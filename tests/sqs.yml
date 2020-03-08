@@ -1,0 +1,60 @@
+
+configs:
+  composex:
+    use_exports: False
+    use_ssm: True
+
+x-sqs:
+  Queue02:
+    Services:
+      - name: app02
+        access: RW
+      - name: app03
+        access: RO
+    Properties:
+      RedrivePolicy:
+        deadLetterTargetArn: Queue01
+        maxReceiveCount: 10
+    Settings:
+      EnvNames:
+        - APP_QUEUE
+        - AppQueue
+
+  Queue01:
+    Services:
+      - name: app01
+        access: RWMessages
+    Properties: {}
+    Settings:
+      EnvNames:
+        - DLQ
+        - dlq
+
+
+
+services:
+  app01:
+    image: link_to_app01
+    ports:
+      - 443:443
+    labels:
+      is_public: True
+      use_nlb: True
+      use_alb: False
+      use_discovery: False
+
+  app02:
+    image: link_to_app02
+    ports:
+      - 443:443
+    labels:
+      is_public: True
+      use_nlb: False
+      use_alb: False
+      use_discovery: True
+      healthcheck:
+        http: 80/ping
+
+  app03:
+    image: link_to_app01
+    labels: {}

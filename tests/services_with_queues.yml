@@ -1,0 +1,118 @@
+
+configs:
+
+  app01:
+    ext_sources:
+      - ipv4: 0.0.0.0/0
+        protocol: tcp
+        source_name: all
+      - ipv4: 1.1.1.1/32
+        protocol: icmp
+        source_name: GoogleDns
+    use_alb: False
+    use_nlb: True
+    is_public: True
+  app02:
+     use_alb: False
+     use_nlb: False
+     use_cloudmap: True
+        
+  globals:
+    network:
+      use_cloudmap: True
+  composex:
+    use_exports: false
+    use_ssm: false
+
+  spot_config:
+    bid_price: 0.42
+    use_spot: true
+    spot_instance_types:
+      m5a.xlarge:
+        weight: 4
+      m5a.2xlarge:
+        weight: 8
+      m5a.4xlarge:
+        weight: 16
+
+x-sqs:
+  Queue02:
+    Services:
+      - name: app02
+        access: RWPermissions
+      - name: app03
+        access: RO
+    Properties:
+      RedrivePolicy:
+        deadLetterTargetArn: Queue01
+        maxReceiveCount: 10
+    Settings:
+      EnvNames:
+        - APP_QUEUE
+        - AppQueue
+
+  Queue01:
+    Services:
+      - name: app03
+        access: RWMessages
+    Properties: {}
+    Settings:
+      EnvNames:
+        - DLQ
+        - dlq
+
+  QueueNoServices:
+    Properties: {}
+    Settings:
+      EnvNames:
+        - ALONE
+        - NoOneLikesMe
+
+
+services:
+  app01:
+    environment:
+      SOMEKEY: SomeValue
+      SOMEOTHERKEY: SomeOtherValue
+    image: nginx
+    ports:
+      - 80:80
+    links:
+      - app02
+
+  app02:
+    environment:
+      SOMEKEY: SomeValue
+      SOMEOTHERKEY: SomeOtherValue
+    image: nginx
+    ports:
+      - 80:80
+    labels:
+      is_public: False
+      use_nlb: False
+      use_alb: False
+      use_cloudmap: True
+      healthcheck:
+        http: 80/
+
+  app03:
+    image: nginx
+    labels: {}
+    environment:
+      SOMEKEY: SomeValue
+      SOMEOTHERKEY: SomeOtherValue
+
+  app04:
+    environment: {}
+    image: nginx
+    ports:
+      - protocol: tcp
+        published: 80
+        target: 80
+    labels:
+      is_public: True
+      use_nlb: False
+      use_alb: True
+      use_cloudmap: True
+      healthcheck:
+        http: 80/

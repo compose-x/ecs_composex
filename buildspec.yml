@@ -1,0 +1,19 @@
+version: 0.2
+
+env:
+  variables:
+    KNOWN_BUCKET: ecscomposex_dev
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.7
+      python: 3.8
+    commands:
+      - pip --version || curl -s https://bootstrap.pypa.io/get-pip.py | python
+      - pip install -r requirements_dev.txt
+      - pip install requirements.txt
+  pre_build:
+    commands:
+      - make test
+      - make test-all
