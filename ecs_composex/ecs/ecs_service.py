@@ -148,7 +148,6 @@ def initialize_service_template(service_name):
             ecs_params.ECS_CONTROLLER,
             ecs_params.SERVICE_COUNT,
             ecs_params.CLUSTER_SG_ID,
-            vpc_params.APP_SUBNETS_CIDR,
             vpc_params.VPC_ID,
             vpc_params.APP_SUBNETS,
             vpc_params.PUBLIC_SUBNETS,
@@ -214,7 +213,6 @@ def generate_service_template(compose_content, service_name, service, session=No
         vpc_params.VPC_ID_T: Ref(vpc_params.VPC_ID),
         vpc_params.APP_SUBNETS_T: Join(',', Ref(vpc_params.APP_SUBNETS)),
         vpc_params.PUBLIC_SUBNETS_T: Join(',', Ref(vpc_params.PUBLIC_SUBNETS)),
-        vpc_params.APP_SUBNETS_CIDR_T: Join(',', Ref(vpc_params.APP_SUBNETS_CIDR)),
         ecs_params.CLUSTER_NAME_T: Ref(ecs_params.CLUSTER_NAME),
         ecs_params.LOG_GROUP.title: Ref(ecs_params.LOG_GROUP_T)
     }

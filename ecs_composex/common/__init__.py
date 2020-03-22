@@ -77,11 +77,10 @@ def init_template(description=None):
 def add_parameters(template, parameters):
     """Function to add parameters to the template
 
-    :param description: Description used for the CFN
-    :type description: str
-
-    :returns: template
-    :rtype: Template
+    :param template: the template to add the parameters to
+    :type template: troposphere.Template
+    :param parameters: list of parameters to add to the template
+    :type parameters: list<troposphere.Parmeter>
     """
     for param in parameters:
         if not isinstance(param, Parameter):

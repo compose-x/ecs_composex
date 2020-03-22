@@ -33,8 +33,8 @@ from troposphere.iam import (
     InstanceProfile
 )
 
-from ecs_composex.cluster import cluster_params
-from ecs_composex.cluster.cluster_params import (
+from ecs_composex.compute import cluster_params
+from ecs_composex.compute.cluster_params import (
     HOST_PROFILE_T,
     HOST_ROLE_T,
     NODES_SG_T
@@ -43,6 +43,7 @@ from ecs_composex.common.cfn_conditions import USE_STACK_NAME_CON_T
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T, ROOT_STACK_NAME
 from ecs_composex.iam import service_role_trust_policy
 from ecs_composex.vpc import vpc_params
+from ecs_composex.ecs.ecs_params import CLUSTER_NAME_T
 
 
 def add_hosts_profile(template):
@@ -124,15 +125,13 @@ def add_hosts_security_group(template):
     )
 
 
-def add_launch_template(template, hosts_sg, cluster):
+def add_launch_template(template, hosts_sg):
     """Function to create a launch template.
 
     :param template: ECS Cluster template
     :type template: troposphere.Template
     :param hosts_sg: security group for the EC2 hosts
     :type hosts_sg: troposphere.ec2.SecurityGroup
-    :param cluster: the cluster to add the nodes to
-    :type cluster: troposphere.ecs.Cluster
 
     :return: launch_template
     :rtype: troposphere.ec2.LaunchTemplate
@@ -247,7 +246,7 @@ def add_launch_template(template, hosts_sg, cluster):
                             'group': 'root',
                             'mode': '644',
                             'content': Join('\n', [
-                                Sub(f"ECS_CLUSTER=${{{cluster.title}}}"),
+                                Sub(f"ECS_CLUSTER=${{{CLUSTER_NAME_T}}}"),
                                 'ECS_ENABLE_TASK_IAM_ROLE=true',
                                 'ECS_ENABLE_SPOT_INSTANCE_DRAINING=true',
                                 'ECS_ENABLE_TASK_IAM_ROLE_NETWORK_HOST=true',
@@ -327,7 +326,7 @@ def add_launch_template(template, hosts_sg, cluster):
     return launch_template
 
 
-def add_hosts_resources(template, cluster):
+def add_hosts_resources(template):
     """Function to add the LaunchTemplate, SG and IAM Profile to go along with the ECS Cluster
 
     :param template: the ecs_cluster template to add the hosts config to
@@ -339,5 +338,5 @@ def add_hosts_resources(template, cluster):
     """
     hosts_sg = add_hosts_security_group(template)
     add_hosts_profile(template)
-    launch_template = add_launch_template(template, hosts_sg, cluster)
+    launch_template = add_launch_template(template, hosts_sg)
     return launch_template

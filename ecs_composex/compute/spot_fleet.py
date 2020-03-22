@@ -30,7 +30,7 @@ from troposphere.iam import Role
 from ecs_composex.common import LOG, build_template
 from ecs_composex.iam import service_role_trust_policy
 from ecs_composex.vpc import vpc_params
-from ecs_composex.cluster import cluster_params, cluster_conditions
+from ecs_composex.compute import cluster_params, cluster_conditions
 
 
 DEFAULT_SPOT_CONFIG = {

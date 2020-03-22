@@ -17,8 +17,7 @@ NODES_SG_T = 'EcsHostsSg'
 
 CLUSTER_NAME = Parameter(
     CLUSTER_NAME_T,
-    Type='String',
-    Default='<default>'
+    Type='String'
 )
 
 USE_FLEET_T = 'UseSpotFleetHosts'

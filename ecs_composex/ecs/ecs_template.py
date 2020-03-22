@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 """ Core ECS Template building """
 
-from troposphere import Ref, Sub, Tags, Join
+from troposphere import Ref, Sub, Tags
 from troposphere.cloudformation import Stack
 from troposphere.ec2 import SecurityGroup
 from troposphere.logs import LogGroup
-from troposphere.ecs import Cluster
 
 from ecs_composex.common import LOG
 from ecs_composex.common import (
@@ -16,6 +15,7 @@ from ecs_composex.common.cfn_params import (
     ROOT_STACK_NAME
 )
 from ecs_composex.ecs import ecs_params
+from ecs_composex.ecs.ecs_params import CLUSTER_NAME, CLUSTER_NAME_T
 from ecs_composex.ecs.ecs_service import (
     generate_service_template
 )
@@ -54,13 +54,12 @@ def add_clusterwide_security_group(template):
     sg = SecurityGroup(
         'ClusterWideSecurityGroup',
         template=template,
-        GroupDescription=Sub(f"SG for ${{{ROOT_STACK_NAME_T}}}"),
-        GroupName=Sub(f"cluster-${{{ROOT_STACK_NAME_T}}}"),
+        GroupDescription=Sub(f"SG for ${{{CLUSTER_NAME_T}}}"),
+        GroupName=Sub(f"cluster-${{{CLUSTER_NAME_T}}}"),
         Tags=Tags(
             {
-                'Name': Sub(f"clustersg-${{{ROOT_STACK_NAME_T}}}"),
-                'StackName': Ref('AWS::StackName'),
-                'ClusterName': Ref(ROOT_STACK_NAME_T)
+                'Name': Sub(f"clustersg-${{{CLUSTER_NAME_T}}}"),
+                'ClusterName': Ref(CLUSTER_NAME)
             }
         ),
         VpcId=Ref(vpc_params.VPC_ID)
@@ -92,7 +91,7 @@ def add_services_stacks(compose_content, root_tpl, cluster_sg, session=None, **k
             **kwargs
         )
         parameters = {
-            ecs_params.CLUSTER_NAME_T: Ref(ROOT_STACK_NAME),
+            CLUSTER_NAME_T: Ref(CLUSTER_NAME),
             ROOT_STACK_NAME_T: Ref(ROOT_STACK_NAME),
             ecs_params.CLUSTER_SG_ID_T: Ref(cluster_sg)
         }
@@ -125,25 +124,24 @@ def generate_services_templates(compose_content, session=None, **kwargs):
     """
     parameters = [
         cfn_params.SERVICE_DISCOVERY,
-        ecs_params.CLUSTER_NAME,
+        CLUSTER_NAME,
         vpc_params.VPC_ID,
-        vpc_params.APP_SUBNETS_CIDR,
         vpc_params.PUBLIC_SUBNETS,
-        vpc_params.APP_SUBNETS,
-        ecs_params
+        vpc_params.APP_SUBNETS
     ]
-    root_tpl = build_template(
+    template = build_template(
         'Root template for ECS Services',
         parameters
     )
 
-    root_tpl.add_resource(LogGroup(
+    template.add_resource(LogGroup(
         ecs_params.LOG_GROUP_T,
         RetentionInDays=30,
-        LogGroupName=Ref(LOG)
+        LogGroupName=Ref(CLUSTER_NAME)
     ))
-    cluster_sg = add_clusterwide_security_group(root_tpl)
-    add_services_stacks(compose_content, root_tpl, cluster_sg, session=session, **kwargs)
-    with open('/tmp/ecs_root.json', 'w') as services_fd:
-        services_fd.write(root_tpl.to_json())
-    return root_tpl
+    cluster_sg = add_clusterwide_security_group(template)
+    add_services_stacks(compose_content, template, cluster_sg, session=session, **kwargs)
+    if KEYISSET('Debug', kwargs):
+        with open('/tmp/ecs_root.json', 'w') as services_fd:
+            services_fd.write(template.to_json())
+    return template

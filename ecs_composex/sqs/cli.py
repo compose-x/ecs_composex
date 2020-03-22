@@ -21,7 +21,7 @@ def main():
         help="Path to the Docker Compose / ComposeX file"
     )
     parser.add_argument(
-        '-o', '--output-file', required=True, dest="OutputFile",
+        '-o', '--output-file', required=True,
         help="Output file for the template body"
     )
     parser.add_argument('_', nargs='*')

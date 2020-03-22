@@ -1,39 +1,73 @@
-ECS ComposeX
-============
+========================
+ECS Composex - Examples
+========================
 
 .. contents::
 
-Assumptions
------------
+ecs_composex
+============
 
-There are so many ways to do things on AWS especially these days with Containers.
-Mostly two ways here regarding how the networking is going to be handled:
+Create everything
+-----------------
 
-* Add a CloudMap to the VPC and register the microservices against the Service Discovery
-* Not use CloudMap and use a custom Route53 record that will put an ALB or NLB in front of the service.
+.. code-block:: bash
 
-Otherwise,
+    ecs_composex --create-vpc --create-cluster -f /path/to/docker/file -o /tmp/stack.json
+    aws cloudformation create-stack --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND \
+        --template-body file://outputs/test.json  \
+        --stack-name toto
 
-* You are happy with AWS, and **you understand the cost of avoiding vendor locking** - that's my way to say I am using AWS tools, not 3rd parties.
-* You want security first and therefore are happy that your containers security groups is going to be as tight as possible.
-* You want the flexibility to use EC2 or Fargate and therefore are happy to align the definitions around Fargate requirements (ie. awsvpc network mode)
-* You know which service needs access to what resources.
+Create VPC and use existing ECS Cluster
+----------------------------------------
 
-Examples
---------
+.. code-block:: bash
 
-I cannot provide as many examples as I would like at this stage. I did work on a similar version
-of that tool and this was using a rather large docker compose file with 20-ish environment variables per
-service and roughly 60 services.
+    ecs_composex --create-vpc --cluster-name test1 -f /path/to/docker/file -o /tmp/stack.json
+    aws cloudformation create-stack --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND \
+        --template-body file://outputs/test.json \
+        --parameters file://outputs/test.params.json \
+        --stack-name toto
 
-End-to-end of creating the whole stack with SQS, SNS, RDS and then the services was taking about 30 mins.
+Use existing VPC and existing cluster
+--------------------------------------
 
-The examples I have for now are the examples I used to run the tests for this.
+.. code-block:: bash
 
-Walkthrough
------------
+    ecs_composex -f tests/services_with_queues.yml  -o outputs/test.json --cluster-name test1 \
+        --public-subnets subnet-074987ef81402e6ca,subnet-00f7f9c1fc66ae3d3,subnet-03756ada536dfcd1e \
+        --app-subnets subnet-095cb471f64ef12d4,subnet-0d60458a6867c6014,subnet-003c6a3c3934bfea2 \
+        --storage-subnets subnet-0300645f9f93a4cf9,subnet-021d10b3cb6c94741,subnet-0c2e6c55baf9040cc \
+        --vpc-id vpc-078f14e333ad0269c \
+        --map ns-hox7np22c6kere6u
+
+    aws cloudformation create-stack --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND \
+        --template-body file://outputs/test.json  \
+        --parameters file://outputs/test.params.json \
+        --stack-name toto
 
 
-ECS ComposeX submodules can be used in a standalone fashion. Refer to each submodules specific usage section for more details.
+ecs_composex-vpc
+=================
 
-.. note:: I worked to get all modules to work under the same input. Objective is to have a single CLI and pick which modules you want to consider when running.
+This CLI is to create just a VPC on its own. That way, if you intend to do a lot of testing, this will save you some
+time each time you deploy a new Cluster/Services in standalone. As in the example above, you can refer to the resources
+IDs simply by looking at the outputs of the VPC stack this will create
+
+.. code-block:: bash
+
+    # Creates VPC with a single NAT for all application subnets
+    ecs_composex-vpc -o outputs/vpc.json --single-nat
+    # Create VPC with a NAT for each Appsubnet based on their AZ
+     ecs_composex-vpc -o outputs/vpc.json
+
+    aws cloudformation create-stack --template-body file://outputs/vpc.json --stack-name vpcalone
+
+ecs_composex-sqs
+================
+
+Similar to the VPC specific CLI, this allows you to create the templates for each SQS Queues shall you only
+want to use ECS ComposeX to make your life easy with SQS configuration.
+
+.. code-block:: bash
+
+    ecs_composex-sqs -f /path/to/docker/compose.yml -o outputs/sqs.json

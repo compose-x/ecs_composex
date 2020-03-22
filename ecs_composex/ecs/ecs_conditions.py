@@ -15,7 +15,19 @@ from troposphere import (
 )
 
 from ecs_composex.ecs import ecs_params
+from ecs_composex.common.cfn_conditions import USE_STACK_NAME_CON_T
 
+GENERATED_CLUSTER_NAME_CON_T = 'UsCfnGeneratedClusterName'
+GENERATED_CLUSTER_NAME_CON = Equals(
+    Ref(ecs_params.CLUSTER_NAME),
+    ecs_params.CLUSTER_NAME.Default
+)
+
+CLUSTER_NAME_CON_T = 'SetClusterNameFromRootStack'
+CLUSTER_NAME_CON = And(
+    Condition(USE_STACK_NAME_CON_T),
+    Condition(GENERATED_CLUSTER_NAME_CON_T)
+)
 SERVICE_COUNT_ZERO_CON_T = 'ServiceCountIsZeroCondition'
 SERVICE_COUNT_ZERO_CON = Equals(
     Ref(ecs_params.SERVICE_COUNT),

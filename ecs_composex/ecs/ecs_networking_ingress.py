@@ -120,7 +120,8 @@ def add_public_security_group_ingress(template, service_name, settings, security
 
 
 def define_service_to_service_ingress(compose_content, template, service_name, service):
-    """Function to determine the security group openings from a service to another
+    """
+    Function to determine the security group openings from a service to another
 
     :param compose_content: docker compose dictionary
     :type compose_content: dict

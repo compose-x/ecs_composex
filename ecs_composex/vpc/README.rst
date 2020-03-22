@@ -41,3 +41,8 @@ The default CIDR range for the VPC is 192.168.36.0/22. It can be overridden with
 
 This leaves a little less than 500 IP address for the EC2 hosts and/or Docker containers.
 
+RoadMap
+-------
+
+* Add option to enable VPC Flow logs
+* Add option to enable VPC Endpoints

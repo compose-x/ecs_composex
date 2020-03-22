@@ -51,7 +51,8 @@ MEMORY_RES = Parameter(MEMORY_RES_T, Type='Number', Default=0)
 CLUSTER_NAME_T = 'EcsClusterName'
 CLUSTER_NAME = Parameter(
     CLUSTER_NAME_T, Type='String',
-    AllowedPattern=r'[a-zA-Z0-9-]+'
+    AllowedPattern=r'[a-zA-Z0-9-]+',
+    Default='default'
 )
 
 SERVICE_NAME_T = 'MicroServiceName'
@@ -174,6 +175,7 @@ SERVICE_GROUP_ID = Parameter(
     Type=SG_ID_TYPE,
     Default='<none>'
 )
+
 
 def get_import_service_group_id(remote_service_name):
     """

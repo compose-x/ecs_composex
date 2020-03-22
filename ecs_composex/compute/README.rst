@@ -1,12 +1,15 @@
 =====================
-ecs_composex.cluster
+ecs_composex.compute
 =====================
 
 .. contents::
 
-This module is here to create the ECS Cluster in addition to some potential compute resources.
+This module is here to create the compute resources if so chosen instead of using Fargate.
 Given that the default it to use AWS Fargate (soon will make it use Fargate Spot as well),
-the EC2 resources I by default had provisioned are now optional.
+the EC2 resources which by default were provisioned are now optional.
+
+I would only recommend to use EC2 resources over fargate if you need for performances reasons
+create backed AMIs which will have a lot of the docker layers that your images and volumes need.
 
 Features
 ---------

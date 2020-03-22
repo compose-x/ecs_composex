@@ -11,27 +11,22 @@ import sys
 
 from boto3 import session
 
-from ecs_composex.cluster import create_cluster_template
+from ecs_composex.compute import create_cluster_template
 from ecs_composex.common.aws import CURATED_AZS, BUCKET_NAME
-from ecs_composex.ecs.ecs_params import LAUNCH_TYPE_T
+from ecs_composex.ecs.ecs_params import CLUSTER_NAME_T
 from ecs_composex.vpc.vpc_params import (
     VPC_ID_T, APP_SUBNETS_T,
     PUBLIC_SUBNETS_T
 )
 
 
-def create_cluster_parser():
+def root_parser():
     """
     Function to create the VPC specific arguments for argparse
     """
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '-f', '--docker-compose-file',
-        required=False
-    )
-    parser.add_argument(
-        '-n', '--env-name', type=str,
-        required=True, dest='EnvName'
+        '-f', '--docker-compose-file', required=False
     )
     parser.add_argument(
         '-o', '--output-file', required=True, help="Output file"
@@ -82,20 +77,20 @@ def create_cluster_parser():
         help="Create an ECS Cluster for this deployment", dest='CreateCluster'
     )
     parser.add_argument(
-        '--use-fargate', required=False, default=True, action='store_true',
-        dest=LAUNCH_TYPE_T, help="If you run Fargate only, no EC2 will be created"
+        '--cluster-name', dest=CLUSTER_NAME_T, required=False
     )
     parser.add_argument(
         '--use-spot-fleet', required=False, default=False, action='store_true',
-        dest='UseSpotFleet', help="Runs spotfleet for EC2. If used in combination "
-                                  "of --use-fargate, it will create an additional SpotFleet"
+        dest='UseSpotFleet',
+        help="Runs spotfleet for EC2. If used in combination "
+             "of --use-fargate, it will create an additional SpotFleet"
     )
     return parser
 
 
 def main():
     """Console script for ecs_composex."""
-    parser = create_cluster_parser()
+    parser = root_parser()
     parser.add_argument('_', nargs='*')
     args = parser.parse_args()
 

@@ -6,17 +6,15 @@ Main module generating the ECS Cluster template.
 
 from troposphere import Ref, If, GetAtt
 from troposphere.cloudformation import Stack
-from troposphere.ecs import Cluster
-
-from ecs_composex.common.outputs import formatted_outputs
-from ecs_composex.cluster import cluster_params, cluster_conditions
-from ecs_composex.cluster.hosts_template import add_hosts_resources
-from ecs_composex.cluster.spot_fleet import generate_spot_fleet_template, DEFAULT_SPOT_CONFIG
+from ecs_composex.compute import cluster_params, cluster_conditions
+from ecs_composex.compute.hosts_template import add_hosts_resources
+from ecs_composex.compute.spot_fleet import generate_spot_fleet_template, DEFAULT_SPOT_CONFIG
 from ecs_composex.common import build_template, KEYISSET, LOG
 from ecs_composex.common import cfn_conditions
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME, ROOT_STACK_NAME_T
 from ecs_composex.common.templates import upload_template
 from ecs_composex.vpc import vpc_params
+from ecs_composex.ecs.ecs_params import CLUSTER_NAME
 
 
 def add_spotfleet_stack(template, region_azs, compose_content, launch_template, **kwargs):
@@ -98,7 +96,7 @@ def generate_cluster_template(region_azs, compose_content=None, **kwargs):
             cluster_params.MAX_CAPACITY,
             vpc_params.APP_SUBNETS,
             vpc_params.VPC_ID,
-            ecs_params.CLUSTER_NAME
+            CLUSTER_NAME
         ]
     )
     template.add_condition(
@@ -109,33 +107,9 @@ def generate_cluster_template(region_azs, compose_content=None, **kwargs):
         cluster_conditions.USE_SPOT_CON_T,
         cluster_conditions.USE_SPOT_CON
     )
-    template.add_condition(
-        cluster_conditions.GENERATED_CLUSTER_NAME_CON_T,
-        cluster_conditions.GENERATED_CLUSTER_NAME_CON
-    )
-    template.add_condition(
-        cluster_conditions.CLUSTER_NAME_CON_T,
-        cluster_conditions.CLUSTER_NAME_CON
-    )
-    cluster = Cluster(
-        'EcsCluster',
-        ClusterName=If(
-            cluster_conditions.GENERATED_CLUSTER_NAME_CON_T,
-            Ref('AWS::NoValue'),
-            If(
-                cluster_conditions.CLUSTER_NAME_CON_T,
-                Ref(ROOT_STACK_NAME),
-                Ref('AWS::StackName')
-            )
-        ),
-        template=template
-    )
-    launch_template = add_hosts_resources(template, cluster)
+    launch_template = add_hosts_resources(template)
     add_spotfleet_stack(
         template, region_azs,
         compose_content, launch_template, **kwargs
     )
-    template.add_output(formatted_outputs([
-        {cluster_params.CLUSTER_NAME_T: Ref(cluster)}
-    ]))
     return template

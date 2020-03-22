@@ -2,6 +2,7 @@
 ECS ComposeX
 ============
 
+.. image:: https://codebuild.eu-west-1.amazonaws.com/badges?uuid=eyJlbmNyeXB0ZWREYXRhIjoiQmdmZGZ3MkJCbDNhYVJvc0oza1orVW4zRjM1N21rdERiZ0NqUXYvSDFXM1Nxb1ROYnJTdDBLc3N3L0FGdm9LVjVkUTlzQkhjR1hZZ2JOTG1GYXB1QTJjPSIsIml2UGFyYW1ldGVyU3BlYyI6Ik5xTGhESjY1ZzVsQ3R4RFMiLCJtYXRlcmlhbFNldFNlcmlhbCI6MX0%3D&branch=master
 
 .. image:: https://img.shields.io/pypi/v/ecs_composex.svg
         :target: https://pypi.python.org/pypi/ecs_composex
@@ -11,6 +12,7 @@ ECS ComposeX
         :target: https://ecs-composex.readthedocs.io/en/latest/?badge=latest
         :alt: Documentation Status
 
+.. contents::
 
 What is it?
 ============

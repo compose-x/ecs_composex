@@ -87,7 +87,7 @@ you are good to go.
 
 .. note::
 
-    This is volountarily not using the *configs* keyword not to confuse with Docker Compose *configs*
+    This is voluntarily not using the *configs* keyword not to confuse with Docker Compose *configs*
 
 
 Services
@@ -111,4 +111,4 @@ The available defined access policies are :
 These need tuning and perfecting, NotAction might not be the best approach. TBD.
 
 
-.. _CFN SQS definition`: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-sqs-queues.html
+.. _CFN SQS definition: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-sqs-queues.html

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Module to create the ECS Cluster and if so chosen, the SpotFleet / OnDemand instances to go with it.
+Module to create the compute resources, if so chosen, the SpotFleet / OnDemand instances to go with it.
 
 The SpotFleet and OnDemand instances are optional, but the LaunchTemplate gets created so that if
 for testing one would wish to run a new EC2 instance, you can simply do it from the launch template.
@@ -11,13 +11,19 @@ import boto3
 
 from ecs_composex.common import KEYISSET, load_composex_file
 from ecs_composex.common.aws import get_curated_azs
-from ecs_composex.cluster.cluster_template import generate_cluster_template
+from ecs_composex.compute.cluster_template import generate_cluster_template
 
 
 def create_cluster_template(session=None, **kwargs):
     """
     Function entrypoint for CLI.
+    :param session: boto3 session to override API calls with
+    :type session: boto3.session.Session
+
+    :return: cluster template
+    :rtype: troposphere.Template
     """
+    compose_content = None
     if KEYISSET('ComposeXFile', kwargs):
         compose_content = load_composex_file(kwargs['ComposeXFile'])
 

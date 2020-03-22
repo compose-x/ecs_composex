@@ -13,7 +13,7 @@ with open('HISTORY.rst') as history_file:
 
 requirements = [
     'troposphere==2.6.0',
-    'boto3'
+    'boto3==1.12.9'
 ]
 
 setup_requirements = ['pytest-runner', ]
@@ -34,12 +34,12 @@ setup(
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
     ],
-    description="Package that generates CFN templates based on a Dockercompose file to generate ECS Cluster, ECS Services and Extra resources such as SQS Queues, SNS Topics etc. that can be accessed via IAM",
+    description="Package that generates CFN templates based on a Docker Compose file to generate ECS Cluster,"
+                "ECS Services and Extra resources such as SQS Queues, SNS Topics etc. that can be accessed via IAM",
     entry_points={
         'console_scripts': [
             'ecs_composex=ecs_composex.cli:main',
             'ecs_composex-vpc=ecs_composex.vpc.cli:main',
-            'ecs_composex-cluster=ecs_composex.cluster.cli:main',
             'ecs_composex-sqs=ecs_composex.sqs.cli:main'
         ]
     },
@@ -53,7 +53,7 @@ setup(
     setup_requires=setup_requirements,
     test_suite='tests',
     tests_require=test_requirements,
-    url='https://github.com/johnpreston/ecs_composex',
+    url='https://github.com/lambda-my-aws/ecs_composex',
     version='0.0.1',
     zip_safe=False
 )

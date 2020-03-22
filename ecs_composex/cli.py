@@ -15,10 +15,10 @@ from ecs_composex.common import KEYISSET
 from ecs_composex.root import generate_full_template
 from ecs_composex.vpc.vpc_params import (
     APP_SUBNETS_T, PUBLIC_SUBNETS_T, STORAGE_SUBNETS_T,
-    VPC_ID_T
+    VPC_ID_T, VPC_MAP_ID_T
 )
 from ecs_composex.ecs.ecs_params import LAUNCH_TYPE_T
-from ecs_composex.cluster.cluster_params import (
+from ecs_composex.compute.cluster_params import (
     CLUSTER_NAME_T, USE_FLEET_T
 )
 
@@ -36,12 +36,12 @@ def validate_vpc_input(args):
         PUBLIC_SUBNETS_T,
         APP_SUBNETS_T,
         STORAGE_SUBNETS_T,
-        VPC_ID_T
+        VPC_ID_T, VPC_MAP_ID_T
     ]
     if not KEYISSET('CreateVpc', args):
         for key in nocreate_requirements:
-            if key not in args:
-                raise warnings.warn(f"If you want to use an existing VPC, you need {key}", UserWarning)
+            if not KEYISSET(key, args):
+                raise ValueError(f"If you want to use an existing VPC, you need {key}")
     else:
         for key in nocreate_requirements:
             if KEYISSET(key, args):
@@ -115,6 +115,9 @@ def main():
         help="List of Subnet IDs to use for the cluster when not creating VPC"
     )
     parser.add_argument(
+        '--discovery-map-id', '--map', dest=VPC_MAP_ID_T, required=False, help="Service Discovery ID, ie. ns-xxx"
+    )
+    parser.add_argument(
         '--single-nat', dest='SingleNat', action='store_true',
         help="Whether you want a single NAT for your application subnets or not. Not recommended for production"
     )
@@ -124,8 +127,10 @@ def main():
         help="Create an ECS Cluster for this deployment", dest='CreateCluster'
     )
     parser.add_argument(
-        '--cluster-name', type=str, required=False, dest=CLUSTER_NAME_T
+        '--cluster-name', type=str, required=False, dest=CLUSTER_NAME_T,
+        help='Override/Provide ECS Cluster name'
     )
+    # COMPUTE SETTINGS
     parser.add_argument(
         '--use-fargate', required=False, default=False, action='store_true',
         dest=LAUNCH_TYPE_T, help="If you run Fargate only, no EC2 will be created"
@@ -134,6 +139,11 @@ def main():
         '--use-spot-fleet', required=False, default=False, action='store_true',
         dest=USE_FLEET_T, help="Runs spotfleet for EC2. If used in combination "
                                "of --use-fargate, it will create an additional SpotFleet"
+    )
+    parser.add_argument(
+        '--create-launch-template', dest='CreateLaunchTemplate', action='store_true',
+        help='Whether you want to create a launch template to create EC2 resources for'
+        ' to expand the ECS Cluster and run containers on EC2 instances you might have access to.'
     )
     #  ECS COMPOSEX SPECIALS
     parser.add_argument(
