@@ -214,6 +214,6 @@ Disclaimer
 
 .. _Cookiecutter: https://github.com/audreyr/cookiecutter
 .. _`audreyr/cookiecutter-pypackage`: https://github.com/audreyr/cookiecutter-pypackage
-.. _Mark Peek: https://github.com/markpeek
-.. _AWS ECS CLI: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ECS_CLI.html
+.. _`Mark Peek`: https://github.com/markpeek
+.. _`AWS ECS CLI`: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ECS_CLI.html
 .. _Troposphere: https://github.com/cloudtools/troposphere

@@ -32,13 +32,13 @@ You can either clone the public repository:
 
 .. code-block:: console
 
-    $ git clone git://github.com/johnpreston/ecs_composex
+    $ git clone git://github.com/lambda-my-aws/ecs_composex
 
 Or download the `tarball`_:
 
 .. code-block:: console
 
-    $ curl -OJL https://github.com/johnpreston/ecs_composex/tarball/master
+    $ curl -OJL https://github.com/lambda-my-aws/ecs_composex/tarball/master
 
 Once you have a copy of the source, you can install it with:
 
@@ -47,5 +47,5 @@ Once you have a copy of the source, you can install it with:
     $ python setup.py install
 
 
-.. _Github repo: https://github.com/johnpreston/ecs_composex
-.. _tarball: https://github.com/johnpreston/ecs_composex/tarball/master
+.. _Github repo: https://github.com/lambda-my-aws/ecs_composex
+.. _tarball: https://github.com/lambda-my-aws/ecs_composex/tarball/master
