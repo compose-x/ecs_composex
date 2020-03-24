@@ -130,7 +130,11 @@ def define_service_containers(service_template):
 def set_resource_type_settings(
     service_template, service_name, resources_permissions, env_vars, containers
 ):
-    """Function to add the resource type settings for a service if applicable
+    """
+    Function to add the resource type settings for a service if applicable.
+    Goes through each resource permissions (ie, queue01) of a given resource type (i.e. sqs)
+    and identifies the policy associated with the service, then binds the policy to the
+    IAM Task Role and adds the environment variables to the microservice.
 
     :param service_template: the service template
     :type service_template: troposphere.Template
@@ -156,13 +160,15 @@ def set_resource_type_settings(
                     LOG.debug(environment)
 
 
-def assign_x_resources_to_service(compose_content, service_name, service_tpl, **kwargs):
+def assign_x_resources_to_service(
+    service_name, service_tpl, x_resources_configs, **kwargs
+):
     """
     Parses each X component and if the service is listed there, assigns the policy to
-    the service task role
+    the service task role for services manageable via IAM only.
 
-    :param compose_content: docker ComposeX file content
-    :type compose_content: dict
+    :param x_resources_configs: IAM based x services access.
+    :type x_resources_configs: dict
     :param service_name: name of the service
     :type service_name: str
     :param service_tpl: service template to add the resources to
@@ -170,15 +176,11 @@ def assign_x_resources_to_service(compose_content, service_name, service_tpl, **
     :param kwargs: optional arguments
     :type kwargs: dict
     """
-    x_resources_configs = generate_x_resource_configs(compose_content, **kwargs)
     containers = define_service_containers(service_tpl)
 
     for resource_type in x_resources_configs:
-        if not (resource_type == "x-rds" or resource_type == "x-cluster"):
-            if not KEYISSET("permissions", x_resources_configs[resource_type]):
-                continue
-            resources_perms = x_resources_configs[resource_type]["permissions"]
-            env_vars = x_resources_configs[resource_type]["envvars"]
-            set_resource_type_settings(
-                service_tpl, service_name, resources_perms, env_vars, containers
-            )
+        resources_perms = x_resources_configs[resource_type]["permissions"]
+        env_vars = x_resources_configs[resource_type]["envvars"]
+        set_resource_type_settings(
+            service_tpl, service_name, resources_perms, env_vars, containers
+        )

@@ -201,7 +201,7 @@ class FileArtifact(object):
             LOG.debug(f"Created directory {self.output_dir} to store files")
         except FileExistsError:
             LOG.debug(f"Output directory {self.output_dir} already exists")
-        with open(f"{self.output_dir}/{self.file_name}", "w") as template_fd:
+        with open(self.local_path, "w") as template_fd:
             template_fd.write(self.body)
             LOG.debug(
                 f"Template {self.file_name} written successfully at {self.output_dir}/{self.file_name}"
