@@ -20,7 +20,7 @@ from ecs_composex.common.cfn_params import (
 from ecs_composex.common.tagging import generate_tags_parameters, add_object_tags
 from ecs_composex.common.templates import upload_template
 from ecs_composex.compute import create_cluster_template
-from ecs_composex.compute.cluster_params import (
+from ecs_composex.compute.compute_params import (
     TARGET_CAPACITY_T,
     TARGET_CAPACITY,
     MIN_CAPACITY_T,

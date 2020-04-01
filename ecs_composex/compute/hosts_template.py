@@ -33,14 +33,13 @@ from troposphere.iam import (
     InstanceProfile
 )
 
-from ecs_composex.compute import cluster_params
-from ecs_composex.compute.cluster_params import (
+from ecs_composex.compute import compute_params
+from ecs_composex.compute.compute_params import (
     HOST_PROFILE_T,
     HOST_ROLE_T,
     NODES_SG_T
 )
-from ecs_composex.common.cfn_conditions import USE_STACK_NAME_CON_T
-from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T, ROOT_STACK_NAME
+
 from ecs_composex.iam import service_role_trust_policy
 from ecs_composex.vpc import vpc_params
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME_T
@@ -71,7 +70,7 @@ def add_hosts_profile(template):
                     'Resource': [
                         Sub(
                             "arn:${AWS::Partition}:ecs:${AWS::Region}:${AWS::AccountId}:"
-                            f"cluster/${{{ROOT_STACK_NAME_T}}}"
+                            f"cluster/${{{CLUSTER_NAME_T}}}"
                         )
                     ]
                 },
@@ -120,7 +119,7 @@ def add_hosts_security_group(template):
     return SecurityGroup(
         NODES_SG_T,
         template=template,
-        GroupDescription=Sub(f"Group for hosts in ${{{ROOT_STACK_NAME_T}}}"),
+        GroupDescription=Sub(f"Group for hosts in ${{{CLUSTER_NAME_T}}}"),
         VpcId=Ref(vpc_params.VPC_ID)
     )
 
@@ -161,13 +160,13 @@ def add_launch_template(template, hosts_sg):
             cloudformation.Init(
                 cloudformation.InitConfigSets(
                     default=[
-                        'vmpackages',
+                        'awspackages',
                         'dockerconfig',
                         'ecsconfig',
-                        'vmservices'
+                        'awsservices'
                     ]
                 ),
-                vmpackages=cloudformation.InitConfig(
+                awspackages=cloudformation.InitConfig(
                     packages={
                         'yum': {
                             "awslogs": [],
@@ -183,7 +182,7 @@ def add_launch_template(template, hosts_sg):
                         }
                     }
                 ),
-                vmservices=cloudformation.InitConfig(
+                awsservices=cloudformation.InitConfig(
                     services={
                         "sysvinit": {
                             "amazon-ssm-agent": {
@@ -283,7 +282,7 @@ def add_launch_template(template, hosts_sg):
                     )
                 )
             ],
-            ImageId=Ref(cluster_params.ECS_AMI_ID),
+            ImageId=Ref(compute_params.ECS_AMI_ID),
             InstanceInitiatedShutdownBehavior='terminate',
             IamInstanceProfile=IamInstanceProfile(
                 Arn=Sub(f"${{{HOST_PROFILE_T}.Arn}}")
@@ -292,7 +291,7 @@ def add_launch_template(template, hosts_sg):
                 TagSpecifications(
                     ResourceType='instance',
                     Tags=Tags(
-                        Name=Sub(f"EcsNodes-${{{ROOT_STACK_NAME_T}}}"),
+                        Name=Sub(f"EcsNodes-${{{CLUSTER_NAME_T}}}"),
                         StackName=Ref('AWS::StackName'),
                         StackId=Ref('AWS::StackId')
                     )
@@ -317,11 +316,7 @@ def add_launch_template(template, hosts_sg):
                 '# EOF'
             ]))
         ),
-        LaunchTemplateName=If(
-            USE_STACK_NAME_CON_T,
-            Ref('AWS::StackName'),
-            Ref(ROOT_STACK_NAME)
-        )
+        LaunchTemplateName=Ref(CLUSTER_NAME_T)
     )
     return launch_template
 
@@ -331,10 +326,9 @@ def add_hosts_resources(template):
 
     :param template: the ecs_cluster template to add the hosts config to
     :type template: troposphere.Template
-    :param cluster: the cluster to add the hosts to
-    :type cluster: troposphere.ecs.Cluster
 
-    :returns: launch_template
+    :return: launch_template
+    :rtype: troposphere.ec2.LaunchTemplate
     """
     hosts_sg = add_hosts_security_group(template)
     add_hosts_profile(template)

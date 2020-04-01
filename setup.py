@@ -39,6 +39,7 @@ setup(
     entry_points={
         'console_scripts': [
             'ecs_composex=ecs_composex.cli:main',
+            'ecs_composex-compute=ecs_composex.compute.cli:main',
             'ecs_composex-vpc=ecs_composex.vpc.cli:main',
             'ecs_composex-sqs=ecs_composex.sqs.cli:main'
         ]

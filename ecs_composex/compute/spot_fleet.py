@@ -30,7 +30,7 @@ from troposphere.iam import Role
 from ecs_composex.common import LOG, build_template
 from ecs_composex.iam import service_role_trust_policy
 from ecs_composex.vpc import vpc_params
-from ecs_composex.compute import cluster_params, cluster_conditions
+from ecs_composex.compute import compute_params, compute_conditions
 
 
 DEFAULT_SPOT_CONFIG = {
@@ -73,7 +73,13 @@ def add_fleet_role(template):
 
 def define_overrides(region_azs, lt_id, lt_version, spot_config):
     """Function to generate Overrides for the SpotFleet
-
+    :param region_azs: Availability Zones of the region to create the hosts into
+    :type region_azs: list
+    :param lt_id: Launch template ID
+    :param lt_version: Launch Template Version
+    :param spot_config: SpotFleet configuration for pricing and instance types
+    :return: configs
+    :type: list
     """
     if isinstance(lt_id, LaunchTemplate):
         template_id = Ref(lt_id)
@@ -129,11 +135,11 @@ def add_scaling_policies(template, spot_fleet, role):
         f"SpotFleetScalingTarget{spot_fleet.title}",
         template=template,
         MaxCapacity=If(
-            cluster_conditions.MAX_IS_MIN_T,
-            Ref(cluster_params.MIN_CAPACITY),
-            Ref(cluster_params.MAX_CAPACITY)
+            compute_conditions.MAX_IS_MIN_T,
+            Ref(compute_params.MIN_CAPACITY),
+            Ref(compute_params.MAX_CAPACITY)
         ),
-        MinCapacity=Ref(cluster_params.MIN_CAPACITY),
+        MinCapacity=Ref(compute_params.MIN_CAPACITY),
         ResourceId=Sub(f'spot-fleet-request/${{{spot_fleet.title}}}'),
         RoleARN=GetAtt(role, 'Arn'),
         ServiceNamespace='ec2',
@@ -267,7 +273,7 @@ def define_spot_fleet(template, region_azs, lt_id, lt_version, **kwargs):
             ExcessCapacityTerminationPolicy='default',
             IamFleetRole=GetAtt(role, 'Arn'),
             InstanceInterruptionBehavior='terminate',
-            TargetCapacity=Ref(cluster_params.TARGET_CAPACITY),
+            TargetCapacity=Ref(compute_params.TARGET_CAPACITY),
             Type='maintain',
             SpotPrice=str(kwargs['spot_config']['bid_price']),
             ReplaceUnhealthyInstances=True,
@@ -285,18 +291,18 @@ def generate_spot_fleet_template(region_azs, **kwargs):
     template = build_template(
         'Template For SpotFleet As Part Of EcsCluster',
         [
-            cluster_params.LAUNCH_TEMPLATE_ID,
-            cluster_params.LAUNCH_TEMPLATE_VersionNumber,
-            cluster_params.MIN_CAPACITY,
-            cluster_params.MAX_CAPACITY,
-            cluster_params.TARGET_CAPACITY
+            compute_params.LAUNCH_TEMPLATE_ID,
+            compute_params.LAUNCH_TEMPLATE_VersionNumber,
+            compute_params.MIN_CAPACITY,
+            compute_params.MAX_CAPACITY,
+            compute_params.TARGET_CAPACITY
         ]
     )
     template.add_condition(
-        cluster_conditions.MAX_IS_MIN_T,
-        cluster_conditions.MAX_IS_MIN
+        compute_conditions.MAX_IS_MIN_T,
+        compute_conditions.MAX_IS_MIN
     )
-    lt_id = Ref(cluster_params.LAUNCH_TEMPLATE_ID)
-    lt_version = Ref(cluster_params.LAUNCH_TEMPLATE_VersionNumber)
+    lt_id = Ref(compute_params.LAUNCH_TEMPLATE_ID)
+    lt_version = Ref(compute_params.LAUNCH_TEMPLATE_VersionNumber)
     define_spot_fleet(template, region_azs, lt_id, lt_version, **kwargs)
     return template

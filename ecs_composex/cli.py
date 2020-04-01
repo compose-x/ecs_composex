@@ -18,7 +18,7 @@ from ecs_composex.vpc.vpc_params import (
     VPC_ID_T, VPC_MAP_ID_T
 )
 from ecs_composex.ecs.ecs_params import LAUNCH_TYPE_T
-from ecs_composex.compute.cluster_params import (
+from ecs_composex.compute.compute_params import (
     CLUSTER_NAME_T, USE_FLEET_T
 )
 
