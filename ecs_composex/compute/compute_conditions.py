@@ -3,10 +3,10 @@
 from troposphere import (
     Condition, Equals, Ref, Not
 )
-from ecs_composex.compute import cluster_params
+from ecs_composex.compute import compute_params
 USE_SPOT_CON_T = 'UseSpotFleetHostsCondition'
 USE_SPOT_CON = Equals(
-    Ref(cluster_params.USE_FLEET),
+    Ref(compute_params.USE_FLEET),
     'True'
 )
 
@@ -17,6 +17,6 @@ NOT_USE_SPOT_CON = Not(
 
 MAX_IS_MIN_T = 'CapacityMaxIsMinCondition'
 MAX_IS_MIN = Equals(
-    Ref(cluster_params.MAX_CAPACITY),
+    Ref(compute_params.MAX_CAPACITY),
     0
 )

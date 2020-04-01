@@ -9,7 +9,7 @@ from troposphere.cloudformation import Stack
 from troposphere.ecs import Cluster
 
 from ecs_composex.compute import create_cluster_template
-from ecs_composex.compute.cluster_params import (
+from ecs_composex.compute.compute_params import (
     TARGET_CAPACITY_T,
     TARGET_CAPACITY,
     MIN_CAPACITY_T,

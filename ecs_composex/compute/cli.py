@@ -15,8 +15,7 @@ from ecs_composex.compute import create_cluster_template
 from ecs_composex.common.aws import CURATED_AZS, BUCKET_NAME
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME_T
 from ecs_composex.vpc.vpc_params import (
-    VPC_ID_T, APP_SUBNETS_T,
-    PUBLIC_SUBNETS_T
+    VPC_ID_T, APP_SUBNETS_T
 )
 
 
@@ -48,34 +47,14 @@ def root_parser():
     )
     # VPC SETTINGS
     parser.add_argument(
-        '--create-vpc', required=False, default=False, action='store_true',
-        help="Create a VPC for this deployment", dest='CreateVpc'
-    )
-    parser.add_argument(
-        '--vpc-cidr', required=False, default='192.168.36.0/22', dest='VpcCidr',
-        help="Specify the VPC CIDR if you use --create-vpc"
-    )
-    parser.add_argument(
         '--vpc-id', dest=VPC_ID_T, required=False, type=str,
         help='Specify VPC ID when not creating one'
     )
     parser.add_argument(
-        '--public-subnets', required=False, dest=PUBLIC_SUBNETS_T, action='append',
-        help="List of Subnet IDs to use for the cluster when not creating VPC"
-    )
-    parser.add_argument(
-        '--app-subnets', required=False, dest=APP_SUBNETS_T, action='append',
-        help="List of Subnet IDs to use for the cluster when not creating VPC"
-    )
-    parser.add_argument(
-        '--storage-subnets', required=False, dest=APP_SUBNETS_T, action='append',
+        '--hosts-subnets', required=False, dest=APP_SUBNETS_T, action='append',
         help="List of Subnet IDs to use for the cluster when not creating VPC"
     )
     # CLUSTER SETTINGS
-    parser.add_argument(
-        '--create-cluster', required=False, default=False, action='store_true',
-        help="Create an ECS Cluster for this deployment", dest='CreateCluster'
-    )
     parser.add_argument(
         '--cluster-name', dest=CLUSTER_NAME_T, required=False
     )
