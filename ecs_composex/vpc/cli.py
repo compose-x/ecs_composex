@@ -9,6 +9,7 @@ from boto3 import session
 
 from ecs_composex.common.aws import CURATED_AZS
 from ecs_composex.vpc import create_vpc_template
+from ecs_composex import XFILE_DEST
 
 
 def main():
@@ -17,6 +18,9 @@ def main():
     parser.add_argument(
         '--vpc-cidr', required=False, default='192.168.36.0/22', dest='VpcCidr',
         help="Specify the VPC CIDR"
+    )
+    parser.add_argument(
+        '-f', '--composex-file', dest=XFILE_DEST, required=False
     )
     parser.add_argument(
         '--region', required=False, default=session.Session().region_name,

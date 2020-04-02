@@ -34,6 +34,28 @@ configs:
         weight: 8
       m5a.4xlarge:
         weight: 16
+# List like tags
+x-tags:
+  - name: costcentre
+    value: someoneispaying
+  - name: owner
+    value: IOwnThis
+  - name: mail
+    value: you@paying.bill
+  - name: weird-name
+    value: something good and long
+  - name: another:weird:name
+    value: gogogo
+  - name: toto
+    value: something wrong
+
+# With Dict like Tags
+#x-tags:
+#  something: value
+#  else: othervalue
+#  weirdshit: other
+#  underscore: value2
+#  dasher: prancer
 
 x-sqs:
   Queue02:

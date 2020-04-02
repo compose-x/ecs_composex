@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+"""
+Most commonly used functions shared across all modules.
+"""
 
 import logging as logthings
 import re
@@ -126,11 +130,10 @@ def add_defaults(template):
 
 
 def build_template(description=None, *parameters):
-    """Entry point function to creating the template for ECS ComposeX resources
-
+    """
+    Entry point function to creating the template for ECS ComposeX resources
     :param description: Optional custom description for the CFN template
     :type description: str, optional
-
     :param parameters: List of optional parameters to add to the template.
     :type parameters: List<troposphere.Parameters>, optional
 

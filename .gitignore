@@ -17,6 +17,7 @@ outputs/*.yaml
 #DOCS
 docs/_build/*
 docs/_static/*
+docs/ecs_composex*.rst
 
 
 # IDEA STUFF
