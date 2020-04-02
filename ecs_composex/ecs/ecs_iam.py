@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 """ IAM Building block for ECS """
 
-
 from troposphere import Sub, Ref
 from troposphere.iam import Role, PolicyType
 
-from ecs_composex.common import LOG
+from ecs_composex.common import LOG, KEYISSET
 from ecs_composex.ecs.ecs_params import SERVICE_NAME_T, CLUSTER_NAME_T, EXEC_ROLE_T, TASK_ROLE_T, TASK_T
 from ecs_composex.ecs_composex import generate_x_resource_configs
 from ecs_composex.iam import service_role_trust_policy
@@ -173,6 +172,8 @@ def assign_x_resources_to_service(compose_content, service_name, service_tpl, **
 
     for resource_type in x_resources_configs:
         if not (resource_type == 'x-rds' or resource_type == 'x-cluster'):
+            if not KEYISSET('permissions', x_resources_configs[resource_type]):
+                continue
             resources_perms = x_resources_configs[resource_type]['permissions']
             env_vars = x_resources_configs[resource_type]['envvars']
             set_resource_type_settings(service_tpl, service_name, resources_perms, env_vars, containers)

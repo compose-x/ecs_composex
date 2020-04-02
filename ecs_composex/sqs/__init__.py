@@ -4,11 +4,12 @@
 import os
 import boto3
 
-from ecs_composex.common import LOG
+from ecs_composex import XFILE_DEST
 from ecs_composex.common import (
     validate_input,
     validate_kwargs,
-    load_composex_file
+    load_composex_file,
+    LOG
 )
 from ecs_composex.common.templates import validate_template
 from ecs_composex.sqs.sqs_template import generate_sqs_root_template
@@ -27,7 +28,7 @@ def create_sqs_template(session=None, **kwargs):
     :return: sqs_tpl
     :rtype: troposphere.Template
     """
-    content = load_composex_file(kwargs['ComposeXFile'])
+    content = load_composex_file(kwargs[XFILE_DEST])
     validate_input(content, RES_KEY)
     validate_kwargs(['BucketName'], kwargs)
 

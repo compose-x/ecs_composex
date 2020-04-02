@@ -123,6 +123,7 @@ def generate_x_resource_configs(content, **kwargs):
     :return: resource_configs
     :rtype: dict
     """
+    exempt_keys = ['x-rds', 'x-tags', 'x-cluster']
     resource_configs = {}
     options = get_composex_globals(content)
     kwargs.update(options)
@@ -130,7 +131,7 @@ def generate_x_resource_configs(content, **kwargs):
         res_name = RES_REGX.sub('', resource_type)
         resources = content[resource_type]
         if (resource_type.startswith('x-')
-                and not (resource_type == 'x-rds' or resource_type == 'x-cluster')
+                and not (resource_type in exempt_keys)
                 and content[resource_type]):
             resource_configs[resource_type] = {}
             module_name = f"{res_name}.{res_name}_perms"

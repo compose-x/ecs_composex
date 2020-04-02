@@ -188,7 +188,6 @@ License and documentation
     * https://docs.ecs-composex.lambda-my-aws.io
     * https://ecs-composex.readthedocs.io/en/latest
 
-
 Credits
 =======
 

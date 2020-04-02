@@ -8,7 +8,7 @@ from troposphere.logs import LogGroup
 
 from ecs_composex.common import LOG
 from ecs_composex.common import (
-    cfn_params, build_template, KEYISSET
+    cfn_params, build_template, KEYISSET, add_parameters
 )
 from ecs_composex.common.cfn_params import (
     ROOT_STACK_NAME_T,
@@ -20,6 +20,7 @@ from ecs_composex.ecs.ecs_service import (
     generate_service_template
 )
 from ecs_composex.vpc import vpc_params
+from ecs_composex.common.tagging import generate_tags_parameters, add_object_tags
 
 
 def validate_labels(service_labels):
@@ -67,7 +68,7 @@ def add_clusterwide_security_group(template):
     return sg
 
 
-def add_services_stacks(compose_content, root_tpl, cluster_sg, session=None, **kwargs):
+def add_services_stacks(compose_content, root_tpl, cluster_sg, tags=None, session=None, **kwargs):
     """Function putting together the ECS Service template
 
     :param compose_content: Docker/ComposeX file content
@@ -87,6 +88,7 @@ def add_services_stacks(compose_content, root_tpl, cluster_sg, session=None, **k
             compose_content,
             service_name,
             service,
+            tags=tags,
             session=session,
             **kwargs
         )
@@ -122,6 +124,7 @@ def generate_services_templates(compose_content, session=None, **kwargs):
     """
     Function to generate the root template
     """
+    tags_params = generate_tags_parameters(compose_content)
     parameters = [
         cfn_params.SERVICE_DISCOVERY,
         CLUSTER_NAME,
@@ -133,14 +136,17 @@ def generate_services_templates(compose_content, session=None, **kwargs):
         'Root template for ECS Services',
         parameters
     )
-
+    if tags_params:
+        add_parameters(template, tags_params[0])
     template.add_resource(LogGroup(
         ecs_params.LOG_GROUP_T,
         RetentionInDays=30,
         LogGroupName=Ref(CLUSTER_NAME)
     ))
     cluster_sg = add_clusterwide_security_group(template)
-    add_services_stacks(compose_content, template, cluster_sg, session=session, **kwargs)
+    add_services_stacks(compose_content, template, cluster_sg, tags_params, session=session, **kwargs)
+    for resource in template.resources:
+        add_object_tags(template.resources[resource], tags_params[1])
     if KEYISSET('Debug', kwargs):
         with open('/tmp/ecs_root.json', 'w') as services_fd:
             services_fd.write(template.to_json())

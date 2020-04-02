@@ -17,7 +17,7 @@ from troposphere.ecs import (
 
 from ecs_composex.common import LOG, cfn_conditions
 from ecs_composex.common import (
-    build_template, cfn_params
+    build_template, cfn_params, add_parameters
 )
 from ecs_composex.common.cfn_params import (
     ROOT_STACK_NAME_T
@@ -40,6 +40,7 @@ from ecs_composex.ecs.ecs_task import (
     add_task_defnition
 )
 from ecs_composex.vpc import vpc_params
+from ecs_composex.common.tagging import add_object_tags
 
 STATIC = 0
 
@@ -188,7 +189,7 @@ def generate_service_template_outputs(template, service_name):
     ], export=True, prefix=f"${{{ROOT_STACK_NAME_T}}}-{service_name}"))
 
 
-def generate_service_template(compose_content, service_name, service, session=None, **kwargs):
+def generate_service_template(compose_content, service_name, service, tags=None, session=None, **kwargs):
     """
     Function to generate single service template based on its definition in
     the Compose file.
@@ -216,6 +217,10 @@ def generate_service_template(compose_content, service_name, service, session=No
         ecs_params.CLUSTER_NAME_T: Ref(ecs_params.CLUSTER_NAME),
         ecs_params.LOG_GROUP.title: Ref(ecs_params.LOG_GROUP_T)
     }
+    if tags and tags[0]:
+        add_parameters(service_tpl, tags[0])
+        for tag in tags[0]:
+            parameters.update({tag.title: Ref(tag.title)})
     add_service_roles(service_tpl)
     parameters.update(add_task_defnition(
         service_tpl, service_name, service, network_settings
@@ -241,6 +246,9 @@ def generate_service_template(compose_content, service_name, service, session=No
     if isinstance(services_dependencies, list):
         stack_dependencies += services_dependencies
     generate_service_template_outputs(service_tpl, service_name)
+    if tags and tags[1]:
+        for resource in service_tpl.resources:
+            add_object_tags(service_tpl.resources[resource], tags[1])
     service_tpl_url = upload_template(
         service_tpl.to_json(),
         kwargs['BucketName'],

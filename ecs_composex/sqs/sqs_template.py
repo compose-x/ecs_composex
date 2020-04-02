@@ -16,10 +16,10 @@ from troposphere.ssm import (
     Parameter as SsmParameter
 )
 
-from ecs_composex.common import LOG
+from ecs_composex.common.tagging import add_object_tags, generate_tags_parameters
 from ecs_composex.common import (
-    build_template,
-    cfn_params, KEYISSET, KEYPRESENT,
+    build_template, add_parameters,
+    cfn_params, KEYISSET, KEYPRESENT, LOG
 )
 from ecs_composex.common import validate_kwargs
 from ecs_composex.common.cfn_conditions import (
@@ -140,7 +140,7 @@ def add_ssm_parameters(src_template, queue_obj):
     )
 
 
-def generate_queue_template(queue_name, properties, redrive_queue=None, **kwargs):
+def generate_queue_template(queue_name, properties, redrive_queue=None, tags=None):
     """
     Function that generates a single queue template
 
@@ -173,6 +173,8 @@ def generate_queue_template(queue_name, properties, redrive_queue=None, **kwargs
             f"${{{ROOT_STACK_NAME_T}}}-${{{SQS_NAME_T}}}"
         )
     queue = Queue(queue_name, template=queue_template, **properties)
+    if tags:
+        add_object_tags(queue, tags)
     add_ssm_parameters(queue_template, queue)
     cfn_prefix = f"${{{ROOT_STACK_NAME_T}}}-${{{SQS_NAME_T}}}"
     queue_template.add_output(formatted_outputs(
@@ -186,7 +188,7 @@ def generate_queue_template(queue_name, properties, redrive_queue=None, **kwargs
     return queue_template
 
 
-def add_queue_stack(queue_name, queue, queues, session, **kwargs):
+def add_queue_stack(queue_name, queue, queues, session, tags, **kwargs):
     """
     Function to define the Queue template settings for the Nested Stack
 
@@ -226,10 +228,14 @@ def add_queue_stack(queue_name, queue, queues, session, **kwargs):
             queue_name,
             properties,
             redrive_target,
-            **kwargs
+            tags=tags[1]
         )
     else:
-        queue_tpl = generate_queue_template(queue_name, properties, **kwargs)
+        queue_tpl = generate_queue_template(queue_name, properties, tags=tags[1])
+    if tags[0]:
+        add_parameters(queue_tpl, tags[0])
+        for tag in tags[0]:
+            parameters.update({tag.title: Ref(tag.title)})
     LOG.debug(parameters)
     LOG.debug(session)
     template_url = upload_template(
@@ -260,20 +266,20 @@ def generate_sqs_root_template(compose_content, session, **kwargs):
     :return: SQS Root/Parent template
     :rtype: troposphere.Template
     """
-    validate_kwargs(
-        ['BucketName'],
-        kwargs
-    )
+    validate_kwargs(['BucketName'], kwargs)
     description = 'Root SQS Template'
     if KEYISSET('EnvName', kwargs):
         description = f"Root SQS Template for {kwargs['EnvName']}"
     root_tpl = build_template(description)
+    params_and_tags = generate_tags_parameters(compose_content)
+    if params_and_tags[0]:
+        add_parameters(root_tpl, params_and_tags[0])
     queues = compose_content[RES_KEY]
     for queue_name in queues:
         LOG.debug(queue_name)
         LOG.debug(session)
         queue_stack = add_queue_stack(
-            queue_name, queues[queue_name], queues.keys(), session, **kwargs
+            queue_name, queues[queue_name], queues.keys(), session, params_and_tags, **kwargs
         )
         root_tpl.add_resource(queue_stack)
     return root_tpl

@@ -124,7 +124,7 @@ def add_public_subnets(template, vpc, az_range, layers, igw, single_nat):
                 template=template,
                 AllocationId=GetAtt(eip, 'AllocationId'),
                 SubnetId=Ref(subnet)
-                )
+            )
             nats.append(nat)
         SubnetRouteTableAssociation(
             f'PublicSubnetsRtbAssoc{alpha[count].upper()}',
