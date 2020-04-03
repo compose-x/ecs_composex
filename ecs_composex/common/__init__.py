@@ -21,7 +21,6 @@ except ImportError:
 from ecs_composex.common import cfn_params
 from ecs_composex.common import cfn_conditions
 
-
 DATE = dt.utcnow().isoformat()
 DATE_PREFIX = dt.utcnow().strftime('%Y/%m/%d/%H%M')
 NONALPHANUM = re.compile(r'[\W]+')
@@ -235,6 +234,56 @@ def setup_logging():
         the_logger.addHandler(handler)
 
     return the_logger
+
+
+def write_template_to_file(template, file_path):
+    """
+    Function to write the template to a specific path
+    :param template: the troposphere template
+    :type template: troposphere.Template
+    :param file_path: file path where to write the template rendered
+    :type file_path: str
+    """
+    regex = re.compile(r'(.yml|.yaml)$')
+    with open(file_path, 'w') as template_fd:
+        if regex.findall(file_path):
+            template_fd.write(template.to_yaml())
+        else:
+            template_fd.write(template.to_json())
+
+
+def build_default_stack_parameters(stack_params, **kwargs):
+    """
+    Function to check and define default parameters for the root stack from the CLI options
+    :param stack_params: list of parameters to add to to use for the root stack
+    :type stack_params: list
+    :param kwargs: extended arguments
+    :type kwargs: dict
+    """
+    if KEYISSET(cfn_params.USE_FLEET_T, kwargs):
+        build_parameters_file(stack_params, cfn_params.USE_FLEET_T, kwargs[cfn_params.USE_FLEET_T])
+
+
+def build_parameters_file(params: list, parameter_name: str, parameter_value):
+    """
+    Function to build arguments file to pass onto CFN.
+    Adds the parameter key/value so it can be written to file afterwards
+
+    :param params: list of parameters
+    :type params: list
+    :param parameter_name: key of the parameter
+    :type parameter_name: str
+    :param parameter_value: value of the parameter
+    :type parameter_value: str or int or list
+    """
+    if params is None:
+        params = []
+    if isinstance(parameter_value, (int, float)):
+        parameter_value = str(parameter_value)
+    params.append({
+        "ParameterKey": parameter_name,
+        "ParameterValue": parameter_value
+    })
 
 
 def load_composex_file(file_path):

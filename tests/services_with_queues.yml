@@ -1,6 +1,5 @@
 
 configs:
-
   app01:
     ext_sources:
       - ipv4: 0.0.0.0/0
@@ -23,7 +22,6 @@ configs:
   composex:
     use_exports: false
     use_ssm: false
-
   spot_config:
     bid_price: 0.42
     use_spot: true
@@ -34,6 +32,7 @@ configs:
         weight: 8
       m5a.4xlarge:
         weight: 16
+
 # List like tags
 x-tags:
   - name: costcentre
