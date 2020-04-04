@@ -2,17 +2,15 @@
 History
 =======
 
-0.1.0 (2020-03-24)
+0.1.2 (2020-04-04)
 ==================
 
-* First release on PyPI.
-    * Working VPC + Cluster + Services
-    * Working expansion of existing Cluster with new VPC
-    * Working expansion of existing VPC and Cluster with new services
-    * IAM working to allow services access to SQS queues
-    * SQS Queues functional with DLQ
-    * Works on Python 3.6, 3.7, 3.8
-    * Working start of build integration in CodeBuild for automated testing
+Patch release aiming to improve the CLI and integration of the Compute layer so that the compute resources creation
+in EC2 are standalone and can be created separately if one so wished to reuse.
+
+ `Issue <https://github.com/lambda-my-aws/ecs_composex/issues/7>`_ related to the fix.
+
+ `PR <https://github.com/lambda-my-aws/ecs_composex/pull/8>`_ related to the fix.
 
 0.1.1 (2020-04-02)
 ==================
@@ -37,3 +35,15 @@ or alternatively in an object/dict format
     x-tags:
       TagA: ValueA
       TagB: ValueB
+
+0.1.0 (2020-03-24)
+==================
+
+* First release on PyPI.
+    * Working VPC + Cluster + Services
+    * Working expansion of existing Cluster with new VPC
+    * Working expansion of existing VPC and Cluster with new services
+    * IAM working to allow services access to SQS queues
+    * SQS Queues functional with DLQ
+    * Works on Python 3.6, 3.7, 3.8
+    * Working start of build integration in CodeBuild for automated testing

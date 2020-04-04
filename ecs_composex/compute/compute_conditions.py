@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from troposphere import Condition, Equals, Ref, Not
+from troposphere import Equals, Ref
 from ecs_composex.compute import compute_params
 
 MAX_IS_MIN_T = "CapacityMaxIsMinCondition"
