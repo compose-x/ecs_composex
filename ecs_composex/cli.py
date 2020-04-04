@@ -6,8 +6,10 @@
 import sys
 import argparse
 import warnings
+import json
 from boto3 import session
-from ecs_composex.common import LOG
+from ecs_composex import XFILE_DEST
+from ecs_composex.common import LOG, write_template_to_file
 from ecs_composex.common.aws import (
     BUCKET_NAME, CURATED_AZS
 )
@@ -17,14 +19,13 @@ from ecs_composex.vpc.vpc_params import (
     APP_SUBNETS_T, PUBLIC_SUBNETS_T, STORAGE_SUBNETS_T,
     VPC_ID_T, VPC_MAP_ID_T
 )
-from ecs_composex.ecs.ecs_params import LAUNCH_TYPE_T
-from ecs_composex.compute.cluster_params import (
-    CLUSTER_NAME_T, USE_FLEET_T
-)
+from ecs_composex.common.cfn_params import USE_FLEET_T
+from ecs_composex.compute.compute_params import CLUSTER_NAME_T
 
 
 def validate_vpc_input(args):
-    """Function to validate the VPC arguments are all present
+    """
+    Function to validate the VPC arguments are all present
 
     :param args: Parser arguments
     :type args: dict
@@ -56,6 +57,7 @@ def validate_cluster_input(args):
     """Function to validate the cluster arguments
 
     :param args: Parser arguments
+    :raise: KeyError
     """
     if not KEYISSET('CreateCluster', args) and not KEYISSET(CLUSTER_NAME_T, args):
         raise KeyError(f"You must provide an ECS Cluster name if you do not want ECS ComposeX to create one for you")
@@ -66,7 +68,7 @@ def main():
     parser = argparse.ArgumentParser()
     #  Generic settings
     parser.add_argument(
-        '-f', '--docker-compose-file', dest='ComposeXFile',
+        '-f', '--docker-compose-file', dest=XFILE_DEST,
         required=True, help="Path to the Docker compose file"
     )
     parser.add_argument(
@@ -132,16 +134,12 @@ def main():
     )
     # COMPUTE SETTINGS
     parser.add_argument(
-        '--use-fargate', required=False, default=False, action='store_true',
-        dest=LAUNCH_TYPE_T, help="If you run Fargate only, no EC2 will be created"
-    )
-    parser.add_argument(
         '--use-spot-fleet', required=False, default=False, action='store_true',
         dest=USE_FLEET_T, help="Runs spotfleet for EC2. If used in combination "
                                "of --use-fargate, it will create an additional SpotFleet"
     )
     parser.add_argument(
-        '--create-launch-template', dest='CreateLaunchTemplate', action='store_true',
+        '--add-compute-resources', dest='AddComputeResources', action='store_true',
         help='Whether you want to create a launch template to create EC2 resources for'
         ' to expand the ECS Cluster and run containers on EC2 instances you might have access to.'
     )
@@ -158,7 +156,10 @@ def main():
     validate_cluster_input(vars(args))
 
     print("Arguments: " + str(args._))
-    generate_full_template(**vars(args))
+    templates_and_params = generate_full_template(**vars(args))
+    write_template_to_file(templates_and_params[0], args.output_file)
+    with open(f"{args.output_file.split('.')[0]}.params.json", 'w') as params_fd:
+        params_fd.write(json.dumps(templates_and_params[1], indent=4))
 
 
 if __name__ == "__main__":

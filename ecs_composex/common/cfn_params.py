@@ -50,3 +50,13 @@ USE_SSM_EXPORTS = Parameter(
     USE_SSM_EXPORTS_T, Type='String',
     AllowedValues=['True', 'False'], Default='False'
 )
+
+USE_FLEET_T = "UseSpotFleetHosts"
+USE_FLEET = Parameter(
+    USE_FLEET_T, Type="String", Default="False", AllowedValues=["True", "False"]
+)
+
+USE_ONDEMAND_T = "UseOnDemandHosts"
+USE_ONDEMAND = Parameter(
+    USE_ONDEMAND_T, Type="String", Default="False", AllowedValues=["True", "False"]
+)

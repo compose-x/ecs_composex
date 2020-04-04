@@ -23,7 +23,6 @@ configs:
   composex:
     use_exports: false
     use_ssm: false
-
   spot_config:
     bid_price: 0.42
     use_spot: true

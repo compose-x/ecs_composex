@@ -4,49 +4,40 @@
 Functions to add to the Cluster template when people want to use SpotFleet for their ECS Cluster.
 """
 
-from troposphere import (
-    Ref, Sub, GetAtt, Select, If, Split
-)
+from troposphere import Ref, Sub, GetAtt, Select, If, Split
 
 from troposphere.ec2 import (
-    SpotFleet, SpotFleetRequestConfigData,
+    SpotFleet,
+    SpotFleetRequestConfigData,
     LaunchTemplate,
     LaunchTemplateConfigs,
     LaunchTemplateSpecification,
-    LaunchTemplateOverrides
+    LaunchTemplateOverrides,
 )
 
 from troposphere.applicationautoscaling import (
-    ScalableTarget, StepAdjustment,
+    ScalableTarget,
+    StepAdjustment,
     StepScalingPolicyConfiguration,
-    ScalingPolicy
+    ScalingPolicy,
 )
 
-from troposphere.cloudwatch import (
-    Alarm,
-    MetricDimension as CwMetricDimension
-)
+from troposphere.cloudwatch import Alarm, MetricDimension as CwMetricDimension
 from troposphere.iam import Role
 from ecs_composex.common import LOG, build_template
 from ecs_composex.iam import service_role_trust_policy
 from ecs_composex.vpc import vpc_params
-from ecs_composex.compute import cluster_params, cluster_conditions
+from ecs_composex.compute import compute_params, compute_conditions
 
 
 DEFAULT_SPOT_CONFIG = {
-    'use_spot': True,
-    'bid_price': 0.42,
-    'spot_instance_types': {
-        'm5a.xlarge': {
-            'weight': 3
-        },
-        'm5a.2xlarge': {
-            'weight': 7
-        },
-        'm5a.4xlarge': {
-            'weight': 15
-        }
-    }
+    "use_spot": True,
+    "bid_price": 0.42,
+    "spot_instance_types": {
+        "m5a.xlarge": {"weight": 3},
+        "m5a.2xlarge": {"weight": 7},
+        "m5a.4xlarge": {"weight": 15},
+    },
 }
 
 
@@ -60,28 +51,39 @@ def add_fleet_role(template):
     :rtype: troposphere.iam.Role
     """
     role = Role(
-        'IamFleetRole',
+        "IamFleetRole",
         template=template,
-        AssumeRolePolicyDocument=service_role_trust_policy('spotfleet'),
+        AssumeRolePolicyDocument=service_role_trust_policy("spotfleet"),
         ManagedPolicyArns=[
-            'arn:aws:iam::aws:policy/service-role/AmazonEC2SpotFleetAutoscaleRole',
-            'arn:aws:iam::aws:policy/service-role/AmazonEC2SpotFleetTaggingRole'
-        ]
+            "arn:aws:iam::aws:policy/service-role/AmazonEC2SpotFleetAutoscaleRole",
+            "arn:aws:iam::aws:policy/service-role/AmazonEC2SpotFleetTaggingRole",
+        ],
     )
     return role
 
 
 def define_overrides(region_azs, lt_id, lt_version, spot_config):
     """Function to generate Overrides for the SpotFleet
-
+    :param region_azs: Availability Zones of the region to create the hosts into
+    :type region_azs: list
+    :param lt_id: Launch template ID
+    :param lt_version: Launch Template Version
+    :param spot_config: SpotFleet configuration for pricing and instance types
+    :return: configs
+    :type: list
     """
     if isinstance(lt_id, LaunchTemplate):
         template_id = Ref(lt_id)
-        template_version = GetAtt(lt_id, 'LatestVersionNumber')
+        template_version = GetAtt(lt_id, "LatestVersionNumber")
     elif not isinstance(lt_id, Ref) or not isinstance(lt_version, Ref):
         raise TypeError(
-            f"The launch template and/or version are of type", lt_id, lt_version,
-            "Expected", LaunchTemplate, "Or", Ref
+            f"The launch template and/or version are of type",
+            lt_id,
+            lt_version,
+            "Expected",
+            LaunchTemplate,
+            "Or",
+            Ref,
         )
     else:
         template_id = lt_id
@@ -92,21 +94,22 @@ def define_overrides(region_azs, lt_id, lt_version, spot_config):
     LOG.debug(spot_config)
     for count, az in enumerate(region_azs):
         LOG.debug(az)
-        for itype in spot_config['spot_instance_types']:
+        for itype in spot_config["spot_instance_types"]:
             overrides.append(
                 LaunchTemplateOverrides(
-                    SubnetId=Select(count, Split(',', vpc_params.APP_SUBNETS_IMPORT)),
-                    WeightedCapacity=spot_config['spot_instance_types'][itype]['weight'],
-                    InstanceType=itype
+                    SubnetId=Select(count, Split(",", vpc_params.APP_SUBNETS_IMPORT)),
+                    WeightedCapacity=spot_config["spot_instance_types"][itype][
+                        "weight"
+                    ],
+                    InstanceType=itype,
                 )
             )
     configs.append(
         LaunchTemplateConfigs(
             LaunchTemplateSpecification=LaunchTemplateSpecification(
-                LaunchTemplateId=template_id,
-                Version=template_version
+                LaunchTemplateId=template_id, Version=template_version
             ),
-            Overrides=overrides
+            Overrides=overrides,
         )
     )
     return configs
@@ -129,55 +132,49 @@ def add_scaling_policies(template, spot_fleet, role):
         f"SpotFleetScalingTarget{spot_fleet.title}",
         template=template,
         MaxCapacity=If(
-            cluster_conditions.MAX_IS_MIN_T,
-            Ref(cluster_params.MIN_CAPACITY),
-            Ref(cluster_params.MAX_CAPACITY)
+            compute_conditions.MAX_IS_MIN_T,
+            Ref(compute_params.MIN_CAPACITY),
+            Ref(compute_params.MAX_CAPACITY),
         ),
-        MinCapacity=Ref(cluster_params.MIN_CAPACITY),
-        ResourceId=Sub(f'spot-fleet-request/${{{spot_fleet.title}}}'),
-        RoleARN=GetAtt(role, 'Arn'),
-        ServiceNamespace='ec2',
-        ScalableDimension='ec2:spot-fleet-request:TargetCapacity'
+        MinCapacity=Ref(compute_params.MIN_CAPACITY),
+        ResourceId=Sub(f"spot-fleet-request/${{{spot_fleet.title}}}"),
+        RoleARN=GetAtt(role, "Arn"),
+        ServiceNamespace="ec2",
+        ScalableDimension="ec2:spot-fleet-request:TargetCapacity",
     )
 
     scale_in_policy = ScalingPolicy(
         f"FleetScalingIn{spot_fleet.title}",
         template=template,
-        PolicyName=Sub(f'${{{spot_fleet.title}}}ScalingIn'),
-        PolicyType='StepScaling',
+        PolicyName=Sub(f"${{{spot_fleet.title}}}ScalingIn"),
+        PolicyType="StepScaling",
         ScalingTargetId=Ref(target),
         StepScalingPolicyConfiguration=StepScalingPolicyConfiguration(
-            AdjustmentType='ChangeInCapacity',
+            AdjustmentType="ChangeInCapacity",
             Cooldown=300,
-            MetricAggregationType='Average',
+            MetricAggregationType="Average",
             StepAdjustments=[
-                StepAdjustment(
-                    MetricIntervalLowerBound=10,
-                    ScalingAdjustment='-1'
-                )
-            ]
-        )
+                StepAdjustment(MetricIntervalLowerBound=10, ScalingAdjustment="-1")
+            ],
+        ),
     )
 
     scale_out_policy = ScalingPolicy(
         f"FleetScalingOut{spot_fleet.title}",
         template=template,
-        PolicyName=Sub(f'${{{spot_fleet.title}}}CpuAverageScaleOut'),
-        PolicyType='StepScaling',
+        PolicyName=Sub(f"${{{spot_fleet.title}}}CpuAverageScaleOut"),
+        PolicyType="StepScaling",
         ScalingTargetId=Ref(target),
         StepScalingPolicyConfiguration=StepScalingPolicyConfiguration(
-            AdjustmentType='ChangeInCapacity',
+            AdjustmentType="ChangeInCapacity",
             Cooldown=300,
-            MetricAggregationType='Average',
+            MetricAggregationType="Average",
             StepAdjustments=[
-                StepAdjustment(
-                    MetricIntervalLowerBound=10,
-                    ScalingAdjustment='1'
-                )
-            ]
-        )
+                StepAdjustment(MetricIntervalLowerBound=10, ScalingAdjustment="1")
+            ],
+        ),
     )
-    return (scale_in_policy, scale_out_policy)
+    return scale_in_policy, scale_out_policy
 
 
 def define_default_cw_alarms(template, spot_fleet, scaling_set):
@@ -198,51 +195,37 @@ def define_default_cw_alarms(template, spot_fleet, scaling_set):
         f"LowCpuAverageAlarm{spot_fleet.title}",
         template=template,
         ActionsEnabled=True,
-        AlarmActions=[
-            Ref(scaling_set[0])
-        ],
+        AlarmActions=[Ref(scaling_set[0])],
         AlarmDescription=Sub(f"LOW CPU USAGE FOR ${{{spot_fleet.title}}}"),
-        AlarmName=Sub(f'CPU_AVG_LOW_${{{spot_fleet.title}}}'),
-        ComparisonOperator='LessThanOrEqualToThreshold',
-        Dimensions=[
-            CwMetricDimension(
-                Name='FleetRequestId',
-                Value=Ref(spot_fleet)
-            )
-        ],
+        AlarmName=Sub(f"CPU_AVG_LOW_${{{spot_fleet.title}}}"),
+        ComparisonOperator="LessThanOrEqualToThreshold",
+        Dimensions=[CwMetricDimension(Name="FleetRequestId", Value=Ref(spot_fleet))],
         EvaluationPeriods=5,
         Period=60,
-        Namespace='AWS/EC2Spot',
-        MetricName='CPUUtilization',
-        Statistic='Average',
-        Threshold='25',
-        Unit='Percent',
-        TreatMissingData='notBreaching'
+        Namespace="AWS/EC2Spot",
+        MetricName="CPUUtilization",
+        Statistic="Average",
+        Threshold="25",
+        Unit="Percent",
+        TreatMissingData="notBreaching",
     )
 
     Alarm(
-        f'HighCpuAverageAlarm{spot_fleet.title}',
+        f"HighCpuAverageAlarm{spot_fleet.title}",
         ActionsEnabled=True,
-        AlarmActions=[
-            Ref(scaling_set[1])
-        ],
+        AlarmActions=[Ref(scaling_set[1])],
         AlarmDescription=Sub(f"LOW CPU USAGE FOR ${{{spot_fleet.title}}}"),
-        AlarmName=Sub(f'CPU_AVG_HIGH_${{{spot_fleet.title}}}'),
-        ComparisonOperator='GreaterThanOrEqualToThreshold',
-        Dimensions=[
-            CwMetricDimension(
-                Name='FleetRequestId',
-                Value=Ref(spot_fleet)
-            )
-        ],
+        AlarmName=Sub(f"CPU_AVG_HIGH_${{{spot_fleet.title}}}"),
+        ComparisonOperator="GreaterThanOrEqualToThreshold",
+        Dimensions=[CwMetricDimension(Name="FleetRequestId", Value=Ref(spot_fleet))],
         EvaluationPeriods=5,
         Period=60,
-        Namespace='AWS/EC2Spot',
-        MetricName='CPUUtilization',
-        Statistic='Average',
-        Threshold='65',
-        Unit='Percent',
-        TreatMissingData='notBreaching'
+        Namespace="AWS/EC2Spot",
+        MetricName="CPUUtilization",
+        Statistic="Average",
+        Threshold="65",
+        Unit="Percent",
+        TreatMissingData="notBreaching",
     )
 
 
@@ -257,22 +240,22 @@ def define_spot_fleet(template, region_azs, lt_id, lt_version, **kwargs):
 
     :returns: NIL
     """
-    configs = define_overrides(region_azs, lt_id, lt_version, kwargs['spot_config'])
+    configs = define_overrides(region_azs, lt_id, lt_version, kwargs["spot_config"])
     role = add_fleet_role(template)
     fleet = SpotFleet(
         f"EcsClusterFleet",
         template=template,
         SpotFleetRequestConfigData=SpotFleetRequestConfigData(
-            AllocationStrategy='diversified',
-            ExcessCapacityTerminationPolicy='default',
-            IamFleetRole=GetAtt(role, 'Arn'),
-            InstanceInterruptionBehavior='terminate',
-            TargetCapacity=Ref(cluster_params.TARGET_CAPACITY),
-            Type='maintain',
-            SpotPrice=str(kwargs['spot_config']['bid_price']),
+            AllocationStrategy="diversified",
+            ExcessCapacityTerminationPolicy="default",
+            IamFleetRole=GetAtt(role, "Arn"),
+            InstanceInterruptionBehavior="terminate",
+            TargetCapacity=Ref(compute_params.TARGET_CAPACITY),
+            Type="maintain",
+            SpotPrice=str(kwargs["spot_config"]["bid_price"]),
             ReplaceUnhealthyInstances=True,
             LaunchTemplateConfigs=configs,
-        )
+        ),
     )
     scaling_set = add_scaling_policies(template, fleet, role)
     define_default_cw_alarms(template, fleet, scaling_set)
@@ -283,20 +266,19 @@ def generate_spot_fleet_template(region_azs, **kwargs):
     Generates a standalone template for SpotFleet
     """
     template = build_template(
-        'Template For SpotFleet As Part Of EcsCluster',
+        "Template For SpotFleet As Part Of EcsCluster",
         [
-            cluster_params.LAUNCH_TEMPLATE_ID,
-            cluster_params.LAUNCH_TEMPLATE_VersionNumber,
-            cluster_params.MIN_CAPACITY,
-            cluster_params.MAX_CAPACITY,
-            cluster_params.TARGET_CAPACITY
-        ]
+            compute_params.LAUNCH_TEMPLATE_ID,
+            compute_params.LAUNCH_TEMPLATE_VersionNumber,
+            compute_params.MIN_CAPACITY,
+            compute_params.MAX_CAPACITY,
+            compute_params.TARGET_CAPACITY,
+        ],
     )
     template.add_condition(
-        cluster_conditions.MAX_IS_MIN_T,
-        cluster_conditions.MAX_IS_MIN
+        compute_conditions.MAX_IS_MIN_T, compute_conditions.MAX_IS_MIN
     )
-    lt_id = Ref(cluster_params.LAUNCH_TEMPLATE_ID)
-    lt_version = Ref(cluster_params.LAUNCH_TEMPLATE_VersionNumber)
+    lt_id = Ref(compute_params.LAUNCH_TEMPLATE_ID)
+    lt_version = Ref(compute_params.LAUNCH_TEMPLATE_VersionNumber)
     define_spot_fleet(template, region_azs, lt_id, lt_version, **kwargs)
     return template

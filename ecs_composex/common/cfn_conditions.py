@@ -58,3 +58,9 @@ USE_SSM_ONLY = And(
     Condition(USE_SSM_EXPORTS_T),
     Condition(NOT_USE_CFN_EXPORTS_T)
 )
+
+USE_SPOT_CON_T = "UseSpotFleetHostsCondition"
+USE_SPOT_CON = Equals(Ref(cfn_params.USE_FLEET), "True")
+
+NOT_USE_SPOT_CON_T = "NotUseSpotFleetHostsCondition"
+NOT_USE_SPOT_CON = Not(Condition(USE_SPOT_CON_T))
