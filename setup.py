@@ -13,12 +13,11 @@ with open('HISTORY.rst') as history_file:
 
 requirements = [
     'troposphere==2.6.0',
-    'boto3==1.12.9'
+    'boto3==1.12.36'
 ]
 
-setup_requirements = ['pytest-runner', ]
-
-test_requirements = ['pytest>=3', ]
+setup_requirements = ['pytest-runner>=5.1']
+test_requirements = ['pytest>=4.6', "tox==3.14.6"]
 
 setup(
     author="John Mille",
@@ -55,6 +54,6 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/lambda-my-aws/ecs_composex',
-    version='0.1.1',
+    version='0.1.2',
     zip_safe=False
 )
