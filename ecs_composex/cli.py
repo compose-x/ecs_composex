@@ -42,13 +42,13 @@ def validate_vpc_input(args):
     if not KEYISSET('CreateVpc', args):
         for key in nocreate_requirements:
             if not KEYISSET(key, args):
-                raise ValueError(f"If you want to use an existing VPC, you need {key}")
+                warnings.warn(f"{key} was not provided. Not adding to the parameters file", UserWarning)
     else:
         for key in nocreate_requirements:
             if KEYISSET(key, args):
                 LOG.info(args[key])
                 warnings.warn(
-                    f"Creating VPC is set but you also set {key}. Ignoring and using new VPC values",
+                    f"Creating VPC is set. Ignoring value for {key}",
                     UserWarning
                 )
 
@@ -60,7 +60,9 @@ def validate_cluster_input(args):
     :raise: KeyError
     """
     if not KEYISSET('CreateCluster', args) and not KEYISSET(CLUSTER_NAME_T, args):
-        raise KeyError(f"You must provide an ECS Cluster name if you do not want ECS ComposeX to create one for you")
+        warnings.warn(
+            f"You must provide an ECS Cluster name if you do not want ECS ComposeX to create one for you", UserWarning
+        )
 
 
 def main():

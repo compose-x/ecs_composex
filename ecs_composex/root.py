@@ -44,27 +44,28 @@ from ecs_composex.vpc import vpc_params
 
 ROOT_CLUSTER_NAME = 'EcsCluster'
 
+VPC_ARGS = [
+    vpc_params.PUBLIC_SUBNETS_T,
+    vpc_params.APP_SUBNETS_T,
+    vpc_params.STORAGE_SUBNETS_T,
+    vpc_params.VPC_ID_T, vpc_params.VPC_MAP_ID_T
+]
+
 
 def generate_vpc_parameters(template, params, **kwargs):
-    """Function to add the VPC arguments to the root stack
+    """
+    Function to add the VPC arguments to the root stack
+
+    :param template: the root template to add the parameters to
+    :type template: troposphere.Template
     :param params: list of parameters
     :type params: list
     """
-    build_parameters_file(
-        params, vpc_params.VPC_ID_T, kwargs[vpc_params.VPC_ID_T]
-    )
-    build_parameters_file(
-        params, vpc_params.APP_SUBNETS_T, ','.join(kwargs[vpc_params.APP_SUBNETS_T])
-    )
-    build_parameters_file(
-        params, vpc_params.PUBLIC_SUBNETS_T, ','.join(kwargs[vpc_params.PUBLIC_SUBNETS_T])
-    )
-    build_parameters_file(
-        params, vpc_params.STORAGE_SUBNETS_T, ','.join(kwargs[vpc_params.STORAGE_SUBNETS_T])
-    )
-    build_parameters_file(
-        params, vpc_params.VPC_MAP_ID_T, kwargs[vpc_params.VPC_MAP_ID_T]
-    )
+    for arg in VPC_ARGS:
+        if KEYISSET(arg, kwargs):
+            build_parameters_file(
+                params, arg, kwargs[arg]
+            )
     params = [
         vpc_params.VPC_ID,
         vpc_params.APP_SUBNETS,
@@ -79,6 +80,7 @@ def add_vpc_to_root(root_template, session, tags_params=None, **kwargs):
     """
     Function to add VPC stack to the root one.
 
+    :param tags_params: Tags to add to the stack
     :param root_template: root stack template
     :type root_template: troposphere.Template
     :param session: boto session for override
@@ -349,7 +351,7 @@ def generate_full_template(session=None, **kwargs):
         add_object_tags(vpc_stack, tags_params[1])
     else:
         generate_vpc_parameters(template, stack_params, **kwargs)
-        LOG.info(stack_params)
+        LOG.debug(stack_params)
     if KEYISSET(CLUSTER_NAME_T, kwargs):
         build_parameters_file(stack_params, CLUSTER_NAME_T, kwargs[CLUSTER_NAME_T])
     if KEYISSET('CreateCluster', kwargs):
