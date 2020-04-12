@@ -3,17 +3,34 @@ version: 0.2
 env:
   variables:
     KNOWN_BUCKET: lambda-dev-eu-west-1
+  git-credential-helper: yes
 
 phases:
   install:
     runtime-versions:
-      python: 3.7
       python: 3.8
     commands:
       - pip --version || curl -s https://bootstrap.pypa.io/get-pip.py | python
-      - pip install -r requirements_dev.txt
+      - pip install -r requirements_buildspec.txt
       - python setup.py install
+      - python setup.py develop
   pre_build:
     commands:
       - make test
       - make test-all
+
+  build:
+    commands:
+      - export PATH=$PATH:/root/.pyenv/versions/3.8.1/bin
+      - ecs_composex-vpc -o outputs/vpc_standalone.yml
+      - ecs_composex-vpc -f tests/services_with_queues.yml -o outputs/vpc_standalone_with_input.yml
+      - ecs_composex-compute -o outputs/compute_standalone.yml
+      - ecs_composex-compute -f tests/services_with_queues.yml -o outputs/compute_standalone_with_input.yml
+      - ecs_composex --create-vpc --create-cluster -f tests/services_with_queues.yml -o outputs/aio.yml
+
+artifacts:
+  files:
+    - '*.yml'
+    - '*.json'
+  base-directory: outputs
+  name: outputs
