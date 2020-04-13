@@ -252,7 +252,7 @@ def add_services(template, depends, session, vpc_stack=None, **kwargs):
     parameters = {
         ROOT_STACK_NAME_T: Ref('AWS::StackName')
     }
-    if not KEYISSET(CLUSTER_NAME_T, kwargs):
+    if KEYISSET("CreateCluster", kwargs):
         parameters[ecs_params.CLUSTER_NAME_T] = Ref(ROOT_CLUSTER_NAME)
     else:
         parameters[ecs_params.CLUSTER_NAME_T] = Ref(CLUSTER_NAME)
@@ -357,9 +357,12 @@ def generate_full_template(session=None, **kwargs):
     if KEYISSET('CreateCluster', kwargs):
         add_ecs_cluster(template, depends_on)
         depends_on.append(ROOT_CLUSTER_NAME)
+
     add_compute(template, depends_on, stack_params, vpc_stack, tags=tags_params, session=session, **kwargs)
     add_services(template, depends_on, session=session, vpc_stack=vpc_stack, **kwargs)
 
     for resource in template.resources:
         add_object_tags(template.resources[resource], tags_params[1])
+    template_url = upload_template(template.to_json(), kwargs['BucketName'], 'composex_root.json', session=session)
+    LOG.info(f"Root stack template uploaded to {template_url}")
     return template, stack_params
