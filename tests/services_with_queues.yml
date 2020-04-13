@@ -36,17 +36,11 @@ configs:
 # List like tags
 x-tags:
   - name: costcentre
-    value: someoneispaying
+    value: LambdaMyAws
   - name: owner
-    value: IOwnThis
+    value: MySelf
   - name: mail
     value: you@paying.bill
-  - name: weird-name
-    value: something good and long
-  - name: another:weird:name
-    value: gogogo
-  - name: toto
-    value: something wrong
 
 # With Dict like Tags
 #x-tags:

@@ -14,6 +14,10 @@ from ecs_composex.common.aws import (
     BUCKET_NAME, CURATED_AZS
 )
 from ecs_composex.common import KEYISSET
+from ecs_composex.common.cfn_tools import (
+    build_config_template_file,
+    write_config_template_file
+)
 from ecs_composex.root import generate_full_template
 from ecs_composex.vpc.vpc_params import (
     APP_SUBNETS_T, PUBLIC_SUBNETS_T, STORAGE_SUBNETS_T,
@@ -77,6 +81,10 @@ def main():
         '-o', '--output-file', type=str, required=True,
         help="The name and path of the main output file. If you specify extra arguments, it will create a parameters"
              " file as well for creating your CFN Stack"
+    )
+    parser.add_argument(
+        '--no-cfn-template-config-file', action='store_true', default=True,
+        help="Do not generate the CFN Configuration template file"
     )
     #  AWS SETTINGS
     parser.add_argument(
@@ -160,6 +168,8 @@ def main():
     print("Arguments: " + str(args._))
     templates_and_params = generate_full_template(**vars(args))
     write_template_to_file(templates_and_params[0], args.output_file)
+    cfn_config = build_config_template_file(templates_and_params[1])
+    write_config_template_file(cfn_config, f"{args.output_file.split('.')[0]}.config.json")
     with open(f"{args.output_file.split('.')[0]}.params.json", 'w') as params_fd:
         params_fd.write(json.dumps(templates_and_params[1], indent=4))
 
