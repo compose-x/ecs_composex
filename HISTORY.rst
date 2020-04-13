@@ -2,6 +2,18 @@
 History
 =======
 
+0.1.3 (2020-04-13)
+==================
+
+A patch release with a lot of little features added driven by the writing up of the blog to make it easier to have in
+a CICD pipeline.
+
+See overall progress on `GH Project`_
+
+* `Issue 14 <https://github.com/lambda-my-aws/ecs_composex/issues/14>`_
+* `Issue 15 <https://github.com/lambda-my-aws/ecs_composex/issues/15>`_
+
+
 0.1.2 (2020-04-04)
 ==================
 
@@ -47,3 +59,6 @@ or alternatively in an object/dict format
     * SQS Queues functional with DLQ
     * Works on Python 3.6, 3.7, 3.8
     * Working start of build integration in CodeBuild for automated testing
+
+
+.. _GH Project: https://github.com/orgs/lambda-my-aws/projects/3
