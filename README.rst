@@ -12,6 +12,8 @@ ECS ComposeX
         :target: https://ecs-composex.readthedocs.io/en/latest/?badge=latest
         :alt: Documentation Status
 
+`Blog <https://blog.ecs-composex.lambda-my-aws.io/>`_
+
 .. contents::
 
 What is it?
