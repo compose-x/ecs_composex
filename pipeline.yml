@@ -282,7 +282,7 @@ Resources:
           Id: !Ref KmsKeyArn
           Type: KMS
         Type: S3
-      RestartExecutionOnUpdate: false
+      RestartExecutionOnUpdate: true
       RoleArn: !GetAtt 'CodePipelineRole.Arn'
       Stages:
         - Name: SourceAction
