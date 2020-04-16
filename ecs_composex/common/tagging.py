@@ -21,6 +21,7 @@ otherwise you could not, i.e., *vpc::usage::ecsapps*
 import copy
 
 from troposphere import Tags, Parameter, Ref
+from troposphere.ec2 import LaunchTemplate, TagSpecifications
 
 from ecs_composex.common import KEYISSET, NONALPHANUM, LOG
 
@@ -105,8 +106,25 @@ def add_object_tags(obj, tags):
     :type tags: dict or list
     """
     clean_tags = copy.deepcopy(tags)
+    if isinstance(obj, LaunchTemplate):
+        LOG.debug('Setting tags to LaunchTemplate')
+        try:
+            launch_data = getattr(obj, 'LaunchTemplateData')
+            if hasattr(launch_data, 'TagSpecifications'):
+                tags_specs = getattr(launch_data, 'TagSpecifications')
+                if isinstance(tags_specs, list) and tags_specs:
+                    for tag_spec in tags_specs:
+                        original_tags = getattr(tag_spec, 'Tags')
+                        new_tags = original_tags + tags
+                        setattr(tag_spec, 'Tags', new_tags)
+                    setattr(launch_data, 'TagSpecifications', tags_specs)
+        except AttributeError:
+            LOG.error('Failed to get the launch template data')
+        except Exception as error:
+            LOG.error(error)
     if hasattr(obj, 'props') and 'Tags' not in obj.props:
         return
+
     if hasattr(obj, 'Tags') and isinstance(getattr(obj, 'Tags'), Tags):
         LOG.debug(f'Adding the new tags {clean_tags} to {obj}')
         existing_tags = getattr(obj, 'Tags')
