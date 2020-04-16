@@ -10,7 +10,7 @@ from ecs_composex.common import KEYISSET
 def build_config_template_file(parameters=None, tags=None, stack_policies=None):
     """
     Function to create the CFN Template configuration file.
-    See `Documentation <https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/continuous-delivery-codepipeline-cfn-artifacts.html>`_
+
     :param parameters: list of parameters and the value we want for it.
     :type parameters: list
     :param tags: To implement
