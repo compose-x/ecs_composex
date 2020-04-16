@@ -5,12 +5,7 @@ import os
 import boto3
 
 from ecs_composex import XFILE_DEST
-from ecs_composex.common import (
-    validate_input,
-    validate_kwargs,
-    load_composex_file,
-    LOG
-)
+from ecs_composex.common import validate_input, validate_kwargs, load_composex_file, LOG
 from ecs_composex.common.templates import validate_template
 from ecs_composex.sqs.sqs_template import generate_sqs_root_template
 
@@ -30,12 +25,14 @@ def create_sqs_template(session=None, **kwargs):
     """
     content = load_composex_file(kwargs[XFILE_DEST])
     validate_input(content, RES_KEY)
-    validate_kwargs(['BucketName'], kwargs)
+    validate_kwargs(["BucketName"], kwargs)
 
     if session is None:
         session = boto3.session.Session()
-    sqs_tpl = generate_sqs_root_template(compose_content=content, session=session, **kwargs)
+    sqs_tpl = generate_sqs_root_template(
+        compose_content=content, session=session, **kwargs
+    )
 
-    validate_template(sqs_tpl.to_json(), 'sqs_root')
+    validate_template(sqs_tpl.to_json(), "sqs_root")
     LOG.debug("Template for SQS validated by CFN.")
     return sqs_tpl

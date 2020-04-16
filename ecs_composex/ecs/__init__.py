@@ -29,9 +29,8 @@ def create_services_templates(session=None, **kwargs):
     """
     if session is None:
         session = boto3.session.Session()
-    content = load_composex_file(kwargs['ComposeXFile'])
+    content = load_composex_file(kwargs["ComposeXFile"])
     services_template = generate_services_templates(
-        compose_content=content, session=session,
-        **kwargs
+        compose_content=content, session=session, **kwargs
     )
     return services_template

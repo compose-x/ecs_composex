@@ -47,17 +47,16 @@ def define_extended_tags(tags):
     :return: Tags() or None
     :rtype: troposphere.Tags or None
     """
-    tags_keys = ['name', 'value']
+    tags_keys = ["name", "value"]
     rendered_tags = []
     if isinstance(tags, list):
         for tag in tags:
             if not isinstance(tag, dict):
-                raise TypeError('Tags must be of type', dict)
+                raise TypeError("Tags must be of type", dict)
             elif not set(tag.keys()) == set(tags_keys):
-                raise KeyError('Keys for tags must be', 'value', 'name')
-            rendered_tags.append({
-                tag['name']: Ref(define_tag_parameter_title(tag['name']))
-            }
+                raise KeyError("Keys for tags must be", "value", "name")
+            rendered_tags.append(
+                {tag["name"]: Ref(define_tag_parameter_title(tag["name"]))}
             )
     elif isinstance(tags, dict):
         for tag in tags:
@@ -76,25 +75,55 @@ def generate_tags_parameters(composex_content):
     :return: list of parameters and tags to add to objects
     :rtype: tuple
     """
-    if not KEYISSET('x-tags', composex_content):
-        LOG.info('No x-tags found. Skipping')
+    if not KEYISSET("x-tags", composex_content):
+        LOG.info("No x-tags found. Skipping")
         return
-    xtags = composex_content['x-tags']
+    xtags = composex_content["x-tags"]
     object_tags = define_extended_tags(xtags)
     parameters = []
     for tag in xtags:
         parameters.append(
             Parameter(
-                define_tag_parameter_title(tag['name']) if isinstance(xtags, list) else define_tag_parameter_title(tag),
-                Type='String',
+                define_tag_parameter_title(tag["name"])
+                if isinstance(xtags, list)
+                else define_tag_parameter_title(tag),
+                Type="String",
                 MinLength=2,
                 MaxLength=128,
-                AllowedPattern=r'[\x20-\x7E]+',
+                AllowedPattern=r"[\x20-\x7E]+",
                 ConstraintDescription="Must be ASCII",
-                Default=tag['value'] if isinstance(xtags, list) else xtags[tag]
+                Default=tag["value"] if isinstance(xtags, list) else xtags[tag],
             )
         )
     return parameters, object_tags
+
+
+def expand_launch_template_tags_specs(lt, tags):
+    """
+    Function to expand the LaunchTemplate TagSpecifications with defined x-tags.
+
+    :param lt: the LaunchTemplate object
+    :type: troposphere.ec2.LaunchTemplate
+    :param tags: the Tags as built from x-tags
+    :type tags: troposphere.Tags
+    """
+    LOG.debug("Setting tags to LaunchTemplate")
+    try:
+        launch_data = getattr(lt, "LaunchTemplateData")
+        if hasattr(launch_data, "TagSpecifications"):
+            tags_specs = getattr(launch_data, "TagSpecifications")
+            if isinstance(tags_specs, list) and tags_specs:
+                for tag_spec in tags_specs:
+                    if not isinstance(tag_spec, TagSpecifications):
+                        continue
+                    original_tags = getattr(tag_spec, "Tags")
+                    new_tags = original_tags + tags
+                    setattr(tag_spec, "Tags", new_tags)
+                setattr(launch_data, "TagSpecifications", tags_specs)
+    except AttributeError:
+        LOG.error("Failed to get the launch template data")
+    except Exception as error:
+        LOG.error(error)
 
 
 def add_object_tags(obj, tags):
@@ -107,29 +136,14 @@ def add_object_tags(obj, tags):
     """
     clean_tags = copy.deepcopy(tags)
     if isinstance(obj, LaunchTemplate):
-        LOG.debug('Setting tags to LaunchTemplate')
-        try:
-            launch_data = getattr(obj, 'LaunchTemplateData')
-            if hasattr(launch_data, 'TagSpecifications'):
-                tags_specs = getattr(launch_data, 'TagSpecifications')
-                if isinstance(tags_specs, list) and tags_specs:
-                    for tag_spec in tags_specs:
-                        original_tags = getattr(tag_spec, 'Tags')
-                        new_tags = original_tags + tags
-                        setattr(tag_spec, 'Tags', new_tags)
-                    setattr(launch_data, 'TagSpecifications', tags_specs)
-        except AttributeError:
-            LOG.error('Failed to get the launch template data')
-        except Exception as error:
-            LOG.error(error)
-    if hasattr(obj, 'props') and 'Tags' not in obj.props:
+        expand_launch_template_tags_specs(obj, clean_tags)
+    if hasattr(obj, "props") and "Tags" not in obj.props:
         return
-
-    if hasattr(obj, 'Tags') and isinstance(getattr(obj, 'Tags'), Tags):
-        LOG.debug(f'Adding the new tags {clean_tags} to {obj}')
-        existing_tags = getattr(obj, 'Tags')
+    if hasattr(obj, "Tags") and isinstance(getattr(obj, "Tags"), Tags):
+        LOG.debug(f"Adding the new tags {clean_tags} to {obj}")
+        existing_tags = getattr(obj, "Tags")
         new_tags = existing_tags + clean_tags
-        setattr(obj, 'Tags', new_tags)
-    elif not hasattr(obj, 'Tags'):
-        LOG.debug(f'Adding tags to {obj}')
-        setattr(obj, 'Tags', tags)
+        setattr(obj, "Tags", new_tags)
+    elif not hasattr(obj, "Tags"):
+        LOG.debug(f"Adding tags to {obj}")
+        setattr(obj, "Tags", tags)

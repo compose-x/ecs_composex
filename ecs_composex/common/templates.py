@@ -28,24 +28,22 @@ def check_bucket(bucket_name, session=None, client=None):
     if session is None:
         session = boto3.session.Session()
     region = session.region_name
-    location = {'LocationConstraint': region}
+    location = {"LocationConstraint": region}
     if client is None:
-        client = session.client('s3')
+        client = session.client("s3")
     try:
-        client.head_bucket(
-            Bucket=bucket_name
-        )
-        LOG.debug(f'Bucket {bucket_name} available')
+        client.head_bucket(Bucket=bucket_name)
+        LOG.debug(f"Bucket {bucket_name} available")
         return True
     except ClientError as error:
-        if error.response['Error']['Code'] == '404':
+        if error.response["Error"]["Code"] == "404":
             try:
                 LOG.info(f"Attempting to create bucket {bucket_name}")
                 client.create_bucket(
-                    ACL='private',
+                    ACL="private",
                     Bucket=bucket_name,
                     ObjectLockEnabledForBucket=True,
-                    CreateBucketConfiguration=location
+                    CreateBucketConfiguration=location,
                 )
                 LOG.info(f"Bucket {bucket_name} successfully created.")
                 return True
@@ -54,7 +52,7 @@ def check_bucket(bucket_name, session=None, client=None):
                 return False
     except Exception as error:
         LOG.error(error)
-        LOG.error(f'Bucket name: {bucket_name}')
+        LOG.error(f"Bucket name: {bucket_name}")
         LOG.error(type(bucket_name))
         return False
 
@@ -76,9 +74,9 @@ def validate_template(template_body, file_name, template_url=None, session=None)
     :rtype: bool
     """
     if session is None:
-        client = boto3.client('cloudformation')
+        client = boto3.client("cloudformation")
     else:
-        client = session.client('cloudformation')
+        client = session.client("cloudformation")
 
     try:
         if template_url is None:
@@ -88,14 +86,22 @@ def validate_template(template_body, file_name, template_url=None, session=None)
         return True
     except Exception as error:
         LOG.error(error)
-        with open(f'/tmp/{file_name}', 'w') as fd:
-            fd.write(template_body.strip('\n'))
-        LOG.error(f'Non valid template successfully written to /tmp/{file_name}')
+        with open(f"/tmp/{file_name}", "w") as fd:
+            fd.write(template_body.strip("\n"))
+        LOG.error(f"Non valid template successfully written to /tmp/{file_name}")
     return False
 
 
-def upload_template(template_body, bucket_name, file_name, validate=True,
-                    prefix=None, session=None, client=None, **kwargs):
+def upload_template(
+    template_body,
+    bucket_name,
+    file_name,
+    validate=True,
+    prefix=None,
+    session=None,
+    client=None,
+    **kwargs,
+):
     """Upload template_body to a file in s3 with given prefix and bucket_name
 
     :param template_body: Template body, would come from troposphere template to_json() or to_yaml()
@@ -123,24 +129,26 @@ def upload_template(template_body, bucket_name, file_name, validate=True,
     if prefix is None:
         prefix = DATE_PREFIX
 
-    key = f'{prefix}/{file_name}'
+    key = f"{prefix}/{file_name}"
     if client is None:
-        client = session.client('s3')
+        client = session.client("s3")
     try:
         client.put_object(
             Body=template_body,
             Key=key,
             Bucket=bucket_name,
-            ContentEncoding='utf-8',
-            ContentType='application/json',
-            ServerSideEncryption='AES256',
-            **kwargs
+            ContentEncoding="utf-8",
+            ContentType="application/json",
+            ServerSideEncryption="AES256",
+            **kwargs,
         )
-        url_path = f'https://s3.amazonaws.com/{bucket_name}/{key}'
+        url_path = f"https://s3.amazonaws.com/{bucket_name}/{key}"
         if validate:
             assert validate_template(
-                template_body, file_name=file_name,
-                template_url=url_path, session=session
+                template_body,
+                file_name=file_name,
+                template_url=url_path,
+                session=session,
             )
         return url_path
     except Exception as error:

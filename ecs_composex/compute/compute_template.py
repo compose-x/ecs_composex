@@ -23,7 +23,12 @@ from ecs_composex.common import (
     write_template_to_file,
 )
 from ecs_composex.common import cfn_conditions
-from ecs_composex.common.cfn_params import ROOT_STACK_NAME, ROOT_STACK_NAME_T, USE_FLEET, USE_ONDEMAND
+from ecs_composex.common.cfn_params import (
+    ROOT_STACK_NAME,
+    ROOT_STACK_NAME_T,
+    USE_FLEET,
+    USE_ONDEMAND,
+)
 from ecs_composex.common.templates import upload_template
 from ecs_composex.vpc import vpc_params
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME
@@ -134,9 +139,7 @@ def generate_compute_template(region_azs, compose_content=None, tags=None, **kwa
     template.add_condition(
         compute_conditions.MAX_IS_MIN_T, compute_conditions.MAX_IS_MIN
     )
-    template.add_condition(
-        cfn_conditions.USE_SPOT_CON_T, cfn_conditions.USE_SPOT_CON
-    )
+    template.add_condition(cfn_conditions.USE_SPOT_CON_T, cfn_conditions.USE_SPOT_CON)
     launch_template = add_hosts_resources(template)
     add_spotfleet_stack(
         template, region_azs, compose_content, launch_template, tags, **kwargs
