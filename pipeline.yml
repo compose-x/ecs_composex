@@ -285,7 +285,7 @@ Resources:
       RestartExecutionOnUpdate: false
       RoleArn: !GetAtt 'CodePipelineRole.Arn'
       Stages:
-        - Name: Source
+        - Name: SourceAction
           Actions:
             - Name: EcsComposeXSource
               ActionTypeId:
