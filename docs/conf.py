@@ -48,8 +48,8 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'ECS-ComposeX'
-copyright = u"2019, John Mille"
-author = u"John Mille"
+copyright = u"2020, John Mille"
+author = u"John Preston"
 
 # The version info for the project you're documenting, acts as replacement
 # for |version| and |release|, also used in various other places throughout
@@ -70,7 +70,7 @@ language = None
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This patterns also effect to html_static_path and html_extra_path
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', '.idea']
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
@@ -135,7 +135,7 @@ latex_elements = {
 latex_documents = [
     (master_doc, 'ecs_composex.tex',
      u'ECS-ComposeX Documentation',
-     u'John Mille', 'manual'),
+     u'John Preston', 'manual'),
 ]
 
 
@@ -163,6 +163,3 @@ texinfo_documents = [
      'One line description of project.',
      'Miscellaneous'),
 ]
-
-
-

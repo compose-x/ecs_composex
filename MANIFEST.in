@@ -5,7 +5,6 @@ include LICENSE
 include README.rst
 include USAGE.rst
 include requirements*.txt
-
 recursive-include tests *
 recursive-exclude * __pycache__
 recursive-exclude * *.py[co]

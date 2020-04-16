@@ -21,8 +21,6 @@ ECS ComposeX
     :alt: PyPI - Python Version
 
 
-`Blog <https://blog.ecs-composex.lambda-my-aws.io/>`_
-
 .. contents::
 
 What is it?
@@ -37,7 +35,6 @@ ECS ComposeX aims to be a CLI tool at first for people to run from their laptops
 Given its nature, it is easy to integrate it into AWS Lambda as a library and enable calling upon it to generate all
 the things from there.
 
-
 What you do with it
 ===================
 
@@ -46,6 +43,11 @@ What you do with it
 3. Add x- sections for extra AWS Resources you want your services to access to perform their tasks
 4. Run ECS ComposeX against your ComposeX file
 5. Deploy
+
+Blog_
+=====
+
+Follow the news and technical articles on using ECS ComposeX on the `Blog`_
 
 
 Features
@@ -113,6 +115,33 @@ for your profiles as you switch to them.
     If you do not do that as the root user of the account, you will have to enable that for IAM users or roles specifically.
     A Role/Group/User can have an IAM policy allowing them to put the ecs account settings, but then these settings will only
     apply to the role / user that ran the command.
+
+IAM Permissions to execute ECS ComposeX
+----------------------------------------
+
+.. code-block:: yaml
+
+    PolicyDocument:
+        Statement:
+          - Sid: CloudFormationAccess
+            Resource:
+              - '*'
+            Effect: Allow
+            Action:
+              - 'cloudformation:ValidateTemplate'
+          - Sid: S3BucketAccess
+            Resource:
+                - cfn-templates-bucket-arn
+            Effect: Allow
+            Action:
+              - 's3:ListBucket'
+          - Sid: S3BucketObjectsAccess
+            Resource:
+                - cfn-templates-bucket-arn/*
+            Effect: Allow
+            Action:
+              - 's3:GetObject*'
+              - 's3:PutObject*'
 
 
 Why though?
@@ -227,3 +256,4 @@ Disclaimer
 .. _`Mark Peek`: https://github.com/markpeek
 .. _`AWS ECS CLI`: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ECS_CLI.html
 .. _Troposphere: https://github.com/cloudtools/troposphere
+.. _Blog: https://blog.ecs-composex.lambda-my-aws.io/
