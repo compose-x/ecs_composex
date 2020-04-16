@@ -122,3 +122,4 @@ ENV/
 
 # mypy
 .mypy_cache/
+/codebuild_build.sh

@@ -54,6 +54,6 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/lambda-my-aws/ecs_composex',
-    version='0.1.2',
+    version='0.1.3',
     zip_safe=False
 )

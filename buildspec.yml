@@ -4,6 +4,7 @@ env:
   variables:
     KNOWN_BUCKET: lambda-dev-eu-west-1
     OUTPUT_FOLDER: /tmp/outputs
+  git-credential-helper: yes
 
 phases:
   install:
@@ -11,8 +12,9 @@ phases:
       python: 3.8
     commands:
       - pip --version || curl -s https://bootstrap.pypa.io/get-pip.py | python
-      - pip install -r requirements_dev.txt
+      - pip install -r requirements_buildspec.txt
       - python setup.py install
+      - python setup.py develop
   pre_build:
     commands:
       - make test
@@ -29,4 +31,3 @@ artifacts:
     - '**/*'
   base-directory: /tmp/outputs
   discard-paths: no
-
