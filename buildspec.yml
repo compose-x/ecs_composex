@@ -3,6 +3,7 @@ version: 0.2
 env:
   variables:
     KNOWN_BUCKET: lambda-dev-eu-west-1
+    OUTPUT_FOLDER: /tmp/outputs
 
 phases:
   install:
@@ -16,8 +17,16 @@ phases:
     commands:
       - make test
       - make test-all
+      - mkdir -p ${OUTPUT_FOLDER}
 
   build:
     commands:
-      - mkdir single-vpc
-      - ecs_composex-vpc -f tests/services_with_queues.yml -o single-vpc/root.yml
+      - mkdir -p ${OUTPUT_FOLDER}/single-vpc
+      - ecs_composex-vpc -f tests/services_with_queues.yml -o ${OUTPUT_FOLDER}/single-vpc/root.yml
+
+artifacts:
+  files:
+    - '**/*'
+  base-directory: /tmp/outputs
+  discard-paths: no
+

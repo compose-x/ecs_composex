@@ -267,6 +267,9 @@ Resources:
           - Name: CFN_TPL_BUCKET
             Type: PLAINTEXT
             Value: !Ref CfnTemplatesBucketName
+          - Name: KNOWN_BUCKET
+            Type: PLAINTEXT
+            Value: !Ref CfnTemplatesBucketName
       Source:
         Type: CODEPIPELINE
 
