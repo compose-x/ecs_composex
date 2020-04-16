@@ -24,7 +24,7 @@ Parameters:
 
   BranchName:
     Type: String
-    Default: master
+    Default: develop
 
   KmsKeyArn:
     Type: AWS::SSM::Parameter::Value<String>
@@ -287,7 +287,7 @@ Resources:
       Stages:
         - Name: SourceAction
           Actions:
-            - Name: EcsComposeXSource
+            - Name: EcsComposeXSourceAction
               ActionTypeId:
                 Version: '1'
                 Owner: ThirdParty
@@ -300,7 +300,7 @@ Resources:
                 Owner: lambda-my-aws
                 OAuthToken: '{{resolve:secretsmanager:GHToken:SecretString:token}}'
               OutputArtifacts:
-                - Name: EcsComposeXSource
+                - Name: EcsComposeXSourceCode
               RunOrder: '1'
         - Name: !Sub 'GenerateCfnTemplates'
           Actions:
@@ -313,7 +313,7 @@ Resources:
               Configuration:
                 ProjectName: !Ref EcsComposeXGenerate
               InputArtifacts:
-                - Name: EcsComposeXSource
+                - Name: EcsComposeXSourceCode
               OutputArtifacts:
                 - Name: EcsComposeXTemplates
               RunOrder: '1'
@@ -359,7 +359,7 @@ Resources:
         - JsonPath: "$.ref"
           MatchEquals: refs/heads/{Branch}
       TargetPipeline: !Ref Pipeline
-      TargetAction: EcsComposeXSource
+      TargetAction: EcsComposeXSourceAction
       Name: BranchesWebHook
       TargetPipelineVersion: !GetAtt Pipeline.Version
       RegisterWithThirdParty: true
