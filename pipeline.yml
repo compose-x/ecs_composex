@@ -1,0 +1,362 @@
+---
+Description: >-
+  Pipeline to release Lambda layers publicly when new release is created
+
+Metadata:
+  Author: https://github.com/johnpreston
+  Maintainer: https://github.com/johnpreston
+
+Parameters:
+  ArtifactsBucketName:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /cicd/shared/s3/artifacts/name
+
+  CfnTemplatesBucketName:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /cicd/shared/s3/templates/name
+
+  GithubRepositoryName:
+    Type: String
+    Description: Name of VCS repository in GitHub
+    Default: ecs_composex
+    AllowedValues:
+      - ecs_composex
+
+  BranchName:
+    Type: String
+    Default: master
+
+  KmsKeyArn:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /cicd/shared/kms/arn
+
+Resources:
+  CloudformationRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Policies:
+        - PolicyName: AllowCreateRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: AllowIamRoleCreation
+                Effect: Allow
+                Resource:
+                  - '*'
+                Action:
+                  - iam:GetRole
+                  - iam:UpdateAssumeRolePolicy
+                  - iam:ListRoleTags
+                  - iam:UntagRole
+                  - iam:TagRole
+                  - iam:PutRolePermissionsBoundary
+                  - iam:RemoveRoleFromInstanceProfile
+                  - iam:UpdateRoleDescription
+                  - iam:CreateRole
+                  - iam:DeleteRole
+                  - iam:AttachRolePolicy
+                  - iam:PutRolePolicy
+                  - iam:DeleteRolePermissionsBoundary
+                  - iam:AddRoleToInstanceProfile
+                  - iam:ListInstanceProfilesForRole
+                  - iam:PassRole
+                  - iam:CreateServiceLinkedRole
+                  - iam:DetachRolePolicy
+                  - iam:ListAttachedRolePolicies
+                  - iam:DeleteRolePolicy
+                  - iam:UpdateRole
+                  - iam:ListRolePolicies
+                  - iam:GetRolePolicy
+        - PolicyName: KmsDecryptData
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: DecryptEncryptArtifacts
+                Effect: Allow
+                Action:
+                  - kms:Decrypt
+                  - kms:DescribeKey
+                Resource:
+                  - !Ref KmsKeyArn
+        - PolicyName: S3Access
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Action:
+                  - s3:GetObject*
+                  - s3:ListBucket
+                  - s3:GetBucket*
+                Effect: Allow
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:s3:::${ArtifactsBucketName}'
+                  - !Sub 'arn:${AWS::Partition}:s3:::${ArtifactsBucketName}/*'
+                Sid: AllowRwToArtifactsBucket
+              - Action:
+                  - s3:GetObject*
+                  - s3:ListBucket
+                  - s3:GetBucket*
+                Effect: Allow
+                Sid: GetCloudformationTemplates
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:s3:::${CfnTemplatesBucketName}'
+                  - !Sub 'arn:${AWS::Partition}:s3:::${CfnTemplatesBucketName}/*'
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/PowerUserAccess
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - !Sub 'cloudformation.${AWS::URLSuffix}'
+            Condition:
+              Bool:
+                aws:SecureTransport: true
+
+  CodeBuildRole:
+    Type: AWS::IAM::Role
+    Properties:
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - !Sub 'codebuild.${AWS::URLSuffix}'
+      Policies:
+        - PolicyName: EcsComposeXAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: Ec2BasicReads
+                Effect: Allow
+                Resource:
+                  - '*'
+                Action:
+                  - ec2:DescribeAvailabilityZones
+                  - ec2:DescribeRegions
+              - Action:
+                  - s3:PutObject
+                  - s3:PutObjectVersion
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                Effect: Allow
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:s3:::${ArtifactsBucketName}/*'
+                  - !Sub 'arn:${AWS::Partition}:s3:::${CfnTemplatesBucketName}/*'
+              - Sid: EcsComposeXOtherS3Access
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:s3:::${CfnTemplatesBucketName}'
+                NotAction:
+                  - s3:DeleteBucket
+                Effect: Allow
+              - Sid: CloudFormationActions
+                Effect: Allow
+                Resource: '*'
+                Action:
+                  - cloudformation:Describe*
+                  - cloudformation:Get*
+                  - cloudformation:Validate*
+        - PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Action:
+                  - codebuild:Get*
+                  - codebuild:BatchGet*
+                Effect: Allow
+                Resource:
+                  - '*'
+          PolicyName: CodeBuildSelfAccessForAutomationTricks0
+        - PolicyName: KmsAccess
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: DecryptEncryptArtifacts
+                Effect: Allow
+                Action:
+                  - kms:DescribeKey
+                  - kms:GenerateDataKey*
+                  - kms:Encrypt
+                  - kms:ReEncrypt*
+                  - kms:Decrypt
+                Resource:
+                  - !Ref KmsKeyArn
+
+  CodePipelineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - !Sub 'codepipeline.${AWS::URLSuffix}'
+            Condition:
+              Bool:
+                aws:SecureTransport: true
+      Policies:
+        - PolicyName: S3Access
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Action:
+                  - s3:PutObject
+                  - s3:PutObjectVersion
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                Effect: Allow
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:s3:::${ArtifactsBucketName}/*'
+        - PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Action:
+                  - codebuild:BatchGetBuilds
+                  - codebuild:StartBuild
+                  - codebuild:Get*
+                  - codebuild:Describe*
+                Effect: Allow
+                Resource: '*'
+          PolicyName: CodeBuildAccess
+        - PolicyName: KmsAccess
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: DecryptEncryptArtifacts
+                Effect: Allow
+                Action:
+                  - kms:DescribeKey
+                  - kms:GenerateDataKey*
+                  - kms:Encrypt
+                  - kms:ReEncrypt*
+                  - kms:Decrypt
+                Resource:
+                  - !Ref KmsKeyArn
+              - Sid: AllowPassRole
+                Action:
+                  - iam:PassRole
+                Condition:
+                  StringEqualsIfExists:
+                    iam:PassedToService:
+                      - !Sub 'cloudformation.${AWS::URLSuffix}'
+                Effect: Allow
+                Resource:
+                  - !GetAtt 'CloudformationRole.Arn'
+
+  EcsComposeXGenerate:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Artifacts:
+        Type: CODEPIPELINE
+      ServiceRole: !GetAtt 'CodeBuildRole.Arn'
+      Description: !Sub 'Generates CFN templates to test ECS ComposeX use-cases'
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:3.0
+        Type: LINUX_CONTAINER
+        EnvironmentVariables:
+          - Name: CFN_TPL_BUCKET
+            Type: PLAINTEXT
+            Value: !Ref CfnTemplatesBucketName
+      Source:
+        Type: CODEPIPELINE
+
+  Pipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      ArtifactStore:
+        Location: !Ref ArtifactsBucketName
+        EncryptionKey:
+          Id: !Ref KmsKeyArn
+          Type: KMS
+        Type: S3
+      RestartExecutionOnUpdate: false
+      RoleArn: !GetAtt 'CodePipelineRole.Arn'
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: EcsComposeXSource
+              ActionTypeId:
+                Version: '1'
+                Owner: ThirdParty
+                Category: Source
+                Provider: GitHub
+              Configuration:
+                Branch: !Ref BranchName
+                PollForSourceChanges: false
+                Repo: !Ref GithubRepositoryName
+                Owner: lambda-my-aws
+                OAuthToken: '{{resolve:secretsmanager:GHToken:SecretString:token}}'
+              OutputArtifacts:
+                - Name: EcsComposeXSource
+              RunOrder: '1'
+        - Name: !Sub 'GenerateCfnTemplates'
+          Actions:
+            - Name: EcsComposeXGenerate
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: '1'
+              Configuration:
+                ProjectName: !Ref EcsComposeXGenerate
+              InputArtifacts:
+                - Name: EcsComposeXSource
+              OutputArtifacts:
+                - Name: EcsComposeXTemplates
+              RunOrder: '1'
+        - Name: !Sub 'DeployUseCases'
+          Actions:
+            - Name: DeploySingleVpc
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CloudFormation
+                Version: '1'
+              Configuration:
+                ActionMode: CREATE_UPDATE
+                RoleArn: !GetAtt CloudformationRole.Arn
+                StackName: single-vpc
+                TemplatePath: !Sub 'ComposeXOutput::single-vpc/root.yml'
+              InputArtifacts:
+                - Name: EcsComposeXTemplates
+              OutputArtifacts:
+                - Name: SingleVpcOutputs
+              RunOrder: '1'
+        - Name: !Sub 'CleanUpUseCases'
+          Actions:
+            - ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CloudFormation
+                Version: '1'
+              Configuration:
+                ActionMode: DELETE_ONLY
+                RoleArn: !GetAtt CloudformationRole.Arn
+                StackName: !Sub 'dev'
+              Name: DestroySingleVpc
+              RunOrder: '1'
+
+  BranchesWebHook:
+    Type: AWS::CodePipeline::Webhook
+    Properties:
+      Authentication: GITHUB_HMAC
+      AuthenticationConfiguration:
+        SecretToken: '{{resolve:secretsmanager:GHToken:SecretString:token}}'
+      Filters:
+        - JsonPath: "$.ref"
+          MatchEquals: refs/heads/{Branch}
+      TargetPipeline: !Ref Pipeline
+      TargetAction: EcsComposeXSource
+      Name: BranchesWebHook
+      TargetPipelineVersion: !GetAtt Pipeline.Version
+      RegisterWithThirdParty: true
