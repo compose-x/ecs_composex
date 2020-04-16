@@ -5,3 +5,5 @@ __email__ = "john@lambda-my-aws.io"
 __version__ = "0.1.3"
 
 XFILE_DEST = "ComposeXFile"
+DIR_DEST = "OuputDirectory"
+FILE_DEST = "OuputFile"

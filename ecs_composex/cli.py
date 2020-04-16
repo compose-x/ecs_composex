@@ -7,8 +7,9 @@ import sys
 import argparse
 import warnings
 import json
+from datetime import datetime as dt
 from boto3 import session
-from ecs_composex import XFILE_DEST
+from ecs_composex import XFILE_DEST, DIR_DEST, FILE_DEST
 from ecs_composex.common import LOG, write_template_to_file
 from ecs_composex.common.aws import BUCKET_NAME, CURATED_AZS
 from ecs_composex.common import KEYISSET
@@ -70,8 +71,23 @@ def validate_cluster_input(args):
     if not KEYISSET("CreateCluster", args) and not KEYISSET(CLUSTER_NAME_T, args):
         warnings.warn(
             f"You must provide an ECS Cluster name if you do not want ECS ComposeX to create one for you",
-            UserWarning,
+            UserWarning
         )
+
+
+def validate_output(args):
+    """
+    Function to check that not both the output file and output directory are specified.
+    By default, if specified, directory will take precedence.
+
+    :param args: Parser arguments
+    :type args: dict
+    """
+    if KEYISSET(DIR_DEST, args) and KEYISSET(FILE_DEST, args):
+        warnings.warn(
+            "Both the {DIR_DEST} and {FILE_DEST} were specified. Only considering the {DIR_DEST}"
+        )
+        args.pop(FILE_DEST)
 
 
 def main():
@@ -90,8 +106,18 @@ def main():
         "--output-file",
         type=str,
         required=True,
+        dest=FILE_DEST,
         help="The name and path of the main output file. If you specify extra arguments, it will create a parameters"
         " file as well for creating your CFN Stack",
+    )
+    parser.add_argument(
+        "-d",
+        "--output-dir",
+        required=False,
+        help="Output directory to write all the templates to.",
+        type=str,
+        dest=DIR_DEST,
+        default=f"/tmp/{dt.utcnow().strftime('%s')}"
     )
     parser.add_argument(
         "--cfn-config-file",
@@ -236,9 +262,11 @@ def main():
 
     validate_vpc_input(vars(args))
     validate_cluster_input(vars(args))
+    validate_output(vars(args))
 
     print("Arguments: " + str(args._))
     templates_and_params = generate_full_template(**vars(args))
+
     write_template_to_file(templates_and_params[0], args.output_file)
     cfn_config = build_config_template_file(templates_and_params[1])
     if KEYISSET("CfnConfigFile", vars(args)):

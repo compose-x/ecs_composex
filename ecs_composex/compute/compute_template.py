@@ -85,7 +85,7 @@ def add_spotfleet_stack(
         for resource in fleet_template.resources:
             add_object_tags(fleet_template.resources[resource], tags[1])
     fleet_template_url = upload_template(
-        fleet_template.to_json(), kwargs["BucketName"], "spot_fleet.json"
+        fleet_template.to_json(), bucket_name=kwargs["BucketName"], file_name="spot_fleet.json"
     )
     if not fleet_template_url:
         LOG.warn(

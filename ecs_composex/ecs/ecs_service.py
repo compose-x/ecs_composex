@@ -223,8 +223,8 @@ def generate_service_template(
             add_object_tags(service_tpl.resources[resource], tags[1])
     service_tpl_url = upload_template(
         service_tpl.to_json(),
-        kwargs["BucketName"],
-        f"{service_name}.json",
+        bucket_name=kwargs["BucketName"],
+        file_name=f"{service_name}.json",
         session=session,
     )
     LOG.debug(service_tpl_url)

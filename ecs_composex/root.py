@@ -93,7 +93,7 @@ def add_vpc_to_root(root_template, session, tags_params=None, **kwargs):
         tags_params = ()
     vpc_template = create_vpc_template(session=session, **kwargs)
     vpc_template_url = upload_template(
-        vpc_template.to_json(), kwargs["BucketName"], "vpc.json", session=session
+        vpc_template.to_json(), bucket_name=kwargs["BucketName"], file_name="vpc.json", session=session
     )
     LOG.debug(vpc_template_url)
     with open(f"{kwargs['output_file']}.vpc.json", "w") as vpc_fd:
