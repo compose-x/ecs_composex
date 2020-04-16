@@ -10,18 +10,19 @@ import json
 from boto3 import session
 from ecs_composex import XFILE_DEST
 from ecs_composex.common import LOG, write_template_to_file
-from ecs_composex.common.aws import (
-    BUCKET_NAME, CURATED_AZS
-)
+from ecs_composex.common.aws import BUCKET_NAME, CURATED_AZS
 from ecs_composex.common import KEYISSET
 from ecs_composex.common.cfn_tools import (
     build_config_template_file,
-    write_config_template_file
+    write_config_template_file,
 )
 from ecs_composex.root import generate_full_template
 from ecs_composex.vpc.vpc_params import (
-    APP_SUBNETS_T, PUBLIC_SUBNETS_T, STORAGE_SUBNETS_T,
-    VPC_ID_T, VPC_MAP_ID_T
+    APP_SUBNETS_T,
+    PUBLIC_SUBNETS_T,
+    STORAGE_SUBNETS_T,
+    VPC_ID_T,
+    VPC_MAP_ID_T,
 )
 from ecs_composex.common.cfn_params import USE_FLEET_T
 from ecs_composex.compute.compute_params import CLUSTER_NAME_T
@@ -41,19 +42,22 @@ def validate_vpc_input(args):
         PUBLIC_SUBNETS_T,
         APP_SUBNETS_T,
         STORAGE_SUBNETS_T,
-        VPC_ID_T, VPC_MAP_ID_T
+        VPC_ID_T,
+        VPC_MAP_ID_T,
     ]
-    if not KEYISSET('CreateVpc', args):
+    if not KEYISSET("CreateVpc", args):
         for key in nocreate_requirements:
             if not KEYISSET(key, args):
-                warnings.warn(f"{key} was not provided. Not adding to the parameters file", UserWarning)
+                warnings.warn(
+                    f"{key} was not provided. Not adding to the parameters file",
+                    UserWarning,
+                )
     else:
         for key in nocreate_requirements:
             if KEYISSET(key, args):
                 LOG.info(args[key])
                 warnings.warn(
-                    f"Creating VPC is set. Ignoring value for {key}",
-                    UserWarning
+                    f"Creating VPC is set. Ignoring value for {key}", UserWarning
                 )
 
 
@@ -63,9 +67,10 @@ def validate_cluster_input(args):
     :param args: Parser arguments
     :raise: KeyError
     """
-    if not KEYISSET('CreateCluster', args) and not KEYISSET(CLUSTER_NAME_T, args):
+    if not KEYISSET("CreateCluster", args) and not KEYISSET(CLUSTER_NAME_T, args):
         warnings.warn(
-            f"You must provide an ECS Cluster name if you do not want ECS ComposeX to create one for you", UserWarning
+            f"You must provide an ECS Cluster name if you do not want ECS ComposeX to create one for you",
+            UserWarning,
         )
 
 
@@ -74,95 +79,159 @@ def main():
     parser = argparse.ArgumentParser()
     #  Generic settings
     parser.add_argument(
-        '-f', '--docker-compose-file', dest=XFILE_DEST,
-        required=True, help="Path to the Docker compose file"
+        "-f",
+        "--docker-compose-file",
+        dest=XFILE_DEST,
+        required=True,
+        help="Path to the Docker compose file",
     )
     parser.add_argument(
-        '-o', '--output-file', type=str, required=True,
+        "-o",
+        "--output-file",
+        type=str,
+        required=True,
         help="The name and path of the main output file. If you specify extra arguments, it will create a parameters"
-             " file as well for creating your CFN Stack"
+        " file as well for creating your CFN Stack",
     )
     parser.add_argument(
-        '--cfn-config-file', help="Path to AWS Template config file", required=False, dest="CfnConfigFile", type=str
+        "--cfn-config-file",
+        help="Path to AWS Template config file",
+        required=False,
+        dest="CfnConfigFile",
+        type=str,
     )
     parser.add_argument(
-        '--no-cfn-template-config-file', action='store_true', default=True,
-        help="Do not generate the CFN Configuration template file"
+        "--no-cfn-template-config-file",
+        action="store_true",
+        default=True,
+        help="Do not generate the CFN Configuration template file",
     )
     #  AWS SETTINGS
     parser.add_argument(
-        '--region', required=False, default=session.Session().region_name,
-        dest='AwsRegion',
+        "--region",
+        required=False,
+        default=session.Session().region_name,
+        dest="AwsRegion",
         help="Specify the region you want to build for"
-             "default use default region from config or environment vars"
+        "default use default region from config or environment vars",
     )
     parser.add_argument(
-        '--az', dest='AwsAzs', action='append', required=False, default=CURATED_AZS,
-        help="List AZs you want to deploy to specifically within the region"
+        "--az",
+        dest="AwsAzs",
+        action="append",
+        required=False,
+        default=CURATED_AZS,
+        help="List AZs you want to deploy to specifically within the region",
     )
     parser.add_argument(
-        '-b', '--bucket-name', type=str, required=False, default=BUCKET_NAME,
-        help='Bucket name to upload the templates to', dest='BucketName'
+        "-b",
+        "--bucket-name",
+        type=str,
+        required=False,
+        default=BUCKET_NAME,
+        help="Bucket name to upload the templates to",
+        dest="BucketName",
     )
     # VPC SETTINGS
     parser.add_argument(
-        '--create-vpc', required=False, default=False, action='store_true',
-        help="Create a VPC for this deployment", dest='CreateVpc'
+        "--create-vpc",
+        required=False,
+        default=False,
+        action="store_true",
+        help="Create a VPC for this deployment",
+        dest="CreateVpc",
     )
     parser.add_argument(
-        '--vpc-cidr', required=False, default='192.168.36.0/22', dest='VpcCidr',
-        help="Specify the VPC CIDR if you use --create-vpc"
+        "--vpc-cidr",
+        required=False,
+        default="192.168.36.0/22",
+        dest="VpcCidr",
+        help="Specify the VPC CIDR if you use --create-vpc",
     )
     parser.add_argument(
-        '--vpc-id', dest=VPC_ID_T, required=False, type=str,
-        help='Specify VPC ID when not creating one'
+        "--vpc-id",
+        dest=VPC_ID_T,
+        required=False,
+        type=str,
+        help="Specify VPC ID when not creating one",
     )
     parser.add_argument(
-        '--public-subnets', required=False, dest=PUBLIC_SUBNETS_T, action='append',
-        help="List of Subnet IDs to use for the cluster when not creating VPC"
+        "--public-subnets",
+        required=False,
+        dest=PUBLIC_SUBNETS_T,
+        action="append",
+        help="List of Subnet IDs to use for the cluster when not creating VPC",
     )
     parser.add_argument(
-        '--app-subnets', required=False, dest=APP_SUBNETS_T, action='append',
-        help="List of Subnet IDs to use for the cluster when not creating VPC"
+        "--app-subnets",
+        required=False,
+        dest=APP_SUBNETS_T,
+        action="append",
+        help="List of Subnet IDs to use for the cluster when not creating VPC",
     )
     parser.add_argument(
-        '--storage-subnets', required=False, dest=STORAGE_SUBNETS_T, action='append',
-        help="List of Subnet IDs to use for the cluster when not creating VPC"
+        "--storage-subnets",
+        required=False,
+        dest=STORAGE_SUBNETS_T,
+        action="append",
+        help="List of Subnet IDs to use for the cluster when not creating VPC",
     )
     parser.add_argument(
-        '--discovery-map-id', '--map', dest=VPC_MAP_ID_T, required=False, help="Service Discovery ID, ie. ns-xxx"
+        "--discovery-map-id",
+        "--map",
+        dest=VPC_MAP_ID_T,
+        required=False,
+        help="Service Discovery ID, ie. ns-xxx",
     )
     parser.add_argument(
-        '--single-nat', dest='SingleNat', action='store_true',
-        help="Whether you want a single NAT for your application subnets or not. Not recommended for production"
+        "--single-nat",
+        dest="SingleNat",
+        action="store_true",
+        help="Whether you want a single NAT for your application subnets or not. Not recommended for production",
     )
     # CLUSTER SETTINGS
     parser.add_argument(
-        '--create-cluster', required=False, default=False, action='store_true',
-        help="Create an ECS Cluster for this deployment", dest='CreateCluster'
+        "--create-cluster",
+        required=False,
+        default=False,
+        action="store_true",
+        help="Create an ECS Cluster for this deployment",
+        dest="CreateCluster",
     )
     parser.add_argument(
-        '--cluster-name', type=str, required=False, dest=CLUSTER_NAME_T,
-        help='Override/Provide ECS Cluster name'
+        "--cluster-name",
+        type=str,
+        required=False,
+        dest=CLUSTER_NAME_T,
+        help="Override/Provide ECS Cluster name",
     )
     # COMPUTE SETTINGS
     parser.add_argument(
-        '--use-spot-fleet', required=False, default=False, action='store_true',
-        dest=USE_FLEET_T, help="Runs spotfleet for EC2. If used in combination "
-                               "of --use-fargate, it will create an additional SpotFleet"
+        "--use-spot-fleet",
+        required=False,
+        default=False,
+        action="store_true",
+        dest=USE_FLEET_T,
+        help="Runs spotfleet for EC2. If used in combination "
+        "of --use-fargate, it will create an additional SpotFleet",
     )
     parser.add_argument(
-        '--add-compute-resources', dest='AddComputeResources', action='store_true',
-        help='Whether you want to create a launch template to create EC2 resources for'
-        ' to expand the ECS Cluster and run containers on EC2 instances you might have access to.'
+        "--add-compute-resources",
+        dest="AddComputeResources",
+        action="store_true",
+        help="Whether you want to create a launch template to create EC2 resources for"
+        " to expand the ECS Cluster and run containers on EC2 instances you might have access to.",
     )
     #  ECS COMPOSEX SPECIALS
     parser.add_argument(
-        '--iam-only', default=False, action='store_true', required=False,
-        help="Generates only the IAM roles for the tasks"
+        "--iam-only",
+        default=False,
+        action="store_true",
+        required=False,
+        help="Generates only the IAM roles for the tasks",
     )
 
-    parser.add_argument('_', nargs='*')
+    parser.add_argument("_", nargs="*")
     args = parser.parse_args()
 
     validate_vpc_input(vars(args))
@@ -172,12 +241,12 @@ def main():
     templates_and_params = generate_full_template(**vars(args))
     write_template_to_file(templates_and_params[0], args.output_file)
     cfn_config = build_config_template_file(templates_and_params[1])
-    if KEYISSET('CfnConfigFile', vars(args)):
+    if KEYISSET("CfnConfigFile", vars(args)):
         config_file_path = args.CfnConfigFile
     else:
         config_file_path = f"{args.output_file.split('.')[0]}.config.json"
     write_config_template_file(cfn_config, config_file_path)
-    with open(f"{args.output_file.split('.')[0]}.params.json", 'w') as params_fd:
+    with open(f"{args.output_file.split('.')[0]}.params.json", "w") as params_fd:
         params_fd.write(json.dumps(templates_and_params[1], indent=4))
 
 

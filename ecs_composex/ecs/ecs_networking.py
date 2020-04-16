@@ -4,32 +4,21 @@ Functions that will add networking elements for the ECS Service as well as gener
 the network configuration for the ServiceDefinition
 """
 
-from troposphere import (
-    Ref, Sub, GetAtt, Tags
-)
-from troposphere.ec2 import (
-    SecurityGroup
-)
-from troposphere.ecs import (
-    ServiceRegistry
-)
+from troposphere import Ref, Sub, GetAtt, Tags
+from troposphere.ec2 import SecurityGroup
+from troposphere.ecs import ServiceRegistry
 from troposphere.servicediscovery import (
     DnsConfig as SdDnsConfig,
     Service as SdService,
     DnsRecord as SdDnsRecord,
-    HealthCheckCustomConfig as SdHealthCheckCustomConfig
+    HealthCheckCustomConfig as SdHealthCheckCustomConfig,
 )
 
 from ecs_composex.common import KEYISSET, LOG
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.ecs.ecs_loadbalancing import define_service_load_balancing
-from ecs_composex.ecs.ecs_params import (
-    SERVICE_NAME_T, SERVICE_NAME, SG_T
-)
-from ecs_composex.vpc.vpc_params import (
-    NAMESPACE_ID_IMPORT,
-    VPC_ID
-)
+from ecs_composex.ecs.ecs_params import SERVICE_NAME_T, SERVICE_NAME, SG_T
+from ecs_composex.vpc.vpc_params import NAMESPACE_ID_IMPORT, VPC_ID
 
 
 def add_service_default_sg(template):
@@ -45,15 +34,17 @@ def add_service_default_sg(template):
     sg = SecurityGroup(
         SG_T,
         template=template,
-        GroupDescription=Sub(f"SG for ${{{SERVICE_NAME_T}}} - ${{{ROOT_STACK_NAME_T}}}"),
+        GroupDescription=Sub(
+            f"SG for ${{{SERVICE_NAME_T}}} - ${{{ROOT_STACK_NAME_T}}}"
+        ),
         Tags=Tags(
             {
-                'Name': Sub(f"${{{SERVICE_NAME_T}}}-${{{ROOT_STACK_NAME_T}}}"),
-                'StackName': Ref('AWS::StackName'),
-                'MicroserviceName': Ref(SERVICE_NAME)
+                "Name": Sub(f"${{{SERVICE_NAME_T}}}-${{{ROOT_STACK_NAME_T}}}"),
+                "StackName": Ref("AWS::StackName"),
+                "MicroserviceName": Ref(SERVICE_NAME),
             }
         ),
-        VpcId=Ref(VPC_ID)
+        VpcId=Ref(VPC_ID),
     )
     return sg
 
@@ -63,35 +54,27 @@ def add_service_to_map(template, service_name, service, settings):
     Function to add the service into a cloudmap
     """
     sd_service = SdService(
-        'EcsDiscoveryService',
+        "EcsDiscoveryService",
         template=template,
-        Description=f'{service_name}',
+        Description=f"{service_name}",
         NamespaceId=NAMESPACE_ID_IMPORT,
-        HealthCheckCustomConfig=SdHealthCheckCustomConfig(
-            FailureThreshold=1.0
-        ),
+        HealthCheckCustomConfig=SdHealthCheckCustomConfig(FailureThreshold=1.0),
         DnsConfig=SdDnsConfig(
-            RoutingPolicy='MULTIVALUE',
-            NamespaceId=Ref('AWS::NoValue'),
+            RoutingPolicy="MULTIVALUE",
+            NamespaceId=Ref("AWS::NoValue"),
             DnsRecords=[
-                SdDnsRecord(
-                    TTL='30',
-                    Type='A'
-                ),
-                SdDnsRecord(
-                    TTL='30',
-                    Type='SRV'
-                )
-            ]
+                SdDnsRecord(TTL="30", Type="A"),
+                SdDnsRecord(TTL="30", Type="SRV"),
+            ],
         ),
-        Name=service_name
+        Name=service_name,
     )
     registries = []
-    for port in service['ports']:
+    for port in service["ports"]:
         registry = ServiceRegistry(
             f"ServiceRegistry{port.split(':')[-1]}",
-            RegistryArn=GetAtt(sd_service, 'Arn'),
-            Port=port.split(':')[-1]
+            RegistryArn=GetAtt(sd_service, "Arn"),
+            Port=port.split(":")[-1],
         )
         registries.append(registry)
     return registries
@@ -106,10 +89,10 @@ def define_protocol(port_string):
     :return: protocol, ie. udp or tcp
     :rtype: str
     """
-    protocols = ['tcp', 'udp']
-    protocol = 'tcp'
-    if port_string.find('/'):
-        protocol_found = port_string.split('/')[-1].strip()
+    protocols = ["tcp", "udp"]
+    protocol = "tcp"
+    if port_string.find("/"):
+        protocol_found = port_string.split("/")[-1].strip()
         if protocol_found in protocols:
             return protocol_found
     return protocol
@@ -125,22 +108,24 @@ def define_service_ports(service):
     :rtype: list
     """
     ports = []
-    valid_keys = ['published', 'target', 'protocol', 'mode']
+    valid_keys = ["published", "target", "protocol", "mode"]
     service_ports = []
-    if KEYISSET('ports', service):
-        ports = service['ports']
+    if KEYISSET("ports", service):
+        ports = service["ports"]
     for port in ports:
         if isinstance(port, str):
-            service_ports.append({
-                'protocol': define_protocol(port),
-                'published': port.split(':')[0],
-                'target': port.split(':')[-1].split('/')[0].strip(),
-                'mode': 'awsvpc'
-            })
+            service_ports.append(
+                {
+                    "protocol": define_protocol(port),
+                    "published": port.split(":")[0],
+                    "target": port.split(":")[-1].split("/")[0].strip(),
+                    "mode": "awsvpc",
+                }
+            )
         elif isinstance(port, dict):
             if not set(port).issubset(valid_keys):
-                raise KeyError(f"Valid keys are", valid_keys, 'got', port.keys())
-            port['mode'] = 'awsvpc'
+                raise KeyError(f"Valid keys are", valid_keys, "got", port.keys())
+            port["mode"] = "awsvpc"
             service_ports.append(port)
     LOG.debug(service_ports)
     return service_ports
@@ -160,40 +145,49 @@ def compile_network_settings(compose_content, service, service_name):
     :rtype: dict
     """
     valid_keys = [
-        'use_alb', 'use_nlb', 'use_cloudmap', 'is_public', 'healthcheck', 'ext_sources', 'ports'
+        "use_alb",
+        "use_nlb",
+        "use_cloudmap",
+        "is_public",
+        "healthcheck",
+        "ext_sources",
+        "ports",
     ]
     settings = {}
     globals = {
-        'use_cloudmap': True,
-        'use_nlb': False,
-        'use_alb': True,
-        'is_public': False
+        "use_cloudmap": True,
+        "use_nlb": False,
+        "use_alb": True,
+        "is_public": False,
     }
-    if KEYISSET('labels', service):
-        settings = service['labels']
-    if KEYISSET('configs', compose_content):
-        if KEYISSET(service_name, compose_content['configs']):
+    if KEYISSET("labels", service):
+        settings = service["labels"]
+    if KEYISSET("configs", compose_content):
+        if KEYISSET(service_name, compose_content["configs"]):
             LOG.warn(
                 f"Service {service_name} has defined configs in the configs section."
                 "Overriding with values"
             )
-            settings = compose_content['configs'][service_name]
-    if (KEYISSET('globals', compose_content['configs']) and
-            KEYISSET('network', compose_content['configs']['globals']['network'])):
-        globals.update(compose_content['configs']['globals']['network'])
+            settings = compose_content["configs"][service_name]
+    if KEYISSET("globals", compose_content["configs"]) and KEYISSET(
+        "network", compose_content["configs"]["globals"]["network"]
+    ):
+        globals.update(compose_content["configs"]["globals"]["network"])
     if not set(settings).issubset(valid_keys):
         LOG.error(valid_keys)
         LOG.error(settings)
-        raise KeyError('Invalid keys defined in the network section of the service config in configs')
+        raise KeyError(
+            "Invalid keys defined in the network section of the service config in configs"
+        )
     for key in valid_keys:
-        if key not in settings and key != 'ports':
+        if key not in settings and key != "ports":
             if key in globals.keys():
-                if key == 'use_cloudmap' and not KEYISSET('is_public', settings):
-                    LOG.debug(f'Missing use_cloudmap but {service_name} is public.')
+                if key == "use_cloudmap" and not KEYISSET("is_public", settings):
+                    LOG.debug(f"Missing use_cloudmap but {service_name} is public.")
                     settings[key] = False
                 else:
                     settings[key] = globals[key]
-    settings['ports'] = define_service_ports(service)
+    settings["ports"] = define_service_ports(service)
     return settings
 
 
@@ -212,24 +206,25 @@ def define_service_network_config(template, service_name, network_settings, **kw
     :rtype: tuple
     """
     add_service_default_sg(template)
-    service_lbs = Ref('AWS::NoValue')
-    registries = Ref('AWS::NoValue')
-    service_attrs = {
-        'LoadBalancers': service_lbs,
-        'ServiceRegistries': registries
-    }
+    service_lbs = Ref("AWS::NoValue")
+    registries = Ref("AWS::NoValue")
+    service_attrs = {"LoadBalancers": service_lbs, "ServiceRegistries": registries}
     external_dependencies = []
-    if not KEYISSET('AwsAzs', kwargs):
+    if not KEYISSET("AwsAzs", kwargs):
         raise KeyError(
-            'Missing AwsAzs from options.'
-            'AZs are required to configure services networking'
+            "Missing AwsAzs from options."
+            "AZs are required to configure services networking"
         )
-    if not KEYISSET('ports', network_settings):
+    if not KEYISSET("ports", network_settings):
         LOG.debug(f"{service_name} does not have any ports. No ingress necessary")
         return service_attrs, external_dependencies
     LOG.debug(network_settings)
-    if KEYISSET('use_nlb', network_settings) or KEYISSET('use_alb', network_settings):
-        service_lb = define_service_load_balancing(template, service_name, network_settings, **kwargs)
-        service_attrs['LoadBalancers'] = service_lb[0]
-        service_attrs['DependsOn'] = service_lb[-1] if isinstance(service_lb[-1], list) else []
+    if KEYISSET("use_nlb", network_settings) or KEYISSET("use_alb", network_settings):
+        service_lb = define_service_load_balancing(
+            template, service_name, network_settings, **kwargs
+        )
+        service_attrs["LoadBalancers"] = service_lb[0]
+        service_attrs["DependsOn"] = (
+            service_lb[-1] if isinstance(service_lb[-1], list) else []
+        )
     return service_attrs, external_dependencies

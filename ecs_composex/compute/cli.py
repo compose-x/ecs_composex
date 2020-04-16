@@ -101,7 +101,7 @@ def main():
 
     template_params = create_compute_stack(**vars(args))
     write_template_to_file(template_params[0], args.output_file)
-    with open(f"{args.output_file.split('.')[0]}.params.json", 'w') as params_fd:
+    with open(f"{args.output_file.split('.')[0]}.params.json", "w") as params_fd:
         params_fd.write(json.dumps(template_params[1], indent=4))
     return 0
 

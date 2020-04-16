@@ -16,22 +16,9 @@ def service_role_trust_policy(service_name):
     """
     statement = {
         "Effect": "Allow",
-        "Principal": {
-            "Service": [
-                Sub(f'{service_name}.${{AWS::URLSuffix}}')
-            ]
-        },
+        "Principal": {"Service": [Sub(f"{service_name}.${{AWS::URLSuffix}}")]},
         "Action": ["sts:AssumeRole"],
-        "Condition": {
-            "Bool": {
-                "aws:SecureTransport": "true"
-            }
-        }
+        "Condition": {"Bool": {"aws:SecureTransport": "true"}},
     }
-    policy_doc = {
-        "Version": "2012-10-17",
-        "Statement": [
-            statement
-        ]
-    }
+    policy_doc = {"Version": "2012-10-17", "Statement": [statement]}
     return policy_doc

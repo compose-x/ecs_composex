@@ -23,8 +23,10 @@ def get_composex_globals(compose_content):
     :return: docker compose globals
     :rtype: dict
     """
-    if KEYISSET('configs', compose_content) and KEYISSET('composex', compose_content['configs']):
-        return compose_content['configs']['composex']
+    if KEYISSET("configs", compose_content) and KEYISSET(
+        "composex", compose_content["configs"]
+    ):
+        return compose_content["configs"]["composex"]
     return {}
 
 
@@ -51,9 +53,7 @@ def get_mod_function(module_name, function_name):
         except AttributeError:
             LOG.info(f"No {function_name} function found - skipping")
     except ImportError as error:
-        LOG.error(
-            f'Failure to process the module {composex_module_name}'
-        )
+        LOG.error(f"Failure to process the module {composex_module_name}")
         LOG.error(error)
     return res_module
 
@@ -78,10 +78,8 @@ def generate_x_resources_policies(resources, resource_type, function, **kwargs):
         assert validate_resource_title(resource_name, resource_type)
         resource = resources[resource_name]
 
-        if KEYISSET('Services', resource):
-            mod_policies[resource_name] = function(
-                resource_name, resource, **kwargs
-            )
+        if KEYISSET("Services", resource):
+            mod_policies[resource_name] = function(resource_name, resource, **kwargs)
     return mod_policies
 
 
@@ -105,10 +103,8 @@ def generate_x_resources_envvars(resources, resource_type, function, **kwargs):
         assert validate_resource_title(resource_name, resource_type)
         resource = resources[resource_name]
 
-        if KEYISSET('Services', resource):
-            mod_envvars[resource_name] = function(
-                resource_name, resource, **kwargs
-            )
+        if KEYISSET("Services", resource):
+            mod_envvars[resource_name] = function(resource_name, resource, **kwargs)
     return mod_envvars
 
 
@@ -123,16 +119,18 @@ def generate_x_resource_configs(content, **kwargs):
     :return: resource_configs
     :rtype: dict
     """
-    exempt_keys = ['x-rds', 'x-tags', 'x-cluster']
+    exempt_keys = ["x-rds", "x-tags", "x-cluster"]
     resource_configs = {}
     options = get_composex_globals(content)
     kwargs.update(options)
     for resource_type in content.keys():
-        res_name = RES_REGX.sub('', resource_type)
+        res_name = RES_REGX.sub("", resource_type)
         resources = content[resource_type]
-        if (resource_type.startswith('x-')
-                and not (resource_type in exempt_keys)
-                and content[resource_type]):
+        if (
+            resource_type.startswith("x-")
+            and not (resource_type in exempt_keys)
+            and content[resource_type]
+        ):
             resource_configs[resource_type] = {}
             module_name = f"{res_name}.{res_name}_perms"
             perms_function_name = f"generate_{res_name}_permissions"
@@ -142,17 +140,15 @@ def generate_x_resource_configs(content, **kwargs):
             LOG.debug(perms_function)
             LOG.debug(vars_function)
             if perms_function:
-                resource_configs[resource_type]['permissions'] = generate_x_resources_policies(
-                    resources,
-                    resource_type,
-                    perms_function,
-                    **kwargs
+                resource_configs[resource_type][
+                    "permissions"
+                ] = generate_x_resources_policies(
+                    resources, resource_type, perms_function, **kwargs
                 )
             if vars_function:
-                resource_configs[resource_type]['envvars'] = generate_x_resources_envvars(
-                    resources,
-                    resource_type,
-                    vars_function,
-                    **kwargs
+                resource_configs[resource_type][
+                    "envvars"
+                ] = generate_x_resources_envvars(
+                    resources, resource_type, vars_function, **kwargs
                 )
     return resource_configs

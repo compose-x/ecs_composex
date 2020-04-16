@@ -23,8 +23,8 @@ def get_region_azs(region=None, session=None, client=None):
         elif isinstance(region, str):
             session = boto3.session.Session(region_name=region)
     if client is None:
-        return session.client('ec2').describe_availability_zones()['AvailabilityZones']
-    return client.describe_availability_zones()['AvailabilityZones']
+        return session.client("ec2").describe_availability_zones()["AvailabilityZones"]
+    return client.describe_availability_zones()["AvailabilityZones"]
 
 
 def get_curated_azs(region=None, session=None, client=None):
@@ -41,7 +41,7 @@ def get_curated_azs(region=None, session=None, client=None):
     :rtype: list
     """
     azs = get_region_azs(region, session, client)
-    return [az['ZoneName'] for az in azs]
+    return [az["ZoneName"] for az in azs]
 
 
 def get_account_id(session=None, client=None):
@@ -57,11 +57,11 @@ def get_account_id(session=None, client=None):
     :rtype: list
     """
     if client is not None:
-        return client.get_caller_identity()['Account']
+        return client.get_caller_identity()["Account"]
     elif client is None and session is not None:
-        return session.client('sts').get_caller_identity()['Account']
+        return session.client("sts").get_caller_identity()["Account"]
     elif client is None and session is None:
-        return boto3.client('sts').get_caller_identity()['Account']
+        return boto3.client("sts").get_caller_identity()["Account"]
 
 
 CURATED_AZS = get_curated_azs()

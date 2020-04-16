@@ -10,7 +10,11 @@ for testing one would wish to run a new EC2 instance, you can simply do it from 
 import boto3
 
 from ecs_composex import XFILE_DEST
-from ecs_composex.common import KEYISSET, load_composex_file, build_default_stack_parameters
+from ecs_composex.common import (
+    KEYISSET,
+    load_composex_file,
+    build_default_stack_parameters,
+)
 from ecs_composex.common.aws import get_curated_azs
 from ecs_composex.common.tagging import generate_tags_parameters
 from ecs_composex.compute.compute_template import generate_compute_template
