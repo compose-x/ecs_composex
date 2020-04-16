@@ -7,7 +7,6 @@ env:
 phases:
   install:
     runtime-versions:
-      python: 3.7
       python: 3.8
     commands:
       - pip --version || curl -s https://bootstrap.pypa.io/get-pip.py | python
@@ -17,3 +16,8 @@ phases:
     commands:
       - make test
       - make test-all
+
+  build:
+    commands:
+      - mkdir single-vpc
+      - ecs_composex-vpc -f tests/services_with_queues.yml -o single-vpc/root.yml
