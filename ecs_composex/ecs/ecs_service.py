@@ -12,11 +12,12 @@ from troposphere.ecs import (
     DeploymentController,
 )
 
-from ecs_composex.common import LOG, cfn_conditions
 from ecs_composex.common import build_template, cfn_params, add_parameters
+from ecs_composex.common import cfn_conditions
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.outputs import formatted_outputs
-from ecs_composex.common.templates import upload_template
+from ecs_composex.common.tagging import add_object_tags
+from ecs_composex.common.templates import FileArtifact
 from ecs_composex.ecs import ecs_conditions
 from ecs_composex.ecs import ecs_params
 from ecs_composex.ecs.ecs_iam import add_service_roles, assign_x_resources_to_service
@@ -28,7 +29,6 @@ from ecs_composex.ecs.ecs_networking import (
 from ecs_composex.ecs.ecs_networking_ingress import define_service_to_service_ingress
 from ecs_composex.ecs.ecs_task import add_task_defnition
 from ecs_composex.vpc import vpc_params
-from ecs_composex.common.tagging import add_object_tags
 
 STATIC = 0
 
@@ -221,11 +221,8 @@ def generate_service_template(
     if tags and tags[1]:
         for resource in service_tpl.resources:
             add_object_tags(service_tpl.resources[resource], tags[1])
-    service_tpl_url = upload_template(
-        service_tpl.to_json(),
-        bucket_name=kwargs["BucketName"],
-        file_name=f"{service_name}.json",
-        session=session,
+    service_tpl_file = FileArtifact(
+        f"{service_name}.yml", service_tpl, session=session, **kwargs
     )
-    LOG.debug(service_tpl_url)
-    return service_tpl_url, parameters, stack_dependencies
+    service_tpl_file.create()
+    return service_tpl_file.url, parameters, stack_dependencies

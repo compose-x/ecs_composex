@@ -15,13 +15,8 @@ from ecs_composex.compute.spot_fleet import (
     generate_spot_fleet_template,
     DEFAULT_SPOT_CONFIG,
 )
-from ecs_composex.common import (
-    build_template,
-    KEYISSET,
-    LOG,
-    add_parameters,
-    write_template_to_file,
-)
+from ecs_composex.common.templates import FileArtifact
+from ecs_composex.common import build_template, KEYISSET, LOG, add_parameters
 from ecs_composex.common import cfn_conditions
 from ecs_composex.common.cfn_params import (
     ROOT_STACK_NAME,
@@ -29,7 +24,6 @@ from ecs_composex.common.cfn_params import (
     USE_FLEET,
     USE_ONDEMAND,
 )
-from ecs_composex.common.templates import upload_template
 from ecs_composex.vpc import vpc_params
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME
 from ecs_composex.common.tagging import add_object_tags
@@ -84,20 +78,19 @@ def add_spotfleet_stack(
             parameters.update({tag.title: Ref(tag.title)})
         for resource in fleet_template.resources:
             add_object_tags(fleet_template.resources[resource], tags[1])
-    fleet_template_url = upload_template(
-        fleet_template.to_json(), bucket_name=kwargs["BucketName"], file_name="spot_fleet.json"
-    )
-    if not fleet_template_url:
+    fleet_file = FileArtifact("spot_fleet.yml", template=fleet_template, **kwargs)
+    fleet_file.write()
+    fleet_file.upload()
+    if not fleet_file.url:
         LOG.warn(
             "Fleet template URL not returned. Not adding SpotFleet to Cluster stack"
         )
         return
-    write_template_to_file(fleet_template, "/tmp/spot_fleet.yml")
     template.add_resource(
         Stack(
             "SpotFleet",
             Condition=cfn_conditions.USE_SPOT_CON_T,
-            TemplateURL=fleet_template_url,
+            TemplateURL=fleet_file.url,
             Parameters=parameters,
         )
     )

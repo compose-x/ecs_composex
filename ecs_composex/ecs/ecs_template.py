@@ -133,7 +133,4 @@ def generate_services_templates(compose_content, session=None, **kwargs):
     )
     for resource in template.resources:
         add_object_tags(template.resources[resource], tags_params[1])
-    if KEYISSET("Debug", kwargs):
-        with open("/tmp/ecs_root.json", "w") as services_fd:
-            services_fd.write(template.to_json())
     return template

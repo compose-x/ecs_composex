@@ -8,11 +8,11 @@ elsewhere for nested cluster stack
 
 import argparse
 import sys
-import json
+import os
 
 from boto3 import session
-from ecs_composex import XFILE_DEST
-from ecs_composex.common import write_template_to_file
+from ecs_composex import XFILE_DEST, DIR_DEST
+from ecs_composex.common.templates import FileArtifact
 from ecs_composex.common.aws import CURATED_AZS, BUCKET_NAME
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME_T
 from ecs_composex.vpc.vpc_params import VPC_ID_T, APP_SUBNETS_T
@@ -35,8 +35,17 @@ def root_parser():
     parser.add_argument(
         "-o",
         "--output-file",
-        required=True,
+        required=False,
+        default=f"{os.path.basename(os.path.dirname(__file__))}.yml",
         help="Output file. Extension determines the file format",
+    )
+    parser.add_argument(
+        "-d",
+        "--output-dir",
+        required=False,
+        help="Output directory to write all the templates to.",
+        type=str,
+        dest=DIR_DEST,
     )
     #  AWS SETTINGS
     parser.add_argument(
@@ -90,6 +99,12 @@ def root_parser():
         help="Runs spotfleet for EC2. If used in combination "
         "of --use-fargate, it will create an additional SpotFleet",
     )
+    parser.add_argument(
+        "--no-upload",
+        action="store_true",
+        default=False,
+        help="Do not upload the file to S3.",
+    )
     return parser
 
 
@@ -100,9 +115,19 @@ def main():
     args = parser.parse_args()
 
     template_params = create_compute_stack(**vars(args))
-    write_template_to_file(template_params[0], args.output_file)
-    with open(f"{args.output_file.split('.')[0]}.params.json", "w") as params_fd:
-        params_fd.write(json.dumps(template_params[1], indent=4))
+    template_file = FileArtifact(
+        args.output_file, template=template_params[0], **vars(args)
+    )
+    params_file_name = f"{args.output_file.split('.')[0]}.params.json"
+    params_file = FileArtifact(
+        params_file_name, content=template_params[1], **vars(args)
+    )
+    if args.no_upload:
+        template_file.write()
+        params_file.write()
+    else:
+        template_file.create()
+        params_file.create()
     return 0
 
 

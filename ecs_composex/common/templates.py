@@ -4,8 +4,9 @@
 Functions to manage a template and wheter it should be stored in S3
 """
 import yaml
+
 try:
-    from yaml import CDumper as dumper
+    from yaml import CDumper as Dumper
 except ImportError:
     from yaml import Dumper
 from os import path, mkdir
@@ -103,15 +104,15 @@ def validate_template(template_body, file_name, template_url=None, session=None)
 
 
 def upload_template(
-        template_body,
-        bucket_name,
-        file_name,
-        validate=True,
-        prefix=None,
-        session=None,
-        client=None,
-        mime=None,
-        **kwargs,
+    template_body,
+    bucket_name,
+    file_name,
+    validate=True,
+    prefix=None,
+    session=None,
+    client=None,
+    mime=None,
+    **kwargs,
 ):
     """Upload template_body to a file in s3 with given prefix and bucket_name
 
@@ -137,7 +138,7 @@ def upload_template(
         session = boto3.session.Session()
     assert check_bucket(bucket_name=bucket_name, session=session)
     if mime is None:
-        mime = 'application/json'
+        mime = "application/json"
     if prefix is None:
         prefix = DATE_PREFIX
 
@@ -187,22 +188,22 @@ class FileArtifact(object):
     body = None
     template = None
     file_name = None
-    mime = 'text/plain'
+    mime = "text/plain"
     session = boto3.session.Session()
     bucket = None
     uploadable = False
+    validated = False
     output_dir = f"/tmp/{dt.utcnow().strftime('%s')}"
     uploaded = False
 
     def upload(self):
         if not self.uploadable:
-            LOG.error('BucketName was not specified, not attempting upload')
+            LOG.error("BucketName was not specified, not attempting upload")
+        elif not self.validated:
+            LOG.error("The template was not correctly validated. Not uploading")
         else:
             self.url = upload_template(
-                self.body,
-                self.bucket,
-                self.file_name,
-                mime=self.mime
+                self.body, self.bucket, self.file_name, mime=self.mime, validate=False
             )
             LOG.info(f"Template {self.file_name} uploaded successfully to {self.url}")
             self.uploaded = True
@@ -212,37 +213,43 @@ class FileArtifact(object):
             mkdir(self.output_dir)
             LOG.info(f"Created directory {self.output_dir} to store files")
         except FileExistsError:
-            LOG.debug('Output directory already exists')
-        with open(f"{self.output_dir}/{self.file_name}", 'w') as template_fd:
+            LOG.debug(f"Output directory {self.output_dir} already exists")
+        with open(f"{self.output_dir}/{self.file_name}", "w") as template_fd:
             template_fd.write(self.body)
-            LOG.info(f"Template {self.file_name} written successfully at {self.output_dir}/{self.file_name}")
+            LOG.info(
+                f"Template {self.file_name} written successfully at {self.output_dir}/{self.file_name}"
+            )
 
     def validate(self):
         try:
-            self.session.client('cloudformation').validate_template(TemplateBody=self.body)
-            return True
+            self.session.client("cloudformation").validate_template(
+                TemplateBody=self.template.to_json()
+            )
+            LOG.debug(f"Template {self.file_name} was validated successfully by CFN")
+            self.validated = True
         except ClientError as error:
             LOG.error(error)
-            return False
 
     def define_file_specs(self):
         """
         Function to set the file body from template if self.template is Template
         :return:
         """
-        if self.file_name.endswith('.json'):
-            self.mime = 'application/json'
-        elif self.file_name.endswith('.yml') or self.file_name.endswith('.yaml'):
-            self.mime = 'application/x-yaml'
+        if self.file_name.endswith(".json"):
+            self.mime = "application/json"
+        elif self.file_name.endswith(".yml") or self.file_name.endswith(".yaml"):
+            self.mime = "application/x-yaml"
         if isinstance(self.template, Template):
-            if self.mime == 'application/x-yaml':
+            if self.mime == "application/x-yaml":
                 self.body = self.template.to_yaml()
             else:
                 self.body = self.template.to_json()
         elif isinstance(self.content, (list, dict, tuple)):
-            if self.mime == 'application/x-yaml':
+            self.validated = True
+            self.uploadable = True
+            if self.mime == "application/x-yaml":
                 self.body = yaml.dump(self.content, Dumper=Dumper)
-            elif self.mime == 'application/json':
+            elif self.mime == "application/json":
                 self.body = json.dumps(self.content, indent=4)
 
     def set_from_kwargs(self, **kwargs):
@@ -252,9 +259,16 @@ class FileArtifact(object):
         """
         if KEYISSET(DIR_DEST, kwargs):
             self.output_dir = path.abspath(kwargs[DIR_DEST])
-        if KEYISSET('BucketName', kwargs):
-            self.bucket = kwargs['BucketName']
+        if KEYISSET("BucketName", kwargs):
+            self.bucket = kwargs["BucketName"]
             self.uploadable = True
+
+    def create(self):
+        """
+        Function to write to file and upload in a single function
+        """
+        self.write()
+        self.upload()
 
     def __init__(self, file_name, template=None, content=None, session=None, **kwargs):
         """
@@ -268,14 +282,15 @@ class FileArtifact(object):
         self.file_name = file_name
         if template is not None and not isinstance(template, Template):
             raise TypeError("template must be of type", Template, "got", type(template))
-        self.template = template
-        self.define_file_specs()
+        elif isinstance(template, Template):
+            self.template = template
+            self.validate()
         if session is not None:
             self.session = session
         self.set_from_kwargs(**kwargs)
         if content is not None and isinstance(content, (tuple, dict, str, list)):
             self.content = content
+        self.define_file_specs()
 
     def __repr__(self):
         return f"{self.output_dir}/{self.file_name}"
-

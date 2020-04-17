@@ -9,8 +9,8 @@ from boto3 import session
 
 from ecs_composex.common.aws import CURATED_AZS, BUCKET_NAME
 from ecs_composex.vpc import create_vpc_template
-from ecs_composex import XFILE_DEST, DIR_DEST, FILE_DEST
-from ecs_composex.common.templates import  FileArtifact
+from ecs_composex import XFILE_DEST, DIR_DEST
+from ecs_composex.common.templates import FileArtifact
 
 
 def main():
@@ -38,7 +38,7 @@ def main():
         required=False,
         help="Output directory to write all the templates to.",
         type=str,
-        dest=DIR_DEST
+        dest=DIR_DEST,
     )
     parser.add_argument(
         "--az",
@@ -59,9 +59,9 @@ def main():
     )
     parser.add_argument(
         "--no-upload",
-        action='store_true',
+        action="store_true",
         default=False,
-        help="Do not upload the file to S3."
+        help="Do not upload the file to S3.",
     )
     parser.add_argument(
         "-b",
@@ -76,7 +76,7 @@ def main():
     args = parser.parse_args()
 
     template = create_vpc_template(**vars(args))
-    file_name = 'vpc.yml'
+    file_name = "vpc.yml"
     if args.output_file:
         file_name = args.output_file
     template_file = FileArtifact(file_name, template=template, **vars(args))
