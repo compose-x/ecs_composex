@@ -3,19 +3,21 @@
 
 """Console script for ecs_composex."""
 
-import sys
-import argparse
+import os
 import warnings
-import json
+
+import argparse
+import sys
 from boto3 import session
-from ecs_composex import XFILE_DEST
-from ecs_composex.common import LOG, write_template_to_file
-from ecs_composex.common.aws import BUCKET_NAME, CURATED_AZS
+
+from ecs_composex import XFILE_DEST, DIR_DEST
 from ecs_composex.common import KEYISSET
-from ecs_composex.common.cfn_tools import (
-    build_config_template_file,
-    write_config_template_file,
-)
+from ecs_composex.common import LOG
+from ecs_composex.common.aws import BUCKET_NAME, CURATED_AZS
+from ecs_composex.common.cfn_params import USE_FLEET_T
+from ecs_composex.common.cfn_tools import build_config_template_file
+from ecs_composex.common.templates import FileArtifact
+from ecs_composex.compute.compute_params import CLUSTER_NAME_T
 from ecs_composex.root import generate_full_template
 from ecs_composex.vpc.vpc_params import (
     APP_SUBNETS_T,
@@ -24,8 +26,6 @@ from ecs_composex.vpc.vpc_params import (
     VPC_ID_T,
     VPC_MAP_ID_T,
 )
-from ecs_composex.common.cfn_params import USE_FLEET_T
-from ecs_composex.compute.compute_params import CLUSTER_NAME_T
 
 
 def validate_vpc_input(args):
@@ -88,10 +88,17 @@ def main():
     parser.add_argument(
         "-o",
         "--output-file",
+        required=False,
+        default=f"{os.path.basename(os.path.dirname(__file__))}.yml",
+        help="Output file. Extension determines the file format",
+    )
+    parser.add_argument(
+        "-d",
+        "--output-dir",
+        required=False,
+        help="Output directory to write all the templates to.",
         type=str,
-        required=True,
-        help="The name and path of the main output file. If you specify extra arguments, it will create a parameters"
-        " file as well for creating your CFN Stack",
+        dest=DIR_DEST,
     )
     parser.add_argument(
         "--cfn-config-file",
@@ -239,15 +246,24 @@ def main():
 
     print("Arguments: " + str(args._))
     templates_and_params = generate_full_template(**vars(args))
-    write_template_to_file(templates_and_params[0], args.output_file)
+
+    template_file = FileArtifact(
+        args.output_file, template=templates_and_params[0], **vars(args)
+    )
+    template_file.create()
     cfn_config = build_config_template_file(templates_and_params[1])
     if KEYISSET("CfnConfigFile", vars(args)):
-        config_file_path = args.CfnConfigFile
+        config_file_name = args.CfnConfigFile
     else:
-        config_file_path = f"{args.output_file.split('.')[0]}.config.json"
-    write_config_template_file(cfn_config, config_file_path)
-    with open(f"{args.output_file.split('.')[0]}.params.json", "w") as params_fd:
-        params_fd.write(json.dumps(templates_and_params[1], indent=4))
+        config_file_name = f"{args.output_file.split('.')[0]}.config.json"
+    config_file = FileArtifact(config_file_name, content=cfn_config, **vars(args))
+    config_file.create()
+    params_file = FileArtifact(
+        f"{args.output_file.split('.')[0]}.params.json",
+        content=templates_and_params[1],
+        **vars(args),
+    )
+    params_file.create()
 
 
 if __name__ == "__main__":

@@ -23,7 +23,7 @@ from ecs_composex.common.cfn_params import (
     USE_ONDEMAND_T,
 )
 from ecs_composex.common.tagging import generate_tags_parameters, add_object_tags
-from ecs_composex.common.templates import upload_template
+from ecs_composex.common.templates import upload_template, FileArtifact
 from ecs_composex.compute import create_compute_stack
 from ecs_composex.compute.compute_params import (
     TARGET_CAPACITY_T,
@@ -92,17 +92,14 @@ def add_vpc_to_root(root_template, session, tags_params=None, **kwargs):
     if tags_params is None:
         tags_params = ()
     vpc_template = create_vpc_template(session=session, **kwargs)
-    vpc_template_url = upload_template(
-        vpc_template.to_json(), kwargs["BucketName"], "vpc.json", session=session
-    )
-    LOG.debug(vpc_template_url)
-    with open(f"{kwargs['output_file']}.vpc.json", "w") as vpc_fd:
-        vpc_fd.write(vpc_template.to_json())
+    vpc_file = FileArtifact("vpc.yml", template=vpc_template, **kwargs)
+    vpc_file.create()
+    LOG.debug(vpc_file.url)
     parameters = {ROOT_STACK_NAME_T: Ref("AWS::StackName")}
     for param in tags_params:
         parameters.update({param.title: Ref(param.title)})
     vpc_stack = root_template.add_resource(
-        Stack("Vpc", TemplateURL=vpc_template_url, Parameters=parameters)
+        Stack("Vpc", TemplateURL=vpc_file.url, Parameters=parameters)
     )
     return vpc_stack
 
@@ -147,6 +144,8 @@ def add_compute(
     depends_on = []
     root_template.add_parameter(TARGET_CAPACITY)
     compute_template = create_compute_stack(session, **kwargs)
+    compute_file = FileArtifact("compute.yml", template=compute_template[0], **kwargs)
+    compute_file.create()
     parameters = {
         ROOT_STACK_NAME_T: Ref("AWS::StackName"),
         TARGET_CAPACITY_T: Ref(TARGET_CAPACITY),
@@ -181,16 +180,12 @@ def add_compute(
         build_parameters_file(
             params, vpc_params.APP_SUBNETS_T, kwargs[vpc_params.APP_SUBNETS_T]
         )
-
+        params_file = FileArtifact("compute.params.json", content=parameters)
+        params_file.create()
     compute_stack = root_template.add_resource(
         Stack(
             "Compute",
-            TemplateURL=upload_template(
-                template_body=compute_template[0].to_json(),
-                bucket_name=kwargs["BucketName"],
-                file_name="compute.json",
-                session=session,
-            ),
+            TemplateURL=compute_file.url,
             Parameters=parameters,
             DependsOn=dependencies,
         )
@@ -215,12 +210,8 @@ def add_x_resources(template, session, tags=None, **kwargs):
             create_function = get_mod_function(res_type, function_name)
             if create_function:
                 x_template = create_function(session=session, **kwargs)
-                x_template_url = upload_template(
-                    x_template.to_json(),
-                    kwargs["BucketName"],
-                    f"{res_type}.json",
-                    session=session,
-                )
+                x_file = FileArtifact(f"{res_type}.yml", template=x_template, **kwargs)
+                x_file.create()
                 depends_on.append(res_type.title().strip())
                 parameters = {ROOT_STACK_NAME_T: Ref("AWS::StackName")}
                 for tag in tags:
@@ -228,7 +219,7 @@ def add_x_resources(template, session, tags=None, **kwargs):
                 template.add_resource(
                     Stack(
                         res_type.title().strip(),
-                        TemplateURL=x_template_url,
+                        TemplateURL=x_file.url,
                         Parameters=parameters,
                     )
                 )
@@ -249,11 +240,10 @@ def add_services(template, depends, session, vpc_stack=None, **kwargs):
     :param kwargs: optional parameters
     """
     services_template = create_services_templates(session=session, **kwargs)
-    services_template_url = upload_template(
-        template_body=services_template.to_json(),
-        bucket_name=kwargs["BucketName"],
-        file_name="services.json",
+    services_root_file = FileArtifact(
+        "services.yml", template=services_template, **kwargs
     )
+    services_root_file.create()
     parameters = {ROOT_STACK_NAME_T: Ref("AWS::StackName")}
     if KEYISSET("CreateCluster", kwargs):
         parameters[ecs_params.CLUSTER_NAME_T] = Ref(ROOT_CLUSTER_NAME)
@@ -284,7 +274,7 @@ def add_services(template, depends, session, vpc_stack=None, **kwargs):
     return Stack(
         "Services",
         template=template,
-        TemplateURL=services_template_url,
+        TemplateURL=services_root_file.url,
         Parameters=parameters,
         DependsOn=depends,
     )

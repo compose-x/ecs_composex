@@ -7,9 +7,10 @@ import sys
 import argparse
 from boto3 import session
 
-from ecs_composex.common.aws import CURATED_AZS
+from ecs_composex.common.aws import CURATED_AZS, BUCKET_NAME
 from ecs_composex.vpc import create_vpc_template
-from ecs_composex import XFILE_DEST
+from ecs_composex import XFILE_DEST, DIR_DEST
+from ecs_composex.common.templates import FileArtifact
 
 
 def main():
@@ -32,6 +33,14 @@ def main():
         "default use default region from config or environment vars",
     )
     parser.add_argument(
+        "-d",
+        "--output-dir",
+        required=False,
+        help="Output directory to write all the templates to.",
+        type=str,
+        dest=DIR_DEST,
+    )
+    parser.add_argument(
         "--az",
         dest="AwsAzs",
         action="append",
@@ -48,16 +57,32 @@ def main():
         action="store_true",
         help="Whether you want a single NAT for your application subnets or not. Not recommended for production",
     )
+    parser.add_argument(
+        "--no-upload",
+        action="store_true",
+        default=False,
+        help="Do not upload the file to S3.",
+    )
+    parser.add_argument(
+        "-b",
+        "--bucket-name",
+        type=str,
+        required=False,
+        default=BUCKET_NAME,
+        help="Bucket name to upload the templates to",
+        dest="BucketName",
+    )
     parser.add_argument("_", nargs="*")
     args = parser.parse_args()
 
     template = create_vpc_template(**vars(args))
+    file_name = "vpc.yml"
     if args.output_file:
-        with open(args.output_file, "w") as tpl_fd:
-            if args.output_file.endswith(".yml") or args.output_file.endswith(".yaml"):
-                tpl_fd.write(template.to_yaml())
-            else:
-                tpl_fd.write(template.to_json())
+        file_name = args.output_file
+    template_file = FileArtifact(file_name, template=template, **vars(args))
+    template_file.write()
+    if not args.no_upload:
+        template_file.upload()
     return 0
 
 

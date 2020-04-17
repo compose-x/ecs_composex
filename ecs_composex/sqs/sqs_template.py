@@ -26,7 +26,7 @@ from ecs_composex.common.cfn_conditions import (
 )
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME, ROOT_STACK_NAME_T
 from ecs_composex.common.outputs import formatted_outputs
-from ecs_composex.common.templates import upload_template
+from ecs_composex.common.templates import FileArtifact
 from ecs_composex.sqs.sqs_params import (
     SQS_NAME_T,
     SQS_NAME,
@@ -132,10 +132,14 @@ def generate_queue_template(queue_name, properties, redrive_queue=None, tags=Non
     """
     Function that generates a single queue template
 
+    :param redrive_queue: SQS Redrive queue for DLQ
+    :type redrive_queue: str
     :param queue_name: Name of the Queue as defined in ComposeX File
     :type queue_name: str
     :param properties: The queue properties
     :type properties: dict
+    :param tags: tags to add to the queue
+    :type tags: troposphere.Tags
 
     :returns: queue_template
     :rtype: troposphere.Template
@@ -220,17 +224,15 @@ def add_queue_stack(queue_name, queue, queues, session, tags, **kwargs):
             parameters.update({tag.title: Ref(tag.title)})
     LOG.debug(parameters)
     LOG.debug(session)
-    template_url = upload_template(
-        template_body=queue_tpl.to_json(),
-        bucket_name=kwargs["BucketName"],
-        file_name=f"{queue_name}.json",
-        session=session,
+    template_file = FileArtifact(
+        f"{queue_name}.yml", template=queue_tpl, session=session, **kwargs
     )
+    template_file.create()
     queue_stack = Stack(
         queue_name,
         Parameters=parameters,
         DependsOn=depends_on,
-        TemplateURL=template_url,
+        TemplateURL=template_file.url,
     )
     return queue_stack
 

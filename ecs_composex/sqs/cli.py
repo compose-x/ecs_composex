@@ -3,15 +3,33 @@
 
 """Console script for ecs_composex.sqs"""
 import sys
+import os
 import argparse
 
+from ecs_composex import DIR_DEST
 from ecs_composex.common.aws import BUCKET_NAME
 from ecs_composex.sqs import create_sqs_template
+from ecs_composex.common.templates import FileArtifact
 
 
 def main():
     """Console script for ecs_composex."""
     parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-o",
+        "--output-file",
+        required=False,
+        default=f"{os.path.basename(os.path.dirname(__file__))}.yml",
+        help="Output file. Extension determines the file format",
+    )
+    parser.add_argument(
+        "-d",
+        "--output-dir",
+        required=False,
+        help="Output directory to write all the templates to.",
+        type=str,
+        dest=DIR_DEST,
+    )
     parser.add_argument(
         "-b",
         "--bucket-name",
@@ -28,18 +46,13 @@ def main():
         dest="ComposeXFile",
         help="Path to the Docker Compose / ComposeX file",
     )
-    parser.add_argument(
-        "-o", "--output-file", required=True, help="Output file for the template body"
-    )
     parser.add_argument("_", nargs="*")
     args = parser.parse_args()
 
     template = create_sqs_template(**vars(args))
-    with open(args.output_file, "w") as tpl_fd:
-        if args.output_file.endswith(".yml") or args.output_file.endswith(".yaml"):
-            tpl_fd.write(template.to_yaml())
-        else:
-            tpl_fd.write(template.to_json())
+    template_file = FileArtifact(args.output_file, template=template, **vars(args))
+    template_file.create()
+
     return 0
 
 

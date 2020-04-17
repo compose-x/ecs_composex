@@ -3,11 +3,22 @@
 """
 Functions to manage a template and wheter it should be stored in S3
 """
+import yaml
+
+try:
+    from yaml import CDumper as Dumper
+except ImportError:
+    from yaml import Dumper
+from os import path, mkdir
 
 import boto3
+import json
 from botocore.exceptions import ClientError
+from datetime import datetime as dt
+from troposphere import Template
 
-from ecs_composex.common import DATE_PREFIX
+from ecs_composex import DIR_DEST
+from ecs_composex.common import DATE_PREFIX, KEYISSET
 from ecs_composex.common import LOG
 
 
@@ -100,6 +111,7 @@ def upload_template(
     prefix=None,
     session=None,
     client=None,
+    mime=None,
     **kwargs,
 ):
     """Upload template_body to a file in s3 with given prefix and bucket_name
@@ -125,7 +137,8 @@ def upload_template(
     if session is None:
         session = boto3.session.Session()
     assert check_bucket(bucket_name=bucket_name, session=session)
-
+    if mime is None:
+        mime = "application/json"
     if prefix is None:
         prefix = DATE_PREFIX
 
@@ -138,7 +151,7 @@ def upload_template(
             Key=key,
             Bucket=bucket_name,
             ContentEncoding="utf-8",
-            ContentType="application/json",
+            ContentType=mime,
             ServerSideEncryption="AES256",
             **kwargs,
         )
@@ -154,3 +167,130 @@ def upload_template(
     except Exception as error:
         LOG.debug(error)
         return None
+
+
+def write_file_to_directory(file_content, directory, file_name=None, **kwargs):
+    """
+    Function to write a file to a directory.
+    :param file_content:
+    :param directory:
+    :param file_name:
+    :return:
+    """
+
+
+class FileArtifact(object):
+    """
+    Class for a template file built.
+    """
+
+    url = None
+    body = None
+    template = None
+    file_name = None
+    mime = "text/plain"
+    session = boto3.session.Session()
+    bucket = None
+    uploadable = False
+    validated = False
+    output_dir = f"/tmp/{dt.utcnow().strftime('%s')}"
+    uploaded = False
+
+    def upload(self):
+        if not self.uploadable:
+            LOG.error("BucketName was not specified, not attempting upload")
+        elif not self.validated:
+            LOG.error("The template was not correctly validated. Not uploading")
+        else:
+            self.url = upload_template(
+                self.body, self.bucket, self.file_name, mime=self.mime, validate=False
+            )
+            LOG.info(f"Template {self.file_name} uploaded successfully to {self.url}")
+            self.uploaded = True
+
+    def write(self):
+        try:
+            mkdir(self.output_dir)
+            LOG.info(f"Created directory {self.output_dir} to store files")
+        except FileExistsError:
+            LOG.debug(f"Output directory {self.output_dir} already exists")
+        with open(f"{self.output_dir}/{self.file_name}", "w") as template_fd:
+            template_fd.write(self.body)
+            LOG.info(
+                f"Template {self.file_name} written successfully at {self.output_dir}/{self.file_name}"
+            )
+
+    def validate(self):
+        try:
+            self.session.client("cloudformation").validate_template(
+                TemplateBody=self.template.to_json()
+            )
+            LOG.debug(f"Template {self.file_name} was validated successfully by CFN")
+            self.validated = True
+        except ClientError as error:
+            LOG.error(error)
+
+    def define_file_specs(self):
+        """
+        Function to set the file body from template if self.template is Template
+        :return:
+        """
+        if self.file_name.endswith(".json"):
+            self.mime = "application/json"
+        elif self.file_name.endswith(".yml") or self.file_name.endswith(".yaml"):
+            self.mime = "application/x-yaml"
+        if isinstance(self.template, Template):
+            if self.mime == "application/x-yaml":
+                self.body = self.template.to_yaml()
+            else:
+                self.body = self.template.to_json()
+        elif isinstance(self.content, (list, dict, tuple)):
+            self.validated = True
+            self.uploadable = True
+            if self.mime == "application/x-yaml":
+                self.body = yaml.dump(self.content, Dumper=Dumper)
+            elif self.mime == "application/json":
+                self.body = json.dumps(self.content, indent=4)
+
+    def set_from_kwargs(self, **kwargs):
+        """
+        Function to set internal settings based on kwargs keys
+        :param kwargs:
+        """
+        if KEYISSET(DIR_DEST, kwargs):
+            self.output_dir = path.abspath(kwargs[DIR_DEST])
+        if KEYISSET("BucketName", kwargs):
+            self.bucket = kwargs["BucketName"]
+            self.uploadable = True
+
+    def create(self):
+        """
+        Function to write to file and upload in a single function
+        """
+        self.write()
+        self.upload()
+
+    def __init__(self, file_name, template=None, content=None, session=None, **kwargs):
+        """
+        Init function for our template file object
+        :param file_name: Name of the file. Mandatory
+        :param template: If you are providing a template to generate
+        :param body: raw content to write
+        :param session:
+        :param kwargs:
+        """
+        self.file_name = file_name
+        if template is not None and not isinstance(template, Template):
+            raise TypeError("template must be of type", Template, "got", type(template))
+        elif isinstance(template, Template):
+            self.template = template
+            self.validate()
+        if session is not None:
+            self.session = session
+        self.set_from_kwargs(**kwargs)
+        if content is not None and isinstance(content, (tuple, dict, str, list)):
+            self.content = content
+        self.define_file_specs()
+
+    def __repr__(self):
+        return f"{self.output_dir}/{self.file_name}"
