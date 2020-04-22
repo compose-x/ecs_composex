@@ -74,6 +74,7 @@ coverage: ## check code coverage quickly with the default Python
 docs: clean-c9 ## generate Sphinx HTML documentation, including API docs
 	rm -f docs/ecs_composex.rst
 	rm -f docs/modules.rst
+	find docs -name "ecs_composex.*.rst" -print -delete
 	sphinx-apidoc -o docs/ ecs_composex
 	$(MAKE) -C docs clean
 	$(MAKE) -C docs html

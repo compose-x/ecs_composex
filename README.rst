@@ -101,20 +101,24 @@ ECS Account settings can be found at https://docs.aws.amazon.com/AmazonECS/lates
 
 .. code-block:: bash
 
-    aws ecs put-account-setting --name awsvpcTrunking --value enabled
-    aws ecs put-account-setting --name serviceLongArnFormat --value enabled
-    aws ecs put-account-setting --name taskLongArnFormat --value enabled
-    aws ecs put-account-setting --name containerInstanceLongArnFormat --value enabled
-    aws ecs put-account-setting --name containerInsights --value enabled
+    aws ecs put-account-setting-default --name awsvpcTrunking --value enabled
+    aws ecs put-account-setting-default --name serviceLongArnFormat --value enabled
+    aws ecs put-account-setting-default --name taskLongArnFormat --value enabled
+    aws ecs put-account-setting-default --name containerInstanceLongArnFormat --value enabled
+    aws ecs put-account-setting-default --name containerInsights --value enabled
 
-If you have multiple profiles and use awsume you could iterate over each account and run the above commands to apply it
-for your profiles as you switch to them.
 
-.. warning::
+.. hint::
 
-    If you do not do that as the root user of the account, you will have to enable that for IAM users or roles specifically.
-    A Role/Group/User can have an IAM policy allowing them to put the ecs account settings, but then these settings will only
-    apply to the role / user that ran the command.
+    If you want to enable these settings for a specific IAM role you can assume yourself, from CLI you can use `aws ecs put-account-setting` as opposed to `aws ecs put-account-setting-default`
+
+    .. code-block:: bash
+
+        aws ecs put-account-setting --name awsvpcTrunking --value enabled
+        aws ecs put-account-setting --name serviceLongArnFormat --value enabled
+        aws ecs put-account-setting --name taskLongArnFormat --value enabled
+        aws ecs put-account-setting --name containerInstanceLongArnFormat --value enabled
+        aws ecs put-account-setting --name containerInsights --value enabled
 
 IAM Permissions to execute ECS ComposeX
 ----------------------------------------
