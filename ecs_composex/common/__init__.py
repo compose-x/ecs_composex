@@ -201,10 +201,22 @@ def setup_logging():
     :rtype: Logger
     """
     level = environ.get("LOGLEVEL")
+    default_level = True
+    formats = {
+        'INFO': logthings.Formatter(
+            "%(asctime)s [%(levelname)s], %(message)s",
+            "%Y-%m-%d %H:%M:%S",
+        ),
+        'DEBUG': logthings.Formatter(
+            "%(asctime)s [%(levelname)s], %(filename)s.%(lineno)d , %(funcName)s, %(message)s",
+            "%Y-%m-%d %H:%M:%S",
+        )
+    }
 
     if level is not None and isinstance(level, str):
         print("SETTING TO", level.upper())
         logthings.basicConfig(level=level.upper())
+        default_level = False
     else:
         logthings.basicConfig(level="INFO")
 
@@ -214,10 +226,12 @@ def setup_logging():
     the_logger = logthings.getLogger("EcsComposeX")
 
     if not the_logger.handlers:
-        formatter = logthings.Formatter(
-            "[%(levelname)s] %(asctime)s, %(funcName)s, %(message)s",
-            "%Y-%m-%d %H:%M:%S",
-        )
+        if default_level:
+            formatter = formats['INFO']
+        elif KEYISSET(level.upper(), formats):
+            formatter = formats[level.upper()]
+        else:
+            formatter = formats['DEBUG']
         handler = logthings.StreamHandler(sys.stdout)
         handler.setFormatter(formatter)
         the_logger.addHandler(handler)

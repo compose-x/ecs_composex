@@ -9,7 +9,8 @@ import argparse
 from ecs_composex import DIR_DEST
 from ecs_composex.common.aws import BUCKET_NAME
 from ecs_composex.sqs import create_sqs_template
-from ecs_composex.common.templates import FileArtifact
+from ecs_composex.common.files import FileArtifact
+from ecs_composex.common.stacks import render_final_template
 
 
 def main():
@@ -50,6 +51,7 @@ def main():
     args = parser.parse_args()
 
     template = create_sqs_template(**vars(args))
+    render_final_template(template)
     template_file = FileArtifact(args.output_file, template=template, **vars(args))
     template_file.create()
 

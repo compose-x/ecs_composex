@@ -11,13 +11,13 @@ from troposphere.ecs import (
     NetworkConfiguration,
     DeploymentController,
 )
-
+from ecs_composex import CFN_EXPORT_DELIMITER as delim
 from ecs_composex.common import build_template, cfn_params, add_parameters
 from ecs_composex.common import cfn_conditions
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.outputs import formatted_outputs
 from ecs_composex.common.tagging import add_object_tags
-from ecs_composex.common.templates import FileArtifact
+from ecs_composex.common.files import FileArtifact
 from ecs_composex.ecs import ecs_conditions
 from ecs_composex.ecs import ecs_params
 from ecs_composex.ecs.ecs_iam import add_service_roles, assign_x_resources_to_service
@@ -160,7 +160,7 @@ def generate_service_template_outputs(template, service_name):
         formatted_outputs(
             [{ecs_params.SERVICE_GROUP_ID_T: GetAtt(ecs_params.SG_T, "GroupId")}],
             export=True,
-            prefix=f"${{{ROOT_STACK_NAME_T}}}-{service_name}",
+            prefix=f"${{{ROOT_STACK_NAME_T}}}{delim}{service_name}",
         )
     )
 
@@ -221,8 +221,4 @@ def generate_service_template(
     if tags and tags[1]:
         for resource in service_tpl.resources:
             add_object_tags(service_tpl.resources[resource], tags[1])
-    service_tpl_file = FileArtifact(
-        f"{service_name}.yml", service_tpl, session=session, **kwargs
-    )
-    service_tpl_file.create()
-    return service_tpl_file.url, parameters, stack_dependencies
+    return service_tpl, parameters, stack_dependencies

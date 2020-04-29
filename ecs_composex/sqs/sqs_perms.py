@@ -7,6 +7,7 @@ based on pre-defined SQS policies for consumers
 from troposphere import Sub, ImportValue, If
 from troposphere.iam import Policy as IamPolicy
 from troposphere.ecs import Environment
+from ecs_composex import CFN_EXPORT_DELIMITER as delim
 from ecs_composex.sqs import sqs_params
 from ecs_composex.common import LOG
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
@@ -66,7 +67,7 @@ def generate_queue_strings(queue_name):
     """
     ssm_string = f"/${{{ROOT_STACK_NAME_T}}}{SQS_SSM_PREFIX}{queue_name}"
     ssm_export = Sub(r"{{resolve:ssm:%s:1}}" % (ssm_string))
-    cfn_string = f"${{{ROOT_STACK_NAME_T}}}-{queue_name}-{sqs_params.SQS_ARN_T}"
+    cfn_string = f"${{{ROOT_STACK_NAME_T}}}{delim}{queue_name}{delim}{sqs_params.SQS_ARN_T}"
     cfn_import = ImportValue(Sub(cfn_string))
     return (ssm_export, cfn_import)
 

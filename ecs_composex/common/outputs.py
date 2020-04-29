@@ -4,6 +4,7 @@ Functions to format CFN template Outputs
 """
 
 from troposphere import Output, Export, Sub, If
+from ecs_composex import CFN_EXPORT_DELIMITER
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.cfn_conditions import USE_STACK_NAME_CON_T
 
@@ -20,9 +21,10 @@ def cfn_resource_type(object_name, strip=True):
     return res_type
 
 
-def formatted_outputs(comments, export=False, prefix=None, use_root_stack=False):
+def formatted_outputs(comments, export=False, prefix=None, use_root_stack=False, delimiter=None):
     """Function to format the outputs easily and add exports based on a prefix
 
+    :param delimiter: delimimiter to use between parts of the export
     :param comments: List of KeyPair values representing the output
     :type comments: list
     :param export: Whether or not this output should export to CFN Exports. Default: False
@@ -36,6 +38,8 @@ def formatted_outputs(comments, export=False, prefix=None, use_root_stack=False)
     :rtype: list
     """
     outputs = []
+    if delimiter is None:
+        delimiter = CFN_EXPORT_DELIMITER
     if isinstance(comments, list):
         for comment in comments:
             if isinstance(comment, dict):
@@ -46,13 +50,13 @@ def formatted_outputs(comments, export=False, prefix=None, use_root_stack=False)
                         args["Export"] = Export(
                             If(
                                 USE_STACK_NAME_CON_T,
-                                Sub(f"${{AWS::StackName}}-{keys[0]}"),
-                                Sub(f"${{{ROOT_STACK_NAME_T}}}-{keys[0]}"),
+                                Sub(f"${{AWS::StackName}}{delimiter}{keys[0]}"),
+                                Sub(f"${{{ROOT_STACK_NAME_T}}}{delimiter}{keys[0]}"),
                             )
                         )
                     elif use_root_stack:
-                        Export(Sub(f"${{{ROOT_STACK_NAME_T}}}-{keys[0]}"))
+                        Export(Sub(f"${{{ROOT_STACK_NAME_T}}}{delimiter}{keys[0]}"))
                     elif isinstance(prefix, str):
-                        args["Export"] = Export(Sub(f"{prefix}-{keys[0]}"))
+                        args["Export"] = Export(Sub(f"{prefix}{delimiter}{keys[0]}"))
                 outputs.append(Output(**args))
     return outputs

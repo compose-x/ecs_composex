@@ -9,6 +9,7 @@ from troposphere.cloudformation import Stack
 from troposphere.sqs import Queue, RedrivePolicy
 from troposphere.ssm import Parameter as SsmParameter
 
+from ecs_composex import CFN_EXPORT_DELIMITER as delim
 from ecs_composex.common.tagging import add_object_tags, generate_tags_parameters
 from ecs_composex.common import (
     build_template,
@@ -26,14 +27,16 @@ from ecs_composex.common.cfn_conditions import (
 )
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME, ROOT_STACK_NAME_T
 from ecs_composex.common.outputs import formatted_outputs
-from ecs_composex.common.templates import FileArtifact
 from ecs_composex.sqs.sqs_params import (
     SQS_NAME_T,
     SQS_NAME,
     DLQ_NAME_T,
     DLQ_NAME,
     SQS_ARN_T,
+    DLQ_ARN, DLQ_ARN_T
 )
+
+from ecs_composex.common.stacks import ComposeXStack
 
 RES_KEY = f"x-{os.path.basename(os.path.dirname(os.path.abspath(__file__)))}"
 SQS_SSM_PREFIX = f"/{RES_KEY}/"
@@ -85,9 +88,10 @@ def add_redrive_policy(queue_tpl, queue_name, properties, dlq_name):
     )
     ssm_resolve = Sub(r"{{resolve:ssm:%s:1}}" % (ssm_string))
     cfn_import = ImportValue(
-        Sub(f"${{{ROOT_STACK_NAME_T}}}" f"-${{{DLQ_NAME_T}}}" f"-{SQS_ARN_T}")
+        Sub(f"${{{ROOT_STACK_NAME_T}}}" f"{delim}" f"${{{DLQ_NAME_T}}}" f"{delim}" f"{SQS_ARN_T}")
     )
-    redrive_queue_import = If(USE_SSM_ONLY_T, ssm_resolve, cfn_import)
+    redrive_queue_import = If(USE_SSM_ONLY_T, ssm_resolve, Ref(DLQ_ARN))
+    queue_tpl.add_parameter(DLQ_ARN)
     queue_tpl.add_parameter(DLQ_NAME)
     policy = properties["RedrivePolicy"]
     policy["deadLetterTargetArn"] = redrive_queue_import
@@ -165,11 +169,11 @@ def generate_queue_template(queue_name, properties, redrive_queue=None, tags=Non
     if tags:
         add_object_tags(queue, tags)
     add_ssm_parameters(queue_template, queue)
-    cfn_prefix = f"${{{ROOT_STACK_NAME_T}}}-${{{SQS_NAME_T}}}"
+    cfn_prefix = f"${{{ROOT_STACK_NAME_T}}}{delim}${{{SQS_NAME_T}}}"
     queue_template.add_output(
         formatted_outputs(
             [
-                {SQS_NAME_T: GetAtt(queue, "QueueName")},
+                {SQS_NAME_T: GetAtt(queue, SQS_NAME_T)},
                 {SQS_ARN_T: GetAtt(queue, "Arn")},
             ],
             export=True,
@@ -183,6 +187,7 @@ def add_queue_stack(queue_name, queue, queues, session, tags, **kwargs):
     """
     Function to define the Queue template settings for the Nested Stack
 
+    :param tags: tags to add to the resources of the stack.
     :param queue_name: Name of the queue as defined in Docker ComposeX file
     :param queue: the queue
     :param queues: all the queues in a list
@@ -190,7 +195,7 @@ def add_queue_stack(queue_name, queue, queues, session, tags, **kwargs):
     :param kwargs: optional arguments
 
     :return: Queue Stack object
-    :rtype: troposphere.cloudformation.Stack
+    :rtype: ecs_composex.common.files.ComposeXStack
     """
     depends_on = []
     parameters = {
@@ -212,7 +217,10 @@ def add_queue_stack(queue_name, queue, queues, session, tags, **kwargs):
                 f"Queue {redrive_target} defined as DLQ for {queue_name} but is not defined"
             )
         depends_on.append(redrive_target)
-        parameters.update({DLQ_NAME_T: redrive_target})
+        parameters.update({
+            DLQ_ARN_T: GetAtt(redrive_target, f"Outputs.{SQS_ARN_T}"),
+            DLQ_NAME_T: GetAtt(redrive_target, f"Outputs.{SQS_NAME_T}")
+        })
         queue_tpl = generate_queue_template(
             queue_name, properties, redrive_target, tags=tags[1]
         )
@@ -224,15 +232,12 @@ def add_queue_stack(queue_name, queue, queues, session, tags, **kwargs):
             parameters.update({tag.title: Ref(tag.title)})
     LOG.debug(parameters)
     LOG.debug(session)
-    template_file = FileArtifact(
-        f"{queue_name}.yml", template=queue_tpl, session=session, **kwargs
-    )
-    template_file.create()
-    queue_stack = Stack(
+    queue_stack = ComposeXStack(
         queue_name,
+        template=queue_tpl,
         Parameters=parameters,
         DependsOn=depends_on,
-        TemplateURL=template_file.url,
+        **kwargs
     )
     return queue_stack
 

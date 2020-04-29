@@ -32,7 +32,7 @@ def create_vpc_template(session=None, **kwargs):
     LOG.debug(azs)
     cidr_block = kwargs["VpcCidr"]
     single_nat = KEYISSET("SingleNat", kwargs)
-    template = generate_vpc_template(cidr_block, azs, session, single_nat=single_nat)
+    template = generate_vpc_template(cidr_block, azs, single_nat=single_nat)
     if KEYISSET(XFILE_DEST, kwargs):
         params_and_tags = generate_tags_parameters(
             load_composex_file(kwargs[XFILE_DEST])
