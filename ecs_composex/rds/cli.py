@@ -8,7 +8,8 @@ import argparse
 
 from ecs_composex import DIR_DEST
 from ecs_composex.common.aws import BUCKET_NAME
-from ecs_composex.common.templates import FileArtifact
+from ecs_composex.common.files import FileArtifact
+from ecs_composex.common.stacks import  render_final_template
 from ecs_composex.rds import create_rds_template
 
 
@@ -65,6 +66,7 @@ def main():
     args = vars(pargs)
     template = create_rds_template(**args)
     if template:
+        render_final_template(template)
         template_file = FileArtifact(pargs.output_file, template=template, **args)
         template_file.create()
         return 0

@@ -30,6 +30,7 @@ from ecs_composex.compute.compute_params import (
     TARGET_CAPACITY,
     MIN_CAPACITY_T,
 )
+from ecs_composex.ecs import ServicesStack
 from ecs_composex.ecs import ecs_params, create_services_templates
 from ecs_composex.ecs.ecs_conditions import (
     GENERATED_CLUSTER_NAME_CON_T,
@@ -192,7 +193,7 @@ def add_compute(
     return compute_stack
 
 
-def add_x_resources(template, session, tags=None, **kwargs):
+def add_x_resources(template, services_stack, session, tags=None, **kwargs):
     """
     Function to add each X resource from the compose file
     """
@@ -207,7 +208,7 @@ def add_x_resources(template, session, tags=None, **kwargs):
             function_name = f"create_{res_type}_template"
             create_function = get_mod_function(res_type, function_name)
             if create_function:
-                x_template = create_function(session=session, **kwargs)
+                x_template = create_function(services_stack, session=session, **kwargs)
                 depends_on.append(res_type.title().strip())
                 parameters = {ROOT_STACK_NAME_T: Ref("AWS::StackName")}
                 for tag in tags:
@@ -237,40 +238,19 @@ def add_services(template, depends, session, vpc_stack=None, **kwargs):
     :param kwargs: optional parameters
     """
     services_template = create_services_templates(session=session, **kwargs)
-    parameters = {ROOT_STACK_NAME_T: Ref("AWS::StackName")}
-    if KEYISSET("CreateCluster", kwargs):
-        parameters[ecs_params.CLUSTER_NAME_T] = Ref(ROOT_CLUSTER_NAME)
-    else:
-        parameters[ecs_params.CLUSTER_NAME_T] = Ref(CLUSTER_NAME)
-    if vpc_stack:
-        parameters.update(
-            {
-                vpc_params.VPC_ID_T: GetAtt(
-                    vpc_stack, f"Outputs.{vpc_params.VPC_ID_T}"
-                ),
-                vpc_params.PUBLIC_SUBNETS_T: GetAtt(
-                    vpc_stack, f"Outputs.{vpc_params.PUBLIC_SUBNETS_T}"
-                ),
-                vpc_params.APP_SUBNETS_T: GetAtt(
-                    vpc_stack, f"Outputs.{vpc_params.APP_SUBNETS_T}"
-                ),
-            }
-        )
-    else:
-        parameters.update(
-            {
-                vpc_params.VPC_ID_T: Ref(vpc_params.VPC_ID),
-                vpc_params.PUBLIC_SUBNETS_T: Join(",", Ref(vpc_params.PUBLIC_SUBNETS)),
-                vpc_params.APP_SUBNETS_T: Join(",", Ref(vpc_params.APP_SUBNETS)),
-            }
-        )
-    return template.add_resource(ComposeXStack(
+    stack = ServicesStack(
         "Services",
         template=services_template,
-        Parameters=parameters,
         DependsOn=depends,
         **kwargs
-    ))
+    )
+    if KEYISSET("CreateCluster", kwargs):
+        stack.add_cluster_parameter({ecs_params.CLUSTER_NAME_T: Ref(ROOT_CLUSTER_NAME)})
+    else:
+        stack.add_cluster_parameter({ecs_params.CLUSTER_NAME_T: Ref(CLUSTER_NAME)})
+    if vpc_stack:
+        stack.add_vpc_stack(vpc_stack)
+    return template.add_resource(stack)
 
 
 def add_ecs_cluster(template, depends_on=None):
@@ -336,11 +316,14 @@ def generate_full_template(session=None, **kwargs):
     LOG.debug(kwargs)
     validate_kwargs(["BucketName"], kwargs)
     vpc_stack = None
-    depends_on = add_x_resources(template, session=session, **kwargs)
+    depends_on = []
+    services_stack = add_services(template, depends_on, session=session, vpc_stack=vpc_stack, **kwargs)
+    depends_on += add_x_resources(template, services_stack, session=session, **kwargs)
     if KEYISSET("CreateVpc", kwargs):
         vpc_stack = add_vpc_to_root(template, session, tags_params[0], **kwargs)
         depends_on.append(vpc_stack)
         add_object_tags(vpc_stack, tags_params[1])
+        services_stack.add_vpc_stack(vpc_stack)
     else:
         generate_vpc_parameters(template, stack_params, **kwargs)
         LOG.debug(stack_params)
@@ -349,7 +332,6 @@ def generate_full_template(session=None, **kwargs):
     if KEYISSET("CreateCluster", kwargs):
         add_ecs_cluster(template, depends_on)
         depends_on.append(ROOT_CLUSTER_NAME)
-
     add_compute(
         template,
         depends_on,
@@ -359,8 +341,6 @@ def generate_full_template(session=None, **kwargs):
         session=session,
         **kwargs,
     )
-    add_services(template, depends_on, session=session, vpc_stack=vpc_stack, **kwargs)
-
     for resource in template.resources:
         add_object_tags(template.resources[resource], tags_params[1])
     return template, stack_params

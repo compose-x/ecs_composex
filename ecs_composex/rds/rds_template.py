@@ -4,10 +4,9 @@ Main module template to generate the RDS Root template and all stacks according 
 """
 
 from troposphere import Sub, Ref, Join
-from troposphere.cloudformation import Stack
 from ecs_composex.common import LOG, build_template, validate_kwargs, add_parameters
 from ecs_composex.common.tagging import add_object_tags, generate_tags_parameters
-from ecs_composex.common.templates import FileArtifact
+from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.vpc.vpc_params import (
     VPC_ID,
     VPC_ID_T,
@@ -16,7 +15,11 @@ from ecs_composex.vpc.vpc_params import (
     STORAGE_SUBNETS,
     STORAGE_SUBNETS_T,
 )
-from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
+from ecs_composex.vpc.vpc_conditions import (
+    USE_VPC_MAP_ID_CON_T, USE_VPC_MAP_ID_CON,
+    NOT_USE_VPC_MAP_ID_CON_T, NOT_USE_VPC_MAP_ID_CON
+)
+from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T, ROOT_STACK_NAME
 from ecs_composex.rds.rds_params import (
     RES_KEY,
     DBS_SUBNET_GROUP,
@@ -40,6 +43,7 @@ def add_db_stack(
 ):
     """
     Function to add the DB stack to the root stack
+    :param params_and_tags: parameters and tags to add to the stack objects.
     :param dbs_subnet_group: Subnet group for DBs
     :type dbs_subnet_group: troposphere.rds.DBSubnetGroup
     :param root_template: root template to add the nested stack to
@@ -71,14 +75,36 @@ def add_db_stack(
         add_parameters(db_template, params_and_tags[0])
         for obj in db_template.resources:
             add_object_tags(db_template.resources[obj], params_and_tags[1])
-    db_template_file = FileArtifact(f"{db_name}.yml", template=db_template, **kwargs)
-    db_template_file.create()
-    Stack(
+    root_template.add_resource(ComposeXStack(
         db_name,
-        template=root_template,
-        TemplateURL=db_template_file.url,
+        template=db_template,
         Parameters=parameters,
+        **kwargs
+    ))
+
+
+def init_rds_root_template():
+    """
+    Function to generate the root template for RDS
+    :return:
+    """
+    template = build_template(
+        "RDS Root Template",
+        [
+            VPC_MAP_ID,
+            VPC_ID,
+            STORAGE_SUBNETS
+        ]
     )
+    template.add_condition(
+        USE_VPC_MAP_ID_CON_T,
+        USE_VPC_MAP_ID_CON
+    )
+    template.add_condition(
+        NOT_USE_VPC_MAP_ID_CON_T,
+        NOT_USE_VPC_MAP_ID_CON
+    )
+    return template
 
 
 def generate_rds_templates(compose_content, **kwargs):
@@ -91,13 +117,13 @@ def generate_rds_templates(compose_content, **kwargs):
     :return: rds_root_template, the RDS Root template with nested stacks
     :rtype: troposphere.Template
     """
-    rds_root_tpl = build_template("RDS Root template", [VPC_ID, STORAGE_SUBNETS])
-    dbs_subnet_group = create_db_subnet_group(rds_root_tpl)
+    root_tpl = init_rds_root_template()
+    dbs_subnet_group = create_db_subnet_group(root_tpl)
     params_and_tags = generate_tags_parameters(compose_content)
     section = compose_content[RES_KEY]
     for db_name in section:
         add_db_stack(
-            rds_root_tpl,
+            root_tpl,
             dbs_subnet_group,
             db_name,
             section[db_name],
@@ -105,7 +131,7 @@ def generate_rds_templates(compose_content, **kwargs):
             **kwargs,
         )
     if params_and_tags:
-        add_parameters(rds_root_tpl, params_and_tags[0])
-        for obj in rds_root_tpl.resources:
-            add_object_tags(rds_root_tpl.resources[obj], params_and_tags[1])
-    return rds_root_tpl
+        add_parameters(root_tpl, params_and_tags[0])
+        for obj in root_tpl.resources:
+            add_object_tags(root_tpl.resources[obj], params_and_tags[1])
+    return root_tpl
