@@ -30,8 +30,10 @@ from ecs_composex.vpc.vpc_params import (
     STORAGE_SUBNETS,
 )
 from ecs_composex.vpc.vpc_conditions import (
-    USE_VPC_MAP_ID_CON_T, USE_VPC_MAP_ID_CON,
-    NOT_USE_VPC_MAP_ID_CON_T, NOT_USE_VPC_MAP_ID_CON
+    USE_VPC_MAP_ID_CON_T,
+    USE_VPC_MAP_ID_CON,
+    NOT_USE_VPC_MAP_ID_CON_T,
+    NOT_USE_VPC_MAP_ID_CON,
 )
 from ecs_composex.rds.rds_params import (
     DB_ENGINE_VERSION,
@@ -332,14 +334,8 @@ def init_database_template(db_name):
         rds_conditions.USE_CLUSTER_OR_SNAPSHOT_CON_T,
         rds_conditions.USE_CLUSTER_OR_SNAPSHOT_CON,
     )
-    template.add_condition(
-        USE_VPC_MAP_ID_CON_T,
-        USE_VPC_MAP_ID_CON
-    )
-    template.add_condition(
-        NOT_USE_VPC_MAP_ID_CON_T,
-        NOT_USE_VPC_MAP_ID_CON
-    )
+    template.add_condition(USE_VPC_MAP_ID_CON_T, USE_VPC_MAP_ID_CON)
+    template.add_condition(NOT_USE_VPC_MAP_ID_CON_T, NOT_USE_VPC_MAP_ID_CON)
     create_db_subnet_group(template, True)
     return template
 

@@ -18,10 +18,11 @@ It is going to also, based on the labels set in the compose file
 """
 
 import boto3
-from troposphere import GetAtt, Ref, Sub, Join
-from ecs_composex.common.cfn_params import ROOT_STACK_NAME, ROOT_STACK_NAME_T
-from ecs_composex.common.stacks import ComposeXStack
+from troposphere import GetAtt, Ref, Join
+
 from ecs_composex.common import load_composex_file, KEYISSET
+from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
+from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.ecs.ecs_template import generate_services_templates
 from ecs_composex.vpc import vpc_params
 
@@ -43,6 +44,7 @@ class ServicesStack(ComposeXStack):
     """
     Class to handle ECS root stack specific settings
     """
+
     vpc_stack = None
     dependencies = []
 
@@ -52,7 +54,9 @@ class ServicesStack(ComposeXStack):
         elif isinstance(vpc_stack, str):
             vpc = vpc_stack
         else:
-            raise TypeError(f"vpc_stack must be of type", ComposeXStack, str, "got", type(vpc_stack))
+            raise TypeError(
+                f"vpc_stack must be of type", ComposeXStack, str, "got", type(vpc_stack)
+            )
         self.Parameters.update(
             {
                 vpc_params.VPC_ID_T: GetAtt(

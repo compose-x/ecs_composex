@@ -4,7 +4,6 @@
 from troposphere import Sub, Ref
 from troposphere.iam import Role, PolicyType
 
-from ecs_composex.common import LOG, KEYISSET
 from ecs_composex.ecs.ecs_params import (
     SERVICE_NAME_T,
     CLUSTER_NAME_T,
@@ -12,7 +11,6 @@ from ecs_composex.ecs.ecs_params import (
     TASK_ROLE_T,
     TASK_T,
 )
-from ecs_composex.ecs_composex import generate_x_resource_configs
 from ecs_composex.iam import service_role_trust_policy
 
 
@@ -125,62 +123,3 @@ def define_service_containers(service_template):
             "Service Task definition defined but no ContainerDefinitions found"
         )
     return containers
-
-
-def set_resource_type_settings(
-    service_template, service_name, resources_permissions, env_vars, containers
-):
-    """
-    Function to add the resource type settings for a service if applicable.
-    Goes through each resource permissions (ie, queue01) of a given resource type (i.e. sqs)
-    and identifies the policy associated with the service, then binds the policy to the
-    IAM Task Role and adds the environment variables to the microservice.
-
-    :param service_template: the service template
-    :type service_template: troposphere.Template
-    :param service_name: name of the service as defined in the docker compose file
-    :type service_name: str
-    :param resources_permissions: resource permissions for a given resource type
-    :type resources_permissions: dict
-    :param env_vars: environment variables to get from the extra resources to add to the container environment
-    :type env_vars: dict
-    :param containers: list of containers from the task definition
-    :type containers: list<troposphere.ecs.ContainerDefinition>
-   """
-    task_role = service_template.resources[TASK_ROLE_T]
-    for resource_name in resources_permissions:
-        res_vars = env_vars[resource_name]
-        for permission_type in resources_permissions[resource_name]:
-            permission = resources_permissions[resource_name][permission_type]
-            if service_name in permission["Services"]:
-                task_role.Policies.append(permission["Policy"])
-                for container in containers:
-                    environment = getattr(container, "Environment")
-                    environment += res_vars
-                    LOG.debug(environment)
-
-
-def assign_x_resources_to_service(
-    service_name, service_tpl, x_resources_configs, **kwargs
-):
-    """
-    Parses each X component and if the service is listed there, assigns the policy to
-    the service task role for services manageable via IAM only.
-
-    :param x_resources_configs: IAM based x services access.
-    :type x_resources_configs: dict
-    :param service_name: name of the service
-    :type service_name: str
-    :param service_tpl: service template to add the resources to
-    :type service_tpl: troposphere.Template
-    :param kwargs: optional arguments
-    :type kwargs: dict
-    """
-    containers = define_service_containers(service_tpl)
-
-    for resource_type in x_resources_configs:
-        resources_perms = x_resources_configs[resource_type]["permissions"]
-        env_vars = x_resources_configs[resource_type]["envvars"]
-        set_resource_type_settings(
-            service_tpl, service_name, resources_perms, env_vars, containers
-        )

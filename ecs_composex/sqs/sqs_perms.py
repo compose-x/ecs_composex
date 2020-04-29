@@ -5,15 +5,16 @@ based on pre-defined SQS policies for consumers
 """
 
 from troposphere import Sub, ImportValue, If
-from troposphere.iam import Policy as IamPolicy
 from troposphere.ecs import Environment
+from troposphere.iam import Policy as IamPolicy
+
 from ecs_composex import CFN_EXPORT_DELIMITER as delim
-from ecs_composex.sqs import sqs_params
-from ecs_composex.common import LOG
-from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
-from ecs_composex.common.cfn_conditions import USE_SSM_ONLY_T
 from ecs_composex.common import KEYISSET
-from ecs_composex.sqs import SQS_SSM_PREFIX
+from ecs_composex.common import LOG
+from ecs_composex.common.cfn_conditions import USE_SSM_ONLY_T
+from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
+from ecs_composex.sqs import sqs_params
+from ecs_composex.sqs.sqs_params import SQS_SSM_PREFIX
 
 QUEUES_ACCESS_TYPES = {
     "RWMessages": {
@@ -67,7 +68,9 @@ def generate_queue_strings(queue_name):
     """
     ssm_string = f"/${{{ROOT_STACK_NAME_T}}}{SQS_SSM_PREFIX}{queue_name}"
     ssm_export = Sub(r"{{resolve:ssm:%s:1}}" % (ssm_string))
-    cfn_string = f"${{{ROOT_STACK_NAME_T}}}{delim}{queue_name}{delim}{sqs_params.SQS_ARN_T}"
+    cfn_string = (
+        f"${{{ROOT_STACK_NAME_T}}}{delim}{queue_name}{delim}{sqs_params.SQS_ARN_T}"
+    )
     cfn_import = ImportValue(Sub(cfn_string))
     return (ssm_export, cfn_import)
 
@@ -89,7 +92,6 @@ def generate_sqs_permissions(queue_name, resource, **kwargs):
 
     export_strings = generate_queue_strings(queue_name)
     queue_policies = {}
-    services = resource["Services"]
     for a_type in QUEUES_ACCESS_TYPES:
         clean_policy = {"Version": "2012-10-17", "Statement": []}
         LOG.debug(a_type)
@@ -98,14 +100,10 @@ def generate_sqs_permissions(queue_name, resource, **kwargs):
             USE_SSM_ONLY_T, export_strings[0], export_strings[1]
         )
         clean_policy["Statement"].append(policy_doc)
-        queue_policies[a_type] = {"Services": [], "Policy": None}
-        queue_policies[a_type]["Policy"] = IamPolicy(
+        queue_policies[a_type] = IamPolicy(
             PolicyName=Sub(f"AccessToSqsQueue{queue_name}In${{{ROOT_STACK_NAME_T}}}"),
             PolicyDocument=clean_policy,
         )
-        for service in services:
-            if service["access"] == a_type:
-                queue_policies[a_type]["Services"].append(service["name"])
     return queue_policies
 
 

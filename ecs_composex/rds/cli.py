@@ -9,7 +9,7 @@ import argparse
 from ecs_composex import DIR_DEST
 from ecs_composex.common.aws import BUCKET_NAME
 from ecs_composex.common.files import FileArtifact
-from ecs_composex.common.stacks import  render_final_template
+from ecs_composex.common.stacks import render_final_template
 from ecs_composex.rds import create_rds_template
 
 

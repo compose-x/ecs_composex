@@ -2,15 +2,11 @@
 
 """Generates the individual SQS Queues templates."""
 
-import os
-
-from troposphere import Tags, Sub, GetAtt, ImportValue, If, Ref
-from troposphere.cloudformation import Stack
+from troposphere import Tags, Sub, GetAtt, If, Ref
 from troposphere.sqs import Queue, RedrivePolicy
 from troposphere.ssm import Parameter as SsmParameter
 
-from ecs_composex import CFN_EXPORT_DELIMITER as delim
-from ecs_composex.common.tagging import add_object_tags, generate_tags_parameters
+from ecs_composex import CFN_EXPORT_DELIMITER as DELIM
 from ecs_composex.common import (
     build_template,
     add_parameters,
@@ -27,19 +23,18 @@ from ecs_composex.common.cfn_conditions import (
 )
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME, ROOT_STACK_NAME_T
 from ecs_composex.common.outputs import formatted_outputs
+from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.common.tagging import add_object_tags, generate_tags_parameters
+from ecs_composex.sqs.sqs_params import RES_KEY, SQS_SSM_PREFIX
 from ecs_composex.sqs.sqs_params import (
     SQS_NAME_T,
     SQS_NAME,
     DLQ_NAME_T,
     DLQ_NAME,
     SQS_ARN_T,
-    DLQ_ARN, DLQ_ARN_T
+    DLQ_ARN,
+    DLQ_ARN_T,
 )
-
-from ecs_composex.common.stacks import ComposeXStack
-
-RES_KEY = f"x-{os.path.basename(os.path.dirname(os.path.abspath(__file__)))}"
-SQS_SSM_PREFIX = f"/{RES_KEY}/"
 
 
 def define_queue_tags(properties, queue_name):
@@ -87,9 +82,15 @@ def add_redrive_policy(queue_tpl, queue_name, properties, dlq_name):
         f"/${{{ROOT_STACK_NAME_T}}}{SQS_SSM_PREFIX}${{{DLQ_NAME_T}}}/{SQS_ARN_T}"
     )
     ssm_resolve = Sub(r"{{resolve:ssm:%s:1}}" % (ssm_string))
-    cfn_import = ImportValue(
-        Sub(f"${{{ROOT_STACK_NAME_T}}}" f"{delim}" f"${{{DLQ_NAME_T}}}" f"{delim}" f"{SQS_ARN_T}")
-    )
+    # cfn_import = ImportValue(
+    #     Sub(
+    #         f"${{{ROOT_STACK_NAME_T}}}"
+    #         f"{DELIM}"
+    #         f"${{{DLQ_NAME_T}}}"
+    #         f"{DELIM}"
+    #         f"{SQS_ARN_T}"
+    #     )
+    # )
     redrive_queue_import = If(USE_SSM_ONLY_T, ssm_resolve, Ref(DLQ_ARN))
     queue_tpl.add_parameter(DLQ_ARN)
     queue_tpl.add_parameter(DLQ_NAME)
@@ -169,7 +170,7 @@ def generate_queue_template(queue_name, properties, redrive_queue=None, tags=Non
     if tags:
         add_object_tags(queue, tags)
     add_ssm_parameters(queue_template, queue)
-    cfn_prefix = f"${{{ROOT_STACK_NAME_T}}}{delim}${{{SQS_NAME_T}}}"
+    cfn_prefix = f"${{{ROOT_STACK_NAME_T}}}{DELIM}${{{SQS_NAME_T}}}"
     queue_template.add_output(
         formatted_outputs(
             [
@@ -217,10 +218,12 @@ def add_queue_stack(queue_name, queue, queues, session, tags, **kwargs):
                 f"Queue {redrive_target} defined as DLQ for {queue_name} but is not defined"
             )
         depends_on.append(redrive_target)
-        parameters.update({
-            DLQ_ARN_T: GetAtt(redrive_target, f"Outputs.{SQS_ARN_T}"),
-            DLQ_NAME_T: GetAtt(redrive_target, f"Outputs.{SQS_NAME_T}")
-        })
+        parameters.update(
+            {
+                DLQ_ARN_T: GetAtt(redrive_target, f"Outputs.{SQS_ARN_T}"),
+                DLQ_NAME_T: GetAtt(redrive_target, f"Outputs.{SQS_NAME_T}"),
+            }
+        )
         queue_tpl = generate_queue_template(
             queue_name, properties, redrive_target, tags=tags[1]
         )
@@ -237,7 +240,7 @@ def add_queue_stack(queue_name, queue, queues, session, tags, **kwargs):
         template=queue_tpl,
         Parameters=parameters,
         DependsOn=depends_on,
-        **kwargs
+        **kwargs,
     )
     return queue_stack
 

@@ -1,29 +1,26 @@
 # -*- coding: utf-8 -*-
 """Module to handle AWS SQS CFN Templates creation"""
 
-import os
 import boto3
 
 from ecs_composex import XFILE_DEST
-from ecs_composex.common import validate_input, validate_kwargs, load_composex_file, LOG
-from ecs_composex.common.files import validate_template
+from ecs_composex.common import validate_input, validate_kwargs, load_composex_file
+from ecs_composex.sqs.sqs_params import RES_KEY
 from ecs_composex.sqs.sqs_template import generate_sqs_root_template
 
-RES_KEY = f"x-{os.path.basename(os.path.dirname(os.path.abspath(__file__)))}"
-SQS_SSM_PREFIX = f"/{RES_KEY}/"
 
-
-def create_sqs_template(services_stack=None, session=None, **kwargs):
+def create_sqs_template(content=None, session=None, **kwargs):
     """
     Creates the CFN Troposphere template
-
+    :param content: docker compose file content
     :param session: boto3 session to override default
     :type session: boto3.session.Session
 
     :return: sqs_tpl
     :rtype: troposphere.Template
     """
-    content = load_composex_file(kwargs[XFILE_DEST])
+    if content is None:
+        content = load_composex_file(kwargs[XFILE_DEST])
     validate_input(content, RES_KEY)
     validate_kwargs(["BucketName"], kwargs)
 

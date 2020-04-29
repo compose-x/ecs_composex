@@ -21,7 +21,9 @@ def cfn_resource_type(object_name, strip=True):
     return res_type
 
 
-def formatted_outputs(comments, export=False, prefix=None, use_root_stack=False, delimiter=None):
+def formatted_outputs(
+    comments, export=False, prefix=None, use_root_stack=False, delimiter=None
+):
     """Function to format the outputs easily and add exports based on a prefix
 
     :param delimiter: delimimiter to use between parts of the export

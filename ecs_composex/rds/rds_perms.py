@@ -3,15 +3,13 @@
 Module to provide services with access to the RDS databases.
 """
 
-from ecs_composex.common.cfn_params import (
-    ROOT_STACK_NAME_T
-)
+from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common import cfn_conditions, LOG
 from ecs_composex.rds.rds_params import (
     DB_EXPORT_PORT_T,
     DB_EXPORT_PREFIX_T,
     DB_EXPORT_SECRET_ARN_T,
-    DB_EXPORT_SECRET_NAME_T
+    DB_EXPORT_SECRET_NAME_T,
 )
 
 
@@ -24,7 +22,7 @@ def generate_rds_export_strings(db_name):
         DB_EXPORT_PORT_T: f"${{{ROOT_STACK_NAME_T}}}-{db_name}-{DB_EXPORT_PORT_T}",
         DB_EXPORT_PREFIX_T: f"{{{ROOT_STACK_NAME_T}}}-{db_name}-{DB_EXPORT_PREFIX_T}",
         DB_EXPORT_SECRET_ARN_T: f"{{{ROOT_STACK_NAME_T}}}-{db_name}-{DB_EXPORT_SECRET_ARN_T}",
-        DB_EXPORT_SECRET_NAME_T: f"{{{ROOT_STACK_NAME_T}}}-{db_name}-{DB_EXPORT_SECRET_NAME_T}"
+        DB_EXPORT_SECRET_NAME_T: f"{{{ROOT_STACK_NAME_T}}}-{db_name}-{DB_EXPORT_SECRET_NAME_T}",
     }
     return db_strings
 
