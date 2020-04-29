@@ -50,6 +50,7 @@ from ecs_composex.common.stacks import ComposeXStack, XModuleStack
 RES_REGX = re.compile(r"(^([x-]+))")
 ROOT_CLUSTER_NAME = "EcsCluster"
 COMPUTE_STACK_NAME = "Ec2Compute"
+VPC_STACK_NAME = "vpc"
 
 VPC_ARGS = [
     vpc_params.PUBLIC_SUBNETS_T,
@@ -58,6 +59,8 @@ VPC_ARGS = [
     vpc_params.VPC_ID_T,
     vpc_params.VPC_MAP_ID_T,
 ]
+
+SUPPORTED_X_MODULES = ["x-rds", "rds", "x-sqs", "sqs"]
 
 
 def get_composex_globals(compose_content):
@@ -90,6 +93,7 @@ def get_mod_function(module_name, function_name):
     composex_module_name = f"ecs_composex.{module_name}"
     LOG.debug(composex_module_name)
     res_module = None
+    function = None
     try:
         res_module = import_module(composex_module_name)
         LOG.debug(res_module)
@@ -101,7 +105,32 @@ def get_mod_function(module_name, function_name):
     except ImportError as error:
         LOG.error(f"Failure to process the module {composex_module_name}")
         LOG.error(error)
-    return res_module
+    return function
+
+
+def get_mod_class(module_name):
+    """
+    Function to get the XModule class for a specific ecs_composex module
+    :param module_name:
+    :return:
+    """
+    composex_module_name = f"ecs_composex.{module_name}"
+    LOG.debug(composex_module_name)
+    res_module = None
+    the_class = None
+    try:
+        res_module = import_module(composex_module_name)
+        LOG.debug(res_module)
+        try:
+            the_class = getattr(res_module, "XResource")
+            return the_class
+        except AttributeError:
+            LOG.info(f"No XResource class for {module_name} found - skipping")
+            return None
+    except ImportError as error:
+        LOG.error(f"Failure to process the module {composex_module_name}")
+        LOG.error(error)
+    return the_class
 
 
 def generate_x_resources_policies(resources, resource_type, function, **kwargs):
@@ -165,17 +194,20 @@ def apply_x_configs_to_ecs(content, root_template, services_stack, **kwargs):
     :return: resource_configs
     :rtype: dict
     """
-    iam_services = ["x-sqs"]
-    tcp_services = ["x-rds"]
     for resource_name in root_template.resources:
         resource = root_template.resources[resource_name]
-        if isinstance(resource, XModuleStack):
-            module = getattr(resource, 'title')
+        if (
+            issubclass(type(resource), ComposeXStack)
+            and resource_name in SUPPORTED_X_MODULES
+        ):
+            module = getattr(resource, "title")
             composex_key = f"x-{module}"
-            ecs_function = get_mod_function(f"{module}.{module}_ecs", f"{module}_to_ecs")
+            ecs_function = get_mod_function(
+                f"{module}.{module}_ecs", f"{module}_to_ecs"
+            )
             if ecs_function:
                 LOG.debug(ecs_function)
-                ecs_function(content[composex_key], services_stack, resource.stack_template)
+                ecs_function(content[composex_key], services_stack, resource)
 
 
 def generate_vpc_parameters(template, params, **kwargs):
@@ -221,7 +253,7 @@ def add_vpc_to_root(root_template, session, tags_params=None, **kwargs):
     for param in tags_params:
         parameters.update({param.title: Ref(param.title)})
     vpc_stack = root_template.add_resource(
-        ComposeXStack("Vpc", vpc_template, Parameters=parameters, **kwargs)
+        ComposeXStack(VPC_STACK_NAME, vpc_template, Parameters=parameters, **kwargs)
     )
     return vpc_stack
 
@@ -315,31 +347,40 @@ def add_compute(
     return compute_stack
 
 
-def add_x_resources(template, session, tags=None, **kwargs):
+def add_x_resources(template, session, tags=None, vpc_stack=None, **kwargs):
     """
     Function to add each X resource from the compose file
     """
     content = load_composex_file(kwargs[XFILE_DEST])
-    ignore_x = ["x-rds", "x-tags"]
+    ignore_x = ["x-tags"]
+    iam_services = ["x-sqs"]
+    tcp_services = ["x-rds"]
+    depends_on = []
     if tags is None:
         tags = []
     for key in content:
         if key.startswith("x-") and key not in ignore_x:
             res_type = RES_REGX.sub("", key)
             function_name = f"create_{res_type}_template"
+            xclass = get_mod_class(res_type)
             create_function = get_mod_function(res_type, function_name)
             if create_function:
                 x_template = create_function(session=session, **kwargs)
-                # depends_on.append(res_type.title().strip())
+                if vpc_stack is not None and key in tcp_services:
+                    depends_on.append(VPC_STACK_NAME)
                 parameters = {ROOT_STACK_NAME_T: Ref("AWS::StackName")}
                 for tag in tags:
                     parameters.update({tag.title: Ref(tag.title)})
-                xstack = XModuleStack(
+                LOG.debug(xclass)
+                xstack = xclass(
                     res_type.strip(),
                     template=x_template,
                     Parameters=parameters,
+                    DependsOn=depends_on,
                     **kwargs,
                 )
+                if vpc_stack and key in tcp_services:
+                    xstack.add_vpc_stack(vpc_stack)
                 template.add_resource(xstack)
 
 
@@ -438,7 +479,6 @@ def generate_full_template(session=None, **kwargs):
     services_stack = add_services(
         template, depends_on, session=session, vpc_stack=vpc_stack, **kwargs
     )
-    add_x_resources(template, session=session, **kwargs)
     if KEYISSET("CreateVpc", kwargs):
         vpc_stack = add_vpc_to_root(template, session, tags_params[0], **kwargs)
         depends_on.append(vpc_stack)
@@ -461,6 +501,7 @@ def generate_full_template(session=None, **kwargs):
         session=session,
         **kwargs,
     )
+    add_x_resources(template, session=session, vpc_stack=vpc_stack, **kwargs)
     apply_x_configs_to_ecs(content, template, services_stack, **kwargs)
     for resource in template.resources:
         add_object_tags(template.resources[resource], tags_params[1])

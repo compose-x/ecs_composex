@@ -6,6 +6,7 @@ ecs_composex.rds parameters
 from troposphere import Parameter
 
 RES_KEY = "x-rds"
+DB_SECRET_POLICY_NAME = "RdsDbPolicy"
 
 DB_SG_T = "DatabaseSecurityGroup"
 
@@ -52,4 +53,4 @@ DB_STORAGE_TYPE = Parameter(
 DB_EXPORT_PREFIX_T = "RdsDb"
 DB_EXPORT_PORT_T = "RdsPort"
 DB_EXPORT_SECRET_ARN_T = "RdsSecretArn"
-DB_EXPORT_SECRET_NAME_T = "RdsSecretName"
+DB_EXPORT_SG_ID_T = "RdsDbSecurityGroup"

@@ -3,37 +3,28 @@
 RDS DB template generator
 """
 
-from troposphere import Sub, Ref, If
-from troposphere.secretsmanager import (
-    Secret,
-    SecretTargetAttachment,
-    GenerateSecretString,
-)
+from troposphere import Sub, Ref, If, GetAtt
+from troposphere.ec2 import SecurityGroup
 from troposphere.rds import (
     DBSubnetGroup,
     DBCluster,
     DBClusterParameterGroup,
     DBInstance,
     DBParameterGroup,
-    DBSecurityGroup,
-    DBSecurityGroupIngress,
 )
-from troposphere.ec2 import SecurityGroup
-from ecs_composex.common import LOG, build_template, cfn_conditions
+from troposphere.secretsmanager import (
+    Secret,
+    SecretTargetAttachment,
+    GenerateSecretString,
+)
+
+from ecs_composex.common import build_template, cfn_conditions
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
-from ecs_composex.vpc.vpc_params import (
-    VPC_ID,
-    VPC_ID_T,
-    VPC_MAP_ID,
-    VPC_MAP_ID_T,
-    STORAGE_SUBNETS_T,
-    STORAGE_SUBNETS,
-)
-from ecs_composex.vpc.vpc_conditions import (
-    USE_VPC_MAP_ID_CON_T,
-    USE_VPC_MAP_ID_CON,
-    NOT_USE_VPC_MAP_ID_CON_T,
-    NOT_USE_VPC_MAP_ID_CON,
+from ecs_composex.common.outputs import formatted_outputs
+from ecs_composex.rds import rds_conditions
+from ecs_composex.rds.rds_parameter_groups_helper import (
+    get_family_from_engine_version,
+    get_family_settings,
 )
 from ecs_composex.rds.rds_params import (
     DB_ENGINE_VERSION,
@@ -49,11 +40,20 @@ from ecs_composex.rds.rds_params import (
     DB_USERNAME,
     DB_STORAGE_CAPACITY,
     DB_STORAGE_TYPE,
+    DB_EXPORT_SECRET_ARN_T,
+    DB_EXPORT_PORT_T,
+    DB_EXPORT_SG_ID_T,
 )
-from ecs_composex.rds import rds_conditions
-from ecs_composex.rds.rds_parameter_groups_helper import (
-    get_family_from_engine_version,
-    get_family_settings,
+from ecs_composex.vpc.vpc_conditions import (
+    USE_VPC_MAP_ID_CON_T,
+    USE_VPC_MAP_ID_CON,
+    NOT_USE_VPC_MAP_ID_CON_T,
+    NOT_USE_VPC_MAP_ID_CON,
+)
+from ecs_composex.vpc.vpc_params import (
+    VPC_ID,
+    VPC_MAP_ID,
+    STORAGE_SUBNETS,
 )
 
 CLUSTER_SUBNET_GROUP = "ClusterSubnetGroup"
@@ -62,6 +62,27 @@ CLUSTER_T = "AuroraCluster"
 DATABASE_T = "RdsDatabase"
 PARAMETER_GROUP_T = "RdsParametersGroup"
 CLUSTER_PARAMETER_GROUP_T = "RdsClusterParameterGroup"
+
+
+def add_db_outputs(db_template, db_name):
+    """
+    Functiont to add outputs to the DB template
+    :param db_template:
+    :param db_name:
+    :param db:
+    :return:
+    """
+    db_template.add_output(
+        formatted_outputs(
+            [
+                {DB_EXPORT_SECRET_ARN_T: Ref(DB_SECRET_T)},
+                {DB_EXPORT_PORT_T: GetAtt(CLUSTER_T, "Endpoint.Port")},
+                {DB_NAME_T: Ref(DATABASE_T)},
+                {DB_EXPORT_SG_ID_T: GetAtt(DB_SG_T, "GroupId")},
+            ],
+            obj_name=db_name,
+        )
+    )
 
 
 def create_db_subnet_group(template, conditional=False):
@@ -106,7 +127,7 @@ def add_db_sg(template, db_name):
     SecurityGroup(
         DB_SG_T,
         template=template,
-        GroupName=Sub(f"${{{ROOT_STACK_NAME_T}}}-${db_name}"),
+        GroupName=Sub(f"${{{ROOT_STACK_NAME_T}}}-{db_name}"),
         GroupDescription=Sub(f"${{{ROOT_STACK_NAME_T}}} ${db_name}"),
         VpcId=Ref(VPC_ID),
     )
@@ -200,6 +221,9 @@ def add_instance(template, db, **kwargs):
                 f"{{{{resolve:secretsmanager:${{{DB_SECRET_T}}}:SecretString:password}}}}"
             ),
         ),
+        VPCSecurityGroups=If(
+            rds_conditions.USE_CLUSTER_CON_T, Ref("AWS::NoValue"), [Ref(DB_SG_T)]
+        ),
     )
 
 
@@ -243,6 +267,7 @@ def add_cluster(template, db, **kwargs):
         Engine=Ref(DB_ENGINE_NAME),
         EngineVersion=Ref(DB_ENGINE_VERSION),
         DBClusterParameterGroupName=Ref(CLUSTER_PARAMETER_GROUP_T),
+        VpcSecurityGroupIds=[Ref(DB_SG_T)],
     )
     return cluster
 
@@ -353,6 +378,8 @@ def generate_database_template(db_name, db, **kwargs):
     db_template = init_database_template(db_name)
     add_cluster(db_template, db, **kwargs)
     add_db_secret(db_template)
+    add_db_sg(db_template, db_name)
     add_instance(db_template, None, **kwargs)
     add_parameter_group(db_template, db)
+    add_db_outputs(db_template, db_name)
     return db_template

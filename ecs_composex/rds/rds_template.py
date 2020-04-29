@@ -3,17 +3,22 @@
 Main module template to generate the RDS Root template and all stacks according to x-rds settings
 """
 
-from troposphere import Sub, Ref, Join
-from ecs_composex.common import LOG, build_template, validate_kwargs, add_parameters
-from ecs_composex.common.tagging import add_object_tags, generate_tags_parameters
+from troposphere import Ref, Join
+
+from ecs_composex.common import build_template, validate_kwargs, add_parameters
+from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T, ROOT_STACK_NAME
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.vpc.vpc_params import (
-    VPC_ID,
-    VPC_ID_T,
-    VPC_MAP_ID_T,
-    VPC_MAP_ID,
-    STORAGE_SUBNETS,
-    STORAGE_SUBNETS_T,
+from ecs_composex.common.tagging import add_object_tags, generate_tags_parameters
+from ecs_composex.rds.rds_db_template import (
+    generate_database_template,
+    create_db_subnet_group,
+)
+from ecs_composex.rds.rds_params import (
+    RES_KEY,
+    DBS_SUBNET_GROUP_T,
+    DB_NAME_T,
+    DB_ENGINE_VERSION_T,
+    DB_ENGINE_NAME_T,
 )
 from ecs_composex.vpc.vpc_conditions import (
     USE_VPC_MAP_ID_CON_T,
@@ -21,22 +26,12 @@ from ecs_composex.vpc.vpc_conditions import (
     NOT_USE_VPC_MAP_ID_CON_T,
     NOT_USE_VPC_MAP_ID_CON,
 )
-from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T, ROOT_STACK_NAME
-from ecs_composex.rds.rds_params import (
-    RES_KEY,
-    DBS_SUBNET_GROUP,
-    DBS_SUBNET_GROUP_T,
-    DB_NAME_T,
-    DB_INSTANCE_CLASS_T,
-    DB_INSTANCE_CLASS,
-    DB_ENGINE_VERSION_T,
-    DB_ENGINE_VERSION,
-    DB_ENGINE_NAME,
-    DB_ENGINE_NAME_T,
-)
-from ecs_composex.rds.rds_db_template import (
-    generate_database_template,
-    create_db_subnet_group,
+from ecs_composex.vpc.vpc_params import (
+    VPC_ID,
+    VPC_ID_T,
+    VPC_MAP_ID,
+    STORAGE_SUBNETS,
+    STORAGE_SUBNETS_T,
 )
 
 
@@ -68,6 +63,7 @@ def add_db_stack(
         DBS_SUBNET_GROUP_T: Ref(dbs_subnet_group),
         DB_NAME_T: db_name,
         STORAGE_SUBNETS_T: Join(",", Ref(STORAGE_SUBNETS)),
+        ROOT_STACK_NAME_T: Ref(ROOT_STACK_NAME),
     }
     parameters.update(non_stack_params)
     db_template = generate_database_template(db_name, db, **kwargs)

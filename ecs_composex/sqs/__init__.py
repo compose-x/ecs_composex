@@ -4,6 +4,7 @@
 import boto3
 
 from ecs_composex import XFILE_DEST
+from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common import validate_input, validate_kwargs, load_composex_file
 from ecs_composex.sqs.sqs_params import RES_KEY
 from ecs_composex.sqs.sqs_template import generate_sqs_root_template
@@ -30,3 +31,9 @@ def create_sqs_template(content=None, session=None, **kwargs):
         compose_content=content, session=session, **kwargs
     )
     return sqs_tpl
+
+
+class XResource(ComposeXStack):
+    """
+    Class to handle SQS Root stack related actions
+    """

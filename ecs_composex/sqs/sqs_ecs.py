@@ -22,14 +22,14 @@ def apply_settings_to_service(
         LOG.debug(environment)
 
 
-def sqs_to_ecs(queues, services_stack, sqs_stack, **kwargs):
+def sqs_to_ecs(queues, services_stack, sqs_root_stack, **kwargs):
     """
     Function to apply SQS settings to ECS Services
     :return:
     """
     for queue_name in queues:
         queue = queues[queue_name]
-        if queue_name not in sqs_stack.resources:
+        if queue_name not in sqs_root_stack.stack_template.resources:
             raise KeyError(f"SQS queue {queue_name} not a resource of the SQS stack")
         perms = generate_sqs_permissions(queue_name, queue, **kwargs)
         envvars = generate_sqs_envvars(queue_name, queue, **kwargs)
@@ -50,3 +50,5 @@ def sqs_to_ecs(queues, services_stack, sqs_stack, **kwargs):
                     envvars,
                     service["access"],
                 )
+            if sqs_root_stack.title not in services_stack.DependsOn:
+                services_stack.DependsOn.append(sqs_root_stack.title)

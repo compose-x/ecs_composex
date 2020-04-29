@@ -1,0 +1,78 @@
+---
+# All Modules
+
+configs:
+  serviceA:
+    use_alb: True
+    is_public: True
+  serviceB:
+    is_public: False
+
+  globals:
+    network:
+      use_cloudmap: True
+
+services:
+  serviceA:
+    image: nginx
+
+  serviceB:
+    image: nginx
+
+x-tags:
+  - name: costcentre
+    value: lambda-my-aws
+  - name: mail
+    value: john@lambda-my-aws.io
+
+x-sqs:
+  Queue02:
+    Services:
+      - name: serviceA
+        access: RWPermissions
+      - name: serviceB
+        access: RO
+    Properties:
+      RedrivePolicy:
+        deadLetterTargetArn: Queue01
+        maxReceiveCount: 10
+    Settings:
+      EnvNames:
+        - APP_QUEUE
+        - AppQueue
+
+  Queue01:
+    Services:
+      - name: serviceB
+        access: RWMessages
+    Properties: {}
+    Settings:
+      EnvNames:
+        - DLQ
+        - dlq
+
+  QueueNoServices:
+    Properties: {}
+    Settings:
+      EnvNames:
+        - ALONE
+        - NoOneLikesMe
+
+x-rds:
+  dbA:
+    Properties:
+      Engine: "aurora-mysql"
+      EngineVersion: "5.7.12"
+    Services:
+      - name: serviceA
+        access: RW
+
+  dbB:
+    Properties:
+      Engine: "aurora-mysql"
+      EngineVersion: "5.7.12"
+    Services:
+      - name: serviceA
+        access: RW
+      - name: serviceB
+        access: RW

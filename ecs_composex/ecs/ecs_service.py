@@ -167,7 +167,7 @@ def generate_service_template_outputs(template, service_name):
         formatted_outputs(
             [{ecs_params.SERVICE_GROUP_ID_T: GetAtt(ecs_params.SG_T, "GroupId")}],
             export=True,
-            prefix=f"${{{ROOT_STACK_NAME_T}}}{delim}{service_name}",
+            obj_name=service_name,
         )
     )
 

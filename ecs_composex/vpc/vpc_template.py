@@ -38,8 +38,6 @@ def add_cloudmap_support(template, vpc):
 
     :param template: VPC Template()
     :param vpc: Vpc() object for Ref()
-
-    :returns: NIL
     """
     map_id = VpcSpace(
         "VpcCloudMapNameSpace",
@@ -73,8 +71,6 @@ def add_template_outputs(template, vpc, storage_subnets, public_subnets, app_sub
     :param storage_subnets: List of Subnet()
     :param public_subnets: List of Subnet()
     :param app_subnets: List of Subnet()
-
-    :returns: NIL
     """
     template.add_output(
         formatted_outputs(

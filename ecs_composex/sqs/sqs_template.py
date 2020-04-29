@@ -170,15 +170,14 @@ def generate_queue_template(queue_name, properties, redrive_queue=None, tags=Non
     if tags:
         add_object_tags(queue, tags)
     add_ssm_parameters(queue_template, queue)
-    cfn_prefix = f"${{{ROOT_STACK_NAME_T}}}{DELIM}${{{SQS_NAME_T}}}"
     queue_template.add_output(
         formatted_outputs(
             [
                 {SQS_NAME_T: GetAtt(queue, SQS_NAME_T)},
                 {SQS_ARN_T: GetAtt(queue, "Arn")},
             ],
+            obj_name=SQS_NAME,
             export=True,
-            prefix=cfn_prefix,
         )
     )
     return queue_template
