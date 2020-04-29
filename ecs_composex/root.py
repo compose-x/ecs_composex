@@ -23,7 +23,7 @@ from ecs_composex.common.cfn_params import (
     USE_ONDEMAND_T,
 )
 from ecs_composex.common.tagging import generate_tags_parameters, add_object_tags
-from ecs_composex.common.templates import upload_template, FileArtifact
+from ecs_composex.common.files import FileArtifact
 from ecs_composex.compute import create_compute_stack
 from ecs_composex.compute.compute_params import (
     TARGET_CAPACITY_T,
@@ -41,8 +41,10 @@ from ecs_composex.ecs.ecs_params import CLUSTER_NAME_T, CLUSTER_NAME
 from ecs_composex.ecs_composex import RES_REGX, get_mod_function
 from ecs_composex.vpc import create_vpc_template
 from ecs_composex.vpc import vpc_params
+from ecs_composex.common.stacks import ComposeXStack
 
 ROOT_CLUSTER_NAME = "EcsCluster"
+COMPUTE_STACK_NAME = "Ec2Compute"
 
 VPC_ARGS = [
     vpc_params.PUBLIC_SUBNETS_T,
@@ -92,14 +94,11 @@ def add_vpc_to_root(root_template, session, tags_params=None, **kwargs):
     if tags_params is None:
         tags_params = ()
     vpc_template = create_vpc_template(session=session, **kwargs)
-    vpc_file = FileArtifact("vpc.yml", template=vpc_template, **kwargs)
-    vpc_file.create()
-    LOG.debug(vpc_file.url)
     parameters = {ROOT_STACK_NAME_T: Ref("AWS::StackName")}
     for param in tags_params:
         parameters.update({param.title: Ref(param.title)})
     vpc_stack = root_template.add_resource(
-        Stack("Vpc", TemplateURL=vpc_file.url, Parameters=parameters)
+        ComposeXStack("Vpc", vpc_template, Parameters=parameters, **kwargs)
     )
     return vpc_stack
 
@@ -144,8 +143,6 @@ def add_compute(
     depends_on = []
     root_template.add_parameter(TARGET_CAPACITY)
     compute_template = create_compute_stack(session, **kwargs)
-    compute_file = FileArtifact("compute.yml", template=compute_template[0], **kwargs)
-    compute_file.create()
     parameters = {
         ROOT_STACK_NAME_T: Ref("AWS::StackName"),
         TARGET_CAPACITY_T: Ref(TARGET_CAPACITY),
@@ -183,14 +180,15 @@ def add_compute(
         params_file = FileArtifact("compute.params.json", content=parameters)
         params_file.create()
     compute_stack = root_template.add_resource(
-        Stack(
-            "Compute",
-            TemplateURL=compute_file.url,
+        ComposeXStack(
+            COMPUTE_STACK_NAME,
+            template=compute_template[0],
             Parameters=parameters,
             DependsOn=dependencies,
+            **kwargs
         )
     )
-    dependencies.append("Compute")
+    dependencies.append(COMPUTE_STACK_NAME)
     return compute_stack
 
 
@@ -210,17 +208,16 @@ def add_x_resources(template, session, tags=None, **kwargs):
             create_function = get_mod_function(res_type, function_name)
             if create_function:
                 x_template = create_function(session=session, **kwargs)
-                x_file = FileArtifact(f"{res_type}.yml", template=x_template, **kwargs)
-                x_file.create()
                 depends_on.append(res_type.title().strip())
                 parameters = {ROOT_STACK_NAME_T: Ref("AWS::StackName")}
                 for tag in tags:
                     parameters.update({tag.title: Ref(tag.title)})
                 template.add_resource(
-                    Stack(
+                    ComposeXStack(
                         res_type.title().strip(),
-                        TemplateURL=x_file.url,
+                        template=x_template,
                         Parameters=parameters,
+                        **kwargs
                     )
                 )
     return depends_on
@@ -240,10 +237,6 @@ def add_services(template, depends, session, vpc_stack=None, **kwargs):
     :param kwargs: optional parameters
     """
     services_template = create_services_templates(session=session, **kwargs)
-    services_root_file = FileArtifact(
-        "services.yml", template=services_template, **kwargs
-    )
-    services_root_file.create()
     parameters = {ROOT_STACK_NAME_T: Ref("AWS::StackName")}
     if KEYISSET("CreateCluster", kwargs):
         parameters[ecs_params.CLUSTER_NAME_T] = Ref(ROOT_CLUSTER_NAME)
@@ -271,13 +264,13 @@ def add_services(template, depends, session, vpc_stack=None, **kwargs):
                 vpc_params.APP_SUBNETS_T: Join(",", Ref(vpc_params.APP_SUBNETS)),
             }
         )
-    return Stack(
+    return template.add_resource(ComposeXStack(
         "Services",
-        template=template,
-        TemplateURL=services_root_file.url,
+        template=services_template,
         Parameters=parameters,
         DependsOn=depends,
-    )
+        **kwargs
+    ))
 
 
 def add_ecs_cluster(template, depends_on=None):
@@ -370,8 +363,4 @@ def generate_full_template(session=None, **kwargs):
 
     for resource in template.resources:
         add_object_tags(template.resources[resource], tags_params[1])
-    template_url = upload_template(
-        template.to_json(), kwargs["BucketName"], "composex_root.json", session=session
-    )
-    LOG.info(f"Root stack template uploaded to {template_url}")
     return template, stack_params

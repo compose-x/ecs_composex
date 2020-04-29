@@ -9,7 +9,7 @@ You can change the names *values* so you like so long as you keep it [a-zA-Z0-9]
 """
 
 from troposphere import Parameter, Select, Split, Ref, ImportValue, Sub
-
+from ecs_composex import CFN_EXPORT_DELIMITER as delim
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.vpc.vpc_params import SG_ID_TYPE
 
@@ -143,5 +143,5 @@ def get_import_service_group_id(remote_service_name):
     Function to return the ImportValue(Sub()) for given service name
     """
     return ImportValue(
-        Sub(f"${{{ROOT_STACK_NAME_T}}}-{remote_service_name}-{SERVICE_GROUP_ID_T}")
+        Sub(f"${{{ROOT_STACK_NAME_T}}}{delim}{remote_service_name}{delim}{SERVICE_GROUP_ID_T}")
     )

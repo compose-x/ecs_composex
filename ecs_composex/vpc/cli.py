@@ -10,7 +10,7 @@ from boto3 import session
 from ecs_composex.common.aws import CURATED_AZS, BUCKET_NAME
 from ecs_composex.vpc import create_vpc_template
 from ecs_composex import XFILE_DEST, DIR_DEST
-from ecs_composex.common.templates import FileArtifact
+from ecs_composex.common.files import FileArtifact
 
 
 def main():

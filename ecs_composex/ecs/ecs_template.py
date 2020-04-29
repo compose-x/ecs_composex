@@ -14,6 +14,7 @@ from ecs_composex.ecs.ecs_params import CLUSTER_NAME, CLUSTER_NAME_T
 from ecs_composex.ecs.ecs_service import generate_service_template
 from ecs_composex.vpc import vpc_params
 from ecs_composex.common.tagging import generate_tags_parameters, add_object_tags
+from ecs_composex.common.stacks import ComposeXStack
 
 
 def validate_labels(service_labels):
@@ -92,19 +93,18 @@ def add_services_stacks(
         LOG.debug(dependencies)
         parameters.update(service_set[1])
         if service_set[0]:
-            Stack(
+            root_tpl.add_resource(ComposeXStack(
                 service_name,
-                template=root_tpl,
-                TemplateURL=service_set[0],
+                template=service_set[0],
                 Parameters=parameters,
                 DependsOn=dependencies,
-            )
+                **kwargs
+            ))
         else:
             Warning(
                 f"Template for service {service_name}" "was not successfully generated"
             )
         LOG.debug(f"Service {service_name} added.")
-        LOG.info(f"Template URL: {service_set[0]}")
 
 
 def generate_services_templates(compose_content, session=None, **kwargs):

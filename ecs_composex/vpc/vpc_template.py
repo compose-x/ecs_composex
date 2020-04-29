@@ -21,7 +21,7 @@ from ecs_composex.common import cfn_params, cfn_conditions, build_template
 from ecs_composex.common.cfn_conditions import USE_CLOUDMAP_CON_T, USE_STACK_NAME_CON_T
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME, ROOT_STACK_NAME_T
 from ecs_composex.common.outputs import formatted_outputs
-from ecs_composex.common.templates import validate_template
+from ecs_composex.common.files import validate_template
 from ecs_composex.vpc import vpc_params, aws_mappings, vpc_conditions
 from ecs_composex.vpc.vpc_maths import get_subnet_layers
 from ecs_composex.vpc.vpc_subnets import (
@@ -201,20 +201,17 @@ def add_vpc_core(template, vpc_cidr):
     return (vpc, igw)
 
 
-def generate_vpc_template(cidr_block, azs, session=None, single_nat=False):
+def generate_vpc_template(cidr_block, azs, single_nat=False):
     """
     Function to generate a new VPC template for CFN
 
     :param cidr_block: str of the CIDR used for this VPC
     :param azs: list of AWS Azs i.e. ['eu-west-1a', 'eu-west-1b']
-    :param session: override session from boto3.session.Sesssion().
     :param single_nat: True/False if you want a single NAT for the Application Subnets
     :type single_nat: bool
 
     :return: Template() representing the VPC and associated resources
     """
-    if session is None:
-        session = boto3.session.Session()
     azs_count = len(azs)
     az_range = range(0, azs_count)
     layers = get_subnet_layers(cidr_block, len(azs))
@@ -245,6 +242,4 @@ def generate_vpc_template(cidr_block, azs, session=None, single_nat=False):
     add_vpc_cidrs_outputs(template, layers)
     add_cloudmap_support(template, vpc[0])
     validate_template(template.to_json(), "vpc.json")
-    with open("/tmp/vpc.json", "w") as fd:
-        fd.write(template.to_json())
     return template

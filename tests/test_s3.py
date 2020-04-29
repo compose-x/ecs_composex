@@ -5,7 +5,7 @@
 
 import json
 from os import environ
-from ecs_composex.common.templates import (
+from ecs_composex.common.files import (
     check_bucket, upload_template
 )
 
