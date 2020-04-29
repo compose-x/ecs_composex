@@ -16,8 +16,10 @@ from ecs_composex.vpc.vpc_params import (
     STORAGE_SUBNETS_T,
 )
 from ecs_composex.vpc.vpc_conditions import (
-    USE_VPC_MAP_ID_CON_T, USE_VPC_MAP_ID_CON,
-    NOT_USE_VPC_MAP_ID_CON_T, NOT_USE_VPC_MAP_ID_CON
+    USE_VPC_MAP_ID_CON_T,
+    USE_VPC_MAP_ID_CON,
+    NOT_USE_VPC_MAP_ID_CON_T,
+    NOT_USE_VPC_MAP_ID_CON,
 )
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T, ROOT_STACK_NAME
 from ecs_composex.rds.rds_params import (
@@ -75,12 +77,9 @@ def add_db_stack(
         add_parameters(db_template, params_and_tags[0])
         for obj in db_template.resources:
             add_object_tags(db_template.resources[obj], params_and_tags[1])
-    root_template.add_resource(ComposeXStack(
-        db_name,
-        template=db_template,
-        Parameters=parameters,
-        **kwargs
-    ))
+    root_template.add_resource(
+        ComposeXStack(db_name, template=db_template, Parameters=parameters, **kwargs)
+    )
 
 
 def init_rds_root_template():
@@ -89,21 +88,10 @@ def init_rds_root_template():
     :return:
     """
     template = build_template(
-        "RDS Root Template",
-        [
-            VPC_MAP_ID,
-            VPC_ID,
-            STORAGE_SUBNETS
-        ]
+        "RDS Root Template", [VPC_MAP_ID, VPC_ID, STORAGE_SUBNETS]
     )
-    template.add_condition(
-        USE_VPC_MAP_ID_CON_T,
-        USE_VPC_MAP_ID_CON
-    )
-    template.add_condition(
-        NOT_USE_VPC_MAP_ID_CON_T,
-        NOT_USE_VPC_MAP_ID_CON
-    )
+    template.add_condition(USE_VPC_MAP_ID_CON_T, USE_VPC_MAP_ID_CON)
+    template.add_condition(NOT_USE_VPC_MAP_ID_CON_T, NOT_USE_VPC_MAP_ID_CON)
     return template
 
 

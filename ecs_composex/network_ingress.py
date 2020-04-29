@@ -19,7 +19,7 @@ def define_resource_strategy(resource):
     :return:
     """
     strategy = 0
-    if not KEYISSET('Services', resource):
+    if not KEYISSET("Services", resource):
         return
     if KEYISSET("Settings", resource) and KEYISSET("is_global", resource["Settings"]):
         strategy = SG_TO_ALL
@@ -37,7 +37,7 @@ def generate_resource_ingress(resource_name, resource):
     :return:
     """
     ingresses = {}
-    services = resource['Services']
+    services = resource["Services"]
     for service in services:
         ingresses[service] = None
     return ingresses

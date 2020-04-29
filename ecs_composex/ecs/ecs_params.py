@@ -143,5 +143,7 @@ def get_import_service_group_id(remote_service_name):
     Function to return the ImportValue(Sub()) for given service name
     """
     return ImportValue(
-        Sub(f"${{{ROOT_STACK_NAME_T}}}{delim}{remote_service_name}{delim}{SERVICE_GROUP_ID_T}")
+        Sub(
+            f"${{{ROOT_STACK_NAME_T}}}{delim}{remote_service_name}{delim}{SERVICE_GROUP_ID_T}"
+        )
     )

@@ -11,16 +11,16 @@ from troposphere.ecs import (
     NetworkConfiguration,
     DeploymentController,
 )
+
 from ecs_composex import CFN_EXPORT_DELIMITER as delim
 from ecs_composex.common import build_template, cfn_params, add_parameters
 from ecs_composex.common import cfn_conditions
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.outputs import formatted_outputs
 from ecs_composex.common.tagging import add_object_tags
-from ecs_composex.common.files import FileArtifact
 from ecs_composex.ecs import ecs_conditions
 from ecs_composex.ecs import ecs_params
-from ecs_composex.ecs.ecs_iam import add_service_roles, assign_x_resources_to_service
+from ecs_composex.ecs.ecs_iam import add_service_roles
 from ecs_composex.ecs.ecs_loadbalancing import define_grace_period
 from ecs_composex.ecs.ecs_networking import (
     define_service_network_config,
@@ -147,12 +147,10 @@ def initialize_service_template(service_name):
         ecs_conditions.SERVICE_COUNT_ZERO_AND_FARGATE_CON,
     )
     service_tpl.add_condition(
-        vpc_conditions.USE_VPC_MAP_ID_CON_T,
-        vpc_conditions.USE_VPC_MAP_ID_CON
+        vpc_conditions.USE_VPC_MAP_ID_CON_T, vpc_conditions.USE_VPC_MAP_ID_CON
     )
     service_tpl.add_condition(
-        vpc_conditions.NOT_USE_VPC_MAP_ID_CON_T,
-        vpc_conditions.NOT_USE_VPC_MAP_ID_CON
+        vpc_conditions.NOT_USE_VPC_MAP_ID_CON_T, vpc_conditions.NOT_USE_VPC_MAP_ID_CON
     )
     return service_tpl
 
@@ -175,13 +173,7 @@ def generate_service_template_outputs(template, service_name):
 
 
 def generate_service_template(
-    compose_content,
-    service_name,
-    service,
-    x_resources_config,
-    tags=None,
-    session=None,
-    **kwargs,
+    compose_content, service_name, service, tags=None, session=None, **kwargs,
 ):
     """
     Function to generate single service template based on its definition in
@@ -216,9 +208,6 @@ def generate_service_template(
     add_service_roles(service_tpl)
     parameters.update(
         add_task_defnition(service_tpl, service_name, service, network_settings)
-    )
-    assign_x_resources_to_service(
-        service_name, service_tpl, x_resources_config, **kwargs
     )
     service_sgs = [ecs_params.SG_T, ecs_params.CLUSTER_SG_ID]
     service_network_config = define_service_network_config(

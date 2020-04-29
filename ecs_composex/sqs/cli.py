@@ -5,15 +5,18 @@
 import sys
 import os
 import argparse
+import boto3
 
+from ecs_composex import XFILE_DEST
 from ecs_composex import DIR_DEST
 from ecs_composex.common.aws import BUCKET_NAME
-from ecs_composex.sqs import create_sqs_template
+from ecs_composex.common import load_composex_file, validate_kwargs, validate_input
 from ecs_composex.common.files import FileArtifact
 from ecs_composex.common.stacks import render_final_template
+from ecs_composex.sqs.sqs_template import generate_sqs_root_template
 
 
-def main():
+def sqs_parser():
     """Console script for ecs_composex."""
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -48,13 +51,29 @@ def main():
         help="Path to the Docker Compose / ComposeX file",
     )
     parser.add_argument("_", nargs="*")
-    args = parser.parse_args()
+    return parser
 
-    template = create_sqs_template(**vars(args))
+
+def main():
+    """
+    Main function to invoke ecs_composex-sqs CLI
+    :return:
+    """
+    res_key = f"x-{os.path.basename(os.path.dirname(os.path.abspath(__file__)))}"
+    parser = sqs_parser()
+    args = parser.parse_args()
+    kwargs = vars(args)
+    content = load_composex_file(kwargs[XFILE_DEST])
+    validate_input(content, res_key)
+    validate_kwargs(["BucketName"], kwargs)
+    session = boto3.session.Session()
+    template = generate_sqs_root_template(
+        compose_content=content, session=session, **kwargs
+    )
+
     render_final_template(template)
     template_file = FileArtifact(args.output_file, template=template, **vars(args))
     template_file.create()
-
     return 0
 
 

@@ -5,7 +5,6 @@ Create the VPC template and its associated resources
 TODO : Implement VPC Endpoints, NetworkACLs, VPC Flow logging to S3.
 """
 
-import boto3
 from troposphere import GetAtt, Tags, Join, Ref, Sub, If
 from troposphere.ec2 import (
     VPC as VPCType,
@@ -21,7 +20,6 @@ from ecs_composex.common import cfn_params, cfn_conditions, build_template
 from ecs_composex.common.cfn_conditions import USE_CLOUDMAP_CON_T, USE_STACK_NAME_CON_T
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME, ROOT_STACK_NAME_T
 from ecs_composex.common.outputs import formatted_outputs
-from ecs_composex.common.files import validate_template
 from ecs_composex.vpc import vpc_params, aws_mappings, vpc_conditions
 from ecs_composex.vpc.vpc_maths import get_subnet_layers
 from ecs_composex.vpc.vpc_subnets import (

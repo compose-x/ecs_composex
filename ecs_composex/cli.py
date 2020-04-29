@@ -19,7 +19,7 @@ from ecs_composex.common.cfn_tools import build_config_template_file
 from ecs_composex.common.files import FileArtifact
 from ecs_composex.common.stacks import render_final_template
 from ecs_composex.compute.compute_params import CLUSTER_NAME_T
-from ecs_composex.root import generate_full_template
+from ecs_composex.ecs_composex import generate_full_template
 from ecs_composex.vpc.vpc_params import (
     APP_SUBNETS_T,
     PUBLIC_SUBNETS_T,
