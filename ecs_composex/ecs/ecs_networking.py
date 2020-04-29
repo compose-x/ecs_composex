@@ -18,7 +18,8 @@ from ecs_composex.common import KEYISSET, LOG
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.ecs.ecs_loadbalancing import define_service_load_balancing
 from ecs_composex.ecs.ecs_params import SERVICE_NAME_T, SERVICE_NAME, SG_T
-from ecs_composex.vpc.vpc_params import NAMESPACE_ID_IMPORT, VPC_ID
+from ecs_composex.vpc.vpc_params import VPC_ID, VPC_MAP_ID
+from ecs_composex.vpc.vpc_conditions import USE_VPC_MAP_ID_CON_T
 
 
 def add_service_default_sg(template):
@@ -56,8 +57,9 @@ def add_service_to_map(template, service_name, service, settings):
     sd_service = SdService(
         "EcsDiscoveryService",
         template=template,
+        Condition=USE_VPC_MAP_ID_CON_T,
         Description=f"{service_name}",
-        NamespaceId=NAMESPACE_ID_IMPORT,
+        NamespaceId=Ref(VPC_MAP_ID),
         HealthCheckCustomConfig=SdHealthCheckCustomConfig(FailureThreshold=1.0),
         DnsConfig=SdDnsConfig(
             RoutingPolicy="MULTIVALUE",

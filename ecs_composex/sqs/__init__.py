@@ -13,7 +13,7 @@ RES_KEY = f"x-{os.path.basename(os.path.dirname(os.path.abspath(__file__)))}"
 SQS_SSM_PREFIX = f"/{RES_KEY}/"
 
 
-def create_sqs_template(session=None, **kwargs):
+def create_sqs_template(services_stack=None, session=None, **kwargs):
     """
     Creates the CFN Troposphere template
 

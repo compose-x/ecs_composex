@@ -46,7 +46,7 @@ USE_SUB_ZONE = Parameter(
 )
 
 VPC_MAP_ID_T = "VpcDiscoveryMapId"
-VPC_MAP_ID = Parameter(VPC_MAP_ID_T, Type="String", Default="<none>")
+VPC_MAP_ID = Parameter(VPC_MAP_ID_T, Type="String", Default="default")
 
 VPC_MAP_ARN_T = "VpcDiscoveryMapArn"
 VPC_MAP_ARN = Parameter(VPC_MAP_ARN_T, Type="String", Default="<none>")

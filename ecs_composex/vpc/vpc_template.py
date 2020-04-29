@@ -241,5 +241,4 @@ def generate_vpc_template(cidr_block, azs, single_nat=False):
     )
     add_vpc_cidrs_outputs(template, layers)
     add_cloudmap_support(template, vpc[0])
-    validate_template(template.to_json(), "vpc.json")
     return template

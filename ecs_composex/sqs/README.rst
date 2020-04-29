@@ -6,7 +6,7 @@ exports so that they can be used and referenced to/by services.
 
 
 Declaration of queues in ComposeX
-==================================
+---------------------------------
 
 The SQS queues are referenced with the key *x-sqs* in the compose file.
 
@@ -22,6 +22,7 @@ The SQS queues are referenced with the key *x-sqs* in the compose file.
        Services: []
        Settings: {}
        
+
 Queue properties
 ----------------
 
@@ -30,7 +31,7 @@ exact pattern as for the `CFN SQS definition`_.
 There was no reason to re-invent the wheel and therefore right up a massive amount of documentation.
 
 Redrive policy
-""""""""""""""
+^^^^^^^^^^^^^^
 
 The redrive policy works exactly as you would expect it and is defined in the exact same way as for within
 the SQS proprties. Only, here, you only need to put the queue name of the DLQ. The generated ARN etc. will be
@@ -68,7 +69,7 @@ Supported attributes:
 * `EnvNames`_
 
 EnvNames
-""""""""
+^^^^^^^^
 
 This is a list of names that you would want to use for the SQS Queue exposed to the microservice.
 By default, it will always expose the name of the queue as written in the composex file.
@@ -91,7 +92,7 @@ you are good to go.
 
 
 Services
---------
+^^^^^^^^
 
 This is where the value of using this tool comes in play: you can list the services you want to provide access to the queue to,
 by listing these.

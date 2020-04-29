@@ -1,0 +1,728 @@
+---
+# RDS Only settings
+
+configs:
+  serviceA:
+    use_alb: True
+    is_public: True
+  serviceB:
+    is_public: False
+
+  globals:
+    network:
+      use_cloudmap: True
+
+x-rds:
+  dbA:
+    Properties:
+      Engine: "aurora-mysql"
+      EngineVersion: "5.7.12"
+    Services:
+      - name: serviceA
+        access: RW
+      - name: serviceB
+        access: RW
+      - name: serviceC
+        access: RW
+      - name: serviceD
+        access: RW
+      - name: serviceE
+        access: RW
+      - name: serviceF
+        access: RW
+      - name: serviceG
+        access: RW
+      - name: serviceH
+        access: RW
+      - name: serviceI
+        access: RW
+      - name: serviceJ
+        access: RW
+      - name: serviceK
+        access: RW
+      - name: serviceL
+        access: RW
+      - name: serviceM
+        access: RW
+      - name: serviceN
+        access: RW
+      - name: serviceO
+        access: RW
+      - name: serviceP
+        access: RW
+      - name: serviceQ
+        access: RW
+      - name: serviceR
+        access: RW
+      - name: serviceS
+        access: RW
+      - name: serviceT
+        access: RW
+      - name: serviceU
+        access: RW
+      - name: serviceV
+        access: RW
+      - name: serviceW
+        access: RW
+      - name: serviceX
+        access: RW
+      - name: serviceY
+        access: RW
+      - name: serviceZ
+        access: RW
+      - name: serviceA1
+        access: RW
+      - name: serviceB1
+        access: RW
+      - name: serviceC1
+        access: RW
+      - name: serviceD1
+        access: RW
+      - name: serviceE1
+        access: RW
+      - name: serviceF1
+        access: RW
+      - name: serviceG1
+        access: RW
+      - name: serviceH1
+        access: RW
+      - name: serviceI1
+        access: RW
+      - name: serviceJ1
+        access: RW
+      - name: serviceK1
+        access: RW
+      - name: serviceL1
+        access: RW
+      - name: serviceM1
+        access: RW
+      - name: serviceN1
+        access: RW
+      - name: serviceO1
+        access: RW
+      - name: serviceP1
+        access: RW
+      - name: serviceQ1
+        access: RW
+      - name: serviceR1
+        access: RW
+      - name: serviceS1
+        access: RW
+      - name: serviceT1
+        access: RW
+      - name: serviceU1
+        access: RW
+      - name: serviceV1
+        access: RW
+      - name: serviceW1
+        access: RW
+      - name: serviceX1
+        access: RW
+      - name: serviceY1
+        access: RW
+      - name: serviceZ1
+        access: RW
+
+  dbB:
+    Properties:
+      Engine: "aurora-mysql"
+      EngineVersion: "5.7.12"
+    Services:
+      - name: serviceA
+        access: RW
+      - name: serviceB
+        access: RW
+      - name: serviceC
+        access: RW
+      - name: serviceD
+        access: RW
+      - name: serviceE
+        access: RW
+      - name: serviceF
+        access: RW
+      - name: serviceG
+        access: RW
+      - name: serviceH
+        access: RW
+      - name: serviceI
+        access: RW
+      - name: serviceJ
+        access: RW
+      - name: serviceK
+        access: RW
+      - name: serviceL
+        access: RW
+      - name: serviceM
+        access: RW
+      - name: serviceN
+        access: RW
+      - name: serviceO
+        access: RW
+      - name: serviceP
+        access: RW
+      - name: serviceQ
+        access: RW
+      - name: serviceR
+        access: RW
+      - name: serviceS
+        access: RW
+      - name: serviceT
+        access: RW
+      - name: serviceU
+        access: RW
+      - name: serviceV
+        access: RW
+      - name: serviceW
+        access: RW
+      - name: serviceX
+        access: RW
+      - name: serviceY
+        access: RW
+      - name: serviceZ
+        access: RW
+      - name: serviceA1
+        access: RW
+      - name: serviceB1
+        access: RW
+      - name: serviceC1
+        access: RW
+      - name: serviceD1
+        access: RW
+      - name: serviceE1
+        access: RW
+      - name: serviceF1
+        access: RW
+      - name: serviceG1
+        access: RW
+      - name: serviceH1
+        access: RW
+      - name: serviceI1
+        access: RW
+      - name: serviceJ1
+        access: RW
+      - name: serviceK1
+        access: RW
+      - name: serviceL1
+        access: RW
+      - name: serviceM1
+        access: RW
+      - name: serviceN1
+        access: RW
+      - name: serviceO1
+        access: RW
+      - name: serviceP1
+        access: RW
+      - name: serviceQ1
+        access: RW
+      - name: serviceR1
+        access: RW
+      - name: serviceS1
+        access: RW
+      - name: serviceT1
+        access: RW
+      - name: serviceU1
+        access: RW
+      - name: serviceV1
+        access: RW
+      - name: serviceW1
+        access: RW
+      - name: serviceX1
+        access: RW
+      - name: serviceY1
+        access: RW
+      - name: serviceZ1
+        access: RW
+
+  dbC:
+    Properties:
+      Engine: "aurora-mysql"
+      EngineVersion: "5.7.12"
+    Services:
+      - name: serviceA
+        access: RW
+      - name: serviceB
+        access: RW
+      - name: serviceC
+        access: RW
+      - name: serviceD
+        access: RW
+      - name: serviceE
+        access: RW
+      - name: serviceF
+        access: RW
+      - name: serviceG
+        access: RW
+      - name: serviceH
+        access: RW
+      - name: serviceI
+        access: RW
+      - name: serviceJ
+        access: RW
+      - name: serviceK
+        access: RW
+      - name: serviceL
+        access: RW
+      - name: serviceM
+        access: RW
+      - name: serviceN
+        access: RW
+      - name: serviceO
+        access: RW
+      - name: serviceP
+        access: RW
+      - name: serviceQ
+        access: RW
+      - name: serviceR
+        access: RW
+      - name: serviceS
+        access: RW
+      - name: serviceT
+        access: RW
+      - name: serviceU
+        access: RW
+      - name: serviceV
+        access: RW
+      - name: serviceW
+        access: RW
+      - name: serviceX
+        access: RW
+      - name: serviceY
+        access: RW
+      - name: serviceZ
+        access: RW
+      - name: serviceA1
+        access: RW
+      - name: serviceB1
+        access: RW
+      - name: serviceC1
+        access: RW
+      - name: serviceD1
+        access: RW
+      - name: serviceE1
+        access: RW
+      - name: serviceF1
+        access: RW
+      - name: serviceG1
+        access: RW
+      - name: serviceH1
+        access: RW
+      - name: serviceI1
+        access: RW
+      - name: serviceJ1
+        access: RW
+      - name: serviceK1
+        access: RW
+      - name: serviceL1
+        access: RW
+      - name: serviceM1
+        access: RW
+      - name: serviceN1
+        access: RW
+      - name: serviceO1
+        access: RW
+      - name: serviceP1
+        access: RW
+      - name: serviceQ1
+        access: RW
+      - name: serviceR1
+        access: RW
+      - name: serviceS1
+        access: RW
+      - name: serviceT1
+        access: RW
+      - name: serviceU1
+        access: RW
+      - name: serviceV1
+        access: RW
+      - name: serviceW1
+        access: RW
+      - name: serviceX1
+        access: RW
+      - name: serviceY1
+        access: RW
+      - name: serviceZ1
+        access: RW
+
+  dbD:
+    Properties:
+      Engine: "aurora-mysql"
+      EngineVersion: "5.7.12"
+    Services:
+      - name: serviceA
+        access: RW
+      - name: serviceB
+        access: RW
+      - name: serviceC
+        access: RW
+      - name: serviceD
+        access: RW
+      - name: serviceE
+        access: RW
+      - name: serviceF
+        access: RW
+      - name: serviceG
+        access: RW
+      - name: serviceH
+        access: RW
+      - name: serviceI
+        access: RW
+      - name: serviceJ
+        access: RW
+      - name: serviceK
+        access: RW
+      - name: serviceL
+        access: RW
+      - name: serviceM
+        access: RW
+      - name: serviceN
+        access: RW
+      - name: serviceO
+        access: RW
+      - name: serviceP
+        access: RW
+      - name: serviceQ
+        access: RW
+      - name: serviceR
+        access: RW
+      - name: serviceS
+        access: RW
+      - name: serviceT
+        access: RW
+      - name: serviceU
+        access: RW
+      - name: serviceV
+        access: RW
+      - name: serviceW
+        access: RW
+      - name: serviceX
+        access: RW
+      - name: serviceY
+        access: RW
+      - name: serviceZ
+        access: RW
+      - name: serviceA1
+        access: RW
+      - name: serviceB1
+        access: RW
+      - name: serviceC1
+        access: RW
+      - name: serviceD1
+        access: RW
+      - name: serviceE1
+        access: RW
+      - name: serviceF1
+        access: RW
+      - name: serviceG1
+        access: RW
+      - name: serviceH1
+        access: RW
+      - name: serviceI1
+        access: RW
+      - name: serviceJ1
+        access: RW
+      - name: serviceK1
+        access: RW
+      - name: serviceL1
+        access: RW
+      - name: serviceM1
+        access: RW
+      - name: serviceN1
+        access: RW
+      - name: serviceO1
+        access: RW
+      - name: serviceP1
+        access: RW
+      - name: serviceQ1
+        access: RW
+      - name: serviceR1
+        access: RW
+      - name: serviceS1
+        access: RW
+      - name: serviceT1
+        access: RW
+      - name: serviceU1
+        access: RW
+      - name: serviceV1
+        access: RW
+      - name: serviceW1
+        access: RW
+      - name: serviceX1
+        access: RW
+      - name: serviceY1
+        access: RW
+      - name: serviceZ1
+        access: RW
+
+  dbE:
+    Properties:
+      Engine: "aurora-mysql"
+      EngineVersion: "5.7.12"
+    Services:
+      - name: serviceA
+        access: RW
+      - name: serviceB
+        access: RW
+      - name: serviceC
+        access: RW
+      - name: serviceD
+        access: RW
+      - name: serviceE
+        access: RW
+      - name: serviceF
+        access: RW
+      - name: serviceG
+        access: RW
+      - name: serviceH
+        access: RW
+      - name: serviceI
+        access: RW
+      - name: serviceJ
+        access: RW
+      - name: serviceK
+        access: RW
+      - name: serviceL
+        access: RW
+      - name: serviceM
+        access: RW
+      - name: serviceN
+        access: RW
+      - name: serviceO
+        access: RW
+      - name: serviceP
+        access: RW
+      - name: serviceQ
+        access: RW
+      - name: serviceR
+        access: RW
+      - name: serviceS
+        access: RW
+      - name: serviceT
+        access: RW
+      - name: serviceU
+        access: RW
+      - name: serviceV
+        access: RW
+      - name: serviceW
+        access: RW
+      - name: serviceX
+        access: RW
+      - name: serviceY
+        access: RW
+      - name: serviceZ
+        access: RW
+      - name: serviceA1
+        access: RW
+      - name: serviceB1
+        access: RW
+      - name: serviceC1
+        access: RW
+      - name: serviceD1
+        access: RW
+      - name: serviceE1
+        access: RW
+      - name: serviceF1
+        access: RW
+      - name: serviceG1
+        access: RW
+      - name: serviceH1
+        access: RW
+      - name: serviceI1
+        access: RW
+      - name: serviceJ1
+        access: RW
+      - name: serviceK1
+        access: RW
+      - name: serviceL1
+        access: RW
+      - name: serviceM1
+        access: RW
+      - name: serviceN1
+        access: RW
+      - name: serviceO1
+        access: RW
+      - name: serviceP1
+        access: RW
+      - name: serviceQ1
+        access: RW
+      - name: serviceR1
+        access: RW
+      - name: serviceS1
+        access: RW
+      - name: serviceT1
+        access: RW
+      - name: serviceU1
+        access: RW
+      - name: serviceV1
+        access: RW
+      - name: serviceW1
+        access: RW
+      - name: serviceX1
+        access: RW
+      - name: serviceY1
+        access: RW
+      - name: serviceZ1
+        access: RW
+
+services:
+  serviceA:
+    image: nginx
+
+  serviceB:
+    image: nginx
+
+  serviceC:
+    image: nginx
+
+  serviceD:
+    image: nginx
+
+  serviceE:
+    image: nginx
+
+  serviceF:
+    image: nginx
+
+  serviceG:
+    image: nginx
+
+  serviceH:
+    image: nginx
+
+  serviceI:
+    image: nginx
+
+  serviceJ:
+    image: nginx
+
+  serviceK:
+    image: nginx
+
+  serviceL:
+    image: nginx
+
+  serviceM:
+    image: nginx
+
+  serviceN:
+    image: nginx
+
+  serviceO:
+    image: nginx
+
+  serviceP:
+    image: nginx
+
+  serviceQ:
+    image: nginx
+
+  serviceR:
+    image: nginx
+
+  serviceS:
+    image: nginx
+
+  serviceT:
+    image: nginx
+
+  serviceU:
+    image: nginx
+
+  serviceV:
+    image: nginx
+
+  serviceW:
+    image: nginx
+
+  serviceX:
+    image: nginx
+
+  serviceY:
+    image: nginx
+
+  serviceZ:
+    image: nginx
+
+  serviceA1:
+    image: nginx
+
+  serviceB1:
+    image: nginx
+
+  serviceC1:
+    image: nginx
+
+  serviceD1:
+    image: nginx
+
+  serviceE1:
+    image: nginx
+
+  serviceF1:
+    image: nginx
+
+  serviceG1:
+    image: nginx
+
+  serviceH1:
+    image: nginx
+
+  serviceI1:
+    image: nginx
+
+  serviceJ1:
+    image: nginx
+
+  serviceK1:
+    image: nginx
+
+  serviceL1:
+    image: nginx
+
+  serviceM1:
+    image: nginx
+
+  serviceN1:
+    image: nginx
+
+  serviceO1:
+    image: nginx
+
+  serviceP1:
+    image: nginx
+
+  serviceQ1:
+    image: nginx
+
+  serviceR1:
+    image: nginx
+
+  serviceS1:
+    image: nginx
+
+  serviceT1:
+    image: nginx
+
+  serviceU1:
+    image: nginx
+
+  serviceV1:
+    image: nginx
+
+  serviceW1:
+    image: nginx
+
+  serviceX1:
+    image: nginx
+
+  serviceY1:
+    image: nginx
+
+  serviceZ1:
+    image: nginx
+
+
+x-tags:
+  - name: costcentre
+    value: lambda-my-aws
+  - name: mail
+    value: john@lambda-my-aws.io

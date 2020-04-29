@@ -125,7 +125,7 @@ FARGATE_CPU_RAM_CONFIG = Parameter(
         "4096!29696",
         "4096!30720",
     ],
-    Default="512!1024",
+    Default="256!512",
 )
 
 FARGATE_CPU = Select(0, Split("!", Ref(FARGATE_CPU_RAM_CONFIG)))

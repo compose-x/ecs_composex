@@ -108,6 +108,59 @@ def generate_x_resources_envvars(resources, resource_type, function, **kwargs):
     return mod_envvars
 
 
+def iam_resource_configs(
+    resource_type, resources, res_name, **kwargs
+):
+    """
+    Function to deal with permissions access and env variables for IAM based services
+    :param resource_type:
+    :param resources:
+    :param res_name:
+    :param kwargs:
+    :return:
+    """
+    configs = {resource_type: {}}
+    module_name = f"{res_name}.{res_name}_perms"
+    perms_function_name = f"generate_{res_name}_permissions"
+    vars_function_name = f"generate_{res_name}_envvars"
+    perms_function = get_mod_function(module_name, perms_function_name)
+    vars_function = get_mod_function(module_name, vars_function_name)
+    LOG.debug(perms_function)
+    LOG.debug(vars_function)
+    if perms_function:
+        configs[resource_type]["permissions"] = generate_x_resources_policies(
+            resources, resource_type, perms_function, **kwargs
+        )
+    if vars_function:
+        configs[resource_type]["envvars"] = generate_x_resources_envvars(
+            resources, resource_type, vars_function, **kwargs
+        )
+    return configs
+
+
+def tcp_resource_configs(
+    content, resource_configs, resource_type, resources, res_name, **kwargs
+):
+    """
+    Function to deal with permissions access and env variables for IAM based services
+    :param content: Docker ComposeX content
+    :param resource_configs:
+    :param resource_type:
+    :param resources:
+    :param res_name:
+    :param kwargs:
+    :return:
+    """
+    configs = {}
+    resource_sets = {}
+    module_name = f"{res_name}.{res_name}_perms"
+    perms_function_name = f"generate_{res_name}_permissions"
+    vars_function_name = f"generate_{res_name}_envvars"
+    vars_function = get_mod_function(module_name, vars_function_name)
+    LOG.debug(vars_function)
+    return configs
+
+
 def generate_x_resource_configs(content, **kwargs):
     """
     Function that evaluates only the x- sections of the Compose file
@@ -119,36 +172,29 @@ def generate_x_resource_configs(content, **kwargs):
     :return: resource_configs
     :rtype: dict
     """
+    iam_services = ["x-sqs"]
+    tcp_services = ["x-rds"]
     exempt_keys = ["x-rds", "x-tags", "x-cluster"]
     resource_configs = {}
     options = get_composex_globals(content)
     kwargs.update(options)
     for resource_type in content.keys():
-        res_name = RES_REGX.sub("", resource_type)
+        resource_modname = RES_REGX.sub("", resource_type)
         resources = content[resource_type]
         if (
-            resource_type.startswith("x-")
-            and not (resource_type in exempt_keys)
-            and content[resource_type]
+            resource_type in iam_services
+            and KEYISSET(resource_type, content)
         ):
-            resource_configs[resource_type] = {}
-            module_name = f"{res_name}.{res_name}_perms"
-            perms_function_name = f"generate_{res_name}_permissions"
-            vars_function_name = f"generate_{res_name}_envvars"
-            perms_function = get_mod_function(module_name, perms_function_name)
-            vars_function = get_mod_function(module_name, vars_function_name)
-            LOG.debug(perms_function)
-            LOG.debug(vars_function)
-            if perms_function:
-                resource_configs[resource_type][
-                    "permissions"
-                ] = generate_x_resources_policies(
-                    resources, resource_type, perms_function, **kwargs
+            resource_configs.update(
+                iam_resource_configs(
+                    resource_type, resources, resource_modname, **kwargs
                 )
-            if vars_function:
-                resource_configs[resource_type][
-                    "envvars"
-                ] = generate_x_resources_envvars(
-                    resources, resource_type, vars_function, **kwargs
-                )
+            )
+        elif (
+            resource_type in tcp_services
+            and KEYISSET(resource_type, content)
+        ):
+            resource_configs.update(
+                tcp_resource_configs(content, resource_type, resources, resource_modname, **kwargs)
+            )
     return resource_configs
