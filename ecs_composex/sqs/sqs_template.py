@@ -6,7 +6,6 @@ from troposphere import Tags, Sub, GetAtt, If, Ref
 from troposphere.sqs import Queue, RedrivePolicy
 from troposphere.ssm import Parameter as SsmParameter
 
-from ecs_composex import CFN_EXPORT_DELIMITER as DELIM
 from ecs_composex.common import (
     build_template,
     add_parameters,

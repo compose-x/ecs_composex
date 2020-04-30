@@ -181,7 +181,7 @@ def add_instance(template, db, **kwargs):
     :param kwargs:
     :return:
     """
-    db = DBInstance(
+    DBInstance(
         DATABASE_T,
         template=template,
         Engine=Ref(DB_ENGINE_NAME),

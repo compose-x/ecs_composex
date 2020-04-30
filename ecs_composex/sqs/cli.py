@@ -7,8 +7,7 @@ import os
 import argparse
 import boto3
 
-from ecs_composex import XFILE_DEST
-from ecs_composex import DIR_DEST
+from ecs_composex.common.ecs_composex import XFILE_DEST, DIR_DEST
 from ecs_composex.common.aws import BUCKET_NAME
 from ecs_composex.common import load_composex_file, validate_kwargs, validate_input
 from ecs_composex.common.files import FileArtifact

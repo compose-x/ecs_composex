@@ -9,7 +9,7 @@ You can change the names *values* so you like so long as you keep it [a-zA-Z0-9]
 """
 
 from troposphere import Parameter, Select, Split, Ref, ImportValue, Sub
-from ecs_composex import CFN_EXPORT_DELIMITER as delim
+from ecs_composex.common.ecs_composex import CFN_EXPORT_DELIMITER as delim
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.vpc.vpc_params import SG_ID_TYPE
 

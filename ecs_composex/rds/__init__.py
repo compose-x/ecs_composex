@@ -6,7 +6,7 @@ Module to handle AWS RDS CFN Templates creation
 import os
 import boto3
 from warnings import warn
-from ecs_composex import XFILE_DEST
+from ecs_composex.common.ecs_composex import XFILE_DEST
 from ecs_composex.common import (
     validate_input,
     validate_kwargs,

@@ -12,10 +12,8 @@ from troposphere.ecs import (
     DeploymentController,
 )
 
-from ecs_composex import CFN_EXPORT_DELIMITER as delim
 from ecs_composex.common import build_template, cfn_params, add_parameters
 from ecs_composex.common import cfn_conditions
-from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.outputs import formatted_outputs
 from ecs_composex.common.tagging import add_object_tags
 from ecs_composex.ecs import ecs_conditions

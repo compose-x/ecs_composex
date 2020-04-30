@@ -4,7 +4,7 @@ Functions to format CFN template Outputs
 """
 
 from troposphere import Output, Export, Sub, If, ImportValue
-from ecs_composex import CFN_EXPORT_DELIMITER
+from ecs_composex.common.ecs_composex import CFN_EXPORT_DELIMITER
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.cfn_conditions import USE_STACK_NAME_CON_T
 

@@ -8,7 +8,7 @@ from troposphere import Sub, ImportValue, If
 from troposphere.ecs import Environment
 from troposphere.iam import Policy as IamPolicy
 
-from ecs_composex import CFN_EXPORT_DELIMITER as delim
+from ecs_composex.common.ecs_composex import CFN_EXPORT_DELIMITER as DELIM
 from ecs_composex.common import KEYISSET
 from ecs_composex.common import LOG
 from ecs_composex.common.cfn_conditions import USE_SSM_ONLY_T
@@ -69,7 +69,7 @@ def generate_queue_strings(queue_name):
     ssm_string = f"/${{{ROOT_STACK_NAME_T}}}{SQS_SSM_PREFIX}{queue_name}"
     ssm_export = Sub(r"{{resolve:ssm:%s:1}}" % (ssm_string))
     cfn_string = (
-        f"${{{ROOT_STACK_NAME_T}}}{delim}{queue_name}{delim}{sqs_params.SQS_ARN_T}"
+        f"${{{ROOT_STACK_NAME_T}}}{DELIM}{queue_name}{DELIM}{sqs_params.SQS_ARN_T}"
     )
     cfn_import = ImportValue(Sub(cfn_string))
     return (ssm_export, cfn_import)

@@ -4,21 +4,21 @@ Module to provide services with access to the RDS databases.
 """
 
 from troposphere import Ref, GetAtt
-from troposphere.iam import PolicyType, Policy
-from troposphere.ecs import Secret as EcsSecret
 from troposphere.ec2 import SecurityGroupIngress
+from troposphere.ecs import Secret as EcsSecret
+from troposphere.iam import PolicyType
 
 from ecs_composex.common import KEYISSET
 from ecs_composex.common.outputs import define_import
 from ecs_composex.ecs.ecs_iam import define_service_containers
+from ecs_composex.ecs.ecs_params import SG_T
+from ecs_composex.ecs.ecs_params import TASK_ROLE_T, EXEC_ROLE_T
 from ecs_composex.rds.rds_params import (
     DB_EXPORT_SECRET_ARN_T,
     DB_SECRET_POLICY_NAME,
     DB_EXPORT_SG_ID_T,
     DB_EXPORT_PORT_T,
 )
-from ecs_composex.ecs.ecs_params import SG_T
-from ecs_composex.ecs.ecs_params import TASK_ROLE_T, EXEC_ROLE_T
 
 
 def generate_rds_secrets_permissions(resources, db_name):
@@ -34,7 +34,7 @@ def generate_rds_secrets_permissions(resources, db_name):
     }
 
 
-def add_rds_policy(service_template, secret_import, db_name):
+def add_rds_policy(service_template, secret_import, db_name, use_task_role=False):
     """
     Function to add or append policy to access DB Secret for the Execution Role
     :param service_template:
@@ -47,8 +47,10 @@ def add_rds_policy(service_template, secret_import, db_name):
     if KEYISSET(DB_SECRET_POLICY_NAME, service_template.resources):
         db_policy = service_template.resources[DB_SECRET_POLICY_NAME]
         db_policy.PolicyDocument["Statement"].append(db_policy_statement)
+        if use_task_role:
+            db_policy.Roles.append(Ref(task_role))
     else:
-        PolicyType(
+        policy = PolicyType(
             DB_SECRET_POLICY_NAME,
             template=service_template,
             Roles=[Ref(exec_role)],
@@ -58,6 +60,8 @@ def add_rds_policy(service_template, secret_import, db_name):
                 "Statement": [db_policy_statement],
             },
         )
+        if use_task_role:
+            policy.Roles.append(Ref(task_role))
 
 
 def define_db_secret_import(db_name):

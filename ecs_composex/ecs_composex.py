@@ -4,13 +4,10 @@
 import re
 from importlib import import_module
 
-from ecs_composex.common import validate_resource_title
-
 import boto3
 from troposphere import Ref, GetAtt, If
 from troposphere.ecs import Cluster
 
-from ecs_composex import XFILE_DEST
 from ecs_composex.common import (
     LOG,
     add_parameters,
@@ -19,6 +16,7 @@ from ecs_composex.common import (
     build_default_stack_parameters,
 )
 from ecs_composex.common import build_template, KEYISSET, load_composex_file
+from ecs_composex.common import validate_resource_title
 from ecs_composex.common.cfn_params import (
     ROOT_STACK_NAME_T,
     USE_FLEET,
@@ -26,8 +24,10 @@ from ecs_composex.common.cfn_params import (
     USE_ONDEMAND,
     USE_ONDEMAND_T,
 )
-from ecs_composex.common.tagging import generate_tags_parameters, add_object_tags
+from ecs_composex.common.ecs_composex import XFILE_DEST
 from ecs_composex.common.files import FileArtifact
+from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.common.tagging import generate_tags_parameters, add_object_tags
 from ecs_composex.compute import create_compute_stack
 from ecs_composex.compute.compute_params import (
     TARGET_CAPACITY_T,
@@ -45,7 +45,6 @@ from ecs_composex.ecs.ecs_conditions import (
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME_T, CLUSTER_NAME
 from ecs_composex.vpc import create_vpc_template
 from ecs_composex.vpc import vpc_params
-from ecs_composex.common.stacks import ComposeXStack, XModuleStack
 
 RES_REGX = re.compile(r"(^([x-]+))")
 ROOT_CLUSTER_NAME = "EcsCluster"
@@ -353,7 +352,7 @@ def add_x_resources(template, session, tags=None, vpc_stack=None, **kwargs):
     """
     content = load_composex_file(kwargs[XFILE_DEST])
     ignore_x = ["x-tags"]
-    iam_services = ["x-sqs"]
+    # iam_services = ["x-sqs"]
     tcp_services = ["x-rds"]
     depends_on = []
     if tags is None:

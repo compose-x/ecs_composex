@@ -16,8 +16,7 @@ import json
 from botocore.exceptions import ClientError
 from datetime import datetime as dt
 from troposphere import Template
-
-from ecs_composex import DIR_DEST
+from ecs_composex.common.ecs_composex import DIR_DEST
 from ecs_composex.common import DATE_PREFIX, KEYISSET
 from ecs_composex.common import LOG
 

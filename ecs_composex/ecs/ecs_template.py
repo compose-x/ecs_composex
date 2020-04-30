@@ -8,12 +8,12 @@ from troposphere.logs import LogGroup
 from ecs_composex.common import LOG
 from ecs_composex.common import cfn_params, build_template, KEYISSET, add_parameters
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T, ROOT_STACK_NAME
+from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.common.tagging import generate_tags_parameters, add_object_tags
 from ecs_composex.ecs import ecs_params
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME, CLUSTER_NAME_T
 from ecs_composex.ecs.ecs_service import generate_service_template
 from ecs_composex.vpc import vpc_params
-from ecs_composex.common.tagging import generate_tags_parameters, add_object_tags
-from ecs_composex.common.stacks import ComposeXStack
 
 
 def validate_labels(service_labels):
