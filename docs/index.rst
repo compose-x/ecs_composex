@@ -2,16 +2,38 @@ Welcome to ECS-ComposeX's documentation!
 ========================================
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+    :maxdepth: 2
+    :caption: Contents:
 
-   readme
-   installation
-   usage
-   modules
-   contributing
-   authors
-   history
+    readme
+    installation
+    contributing
+
+.. toctree::
+    :maxdepth: 1
+    :caption: Modules
+
+    modules_docs
+    modules_syntax
+    modules
+
+.. toctree::
+    :maxdepth: 2
+    :caption: Examples
+
+    usage
+
+.. toctree::
+    :maxdepth: 2
+    :caption: contributions
+
+    authors
+
+.. toctree::
+    :maxdepth: 2
+    :caption: Changelog
+
+    history
 
 Indices and tables
 ==================

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import boto3
-from ecs_composex import XFILE_DEST
+from ecs_composex.common.ecs_composex import XFILE_DEST
 from ecs_composex.common import LOG, KEYISSET, load_composex_file, add_parameters
 from ecs_composex.common.aws import get_curated_azs
 from ecs_composex.common.tagging import generate_tags_parameters, add_object_tags

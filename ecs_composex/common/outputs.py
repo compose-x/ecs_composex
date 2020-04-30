@@ -3,8 +3,8 @@
 Functions to format CFN template Outputs
 """
 
-from troposphere import Output, Export, Sub, If
-from ecs_composex import CFN_EXPORT_DELIMITER
+from troposphere import Output, Export, Sub, If, ImportValue
+from ecs_composex.common.ecs_composex import CFN_EXPORT_DELIMITER
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.cfn_conditions import USE_STACK_NAME_CON_T
 
@@ -21,7 +21,7 @@ def cfn_resource_type(object_name, strip=True):
     return res_type
 
 
-def formatted_outputs(comments, export=False, prefix=None, use_root_stack=False, delimiter=None):
+def formatted_outputs(comments, obj_name=None, export=True, delimiter=None):
     """Function to format the outputs easily and add exports based on a prefix
 
     :param delimiter: delimimiter to use between parts of the export
@@ -40,23 +40,56 @@ def formatted_outputs(comments, export=False, prefix=None, use_root_stack=False,
     outputs = []
     if delimiter is None:
         delimiter = CFN_EXPORT_DELIMITER
+    if isinstance(obj_name, str):
+        obj_name = f"{delimiter}{obj_name}"
+    elif obj_name is not None and hasattr(obj_name, "title"):
+        obj_name = f"{delimiter}${{{obj_name.title}}}"
+    elif obj_name is None:
+        obj_name = ""
     if isinstance(comments, list):
         for comment in comments:
             if isinstance(comment, dict):
                 keys = list(comment.keys())
-                args = {"title": keys[0], "Value": comment[keys[0]]}
+                title = keys[0]
+                args = {"title": title, "Value": comment[title]}
                 if export:
-                    if prefix is None:
-                        args["Export"] = Export(
-                            If(
-                                USE_STACK_NAME_CON_T,
-                                Sub(f"${{AWS::StackName}}{delimiter}{keys[0]}"),
-                                Sub(f"${{{ROOT_STACK_NAME_T}}}{delimiter}{keys[0]}"),
-                            )
+                    args["Export"] = Export(
+                        If(
+                            USE_STACK_NAME_CON_T,
+                            Sub(f"${{AWS::StackName}}{obj_name}{delimiter}{title}"),
+                            Sub(
+                                f"${{{ROOT_STACK_NAME_T}}}{obj_name}{delimiter}{title}"
+                            ),
                         )
-                    elif use_root_stack:
-                        Export(Sub(f"${{{ROOT_STACK_NAME_T}}}{delimiter}{keys[0]}"))
-                    elif isinstance(prefix, str):
-                        args["Export"] = Export(Sub(f"{prefix}{delimiter}{keys[0]}"))
-                outputs.append(Output(**args))
+                    )
+                output = Output(**args)
+                outputs.append(output)
     return outputs
+
+
+def define_import(resource_name, attribute_name, delimiter=None):
+    """
+    Function to generate ImportValue for defined name
+    :param delimiter: delimiter between stack name, resource name and attribute
+    :param resource_name: name of the resource exported
+    :param attribute_name: attribute exported
+    :type attribute_name: str
+    :type resource_name: str
+    :return:
+    """
+    delimiter = CFN_EXPORT_DELIMITER
+    if delimiter is not None:
+        delimiter = delimiter
+    return If(
+        USE_STACK_NAME_CON_T,
+        ImportValue(
+            Sub(
+                f"${{AWS::StackName}}{delimiter}{resource_name}{delimiter}{attribute_name}"
+            )
+        ),
+        ImportValue(
+            Sub(
+                f"${{{ROOT_STACK_NAME_T}}}{delimiter}{resource_name}{delimiter}{attribute_name}"
+            )
+        ),
+    )

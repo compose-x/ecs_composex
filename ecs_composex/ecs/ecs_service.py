@@ -11,16 +11,14 @@ from troposphere.ecs import (
     NetworkConfiguration,
     DeploymentController,
 )
-from ecs_composex import CFN_EXPORT_DELIMITER as delim
+
 from ecs_composex.common import build_template, cfn_params, add_parameters
 from ecs_composex.common import cfn_conditions
-from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.outputs import formatted_outputs
 from ecs_composex.common.tagging import add_object_tags
-from ecs_composex.common.files import FileArtifact
 from ecs_composex.ecs import ecs_conditions
 from ecs_composex.ecs import ecs_params
-from ecs_composex.ecs.ecs_iam import add_service_roles, assign_x_resources_to_service
+from ecs_composex.ecs.ecs_iam import add_service_roles
 from ecs_composex.ecs.ecs_loadbalancing import define_grace_period
 from ecs_composex.ecs.ecs_networking import (
     define_service_network_config,
@@ -28,7 +26,7 @@ from ecs_composex.ecs.ecs_networking import (
 )
 from ecs_composex.ecs.ecs_networking_ingress import define_service_to_service_ingress
 from ecs_composex.ecs.ecs_task import add_task_defnition
-from ecs_composex.vpc import vpc_params
+from ecs_composex.vpc import vpc_params, vpc_conditions
 
 STATIC = 0
 
@@ -128,6 +126,7 @@ def initialize_service_template(service_name):
             vpc_params.VPC_ID,
             vpc_params.APP_SUBNETS,
             vpc_params.PUBLIC_SUBNETS,
+            vpc_params.VPC_MAP_ID,
             ecs_params.LOG_GROUP,
         ],
     )
@@ -145,6 +144,12 @@ def initialize_service_template(service_name):
         ecs_conditions.SERVICE_COUNT_ZERO_AND_FARGATE_CON_T,
         ecs_conditions.SERVICE_COUNT_ZERO_AND_FARGATE_CON,
     )
+    service_tpl.add_condition(
+        vpc_conditions.USE_VPC_MAP_ID_CON_T, vpc_conditions.USE_VPC_MAP_ID_CON
+    )
+    service_tpl.add_condition(
+        vpc_conditions.NOT_USE_VPC_MAP_ID_CON_T, vpc_conditions.NOT_USE_VPC_MAP_ID_CON
+    )
     return service_tpl
 
 
@@ -160,13 +165,13 @@ def generate_service_template_outputs(template, service_name):
         formatted_outputs(
             [{ecs_params.SERVICE_GROUP_ID_T: GetAtt(ecs_params.SG_T, "GroupId")}],
             export=True,
-            prefix=f"${{{ROOT_STACK_NAME_T}}}{delim}{service_name}",
+            obj_name=service_name,
         )
     )
 
 
 def generate_service_template(
-    compose_content, service_name, service, tags=None, session=None, **kwargs
+    compose_content, service_name, service, tags=None, session=None, **kwargs,
 ):
     """
     Function to generate single service template based on its definition in
@@ -188,6 +193,7 @@ def generate_service_template(
     service_tpl = initialize_service_template(service_name)
     parameters = {
         vpc_params.VPC_ID_T: Ref(vpc_params.VPC_ID),
+        vpc_params.VPC_MAP_ID_T: Ref(vpc_params.VPC_MAP_ID),
         vpc_params.APP_SUBNETS_T: Join(",", Ref(vpc_params.APP_SUBNETS)),
         vpc_params.PUBLIC_SUBNETS_T: Join(",", Ref(vpc_params.PUBLIC_SUBNETS)),
         ecs_params.CLUSTER_NAME_T: Ref(ecs_params.CLUSTER_NAME),
@@ -201,7 +207,6 @@ def generate_service_template(
     parameters.update(
         add_task_defnition(service_tpl, service_name, service, network_settings)
     )
-    assign_x_resources_to_service(compose_content, service_name, service_tpl, **kwargs)
     service_sgs = [ecs_params.SG_T, ecs_params.CLUSTER_SG_ID]
     service_network_config = define_service_network_config(
         service_tpl, service_name, network_settings, **kwargs

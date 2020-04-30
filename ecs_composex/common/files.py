@@ -16,8 +16,7 @@ import json
 from botocore.exceptions import ClientError
 from datetime import datetime as dt
 from troposphere import Template
-
-from ecs_composex import DIR_DEST
+from ecs_composex.common.ecs_composex import DIR_DEST
 from ecs_composex.common import DATE_PREFIX, KEYISSET
 from ecs_composex.common import LOG
 
@@ -201,7 +200,7 @@ class FileArtifact(object):
             LOG.debug(f"Created directory {self.output_dir} to store files")
         except FileExistsError:
             LOG.debug(f"Output directory {self.output_dir} already exists")
-        with open(f"{self.output_dir}/{self.file_name}", "w") as template_fd:
+        with open(self.file_path, "w") as template_fd:
             template_fd.write(self.body)
             LOG.debug(
                 f"Template {self.file_name} written successfully at {self.output_dir}/{self.file_name}"

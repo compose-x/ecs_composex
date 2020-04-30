@@ -1,47 +1,54 @@
 # -*- coding: utf-8 -*-
 """
-Core module for ECS ComposeX.
-
-This module is going to parse each service and each x-resource key from the compose file
-(hence ComposeX) and determine its
-
-* ServiceDefinition
-* TaskDefinition
-* TaskRole
-* ExecutionRole
-
-It is going to also, based on the labels set in the compose file
-
-* Add the service to Service Discovery via AWS CloudMap
-* Add load-balancers to dispatch traffic to the microservice
-
+Module to handle AWS RDS CFN Templates creation
 """
 
+import os
 import boto3
-from troposphere import GetAtt, Ref, Join
-
-from ecs_composex.common import load_composex_file, KEYISSET
-from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
+from warnings import warn
 from ecs_composex.common.ecs_composex import XFILE_DEST
-from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.ecs.ecs_template import generate_services_templates
+from ecs_composex.common import (
+    validate_input,
+    validate_kwargs,
+    load_composex_file,
+    LOG,
+    KEYISSET,
+)
+from troposphere import GetAtt, Ref, Join
+from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
+from ecs_composex.rds.rds_template import generate_rds_templates
 from ecs_composex.vpc import vpc_params
+from ecs_composex.common.stacks import ComposeXStack
+
+RES_KEY = f"x-{os.path.basename(os.path.dirname(os.path.abspath(__file__)))}"
+RDS_SSM_PREFIX = f"/{RES_KEY}/"
 
 
-def create_services_templates(session=None, **kwargs):
+def create_rds_template(session=None, **kwargs):
     """
-    :return:
+    Creates the CFN Troposphere template
+
+    :param session: boto3 session to override default
+    :type session: boto3.session.Session
+
+    :return: rds_tpl
+    :rtype: troposphere.Template
     """
+    content = load_composex_file(kwargs[XFILE_DEST])
+    if not KEYISSET(RES_KEY, content):
+        warn(f"No {RES_KEY} found in the docker compose definition. Skipping")
+        return None
+    validate_input(content, RES_KEY)
+    validate_kwargs(["BucketName"], kwargs)
+
     if session is None:
         session = boto3.session.Session()
-    content = load_composex_file(kwargs[XFILE_DEST])
-    services_template = generate_services_templates(
-        compose_content=content, session=session, **kwargs
-    )
-    return services_template
+    rds_tpl = generate_rds_templates(compose_content=content, session=session, **kwargs)
+    LOG.debug(f"Template for {RES_KEY} validated by CFN.")
+    return rds_tpl
 
 
-class ServicesStack(ComposeXStack):
+class XResource(ComposeXStack):
     """
     Class to handle ECS root stack specific settings
     """
@@ -63,11 +70,8 @@ class ServicesStack(ComposeXStack):
                 vpc_params.VPC_ID_T: GetAtt(
                     vpc_stack, f"Outputs.{vpc_params.VPC_ID_T}"
                 ),
-                vpc_params.PUBLIC_SUBNETS_T: GetAtt(
-                    vpc_stack, f"Outputs.{vpc_params.PUBLIC_SUBNETS_T}"
-                ),
-                vpc_params.APP_SUBNETS_T: GetAtt(
-                    vpc_stack, f"Outputs.{vpc_params.APP_SUBNETS_T}"
+                vpc_params.STORAGE_SUBNETS_T: GetAtt(
+                    vpc_stack, f"Outputs.{vpc_params.STORAGE_SUBNETS_T}"
                 ),
             }
         )
@@ -87,6 +91,7 @@ class ServicesStack(ComposeXStack):
             self.Parameters = {
                 ROOT_STACK_NAME_T: Ref("AWS::StackName"),
                 vpc_params.VPC_ID_T: Ref(vpc_params.VPC_ID),
-                vpc_params.PUBLIC_SUBNETS_T: Join(",", Ref(vpc_params.PUBLIC_SUBNETS)),
-                vpc_params.APP_SUBNETS_T: Join(",", Ref(vpc_params.APP_SUBNETS)),
+                vpc_params.STORAGE_SUBNETS_T: Join(
+                    ",", Ref(vpc_params.STORAGE_SUBNETS)
+                ),
             }

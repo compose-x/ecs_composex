@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Entrypoint for IAM"""
 
 from troposphere import Sub

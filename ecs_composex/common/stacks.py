@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-from ecs_composex.common import LOG
 from troposphere.cloudformation import Stack
-from troposphere import BaseAWSObject
+
+from ecs_composex.common import LOG
 from ecs_composex.common.files import FileArtifact
 
 
@@ -10,14 +10,40 @@ class ComposeXStack(Stack, object):
     """
     Class to define a CFN Stack as a composition of its template object, parameters, tags etc.
     """
-    title = None
+
     template_file = None
     cfn_params_file = None
     cfn_config_file = None
+
     attributes = [
-        'Condition', 'CreationPolicy', 'DeletionPolicy', 'DependsOn',
-        'Metadata', 'UpdatePolicy', 'UpdateReplacePolicy',
+        "Condition",
+        "CreationPolicy",
+        "DeletionPolicy",
+        "DependsOn",
+        "Metadata",
+        "UpdatePolicy",
+        "UpdateReplacePolicy",
     ]
+
+    def add_dependencies(self, dependencies):
+        """
+        Function to add dependencies to DependsOn
+        :return:
+        """
+        if isinstance(dependencies, str):
+            self.DependsOn.append(dependencies)
+        elif isinstance(dependencies, list):
+            self.DependsOn += dependencies
+
+    def add_parameter(self, parameter):
+        """
+        Function to add a parameter or set of parameters to the stack
+        :param parameter:
+        :return:
+        """
+        if not isinstance(parameter, dict):
+            raise TypeError("parameter must be of type", dict, "got", type(parameter))
+        self.Parameters.update(parameter)
 
     def render(self):
         """
@@ -26,6 +52,7 @@ class ComposeXStack(Stack, object):
         LOG.debug(f"Rendering {self.title}")
         self.template_file.define_body()
         self.template_file.upload()
+        self.template_file.write()
         self.template_file.validate()
         LOG.debug(f"Rendered URL = {self.template_file.url}")
         self.TemplateURL = self.template_file.url
@@ -53,9 +80,19 @@ class ComposeXStack(Stack, object):
         if self.template_file.url is None:
             self.template_file.url = self.template_file.file_path
         stack_kwargs = dict((x, kwargs[x]) for x in self.props.keys() if x in kwargs)
-        stack_kwargs.update(dict((x, kwargs[x]) for x in self.attributes if x in kwargs))
+        stack_kwargs.update(
+            dict((x, kwargs[x]) for x in self.attributes if x in kwargs)
+        )
         super().__init__(title, **stack_kwargs)
         self.TemplateURL = self.template_file.url
+        if not hasattr(self, "DependsOn"):
+            self.DependsOn = []
+
+
+class XModuleStack(ComposeXStack):
+    """
+    Class to deal specifically with x-modules root stacks
+    """
 
 
 def render_final_template(root_template):
@@ -69,7 +106,7 @@ def render_final_template(root_template):
     resources = root_template.resources
     for resource_name in resources:
         resource = resources[resource_name]
-        if isinstance(resource, ComposeXStack):
+        if isinstance(resource, (XModuleStack, ComposeXStack)):
             LOG.debug(resource)
             LOG.debug(resource.TemplateURL)
             render_final_template(resource.stack_template)

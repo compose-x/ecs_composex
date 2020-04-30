@@ -5,7 +5,6 @@ Create the VPC template and its associated resources
 TODO : Implement VPC Endpoints, NetworkACLs, VPC Flow logging to S3.
 """
 
-import boto3
 from troposphere import GetAtt, Tags, Join, Ref, Sub, If
 from troposphere.ec2 import (
     VPC as VPCType,
@@ -21,7 +20,6 @@ from ecs_composex.common import cfn_params, cfn_conditions, build_template
 from ecs_composex.common.cfn_conditions import USE_CLOUDMAP_CON_T, USE_STACK_NAME_CON_T
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME, ROOT_STACK_NAME_T
 from ecs_composex.common.outputs import formatted_outputs
-from ecs_composex.common.files import validate_template
 from ecs_composex.vpc import vpc_params, aws_mappings, vpc_conditions
 from ecs_composex.vpc.vpc_maths import get_subnet_layers
 from ecs_composex.vpc.vpc_subnets import (
@@ -40,8 +38,6 @@ def add_cloudmap_support(template, vpc):
 
     :param template: VPC Template()
     :param vpc: Vpc() object for Ref()
-
-    :returns: NIL
     """
     map_id = VpcSpace(
         "VpcCloudMapNameSpace",
@@ -75,8 +71,6 @@ def add_template_outputs(template, vpc, storage_subnets, public_subnets, app_sub
     :param storage_subnets: List of Subnet()
     :param public_subnets: List of Subnet()
     :param app_subnets: List of Subnet()
-
-    :returns: NIL
     """
     template.add_output(
         formatted_outputs(
@@ -241,5 +235,4 @@ def generate_vpc_template(cidr_block, azs, single_nat=False):
     )
     add_vpc_cidrs_outputs(template, layers)
     add_cloudmap_support(template, vpc[0])
-    validate_template(template.to_json(), "vpc.json")
     return template

@@ -1,0 +1,45 @@
+---
+# RDS Only settings
+
+configs:
+  serviceA:
+    use_alb: True
+    is_public: True
+  serviceB:
+    is_public: False
+
+  globals:
+    network:
+      use_cloudmap: True
+
+x-rds:
+  dbA:
+    Properties:
+      Engine: "aurora-mysql"
+      EngineVersion: "5.7.12"
+    Services:
+      - name: serviceA
+        access: RW
+
+  dbB:
+    Properties:
+      Engine: "aurora-mysql"
+      EngineVersion: "5.7.12"
+    Services:
+      - name: serviceA
+        access: RW
+      - name: serviceB
+        access: RW
+
+services:
+  serviceA:
+    image: nginx
+
+  serviceB:
+    image: nginx
+
+x-tags:
+  - name: costcentre
+    value: lambda-my-aws
+  - name: mail
+    value: john@lambda-my-aws.io
