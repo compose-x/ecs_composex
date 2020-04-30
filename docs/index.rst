@@ -2,6 +2,7 @@ Welcome to ECS-ComposeX's documentation!
 ========================================
 
 .. toctree::
+
     :maxdepth: 2
     :caption: Contents:
 
