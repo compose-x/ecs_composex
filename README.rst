@@ -2,24 +2,36 @@
 ECS ComposeX
 ============
 
-.. image:: https://codebuild.eu-west-1.amazonaws.com/badges?uuid=eyJlbmNyeXB0ZWREYXRhIjoiQmdmZGZ3MkJCbDNhYVJvc0oza1orVW4zRjM1N21rdERiZ0NqUXYvSDFXM1Nxb1ROYnJTdDBLc3N3L0FGdm9LVjVkUTlzQkhjR1hZZ2JOTG1GYXB1QTJjPSIsIml2UGFyYW1ldGVyU3BlYyI6Ik5xTGhESjY1ZzVsQ3R4RFMiLCJtYXRlcmlhbFNldFNlcmlhbCI6MX0%3D&branch=master
+.. |LICENSE| image:: https://img.shields.io/pypi/l/ecs_composex
+    :alt: PyPI - License
 
-.. image:: https://readthedocs.org/projects/ecs-composex/badge/?version=latest
+.. |RELEASE| image:: https://img.shields.io/github/v/release/lambda-my-aws/ecs_composex
+    :alt: GitHub release (latest by date)
+
+.. |BUILD| image:: https://codebuild.eu-west-1.amazonaws.com/badges?uuid=eyJlbmNyeXB0ZWREYXRhIjoiQmdmZGZ3MkJCbDNhYVJvc0oza1orVW4zRjM1N21rdERiZ0NqUXYvSDFXM1Nxb1ROYnJTdDBLc3N3L0FGdm9LVjVkUTlzQkhjR1hZZ2JOTG1GYXB1QTJjPSIsIml2UGFyYW1ldGVyU3BlYyI6Ik5xTGhESjY1ZzVsQ3R4RFMiLCJtYXRlcmlhbFNldFNlcmlhbCI6MX0%3D&branch=master
+
+.. |DOCS| image:: https://readthedocs.org/projects/ecs-composex/badge/?version=latest
         :target: https://ecs-composex.readthedocs.io/en/latest/?badge=latest
         :alt: Documentation Status
 
-.. image:: https://img.shields.io/pypi/v/ecs_composex.svg
+.. |PYPI_RELEASE| image:: https://img.shields.io/pypi/v/ecs_composex.svg
         :target: https://pypi.python.org/pypi/ecs_composex
 
-.. image:: https://img.shields.io/pypi/dm/ecs_composex
+.. |PYPI_DL| image:: https://img.shields.io/pypi/dm/ecs_composex
     :alt: PyPI - Downloads
 
-.. image:: https://img.shields.io/pypi/l/ecs_composex
-    :alt: PyPI - License
-
-.. image:: https://img.shields.io/pypi/pyversions/ecs_composex
+.. |PY_VERSIONS| image:: https://img.shields.io/pypi/pyversions/ecs_composex
     :alt: PyPI - Python Version
 
+.. |STYLE| image:: https://img.shields.io/badge/codestyle-black-black
+
+|RELEASE| |PYPI_RELEASE|
+
+|DOCS| |BUILD|
+
+|PY_VERSIONS|
+
+|LICENSE| |STYLE|
 
 .. contents::
 
