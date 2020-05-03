@@ -2,36 +2,24 @@
 ECS ComposeX
 ============
 
-.. |LICENSE| image:: https://img.shields.io/pypi/l/ecs_composex
-    :alt: PyPI - License
+.. image:: https://codebuild.eu-west-1.amazonaws.com/badges?uuid=eyJlbmNyeXB0ZWREYXRhIjoiQmdmZGZ3MkJCbDNhYVJvc0oza1orVW4zRjM1N21rdERiZ0NqUXYvSDFXM1Nxb1ROYnJTdDBLc3N3L0FGdm9LVjVkUTlzQkhjR1hZZ2JOTG1GYXB1QTJjPSIsIml2UGFyYW1ldGVyU3BlYyI6Ik5xTGhESjY1ZzVsQ3R4RFMiLCJtYXRlcmlhbFNldFNlcmlhbCI6MX0%3D&branch=master
 
-.. |RELEASE| image:: https://img.shields.io/github/v/release/lambda-my-aws/ecs_composex
-    :alt: GitHub release (latest by date)
-
-.. |BUILD| image:: https://codebuild.eu-west-1.amazonaws.com/badges?uuid=eyJlbmNyeXB0ZWREYXRhIjoiQmdmZGZ3MkJCbDNhYVJvc0oza1orVW4zRjM1N21rdERiZ0NqUXYvSDFXM1Nxb1ROYnJTdDBLc3N3L0FGdm9LVjVkUTlzQkhjR1hZZ2JOTG1GYXB1QTJjPSIsIml2UGFyYW1ldGVyU3BlYyI6Ik5xTGhESjY1ZzVsQ3R4RFMiLCJtYXRlcmlhbFNldFNlcmlhbCI6MX0%3D&branch=master
-
-.. |DOCS| image:: https://readthedocs.org/projects/ecs-composex/badge/?version=latest
+.. image:: https://readthedocs.org/projects/ecs-composex/badge/?version=latest
         :target: https://ecs-composex.readthedocs.io/en/latest/?badge=latest
         :alt: Documentation Status
 
-.. |PYPI_RELEASE| image:: https://img.shields.io/pypi/v/ecs_composex.svg
+.. image:: https://img.shields.io/pypi/v/ecs_composex.svg
         :target: https://pypi.python.org/pypi/ecs_composex
 
-.. |PYPI_DL| image:: https://img.shields.io/pypi/dm/ecs_composex
+.. image:: https://img.shields.io/pypi/dm/ecs_composex
     :alt: PyPI - Downloads
 
-.. |PY_VERSIONS| image:: https://img.shields.io/pypi/pyversions/ecs_composex
+.. image:: https://img.shields.io/pypi/l/ecs_composex
+    :alt: PyPI - License
+
+.. image:: https://img.shields.io/pypi/pyversions/ecs_composex
     :alt: PyPI - Python Version
 
-.. |STYLE| image:: https://img.shields.io/badge/codestyle-black-black
-
-|RELEASE| |PYPI_RELEASE|
-
-|DOCS| |BUILD|
-
-|PY_VERSIONS|
-
-|LICENSE| |STYLE|
 
 .. contents::
 
@@ -157,7 +145,13 @@ IAM Permissions to execute ECS ComposeX
             Effect: Allow
             Action:
               - 's3:GetObject*'
-              - 's3:PutObject*'
+              - 's3:PutObject*
+          - Sid: Ec2Access
+            Effect: Allow
+            Action:
+              - ec2:DescribeAvailabilityZones
+            Resource:
+              - "*"
 
 
 Why though?
@@ -188,9 +182,9 @@ Why am I not using AWS CDK?
 
 I started this work before AWS CDK came out with any python support, and I am not a developer professionally but I do love developing, and python is my language
 of choice. Troposphere was the obvious choice as the python library to use to build all the CFN templates. I find the way Troposphere has been built is awesome,
-it has a very nice community and is released often. I did a few PRs myself and `Mark Peek`_ is very proactive with PRs, releases come out often.
-
-Will I use CDK in the future? Depends on how many of you are going to use ECS ComposeX and will ask for it.
+the name of the properties are the same as they are in AWS CloudFormation, which gives a sense of standard to the user,
+allowing an experience as close to copy-paste as possible. `Troposphere`_ has a very nice community and is released often.
+I did a few PRs myself and `Mark Peek`_ is very proactive with PRs, releases come out often.
 
 
 Why not stick to AWS CFN Templates and CFN macros ?
@@ -239,7 +233,7 @@ Then, with the newly released CFN Private Registries, mutate this system to have
 License and documentation
 ==========================
 
-* Free software: BSD license
+* Free software: GPLv3+
 * Documentation:
     * https://docs.ecs-composex.lambda-my-aws.io
     * https://ecs-composex.readthedocs.io/en/latest
@@ -250,7 +244,6 @@ Credits
 This package would not have been possible without the amazing job done by the AWS CloudFormation team!
 
 This package would not have been possible without the amazing community around `Troposphere`_!
-
 
 This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypackage`_ project template.
 

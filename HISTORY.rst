@@ -8,21 +8,19 @@ History
 Code refactored to allow a better way to go over each template and stack so everything is treated in memory
 before being put into a file and uploaded into S3.
 
-Issues closed
-^^^^^^^^^^^^^
-
-* Docs update and first go at IAM perms (`#22`_)
-* Refactor of XModules logic onto ECS services (`#39`_)
-* Templates & Stacks refactor (`#38`_)
-* Update issue templates for easy PRs and Bug reports
-* Added `make conform` to run black against the code to standardize syntax (`#26`_)
-* Allow to specify directory to write all the templates to in addition to S3. (`#27`_)
-* Reformatted with black (`#25`_)
-* Expand TagsSpecifications with x-tags (`#24`_)
-* Bug fix for root template and Cluster reference (`#20`_)
+* Issues closed
+    * Docs update and first go at IAM perms (`#22`_)
+    * Refactor of XModules logic onto ECS services (`#39`_)
+    * Templates & Stacks refactor (`#38`_)
+    * Update issue templates for easy PRs and Bug reports
+    * Added `make conform` to run black against the code to standardize syntax (`#26`_)
+    * Allow to specify directory to write all the templates to in addition to S3. (`#27`_)
+    * Reformatted with black (`#25`_)
+    * Expand TagsSpecifications with x-tags (`#24`_)
+    * Bug fix for root template and Cluster reference (`#20`_)
 
 Documentation structure and content updated to help navigate through modules in an easier way.
-Documented syntax refrence for each module
+Documented syntax reference for each module
 
 New feature
 ^^^^^^^^^^^
