@@ -16,7 +16,6 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-
 """
 Module to create the Launch Template for the hosts and the associated security group and
 IAM Role (with Instance Profile).

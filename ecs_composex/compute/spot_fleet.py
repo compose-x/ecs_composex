@@ -16,7 +16,6 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-
 """
 Functions to add to the Cluster template when people want to use SpotFleet for their ECS Cluster.
 """
