@@ -2,7 +2,7 @@
 History
 =======
 
-0.2.0 (2020-05-01)
+0.2.0 (2020-05-03)
 ==================
 
 Code refactored to allow a better way to go over each template and stack so everything is treated in memory
