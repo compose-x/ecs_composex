@@ -46,7 +46,7 @@ setup(
     author_email="john@lambda-my-aws.io",
     python_requires="!=2.*, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*",
     classifiers=[
-        "Development Status:: 3 - Alpha",
+        "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",
         "Intended Audience :: System Administrators",
         "Intended Audience :: Information Technology",
@@ -55,7 +55,7 @@ setup(
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
-        "Programming Language :: Python :: 3.8"
+        "Programming Language :: Python :: 3.8",
     ],
     description="Implement for AWS ECS and Docker Compose what SAM is to Serverless for AWS Lambda",
     entry_points={
@@ -69,7 +69,7 @@ setup(
     },
     install_requires=requirements,
     license="BSD license",
-    long_description=readme + "\n\n" + history,
+    long_description=readme,
     include_package_data=True,
     keywords="ecs_composex",
     name="ecs_composex",
@@ -78,6 +78,6 @@ setup(
     test_suite="tests",
     tests_require=test_requirements,
     url="https://github.com/lambda-my-aws/ecs_composex",
-    version="0.1.3",
-    zip_safe=False
+    version="0.2.0",
+    zip_safe=False,
 )

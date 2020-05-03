@@ -37,6 +37,8 @@ def build_config_template_file(config, parameters=None, tags=None, stack_policie
     """
     if parameters is not None and not isinstance(parameters, list):
         raise TypeError("parameters must be a list of objects", list)
+    if not KEYISSET("Parameters", config):
+        config["Parameters"] = {}
     for param in parameters:
         config["Parameters"].update({param["ParameterKey"]: param["ParameterValue"]})
     return config

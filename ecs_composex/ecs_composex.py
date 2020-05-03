@@ -505,7 +505,6 @@ def generate_full_template(content, session=None, **kwargs):
         services_stack.add_vpc_stack(vpc_stack)
     else:
         generate_vpc_parameters(template, stack_params, **kwargs)
-        LOG.debug(stack_params)
     if KEYISSET(CLUSTER_NAME_T, kwargs):
         build_parameters_file(stack_params, CLUSTER_NAME_T, kwargs[CLUSTER_NAME_T])
     if KEYISSET("CreateCluster", kwargs):
@@ -524,4 +523,5 @@ def generate_full_template(content, session=None, **kwargs):
     apply_x_configs_to_ecs(content, template, services_stack, **kwargs)
     for resource in template.resources:
         add_object_tags(template.resources[resource], tags_params[1])
+    LOG.debug(stack_params)
     return template, stack_params
