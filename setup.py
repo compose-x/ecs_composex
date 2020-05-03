@@ -1,7 +1,22 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+#  ECS ComposeX <https://github.com/lambda-my-aws/ecs_composex>
+#  Copyright (C) 2020  John Mille <john@lambda-my-aws.io>
+#
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""The setup script."""
+"""The setup script for ECS ComposeX"""
 
 import os
 from setuptools import setup, find_packages
@@ -31,17 +46,18 @@ setup(
     author_email="john@lambda-my-aws.io",
     python_requires="!=2.*, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*",
     classifiers=[
-        "Development Status :: 2 - Pre-Alpha",
+        "Development Status:: 3 - Alpha",
         "Intended Audience :: Developers",
-        "License :: OSI Approved :: BSD License",
+        "Intended Audience :: System Administrators",
+        "Intended Audience :: Information Technology",
+        "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
         "Natural Language :: English",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8"
     ],
-    description="Package that generates CFN templates based on a Docker Compose file to generate ECS Cluster,"
-    "ECS Services and Extra resources such as SQS Queues, SNS Topics etc. that can be accessed via IAM",
+    description="Implement for AWS ECS and Docker Compose what SAM is to Serverless for AWS Lambda",
     entry_points={
         "console_scripts": [
             "ecs_composex=ecs_composex.cli:main",
