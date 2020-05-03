@@ -145,7 +145,13 @@ IAM Permissions to execute ECS ComposeX
             Effect: Allow
             Action:
               - 's3:GetObject*'
-              - 's3:PutObject*'
+              - 's3:PutObject*
+          - Sid: Ec2Access
+            Effect: Allow
+            Action:
+              - ec2:DescribeAvailabilityZones
+            Resource:
+              - "*"
 
 
 Why though?
@@ -176,9 +182,9 @@ Why am I not using AWS CDK?
 
 I started this work before AWS CDK came out with any python support, and I am not a developer professionally but I do love developing, and python is my language
 of choice. Troposphere was the obvious choice as the python library to use to build all the CFN templates. I find the way Troposphere has been built is awesome,
-it has a very nice community and is released often. I did a few PRs myself and `Mark Peek`_ is very proactive with PRs, releases come out often.
-
-Will I use CDK in the future? Depends on how many of you are going to use ECS ComposeX and will ask for it.
+the name of the properties are the same as they are in AWS CloudFormation, which gives a sense of standard to the user,
+allowing an experience as close to copy-paste as possible. `Troposphere`_ has a very nice community and is released often.
+I did a few PRs myself and `Mark Peek`_ is very proactive with PRs, releases come out often.
 
 
 Why not stick to AWS CFN Templates and CFN macros ?
@@ -227,7 +233,7 @@ Then, with the newly released CFN Private Registries, mutate this system to have
 License and documentation
 ==========================
 
-* Free software: BSD license
+* Free software: GPLv3+
 * Documentation:
     * https://docs.ecs-composex.lambda-my-aws.io
     * https://ecs-composex.readthedocs.io/en/latest
@@ -238,7 +244,6 @@ Credits
 This package would not have been possible without the amazing job done by the AWS CloudFormation team!
 
 This package would not have been possible without the amazing community around `Troposphere`_!
-
 
 This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypackage`_ project template.
 
