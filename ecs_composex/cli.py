@@ -275,7 +275,9 @@ def main():
     templates_and_params = generate_full_template(content, **kwargs)
 
     render_final_template(templates_and_params[0])
-    cfn_config = build_config_template_file(config={}, parameters=templates_and_params[1])
+    cfn_config = build_config_template_file(
+        config={}, parameters=templates_and_params[1]
+    )
     if KEYISSET("CfnConfigFile", vars(args)):
         config_file_name = args.CfnConfigFile
     else:

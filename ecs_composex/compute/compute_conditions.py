@@ -16,7 +16,6 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-
 from troposphere import Equals, Ref
 from ecs_composex.compute import compute_params
 

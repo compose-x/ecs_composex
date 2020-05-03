@@ -2,23 +2,35 @@
 ECS ComposeX
 ============
 
-.. image:: https://codebuild.eu-west-1.amazonaws.com/badges?uuid=eyJlbmNyeXB0ZWREYXRhIjoiQmdmZGZ3MkJCbDNhYVJvc0oza1orVW4zRjM1N21rdERiZ0NqUXYvSDFXM1Nxb1ROYnJTdDBLc3N3L0FGdm9LVjVkUTlzQkhjR1hZZ2JOTG1GYXB1QTJjPSIsIml2UGFyYW1ldGVyU3BlYyI6Ik5xTGhESjY1ZzVsQ3R4RFMiLCJtYXRlcmlhbFNldFNlcmlhbCI6MX0%3D&branch=master
+.. |BUILD| image:: https://codebuild.eu-west-1.amazonaws.com/badges?uuid=eyJlbmNyeXB0ZWREYXRhIjoiRXloUWdET3RnVHF6MXJFZ0pkWkgvOVpZbTBUN202cG5kai9iOFZnOHI3NTU4NUNYYkRUdE9KWDBDSW54TW90aTlQWk5yWmJhelFxck5PbHlKRXNnUjF3PSIsIml2UGFyYW1ldGVyU3BlYyI6ImJZcVl2bUFaeE1DRFZ5UTEiLCJtYXRlcmlhbFNldFNlcmlhbCI6MX0%3D&branch=master
 
-.. image:: https://readthedocs.org/projects/ecs-composex/badge/?version=latest
+.. |DOCS_BUILD| image:: https://readthedocs.org/projects/ecs-composex/badge/?version=latest
         :target: https://ecs-composex.readthedocs.io/en/latest/?badge=latest
         :alt: Documentation Status
 
-.. image:: https://img.shields.io/pypi/v/ecs_composex.svg
+.. |PYPI_VERSION| image:: https://img.shields.io/pypi/v/ecs_composex.svg
         :target: https://pypi.python.org/pypi/ecs_composex
 
-.. image:: https://img.shields.io/pypi/dm/ecs_composex
+.. |PYPI_DL| image:: https://img.shields.io/pypi/dm/ecs_composex
     :alt: PyPI - Downloads
+    :target: https://pypi.python.org/pypi/ecs_composex
 
-.. image:: https://img.shields.io/pypi/l/ecs_composex
-    :alt: PyPI - License
+.. |PYPI_LICENSE| image:: https://img.shields.io/github/license/lambda-my-aws/ecs_composex
+    :alt: GitHub
+    :target: https://github.com/lambda-my-aws/ecs_composex/blob/master/LICENSE
 
-.. image:: https://img.shields.io/pypi/pyversions/ecs_composex
+.. |PYPI_PYVERS| image:: https://img.shields.io/pypi/pyversions/ecs_composex
     :alt: PyPI - Python Version
+    :target: https://pypi.python.org/pypi/ecs_composex
+
+.. |PYPI_WHEEL| image:: https://img.shields.io/pypi/wheel/ecs_composex
+    :alt: PyPI - Wheel
+    :target: https://pypi.python.org/pypi/ecs_composex
+
+|BUILD| |DOCS_BUILD|
+
+|PYPI_VERSION| |PYPI_LICENSE|
+
 
 
 .. contents::

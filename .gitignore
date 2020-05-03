@@ -120,3 +120,4 @@ ENV/
 .mypy_cache/
 /codebuild_build.sh
 /tests/test.config.json
+/reports/
