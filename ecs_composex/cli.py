@@ -1,5 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+#  ECS ComposeX <https://github.com/lambda-my-aws/ecs_composex>
+#  Copyright (C) 2020  John Mille <john@lambda-my-aws.io>
+#
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """Console script for ecs_composex."""
 
@@ -11,8 +26,8 @@ import warnings
 from boto3 import session
 
 from ecs_composex.common import KEYISSET
-from ecs_composex.common import LOG
-from ecs_composex.common.aws import BUCKET_NAME, CURATED_AZS
+from ecs_composex.common import LOG, load_composex_file
+from ecs_composex.common.aws import get_curated_azs, get_account_id
 from ecs_composex.common.cfn_params import USE_FLEET_T
 from ecs_composex.common.cfn_tools import build_config_template_file
 from ecs_composex.common.ecs_composex import XFILE_DEST, DIR_DEST
@@ -27,6 +42,10 @@ from ecs_composex.vpc.vpc_params import (
     VPC_ID_T,
     VPC_MAP_ID_T,
 )
+
+CURATED_AZS = get_curated_azs()
+ACCOUNT_ID = get_account_id()
+BUCKET_NAME = f"cfn-templates-{ACCOUNT_ID[:6]}"
 
 
 def validate_vpc_input(args):
@@ -75,7 +94,7 @@ def validate_cluster_input(args):
         )
 
 
-def main():
+def main_parser():
     """Console script for ecs_composex."""
     parser = argparse.ArgumentParser()
     #  Generic settings
@@ -240,16 +259,23 @@ def main():
     )
 
     parser.add_argument("_", nargs="*")
+    return parser
+
+
+def main():
+    parser = main_parser()
     args = parser.parse_args()
 
+    kwargs = vars(args)
+    content = load_composex_file(kwargs[XFILE_DEST])
     validate_vpc_input(vars(args))
     validate_cluster_input(vars(args))
 
     print("Arguments: " + str(args._))
-    templates_and_params = generate_full_template(**vars(args))
+    templates_and_params = generate_full_template(content, **kwargs)
 
     render_final_template(templates_and_params[0])
-    cfn_config = build_config_template_file(templates_and_params[1])
+    cfn_config = build_config_template_file(config={}, parameters=templates_and_params[1])
     if KEYISSET("CfnConfigFile", vars(args)):
         config_file_name = args.CfnConfigFile
     else:

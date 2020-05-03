@@ -1,4 +1,20 @@
 # -*- coding: utf-8 -*-
+#  ECS ComposeX <https://github.com/lambda-my-aws/ecs_composex>
+#  Copyright (C) 2020  John Mille <john@lambda-my-aws.io>
+#
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 """
 Helper to generate default parameter group settings from engine name and version
 """
@@ -10,7 +26,7 @@ def get_db_engine_settings(db_engine_name, db_engine_version, serverless=False):
     """
     Function to return just the details about that DB Engine Version
     """
-    LOG.info(f"Looking for the family of {db_engine_name}-{db_engine_version}")
+    LOG.debug(f"Looking for the family of {db_engine_name}-{db_engine_version}")
     client = boto3.client("rds")
     req = client.describe_db_engine_versions(
         Engine=db_engine_name, EngineVersion=db_engine_version
@@ -86,8 +102,8 @@ def get_family_from_engine_version(
 def get_family_settings(db_family):
 
     if db_family.startswith("aurora"):
-        LOG.info("Aurora based instance")
-        LOG.info(f"Looking for parameters for {db_family}")
+        LOG.debug("Aurora based instance")
+        LOG.debug(f"Looking for parameters for {db_family}")
         return get_db_cluster_engine_parameter_group_defaults(db_family)
     else:
         return None

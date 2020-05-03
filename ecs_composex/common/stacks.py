@@ -1,5 +1,26 @@
 # -*- coding: utf-8 -*-
+#  ECS ComposeX <https://github.com/lambda-my-aws/ecs_composex>
+#  Copyright (C) 2020  John Mille <john@lambda-my-aws.io>
+#
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+"""
+Module to handle Root stacks and substacks in ECS composeX. Allows to treat everything in memory before uploading
+files into S3 and on disk.
+"""
+
+from troposphere import Template
 from troposphere.cloudformation import Stack
 
 from ecs_composex.common import LOG
@@ -71,12 +92,16 @@ class ComposeXStack(Stack, object):
 
         if extension is None and template_file is None:
             extension = ".yml"
+        if not isinstance(template, Template):
+            raise TypeError("template must be of type", Template, "got", type(template))
         self.stack_template = template
         if template_file and isinstance(template_file, FileArtifact):
             self.template_file = template_file
         else:
             file_name = f"{title}{extension}"
-            self.template_file = FileArtifact(file_name, self.stack_template, **kwargs)
+            self.template_file = FileArtifact(
+                file_name, template=self.stack_template, **kwargs
+            )
         if self.template_file.url is None:
             self.template_file.url = self.template_file.file_path
         stack_kwargs = dict((x, kwargs[x]) for x in self.props.keys() if x in kwargs)

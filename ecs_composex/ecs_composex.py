@@ -1,5 +1,23 @@
 # -*- coding: utf-8 -*-
-"""Module to generate a full stack with VPC & Cluster."""
+#  ECS ComposeX <https://github.com/lambda-my-aws/ecs_composex>
+#  Copyright (C) 2020  John Mille <john@lambda-my-aws.io>
+#
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+"""
+Module to generate a full stack with VPC, Cluster, Compute, Services and all X- AWS resources.
+"""
 
 import re
 from importlib import import_module
@@ -454,20 +472,22 @@ def init_root_template(stack_params, tags=None):
     return template
 
 
-def generate_full_template(session=None, **kwargs):
+def generate_full_template(content, session=None, **kwargs):
     """
     Function to generate the root template
 
+    :param content: ComposeX file content
+    :type content: dict
     :param session: boto3 session to override client
     :type session: boto3.session.Session
 
-    :return template: Template()
+    :return template: Template, params
+    :rtype: template, list
     """
     if session is None:
         session = boto3.session.Session(region_name=kwargs["AwsRegion"])
     stack_params = []
     build_default_stack_parameters(stack_params, **kwargs)
-    content = load_composex_file(kwargs[XFILE_DEST])
     kwargs.update(get_composex_globals(content))
     tags_params = generate_tags_parameters(content)
     template = init_root_template(stack_params, tags_params)
@@ -485,7 +505,6 @@ def generate_full_template(session=None, **kwargs):
         services_stack.add_vpc_stack(vpc_stack)
     else:
         generate_vpc_parameters(template, stack_params, **kwargs)
-        LOG.debug(stack_params)
     if KEYISSET(CLUSTER_NAME_T, kwargs):
         build_parameters_file(stack_params, CLUSTER_NAME_T, kwargs[CLUSTER_NAME_T])
     if KEYISSET("CreateCluster", kwargs):
@@ -504,4 +523,5 @@ def generate_full_template(session=None, **kwargs):
     apply_x_configs_to_ecs(content, template, services_stack, **kwargs)
     for resource in template.resources:
         add_object_tags(template.resources[resource], tags_params[1])
+    LOG.debug(stack_params)
     return template, stack_params

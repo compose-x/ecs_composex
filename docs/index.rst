@@ -2,9 +2,8 @@ Welcome to ECS-ComposeX's documentation!
 ========================================
 
 .. toctree::
-
     :maxdepth: 2
-    :caption: Contents:
+    :caption: Contents
 
     readme
     installation
@@ -26,7 +25,7 @@ Welcome to ECS-ComposeX's documentation!
 
 .. toctree::
     :maxdepth: 2
-    :caption: contributions
+    :caption: Contributions
 
     authors
 

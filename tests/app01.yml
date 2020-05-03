@@ -1,0 +1,585 @@
+Conditions:
+  MemoryReservedIsMemoryAllocatedCondition: !Equals
+    - !Ref 'ContainerMemoryReservation'
+    - 0
+  NotUseCfnExportsCondition: !Not
+    - !Condition 'UseExportsCondition'
+  NotUseVpcMapId: !Equals
+    - !Ref 'VpcDiscoveryMapId'
+    - default
+  ServiceCountIsZeroCondition: !Equals
+    - !Ref 'MicroservicesCount'
+    - '0'
+  ServiceCountZeroAndFargate: !And
+    - !Condition 'UseFargateCondition'
+    - !Condition 'ServiceCountIsZeroCondition'
+  UseCfnAndSsmCondition: !And
+    - !Condition 'UseExportsCondition'
+    - !Condition 'UseSsmExportsCondition'
+  UseCloudMapCondition: !Equals
+    - !Ref 'UseAwsCloudMap'
+    - 'True'
+  UseExportsCondition: !Equals
+    - !Ref 'UseCfnExports'
+    - 'True'
+  UseFargateCondition: !Equals
+    - !Ref 'EcsLaunchType'
+    - FARGATE
+  UseSsmExportsCondition: !Equals
+    - !Ref 'UseSsmExports'
+    - 'True'
+  UseSsmOnlyCondition: !And
+    - !Condition 'UseSsmExportsCondition'
+    - !Condition 'NotUseCfnExportsCondition'
+  UseStackName: !Equals
+    - !Ref 'RootStackName'
+    - <self>
+  UseVpcMapId: !Not
+    - !Condition 'NotUseVpcMapId'
+Description: Template for app01
+Metadata:
+  GeneratedOn: '2020-04-29T19:34:11.556831'
+Outputs:
+  ServiceGroupId:
+    Export:
+      Name: !If
+        - UseStackName
+        - !Sub '${AWS::StackName}app01::::ServiceGroupId'
+        - !Sub '${RootStackName}app01::::ServiceGroupId'
+    Value: !GetAtt 'ServiceSecurityGroup.GroupId'
+Parameters:
+  AppSubnets:
+    Type: List<AWS::EC2::Subnet::Id>
+  ClusterServicesLogGroup:
+    Type: String
+  ClusterWideSGId:
+    Default: <none>
+    Type: AWS::EC2::SecurityGroup::Id
+  ContainerMemoryAllocation:
+    Default: 512
+    Type: Number
+  ContainerMemoryReservation:
+    Default: 0
+    Type: Number
+  CostcentreTag:
+    AllowedPattern: '[\x20-\x7E]+'
+    ConstraintDescription: Must be ASCII
+    Default: LambdaMyAws
+    MaxLength: 128
+    MinLength: 2
+    Type: String
+  EcsClusterName:
+    AllowedPattern: '[a-zA-Z0-9-]+'
+    Default: default
+    Type: String
+  EcsLaunchType:
+    AllowedValues:
+      - EC2
+      - FARGATE
+    Default: FARGATE
+    Type: String
+  EcsServiceDeploymentController:
+    AllowedValues:
+      - ECS
+      - CODE_DEPLOY
+      - EXTERNAL
+    Default: ECS
+    Type: String
+  FargateCpuRamConfiguration:
+    AllowedValues:
+      - 256!512
+      - 256!1024
+      - 256!2048
+      - 512!1024
+      - 512!2048
+      - 512!3072
+      - 512!4096
+      - 1024!2048
+      - 1024!3072
+      - 1024!4096
+      - 1024!5120
+      - 1024!6144
+      - 1024!7168
+      - 1024!8192
+      - 2048!2048
+      - 2048!3072
+      - 2048!4096
+      - 2048!5120
+      - 2048!6144
+      - 2048!7168
+      - 2048!8192
+      - 2048!9216
+      - 2048!10240
+      - 2048!11264
+      - 2048!12288
+      - 2048!13312
+      - 2048!14336
+      - 2048!15360
+      - 2048!16384
+      - 4096!8192
+      - 4096!9216
+      - 4096!10240
+      - 4096!11264
+      - 4096!12288
+      - 4096!13312
+      - 4096!14336
+      - 4096!15360
+      - 4096!16384
+      - 4096!17408
+      - 4096!18432
+      - 4096!19456
+      - 4096!20480
+      - 4096!21504
+      - 4096!22528
+      - 4096!23552
+      - 4096!24576
+      - 4096!25600
+      - 4096!26624
+      - 4096!27648
+      - 4096!28672
+      - 4096!29696
+      - 4096!30720
+    Default: 256!512
+    Type: String
+  MailTag:
+    AllowedPattern: '[\x20-\x7E]+'
+    ConstraintDescription: Must be ASCII
+    Default: you@paying.bill
+    MaxLength: 128
+    MinLength: 2
+    Type: String
+  MicroServiceName:
+    AllowedPattern: '[a-zA-Z0-9-]+'
+    Type: String
+  MicroserviceImage:
+    Type: String
+  MicroservicesCount:
+    Default: 0
+    MinValue: 0
+    Type: Number
+  OwnerTag:
+    AllowedPattern: '[\x20-\x7E]+'
+    ConstraintDescription: Must be ASCII
+    Default: MySelf
+    MaxLength: 128
+    MinLength: 2
+    Type: String
+  PublicSubnets:
+    Type: List<AWS::EC2::Subnet::Id>
+  RootStackName:
+    Default: <self>
+    Description: When part of a combined deployment, represents to the top stack name
+    Type: String
+  TaskCpuCount:
+    Default: 1024
+    Type: Number
+  UseAwsCloudMap:
+    AllowedValues:
+      - 'True'
+      - 'False'
+    Default: 'True'
+    Type: String
+  UseCfnExports:
+    AllowedValues:
+      - 'True'
+      - 'False'
+    Default: 'True'
+    Type: String
+  UseSsmExports:
+    AllowedValues:
+      - 'True'
+      - 'False'
+    Default: 'False'
+    Type: String
+  VpcDiscoveryMapId:
+    Default: default
+    Type: String
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+Resources:
+  EcsExecutionRole:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Condition:
+              Bool:
+                aws:SecureTransport: 'true'
+            Effect: Allow
+            Principal:
+              Service:
+                - !Sub 'ecs-tasks.${AWS::URLSuffix}'
+        Version: '2012-10-17'
+      Description: !Sub 'Execution role for ${MicroServiceName} in ${EcsClusterName}'
+      Tags:
+        - Key: costcentre
+          Value: !Ref 'CostcentreTag'
+        - Key: mail
+          Value: !Ref 'MailTag'
+        - Key: owner
+          Value: !Ref 'OwnerTag'
+    Type: AWS::IAM::Role
+  EcsExecutionRolePolicy:
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - ecr:GetAuthorizationToken
+              - ecr:BatchCheckLayerAvailability
+              - ecr:GetDownloadUrlForLayer
+              - ecr:GetRepositoryPolicy
+              - ecr:DescribeRepositories
+              - ecr:ListImages
+              - ecr:DescribeImages
+              - ecr:BatchGetImage
+            Effect: Allow
+            Resource:
+              - '*'
+            Sid: AllowsForEcrPullFromEcsAgent
+          - Action:
+              - ecs:DiscoverPollEndpoint
+              - ecs:Poll
+              - ecs:Submit*
+            Effect: Allow
+            Resource:
+              - '*'
+            Sid: AllowEcsAgentOrientedTasks
+          - Action:
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+            Effect: Allow
+            Resource:
+              - !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${EcsClusterName}:*'
+            Sid: AllowCloudWatchLoggingToSpecificLogGroup
+          - Action:
+              - ec2:AttachNetworkInterface
+              - ec2:CreateNetworkInterface
+              - ec2:CreateNetworkInterfacePermission
+              - ec2:DeleteNetworkInterface
+              - ec2:DeleteNetworkInterfacePermission
+              - ec2:Describe*
+              - ec2:DetachNetworkInterface
+              - elasticloadbalancing:DeregisterInstancesFromLoadBalancer
+              - elasticloadbalancing:DeregisterTargets
+              - elasticloadbalancing:Describe*
+              - elasticloadbalancing:RegisterInstancesWithLoadBalancer
+              - elasticloadbalancing:RegisterTargets
+            Effect: Allow
+            Resource:
+              - '*'
+            Sid: AllowsEcsAgentToPerformActionsForMicroservice
+        Version: '2012-10-17'
+      PolicyName: !Sub 'EcsExecRole'
+      Roles:
+        - !Ref 'EcsExecutionRole'
+    Type: AWS::IAM::Policy
+  EcsServiceDefinition:
+    DependsOn:
+      - MicroserviceNetworkLB
+      - NetworkPublicTargetGroupPort80
+      - NetworkPublicListenerPort80
+    Properties:
+      Cluster: !Ref 'EcsClusterName'
+      DeploymentController:
+        Type: !Ref 'EcsServiceDeploymentController'
+      DesiredCount: !If
+        - ServiceCountZeroAndFargate
+        - 1
+        - !If
+          - UseFargateCondition
+          - !Ref 'MicroservicesCount'
+          - !If
+            - ServiceCountIsZeroCondition
+            - !Ref 'AWS::NoValue'
+            - !Ref 'MicroservicesCount'
+      EnableECSManagedTags: 'true'
+      HealthCheckGracePeriodSeconds: !Ref 'AWS::NoValue'
+      LaunchType: !Ref 'EcsLaunchType'
+      LoadBalancers:
+        - ContainerName: !Ref 'MicroServiceName'
+          ContainerPort: '80'
+          TargetGroupArn: !Ref 'NetworkPublicTargetGroupPort80'
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          SecurityGroups:
+            - !Ref 'ServiceSecurityGroup'
+            - !Ref 'ClusterWideSGId'
+          Subnets: !Ref 'AppSubnets'
+      PlacementStrategies: !If
+        - UseFargateCondition
+        - !Ref 'AWS::NoValue'
+        - - Field: instanceId
+            Type: spread
+          - Field: attribute:ecs.availability-zone
+            Type: spread
+      PropagateTags: SERVICE
+      SchedulingStrategy: !If
+        - UseFargateCondition
+        - REPLICA
+        - !If
+          - ServiceCountZeroAndFargate
+          - REPLICA
+          - DAEMON
+      ServiceRegistries: !Ref 'AWS::NoValue'
+      Tags:
+        - Key: Name
+          Value: !Ref 'MicroServiceName'
+        - Key: StackName
+          Value: !Ref 'AWS::StackName'
+        - Key: costcentre
+          Value: !Ref 'CostcentreTag'
+        - Key: mail
+          Value: !Ref 'MailTag'
+        - Key: owner
+          Value: !Ref 'OwnerTag'
+      TaskDefinition: !Ref 'EcsTaskDefinition'
+    Type: AWS::ECS::Service
+  EcsTaskDefinition:
+    Properties:
+      ContainerDefinitions:
+        - Environment:
+            - Name: SOMEKEY
+              Value: SomeValue
+            - Name: SOMEOTHERKEY
+              Value: SomeOtherValue
+          Image: !Ref 'MicroserviceImage'
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref 'EcsClusterName'
+              awslogs-region: !Ref 'AWS::Region'
+              awslogs-stream-prefix: !Ref 'ClusterServicesLogGroup'
+          MemoryReservation: !If
+            - UseFargateCondition
+            - !Select
+              - 1
+              - !Split
+                - '!'
+                - !Ref 'FargateCpuRamConfiguration'
+            - !If
+              - MemoryReservedIsMemoryAllocatedCondition
+              - !Ref 'ContainerMemoryAllocation'
+              - !Ref 'ContainerMemoryReservation'
+          Name: !Ref 'MicroServiceName'
+          PortMappings:
+            - ContainerPort: '80'
+              HostPort: '80'
+      Cpu: !If
+        - UseFargateCondition
+        - !Select
+          - 0
+          - !Split
+            - '!'
+            - !Ref 'FargateCpuRamConfiguration'
+        - !Ref 'TaskCpuCount'
+      ExecutionRoleArn: !GetAtt 'EcsExecutionRole.Arn'
+      Family: !Ref 'MicroServiceName'
+      Memory: !If
+        - UseFargateCondition
+        - !Select
+          - 1
+          - !Split
+            - '!'
+            - !Ref 'FargateCpuRamConfiguration'
+        - !Ref 'ContainerMemoryAllocation'
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - EC2
+        - FARGATE
+      Tags:
+        - Key: Environment
+          Value: !Ref 'AWS::StackName'
+        - Key: Name
+          Value: !Ref 'MicroServiceName'
+        - Key: costcentre
+          Value: !Ref 'CostcentreTag'
+        - Key: mail
+          Value: !Ref 'MailTag'
+        - Key: owner
+          Value: !Ref 'OwnerTag'
+      TaskRoleArn: !GetAtt 'EcsTaskRole.Arn'
+    Type: AWS::ECS::TaskDefinition
+  EcsTaskRole:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Condition:
+              Bool:
+                aws:SecureTransport: 'true'
+            Effect: Allow
+            Principal:
+              Service:
+                - !Sub 'ecs-tasks.${AWS::URLSuffix}'
+        Version: '2012-10-17'
+      Description: !Sub 'TaskRole - ${MicroServiceName} in ${EcsClusterName}'
+      ManagedPolicyArns: []
+      Policies: []
+      Tags:
+        - Key: costcentre
+          Value: !Ref 'CostcentreTag'
+        - Key: mail
+          Value: !Ref 'MailTag'
+        - Key: owner
+          Value: !Ref 'OwnerTag'
+    Type: AWS::IAM::Role
+  EipPublicNlbeuwest1aapp01:
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: costcentre
+          Value: !Ref 'CostcentreTag'
+        - Key: mail
+          Value: !Ref 'MailTag'
+        - Key: owner
+          Value: !Ref 'OwnerTag'
+    Type: AWS::EC2::EIP
+  EipPublicNlbeuwest1bapp01:
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: costcentre
+          Value: !Ref 'CostcentreTag'
+        - Key: mail
+          Value: !Ref 'MailTag'
+        - Key: owner
+          Value: !Ref 'OwnerTag'
+    Type: AWS::EC2::EIP
+  EipPublicNlbeuwest1capp01:
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: costcentre
+          Value: !Ref 'CostcentreTag'
+        - Key: mail
+          Value: !Ref 'MailTag'
+        - Key: owner
+          Value: !Ref 'OwnerTag'
+    Type: AWS::EC2::EIP
+  FromAllOnto80tcp:
+    Properties:
+      CidrIp: '0.0.0.0/0'
+      CidrIpv6: !Ref 'AWS::NoValue'
+      Description: !Sub 'From All To 80tcp for ${MicroServiceName}'
+      FromPort: '80'
+      GroupId: !GetAtt 'ServiceSecurityGroup.GroupId'
+      IpProtocol: tcp
+      ToPort: '80'
+    Type: AWS::EC2::SecurityGroupIngress
+  FromGooglednsOnto80tcp:
+    Properties:
+      CidrIp: 1.1.1.1/32
+      CidrIpv6: !Ref 'AWS::NoValue'
+      Description: !Sub 'From Googledns To 80tcp for ${MicroServiceName}'
+      FromPort: '80'
+      GroupId: !GetAtt 'ServiceSecurityGroup.GroupId'
+      IpProtocol: tcp
+      ToPort: '80'
+    Type: AWS::EC2::SecurityGroupIngress
+  Fromapp01Toapp02Port80:
+    Properties:
+      FromPort: '80'
+      GroupId: !ImportValue
+        Fn::Sub: ${RootStackName}::app02::ServiceGroupId
+      IpProtocol: tcp
+      SourceSecurityGroupId: !GetAtt 'ServiceSecurityGroup.GroupId'
+      SourceSecurityGroupOwnerId: !Ref 'AWS::AccountId'
+      ToPort: '80'
+    Type: AWS::EC2::SecurityGroupIngress
+  MicroserviceNetworkLB:
+    Properties:
+      LoadBalancerAttributes:
+        - Key: load_balancing.cross_zone.enabled
+          Value: 'true'
+      Scheme: internet-facing
+      SecurityGroups: !Ref 'AWS::NoValue'
+      SubnetMappings:
+        - AllocationId: !GetAtt 'EipPublicNlbeuwest1aapp01.AllocationId'
+          SubnetId: !Select
+            - 0
+            - !Ref 'PublicSubnets'
+        - AllocationId: !GetAtt 'EipPublicNlbeuwest1bapp01.AllocationId'
+          SubnetId: !Select
+            - 1
+            - !Ref 'PublicSubnets'
+        - AllocationId: !GetAtt 'EipPublicNlbeuwest1capp01.AllocationId'
+          SubnetId: !Select
+            - 2
+            - !Ref 'PublicSubnets'
+      Subnets: !Ref 'AWS::NoValue'
+      Tags:
+        - Key: MicroserviceName
+          Value: !Ref 'MicroServiceName'
+        - Key: Name
+          Value: !Sub '${MicroServiceName}-${RootStackName}'
+        - Key: StackName
+          Value: !Ref 'AWS::StackName'
+        - Key: costcentre
+          Value: !Ref 'CostcentreTag'
+        - Key: mail
+          Value: !Ref 'MailTag'
+        - Key: owner
+          Value: !Ref 'OwnerTag'
+      Type: network
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+  NetworkPublicListenerPort80:
+    DependsOn:
+      - MicroserviceNetworkLB
+    Properties:
+      DefaultActions:
+        - TargetGroupArn: !Ref 'NetworkPublicTargetGroupPort80'
+          Type: forward
+      LoadBalancerArn: !Ref 'MicroserviceNetworkLB'
+      Port: '80'
+      Protocol: TCP
+    Type: AWS::ElasticLoadBalancingV2::Listener
+  NetworkPublicTargetGroupPort80:
+    DependsOn:
+      - MicroserviceNetworkLB
+    Properties:
+      HealthCheckIntervalSeconds: 10
+      HealthyThresholdCount: 2
+      Port: '80'
+      Protocol: TCP
+      Tags:
+        - Key: MicroserviceName
+          Value: !Ref 'MicroServiceName'
+        - Key: Name
+          Value: !Sub '${MicroServiceName}-80'
+        - Key: StackId
+          Value: !Ref 'AWS::StackId'
+        - Key: StackName
+          Value: !Ref 'AWS::StackName'
+        - Key: costcentre
+          Value: !Ref 'CostcentreTag'
+        - Key: mail
+          Value: !Ref 'MailTag'
+        - Key: owner
+          Value: !Ref 'OwnerTag'
+      TargetGroupAttributes:
+        - Key: deregistration_delay.timeout_seconds
+          Value: '10'
+      TargetType: ip
+      UnhealthyThresholdCount: 2
+      VpcId: !Ref 'VpcId'
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+  ServiceSecurityGroup:
+    Properties:
+      GroupDescription: !Sub 'SG for ${MicroServiceName} - ${RootStackName}'
+      Tags:
+        - Key: MicroserviceName
+          Value: !Ref 'MicroServiceName'
+        - Key: Name
+          Value: !Sub '${MicroServiceName}-${RootStackName}'
+        - Key: StackName
+          Value: !Ref 'AWS::StackName'
+        - Key: costcentre
+          Value: !Ref 'CostcentreTag'
+        - Key: mail
+          Value: !Ref 'MailTag'
+        - Key: owner
+          Value: !Ref 'OwnerTag'
+      VpcId: !Ref 'VpcId'
+    Type: AWS::EC2::SecurityGroup

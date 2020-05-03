@@ -1,37 +1,47 @@
 # -*- coding: utf-8 -*-
+#  ECS ComposeX <https://github.com/lambda-my-aws/ecs_composex>
+#  Copyright (C) 2020  John Mille <john@lambda-my-aws.io>
+#
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
 """
 Most commonly used functions shared across all modules.
 """
 
 import json
-from ecs_composex.common import KEYISSET
+from ecs_composex.common import KEYISSET, LOG
 
 
-def build_config_template_file(parameters=None, tags=None, stack_policies=None):
+def build_config_template_file(config, parameters=None, tags=None, stack_policies=None):
     """
     Function to create the CFN Template configuration file.
 
+    :param config: CFN stack config definition
+    :type config: dict
     :param parameters: list of parameters and the value we want for it.
     :type parameters: list
     :param tags: To implement
     :param stack_policies: To implement
     """
-    config = {"Parameters": {}}
     if parameters is not None and not isinstance(parameters, list):
         raise TypeError("parameters must be a list of objects", list)
+    if not KEYISSET("Parameters", config):
+        config["Parameters"] = {}
     for param in parameters:
         config["Parameters"].update({param["ParameterKey"]: param["ParameterValue"]})
     return config
-
-
-def write_config_template_file(config, output_file):
-    """
-    Function to write the
-    :param config:
-    :param output_file:
-    """
-    with open(output_file, "w") as config_fd:
-        config_fd.write(json.dumps(config, indent=4))
 
 
 def import_parameters_into_config_file(parameters_file, config_file):
@@ -43,13 +53,19 @@ def import_parameters_into_config_file(parameters_file, config_file):
     """
     with open(parameters_file, "r") as params_fd:
         parameters = json.loads(params_fd.read())
-    with open(config_file, "r") as config_fd:
-        config = json.loads(config_fd.read())
-    new_params_config = build_config_template_file(parameters)
-    if KEYISSET("Parameters", config):
-        for param in config["Parameters"]:
-            if param in new_params_config["Parmeters"]:
-                config["Parameters"][param] = new_params_config["Parameters"][param]
+    try:
+        with open(config_file, "r") as config_fd:
+            try:
+                config = json.loads(config_fd.read())
+            except json.decoder.JSONDecodeError:
+                config = {"Parameters": {}}
+            if not KEYISSET("Parameters", config):
+                config["Parameters"] = {}
+    except FileNotFoundError:
+        config = {"Parameters": {}}
+    print(config)
+    new_config = build_config_template_file(config, parameters)
+    LOG.info(new_config)
 
     with open(config_file, "w") as config_fd:
-        config_fd.write(json.dumps(config, indent=4))
+        config_fd.write(json.dumps(new_config, indent=4))

@@ -1,5 +1,24 @@
 # -*- coding: utf-8 -*-
-"""Common variables fetched from AWS."""
+#  ECS ComposeX <https://github.com/lambda-my-aws/ecs_composex>
+#  Copyright (C) 2020  John Mille <john@lambda-my-aws.io>
+#
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+"""
+Common functions and variables fetched from AWS.
+"""
 
 import boto3
 
@@ -17,12 +36,12 @@ def get_region_azs(region=None, session=None, client=None):
     :return: list of AZs in the given region
     :rtype: list
     """
-    if session is None:
-        if region is None:
-            session = boto3.session.Session()
-        elif isinstance(region, str):
-            session = boto3.session.Session(region_name=region)
     if client is None:
+        if session is None:
+            if region is None:
+                session = boto3.session.Session()
+            elif isinstance(region, str):
+                session = boto3.session.Session(region_name=region)
         return session.client("ec2").describe_availability_zones()["AvailabilityZones"]
     return client.describe_availability_zones()["AvailabilityZones"]
 
@@ -53,8 +72,8 @@ def get_account_id(session=None, client=None):
     :param client: boto3 client to make API calls
     :type client: boto3.client
 
-    :return: list of AZs
-    :rtype: list
+    :return: account ID
+    :rtype: str
     """
     if client is not None:
         return client.get_caller_identity()["Account"]
@@ -62,8 +81,3 @@ def get_account_id(session=None, client=None):
         return session.client("sts").get_caller_identity()["Account"]
     elif client is None and session is None:
         return boto3.client("sts").get_caller_identity()["Account"]
-
-
-CURATED_AZS = get_curated_azs()
-ACCOUNT_ID = get_account_id()
-BUCKET_NAME = f"cfn-templates-{ACCOUNT_ID[:6]}"

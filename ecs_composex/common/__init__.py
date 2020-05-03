@@ -1,4 +1,21 @@
 # -*- coding: utf-8 -*-
+#  ECS ComposeX <https://github.com/lambda-my-aws/ecs_composex>
+#  Copyright (C) 2020  John Mille <john@lambda-my-aws.io>
+#
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
 """
 Most commonly used functions shared across all modules.
 """
@@ -21,7 +38,7 @@ from ecs_composex.common import cfn_conditions
 
 DATE = dt.utcnow().isoformat()
 DATE_PREFIX = dt.utcnow().strftime("%Y/%m/%d/%H%M")
-NONALPHANUM = re.compile(r"[\W]+")
+NONALPHANUM = re.compile(r"([^a-zA-Z0-9])")
 
 
 def KEYISSET(x, y):
@@ -167,9 +184,9 @@ def validate_input(compose_content, res_key):
     :return: True/False if all keys are valid
     :rtype: bool
     """
-    names = compose_content[res_key]
-    for name in names:
-        validate_resource_title(name, res_key)
+    section = compose_content[res_key]
+    for resource_name in section.keys():
+        validate_resource_title(resource_name, res_key)
     return True
 
 
@@ -255,6 +272,25 @@ def write_template_to_file(template, file_path):
             template_fd.write(template.to_json())
 
 
+def build_parameters_file(params, parameter_name, parameter_value):
+    """
+    Function to build arguments file to pass onto CFN.
+    Adds the parameter key/value so it can be written to file afterwards
+
+    :param params: list of parameters
+    :type params: list
+    :param parameter_name: key of the parameter
+    :type parameter_name: str
+    :param parameter_value: value of the parameter
+    :type parameter_value: str||list
+    """
+    if params is None:
+        params = []
+    if isinstance(parameter_value, (int, float)):
+        parameter_value = str(parameter_value)
+    params.append({"ParameterKey": parameter_name, "ParameterValue": parameter_value})
+
+
 def build_default_stack_parameters(stack_params, **kwargs):
     """
     Function to check and define default parameters for the root stack from the CLI options
@@ -267,25 +303,6 @@ def build_default_stack_parameters(stack_params, **kwargs):
         build_parameters_file(
             stack_params, cfn_params.USE_FLEET_T, kwargs[cfn_params.USE_FLEET_T]
         )
-
-
-def build_parameters_file(params: list, parameter_name: str, parameter_value):
-    """
-    Function to build arguments file to pass onto CFN.
-    Adds the parameter key/value so it can be written to file afterwards
-
-    :param params: list of parameters
-    :type params: list
-    :param parameter_name: key of the parameter
-    :type parameter_name: str
-    :param parameter_value: value of the parameter
-    :type parameter_value: str or int or list
-    """
-    if params is None:
-        params = []
-    if isinstance(parameter_value, (int, float)):
-        parameter_value = str(parameter_value)
-    params.append({"ParameterKey": parameter_name, "ParameterValue": parameter_value})
 
 
 def load_composex_file(file_path):

@@ -1,4 +1,21 @@
 # -*- coding: utf-8 -*-
+#  ECS ComposeX <https://github.com/lambda-my-aws/ecs_composex>
+#  Copyright (C) 2020  John Mille <john@lambda-my-aws.io>
+#
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
 
 """
 Functions to add to the Cluster template when people want to use SpotFleet for their ECS Cluster.
@@ -24,7 +41,7 @@ from troposphere.applicationautoscaling import (
 
 from troposphere.cloudwatch import Alarm, MetricDimension as CwMetricDimension
 from troposphere.iam import Role
-from ecs_composex.common import LOG, build_template
+from ecs_composex.common import LOG, build_template, KEYISSET
 from ecs_composex.iam import service_role_trust_policy
 from ecs_composex.vpc import vpc_params
 from ecs_composex.compute import compute_params, compute_conditions
@@ -280,5 +297,7 @@ def generate_spot_fleet_template(region_azs, **kwargs):
     )
     lt_id = Ref(compute_params.LAUNCH_TEMPLATE_ID)
     lt_version = Ref(compute_params.LAUNCH_TEMPLATE_VersionNumber)
+    if not KEYISSET("spot_config", kwargs):
+        kwargs["spot_config"] = DEFAULT_SPOT_CONFIG
     define_spot_fleet(template, region_azs, lt_id, lt_version, **kwargs)
     return template

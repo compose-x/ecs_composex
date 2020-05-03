@@ -1,5 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+#  ECS ComposeX <https://github.com/lambda-my-aws/ecs_composex>
+#  Copyright (C) 2020  John Mille <john@lambda-my-aws.io>
+#
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """Console script for ecs_composex.vpc"""
 
@@ -7,10 +22,14 @@ import sys
 import argparse
 from boto3 import session
 
-from ecs_composex.common.aws import CURATED_AZS, BUCKET_NAME
+from ecs_composex.common.aws import get_curated_azs, get_account_id
 from ecs_composex.vpc import create_vpc_template
 from ecs_composex.common.ecs_composex import XFILE_DEST, DIR_DEST
 from ecs_composex.common.files import FileArtifact
+
+CURATED_AZS = get_curated_azs()
+ACCOUNT_ID = get_account_id()
+BUCKET_NAME = f"cfn-templates-{ACCOUNT_ID[:6]}"
 
 
 def main():

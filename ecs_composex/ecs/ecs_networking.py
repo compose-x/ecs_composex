@@ -1,4 +1,20 @@
 # -*- coding: utf-8 -*-
+#  ECS ComposeX <https://github.com/lambda-my-aws/ecs_composex>
+#  Copyright (C) 2020  John Mille <john@lambda-my-aws.io>
+#
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 """
 Functions that will add networking elements for the ECS Service as well as generating
 the network configuration for the ServiceDefinition
@@ -115,6 +131,10 @@ def define_service_ports(service):
     if KEYISSET("ports", service):
         ports = service["ports"]
     for port in ports:
+        if not isinstance(port, (str, dict, int)):
+            raise TypeError(
+                "ports must be of types", dict, "or", list, "got", type(port)
+            )
         if isinstance(port, str):
             service_ports.append(
                 {
@@ -129,6 +149,10 @@ def define_service_ports(service):
                 raise KeyError(f"Valid keys are", valid_keys, "got", port.keys())
             port["mode"] = "awsvpc"
             service_ports.append(port)
+        elif isinstance(port, int):
+            service_ports.append(
+                {"protocol": "tcp", "published": port, "target": port, "mode": "awsvpc"}
+            )
     LOG.debug(service_ports)
     return service_ports
 
@@ -166,7 +190,7 @@ def compile_network_settings(compose_content, service, service_name):
         settings = service["labels"]
     if KEYISSET("configs", compose_content):
         if KEYISSET(service_name, compose_content["configs"]):
-            LOG.warn(
+            LOG.warning(
                 f"Service {service_name} has defined configs in the configs section."
                 "Overriding with values"
             )

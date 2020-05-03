@@ -35,12 +35,12 @@ def check_bucket(bucket_name, session=None, client=None):
     :returns: True/False, Returns whether the bucket exists or not for upload
     :rtype: bool
     """
-    if session is None:
-        session = boto3.session.Session()
+    if client is None:
+        if session is None:
+            session = boto3.session.Session()
+        client = session.client("s3")
     region = session.region_name
     location = {"LocationConstraint": region}
-    if client is None:
-        client = session.client("s3")
     try:
         client.head_bucket(Bucket=bucket_name)
         LOG.debug(f"Bucket {bucket_name} available")
@@ -201,6 +201,8 @@ class FileArtifact(object):
         except FileExistsError:
             LOG.debug(f"Output directory {self.output_dir} already exists")
         with open(self.file_path, "w") as template_fd:
+            if self.body is None:
+                self.define_body()
             template_fd.write(self.body)
             LOG.debug(
                 f"Template {self.file_name} written successfully at {self.output_dir}/{self.file_name}"
