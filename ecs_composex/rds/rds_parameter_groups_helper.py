@@ -10,7 +10,7 @@ def get_db_engine_settings(db_engine_name, db_engine_version, serverless=False):
     """
     Function to return just the details about that DB Engine Version
     """
-    LOG.info(f"Looking for the family of {db_engine_name}-{db_engine_version}")
+    LOG.debug(f"Looking for the family of {db_engine_name}-{db_engine_version}")
     client = boto3.client("rds")
     req = client.describe_db_engine_versions(
         Engine=db_engine_name, EngineVersion=db_engine_version
@@ -86,8 +86,8 @@ def get_family_from_engine_version(
 def get_family_settings(db_family):
 
     if db_family.startswith("aurora"):
-        LOG.info("Aurora based instance")
-        LOG.info(f"Looking for parameters for {db_family}")
+        LOG.debug("Aurora based instance")
+        LOG.debug(f"Looking for parameters for {db_family}")
         return get_db_cluster_engine_parameter_group_defaults(db_family)
     else:
         return None

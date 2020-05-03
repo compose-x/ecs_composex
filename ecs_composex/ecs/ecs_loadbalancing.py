@@ -326,14 +326,14 @@ def define_lb_type(service_name, labels):
     """
     lb_type = "application"
     if KEYISSET("use_nlb", labels) and KEYISSET("use_alb", labels):
-        LOG.warn("Both ALB and NLB are enabled for this service. Defaulting to ALB")
+        LOG.warning("Both ALB and NLB are enabled for this service. Defaulting to ALB")
     elif KEYISSET("use_nlb", labels) and not KEYISSET("use_alb", labels):
         LOG.debug(f"Creating a NLB for service {service_name}")
         lb_type = "network"
     elif not KEYISSET("use_nlb", labels) and KEYISSET("use_alb", labels):
         LOG.debug(f"Creating a ALB for service {service_name}")
     else:
-        LOG.warn(
+        LOG.warning(
             "Neither ALB or NLB were specified but service was flagged as service."
             "Defaulting to ALB"
         )

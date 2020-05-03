@@ -115,6 +115,10 @@ def define_service_ports(service):
     if KEYISSET("ports", service):
         ports = service["ports"]
     for port in ports:
+        if not isinstance(port, (str, dict, int)):
+            raise TypeError(
+                "ports must be of types", dict, "or", list, "got", type(port)
+            )
         if isinstance(port, str):
             service_ports.append(
                 {
@@ -129,6 +133,10 @@ def define_service_ports(service):
                 raise KeyError(f"Valid keys are", valid_keys, "got", port.keys())
             port["mode"] = "awsvpc"
             service_ports.append(port)
+        elif isinstance(port, int):
+            service_ports.append(
+                {"protocol": "tcp", "published": port, "target": port, "mode": "awsvpc"}
+            )
     LOG.debug(service_ports)
     return service_ports
 
@@ -166,7 +174,7 @@ def compile_network_settings(compose_content, service, service_name):
         settings = service["labels"]
     if KEYISSET("configs", compose_content):
         if KEYISSET(service_name, compose_content["configs"]):
-            LOG.warn(
+            LOG.warning(
                 f"Service {service_name} has defined configs in the configs section."
                 "Overriding with values"
             )

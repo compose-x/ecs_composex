@@ -8,11 +8,14 @@ import argparse
 import boto3
 
 from ecs_composex.common.ecs_composex import XFILE_DEST, DIR_DEST
-from ecs_composex.common.aws import BUCKET_NAME
+from ecs_composex.common.aws import get_account_id
 from ecs_composex.common import load_composex_file, validate_kwargs, validate_input
 from ecs_composex.common.files import FileArtifact
 from ecs_composex.common.stacks import render_final_template
 from ecs_composex.sqs.sqs_template import generate_sqs_root_template
+
+ACCOUNT_ID = get_account_id()
+BUCKET_NAME = f"cfn-templates-{ACCOUNT_ID[:6]}"
 
 
 def sqs_parser():

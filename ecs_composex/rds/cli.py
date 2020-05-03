@@ -6,11 +6,14 @@ import argparse
 import os
 import sys
 
-from ecs_composex.common.aws import BUCKET_NAME
+from ecs_composex.common.aws import get_account_id
 from ecs_composex.common.ecs_composex import DIR_DEST
 from ecs_composex.common.files import FileArtifact
 from ecs_composex.common.stacks import render_final_template
 from ecs_composex.rds import create_rds_template
+
+ACCOUNT_ID = get_account_id()
+BUCKET_NAME = f"cfn-templates-{ACCOUNT_ID[:6]}"
 
 
 def create_parser():

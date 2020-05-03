@@ -21,7 +21,7 @@ from ecs_composex.common import cfn_conditions
 
 DATE = dt.utcnow().isoformat()
 DATE_PREFIX = dt.utcnow().strftime("%Y/%m/%d/%H%M")
-NONALPHANUM = re.compile(r"[\W]+")
+NONALPHANUM = re.compile(r"([^a-zA-Z0-9])")
 
 
 def KEYISSET(x, y):
@@ -167,9 +167,9 @@ def validate_input(compose_content, res_key):
     :return: True/False if all keys are valid
     :rtype: bool
     """
-    names = compose_content[res_key]
-    for name in names:
-        validate_resource_title(name, res_key)
+    section = compose_content[res_key]
+    for resource_name in section.keys():
+        validate_resource_title(resource_name, res_key)
     return True
 
 
@@ -255,6 +255,25 @@ def write_template_to_file(template, file_path):
             template_fd.write(template.to_json())
 
 
+def build_parameters_file(params, parameter_name, parameter_value):
+    """
+    Function to build arguments file to pass onto CFN.
+    Adds the parameter key/value so it can be written to file afterwards
+
+    :param params: list of parameters
+    :type params: list
+    :param parameter_name: key of the parameter
+    :type parameter_name: str
+    :param parameter_value: value of the parameter
+    :type parameter_value: str||list
+    """
+    if params is None:
+        params = []
+    if isinstance(parameter_value, (int, float)):
+        parameter_value = str(parameter_value)
+    params.append({"ParameterKey": parameter_name, "ParameterValue": parameter_value})
+
+
 def build_default_stack_parameters(stack_params, **kwargs):
     """
     Function to check and define default parameters for the root stack from the CLI options
@@ -267,25 +286,6 @@ def build_default_stack_parameters(stack_params, **kwargs):
         build_parameters_file(
             stack_params, cfn_params.USE_FLEET_T, kwargs[cfn_params.USE_FLEET_T]
         )
-
-
-def build_parameters_file(params: list, parameter_name: str, parameter_value):
-    """
-    Function to build arguments file to pass onto CFN.
-    Adds the parameter key/value so it can be written to file afterwards
-
-    :param params: list of parameters
-    :type params: list
-    :param parameter_name: key of the parameter
-    :type parameter_name: str
-    :param parameter_value: value of the parameter
-    :type parameter_value: str or int or list
-    """
-    if params is None:
-        params = []
-    if isinstance(parameter_value, (int, float)):
-        parameter_value = str(parameter_value)
-    params.append({"ParameterKey": parameter_name, "ParameterValue": parameter_value})
 
 
 def load_composex_file(file_path):

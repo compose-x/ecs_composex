@@ -14,59 +14,54 @@ except ImportError:
 from ecs_composex.sqs import create_sqs_template
 from ecs_composex.sqs.sqs_perms import generate_sqs_permissions
 
-try:
-    BUCKET = os.environ['KNOWN_BUCKET']
-except KeyError:
-    BUCKET = 'lambda-dev-eu-west-1'
-
-
-CONFIG = {
-    'BucketName': BUCKET,
-    'EnvName': 'abcd',
-}
-
-HERE = os.path.dirname(os.path.abspath(__file__))
+from os import path, environ
+import pytest
 
 
 @pytest.fixture
-def content_sqs():
+def bucket_name():
+    try:
+        bucket = environ["KNOWN_bucket"]
+    except KeyError:
+        bucket = "lambda-dev-eu-west-1"
+    return bucket
+
+
+@pytest.fixture
+def here():
+    return path.abspath(path.dirname(__file__))
+
+
+@pytest.fixture
+def content_sqs(here):
     """
     Opens the file and passes the content around
     """
-    with open(f"{HERE}/sqs.yml", 'r') as fd:
+    with open(f"{here}/sqs.yml", "r") as fd:
         content = yaml.load(fd.read(), Loader=Loader)
     return content
 
+
 @pytest.fixture
-def args():
+def args(bucket_name):
+    return {"BucketName": bucket_name, "Debug": True}
+
+
+@pytest.fixture
+def parser_args(here, bucket_name):
     return {
-        'BucketName': BUCKET,
-        'Debug': True
+        "ComposeXFile": f"{here}/services_with_queues.yml",
+        "BucketName": bucket_name,
+        "OutputFile": "/tmp/sqs.yml",
     }
 
-
-@pytest.fixture
-def parser_args():
-    return({
-        'ComposeXFile': f"{HERE}/services_with_queues.yml",
-        'BucketName': BUCKET,
-        'OutputFile': '/tmp/sqs.yml'
-    })
 
 def test_generate_policies(args):
     """
     Function to test generation of a queue policies
     """
     policies = generate_sqs_permissions(
-        'QueueA', {
-            'Services': [
-                {
-                    'name': 'App01',
-                    'access': 'RWMessages'
-                }
-            ]
-        },
-        **args
+        "QueueA", {"Services": [{"name": "App01", "access": "RWMessages"}]}, **args
     )
     assert len(policies.keys()) == 3
 

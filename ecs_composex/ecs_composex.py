@@ -454,20 +454,22 @@ def init_root_template(stack_params, tags=None):
     return template
 
 
-def generate_full_template(session=None, **kwargs):
+def generate_full_template(content, session=None, **kwargs):
     """
     Function to generate the root template
 
+    :param content: ComposeX file content
+    :type content: dict
     :param session: boto3 session to override client
     :type session: boto3.session.Session
 
-    :return template: Template()
+    :return template: Template, params
+    :rtype: template, list
     """
     if session is None:
         session = boto3.session.Session(region_name=kwargs["AwsRegion"])
     stack_params = []
     build_default_stack_parameters(stack_params, **kwargs)
-    content = load_composex_file(kwargs[XFILE_DEST])
     kwargs.update(get_composex_globals(content))
     tags_params = generate_tags_parameters(content)
     template = init_root_template(stack_params, tags_params)

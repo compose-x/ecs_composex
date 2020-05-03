@@ -17,12 +17,12 @@ def get_region_azs(region=None, session=None, client=None):
     :return: list of AZs in the given region
     :rtype: list
     """
-    if session is None:
-        if region is None:
-            session = boto3.session.Session()
-        elif isinstance(region, str):
-            session = boto3.session.Session(region_name=region)
     if client is None:
+        if session is None:
+            if region is None:
+                session = boto3.session.Session()
+            elif isinstance(region, str):
+                session = boto3.session.Session(region_name=region)
         return session.client("ec2").describe_availability_zones()["AvailabilityZones"]
     return client.describe_availability_zones()["AvailabilityZones"]
 
@@ -53,8 +53,8 @@ def get_account_id(session=None, client=None):
     :param client: boto3 client to make API calls
     :type client: boto3.client
 
-    :return: list of AZs
-    :rtype: list
+    :return: account ID
+    :rtype: str
     """
     if client is not None:
         return client.get_caller_identity()["Account"]
@@ -62,8 +62,3 @@ def get_account_id(session=None, client=None):
         return session.client("sts").get_caller_identity()["Account"]
     elif client is None and session is None:
         return boto3.client("sts").get_caller_identity()["Account"]
-
-
-CURATED_AZS = get_curated_azs()
-ACCOUNT_ID = get_account_id()
-BUCKET_NAME = f"cfn-templates-{ACCOUNT_ID[:6]}"

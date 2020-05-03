@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from troposphere import Template
 from troposphere.cloudformation import Stack
 
 from ecs_composex.common import LOG
@@ -71,12 +72,16 @@ class ComposeXStack(Stack, object):
 
         if extension is None and template_file is None:
             extension = ".yml"
+        if not isinstance(template, Template):
+            raise TypeError("template must be of type", Template, "got", type(template))
         self.stack_template = template
         if template_file and isinstance(template_file, FileArtifact):
             self.template_file = template_file
         else:
             file_name = f"{title}{extension}"
-            self.template_file = FileArtifact(file_name, self.stack_template, **kwargs)
+            self.template_file = FileArtifact(
+                file_name, template=self.stack_template, **kwargs
+            )
         if self.template_file.url is None:
             self.template_file.url = self.template_file.file_path
         stack_kwargs = dict((x, kwargs[x]) for x in self.props.keys() if x in kwargs)

@@ -68,7 +68,9 @@ def add_spotfleet_stack(
     if spot_config:
         kwargs.update({"spot_config": spot_config})
     else:
-        LOG.warn("No spot_config set in configs of ComposeX File. Setting to defaults")
+        LOG.warning(
+            "No spot_config set in configs of ComposeX File. Setting to defaults"
+        )
         kwargs.update({"spot_config": DEFAULT_SPOT_CONFIG})
     fleet_template = generate_spot_fleet_template(region_azs, **kwargs)
     if tags and tags[0]:
