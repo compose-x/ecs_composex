@@ -1,0 +1,14 @@
+[
+    {
+        "ParameterKey": "UseSpotFleetHosts",
+        "ParameterValue": "False"
+    },
+    {
+        "ParameterKey": "CostcentreTag",
+        "ParameterValue": "lambda-my-aws"
+    },
+    {
+        "ParameterKey": "MailTag",
+        "ParameterValue": "john@lambda-my-aws.io"
+    }
+]

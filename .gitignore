@@ -14,12 +14,6 @@ outputs/*.json
 outputs/*.yml
 outputs/*.yaml
 
-#DOCS
-docs/_build/*
-docs/_static/*
-docs/ecs_composex*.rst
-
-
 # IDEA STUFF
 .idea
 
@@ -85,6 +79,8 @@ instance/
 # Sphinx documentation
 docs/ecs_composex*.rst
 docs/modules.rst
+docs/_build/*
+docs/_static/*
 
 
 # PyBuilder
@@ -123,3 +119,4 @@ ENV/
 # mypy
 .mypy_cache/
 /codebuild_build.sh
+/tests/test.config.json

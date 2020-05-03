@@ -13,11 +13,15 @@ import os
 from boto3 import session
 from ecs_composex.common.ecs_composex import XFILE_DEST, DIR_DEST
 from ecs_composex.common.files import FileArtifact
-from ecs_composex.common.aws import CURATED_AZS, BUCKET_NAME
+from ecs_composex.common.aws import get_curated_azs, get_account_id
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME_T
 from ecs_composex.vpc.vpc_params import VPC_ID_T, APP_SUBNETS_T
 from ecs_composex.compute import create_compute_stack
 from ecs_composex.common.cfn_params import USE_FLEET_T
+
+CURATED_AZS = get_curated_azs()
+ACCOUNT_ID = get_account_id()
+BUCKET_NAME = f"cfn-templates-{ACCOUNT_ID[:6]}"
 
 
 def root_parser():

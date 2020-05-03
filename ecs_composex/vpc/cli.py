@@ -7,10 +7,14 @@ import sys
 import argparse
 from boto3 import session
 
-from ecs_composex.common.aws import CURATED_AZS, BUCKET_NAME
+from ecs_composex.common.aws import get_curated_azs, get_account_id
 from ecs_composex.vpc import create_vpc_template
 from ecs_composex.common.ecs_composex import XFILE_DEST, DIR_DEST
 from ecs_composex.common.files import FileArtifact
+
+CURATED_AZS = get_curated_azs()
+ACCOUNT_ID = get_account_id()
+BUCKET_NAME = f"cfn-templates-{ACCOUNT_ID[:6]}"
 
 
 def main():

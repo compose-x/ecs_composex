@@ -3,13 +3,16 @@ version: 0.2
 env:
   variables:
     KNOWN_BUCKET: lambda-dev-eu-west-1
+    PY_VERSION: 3.8
   git-credential-helper: yes
 
 phases:
   install:
     runtime-versions:
-      python: 3.8
+      python: "$(echo $PY_VERSION)"
     commands:
+      - export PY_FULL_VERSION=`python --version| awk '{print $NF}'`
+      - export PATH=/root/.pyenv/versions/${PY_FULL_VERSION}/bin:${PATH}
       - pip --version || curl -s https://bootstrap.pypa.io/get-pip.py | python
       - pip install -r requirements_buildspec.txt
       - python setup.py install
@@ -21,12 +24,13 @@ phases:
 
   build:
     commands:
-      - export PATH=$PATH:/root/.pyenv/versions/3.8.1/bin
-      - ecs_composex-vpc -o outputs/vpc_standalone.yml
-      - ecs_composex-vpc -f tests/services_with_queues.yml -o outputs/vpc_standalone_with_input.yml
-      - ecs_composex-compute -o outputs/compute_standalone.yml
-      - ecs_composex-compute -f tests/services_with_queues.yml -o outputs/compute_standalone_with_input.yml
-      - ecs_composex --create-vpc --create-cluster -f tests/services_with_queues.yml -o outputs/aio.yml
+      - mkdir -p ${PWD}/outputs
+      - ecs_composex --help || echo $PATH && which python
+      - ecs_composex-vpc -d outputs -o vpc_standalone.yml
+      - ecs_composex-vpc -f tests/services_with_queues.yml -d outputs -o vpc_standalone_with_input.yml
+      - ecs_composex-compute -d outputs -o compute_standalone.yml
+      - ecs_composex-compute -f tests/services_with_queues.yml -d outputs -o compute_standalone_with_input.yml
+      - ecs_composex --create-vpc --create-cluster -f tests/services_with_queues.yml -d outputs -o aio.yml
 
 artifacts:
   files:

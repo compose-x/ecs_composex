@@ -11,8 +11,8 @@ import warnings
 from boto3 import session
 
 from ecs_composex.common import KEYISSET
-from ecs_composex.common import LOG
-from ecs_composex.common.aws import BUCKET_NAME, CURATED_AZS
+from ecs_composex.common import LOG, load_composex_file
+from ecs_composex.common.aws import get_curated_azs, get_account_id
 from ecs_composex.common.cfn_params import USE_FLEET_T
 from ecs_composex.common.cfn_tools import build_config_template_file
 from ecs_composex.common.ecs_composex import XFILE_DEST, DIR_DEST
@@ -27,6 +27,10 @@ from ecs_composex.vpc.vpc_params import (
     VPC_ID_T,
     VPC_MAP_ID_T,
 )
+
+CURATED_AZS = get_curated_azs()
+ACCOUNT_ID = get_account_id()
+BUCKET_NAME = f"cfn-templates-{ACCOUNT_ID[:6]}"
 
 
 def validate_vpc_input(args):
@@ -75,7 +79,7 @@ def validate_cluster_input(args):
         )
 
 
-def main():
+def main_parser():
     """Console script for ecs_composex."""
     parser = argparse.ArgumentParser()
     #  Generic settings
@@ -240,13 +244,20 @@ def main():
     )
 
     parser.add_argument("_", nargs="*")
+    return parser
+
+
+def main():
+    parser = main_parser()
     args = parser.parse_args()
 
+    kwargs = vars(args)
+    content = load_composex_file(kwargs[XFILE_DEST])
     validate_vpc_input(vars(args))
     validate_cluster_input(vars(args))
 
     print("Arguments: " + str(args._))
-    templates_and_params = generate_full_template(**vars(args))
+    templates_and_params = generate_full_template(content, **kwargs)
 
     render_final_template(templates_and_params[0])
     cfn_config = build_config_template_file(templates_and_params[1])
