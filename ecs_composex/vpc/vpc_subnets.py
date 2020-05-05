@@ -32,6 +32,8 @@ respective AZ
 """
 
 from string import ascii_lowercase as alpha
+
+from troposphere import GetAtt, Tags, Ref, Sub, If
 from troposphere.ec2 import (
     Subnet,
     SubnetRouteTableAssociation,
@@ -40,19 +42,24 @@ from troposphere.ec2 import (
     Route,
     RouteTable,
 )
-from troposphere import GetAtt, Tags, Ref, Sub, If
 
-from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.cfn_conditions import USE_STACK_NAME_CON_T
+from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
+from ecs_composex.common.ecs_composex import CFN_EXPORT_DELIMITER as DELIM
 
 
 def add_storage_subnets(template, vpc, az_range, layers):
     """
     Function to add storage subnets inside the VPC
 
+    :param layers: VPC layers
+    :type layers: dict
     :param template: VPC Template()
+    :type template: troposphere.Template
     :param vpc: Vpc() for Ref()
+    :type vpc: troposphere.ec2.Vpc
     :param az_range: range for iteration over select AZs
+    :type az_range: list
 
     :returns: tuple() list of rtb, list of subnets
     """
@@ -60,7 +67,7 @@ def add_storage_subnets(template, vpc, az_range, layers):
         "StorageRtb",
         template=template,
         VpcId=Ref(vpc),
-        Tags=Tags(Name="StorageRtb") + Tags({"vpc:usage": "storage"}),
+        Tags=Tags(Name="StorageRtb") + Tags({f"vpc{DELIM}usage": "storage"}),
     )
 
     subnets = []
@@ -78,7 +85,7 @@ def add_storage_subnets(template, vpc, az_range, layers):
                     Sub(f"${{{ROOT_STACK_NAME_T}}}-Storage-{alpha[count]}"),
                 ),
             )
-            + Tags({"vpc:usage": "storage"}),
+            + Tags({f"vpc{DELIM}usage": "storage", f"vpc{DELIM}vpc-id": Ref(vpc)}),
         )
         SubnetRouteTableAssociation(
             f"StorageSubnetAssoc{alpha[count].upper()}",
@@ -87,24 +94,33 @@ def add_storage_subnets(template, vpc, az_range, layers):
             RouteTableId=Ref(rtb),
         )
         subnets.append(subnet)
-    return ([rtb], subnets)
+    return [rtb], subnets
 
 
 def add_public_subnets(template, vpc, az_range, layers, igw, single_nat):
     """
     Function to add public subnets for the VPC
 
+    :param layers: layers of subnets
+    :type layers: dict
+    :param igw: internet gateway to route to
+    :type igw: troposphere.ec2.InternetGateway
+    :param single_nat: whether we should have a single NAT Gateway
+    :type single_nat: boolean
     :param template: VPC Template()
+    :type template: troposphere.Template
     :param vpc: Vpc() for Ref()
+    :type vpc: troposphere.ec2.Template
     :param az_range: range for iteration over select AZs
+    :type az_range: list
 
-    :returns: tuple() list of rtb, list of subnets, list of nats
+    :return: tuple() list of rtb, list of subnets, list of nats
     """
     rtb = RouteTable(
         "PublicRtb",
         template=template,
         VpcId=Ref(vpc),
-        Tags=Tags(Name="PublicRtb") + Tags({"vpc:usage": "public"}),
+        Tags=Tags(Name="PublicRtb") + Tags({f"vpc{DELIM}usage": "public"}),
     )
     Route(
         "PublicDefaultRoute",
@@ -130,7 +146,7 @@ def add_public_subnets(template, vpc, az_range, layers, igw, single_nat):
                     Sub(f"${{{ROOT_STACK_NAME_T}}}-Public-{alpha[count]}"),
                 ),
             )
-            + Tags({"30-automation:usage": "public"}),
+            + Tags({f"vpc{DELIM}usage": "public", f"vpc{DELIM}vpc-id": Ref(vpc)}),
         )
         if (single_nat and not nats) or not single_nat:
             eip = EIP(
@@ -150,7 +166,7 @@ def add_public_subnets(template, vpc, az_range, layers, igw, single_nat):
             SubnetId=Ref(subnet),
         )
         subnets.append(subnet)
-    return ([rtb], subnets, nats)
+    return [rtb], subnets, nats
 
 
 def add_apps_subnets(template, vpc, az_range, layers, nats):
@@ -186,7 +202,7 @@ def add_apps_subnets(template, vpc, az_range, layers, nats):
                     Sub(f"${{{ROOT_STACK_NAME_T}}}-App-{alpha[count]}"),
                 ),
             )
-            + Tags({"vpc:usage": "application"}),
+            + Tags({f"vpc{DELIM}usage": "application", f"vpc{DELIM}vpc-id": Ref(vpc)}),
         )
         rtb = RouteTable(
             f"AppRtb{alpha[count].upper()}",
