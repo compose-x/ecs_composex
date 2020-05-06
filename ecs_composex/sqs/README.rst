@@ -9,6 +9,9 @@ Queue properties
 
 In order to make things very simple, the definition of properties follows the exact pattern as for the `CFN SQS definition`_.
 
+Special properties
+------------------
+
 Redrive policy
 ^^^^^^^^^^^^^^
 
@@ -39,3 +42,8 @@ Example with DLQ:
 
 
 .. _CFN SQS definition: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-sqs-queues.html
+
+
+.. note::
+
+    See :ref:`sqs_syntax_reference`

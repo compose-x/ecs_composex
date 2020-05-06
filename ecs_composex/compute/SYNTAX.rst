@@ -1,7 +1,7 @@
-﻿ecs_composex.compute
-====================
+﻿.. _compute_syntax_reference:
 
-.. contents::
+Compute Reference Syntax
+========================
 
 This module is not strictly a module which the same settings as the other AWS resources. This is a module which allows
 users to create the EC2 compute resources necessary to run the ECS Containers on top of EC2 workloads.
@@ -15,6 +15,8 @@ users to create the EC2 compute resources necessary to run the ECS Containers on
 
     By default, everything is built to use EC2 spot fleet, simply to save money on deployment for testing.
     Future will allow to run pure OnDemand or hybrid mode.
+
+.. _compute syntax reference:
 
 Define settings in the configs section
 ---------------------------------------

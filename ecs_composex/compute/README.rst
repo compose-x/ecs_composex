@@ -1,7 +1,6 @@
 ecs_composex.compute
 =====================
 
-.. contents::
 
 This module is here to create the compute resources if so chosen instead of using Fargate.
 Given that the default it to use AWS Fargate (soon will make it use Fargate Spot as well),
@@ -38,6 +37,8 @@ and create the Compute resources yourself (EC2, ASG, SpotFleet).
 At the moment, the option *--iam-only* is not implemented but soon it will allow you to get the CFN
 templates for just the IAM parts if you so wished to.
 
+.. _ec2_compute_design:
+
 The default EC2 configuration
 ------------------------------
 
@@ -47,3 +48,8 @@ of CloudFormation.
 
 The IAM Profile allows the node to register against the ECS Cluster and only against that one. As you will
 soon realize in this project, everything with IAM is done to be least privileges only.
+
+
+.. note::
+
+    See :ref:`compute_syntax_reference`

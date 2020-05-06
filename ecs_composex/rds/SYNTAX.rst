@@ -1,24 +1,7 @@
-ecs_composex.rds
-================
+.. _rds_syntax_reference:
 
-.. contents::
-
-.. code-block:: yaml
-
-    x-rds:
-      dbname:
-        Properties:
-          Engine: aurora-mysql
-          EngineVersion: 5.7.12
-        Services:
-          - name: app01
-            access: RW
-
-
-.. hint::
-
-    The DB Family group will be found automatically and the setting `copy_default_parameters`_ will allow creation of a
-    new RDS Parameter group for the Cluster / DB Instance.
+RDS Syntax Reference
+====================
 
 Services
 --------
@@ -27,6 +10,9 @@ At this point in time, there is no plan to deploy as part of ECS ComposeX a lamb
 and create a DB/schema specifically for the microservice, as would `this lambda function <https://github.com/lambda-my-aws/rds-auth-helper>`_ do.
 
 The syntax for listing the services remains the same as the other x- resources but the access type won't be respected.
+
+Access types
+^^^^^^^^^^^^^
 
 .. warning::
 
@@ -51,7 +37,7 @@ This avoids the bug where only default.aurora-mysql5.6 settings are found if the
     The function performing the import of settings in ecs_composex.rds.rds_parameter_groups_helper.py
 
 Properties
---------------------
+----------
 
 RDS cluster or instances need a lot of parameters. At this stage, you would not copy the settings as defined on AWS CFN
 documentation, simply because a lot of it is done automatically for you. The plan is to use the settings in the future
@@ -71,6 +57,31 @@ so therefore the difference will be very minor in the syntax.
 * `Engine`_
 * `EngineVersion`_
 
+
+Special Properties
+^^^^^^^^^^^^^^^^^^
+
+No special properties available for RDS yet.
+
+Examples
+--------
+
+.. code-block:: yaml
+
+    x-rds:
+      dbname:
+        Properties:
+          Engine: aurora-mysql
+          EngineVersion: 5.7.12
+        Services:
+          - name: app01
+            access: RW
+
+
+.. hint::
+
+    The DB Family group will be found automatically and the setting `copy_default_parameters`_ will allow creation of a
+    new RDS Parameter group for the Cluster / DB Instance.
 
 
 .. _Engine: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-rds-dbcluster.html#cfn-rds-dbcluster-engine

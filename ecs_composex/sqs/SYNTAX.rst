@@ -1,7 +1,7 @@
-ecs_composex.sqs
-================
+.. _sqs_syntax_reference:
 
-.. contents::
+SQS Syntax Reference
+====================
 
 Services
 --------
@@ -32,6 +32,9 @@ No specific settings for SQS at this point.
 Properties
 ----------
 
+Mandatory Properties
+^^^^^^^^^^^^^^^^^^^^^
+
 SQS does not require any properties to be set in order to create the queue. No settings are mandatory.
 
 Special properties
@@ -44,7 +47,7 @@ simply by referring to the name of the queue, deployed in this same deployment.
 
 To do so, simply use the following syntax:
 
-Samples
+Examples
 --------
 
 .. code-block:: yaml
