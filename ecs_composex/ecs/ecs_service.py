@@ -28,10 +28,9 @@ from troposphere.ecs import (
     DeploymentController,
 )
 
-from ecs_composex.common import build_template, cfn_params, add_parameters
+from ecs_composex.common import build_template, cfn_params
 from ecs_composex.common import cfn_conditions
 from ecs_composex.common.outputs import formatted_outputs
-from ecs_composex.common.tagging import add_object_tags
 from ecs_composex.ecs import ecs_conditions
 from ecs_composex.ecs import ecs_params
 from ecs_composex.ecs.ecs_iam import add_service_roles
@@ -187,7 +186,7 @@ def generate_service_template_outputs(template, service_name):
 
 
 def generate_service_template(
-    compose_content, service_name, service, tags=None, session=None, **kwargs,
+    compose_content, service_name, service, **kwargs,
 ):
     """
     Function to generate single service template based on its definition in
@@ -215,10 +214,6 @@ def generate_service_template(
         ecs_params.CLUSTER_NAME_T: Ref(ecs_params.CLUSTER_NAME),
         ecs_params.LOG_GROUP.title: Ref(ecs_params.LOG_GROUP_T),
     }
-    if tags and tags[0]:
-        add_parameters(service_tpl, tags[0])
-        for tag in tags[0]:
-            parameters.update({tag.title: Ref(tag.title)})
     add_service_roles(service_tpl)
     parameters.update(
         add_task_defnition(service_tpl, service_name, service, network_settings)
@@ -239,7 +234,4 @@ def generate_service_template(
     if isinstance(services_dependencies, list):
         stack_dependencies += services_dependencies
     generate_service_template_outputs(service_tpl, service_name)
-    if tags and tags[1]:
-        for resource in service_tpl.resources:
-            add_object_tags(service_tpl.resources[resource], tags[1])
     return service_tpl, parameters, stack_dependencies

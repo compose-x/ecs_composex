@@ -34,8 +34,8 @@ from ecs_composex.common import KEYISSET, LOG
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.ecs.ecs_loadbalancing import define_service_load_balancing
 from ecs_composex.ecs.ecs_params import SERVICE_NAME_T, SERVICE_NAME, SG_T
-from ecs_composex.vpc.vpc_params import VPC_ID, VPC_MAP_ID
 from ecs_composex.vpc.vpc_conditions import USE_VPC_MAP_ID_CON_T
+from ecs_composex.vpc.vpc_params import VPC_ID, VPC_MAP_ID
 
 
 def add_service_default_sg(template):
@@ -85,7 +85,7 @@ def add_service_to_map(template, service_name, service, settings):
                 SdDnsRecord(TTL="30", Type="SRV"),
             ],
         ),
-        Name=service_name,
+        Name=service_name if not KEYISSET("hostname", service) else service["hostname"],
     )
     registries = []
     for port in service["ports"]:
@@ -180,10 +180,10 @@ def compile_network_settings(compose_content, service, service_name):
         "ports",
     ]
     settings = {}
-    globals = {
+    defaults = {
         "use_cloudmap": True,
         "use_nlb": False,
-        "use_alb": True,
+        "use_alb": False,
         "is_public": False,
     }
     if KEYISSET("labels", service):
@@ -198,7 +198,7 @@ def compile_network_settings(compose_content, service, service_name):
     if KEYISSET("globals", compose_content["configs"]) and KEYISSET(
         "network", compose_content["configs"]["globals"]["network"]
     ):
-        globals.update(compose_content["configs"]["globals"]["network"])
+        defaults.update(compose_content["configs"]["globals"]["network"])
     if not set(settings).issubset(valid_keys):
         LOG.error(valid_keys)
         LOG.error(settings)
@@ -207,13 +207,15 @@ def compile_network_settings(compose_content, service, service_name):
         )
     for key in valid_keys:
         if key not in settings and key != "ports":
-            if key in globals.keys():
+            if key in defaults.keys():
                 if key == "use_cloudmap" and not KEYISSET("is_public", settings):
                     LOG.debug(f"Missing use_cloudmap but {service_name} is public.")
                     settings[key] = False
                 else:
-                    settings[key] = globals[key]
+                    settings[key] = defaults[key]
     settings["ports"] = define_service_ports(service)
+    LOG.debug(service_name)
+    LOG.debug(settings)
     return settings
 
 

@@ -45,7 +45,7 @@ from ecs_composex.common.cfn_params import (
 from ecs_composex.common.ecs_composex import XFILE_DEST
 from ecs_composex.common.files import FileArtifact
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.common.tagging import generate_tags_parameters, add_object_tags
+from ecs_composex.common.tagging import generate_tags_parameters, add_all_tags
 from ecs_composex.compute import create_compute_stack
 from ecs_composex.compute.compute_params import (
     TARGET_CAPACITY_T,
@@ -263,12 +263,8 @@ def add_vpc_to_root(root_template, session, tags_params=None, **kwargs):
     :return: vpc_stack
     :rtype: troposphere.cloudformation.Stack
     """
-    if tags_params is None:
-        tags_params = ()
-    vpc_template = create_vpc_template(session=session, **kwargs)
+    vpc_template = create_vpc_template(session=session, tags=tags_params, **kwargs)
     parameters = {ROOT_STACK_NAME_T: Ref("AWS::StackName")}
-    for param in tags_params:
-        parameters.update({param.title: Ref(param.title)})
     vpc_stack = root_template.add_resource(
         ComposeXStack(VPC_STACK_NAME, vpc_template, Parameters=parameters, **kwargs)
     )
@@ -499,9 +495,8 @@ def generate_full_template(content, session=None, **kwargs):
         template, depends_on, session=session, vpc_stack=vpc_stack, **kwargs
     )
     if KEYISSET("CreateVpc", kwargs):
-        vpc_stack = add_vpc_to_root(template, session, tags_params[0], **kwargs)
+        vpc_stack = add_vpc_to_root(template, session, tags_params, **kwargs)
         depends_on.append(vpc_stack)
-        add_object_tags(vpc_stack, tags_params[1])
         services_stack.add_vpc_stack(vpc_stack)
     else:
         generate_vpc_parameters(template, stack_params, **kwargs)
@@ -521,7 +516,6 @@ def generate_full_template(content, session=None, **kwargs):
     )
     add_x_resources(template, session=session, vpc_stack=vpc_stack, **kwargs)
     apply_x_configs_to_ecs(content, template, services_stack, **kwargs)
-    for resource in template.resources:
-        add_object_tags(template.resources[resource], tags_params[1])
+    add_all_tags(template, tags_params)
     LOG.debug(stack_params)
     return template, stack_params
