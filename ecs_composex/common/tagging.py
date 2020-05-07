@@ -38,9 +38,11 @@ otherwise you could not, i.e., *vpc::usage::ecsapps*
 import copy
 
 from troposphere import Tags, Parameter, Ref
+from troposphere.cloudformation import Stack
 from troposphere.ec2 import LaunchTemplate, TagSpecifications
 
-from ecs_composex.common import KEYISSET, NONALPHANUM, LOG
+from ecs_composex.common import KEYISSET, NONALPHANUM, LOG, add_parameters
+from ecs_composex.common.stacks import XModuleStack, ComposeXStack
 
 
 def define_tag_parameter_title(tag_name):
@@ -94,7 +96,7 @@ def generate_tags_parameters(composex_content):
     """
     if not KEYISSET("x-tags", composex_content):
         LOG.info("No x-tags found. Skipping")
-        return
+        return []
     xtags = composex_content["x-tags"]
     object_tags = define_extended_tags(xtags)
     parameters = []
@@ -151,6 +153,8 @@ def add_object_tags(obj, tags):
     :param tags: list of tags as defined in Docker composeX file
     :type tags: dict or list
     """
+    if tags is None:
+        return
     clean_tags = copy.deepcopy(tags)
     if isinstance(obj, LaunchTemplate):
         expand_launch_template_tags_specs(obj, clean_tags)
@@ -164,3 +168,33 @@ def add_object_tags(obj, tags):
     elif not hasattr(obj, "Tags"):
         LOG.debug(f"Adding tags to {obj}")
         setattr(obj, "Tags", tags)
+
+
+def add_all_tags(root_template, params_and_tags):
+    """
+    Function to go through all stacks of a given template and update the template
+    It will recursively render sub stacks defined.
+    If there are no substacks, it will go over the resources of the template add the tags.
+
+    :param root_template: the root template to iterate over the resources.
+    :type root_template: troposphere.Template
+    :param params_and_tags: parameters and tags to add to the stack resources
+    :type params_and_tags: ()
+    """
+    if not params_and_tags:
+        return None
+    resources = root_template.resources
+    for resource_name in resources:
+        resource = resources[resource_name]
+        if isinstance(resource, (XModuleStack, ComposeXStack)):
+            LOG.debug(resource)
+            LOG.debug(resource.TemplateURL)
+            add_all_tags(resource.stack_template, params_and_tags)
+            add_parameters(resource.stack_template, params_and_tags[0])
+            for stack_resname in resource.stack_template.resources:
+                add_object_tags(
+                    resource.stack_template.resources[stack_resname], params_and_tags[1]
+                )
+        elif isinstance(resource, Stack):
+            LOG.warn(resource_name)
+            LOG.warn(resource)

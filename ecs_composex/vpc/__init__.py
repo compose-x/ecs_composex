@@ -20,14 +20,15 @@ ECS ComposeX - VPC module to simplify testing and deployment of services into AW
 """
 
 import boto3
-from ecs_composex.common.ecs_composex import XFILE_DEST
-from ecs_composex.common import LOG, KEYISSET, load_composex_file, add_parameters
+
+from ecs_composex.common import LOG, KEYISSET, load_composex_file
 from ecs_composex.common.aws import get_curated_azs
-from ecs_composex.common.tagging import generate_tags_parameters, add_object_tags
+from ecs_composex.common.ecs_composex import XFILE_DEST
+from ecs_composex.common.tagging import generate_tags_parameters, add_all_tags
 from ecs_composex.vpc.vpc_template import generate_vpc_template
 
 
-def create_vpc_template(session=None, **kwargs):
+def create_vpc_template(session=None, tags=None, **kwargs):
     """Function to create the vpc template for a combined deployment. Invoked by CLI
 
     :param session:
@@ -52,11 +53,7 @@ def create_vpc_template(session=None, **kwargs):
     cidr_block = kwargs["VpcCidr"]
     single_nat = KEYISSET("SingleNat", kwargs)
     template = generate_vpc_template(cidr_block, azs, single_nat=single_nat)
-    if KEYISSET(XFILE_DEST, kwargs):
-        params_and_tags = generate_tags_parameters(
-            load_composex_file(kwargs[XFILE_DEST])
-        )
-        add_parameters(template, params_and_tags[0])
-        for obj in template.resources:
-            add_object_tags(template.resources[obj], params_and_tags[1])
+    if tags is None and KEYISSET(XFILE_DEST, kwargs):
+        tags = generate_tags_parameters(load_composex_file(kwargs[XFILE_DEST]))
+    add_all_tags(template, tags)
     return template

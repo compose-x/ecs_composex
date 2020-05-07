@@ -17,13 +17,13 @@
 
 """Generates the individual SQS Queues templates."""
 
+import boto3
 from troposphere import Tags, Sub, GetAtt, If, Ref
 from troposphere.sqs import Queue, RedrivePolicy
 from troposphere.ssm import Parameter as SsmParameter
 
 from ecs_composex.common import (
     build_template,
-    add_parameters,
     cfn_params,
     KEYISSET,
     KEYPRESENT,
@@ -38,7 +38,7 @@ from ecs_composex.common.cfn_conditions import (
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME, ROOT_STACK_NAME_T
 from ecs_composex.common.outputs import formatted_outputs
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.common.tagging import add_object_tags, generate_tags_parameters
+from ecs_composex.common.tagging import generate_tags_parameters
 from ecs_composex.sqs.sqs_params import RES_KEY, SQS_SSM_PREFIX
 from ecs_composex.sqs.sqs_params import (
     SQS_NAME_T,
@@ -147,7 +147,7 @@ def add_ssm_parameters(src_template, queue_obj):
     )
 
 
-def generate_queue_template(queue_name, properties, redrive_queue=None, tags=None):
+def generate_queue_template(queue_name, properties, redrive_queue=None):
     """
     Function that generates a single queue template
 
@@ -181,8 +181,6 @@ def generate_queue_template(queue_name, properties, redrive_queue=None, tags=Non
     else:
         properties["QueueName"] = Sub(f"${{{ROOT_STACK_NAME_T}}}-${{{SQS_NAME_T}}}")
     queue = Queue(queue_name, template=queue_template, **properties)
-    if tags:
-        add_object_tags(queue, tags)
     add_ssm_parameters(queue_template, queue)
     queue_template.add_output(
         formatted_outputs(
@@ -197,7 +195,7 @@ def generate_queue_template(queue_name, properties, redrive_queue=None, tags=Non
     return queue_template
 
 
-def add_queue_stack(queue_name, queue, queues, session, tags, **kwargs):
+def add_queue_stack(queue_name, queue, queues, session, **kwargs):
     """
     Function to define the Queue template settings for the Nested Stack
 
@@ -237,15 +235,9 @@ def add_queue_stack(queue_name, queue, queues, session, tags, **kwargs):
                 DLQ_NAME_T: GetAtt(redrive_target, f"Outputs.{SQS_NAME_T}"),
             }
         )
-        queue_tpl = generate_queue_template(
-            queue_name, properties, redrive_target, tags=tags[1]
-        )
+        queue_tpl = generate_queue_template(queue_name, properties, redrive_target)
     else:
-        queue_tpl = generate_queue_template(queue_name, properties, tags=tags[1])
-    if tags[0]:
-        add_parameters(queue_tpl, tags[0])
-        for tag in tags[0]:
-            parameters.update({tag.title: Ref(tag.title)})
+        queue_tpl = generate_queue_template(queue_name, properties)
     LOG.debug(parameters)
     LOG.debug(session)
     queue_stack = ComposeXStack(
@@ -258,7 +250,7 @@ def add_queue_stack(queue_name, queue, queues, session, tags, **kwargs):
     return queue_stack
 
 
-def generate_sqs_root_template(compose_content, session, **kwargs):
+def generate_sqs_root_template(compose_content, tags=None, session=None, **kwargs):
     """
     Generates a base template for a sqs queues. Iterates over each queue defined
     in x-sqs of the ComposeX file and identify settings and properties for these
@@ -271,25 +263,21 @@ def generate_sqs_root_template(compose_content, session, **kwargs):
     :return: SQS Root/Parent template
     :rtype: troposphere.Template
     """
+    if not session:
+        session = boto3.session.Session()
     validate_kwargs(["BucketName"], kwargs)
     description = "Root SQS Template"
     if KEYISSET("EnvName", kwargs):
         description = f"Root SQS Template for {kwargs['EnvName']}"
     root_tpl = build_template(description)
-    params_and_tags = generate_tags_parameters(compose_content)
-    if params_and_tags[0]:
-        add_parameters(root_tpl, params_and_tags[0])
+    if tags is None:
+        tags = generate_tags_parameters(compose_content)
     queues = compose_content[RES_KEY]
     for queue_name in queues:
         LOG.debug(queue_name)
         LOG.debug(session)
         queue_stack = add_queue_stack(
-            queue_name,
-            queues[queue_name],
-            queues.keys(),
-            session,
-            params_and_tags,
-            **kwargs,
+            queue_name, queues[queue_name], queues.keys(), session, **kwargs,
         )
         root_tpl.add_resource(queue_stack)
     return root_tpl

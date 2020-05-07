@@ -27,8 +27,8 @@ from troposphere.ecs import (
 )
 
 from ecs_composex.common import add_parameters, KEYISSET
-from ecs_composex.ecs.ecs_params import NETWORK_MODE, EXEC_ROLE_T, TASK_ROLE_T, TASK_T
 from ecs_composex.ecs import ecs_params, ecs_conditions
+from ecs_composex.ecs.ecs_params import NETWORK_MODE, EXEC_ROLE_T, TASK_ROLE_T, TASK_T
 
 
 def import_env_variables(service):
@@ -43,7 +43,14 @@ def import_env_variables(service):
     env_vars = []
     if KEYISSET("environment", service):
         for key in service["environment"]:
-            env_vars.append(Environment(Name=key, Value=service["environment"][key]))
+            if not isinstance(service["environment"][key], str):
+                env_vars.append(
+                    Environment(Name=key, Value=str(service["environment"][key]))
+                )
+            else:
+                env_vars.append(
+                    Environment(Name=key, Value=service["environment"][key])
+                )
     return env_vars
 
 

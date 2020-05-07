@@ -22,10 +22,10 @@ from troposphere.ec2 import SecurityGroup
 from troposphere.logs import LogGroup
 
 from ecs_composex.common import LOG
-from ecs_composex.common import cfn_params, build_template, KEYISSET, add_parameters
+from ecs_composex.common import cfn_params, build_template, KEYISSET
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T, ROOT_STACK_NAME
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.common.tagging import generate_tags_parameters, add_object_tags
+from ecs_composex.common.tagging import generate_tags_parameters, add_all_tags
 from ecs_composex.ecs import ecs_params
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME, CLUSTER_NAME_T
 from ecs_composex.ecs.ecs_service import generate_service_template
@@ -75,9 +75,7 @@ def add_clusterwide_security_group(template):
     return sg
 
 
-def add_services_stacks(
-    compose_content, root_tpl, cluster_sg, tags=None, session=None, **kwargs
-):
+def add_services_stacks(compose_content, root_tpl, cluster_sg, session=None, **kwargs):
     """Function putting together the ECS Service template
 
     :param compose_content: Docker/ComposeX file content
@@ -91,17 +89,10 @@ def add_services_stacks(
     :param kwargs: optional arguments
     :type kwargs: dicts or set
     """
-    # x_resources_configs = generate_x_resource_configs(compose_content, **kwargs)
     for service_name in compose_content[ecs_params.RES_KEY]:
         service = compose_content[ecs_params.RES_KEY][service_name]
         service_set = generate_service_template(
-            compose_content,
-            service_name,
-            service,
-            # x_resources_configs,
-            tags=tags,
-            session=session,
-            **kwargs,
+            compose_content, service_name, service, session=session, **kwargs,
         )
         parameters = {
             CLUSTER_NAME_T: Ref(CLUSTER_NAME),
@@ -145,8 +136,6 @@ def generate_services_templates(compose_content, session=None, **kwargs):
         vpc_params.VPC_MAP_ID,
     ]
     template = build_template("Root template for ECS Services", parameters)
-    if tags_params:
-        add_parameters(template, tags_params[0])
     template.add_resource(
         LogGroup(
             ecs_params.LOG_GROUP_T, RetentionInDays=30, LogGroupName=Ref(CLUSTER_NAME)
@@ -154,8 +143,7 @@ def generate_services_templates(compose_content, session=None, **kwargs):
     )
     cluster_sg = add_clusterwide_security_group(template)
     add_services_stacks(
-        compose_content, template, cluster_sg, tags_params, session=session, **kwargs
+        compose_content, template, cluster_sg, session=session, **kwargs
     )
-    for resource in template.resources:
-        add_object_tags(template.resources[resource], tags_params[1])
+    add_all_tags(template, tags_params)
     return template
