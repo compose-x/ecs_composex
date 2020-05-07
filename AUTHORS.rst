@@ -1,23 +1,18 @@
-=======
-Credits
-=======
+.. highlight:: shell
 
-Development Lead
-----------------
+=============
+Contributors
+=============
 
 * John Preston
-    * .. image:: https://img.shields.io/keybase/pgp/johnpreston78?style=flat-square
-        :alt: Keybase PGP
-    * Github: https://github.com/johnpreston
+    * `Keybase <https://keybase.io/johnpreston78>`_ |JohnPreston78PGP|
+    * `Github <https://github.com/johnpreston>`_
+
+* Harold Spencer Jr.
+    * `Keybase <https://keybase.io/hspencer77>`_ |HSpencer77PGP|
+    * `Github <https://github.com/hspencer77>`_
 
 
-Special thanks
---------------
+.. |JohnPreston78PGP| image:: https://img.shields.io/keybase/pgp/johnpreston78
+.. |HSpencer77PGP| image:: https://img.shields.io/keybase/pgp/hspencer77
 
-* Harold Spencer
-    Harold is an old friend of mine, who has agreed to be my guinea pig and keep my assumptions etc. in check to make
-    this tool as relevant as possible and actually solve issues than trying to implement goodies features.
-    
-    * .. image:: https://img.shields.io/keybase/pgp/hspencer77?style=flat-square
-        :alt: Keybase PGP
-    * GitHub: https://github.com/hspencer77

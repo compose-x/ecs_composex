@@ -4,8 +4,6 @@ ecs_composex.rds
 This package is here to create all the CFN templates necessary to create RDS instances and allow microservices
 to access the databases.
 
-.. contents::
-
 Assumptions
 -----------
 
@@ -47,3 +45,7 @@ Standalone usage
 ----------------
 
 You can use ECS ComposeX to create a standalone version of your RDS database.
+
+.. note::
+
+    See :ref:`rds_syntax_reference`

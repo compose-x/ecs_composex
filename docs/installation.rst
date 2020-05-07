@@ -6,7 +6,7 @@ Installation
 
 
 Stable release
---------------
+==============
 
 To install ECS-ComposeX, run this command in your terminal:
 
@@ -24,7 +24,7 @@ you through the process.
 
 
 From sources
-------------
+============
 
 The sources for ECS-ComposeX can be downloaded from the `Github repo`_.
 

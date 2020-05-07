@@ -3,6 +3,7 @@ ComposeX Modules Syntax
 =======================
 
 .. contents::
+    :depth: 1
 
 .. include:: ../ecs_composex/COMMON_SYNTAX.rst
 

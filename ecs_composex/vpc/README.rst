@@ -1,8 +1,6 @@
 ecs_composex.vpc
 ================
 
-.. contents::
-
 I am not here to tell you what a VPC should look like. So in that spirit, this is really here to be one
 less thing developers who wish to use that tool are going to have to think about.
 
@@ -15,8 +13,10 @@ or something else like Terraform to identify and get subnet IDs, CIDR and otherw
 from CFN exports.
 
 
-Network design
----------------
+.. _vpc_network_design:
+
+VPC Network design
+-------------------
 
 The design of the VPC generated is very simple 3-tiers:
 

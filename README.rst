@@ -27,59 +27,105 @@ ECS ComposeX
     :alt: PyPI - Wheel
     :target: https://pypi.python.org/pypi/ecs_composex
 
+.. |CODE_STYLE| image:: https://img.shields.io/badge/codestyle-black-black
+    :alt: CodeStyle
+    :target: https://pypi.org/project/black/
+
+.. |TDD| image:: https://img.shields.io/badge/tdd-pytest-black
+    :alt: TDD with pytest
+    :target: https://docs.pytest.org/en/latest/contents.html
+
+.. |BDD| image:: https://img.shields.io/badge/bdd-behave-black
+    :alt: BDD with Behave
+    :target: https://behave.readthedocs.io/en/latest/
+
 |BUILD| |DOCS_BUILD|
 
 |PYPI_VERSION| |PYPI_LICENSE|
 
+|CODE_STYLE| |TDD| |BDD|
 
+-------------------------------------------------------------------------------------------------------------
+Build your infrastructure and deploy your services to AWS services using docker-compose format file format.
+-------------------------------------------------------------------------------------------------------------
 
 .. contents::
+    :local:
+    :depth: 1
 
-What is it?
+Introduction
 ============
 
-ECS ComposeX is a tool to generate CFN templates (using the excellent `Troposphere`_ library) which are going to allow
-any developer or cloud engineer to build and publish their applications running in Docker containers on top of AWS ECS.
+`Docker Compose`_ has been around for a long while and enabled developers to perform local integration testing between
+their microservices as well as with other dependencies their application have (i.e. a redis or MySQL server).
 
-Once the templates are generated, you can simply create new stacks, in any AWS region, in any AWS Account, seamlessly.
+However, for developers to translate their docker compose file into an AWS infrastructure can be a lot of work. And for
+the cloud engineers (or DevOps engineers) it can very quickly become something overwhelming to manage at very large scale
+to ensure best-practices are in place, for example, ensuring least privileges access from a service to another.
 
-ECS ComposeX aims to be a CLI tool at first for people to run from their laptops or even from their CI/CD pipelines.
-Given its nature, it is easy to integrate it into AWS Lambda as a library and enable calling upon it to generate all
-the things from there.
+This is where `ECS ComposeX`_ comes into play.
 
-What you do with it
-===================
+Translate Docker services into AWS ECS
+---------------------------------------
 
-1. Take an existing Docker compose file of your services you want to deploy to AWS
-2. Add settings to explain how you want to deploy these services
-3. Add x- sections for extra AWS Resources you want your services to access to perform their tasks
-4. Run ECS ComposeX against your ComposeX file
-5. Deploy
+First ECS ComposeX translates the services definition in the docker compose file into the ECS definitions to allow the service to
+run on AWS. It will, doing so, create all the necessary elements to ensure a successful and feature rich deployment into ECS.
 
-Blog_
-=====
+.. note::
 
-Follow the news and technical articles on using ECS ComposeX on the `Blog`_
+    ECS ComposeX has been built to allow services to run with Fargate or EC2.
 
 
-Features
-========
+Provision other AWS resources your services need
+-------------------------------------------------
 
-* Generates all the IAM policies and roles for your microservices to access your extra resources
-    * ECS Task Role and policies. Policies are tailored to allow access to only the necessary resources
-    * ECS Execution Role and policies, allows ECS-Agent to do its job on your behalf
-* Generates the task and service definition based on configuration set in your Docker compose file
-    * Task definition with all defined environment variables
-    * Add predefined variables from Queues, Topics etc. to allow quick lookup of your resources (ie QueueURL, QueueARN)
-    * Service definition with all extra configuration to work with AWS CloudMap or AWS LoadBalancers
-* Deploy onto an ECS Cluster
-    * Use AWS Fargate with no effort in configuration (Default)
-    * Use AWS EC2 SpotFleet if you need hosts control but wan to keep costs under control (optional)
-* Generate the VPC you need to support all the network resources with a predefined 3-Tier layout if you need one
-    * VPC
-    * Subnets (Using the usual 3-Tiers design, Public/App/Storage)
-* Generate only the launch-templates for your hosts and run your containers on EC2 from the template with no effort
-* Monitor all your microservices via AWS CloudWatch (Logs and metrics)
+So you have the definitions of your services and they are running on ECS.
+But what about these other services that you need for your application to work? DBs, notifications, streams etc.
+Are you going to run your MySQL server onto ECS too or are you going to want to use AWS RDS?
+How are you going to define the IAM roles and policies for each service? Access Secrets? Configuration settings?
+
+That is the second focus of ECS ComposeX: defining extra sections in the YAML document of your docker compose file, you
+can define, for your databases, queues, secrets etc.
+
+ECS ComposeX will parse every single one of these components. These components can exist on their own but what is of interest
+is to allow the services to access these.
+
+That is where ECS ComposeX will automatically take care of all of that for you.
+
+For services like SQS or SNS, it will create the IAM policies and assign the permissions to your ECS Task Role so the service
+gets access to these via IAM and STS. Credentials will be available through the metadata endpoint, which your SDK will pick
+immediately.
+
+For services such as RDS or ElasticCache, it will create the security groups ingress rules as needed, and when applicable,
+will handle to generate secrets and expose these via ECS Secrets to your services.
+
+Implementing least privileges at the heart of ECS ComposeX
+-----------------------------------------------------------
+
+One of the most important value add for a team of Cloud/DevOps engineers who have to look after an environment to use
+ECS ComposeX is the persistent implementation of best practices:
+
+* All microservices are using different sets of credentials
+* All microservices are isolated by default and allowed traffic only when explicitly permitted
+* All microservices must be defined as the consumer of a resource (DB, Queue, Table) to be granted access to it.
+
+There have been to many instances of breaches on AWS due to a lack of strict IAM definitions and permissions. Automation
+can solve that problem and with ECS ComposeX the effort is to constantly abide by the least privileges access principle.
+
+Plug-And-Play
+--------------
+
+ECS ComposeX allows to create not only the resources your application stack needs, but also the underlying infrastrcuture,
+for example, your networking layer (VPC, subnets etc.) as well as the compute (using SpotFleet by default).
+
+This is to allow developers to deploy in their development accounts without having to concern themselves with network
+design and capacity planning.
+
+.. note::
+
+    | :ref:`vpc_network_design`
+    | :ref:`ec2_compute_design`
+    | :ref:`syntax_reference`
 
 .. note::
 
@@ -88,189 +134,46 @@ Features
     This tool aims to reproduce the original ECS CLI behaviour whilst adding logic for non ECS resources that you want to create in your environment.
 
 
-AWS Account settings and requirements
-=====================================
-
-Because of my adhesion to using the Cloud Provider's tools for monitoring, logging, etc, some features and options
-are enabled and you would get CloudFormation complain about account level settings not being enabled.
-
-Depending on how you are setting up your AWS account(s) you might have to activate these settings if you haven't already.
-
-.. note::
-
-    It is important that you enable AWS VPC Trunking to allow each service tasks to run within the same SecurityGroup and use the extended number of ENIs per instance.
-    Reference: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/container-instance-eni.html
-    Announcement: https://aws.amazon.com/about-aws/whats-new/2019/06/Amazon-ECS-Improves-ENI-Density-Limits-for-awsvpc-Networking-Mode/
-    
-
-ECS Settings
--------------
-
-ECS Account settings can be found at https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-account-settings.html
-
-* ECS - VPC Trunking
-* ECS Extended logs and monitoring
-
-.. code-block:: bash
-
-    aws ecs put-account-setting-default --name awsvpcTrunking --value enabled
-    aws ecs put-account-setting-default --name serviceLongArnFormat --value enabled
-    aws ecs put-account-setting-default --name taskLongArnFormat --value enabled
-    aws ecs put-account-setting-default --name containerInstanceLongArnFormat --value enabled
-    aws ecs put-account-setting-default --name containerInsights --value enabled
-
-
-.. hint::
-
-    If you want to enable these settings for a specific IAM role you can assume yourself, from CLI you can use `aws ecs put-account-setting` as opposed to `aws ecs put-account-setting-default`
-
-    .. code-block:: bash
-
-        aws ecs put-account-setting --name awsvpcTrunking --value enabled
-        aws ecs put-account-setting --name serviceLongArnFormat --value enabled
-        aws ecs put-account-setting --name taskLongArnFormat --value enabled
-        aws ecs put-account-setting --name containerInstanceLongArnFormat --value enabled
-        aws ecs put-account-setting --name containerInsights --value enabled
-
-IAM Permissions to execute ECS ComposeX
-----------------------------------------
-
-.. code-block:: yaml
-
-    PolicyDocument:
-        Statement:
-          - Sid: CloudFormationAccess
-            Resource:
-              - '*'
-            Effect: Allow
-            Action:
-              - 'cloudformation:ValidateTemplate'
-          - Sid: S3BucketAccess
-            Resource:
-                - cfn-templates-bucket-arn
-            Effect: Allow
-            Action:
-              - 's3:ListBucket'
-          - Sid: S3BucketObjectsAccess
-            Resource:
-                - cfn-templates-bucket-arn/*
-            Effect: Allow
-            Action:
-              - 's3:GetObject*'
-              - 's3:PutObject*
-          - Sid: Ec2Access
-            Effect: Allow
-            Action:
-              - ec2:DescribeAvailabilityZones
-            Resource:
-              - "*"
-
-
-Why though?
-===========
-
-Many companies I have worked with struggle with providing a true cloudy experience to their developers and enable them to deploy AWS resources in a controled fashion.
-And when they do give poweruser/administrator level of permissions to the developers, they usually have not been trained approprately to understand fundamentals,
-such as least privileges and you end up with services which all use the same AWS Access and Secret keys (yes, I witnessed it recently) and these keys stay around for
-eternity (seen 1000+ days).
-As an AWS Cloud Engineer, this scares the hell out of me and I feel like this is the first thing I need to fix.
-As an automation engineer, I wanted a tool that allows developers to keep using Docker compose, as they very often do, so they can't run their workload on their
-laptops for quick testing and application testing.
-But, "It works on my laptop" is something that in 2020 is simply unacceptable to companies deploying microservices.
-
-Therefore, combining my love for least privileges and therefore IAM instance capability to implement it, and the need for a tool going these extra miles,
-I decided to simply go for it.
-
-.. _later on:
-
-A lot of you probably would prefer to use some other tools, such as Terraform, but I all heartily believe that cloud
-engineers should use the IaC provided by the Cloud provider. Third party integrations are coming, including for example
-the excellent AWS CFN registries where we already see partners like DataDog provide the ability to create non AWS
-resources as part of the CFN stack and remove the need for custom made code.
-
-
-Why am I not using AWS CDK?
-===========================
-
-I started this work before AWS CDK came out with any python support, and I am not a developer professionally but I do love developing, and python is my language
-of choice. Troposphere was the obvious choice as the python library to use to build all the CFN templates. I find the way Troposphere has been built is awesome,
-the name of the properties are the same as they are in AWS CloudFormation, which gives a sense of standard to the user,
-allowing an experience as close to copy-paste as possible. `Troposphere`_ has a very nice community and is released often.
-I did a few PRs myself and `Mark Peek`_ is very proactive with PRs, releases come out often.
-
-
-Why not stick to AWS CFN Templates and CFN macros ?
-====================================================
-
-I love CFN Macros and I think that it is not enough spoken about. Probably because at start, Fn::Transform was not over
-well documented and importing snippets wasn't working all the time as one would have wanted.
-
-I love CFN and I can write templates very easily in YAML or even in JSON. But, typos are a nightmare and it takes a good
-IDE configuration to make it easy and viable. For small templates, it is fine, but with a lot of conditions, references,
-parameters, imports, it is very easy to mess it up. And when come nested stacks, it is a huge amount of time spent waiting
-and hoping nothing wrong happens in a nested stack.
-
-So, using python, I can do all the loops I want, and most importantly, I can make super consistent all the titles for
-the various AWS resources that the templates are going to create. If I make a typo somewhere in a title, this typo goes everywhere,
-and therefore, AWS CFN is happy to resolve, find, GetAttributes etc from it.
-
-This saves an insane amount of time.
-
-Also, thanks to using Python and with YAML as a common syntax method to write Docker compose files and AWS templates, we
-can marry the two very easily.
-
-
-I want to use EKS. Can I use ECS ComposeX?
-==========================================
-
-You certainly could, but you wouldn't really, or maybe only for the IAM part? If you plan on using EKS, I can't recommend enough to use the AWS
-Service Operator for K8s. You can refer to this blog https://aws.amazon.com/blogs/opensource/aws-service-operator-kubernetes-available/ to get more details
-about it. You will notice a lot of similarities in what ECS ComposeX tries to achieve, but for ECS as opposed to EKS.
-
-
-What is next for ECS ComposeX ?
-===============================
-
-* CI/CD for everyone so that any PR is evaluated automatically and possibly merged
-* Add more resources supports (DynamoDB tables, SNS Topics, and then RDS).
-* Enable definition of AppMesh routes from the Docker compose file (gotta dig more into this)
-* Allow to add x-lambdas which would go through git/folder based discovery of existing functions written with SAM and
-  identify resources to be shared(ie, queue between ECS service and a Lambda).
-* Architecture reference for usage in CI/CD
-
-First, move this into a CFN Macro, with a simple root template that would take a few settings in and the URL to the Compose file and render all templates within CFN itself via Lambda.
-Then, with the newly released CFN Private Registries, mutate this system to have fully integrated to CFN objects which will resolve all this.
-
-
 License and documentation
 ==========================
 
 * Free software: GPLv3+
 * Documentation:
     * https://docs.ecs-composex.lambda-my-aws.io
-    * https://ecs-composex.readthedocs.io/en/latest
+    * https://ecs-composex.readthedocs.io/en/latest |DOCS_BUILD|
+
+Blog
+====
+
+.. |BLOG_RELEASE| image:: https://codebuild.eu-west-1.amazonaws.com/badges?uuid=eyJlbmNyeXB0ZWREYXRhIjoicHZaQXFLNGYya3pzWExXM09ZTDZqbkU4cXZENzlZc2grQ0s5RXNxN0tYSXF6U3hJSkZWd3JqZkcrd29RUExmZGw1VXVsTTd6ckE4RjhSenl4QUtUY3I0PSIsIml2UGFyYW1ldGVyU3BlYyI6IjdleGRRTS9rbTRIUUY4TkoiLCJtYXRlcmlhbFNldFNlcmlhbCI6MX0%3D&branch=master
+
+Follow the news and technical articles on using ECS ComposeX on the `Blog`_ |BLOG_RELEASE|
+
+* `CICD Pipeline for multiple services on AWS ECS with ECS ComposeX`_
+
+
+GitHub project
+==============
+
+To follow the progress of ECS ComposeX and raise issues/feature requests, you can go to to the `ECS ComposeX Project`_
+
+
+What is next for ECS ComposeX ?
+===============================
+
+* Add more resources supports (DynamoDB tables, SNS Topics).
+* Enable definition of service mesh and service discovery
+
+First, move this into a CFN Macro, with a simple root template that would take a few settings in and the URL to the Compose file and render all templates within CFN itself via Lambda.
+Then, with the newly released CFN Private Registries, mutate this system to have fully integrated to CFN objects which will resolve all this.
+
 
 Credits
 =======
 
 This package would not have been possible without the amazing job done by the AWS CloudFormation team!
-
 This package would not have been possible without the amazing community around `Troposphere`_!
-
 This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypackage`_ project template.
-
-Disclaimer
-===========
-
-* I am not an AWS employee
-* I am not being paid by AWS
-* I don't even have AWS shares ..
-* I don't intend to sell anything to anyone
-* I am doing this on my free time because I like doing some functional coding/scriping
-* I am in no way an prod-ready app developer so I am sure a lot of stuff is not the most optimal with my code. PRs welcome.
-* I come learning C in such a way that each function can't be longer than 25 lines, 80 chars wide and 5 functions per file.
-  This obviously is not so realistic in python, but I try to keep my code clean and the function names as clear as possible.
-
 
 .. _Cookiecutter: https://github.com/audreyr/cookiecutter
 .. _`audreyr/cookiecutter-pypackage`: https://github.com/audreyr/cookiecutter-pypackage
@@ -278,3 +181,9 @@ Disclaimer
 .. _`AWS ECS CLI`: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ECS_CLI.html
 .. _Troposphere: https://github.com/cloudtools/troposphere
 .. _Blog: https://blog.ecs-composex.lambda-my-aws.io/
+.. _Docker Compose: https://docs.docker.com/compose/
+.. _ECS ComposeX: https://github.com/lambda-my-aws/ecs_composex
+.. _YAML Specifications: https://yaml.org/spec/
+.. _Extensions fields:  https://docs.docker.com/compose/compose-file/#extension-fields
+.. _ECS ComposeX Project: https://github.com/orgs/lambda-my-aws/projects/3
+.. _CICD Pipeline for multiple services on AWS ECS with ECS ComposeX: https://blog.ecs-composex.lambda-my-aws.io/posts/cicd-pipeline-for-multiple-services-on-aws-ecs-with-ecs-composex/
