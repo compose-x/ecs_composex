@@ -20,7 +20,7 @@ Functions that will add networking elements for the ECS Service as well as gener
 the network configuration for the ServiceDefinition
 """
 
-from troposphere import Ref, Sub, GetAtt, Tags
+from troposphere import Ref, Sub, GetAtt, Tags, If
 from troposphere.ec2 import SecurityGroup
 from troposphere.ecs import ServiceRegistry
 from troposphere.servicediscovery import (
@@ -33,7 +33,13 @@ from troposphere.servicediscovery import (
 from ecs_composex.common import KEYISSET, LOG
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.ecs.ecs_loadbalancing import define_service_load_balancing
-from ecs_composex.ecs.ecs_params import SERVICE_NAME_T, SERVICE_NAME, SG_T
+from ecs_composex.ecs.ecs_params import (
+    SERVICE_NAME_T,
+    SERVICE_NAME,
+    SG_T,
+    SERVICE_HOSTNAME,
+)
+from ecs_composex.ecs.ecs_conditions import USE_HOSTNAME_CON_T
 from ecs_composex.vpc.vpc_conditions import USE_VPC_MAP_ID_CON_T
 from ecs_composex.vpc.vpc_params import VPC_ID, VPC_MAP_ID
 
@@ -66,7 +72,7 @@ def add_service_default_sg(template):
     return sg
 
 
-def add_service_to_map(template, service_name, service, settings):
+def add_service_to_map(template, service_name, network_settings):
     """
     Function to add the service into a cloudmap
     """
@@ -85,14 +91,14 @@ def add_service_to_map(template, service_name, service, settings):
                 SdDnsRecord(TTL="30", Type="SRV"),
             ],
         ),
-        Name=service_name if not KEYISSET("hostname", service) else service["hostname"],
+        Name=If(USE_HOSTNAME_CON_T, Ref(SERVICE_HOSTNAME), Ref(SERVICE_NAME)),
     )
     registries = []
-    for port in service["ports"]:
+    for port in network_settings["ports"]:
         registry = ServiceRegistry(
-            f"ServiceRegistry{port.split(':')[-1]}",
+            f"ServiceRegistry{port['published']}",
             RegistryArn=GetAtt(sd_service, "Arn"),
-            Port=port.split(":")[-1],
+            Port=port["published"],
         )
         registries.append(registry)
     return registries
@@ -195,10 +201,11 @@ def compile_network_settings(compose_content, service, service_name):
                 "Overriding with values"
             )
             settings = compose_content["configs"][service_name]
-    if KEYISSET("globals", compose_content["configs"]) and KEYISSET(
-        "network", compose_content["configs"]["globals"]["network"]
-    ):
-        defaults.update(compose_content["configs"]["globals"]["network"])
+        if KEYISSET("globals", compose_content["configs"]) and KEYISSET(
+            "network", compose_content["configs"]["globals"]["network"]
+        ):
+            defaults.update(compose_content["configs"]["globals"]["network"])
+
     if not set(settings).issubset(valid_keys):
         LOG.error(valid_keys)
         LOG.error(settings)
@@ -208,7 +215,7 @@ def compile_network_settings(compose_content, service, service_name):
     for key in valid_keys:
         if key not in settings and key != "ports":
             if key in defaults.keys():
-                if key == "use_cloudmap" and not KEYISSET("is_public", settings):
+                if key == "use_cloudmap" and KEYISSET("is_public", settings):
                     LOG.debug(f"Missing use_cloudmap but {service_name} is public.")
                     settings[key] = False
                 else:
@@ -235,7 +242,9 @@ def define_service_network_config(template, service_name, network_settings, **kw
     """
     add_service_default_sg(template)
     service_lbs = Ref("AWS::NoValue")
-    registries = Ref("AWS::NoValue")
+    registries = add_service_to_map(template, service_name, network_settings)
+    if not registries:
+        registries = Ref("AWS::NoValue")
     service_attrs = {"LoadBalancers": service_lbs, "ServiceRegistries": registries}
     external_dependencies = []
     if not KEYISSET("AwsAzs", kwargs):

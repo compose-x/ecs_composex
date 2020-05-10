@@ -17,27 +17,36 @@
 
 """ Core ECS Template building """
 
-from troposphere import Ref, Sub, Tags
+from troposphere import Ref, Sub, Tags, Join
 from troposphere.ec2 import SecurityGroup
-from troposphere.logs import LogGroup
 
+from ecs_composex.common import KEYISSET
 from ecs_composex.common import LOG
-from ecs_composex.common import cfn_params, build_template, KEYISSET
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T, ROOT_STACK_NAME
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.common.tagging import generate_tags_parameters, add_all_tags
 from ecs_composex.ecs import ecs_params
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME, CLUSTER_NAME_T
-from ecs_composex.ecs.ecs_service import generate_service_template
+from ecs_composex.ecs.ecs_service import Service
 from ecs_composex.vpc import vpc_params
 
 
-def validate_labels(service_labels):
+class ServiceStack(ComposeXStack):
     """
-    Function to validate service labels
-    # TO IMPLEMENT
+    Class to handle individual service stack
     """
-    return True
+
+    def __init__(
+        self, title, template, service, template_file=None, extension=None, **kwargs
+    ):
+        self.service = service
+        super().__init__(title, template, template_file, extension, **kwargs)
+        if not KEYISSET("Parameters", kwargs):
+            self.Parameters = {
+                ROOT_STACK_NAME_T: Ref("AWS::StackName"),
+                vpc_params.VPC_ID_T: Ref(vpc_params.VPC_ID),
+                vpc_params.PUBLIC_SUBNETS_T: Join(",", Ref(vpc_params.PUBLIC_SUBNETS)),
+                vpc_params.APP_SUBNETS_T: Join(",", Ref(vpc_params.APP_SUBNETS)),
+            }
 
 
 def validate_input(services):
@@ -50,8 +59,6 @@ def validate_input(services):
         for prop in props_must_have:
             if not KEYISSET(prop, service):
                 raise KeyError("Service {service_name} is missing property {prop}")
-        if prop == "labels":
-            assert validate_labels(service[prop])
     return True
 
 
@@ -75,7 +82,7 @@ def add_clusterwide_security_group(template):
     return sg
 
 
-def add_services_stacks(compose_content, root_tpl, cluster_sg, session=None, **kwargs):
+def generate_services(compose_content, cluster_sg, session=None, **kwargs):
     """Function putting together the ECS Service template
 
     :param compose_content: Docker/ComposeX file content
@@ -89,61 +96,30 @@ def add_services_stacks(compose_content, root_tpl, cluster_sg, session=None, **k
     :param kwargs: optional arguments
     :type kwargs: dicts or set
     """
+    services = {}
     for service_name in compose_content[ecs_params.RES_KEY]:
-        service = compose_content[ecs_params.RES_KEY][service_name]
-        service_set = generate_service_template(
-            compose_content, service_name, service, session=session, **kwargs,
+        service_definition = compose_content[ecs_params.RES_KEY][service_name]
+        service = Service(service_name, service_definition, compose_content, **kwargs)
+        service.parameters.update(
+            {
+                CLUSTER_NAME_T: Ref(CLUSTER_NAME),
+                ROOT_STACK_NAME_T: Ref(ROOT_STACK_NAME),
+                ecs_params.CLUSTER_SG_ID_T: Ref(cluster_sg),
+                vpc_params.VPC_MAP_ID_T: Ref(vpc_params.VPC_MAP_ID_T),
+            }
         )
-        parameters = {
-            CLUSTER_NAME_T: Ref(CLUSTER_NAME),
-            ROOT_STACK_NAME_T: Ref(ROOT_STACK_NAME),
-            ecs_params.CLUSTER_SG_ID_T: Ref(cluster_sg),
-        }
-        dependencies = [ecs_params.LOG_GROUP_T]
-        LOG.debug(service_set[-1])
-        if isinstance(service_set[-1], list):
-            dependencies = dependencies + service_set[-1]
-        LOG.debug(dependencies)
-        parameters.update(service_set[1])
-        if service_set[0]:
-            root_tpl.add_resource(
-                ComposeXStack(
-                    service_name,
-                    template=service_set[0],
-                    Parameters=parameters,
-                    DependsOn=dependencies,
-                    **kwargs,
-                )
-            )
-        else:
-            Warning(
-                f"Template for service {service_name}" "was not successfully generated"
-            )
+        if KEYISSET("hostname", service.definition):
+            service.parameters.update({ecs_params.SERVICE_HOSTNAME_T: service.hostname})
+        service.dependencies.append(ecs_params.LOG_GROUP_T)
+        # ServiceStack(
+        #         service.resource_name,
+        #         template=service.template,
+        #         service=service,
+        #         Parameters=service.parameters,
+        #         DependsOn=service.dependencies,
+        #         **kwargs,
+        #     )
+        # )
         LOG.debug(f"Service {service_name} added.")
-
-
-def generate_services_templates(compose_content, session=None, **kwargs):
-    """
-    Function to generate the root template
-    """
-    tags_params = generate_tags_parameters(compose_content)
-    parameters = [
-        cfn_params.SERVICE_DISCOVERY,
-        CLUSTER_NAME,
-        vpc_params.VPC_ID,
-        vpc_params.PUBLIC_SUBNETS,
-        vpc_params.APP_SUBNETS,
-        vpc_params.VPC_MAP_ID,
-    ]
-    template = build_template("Root template for ECS Services", parameters)
-    template.add_resource(
-        LogGroup(
-            ecs_params.LOG_GROUP_T, RetentionInDays=30, LogGroupName=Ref(CLUSTER_NAME)
-        )
-    )
-    cluster_sg = add_clusterwide_security_group(template)
-    add_services_stacks(
-        compose_content, template, cluster_sg, session=session, **kwargs
-    )
-    add_all_tags(template, tags_params)
-    return template
+        services[service_name] = service
+    return services

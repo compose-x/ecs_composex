@@ -21,15 +21,14 @@ Functions to build the ECS Service Definition
 
 from troposphere import Tags, GetAtt, Ref, If, Join
 from troposphere.ecs import (
-    Service,
+    Service as EcsService,
     PlacementStrategy,
     AwsvpcConfiguration,
     NetworkConfiguration,
     DeploymentController,
 )
 
-from ecs_composex.common import build_template, cfn_params
-from ecs_composex.common import cfn_conditions
+from ecs_composex.common import build_template, NONALPHANUM, KEYISSET
 from ecs_composex.common.outputs import formatted_outputs
 from ecs_composex.ecs import ecs_conditions
 from ecs_composex.ecs import ecs_params
@@ -39,7 +38,6 @@ from ecs_composex.ecs.ecs_networking import (
     define_service_network_config,
     compile_network_settings,
 )
-from ecs_composex.ecs.ecs_networking_ingress import define_service_to_service_ingress
 from ecs_composex.ecs.ecs_task import add_task_defnition
 from ecs_composex.vpc import vpc_params, vpc_conditions
 
@@ -72,7 +70,7 @@ def generate_service_definition(template, network_settings, security_groups, **k
     """
 
     service_sgs = [Ref(sg) for sg in security_groups]
-    Service(
+    EcsService(
         ecs_params.SERVICE_T,
         template=template,
         Cluster=Ref(ecs_params.CLUSTER_NAME),
@@ -134,7 +132,6 @@ def initialize_service_template(service_name):
         [
             ecs_params.CLUSTER_NAME,
             ecs_params.LAUNCH_TYPE,
-            cfn_params.SERVICE_DISCOVERY,
             ecs_params.ECS_CONTROLLER,
             ecs_params.SERVICE_COUNT,
             ecs_params.CLUSTER_SG_ID,
@@ -143,14 +140,12 @@ def initialize_service_template(service_name):
             vpc_params.PUBLIC_SUBNETS,
             vpc_params.VPC_MAP_ID,
             ecs_params.LOG_GROUP,
+            ecs_params.SERVICE_HOSTNAME,
         ],
     )
     service_tpl.add_condition(
         ecs_conditions.MEM_RES_IS_MEM_ALLOC_CON_T,
         ecs_conditions.MEM_RES_IS_MEM_ALLOC_CON,
-    )
-    service_tpl.add_condition(
-        cfn_conditions.USE_CLOUDMAP_CON_T, cfn_conditions.USE_CLOUDMAP_CON
     )
     service_tpl.add_condition(
         ecs_conditions.SERVICE_COUNT_ZERO_CON_T, ecs_conditions.SERVICE_COUNT_ZERO_CON
@@ -165,73 +160,79 @@ def initialize_service_template(service_name):
     service_tpl.add_condition(
         vpc_conditions.NOT_USE_VPC_MAP_ID_CON_T, vpc_conditions.NOT_USE_VPC_MAP_ID_CON
     )
+    service_tpl.add_condition(
+        ecs_conditions.USE_HOSTNAME_CON_T, ecs_conditions.USE_HOSTNAME_CON
+    )
+    service_tpl.add_condition(
+        ecs_conditions.NOT_USE_HOSTNAME_CON_T, ecs_conditions.NOT_USE_HOSTNAME_CON
+    )
     return service_tpl
 
 
-def generate_service_template_outputs(template, service_name):
+class Service(object):
     """
-    Function to generate the Service template outputs
+    Function to represent one service
+    """
 
-    :param template: service template
-    :type template: troposphere.Template
-    :param service_name: name of the service as defined in Docker ComposeX file
-    """
-    template.add_output(
-        formatted_outputs(
-            [{ecs_params.SERVICE_GROUP_ID_T: GetAtt(ecs_params.SG_T, "GroupId")}],
-            export=True,
-            obj_name=service_name,
+    links = []
+    dependencies = []
+    network_settings = None
+
+    def generate_service_template_outputs(self):
+        """
+        Function to generate the Service template outputs
+        """
+        self.template.add_output(
+            formatted_outputs(
+                [{ecs_params.SERVICE_GROUP_ID_T: GetAtt(ecs_params.SG_T, "GroupId")}],
+                export=True,
+                obj_name=self.resource_name,
+            )
         )
-    )
 
+    def __init__(self, service_name, definition, content, **kwargs):
+        """
+        Function to initialize the Service object
+        :param service_name:
+        :param service:
+        """
+        self.definition = definition
+        self.links = definition["links"] if KEYISSET("links", definition) else []
+        self.dependencies = (
+            definition["depends_on"] if KEYISSET("depends_on", definition) else []
+        )
+        self.service_name = service_name
+        if not KEYISSET("image", definition):
+            raise KeyError(f"No image property set for service {service_name}")
+        self.image = definition["image"]
+        self.environment = (
+            definition["environment"] if KEYISSET("environment", definition) else []
+        )
+        self.resource_name = NONALPHANUM.sub("", self.service_name)
+        if KEYISSET("hostname", self.definition):
+            self.hostname = self.definition["hostname"]
+        else:
+            self.hostname = self.resource_name
+        self.network_settings = compile_network_settings(
+            content, self.definition, self.service_name
+        )
+        self.template = initialize_service_template(self.resource_name)
+        self.parameters = {
+            vpc_params.VPC_ID_T: Ref(vpc_params.VPC_ID),
+            vpc_params.VPC_MAP_ID_T: Ref(vpc_params.VPC_MAP_ID),
+            vpc_params.APP_SUBNETS_T: Join(",", Ref(vpc_params.APP_SUBNETS)),
+            vpc_params.PUBLIC_SUBNETS_T: Join(",", Ref(vpc_params.PUBLIC_SUBNETS)),
+            ecs_params.CLUSTER_NAME_T: Ref(ecs_params.CLUSTER_NAME),
+            ecs_params.LOG_GROUP.title: Ref(ecs_params.LOG_GROUP_T),
+        }
+        add_service_roles(self.template)
+        add_task_defnition(self)
 
-def generate_service_template(
-    compose_content, service_name, service, **kwargs,
-):
-    """
-    Function to generate single service template based on its definition in
-    the Compose file.
-
-    :param compose_content: Docker/ComposeX Content
-    :type compose_content: dict
-    :param service_name: Name of the service as defined in ComposeX
-    :type service_name: str
-    :param service: service dict as defined in ComposeX
-    :type service: dict
-    :param session: boto3 session for override
-    :type session: boto3.session.Session
-
-    :returns: service template URL, service specific parameters, stack dependencies
-    :rtype: tuple
-    """
-    network_settings = compile_network_settings(compose_content, service, service_name)
-    service_tpl = initialize_service_template(service_name)
-    parameters = {
-        vpc_params.VPC_ID_T: Ref(vpc_params.VPC_ID),
-        vpc_params.VPC_MAP_ID_T: Ref(vpc_params.VPC_MAP_ID),
-        vpc_params.APP_SUBNETS_T: Join(",", Ref(vpc_params.APP_SUBNETS)),
-        vpc_params.PUBLIC_SUBNETS_T: Join(",", Ref(vpc_params.PUBLIC_SUBNETS)),
-        ecs_params.CLUSTER_NAME_T: Ref(ecs_params.CLUSTER_NAME),
-        ecs_params.LOG_GROUP.title: Ref(ecs_params.LOG_GROUP_T),
-    }
-    add_service_roles(service_tpl)
-    parameters.update(
-        add_task_defnition(service_tpl, service_name, service, network_settings)
-    )
-    service_sgs = [ecs_params.SG_T, ecs_params.CLUSTER_SG_ID]
-    service_network_config = define_service_network_config(
-        service_tpl, service_name, network_settings, **kwargs
-    )
-    generate_service_definition(
-        service_tpl, network_settings, service_sgs, **service_network_config[0]
-    )
-    services_dependencies = define_service_to_service_ingress(
-        compose_content, service_tpl, service_name, service
-    )
-    stack_dependencies = []
-    if isinstance(service_network_config[-1], list):
-        stack_dependencies += service_network_config[-1]
-    if isinstance(services_dependencies, list):
-        stack_dependencies += services_dependencies
-    generate_service_template_outputs(service_tpl, service_name)
-    return service_tpl, parameters, stack_dependencies
+        self.sgs = [ecs_params.SG_T, ecs_params.CLUSTER_SG_ID]
+        self.network_config = define_service_network_config(
+            self.template, self.resource_name, self.network_settings, **kwargs
+        )
+        generate_service_definition(
+            self.template, self.network_settings, self.sgs, **self.network_config[0]
+        )
+        self.generate_service_template_outputs()

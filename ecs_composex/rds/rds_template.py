@@ -83,7 +83,7 @@ def add_db_stack(root_template, dbs_subnet_group, db_name, db, **kwargs):
     if db_template is None:
         return
     root_template.add_resource(
-        ComposeXStack(db_name, template=db_template, Parameters=parameters, **kwargs)
+        ComposeXStack(db_name, stack_template=db_template, Parameters=parameters, **kwargs)
     )
 
 

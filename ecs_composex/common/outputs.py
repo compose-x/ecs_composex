@@ -93,9 +93,9 @@ def define_import(resource_name, attribute_name, delimiter=None):
     :type resource_name: str
     :return:
     """
-    delimiter = CFN_EXPORT_DELIMITER
-    if delimiter is not None:
-        delimiter = delimiter
+
+    if delimiter is None:
+        delimiter = CFN_EXPORT_DELIMITER
     return If(
         USE_STACK_NAME_CON_T,
         ImportValue(

@@ -25,10 +25,10 @@ which it heavily relies onto.
 You can change the names *values* so you like so long as you keep it Alphanumerical [a-zA-Z0-9]
 """
 
-from troposphere import Condition, Ref, Equals, And
+from troposphere import Condition, Ref, Equals, And, Not
 
-from ecs_composex.ecs import ecs_params
 from ecs_composex.common.cfn_conditions import USE_STACK_NAME_CON_T
+from ecs_composex.ecs import ecs_params
 
 GENERATED_CLUSTER_NAME_CON_T = "UsCfnGeneratedClusterName"
 GENERATED_CLUSTER_NAME_CON = Equals(
@@ -54,3 +54,11 @@ SERVICE_COUNT_ZERO_AND_FARGATE_CON_T = "ServiceCountZeroAndFargate"
 SERVICE_COUNT_ZERO_AND_FARGATE_CON = And(
     Condition(USE_FARGATE_CON_T), Condition(SERVICE_COUNT_ZERO_CON_T)
 )
+
+NOT_USE_HOSTNAME_CON_T = "NotUseMicroserviceHostnameCondition"
+NOT_USE_HOSTNAME_CON = Equals(
+    Ref(ecs_params.SERVICE_HOSTNAME), ecs_params.SERVICE_HOSTNAME.Default
+)
+
+USE_HOSTNAME_CON_T = "UseMicroserviceHostnameCondition"
+USE_HOSTNAME_CON = Not(Condition(NOT_USE_HOSTNAME_CON_T))
