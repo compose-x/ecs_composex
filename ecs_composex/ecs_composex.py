@@ -356,7 +356,7 @@ def add_compute(
     compute_stack = root_template.add_resource(
         ComposeXStack(
             COMPUTE_STACK_NAME,
-            template=compute_template[0],
+            stack_template=compute_template[0],
             Parameters=parameters,
             DependsOn=dependencies,
             **kwargs,

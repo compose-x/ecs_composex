@@ -39,7 +39,7 @@ def test_generate_rds_template(test_file):
 
 def test_x_resource(test_file, bucket_name):
     template = generate_rds_templates(test_file)
-    rds_root = XResource("rds", template=template, **{"BucketName": bucket_name})
+    rds_root = XResource("rds", stack_template=template, **{"BucketName": bucket_name})
     rds_root.template_file.write()
     path.exists(rds_root.template_file.file_path)
 

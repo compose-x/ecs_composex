@@ -97,7 +97,7 @@ def add_spotfleet_stack(
     template.add_resource(
         ComposeXStack(
             "SpotFleet",
-            template=fleet_template,
+            stack_template=fleet_template,
             Condition=cfn_conditions.USE_SPOT_CON_T,
             Parameters=parameters,
             **kwargs
