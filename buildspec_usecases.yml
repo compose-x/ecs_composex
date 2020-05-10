@@ -17,21 +17,20 @@ phases:
       - pip install pip -U || curl -s https://bootstrap.pypa.io/get-pip.py | python
       - pip install behave
       - python setup.py install
-      - ecs_composex --help || echo $PATH && which python
 
   build:
     commands:
-      - CASE_ID=case01 mkdir -p ${PWD}/${CASES_FOLDER}/${CASE_ID}
-      - CASE_ID=case01 ecs_composex-vpc -d ${PWD}/${CASES_FOLDER}/${CASE_ID} -o root.yml
-      - CASE_ID=case02 mkdir -p ${PWD}/${CASES_FOLDER}/${CASE_ID} && ecs_composex-vpc -d ${PWD}/${CASES_FOLDER}/${CASE_ID} -o root.yml
-
-  post_build:
-    commands:
-      - ls -lR ${PWD}/${CASES_FOLDER}
+      - export CASE_ID=case01
+      - export CASE_PATH=${PWD}/${CASES_FOLDER}/${CASE_ID} && echo $CASE_PATH && mkdir -p $CASE_PATH
+      - ecs_composex-vpc -d ${CASE_PATH} -o root.yml -b ${CFN_TPL_BUCKET}
+      - export CASE_ID=case02
+      - export CASE_PATH=${PWD}/${CASES_FOLDER}/${CASE_ID} && echo $CASE_PATH && mkdir -p $CASE_PATH
+      - ecs_composex-vpc -d ${CASE_PATH} -o root.yml -b ${CFN_TPL_BUCKET}
+      - ls -lR ${PWD}/${CASES_FOLDER}/
 
 artifacts:
   files:
-    - '*.yml'
-    - '*.json'
+    - '**/*.yml'
+    - '**/*.json'
   base-directory: "$(echo $CASES_FOLDER)"
   name: "${echo $CASES_FOLDER}"

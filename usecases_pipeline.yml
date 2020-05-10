@@ -222,7 +222,7 @@ Resources:
           GroupName: !Ref BuildLogsGroup
           Status: ENABLED
           StreamName: prerelease
-      BadgeEnabled: True
+      BadgeEnabled: False
       Artifacts:
         Type: CODEPIPELINE
       ServiceRole: !GetAtt 'CodeBuildRole.Arn'
@@ -247,7 +247,7 @@ Resources:
           GroupName: !Ref BuildLogsGroup
           Status: ENABLED
           StreamName: prerelease
-      BadgeEnabled: True
+      BadgeEnabled: False
       Artifacts:
         Type: CODEPIPELINE
       ServiceRole: !GetAtt 'CodeBuildRole.Arn'
@@ -345,7 +345,7 @@ Resources:
                 - Name: UseCases
               OutputArtifacts:
                 - Name: Case02Output
-              RunOrder: '2'
+              RunOrder: '1'
         - Name: !Sub 'TestUseCases'
           Actions:
             - Name: TestUseCase01
@@ -369,7 +369,7 @@ Resources:
                 ProjectName: !Ref EcsComposeXTest
               InputArtifacts:
                 - Name: Case01Output
-              RunOrder: '2'
+              RunOrder: '1'
         - Name: !Sub 'Cleanup'
           Actions:
             - ActionTypeId:
