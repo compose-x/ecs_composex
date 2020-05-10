@@ -48,7 +48,6 @@ from ecs_composex.common.tagging import add_all_tags
 from ecs_composex.common.tagging import generate_tags_parameters
 from ecs_composex.ecs import ecs_params
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME, CLUSTER_NAME_T
-from ecs_composex.ecs.ecs_service import Service
 from ecs_composex.ecs.ecs_template import ServiceStack, generate_services
 from ecs_composex.vpc import vpc_params
 
@@ -87,10 +86,14 @@ class ServicesStack(ComposeXStack):
                     Description=f"From{service.resource_name}To{dest_service.resource_name}Port{port['target']}",
                 )
             if dest_service.resource_name not in service.dependencies:
-                LOG.debug(f"Adding new dependency from {service.service_name} to {dest_service.service_name}")
+                LOG.debug(
+                    f"Adding new dependency from {service.service_name} to {dest_service.service_name}"
+                )
                 service.dependencies.append(dest_service.resource_name)
             else:
-                LOG.debug(f"Dependency between {service.service_name} to {dest_service.service_name} already exists")
+                LOG.debug(
+                    f"Dependency between {service.service_name} to {dest_service.service_name} already exists"
+                )
 
     def handle_services_dependencies(self):
         """
@@ -100,7 +103,9 @@ class ServicesStack(ComposeXStack):
             service = self.services[service_name]
             for count, depend in enumerate(service.dependencies):
                 if depend in self.services:
-                    LOG.debug(f"Adding dependency for {depend} using name {self.services[depend].resource_name}")
+                    LOG.debug(
+                        f"Adding dependency for {depend} using name {self.services[depend].resource_name}"
+                    )
                     service.dependencies[count] = self.services[depend].resource_name
             if service.links:
                 self.handle_service_links(service)

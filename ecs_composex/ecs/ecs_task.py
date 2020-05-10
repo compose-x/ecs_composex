@@ -26,7 +26,7 @@ from troposphere.ecs import (
     TaskDefinition,
 )
 
-from ecs_composex.common import add_parameters, KEYISSET
+from ecs_composex.common import add_parameters
 from ecs_composex.ecs import ecs_params, ecs_conditions
 from ecs_composex.ecs.ecs_params import NETWORK_MODE, EXEC_ROLE_T, TASK_ROLE_T, TASK_T
 
