@@ -2,6 +2,14 @@
 History
 =======
 
+0.2.3 (2020-04-10)
+==================
+
+Refactor of the ECS service template into a single class (still got to be reworked).
+Refactored the ECS Services into a master class which ingests the CLI kwargs directly.
+
+Reworked and reorganized documentation to help with readability
+
 0.2.1 (2020-05-03)
 ==================
 
