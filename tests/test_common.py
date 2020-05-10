@@ -183,7 +183,7 @@ def test_compose_stack(test_cfn_template):
     depends_str = "123"
     test_depends = ["abcd", "123"]
     template = build_template()
-    stack = ComposeXStack("test", template=template)
+    stack = ComposeXStack("test", stack_template=template)
     stack.add_dependencies(depends_list)
     assert stack.DependsOn == depends_list
     stack.add_dependencies(depends_str)

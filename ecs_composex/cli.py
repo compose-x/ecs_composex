@@ -283,7 +283,6 @@ def main():
     else:
         config_file_name = f"{args.output_file.split('.')[0]}.config.json"
     config_file = FileArtifact(config_file_name, content=cfn_config, **vars(args))
-    config_file.create()
     params_file = FileArtifact(
         f"{args.output_file.split('.')[0]}.params.json",
         content=templates_and_params[1],
@@ -294,6 +293,7 @@ def main():
     )
     template_file.create()
     params_file.create()
+    config_file.create()
 
 
 if __name__ == "__main__":

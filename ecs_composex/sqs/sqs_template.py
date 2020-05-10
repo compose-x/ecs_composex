@@ -242,7 +242,7 @@ def add_queue_stack(queue_name, queue, queues, session, **kwargs):
     LOG.debug(session)
     queue_stack = ComposeXStack(
         queue_name,
-        template=queue_tpl,
+        stack_template=queue_tpl,
         Parameters=parameters,
         DependsOn=depends_on,
         **kwargs,

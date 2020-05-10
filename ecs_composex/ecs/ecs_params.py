@@ -62,6 +62,14 @@ CLUSTER_NAME = Parameter(
 SERVICE_NAME_T = "MicroServiceName"
 SERVICE_NAME = Parameter(SERVICE_NAME_T, Type="String", AllowedPattern=r"[a-zA-Z0-9-]+")
 
+SERVICE_HOSTNAME_T = "MicroserviceHostname"
+SERVICE_HOSTNAME = Parameter(
+    SERVICE_HOSTNAME_T,
+    Type="String",
+    Default="default",
+    AllowedPattern=r"^[a-z0-9-.]+$",
+)
+
 SERVICE_IMAGE_T = "MicroserviceImage"
 SERVICE_IMAGE = Parameter(SERVICE_IMAGE_T, Type="String")
 

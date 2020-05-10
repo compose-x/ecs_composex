@@ -41,7 +41,10 @@ from ecs_composex.common.cfn_params import (
     USE_FLEET_T,
     USE_ONDEMAND,
     USE_ONDEMAND_T,
+    USE_CLOUDMAP_T,
+    USE_CLOUDMAP,
 )
+from ecs_composex.common import cfn_conditions
 from ecs_composex.common.ecs_composex import XFILE_DEST
 from ecs_composex.common.files import FileArtifact
 from ecs_composex.common.stacks import ComposeXStack
@@ -53,7 +56,7 @@ from ecs_composex.compute.compute_params import (
     MIN_CAPACITY_T,
 )
 from ecs_composex.ecs import ServicesStack
-from ecs_composex.ecs import ecs_params, create_services_templates
+from ecs_composex.ecs import ecs_params
 from ecs_composex.ecs.ecs_conditions import (
     GENERATED_CLUSTER_NAME_CON_T,
     GENERATED_CLUSTER_NAME_CON,
@@ -264,7 +267,10 @@ def add_vpc_to_root(root_template, session, tags_params=None, **kwargs):
     :rtype: troposphere.cloudformation.Stack
     """
     vpc_template = create_vpc_template(session=session, tags=tags_params, **kwargs)
-    parameters = {ROOT_STACK_NAME_T: Ref("AWS::StackName")}
+    parameters = {
+        ROOT_STACK_NAME_T: Ref("AWS::StackName"),
+        USE_CLOUDMAP_T: Ref(USE_CLOUDMAP),
+    }
     vpc_stack = root_template.add_resource(
         ComposeXStack(VPC_STACK_NAME, vpc_template, Parameters=parameters, **kwargs)
     )
@@ -350,7 +356,7 @@ def add_compute(
     compute_stack = root_template.add_resource(
         ComposeXStack(
             COMPUTE_STACK_NAME,
-            template=compute_template[0],
+            stack_template=compute_template[0],
             Parameters=parameters,
             DependsOn=dependencies,
             **kwargs,
@@ -387,7 +393,7 @@ def add_x_resources(template, session, tags=None, vpc_stack=None, **kwargs):
                 LOG.debug(xclass)
                 xstack = xclass(
                     res_type.strip(),
-                    template=x_template,
+                    stack_template=x_template,
                     Parameters=parameters,
                     DependsOn=depends_on,
                     **kwargs,
@@ -410,17 +416,14 @@ def add_services(template, depends, session, vpc_stack=None, **kwargs):
     :type vpc_stack: troposphere.cloudformation.Template
     :param kwargs: optional parameters
     """
-    services_template = create_services_templates(session=session, **kwargs)
-    stack = ServicesStack(
-        "Services", template=services_template, DependsOn=depends, **kwargs
-    )
+    stack = ServicesStack("services", template=None, DependsOn=depends, **kwargs)
     if KEYISSET("CreateCluster", kwargs):
         stack.add_cluster_parameter({ecs_params.CLUSTER_NAME_T: Ref(ROOT_CLUSTER_NAME)})
     else:
         stack.add_cluster_parameter({ecs_params.CLUSTER_NAME_T: Ref(CLUSTER_NAME)})
     if vpc_stack:
         stack.add_vpc_stack(vpc_stack)
-    return template.add_resource(stack)
+    return stack
 
 
 def add_ecs_cluster(template, depends_on=None):
@@ -459,7 +462,13 @@ def init_root_template(stack_params, tags=None):
 
     template = build_template(
         "Root template generated via ECS ComposeX",
-        [USE_FLEET, USE_ONDEMAND, CLUSTER_NAME],
+        [USE_FLEET, USE_ONDEMAND, CLUSTER_NAME, USE_CLOUDMAP],
+    )
+    template.add_condition(
+        cfn_conditions.USE_CLOUDMAP_CON_T, cfn_conditions.USE_CLOUDMAP_CON
+    )
+    template.add_condition(
+        cfn_conditions.NOT_USE_CLOUDMAP_CON_T, cfn_conditions.NOT_USE_CLOUDMAP_CON
     )
     if tags and tags[0] and isinstance(tags[0], list):
         add_parameters(template, tags[0])
@@ -491,8 +500,10 @@ def generate_full_template(content, session=None, **kwargs):
     validate_kwargs(["BucketName"], kwargs)
     vpc_stack = None
     depends_on = []
-    services_stack = add_services(
-        template, depends_on, session=session, vpc_stack=vpc_stack, **kwargs
+    services_stack = template.add_resource(
+        add_services(
+            template, depends_on, session=session, vpc_stack=vpc_stack, **kwargs
+        )
     )
     if KEYISSET("CreateVpc", kwargs):
         vpc_stack = add_vpc_to_root(template, session, tags_params, **kwargs)

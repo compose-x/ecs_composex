@@ -23,7 +23,7 @@ files into S3 and on disk.
 from troposphere import Template
 from troposphere.cloudformation import Stack
 
-from ecs_composex.common import LOG
+from ecs_composex.common import LOG, KEYISSET
 from ecs_composex.common.files import FileArtifact
 
 
@@ -78,12 +78,14 @@ class ComposeXStack(Stack, object):
         LOG.debug(f"Rendered URL = {self.template_file.url}")
         self.TemplateURL = self.template_file.url
 
-    def __init__(self, title, template, template_file=None, extension=None, **kwargs):
+    def __init__(
+        self, title, stack_template, template_file=None, extension=None, **kwargs
+    ):
         """
         Class to keep track of the template object along with the stack object it represents.
 
         :param title: title of the resource in the root template
-        :param template: the template object to keep track of
+        :param stack_template: the template object to keep track of
         :param template_file: if the template file already exists, import
         :param extension: specify a specific file extension if you so wish
         :param render: whether the template should be rendered immediately
@@ -92,9 +94,11 @@ class ComposeXStack(Stack, object):
 
         if extension is None and template_file is None:
             extension = ".yml"
-        if not isinstance(template, Template):
-            raise TypeError("template must be of type", Template, "got", type(template))
-        self.stack_template = template
+        if not isinstance(stack_template, (Template, type(None))):
+            raise TypeError(
+                "template must be of type", Template, "got", type(stack_template)
+            )
+        self.stack_template = stack_template
         if template_file and isinstance(template_file, FileArtifact):
             self.template_file = template_file
         else:
@@ -110,7 +114,7 @@ class ComposeXStack(Stack, object):
         )
         super().__init__(title, **stack_kwargs)
         self.TemplateURL = self.template_file.url
-        if not hasattr(self, "DependsOn"):
+        if not hasattr(self, "DependsOn") or not KEYISSET("DependsOn", kwargs):
             self.DependsOn = []
 
 

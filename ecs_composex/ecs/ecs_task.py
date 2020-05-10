@@ -26,7 +26,7 @@ from troposphere.ecs import (
     TaskDefinition,
 )
 
-from ecs_composex.common import add_parameters, KEYISSET
+from ecs_composex.common import add_parameters
 from ecs_composex.ecs import ecs_params, ecs_conditions
 from ecs_composex.ecs.ecs_params import NETWORK_MODE, EXEC_ROLE_T, TASK_ROLE_T, TASK_T
 
@@ -35,22 +35,17 @@ def import_env_variables(service):
     """
     Function to import Docker compose env variables into ECS Env Variables
     :param service: service definition
-    :type service: dict
+    :type service: ecs_composex.ecs.ecs_service.Service
 
     :return: list of Environment
     :type: list<troposphere.ecs.Environment>
     """
     env_vars = []
-    if KEYISSET("environment", service):
-        for key in service["environment"]:
-            if not isinstance(service["environment"][key], str):
-                env_vars.append(
-                    Environment(Name=key, Value=str(service["environment"][key]))
-                )
-            else:
-                env_vars.append(
-                    Environment(Name=key, Value=service["environment"][key])
-                )
+    for key in service.environment:
+        if not isinstance(service.environment[key], str):
+            env_vars.append(Environment(Name=key, Value=str(service.environment[key])))
+        else:
+            env_vars.append(Environment(Name=key, Value=service.environment[key]))
     return env_vars
 
 
@@ -74,9 +69,10 @@ def generate_container_definition(service, network_settings):
     """
     Generates the container definition
     """
-    mappings = Ref("AWS::NoValue")
     env_vars = import_env_variables(service)
     mappings = generate_port_mappings(network_settings)
+    if not mappings:
+        mappings = Ref("AWS::NoValue")
     container = ContainerDefinition(
         # EntryPoint=If(ENTRY_CON, Ref('AWS::NoValue'), Split(' ', Ref(params.SERVICE_ENTRYPOINT))),
         # Command=If(COMMAND_CON, Ref('AWS::NoValue'), Split('!!', Ref(params.SERVICE_COMMAND))),
@@ -105,22 +101,16 @@ def generate_container_definition(service, network_settings):
     return container
 
 
-def add_task_defnition(template, service_name, service, network_settings):
+def add_task_defnition(service):
     """
     Function to generate and add the task definition with container definitions
     to the service template
 
-    :param network_settings: network settings as defined in compile_network_settings
-    :type network_settings: dict
-    :param template: The service template to add definitions to
-    :type template: troposphere.Template
-    :param service_name: Name of the service
-    :type service_name: str
-    :param service: the service dict object
-    :type service: dict
+    :param service: the Service object
+    :type service: ecs_composex.service.Service
     """
     add_parameters(
-        template,
+        service.template,
         [
             ecs_params.MEMORY_ALLOC,
             ecs_params.MEMORY_RES,
@@ -130,16 +120,18 @@ def add_task_defnition(template, service_name, service, network_settings):
             ecs_params.TASK_CPU_COUNT,
         ],
     )
-    template.add_condition(
+    service.template.add_condition(
         ecs_conditions.USE_FARGATE_CON_T, ecs_conditions.USE_FARGATE_CON
     )
-    parameters = {
-        ecs_params.SERVICE_IMAGE_T: service["image"],
-        ecs_params.SERVICE_NAME_T: service_name,
-    }
+    service.parameters.update(
+        {
+            ecs_params.SERVICE_IMAGE_T: service.image,
+            ecs_params.SERVICE_NAME_T: service.service_name,
+        }
+    )
     TaskDefinition(
         TASK_T,
-        template=template,
+        template=service.template,
         Cpu=If(
             ecs_conditions.USE_FARGATE_CON_T,
             ecs_params.FARGATE_CPU,
@@ -152,12 +144,13 @@ def add_task_defnition(template, service_name, service, network_settings):
         ),
         NetworkMode=NETWORK_MODE,
         Family=Ref(ecs_params.SERVICE_NAME),
-        TaskRoleArn=GetAtt(template.resources[TASK_ROLE_T], "Arn"),
-        ExecutionRoleArn=GetAtt(template.resources[EXEC_ROLE_T], "Arn"),
-        ContainerDefinitions=[generate_container_definition(service, network_settings)],
+        TaskRoleArn=GetAtt(service.template.resources[TASK_ROLE_T], "Arn"),
+        ExecutionRoleArn=GetAtt(service.template.resources[EXEC_ROLE_T], "Arn"),
+        ContainerDefinitions=[
+            generate_container_definition(service, service.network_settings)
+        ],
         RequiresCompatibilities=["EC2", "FARGATE"],
         Tags=Tags(
             {"Name": Ref(ecs_params.SERVICE_NAME), "Environment": Ref("AWS::StackName")}
         ),
     )
-    return parameters

@@ -18,8 +18,9 @@
 
 """Common Conditions across the templates"""
 
-from ecs_composex.common import cfn_params
 from troposphere import Condition, Not, Ref, Equals, And
+
+from ecs_composex.common import cfn_params
 
 USE_STACK_NAME_CON_T = "UseStackName"
 USE_STACK_NAME_CON = Equals(
@@ -27,7 +28,7 @@ USE_STACK_NAME_CON = Equals(
 )
 
 USE_CLOUDMAP_CON_T = "UseCloudMapCondition"
-USE_CLOUDMAP_CON = Equals(Ref(cfn_params.SERVICE_DISCOVERY_T), "True")
+USE_CLOUDMAP_CON = Equals(Ref(cfn_params.USE_CLOUDMAP), "True")
 
 NOT_USE_CLOUDMAP_CON_T = "NotUseCloudMapCondition"
 NOT_USE_CLOUDMAP_CON = Not(Condition(USE_CLOUDMAP_CON_T))

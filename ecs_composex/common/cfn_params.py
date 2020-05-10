@@ -43,9 +43,9 @@ VPC_MAP_ID = Parameter(VPC_MAP_ID_T, Type="String", Default="none")
 VPC_MAP_ARN_T = "AwsVpcCloudMapArn"
 VPC_MAP_ARN = Parameter(VPC_MAP_ARN_T, Type="String", Default="none")
 
-SERVICE_DISCOVERY_T = "UseAwsCloudMap"
-SERVICE_DISCOVERY = Parameter(
-    SERVICE_DISCOVERY_T, Type="String", AllowedValues=["True", "False"], Default="True"
+USE_CLOUDMAP_T = "UseAwsCloudMap"
+USE_CLOUDMAP = Parameter(
+    USE_CLOUDMAP_T, Type="String", AllowedValues=["True", "False"], Default="True"
 )
 
 USE_CFN_PARAMS_T = "UseCfnParametersValue"

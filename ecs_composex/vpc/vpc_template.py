@@ -226,11 +226,7 @@ def generate_vpc_template(cidr_block, azs, single_nat=False):
     layers = get_subnet_layers(cidr_block, len(azs))
     template = build_template(
         "VpcTemplate generated via ECS Compose X",
-        [
-            cfn_params.SERVICE_DISCOVERY,
-            vpc_params.VPC_DNS_ZONE,
-            vpc_params.USE_SUB_ZONE,
-        ],
+        [cfn_params.USE_CLOUDMAP, vpc_params.VPC_DNS_ZONE, vpc_params.USE_SUB_ZONE],
     )
     template.add_mapping("AwsLbAccounts", aws_mappings.AWS_LB_ACCOUNTS)
     template.add_condition(USE_CLOUDMAP_CON_T, cfn_conditions.USE_CLOUDMAP_CON)
