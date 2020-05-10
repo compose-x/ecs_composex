@@ -19,14 +19,18 @@
 """The setup script for ECS ComposeX"""
 
 import os
+import re
 from setuptools import setup, find_packages
 
 DIR_HERE = os.path.abspath(os.path.dirname(__file__))
+# REMOVE UNSUPPORTED RST syntax
+REF_REGX = re.compile(r"(\:ref\:)")
 
-with open(f"{DIR_HERE}/README.rst") as readme_file:
+with open(f"{DIR_HERE}/README.rst", encoding="utf-8") as readme_file:
     readme = readme_file.read()
+    readme = REF_REGX.sub("", readme)
 
-with open(f"{DIR_HERE}/HISTORY.rst") as history_file:
+with open(f"{DIR_HERE}/HISTORY.rst", encoding="utf-8") as history_file:
     history = history_file.read()
 
 requirements = []
@@ -68,8 +72,9 @@ setup(
         ]
     },
     install_requires=requirements,
-    license="BSD license",
+    license="GPLv3+",
     long_description=readme,
+    long_description_content_type="text/x-rst",
     include_package_data=True,
     keywords="ecs_composex",
     name="ecs_composex",
