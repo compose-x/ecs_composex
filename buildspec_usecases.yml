@@ -1,0 +1,37 @@
+version: 0.2
+
+env:
+  variables:
+    KNOWN_BUCKET: lambda-dev-eu-west-1
+    PY_VERSION: 3.8
+    CASES_FOLDER: test-cases
+  git-credential-helper: yes
+
+phases:
+  install:
+    runtime-versions:
+      python: "$(echo $PY_VERSION)"
+    commands:
+      - export PY_FULL_VERSION=`python --version| awk '{print $NF}'`
+      - export PATH=/root/.pyenv/versions/${PY_FULL_VERSION}/bin:${PATH}
+      - pip install pip -U || curl -s https://bootstrap.pypa.io/get-pip.py | python
+      - pip install behave
+      - python setup.py install
+      - ecs_composex --help || echo $PATH && which python
+
+  build:
+    commands:
+      - CASE_ID=case01 mkdir -p ${PWD}/${CASES_FOLDER}/${CASE_ID}
+      - CASE_ID=case01 ecs_composex-vpc -d ${PWD}/${CASES_FOLDER}/${CASE_ID} -o root.yml
+      - CASE_ID=case02 mkdir -p ${PWD}/${CASES_FOLDER}/${CASE_ID} && ecs_composex-vpc -d ${PWD}/${CASES_FOLDER}/${CASE_ID} -o root.yml
+
+  post_build:
+    commands:
+      - ls -lR ${PWD}/${CASES_FOLDER}
+
+artifacts:
+  files:
+    - '*.yml'
+    - '*.json'
+  base-directory: "$(echo $CASES_FOLDER)"
+  name: "${echo $CASES_FOLDER}"
