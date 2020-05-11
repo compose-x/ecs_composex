@@ -44,6 +44,90 @@ Resources:
       LogGroupName: !Sub 'codebuild/${RepositoryName}/${AWS::StackName}'
       RetentionInDays: !Ref BuildLogsRetentionDays
 
+  CloudformationRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Policies:
+        - PolicyName: AllowCreateRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: AllowIamRoleCreation
+                Effect: Allow
+                Resource:
+                  - '*'
+                Action:
+                  - iam:GetRole
+                  - iam:UpdateAssumeRolePolicy
+                  - iam:ListRoleTags
+                  - iam:UntagRole
+                  - iam:TagRole
+                  - iam:PutRolePermissionsBoundary
+                  - iam:RemoveRoleFromInstanceProfile
+                  - iam:UpdateRoleDescription
+                  - iam:CreateRole
+                  - iam:DeleteRole
+                  - iam:AttachRolePolicy
+                  - iam:PutRolePolicy
+                  - iam:DeleteRolePermissionsBoundary
+                  - iam:AddRoleToInstanceProfile
+                  - iam:ListInstanceProfilesForRole
+                  - iam:PassRole
+                  - iam:CreateServiceLinkedRole
+                  - iam:DetachRolePolicy
+                  - iam:ListAttachedRolePolicies
+                  - iam:DeleteRolePolicy
+                  - iam:UpdateRole
+                  - iam:ListRolePolicies
+                  - iam:GetRolePolicy
+        - PolicyName: KmsDecryptData
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: DecryptEncryptArtifacts
+                Effect: Allow
+                Action:
+                  - kms:Decrypt
+                  - kms:DescribeKey
+                Resource:
+                   - !Ref KmsKeyArn
+        - PolicyName: S3Access
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Action:
+                  - s3:GetObject*
+                  - s3:ListBucket
+                  - s3:GetBucket*
+                Effect: Allow
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:s3:::${ArtifactsBucketName}'
+                  - !Sub 'arn:${AWS::Partition}:s3:::${ArtifactsBucketName}/*'
+                Sid: AllowRwToArtifactsBucket
+              - Action:
+                  - s3:GetObject*
+                  - s3:ListBucket
+                  - s3:GetBucket*
+                Effect: Allow
+                Sid: GetCloudformationTemplates
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:s3:::${CfnTemplatesBucketName}'
+                  - !Sub 'arn:${AWS::Partition}:s3:::${CfnTemplatesBucketName}/*'
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/PowerUserAccess
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - !Sub 'cloudformation.${AWS::URLSuffix}'
+            Condition:
+              Bool:
+                aws:SecureTransport: true
+
   CodePipelineRole:
     Type: AWS::IAM::Role
     Properties:
@@ -97,6 +181,34 @@ Resources:
                   - kms:Decrypt
                 Resource:
                   - !Ref KmsKeyArn
+        - PolicyName: AccessForCloudFormation
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Action:
+                  - iam:PassRole
+                Condition:
+                  StringEqualsIfExists:
+                    iam:PassedToService:
+                      - !Sub 'cloudformation.${AWS::URLSuffix}'
+                Effect: Allow
+                Resource:
+                  - !GetAtt 'CloudformationRole.Arn'
+                Sid: AllowsPipelineToPassRoleToCfn
+              - Action:
+                  - cloudformation:CreateStack
+                  - cloudformation:DeleteStack
+                  - cloudformation:DescribeStacks
+                  - cloudformation:UpdateStack
+                  - cloudformation:CreateChangeSet
+                  - cloudformation:DeleteChangeSet
+                  - cloudformation:DescribeChangeSet
+                  - cloudformation:ExecuteChangeSet
+                  - cloudformation:SetStackPolicy
+                  - cloudformation:ValidateTemplate
+                Effect: Allow
+                Resource: '*'
+                Sid: AllowsCloudFormationAccess
 
   CodeBuildRole:
     Type: AWS::IAM::Role
@@ -318,7 +430,7 @@ Resources:
                 Version: '1'
               Configuration:
                 ActionMode: CREATE_UPDATE
-                RoleArn: !GetAtt CodePipelineRole.Arn
+                RoleArn: !GetAtt CloudformationRole.Arn
                 StackName: case01
                 TemplatePath: !Sub 'UseCases::case01/root.yml'
 #                TemplateConfiguration: !Sub 'ComposeXOutput::composex_root.params.json'
@@ -336,7 +448,7 @@ Resources:
                 Version: '1'
               Configuration:
                 ActionMode: CREATE_UPDATE
-                RoleArn: !GetAtt CodePipelineRole.Arn
+                RoleArn: !GetAtt CloudformationRole.Arn
                 StackName: case02
                 TemplatePath: !Sub 'UseCases::case02/root.yml'
 #                TemplateConfiguration: !Sub 'ComposeXOutput::composex_root.params.json'

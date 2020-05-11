@@ -22,7 +22,7 @@ phases:
     commands:
       - export CASE_ID=case01
       - export CASE_PATH=${PWD}/${CASES_FOLDER}/${CASE_ID} && echo $CASE_PATH && mkdir -p $CASE_PATH
-      - ecs_composex-vpc -d ${CASE_PATH} -o root.yml -b ${CFN_TPL_BUCKET}
+      - ecs_composex-vpc -d ${CASE_PATH} -o root.yml -b ${CFN_TPL_BUCKET} --single-nat
       - export CASE_ID=case02
       - export CASE_PATH=${PWD}/${CASES_FOLDER}/${CASE_ID} && echo $CASE_PATH && mkdir -p $CASE_PATH
       - ecs_composex-vpc -d ${CASE_PATH} -o root.yml -b ${CFN_TPL_BUCKET}
