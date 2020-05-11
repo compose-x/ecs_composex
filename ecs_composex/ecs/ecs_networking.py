@@ -101,6 +101,9 @@ def add_service_to_map(template, service_name, network_settings):
             Port=port["published"],
         )
         registries.append(registry)
+        break
+        # BREAK HERE SO only the first port is registered against the service discovery namespace. Limited to 1
+        # record per registry ARN.
     return registries
 
 
