@@ -13,9 +13,10 @@ Feature: vpc-live
   @live
   Scenario Outline: VPC With multiple NAT
     Given I have a VPC called <name>
-    When I want one NAT per AppSubnet
-    Then I should have one NAT per AppSubnet in the same AZ
+    When I want one NAT per AZ
+    Then I should have one NAT per AZ mapping to AppSubnet
 
     Examples: VPC Name
     |name|
+    |case01|
     |case02|

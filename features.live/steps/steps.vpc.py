@@ -31,6 +31,19 @@ def get_app_subnets(context):
     context.subnets = subnets_r["Subnets"]
 
 
+def get_public_subnets(context):
+    context.app_subnets_filters = [
+        {"Name": "tag:vpc::usage", "Values": ["public"]},
+        {"Name": "vpc-id", "Values": [context.vpc["VpcId"]]},
+    ]
+    subnets_r = EC2.describe_subnets(Filters=context.app_subnets_filters)
+    if not subnets_r["Subnets"]:
+        raise ValueError(
+            f"No subnets with tag:vpc::usage public found for vpc {context.vpc['VpcId']}"
+        )
+    context.pub_subnets = subnets_r["Subnets"]
+
+
 def get_vpc_nats(context):
     """
     Function to get the VPC Nat Gateways
@@ -90,11 +103,62 @@ def step_impl(context):
     assert len(context.nat_gws) == len(context.subnets)
 
 
-@when(u'I want one NAT per AppSubnet')
-def step_impl(context):
-    raise NotImplementedError(u'STEP: When I want one NAT per AppSubnet')
+def find_nat_subnet_az(context, subnet_id):
+    """
+    Function to get which AZ the nat is into as per its public subnet
+    :return:
+    """
+    for subnet in context.pub_subnets:
+        if subnet["SubnetId"] == subnet_id:
+            return subnet
 
 
-@then(u'I should have one NAT per AppSubnet in the same AZ')
+def find_app_subnet_in_az(context, az):
+    """
+    Function to get the app subnet of the same AZ as the NAT GW
+    """
+    subnets = []
+    for app_subnet in context.subnets:
+        if app_subnet["AvailabilityZone"] == az:
+            subnets.append(app_subnet)
+    if not subnets:
+        raise ValueError(f"No application subnet found in AZ {az}")
+    return subnets[-1]
+
+
+def find_app_route_table(context, subnet, nat_gw):
+    """
+    Function to check that a subnet has only one route table and that route table uses the NAT for ANY dest.
+    :param context:
+    :param subnet:
+    :return:
+    """
+    for rtb in context.rtbs:
+        for assoc in rtb["Associations"]:
+            if assoc["SubnetId"] == subnet["SubnetId"]:
+                for route in rtb["Routes"]:
+                    if "NatGatewayId" in route.keys() and route["NatGatewayId"] == nat_gw["NatGatewayId"]:
+                        assert route["DestinationCidrBlock"] == "0.0.0.0/0"
+                        return True
+    return False
+
+
+@when(u'I want one NAT per AZ')
 def step_impl(context):
-    raise NotImplementedError(u'STEP: Then I should have one NAT per AppSubnet in the same AZ')
+    import json
+    get_route_tables(context)
+    get_app_subnets(context)
+    get_vpc_nats(context)
+    get_public_subnets(context)
+    print(json.dumps(context.rtbs, indent=4))
+
+    # raise NotImplementedError(u'STEP: When I want one NAT per AppSubnet')
+
+
+@then(u'I should have one NAT per AZ mapping to AppSubnet')
+def step_impl(context):
+    for nat in context.nat_gws:
+        nat_subnet = find_nat_subnet_az(context, nat["SubnetId"])
+        nat_az = nat_subnet["AvailabilityZone"]
+        app_subnet = find_app_subnet_in_az(context, nat_az)
+        assert find_app_route_table(context, app_subnet, nat)
