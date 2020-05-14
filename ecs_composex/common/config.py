@@ -68,7 +68,7 @@ class ComposeXConfig(object):
             elif (
                 hasattr(self, key_name) and getattr(self, key_name) != config[key_name]
             ):
-                LOG.warn(
+                LOG.warning(
                     f"Property {key_name} already set: {getattr(self, key_name)}. Overriding to {config[key_name]}"
                 )
                 setattr(self, key_name, config[key_name])
@@ -106,7 +106,7 @@ class ComposeXConfig(object):
         """
         if KEYISSET(self.master_key, compose_content):
             if KEYISSET(service_name, compose_content[self.master_key]):
-                LOG.warn(
+                LOG.warning(
                     "Configuration for the service set in the configs section. Overriding defaults"
                 )
                 self.set_service_config(compose_content[self.master_key][service_name])

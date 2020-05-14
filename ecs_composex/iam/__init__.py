@@ -18,7 +18,7 @@
 """Entrypoint for IAM"""
 
 import re
-from warnings import warn
+
 from troposphere import Sub, Ref, Join
 from troposphere.iam import Role
 

@@ -39,7 +39,7 @@ from ecs_composex.common import (
     load_composex_file,
     validate_resource_title,
 )
-from ecs_composex.common.config import ComposeXConfig
+from ecs_composex.common import cfn_conditions
 from ecs_composex.common.cfn_params import (
     ROOT_STACK_NAME_T,
     USE_FLEET,
@@ -49,7 +49,6 @@ from ecs_composex.common.cfn_params import (
     USE_CLOUDMAP_T,
     USE_CLOUDMAP,
 )
-from ecs_composex.common import cfn_conditions
 from ecs_composex.common.ecs_composex import XFILE_DEST
 from ecs_composex.common.files import FileArtifact
 from ecs_composex.common.stacks import ComposeXStack

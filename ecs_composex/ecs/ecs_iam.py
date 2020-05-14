@@ -117,7 +117,7 @@ def add_service_roles(template, config):
         ManagedPolicyArns=[],
         Policies=[],
     )
-    if config.boundary:
+    if config and config.boundary:
         add_role_boundaries(role, config.boundary)
         add_role_boundaries(execution_role, config.boundary)
 
