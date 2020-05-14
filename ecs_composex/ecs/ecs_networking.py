@@ -201,10 +201,10 @@ def compile_network_settings(compose_content, service, service_name):
                 "Overriding with values"
             )
             settings = compose_content["configs"][service_name]
-        if KEYISSET("globals", compose_content["configs"]) and KEYISSET(
-            "network", compose_content["configs"]["globals"]["network"]
+        if KEYISSET("composex", compose_content["configs"]) and KEYISSET(
+            "network", compose_content["configs"]["composex"]["network"]
         ):
-            defaults.update(compose_content["configs"]["globals"]["network"])
+            defaults.update(compose_content["configs"]["composex"]["network"])
 
     if not set(settings).issubset(valid_keys):
         LOG.error(valid_keys)

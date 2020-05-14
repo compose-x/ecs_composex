@@ -28,7 +28,7 @@ from troposphere.ecs import (
     DeploymentController,
 )
 
-from ecs_composex.common import build_template, NONALPHANUM, KEYISSET
+from ecs_composex.common import build_template, NONALPHANUM, KEYISSET, LOG
 from ecs_composex.common.outputs import formatted_outputs
 from ecs_composex.ecs import ecs_conditions
 from ecs_composex.ecs import ecs_params
@@ -40,6 +40,7 @@ from ecs_composex.ecs.ecs_networking import (
 )
 from ecs_composex.ecs.ecs_task import add_task_defnition
 from ecs_composex.vpc import vpc_params, vpc_conditions
+from ecs_composex.common.config import ComposeXConfig
 
 STATIC = 0
 
@@ -169,6 +170,63 @@ def initialize_service_template(service_name):
     return service_tpl
 
 
+class ServiceConfig(ComposeXConfig):
+    """
+    Class specifically dealing with the configuration and settings of the service from how it was defined in
+    the compose file
+    """
+
+    keys = ["image", "ports", "environment", "configs", "labels", "command", "hostname"]
+    required_keys = ["image"]
+    use_cloudmap = True
+    use_nlb = None
+    use_alb = None
+    is_public = None
+    healthcheck = None
+    boundary = None
+    lb_type = None
+    hostname = None
+    command = None
+
+    def sort_load_balancing(self):
+        """
+        Function to sort out the load-balancing in case conflicting configuration
+        :return:
+        """
+        self.lb_type = "application"
+        if self.use_nlb and self.use_alb:
+            LOG.warning(
+                "Both ALB and NLB are enabled for this service. Defaulting to ALB"
+            )
+            self.use_nlb = False
+        elif self.use_nlb and not self.use_alb:
+            self.lb_type = "network"
+        LOG.debug(f"Setting LB type to {self.lb_type}")
+
+    def __init__(self, content, service_name, definition):
+        """
+        Function to initialize the service configuration
+        :param content:
+        """
+        configs = {}
+        if KEYISSET("configs", definition):
+            configs = definition["configs"]
+        super().__init__(content, service_name, configs)
+        if not set(self.required_keys).issubset(set(definition)):
+            raise AttributeError(
+                "Required attributes for a service are", self.required_keys
+            )
+        self.image = definition["image"]
+        self.sort_load_balancing()
+        if KEYISSET("ports", definition):
+            pass
+        self.environment = (
+            definition["environment"] if KEYISSET("environment", definition) else []
+        )
+        if KEYISSET("hostname", definition):
+            self.hostname = definition["hostname"]
+
+
 class Service(object):
     """
     Function to represent one service
@@ -177,6 +235,7 @@ class Service(object):
     links = []
     dependencies = []
     network_settings = None
+    config = None
 
     def generate_service_template_outputs(self):
         """
@@ -197,6 +256,9 @@ class Service(object):
         :param service:
         """
         self.definition = definition
+        print(service_name)
+        self.config = ServiceConfig(content, service_name, definition)
+        print(self.config)
         self.links = definition["links"] if KEYISSET("links", definition) else []
         self.dependencies = (
             definition["depends_on"] if KEYISSET("depends_on", definition) else []
@@ -204,15 +266,14 @@ class Service(object):
         self.service_name = service_name
         if not KEYISSET("image", definition):
             raise KeyError(f"No image property set for service {service_name}")
-        self.image = definition["image"]
         self.environment = (
             definition["environment"] if KEYISSET("environment", definition) else []
         )
         self.resource_name = NONALPHANUM.sub("", self.service_name)
-        if KEYISSET("hostname", self.definition):
-            self.hostname = self.definition["hostname"]
-        else:
-            self.hostname = self.resource_name
+        self.hostname = (
+            self.config.hostname if self.config.hostname else self.resource_name
+        )
+
         self.network_settings = compile_network_settings(
             content, self.definition, self.service_name
         )
@@ -225,7 +286,7 @@ class Service(object):
             ecs_params.CLUSTER_NAME_T: Ref(ecs_params.CLUSTER_NAME),
             ecs_params.LOG_GROUP.title: Ref(ecs_params.LOG_GROUP_T),
         }
-        add_service_roles(self.template)
+        add_service_roles(self.template, self.config)
         add_task_defnition(self)
 
         self.sgs = [ecs_params.SG_T, ecs_params.CLUSTER_SG_ID]

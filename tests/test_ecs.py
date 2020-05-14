@@ -45,7 +45,7 @@ def test_ecs_roles(config):
     Tests the creation of service roles
     """
     tmp_tpl = build_template("Tmp template")
-    add_service_roles(tmp_tpl)
+    add_service_roles(tmp_tpl, None)
 
 
 def test_ecs_roles_permissions(content, config):
@@ -53,4 +53,4 @@ def test_ecs_roles_permissions(content, config):
     Function to test
     """
     tmp_tpl = build_template("TMP Template")
-    add_service_roles(tmp_tpl)
+    add_service_roles(tmp_tpl, None)
