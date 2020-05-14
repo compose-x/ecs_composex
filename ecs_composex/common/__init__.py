@@ -41,7 +41,7 @@ DATE_PREFIX = dt.utcnow().strftime("%Y/%m/%d/%H%M")
 NONALPHANUM = re.compile(r"([^a-zA-Z0-9])")
 
 
-def KEYISSET(x, y):
+def keyisset(x, y):
     """Macro to figure if the the dictionary contains a key and that the key is not empty
 
     :param x: The key to check presence in the dictionary
@@ -57,7 +57,7 @@ def KEYISSET(x, y):
     return False
 
 
-def KEYPRESENT(x, y):
+def keypresent(x, y):
     """Macro to figure if the the dictionary contains a key and that the key is not empty
 
     :param x: The key to check presence in the dictionary
@@ -207,7 +207,7 @@ def validate_kwargs(required_keys, kwargs, caller=None):
     :raises: KeyError if key is missing from kwargs
     """
     for required_key in required_keys:
-        if not KEYISSET(required_key, kwargs):
+        if not keyisset(required_key, kwargs):
             raise KeyError(required_key, "is required by module", caller)
     return True
 
@@ -246,7 +246,7 @@ def setup_logging():
     if not the_logger.handlers:
         if default_level:
             formatter = formats["INFO"]
-        elif KEYISSET(level.upper(), formats):
+        elif keyisset(level.upper(), formats):
             formatter = formats[level.upper()]
         else:
             formatter = formats["DEBUG"]
@@ -300,7 +300,7 @@ def build_default_stack_parameters(stack_params, **kwargs):
     :param kwargs: extended arguments
     :type kwargs: dict
     """
-    if KEYISSET(cfn_params.USE_FLEET_T, kwargs):
+    if keyisset(cfn_params.USE_FLEET_T, kwargs):
         build_parameters_file(
             stack_params, cfn_params.USE_FLEET_T, kwargs[cfn_params.USE_FLEET_T]
         )

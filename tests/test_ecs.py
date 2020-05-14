@@ -42,7 +42,7 @@ def config():
 
 def test_ecs_roles(config):
     """
-    Tests the creation of service roles
+    Tests the creation of ecs_service roles
     """
     tmp_tpl = build_template("Tmp template")
     add_service_roles(tmp_tpl, None)

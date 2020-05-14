@@ -25,7 +25,7 @@ from troposphere.ecs import Environment
 from troposphere.iam import Policy as IamPolicy
 
 from ecs_composex.common.ecs_composex import CFN_EXPORT_DELIMITER as DELIM
-from ecs_composex.common import KEYISSET
+from ecs_composex.common import keyisset
 from ecs_composex.common import LOG
 from ecs_composex.common.cfn_conditions import USE_SSM_ONLY_T
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
@@ -126,11 +126,11 @@ def generate_sqs_permissions(queue_name, resource, **kwargs):
 def generate_sqs_envvars(queue_name, resource, **kwargs):
     """
     Function to generate environment variables that can be added to a container definition
-    shall the service need to know about the Queue
+    shall the ecs_service need to know about the Queue
     """
     env_names = []
     export_strings = generate_queue_strings(queue_name)
-    if KEYISSET("Settings", resource) and KEYISSET("EnvNames", resource["Settings"]):
+    if keyisset("Settings", resource) and keyisset("EnvNames", resource["Settings"]):
         for env_name in resource["Settings"]["EnvNames"]:
             env_names.append(
                 Environment(
