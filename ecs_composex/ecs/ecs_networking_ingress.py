@@ -48,22 +48,22 @@ def flatten_ip(ip_str):
     return ip_str.replace(".", "").split("/")[0].strip()
 
 
-def add_lb_to_service_ingress(template, lb_sg, service_sg, settings):
-    """Function to add Service ingress between the LB and the microservice
+def add_lb_to_service_ingress(service, lb_sg, service_sg):
+    """
+    Function to add Service ingress between the LB and the microservice
 
-    :param template: microservice template
-    :param lb_sg:
+    :param service: the service
+    :type service: ecs_composex.ecs.ecs_service.Service
+    :param lb_sg: Load Balancer security group
     :type lb_sg: troposphere.ec2.SecurityGroup
     :param service_sg: security group of the microservice
     :type service_sg: str or troposphere.ec2.SecurityGroup
-    :param settings: network settings as defined in compile_network_settings
-    :type settings: dict
     """
     LOG.debug(f"Adding ALB ingress to service")
-    for port in settings["ports"]:
+    for port in service.config.ports:
         SecurityGroupIngress(
-            f"From{settings['lb_type'].title()}ToServicePort{port['target']}",
-            template=template,
+            f"From{service.config.lb_type.title()}ToServicePort{port['target']}",
+            template=service.template,
             FromPort=port["target"],
             ToPort=port["target"],
             IpProtocol=port["protocol"],
@@ -76,7 +76,7 @@ def add_lb_to_service_ingress(template, lb_sg, service_sg, settings):
         )
 
 
-def add_public_security_group_ingress(template, service_name, settings, security_group):
+def add_public_security_group_ingress(service, template, service_name, settings, security_group):
     """Function to add public ingress. If a list of IPs is found in the config['ext_sources']
     then it will use that, if not, allows from 0.0.0.0/0
 

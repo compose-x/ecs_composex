@@ -72,15 +72,15 @@ def add_service_default_sg(template):
     return sg
 
 
-def add_service_to_map(template, service_name, network_settings):
+def add_service_to_map(service):
     """
     Function to add the service into a cloudmap
     """
     sd_service = SdService(
         "EcsDiscoveryService",
-        template=template,
+        template=service.template,
         Condition=USE_VPC_MAP_ID_CON_T,
-        Description=f"{service_name}",
+        Description=f"{service.resource_name}",
         NamespaceId=Ref(VPC_MAP_ID),
         HealthCheckCustomConfig=SdHealthCheckCustomConfig(FailureThreshold=1.0),
         DnsConfig=SdDnsConfig(
@@ -94,7 +94,7 @@ def add_service_to_map(template, service_name, network_settings):
         Name=If(USE_HOSTNAME_CON_T, Ref(SERVICE_HOSTNAME), Ref(SERVICE_NAME)),
     )
     registries = []
-    for port in network_settings["ports"]:
+    for port in service.config.ports:
         registry = ServiceRegistry(
             f"ServiceRegistry{port['published']}",
             RegistryArn=GetAtt(sd_service, "Arn"),
@@ -120,47 +120,6 @@ def define_protocol(port_string):
         if protocol_found in protocols:
             return protocol_found
     return protocol
-
-
-def define_service_ports(service):
-    """Function to define common structure to ports
-
-    :param service: the service as defined in compose file
-    :type service: dict
-
-    :return: list of ports the service uses formatted according to dict
-    :rtype: list
-    """
-    ports = []
-    valid_keys = ["published", "target", "protocol", "mode"]
-    service_ports = []
-    if KEYISSET("ports", service):
-        ports = service["ports"]
-    for port in ports:
-        if not isinstance(port, (str, dict, int)):
-            raise TypeError(
-                "ports must be of types", dict, "or", list, "got", type(port)
-            )
-        if isinstance(port, str):
-            service_ports.append(
-                {
-                    "protocol": define_protocol(port),
-                    "published": port.split(":")[0],
-                    "target": port.split(":")[-1].split("/")[0].strip(),
-                    "mode": "awsvpc",
-                }
-            )
-        elif isinstance(port, dict):
-            if not set(port).issubset(valid_keys):
-                raise KeyError(f"Valid keys are", valid_keys, "got", port.keys())
-            port["mode"] = "awsvpc"
-            service_ports.append(port)
-        elif isinstance(port, int):
-            service_ports.append(
-                {"protocol": "tcp", "published": port, "target": port, "mode": "awsvpc"}
-            )
-    LOG.debug(service_ports)
-    return service_ports
 
 
 def compile_network_settings(compose_content, service, service_name):
@@ -220,7 +179,6 @@ def compile_network_settings(compose_content, service, service_name):
                     settings[key] = False
                 else:
                     settings[key] = defaults[key]
-    settings["ports"] = define_service_ports(service)
     LOG.debug(service_name)
     LOG.debug(settings)
     return settings
