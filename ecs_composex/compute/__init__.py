@@ -26,7 +26,7 @@ for testing one would wish to run a new EC2 instance, you can simply do it from 
 import boto3
 
 from ecs_composex.common import (
-    KEYISSET,
+    keyisset,
     load_composex_file,
     build_default_stack_parameters,
 )
@@ -48,11 +48,11 @@ def create_compute_stack(session=None, **kwargs):
     tags_params = ()
     stack_params = []
     compose_content = None
-    if KEYISSET(XFILE_DEST, kwargs):
+    if keyisset(XFILE_DEST, kwargs):
         compose_content = load_composex_file(kwargs[XFILE_DEST])
         tags_params = generate_tags_parameters(compose_content)
-    if not KEYISSET("AwsAzs", kwargs):
-        if KEYISSET("AwsRegion", kwargs):
+    if not keyisset("AwsAzs", kwargs):
+        if keyisset("AwsRegion", kwargs):
             azs = get_curated_azs(region=kwargs["AwsRegion"])
         elif session is None:
             session = boto3.session.Session()

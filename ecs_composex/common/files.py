@@ -17,8 +17,11 @@ from botocore.exceptions import ClientError
 from datetime import datetime as dt
 from troposphere import Template
 from ecs_composex.common.ecs_composex import DIR_DEST
-from ecs_composex.common import DATE_PREFIX, KEYISSET
+from ecs_composex.common import DATE_PREFIX, keyisset
 from ecs_composex.common import LOG
+
+JSON_MIME = "application/json"
+YAML_MIME = "application/x-yaml"
 
 
 def check_bucket(bucket_name, session=None, client=None):
@@ -137,7 +140,7 @@ def upload_template(
         session = boto3.session.Session()
     assert check_bucket(bucket_name=bucket_name, session=session)
     if mime is None:
-        mime = "application/json"
+        mime = JSON_MIME
     if prefix is None:
         prefix = DATE_PREFIX
 
@@ -222,15 +225,15 @@ class FileArtifact(object):
 
     def define_body(self):
         if isinstance(self.template, Template):
-            if self.mime == "application/x-yaml":
+            if self.mime == YAML_MIME:
                 self.body = self.template.to_yaml()
             else:
                 self.body = self.template.to_json()
         elif isinstance(self.content, (list, dict, tuple)):
             self.can_upload = True
-            if self.mime == "application/x-yaml":
+            if self.mime == YAML_MIME:
                 self.body = yaml.dump(self.content, Dumper=Dumper)
-            elif self.mime == "application/json":
+            elif self.mime == JSON_MIME:
                 self.body = json.dumps(self.content, indent=4)
 
     def define_file_specs(self):
@@ -238,18 +241,18 @@ class FileArtifact(object):
         Function to set the file body from template if self.template is Template
         """
         if self.file_name.endswith(".json"):
-            self.mime = "application/json"
+            self.mime = JSON_MIME
         elif self.file_name.endswith(".yml") or self.file_name.endswith(".yaml"):
-            self.mime = "application/x-yaml"
+            self.mime = YAML_MIME
 
     def set_from_kwargs(self, **kwargs):
         """
         Function to set internal settings based on kwargs keys
         :param kwargs:
         """
-        if KEYISSET(DIR_DEST, kwargs):
+        if keyisset(DIR_DEST, kwargs):
             self.output_dir = path.abspath(kwargs[DIR_DEST])
-        if KEYISSET("BucketName", kwargs):
+        if keyisset("BucketName", kwargs):
             self.bucket = kwargs["BucketName"]
             self.can_upload = True
 

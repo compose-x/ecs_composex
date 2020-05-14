@@ -20,7 +20,7 @@ configs:
       use_cloudmap: True
   composex:
     iam:
-      boundary: toto
+      boundary: arn:aws:iam::aws:policy/job-function/ViewOnlyAccess
     network:
       use_cloudmap: True
     use_exports: false
@@ -137,4 +137,5 @@ services:
         healthcheck:
           http: 80/
       iam:
-        boundary: tata
+        boundary: arn:aws:iam::aws:policy/job-function/ViewOnlyAccess
+

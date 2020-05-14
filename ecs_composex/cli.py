@@ -25,7 +25,7 @@ import warnings
 
 from boto3 import session
 
-from ecs_composex.common import KEYISSET
+from ecs_composex.common import keyisset
 from ecs_composex.common import LOG, load_composex_file
 from ecs_composex.common.aws import get_curated_azs, get_account_id
 from ecs_composex.common.cfn_params import USE_FLEET_T
@@ -65,16 +65,16 @@ def validate_vpc_input(args):
         VPC_ID_T,
         VPC_MAP_ID_T,
     ]
-    if not KEYISSET("CreateVpc", args):
+    if not keyisset("CreateVpc", args):
         for key in nocreate_requirements:
-            if not KEYISSET(key, args):
+            if not keyisset(key, args):
                 warnings.warn(
                     f"{key} was not provided. Not adding to the parameters file",
                     UserWarning,
                 )
     else:
         for key in nocreate_requirements:
-            if KEYISSET(key, args):
+            if keyisset(key, args):
                 LOG.info(args[key])
                 warnings.warn(
                     f"Creating VPC is set. Ignoring value for {key}", UserWarning
@@ -87,7 +87,7 @@ def validate_cluster_input(args):
     :param args: Parser arguments
     :raise: KeyError
     """
-    if not KEYISSET("CreateCluster", args) and not KEYISSET(CLUSTER_NAME_T, args):
+    if not keyisset("CreateCluster", args) and not keyisset(CLUSTER_NAME_T, args):
         warnings.warn(
             f"You must provide an ECS Cluster name if you do not want ECS ComposeX to create one for you",
             UserWarning,
@@ -278,7 +278,7 @@ def main():
     cfn_config = build_config_template_file(
         config={}, parameters=templates_and_params[1]
     )
-    if KEYISSET("CfnConfigFile", vars(args)):
+    if keyisset("CfnConfigFile", vars(args)):
         config_file_name = args.CfnConfigFile
     else:
         config_file_name = f"{args.output_file.split('.')[0]}.config.json"

@@ -21,7 +21,7 @@ ECS ComposeX - VPC module to simplify testing and deployment of services into AW
 
 import boto3
 
-from ecs_composex.common import LOG, KEYISSET, load_composex_file
+from ecs_composex.common import LOG, keyisset, load_composex_file
 from ecs_composex.common.aws import get_curated_azs
 from ecs_composex.common.ecs_composex import XFILE_DEST
 from ecs_composex.common.tagging import generate_tags_parameters, add_all_tags
@@ -38,8 +38,8 @@ def create_vpc_template(session=None, tags=None, **kwargs):
     :rtype: troposphere.Template
     """
     azs = []
-    if not KEYISSET("AwsAzs", kwargs):
-        if KEYISSET("AwsRegion", kwargs):
+    if not keyisset("AwsAzs", kwargs):
+        if keyisset("AwsRegion", kwargs):
             azs = get_curated_azs(region=kwargs["AwsRegion"])
         elif session is None:
             session = boto3.session.Session()
@@ -51,9 +51,9 @@ def create_vpc_template(session=None, tags=None, **kwargs):
         azs = kwargs["AwsAzs"]
     LOG.debug(azs)
     cidr_block = kwargs["VpcCidr"]
-    single_nat = KEYISSET("SingleNat", kwargs)
+    single_nat = keyisset("SingleNat", kwargs)
     template = generate_vpc_template(cidr_block, azs, single_nat=single_nat)
-    if tags is None and KEYISSET(XFILE_DEST, kwargs):
+    if tags is None and keyisset(XFILE_DEST, kwargs):
         tags = generate_tags_parameters(load_composex_file(kwargs[XFILE_DEST]))
     add_all_tags(template, tags)
     return template
