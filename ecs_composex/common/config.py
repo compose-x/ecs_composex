@@ -37,6 +37,7 @@ class ComposeXConfig(object):
         "use_nlb": False,
         "is_public": False,
         "healthcheck": None,
+        "ext_sources": None
     }
 
     def set_iam(self, config):

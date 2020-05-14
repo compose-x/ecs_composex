@@ -2,20 +2,22 @@
 # Services with queues
 configs:
   app01:
-    ext_sources:
-      - ipv4: 0.0.0.0/0
-        protocol: tcp
-        source_name: all
-      - ipv4: 1.1.1.1/32
-        protocol: icmp
-        source_name: GoogleDns
-    use_alb: False
-    use_nlb: True
-    is_public: True
+    network:
+      ext_sources:
+        - ipv4: 0.0.0.0/0
+          protocol: tcp
+          source_name: all
+        - ipv4: 1.1.1.1/32
+          protocol: icmp
+          source_name: GoogleDns
+      use_alb: False
+      use_nlb: True
+      is_public: True
   app02:
-     use_alb: False
-     use_nlb: False
-     use_cloudmap: True
+    network:
+      use_alb: False
+      use_nlb: False
+      use_cloudmap: True
   composex:
     iam:
       boundary: toto
