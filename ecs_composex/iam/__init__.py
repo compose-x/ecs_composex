@@ -17,7 +17,15 @@
 
 """Entrypoint for IAM"""
 
-from troposphere import Sub
+import re
+from warnings import warn
+from troposphere import Sub, Ref, Join
+from troposphere.iam import Role
+
+from ecs_composex.common import LOG
+
+POLICY_PATTERN = r"((^([a-zA-Z0-9-_.\/]+)$)|(^(arn:aws:iam::(aws|[0-9]{12}):policy\/)[a-zA-Z0-9-_.\/]+$))"
+POLICY_RE = re.compile(POLICY_PATTERN)
 
 
 def service_role_trust_policy(service_name):
@@ -39,3 +47,23 @@ def service_role_trust_policy(service_name):
     }
     policy_doc = {"Version": "2012-10-17", "Statement": [statement]}
     return policy_doc
+
+
+def add_role_boundaries(iam_role, policy):
+    """
+    Function to s
+    :param iam_role:
+    :param policy:
+    :return:
+    """
+    if not isinstance(iam_role, Role):
+        raise TypeError(f"{iam_role} is of type", type(iam_role), "execpted", Role)
+    if not POLICY_RE.match(policy):
+        raise ValueError(f"policy name {policy} does not match expected regexp", POLICY_PATTERN)
+    if isinstance(policy, str) and not policy.startswith("arn:aws:iam::"):
+        policy = Sub(f"arn:${{AWS::Partition}}:iam::${{AWS::AccountId}}:policy/{policy}")
+    elif isinstance(policy, (Sub, Ref, Join)):
+        LOG.debug(f"policy {policy}")
+    if hasattr(iam_role, "PermissionsBoundary"):
+        LOG.warn(f"IAM Role {iam_role.title} already has PermissionsBoundary set. Overriding")
+    setattr(iam_role, "PermissionsBoundary", policy)
