@@ -1,4 +1,5 @@
-
+---
+# Services with queues
 configs:
   app01:
     ext_sources:
@@ -15,13 +16,14 @@ configs:
      use_alb: False
      use_nlb: False
      use_cloudmap: True
-        
-  globals:
+  composex:
+    iam:
+      boundary: toto
     network:
       use_cloudmap: True
-  composex:
     use_exports: false
     use_ssm: false
+
   spot_config:
     bid_price: 0.42
     use_spot: true
@@ -102,7 +104,7 @@ services:
     image: nginx
     ports:
       - 80:80
-    labels:
+    configs:
       is_public: False
       use_nlb: False
       use_alb: False
@@ -112,7 +114,7 @@ services:
 
   app03:
     image: nginx
-    labels: {}
+    configs: {}
     environment:
       SOMEKEY: SomeValue
       SOMEOTHERKEY: SomeOtherValue
@@ -124,10 +126,13 @@ services:
       - protocol: tcp
         published: 80
         target: 80
-    labels:
-      is_public: True
-      use_nlb: False
-      use_alb: True
-      use_cloudmap: True
-      healthcheck:
-        http: 80/
+    configs:
+      network:
+        is_public: True
+        use_nlb: False
+        use_alb: True
+        use_cloudmap: True
+        healthcheck:
+          http: 80/
+      iam:
+        boundary: tata

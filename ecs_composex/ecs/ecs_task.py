@@ -125,7 +125,7 @@ def add_task_defnition(service):
     )
     service.parameters.update(
         {
-            ecs_params.SERVICE_IMAGE_T: service.image,
+            ecs_params.SERVICE_IMAGE_T: service.config.image,
             ecs_params.SERVICE_NAME_T: service.service_name,
         }
     )

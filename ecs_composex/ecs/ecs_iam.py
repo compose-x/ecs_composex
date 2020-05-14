@@ -27,13 +27,15 @@ from ecs_composex.ecs.ecs_params import (
     TASK_ROLE_T,
     TASK_T,
 )
-from ecs_composex.iam import service_role_trust_policy
+from ecs_composex.iam import service_role_trust_policy, add_role_boundaries
 
 
-def add_service_roles(template):
+def add_service_roles(template, config):
     """
     Function to create the IAM roles for the ECS task
 
+    :param config: service configuration
+    :type config: ecs_composex.ecs.ServiceConfig
     :param template: service template to add the resources to
     :type template: troposphere.Template
     """
@@ -107,7 +109,7 @@ def add_service_roles(template):
         },
         Roles=[Ref(execution_role)],
     )
-    Role(
+    role = Role(
         TASK_ROLE_T,
         template=template,
         AssumeRolePolicyDocument=service_role_trust_policy("ecs-tasks"),
@@ -115,6 +117,9 @@ def add_service_roles(template):
         ManagedPolicyArns=[],
         Policies=[],
     )
+    if config.boundary:
+        add_role_boundaries(role, config.boundary)
+        add_role_boundaries(execution_role, config.boundary)
 
 
 def define_service_containers(service_template):

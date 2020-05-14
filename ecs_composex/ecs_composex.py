@@ -33,8 +33,13 @@ from ecs_composex.common import (
     build_parameters_file,
     build_default_stack_parameters,
 )
-from ecs_composex.common import build_template, KEYISSET, load_composex_file
-from ecs_composex.common import validate_resource_title
+from ecs_composex.common import (
+    build_template,
+    KEYISSET,
+    load_composex_file,
+    validate_resource_title,
+)
+from ecs_composex.common.config import ComposeXConfig
 from ecs_composex.common.cfn_params import (
     ROOT_STACK_NAME_T,
     USE_FLEET,

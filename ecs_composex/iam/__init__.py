@@ -59,11 +59,17 @@ def add_role_boundaries(iam_role, policy):
     if not isinstance(iam_role, Role):
         raise TypeError(f"{iam_role} is of type", type(iam_role), "execpted", Role)
     if not POLICY_RE.match(policy):
-        raise ValueError(f"policy name {policy} does not match expected regexp", POLICY_PATTERN)
+        raise ValueError(
+            f"policy name {policy} does not match expected regexp", POLICY_PATTERN
+        )
     if isinstance(policy, str) and not policy.startswith("arn:aws:iam::"):
-        policy = Sub(f"arn:${{AWS::Partition}}:iam::${{AWS::AccountId}}:policy/{policy}")
+        policy = Sub(
+            f"arn:${{AWS::Partition}}:iam::${{AWS::AccountId}}:policy/{policy}"
+        )
     elif isinstance(policy, (Sub, Ref, Join)):
         LOG.debug(f"policy {policy}")
     if hasattr(iam_role, "PermissionsBoundary"):
-        LOG.warn(f"IAM Role {iam_role.title} already has PermissionsBoundary set. Overriding")
+        LOG.warn(
+            f"IAM Role {iam_role.title} already has PermissionsBoundary set. Overriding"
+        )
     setattr(iam_role, "PermissionsBoundary", policy)
