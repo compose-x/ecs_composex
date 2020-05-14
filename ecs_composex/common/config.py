@@ -17,7 +17,7 @@
 
 from json import dumps
 
-from ecs_composex.common import LOG, KEYISSET
+from ecs_composex.common import LOG, keyisset
 
 
 class ComposeXConfig(object):
@@ -37,6 +37,7 @@ class ComposeXConfig(object):
         "use_nlb": False,
         "is_public": False,
         "healthcheck": None,
+        "ext_sources": None,
     }
 
     def set_iam(self, config):
@@ -79,19 +80,20 @@ class ComposeXConfig(object):
         :param compose_content:
         :return:
         """
-        if KEYISSET(self.composex_key, compose_content[self.master_key]):
+        if keyisset(self.composex_key, compose_content[self.master_key]):
             for key in self.valid_config_keys:
-                if KEYISSET(key, compose_content[self.master_key][self.composex_key]):
-                    if hasattr(self, f"set_{key}"):
-                        set_function = getattr(self, f"set_{key}")
-                        LOG.debug(set_function)
-                        set_function(
-                            compose_content[self.master_key][self.composex_key][key]
-                        )
+                if keyisset(
+                    key, compose_content[self.master_key][self.composex_key]
+                ) and hasattr(self, f"set_{key}"):
+                    set_function = getattr(self, f"set_{key}")
+                    LOG.debug(set_function)
+                    set_function(
+                        compose_content[self.master_key][self.composex_key][key]
+                    )
 
     def set_service_config(self, config):
         for key in self.valid_config_keys:
-            if KEYISSET(key, config) and hasattr(self, f"set_{key}"):
+            if keyisset(key, config) and hasattr(self, f"set_{key}"):
                 set_function = getattr(self, f"set_{key}")
                 LOG.debug(set_function, config[key])
                 set_function(config=config[key])
@@ -104,12 +106,13 @@ class ComposeXConfig(object):
         :param compose_content:
         :return:
         """
-        if KEYISSET(self.master_key, compose_content):
-            if KEYISSET(service_name, compose_content[self.master_key]):
-                LOG.warning(
-                    "Configuration for the service set in the configs section. Overriding defaults"
-                )
-                self.set_service_config(compose_content[self.master_key][service_name])
+        if keyisset(self.master_key, compose_content) and keyisset(
+            service_name, compose_content[self.master_key]
+        ):
+            LOG.warning(
+                "Configuration for the ecs_service set in the configs section. Overriding defaults"
+            )
+            self.set_service_config(compose_content[self.master_key][service_name])
         self.set_service_config(config_definition)
 
     def __init__(self, compose_content, service_name=None, service_definition=None):
@@ -118,7 +121,7 @@ class ComposeXConfig(object):
         :param compose_content: compose file content
         :type compose_content: dict
         """
-        if KEYISSET(self.master_key, compose_content):
+        if keyisset(self.master_key, compose_content):
             self.set_from_top_configs(compose_content)
         if service_name and isinstance(service_definition, dict):
             self.define_service_config(

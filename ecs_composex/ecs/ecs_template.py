@@ -20,7 +20,7 @@
 from troposphere import Ref, Sub, Tags, Join
 from troposphere.ec2 import SecurityGroup
 
-from ecs_composex.common import KEYISSET
+from ecs_composex.common import keyisset
 from ecs_composex.common import LOG
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T, ROOT_STACK_NAME
 from ecs_composex.common.stacks import ComposeXStack
@@ -32,7 +32,7 @@ from ecs_composex.vpc import vpc_params
 
 class ServiceStack(ComposeXStack):
     """
-    Class to handle individual service stack
+    Class to handle individual ecs_service stack
     """
 
     def __init__(
@@ -40,7 +40,7 @@ class ServiceStack(ComposeXStack):
     ):
         self.service = service
         super().__init__(title, template, template_file, extension, **kwargs)
-        if not KEYISSET("Parameters", kwargs):
+        if not keyisset("Parameters", kwargs):
             self.Parameters = {
                 ROOT_STACK_NAME_T: Ref("AWS::StackName"),
                 vpc_params.VPC_ID_T: Ref(vpc_params.VPC_ID),
@@ -57,14 +57,14 @@ def validate_input(services):
     for service_name in services:
         service = services[service_name]
         for prop in props_must_have:
-            if not KEYISSET(prop, service):
+            if not keyisset(prop, service):
                 raise KeyError("Service {service_name} is missing property {prop}")
     return True
 
 
 def add_clusterwide_security_group(template):
     """
-    Function to generate the service Load Balancers (if Any)
+    Function to generate the ecs_service Load Balancers (if Any)
     """
     sg = SecurityGroup(
         "ClusterWideSecurityGroup",
@@ -108,15 +108,15 @@ def generate_services(compose_content, cluster_sg, session=None, **kwargs):
                 vpc_params.VPC_MAP_ID_T: Ref(vpc_params.VPC_MAP_ID_T),
             }
         )
-        if KEYISSET("hostname", service.definition):
+        if keyisset("hostname", service.definition):
             service.parameters.update({ecs_params.SERVICE_HOSTNAME_T: service.hostname})
         service.dependencies.append(ecs_params.LOG_GROUP_T)
         # ServiceStack(
-        #         service.resource_name,
-        #         template=service.template,
-        #         service=service,
-        #         Parameters=service.parameters,
-        #         DependsOn=service.dependencies,
+        #         ecs_service.resource_name,
+        #         template=ecs_service.template,
+        #         ecs_service=ecs_service,
+        #         Parameters=ecs_service.parameters,
+        #         DependsOn=ecs_service.dependencies,
         #         **kwargs,
         #     )
         # )

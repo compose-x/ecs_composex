@@ -185,7 +185,7 @@ def add_apps_subnets(template, vpc, az_range, layers, nats):
     if len(nats) < len(az_range):
         primary_nat = nats[0]
         nats = []
-        for az in az_range:
+        for _ in az_range:
             nats.append(primary_nat)
     for count, subnet_cidr, nat in zip(az_range, layers["app"], nats):
         suffix = alpha[count].upper()

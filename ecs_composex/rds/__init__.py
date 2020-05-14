@@ -28,7 +28,7 @@ from ecs_composex.common import (
     validate_kwargs,
     load_composex_file,
     LOG,
-    KEYISSET,
+    keyisset,
 )
 from troposphere import GetAtt, Ref, Join
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
@@ -51,7 +51,7 @@ def create_rds_template(session=None, **kwargs):
     :rtype: troposphere.Template
     """
     content = load_composex_file(kwargs[XFILE_DEST])
-    if not KEYISSET(RES_KEY, content):
+    if not keyisset(RES_KEY, content):
         warn(f"No {RES_KEY} found in the docker compose definition. Skipping")
         return None
     validate_input(content, RES_KEY)
@@ -103,9 +103,9 @@ class XResource(ComposeXStack):
         self, title, stack_template, template_file=None, extension=None, **kwargs
     ):
         super().__init__(title, stack_template, template_file, extension, **kwargs)
-        if not KEYISSET("DependsOn", kwargs):
+        if not keyisset("DependsOn", kwargs):
             self.DependsOn = []
-        if not KEYISSET("Parameters", kwargs):
+        if not keyisset("Parameters", kwargs):
             self.Parameters = {
                 ROOT_STACK_NAME_T: Ref("AWS::StackName"),
                 vpc_params.VPC_ID_T: Ref(vpc_params.VPC_ID),

@@ -29,7 +29,7 @@ def configs():
 
 def test_service_policy():
     """
-    Function to evaluate the service policy
+    Function to evaluate the ecs_service policy
     """
     role = Role("iamrole", AssumeRolePolicyDocument=service_role_trust_policy("ec2"))
     role.to_dict()

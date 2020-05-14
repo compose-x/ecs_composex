@@ -25,8 +25,8 @@ from troposphere.ssm import Parameter as SsmParameter
 from ecs_composex.common import (
     build_template,
     cfn_params,
-    KEYISSET,
-    KEYPRESENT,
+    keyisset,
+    keypresent,
     LOG,
 )
 from ecs_composex.common import validate_kwargs
@@ -38,7 +38,6 @@ from ecs_composex.common.cfn_conditions import (
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME, ROOT_STACK_NAME_T
 from ecs_composex.common.outputs import formatted_outputs
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.common.tagging import generate_tags_parameters
 from ecs_composex.sqs.sqs_params import RES_KEY, SQS_SSM_PREFIX
 from ecs_composex.sqs.sqs_params import (
     SQS_NAME_T,
@@ -64,7 +63,7 @@ def define_queue_tags(properties, queue_name):
     :rtype: troposphere.Tags
     """
     tag_name_exists = False
-    if KEYISSET("Tags", properties):
+    if keyisset("Tags", properties):
         for key in properties["Tags"]:
             if key == "Name":
                 tag_name_exists = True
@@ -218,11 +217,11 @@ def add_queue_stack(queue_name, queue, queues, session, **kwargs):
         cfn_params.USE_CFN_EXPORTS_T: Ref(cfn_params.USE_CFN_EXPORTS),
         cfn_params.USE_SSM_EXPORTS_T: Ref(cfn_params.USE_SSM_EXPORTS),
     }
-    if KEYPRESENT("Properties", queue):
+    if keypresent("Properties", queue):
         properties = queue["Properties"]
     else:
         properties = {}
-    if KEYISSET("RedrivePolicy", properties):
+    if keyisset("RedrivePolicy", properties):
         redrive_target = properties["RedrivePolicy"]["deadLetterTargetArn"]
         if redrive_target not in queues:
             raise KeyError(
@@ -267,11 +266,9 @@ def generate_sqs_root_template(compose_content, tags=None, session=None, **kwarg
         session = boto3.session.Session()
     validate_kwargs(["BucketName"], kwargs)
     description = "Root SQS Template"
-    if KEYISSET("EnvName", kwargs):
+    if keyisset("EnvName", kwargs):
         description = f"Root SQS Template for {kwargs['EnvName']}"
     root_tpl = build_template(description)
-    if tags is None:
-        tags = generate_tags_parameters(compose_content)
     queues = compose_content[RES_KEY]
     for queue_name in queues:
         LOG.debug(queue_name)

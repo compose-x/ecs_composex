@@ -19,7 +19,7 @@
 Module to apply SQS settings onto ECS Services
 """
 
-from ecs_composex.common import LOG, KEYISSET
+from ecs_composex.common import LOG, keyisset
 from ecs_composex.ecs.ecs_iam import define_service_containers
 from ecs_composex.ecs.ecs_params import TASK_ROLE_T
 from ecs_composex.sqs.sqs_perms import generate_sqs_permissions, generate_sqs_envvars
@@ -51,7 +51,7 @@ def sqs_to_ecs(queues, services_stack, sqs_root_stack, **kwargs):
         envvars = generate_sqs_envvars(queue_name, queue, **kwargs)
 
         LOG.debug(services_stack.stack_template.resources.keys())
-        if perms and envvars and KEYISSET("Services", queue):
+        if perms and envvars and keyisset("Services", queue):
             for service in queue["Services"]:
                 if service["name"] not in services_stack.stack_template.resources:
                     raise KeyError(

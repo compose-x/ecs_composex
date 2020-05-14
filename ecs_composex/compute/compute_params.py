@@ -37,7 +37,7 @@ ECS_AMI_ID_T = "EcsAmiId"
 ECS_AMI_ID = Parameter(
     ECS_AMI_ID_T,
     Type="AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>",
-    Default="/aws/service/ecs/optimized-ami/amazon-linux-2/recommended/image_id",
+    Default="/aws/ecs_service/ecs/optimized-ami/amazon-linux-2/recommended/image_id",
 )
 
 MAX_CAPACITY_T = "EcsMaxCapacity"

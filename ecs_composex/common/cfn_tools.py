@@ -21,7 +21,7 @@ Most commonly used functions shared across all modules.
 """
 
 import json
-from ecs_composex.common import KEYISSET, LOG
+from ecs_composex.common import keyisset, LOG
 
 
 def build_config_template_file(config, parameters=None, tags=None, stack_policies=None):
@@ -37,7 +37,7 @@ def build_config_template_file(config, parameters=None, tags=None, stack_policie
     """
     if parameters is not None and not isinstance(parameters, list):
         raise TypeError("parameters must be a list of objects", list)
-    if not KEYISSET("Parameters", config):
+    if not keyisset("Parameters", config):
         config["Parameters"] = {}
     for param in parameters:
         config["Parameters"].update({param["ParameterKey"]: param["ParameterValue"]})
@@ -59,7 +59,7 @@ def import_parameters_into_config_file(parameters_file, config_file):
                 config = json.loads(config_fd.read())
             except json.decoder.JSONDecodeError:
                 config = {"Parameters": {}}
-            if not KEYISSET("Parameters", config):
+            if not keyisset("Parameters", config):
                 config["Parameters"] = {}
     except FileNotFoundError:
         config = {"Parameters": {}}
