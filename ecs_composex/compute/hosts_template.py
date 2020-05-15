@@ -93,7 +93,7 @@ def add_hosts_profile(template):
         template=template,
         AssumeRolePolicyDocument=service_role_trust_policy("ec2"),
         ManagedPolicyArns=[
-            "arn:aws:iam::aws:policy/ecs_service-role/AmazonEC2RoleforSSM"
+            "arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM"
         ],
         Policies=[ecs_policy],
     )

@@ -71,8 +71,8 @@ def add_fleet_role(template):
         template=template,
         AssumeRolePolicyDocument=service_role_trust_policy("spotfleet"),
         ManagedPolicyArns=[
-            "arn:aws:iam::aws:policy/ecs_service-role/AmazonEC2SpotFleetAutoscaleRole",
-            "arn:aws:iam::aws:policy/ecs_service-role/AmazonEC2SpotFleetTaggingRole",
+            "arn:aws:iam::aws:policy/service-role/AmazonEC2SpotFleetAutoscaleRole",
+            "arn:aws:iam::aws:policy/service-role/AmazonEC2SpotFleetTaggingRole",
         ],
     )
     return role
