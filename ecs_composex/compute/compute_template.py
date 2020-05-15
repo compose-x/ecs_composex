@@ -29,7 +29,7 @@ from ecs_composex.compute.spot_fleet import (
     generate_spot_fleet_template,
     DEFAULT_SPOT_CONFIG,
 )
-from ecs_composex.common import build_template, KEYISSET, LOG, add_parameters
+from ecs_composex.common import build_template, keyisset, LOG, add_parameters
 from ecs_composex.common import cfn_conditions
 from ecs_composex.common.cfn_params import (
     ROOT_STACK_NAME,
@@ -75,9 +75,9 @@ def add_spotfleet_stack(
         compute_params.MIN_CAPACITY_T: Ref(compute_params.MIN_CAPACITY),
         compute_params.TARGET_CAPACITY_T: Ref(compute_params.TARGET_CAPACITY),
     }
-    if KEYISSET("configs", compose_content):
+    if keyisset("configs", compose_content):
         configs = compose_content["configs"]
-        if KEYISSET("spot_config", configs):
+        if keyisset("spot_config", configs):
             spot_config = configs["spot_config"]
 
     if spot_config:

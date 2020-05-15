@@ -18,7 +18,7 @@
 """
 Core module for ECS ComposeX.
 
-This module is going to parse each service and each x-resource key from the compose file
+This module is going to parse each ecs_service and each x-resource key from the compose file
 (hence ComposeX) and determine its
 
 * ServiceDefinition
@@ -28,7 +28,7 @@ This module is going to parse each service and each x-resource key from the comp
 
 It is going to also, based on the labels set in the compose file
 
-* Add the service to Service Discovery via AWS CloudMap
+* Add the ecs_service to Service Discovery via AWS CloudMap
 * Add load-balancers to dispatch traffic to the microservice
 
 """
@@ -37,8 +37,8 @@ from troposphere import GetAtt, Sub, Ref, If, Join, Tags
 from troposphere.ec2 import SecurityGroup, SecurityGroupIngress
 from troposphere.logs import LogGroup
 
-from ecs_composex.common import build_template, KEYISSET, LOG
-from ecs_composex.common import load_composex_file, KEYPRESENT
+from ecs_composex.common import build_template, keyisset, LOG
+from ecs_composex.common import load_composex_file, keypresent
 from ecs_composex.common.cfn_conditions import USE_CLOUDMAP_CON_T
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T, USE_CLOUDMAP
 from ecs_composex.common.ecs_composex import XFILE_DEST
@@ -71,7 +71,7 @@ class ServicesStack(ComposeXStack):
             if link not in self.services:
                 raise KeyError(f"{link} is not defined in the services of the template")
             dest_service = self.services[link]
-            for port in dest_service.network_settings["ports"]:
+            for port in dest_service.config.ports:
                 SecurityGroupIngress(
                     f"From{service.resource_name}To{dest_service.resource_name}Port{port['target']}",
                     template=service.template,
@@ -146,7 +146,7 @@ class ServicesStack(ComposeXStack):
         """
         Function to create the services root template
         """
-        if KEYPRESENT("DependsOn", kwargs):
+        if keypresent("DependsOn", kwargs):
             kwargs.pop("DependsOn")
         content = load_composex_file(kwargs[XFILE_DEST])
         tags_params = generate_tags_parameters(content)
@@ -204,7 +204,7 @@ class ServicesStack(ComposeXStack):
     def __init__(self, title, template, template_file=None, extension=None, **kwargs):
         self.create_services_templates(**kwargs)
         super().__init__(title, self.stack_template, template_file, extension, **kwargs)
-        if not KEYISSET("Parameters", kwargs):
+        if not keyisset("Parameters", kwargs):
             self.Parameters = {
                 ROOT_STACK_NAME_T: Ref("AWS::StackName"),
                 vpc_params.VPC_ID_T: Ref(vpc_params.VPC_ID),

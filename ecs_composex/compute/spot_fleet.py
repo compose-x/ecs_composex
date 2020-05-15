@@ -40,7 +40,7 @@ from troposphere.applicationautoscaling import (
 
 from troposphere.cloudwatch import Alarm, MetricDimension as CwMetricDimension
 from troposphere.iam import Role
-from ecs_composex.common import LOG, build_template, KEYISSET
+from ecs_composex.common import LOG, build_template, keyisset
 from ecs_composex.iam import service_role_trust_policy
 from ecs_composex.vpc import vpc_params
 from ecs_composex.compute import compute_params, compute_conditions
@@ -296,7 +296,7 @@ def generate_spot_fleet_template(region_azs, **kwargs):
     )
     lt_id = Ref(compute_params.LAUNCH_TEMPLATE_ID)
     lt_version = Ref(compute_params.LAUNCH_TEMPLATE_VersionNumber)
-    if not KEYISSET("spot_config", kwargs):
+    if not keyisset("spot_config", kwargs):
         kwargs["spot_config"] = DEFAULT_SPOT_CONFIG
     define_spot_fleet(template, region_azs, lt_id, lt_version, **kwargs)
     return template

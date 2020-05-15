@@ -23,7 +23,7 @@ files into S3 and on disk.
 from troposphere import Template
 from troposphere.cloudformation import Stack
 
-from ecs_composex.common import LOG, KEYISSET
+from ecs_composex.common import LOG, keyisset
 from ecs_composex.common.files import FileArtifact
 
 
@@ -114,7 +114,7 @@ class ComposeXStack(Stack, object):
         )
         super().__init__(title, **stack_kwargs)
         self.TemplateURL = self.template_file.url
-        if not hasattr(self, "DependsOn") or not KEYISSET("DependsOn", kwargs):
+        if not hasattr(self, "DependsOn") or not keyisset("DependsOn", kwargs):
             self.DependsOn = []
 
 

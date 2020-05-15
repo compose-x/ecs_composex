@@ -41,7 +41,7 @@ from troposphere import Tags, Parameter, Ref
 from troposphere.cloudformation import Stack
 from troposphere.ec2 import LaunchTemplate, TagSpecifications
 
-from ecs_composex.common import KEYISSET, NONALPHANUM, LOG, add_parameters
+from ecs_composex.common import keyisset, NONALPHANUM, LOG, add_parameters
 from ecs_composex.common.stacks import XModuleStack, ComposeXStack
 
 
@@ -94,7 +94,7 @@ def generate_tags_parameters(composex_content):
     :return: list of parameters and tags to add to objects
     :rtype: tuple
     """
-    if not KEYISSET("x-tags", composex_content):
+    if not keyisset("x-tags", composex_content):
         LOG.info("No x-tags found. Skipping")
         return []
     xtags = composex_content["x-tags"]

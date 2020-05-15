@@ -19,7 +19,7 @@
 Module to provide services with access to the RDS databases.
 """
 
-from ecs_composex.common import LOG, KEYISSET
+from ecs_composex.common import LOG, keyisset
 from ecs_composex.rds.rds_perms import (
     add_secret_to_containers,
     define_db_secret_import,
@@ -41,7 +41,7 @@ def rds_to_ecs(rdsdbs, services_stack, rds_root_stack, **kwargs):
         db_def = rdsdbs[db_name]
         if db_name not in rds_root_stack.stack_template.resources:
             raise KeyError(f"DB {db_name} not defined in RDS Root template")
-        if not KEYISSET("Services", db_def):
+        if not keyisset("Services", db_def):
             LOG.warn(f"DB {db_name} has no services defined.")
             continue
         secret_import = define_db_secret_import(db_name)

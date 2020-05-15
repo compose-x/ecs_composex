@@ -9,6 +9,8 @@ __pycache__/
 #EMACS TMP
 *~
 
+.scanner*
+
 OUTPUTS
 outputs/*.json
 outputs/*.yml

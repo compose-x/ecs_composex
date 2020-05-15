@@ -23,7 +23,7 @@ import re
 from importlib import import_module
 
 import boto3
-from troposphere import Ref, GetAtt, If
+from troposphere import Ref, GetAtt, If, AWS_STACK_NAME
 from troposphere.ecs import Cluster
 
 from ecs_composex.common import (
@@ -35,7 +35,7 @@ from ecs_composex.common import (
 )
 from ecs_composex.common import (
     build_template,
-    KEYISSET,
+    keyisset,
     load_composex_file,
     validate_resource_title,
 )
@@ -95,7 +95,7 @@ def get_composex_globals(compose_content):
     :return: docker compose globals
     :rtype: dict
     """
-    if KEYISSET("configs", compose_content) and KEYISSET(
+    if keyisset("configs", compose_content) and keyisset(
         "composex", compose_content["configs"]
     ):
         return compose_content["configs"]["composex"]
@@ -164,7 +164,7 @@ def generate_x_resources_policies(resources, resource_type, function, **kwargs):
     :type resources: dict
     :param resource_type: resource type, ie. sqs
     :type resource_type: str
-    :param function: the function to call to get IAM policies to add to service role
+    :param function: the function to call to get IAM policies to add to ecs_service role
     :type function: function pointer
     :param kwargs: optional arguments
     :type kwargs: dict
@@ -177,7 +177,7 @@ def generate_x_resources_policies(resources, resource_type, function, **kwargs):
         assert validate_resource_title(resource_name, resource_type)
         resource = resources[resource_name]
 
-        if KEYISSET("Services", resource):
+        if keyisset("Services", resource):
             mod_policies[resource_name] = function(resource_name, resource, **kwargs)
     return mod_policies
 
@@ -202,7 +202,7 @@ def generate_x_resources_envvars(resources, resource_type, function, **kwargs):
         assert validate_resource_title(resource_name, resource_type)
         resource = resources[resource_name]
 
-        if KEYISSET("Services", resource):
+        if keyisset("Services", resource):
             mod_envvars[resource_name] = function(resource_name, resource, **kwargs)
     return mod_envvars
 
@@ -244,7 +244,7 @@ def generate_vpc_parameters(template, params, **kwargs):
     :type params: list
     """
     for arg in VPC_ARGS:
-        if KEYISSET(arg, kwargs):
+        if keyisset(arg, kwargs):
             build_parameters_file(params, arg, kwargs[arg])
     params = [
         vpc_params.VPC_ID,
@@ -272,7 +272,7 @@ def add_vpc_to_root(root_template, session, tags_params=None, **kwargs):
     """
     vpc_template = create_vpc_template(session=session, tags=tags_params, **kwargs)
     parameters = {
-        ROOT_STACK_NAME_T: Ref("AWS::StackName"),
+        ROOT_STACK_NAME_T: Ref(AWS_STACK_NAME),
         USE_CLOUDMAP_T: Ref(USE_CLOUDMAP),
     }
     vpc_stack = root_template.add_resource(
@@ -310,7 +310,7 @@ def add_compute(
     create_compute = False
     args = [USE_FLEET_T, USE_ONDEMAND_T, "AddComputeResources"]
     for arg in args:
-        if KEYISSET(arg, kwargs):
+        if keyisset(arg, kwargs):
             create_compute = True
     if not create_compute:
         return
@@ -322,7 +322,7 @@ def add_compute(
     root_template.add_parameter(TARGET_CAPACITY)
     compute_template = create_compute_stack(session, **kwargs)
     parameters = {
-        ROOT_STACK_NAME_T: Ref("AWS::StackName"),
+        ROOT_STACK_NAME_T: Ref(AWS_STACK_NAME),
         TARGET_CAPACITY_T: Ref(TARGET_CAPACITY),
         MIN_CAPACITY_T: Ref(TARGET_CAPACITY),
         USE_FLEET_T: Ref(USE_FLEET),
@@ -376,7 +376,6 @@ def add_x_resources(template, session, tags=None, vpc_stack=None, **kwargs):
     """
     content = load_composex_file(kwargs[XFILE_DEST])
     ignore_x = ["x-tags"]
-    # iam_services = ["x-sqs"]
     tcp_services = ["x-rds"]
     depends_on = []
     if tags is None:
@@ -391,7 +390,7 @@ def add_x_resources(template, session, tags=None, vpc_stack=None, **kwargs):
                 x_template = create_function(session=session, **kwargs)
                 if vpc_stack is not None and key in tcp_services:
                     depends_on.append(VPC_STACK_NAME)
-                parameters = {ROOT_STACK_NAME_T: Ref("AWS::StackName")}
+                parameters = {ROOT_STACK_NAME_T: Ref(AWS_STACK_NAME)}
                 for tag in tags:
                     parameters.update({tag.title: Ref(tag.title)})
                 LOG.debug(xclass)
@@ -421,7 +420,7 @@ def add_services(template, depends, session, vpc_stack=None, **kwargs):
     :param kwargs: optional parameters
     """
     stack = ServicesStack("services", template=None, DependsOn=depends, **kwargs)
-    if KEYISSET("CreateCluster", kwargs):
+    if keyisset("CreateCluster", kwargs):
         stack.add_cluster_parameter({ecs_params.CLUSTER_NAME_T: Ref(ROOT_CLUSTER_NAME)})
     else:
         stack.add_cluster_parameter({ecs_params.CLUSTER_NAME_T: Ref(CLUSTER_NAME)})
@@ -446,7 +445,7 @@ def add_ecs_cluster(template, depends_on=None):
     Cluster(
         ROOT_CLUSTER_NAME,
         template=template,
-        ClusterName=If(CLUSTER_NAME_CON_T, Ref("AWS::StackName"), Ref(CLUSTER_NAME_T)),
+        ClusterName=If(CLUSTER_NAME_CON_T, Ref(AWS_STACK_NAME), Ref(CLUSTER_NAME_T)),
         DependsOn=depends_on,
     )
 
@@ -509,15 +508,15 @@ def generate_full_template(content, session=None, **kwargs):
             template, depends_on, session=session, vpc_stack=vpc_stack, **kwargs
         )
     )
-    if KEYISSET("CreateVpc", kwargs):
+    if keyisset("CreateVpc", kwargs):
         vpc_stack = add_vpc_to_root(template, session, tags_params, **kwargs)
         depends_on.append(vpc_stack)
         services_stack.add_vpc_stack(vpc_stack)
     else:
         generate_vpc_parameters(template, stack_params, **kwargs)
-    if KEYISSET(CLUSTER_NAME_T, kwargs):
+    if keyisset(CLUSTER_NAME_T, kwargs):
         build_parameters_file(stack_params, CLUSTER_NAME_T, kwargs[CLUSTER_NAME_T])
-    if KEYISSET("CreateCluster", kwargs):
+    if keyisset("CreateCluster", kwargs):
         add_ecs_cluster(template, depends_on)
         depends_on.append(ROOT_CLUSTER_NAME)
     add_compute(

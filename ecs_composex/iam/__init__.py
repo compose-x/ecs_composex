@@ -18,7 +18,6 @@
 """Entrypoint for IAM"""
 
 import re
-
 from troposphere import Sub, Ref, Join
 from troposphere.iam import Role
 
@@ -33,7 +32,7 @@ def service_role_trust_policy(service_name):
     Simple function to format the trust relationship for a Role and an AWS Service
     used from lambda-my-aws/ozone
 
-    :param service_name: name of the service
+    :param service_name: name of the ecs_service
     :type service_name: str
 
     :return: policy document

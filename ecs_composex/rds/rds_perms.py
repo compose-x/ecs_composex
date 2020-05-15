@@ -24,7 +24,7 @@ from troposphere.ec2 import SecurityGroupIngress
 from troposphere.ecs import Secret as EcsSecret
 from troposphere.iam import PolicyType
 
-from ecs_composex.common import KEYISSET
+from ecs_composex.common import keyisset
 from ecs_composex.common.outputs import define_import
 from ecs_composex.ecs.ecs_iam import define_service_containers
 from ecs_composex.ecs.ecs_params import SG_T
@@ -60,7 +60,7 @@ def add_rds_policy(service_template, secret_import, db_name, use_task_role=False
     db_policy_statement = generate_rds_secrets_permissions(secret_import, db_name)
     task_role = service_template.resources[TASK_ROLE_T]
     exec_role = service_template.resources[EXEC_ROLE_T]
-    if KEYISSET(DB_SECRET_POLICY_NAME, service_template.resources):
+    if keyisset(DB_SECRET_POLICY_NAME, service_template.resources):
         db_policy = service_template.resources[DB_SECRET_POLICY_NAME]
         db_policy.PolicyDocument["Statement"].append(db_policy_statement)
         if use_task_role:
@@ -116,7 +116,7 @@ def add_security_group_ingress(service_stack, db_name):
 def add_secret_to_containers(service_template, db_name, secret_import):
     """
     Function to add DB secret to container
-    :param service_template: the service template
+    :param service_template: the ecs_service template
     :param db_name: the name of the database used as environment variable name
     :param secret_import: secret arn
     :return:

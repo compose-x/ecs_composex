@@ -164,7 +164,7 @@ SERVICE_GROUP_ID = Parameter(SERVICE_GROUP_ID_T, Type=SG_ID_TYPE, Default="<none
 
 def get_import_service_group_id(remote_service_name):
     """
-    Function to return the ImportValue(Sub()) for given service name
+    Function to return the ImportValue(Sub()) for given ecs_service name
     """
     return ImportValue(
         Sub(
