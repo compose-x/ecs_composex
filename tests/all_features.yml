@@ -3,25 +3,23 @@
 
 configs:
   serviceA:
-    use_alb: True
-    is_public: True
-    use_nlb: True
-    ext_sources:
-      - ipv4: 0.0.0.0/0
-        protocol: tcp
-        source_name: all
-      - ipv4: 1.1.1.1/32
-        protocol: icmp
-        source_name: GoogleDns
+    network:
+      use_alb: True
+      is_public: True
+      use_nlb: True
+      ext_sources:
+        - ipv4: 0.0.0.0/0
+          protocol: tcp
+          source_name: all
+        - ipv4: 1.1.1.1/32
+          protocol: icmp
+          source_name: GoogleDns
 
   serviceB:
-    is_public: True
-    use_nlb: False
-    use_alb: True
-
-  serviceC:
-    is_public: False
-    use_cloudmap: True
+    network:
+      is_public: True
+      use_nlb: False
+      use_alb: True
 
   globals:
     network:
@@ -42,6 +40,10 @@ services:
 
   serviceC:
     image: nginx
+    configs:
+      network:
+        is_public: False
+        use_cloudmap: True
 
 
 x-tags:
