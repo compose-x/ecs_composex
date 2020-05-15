@@ -159,6 +159,13 @@ def main_parser():
         help="Bucket name to upload the templates to",
         dest="BucketName",
     )
+    parser.add_argument(
+        "--no-upload",
+        action="store_true",
+        default=False,
+        help="Whether the templates should be uploaded or not.",
+        dest="NoUpload",
+    )
     # VPC SETTINGS
     parser.add_argument(
         "--create-vpc",
