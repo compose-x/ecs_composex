@@ -79,7 +79,10 @@ def add_fleet_role(template):
 
 
 def define_overrides(region_azs, lt_id, lt_version, spot_config):
-    """Function to generate Overrides for the SpotFleet
+    """
+    From the list of AZs and the configurations set for spotfleet instances, it will generate an override that
+    SpotFleet will use to diversify the compute resources.
+
     :param region_azs: Availability Zones of the region to create the hosts into
     :type region_azs: list
     :param lt_id: Launch template ID

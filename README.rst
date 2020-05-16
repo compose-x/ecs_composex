@@ -2,52 +2,15 @@
 ECS ComposeX
 ============
 
-.. |BUILD| image:: https://codebuild.eu-west-1.amazonaws.com/badges?uuid=eyJlbmNyeXB0ZWREYXRhIjoiRXloUWdET3RnVHF6MXJFZ0pkWkgvOVpZbTBUN202cG5kai9iOFZnOHI3NTU4NUNYYkRUdE9KWDBDSW54TW90aTlQWk5yWmJhelFxck5PbHlKRXNnUjF3PSIsIml2UGFyYW1ldGVyU3BlYyI6ImJZcVl2bUFaeE1DRFZ5UTEiLCJtYXRlcmlhbFNldFNlcmlhbCI6MX0%3D&branch=master
-
-.. |DOCS_BUILD| image:: https://readthedocs.org/projects/ecs-composex/badge/?version=latest
-        :target: https://ecs-composex.readthedocs.io/en/latest/?badge=latest
-        :alt: Documentation Status
-
-.. |PYPI_VERSION| image:: https://img.shields.io/pypi/v/ecs_composex.svg
-        :target: https://pypi.python.org/pypi/ecs_composex
-
-.. |PYPI_DL| image:: https://img.shields.io/pypi/dm/ecs_composex
-    :alt: PyPI - Downloads
-    :target: https://pypi.python.org/pypi/ecs_composex
-
-.. |PYPI_LICENSE| image:: https://img.shields.io/github/license/lambda-my-aws/ecs_composex
-    :alt: GitHub
-    :target: https://github.com/lambda-my-aws/ecs_composex/blob/master/LICENSE
-
-.. |PYPI_PYVERS| image:: https://img.shields.io/pypi/pyversions/ecs_composex
-    :alt: PyPI - Python Version
-    :target: https://pypi.python.org/pypi/ecs_composex
-
-.. |PYPI_WHEEL| image:: https://img.shields.io/pypi/wheel/ecs_composex
-    :alt: PyPI - Wheel
-    :target: https://pypi.python.org/pypi/ecs_composex
-
-.. |CODE_STYLE| image:: https://img.shields.io/badge/codestyle-black-black
-    :alt: CodeStyle
-    :target: https://pypi.org/project/black/
-
-.. |TDD| image:: https://img.shields.io/badge/tdd-pytest-black
-    :alt: TDD with pytest
-    :target: https://docs.pytest.org/en/latest/contents.html
-
-.. |BDD| image:: https://img.shields.io/badge/bdd-behave-black
-    :alt: BDD with Behave
-    :target: https://behave.readthedocs.io/en/latest/
-
-|BUILD| |DOCS_BUILD|
-
 |PYPI_VERSION| |PYPI_LICENSE|
 
 |CODE_STYLE| |TDD| |BDD|
 
--------------------------------------------------------------------------------------------------------------
-Build your infrastructure and deploy your services to AWS services using docker-compose format file format.
--------------------------------------------------------------------------------------------------------------
+|BUILD|
+
+----------------------------------------------------------------------------------------------------
+Build your infrastructure and deploy your services to AWS services using docker-compose file format.
+----------------------------------------------------------------------------------------------------
 
 .. contents::
     :local:
@@ -140,7 +103,6 @@ License and documentation
 * Free software: GPLv3+
 * Documentation:
     * https://docs.ecs-composex.lambda-my-aws.io
-    * https://ecs-composex.readthedocs.io/en/latest |DOCS_BUILD|
 
 Blog
 ====
@@ -187,3 +149,40 @@ This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypack
 .. _Extensions fields:  https://docs.docker.com/compose/compose-file/#extension-fields
 .. _ECS ComposeX Project: https://github.com/orgs/lambda-my-aws/projects/3
 .. _CICD Pipeline for multiple services on AWS ECS with ECS ComposeX: https://blog.ecs-composex.lambda-my-aws.io/posts/cicd-pipeline-for-multiple-services-on-aws-ecs-with-ecs-composex/
+
+.. |BUILD| image:: https://codebuild.eu-west-1.amazonaws.com/badges?uuid=eyJlbmNyeXB0ZWREYXRhIjoiRXloUWdET3RnVHF6MXJFZ0pkWkgvOVpZbTBUN202cG5kai9iOFZnOHI3NTU4NUNYYkRUdE9KWDBDSW54TW90aTlQWk5yWmJhelFxck5PbHlKRXNnUjF3PSIsIml2UGFyYW1ldGVyU3BlYyI6ImJZcVl2bUFaeE1DRFZ5UTEiLCJtYXRlcmlhbFNldFNlcmlhbCI6MX0%3D&branch=master
+
+.. |DOCS_BUILD| image:: https://readthedocs.org/projects/ecs-composex/badge/?version=latest
+        :target: https://ecs-composex.readthedocs.io/en/latest/?badge=latest
+        :alt: Documentation Status
+
+.. |PYPI_VERSION| image:: https://img.shields.io/pypi/v/ecs_composex.svg
+        :target: https://pypi.python.org/pypi/ecs_composex
+
+.. |PYPI_DL| image:: https://img.shields.io/pypi/dm/ecs_composex
+    :alt: PyPI - Downloads
+    :target: https://pypi.python.org/pypi/ecs_composex
+
+.. |PYPI_LICENSE| image:: https://img.shields.io/github/license/lambda-my-aws/ecs_composex
+    :alt: GitHub
+    :target: https://github.com/lambda-my-aws/ecs_composex/blob/master/LICENSE
+
+.. |PYPI_PYVERS| image:: https://img.shields.io/pypi/pyversions/ecs_composex
+    :alt: PyPI - Python Version
+    :target: https://pypi.python.org/pypi/ecs_composex
+
+.. |PYPI_WHEEL| image:: https://img.shields.io/pypi/wheel/ecs_composex
+    :alt: PyPI - Wheel
+    :target: https://pypi.python.org/pypi/ecs_composex
+
+.. |CODE_STYLE| image:: https://img.shields.io/badge/codestyle-black-black
+    :alt: CodeStyle
+    :target: https://pypi.org/project/black/
+
+.. |TDD| image:: https://img.shields.io/badge/tdd-pytest-black
+    :alt: TDD with pytest
+    :target: https://docs.pytest.org/en/latest/contents.html
+
+.. |BDD| image:: https://img.shields.io/badge/bdd-behave-black
+    :alt: BDD with Behave
+    :target: https://behave.readthedocs.io/en/latest/

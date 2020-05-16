@@ -25,6 +25,10 @@ from ecs_composex.common import LOG
 def get_db_engine_settings(db_engine_name, db_engine_version, serverless=False):
     """
     Function to return just the details about that DB Engine Version
+
+    :param str db_engine_name: Name of the DB Engine
+    :param str db_engine_version: Version of the DB Engine to use
+    :param bool serverless: Whether we are looking for an engine version that supports Serverless for RDS Aurora
     """
     LOG.debug(f"Looking for the family of {db_engine_name}-{db_engine_version}")
     client = boto3.client("rds")
@@ -50,6 +54,8 @@ def get_db_engine_settings(db_engine_name, db_engine_version, serverless=False):
 def get_db_cluster_engine_parameter_group_defaults(engine_family):
     """
     Returns a dict of all the parameter group parameters and default values
+
+    :parm str engine_family: Engine family we are getting the cluster settings for, i.e. aurora-mysql5.7
     """
 
     client = boto3.client("rds")
@@ -100,7 +106,12 @@ def get_family_from_engine_version(
 
 
 def get_family_settings(db_family):
-
+    """
+    Function to get the DB family settings
+    :param str db_family: The DB family
+    :return: db settings or None
+    :rtype: None or dict
+    """
     if db_family.startswith("aurora"):
         LOG.debug("Aurora based instance")
         LOG.debug(f"Looking for parameters for {db_family}")

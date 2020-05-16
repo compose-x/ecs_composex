@@ -76,7 +76,7 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', '.idea']
 pygments_style = 'sphinx'
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
-todo_include_todos = False
+todo_include_todos = True
 
 
 # -- Options for HTML output -------------------------------------------
@@ -88,14 +88,16 @@ todo_include_todos = False
 
 import sphinx_rtd_theme
 
-extensions = ['sphinx.ext.todo', 'sphinx.ext.viewcode', 'sphinx.ext.autodoc']
+extensions += ['sphinx.ext.todo', 'sphinx.ext.viewcode', 'sphinx.ext.autodoc']
 
 html_theme = "sphinx_rtd_theme"
 # Theme options are theme-specific and customize the look and feel of a
 # theme further.  For a list of options available for each theme, see the
 # documentation.
 #
-# html_theme_options = {}
+html_theme_options = {
+    "vcs_pageview_mode": "display_github"
+}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -160,6 +162,6 @@ texinfo_documents = [
      u'ECS-ComposeX Documentation',
      author,
      'ecs_composex',
-     'One line description of project.',
+     'Build your infrastructure and deploy your services to AWS services using docker-compose format file.',
      'Miscellaneous'),
 ]

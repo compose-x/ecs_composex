@@ -82,11 +82,11 @@ CLUSTER_PARAMETER_GROUP_T = "RdsClusterParameterGroup"
 
 def add_db_outputs(db_template, db_name):
     """
-    Functiont to add outputs to the DB template
-    :param db_template:
-    :param db_name:
-    :param db:
-    :return:
+    Function to add outputs to the DB template
+
+    :param db_template: DB Template
+    :type db_template: troposphere.Template
+    :param str db_name: Name of the database
     """
     db_template.add_output(
         formatted_outputs(
@@ -103,12 +103,10 @@ def add_db_outputs(db_template, db_name):
 
 def create_db_subnet_group(template, conditional=False):
     """
-    Function to add the subnet group to
-    :param conditional: Whether or not the object should have a Condition for creation in CFN
-    :type conditional: bool
-    :return:
-    :param template:
+    Function to create a subnet group
 
+    :param troposphere.Template template: the template to add the subnet group to.
+    :param bool conditional: Whether or not the object should have a Condition for creation in CFN
     :return: group, the DB Subnets Group
     :rtype: troposphere.rds.DBSubnetGroup
     """
@@ -135,10 +133,9 @@ def create_db_subnet_group(template, conditional=False):
 def add_db_sg(template, db_name):
     """
     Function to add a Security group for the database
-    :param db_name: Name of the database as defined in compose file
-    :type db_name: str
-    :param template: template to add the sg to
-    :type template: troposphere.Template
+
+    :param str db_name: Name of the database as defined in compose file
+    :param troposphere.Template template: template to add the sg to
     """
     SecurityGroup(
         DB_SG_T,
@@ -152,7 +149,7 @@ def add_db_sg(template, db_name):
 def add_db_secret(template):
     """
     Function to add a Secrets Manager secret that will be associated with the DB
-    :return:
+    :param template.Template template: The template to add the secret to.
     """
     Secret(
         DB_SECRET_T,
@@ -192,10 +189,8 @@ def add_db_secret(template):
 def add_instance(template, db, **kwargs):
     """
     Function to add DB Instance(s)
-    :param template:
-    :param db:
-    :param kwargs:
-    :return:
+
+    :param troposphere.Template template: The template to add the DB Instance to.
     """
     DBInstance(
         DATABASE_T,
@@ -246,10 +241,10 @@ def add_instance(template, db, **kwargs):
 def add_cluster(template, db, **kwargs):
     """
     Function to add the cluster to the template
-    :param db:
-    :param kwargs:
-    :param template:
-    :return:
+
+    :param troposphere.Template template: template to add the DB Cluster to.
+    :return: cluster
+    :rtype: troposphere.rds.DBCluster
     """
     cluster = DBCluster(
         CLUSTER_T,
@@ -292,8 +287,8 @@ def add_parameter_group(template, db):
     """
     Function to create a parameter group which uses the same values as default which can later be altered
 
-    :param template: the RDS template
-    :param db: the db object as imported from Docker composeX file
+    :param troposphere.Template template: the RDS template
+    :param dict db: the db object as imported from Docker composeX file
     """
     db_family = get_family_from_engine_version(
         db["Properties"][DB_ENGINE_NAME.title],
@@ -320,9 +315,8 @@ def add_parameter_group(template, db):
 def init_database_template(db_name):
     """
     Function to initialize the DB Template
-    :param db_name: Name of the DB as defined in compose file
-    :type db_name: str
 
+    :param str db_name: Name of the DB as defined in compose file
     :return: template
     :rtype: troposphere.Template
     """
@@ -384,9 +378,9 @@ def init_database_template(db_name):
 def generate_database_template(db_name, db, **kwargs):
     """
     Function to generate the database template
-    :param db_name:
-    :param db:
-    :param kwargs:
+    :param str db_name: name of the database as defined in the compose file
+    :param dict db: the DB definition as defined in the compose file
+    :param dict kwargs: unordered arguments
 
     :return: db_template
     :rtype: troposphere.Template

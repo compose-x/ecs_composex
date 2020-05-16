@@ -85,7 +85,8 @@ def formatted_outputs(comments, obj_name=None, export=True, delimiter=None):
 
 def define_import(resource_name, attribute_name, delimiter=None):
     """
-    Function to generate ImportValue for defined name
+    Wrapper function to define ImportValue for defined resource name
+
     :param delimiter: delimiter between stack name, resource name and attribute
     :param resource_name: name of the resource exported
     :param attribute_name: attribute exported

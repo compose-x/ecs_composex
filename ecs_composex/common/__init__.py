@@ -138,6 +138,7 @@ def add_defaults(template):
 def build_template(description=None, *parameters):
     """
     Entry point function to creating the template for ECS ComposeX resources
+
     :param description: Optional custom description for the CFN template
     :type description: str, optional
     :param parameters: List of optional parameters to add to the template.
@@ -257,22 +258,6 @@ def setup_logging():
     return the_logger
 
 
-def write_template_to_file(template, file_path):
-    """
-    Function to write the template to a specific path
-    :param template: the troposphere template
-    :type template: troposphere.Template
-    :param file_path: file path where to write the template rendered
-    :type file_path: str
-    """
-    regex = re.compile(r"(.yml|.yaml)$")
-    with open(file_path, "w") as template_fd:
-        if regex.findall(file_path):
-            template_fd.write(template.to_yaml())
-        else:
-            template_fd.write(template.to_json())
-
-
 def build_parameters_file(params, parameter_name, parameter_value):
     """
     Function to build arguments file to pass onto CFN.
@@ -295,6 +280,7 @@ def build_parameters_file(params, parameter_name, parameter_value):
 def build_default_stack_parameters(stack_params, **kwargs):
     """
     Function to check and define default parameters for the root stack from the CLI options
+
     :param stack_params: list of parameters to add to to use for the root stack
     :type stack_params: list
     :param kwargs: extended arguments
@@ -307,7 +293,8 @@ def build_default_stack_parameters(stack_params, **kwargs):
 
 
 def load_composex_file(file_path):
-    """File to load and read the docker compose file
+    """
+    File to load and read the docker compose file
 
     :param file_path: path to the docker compose file
     :type file_path: str

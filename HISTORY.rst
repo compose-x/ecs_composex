@@ -2,7 +2,33 @@
 History
 =======
 
-0.2.3 (2020-04-10)
+0.2.3 (2020-04-16)
+==================
+
+Refactored the ecs part into a class and reworked the configuration settings to allow for easier integration.
+Documentation has been updated to reflect the changes in the structure of the configs section.
+
+New features
+-------------
+
+* Enable AWS X-Ray (`#56 <https://github.com/lambda-my-aws/ecs_composex/issues/56>`_)
+    Enabling X-Ray will allow developer to get APM metrics and visualize the application interaction with other
+    services.
+
+* No-upload (`#64 <https://github.com/lambda-my-aws/ecs_composex/issues/64>`_)
+    This allows to store the templates locally only.
+
+    .. note::
+
+        The templates are still validated from their body
+
+* IAM Boundary for the IAM roles (`#55 <https://github.com/lambda-my-aws/ecs_composex/issues/55>`_)
+    Permissions boundary are an IAM feature that allows to set boundaries which superseed other permissions associated
+    to the entity. It is often the put as a condition for users creating roles to assign a specific Permission Boundary
+    policy to the roles created.
+
+
+0.2.2 (2020-04-10)
 ==================
 
 Refactor of the ECS service template into a single class (still got to be reworked).
@@ -31,7 +57,7 @@ Documentation structure and content updated to help navigate through modules in 
 Documented syntax reference for each module
 
 New features
-^^^^^^^^^^^^
+-------------
 
 * `#6`_ - Implement x-rds. Allows to create RDS databases with very little properties needed
     * Creates Aurora cluster and DB Instance
@@ -51,7 +77,7 @@ a CICD pipeline.
 See overall progress on `GH Project`_
 
 Issues closed
-^^^^^^^^^^^^^
+--------------
 
 * `Issue 14 <https://github.com/lambda-my-aws/ecs_composex/issues/14>`_
 * `Issue 15 <https://github.com/lambda-my-aws/ecs_composex/issues/15>`_
@@ -64,7 +90,7 @@ Patch release aiming to improve the CLI and integration of the Compute layer so 
 in EC2 are standalone and can be created separately if one so wished to reuse.
 
 Issues closed
-^^^^^^^^^^^^^
+-------------
 
  `Issue <https://github.com/lambda-my-aws/ecs_composex/issues/7>`_ related to the fix.
 
