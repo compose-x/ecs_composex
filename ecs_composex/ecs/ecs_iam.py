@@ -145,7 +145,7 @@ def add_service_roles(template, config):
         Roles=[Ref(execution_role)],
     )
     policies = []
-    if config.use_xray:
+    if config and config.use_xray:
         policies.append(define_xray_policy())
     role = Role(
         TASK_ROLE_T,
