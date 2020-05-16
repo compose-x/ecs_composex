@@ -20,17 +20,23 @@ configs:
       is_public: True
       use_nlb: False
       use_alb: True
+  serviceC:
+    network:
+      is_public: False
+      use_cloudmap: True
 
-  globals:
+  composex:
     network:
       use_cloudmap: True
 
 services:
   serviceA:
-    image: nginx
+    image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-01:1589570337
     ports:
       - 80
-
+    configs:
+      xray:
+        enabled: True
   serviceB:
     image: nginx
     ports:
@@ -53,53 +59,53 @@ x-tags:
     value: john@lambda-my-aws.io
 
 x-sqs:
-  Queue02:
-    Services:
-      - name: serviceA
-        access: RWPermissions
-      - name: serviceB
-        access: RO
-    Properties:
-      RedrivePolicy:
-        deadLetterTargetArn: Queue01
-        maxReceiveCount: 10
-    Settings:
-      EnvNames:
-        - APP_QUEUE
-        - AppQueue
+ Queue02:
+   Services:
+     - name: serviceA
+       access: RWPermissions
+     - name: serviceB
+       access: RO
+   Properties:
+     RedrivePolicy:
+       deadLetterTargetArn: Queue01
+       maxReceiveCount: 10
+   Settings:
+     EnvNames:
+       - APP_QUEUE
+       - AppQueue
 
-  Queue01:
-    Services:
-      - name: serviceB
-        access: RWMessages
-    Properties: {}
-    Settings:
-      EnvNames:
-        - DLQ
-        - dlq
+ Queue01:
+   Services:
+     - name: serviceB
+       access: RWMessages
+   Properties: {}
+   Settings:
+     EnvNames:
+       - DLQ
+       - dlq
 
-  QueueNoServices:
-    Properties: {}
-    Settings:
-      EnvNames:
-        - ALONE
-        - NoOneLikesMe
+ QueueNoServices:
+   Properties: {}
+   Settings:
+     EnvNames:
+       - ALONE
+       - NoOneLikesMe
 
 x-rds:
-  dbA:
-    Properties:
-      Engine: "aurora-mysql"
-      EngineVersion: "5.7.12"
-    Services:
-      - name: serviceA
-        access: RW
+ dbA:
+   Properties:
+     Engine: "aurora-mysql"
+     EngineVersion: "5.7.12"
+   Services:
+     - name: serviceA
+       access: RW
 
-  dbB:
-    Properties:
-      Engine: "aurora-mysql"
-      EngineVersion: "5.7.12"
-    Services:
-      - name: serviceA
-        access: RW
-      - name: serviceB
-        access: RW
+ dbB:
+   Properties:
+     Engine: "aurora-mysql"
+     EngineVersion: "5.7.12"
+   Services:
+     - name: serviceA
+       access: RW
+     - name: serviceB
+       access: RW

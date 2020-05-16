@@ -20,7 +20,6 @@ Functions to build the ECS Service Definition
 """
 
 import re
-
 from troposphere import (
     Join,
     Select,
@@ -30,7 +29,7 @@ from troposphere import (
     AWS_ACCOUNT_ID,
     AWS_STACK_NAME,
 )
-from troposphere import Ref, Sub, GetAtt
+from troposphere import Ref, Sub, GetAtt, ImportValue
 from troposphere.ec2 import EIP, SecurityGroup
 from troposphere.ec2 import SecurityGroupIngress
 from troposphere.ecs import LoadBalancer as EcsLoadBalancer
@@ -84,6 +83,7 @@ from ecs_composex.vpc import vpc_params, vpc_conditions
 from ecs_composex.vpc.vpc_conditions import USE_VPC_MAP_ID_CON_T
 from ecs_composex.vpc.vpc_params import VPC_ID, PUBLIC_SUBNETS
 from ecs_composex.vpc.vpc_params import VPC_MAP_ID
+from ecs_composex.ecs.ecs_xray import define_xray_container
 
 CIDR_REG = r"""((((((([0-9]{1}\.))|([0-9]{2}\.)|
 (1[0-9]{2}\.)|(2[0-5]{2}\.)))){3})(((((([0-9]{1}))|
@@ -103,13 +103,35 @@ def flatten_ip(ip_str):
     return ip_str.replace(".", "").split("/")[0].strip()
 
 
+def extend_env_vars(container, env_vars):
+    if (
+        isinstance(container, ContainerDefinition)
+        and not isinstance(container.Name, (Ref, Sub, GetAtt, ImportValue))
+        and container.Name.startswith("AWS")
+    ):
+        LOG.debug(f"Ignoring AWS Container {container.Name}")
+        return
+    environment = (
+        getattr(container, "Environment")
+        if hasattr(container, "Environment")
+        and not isinstance(getattr(container, "Environment"), Ref)
+        else []
+    )
+    if environment:
+        environment += env_vars
+    else:
+        setattr(container, "Environment", env_vars)
+    LOG.debug(environment)
+
+
 def import_env_variables(environment):
     """
     Function to import Docker compose env variables into ECS Env Variables
+
     :param environment: Environment variables as defined on the ecs_service definition
     :type environment: dict
     :return: list of Environment
-    :type: list<troposphere.ecs.Environment>
+    :rtype: list<troposphere.ecs.Environment>
     """
     env_vars = []
     for key in environment:
@@ -140,7 +162,8 @@ def generate_port_mappings(ports):
 
 def define_placement_strategies():
     """
-    Function to generate placement strategies
+    Function to generate placement strategies. Defaults to spreading across all AZs
+
     :return: list of placement strategies
     :rtype: list
     """
@@ -151,7 +174,9 @@ def define_placement_strategies():
 
 
 def define_protocol(port_string):
-    """Function to define the port protocol. Default to TCP if not specified otherwise
+    """
+    Function to define the port protocol. Defaults to TCP if not specified otherwise
+
     :param port_string: the port string to parse from the ports list in the compose file
     :type port_string: str
     :return: protocol, ie. udp or tcp
@@ -164,93 +189,6 @@ def define_protocol(port_string):
         if protocol_found in protocols:
             return protocol_found
     return protocol
-
-
-def add_service_default_sg(template):
-    """
-    Adds a default security group for the microservice.
-    :param template: the template to add the SG to.
-    :type template: troposphere.Template
-    :return: Security group
-    :type: troposphere.ec2.SecurityGroup
-    """
-    sg = SecurityGroup(
-        SG_T,
-        template=template,
-        GroupDescription=Sub(
-            f"SG for ${{{SERVICE_NAME_T}}} - ${{{ROOT_STACK_NAME_T}}}"
-        ),
-        Tags=Tags(
-            {
-                "Name": Sub(f"${{{SERVICE_NAME_T}}}-${{{ROOT_STACK_NAME_T}}}"),
-                "StackName": Ref(AWS_STACK_NAME),
-                "MicroserviceName": Ref(SERVICE_NAME),
-            }
-        ),
-        VpcId=Ref(VPC_ID),
-    )
-    return sg
-
-
-def generate_service_definition(template, network_settings, security_groups, **kwargs):
-    """Function to generate the Service definition
-
-    :param template: ecs_service template
-    :type template: troposphere.Template
-    :param network_settings: network settings as defined in compile_network_settings
-    :type network_settings: dict
-    :param security_groups: list of security groups for the ecs_service to use
-    :type security_groups: list
-    :param kwargs: extra settings that the Service() object can add to
-    :type kwargs: dict
-    """
-
-    service_sgs = [Ref(sg) for sg in security_groups]
-    EcsService(
-        ecs_params.SERVICE_T,
-        template=template,
-        Cluster=Ref(ecs_params.CLUSTER_NAME),
-        DeploymentController=DeploymentController(Type=Ref(ecs_params.ECS_CONTROLLER)),
-        EnableECSManagedTags=True,
-        DesiredCount=If(
-            ecs_conditions.SERVICE_COUNT_ZERO_AND_FARGATE_CON_T,
-            1,
-            If(
-                ecs_conditions.USE_FARGATE_CON_T,
-                Ref(ecs_params.SERVICE_COUNT),
-                If(
-                    ecs_conditions.SERVICE_COUNT_ZERO_CON_T,
-                    Ref(AWS_NO_VALUE),
-                    Ref(ecs_params.SERVICE_COUNT),
-                ),
-            ),
-        ),
-        SchedulingStrategy=If(
-            ecs_conditions.USE_FARGATE_CON_T,
-            "REPLICA",
-            If(
-                ecs_conditions.SERVICE_COUNT_ZERO_AND_FARGATE_CON_T, "REPLICA", "DAEMON"
-            ),
-        ),
-        HealthCheckGracePeriodSeconds=Ref(AWS_NO_VALUE),
-        PlacementStrategies=If(
-            ecs_conditions.USE_FARGATE_CON_T,
-            Ref(AWS_NO_VALUE),
-            define_placement_strategies(),
-        ),
-        NetworkConfiguration=NetworkConfiguration(
-            AwsvpcConfiguration=AwsvpcConfiguration(
-                Subnets=Ref(vpc_params.APP_SUBNETS), SecurityGroups=service_sgs
-            )
-        ),
-        TaskDefinition=Ref(ecs_params.TASK_T),
-        LaunchType=Ref(ecs_params.LAUNCH_TYPE),
-        Tags=Tags(
-            {"Name": Ref(ecs_params.SERVICE_NAME), "StackName": Ref(AWS_STACK_NAME)}
-        ),
-        PropagateTags="SERVICE",
-        **kwargs,
-    )
 
 
 def define_public_mapping(eips, azs):
@@ -350,6 +288,7 @@ class ServiceConfig(ComposeXConfig):
         "volumes",
         "deploy",
     ]
+    service_config_keys = ["xray"]
     required_keys = ["image"]
     use_cloudmap = True
     use_nlb = None
@@ -365,7 +304,14 @@ class ServiceConfig(ComposeXConfig):
     ports = []
     links = []
     service = None
-    ext_sources = None
+    use_xray = False
+
+    def set_xray(self, config):
+        """
+        Function to set the xray
+        """
+        if keyisset("enabled", config):
+            self.use_xray = config["enabled"]
 
     def define_service_ports(self, ports):
         """Function to define common structure to ports
@@ -429,6 +375,9 @@ class ServiceConfig(ComposeXConfig):
         configs = {}
         if keyisset("configs", definition):
             configs = definition["configs"]
+        for key in self.service_config_keys:
+            if key not in self.valid_config_keys:
+                self.valid_config_keys.append(key)
         super().__init__(content, service_name, configs)
         if not set(self.required_keys).issubset(set(definition)):
             raise AttributeError(
@@ -464,6 +413,27 @@ class Service(object):
     ecs_service = None
     eips = []
     service_attrs = None
+
+    def add_service_default_sg(self):
+        """
+        Adds a default security group for the microservice.
+        """
+        self.template.add_resource(
+            SecurityGroup(
+                SG_T,
+                GroupDescription=Sub(
+                    f"SG for ${{{SERVICE_NAME_T}}} - ${{{ROOT_STACK_NAME_T}}}"
+                ),
+                Tags=Tags(
+                    {
+                        "Name": Sub(f"${{{SERVICE_NAME_T}}}-${{{ROOT_STACK_NAME_T}}}"),
+                        "StackName": Ref(AWS_STACK_NAME),
+                        "MicroserviceName": Ref(SERVICE_NAME),
+                    }
+                ),
+                VpcId=Ref(VPC_ID),
+            )
+        )
 
     def add_service_to_map(self):
         """
@@ -521,12 +491,10 @@ class Service(object):
                 ),
             )
 
-    def add_public_security_group_ingress(self, settings, security_group):
+    def add_public_security_group_ingress(self, security_group):
         """Function to add public ingress. If a list of IPs is found in the config['ext_sources']
         then it will use that, if not, allows from 0.0.0.0/0
 
-        :param settings: network settings as defined in compile_network_settings
-        :type settings: dict
         :param security_group: security group (object or title string) to add the rules to
         :type security_group: str or troposphere.ec2.SecurityGroup
         """
@@ -776,9 +744,9 @@ class Service(object):
         )
         if self.config.is_public:
             if self.config.lb_type == "application" and alb_sg:
-                self.add_public_security_group_ingress(self.service_name, alb_sg)
+                self.add_public_security_group_ingress(alb_sg)
             elif self.config.lb_type == "network":
-                self.add_public_security_group_ingress(self.service_name, SG_T)
+                self.add_public_security_group_ingress(SG_T)
         return loadbalancer
 
     def add_service_load_balancer(self, **kwargs):
@@ -847,7 +815,7 @@ class Service(object):
                 ),
             ),
             PortMappings=mappings,
-            Environment=env_vars,
+            Environment=env_vars if env_vars else Ref(AWS_NO_VALUE),
             LogConfiguration=LogConfiguration(
                 LogDriver="awslogs",
                 Options={
@@ -884,6 +852,9 @@ class Service(object):
                 ecs_params.SERVICE_NAME_T: self.service_name,
             }
         )
+        containers = [self.define_container_definition()]
+        if self.config.use_xray:
+            containers.append(define_xray_container())
         self.task_definition = TaskDefinition(
             TASK_T,
             template=self.template,
@@ -901,7 +872,7 @@ class Service(object):
             Family=Ref(ecs_params.SERVICE_NAME),
             TaskRoleArn=GetAtt(self.template.resources[TASK_ROLE_T], "Arn"),
             ExecutionRoleArn=GetAtt(self.template.resources[EXEC_ROLE_T], "Arn"),
-            ContainerDefinitions=[self.define_container_definition()],
+            ContainerDefinitions=containers,
             RequiresCompatibilities=["EC2", "FARGATE"],
             Tags=Tags(
                 {
@@ -912,12 +883,13 @@ class Service(object):
         )
 
     def define_service_network_config(self, **kwargs):
-        """Function to define microservice ingress.
-
-        :return: tuple of the args for the Service() and the dependencies
-        :rtype: tuple
         """
-        add_service_default_sg(self.template)
+        Function to define microservice ingress.
+
+        :param kwargs: unordered parameters
+        :type kwargs: dict
+        """
+        self.add_service_default_sg()
         service_lbs = Ref(AWS_NO_VALUE)
         registries = self.add_service_to_map()
         if not registries:
@@ -946,9 +918,9 @@ class Service(object):
 
     def generate_service_definition(self):
         """
-        Function to generate the Service definition
+        Function to generate the Service definition.
+        This is the last step in defining the service, after all other settings have been prepared.
         """
-
         service_sgs = [Ref(sg) for sg in self.sgs]
         self.ecs_service = EcsService(
             ecs_params.SERVICE_T,
@@ -1006,8 +978,14 @@ class Service(object):
     def __init__(self, service_name, definition, content, **kwargs):
         """
         Function to initialize the Service object
-        :param service_name:
-        :param service:
+        :param service_name: Name of the service
+        :type service_name: str
+        :param definition: the service definition as defined in compose file
+        :type definition: dict
+        :param content: the docker compose content, in full
+        :type content: dict
+        :param kwargs: unordered arguments
+        :type kwargs: dict
         """
         self.definition = definition
         self.config = ServiceConfig(content, service_name, definition)

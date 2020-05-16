@@ -21,21 +21,18 @@ Module to apply SQS settings onto ECS Services
 
 from ecs_composex.common import LOG, keyisset
 from ecs_composex.ecs.ecs_iam import define_service_containers
+from ecs_composex.ecs.ecs_service import extend_env_vars
 from ecs_composex.ecs.ecs_params import TASK_ROLE_T
 from ecs_composex.sqs.sqs_perms import generate_sqs_permissions, generate_sqs_envvars
 
 
-def apply_settings_to_service(
-    service_template, service_name, perms, env_vars, access_type
-):
+def apply_settings_to_service(service_template, perms, env_vars, access_type):
     containers = define_service_containers(service_template)
     policy = perms[access_type]
     task_role = service_template.resources[TASK_ROLE_T]
     task_role.Policies.append(policy)
     for container in containers:
-        environment = getattr(container, "Environment")
-        environment += env_vars
-        LOG.debug(environment)
+        extend_env_vars(container, env_vars)
 
 
 def sqs_to_ecs(queues, services_stack, sqs_root_stack, **kwargs):
@@ -60,11 +57,7 @@ def sqs_to_ecs(queues, services_stack, sqs_root_stack, **kwargs):
                     )
                 service_stack = services_stack.stack_template.resources[service["name"]]
                 apply_settings_to_service(
-                    service_stack.stack_template,
-                    service["name"],
-                    perms,
-                    envvars,
-                    service["access"],
+                    service_stack.stack_template, perms, envvars, service["access"],
                 )
             if sqs_root_stack.title not in services_stack.DependsOn:
                 services_stack.DependsOn.append(sqs_root_stack.title)

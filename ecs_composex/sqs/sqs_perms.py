@@ -127,6 +127,8 @@ def generate_sqs_envvars(queue_name, resource, **kwargs):
     """
     Function to generate environment variables that can be added to a container definition
     shall the ecs_service need to know about the Queue
+    :return: environment key/pairs
+    :rtype: list<troposphere.ecs.Environment>
     """
     env_names = []
     export_strings = generate_queue_strings(queue_name)
