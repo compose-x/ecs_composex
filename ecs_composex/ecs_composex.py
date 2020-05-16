@@ -49,6 +49,7 @@ from ecs_composex.common.cfn_params import (
     USE_CLOUDMAP_T,
     USE_CLOUDMAP,
 )
+from ecs_composex.common.aws import get_curated_azs
 from ecs_composex.common.ecs_composex import XFILE_DEST
 from ecs_composex.common.files import FileArtifact
 from ecs_composex.common.stacks import ComposeXStack
@@ -496,6 +497,8 @@ def generate_full_template(content, session=None, **kwargs):
     """
     if session is None:
         session = boto3.session.Session(region_name=kwargs["AwsRegion"])
+    if not keyisset("AwsAzs", kwargs):
+        kwargs["AwsAzs"] = get_curated_azs(session=session)
     stack_params = []
     build_default_stack_parameters(stack_params, **kwargs)
     kwargs.update(get_composex_globals(content))

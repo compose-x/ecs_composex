@@ -925,8 +925,7 @@ class Service(object):
         external_dependencies = []
         if not keyisset("AwsAzs", kwargs):
             raise KeyError(
-                "Missing AwsAzs from options."
-                "AZs are required to configure services networking"
+                "Missing AwsAzs from options. AZs are required to configure services networking"
             )
         if not self.config.ports:
             LOG.debug(
