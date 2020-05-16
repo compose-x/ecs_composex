@@ -20,6 +20,8 @@ Create the VPC template and its associated resources
 TODO : Implement VPC Endpoints, NetworkACLs, VPC Flow logging to S3.
 """
 
+import re
+
 from troposphere import GetAtt, Tags, Join, Ref, Sub, If
 from troposphere.ec2 import (
     VPC as VPCType,
@@ -31,7 +33,7 @@ from troposphere.ec2 import (
 from troposphere.route53 import HostedZoneVPCs, HostedZone
 from troposphere.servicediscovery import PrivateDnsNamespace as VpcSpace
 
-from ecs_composex.common import cfn_params, cfn_conditions, build_template
+from ecs_composex.common import cfn_params, cfn_conditions, build_template, LOG
 from ecs_composex.common.cfn_conditions import USE_CLOUDMAP_CON_T, USE_STACK_NAME_CON_T
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME, ROOT_STACK_NAME_T
 from ecs_composex.common.outputs import formatted_outputs
@@ -42,6 +44,9 @@ from ecs_composex.vpc.vpc_subnets import (
     add_storage_subnets,
     add_apps_subnets,
 )
+
+AZ_INDEX_PATTERN = r"(([a-z0-9-]+)([a-z]{1}$))"
+AZ_INDEX_RE = re.compile(AZ_INDEX_PATTERN)
 
 VPC_T = "Vpc"
 IGW_T = "InternetGatewayV4"
@@ -221,25 +226,26 @@ def generate_vpc_template(cidr_block, azs, single_nat=False):
 
     :return: Template() representing the VPC and associated resources
     """
-    azs_count = len(azs)
-    az_range = range(0, azs_count)
+
+    azs_index = [AZ_INDEX_RE.match(az).groups()[-1] for az in azs]
     layers = get_subnet_layers(cidr_block, len(azs))
     template = build_template(
         "VpcTemplate generated via ECS Compose X",
         [cfn_params.USE_CLOUDMAP, vpc_params.VPC_DNS_ZONE, vpc_params.USE_SUB_ZONE],
     )
+    LOG.debug(azs_index)
     template.add_mapping("AwsLbAccounts", aws_mappings.AWS_LB_ACCOUNTS)
     template.add_condition(USE_CLOUDMAP_CON_T, cfn_conditions.USE_CLOUDMAP_CON)
     template.add_condition(
         cfn_conditions.NOT_USE_CLOUDMAP_CON_T, cfn_conditions.NOT_USE_CLOUDMAP_CON
     )
     vpc = add_vpc_core(template, cidr_block)
-    storage_subnets = add_storage_subnets(template, vpc[0], az_range, layers)
+    storage_subnets = add_storage_subnets(template, vpc[0], azs_index, layers)
     public_subnets = add_public_subnets(
-        template, vpc[0], az_range, layers, vpc[-1], single_nat
+        template, vpc[0], azs_index, layers, vpc[-1], single_nat
     )
     app_subnets = add_apps_subnets(
-        template, vpc[0], az_range, layers, public_subnets[-1]
+        template, vpc[0], azs_index, layers, public_subnets[-1]
     )
     add_template_outputs(
         template, vpc[0], storage_subnets[1], public_subnets[1], app_subnets[1],

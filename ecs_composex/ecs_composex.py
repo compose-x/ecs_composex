@@ -332,8 +332,9 @@ def add_compute(
         USE_FLEET_T: Ref(USE_FLEET),
         USE_ONDEMAND_T: Ref(USE_ONDEMAND),
     }
-    for tag in tags[0]:
-        parameters.update({tag.title: Ref(tag.title)})
+    if tags:
+        for tag in tags[0]:
+            parameters.update({tag.title: Ref(tag.title)})
     if vpc_stack is not None:
         depends_on.append(vpc_stack)
         parameters.update(
