@@ -20,7 +20,6 @@ phases:
       - pip install -r requirements.txt
       - pip install -r requirements_buildspec.txt
       - python setup.py install
-      -  apt-get install python3-venv || yum install python3-pip || pip install upgrade-ensurepip -U && pip install pip -U
   pre_build:
     commands:
       - make test
@@ -34,6 +33,8 @@ phases:
       - ecs_composex-compute -d outputs -o compute_standalone.yml -b ${KNOWN_BUCKET}
       - ecs_composex-compute -f tests/services_with_queues.yml -d outputs -o compute_standalone_with_input.yml -b ${KNOWN_BUCKET}
       - ecs_composex --create-vpc --create-cluster -f tests/services_with_queues.yml -d outputs -o aio.yml -b ${KNOWN_BUCKET}
+      - ecs_composex --create-vpc --create-cluster -f tests/all_features.yml -d outputs -o all_features.yml -b ${KNOWN_BUCKET}
+      - ecs_composex --create-vpc --create-cluster -f tests/rds_only.yml -d outputs -o rds_only.yml -b ${KNOWN_BUCKET}
 
   post_build:
     commands:

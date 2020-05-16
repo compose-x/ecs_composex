@@ -90,7 +90,6 @@ CIDR_REG = r"""((((((([0-9]{1}\.))|([0-9]{2}\.)|
 ([0-9]{2})|(1[0-9]{2})|(2[0-5]{2}))))){1,3})\/(([0-9])|([1-2][0-9])|((3[0-2])))$"""
 CIDR_PAT = re.compile(CIDR_REG)
 
-
 STATIC = 0
 
 
@@ -366,6 +365,7 @@ class ServiceConfig(ComposeXConfig):
     ports = []
     links = []
     service = None
+    ext_sources = None
 
     def define_service_ports(self, ports):
         """Function to define common structure to ports
@@ -525,7 +525,6 @@ class Service(object):
         """Function to add public ingress. If a list of IPs is found in the config['ext_sources']
         then it will use that, if not, allows from 0.0.0.0/0
 
-        :param ecs_service: the ecs_service
         :param settings: network settings as defined in compile_network_settings
         :type settings: dict
         :param security_group: security group (object or title string) to add the rules to
