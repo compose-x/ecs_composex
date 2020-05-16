@@ -101,9 +101,6 @@ have an HTTP based application. So we need to indicate to ECS ComposeX that it s
           - 8444:443
         environment:
           description: BackendApp
-        links:
-          - db
-
     x-rds:
       db:
         Properties:
@@ -116,9 +113,10 @@ have an HTTP based application. So we need to indicate to ECS ComposeX that it s
 
     configs:
       serviceA:
-        use_alb: True
-        is_public: True
-        ext_sources:
-          - ipv4: 0.0.0.0/0
-            protocol: tcp
-            source_name: all
+        network:
+          use_alb: True
+          is_public: True
+          ext_sources:
+            - ipv4: 0.0.0.0/0
+              protocol: tcp
+              source_name: all

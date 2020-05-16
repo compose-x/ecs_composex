@@ -173,7 +173,21 @@ def upload_template(
 
 class FileArtifact(object):
     """
-    Class for a template file built.
+    Class to handle files artifacts, such as configuration files or templates.
+    It will allow to upload the content to S3 or write to local filesystem.
+    It also handles CloudFormation templates validation.
+
+    :cvar str url: The URL in S3 where the file will be uploaded to or available from.
+    :cvar str body: The content of the FileArtifact
+    :cvar troposphere.Template template: the CFN template
+    :cvar str file_name: the base name of the file
+    :cvar str mime: MIME-type of the file
+    :cvar boto3.session.Session session: session for clients to make API calls to AWS
+    :cvar bool can_upload: Indicate whether or not config allows for upload to S3.
+    :cvar bool no_upload: Turns off upload if True
+    :cvar bool validate: Indicates whether the template is validated.
+    :cvar str output_dir: Path to the local director to output the file to.
+    :cvar str file_path: Output file path for the FileArtifact
     """
 
     url = None
@@ -190,6 +204,9 @@ class FileArtifact(object):
     file_path = None
 
     def upload(self):
+        """
+        Method to handle uploading the files to S3.
+        """
         if not self.can_upload and not self.no_upload:
             LOG.error("BucketName was not specified, not attempting upload")
         elif self.no_upload:
@@ -201,6 +218,9 @@ class FileArtifact(object):
             LOG.info(f"{self.file_name} uploaded successfully to {self.url}")
 
     def write(self):
+        """
+        Method to write the files to local filesystem based on parameters (directory name etc.)
+        """
         try:
             mkdir(self.output_dir)
             LOG.debug(f"Created directory {self.output_dir} to store files")
@@ -216,6 +236,9 @@ class FileArtifact(object):
                 )
 
     def validate(self):
+        """
+        Method to validate the CloudFormation template, either via URL once uploaded to S3 or via TemplateBody
+        """
         try:
             if not self.no_upload:
                 if self.url is None:
@@ -236,6 +259,9 @@ class FileArtifact(object):
             LOG.error(error)
 
     def define_body(self):
+        """
+        Method to define the body of the file artifact. Sets the mime type that will be used for upload into S3.
+        """
         if isinstance(self.template, Template):
             if self.mime == YAML_MIME:
                 self.body = self.template.to_yaml()
@@ -250,7 +276,7 @@ class FileArtifact(object):
 
     def define_file_specs(self):
         """
-        Function to set the file body from template if self.template is Template
+        Method to set the file body from template if self.template is Template
         """
         if self.file_name.endswith(".json"):
             self.mime = JSON_MIME
@@ -259,8 +285,10 @@ class FileArtifact(object):
 
     def set_from_kwargs(self, **kwargs):
         """
-        Function to set internal settings based on kwargs keys
-        :param kwargs:
+        Method to set internal settings based on kwargs keys
+
+        :param kwargs: unordered parameters
+        :type kwargs: dict
         """
         if keyisset(DIR_DEST, kwargs):
             self.output_dir = path.abspath(kwargs[DIR_DEST])
@@ -270,7 +298,7 @@ class FileArtifact(object):
 
     def create(self):
         """
-        Function to write to file and upload in a single function
+        Method to sequentially write to file and upload
         """
         self.define_body()
         self.write()
@@ -278,12 +306,15 @@ class FileArtifact(object):
 
     def __init__(self, file_name, template=None, content=None, session=None, **kwargs):
         """
-        Init function for our template file object
+        Init method for FileArtifact
+
         :param file_name: Name of the file. Mandatory
         :param template: If you are providing a template to generate
         :param body: raw content to write
-        :param session:
-        :param kwargs:
+        :param session: boto3 session to use for API calls to AWS.
+        :type session: boto3.session.Session()
+        :param kwargs: unordered arguments
+        :type kwargs: dict
         """
         self.file_name = file_name
         if template is not None and not isinstance(template, Template):

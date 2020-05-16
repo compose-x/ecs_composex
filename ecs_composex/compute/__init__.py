@@ -39,6 +39,7 @@ from ecs_composex.compute.compute_template import generate_compute_template
 def create_compute_stack(session=None, **kwargs):
     """
     Function entrypoint for CLI.
+
     :param session: boto3 session to override API calls with
     :type session: boto3.session.Session
 

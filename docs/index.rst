@@ -29,6 +29,11 @@ Welcome to ECS-ComposeX's documentation!
 
     modules_docs
     modules_syntax
+
+.. toctree::
+    :maxdepth: 2
+    :caption: Package Modules
+
     modules
 
 .. toctree::

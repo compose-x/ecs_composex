@@ -54,6 +54,7 @@ from ecs_composex.vpc.vpc_params import (
 def add_db_stack(root_template, dbs_subnet_group, db_name, db, **kwargs):
     """
     Function to add the DB stack to the root stack
+
     :param dbs_subnet_group: Subnet group for DBs
     :type dbs_subnet_group: troposphere.rds.DBSubnetGroup
     :param root_template: root template to add the nested stack to
@@ -92,7 +93,9 @@ def add_db_stack(root_template, dbs_subnet_group, db_name, db, **kwargs):
 def init_rds_root_template():
     """
     Function to generate the root template for RDS
-    :return:
+
+    :return: template
+    :rtype: troposphere.Template
     """
     template = build_template(
         "RDS Root Template", [VPC_MAP_ID, VPC_ID, STORAGE_SUBNETS]
@@ -105,6 +108,7 @@ def init_rds_root_template():
 def generate_rds_templates(compose_content, tags=None, **kwargs):
     """
     Function to generate the RDS root template for all the DBs defined in the x-rds section of the compose file
+
     :param compose_content: the docker compose file content
     :type compose_content: dict
     :param kwargs: extra parameters

@@ -274,6 +274,20 @@ class ServiceConfig(ComposeXConfig):
     """
     Class specifically dealing with the configuration and settings of the ecs_service from how it was defined in
     the compose file
+
+    :cvar list keys: List of valid settings for a service in Docker compose syntax reference
+    :cvar list service_config_keys: list of extra configuration that apply to services.
+    :cvar bool use_cloudmap: Indicates whether or not the service will be added to the VPC CloudMap
+    :cvar bool use_alb: Indicates to use an AWS Application LoadBalancer (ELBv2, type application)
+    :cvar bool use_nlb: Indicates to use an AWS Application LoadBalancer (ELBv2, type network)
+    :cvar bool is_public: Indicates whether the service should be accessible publicly
+    :cvar str boundary: IAM boundary policy to use for the IAM Roles (Execution and Task)
+    :cvar str lb_type: Indicates the type of ELBv2 to use (application or network)
+    :cvar str hostname: the hostname to use to route to the service.
+    :cvar str command: the command to use for the service start
+    :cvar list ports: List of ports to use for the microservice.
+    :cvar list links: list of links as indicated in the compose file, indicating connection dependencies.
+    :cvar bool use_xray: Indicates whether or not add the X-Ray Daemon to the task definition.
     """
 
     keys = [
@@ -402,7 +416,15 @@ class ServiceConfig(ComposeXConfig):
 
 class Service(object):
     """
-    Function to represent one ecs_service
+    Class representing the service from the Docker compose file and translate it into
+    AWS ECS Task Definition and Service.
+
+    :cvar list links: the links used for DependsOn of the service stack
+    :cvar list dependencies: list of services used for the DependsOn of the service stack
+    :cvar ServiceConfig config: The service configuration
+    :cvar troposphere.ecs.TaskDefinition task_definition: The service task definition for ECS
+    :cvar list<troposphere.ec2.EIP> eips: list of AWS EC2 EIPs which are used for the public NLB
+    :cvar dict service_attrs: Attributes defined to expand the troposphere.ecs.ServiceDefinition from prior settings.
     """
 
     links = []
@@ -437,7 +459,7 @@ class Service(object):
 
     def add_service_to_map(self):
         """
-        Function to add the ecs_service into a cloudmap
+        Method to create a new Service into CloudMap to represent the current service and add entry into the registry
         """
         sd_service = SdService(
             "EcsDiscoveryService",
@@ -468,7 +490,7 @@ class Service(object):
 
     def add_lb_to_service_ingress(self, lb_sg, service_sg):
         """
-        Function to add Service ingress between the LB and the microservice
+        Method to add ingress rules between the LB and the microservice according to the ports defined by the service.
 
         :param lb_sg: Load Balancer security group
         :type lb_sg: troposphere.ec2.SecurityGroup
@@ -492,8 +514,10 @@ class Service(object):
             )
 
     def add_public_security_group_ingress(self, security_group):
-        """Function to add public ingress. If a list of IPs is found in the config['ext_sources']
-        then it will use that, if not, allows from 0.0.0.0/0
+        """
+        Method to add ingress rules from external sources to a given Security Group (ie. ALB Security Group).
+        If a list of IPs is found in the config['ext_sources'] part of the network section of configs for the service,
+        then it will use that. If no IPv4 source is indicated, it will by default allow traffic from 0.0.0.0/0
 
         :param security_group: security group (object or title string) to add the rules to
         :type security_group: str or troposphere.ec2.SecurityGroup
@@ -567,7 +591,8 @@ class Service(object):
                 )
 
     def add_public_ips(self, azs):
-        """Function to add EIPs for each AZ selected for build
+        """
+        Method to add EIPs for each AZ and adds these to the service template.
 
         :param azs: list of AZs to deploy the EIPs to
         :type azs: list
@@ -585,13 +610,11 @@ class Service(object):
             )
 
     def add_alb_sg(self, ports):
-        """Function to add a security group for application loadbalancer
+        """
+        Method to add a security group for an AWS ALB (ELBv2, application type).
 
         :param ports: list of ports to add ingress from the ALB to ecs_service to
         :type ports: list of ports
-        :param public: whether the ALB is public
-        :type public: int
-
         :return: The ALB's SG
         :rtype: troposphere.ec2.SecurityGroup
         """
@@ -629,7 +652,8 @@ class Service(object):
         return sg
 
     def add_lb_listener(self, port, lb, tgt):
-        """Function add listener for the LB
+        """
+        Method to add a new listener for a given Load Balancer and Target Group combination.
 
         :param port: port to add the listener for
         :type port: int
@@ -656,13 +680,13 @@ class Service(object):
         return listener
 
     def add_target_group(self, port, lb):
-        """Function to generate the TargetGroups
+        """
+        Method to generate the TargetGroups based on the ports of the service.
 
         :param port: the port to add the targetgroup for
         :type port: int
         :param lb: the loadbalancer the targetgroup will be bound to
         :type lb: troposphere.elasticloadbalancingv2.LoadBalancer
-
         :return: target group
         :rtype: troposphere.elasticloadbalancingv2.TargetGroup
         """

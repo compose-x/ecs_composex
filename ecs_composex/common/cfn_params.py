@@ -18,7 +18,7 @@
 
 """"
 Common parameters for CFN
-This is a crucial part as all the titles, maked `_T` are string which are then used the same way
+This is a crucial part as all the titles, marked `_T` are string which are then used the same way
 across all imports, which gives consistency for CFN to use the same names,
 which it heavily relies onto.
 

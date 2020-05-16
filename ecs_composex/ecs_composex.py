@@ -16,7 +16,7 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-Module to generate a full stack with VPC, Cluster, Compute, Services and all X- AWS resources.
+Main module to generate a full stack with VPC, Cluster, Compute, Services and all X- AWS resources.
 """
 
 import re
@@ -88,7 +88,9 @@ SUPPORTED_X_MODULES = ["x-rds", "rds", "x-sqs", "sqs"]
 
 
 def get_composex_globals(compose_content):
-    """Parses configs and looks for globals
+    """
+    Parses configs and looks for composex
+
     :param compose_content: the docker composeX content
     :type compose_content: dict
 
@@ -135,12 +137,12 @@ def get_mod_function(module_name, function_name):
 def get_mod_class(module_name):
     """
     Function to get the XModule class for a specific ecs_composex module
-    :param module_name:
-    :return:
+
+    :param str module_name: Name of the x-module we are looking for.
+    :return: the_class, maps to the main class for the given x-module
     """
     composex_module_name = f"ecs_composex.{module_name}"
     LOG.debug(composex_module_name)
-    res_module = None
     the_class = None
     try:
         res_module = import_module(composex_module_name)
@@ -158,7 +160,8 @@ def get_mod_class(module_name):
 
 
 def generate_x_resources_policies(resources, resource_type, function, **kwargs):
-    """Function to create the policies for the resources of a given type
+    """
+    Function to create the policies for the resources of a given type
 
     :param resources: resources to go over from docker ComposeX file
     :type resources: dict
@@ -183,7 +186,8 @@ def generate_x_resources_policies(resources, resource_type, function, **kwargs):
 
 
 def generate_x_resources_envvars(resources, resource_type, function, **kwargs):
-    """Function to create the env vars for the resources of given type
+    """
+    Function to create the env vars for the resources of given type
 
     :param resources: resources to go over for generating envvars
     :type resources: dict
@@ -209,14 +213,14 @@ def generate_x_resources_envvars(resources, resource_type, function, **kwargs):
 
 def apply_x_configs_to_ecs(content, root_template, services_stack, **kwargs):
     """
-    Function that evaluates only the x- sections of the Compose file
-    and generates calls the init function for each.
+    Function that evaluates only the x- resources of the root template and iterates over the resources.
+    If there is an implemented module in ECS ComposeX for that resource to map to the ECS Services, it will
+    execute the function available in the module to apply defined settings to the services stack.
 
-    :param content: docker ComposeX file content
-    :param kwargs: settings for building X related resources
-
-    :return: resource_configs
-    :rtype: dict
+    :param dict content: The compose file content
+    :param troposphere.Template root_template: The root template for ECS ComposeX
+    :param ecs_composex.ecs.ServicesStack services_stack: root stack for services.
+    :param dict kwargs: settings for building X related resources
     """
     for resource_name in root_template.resources:
         resource = root_template.resources[resource_name]
@@ -406,11 +410,10 @@ def add_x_resources(template, session, tags=None, vpc_stack=None, **kwargs):
                 template.add_resource(xstack)
 
 
-def add_services(template, depends, session, vpc_stack=None, **kwargs):
+def add_services(depends, session, vpc_stack=None, **kwargs):
     """
     Function to add the microservices root stack
-    :param template: root template
-    :type template: troposphere.Template
+
     :param depends: list of dependencies for the stack
     :type depends: list
     :param session: ovveride boto session for API calls
@@ -504,9 +507,7 @@ def generate_full_template(content, session=None, **kwargs):
     vpc_stack = None
     depends_on = []
     services_stack = template.add_resource(
-        add_services(
-            template, depends_on, session=session, vpc_stack=vpc_stack, **kwargs
-        )
+        add_services(depends_on, session=session, vpc_stack=vpc_stack, **kwargs)
     )
     if keyisset("CreateVpc", kwargs):
         vpc_stack = add_vpc_to_root(template, session, tags_params, **kwargs)

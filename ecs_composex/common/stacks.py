@@ -30,6 +30,10 @@ from ecs_composex.common.files import FileArtifact
 class ComposeXStack(Stack, object):
     """
     Class to define a CFN Stack as a composition of its template object, parameters, tags etc.
+
+    :cvar ecs_composex.common.files.FileArtifact template_file: The FileArtifact associated with the stack.
+    :cvar cfn_params_file: CFN Parameters file for the stack
+    :cvar cfn_config_file: CFN Configuration file for the stack
     """
 
     template_file = None

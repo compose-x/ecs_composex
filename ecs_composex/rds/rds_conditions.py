@@ -16,7 +16,7 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-ecs_composex.rds conditions for CFN
+ecs_composex.rds conditions for CFN. Allows to implement conditional logic in native CFN format.
 """
 
 from troposphere import Ref, Equals, Split, Select, Not, Condition, And, Or

@@ -83,8 +83,9 @@ def add_rds_policy(service_template, secret_import, db_name, use_task_role=False
 def define_db_secret_import(db_name):
     """
     Function to define the ImportValue for ECS Service string based on the output of the RDS stack
-    :param db_name:
-    :return:
+
+    :param str db_name: Name of the DB as defined in the compose file.
+    :return: the import function to the DB.
     """
     return define_import(db_name, DB_EXPORT_SECRET_ARN_T)
 
@@ -92,11 +93,9 @@ def define_db_secret_import(db_name):
 def add_security_group_ingress(service_stack, db_name):
     """
     Function to add a SecurityGroupIngress rule into the ECS Service template
-    :param service_stack:
-    :type service_stack: ecs_composex.ecs.ServicesStack
-    :param sg_import:
-    :param db_name:
-    :return:
+
+    :param ecs_composex.ecs.ServicesStack service_stack: The root stack for the services
+    :param str db_name: the name of the database to use for imports
     """
     service_template = service_stack.stack_template
     sg_id = define_import(db_name, DB_EXPORT_SG_ID_T)
@@ -107,6 +106,7 @@ def add_security_group_ingress(service_stack, db_name):
         GroupId=sg_id,
         FromPort=port,
         ToPort=port,
+        Description=f"Allow {port}/tcp FROM {db_name} TO {service_stack.title}",
         SourceSecurityGroupId=GetAtt(service_template.resources[SG_T], "GroupId"),
         SourceSecurityGroupOwnerId=Ref("AWS::AccountId"),
         IpProtocol="6",
@@ -116,10 +116,10 @@ def add_security_group_ingress(service_stack, db_name):
 def add_secret_to_containers(service_template, db_name, secret_import):
     """
     Function to add DB secret to container
-    :param service_template: the ecs_service template
-    :param db_name: the name of the database used as environment variable name
-    :param secret_import: secret arn
-    :return:
+
+    :param troposphere.Template service_template: the ecs_service template
+    :param str db_name: the name of the database used as environment variable name
+    :param str secret_import: secret arn
     """
 
     containers = define_service_containers(service_template)

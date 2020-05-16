@@ -47,9 +47,11 @@ def build_config_template_file(config, parameters=None, tags=None, stack_policie
 def import_parameters_into_config_file(parameters_file, config_file):
     """
     Imports parameter file and outputs it into a CFN Template config file
+
     :param parameters_file: path to the parameters file
+    :type parameters_file: str
     :param config_file: path to the config file.
-    :return:
+    :type config_file: str
     """
     with open(parameters_file, "r") as params_fd:
         parameters = json.loads(params_fd.read())
