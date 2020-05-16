@@ -109,8 +109,8 @@ class ComposeXConfig(object):
         if keyisset(self.master_key, compose_content) and keyisset(
             service_name, compose_content[self.master_key]
         ):
-            LOG.warning(
-                "Configuration for the ecs_service set in the configs section. Overriding defaults"
+            LOG.debug(
+                f"Service {service_name} has configuration in the root configs section."
             )
             self.set_service_config(compose_content[self.master_key][service_name])
         self.set_service_config(config_definition)

@@ -17,8 +17,8 @@
 
 """ IAM Building block for ECS """
 
-from troposphere import Sub, Ref
-from troposphere.iam import Role, PolicyType
+from troposphere import Sub, Ref, AWS_ACCOUNT_ID, AWS_PARTITION, AWS_REGION
+from troposphere.iam import Role, PolicyType, Policy
 
 from ecs_composex.ecs.ecs_params import (
     SERVICE_NAME_T,
@@ -28,6 +28,41 @@ from ecs_composex.ecs.ecs_params import (
     TASK_T,
 )
 from ecs_composex.iam import service_role_trust_policy, add_role_boundaries
+
+
+def define_xray_policy():
+    """
+    Function to define the XRAY Policy
+
+    :return: policy
+    :rtype: troposphere.iam.Policy
+    """
+    return Policy(
+        PolicyName="EnableXRay",
+        PolicyDocument={
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Action": [
+                        "xray:PutTraceSegments",
+                        "xray:PutTelemetryRecords",
+                        "xray:GetSamplingRules",
+                        "xray:GetSamplingTargets",
+                        "xray:GetSamplingStatisticSummaries",
+                    ],
+                    "Effect": "Allow",
+                    "Resource": [
+                        Sub(
+                            f"arn:${{{AWS_PARTITION}}}:xray:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:group/*"
+                        ),
+                        Sub(
+                            f"arn:${{{AWS_PARTITION}}}:xray:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:sampling-rule/*"
+                        ),
+                    ],
+                }
+            ],
+        },
+    )
 
 
 def add_service_roles(template, config):
@@ -81,7 +116,7 @@ def add_service_roles(template, config):
                     "Action": ["logs:CreateLogStream", "logs:PutLogEvents"],
                     "Resource": [
                         Sub(
-                            "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:"
+                            f"arn:${{{AWS_PARTITION}}}:logs:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:log-group:"
                             f"${{{CLUSTER_NAME_T}}}:*"
                         )
                     ],
@@ -109,13 +144,16 @@ def add_service_roles(template, config):
         },
         Roles=[Ref(execution_role)],
     )
+    policies = []
+    if config and config.use_xray:
+        policies.append(define_xray_policy())
     role = Role(
         TASK_ROLE_T,
         template=template,
         AssumeRolePolicyDocument=service_role_trust_policy("ecs-tasks"),
         Description=Sub(f"TaskRole - ${{{SERVICE_NAME_T}}} in ${{{CLUSTER_NAME_T}}}"),
         ManagedPolicyArns=[],
-        Policies=[],
+        Policies=policies,
     )
     if config and config.boundary:
         add_role_boundaries(role, config.boundary)

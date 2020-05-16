@@ -10,8 +10,7 @@ configs:
         - ipv4: 1.1.1.1/32
           protocol: icmp
           source_name: GoogleDns
-      use_alb: False
-      use_nlb: True
+      use_alb: True
       is_public: True
   app02:
     network:
@@ -19,8 +18,6 @@ configs:
       use_nlb: False
       use_cloudmap: True
   composex:
-    iam:
-      boundary: arn:aws:iam::aws:policy/job-function/ViewOnlyAccess
     network:
       use_cloudmap: True
     use_exports: false
@@ -98,6 +95,9 @@ services:
       - 80:80
     links:
       - app02
+    configs:
+      xray:
+        enabled: True
 
   app02:
     environment:
@@ -136,6 +136,3 @@ services:
         use_cloudmap: True
         healthcheck:
           http: 80/
-      iam:
-        boundary: arn:aws:iam::aws:policy/job-function/ViewOnlyAccess
-

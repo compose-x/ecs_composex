@@ -19,16 +19,16 @@
 Module to provide services with access to the RDS databases.
 """
 
-from troposphere import Ref, GetAtt
+from troposphere import Ref, GetAtt, Sub, ImportValue
 from troposphere.ec2 import SecurityGroupIngress
 from troposphere.ecs import Secret as EcsSecret
 from troposphere.iam import PolicyType
+from troposphere.ecs import ContainerDefinition
 
-from ecs_composex.common import keyisset
+from ecs_composex.common import keyisset, LOG
 from ecs_composex.common.outputs import define_import
 from ecs_composex.ecs.ecs_iam import define_service_containers
-from ecs_composex.ecs.ecs_params import SG_T
-from ecs_composex.ecs.ecs_params import TASK_ROLE_T, EXEC_ROLE_T
+from ecs_composex.ecs.ecs_params import TASK_ROLE_T, EXEC_ROLE_T, SG_T
 from ecs_composex.rds.rds_params import (
     DB_EXPORT_SECRET_ARN_T,
     DB_SECRET_POLICY_NAME,
@@ -125,6 +125,13 @@ def add_secret_to_containers(service_template, db_name, secret_import):
     containers = define_service_containers(service_template)
     db_secret = EcsSecret(Name=db_name, ValueFrom=secret_import)
     for container in containers:
+        if (
+            isinstance(container, ContainerDefinition)
+            and not isinstance(container.Name, (Ref, Sub, GetAtt, ImportValue))
+            and container.Name.startswith("AWS")
+        ):
+            LOG.debug(f"Ignoring AWS Container {container.Name}")
+            continue
         if hasattr(container, "Secrets"):
             secrets = getattr(container, "Secrets")
             if secrets:

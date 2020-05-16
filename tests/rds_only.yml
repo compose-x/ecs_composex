@@ -18,28 +18,14 @@ x-rds:
       Engine: "aurora-mysql"
       EngineVersion: "5.7.12"
     Services:
-      - name: serviceA
-        access: RW
-
-  dbB:
-    Properties:
-      Engine: "aurora-mysql"
-      EngineVersion: "5.7.12"
-    Services:
-      - name: serviceA
-        access: RW
       - name: serviceB
         access: RW
 
 services:
   serviceA:
     image: nginx
+    links:
+      - serviceB
 
   serviceB:
     image: nginx
-
-x-tags:
-  - name: costcentre
-    value: lambda-my-aws
-  - name: mail
-    value: john@lambda-my-aws.io
