@@ -320,8 +320,6 @@ def add_compute(
         return
     if params is None:
         params = []
-    if tags is None:
-        tags = ()
     depends_on = []
     root_template.add_parameter(TARGET_CAPACITY)
     compute_template = create_compute_stack(session, **kwargs)
