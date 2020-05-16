@@ -22,6 +22,7 @@ import sys
 import argparse
 from boto3 import session
 
+from ecs_composex.common import LOG
 from ecs_composex.common.aws import get_curated_azs, get_account_id
 from ecs_composex.vpc import create_vpc_template
 from ecs_composex.common.ecs_composex import XFILE_DEST, DIR_DEST
@@ -32,7 +33,7 @@ ACCOUNT_ID = get_account_id()
 BUCKET_NAME = f"cfn-templates-{ACCOUNT_ID[:6]}"
 
 
-def main():
+def vpc_parser():
     """Console script for ecs_composex."""
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -64,7 +65,7 @@ def main():
         dest="AwsAzs",
         action="append",
         required=False,
-        default=CURATED_AZS,
+        default=[],
         help="List AZs you want to deploy to specifically within the region",
     )
     parser.add_argument(
@@ -77,12 +78,6 @@ def main():
         help="Whether you want a single NAT for your application subnets or not. Not recommended for production",
     )
     parser.add_argument(
-        "--no-upload",
-        action="store_true",
-        default=False,
-        help="Do not upload the file to S3.",
-    )
-    parser.add_argument(
         "-b",
         "--bucket-name",
         type=str,
@@ -91,18 +86,35 @@ def main():
         help="Bucket name to upload the templates to",
         dest="BucketName",
     )
+    parser.add_argument(
+        "--no-upload",
+        action="store_true",
+        default=False,
+        help="Whether the templates should be uploaded or not.",
+        dest="NoUpload",
+    )
     parser.add_argument("_", nargs="*")
-    args = parser.parse_args()
+    return parser
 
-    template = create_vpc_template(**vars(args))
-    file_name = "vpc.yml"
-    if args.output_file:
-        file_name = args.output_file
-    template_file = FileArtifact(file_name, template=template, **vars(args))
-    template_file.write()
-    if not args.no_upload:
-        template_file.upload()
-    return 0
+
+def main():
+    """
+    Main Function
+    :return:
+    """
+    parser = vpc_parser()
+    args = parser.parse_args()
+    try:
+        template = create_vpc_template(**vars(args))
+        file_name = "vpc.yml"
+        if args.output_file:
+            file_name = args.output_file
+        template_file = FileArtifact(file_name, template=template, **vars(args))
+        template_file.create()
+        return 0
+    except Exception as error:
+        LOG.error(error)
+        return 1
 
 
 if __name__ == "__main__":

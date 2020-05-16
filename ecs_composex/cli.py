@@ -27,7 +27,7 @@ from boto3 import session
 
 from ecs_composex.common import keyisset
 from ecs_composex.common import LOG, load_composex_file
-from ecs_composex.common.aws import get_curated_azs, get_account_id
+from ecs_composex.common.aws import get_account_id
 from ecs_composex.common.cfn_params import USE_FLEET_T
 from ecs_composex.common.cfn_tools import build_config_template_file
 from ecs_composex.common.ecs_composex import XFILE_DEST, DIR_DEST
@@ -43,7 +43,6 @@ from ecs_composex.vpc.vpc_params import (
     VPC_MAP_ID_T,
 )
 
-CURATED_AZS = get_curated_azs()
 ACCOUNT_ID = get_account_id()
 BUCKET_NAME = f"cfn-templates-{ACCOUNT_ID[:6]}"
 
@@ -147,7 +146,7 @@ def main_parser():
         dest="AwsAzs",
         action="append",
         required=False,
-        default=CURATED_AZS,
+        default=[],
         help="List AZs you want to deploy to specifically within the region",
     )
     parser.add_argument(

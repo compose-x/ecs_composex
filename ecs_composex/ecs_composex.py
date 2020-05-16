@@ -49,6 +49,7 @@ from ecs_composex.common.cfn_params import (
     USE_CLOUDMAP_T,
     USE_CLOUDMAP,
 )
+from ecs_composex.common.aws import get_curated_azs
 from ecs_composex.common.ecs_composex import XFILE_DEST
 from ecs_composex.common.files import FileArtifact
 from ecs_composex.common.stacks import ComposeXStack
@@ -320,8 +321,6 @@ def add_compute(
         return
     if params is None:
         params = []
-    if tags is None:
-        tags = ()
     depends_on = []
     root_template.add_parameter(TARGET_CAPACITY)
     compute_template = create_compute_stack(session, **kwargs)
@@ -332,8 +331,9 @@ def add_compute(
         USE_FLEET_T: Ref(USE_FLEET),
         USE_ONDEMAND_T: Ref(USE_ONDEMAND),
     }
-    for tag in tags[0]:
-        parameters.update({tag.title: Ref(tag.title)})
+    if tags:
+        for tag in tags[0]:
+            parameters.update({tag.title: Ref(tag.title)})
     if vpc_stack is not None:
         depends_on.append(vpc_stack)
         parameters.update(
@@ -497,6 +497,8 @@ def generate_full_template(content, session=None, **kwargs):
     """
     if session is None:
         session = boto3.session.Session(region_name=kwargs["AwsRegion"])
+    if not keyisset("AwsAzs", kwargs):
+        kwargs["AwsAzs"] = get_curated_azs(session=session)
     stack_params = []
     build_default_stack_parameters(stack_params, **kwargs)
     kwargs.update(get_composex_globals(content))

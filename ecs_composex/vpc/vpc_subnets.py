@@ -31,8 +31,6 @@ respective AZ
 
 """
 
-from string import ascii_lowercase as alpha
-
 from troposphere import GetAtt, Tags, Ref, Sub, If
 from troposphere.ec2 import (
     Subnet,
@@ -48,7 +46,7 @@ from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.ecs_composex import CFN_EXPORT_DELIMITER as DELIM
 
 
-def add_storage_subnets(template, vpc, az_range, layers):
+def add_storage_subnets(template, vpc, az_index, layers):
     """
     Function to add storage subnets inside the VPC
 
@@ -58,8 +56,8 @@ def add_storage_subnets(template, vpc, az_range, layers):
     :type template: troposphere.Template
     :param vpc: Vpc() for Ref()
     :type vpc: troposphere.ec2.Vpc
-    :param az_range: range for iteration over select AZs
-    :type az_range: list
+    :param az_index: List of AZ Index (a,b,c..)
+    :type az_index: list
 
     :returns: tuple() list of rtb, list of subnets
     """
@@ -71,24 +69,24 @@ def add_storage_subnets(template, vpc, az_range, layers):
     )
 
     subnets = []
-    for count, subnet_cidr in zip(az_range, layers["stor"]):
+    for index, subnet_cidr in zip(az_index, layers["stor"]):
         subnet = Subnet(
-            f"StorageSubnet{alpha[count].upper()}",
+            f"StorageSubnet{index.upper()}",
             template=template,
             CidrBlock=subnet_cidr,
             VpcId=Ref(vpc),
-            AvailabilityZone=Sub(f"${{AWS::Region}}{alpha[count]}"),
+            AvailabilityZone=Sub(f"${{AWS::Region}}{index}"),
             Tags=Tags(
                 Name=If(
                     USE_STACK_NAME_CON_T,
-                    Sub(f"${{AWS::StackName}}-Storage-{alpha[count]}"),
-                    Sub(f"${{{ROOT_STACK_NAME_T}}}-Storage-{alpha[count]}"),
+                    Sub(f"${{AWS::StackName}}-Storage-{index}"),
+                    Sub(f"${{{ROOT_STACK_NAME_T}}}-Storage-{index}"),
                 ),
             )
             + Tags({f"vpc{DELIM}usage": "storage", f"vpc{DELIM}vpc-id": Ref(vpc)}),
         )
         SubnetRouteTableAssociation(
-            f"StorageSubnetAssoc{alpha[count].upper()}",
+            f"StorageSubnetAssoc{index.upper()}",
             template=template,
             SubnetId=Ref(subnet),
             RouteTableId=Ref(rtb),
@@ -97,7 +95,7 @@ def add_storage_subnets(template, vpc, az_range, layers):
     return [rtb], subnets
 
 
-def add_public_subnets(template, vpc, az_range, layers, igw, single_nat):
+def add_public_subnets(template, vpc, az_index, layers, igw, single_nat):
     """
     Function to add public subnets for the VPC
 
@@ -131,36 +129,34 @@ def add_public_subnets(template, vpc, az_range, layers, igw, single_nat):
     )
     subnets = []
     nats = []
-    for count, subnet_cidr in zip(az_range, layers["pub"]):
+    for index, subnet_cidr in zip(az_index, layers["pub"]):
         subnet = Subnet(
-            f"PublicSubnet{alpha[count].upper()}",
+            f"PublicSubnet{index.upper()}",
             template=template,
             CidrBlock=subnet_cidr,
             VpcId=Ref(vpc),
-            AvailabilityZone=Sub(f"${{AWS::Region}}{alpha[count]}"),
+            AvailabilityZone=Sub(f"${{AWS::Region}}{index}"),
             MapPublicIpOnLaunch=True,
             Tags=Tags(
                 Name=If(
                     USE_STACK_NAME_CON_T,
-                    Sub(f"${{AWS::StackName}}-Public-{alpha[count]}"),
-                    Sub(f"${{{ROOT_STACK_NAME_T}}}-Public-{alpha[count]}"),
+                    Sub(f"${{AWS::StackName}}-Public-{index}"),
+                    Sub(f"${{{ROOT_STACK_NAME_T}}}-Public-{index}"),
                 ),
             )
             + Tags({f"vpc{DELIM}usage": "public", f"vpc{DELIM}vpc-id": Ref(vpc)}),
         )
         if (single_nat and not nats) or not single_nat:
-            eip = EIP(
-                f"NatGatewayEip{alpha[count].upper()}", template=template, Domain="vpc"
-            )
+            eip = EIP(f"NatGatewayEip{index.upper()}", template=template, Domain="vpc")
             nat = NatGateway(
-                f"NatGatewayAz{alpha[count].upper()}",
+                f"NatGatewayAz{index.upper()}",
                 template=template,
                 AllocationId=GetAtt(eip, "AllocationId"),
                 SubnetId=Ref(subnet),
             )
             nats.append(nat)
         SubnetRouteTableAssociation(
-            f"PublicSubnetsRtbAssoc{alpha[count].upper()}",
+            f"PublicSubnetsRtbAssoc{index.upper()}",
             template=template,
             RouteTableId=Ref(rtb),
             SubnetId=Ref(subnet),
@@ -169,56 +165,56 @@ def add_public_subnets(template, vpc, az_range, layers, igw, single_nat):
     return [rtb], subnets, nats
 
 
-def add_apps_subnets(template, vpc, az_range, layers, nats):
+def add_apps_subnets(template, vpc, az_index, layers, nats):
     """
     Function to add application/hosts subnets to the VPC
 
     :param template: VPC Template()
     :param vpc: Vpc() for Ref()
-    :param az_range: range for iteration over select AZs
+    :param list az_index: index for the AZ (a,b,c ..)
     :param nats: list of NatGateway()
 
     :returns: tuple() list of rtb, list of subnets
     """
     subnets = []
     rtbs = []
-    if len(nats) < len(az_range):
+    if len(nats) < len(az_index):
         primary_nat = nats[0]
         nats = []
-        for _ in az_range:
+        for _ in az_index:
             nats.append(primary_nat)
-    for count, subnet_cidr, nat in zip(az_range, layers["app"], nats):
-        suffix = alpha[count].upper()
+    for index, subnet_cidr, nat in zip(az_index, layers["app"], nats):
+        suffix = index.upper()
         subnet = Subnet(
             f"AppSubnet{suffix}",
             template=template,
             CidrBlock=subnet_cidr,
             VpcId=Ref(vpc),
-            AvailabilityZone=Sub(f"${{AWS::Region}}{alpha[count]}"),
+            AvailabilityZone=Sub(f"${{AWS::Region}}{index}"),
             Tags=Tags(
                 Name=If(
                     USE_STACK_NAME_CON_T,
-                    Sub(f"${{AWS::StackName}}-App-{alpha[count]}"),
-                    Sub(f"${{{ROOT_STACK_NAME_T}}}-App-{alpha[count]}"),
+                    Sub(f"${{AWS::StackName}}-App-{index}"),
+                    Sub(f"${{{ROOT_STACK_NAME_T}}}-App-{index}"),
                 ),
             )
             + Tags({f"vpc{DELIM}usage": "application", f"vpc{DELIM}vpc-id": Ref(vpc)}),
         )
         rtb = RouteTable(
-            f"AppRtb{alpha[count].upper()}",
+            f"AppRtb{index.upper()}",
             template=template,
             VpcId=Ref(vpc),
-            Tags=Tags(Name=f"AppRtb{alpha[count].upper()}"),
+            Tags=Tags(Name=f"AppRtb{index.upper()}"),
         )
         Route(
-            f"AppRoute{alpha[count].upper()}",
+            f"AppRoute{index.upper()}",
             template=template,
             NatGatewayId=Ref(nat),
             RouteTableId=Ref(rtb),
             DestinationCidrBlock="0.0.0.0/0",
         )
         SubnetRouteTableAssociation(
-            f"SubnetRtbAssoc{alpha[count].upper()}",
+            f"SubnetRtbAssoc{index.upper()}",
             template=template,
             RouteTableId=Ref(rtb),
             SubnetId=Ref(subnet),

@@ -37,7 +37,6 @@ def create_vpc_template(session=None, tags=None, **kwargs):
     :return: vpc_template Template()
     :rtype: troposphere.Template
     """
-    azs = []
     if not keyisset("AwsAzs", kwargs):
         if keyisset("AwsRegion", kwargs):
             azs = get_curated_azs(region=kwargs["AwsRegion"])
@@ -46,7 +45,6 @@ def create_vpc_template(session=None, tags=None, **kwargs):
             azs = get_curated_azs(session=session)
         else:
             azs = get_curated_azs()
-
     else:
         azs = kwargs["AwsAzs"]
     LOG.debug(azs)
