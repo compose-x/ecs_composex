@@ -184,13 +184,16 @@ class FileArtifact(object):
     session = boto3.session.Session()
     bucket = None
     can_upload = False
+    no_upload = False
     validated = False
     output_dir = f"/tmp/{dt.utcnow().strftime('%s')}"
     file_path = None
 
     def upload(self):
-        if not self.can_upload:
+        if not self.can_upload and not self.no_upload:
             LOG.error("BucketName was not specified, not attempting upload")
+        elif self.no_upload:
+            LOG.debug("No Upload is true. Not uploading")
         else:
             self.url = upload_template(
                 self.body, self.bucket, self.file_name, mime=self.mime, validate=False
@@ -207,17 +210,26 @@ class FileArtifact(object):
             if self.body is None:
                 self.define_body()
             template_fd.write(self.body)
-            LOG.debug(
-                f"Template {self.file_name} written successfully at {self.output_dir}/{self.file_name}"
-            )
+            if self.no_upload:
+                LOG.info(
+                    f"Template {self.file_name} written successfully at {self.output_dir}/{self.file_name}"
+                )
 
     def validate(self):
         try:
-            if self.url is None:
-                self.upload()
-            self.session.client("cloudformation").validate_template(
-                TemplateURL=self.url
-            )
+            if not self.no_upload:
+                if self.url is None:
+                    self.upload()
+                self.session.client("cloudformation").validate_template(
+                    TemplateURL=self.url
+                )
+            elif self.no_upload:
+                if not self.file_path:
+                    self.write()
+                LOG.debug(f"No upload - Validating template body - {self.file_path}")
+                self.session.client("cloudformation").validate_template(
+                    TemplateBody=self.body
+                )
             LOG.debug(f"Template {self.file_name} was validated successfully by CFN")
             self.validated = True
         except ClientError as error:
@@ -285,6 +297,8 @@ class FileArtifact(object):
             self.content = content
         self.define_file_specs()
         self.file_path = f"{self.output_dir}/{self.file_name}"
+        if keyisset("NoUpload", kwargs):
+            self.no_upload = True
 
     def __repr__(self):
         return self.file_path
