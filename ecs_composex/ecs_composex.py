@@ -85,7 +85,7 @@ VPC_ARGS = [
     vpc_params.VPC_MAP_ID_T,
 ]
 
-SUPPORTED_X_MODULES = ["x-rds", "rds", "x-sqs", "sqs"]
+SUPPORTED_X_MODULES = ["x-rds", "rds", "x-sqs", "sqs", "x-sns", "sns"]
 
 
 def get_composex_globals(compose_content):
@@ -237,6 +237,24 @@ def apply_x_configs_to_ecs(content, root_template, services_stack, **kwargs):
             if ecs_function:
                 LOG.debug(ecs_function)
                 ecs_function(content[composex_key], services_stack, resource)
+
+
+def apply_x_to_x_configs(root_template, content):
+    """
+    Function to iterate over each XResource and trigger cross-x resources configurations functions
+
+    :param troposphere.Template root_template: the ECS ComposeX root template
+    :param dict content: The Docker compose file content
+    :return:
+    """
+    for resource_name in root_template.resources:
+        resource = root_template.resources[resource_name]
+        if (
+            issubclass(type(resource), ComposeXStack)
+            and resource_name in SUPPORTED_X_MODULES
+        ):
+            if hasattr(resource, "add_xdependencies"):
+                resource.add_xdependencies(root_template.resources.keys(), content)
 
 
 def generate_vpc_parameters(template, params, **kwargs):
@@ -533,6 +551,7 @@ def generate_full_template(content, session=None, **kwargs):
     )
     add_x_resources(template, session=session, vpc_stack=vpc_stack, **kwargs)
     apply_x_configs_to_ecs(content, template, services_stack, **kwargs)
+    apply_x_to_x_configs(template, content)
     add_all_tags(template, tags_params)
     LOG.debug(stack_params)
     return template, stack_params

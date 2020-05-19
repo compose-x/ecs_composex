@@ -18,3 +18,6 @@
 from os import path
 
 RES_KEY = f"x-{path.basename(path.dirname(path.abspath(__file__)))}"
+SSM_PREFIX = f"/{RES_KEY}/"
+
+TOPIC_ARN_T = "TopicArn"

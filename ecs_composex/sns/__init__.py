@@ -16,11 +16,14 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import boto3
+from troposphere.sns import Topic
 from ecs_composex.sns.sns_params import RES_KEY
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common import load_composex_file, keyisset, LOG
 from ecs_composex.common.ecs_composex import XFILE_DEST
 from ecs_composex.sns.sns_templates import generate_sns_templates
+from ecs_composex.sqs.sqs_params import RES_KEY as SQS_KEY
+from ecs_composex.sns.sns_params import RES_KEY
 
 
 def create_sns_template(session=None, **kwargs):
@@ -35,7 +38,7 @@ def create_sns_template(session=None, **kwargs):
     content = load_composex_file(kwargs[XFILE_DEST])
     if keyisset(RES_KEY, content):
         LOG.debug(f"Processing {RES_KEY} package")
-        generate_sns_templates(content, **kwargs)
+        return generate_sns_templates(content, **kwargs)
 
 
 class XResource(ComposeXStack):
@@ -43,8 +46,24 @@ class XResource(ComposeXStack):
     Class to handle SQS Root stack related actions
     """
 
-    def add_sqs_stack(self):
+    def handle_sqs(self, resource):
+        """
+        Function to handle the SQS configuration to allow SNS to send messages to queues.
+
+        :param ecs_composex.sqs.XResource resource: the SQS XResource
+        """
+        for resource_name in self.stack_template.resources:
+            resource = self.stack_template.resources[resource_name]
+            if isinstance(resource, ComposeXStack):
+                pass
+            elif isinstance(resource, Topic):
+                pass
+
+    def add_xdependencies(self, resources, content):
         """
         Method to add a dependency on the SQS stacks
         """
-        self.DependsOn.append("sqs")
+        dependencies = ["sqs"]
+        for resource_name in resources:
+            if resource_name in dependencies:
+                self.DependsOn.append(resource_name)

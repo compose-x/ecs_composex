@@ -21,6 +21,7 @@ Functions to format CFN template Outputs
 
 from troposphere import Output, Export, Sub, If, ImportValue
 from ecs_composex.common.ecs_composex import CFN_EXPORT_DELIMITER
+from ecs_composex.common import LOG
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.cfn_conditions import USE_STACK_NAME_CON_T
 
@@ -37,7 +38,9 @@ def cfn_resource_type(object_name, strip=True):
     return res_type
 
 
-def formatted_outputs(comments, obj_name=None, export=True, delimiter=None):
+def formatted_outputs(
+    comments, obj_name=None, attribute_name=None, export=True, delimiter=None
+):
     """Function to format the outputs easily and add exports based on a prefix
 
     :param delimiter: delimimiter to use between parts of the export
@@ -45,10 +48,8 @@ def formatted_outputs(comments, obj_name=None, export=True, delimiter=None):
     :type comments: list
     :param export: Whether or not this output should export to CFN Exports. Default: False
     :type export: bool
-    :param prefix: prefix for the cfn exports. Must enable uniqueness of the output in CFN
-    :type prefix: str
-    :param use_root_stack: Whether this output for prefix should use the RootStackName as prefix
-    :type use_root_stack: bool
+    :param str attribute_name: Name of the attribute to export instead of using the title.
+    :param str obj_name: Name of the object
 
     :return: outputs
     :rtype: list
@@ -62,20 +63,27 @@ def formatted_outputs(comments, obj_name=None, export=True, delimiter=None):
         obj_name = f"{delimiter}${{{obj_name.title}}}"
     elif obj_name is None:
         obj_name = ""
+    LOG.debug(obj_name)
     if isinstance(comments, list):
         for comment in comments:
             if isinstance(comment, dict):
                 keys = list(comment.keys())
                 title = keys[0]
+                export_attribute = attribute_name if isinstance(attribute_name, str) else title
                 args = {"title": title, "Value": comment[title]}
                 if export:
+                    stack_string = f"${{AWS::StackName}}{obj_name}{delimiter}{export_attribute}"
+                    root_stack_string = (
+                        f"${{{ROOT_STACK_NAME_T}}}{obj_name}{delimiter}{export_attribute}"
+                    )
+                    LOG.debug(title)
+                    LOG.debug(stack_string)
+                    LOG.debug(root_stack_string)
                     args["Export"] = Export(
                         If(
                             USE_STACK_NAME_CON_T,
-                            Sub(f"${{AWS::StackName}}{obj_name}{delimiter}{title}"),
-                            Sub(
-                                f"${{{ROOT_STACK_NAME_T}}}{obj_name}{delimiter}{title}"
-                            ),
+                            Sub(stack_string),
+                            Sub(root_stack_string),
                         )
                     )
                 output = Output(**args)
