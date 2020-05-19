@@ -39,6 +39,7 @@ class ComposeXStack(Stack, object):
     template_file = None
     cfn_params_file = None
     cfn_config_file = None
+    module_name = None
 
     attributes = [
         "Condition",
