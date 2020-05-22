@@ -46,24 +46,20 @@ class XResource(ComposeXStack):
     Class to handle SQS Root stack related actions
     """
 
-    def handle_sqs(self, resource):
+    def handle_sqs(self, root_template, sqs_root_stack):
         """
         Function to handle the SQS configuration to allow SNS to send messages to queues.
-
-        :param ecs_composex.sqs.XResource resource: the SQS XResource
         """
-        for resource_name in self.stack_template.resources:
-            resource = self.stack_template.resources[resource_name]
-            if isinstance(resource, ComposeXStack):
-                pass
-            elif isinstance(resource, Topic):
-                pass
 
-    def add_xdependencies(self, resources, content):
+
+    def add_xdependencies(self, root_template, content):
         """
         Method to add a dependency on the SQS stacks
+        :param troposphere.Template root_template: The ComposeX Root template
+        :param dict content: the compose file content
         """
-        dependencies = ["sqs"]
-        for resource_name in resources:
-            if resource_name in dependencies:
-                self.DependsOn.append(resource_name)
+        resources = root_template.resources
+        sqs_res = SQS_KEY.strip('x-') if SQS_KEY.startswith('x-') else SQS_KEY
+        if SQS_KEY in content and sqs_res in resources:
+            self.DependsOn.append(sqs_res)
+            self.handle_sqs(root_template, resources[sqs_res])

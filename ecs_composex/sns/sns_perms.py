@@ -29,7 +29,7 @@ from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.ecs_composex import CFN_EXPORT_DELIMITER as DELIM
 from ecs_composex.sns.sns_params import SSM_PREFIX, TOPIC_ARN_T
 
-TOPICS_ACCESS_TYPES = {"Publish": {"Action": ["sns:Publish",], "Effect": "Allow",}}
+TOPICS_ACCESS_TYPES = {"Publish": {"Action": ["sns:Publish"], "Effect": "Allow"}}
 
 
 def generate_topic_strings(topic_name):

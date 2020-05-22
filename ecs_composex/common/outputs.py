@@ -69,13 +69,15 @@ def formatted_outputs(
             if isinstance(comment, dict):
                 keys = list(comment.keys())
                 title = keys[0]
-                export_attribute = attribute_name if isinstance(attribute_name, str) else title
+                export_attribute = (
+                    attribute_name if isinstance(attribute_name, str) else title
+                )
                 args = {"title": title, "Value": comment[title]}
                 if export:
-                    stack_string = f"${{AWS::StackName}}{obj_name}{delimiter}{export_attribute}"
-                    root_stack_string = (
-                        f"${{{ROOT_STACK_NAME_T}}}{obj_name}{delimiter}{export_attribute}"
+                    stack_string = (
+                        f"${{AWS::StackName}}{obj_name}{delimiter}{export_attribute}"
                     )
+                    root_stack_string = f"${{{ROOT_STACK_NAME_T}}}{obj_name}{delimiter}{export_attribute}"
                     LOG.debug(title)
                     LOG.debug(stack_string)
                     LOG.debug(root_stack_string)
