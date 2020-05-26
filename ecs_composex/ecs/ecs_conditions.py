@@ -35,6 +35,14 @@ GENERATED_CLUSTER_NAME_CON = Equals(
     Ref(ecs_params.CLUSTER_NAME), ecs_params.CLUSTER_NAME.Default
 )
 
+NOT_USE_CLUSTER_SG_CON_T = "NotUseClusterSecurityGroupCondition"
+NOT_USE_CLUSTER_SG_CON = Equals(
+    Ref(ecs_params.CLUSTER_SG_ID), ecs_params.CLUSTER_SG_ID.Default
+)
+
+USE_CLUSTER_SG_CON_T = "UseClusterSecurityGroupCondition"
+USE_CLUSTER_SG_CON = Not(Condition(NOT_USE_CLUSTER_SG_CON_T))
+
 CLUSTER_NAME_CON_T = "SetClusterNameFromRootStack"
 CLUSTER_NAME_CON = And(
     Condition(USE_STACK_NAME_CON_T), Condition(GENERATED_CLUSTER_NAME_CON_T)

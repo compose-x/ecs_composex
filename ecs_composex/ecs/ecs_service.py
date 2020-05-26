@@ -68,6 +68,7 @@ from ecs_composex.common import keyisset, LOG
 from ecs_composex.common import add_parameters
 from ecs_composex.common import build_template, NONALPHANUM
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
+from ecs_composex.common.cfn_conditions import USE_STACK_NAME_CON_T
 from ecs_composex.common.config import ComposeXConfig
 from ecs_composex.common.outputs import formatted_outputs
 from ecs_composex.ecs import ecs_params, ecs_conditions
@@ -267,6 +268,12 @@ def initialize_service_template(service_name):
     service_tpl.add_condition(
         ecs_conditions.NOT_USE_HOSTNAME_CON_T, ecs_conditions.NOT_USE_HOSTNAME_CON
     )
+    service_tpl.add_condition(
+        ecs_conditions.NOT_USE_CLUSTER_SG_CON_T, ecs_conditions.NOT_USE_CLUSTER_SG_CON
+    )
+    service_tpl.add_condition(
+        ecs_conditions.USE_CLUSTER_SG_CON_T, ecs_conditions.USE_CLUSTER_SG_CON
+    )
     return service_tpl
 
 
@@ -443,12 +450,18 @@ class Service(object):
         self.template.add_resource(
             SecurityGroup(
                 SG_T,
-                GroupDescription=Sub(
-                    f"SG for ${{{SERVICE_NAME_T}}} - ${{{ROOT_STACK_NAME_T}}}"
+                GroupDescription=If(
+                    USE_STACK_NAME_CON_T,
+                    Sub(f"SG for ${{{SERVICE_NAME_T}}} - ${{AWS::StackName}}"),
+                    Sub(f"SG for ${{{SERVICE_NAME_T}}} - ${{{ROOT_STACK_NAME_T}}}"),
                 ),
                 Tags=Tags(
                     {
-                        "Name": Sub(f"${{{SERVICE_NAME_T}}}-${{{ROOT_STACK_NAME_T}}}"),
+                        "Name": If(
+                            USE_STACK_NAME_CON_T,
+                            Sub(f"${{{SERVICE_NAME_T}}}-${{AWS::StackName}}"),
+                            Sub(f"${{{SERVICE_NAME_T}}}-${{{ROOT_STACK_NAME_T}}}"),
+                        ),
                         "StackName": Ref(AWS_STACK_NAME),
                         "MicroserviceName": Ref(SERVICE_NAME),
                     }
@@ -944,7 +957,10 @@ class Service(object):
         Function to generate the Service definition.
         This is the last step in defining the service, after all other settings have been prepared.
         """
-        service_sgs = [Ref(sg) for sg in self.sgs]
+        service_sgs = [
+            Ref(sg) for sg in self.sgs if not isinstance(sg, (Ref, Sub, If, GetAtt))
+        ]
+        service_sgs += [sg for sg in self.sgs if isinstance(sg, (Ref, Sub, If, GetAtt))]
         self.ecs_service = EcsService(
             ecs_params.SERVICE_T,
             template=self.template,
@@ -1038,7 +1054,14 @@ class Service(object):
         }
         add_service_roles(self.template, self.config)
         self.add_task_defnition()
-        self.sgs = [ecs_params.SG_T, ecs_params.CLUSTER_SG_ID]
+        self.sgs = [ecs_params.SG_T]
+        self.sgs.append(
+            If(
+                ecs_conditions.USE_CLUSTER_SG_CON_T,
+                Ref(ecs_params.CLUSTER_SG_ID),
+                Ref("AWS::NoValue"),
+            )
+        )
         self.define_service_network_config(**kwargs)
         self.generate_service_definition()
         self.generate_service_template_outputs()

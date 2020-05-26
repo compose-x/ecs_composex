@@ -156,7 +156,12 @@ FARGATE_CPU = Select(0, Split("!", Ref(FARGATE_CPU_RAM_CONFIG)))
 FARGATE_RAM = Select(1, Split("!", Ref(FARGATE_CPU_RAM_CONFIG)))
 
 CLUSTER_SG_ID_T = "ClusterWideSGId"
-CLUSTER_SG_ID = Parameter(CLUSTER_SG_ID_T, Type=SG_ID_TYPE, Default="<none>")
+CLUSTER_SG_ID = Parameter(
+    CLUSTER_SG_ID_T,
+    Type="String",
+    Default="none",
+    AllowedPattern=r"(none|^sg-[a-z0-9]+$)",
+)
 
 SERVICE_GROUP_ID_T = "ServiceGroupId"
 SERVICE_GROUP_ID = Parameter(SERVICE_GROUP_ID_T, Type=SG_ID_TYPE, Default="<none>")
