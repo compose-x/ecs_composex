@@ -80,7 +80,9 @@ def set_sqs_topic(subscription, content):
     Function to set permissions and import for SQS subscription
     :return:
     """
-    if keypresent(ENDPOINT_KEY, subscription) and not subscription[ENDPOINT_KEY].startswith("arn:"):
+    if keypresent(ENDPOINT_KEY, subscription) and not subscription[
+        ENDPOINT_KEY
+    ].startswith("arn:"):
         assert check_queue_exists(subscription[ENDPOINT_KEY], content)
     endpoint = (
         define_import(subscription[ENDPOINT_KEY], SQS_ARN_T)

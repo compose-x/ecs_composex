@@ -15,7 +15,6 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import boto3
 from ecs_composex.sns.sns_params import RES_KEY
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common import load_composex_file, keyisset, LOG
