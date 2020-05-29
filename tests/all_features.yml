@@ -69,7 +69,7 @@ x-sns:
     Topic02:
       Properties:
         Subscription:
-          - Endpont: Queue01
+          - Endpoint: Queue01
             Protocol: sqs
       Settings: {}
       Services: []

@@ -21,7 +21,7 @@ Module to add topics and subscriptions to the SNS stack
 
 from troposphere import Ref
 from troposphere.sns import Topic, Subscription
-from ecs_composex.common import LOG, keyisset, build_template, NONALPHANUM
+from ecs_composex.common import LOG, keyisset, keypresent, build_template, NONALPHANUM
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common.outputs import define_import
 from ecs_composex.sqs.sqs_params import SQS_ARN_T, RES_KEY as SQS_KEY
@@ -80,7 +80,7 @@ def set_sqs_topic(subscription, content):
     Function to set permissions and import for SQS subscription
     :return:
     """
-    if not subscription[ENDPOINT_KEY].startswith("arn:"):
+    if keypresent(ENDPOINT_KEY, subscription) and not subscription[ENDPOINT_KEY].startswith("arn:"):
         assert check_queue_exists(subscription[ENDPOINT_KEY], content)
     endpoint = (
         define_import(subscription[ENDPOINT_KEY], SQS_ARN_T)
@@ -101,14 +101,14 @@ def define_topic_subscriptions(subscriptions, content):
     required_keys = [ENDPOINT_KEY, PROTOCOL_KEY]
     subscriptions_objs = []
     for sub in subscriptions:
-        if not any(key in sub for key in required_keys):
+        LOG.debug(sub)
+        if not all(key in sub for key in required_keys):
             raise AttributeError(
                 "Required attributes for Subscription are",
                 required_keys,
                 "Provided",
                 sub.keys(),
             )
-        LOG.debug(sub)
         if keyisset(PROTOCOL_KEY, sub) and (
             sub[PROTOCOL_KEY] == "sqs" or sub[PROTOCOL_KEY] == "SQS"
         ):
