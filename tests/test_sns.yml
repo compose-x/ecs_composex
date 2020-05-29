@@ -1,0 +1,57 @@
+---
+# All Modules & Modules
+
+configs:
+  composex:
+    network:
+      use_cloudmap: True
+
+services:
+  serviceA:
+    image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-01:1589570337
+    ports:
+      - 80
+    configs:
+      xray:
+        enabled: True
+  serviceB:
+    image: nginx
+    ports:
+      - 80:80
+    links:
+      - serviceC
+
+  serviceC:
+    image: nginx
+    configs:
+      network:
+        is_public: False
+        use_cloudmap: True
+
+
+x-tags:
+  - name: costcentre
+    value: lambda-my-aws
+  - name: mail
+    value: john@lambda-my-aws.io
+
+x-sns:
+  Topics:
+    topic01:
+      Properties:
+        Subscriptions:
+          - Protocol: SQS
+            Endpoint: Queue01
+      Settings: {}
+      Services:
+        - name: serviceB
+          access: RW
+
+
+x-sqs:
+  Queue01:
+    Properties: {}
+    Settings: {}
+    Services:
+      - name: serviceC
+        access: RWMessages

@@ -147,4 +147,11 @@ def generate_sqs_envvars(queue_name, resource, **kwargs):
                     Value=If(USE_SSM_ONLY_T, export_strings[0], export_strings[1]),
                 )
             )
+    else:
+        env_names.append(
+            Environment(
+                Name=queue_name,
+                Value=If(USE_SSM_ONLY_T, export_strings[0], export_strings[1]),
+            )
+        )
     return env_names

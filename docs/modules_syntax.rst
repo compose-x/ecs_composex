@@ -14,3 +14,6 @@ ComposeX Modules Syntax
 .. include:: ../ecs_composex/sqs/SYNTAX.rst
 
 .. include:: ../ecs_composex/rds/SYNTAX.rst
+
+.. include:: ../ecs_composex/sns/SYNTAX.rst
+

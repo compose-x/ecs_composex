@@ -183,7 +183,7 @@ def add_all_tags(root_template, params_and_tags):
     """
     if not params_and_tags:
         return None
-    resources = root_template.resources
+    resources = root_template.resources if root_template else []
     for resource_name in resources:
         resource = resources[resource_name]
         if isinstance(resource, (XModuleStack, ComposeXStack)):
@@ -191,6 +191,12 @@ def add_all_tags(root_template, params_and_tags):
             LOG.debug(resource.TemplateURL)
             add_all_tags(resource.stack_template, params_and_tags)
             add_parameters(resource.stack_template, params_and_tags[0])
+            if (
+                not resource
+                or not hasattr(resource, "stack_template")
+                or not resource.stack_template
+            ):
+                return
             for stack_resname in resource.stack_template.resources:
                 add_object_tags(
                     resource.stack_template.resources[stack_resname], params_and_tags[1]

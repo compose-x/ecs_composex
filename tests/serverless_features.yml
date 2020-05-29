@@ -1,4 +1,4 @@
----
+﻿---
 # All Modules & Modules
 
 configs:
@@ -14,16 +14,6 @@ configs:
         - ipv4: 1.1.1.1/32
           protocol: icmp
           source_name: GoogleDns
-
-  serviceB:
-    network:
-      is_public: True
-      use_nlb: False
-      use_alb: True
-  serviceC:
-    network:
-      is_public: False
-      use_cloudmap: True
 
   composex:
     network:
@@ -106,22 +96,3 @@ x-sqs:
      EnvNames:
        - ALONE
        - NoOneLikesMe
-
-x-rds:
- dbA:
-   Properties:
-     Engine: "aurora-mysql"
-     EngineVersion: "5.7.12"
-   Services:
-     - name: serviceA
-       access: RW
-
- dbB:
-   Properties:
-     Engine: "aurora-mysql"
-     EngineVersion: "5.7.12"
-   Services:
-     - name: serviceA
-       access: RW
-     - name: serviceB
-       access: RW
