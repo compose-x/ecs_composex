@@ -36,11 +36,11 @@ services:
       replicas: 6
       resources:
         limits:
-          cpus: 0.5
-          memory: 50M
+          cpus: 1
+          memory: 256M
         reservations:
           cpus: 0.25
-          memory: 20M
+          memory: 128M
     image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-01:1589570337
     ports:
       - 80

@@ -85,6 +85,7 @@ from ecs_composex.vpc.vpc_conditions import USE_VPC_MAP_ID_CON_T
 from ecs_composex.vpc.vpc_params import VPC_ID, PUBLIC_SUBNETS
 from ecs_composex.vpc.vpc_params import VPC_MAP_ID
 from ecs_composex.ecs.ecs_xray import define_xray_container
+from ecs_composex.ecs.docker_tools import set_memory_to_mb
 
 CIDR_REG = r"""((((((([0-9]{1}\.))|([0-9]{2}\.)|
 (1[0-9]{2}\.)|(2[0-5]{2}\.)))){3})(((((([0-9]{1}))|
@@ -300,57 +301,6 @@ def initialize_service_template(service_name):
     return service_tpl
 
 
-def set_memory_to_mb(value, allocating=False):
-    """
-    Returns the value of MB. If no unit set, assuming MB
-    :param value: the string value
-    :param bool allocating: Whether or not the value is for memory allocation
-    :rtype: int or Ref(AWS_NO_VALUE)
-    """
-    b_pat = re.compile(r"(^[0-9.]+(b|B)$)")
-    kb_pat = re.compile(r"(^[0-9.]+(k|kb|kB|Kb|K|KB)$)")
-    mb_pat = re.compile(r"(^[0-9.]+(m|mb|mB|Mb|M|MB)$)")
-    gb_pat = re.compile(r"(^[0-9.]+(g|gb|gB|Gb|G|GB)$)")
-    amount = float(re.sub(r"[^0-9.]", "", value))
-    unit = "MBytes"
-    if b_pat.findall(value):
-        unit = "Bytes"
-        if amount < (512 * 1024 * 1024) and allocating:
-            LOG.warn(
-                f"You set unit to {unit} and value is lower than 512MB. Setting to Fargate minimum"
-            )
-            final_amount = 512
-        elif amount < (512 * 1024 * 1024) and not allocating:
-            LOG.warn(f"You set unit to {unit} and value is invalid. Setting to NoValue")
-            final_amount = Ref(AWS_NO_VALUE)
-        else:
-            final_amount = (amount / 1024) / 1024
-
-    elif kb_pat.findall(value):
-        unit = "KBytes"
-        if amount < (512 * 1024) and allocating:
-            LOG.warn(
-                f"You set unit to {unit} and value is lower than 512MB. Setting to Fargate Minimum"
-            )
-            final_amount = 512
-        elif amount < (512 * 1024) and not allocating:
-            LOG.warn(f"You set unit to {unit} and value is invalid. Setting to NoValue")
-            final_amount = Ref(AWS_NO_VALUE)
-        else:
-            final_amount = int(amount / 1024)
-    elif mb_pat.findall(value):
-        final_amount = int(amount)
-    elif gb_pat.findall(value):
-        unit = "GBytes"
-        final_amount = int(amount * 1024)
-    elif not allocating and amount >= 512:
-        final_amount = int(amount)
-    else:
-        raise ValueError(f"Could not parse {value} to units")
-    LOG.debug(f"Computed unit for {value}: {unit}. Results into {final_amount}MB")
-    return final_amount
-
-
 class ServiceConfig(ComposeXConfig):
     """
     Class specifically dealing with the configuration and settings of the ecs_service from how it was defined in
@@ -405,30 +355,43 @@ class ServiceConfig(ComposeXConfig):
     mem_alloc = Ref(AWS_NO_VALUE)
     mem_resa = Ref(AWS_NO_VALUE)
 
-    def define_compute_resources(self, definition):
+    def define_compute_resources(self, resources):
         """
         Function to analyze the Docker Compose deploy attribute and set settings accordingly.
         deployment keys: replicas, mode, resources
+
+        :param dict resources: Resources definition
+        """
+        if keyisset("limits", resources):
+            if keyisset("cpus", resources["limits"]):
+                self.cpu_alloc = int(float(resources["limits"]["cpus"]) * 1024)
+            if keyisset("memory", resources["limits"]):
+                self.mem_alloc = set_memory_to_mb(resources["limits"]["memory"].strip())
+        if keyisset("reservations", resources):
+            if keyisset("cpus", resources["reservations"]):
+                self.cpu_resa = int(float(resources["reservations"]["cpus"]) * 1024)
+            if keyisset("memory", resources["reservations"]):
+                self.mem_resa = set_memory_to_mb(
+                    resources["reservations"]["memory"].strip()
+                )
+
+    def define_deployment_settings(self, deployment):
+        """
+        Function to set the service deployment settings.
+        """
+        if keyisset("replicas", deployment):
+            setattr(ecs_params.SERVICE_COUNT, "Default", deployment["replicas"])
+
+    def define_service_deploy(self, definition):
+        """
+        Function to setup the service configuration from the deploy section of the service in compose file.
         """
         if not keyisset("deploy", definition):
             return
         deployment = definition["deploy"]
         if keyisset("resources", deployment):
-            resources = deployment["resources"]
-            if keyisset("limits", resources):
-                if keyisset("cpus", resources["limits"]):
-                    self.cpu_alloc = int(float(resources["limits"]["cpus"]) * 1024)
-                if keyisset("memory", resources["limits"]):
-                    self.mem_alloc = set_memory_to_mb(
-                        resources["limits"]["memory"].strip()
-                    )
-            if keyisset("reservations", resources):
-                if keyisset("cpus", resources["reservations"]):
-                    self.cpu_resa = int(float(resources["reservations"]["cpus"]) * 1024)
-                if keyisset("memory", resources["reservations"]):
-                    self.mem_resa = set_memory_to_mb(
-                        resources["reservations"]["memory"].strip()
-                    )
+            self.define_compute_resources(deployment["resources"])
+        self.define_deployment_settings(deployment)
 
     def set_xray(self, config):
         """
@@ -522,7 +485,7 @@ class ServiceConfig(ComposeXConfig):
         )
         if keyisset("hostname", definition):
             self.hostname = definition["hostname"]
-        self.define_compute_resources(definition)
+        self.define_service_deploy(definition)
 
 
 class Container(object):
@@ -649,7 +612,7 @@ class Service(object):
         Method to create a new Service into CloudMap to represent the current service and add entry into the registry
         """
         sd_service = SdService(
-            "EcsDiscoveryService",
+            f"{self.resource_name}DiscoveryService",
             template=self.template,
             Condition=USE_VPC_MAP_ID_CON_T,
             Description=f"{self.service_name}",

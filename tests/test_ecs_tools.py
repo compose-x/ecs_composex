@@ -15,7 +15,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from ecs_composex.ecs.ecs_service import set_memory_to_mb
+from ecs_composex.ecs.docker_tools import set_memory_to_mb
 
 
 def test_mb_settings():
