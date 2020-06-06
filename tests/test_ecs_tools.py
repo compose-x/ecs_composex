@@ -15,16 +15,27 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from ecs_composex.ecs.docker_tools import set_memory_to_mb
+from ecs_composex.ecs.docker_tools import (
+    set_memory_to_mb,
+    find_closest_fargate_configuration,
+)
 
 
 def test_mb_settings():
     """
     Function to ensure the MB return works
-    :return:
     """
     assert set_memory_to_mb("1024") == 1024
     assert set_memory_to_mb("1G") == 1024
     assert set_memory_to_mb("0.5G") == 512
     assert set_memory_to_mb("4G") == 4096
     assert set_memory_to_mb(f"{1024*1024}kB") == 1024
+
+
+def test_fargate_config():
+    """
+    Function to check the combination finding for Fargate
+    """
+    assert find_closest_fargate_configuration(256, 512, True) == "256!512"
+    assert find_closest_fargate_configuration(2018, 4000, True) == "2048!4096"
+    assert find_closest_fargate_configuration(2048, 25555) == (2048, 16384)

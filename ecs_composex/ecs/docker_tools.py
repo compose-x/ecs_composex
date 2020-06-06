@@ -22,6 +22,8 @@ Docker compose integration related function, wrapping transformation to Containe
 import re
 from troposphere import Ref, AWS_NO_VALUE
 from ecs_composex.common import LOG
+from ecs_composex.ecs.ecs_params import FARGATE_MODES
+from ecs_composex.vpc.vpc_maths import clpow2, nxtpow2
 
 
 def set_memory_to_mb(value, allocating=False):
@@ -73,3 +75,34 @@ def set_memory_to_mb(value, allocating=False):
         raise ValueError(f"Could not parse {value} to units")
     LOG.debug(f"Computed unit for {value}: {unit}. Results into {final_amount}MB")
     return final_amount
+
+
+def find_closest_fargate_configuration(cpu, ram, as_param_string=False):
+    """
+    Function to get the closest Fargate CPU / RAM Configuration out of a CPU and RAM combination.
+
+    :param int cpu: CPU count for the Task Definition
+    :param int ram: RAM in MB for the Task Definition
+    :param bool as_param_string: Returns the value as a CFN Fargate Configuration.
+    :return:
+    """
+    fargate_cpus = list(FARGATE_MODES.keys())
+    fargate_cpus.sort()
+    fargate_cpu = clpow2(cpu)
+    if fargate_cpu not in fargate_cpus:
+        LOG.warn(f"Value {cpu} is not valid for Fargate. Valid modes: {fargate_cpus}")
+        if fargate_cpu < fargate_cpus[0]:
+            fargate_cpu = fargate_cpus[0]
+        elif fargate_cpu > fargate_cpus[-1]:
+            fargate_cpu = fargate_cpus[-1]
+    fargate_ram = clpow2(ram)
+    if fargate_ram not in FARGATE_MODES[fargate_cpu]:
+        if nxtpow2(fargate_ram) in FARGATE_MODES[fargate_cpu]:
+            fargate_ram = nxtpow2(fargate_ram)
+        elif clpow2(fargate_ram) < FARGATE_MODES[fargate_cpu][0]:
+            fargate_ram = FARGATE_MODES[fargate_cpu][0]
+        elif clpow2(fargate_ram) >= FARGATE_MODES[fargate_cpu][-1]:
+            fargate_ram = FARGATE_MODES[fargate_cpu][-1]
+    if as_param_string:
+        return f"{fargate_cpu}!{fargate_ram}"
+    return fargate_cpu, fargate_ram

@@ -85,7 +85,10 @@ from ecs_composex.vpc.vpc_conditions import USE_VPC_MAP_ID_CON_T
 from ecs_composex.vpc.vpc_params import VPC_ID, PUBLIC_SUBNETS
 from ecs_composex.vpc.vpc_params import VPC_MAP_ID
 from ecs_composex.ecs.ecs_xray import define_xray_container
-from ecs_composex.ecs.docker_tools import set_memory_to_mb
+from ecs_composex.ecs.docker_tools import (
+    set_memory_to_mb,
+    find_closest_fargate_configuration,
+)
 
 CIDR_REG = r"""((((((([0-9]{1}\.))|([0-9]{2}\.)|
 (1[0-9]{2}\.)|(2[0-5]{2}\.)))){3})(((((([0-9]{1}))|
@@ -354,6 +357,7 @@ class ServiceConfig(ComposeXConfig):
     cpu_resa = Ref(AWS_NO_VALUE)
     mem_alloc = Ref(AWS_NO_VALUE)
     mem_resa = Ref(AWS_NO_VALUE)
+    replicas = int(ecs_params.SERVICE_COUNT.Default)
 
     def define_compute_resources(self, resources):
         """
@@ -380,7 +384,7 @@ class ServiceConfig(ComposeXConfig):
         Function to set the service deployment settings.
         """
         if keyisset("replicas", deployment):
-            setattr(ecs_params.SERVICE_COUNT, "Default", deployment["replicas"])
+            self.replicas = int(deployment["replicas"])
 
     def define_service_deploy(self, definition):
         """
@@ -558,27 +562,6 @@ class Service(object):
     ecs_service = None
     eips = []
     service_attrs = None
-
-    def define_deployment_settings(self, definition):
-        """
-        Function to analyze the Docker Compose deploy attribute and set settings accordingly.
-        deployment keys: replicas, mode, resources
-        """
-
-        if not keyisset("deploy", definition):
-            return
-        deployment = definition["deploy"]
-        if keyisset("replicas", deployment):
-            self.parameters[ecs_params.SERVICE_COUNT_T] = deployment["replicas"]
-        if keyisset("mode", deployment):
-            if deployment["mode"] == "global":
-                pass
-        if keyisset("resources", deployment):
-            resources = deployment["resources"]
-            if keyisset("limits", resources):
-                pass
-            if keyisset("reservations", resources):
-                pass
 
     def add_service_default_sg(self):
         """
@@ -996,6 +979,17 @@ class Service(object):
         containers = [self.define_container_definition()]
         if self.config.use_xray:
             containers.append(define_xray_container(self.template))
+        tasks_cpu = 0
+        tasks_ram = 0
+        for container in containers:
+            if isinstance(container.Cpu, int):
+                tasks_cpu += container.Cpu
+            if isinstance(container.Memory, int):
+                tasks_ram += container.Memory
+        LOG.info(f"CPU: {tasks_cpu}, RAM: {tasks_ram}")
+        if tasks_cpu > 0 and tasks_ram > 0:
+            cpu_ram = find_closest_fargate_configuration(tasks_cpu, tasks_ram, True)
+            self.parameters[ecs_params.FARGATE_CPU_RAM_CONFIG_T] = cpu_ram
         self.task_definition = TaskDefinition(
             TASK_T,
             template=self.template,
@@ -1057,6 +1051,8 @@ class Service(object):
             Ref(sg) for sg in self.sgs if not isinstance(sg, (Ref, Sub, If, GetAtt))
         ]
         service_sgs += [sg for sg in self.sgs if isinstance(sg, (Ref, Sub, If, GetAtt))]
+        if self.config.replicas != ecs_params.SERVICE_COUNT.Default:
+            self.parameters[ecs_params.SERVICE_COUNT_T] = self.config.replicas
         self.ecs_service = EcsService(
             ecs_params.SERVICE_T,
             template=self.template,
