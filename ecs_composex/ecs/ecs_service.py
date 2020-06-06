@@ -511,6 +511,14 @@ class Container(object):
             f"{title}Memory": configuration.mem_alloc,
             f"{title}MemoryReservation": configuration.mem_resa,
         }
+        if not isinstance(configuration.cpu_alloc, Ref):
+            cpu_config = configuration.cpu_alloc
+        elif isinstance(configuration.cpu_alloc, Ref) and not isinstance(
+            configuration.cpu_resa, Ref
+        ):
+            cpu_config = configuration.cpu_resa
+        else:
+            cpu_config = Ref(AWS_NO_VALUE)
         self.definition = ContainerDefinition(
             title,
             Command=definition["command"].strip().split(";")
@@ -521,7 +529,7 @@ class Container(object):
             Hostname=keyset_else_novalue(
                 "hostname", definition, else_value=Ref(ecs_params.SERVICE_NAME)
             ),
-            Cpu=configuration.cpu_resa,
+            Cpu=cpu_config,
             Memory=configuration.mem_alloc,
             MemoryReservation=configuration.mem_resa,
             PortMappings=generate_port_mappings(definition["ports"])
@@ -986,6 +994,10 @@ class Service(object):
                 tasks_cpu += container.Cpu
             if isinstance(container.Memory, int):
                 tasks_ram += container.Memory
+            elif isinstance(container.Memory, Ref) and isinstance(
+                container.MemoryReservation, int
+            ):
+                tasks_ram += container.MemoryReservation
         LOG.info(f"CPU: {tasks_cpu}, RAM: {tasks_ram}")
         if tasks_cpu > 0 and tasks_ram > 0:
             cpu_ram = find_closest_fargate_configuration(tasks_cpu, tasks_ram, True)
