@@ -46,13 +46,13 @@ LAUNCH_TYPE = Parameter(
 IS_PUBLIC_T = "ExposeServicePublicly"
 IS_PUBLIC = Parameter(IS_PUBLIC_T, AllowedValues=["True", "False"], Type="String")
 
-TASK_CPU_COUNT_T = "TaskCpuCount"
-TASK_CPU_COUNT = Parameter(TASK_CPU_COUNT_T, Type="Number", Default=1024)
-MEMORY_ALLOC_T = "ContainerMemoryAllocation"
-MEMORY_RES_T = "ContainerMemoryReservation"
-
-MEMORY_ALLOC = Parameter(MEMORY_ALLOC_T, Type="Number", Default=512)
-MEMORY_RES = Parameter(MEMORY_RES_T, Type="Number", Default=0)
+# TASK_CPU_COUNT_T = "TaskCpuCount"
+# TASK_CPU_COUNT = Parameter(TASK_CPU_COUNT_T, Type="Number", Default=1024)
+# MEMORY_ALLOC_T = "ContainerMemoryAllocation"
+# MEMORY_RES_T = "ContainerMemoryReservation"
+#
+# MEMORY_ALLOC = Parameter(MEMORY_ALLOC_T, Type="Number", Default=512)
+# MEMORY_RES = Parameter(MEMORY_RES_T, Type="Number", Default=0)
 
 CLUSTER_NAME_T = "EcsClusterName"
 CLUSTER_NAME = Parameter(
@@ -165,6 +165,10 @@ CLUSTER_SG_ID = Parameter(
 
 SERVICE_GROUP_ID_T = "ServiceGroupId"
 SERVICE_GROUP_ID = Parameter(SERVICE_GROUP_ID_T, Type=SG_ID_TYPE, Default="<none>")
+
+AWS_XRAY_IMAGE = "amazon/aws-xray-daemon"
+XRAY_IMAGE_T = "AWSXRayImage"
+XRAY_IMAGE = Parameter(XRAY_IMAGE_T, Type="String", Default=AWS_XRAY_IMAGE)
 
 
 def get_import_service_group_id(remote_service_name):

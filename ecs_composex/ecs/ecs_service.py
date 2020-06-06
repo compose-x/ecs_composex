@@ -94,6 +94,23 @@ CIDR_PAT = re.compile(CIDR_REG)
 STATIC = 0
 
 
+def keyset_else_novalue(key, obj, else_value=None):
+    """
+    Function to return value else set to Ref(NoValue)
+    :param str key: key looked for in the dict
+    :param dict obj: the dictionary to look into
+    :param else_value: alternative value to set when not keyisset is False
+    :return: value else Ref(AWS_NO_VALUE)
+    """
+    if not keyisset(key, obj):
+        if else_value is None:
+            return Ref(AWS_NO_VALUE)
+        else:
+            return else_value
+    else:
+        return obj[key]
+
+
 def flatten_ip(ip_str):
     """Function to remove all non alphanum characters from IP CIDR notation
 
@@ -154,11 +171,17 @@ def generate_port_mappings(ports):
     :rtype: list
     """
     mappings = []
+    if not isinstance(ports, list):
+        return mappings
     for port in ports:
+        if not isinstance(port, dict):
+            continue
         mappings.append(
             PortMapping(ContainerPort=port["target"], HostPort=port["target"])
         )
-    return mappings
+    if mappings:
+        return mappings
+    return Ref(AWS_NO_VALUE)
 
 
 def define_placement_strategies():
@@ -245,10 +268,10 @@ def initialize_service_template(service_name):
             ecs_params.SERVICE_HOSTNAME,
         ],
     )
-    service_tpl.add_condition(
-        ecs_conditions.MEM_RES_IS_MEM_ALLOC_CON_T,
-        ecs_conditions.MEM_RES_IS_MEM_ALLOC_CON,
-    )
+    # service_tpl.add_condition(
+    #     ecs_conditions.MEM_RES_IS_MEM_ALLOC_CON_T,
+    #     ecs_conditions.MEM_RES_IS_MEM_ALLOC_CON,
+    # )
     service_tpl.add_condition(
         ecs_conditions.SERVICE_COUNT_ZERO_CON_T, ecs_conditions.SERVICE_COUNT_ZERO_CON
     )
@@ -275,6 +298,57 @@ def initialize_service_template(service_name):
         ecs_conditions.USE_CLUSTER_SG_CON_T, ecs_conditions.USE_CLUSTER_SG_CON
     )
     return service_tpl
+
+
+def set_memory_to_mb(value, allocating=False):
+    """
+    Returns the value of MB. If no unit set, assuming MB
+    :param value: the string value
+    :param bool allocating: Whether or not the value is for memory allocation
+    :rtype: int or Ref(AWS_NO_VALUE)
+    """
+    b_pat = re.compile(r"(^[0-9.]+(b|B)$)")
+    kb_pat = re.compile(r"(^[0-9.]+(k|kb|kB|Kb|K|KB)$)")
+    mb_pat = re.compile(r"(^[0-9.]+(m|mb|mB|Mb|M|MB)$)")
+    gb_pat = re.compile(r"(^[0-9.]+(g|gb|gB|Gb|G|GB)$)")
+    amount = float(re.sub(r"[^0-9.]", "", value))
+    unit = "MBytes"
+    if b_pat.findall(value):
+        unit = "Bytes"
+        if amount < (512 * 1024 * 1024) and allocating:
+            LOG.warn(
+                f"You set unit to {unit} and value is lower than 512MB. Setting to Fargate minimum"
+            )
+            final_amount = 512
+        elif amount < (512 * 1024 * 1024) and not allocating:
+            LOG.warn(f"You set unit to {unit} and value is invalid. Setting to NoValue")
+            final_amount = Ref(AWS_NO_VALUE)
+        else:
+            final_amount = (amount / 1024) / 1024
+
+    elif kb_pat.findall(value):
+        unit = "KBytes"
+        if amount < (512 * 1024) and allocating:
+            LOG.warn(
+                f"You set unit to {unit} and value is lower than 512MB. Setting to Fargate Minimum"
+            )
+            final_amount = 512
+        elif amount < (512 * 1024) and not allocating:
+            LOG.warn(f"You set unit to {unit} and value is invalid. Setting to NoValue")
+            final_amount = Ref(AWS_NO_VALUE)
+        else:
+            final_amount = int(amount / 1024)
+    elif mb_pat.findall(value):
+        final_amount = int(amount)
+    elif gb_pat.findall(value):
+        unit = "GBytes"
+        final_amount = int(amount * 1024)
+    elif not allocating and amount >= 512:
+        final_amount = int(amount)
+    else:
+        raise ValueError(f"Could not parse {value} to units")
+    LOG.debug(f"Computed unit for {value}: {unit}. Results into {final_amount}MB")
+    return final_amount
 
 
 class ServiceConfig(ComposeXConfig):
@@ -326,6 +400,35 @@ class ServiceConfig(ComposeXConfig):
     links = []
     service = None
     use_xray = False
+    cpu_alloc = Ref(AWS_NO_VALUE)
+    cpu_resa = Ref(AWS_NO_VALUE)
+    mem_alloc = Ref(AWS_NO_VALUE)
+    mem_resa = Ref(AWS_NO_VALUE)
+
+    def define_compute_resources(self, definition):
+        """
+        Function to analyze the Docker Compose deploy attribute and set settings accordingly.
+        deployment keys: replicas, mode, resources
+        """
+        if not keyisset("deploy", definition):
+            return
+        deployment = definition["deploy"]
+        if keyisset("resources", deployment):
+            resources = deployment["resources"]
+            if keyisset("limits", resources):
+                if keyisset("cpus", resources["limits"]):
+                    self.cpu_alloc = int(float(resources["limits"]["cpus"]) * 1024)
+                if keyisset("memory", resources["limits"]):
+                    self.mem_alloc = set_memory_to_mb(
+                        resources["limits"]["memory"].strip()
+                    )
+            if keyisset("reservations", resources):
+                if keyisset("cpus", resources["reservations"]):
+                    self.cpu_resa = int(float(resources["reservations"]["cpus"]) * 1024)
+                if keyisset("memory", resources["reservations"]):
+                    self.mem_resa = set_memory_to_mb(
+                        resources["reservations"]["memory"].strip()
+                    )
 
     def set_xray(self, config):
         """
@@ -419,6 +522,56 @@ class ServiceConfig(ComposeXConfig):
         )
         if keyisset("hostname", definition):
             self.hostname = definition["hostname"]
+        self.define_compute_resources(definition)
+
+
+class Container(object):
+    """
+    Class to represent the container definition and its settings
+    """
+
+    parameters = {}
+    required_keys = ["image"]
+
+    def __init__(self, title, definition, configuration):
+        if not set(self.required_keys).issubset(set(definition)):
+            raise AttributeError(
+                "Required attributes for a ecs_service are", self.required_keys
+            )
+        self.parameters = {}
+        self.outputs = {
+            f"{title}Cpu": configuration.cpu_resa,
+            f"{title}Memory": configuration.mem_alloc,
+            f"{title}MemoryReservation": configuration.mem_resa,
+        }
+        self.definition = ContainerDefinition(
+            title,
+            Command=definition["command"].strip().split(";")
+            if keyisset("command", definition)
+            else Ref(AWS_NO_VALUE),
+            Image=Ref(ecs_params.SERVICE_IMAGE),
+            Name=Ref(ecs_params.SERVICE_NAME),
+            Hostname=keyset_else_novalue(
+                "hostname", definition, else_value=Ref(ecs_params.SERVICE_NAME)
+            ),
+            Cpu=configuration.cpu_resa,
+            Memory=configuration.mem_alloc,
+            MemoryReservation=configuration.mem_resa,
+            PortMappings=generate_port_mappings(definition["ports"])
+            if keyisset("ports", definition)
+            else Ref(AWS_NO_VALUE),
+            Environment=import_env_variables(definition["environment"])
+            if keyisset("environment", definition)
+            else Ref(AWS_NO_VALUE),
+            LogConfiguration=LogConfiguration(
+                LogDriver="awslogs",
+                Options={
+                    "awslogs-group": Ref(ecs_params.CLUSTER_NAME),
+                    "awslogs-region": Ref("AWS::Region"),
+                    "awslogs-stream-prefix": Ref(ecs_params.LOG_GROUP),
+                },
+            ),
+        )
 
 
 class Service(object):
@@ -442,6 +595,27 @@ class Service(object):
     ecs_service = None
     eips = []
     service_attrs = None
+
+    def define_deployment_settings(self, definition):
+        """
+        Function to analyze the Docker Compose deploy attribute and set settings accordingly.
+        deployment keys: replicas, mode, resources
+        """
+
+        if not keyisset("deploy", definition):
+            return
+        deployment = definition["deploy"]
+        if keyisset("replicas", deployment):
+            self.parameters[ecs_params.SERVICE_COUNT_T] = deployment["replicas"]
+        if keyisset("mode", deployment):
+            if deployment["mode"] == "global":
+                pass
+        if keyisset("resources", deployment):
+            resources = deployment["resources"]
+            if keyisset("limits", resources):
+                pass
+            if keyisset("reservations", resources):
+                pass
 
     def add_service_default_sg(self):
         """
@@ -831,40 +1005,10 @@ class Service(object):
         """
         Generates the container definition
         """
-        env_vars = import_env_variables(self.config.environment)
-        mappings = generate_port_mappings(self.config.ports)
-        if not mappings:
-            mappings = Ref(AWS_NO_VALUE)
-        container = ContainerDefinition(
-            # EntryPoint=If(ENTRY_CON, Ref('AWS::NoValue'), Split(' ', Ref(params.SERVICE_ENTRYPOINT))),
-            Command=self.config.command.strip().split(";")
-            if self.config.command
-            else Ref(AWS_NO_VALUE),
-            Image=Ref(ecs_params.SERVICE_IMAGE),
-            Name=Ref(ecs_params.SERVICE_NAME),
-            MemoryReservation=If(
-                ecs_conditions.USE_FARGATE_CON_T,
-                ecs_params.FARGATE_RAM,
-                If(
-                    ecs_conditions.MEM_RES_IS_MEM_ALLOC_CON_T,
-                    Ref(ecs_params.MEMORY_ALLOC),
-                    Ref(ecs_params.MEMORY_RES),
-                ),
-            ),
-            PortMappings=mappings,
-            Environment=env_vars if env_vars else Ref(AWS_NO_VALUE),
-            LogConfiguration=LogConfiguration(
-                LogDriver="awslogs",
-                Options={
-                    "awslogs-group": Ref(ecs_params.CLUSTER_NAME),
-                    "awslogs-region": Ref("AWS::Region"),
-                    "awslogs-stream-prefix": Ref(ecs_params.LOG_GROUP),
-                },
-            ),
-        )
-        return container
+        container = Container(self.resource_name, self.definition, self.config)
+        return container.definition
 
-    def add_task_defnition(self):
+    def add_task_definition(self):
         """
         Function to generate and add the task definition with container definitions
         to the ecs_service template
@@ -872,12 +1016,9 @@ class Service(object):
         add_parameters(
             self.template,
             [
-                ecs_params.MEMORY_ALLOC,
-                ecs_params.MEMORY_RES,
                 ecs_params.SERVICE_NAME,
                 ecs_params.SERVICE_IMAGE,
                 ecs_params.FARGATE_CPU_RAM_CONFIG,
-                ecs_params.TASK_CPU_COUNT,
             ],
         )
         self.template.add_condition(
@@ -891,20 +1032,12 @@ class Service(object):
         )
         containers = [self.define_container_definition()]
         if self.config.use_xray:
-            containers.append(define_xray_container())
+            containers.append(define_xray_container(self.template))
         self.task_definition = TaskDefinition(
             TASK_T,
             template=self.template,
-            Cpu=If(
-                ecs_conditions.USE_FARGATE_CON_T,
-                ecs_params.FARGATE_CPU,
-                Ref(ecs_params.TASK_CPU_COUNT),
-            ),
-            Memory=If(
-                ecs_conditions.USE_FARGATE_CON_T,
-                ecs_params.FARGATE_RAM,
-                Ref(ecs_params.MEMORY_ALLOC),
-            ),
+            Cpu=ecs_params.FARGATE_CPU,
+            Memory=ecs_params.FARGATE_RAM,
             NetworkMode=NETWORK_MODE,
             Family=Ref(ecs_params.SERVICE_NAME),
             TaskRoleArn=GetAtt(self.template.resources[TASK_ROLE_T], "Arn"),
@@ -1053,7 +1186,7 @@ class Service(object):
             ecs_params.LOG_GROUP.title: Ref(ecs_params.LOG_GROUP_T),
         }
         add_service_roles(self.template, self.config)
-        self.add_task_defnition()
+        self.add_task_definition()
         self.sgs = [ecs_params.SG_T]
         self.sgs.append(
             If(

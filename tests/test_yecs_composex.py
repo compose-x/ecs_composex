@@ -67,6 +67,7 @@ def test_full_features(all_features, bucket_name, here):
         "AwsAzs": get_curated_azs(session=session),
         "VpcCidr": "172.23.0.0/24",
         "AddComputeResources": True,
+        "NoUpload": True,
     }
     template = generate_full_template(all_features, session=session, **args)
     render_final_template(template[0])

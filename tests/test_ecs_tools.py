@@ -15,27 +15,16 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from troposphere import Ref
-from troposphere.ecs import (
-    ContainerDefinition,
-    PortMapping,
-)
-from ecs_composex.ecs.ecs_params import XRAY_IMAGE
+from ecs_composex.ecs.ecs_service import set_memory_to_mb
 
 
-def define_xray_container(template):
+def test_mb_settings():
     """
-    Function to define the XRay container to run with the app
+    Function to ensure the MB return works
     :return:
     """
-    template.add_parameter(XRAY_IMAGE)
-    xray_container = ContainerDefinition(
-        Image=Ref(XRAY_IMAGE),
-        Name="AWSXRAY",
-        PortMappings=[PortMapping(ContainerPort=2000, Protocol="UDP")],
-        Cpu=32,
-        Memory=256,
-        MemoryReservation=256,
-        Essential=False,
-    )
-    return xray_container
+    assert set_memory_to_mb("1024") == 1024
+    assert set_memory_to_mb("1G") == 1024
+    assert set_memory_to_mb("0.5G") == 512
+    assert set_memory_to_mb("4G") == 4096
+    assert set_memory_to_mb(f"{1024*1024}kB") == 1024
