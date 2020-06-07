@@ -17,7 +17,7 @@ configs:
 
   serviceB:
     network:
-      is_public: True
+      is_public: False
       use_nlb: False
       use_alb: True
   serviceC:

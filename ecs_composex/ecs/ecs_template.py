@@ -152,23 +152,60 @@ def handle_single_services(single_services, cluster_sg, compose_content, **kwarg
                 vpc_params.VPC_MAP_ID_T: Ref(vpc_params.VPC_MAP_ID_T),
             }
         )
-        service.dependencies.append(ecs_params.LOG_GROUP_T)
         LOG.debug(f"Service {service_name} added.")
         services[service_name] = service
     return services
 
 
-def handle_families_services(families, content, **kwargs):
+def handle_families_services(families, cluster_sg, content, **kwargs):
     """
     Function to handle creation of services within the same family.
     :return:
     """
-    configs = []
+    services = {}
     for family_name in families:
+        family_resource_name = NONALPHANUM.sub("", family_name)
+        containers = []
+        template = initialize_service_template(family_resource_name)
         family = families[family_name]
+        family_config = None
+        family_parameters = {}
         for service_name in family:
             service = content[ecs_params.RES_KEY][service_name]
-            configs.append(ServiceConfig(content, service_name, service))
+            service_config = ServiceConfig(content, service_name, service)
+            service_container = Container(
+                template,
+                service_config.resource_name,
+                content[ecs_params.RES_KEY][service_name],
+                config=service_config,
+            )
+            family_parameters.update(service_container.template_parameters)
+            containers.append(service_container)
+            print(containers)
+            if family_config is None:
+                family_config = service_config
+            else:
+                print("FAMILY IS NOT NONE", type(family_config))
+                print(type(family_config), type(service_config))
+                family_config += service_config
+            print(type(family_config))
+        task = Task(template, [c.definition for c in containers], family_config)
+        family_parameters.update(task.template_parameters)
+        service = Service(
+            template, family_resource_name, task.definition, family_config, **kwargs
+        )
+        service.parameters.update(
+            {
+                CLUSTER_NAME_T: Ref(CLUSTER_NAME),
+                ROOT_STACK_NAME_T: Ref(ROOT_STACK_NAME),
+                ecs_params.CLUSTER_SG_ID_T: Ref(cluster_sg),
+                vpc_params.VPC_MAP_ID_T: Ref(vpc_params.VPC_MAP_ID_T),
+            }
+        )
+        service.parameters.update(family_parameters)
+        LOG.debug(f"Service {family_resource_name} added.")
+        services[family_resource_name] = service
+    return services
 
 
 def generate_services(compose_content, cluster_sg, **kwargs):
@@ -198,5 +235,8 @@ def generate_services(compose_content, cluster_sg, **kwargs):
             ]
     services.update(
         handle_single_services(single_services, cluster_sg, compose_content, **kwargs)
+    )
+    services.update(
+        handle_families_services(families, cluster_sg, compose_content, **kwargs)
     )
     return services

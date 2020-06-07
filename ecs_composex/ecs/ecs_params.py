@@ -83,6 +83,31 @@ ECS_CONTROLLER = Parameter(
 )
 
 LOG_GROUP = Parameter(f"Cluster{LOG_GROUP_T}", Type="String")
+LOG_GROUP_RETENTION_T = "ServiceLogGroupRetentionPeriod"
+LOG_GROUP_RETENTION = Parameter(
+    LOG_GROUP_RETENTION_T,
+    Type="Number",
+    Default=30,
+    AllowedValues=[
+        1,
+        3,
+        5,
+        7,
+        14,
+        30,
+        60,
+        90,
+        120,
+        150,
+        180,
+        365,
+        400,
+        545,
+        731,
+        1827,
+        3653,
+    ],
+)
 
 FARGATE_MODES = {
     256: [2 ** i for i in [9, 10, 11]],

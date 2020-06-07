@@ -111,17 +111,6 @@ def add_service_roles(template, config):
                     "Resource": ["*"],
                 },
                 {
-                    "Sid": "AllowCloudWatchLoggingToSpecificLogGroup",
-                    "Effect": "Allow",
-                    "Action": ["logs:CreateLogStream", "logs:PutLogEvents"],
-                    "Resource": [
-                        Sub(
-                            f"arn:${{{AWS_PARTITION}}}:logs:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:log-group:"
-                            f"${{{CLUSTER_NAME_T}}}:*"
-                        )
-                    ],
-                },
-                {
                     "Sid": "AllowsEcsAgentToPerformActionsForMicroservice",
                     "Effect": "Allow",
                     "Action": [

@@ -157,16 +157,11 @@ class ServicesStack(ComposeXStack):
             vpc_params.APP_SUBNETS,
             vpc_params.VPC_MAP_ID,
             USE_CLOUDMAP,
+            ecs_params.XRAY_IMAGE,
+            ecs_params.LOG_GROUP_RETENTION,
         ]
         self.stack_template = build_template(
             "Root template for ECS Services", parameters
-        )
-        self.stack_template.add_resource(
-            LogGroup(
-                ecs_params.LOG_GROUP_T,
-                RetentionInDays=30,
-                LogGroupName=Ref(CLUSTER_NAME),
-            )
         )
         cluster_sg = self.stack_template.add_resource(
             SecurityGroup(
@@ -186,6 +181,9 @@ class ServicesStack(ComposeXStack):
         self.handle_services_dependencies()
         for service_name in self.services:
             service = self.services[service_name]
+            service.parameters.update(
+                {ecs_params.LOG_GROUP_RETENTION_T: Ref(ecs_params.LOG_GROUP_RETENTION)}
+            )
             self.stack_template.add_resource(
                 ServiceStack(
                     service.resource_name,

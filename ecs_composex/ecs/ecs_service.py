@@ -29,6 +29,8 @@ from troposphere import (
     AWS_NO_VALUE,
     AWS_ACCOUNT_ID,
     AWS_STACK_NAME,
+    AWS_PARTITION,
+    AWS_REGION,
 )
 from troposphere import Ref, Sub, GetAtt, ImportValue
 from troposphere.ec2 import EIP, SecurityGroup
@@ -49,6 +51,7 @@ from troposphere.ecs import (
     DeploymentController,
 )
 from troposphere.ecs import ServiceRegistry
+from troposphere.logs import LogGroup
 from troposphere.elasticloadbalancingv2 import (
     LoadBalancer,
     LoadBalancerAttributes,
@@ -64,6 +67,7 @@ from troposphere.servicediscovery import (
     DnsRecord as SdDnsRecord,
     HealthCheckCustomConfig as SdHealthCheckCustomConfig,
 )
+from troposphere.iam import PolicyType
 
 from ecs_composex.common import keyisset, LOG
 from ecs_composex.common import add_parameters
@@ -269,10 +273,10 @@ def initialize_service_template(service_name):
             vpc_params.APP_SUBNETS,
             vpc_params.PUBLIC_SUBNETS,
             vpc_params.VPC_MAP_ID,
-            ecs_params.LOG_GROUP,
             ecs_params.SERVICE_HOSTNAME,
             ecs_params.FARGATE_CPU_RAM_CONFIG,
-            ecs_params.SERVICE_NAME
+            ecs_params.SERVICE_NAME,
+            ecs_params.LOG_GROUP_RETENTION,
         ],
     )
     service_tpl.add_condition(
@@ -301,10 +305,76 @@ def initialize_service_template(service_name):
         ecs_conditions.USE_CLUSTER_SG_CON_T, ecs_conditions.USE_CLUSTER_SG_CON
     )
     service_tpl.add_condition(
-        ecs_conditions.USE_FARGATE_CON_T,
-        ecs_conditions.USE_FARGATE_CON,
+        ecs_conditions.USE_FARGATE_CON_T, ecs_conditions.USE_FARGATE_CON,
+    )
+    svc_log = service_tpl.add_resource(
+        LogGroup(
+            ecs_params.LOG_GROUP_T,
+            RetentionInDays=Ref(ecs_params.LOG_GROUP_RETENTION),
+            LogGroupName=Sub(
+                f"svc/${{{ecs_params.CLUSTER_NAME_T}}}/${{{ecs_params.SERVICE_NAME_T}}}"
+            ),
+        )
+    )
+    service_tpl.add_resource(
+        PolicyType(
+            "CloudWatchAcccess",
+            Roles=[Ref(ecs_params.EXEC_ROLE_T)],
+            PolicyName=Sub(f"CloudWatchAccessFor${{{ecs_params.SERVICE_NAME_T}}}"),
+            PolicyDocument={
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Sid": "AllowCloudWatchLoggingToSpecificLogGroup",
+                        "Effect": "Allow",
+                        "Action": ["logs:CreateLogStream", "logs:PutLogEvents"],
+                        "Resource": [GetAtt(svc_log, "Arn")],
+                    },
+                ],
+            },
+        )
     )
     return service_tpl
+
+
+def set_service_ports(ports):
+    """Function to define common structure to ports
+
+    :return: list of ports the ecs_service uses formatted according to dict
+    :rtype: list
+    """
+    valid_keys = ["published", "target", "protocol", "mode"]
+    service_ports = []
+    for port in ports:
+        if not isinstance(port, (str, dict, int)):
+            raise TypeError(
+                "ports must be of types", dict, "or", list, "got", type(port)
+            )
+        if isinstance(port, str):
+            service_ports.append(
+                {
+                    "protocol": define_protocol(port),
+                    "published": port.split(":")[0],
+                    "target": port.split(":")[-1].split("/")[0].strip(),
+                    "mode": "awsvpc",
+                }
+            )
+        elif isinstance(port, dict):
+            if not set(port).issubset(valid_keys):
+                raise KeyError(f"Valid keys are", valid_keys, "got", port.keys())
+            port["mode"] = "awsvpc"
+            service_ports.append(port)
+        elif isinstance(port, int):
+            service_ports.append(
+                {
+                    "protocol": "tcp",
+                    "published": port,
+                    "target": port,
+                    "mode": "awsvpc",
+                }
+            )
+    LOG.debug(service_ports)
+    return service_ports
 
 
 class ServiceConfig(ComposeXConfig):
@@ -412,45 +482,6 @@ class ServiceConfig(ComposeXConfig):
         if keyisset("enabled", config):
             self.use_xray = config["enabled"]
 
-    def set_service_ports(self, ports):
-        """Function to define common structure to ports
-
-        :return: list of ports the ecs_service uses formatted according to dict
-        :rtype: list
-        """
-        valid_keys = ["published", "target", "protocol", "mode"]
-        service_ports = []
-        for port in ports:
-            if not isinstance(port, (str, dict, int)):
-                raise TypeError(
-                    "ports must be of types", dict, "or", list, "got", type(port)
-                )
-            if isinstance(port, str):
-                service_ports.append(
-                    {
-                        "protocol": define_protocol(port),
-                        "published": port.split(":")[0],
-                        "target": port.split(":")[-1].split("/")[0].strip(),
-                        "mode": "awsvpc",
-                    }
-                )
-            elif isinstance(port, dict):
-                if not set(port).issubset(valid_keys):
-                    raise KeyError(f"Valid keys are", valid_keys, "got", port.keys())
-                port["mode"] = "awsvpc"
-                service_ports.append(port)
-            elif isinstance(port, int):
-                service_ports.append(
-                    {
-                        "protocol": "tcp",
-                        "published": port,
-                        "target": port,
-                        "mode": "awsvpc",
-                    }
-                )
-        LOG.debug(service_ports)
-        return service_ports
-
     def sort_load_balancing(self):
         """
         Function to sort out the load-balancing in case conflicting configuration
@@ -488,7 +519,7 @@ class ServiceConfig(ComposeXConfig):
         )
         self.entrypoint = keyset_else_novalue("entrypoint", definition, else_value=None)
         self.ports = (
-            self.set_service_ports(definition["ports"])
+            set_service_ports(definition["ports"])
             if keyisset("ports", definition)
             else []
         )
@@ -497,6 +528,15 @@ class ServiceConfig(ComposeXConfig):
         self.family_name = family_name if not None else Ref(ecs_params.SERVICE_NAME)
         self.set_service_deploy(definition)
         self.sort_load_balancing()
+
+    def __add__(self, other):
+        """
+        Function to merge two services config.
+        """
+        if other.lb_type is not None:
+            if other.is_public and not self.is_public:
+                self.ports = other.ports + self.ports
+        return self
 
 
 class Container(object):
@@ -1153,16 +1193,11 @@ class Service(object):
             vpc_params.APP_SUBNETS_T: Join(",", Ref(vpc_params.APP_SUBNETS)),
             vpc_params.PUBLIC_SUBNETS_T: Join(",", Ref(vpc_params.PUBLIC_SUBNETS)),
             ecs_params.CLUSTER_NAME_T: Ref(ecs_params.CLUSTER_NAME),
-            ecs_params.LOG_GROUP.title: Ref(ecs_params.LOG_GROUP_T),
         }
         if config.family_name is not None:
-            self.parameters.update({
-                ecs_params.SERVICE_NAME_T: config.family_name
-            })
+            self.parameters.update({ecs_params.SERVICE_NAME_T: config.family_name})
         else:
-            self.parameters.update({
-                ecs_params.SERVICE_NAME_T: service_name
-            })
+            self.parameters.update({ecs_params.SERVICE_NAME_T: service_name})
         add_service_roles(self.template, self.config)
         self.sgs = [ecs_params.SG_T]
         self.sgs.append(
