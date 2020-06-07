@@ -74,6 +74,7 @@ services:
           cpus: 2
         reservations:
           memory: 1G
+    ports: []
 
 
 x-tags:

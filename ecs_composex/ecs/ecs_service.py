@@ -449,7 +449,7 @@ class ServiceConfig(ComposeXConfig):
                     }
                 )
         LOG.debug(service_ports)
-        self.ports = service_ports
+        return service_ports
 
     def sort_load_balancing(self):
         """
@@ -517,9 +517,9 @@ class Container(object):
         )
         add_parameters(template, [image_param])
         self.template_parameters = {image_param.title: definition["image"]}
-        if not isinstance(config.cpu_alloc, Ref):
+        if isinstance(config.cpu_alloc, int):
             cpu_config = config.cpu_alloc
-        elif isinstance(config.cpu_alloc, Ref) and not isinstance(config.cpu_resa, Ref):
+        elif isinstance(config.cpu_alloc, Ref) and isinstance(config.cpu_resa, int):
             cpu_config = config.cpu_resa
         else:
             cpu_config = Ref(AWS_NO_VALUE)
@@ -549,16 +549,16 @@ class Container(object):
             if keyisset("command", definition)
             else Ref(AWS_NO_VALUE),
         )
-        # template.add_output(
-        #     formatted_outputs(
-        #         [
-        #             {f"{title}Cpu": str(config.cpu_resa)},
-        #             {f"{title}Memory": str(config.mem_alloc)},
-        #             {f"{title}MemoryReservation": str(config.mem_resa)},
-        #         ],
-        #         export=False,
-        #     )
-        # )
+        template.add_output(
+            formatted_outputs(
+                [
+                    {f"{title}Cpu": str(config.cpu_resa)},
+                    {f"{title}Memory": str(config.mem_alloc)},
+                    {f"{title}MemoryReservation": str(config.mem_resa)},
+                ],
+                export=False,
+            )
+        )
 
 
 class Task(object):
@@ -569,13 +569,13 @@ class Task(object):
     definition = None
     containers = []
 
-    def set_task_compute_parameter(self):
+    def set_task_compute_parameter(self, containers):
         """
         Method to update task parameter for CPU/RAM profile
         """
         tasks_cpu = 0
         tasks_ram = 0
-        for container in self.containers:
+        for container in containers:
             if isinstance(container.Cpu, int):
                 tasks_cpu += container.Cpu
             if isinstance(container.Memory, int):
@@ -599,12 +599,12 @@ class Task(object):
             ecs_params.FARGATE_CPU_RAM_CONFIG_T: Ref(ecs_params.FARGATE_CPU_RAM_CONFIG),
         }
         if config.use_xray:
-            self.containers.append(define_xray_container())
+            containers.append(define_xray_container())
             add_parameters(template, [ecs_params.XRAY_IMAGE])
             self.template_parameters.update(
                 {ecs_params.XRAY_IMAGE_T: Ref(ecs_params.XRAY_IMAGE)}
             )
-        self.set_task_compute_parameter()
+        self.set_task_compute_parameter(containers)
         self.definition = TaskDefinition(
             TASK_T,
             template=template,

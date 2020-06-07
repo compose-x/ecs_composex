@@ -152,7 +152,6 @@ def handle_single_services(single_services, cluster_sg, compose_content, **kwarg
                 vpc_params.VPC_MAP_ID_T: Ref(vpc_params.VPC_MAP_ID_T),
             }
         )
-        print(template.to_yaml())
         service.dependencies.append(ecs_params.LOG_GROUP_T)
         LOG.debug(f"Service {service_name} added.")
         services[service_name] = service
@@ -200,5 +199,4 @@ def generate_services(compose_content, cluster_sg, **kwargs):
     services.update(
         handle_single_services(single_services, cluster_sg, compose_content, **kwargs)
     )
-    LOG.info(f"Singleservices, {single_services}")
     return services
