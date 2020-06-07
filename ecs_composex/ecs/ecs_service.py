@@ -25,6 +25,7 @@ from troposphere import (
     Select,
     If,
     Tags,
+    Parameter,
     AWS_NO_VALUE,
     AWS_ACCOUNT_ID,
     AWS_STACK_NAME,
@@ -270,12 +271,10 @@ def initialize_service_template(service_name):
             vpc_params.VPC_MAP_ID,
             ecs_params.LOG_GROUP,
             ecs_params.SERVICE_HOSTNAME,
+            ecs_params.FARGATE_CPU_RAM_CONFIG,
+            ecs_params.SERVICE_NAME
         ],
     )
-    # service_tpl.add_condition(
-    #     ecs_conditions.MEM_RES_IS_MEM_ALLOC_CON_T,
-    #     ecs_conditions.MEM_RES_IS_MEM_ALLOC_CON,
-    # )
     service_tpl.add_condition(
         ecs_conditions.SERVICE_COUNT_ZERO_CON_T, ecs_conditions.SERVICE_COUNT_ZERO_CON
     )
@@ -301,6 +300,10 @@ def initialize_service_template(service_name):
     service_tpl.add_condition(
         ecs_conditions.USE_CLUSTER_SG_CON_T, ecs_conditions.USE_CLUSTER_SG_CON
     )
+    service_tpl.add_condition(
+        ecs_conditions.USE_FARGATE_CON_T,
+        ecs_conditions.USE_FARGATE_CON,
+    )
     return service_tpl
 
 
@@ -322,6 +325,10 @@ class ServiceConfig(ComposeXConfig):
     :cvar list ports: List of ports to use for the microservice.
     :cvar list links: list of links as indicated in the compose file, indicating connection dependencies.
     :cvar bool use_xray: Indicates whether or not add the X-Ray Daemon to the task definition.
+    :cvar float cpu_alloc: CPU Allocated to the service
+    :cvar float cpu_resa: CPU Reservation to the service
+    :cvar int mem_alloc: Memory allocation for the service, in MB
+    :cvar int mem_resa: Memory reserved to the service.
     """
 
     keys = [
@@ -358,8 +365,9 @@ class ServiceConfig(ComposeXConfig):
     mem_alloc = Ref(AWS_NO_VALUE)
     mem_resa = Ref(AWS_NO_VALUE)
     replicas = int(ecs_params.SERVICE_COUNT.Default)
+    family_name = None
 
-    def define_compute_resources(self, resources):
+    def set_compute_resources(self, resources):
         """
         Function to analyze the Docker Compose deploy attribute and set settings accordingly.
         deployment keys: replicas, mode, resources
@@ -379,14 +387,14 @@ class ServiceConfig(ComposeXConfig):
                     resources["reservations"]["memory"].strip()
                 )
 
-    def define_deployment_settings(self, deployment):
+    def set_deployment_settings(self, deployment):
         """
         Function to set the service deployment settings.
         """
         if keyisset("replicas", deployment):
             self.replicas = int(deployment["replicas"])
 
-    def define_service_deploy(self, definition):
+    def set_service_deploy(self, definition):
         """
         Function to setup the service configuration from the deploy section of the service in compose file.
         """
@@ -394,8 +402,8 @@ class ServiceConfig(ComposeXConfig):
             return
         deployment = definition["deploy"]
         if keyisset("resources", deployment):
-            self.define_compute_resources(deployment["resources"])
-        self.define_deployment_settings(deployment)
+            self.set_compute_resources(deployment["resources"])
+        self.set_deployment_settings(deployment)
 
     def set_xray(self, config):
         """
@@ -404,7 +412,7 @@ class ServiceConfig(ComposeXConfig):
         if keyisset("enabled", config):
             self.use_xray = config["enabled"]
 
-    def define_service_ports(self, ports):
+    def set_service_ports(self, ports):
         """Function to define common structure to ports
 
         :return: list of ports the ecs_service uses formatted according to dict
@@ -458,7 +466,7 @@ class ServiceConfig(ComposeXConfig):
             self.lb_type = "network"
         LOG.debug(f"Setting LB type to {self.lb_type}")
 
-    def __init__(self, content, service_name, definition):
+    def __init__(self, content, service_name, definition, family_name=None):
         """
         Function to initialize the ecs_service configuration
         :param content:
@@ -474,22 +482,21 @@ class ServiceConfig(ComposeXConfig):
             raise AttributeError(
                 "Required attributes for a ecs_service are", self.required_keys
             )
-        self.image = definition["image"]
+        self.resource_name = NONALPHANUM.sub("", service_name)
         self.command = (
             definition["command"].strip() if keyisset("command", definition) else None
         )
-        self.entrypoint = (
-            definition["entrypoint"] if keyisset("entrypoint", definition) else None
+        self.entrypoint = keyset_else_novalue("entrypoint", definition, else_value=None)
+        self.ports = (
+            self.set_service_ports(definition["ports"])
+            if keyisset("ports", definition)
+            else []
         )
+        self.environment = keyset_else_novalue("environment", definition, else_value=[])
+        self.hostname = keyset_else_novalue("hostname", definition, else_value=None)
+        self.family_name = family_name if not None else Ref(ecs_params.SERVICE_NAME)
+        self.set_service_deploy(definition)
         self.sort_load_balancing()
-        if keyisset("ports", definition):
-            self.define_service_ports(definition["ports"])
-        self.environment = (
-            definition["environment"] if keyisset("environment", definition) else []
-        )
-        if keyisset("hostname", definition):
-            self.hostname = definition["hostname"]
-        self.define_service_deploy(definition)
 
 
 class Container(object):
@@ -500,38 +507,30 @@ class Container(object):
     parameters = {}
     required_keys = ["image"]
 
-    def __init__(self, title, definition, configuration):
+    def __init__(self, template, title, definition, config):
         if not set(self.required_keys).issubset(set(definition)):
             raise AttributeError(
                 "Required attributes for a ecs_service are", self.required_keys
             )
-        self.parameters = {}
-        self.outputs = {
-            f"{title}Cpu": configuration.cpu_resa,
-            f"{title}Memory": configuration.mem_alloc,
-            f"{title}MemoryReservation": configuration.mem_resa,
-        }
-        if not isinstance(configuration.cpu_alloc, Ref):
-            cpu_config = configuration.cpu_alloc
-        elif isinstance(configuration.cpu_alloc, Ref) and not isinstance(
-            configuration.cpu_resa, Ref
-        ):
-            cpu_config = configuration.cpu_resa
+        image_param = Parameter(
+            f"{title}ImageUrl", Type="String", Description=f"ImageURL for {title}",
+        )
+        add_parameters(template, [image_param])
+        self.template_parameters = {image_param.title: definition["image"]}
+        if not isinstance(config.cpu_alloc, Ref):
+            cpu_config = config.cpu_alloc
+        elif isinstance(config.cpu_alloc, Ref) and not isinstance(config.cpu_resa, Ref):
+            cpu_config = config.cpu_resa
         else:
             cpu_config = Ref(AWS_NO_VALUE)
         self.definition = ContainerDefinition(
-            title,
-            Command=definition["command"].strip().split(";")
-            if keyisset("command", definition)
-            else Ref(AWS_NO_VALUE),
-            Image=Ref(ecs_params.SERVICE_IMAGE),
-            Name=Ref(ecs_params.SERVICE_NAME),
-            Hostname=keyset_else_novalue(
-                "hostname", definition, else_value=Ref(ecs_params.SERVICE_NAME)
-            ),
+            f"{title}Container",
+            Image=Ref(image_param),
+            Name=title,
+            Hostname=keyset_else_novalue("hostname", definition, else_value=title,),
             Cpu=cpu_config,
-            Memory=configuration.mem_alloc,
-            MemoryReservation=configuration.mem_resa,
+            Memory=config.mem_alloc,
+            MemoryReservation=config.mem_resa,
             PortMappings=generate_port_mappings(definition["ports"])
             if keyisset("ports", definition)
             else Ref(AWS_NO_VALUE),
@@ -543,8 +542,85 @@ class Container(object):
                 Options={
                     "awslogs-group": Ref(ecs_params.CLUSTER_NAME),
                     "awslogs-region": Ref("AWS::Region"),
-                    "awslogs-stream-prefix": Ref(ecs_params.LOG_GROUP),
+                    "awslogs-stream-prefix": title,
                 },
+            ),
+            Command=definition["command"].strip().split(";")
+            if keyisset("command", definition)
+            else Ref(AWS_NO_VALUE),
+        )
+        # template.add_output(
+        #     formatted_outputs(
+        #         [
+        #             {f"{title}Cpu": str(config.cpu_resa)},
+        #             {f"{title}Memory": str(config.mem_alloc)},
+        #             {f"{title}MemoryReservation": str(config.mem_resa)},
+        #         ],
+        #         export=False,
+        #     )
+        # )
+
+
+class Task(object):
+    """
+    Class to handle the Task definition building and parsing along with the service config.
+    """
+
+    definition = None
+    containers = []
+
+    def set_task_compute_parameter(self):
+        """
+        Method to update task parameter for CPU/RAM profile
+        """
+        tasks_cpu = 0
+        tasks_ram = 0
+        for container in self.containers:
+            if isinstance(container.Cpu, int):
+                tasks_cpu += container.Cpu
+            if isinstance(container.Memory, int):
+                tasks_ram += container.Memory
+            elif isinstance(container.Memory, Ref) and isinstance(
+                container.MemoryReservation, int
+            ):
+                tasks_ram += container.MemoryReservation
+        LOG.info(f"CPU: {tasks_cpu}, RAM: {tasks_ram}")
+        if tasks_cpu > 0 and tasks_ram > 0:
+            cpu_ram = find_closest_fargate_configuration(tasks_cpu, tasks_ram, True)
+            self.template_parameters.update(
+                {ecs_params.FARGATE_CPU_RAM_CONFIG_T: cpu_ram}
+            )
+
+    def __init__(self, template, containers, config):
+        """
+        Init method
+        """
+        self.template_parameters = {
+            ecs_params.FARGATE_CPU_RAM_CONFIG_T: Ref(ecs_params.FARGATE_CPU_RAM_CONFIG),
+        }
+        if config.use_xray:
+            self.containers.append(define_xray_container())
+            add_parameters(template, [ecs_params.XRAY_IMAGE])
+            self.template_parameters.update(
+                {ecs_params.XRAY_IMAGE_T: Ref(ecs_params.XRAY_IMAGE)}
+            )
+        self.set_task_compute_parameter()
+        self.definition = TaskDefinition(
+            TASK_T,
+            template=template,
+            Cpu=ecs_params.FARGATE_CPU,
+            Memory=ecs_params.FARGATE_RAM,
+            NetworkMode=NETWORK_MODE,
+            Family=Ref(ecs_params.SERVICE_NAME),
+            TaskRoleArn=GetAtt(TASK_ROLE_T, "Arn"),
+            ExecutionRoleArn=GetAtt(EXEC_ROLE_T, "Arn"),
+            ContainerDefinitions=containers,
+            RequiresCompatibilities=["EC2", "FARGATE"],
+            Tags=Tags(
+                {
+                    "Name": Ref(ecs_params.SERVICE_NAME),
+                    "Environment": Ref(AWS_STACK_NAME),
+                }
             ),
         )
 
@@ -955,72 +1031,6 @@ class Service(object):
             )
         )
 
-    def define_container_definition(self):
-        """
-        Generates the container definition
-        """
-        container = Container(self.resource_name, self.definition, self.config)
-        return container.definition
-
-    def add_task_definition(self):
-        """
-        Function to generate and add the task definition with container definitions
-        to the ecs_service template
-        """
-        add_parameters(
-            self.template,
-            [
-                ecs_params.SERVICE_NAME,
-                ecs_params.SERVICE_IMAGE,
-                ecs_params.FARGATE_CPU_RAM_CONFIG,
-            ],
-        )
-        self.template.add_condition(
-            ecs_conditions.USE_FARGATE_CON_T, ecs_conditions.USE_FARGATE_CON
-        )
-        self.parameters.update(
-            {
-                ecs_params.SERVICE_IMAGE_T: self.config.image,
-                ecs_params.SERVICE_NAME_T: self.service_name,
-            }
-        )
-        containers = [self.define_container_definition()]
-        if self.config.use_xray:
-            containers.append(define_xray_container(self.template))
-        tasks_cpu = 0
-        tasks_ram = 0
-        for container in containers:
-            if isinstance(container.Cpu, int):
-                tasks_cpu += container.Cpu
-            if isinstance(container.Memory, int):
-                tasks_ram += container.Memory
-            elif isinstance(container.Memory, Ref) and isinstance(
-                container.MemoryReservation, int
-            ):
-                tasks_ram += container.MemoryReservation
-        LOG.info(f"CPU: {tasks_cpu}, RAM: {tasks_ram}")
-        if tasks_cpu > 0 and tasks_ram > 0:
-            cpu_ram = find_closest_fargate_configuration(tasks_cpu, tasks_ram, True)
-            self.parameters[ecs_params.FARGATE_CPU_RAM_CONFIG_T] = cpu_ram
-        self.task_definition = TaskDefinition(
-            TASK_T,
-            template=self.template,
-            Cpu=ecs_params.FARGATE_CPU,
-            Memory=ecs_params.FARGATE_RAM,
-            NetworkMode=NETWORK_MODE,
-            Family=Ref(ecs_params.SERVICE_NAME),
-            TaskRoleArn=GetAtt(self.template.resources[TASK_ROLE_T], "Arn"),
-            ExecutionRoleArn=GetAtt(self.template.resources[EXEC_ROLE_T], "Arn"),
-            ContainerDefinitions=containers,
-            RequiresCompatibilities=["EC2", "FARGATE"],
-            Tags=Tags(
-                {
-                    "Name": Ref(ecs_params.SERVICE_NAME),
-                    "Environment": Ref(AWS_STACK_NAME),
-                }
-            ),
-        )
-
     def define_service_network_config(self, **kwargs):
         """
         Function to define microservice ingress.
@@ -1054,7 +1064,7 @@ class Service(object):
                 service_lb[-1] if isinstance(service_lb[-1], list) else []
             )
 
-    def generate_service_definition(self):
+    def generate_service_definition(self, task_definition):
         """
         Function to generate the Service definition.
         This is the last step in defining the service, after all other settings have been prepared.
@@ -1106,7 +1116,7 @@ class Service(object):
                     Subnets=Ref(vpc_params.APP_SUBNETS), SecurityGroups=service_sgs
                 )
             ),
-            TaskDefinition=Ref(ecs_params.TASK_T),
+            TaskDefinition=Ref(task_definition),
             LaunchType=Ref(ecs_params.LAUNCH_TYPE),
             Tags=Tags(
                 {
@@ -1118,36 +1128,25 @@ class Service(object):
             **self.service_attrs,
         )
 
-    def __init__(self, service_name, definition, content, **kwargs):
+    def __init__(self, template, service_name, task_definition, config, **kwargs):
         """
         Function to initialize the Service object
         :param service_name: Name of the service
         :type service_name: str
         :param definition: the service definition as defined in compose file
         :type definition: dict
-        :param content: the docker compose content, in full
-        :type content: dict
         :param kwargs: unordered arguments
         :type kwargs: dict
         """
-        self.definition = definition
-        self.config = ServiceConfig(content, service_name, definition)
-        LOG.debug(self.config)
-        self.links = definition["links"] if keyisset("links", definition) else []
-        self.dependencies = (
-            definition["depends_on"] if keyisset("depends_on", definition) else []
-        )
+        self.template = template
+        self.config = config
+        self.links = []
+        # self.links = definition["links"] if keyisset("links", definition) else []
+        # self.dependencies = (
+        #     definition["depends_on"] if keyisset("depends_on", definition) else []
+        # )
         self.service_name = service_name
-        if not keyisset("image", definition):
-            raise KeyError(f"No image property set for ecs_service {service_name}")
-        self.environment = (
-            definition["environment"] if keyisset("environment", definition) else []
-        )
-        self.resource_name = NONALPHANUM.sub("", self.service_name)
-        self.hostname = (
-            self.config.hostname if self.config.hostname else self.resource_name
-        )
-        self.template = initialize_service_template(self.resource_name)
+        self.resource_name = self.config.resource_name
         self.parameters = {
             vpc_params.VPC_ID_T: Ref(vpc_params.VPC_ID),
             vpc_params.VPC_MAP_ID_T: Ref(vpc_params.VPC_MAP_ID),
@@ -1156,8 +1155,15 @@ class Service(object):
             ecs_params.CLUSTER_NAME_T: Ref(ecs_params.CLUSTER_NAME),
             ecs_params.LOG_GROUP.title: Ref(ecs_params.LOG_GROUP_T),
         }
+        if config.family_name is not None:
+            self.parameters.update({
+                ecs_params.SERVICE_NAME_T: config.family_name
+            })
+        else:
+            self.parameters.update({
+                ecs_params.SERVICE_NAME_T: service_name
+            })
         add_service_roles(self.template, self.config)
-        self.add_task_definition()
         self.sgs = [ecs_params.SG_T]
         self.sgs.append(
             If(
@@ -1167,5 +1173,5 @@ class Service(object):
             )
         )
         self.define_service_network_config(**kwargs)
-        self.generate_service_definition()
+        self.generate_service_definition(task_definition)
         self.generate_service_template_outputs()

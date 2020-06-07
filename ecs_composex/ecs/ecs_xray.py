@@ -23,12 +23,11 @@ from troposphere.ecs import (
 from ecs_composex.ecs.ecs_params import XRAY_IMAGE
 
 
-def define_xray_container(template):
+def define_xray_container():
     """
     Function to define the XRay container to run with the app
     :return:
     """
-    template.add_parameter(XRAY_IMAGE)
     xray_container = ContainerDefinition(
         Image=Ref(XRAY_IMAGE),
         Name="AWSXRAY",

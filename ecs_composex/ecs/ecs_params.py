@@ -37,6 +37,7 @@ TASK_ROLE_T = "EcsTaskRole"
 SERVICE_T = "EcsServiceDefinition"
 TASK_T = "EcsTaskDefinition"
 RES_KEY = "services"
+ECS_TASK_FAMILY_LABEL = "ecs.task.family"
 
 LAUNCH_TYPE_T = "EcsLaunchType"
 LAUNCH_TYPE = Parameter(
@@ -45,14 +46,6 @@ LAUNCH_TYPE = Parameter(
 
 IS_PUBLIC_T = "ExposeServicePublicly"
 IS_PUBLIC = Parameter(IS_PUBLIC_T, AllowedValues=["True", "False"], Type="String")
-
-# TASK_CPU_COUNT_T = "TaskCpuCount"
-# TASK_CPU_COUNT = Parameter(TASK_CPU_COUNT_T, Type="Number", Default=1024)
-# MEMORY_ALLOC_T = "ContainerMemoryAllocation"
-# MEMORY_RES_T = "ContainerMemoryReservation"
-#
-# MEMORY_ALLOC = Parameter(MEMORY_ALLOC_T, Type="Number", Default=512)
-# MEMORY_RES = Parameter(MEMORY_RES_T, Type="Number", Default=0)
 
 CLUSTER_NAME_T = "EcsClusterName"
 CLUSTER_NAME = Parameter(

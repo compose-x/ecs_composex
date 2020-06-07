@@ -21,12 +21,22 @@ from troposphere import Ref, Sub, Tags, Join
 from troposphere.ec2 import SecurityGroup
 
 from ecs_composex.common import keyisset
-from ecs_composex.common import LOG
+from ecs_composex.common import LOG, NONALPHANUM
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T, ROOT_STACK_NAME
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.ecs import ecs_params
-from ecs_composex.ecs.ecs_params import CLUSTER_NAME, CLUSTER_NAME_T
-from ecs_composex.ecs.ecs_service import Service
+from ecs_composex.ecs.ecs_params import (
+    CLUSTER_NAME,
+    CLUSTER_NAME_T,
+    ECS_TASK_FAMILY_LABEL,
+)
+from ecs_composex.ecs.ecs_service import (
+    Service,
+    ServiceConfig,
+    Container,
+    Task,
+    initialize_service_template,
+)
 from ecs_composex.vpc import vpc_params
 
 
@@ -82,24 +92,58 @@ def add_clusterwide_security_group(template):
     return sg
 
 
-def generate_services(compose_content, cluster_sg, session=None, **kwargs):
-    """Function putting together the ECS Service template
+def define_families(services):
+    """
+    Function to group services together into a task family
+    :param dict services:
+    :return:
+    """
+    families = {}
+    for service_name in services:
+        labels = {}
+        service = services[service_name]
+        svc_labels = service["labels"] if keyisset("labels", service) else {}
+        LOG.info(f"{service_name}")
+        LOG.info(svc_labels)
+        if isinstance(svc_labels, list):
+            for label in svc_labels:
+                if isinstance(label, str) and label.find("=") > 0:
+                    splits = label.split("=")
+                    labels[label] = {splits[0]: splits[1]}
+                elif isinstance(label, dict):
+                    labels.update(label)
+        elif isinstance(svc_labels, dict):
+            labels.update(svc_labels)
+        for label in labels:
+            if label == ECS_TASK_FAMILY_LABEL:
+                family_name = labels[label]
+                if not keyisset(family_name, families):
+                    families[family_name] = [service_name]
+                elif keyisset(family_name, families):
+                    families[family_name].append(service_name)
+    return families
 
-    :param compose_content: Docker/ComposeX file content
-    :type compose_content: dict
-    :param root_tpl: template
-    :type root_tpl: troposphere.Template
-    :param cluster_sg: cluster default security group
-    :type cluster_sg: troposphere.ec2.SecurityGroup
-    :param session: override default session
-    :type session: boto3.session.Session
-    :param kwargs: optional arguments
-    :type kwargs: dicts or set
+
+def handle_single_services(single_services, cluster_sg, compose_content, **kwargs):
+    """
+    Function to handle the single services
+    :return:
     """
     services = {}
-    for service_name in compose_content[ecs_params.RES_KEY]:
-        service_definition = compose_content[ecs_params.RES_KEY][service_name]
-        service = Service(service_name, service_definition, compose_content, **kwargs)
+    for service_name in single_services:
+        service_definition = single_services[service_name]
+        service_config = ServiceConfig(
+            compose_content, service_name, service_definition
+        )
+        service_resource_name = NONALPHANUM.sub("", service_name)
+        template = initialize_service_template(service_config.resource_name)
+        container = Container(
+            template, service_resource_name, service_definition, config=service_config
+        )
+        task = Task(template, [container.definition], service_config)
+        service = Service(
+            template, service_name, task.definition, service_config, **kwargs
+        )
         service.parameters.update(
             {
                 CLUSTER_NAME_T: Ref(CLUSTER_NAME),
@@ -108,18 +152,53 @@ def generate_services(compose_content, cluster_sg, session=None, **kwargs):
                 vpc_params.VPC_MAP_ID_T: Ref(vpc_params.VPC_MAP_ID_T),
             }
         )
-        if keyisset("hostname", service.definition):
-            service.parameters.update({ecs_params.SERVICE_HOSTNAME_T: service.hostname})
+        print(template.to_yaml())
         service.dependencies.append(ecs_params.LOG_GROUP_T)
-        # ServiceStack(
-        #         ecs_service.resource_name,
-        #         template=ecs_service.template,
-        #         ecs_service=ecs_service,
-        #         Parameters=ecs_service.parameters,
-        #         DependsOn=ecs_service.dependencies,
-        #         **kwargs,
-        #     )
-        # )
         LOG.debug(f"Service {service_name} added.")
         services[service_name] = service
+    return services
+
+
+def handle_families_services(families, content, **kwargs):
+    """
+    Function to handle creation of services within the same family.
+    :return:
+    """
+    configs = []
+    for family_name in families:
+        family = families[family_name]
+        for service_name in family:
+            service = content[ecs_params.RES_KEY][service_name]
+            configs.append(ServiceConfig(content, service_name, service))
+
+
+def generate_services(compose_content, cluster_sg, **kwargs):
+    """
+    Function putting together the ECS Service template
+
+    :param compose_content: Docker/ComposeX file content
+    :type compose_content: dict
+    :param cluster_sg: cluster default security group
+    :type cluster_sg: troposphere.ec2.SecurityGroup
+    :param kwargs: optional arguments
+    :type kwargs: dicts or set
+    """
+    services = {}
+    in_family = []
+    families = define_families(compose_content[ecs_params.RES_KEY])
+    for family_name in families:
+        family = families[family_name]
+        for service in family:
+            if service not in in_family:
+                in_family.append(service)
+    single_services = {}
+    for service_name in compose_content[ecs_params.RES_KEY]:
+        if service_name not in in_family:
+            single_services[service_name] = compose_content[ecs_params.RES_KEY][
+                service_name
+            ]
+    services.update(
+        handle_single_services(single_services, cluster_sg, compose_content, **kwargs)
+    )
+    LOG.info(f"Singleservices, {single_services}")
     return services
