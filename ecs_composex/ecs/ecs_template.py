@@ -92,9 +92,42 @@ def add_clusterwide_security_group(template):
     return sg
 
 
+def format_label(labels, svc_labels):
+    """
+    Function to format the label key value if labels are strings in a list
+
+    :param dict labels: labels dict to update with new labels
+    :param list svc_labels: the label string
+    """
+    for label in svc_labels:
+        if isinstance(label, str) and label.find("=") > 0:
+            splits = label.split("=")
+            labels[label] = {splits[0]: splits[1]}
+        elif isinstance(label, dict):
+            labels.update(label)
+
+
+def update_families(families, labels, service_name):
+    """
+    Function to update families info from labels
+
+    :param dict families: registry of applications families
+    :param dict labels: the list of labels from a a service
+    :param str service_name: name of the service for which we get these labels
+    """
+    for label in labels:
+        if label == ECS_TASK_FAMILY_LABEL:
+            family_name = labels[label]
+            if not keyisset(family_name, families):
+                families[family_name] = [service_name]
+            elif keyisset(family_name, families):
+                families[family_name].append(service_name)
+
+
 def define_families(services):
     """
     Function to group services together into a task family
+
     :param dict services:
     :return:
     """
@@ -103,24 +136,11 @@ def define_families(services):
         labels = {}
         service = services[service_name]
         svc_labels = service["labels"] if keyisset("labels", service) else {}
-        LOG.info(f"{service_name}")
-        LOG.info(svc_labels)
         if isinstance(svc_labels, list):
-            for label in svc_labels:
-                if isinstance(label, str) and label.find("=") > 0:
-                    splits = label.split("=")
-                    labels[label] = {splits[0]: splits[1]}
-                elif isinstance(label, dict):
-                    labels.update(label)
+            format_label(labels, svc_labels)
         elif isinstance(svc_labels, dict):
             labels.update(svc_labels)
-        for label in labels:
-            if label == ECS_TASK_FAMILY_LABEL:
-                family_name = labels[label]
-                if not keyisset(family_name, families):
-                    families[family_name] = [service_name]
-                elif keyisset(family_name, families):
-                    families[family_name].append(service_name)
+        update_families(families, labels, service_name)
     return families
 
 
@@ -172,7 +192,9 @@ def handle_families_services(families, cluster_sg, content, **kwargs):
         family_parameters = {}
         for service_name in family:
             service = content[ecs_params.RES_KEY][service_name]
-            service_config = ServiceConfig(content, service_name, service)
+            service_config = ServiceConfig(
+                content, service_name, service, family_name=family_resource_name
+            )
             service_container = Container(
                 template,
                 service_config.resource_name,
@@ -181,14 +203,10 @@ def handle_families_services(families, cluster_sg, content, **kwargs):
             )
             family_parameters.update(service_container.template_parameters)
             containers.append(service_container)
-            print(containers)
             if family_config is None:
                 family_config = service_config
             else:
-                print("FAMILY IS NOT NONE", type(family_config))
-                print(type(family_config), type(service_config))
                 family_config += service_config
-            print(type(family_config))
         task = Task(template, [c.definition for c in containers], family_config)
         family_parameters.update(task.template_parameters)
         service = Service(

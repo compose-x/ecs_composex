@@ -33,9 +33,8 @@ class ComposeXConfig(object):
 
     network_defaults = {
         "use_cloudmap": True,
-        "use_alb": False,
-        "use_nlb": False,
         "is_public": False,
+        "lb_type": None,
         "healthcheck": None,
         "ext_sources": None,
     }
@@ -69,11 +68,13 @@ class ComposeXConfig(object):
             elif (
                 hasattr(self, key_name)
                 and getattr(self, key_name) != config[key_name]
-                and getattr(self, key_name)
+                and getattr(self, key_name) is not None
             ):
                 LOG.warning(
                     f"Property {key_name} already set: {getattr(self, key_name)}. Overriding to {config[key_name]}"
                 )
+                setattr(self, key_name, config[key_name])
+            else:
                 setattr(self, key_name, config[key_name])
 
     def set_from_top_configs(self, compose_content):
@@ -117,7 +118,7 @@ class ComposeXConfig(object):
             self.set_service_config(compose_content[self.master_key][service_name])
         self.set_service_config(config_definition)
 
-    def __init__(self, compose_content, service_name=None, service_definition=None):
+    def __init__(self, compose_content, service_name=None, service_configs=None):
         """
         Initializes the ComposeXConfig class
         :param compose_content: compose file content
@@ -125,10 +126,8 @@ class ComposeXConfig(object):
         """
         if keyisset(self.master_key, compose_content):
             self.set_from_top_configs(compose_content)
-        if service_name and isinstance(service_definition, dict):
-            self.define_service_config(
-                compose_content, service_name, service_definition
-            )
+        if service_name and isinstance(service_configs, dict):
+            self.define_service_config(compose_content, service_name, service_configs)
 
     def __repr__(self):
         return dumps(self.__dict__)

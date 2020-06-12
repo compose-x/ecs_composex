@@ -29,8 +29,6 @@ from troposphere import (
     AWS_NO_VALUE,
     AWS_ACCOUNT_ID,
     AWS_STACK_NAME,
-    AWS_PARTITION,
-    AWS_REGION,
 )
 from troposphere import Ref, Sub, GetAtt, ImportValue
 from troposphere.ec2 import EIP, SecurityGroup
@@ -421,7 +419,6 @@ class ServiceConfig(ComposeXConfig):
     is_public = None
     healthcheck = None
     boundary = None
-    lb_type = None
     hostname = None
     command = None
     entrypoint = None
@@ -436,6 +433,58 @@ class ServiceConfig(ComposeXConfig):
     mem_resa = Ref(AWS_NO_VALUE)
     replicas = int(ecs_params.SERVICE_COUNT.Default)
     family_name = None
+
+    def __init__(self, content, service_name, definition, family_name=None):
+        """
+        Function to initialize the ecs_service configuration
+        :param content:
+        """
+        service_configs = keyset_else_novalue("configs", definition, else_value={})
+        for key in self.service_config_keys:
+            if key not in self.valid_config_keys:
+                self.valid_config_keys.append(key)
+        super().__init__(content, service_name, service_configs)
+
+        if not set(self.required_keys).issubset(set(definition)):
+            raise AttributeError(
+                "Required attributes for a ecs_service are", self.required_keys
+            )
+        self.service_name = service_name
+        self.resource_name = NONALPHANUM.sub("", service_name)
+        self.command = (
+            definition["command"].strip() if keyisset("command", definition) else None
+        )
+        self.entrypoint = keyset_else_novalue("entrypoint", definition, else_value=None)
+        self.ports = (
+            set_service_ports(definition["ports"])
+            if keyisset("ports", definition)
+            else []
+        )
+        self.environment = keyset_else_novalue("environment", definition, else_value=[])
+        self.hostname = keyset_else_novalue("hostname", definition, else_value=None)
+        self.family_name = family_name if not None else Ref(ecs_params.SERVICE_NAME)
+        self.set_service_deploy(definition)
+        self.sort_load_balancing()
+
+    def __add__(self, other):
+        """
+        Function to merge two services config.
+        """
+        LOG.debug(f"Current LB: {self.lb_type}")
+        if other.lb_type is not None and self.lb_type is not None:
+            if other.is_public and not self.is_public:
+                self.ports = other.ports
+                self.lb_type = other.lb_type
+                self.lb_service_name = other.lb_service_name
+                self.is_public = other.is_public
+            elif not other.is_public and self.is_public:
+                pass
+        elif other.lb_type is None:
+            if other.ports:
+                self.ports += other.ports
+        LOG.debug(f"LB TYPE: {self.lb_type}")
+        self.sort_load_balancing()
+        return self
 
     def set_compute_resources(self, resources):
         """
@@ -487,56 +536,13 @@ class ServiceConfig(ComposeXConfig):
         Function to sort out the load-balancing in case conflicting configuration
         :return:
         """
-        self.lb_type = "application"
-        if self.use_nlb and self.use_alb:
-            LOG.warning(
-                "Both ALB and NLB are enabled for this ecs_service. Defaulting to ALB"
-            )
-            self.use_nlb = False
-        elif self.use_nlb and not self.use_alb:
-            self.lb_type = "network"
-        LOG.debug(f"Setting LB type to {self.lb_type}")
-
-    def __init__(self, content, service_name, definition, family_name=None):
-        """
-        Function to initialize the ecs_service configuration
-        :param content:
-        """
-        configs = {}
-        if keyisset("configs", definition):
-            configs = definition["configs"]
-        for key in self.service_config_keys:
-            if key not in self.valid_config_keys:
-                self.valid_config_keys.append(key)
-        super().__init__(content, service_name, configs)
-        if not set(self.required_keys).issubset(set(definition)):
-            raise AttributeError(
-                "Required attributes for a ecs_service are", self.required_keys
-            )
-        self.resource_name = NONALPHANUM.sub("", service_name)
-        self.command = (
-            definition["command"].strip() if keyisset("command", definition) else None
-        )
-        self.entrypoint = keyset_else_novalue("entrypoint", definition, else_value=None)
-        self.ports = (
-            set_service_ports(definition["ports"])
-            if keyisset("ports", definition)
-            else []
-        )
-        self.environment = keyset_else_novalue("environment", definition, else_value=[])
-        self.hostname = keyset_else_novalue("hostname", definition, else_value=None)
-        self.family_name = family_name if not None else Ref(ecs_params.SERVICE_NAME)
-        self.set_service_deploy(definition)
-        self.sort_load_balancing()
-
-    def __add__(self, other):
-        """
-        Function to merge two services config.
-        """
-        if other.lb_type is not None:
-            if other.is_public and not self.is_public:
-                self.ports = other.ports + self.ports
-        return self
+        if self.lb_type is not None and self.lb_type == "application":
+            self.use_alb = True
+        elif self.lb_type is not None and self.lb_type == "network":
+            self.use_nlb = True
+        if self.use_alb or self.use_nlb:
+            self.lb_service_name = self.service_name
+        LOG.debug(f"Setting LB type to {self.lb_type} for {self.resource_name}")
 
 
 class Container(object):
@@ -624,7 +630,7 @@ class Task(object):
                 container.MemoryReservation, int
             ):
                 tasks_ram += container.MemoryReservation
-        LOG.info(f"CPU: {tasks_cpu}, RAM: {tasks_ram}")
+        LOG.debug(f"CPU: {tasks_cpu}, RAM: {tasks_ram}")
         if tasks_cpu > 0 and tasks_ram > 0:
             cpu_ram = find_closest_fargate_configuration(tasks_cpu, tasks_ram, True)
             self.template_parameters.update(
@@ -635,6 +641,7 @@ class Task(object):
         """
         Init method
         """
+        add_service_roles(template, config)
         self.template_parameters = {
             ecs_params.FARGATE_CPU_RAM_CONFIG_T: Ref(ecs_params.FARGATE_CPU_RAM_CONFIG),
         }
@@ -984,12 +991,12 @@ class Service(object):
         :rtype: troposphere.elasticloadbalancingv2.LoadBalancer
         """
         alb_sg = None
-        if self.config.is_public and self.config.lb_type == "network":
+        if self.config.is_public and self.config.use_nlb:
             self.add_public_ips(kwargs["AwsAzs"])
 
         no_value = Ref(AWS_NO_VALUE)
         public_mapping = define_public_mapping(self.eips, kwargs["AwsAzs"])
-        if ports and self.config.lb_type == "application":
+        if ports and self.config.use_alb:
             alb_sg = self.add_alb_sg(ports)
             self.add_lb_to_service_ingress(alb_sg, SG_T)
             lb_sg = [Ref(alb_sg)]
@@ -1009,11 +1016,11 @@ class Service(object):
             else no_value,
             SecurityGroups=lb_sg,
             SubnetMappings=public_mapping
-            if self.config.is_public and self.config.lb_type == "network"
+            if self.config.is_public and self.config.use_nlb
             else no_value,
             Subnets=Ref(PUBLIC_SUBNETS)
-            if self.config.is_public and self.config.lb_type == "application"
-            else no_value,
+            if self.config.is_public and self.config.use_alb
+            else Ref(vpc_params.APP_SUBNETS),
             Type=self.config.lb_type,
             Tags=Tags(
                 {
@@ -1024,9 +1031,9 @@ class Service(object):
             ),
         )
         if self.config.is_public:
-            if self.config.lb_type == "application" and alb_sg:
+            if self.config.use_alb and alb_sg:
                 self.add_public_security_group_ingress(alb_sg)
-            elif self.config.lb_type == "network":
+            elif self.config.use_nlb:
                 self.add_public_security_group_ingress(SG_T)
         return loadbalancer
 
@@ -1048,13 +1055,11 @@ class Service(object):
             tgt_groups.append(tgt)
             depends_on.append(tgt.title)
             depends_on.append(listener.title)
-
-        for target in tgt_groups:
             service_lbs.append(
                 EcsLoadBalancer(
-                    TargetGroupArn=Ref(target),
+                    TargetGroupArn=Ref(tgt),
                     ContainerPort=tgt.Port,
-                    ContainerName=Ref(SERVICE_NAME),
+                    ContainerName=self.config.lb_service_name,
                 )
             )
         return service_lbs, depends_on
@@ -1071,7 +1076,7 @@ class Service(object):
             )
         )
 
-    def define_service_network_config(self, **kwargs):
+    def define_service_ingress(self, **kwargs):
         """
         Function to define microservice ingress.
 
@@ -1186,7 +1191,9 @@ class Service(object):
         #     definition["depends_on"] if keyisset("depends_on", definition) else []
         # )
         self.service_name = service_name
-        self.resource_name = self.config.resource_name
+        self.resource_name = (
+            config.resource_name if config.family_name is None else config.family_name
+        )
         self.parameters = {
             vpc_params.VPC_ID_T: Ref(vpc_params.VPC_ID),
             vpc_params.VPC_MAP_ID_T: Ref(vpc_params.VPC_MAP_ID),
@@ -1198,7 +1205,6 @@ class Service(object):
             self.parameters.update({ecs_params.SERVICE_NAME_T: config.family_name})
         else:
             self.parameters.update({ecs_params.SERVICE_NAME_T: service_name})
-        add_service_roles(self.template, self.config)
         self.sgs = [ecs_params.SG_T]
         self.sgs.append(
             If(
@@ -1207,6 +1213,6 @@ class Service(object):
                 Ref("AWS::NoValue"),
             )
         )
-        self.define_service_network_config(**kwargs)
+        self.define_service_ingress(**kwargs)
         self.generate_service_definition(task_definition)
         self.generate_service_template_outputs()

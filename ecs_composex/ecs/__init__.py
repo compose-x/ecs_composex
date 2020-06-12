@@ -35,7 +35,6 @@ It is going to also, based on the labels set in the compose file
 
 from troposphere import GetAtt, Sub, Ref, If, Join, Tags
 from troposphere.ec2 import SecurityGroup, SecurityGroupIngress
-from troposphere.logs import LogGroup
 
 from ecs_composex.common import build_template, keyisset, LOG
 from ecs_composex.common import load_composex_file, keypresent
