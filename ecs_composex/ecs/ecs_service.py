@@ -463,6 +463,7 @@ class ServiceConfig(ComposeXConfig):
         self.set_service_deploy(definition)
         self.lb_service_name = service_name
         self.lb_type = None
+        self.set_xray(definition)
 
     def use_nlb(self):
         """
@@ -503,6 +504,8 @@ class ServiceConfig(ComposeXConfig):
             if other.ports:
                 self.ports = other.ports
         LOG.debug(f"LB TYPE: {self.lb_type}")
+        if other.use_xray or self.use_xray:
+            self.use_xray = True
         return self
 
     def set_compute_resources(self, resources):
@@ -543,12 +546,12 @@ class ServiceConfig(ComposeXConfig):
             self.set_compute_resources(deployment["resources"])
         self.set_deployment_settings(deployment)
 
-    def set_xray(self, config):
+    def set_xray(self, definition):
         """
         Function to set the xray
         """
-        if keyisset("enabled", config):
-            self.use_xray = config["enabled"]
+        if keyisset("configs", definition) and keyisset("use_xray", definition["configs"]):
+            self.use_xray = True
 
 
 class Container(object):
