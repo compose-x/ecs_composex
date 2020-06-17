@@ -1,0 +1,40 @@
+---
+# Blog applications
+
+version: '3'
+services:
+  rproxy:
+    image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-01-rproxy
+    ports:
+      - 80:80
+    deploy:
+      replicas: 2
+      resources:
+        reservations:
+          cpus: 0.25
+          memory: 64M
+        limits:
+          cpus: 0.5
+          memory: 128M
+      labels:
+        ecs.task.family: app01
+    configs:
+      network:
+        is_public: True
+        lb_type: application
+
+  app:
+    image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-01:latest
+    ports:
+      - 5000
+    deploy:
+      resources:
+        cpus: 0.5
+        memory: 128M
+      limits:
+        cpus: 1
+        memory: 256M
+      labels:
+        ecs.task.family: app01
+    configs:
+      use_xray: True

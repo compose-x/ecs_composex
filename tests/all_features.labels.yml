@@ -30,6 +30,8 @@ configs:
 services:
   serviceA:
     deploy:
+      labels:
+        ecs.task.family: app01
       mode: replicated
       replicas: 6
       resources:
@@ -46,20 +48,18 @@ services:
     configs:
       xray:
         enabled: True
-    labels:
-      - ecs.task.family: app01
     links:
       - serviceB
 
   serviceB:
-    labels:
-      ecs.task.family: app01
     image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-01:1589570337
     ports:
       - 5000:5000
     links:
       - serviceC
     deploy:
+      labels:
+        ecs.task.family: app01
       resources:
         limits:
           cpus: 1

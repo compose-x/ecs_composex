@@ -27,8 +27,6 @@ class ComposeXConfig(object):
 
     master_key = "configs"
     composex_key = "composex"
-    network = None
-    iam = None
     valid_config_keys = ["network", "iam"]
 
     network_defaults = {
@@ -124,6 +122,8 @@ class ComposeXConfig(object):
         :param compose_content: compose file content
         :type compose_content: dict
         """
+        self.network = None
+        self.iam = None
         if keyisset(self.master_key, compose_content):
             self.set_from_top_configs(compose_content)
         if service_name and isinstance(service_configs, dict):

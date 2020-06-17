@@ -413,26 +413,6 @@ class ServiceConfig(ComposeXConfig):
     ]
     service_config_keys = ["xray"]
     required_keys = ["image"]
-    use_cloudmap = True
-    use_nlb = None
-    use_alb = None
-    is_public = None
-    healthcheck = None
-    boundary = None
-    hostname = None
-    command = None
-    entrypoint = None
-    volumes = []
-    ports = []
-    links = []
-    service = None
-    use_xray = False
-    cpu_alloc = Ref(AWS_NO_VALUE)
-    cpu_resa = Ref(AWS_NO_VALUE)
-    mem_alloc = Ref(AWS_NO_VALUE)
-    mem_resa = Ref(AWS_NO_VALUE)
-    replicas = int(ecs_params.SERVICE_COUNT.Default)
-    family_name = None
 
     def __init__(self, content, service_name, definition, family_name=None):
         """
@@ -449,6 +429,23 @@ class ServiceConfig(ComposeXConfig):
             raise AttributeError(
                 "Required attributes for a ecs_service are", self.required_keys
             )
+        self.use_cloudmap = True
+        self.is_public = False
+        self.healthcheck = None
+        self.boundary = None
+        self.hostname = None
+        self.command = None
+        self.entrypoint = None
+        self.volumes = []
+        self.ports = []
+        self.links = []
+        self.service = None
+        self.use_xray = False
+        self.replicas = int(ecs_params.SERVICE_COUNT.Default)
+        self.cpu_alloc = Ref(AWS_NO_VALUE)
+        self.cpu_resa = Ref(AWS_NO_VALUE)
+        self.mem_alloc = Ref(AWS_NO_VALUE)
+        self.mem_resa = Ref(AWS_NO_VALUE)
         self.service_name = service_name
         self.resource_name = NONALPHANUM.sub("", service_name)
         self.command = (
@@ -464,7 +461,30 @@ class ServiceConfig(ComposeXConfig):
         self.hostname = keyset_else_novalue("hostname", definition, else_value=None)
         self.family_name = family_name if not None else Ref(ecs_params.SERVICE_NAME)
         self.set_service_deploy(definition)
-        self.sort_load_balancing()
+        self.lb_service_name = service_name
+        self.lb_type = None
+
+    def use_nlb(self):
+        """
+        Method to indicate if the current lb_type is network
+
+        :return: True or False
+        :rtype: bool
+        """
+        if self.lb_type == "network":
+            return True
+        return False
+
+    def use_alb(self):
+        """
+        Method to indicate if the current lb_type is application
+
+        :return: True or False
+        :rtype: bool
+        """
+        if self.lb_type == "application":
+            return True
+        return False
 
     def __add__(self, other):
         """
@@ -481,9 +501,8 @@ class ServiceConfig(ComposeXConfig):
                 pass
         elif other.lb_type is None:
             if other.ports:
-                self.ports += other.ports
+                self.ports = other.ports
         LOG.debug(f"LB TYPE: {self.lb_type}")
-        self.sort_load_balancing()
         return self
 
     def set_compute_resources(self, resources):
@@ -530,19 +549,6 @@ class ServiceConfig(ComposeXConfig):
         """
         if keyisset("enabled", config):
             self.use_xray = config["enabled"]
-
-    def sort_load_balancing(self):
-        """
-        Function to sort out the load-balancing in case conflicting configuration
-        :return:
-        """
-        if self.lb_type is not None and self.lb_type == "application":
-            self.use_alb = True
-        elif self.lb_type is not None and self.lb_type == "network":
-            self.use_nlb = True
-        if self.use_alb or self.use_nlb:
-            self.lb_service_name = self.service_name
-        LOG.debug(f"Setting LB type to {self.lb_type} for {self.resource_name}")
 
 
 class Container(object):
@@ -633,7 +639,7 @@ class Task(object):
         LOG.debug(f"CPU: {tasks_cpu}, RAM: {tasks_ram}")
         if tasks_cpu > 0 and tasks_ram > 0:
             cpu_ram = find_closest_fargate_configuration(tasks_cpu, tasks_ram, True)
-            self.template_parameters.update(
+            self.stack_parameters.update(
                 {ecs_params.FARGATE_CPU_RAM_CONFIG_T: cpu_ram}
             )
 
@@ -642,13 +648,11 @@ class Task(object):
         Init method
         """
         add_service_roles(template, config)
-        self.template_parameters = {
-            ecs_params.FARGATE_CPU_RAM_CONFIG_T: Ref(ecs_params.FARGATE_CPU_RAM_CONFIG),
-        }
+        self.stack_parameters = {}
         if config.use_xray:
             containers.append(define_xray_container())
             add_parameters(template, [ecs_params.XRAY_IMAGE])
-            self.template_parameters.update(
+            self.stack_parameters.update(
                 {ecs_params.XRAY_IMAGE_T: Ref(ecs_params.XRAY_IMAGE)}
             )
         self.set_task_compute_parameter(containers)
@@ -991,12 +995,12 @@ class Service(object):
         :rtype: troposphere.elasticloadbalancingv2.LoadBalancer
         """
         alb_sg = None
-        if self.config.is_public and self.config.use_nlb:
+        if self.config.is_public and self.config.use_nlb():
             self.add_public_ips(kwargs["AwsAzs"])
 
         no_value = Ref(AWS_NO_VALUE)
         public_mapping = define_public_mapping(self.eips, kwargs["AwsAzs"])
-        if ports and self.config.use_alb:
+        if ports and self.config.use_alb():
             alb_sg = self.add_alb_sg(ports)
             self.add_lb_to_service_ingress(alb_sg, SG_T)
             lb_sg = [Ref(alb_sg)]
@@ -1016,10 +1020,10 @@ class Service(object):
             else no_value,
             SecurityGroups=lb_sg,
             SubnetMappings=public_mapping
-            if self.config.is_public and self.config.use_nlb
+            if self.config.is_public and self.config.use_nlb()
             else no_value,
             Subnets=Ref(PUBLIC_SUBNETS)
-            if self.config.is_public and self.config.use_alb
+            if self.config.is_public and self.config.use_alb()
             else Ref(vpc_params.APP_SUBNETS),
             Type=self.config.lb_type,
             Tags=Tags(
@@ -1031,9 +1035,9 @@ class Service(object):
             ),
         )
         if self.config.is_public:
-            if self.config.use_alb and alb_sg:
+            if self.config.use_alb() and alb_sg:
                 self.add_public_security_group_ingress(alb_sg)
-            elif self.config.use_nlb:
+            elif self.config.use_nlb():
                 self.add_public_security_group_ingress(SG_T)
         return loadbalancer
 
@@ -1102,7 +1106,7 @@ class Service(object):
                 f"{self.service_name} does not have any ports. No ingress necessary"
             )
             return self.service_attrs, external_dependencies
-        if self.config.use_alb or self.config.use_nlb:
+        if self.config.use_alb() or self.config.use_nlb():
             service_lb = self.add_service_load_balancer(**kwargs)
             self.service_attrs["LoadBalancers"] = service_lb[0]
             self.service_attrs["DependsOn"] = (

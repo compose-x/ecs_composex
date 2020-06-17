@@ -124,6 +124,37 @@ def update_families(families, labels, service_name):
                 families[family_name].append(service_name)
 
 
+def get_deploy_labels(service_definition):
+    """
+    Function to get the deploy labels of a service definition
+
+    :param dict service_definition: The service definition as defined in compose file
+    :return: labels if any
+    :rtype: dict
+    """
+    labels = None
+    deploy_key = "deploy"
+    labels_key = "labels"
+    svc_labels = {}
+    if keyisset(deploy_key, service_definition):
+        if keyisset(labels_key, service_definition[deploy_key]):
+            labels = service_definition[deploy_key][labels_key]
+            LOG.info(f"labels: {labels}")
+    if labels:
+        if isinstance(labels, dict):
+            return labels
+        elif isinstance(labels, list):
+            for item in labels:
+                if not isinstance(item, str):
+                    raise TypeError(
+                        f"When using a list for deploy labels, all labels must be of type string"
+                    )
+                elif item.finds("=") > 0:
+                    svc_labels.update({item.split("=")[0]: item.split("=")[1]})
+        return svc_labels
+    return {}
+
+
 def define_families(services):
     """
     Function to group services together into a task family
@@ -135,7 +166,8 @@ def define_families(services):
     for service_name in services:
         labels = {}
         service = services[service_name]
-        svc_labels = service["labels"] if keyisset("labels", service) else {}
+        svc_labels = get_deploy_labels(service)
+        LOG.info(f"service {service_name} - labels {svc_labels}")
         if isinstance(svc_labels, list):
             format_label(labels, svc_labels)
         elif isinstance(svc_labels, dict):
@@ -208,7 +240,7 @@ def handle_families_services(families, cluster_sg, content, **kwargs):
             else:
                 family_config += service_config
         task = Task(template, [c.definition for c in containers], family_config)
-        family_parameters.update(task.template_parameters)
+        family_parameters.update(task.stack_parameters)
         service = Service(
             template, family_resource_name, task.definition, family_config, **kwargs
         )

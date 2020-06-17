@@ -60,6 +60,17 @@ class ServicesStack(ComposeXStack):
     dependencies = []
     services = []
 
+    def __init__(self, title, template, template_file=None, extension=None, **kwargs):
+        self.create_services_templates(**kwargs)
+        super().__init__(title, self.stack_template, template_file, extension, **kwargs)
+        if not keyisset("Parameters", kwargs):
+            self.Parameters = {
+                ROOT_STACK_NAME_T: Ref("AWS::StackName"),
+                vpc_params.VPC_ID_T: Ref(vpc_params.VPC_ID),
+                vpc_params.PUBLIC_SUBNETS_T: Join(",", Ref(vpc_params.PUBLIC_SUBNETS)),
+                vpc_params.APP_SUBNETS_T: Join(",", Ref(vpc_params.APP_SUBNETS)),
+            }
+
     def handle_service_links(self, service):
         """
         Function to handle links between services
@@ -197,14 +208,3 @@ class ServicesStack(ComposeXStack):
 
     def add_cluster_parameter(self, cluster_param):
         self.Parameters.update(cluster_param)
-
-    def __init__(self, title, template, template_file=None, extension=None, **kwargs):
-        self.create_services_templates(**kwargs)
-        super().__init__(title, self.stack_template, template_file, extension, **kwargs)
-        if not keyisset("Parameters", kwargs):
-            self.Parameters = {
-                ROOT_STACK_NAME_T: Ref("AWS::StackName"),
-                vpc_params.VPC_ID_T: Ref(vpc_params.VPC_ID),
-                vpc_params.PUBLIC_SUBNETS_T: Join(",", Ref(vpc_params.PUBLIC_SUBNETS)),
-                vpc_params.APP_SUBNETS_T: Join(",", Ref(vpc_params.APP_SUBNETS)),
-            }
