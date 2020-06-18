@@ -424,15 +424,12 @@ class ServiceConfig(ComposeXConfig):
             if key not in self.valid_config_keys:
                 self.valid_config_keys.append(key)
         super().__init__(content, service_name, service_configs)
+        print(self)
 
         if not set(self.required_keys).issubset(set(definition)):
             raise AttributeError(
                 "Required attributes for a ecs_service are", self.required_keys
             )
-        self.use_cloudmap = True
-        self.is_public = False
-        self.healthcheck = None
-        self.boundary = None
         self.hostname = None
         self.command = None
         self.entrypoint = None
@@ -462,8 +459,47 @@ class ServiceConfig(ComposeXConfig):
         self.family_name = family_name if not None else Ref(ecs_params.SERVICE_NAME)
         self.set_service_deploy(definition)
         self.lb_service_name = service_name
-        self.lb_type = None
         self.set_xray(definition)
+
+    def __add__(self, other):
+        """
+        Function to merge two services config.
+        """
+        LOG.info(f"Current LB: {self.lb_type}")
+        if self.lb_type is None:
+            if other.lb_type is not None:
+                self.ports = other.ports
+                self.lb_type = other.lb_type
+                self.is_public = other.is_public
+
+        elif self.lb_type is not None and other.lb_type is not None:
+            if self.is_public:
+                pass
+            elif other.is_public and not self.is_public:
+                self.ports = other.ports
+                self.lb_type = other.lb_type
+                self.lb_service_name = other.lb_service_name
+                self.is_public = other.is_public
+            elif not other.is_public and self.is_public:
+                pass
+        elif self.lb_type is not None and other.lb_type is None:
+            pass
+        LOG.debug(f"LB TYPE: {self.lb_type}")
+        if other.use_xray or self.use_xray:
+            self.use_xray = True
+        print(self.lb_type)
+        return self
+
+    def set_lb_type(self, definition):
+        """
+        Function setting lb type
+
+        :param definition: service definition
+        """
+        if keyisset("configs", definition) and keyisset(
+            "network", definition["configs"]
+        ):
+            keyset_else_novalue("lb_type", definition["configs"]["network"])
 
     def use_nlb(self):
         """
@@ -486,27 +522,6 @@ class ServiceConfig(ComposeXConfig):
         if self.lb_type == "application":
             return True
         return False
-
-    def __add__(self, other):
-        """
-        Function to merge two services config.
-        """
-        LOG.debug(f"Current LB: {self.lb_type}")
-        if other.lb_type is not None and self.lb_type is not None:
-            if other.is_public and not self.is_public:
-                self.ports = other.ports
-                self.lb_type = other.lb_type
-                self.lb_service_name = other.lb_service_name
-                self.is_public = other.is_public
-            elif not other.is_public and self.is_public:
-                pass
-        elif other.lb_type is None:
-            if other.ports:
-                self.ports = other.ports
-        LOG.debug(f"LB TYPE: {self.lb_type}")
-        if other.use_xray or self.use_xray:
-            self.use_xray = True
-        return self
 
     def set_compute_resources(self, resources):
         """
@@ -550,7 +565,9 @@ class ServiceConfig(ComposeXConfig):
         """
         Function to set the xray
         """
-        if keyisset("configs", definition) and keyisset("use_xray", definition["configs"]):
+        if keyisset("configs", definition) and keyisset(
+            "use_xray", definition["configs"]
+        ):
             self.use_xray = True
 
 
@@ -607,9 +624,15 @@ class Container(object):
         template.add_output(
             formatted_outputs(
                 [
-                    {f"{title}Cpu": str(config.cpu_resa)},
-                    {f"{title}Memory": str(config.mem_alloc)},
-                    {f"{title}MemoryReservation": str(config.mem_resa)},
+                    {f"{title}Cpu": str(config.cpu_resa)}
+                    if isinstance(config.cpu_resa, int)
+                    else Ref(AWS_NO_VALUE),
+                    {f"{title}Memory": str(config.mem_alloc)}
+                    if isinstance(config.cpu_resa, int)
+                    else Ref(AWS_NO_VALUE),
+                    {f"{title}MemoryReservation": str(config.mem_resa)}
+                    if isinstance(config.cpu_resa, int)
+                    else Ref(AWS_NO_VALUE),
                 ],
                 export=False,
             )
@@ -642,9 +665,7 @@ class Task(object):
         LOG.debug(f"CPU: {tasks_cpu}, RAM: {tasks_ram}")
         if tasks_cpu > 0 and tasks_ram > 0:
             cpu_ram = find_closest_fargate_configuration(tasks_cpu, tasks_ram, True)
-            self.stack_parameters.update(
-                {ecs_params.FARGATE_CPU_RAM_CONFIG_T: cpu_ram}
-            )
+            self.stack_parameters.update({ecs_params.FARGATE_CPU_RAM_CONFIG_T: cpu_ram})
 
     def __init__(self, template, containers, config):
         """
@@ -992,7 +1013,8 @@ class Service(object):
         return tgt
 
     def add_load_balancer(self, ports, **kwargs):
-        """Function to add LB to template
+        """
+        Method to add LB to template
 
         :return: loadbalancer
         :rtype: troposphere.elasticloadbalancingv2.LoadBalancer
@@ -1045,7 +1067,8 @@ class Service(object):
         return loadbalancer
 
     def add_service_load_balancer(self, **kwargs):
-        """Function to add all ELBv2 resources for a microservice
+        """
+        Method to add all ELBv2 resources for a microservice
 
         :return: service_lbs, depends_on
         :rtype: tuple
@@ -1054,6 +1077,7 @@ class Service(object):
         tgt_groups = []
         depends_on = []
         curated_ports = [int(port["target"]) for port in self.config.ports]
+        print(curated_ports)
         service_lb = self.add_load_balancer(curated_ports, **kwargs)
         depends_on.append(service_lb.title)
         for port in curated_ports:
