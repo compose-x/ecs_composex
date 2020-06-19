@@ -41,6 +41,7 @@ from troposphere.ecs import (
     ContainerDefinition,
     TaskDefinition,
     HealthCheck,
+    ContainerDependency,
 )
 from troposphere.ecs import (
     Service as EcsService,
@@ -468,6 +469,8 @@ class ServiceConfig(ComposeXConfig):
             raise AttributeError(
                 "Required attributes for a ecs_service are", self.required_keys
             )
+        self.family_dependents = []
+        self.essential = False
         self.volumes = []
         self.links = []
         self.service = None
@@ -656,6 +659,10 @@ class Container(object):
             Command=definition["command"].strip().split(";")
             if keyisset("command", definition)
             else Ref(AWS_NO_VALUE),
+            DependsOn=[ContainerDependency(**args) for args in config.family_dependents]
+            if config.family_dependents
+            else Ref(AWS_NO_VALUE),
+            Essential=config.essential
         )
         template.add_output(
             formatted_outputs(
@@ -698,9 +705,19 @@ class Task(object):
             ):
                 for dependency in service_config.depends_on:
                     containers_config[dependency][priority_key] += 1
+                    containers_config[dependency]["config"].essential = False
+                    service_config.family_dependents.append(
+                        {
+                            "ContainerName": dependency,
+                            "Condition": "START"
+                            if not containers_config[dependency]["config"].healthcheck
+                            else "HEALTHY",
+                        }
+                    )
         for service in containers_config:
             unordered.append(containers_config[service])
         ordered_containers_config = sorted(unordered, key=lambda i: i["priority"])
+        ordered_containers_config[0]["config"].essential = True
         for service_config in ordered_containers_config:
             container = Container(
                 template,
