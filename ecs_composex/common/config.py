@@ -33,7 +33,6 @@ class ComposeXConfig(object):
         "use_cloudmap": True,
         "is_public": False,
         "lb_type": None,
-        "healthcheck": None,
         "ext_sources": None,
     }
 

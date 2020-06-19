@@ -33,7 +33,6 @@ from ecs_composex.ecs.ecs_params import (
 from ecs_composex.ecs.ecs_service import (
     Service,
     ServiceConfig,
-    Container,
     Task,
     initialize_service_template,
 )
@@ -92,7 +91,7 @@ def add_clusterwide_security_group(template):
     return sg
 
 
-def format_label(labels, svc_labels):
+def parse_string_labels(labels, svc_labels):
     """
     Function to format the label key value if labels are strings in a list
 
@@ -100,11 +99,9 @@ def format_label(labels, svc_labels):
     :param list svc_labels: the label string
     """
     for label in svc_labels:
-        if isinstance(label, str) and label.find("=") > 0:
+        if label.find("=") > 0:
             splits = label.split("=")
-            labels[label] = {splits[0]: splits[1]}
-        elif isinstance(label, dict):
-            labels.update(label)
+            labels.update({splits[0]: splits[1]})
 
 
 def update_families(families, labels, service_name):
@@ -132,27 +129,25 @@ def get_deploy_labels(service_definition):
     :return: labels if any
     :rtype: dict
     """
-    labels = None
+    labels = {}
     deploy_key = "deploy"
     labels_key = "labels"
     svc_labels = {}
     if keyisset(deploy_key, service_definition):
         if keyisset(labels_key, service_definition[deploy_key]):
-            labels = service_definition[deploy_key][labels_key]
-            LOG.debug(f"labels: {labels}")
-    if labels:
-        if isinstance(labels, dict):
-            return labels
-        elif isinstance(labels, list):
-            for item in labels:
+            svc_labels = service_definition[deploy_key][labels_key]
+            LOG.debug(f"labels: {svc_labels}")
+    if svc_labels:
+        if isinstance(svc_labels, list):
+            for item in svc_labels:
                 if not isinstance(item, str):
                     raise TypeError(
                         f"When using a list for deploy labels, all labels must be of type string"
                     )
-                elif item.finds("=") > 0:
-                    svc_labels.update({item.split("=")[0]: item.split("=")[1]})
-        return svc_labels
-    return {}
+                parse_string_labels(labels, svc_labels)
+        elif isinstance(svc_labels, dict):
+            return svc_labels
+    return labels
 
 
 def define_families(services):
@@ -168,45 +163,11 @@ def define_families(services):
         service = services[service_name]
         svc_labels = get_deploy_labels(service)
         LOG.debug(f"service {service_name} - labels {svc_labels}")
-        if isinstance(svc_labels, list):
-            format_label(labels, svc_labels)
-        elif isinstance(svc_labels, dict):
-            labels.update(svc_labels)
+        labels.update(svc_labels)
+        if not labels:
+            labels = {ECS_TASK_FAMILY_LABEL: service_name}
         update_families(families, labels, service_name)
     return families
-
-
-def handle_single_services(single_services, cluster_sg, compose_content, **kwargs):
-    """
-    Function to handle the single services
-    :return:
-    """
-    services = {}
-    for service_name in single_services:
-        service_definition = single_services[service_name]
-        service_config = ServiceConfig(
-            compose_content, service_name, service_definition
-        )
-        service_resource_name = NONALPHANUM.sub("", service_name)
-        template = initialize_service_template(service_config.resource_name)
-        container = Container(
-            template, service_resource_name, service_definition, config=service_config
-        )
-        task = Task(template, [container.definition], service_config)
-        service = Service(
-            template, service_name, task.definition, service_config, **kwargs
-        )
-        service.parameters.update(
-            {
-                CLUSTER_NAME_T: Ref(CLUSTER_NAME),
-                ROOT_STACK_NAME_T: Ref(ROOT_STACK_NAME),
-                ecs_params.CLUSTER_SG_ID_T: Ref(cluster_sg),
-                vpc_params.VPC_MAP_ID_T: Ref(vpc_params.VPC_MAP_ID_T),
-            }
-        )
-        LOG.debug(f"Service {service_name} added.")
-        services[service_name] = service
-    return services
 
 
 def handle_families_services(families, cluster_sg, content, **kwargs):
@@ -217,32 +178,28 @@ def handle_families_services(families, cluster_sg, content, **kwargs):
     services = {}
     for family_name in families:
         family_resource_name = NONALPHANUM.sub("", family_name)
-        containers = []
         template = initialize_service_template(family_resource_name)
         family = families[family_name]
-        family_config = None
+        family_service_configs = {}
         family_parameters = {}
         for service_name in family:
             service = content[ecs_params.RES_KEY][service_name]
             service_config = ServiceConfig(
                 content, service_name, service, family_name=family_resource_name
             )
-            service_container = Container(
-                template,
-                service_config.resource_name,
-                content[ecs_params.RES_KEY][service_name],
-                config=service_config,
-            )
-            family_parameters.update(service_container.template_parameters)
-            containers.append(service_container)
-            if family_config is None:
-                family_config = service_config
-            else:
-                family_config += service_config
-        task = Task(template, [c.definition for c in containers], family_config)
+            family_service_configs[service_name] = {
+                "config": service_config,
+                "priority": 0,
+                "definition": service,
+            }
+        task = Task(template, family_service_configs, family_parameters)
         family_parameters.update(task.stack_parameters)
         service = Service(
-            template, family_resource_name, task.definition, family_config, **kwargs
+            template,
+            family_resource_name,
+            task.definition,
+            task.family_config,
+            **kwargs,
         )
         service.parameters.update(
             {
@@ -270,22 +227,7 @@ def generate_services(compose_content, cluster_sg, **kwargs):
     :type kwargs: dicts or set
     """
     services = {}
-    in_family = []
     families = define_families(compose_content[ecs_params.RES_KEY])
-    for family_name in families:
-        family = families[family_name]
-        for service in family:
-            if service not in in_family:
-                in_family.append(service)
-    single_services = {}
-    for service_name in compose_content[ecs_params.RES_KEY]:
-        if service_name not in in_family:
-            single_services[service_name] = compose_content[ecs_params.RES_KEY][
-                service_name
-            ]
-    services.update(
-        handle_single_services(single_services, cluster_sg, compose_content, **kwargs)
-    )
     services.update(
         handle_families_services(families, cluster_sg, compose_content, **kwargs)
     )

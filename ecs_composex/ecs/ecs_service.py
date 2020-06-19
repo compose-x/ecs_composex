@@ -40,6 +40,7 @@ from troposphere.ecs import (
     LogConfiguration,
     ContainerDefinition,
     TaskDefinition,
+    HealthCheck,
 )
 from troposphere.ecs import (
     Service as EcsService,
@@ -165,6 +166,42 @@ def import_env_variables(environment):
         else:
             env_vars.append(Environment(Name=key, Value=environment[key]))
     return env_vars
+
+
+def set_healthcheck(definition):
+    """
+    Function to set healtcheck configuration
+    :return:
+    """
+    key = "healthcheck"
+    valid_keys = ["test", "interval", "timeout", "retries", "start_period"]
+    attr_mappings = {
+        "test": "Command",
+        "interval": "Interval",
+        "timeout": "Timeout",
+        "retries": "Retries",
+        "start_period": "StartPeriod",
+    }
+    required_keys = ["test"]
+    if not keyisset(key, definition):
+        return None
+    else:
+        healthcheck = definition[key]
+        for key in healthcheck.keys():
+            if key not in valid_keys:
+                raise AttributeError(f"Key {key} is not valid. Expected", valid_keys)
+        if not all(required_keys) not in healthcheck.keys():
+            raise AttributeError(
+                f"Expected at least {required_keys}. Got", healthcheck.keys()
+            )
+        params = {}
+        for key in healthcheck.keys():
+            params[attr_mappings[key]] = healthcheck[key]
+        if isinstance(params["Command"], str):
+            params["Command"] = [healthcheck["test"]]
+        if keyisset("Interval", params) and isinstance(params["Interval"], str):
+            params["Interval"] = int(healthcheck["interval"])
+        return HealthCheck(**params)
 
 
 def generate_port_mappings(ports):
@@ -426,17 +463,12 @@ class ServiceConfig(ComposeXConfig):
             if key not in self.valid_config_keys:
                 self.valid_config_keys.append(key)
         super().__init__(content, service_name, service_configs)
-        print(self)
 
         if not set(self.required_keys).issubset(set(definition)):
             raise AttributeError(
                 "Required attributes for a ecs_service are", self.required_keys
             )
-        self.hostname = None
-        self.command = None
-        self.entrypoint = None
         self.volumes = []
-        self.ports = []
         self.links = []
         self.service = None
         self.use_xray = False
@@ -458,10 +490,18 @@ class ServiceConfig(ComposeXConfig):
         )
         self.environment = keyset_else_novalue("environment", definition, else_value=[])
         self.hostname = keyset_else_novalue("hostname", definition, else_value=None)
-        self.family_name = family_name if not None else Ref(ecs_params.SERVICE_NAME)
+        self.family_name = family_name
         self.set_service_deploy(definition)
         self.lb_service_name = service_name
         self.set_xray(definition)
+        self.healthcheck = set_healthcheck(definition)
+        self.depends_on = keyset_else_novalue("depends_on", definition, else_value=[])
+
+    def handle_add_with_dependency(self, other):
+        """
+        :param other:
+        :return:
+        """
 
     def __add__(self, other):
         """
@@ -489,19 +529,7 @@ class ServiceConfig(ComposeXConfig):
         LOG.debug(f"LB TYPE: {self.lb_type}")
         if other.use_xray or self.use_xray:
             self.use_xray = True
-        print(self.lb_type)
         return self
-
-    def set_lb_type(self, definition):
-        """
-        Function setting lb type
-
-        :param definition: service definition
-        """
-        if keyisset(self.master_key, definition) and keyisset(
-            "network", definition[self.master_key]
-        ):
-            keyset_else_novalue("lb_type", definition[self.master_key]["network"])
 
     def use_nlb(self):
         """
@@ -582,6 +610,13 @@ class Container(object):
     required_keys = ["image"]
 
     def __init__(self, template, title, definition, config):
+        """
+
+        :param troposphere.Template template: template to add the container definition to
+        :param str title: name of the resource / service
+        :param dict definition: service definition
+        :param ServiceConfig config: service configuration
+        """
         if not set(self.required_keys).issubset(set(definition)):
             raise AttributeError(
                 "Required attributes for a ecs_service are", self.required_keys
@@ -590,7 +625,7 @@ class Container(object):
             f"{title}ImageUrl", Type="String", Description=f"ImageURL for {title}",
         )
         add_parameters(template, [image_param])
-        self.template_parameters = {image_param.title: definition["image"]}
+        self.stack_parameters = {image_param.title: definition["image"]}
         if isinstance(config.cpu_alloc, int):
             cpu_config = config.cpu_alloc
         elif isinstance(config.cpu_alloc, Ref) and isinstance(config.cpu_resa, int):
@@ -601,11 +636,10 @@ class Container(object):
             f"{title}Container",
             Image=Ref(image_param),
             Name=title,
-            Hostname=keyset_else_novalue("hostname", definition, else_value=title,),
             Cpu=cpu_config,
             Memory=config.mem_alloc,
             MemoryReservation=config.mem_resa,
-            PortMappings=generate_port_mappings(definition["ports"])
+            PortMappings=generate_port_mappings(config.ports)
             if keyisset("ports", definition)
             else Ref(AWS_NO_VALUE),
             Environment=import_env_variables(definition["environment"])
@@ -614,7 +648,7 @@ class Container(object):
             LogConfiguration=LogConfiguration(
                 LogDriver="awslogs",
                 Options={
-                    "awslogs-group": Ref(ecs_params.CLUSTER_NAME),
+                    "awslogs-group": Ref(ecs_params.LOG_GROUP_T),
                     "awslogs-region": Ref("AWS::Region"),
                     "awslogs-stream-prefix": title,
                 },
@@ -647,15 +681,47 @@ class Task(object):
     """
 
     definition = None
-    containers = []
 
-    def set_task_compute_parameter(self, containers):
+    def sort_container_configs(self, template, containers_config):
+        """
+        Method to sort out the containers dependencies and create the containers definitions based on the configs.
+        :return:
+        """
+        config_key = "config"
+        priority_key = "priority"
+        services_names = list(containers_config.keys())
+        unordered = []
+        for service_name in services_names:
+            service_config = containers_config[service_name][config_key]
+            if service_config.depends_on and any(
+                i in services_names for i in service_config.depends_on
+            ):
+                for dependency in service_config.depends_on:
+                    containers_config[dependency][priority_key] += 1
+        for service in containers_config:
+            unordered.append(containers_config[service])
+        ordered_containers_config = sorted(unordered, key=lambda i: i["priority"])
+        for service_config in ordered_containers_config:
+            container = Container(
+                template,
+                service_config["config"].resource_name,
+                service_config["definition"],
+                service_config["config"],
+            )
+            self.containers.append(container.definition)
+            self.stack_parameters.update(container.stack_parameters)
+            if self.family_config is None:
+                self.family_config = service_config["config"]
+            else:
+                self.family_config += service_config["config"]
+
+    def set_task_compute_parameter(self):
         """
         Method to update task parameter for CPU/RAM profile
         """
         tasks_cpu = 0
         tasks_ram = 0
-        for container in containers:
+        for container in self.containers:
             if isinstance(container.Cpu, int):
                 tasks_cpu += container.Cpu
             if isinstance(container.Memory, int):
@@ -669,19 +735,23 @@ class Task(object):
             cpu_ram = find_closest_fargate_configuration(tasks_cpu, tasks_ram, True)
             self.stack_parameters.update({ecs_params.FARGATE_CPU_RAM_CONFIG_T: cpu_ram})
 
-    def __init__(self, template, containers, config):
+    def __init__(self, template, containers_config, family_parameters):
         """
         Init method
         """
-        add_service_roles(template, config)
+        self.containers = []
+        self.containers_config = None
+        self.family_config = None
         self.stack_parameters = {}
-        if config.use_xray:
-            containers.append(define_xray_container())
+        self.sort_container_configs(template, containers_config)
+        add_service_roles(template, self.family_config)
+        if self.family_config.use_xray:
+            self.containers.append(define_xray_container())
             add_parameters(template, [ecs_params.XRAY_IMAGE])
             self.stack_parameters.update(
                 {ecs_params.XRAY_IMAGE_T: Ref(ecs_params.XRAY_IMAGE)}
             )
-        self.set_task_compute_parameter(containers)
+        self.set_task_compute_parameter()
         self.definition = TaskDefinition(
             TASK_T,
             template=template,
@@ -691,7 +761,7 @@ class Task(object):
             Family=Ref(ecs_params.SERVICE_NAME),
             TaskRoleArn=GetAtt(TASK_ROLE_T, "Arn"),
             ExecutionRoleArn=GetAtt(EXEC_ROLE_T, "Arn"),
-            ContainerDefinitions=containers,
+            ContainerDefinitions=self.containers,
             RequiresCompatibilities=["EC2", "FARGATE"],
             Tags=Tags(
                 {
@@ -1079,7 +1149,6 @@ class Service(object):
         tgt_groups = []
         depends_on = []
         curated_ports = [int(port["target"]) for port in self.config.ports]
-        print(curated_ports)
         service_lb = self.add_load_balancer(curated_ports, **kwargs)
         depends_on.append(service_lb.title)
         for port in curated_ports:
