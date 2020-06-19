@@ -44,17 +44,17 @@ you can use the native *configs* key of Docker compose.
 
     To define configuration for your service, simply create a new element/dict in the configs element of the YAML file.
 
-configs
--------
+x-configs
+---------
 
 Configs is a section natively supported by docker-compose. The sections allows you to define generic settings for all
 services, and apply it to services.
 
 The way the definition of settings has been implemented is to go from the generic to the specific:
 
-* 1. configs -> composex
-* 2. configs -> service name
-* 3. services -> service
+* 1. x-configs -> composex
+* 2. x-configs -> service name
+* 3. x-services -> service
 
 .. hint::
 
@@ -71,9 +71,7 @@ Subkeys of the section:
 
 *   `is_public`_
 
-*   `use_alb`_
-
-*   `use_nlb`_
+*   `lb_type`_
 
 *   `use_cloudmap`_
 
@@ -87,7 +85,7 @@ Subkeys of the section:
         links: []
         ports:
         - 80:80
-        configs:
+        x-configs:
           network:
             use_alb: False
             use_nlb: False
@@ -105,7 +103,7 @@ name which will be shown in the EC2 security group description of the ingress ru
 
 .. code-block:: yaml
 
-    configs:
+    x-configs:
       app01:
         network:
           ext_sources:
@@ -128,23 +126,14 @@ is_public
 boolean to indicate whether or not the service should be accessible publicly. If set to true, the *load balancer* associated
 to the service will be made public.
 
-use_nlb
+lb_type
 """""""
 
-Some services will need TCP or UDP based load-balancing. If that is what you need, setting to true will provide your
-service with an NLB to send traffic to your containers.
+When using a load-balancer to reach to the service, specify the Load Balancer type.
+Accepted values:
 
-
-use_alb
-"""""""
-
-Similarly to `use_nlb`_ this however creates an application load-balancer. It will then carry its own Security Group
-and all the permissions for public ingress will be set to the load-balancer security group, where only the ports defined
-on the service will allow ingress from the ALB.
-
-.. warning::
-
-    If you set both use_alb and use_nlb to true, then ALB takes precedence.
+* network
+* application
 
 use_cloudmap
 """""""""""""
@@ -190,12 +179,12 @@ Examples:
     services:
       serviceA:
         image: nginx
-        configs:
+        x-configs:
           iam:
             boundary: containers # this will resolve into arn:${partition}:iam::${accountId}:policy/containers
       serviceB:
         image: redis
-        configs:
+        x-configs:
           iam:
             boundary: arn:aws:iam::aws:policy/PowerUserAccess
 
@@ -209,14 +198,14 @@ Example:
 
 .. code-block:: yaml
 
-    configs:
+    x-configs:
       composex:
         xray:
           enabled: true
 
     services:
       serviceA:
-        configs:
+        x-configs:
           xray:
             enabled: True
 

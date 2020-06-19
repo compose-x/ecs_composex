@@ -419,7 +419,9 @@ class ServiceConfig(ComposeXConfig):
         Function to initialize the ecs_service configuration
         :param content:
         """
-        service_configs = keyset_else_novalue("configs", definition, else_value={})
+        service_configs = keyset_else_novalue(
+            self.master_key, definition, else_value={}
+        )
         for key in self.service_config_keys:
             if key not in self.valid_config_keys:
                 self.valid_config_keys.append(key)
@@ -496,10 +498,10 @@ class ServiceConfig(ComposeXConfig):
 
         :param definition: service definition
         """
-        if keyisset("configs", definition) and keyisset(
-            "network", definition["configs"]
+        if keyisset(self.master_key, definition) and keyisset(
+            "network", definition[self.master_key]
         ):
-            keyset_else_novalue("lb_type", definition["configs"]["network"])
+            keyset_else_novalue("lb_type", definition[self.master_key]["network"])
 
     def use_nlb(self):
         """
@@ -565,8 +567,8 @@ class ServiceConfig(ComposeXConfig):
         """
         Function to set the xray
         """
-        if keyisset("configs", definition) and keyisset(
-            "use_xray", definition["configs"]
+        if keyisset(self.master_key, definition) and keyisset(
+            "use_xray", definition[self.master_key]
         ):
             self.use_xray = True
 

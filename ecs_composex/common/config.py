@@ -25,7 +25,7 @@ class ComposeXConfig(object):
     Class to parse and define configuration settings for ECS ComposeX
     """
 
-    master_key = "configs"
+    master_key = "x-configs"
     composex_key = "composex"
     valid_config_keys = ["network", "iam"]
 

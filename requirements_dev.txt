@@ -11,3 +11,4 @@ pytest-runner==5.2
 sphinx-rtd-theme==0.4.3
 black==19.10b0
 wheel
+docker-compose==1.26.0
