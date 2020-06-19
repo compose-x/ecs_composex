@@ -88,15 +88,6 @@ class ComposeXConfig(object):
             if key_name not in config.keys():
                 LOG.info(f"Missing {key_name}. Setting to default")
                 setattr(self, key_name, self.network_defaults[key_name])
-            # elif (
-            #     hasattr(self, key_name)
-            #     and getattr(self, key_name) != config[key_name]
-            #     and getattr(self, key_name) is not None
-            # ):
-            #     LOG.warning(
-            #         f"Property {key_name} already set: {getattr(self, key_name)}. Overriding to {config[key_name]}"
-            #     )
-            #     setattr(self, key_name, config[key_name])
             else:
                 LOG.info(f"ELSE - {key_name}- {config[key_name]}")
                 setattr(self, key_name, config[key_name])
