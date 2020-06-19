@@ -1,12 +1,11 @@
 ---
 # All Modules & Modules
 
-configs:
+x-configs:
   serviceA:
     network:
-      use_alb: True
+      lb_type: application
       is_public: True
-      use_nlb: True
       ext_sources:
         - ipv4: 0.0.0.0/0
           protocol: tcp
@@ -18,8 +17,7 @@ configs:
   serviceB:
     network:
       is_public: True
-      use_nlb: False
-      use_alb: True
+      lb_type: application
   serviceC:
     network:
       is_public: False
@@ -44,7 +42,7 @@ services:
     image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-01:1589570337
     ports:
       - 80
-    configs:
+    x-configs:
       xray:
         enabled: True
   serviceB:
@@ -64,7 +62,7 @@ services:
 
   serviceC:
     image: nginx
-    configs:
+    x-configs:
       network:
         is_public: False
         use_cloudmap: True

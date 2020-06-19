@@ -86,6 +86,7 @@ VPC_ARGS = [
 ]
 
 SUPPORTED_X_MODULES = ["x-rds", "rds", "x-sqs", "sqs", "x-sns", "sns"]
+EXCLUDED_X_KEYS = ["x-configs", "x-tags"]
 
 
 def get_composex_globals(compose_content):
@@ -397,13 +398,12 @@ def add_x_resources(template, session, tags=None, vpc_stack=None, **kwargs):
     Function to add each X resource from the compose file
     """
     content = load_composex_file(kwargs[XFILE_DEST])
-    ignore_x = ["x-tags"]
     tcp_services = ["x-rds"]
     depends_on = []
     if tags is None:
         tags = []
     for key in content:
-        if key.startswith("x-") and key not in ignore_x:
+        if key.startswith("x-") and key not in EXCLUDED_X_KEYS:
             res_type = RES_REGX.sub("", key)
             function_name = f"create_{res_type}_template"
             xclass = get_mod_class(res_type)

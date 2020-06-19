@@ -467,7 +467,7 @@ class ServiceConfig(ComposeXConfig):
         """
         Function to merge two services config.
         """
-        LOG.info(f"Current LB: {self.lb_type}")
+        LOG.debug(f"Current LB: {self.lb_type}")
         if self.lb_type is None:
             if other.lb_type is not None:
                 self.ports = other.ports

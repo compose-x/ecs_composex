@@ -139,7 +139,7 @@ def get_deploy_labels(service_definition):
     if keyisset(deploy_key, service_definition):
         if keyisset(labels_key, service_definition[deploy_key]):
             labels = service_definition[deploy_key][labels_key]
-            LOG.info(f"labels: {labels}")
+            LOG.debug(f"labels: {labels}")
     if labels:
         if isinstance(labels, dict):
             return labels
@@ -167,7 +167,7 @@ def define_families(services):
         labels = {}
         service = services[service_name]
         svc_labels = get_deploy_labels(service)
-        LOG.info(f"service {service_name} - labels {svc_labels}")
+        LOG.debug(f"service {service_name} - labels {svc_labels}")
         if isinstance(svc_labels, list):
             format_label(labels, svc_labels)
         elif isinstance(svc_labels, dict):

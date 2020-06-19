@@ -24,7 +24,7 @@ import pytest
 
 @pytest.fixture
 def configs():
-    return {"configs": {"composex": {"iam": {"boundary": "toto"}}}}
+    return {"x-configs": {"composex": {"iam": {"boundary": "toto"}}}}
 
 
 def test_service_policy():
