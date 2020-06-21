@@ -20,6 +20,7 @@ Functions to build the ECS Service Definition
 """
 
 import re
+
 from troposphere import (
     Join,
     Select,
@@ -51,7 +52,6 @@ from troposphere.ecs import (
     DeploymentController,
 )
 from troposphere.ecs import ServiceRegistry
-from troposphere.logs import LogGroup
 from troposphere.elasticloadbalancingv2 import (
     LoadBalancer,
     LoadBalancerAttributes,
@@ -61,22 +61,27 @@ from troposphere.elasticloadbalancingv2 import (
     Action as ListenerAction,
     SubnetMapping,
 )
+from troposphere.iam import PolicyType
+from troposphere.logs import LogGroup
 from troposphere.servicediscovery import (
     DnsConfig as SdDnsConfig,
     Service as SdService,
     DnsRecord as SdDnsRecord,
     HealthCheckCustomConfig as SdHealthCheckCustomConfig,
 )
-from troposphere.iam import PolicyType
 
-from ecs_composex.common import keyisset, LOG
 from ecs_composex.common import add_parameters
 from ecs_composex.common import build_template, NONALPHANUM
-from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
+from ecs_composex.common import keyisset, LOG
 from ecs_composex.common.cfn_conditions import USE_STACK_NAME_CON_T
+from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.config import ComposeXConfig
 from ecs_composex.common.outputs import formatted_outputs
 from ecs_composex.ecs import ecs_params, ecs_conditions
+from ecs_composex.ecs.docker_tools import (
+    set_memory_to_mb,
+    find_closest_fargate_configuration,
+)
 from ecs_composex.ecs.ecs_conditions import USE_HOSTNAME_CON_T
 from ecs_composex.ecs.ecs_iam import add_service_roles
 from ecs_composex.ecs.ecs_params import NETWORK_MODE, EXEC_ROLE_T, TASK_ROLE_T, TASK_T
@@ -85,15 +90,11 @@ from ecs_composex.ecs.ecs_params import (
     SERVICE_NAME_T,
     SG_T,
 )
+from ecs_composex.ecs.ecs_xray import define_xray_container
 from ecs_composex.vpc import vpc_params, vpc_conditions
 from ecs_composex.vpc.vpc_conditions import USE_VPC_MAP_ID_CON_T
 from ecs_composex.vpc.vpc_params import VPC_ID, PUBLIC_SUBNETS
 from ecs_composex.vpc.vpc_params import VPC_MAP_ID
-from ecs_composex.ecs.ecs_xray import define_xray_container
-from ecs_composex.ecs.docker_tools import (
-    set_memory_to_mb,
-    find_closest_fargate_configuration,
-)
 
 CIDR_REG = r"""((((((([0-9]{1}\.))|([0-9]{2}\.)|
 (1[0-9]{2}\.)|(2[0-5]{2}\.)))){3})(((((([0-9]{1}))|
@@ -130,6 +131,27 @@ def flatten_ip(ip_str):
     return ip_str.replace(".", "").split("/")[0].strip()
 
 
+def extend_service_secrets(container, secret):
+    """
+    Function to add secrets to a Container definition
+
+    :param container: container definition
+    :type container: troposphere.ecs.ContainerDefinition
+    :param secret: secret to add
+    :type secret: troposphere.ecs.Secret
+    """
+    if hasattr(container, "Secrets"):
+        secrets = getattr(container, "Secrets")
+        if secrets:
+            uniq = [secret.Name for secret in secrets]
+            if secret.Name not in uniq:
+                secrets.append(secret)
+        else:
+            setattr(container, "Secrets", [secret])
+    else:
+        setattr(container, "Secrets", [secret])
+
+
 def extend_env_vars(container, env_vars):
     if (
         isinstance(container, ContainerDefinition)
@@ -145,7 +167,12 @@ def extend_env_vars(container, env_vars):
         else []
     )
     if environment:
-        environment += env_vars
+        existing = [var.Name for var in environment]
+        for var in env_vars:
+            if var.Name not in existing:
+                LOG.debug(f"Adding {var.Name} to {existing}")
+                environment.append(var)
+
     else:
         setattr(container, "Environment", env_vars)
     LOG.debug(environment)
@@ -709,7 +736,7 @@ class Task(object):
             if service_config.depends_on and any(
                 i in services_names for i in service_config.depends_on
             ):
-                for dependency in service_config.depends_on:
+                for count, dependency in enumerate(service_config.depends_on):
                     containers_config[dependency][priority_key] += 1
                     containers_config[dependency]["config"].essential = False
                     service_config.family_dependents.append(
@@ -720,6 +747,7 @@ class Task(object):
                             else "HEALTHY",
                         }
                     )
+                    service_config.depends_on.pop(count)
         for service in containers_config:
             unordered.append(containers_config[service])
         ordered_containers_config = sorted(unordered, key=lambda i: i["priority"])
@@ -858,7 +886,7 @@ class Service(object):
         )
         self.config = config
         self.define_service_ingress(**kwargs)
-        self.generate_service_definition(task_definition)
+        self.generate_service_definition(task_definition.definition)
         self.generate_service_template_outputs()
 
     def add_service_default_sg(self):

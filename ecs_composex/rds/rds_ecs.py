@@ -26,15 +26,17 @@ from ecs_composex.rds.rds_perms import (
     add_rds_policy,
     add_security_group_ingress,
 )
+from ecs_composex.ecs.ecs_template import get_service_family_name
 
 
-def rds_to_ecs(rdsdbs, services_stack, rds_root_stack, **kwargs):
+def rds_to_ecs(rdsdbs, services_stack, services_families, rds_root_stack, **kwargs):
     """
     Function to apply onto existing ECS Templates the various settings
 
     :param rds_root_stack:
     :param rdsdbs:
     :param services_stack:
+    :param services_families: Families definition
     :param kwargs:
     :return:
     """
@@ -47,13 +49,17 @@ def rds_to_ecs(rdsdbs, services_stack, rds_root_stack, **kwargs):
             continue
         secret_import = define_db_secret_import(db_name)
         for service in db_def["Services"]:
-            if not service["name"] in services_stack.stack_template.resources:
+            service_family = get_service_family_name(services_families, service["name"])
+            if service_family not in services_stack.stack_template.resources:
                 raise AttributeError(
-                    f"No service {service['name']} present in services stack"
+                    f"No service {service_family} present in services stack"
                 )
-            service_stack = services_stack.stack_template.resources[service["name"]]
+            family_wide = True if service["name"] in services_families else False
+            service_stack = services_stack.stack_template.resources[service_family]
             service_template = service_stack.stack_template
-            add_secret_to_containers(service_template, db_name, secret_import)
+            add_secret_to_containers(
+                service_template, db_name, secret_import, service["name"], family_wide
+            )
             add_rds_policy(service_template, secret_import, db_name)
             add_security_group_ingress(service_stack, db_name)
             if rds_root_stack.title not in services_stack.DependsOn:

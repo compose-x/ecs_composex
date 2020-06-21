@@ -17,8 +17,8 @@
 
 """ IAM Building block for ECS """
 
-from troposphere import Sub, Ref, AWS_ACCOUNT_ID, AWS_PARTITION, AWS_REGION
-from troposphere.iam import Role, PolicyType, Policy
+from troposphere import Sub, Ref
+from troposphere.iam import Role, PolicyType
 
 from ecs_composex.ecs.ecs_params import (
     SERVICE_NAME_T,

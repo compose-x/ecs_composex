@@ -19,7 +19,7 @@
 RDS DB template generator
 """
 
-from troposphere import Sub, Ref, If, GetAtt
+from troposphere import Sub, Ref, If, GetAtt, AWS_NO_VALUE
 from troposphere.ec2 import SecurityGroup
 from troposphere.rds import (
     DBSubnetGroup,
@@ -198,7 +198,7 @@ def add_instance(template, db, **kwargs):
         Engine=Ref(DB_ENGINE_NAME),
         EngineVersion=Ref(DB_ENGINE_VERSION),
         StorageType=If(
-            rds_conditions.USE_CLUSTER_CON_T, Ref("AWS::NoValue"), Ref(DB_STORAGE_TYPE)
+            rds_conditions.USE_CLUSTER_CON_T, Ref(AWS_NO_VALUE), Ref(DB_STORAGE_TYPE)
         ),
         DBSubnetGroupName=If(
             rds_conditions.NOT_USE_CLUSTER_CON_T,
@@ -207,33 +207,33 @@ def add_instance(template, db, **kwargs):
                 Ref(CLUSTER_SUBNET_GROUP),
                 Ref(DBS_SUBNET_GROUP),
             ),
-            Ref("AWS::NoValue"),
+            Ref(AWS_NO_VALUE),
         ),
         AllocatedStorage=If(
             rds_conditions.USE_CLUSTER_CON_T,
-            Ref("AWS::NoValue"),
+            Ref(AWS_NO_VALUE),
             Ref(DB_STORAGE_CAPACITY),
         ),
         DBInstanceClass=Ref(DB_INSTANCE_CLASS),
         MasterUsername=If(
             rds_conditions.USE_CLUSTER_OR_SNAPSHOT_CON_T,
-            Ref("AWS::NoValue"),
+            Ref(AWS_NO_VALUE),
             Sub(
                 f"{{{{resolve:secretsmanager:${{{DB_SECRET_T}}}:SecretString:username}}}}"
             ),
         ),
         DBClusterIdentifier=If(
-            rds_conditions.USE_CLUSTER_CON_T, Ref(CLUSTER_T), Ref("AWS::NoValue")
+            rds_conditions.USE_CLUSTER_CON_T, Ref(CLUSTER_T), Ref(AWS_NO_VALUE)
         ),
         MasterUserPassword=If(
             rds_conditions.USE_CLUSTER_CON_T,
-            Ref("AWS::NoValue"),
+            Ref(AWS_NO_VALUE),
             Sub(
                 f"{{{{resolve:secretsmanager:${{{DB_SECRET_T}}}:SecretString:password}}}}"
             ),
         ),
         VPCSecurityGroups=If(
-            rds_conditions.USE_CLUSTER_CON_T, Ref("AWS::NoValue"), [Ref(DB_SG_T)]
+            rds_conditions.USE_CLUSTER_CON_T, Ref(AWS_NO_VALUE), [Ref(DB_SG_T)]
         ),
     )
 
@@ -258,7 +258,7 @@ def add_cluster(template, db, **kwargs):
         DatabaseName=Ref(DB_NAME),
         MasterUsername=If(
             rds_conditions.USE_CLUSTER_AND_SNAPSHOT_CON_T,
-            Ref("AWS::NoValue"),
+            Ref(AWS_NO_VALUE),
             Sub(
                 f"{{{{resolve:secretsmanager:${{{DB_SECRET_T}}}:SecretString:username}}}}"
             ),
@@ -271,9 +271,9 @@ def add_cluster(template, db, **kwargs):
             If(
                 rds_conditions.USE_DB_SNAPSHOT_CON_T,
                 Ref(DB_SNAPSHOT_ID),
-                Ref("AWS::NoValue"),
+                Ref(AWS_NO_VALUE),
             ),
-            Ref("AWS::NoValue"),
+            Ref(AWS_NO_VALUE),
         ),
         Engine=Ref(DB_ENGINE_NAME),
         EngineVersion=Ref(DB_ENGINE_VERSION),

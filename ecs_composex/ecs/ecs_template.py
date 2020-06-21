@@ -137,7 +137,7 @@ def get_deploy_labels(service_definition):
     return labels
 
 
-def define_families(services):
+def define_services_families(services):
     """
     Function to group services together into a task family
 
@@ -155,6 +155,23 @@ def define_families(services):
             labels = {ECS_TASK_FAMILY_LABEL: service_name}
         update_families(families, labels, service_name)
     return families
+
+
+def get_service_family_name(services_families, service_name):
+    """
+    Function to return the root family name, representing the service stack name.
+
+    :param services_families:
+    :param service_name:
+    :return: service stack name
+    :rtype: str
+    """
+    for family_name in services_families:
+        if service_name in services_families[family_name]:
+            return family_name
+    if service_name in services_families.keys():
+        return service_name
+    return None
 
 
 def handle_families_services(families, cluster_sg, content, **kwargs):
@@ -184,7 +201,7 @@ def handle_families_services(families, cluster_sg, content, **kwargs):
         service = Service(
             template,
             family_resource_name,
-            task.definition,
+            task,
             task.family_config,
             **kwargs,
         )
@@ -214,7 +231,7 @@ def generate_services(compose_content, cluster_sg, **kwargs):
     :type kwargs: dicts or set
     """
     services = {}
-    families = define_families(compose_content[ecs_params.RES_KEY])
+    families = define_services_families(compose_content[ecs_params.RES_KEY])
     services.update(
         handle_families_services(families, cluster_sg, compose_content, **kwargs)
     )

@@ -68,7 +68,12 @@ from ecs_composex.ecs.ecs_conditions import (
     CLUSTER_NAME_CON_T,
     CLUSTER_NAME_CON,
 )
-from ecs_composex.ecs.ecs_params import CLUSTER_NAME_T, CLUSTER_NAME
+from ecs_composex.ecs.ecs_params import (
+    CLUSTER_NAME_T,
+    CLUSTER_NAME,
+    RES_KEY as SERVICES_KEY,
+)
+from ecs_composex.ecs.ecs_template import define_services_families
 from ecs_composex.vpc import create_vpc_template
 from ecs_composex.vpc import vpc_params
 
@@ -213,7 +218,9 @@ def generate_x_resources_envvars(resources, resource_type, function, **kwargs):
     return mod_envvars
 
 
-def apply_x_configs_to_ecs(content, root_template, services_stack, **kwargs):
+def apply_x_configs_to_ecs(
+    content, root_template, services_stack, services_families, **kwargs
+):
     """
     Function that evaluates only the x- resources of the root template and iterates over the resources.
     If there is an implemented module in ECS ComposeX for that resource to map to the ECS Services, it will
@@ -223,6 +230,7 @@ def apply_x_configs_to_ecs(content, root_template, services_stack, **kwargs):
     :param troposphere.Template root_template: The root template for ECS ComposeX
     :param ecs_composex.ecs.ServicesStack services_stack: root stack for services.
     :param dict kwargs: settings for building X related resources
+    :param dict services_families: Families and services mappings
     """
     for resource_name in root_template.resources:
         resource = root_template.resources[resource_name]
@@ -237,7 +245,9 @@ def apply_x_configs_to_ecs(content, root_template, services_stack, **kwargs):
             )
             if ecs_function:
                 LOG.debug(ecs_function)
-                ecs_function(content[composex_key], services_stack, resource)
+                ecs_function(
+                    content[composex_key], services_stack, services_families, resource
+                )
 
 
 def apply_x_to_x_configs(root_template, content):
@@ -470,15 +480,9 @@ def add_ecs_cluster(template, depends_on=None):
         DependsOn=depends_on,
         CapacityProviders=["FARGATE", "FARGATE_SPOT"],
         DefaultCapacityProviderStrategy=[
-            CapacityProviderStrategyItem(
-                Weight=2,
-                CapacityProvider="FARGATE_SPOT"
-            ),
-            CapacityProviderStrategyItem(
-                Weight=1,
-                CapacityProvider="FARGATE"
-            )
-        ]
+            CapacityProviderStrategyItem(Weight=2, CapacityProvider="FARGATE_SPOT"),
+            CapacityProviderStrategyItem(Weight=1, CapacityProvider="FARGATE"),
+        ],
     )
 
 
@@ -537,6 +541,7 @@ def generate_full_template(content, session=None, **kwargs):
     validate_kwargs(["BucketName"], kwargs)
     vpc_stack = None
     depends_on = []
+    services_families = define_services_families(content[SERVICES_KEY])
     services_stack = template.add_resource(
         add_services(depends_on, session=session, vpc_stack=vpc_stack, **kwargs)
     )
@@ -561,7 +566,9 @@ def generate_full_template(content, session=None, **kwargs):
         **kwargs,
     )
     add_x_resources(template, session=session, vpc_stack=vpc_stack, **kwargs)
-    apply_x_configs_to_ecs(content, template, services_stack, **kwargs)
+    apply_x_configs_to_ecs(
+        content, template, services_stack, services_families, **kwargs
+    )
     apply_x_to_x_configs(template, content)
     add_all_tags(template, tags_params)
     LOG.debug(stack_params)

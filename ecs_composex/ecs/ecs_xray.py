@@ -16,11 +16,7 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from troposphere import Ref
-from troposphere.ecs import (
-    ContainerDefinition,
-    PortMapping,
-    LogConfiguration
-)
+from troposphere.ecs import ContainerDefinition, PortMapping, LogConfiguration
 from ecs_composex.ecs.ecs_params import XRAY_IMAGE, LOG_GROUP_T
 
 
