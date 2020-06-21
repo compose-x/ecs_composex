@@ -50,11 +50,6 @@ CLUSTER_NAME_CON = And(
 SERVICE_COUNT_ZERO_CON_T = "ServiceCountIsZeroCondition"
 SERVICE_COUNT_ZERO_CON = Equals(Ref(ecs_params.SERVICE_COUNT), "0")
 
-# MEM_RES_IS_MEM_ALLOC_CON_T = "MemoryReservedIsMemoryAllocatedCondition"
-# MEM_RES_IS_MEM_ALLOC_CON = Equals(
-#     Ref(ecs_params.MEMORY_RES), ecs_params.MEMORY_RES.Default
-# )
-
 USE_FARGATE_CON_T = "UseFargateCondition"
 USE_FARGATE_CON = Equals(Ref(ecs_params.LAUNCH_TYPE), "FARGATE")
 

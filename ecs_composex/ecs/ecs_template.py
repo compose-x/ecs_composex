@@ -120,10 +120,11 @@ def get_deploy_labels(service_definition):
     deploy_key = "deploy"
     labels_key = "labels"
     svc_labels = {}
-    if keyisset(deploy_key, service_definition):
-        if keyisset(labels_key, service_definition[deploy_key]):
-            svc_labels = service_definition[deploy_key][labels_key]
-            LOG.debug(f"labels: {svc_labels}")
+    if keyisset(deploy_key, service_definition) and keyisset(
+        labels_key, service_definition[deploy_key]
+    ):
+        svc_labels = service_definition[deploy_key][labels_key]
+        LOG.debug(f"labels: {svc_labels}")
     if svc_labels:
         if isinstance(svc_labels, list):
             for item in svc_labels:

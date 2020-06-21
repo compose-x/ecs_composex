@@ -25,6 +25,51 @@ from ecs_composex.common import LOG
 from ecs_composex.ecs.ecs_params import FARGATE_MODES
 from ecs_composex.vpc.vpc_maths import clpow2, nxtpow2
 
+NUMBERS_REG = r"[^0-9.]"
+
+
+def handle_bytes(value, allocating=False):
+    """
+    Function to handle the KB use-case
+
+    :param value: the string value
+    :param bool allocating: Whether or not the value is for memory allocation
+    :rtype: int or Ref(AWS_NO_VALUE)
+    """
+    amount = float(re.sub(NUMBERS_REG, "", value))
+    unit = "Bytes"
+    if amount < (512 * 1024 * 1024) and allocating:
+        LOG.warn(
+            f"You set unit to {unit} and value is lower than 512MB. Setting to Fargate minimum"
+        )
+        final_amount = 512
+    elif amount < (512 * 1024 * 1024) and not allocating:
+        LOG.warn(f"You set unit to {unit} and value is invalid. Setting to NoValue")
+        final_amount = Ref(AWS_NO_VALUE)
+    else:
+        final_amount = (amount / 1024) / 1024
+    return final_amount
+
+
+def handle_kbytes(value, allocating=False):
+    """
+    Function to handle KB use-case
+
+    """
+    amount = float(re.sub(NUMBERS_REG, "", value))
+    unit = "KBytes"
+    if amount < (512 * 1024) and allocating:
+        LOG.warn(
+            f"You set unit to {unit} and value is lower than 512MB. Setting to Fargate Minimum"
+        )
+        final_amount = 512
+    elif amount < (512 * 1024) and not allocating:
+        LOG.warn(f"You set unit to {unit} and value is invalid. Setting to NoValue")
+        final_amount = Ref(AWS_NO_VALUE)
+    else:
+        final_amount = int(amount / 1024)
+    return final_amount
+
 
 def set_memory_to_mb(value, allocating=False):
     """
@@ -37,33 +82,12 @@ def set_memory_to_mb(value, allocating=False):
     kb_pat = re.compile(r"(^[0-9.]+(k|kb|kB|Kb|K|KB)$)")
     mb_pat = re.compile(r"(^[0-9.]+(m|mb|mB|Mb|M|MB)$)")
     gb_pat = re.compile(r"(^[0-9.]+(g|gb|gB|Gb|G|GB)$)")
-    amount = float(re.sub(r"[^0-9.]", "", value))
+    amount = float(re.sub(NUMBERS_REG, "", value))
     unit = "MBytes"
     if b_pat.findall(value):
-        unit = "Bytes"
-        if amount < (512 * 1024 * 1024) and allocating:
-            LOG.warn(
-                f"You set unit to {unit} and value is lower than 512MB. Setting to Fargate minimum"
-            )
-            final_amount = 512
-        elif amount < (512 * 1024 * 1024) and not allocating:
-            LOG.warn(f"You set unit to {unit} and value is invalid. Setting to NoValue")
-            final_amount = Ref(AWS_NO_VALUE)
-        else:
-            final_amount = (amount / 1024) / 1024
-
+        final_amount = handle_bytes(value, allocating)
     elif kb_pat.findall(value):
-        unit = "KBytes"
-        if amount < (512 * 1024) and allocating:
-            LOG.warn(
-                f"You set unit to {unit} and value is lower than 512MB. Setting to Fargate Minimum"
-            )
-            final_amount = 512
-        elif amount < (512 * 1024) and not allocating:
-            LOG.warn(f"You set unit to {unit} and value is invalid. Setting to NoValue")
-            final_amount = Ref(AWS_NO_VALUE)
-        else:
-            final_amount = int(amount / 1024)
+        final_amount = handle_kbytes(value, allocating)
     elif mb_pat.findall(value):
         final_amount = int(amount)
     elif gb_pat.findall(value):
@@ -86,7 +110,7 @@ def find_closest_ram_config(ram, ram_range):
     :return: the closest amount of RAM.
     :rtype: int
     """
-    LOG.info(f"{ram} - {ram_range[0]} - {ram_range[-1]}")
+    LOG.debug(f"{ram} - {ram_range[0]} - {ram_range[-1]}")
     if ram >= ram_range[-1]:
         return ram_range[-1]
     elif ram <= ram_range[0]:
@@ -94,7 +118,7 @@ def find_closest_ram_config(ram, ram_range):
     else:
         for ram_value in ram_range:
             if ram <= ram_value:
-                LOG.info(f"BEST RAM FOUND: {ram_value}")
+                LOG.debug(f"BEST RAM FOUND: {ram_value}")
                 return ram_value
 
 
