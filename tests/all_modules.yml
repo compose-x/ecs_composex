@@ -1,7 +1,7 @@
 ---
 # All Modules
 
-configs:
+x-configs:
   serviceA:
     use_alb: True
     is_public: True

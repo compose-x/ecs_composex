@@ -3,3 +3,4 @@ pytest-runner==5.2
 flake8==3.7.9
 tox==3.14.6
 coverage==5.1
+docker-compose==1.26.0

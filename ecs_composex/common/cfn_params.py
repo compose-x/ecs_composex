@@ -32,7 +32,7 @@ ROOT_STACK_NAME_T = "RootStackName"
 ROOT_STACK_NAME = Parameter(
     ROOT_STACK_NAME_T,
     Type="String",
-    Default="<self>",
+    Default="self",
     Description="When part of a combined deployment, represents to the top stack name",
 )
 

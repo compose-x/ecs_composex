@@ -1,12 +1,11 @@
 ---
 # All Modules & Modules
 
-configs:
+x-configs:
   serviceA:
     network:
-      use_alb: True
+      lb_type: application
       is_public: True
-      use_nlb: True
       ext_sources:
         - ipv4: 0.0.0.0/0
           protocol: tcp
@@ -18,8 +17,7 @@ configs:
   serviceB:
     network:
       is_public: True
-      use_nlb: False
-      use_alb: True
+      lb_type: application
   serviceC:
     network:
       is_public: False
@@ -31,10 +29,20 @@ configs:
 
 services:
   serviceA:
+    deploy:
+      mode: replicated
+      replicas: 6
+      resources:
+        limits:
+          cpus: 1
+          memory: 256M
+        reservations:
+          cpus: 0.25
+          memory: 128M
     image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-01:1589570337
     ports:
       - 80
-    configs:
+    x-configs:
       xray:
         enabled: True
   serviceB:
@@ -43,13 +51,28 @@ services:
       - 80:80
     links:
       - serviceC
+    deploy:
+      resources:
+        limits:
+          cpus: 1
+          memory: 1.5G
+        reservations:
+          cpus: 0.5
+          memory: 1048576kB
 
   serviceC:
     image: nginx
-    configs:
+    x-configs:
       network:
         is_public: False
         use_cloudmap: True
+    deploy:
+      resources:
+        limits:
+          cpus: 2
+        reservations:
+          memory: 1G
+    ports: []
 
 
 x-tags:

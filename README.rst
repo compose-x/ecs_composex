@@ -96,6 +96,11 @@ design and capacity planning.
     Alternatively, use the AWS CLI v2. It is absolutely smashing-ly awesome and might be just what you need
     This tool aims to reproduce the original ECS CLI behaviour whilst adding logic for non ECS resources that you want to create in your environment.
 
+Fargate First
+-------------
+
+However the original deployments and work on this project was done using EC2 instances (using SpotFleet mostly), everything
+is now implemented to work on AWS Fargate First (2020-06-06).
 
 License and documentation
 ==========================

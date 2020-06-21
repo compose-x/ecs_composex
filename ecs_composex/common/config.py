@@ -25,22 +25,43 @@ class ComposeXConfig(object):
     Class to parse and define configuration settings for ECS ComposeX
     """
 
-    master_key = "configs"
+    master_key = "x-configs"
     composex_key = "composex"
-    network = None
-    iam = None
     valid_config_keys = ["network", "iam"]
 
     network_defaults = {
         "use_cloudmap": True,
-        "use_alb": False,
-        "use_nlb": False,
         "is_public": False,
-        "healthcheck": None,
+        "lb_type": None,
         "ext_sources": None,
     }
 
-    def set_iam(self, config):
+    def __init__(self, compose_content, service_name=None, service_configs=None):
+        """
+        Initializes the ComposeXConfig class
+        :param compose_content: compose file content
+        :type compose_content: dict
+        """
+        self.network = None
+        self.iam = None
+
+        self.lb_type = None
+        self.healthcheck = None
+        self.ext_sources = None
+        self.is_public: False
+        self.use_cloudmap = True
+        self.boundary = None
+        self.service_name = service_name if service_name else "global"
+
+        if keyisset(self.master_key, compose_content):
+            self.set_from_top_configs(compose_content)
+        if service_name and isinstance(service_configs, dict):
+            self.define_service_config(compose_content, service_name, service_configs)
+
+    def __repr__(self):
+        return dumps(self.__dict__)
+
+    def init_iam(self, config):
         """
         Function to set IAM
         :return:
@@ -54,7 +75,7 @@ class ComposeXConfig(object):
                 )
             setattr(self, key_name, config[key_name])
 
-    def set_network(self, config):
+    def init_network(self, config):
         """
         Function to define networking properties
         """
@@ -64,14 +85,13 @@ class ComposeXConfig(object):
                     f"{key_name} is not a valid configuration for Networking"
                 )
         for key_name in self.network_defaults:
-            if key_name not in config.keys():
-                setattr(self, key_name, self.network_defaults[key_name])
-            elif (
-                hasattr(self, key_name) and getattr(self, key_name) != config[key_name]
-            ):
-                LOG.warning(
-                    f"Property {key_name} already set: {getattr(self, key_name)}. Overriding to {config[key_name]}"
+            if key_name not in config.keys() and not hasattr(self, key_name):
+                LOG.info(
+                    f"Missing {key_name}. Setting to default - {self.service_name}"
                 )
+                setattr(self, key_name, self.network_defaults[key_name])
+            elif key_name in config.keys():
+                LOG.debug(f"ELSE - {key_name}- {config[key_name]}")
                 setattr(self, key_name, config[key_name])
 
     def set_from_top_configs(self, compose_content):
@@ -84,19 +104,19 @@ class ComposeXConfig(object):
             for key in self.valid_config_keys:
                 if keyisset(
                     key, compose_content[self.master_key][self.composex_key]
-                ) and hasattr(self, f"set_{key}"):
-                    set_function = getattr(self, f"set_{key}")
-                    LOG.debug(set_function)
-                    set_function(
+                ) and hasattr(self, f"init_{key}"):
+                    init_function = getattr(self, f"init_{key}")
+                    LOG.debug(init_function)
+                    init_function(
                         compose_content[self.master_key][self.composex_key][key]
                     )
 
     def set_service_config(self, config):
         for key in self.valid_config_keys:
-            if keyisset(key, config) and hasattr(self, f"set_{key}"):
-                set_function = getattr(self, f"set_{key}")
-                LOG.debug(set_function, config[key])
-                set_function(config=config[key])
+            if keyisset(key, config) and hasattr(self, f"init_{key}"):
+                init_function = getattr(self, f"init_{key}")
+                LOG.debug(init_function, config[key])
+                init_function(config=config[key])
 
     def define_service_config(self, compose_content, service_name, config_definition):
         """
@@ -110,23 +130,7 @@ class ComposeXConfig(object):
             service_name, compose_content[self.master_key]
         ):
             LOG.debug(
-                f"Service {service_name} has configuration in the root configs section."
+                f"Service {service_name} has configuration in the root {self.master_key} section."
             )
             self.set_service_config(compose_content[self.master_key][service_name])
         self.set_service_config(config_definition)
-
-    def __init__(self, compose_content, service_name=None, service_definition=None):
-        """
-        Initializes the ComposeXConfig class
-        :param compose_content: compose file content
-        :type compose_content: dict
-        """
-        if keyisset(self.master_key, compose_content):
-            self.set_from_top_configs(compose_content)
-        if service_name and isinstance(service_definition, dict):
-            self.define_service_config(
-                compose_content, service_name, service_definition
-            )
-
-    def __repr__(self):
-        return dumps(self.__dict__)

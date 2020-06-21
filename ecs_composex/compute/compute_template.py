@@ -41,6 +41,7 @@ from ecs_composex.vpc import vpc_params
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME
 from ecs_composex.common.tagging import add_object_tags
 from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.common.config import ComposeXConfig
 
 
 def add_spotfleet_stack(
@@ -75,8 +76,8 @@ def add_spotfleet_stack(
         compute_params.MIN_CAPACITY_T: Ref(compute_params.MIN_CAPACITY),
         compute_params.TARGET_CAPACITY_T: Ref(compute_params.TARGET_CAPACITY),
     }
-    if keyisset("configs", compose_content):
-        configs = compose_content["configs"]
+    if keyisset(ComposeXConfig.master_key, compose_content):
+        configs = compose_content[ComposeXConfig.master_key]
         if keyisset("spot_config", configs):
             spot_config = configs["spot_config"]
 

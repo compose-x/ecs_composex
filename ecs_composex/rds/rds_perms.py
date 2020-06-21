@@ -29,6 +29,7 @@ from ecs_composex.common import keyisset, LOG
 from ecs_composex.common.outputs import define_import
 from ecs_composex.ecs.ecs_iam import define_service_containers
 from ecs_composex.ecs.ecs_params import TASK_ROLE_T, EXEC_ROLE_T, SG_T
+from ecs_composex.ecs.ecs_service import extend_service_secrets
 from ecs_composex.rds.rds_params import (
     DB_EXPORT_SECRET_ARN_T,
     DB_SECRET_POLICY_NAME,
@@ -106,20 +107,24 @@ def add_security_group_ingress(service_stack, db_name):
         GroupId=sg_id,
         FromPort=port,
         ToPort=port,
-        Description=f"Allow {port}/tcp FROM {db_name} TO {service_stack.title}",
+        Description=Sub(f"Allow FROM {db_name} TO {service_stack.title}"),
         SourceSecurityGroupId=GetAtt(service_template.resources[SG_T], "GroupId"),
         SourceSecurityGroupOwnerId=Ref("AWS::AccountId"),
         IpProtocol="6",
     )
 
 
-def add_secret_to_containers(service_template, db_name, secret_import):
+def add_secret_to_containers(
+    service_template, db_name, secret_import, service_name, family_wide=False
+):
     """
     Function to add DB secret to container
 
     :param troposphere.Template service_template: the ecs_service template
     :param str db_name: the name of the database used as environment variable name
     :param str secret_import: secret arn
+    :param str service_name: Name of the service that was explicitely listed as consuming the DB
+    :param bool family_wide: Whether or not apply the secret to all services of the family.
     """
 
     containers = define_service_containers(service_template)
@@ -129,16 +134,12 @@ def add_secret_to_containers(service_template, db_name, secret_import):
             isinstance(container, ContainerDefinition)
             and not isinstance(container.Name, (Ref, Sub, GetAtt, ImportValue))
             and container.Name.startswith("AWS")
+            and family_wide
         ):
             LOG.debug(f"Ignoring AWS Container {container.Name}")
             continue
-        if hasattr(container, "Secrets"):
-            secrets = getattr(container, "Secrets")
-            if secrets:
-                secrets.append(db_secret)
-            else:
-                secrets = [db_secret]
-                setattr(container, "Secrets", secrets)
-        else:
-            secrets = [db_secret]
-            setattr(container, "Secrets", secrets)
+        elif family_wide:
+            extend_service_secrets(container, db_secret)
+        elif not family_wide and container.Name == service_name:
+            extend_service_secrets(container, db_secret)
+            break

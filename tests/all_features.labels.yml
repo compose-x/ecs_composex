@@ -1,0 +1,157 @@
+---
+# All Modules & Modules
+
+configs:
+  serviceA:
+    network:
+      lb_type: application
+      is_public: True
+      ext_sources:
+        - ipv4: 0.0.0.0/0
+          protocol: tcp
+          source_name: all
+        - ipv4: 1.1.1.1/32
+          protocol: icmp
+          source_name: GoogleDns
+
+#  serviceB:
+#    network:
+#      is_public: False
+#      lb_type: network
+  serviceC:
+    network:
+      is_public: False
+      use_cloudmap: True
+
+  composex:
+    network:
+      use_cloudmap: True
+
+services:
+  serviceA:
+    deploy:
+      labels:
+        ecs.task.family: app01
+      mode: replicated
+      replicas: 6
+      resources:
+        limits:
+          cpus: 1
+          memory: 256M
+        reservations:
+          cpus: 0.25
+          memory: 128M
+    image: nginx
+    ports:
+      - 443
+      - 80:80
+    configs:
+      xray:
+        enabled: True
+    links:
+      - serviceB
+
+  serviceB:
+    image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-01:1589570337
+    ports:
+      - 5000:5000
+    links:
+      - serviceC
+    deploy:
+      labels:
+        ecs.task.family: app01
+      resources:
+        limits:
+          cpus: 1
+          memory: 1.5G
+        reservations:
+          cpus: 0.5
+          memory: 1048576kB
+
+  serviceC:
+    image: nginx
+    configs:
+      network:
+        is_public: False
+        use_cloudmap: True
+    deploy:
+      resources:
+        limits:
+          cpus: 2
+        reservations:
+          memory: 1G
+
+
+#x-tags:
+#  - name: costcentre
+#    value: lambda-my-aws
+#  - name: mail
+#    value: john@lambda-my-aws.io
+
+#x-sns:
+#  Topics:
+#    Topic01:
+#      Properties: {}
+#      Services:
+#        - name: serviceC
+#          access: Publish
+#      Settings: {}
+#    Topic02:
+#      Properties:
+#        Subscription:
+#          - Endpoint: Queue01
+#            Protocol: sqs
+#      Settings: {}
+#      Services: []
+#
+#x-sqs:
+# Queue02:
+#   Services:
+#     - name: serviceA
+#       access: RWPermissions
+#     - name: serviceB
+#       access: RO
+#   Properties:
+#     RedrivePolicy:
+#       deadLetterTargetArn: Queue01
+#       maxReceiveCount: 10
+#   Settings:
+#     EnvNames:
+#       - APP_QUEUE
+#       - AppQueue
+#
+# Queue01:
+#   Services:
+#     - name: serviceB
+#       access: RWMessages
+#   Properties: {}
+#   Settings:
+#     EnvNames:
+#       - DLQ
+#       - dlq
+#
+# QueueNoServices:
+#   Properties: {}
+#   Settings:
+#     EnvNames:
+#       - ALONE
+#       - NoOneLikesMe
+#
+#x-rds:
+# dbA:
+#   Properties:
+#     Engine: "aurora-mysql"
+#     EngineVersion: "5.7.12"
+#   Services:
+#     - name: serviceA
+#       access: RW
+#
+# dbB:
+#   Properties:
+#     Engine: "aurora-mysql"
+#     EngineVersion: "5.7.12"
+#   Services:
+#     - name: serviceA
+#       access: RW
+#     - name: serviceB
+#       access: RW

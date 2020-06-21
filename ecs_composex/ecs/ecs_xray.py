@@ -15,12 +15,9 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from troposphere.ecs import (
-    ContainerDefinition,
-    PortMapping,
-)
-
-AWS_XRAY_IMAGE = "amazon/aws-xray-daemon"
+from troposphere import Ref
+from troposphere.ecs import ContainerDefinition, PortMapping, LogConfiguration
+from ecs_composex.ecs.ecs_params import XRAY_IMAGE, LOG_GROUP_T
 
 
 def define_xray_container():
@@ -29,11 +26,20 @@ def define_xray_container():
     :return:
     """
     xray_container = ContainerDefinition(
-        Image=AWS_XRAY_IMAGE,
-        Name="AWSXRAY",
+        Image=Ref(XRAY_IMAGE),
+        Name="xray-daemon",
         PortMappings=[PortMapping(ContainerPort=2000, Protocol="UDP")],
         Cpu=32,
         Memory=256,
+        MemoryReservation=256,
         Essential=False,
+        LogConfiguration=LogConfiguration(
+            LogDriver="awslogs",
+            Options={
+                "awslogs-group": Ref(LOG_GROUP_T),
+                "awslogs-region": Ref("AWS::Region"),
+                "awslogs-stream-prefix": "xray-daemon",
+            },
+        ),
     )
     return xray_container

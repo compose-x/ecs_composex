@@ -15,32 +15,27 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from ecs_composex.common.config import ComposeXConfig
-from ecs_composex.iam import add_role_boundaries, service_role_trust_policy
-from troposphere.iam import Role
-
-import pytest
-
-
-@pytest.fixture
-def configs():
-    return {"x-configs": {"composex": {"iam": {"boundary": "toto"}}}}
+from ecs_composex.ecs.docker_tools import (
+    set_memory_to_mb,
+    find_closest_fargate_configuration,
+)
 
 
-def test_service_policy():
+def test_mb_settings():
     """
-    Function to evaluate the ecs_service policy
+    Function to ensure the MB return works
     """
-    role = Role("iamrole", AssumeRolePolicyDocument=service_role_trust_policy("ec2"))
-    role.to_dict()
+    assert set_memory_to_mb("1024") == 1024
+    assert set_memory_to_mb("1G") == 1024
+    assert set_memory_to_mb("0.5G") == 512
+    assert set_memory_to_mb("4G") == 4096
+    assert set_memory_to_mb(f"{1024*1024}kB") == 1024
 
 
-def test_service_role_with_boundary(configs):
+def test_fargate_config():
     """
-    :param config:
+    Function to check the combination finding for Fargate
     """
-    config = ComposeXConfig(configs)
-    assert hasattr(config, "boundary")
-    role = Role("iamrole", AssumeRolePolicyDocument=service_role_trust_policy("ec2"))
-    add_role_boundaries(role, config.boundary)
-    assert hasattr(role, "PermissionsBoundary")
+    assert find_closest_fargate_configuration(256, 512, True) == "256!512"
+    assert find_closest_fargate_configuration(2018, 4000, True) == "2048!4096"
+    assert find_closest_fargate_configuration(2048, 25555) == (2048, 16384)

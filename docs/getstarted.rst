@@ -111,7 +111,7 @@ have an HTTP based application. So we need to indicate to ECS ComposeX that it s
           - name: serviceB
             access: RW
 
-    configs:
+    x-configs:
       serviceA:
         network:
           use_alb: True

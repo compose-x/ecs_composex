@@ -29,7 +29,7 @@ Example:
 
 .. code-block:: yaml
 
-    configs:
+    x-configs:
       spot_config:
         bid_price: 0.42
         use_spot: true

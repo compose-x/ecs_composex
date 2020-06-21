@@ -21,12 +21,21 @@ from troposphere import Ref, Sub, Tags, Join
 from troposphere.ec2 import SecurityGroup
 
 from ecs_composex.common import keyisset
-from ecs_composex.common import LOG
+from ecs_composex.common import LOG, NONALPHANUM
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T, ROOT_STACK_NAME
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.ecs import ecs_params
-from ecs_composex.ecs.ecs_params import CLUSTER_NAME, CLUSTER_NAME_T
-from ecs_composex.ecs.ecs_service import Service
+from ecs_composex.ecs.ecs_params import (
+    CLUSTER_NAME,
+    CLUSTER_NAME_T,
+    ECS_TASK_FAMILY_LABEL,
+)
+from ecs_composex.ecs.ecs_service import (
+    Service,
+    ServiceConfig,
+    Task,
+    initialize_service_template,
+)
 from ecs_composex.vpc import vpc_params
 
 
@@ -49,19 +58,6 @@ class ServiceStack(ComposeXStack):
             }
 
 
-def validate_input(services):
-    """
-    Validates services docker format
-    """
-    props_must_have = ["image"]
-    for service_name in services:
-        service = services[service_name]
-        for prop in props_must_have:
-            if not keyisset(prop, service):
-                raise KeyError("Service {service_name} is missing property {prop}")
-    return True
-
-
 def add_clusterwide_security_group(template):
     """
     Function to generate the ecs_service Load Balancers (if Any)
@@ -82,24 +78,129 @@ def add_clusterwide_security_group(template):
     return sg
 
 
-def generate_services(compose_content, cluster_sg, session=None, **kwargs):
-    """Function putting together the ECS Service template
+def parse_string_labels(labels, svc_labels):
+    """
+    Function to format the label key value if labels are strings in a list
 
-    :param compose_content: Docker/ComposeX file content
-    :type compose_content: dict
-    :param root_tpl: template
-    :type root_tpl: troposphere.Template
-    :param cluster_sg: cluster default security group
-    :type cluster_sg: troposphere.ec2.SecurityGroup
-    :param session: override default session
-    :type session: boto3.session.Session
-    :param kwargs: optional arguments
-    :type kwargs: dicts or set
+    :param dict labels: labels dict to update with new labels
+    :param list svc_labels: the label string
+    """
+    for label in svc_labels:
+        if label.find("=") > 0:
+            splits = label.split("=")
+            labels.update({splits[0]: splits[1]})
+
+
+def update_families(families, labels, service_name):
+    """
+    Function to update families info from labels
+
+    :param dict families: registry of applications families
+    :param dict labels: the list of labels from a a service
+    :param str service_name: name of the service for which we get these labels
+    """
+    for label in labels:
+        if label == ECS_TASK_FAMILY_LABEL:
+            family_name = labels[label]
+            if not keyisset(family_name, families):
+                families[family_name] = [service_name]
+            elif keyisset(family_name, families):
+                families[family_name].append(service_name)
+
+
+def get_deploy_labels(service_definition):
+    """
+    Function to get the deploy labels of a service definition
+
+    :param dict service_definition: The service definition as defined in compose file
+    :return: labels if any
+    :rtype: dict
+    """
+    labels = {}
+    deploy_key = "deploy"
+    labels_key = "labels"
+    svc_labels = {}
+    if keyisset(deploy_key, service_definition):
+        if keyisset(labels_key, service_definition[deploy_key]):
+            svc_labels = service_definition[deploy_key][labels_key]
+            LOG.debug(f"labels: {svc_labels}")
+    if svc_labels:
+        if isinstance(svc_labels, list):
+            for item in svc_labels:
+                if not isinstance(item, str):
+                    raise TypeError(
+                        f"When using a list for deploy labels, all labels must be of type string"
+                    )
+                parse_string_labels(labels, svc_labels)
+        elif isinstance(svc_labels, dict):
+            return svc_labels
+    return labels
+
+
+def define_services_families(services):
+    """
+    Function to group services together into a task family
+
+    :param dict services:
+    :return:
+    """
+    families = {}
+    for service_name in services:
+        labels = {}
+        service = services[service_name]
+        svc_labels = get_deploy_labels(service)
+        LOG.debug(f"service {service_name} - labels {svc_labels}")
+        labels.update(svc_labels)
+        if not labels:
+            labels = {ECS_TASK_FAMILY_LABEL: service_name}
+        update_families(families, labels, service_name)
+    return families
+
+
+def get_service_family_name(services_families, service_name):
+    """
+    Function to return the root family name, representing the service stack name.
+
+    :param services_families:
+    :param service_name:
+    :return: service stack name
+    :rtype: str
+    """
+    for family_name in services_families:
+        if service_name in services_families[family_name]:
+            return family_name
+    if service_name in services_families.keys():
+        return service_name
+    return None
+
+
+def handle_families_services(families, cluster_sg, content, **kwargs):
+    """
+    Function to handle creation of services within the same family.
+    :return:
     """
     services = {}
-    for service_name in compose_content[ecs_params.RES_KEY]:
-        service_definition = compose_content[ecs_params.RES_KEY][service_name]
-        service = Service(service_name, service_definition, compose_content, **kwargs)
+    for family_name in families:
+        family_resource_name = NONALPHANUM.sub("", family_name)
+        template = initialize_service_template(family_resource_name)
+        family = families[family_name]
+        family_service_configs = {}
+        family_parameters = {}
+        for service_name in family:
+            service = content[ecs_params.RES_KEY][service_name]
+            service_config = ServiceConfig(
+                content, service_name, service, family_name=family_resource_name
+            )
+            family_service_configs[service_name] = {
+                "config": service_config,
+                "priority": 0,
+                "definition": service,
+            }
+        task = Task(template, family_service_configs, family_parameters)
+        family_parameters.update(task.stack_parameters)
+        service = Service(
+            template, family_resource_name, task, task.family_config, **kwargs,
+        )
         service.parameters.update(
             {
                 CLUSTER_NAME_T: Ref(CLUSTER_NAME),
@@ -108,18 +209,26 @@ def generate_services(compose_content, cluster_sg, session=None, **kwargs):
                 vpc_params.VPC_MAP_ID_T: Ref(vpc_params.VPC_MAP_ID_T),
             }
         )
-        if keyisset("hostname", service.definition):
-            service.parameters.update({ecs_params.SERVICE_HOSTNAME_T: service.hostname})
-        service.dependencies.append(ecs_params.LOG_GROUP_T)
-        # ServiceStack(
-        #         ecs_service.resource_name,
-        #         template=ecs_service.template,
-        #         ecs_service=ecs_service,
-        #         Parameters=ecs_service.parameters,
-        #         DependsOn=ecs_service.dependencies,
-        #         **kwargs,
-        #     )
-        # )
-        LOG.debug(f"Service {service_name} added.")
-        services[service_name] = service
+        service.parameters.update(family_parameters)
+        LOG.debug(f"Service {family_resource_name} added.")
+        services[family_resource_name] = service
+    return services
+
+
+def generate_services(compose_content, cluster_sg, **kwargs):
+    """
+    Function putting together the ECS Service template
+
+    :param compose_content: Docker/ComposeX file content
+    :type compose_content: dict
+    :param cluster_sg: cluster default security group
+    :type cluster_sg: troposphere.ec2.SecurityGroup
+    :param kwargs: optional arguments
+    :type kwargs: dicts or set
+    """
+    services = {}
+    families = define_services_families(compose_content[ecs_params.RES_KEY])
+    services.update(
+        handle_families_services(families, cluster_sg, compose_content, **kwargs)
+    )
     return services

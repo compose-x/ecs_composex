@@ -35,7 +35,6 @@ It is going to also, based on the labels set in the compose file
 
 from troposphere import GetAtt, Sub, Ref, If, Join, Tags
 from troposphere.ec2 import SecurityGroup, SecurityGroupIngress
-from troposphere.logs import LogGroup
 
 from ecs_composex.common import build_template, keyisset, LOG
 from ecs_composex.common import load_composex_file, keypresent
@@ -60,6 +59,17 @@ class ServicesStack(ComposeXStack):
     vpc_stack = None
     dependencies = []
     services = []
+
+    def __init__(self, title, template, template_file=None, extension=None, **kwargs):
+        self.create_services_templates(**kwargs)
+        super().__init__(title, self.stack_template, template_file, extension, **kwargs)
+        if not keyisset("Parameters", kwargs):
+            self.Parameters = {
+                ROOT_STACK_NAME_T: Ref("AWS::StackName"),
+                vpc_params.VPC_ID_T: Ref(vpc_params.VPC_ID),
+                vpc_params.PUBLIC_SUBNETS_T: Join(",", Ref(vpc_params.PUBLIC_SUBNETS)),
+                vpc_params.APP_SUBNETS_T: Join(",", Ref(vpc_params.APP_SUBNETS)),
+            }
 
     def handle_service_links(self, service):
         """
@@ -157,16 +167,11 @@ class ServicesStack(ComposeXStack):
             vpc_params.APP_SUBNETS,
             vpc_params.VPC_MAP_ID,
             USE_CLOUDMAP,
+            ecs_params.XRAY_IMAGE,
+            ecs_params.LOG_GROUP_RETENTION,
         ]
         self.stack_template = build_template(
             "Root template for ECS Services", parameters
-        )
-        self.stack_template.add_resource(
-            LogGroup(
-                ecs_params.LOG_GROUP_T,
-                RetentionInDays=30,
-                LogGroupName=Ref(CLUSTER_NAME),
-            )
         )
         cluster_sg = self.stack_template.add_resource(
             SecurityGroup(
@@ -186,6 +191,9 @@ class ServicesStack(ComposeXStack):
         self.handle_services_dependencies()
         for service_name in self.services:
             service = self.services[service_name]
+            service.parameters.update(
+                {ecs_params.LOG_GROUP_RETENTION_T: Ref(ecs_params.LOG_GROUP_RETENTION)}
+            )
             self.stack_template.add_resource(
                 ServiceStack(
                     service.resource_name,
@@ -200,14 +208,3 @@ class ServicesStack(ComposeXStack):
 
     def add_cluster_parameter(self, cluster_param):
         self.Parameters.update(cluster_param)
-
-    def __init__(self, title, template, template_file=None, extension=None, **kwargs):
-        self.create_services_templates(**kwargs)
-        super().__init__(title, self.stack_template, template_file, extension, **kwargs)
-        if not keyisset("Parameters", kwargs):
-            self.Parameters = {
-                ROOT_STACK_NAME_T: Ref("AWS::StackName"),
-                vpc_params.VPC_ID_T: Ref(vpc_params.VPC_ID),
-                vpc_params.PUBLIC_SUBNETS_T: Join(",", Ref(vpc_params.PUBLIC_SUBNETS)),
-                vpc_params.APP_SUBNETS_T: Join(",", Ref(vpc_params.APP_SUBNETS)),
-            }

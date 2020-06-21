@@ -20,11 +20,13 @@ Functions to build the ECS Service Definition
 """
 
 import re
+
 from troposphere import (
     Join,
     Select,
     If,
     Tags,
+    Parameter,
     AWS_NO_VALUE,
     AWS_ACCOUNT_ID,
     AWS_STACK_NAME,
@@ -39,6 +41,8 @@ from troposphere.ecs import (
     LogConfiguration,
     ContainerDefinition,
     TaskDefinition,
+    HealthCheck,
+    ContainerDependency,
 )
 from troposphere.ecs import (
     Service as EcsService,
@@ -57,6 +61,8 @@ from troposphere.elasticloadbalancingv2 import (
     Action as ListenerAction,
     SubnetMapping,
 )
+from troposphere.iam import PolicyType
+from troposphere.logs import LogGroup
 from troposphere.servicediscovery import (
     DnsConfig as SdDnsConfig,
     Service as SdService,
@@ -64,14 +70,18 @@ from troposphere.servicediscovery import (
     HealthCheckCustomConfig as SdHealthCheckCustomConfig,
 )
 
-from ecs_composex.common import keyisset, LOG
 from ecs_composex.common import add_parameters
 from ecs_composex.common import build_template, NONALPHANUM
-from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
+from ecs_composex.common import keyisset, LOG
 from ecs_composex.common.cfn_conditions import USE_STACK_NAME_CON_T
+from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.config import ComposeXConfig
 from ecs_composex.common.outputs import formatted_outputs
 from ecs_composex.ecs import ecs_params, ecs_conditions
+from ecs_composex.ecs.docker_tools import (
+    set_memory_to_mb,
+    find_closest_fargate_configuration,
+)
 from ecs_composex.ecs.ecs_conditions import USE_HOSTNAME_CON_T
 from ecs_composex.ecs.ecs_iam import add_service_roles
 from ecs_composex.ecs.ecs_params import NETWORK_MODE, EXEC_ROLE_T, TASK_ROLE_T, TASK_T
@@ -80,11 +90,11 @@ from ecs_composex.ecs.ecs_params import (
     SERVICE_NAME_T,
     SG_T,
 )
+from ecs_composex.ecs.ecs_xray import define_xray_container
 from ecs_composex.vpc import vpc_params, vpc_conditions
 from ecs_composex.vpc.vpc_conditions import USE_VPC_MAP_ID_CON_T
 from ecs_composex.vpc.vpc_params import VPC_ID, PUBLIC_SUBNETS
 from ecs_composex.vpc.vpc_params import VPC_MAP_ID
-from ecs_composex.ecs.ecs_xray import define_xray_container
 
 CIDR_REG = r"""((((((([0-9]{1}\.))|([0-9]{2}\.)|
 (1[0-9]{2}\.)|(2[0-5]{2}\.)))){3})(((((([0-9]{1}))|
@@ -92,6 +102,23 @@ CIDR_REG = r"""((((((([0-9]{1}\.))|([0-9]{2}\.)|
 CIDR_PAT = re.compile(CIDR_REG)
 
 STATIC = 0
+
+
+def keyset_else_novalue(key, obj, else_value=None):
+    """
+    Function to return value else set to Ref(NoValue)
+    :param str key: key looked for in the dict
+    :param dict obj: the dictionary to look into
+    :param else_value: alternative value to set when not keyisset is False
+    :return: value else Ref(AWS_NO_VALUE)
+    """
+    if not keyisset(key, obj):
+        if else_value is None:
+            return Ref(AWS_NO_VALUE)
+        else:
+            return else_value
+    else:
+        return obj[key]
 
 
 def flatten_ip(ip_str):
@@ -102,6 +129,27 @@ def flatten_ip(ip_str):
     :rtype: str
     """
     return ip_str.replace(".", "").split("/")[0].strip()
+
+
+def extend_service_secrets(container, secret):
+    """
+    Function to add secrets to a Container definition
+
+    :param container: container definition
+    :type container: troposphere.ecs.ContainerDefinition
+    :param secret: secret to add
+    :type secret: troposphere.ecs.Secret
+    """
+    if hasattr(container, "Secrets"):
+        secrets = getattr(container, "Secrets")
+        if secrets:
+            uniq = [secret.Name for secret in secrets]
+            if secret.Name not in uniq:
+                secrets.append(secret)
+        else:
+            setattr(container, "Secrets", [secret])
+    else:
+        setattr(container, "Secrets", [secret])
 
 
 def extend_env_vars(container, env_vars):
@@ -119,7 +167,12 @@ def extend_env_vars(container, env_vars):
         else []
     )
     if environment:
-        environment += env_vars
+        existing = [var.Name for var in environment]
+        for var in env_vars:
+            if var.Name not in existing:
+                LOG.debug(f"Adding {var.Name} to {existing}")
+                environment.append(var)
+
     else:
         setattr(container, "Environment", env_vars)
     LOG.debug(environment)
@@ -143,6 +196,42 @@ def import_env_variables(environment):
     return env_vars
 
 
+def set_healthcheck(definition):
+    """
+    Function to set healtcheck configuration
+    :return:
+    """
+    key = "healthcheck"
+    valid_keys = ["test", "interval", "timeout", "retries", "start_period"]
+    attr_mappings = {
+        "test": "Command",
+        "interval": "Interval",
+        "timeout": "Timeout",
+        "retries": "Retries",
+        "start_period": "StartPeriod",
+    }
+    required_keys = ["test"]
+    if not keyisset(key, definition):
+        return None
+    else:
+        healthcheck = definition[key]
+        for key in healthcheck.keys():
+            if key not in valid_keys:
+                raise AttributeError(f"Key {key} is not valid. Expected", valid_keys)
+        if not all(required_keys) not in healthcheck.keys():
+            raise AttributeError(
+                f"Expected at least {required_keys}. Got", healthcheck.keys()
+            )
+        params = {}
+        for key in healthcheck.keys():
+            params[attr_mappings[key]] = healthcheck[key]
+        if isinstance(params["Command"], str):
+            params["Command"] = [healthcheck["test"]]
+        if keyisset("Interval", params) and isinstance(params["Interval"], str):
+            params["Interval"] = int(healthcheck["interval"])
+        return HealthCheck(**params)
+
+
 def generate_port_mappings(ports):
     """
     Generates a port mapping from the Docker compose file.
@@ -154,11 +243,17 @@ def generate_port_mappings(ports):
     :rtype: list
     """
     mappings = []
+    if not isinstance(ports, list):
+        return mappings
     for port in ports:
+        if not isinstance(port, dict):
+            continue
         mappings.append(
             PortMapping(ContainerPort=port["target"], HostPort=port["target"])
         )
-    return mappings
+    if mappings:
+        return mappings
+    return Ref(AWS_NO_VALUE)
 
 
 def define_placement_strategies():
@@ -241,13 +336,11 @@ def initialize_service_template(service_name):
             vpc_params.APP_SUBNETS,
             vpc_params.PUBLIC_SUBNETS,
             vpc_params.VPC_MAP_ID,
-            ecs_params.LOG_GROUP,
             ecs_params.SERVICE_HOSTNAME,
+            ecs_params.FARGATE_CPU_RAM_CONFIG,
+            ecs_params.SERVICE_NAME,
+            ecs_params.LOG_GROUP_RETENTION,
         ],
-    )
-    service_tpl.add_condition(
-        ecs_conditions.MEM_RES_IS_MEM_ALLOC_CON_T,
-        ecs_conditions.MEM_RES_IS_MEM_ALLOC_CON,
     )
     service_tpl.add_condition(
         ecs_conditions.SERVICE_COUNT_ZERO_CON_T, ecs_conditions.SERVICE_COUNT_ZERO_CON
@@ -274,7 +367,77 @@ def initialize_service_template(service_name):
     service_tpl.add_condition(
         ecs_conditions.USE_CLUSTER_SG_CON_T, ecs_conditions.USE_CLUSTER_SG_CON
     )
+    service_tpl.add_condition(
+        ecs_conditions.USE_FARGATE_CON_T, ecs_conditions.USE_FARGATE_CON,
+    )
+    svc_log = service_tpl.add_resource(
+        LogGroup(
+            ecs_params.LOG_GROUP_T,
+            RetentionInDays=Ref(ecs_params.LOG_GROUP_RETENTION),
+            LogGroupName=Sub(
+                f"svc/${{{ecs_params.CLUSTER_NAME_T}}}/${{{ecs_params.SERVICE_NAME_T}}}"
+            ),
+        )
+    )
+    service_tpl.add_resource(
+        PolicyType(
+            "CloudWatchAcccess",
+            Roles=[Ref(ecs_params.EXEC_ROLE_T)],
+            PolicyName=Sub(f"CloudWatchAccessFor${{{ecs_params.SERVICE_NAME_T}}}"),
+            PolicyDocument={
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Sid": "AllowCloudWatchLoggingToSpecificLogGroup",
+                        "Effect": "Allow",
+                        "Action": ["logs:CreateLogStream", "logs:PutLogEvents"],
+                        "Resource": [GetAtt(svc_log, "Arn")],
+                    },
+                ],
+            },
+        )
+    )
     return service_tpl
+
+
+def set_service_ports(ports):
+    """Function to define common structure to ports
+
+    :return: list of ports the ecs_service uses formatted according to dict
+    :rtype: list
+    """
+    valid_keys = ["published", "target", "protocol", "mode"]
+    service_ports = []
+    for port in ports:
+        if not isinstance(port, (str, dict, int)):
+            raise TypeError(
+                "ports must be of types", dict, "or", list, "got", type(port)
+            )
+        if isinstance(port, str):
+            service_ports.append(
+                {
+                    "protocol": define_protocol(port),
+                    "published": port.split(":")[0],
+                    "target": port.split(":")[-1].split("/")[0].strip(),
+                    "mode": "awsvpc",
+                }
+            )
+        elif isinstance(port, dict):
+            if not set(port).issubset(valid_keys):
+                raise KeyError(f"Valid keys are", valid_keys, "got", port.keys())
+            port["mode"] = "awsvpc"
+            service_ports.append(port)
+        elif isinstance(port, int):
+            service_ports.append(
+                {
+                    "protocol": "tcp",
+                    "published": port,
+                    "target": port,
+                    "mode": "awsvpc",
+                }
+            )
+    LOG.debug(service_ports)
+    return service_ports
 
 
 class ServiceConfig(ComposeXConfig):
@@ -295,6 +458,10 @@ class ServiceConfig(ComposeXConfig):
     :cvar list ports: List of ports to use for the microservice.
     :cvar list links: list of links as indicated in the compose file, indicating connection dependencies.
     :cvar bool use_xray: Indicates whether or not add the X-Ray Daemon to the task definition.
+    :cvar float cpu_alloc: CPU Allocated to the service
+    :cvar float cpu_resa: CPU Reservation to the service
+    :cvar int mem_alloc: Memory allocation for the service, in MB
+    :cvar int mem_resa: Memory reserved to the service.
     """
 
     keys = [
@@ -308,117 +475,352 @@ class ServiceConfig(ComposeXConfig):
         "entrypoint",
         "volumes",
         "deploy",
+        "external_links",
     ]
     service_config_keys = ["xray"]
     required_keys = ["image"]
-    use_cloudmap = True
-    use_nlb = None
-    use_alb = None
-    is_public = None
-    healthcheck = None
-    boundary = None
-    lb_type = None
-    hostname = None
-    command = None
-    entrypoint = None
-    volumes = []
-    ports = []
-    links = []
-    service = None
-    use_xray = False
 
-    def set_xray(self, config):
-        """
-        Function to set the xray
-        """
-        if keyisset("enabled", config):
-            self.use_xray = config["enabled"]
-
-    def define_service_ports(self, ports):
-        """Function to define common structure to ports
-
-        :return: list of ports the ecs_service uses formatted according to dict
-        :rtype: list
-        """
-        valid_keys = ["published", "target", "protocol", "mode"]
-        service_ports = []
-        for port in ports:
-            if not isinstance(port, (str, dict, int)):
-                raise TypeError(
-                    "ports must be of types", dict, "or", list, "got", type(port)
-                )
-            if isinstance(port, str):
-                service_ports.append(
-                    {
-                        "protocol": define_protocol(port),
-                        "published": port.split(":")[0],
-                        "target": port.split(":")[-1].split("/")[0].strip(),
-                        "mode": "awsvpc",
-                    }
-                )
-            elif isinstance(port, dict):
-                if not set(port).issubset(valid_keys):
-                    raise KeyError(f"Valid keys are", valid_keys, "got", port.keys())
-                port["mode"] = "awsvpc"
-                service_ports.append(port)
-            elif isinstance(port, int):
-                service_ports.append(
-                    {
-                        "protocol": "tcp",
-                        "published": port,
-                        "target": port,
-                        "mode": "awsvpc",
-                    }
-                )
-        LOG.debug(service_ports)
-        self.ports = service_ports
-
-    def sort_load_balancing(self):
-        """
-        Function to sort out the load-balancing in case conflicting configuration
-        :return:
-        """
-        self.lb_type = "application"
-        if self.use_nlb and self.use_alb:
-            LOG.warning(
-                "Both ALB and NLB are enabled for this ecs_service. Defaulting to ALB"
-            )
-            self.use_nlb = False
-        elif self.use_nlb and not self.use_alb:
-            self.lb_type = "network"
-        LOG.debug(f"Setting LB type to {self.lb_type}")
-
-    def __init__(self, content, service_name, definition):
+    def __init__(self, content, service_name, definition, family_name=None):
         """
         Function to initialize the ecs_service configuration
         :param content:
         """
-        configs = {}
-        if keyisset("configs", definition):
-            configs = definition["configs"]
+        service_configs = keyset_else_novalue(
+            self.master_key, definition, else_value={}
+        )
         for key in self.service_config_keys:
             if key not in self.valid_config_keys:
                 self.valid_config_keys.append(key)
-        super().__init__(content, service_name, configs)
+        super().__init__(content, service_name, service_configs)
+
         if not set(self.required_keys).issubset(set(definition)):
             raise AttributeError(
                 "Required attributes for a ecs_service are", self.required_keys
             )
-        self.image = definition["image"]
+        self.family_dependents = []
+        self.essential = False
+        self.volumes = []
+        self.links = (keyset_else_novalue("external_links", definition, else_value=[]),)
+        self.service = None
+        self.use_xray = False
+        self.replicas = int(ecs_params.SERVICE_COUNT.Default)
+        self.cpu_alloc = Ref(AWS_NO_VALUE)
+        self.cpu_resa = Ref(AWS_NO_VALUE)
+        self.mem_alloc = Ref(AWS_NO_VALUE)
+        self.mem_resa = Ref(AWS_NO_VALUE)
+        self.service_name = service_name
+        self.resource_name = NONALPHANUM.sub("", service_name)
         self.command = (
             definition["command"].strip() if keyisset("command", definition) else None
         )
-        self.entrypoint = (
-            definition["entrypoint"] if keyisset("entrypoint", definition) else None
+        self.entrypoint = keyset_else_novalue("entrypoint", definition, else_value=None)
+        self.ports = (
+            set_service_ports(definition["ports"])
+            if keyisset("ports", definition)
+            else []
         )
-        self.sort_load_balancing()
-        if keyisset("ports", definition):
-            self.define_service_ports(definition["ports"])
-        self.environment = (
-            definition["environment"] if keyisset("environment", definition) else []
+        self.environment = keyset_else_novalue("environment", definition, else_value=[])
+        self.hostname = keyset_else_novalue("hostname", definition, else_value=None)
+        self.family_name = family_name
+        self.set_service_deploy(definition)
+        self.lb_service_name = service_name
+        self.set_xray(definition)
+        self.healthcheck = set_healthcheck(definition)
+        self.depends_on = keyset_else_novalue("depends_on", definition, else_value=[])
+
+    def handle_add_with_dependency(self, other):
+        """
+        :param other:
+        :return:
+        """
+
+    def __add__(self, other):
+        """
+        Function to merge two services config.
+        """
+        LOG.debug(f"Current LB: {self.lb_type}")
+        if self.lb_type is None:
+            if other.lb_type is not None:
+                self.ports = other.ports
+                self.lb_type = other.lb_type
+                self.is_public = other.is_public
+
+        elif self.lb_type is not None and other.lb_type is not None:
+            if self.is_public:
+                pass
+            elif other.is_public and not self.is_public:
+                self.ports = other.ports
+                self.lb_type = other.lb_type
+                self.lb_service_name = other.lb_service_name
+                self.is_public = other.is_public
+            elif not other.is_public and self.is_public:
+                pass
+        elif self.lb_type is not None and other.lb_type is None:
+            pass
+        LOG.debug(f"LB TYPE: {self.lb_type}")
+        if other.use_xray or self.use_xray:
+            self.use_xray = True
+        if self.links or other.links:
+            self.links += other.links
+        return self
+
+    def use_nlb(self):
+        """
+        Method to indicate if the current lb_type is network
+
+        :return: True or False
+        :rtype: bool
+        """
+        if self.lb_type == "network":
+            return True
+        return False
+
+    def use_alb(self):
+        """
+        Method to indicate if the current lb_type is application
+
+        :return: True or False
+        :rtype: bool
+        """
+        if self.lb_type == "application":
+            return True
+        return False
+
+    def set_compute_resources(self, resources):
+        """
+        Function to analyze the Docker Compose deploy attribute and set settings accordingly.
+        deployment keys: replicas, mode, resources
+
+        :param dict resources: Resources definition
+        """
+        if keyisset("limits", resources):
+            if keyisset("cpus", resources["limits"]):
+                self.cpu_alloc = int(float(resources["limits"]["cpus"]) * 1024)
+            if keyisset("memory", resources["limits"]):
+                self.mem_alloc = set_memory_to_mb(resources["limits"]["memory"].strip())
+        if keyisset("reservations", resources):
+            if keyisset("cpus", resources["reservations"]):
+                self.cpu_resa = int(float(resources["reservations"]["cpus"]) * 1024)
+            if keyisset("memory", resources["reservations"]):
+                self.mem_resa = set_memory_to_mb(
+                    resources["reservations"]["memory"].strip()
+                )
+
+    def set_deployment_settings(self, deployment):
+        """
+        Function to set the service deployment settings.
+        """
+        if keyisset("replicas", deployment):
+            self.replicas = int(deployment["replicas"])
+
+    def set_service_deploy(self, definition):
+        """
+        Function to setup the service configuration from the deploy section of the service in compose file.
+        """
+        if not keyisset("deploy", definition):
+            return
+        deployment = definition["deploy"]
+        if keyisset("resources", deployment):
+            self.set_compute_resources(deployment["resources"])
+        self.set_deployment_settings(deployment)
+
+    def set_xray(self, definition):
+        """
+        Function to set the xray
+        """
+        if keyisset(self.master_key, definition) and keyisset(
+            "use_xray", definition[self.master_key]
+        ):
+            self.use_xray = True
+
+
+class Container(object):
+    """
+    Class to represent the container definition and its settings
+    """
+
+    parameters = {}
+    required_keys = ["image"]
+
+    def __init__(self, template, title, definition, config):
+        """
+
+        :param troposphere.Template template: template to add the container definition to
+        :param str title: name of the resource / service
+        :param dict definition: service definition
+        :param ServiceConfig config: service configuration
+        """
+        if not set(self.required_keys).issubset(set(definition)):
+            raise AttributeError(
+                "Required attributes for a ecs_service are", self.required_keys
+            )
+        image_param = Parameter(
+            f"{title}ImageUrl", Type="String", Description=f"ImageURL for {title}",
         )
-        if keyisset("hostname", definition):
-            self.hostname = definition["hostname"]
+        add_parameters(template, [image_param])
+        self.stack_parameters = {image_param.title: definition["image"]}
+        if isinstance(config.cpu_alloc, int):
+            cpu_config = config.cpu_alloc
+        elif isinstance(config.cpu_alloc, Ref) and isinstance(config.cpu_resa, int):
+            cpu_config = config.cpu_resa
+        else:
+            cpu_config = Ref(AWS_NO_VALUE)
+        self.definition = ContainerDefinition(
+            f"{title}Container",
+            Image=Ref(image_param),
+            Name=title,
+            Cpu=cpu_config,
+            Memory=config.mem_alloc,
+            MemoryReservation=config.mem_resa,
+            PortMappings=generate_port_mappings(config.ports)
+            if keyisset("ports", definition)
+            else Ref(AWS_NO_VALUE),
+            Environment=import_env_variables(definition["environment"])
+            if keyisset("environment", definition)
+            else Ref(AWS_NO_VALUE),
+            LogConfiguration=LogConfiguration(
+                LogDriver="awslogs",
+                Options={
+                    "awslogs-group": Ref(ecs_params.LOG_GROUP_T),
+                    "awslogs-region": Ref("AWS::Region"),
+                    "awslogs-stream-prefix": title,
+                },
+            ),
+            Command=definition["command"].strip().split(";")
+            if keyisset("command", definition)
+            else Ref(AWS_NO_VALUE),
+            DependsOn=[ContainerDependency(**args) for args in config.family_dependents]
+            if config.family_dependents
+            else Ref(AWS_NO_VALUE),
+            Essential=config.essential,
+            HealthCheck=config.healthcheck
+            if isinstance(config.healthcheck, HealthCheck)
+            else Ref(AWS_NO_VALUE),
+        )
+        template.add_output(
+            formatted_outputs(
+                [
+                    {f"{title}Cpu": str(config.cpu_resa)}
+                    if isinstance(config.cpu_resa, int)
+                    else Ref(AWS_NO_VALUE),
+                    {f"{title}Memory": str(config.mem_alloc)}
+                    if isinstance(config.cpu_resa, int)
+                    else Ref(AWS_NO_VALUE),
+                    {f"{title}MemoryReservation": str(config.mem_resa)}
+                    if isinstance(config.cpu_resa, int)
+                    else Ref(AWS_NO_VALUE),
+                ],
+                export=False,
+            )
+        )
+
+
+class Task(object):
+    """
+    Class to handle the Task definition building and parsing along with the service config.
+    """
+
+    definition = None
+
+    def sort_container_configs(self, template, containers_config):
+        """
+        Method to sort out the containers dependencies and create the containers definitions based on the configs.
+        :return:
+        """
+        config_key = "config"
+        priority_key = "priority"
+        services_names = list(containers_config.keys())
+        unordered = []
+        for service_name in services_names:
+            service_config = containers_config[service_name][config_key]
+            if service_config.depends_on and any(
+                i in services_names for i in service_config.depends_on
+            ):
+                for count, dependency in enumerate(service_config.depends_on):
+                    containers_config[dependency][priority_key] += 1
+                    containers_config[dependency]["config"].essential = False
+                    service_config.family_dependents.append(
+                        {
+                            "ContainerName": dependency,
+                            "Condition": "START"
+                            if not containers_config[dependency]["config"].healthcheck
+                            else "HEALTHY",
+                        }
+                    )
+                    service_config.depends_on.pop(count)
+        for service in containers_config:
+            unordered.append(containers_config[service])
+        ordered_containers_config = sorted(unordered, key=lambda i: i["priority"])
+        ordered_containers_config[0]["config"].essential = True
+        for service_config in ordered_containers_config:
+            container = Container(
+                template,
+                service_config["config"].resource_name,
+                service_config["definition"],
+                service_config["config"],
+            )
+            self.containers.append(container.definition)
+            self.stack_parameters.update(container.stack_parameters)
+            if self.family_config is None:
+                self.family_config = service_config["config"]
+            else:
+                self.family_config += service_config["config"]
+
+    def set_task_compute_parameter(self):
+        """
+        Method to update task parameter for CPU/RAM profile
+        """
+        tasks_cpu = 0
+        tasks_ram = 0
+        for container in self.containers:
+            if isinstance(container.Cpu, int):
+                tasks_cpu += container.Cpu
+            if isinstance(container.Memory, int):
+                tasks_ram += container.Memory
+            elif isinstance(container.Memory, Ref) and isinstance(
+                container.MemoryReservation, int
+            ):
+                tasks_ram += container.MemoryReservation
+        LOG.debug(f"CPU: {tasks_cpu}, RAM: {tasks_ram}")
+        if tasks_cpu > 0 and tasks_ram > 0:
+            cpu_ram = find_closest_fargate_configuration(tasks_cpu, tasks_ram, True)
+            self.stack_parameters.update({ecs_params.FARGATE_CPU_RAM_CONFIG_T: cpu_ram})
+
+    def __init__(self, template, containers_config, family_parameters):
+        """
+        Init method
+        """
+        self.containers = []
+        self.containers_config = None
+        self.family_config = None
+        self.stack_parameters = {}
+        self.sort_container_configs(template, containers_config)
+        add_service_roles(template, self.family_config)
+        if self.family_config.use_xray:
+            self.containers.append(define_xray_container())
+            add_parameters(template, [ecs_params.XRAY_IMAGE])
+            self.stack_parameters.update(
+                {ecs_params.XRAY_IMAGE_T: Ref(ecs_params.XRAY_IMAGE)}
+            )
+        self.set_task_compute_parameter()
+        self.definition = TaskDefinition(
+            TASK_T,
+            template=template,
+            Cpu=ecs_params.FARGATE_CPU,
+            Memory=ecs_params.FARGATE_RAM,
+            NetworkMode=NETWORK_MODE,
+            Family=Ref(ecs_params.SERVICE_NAME),
+            TaskRoleArn=GetAtt(TASK_ROLE_T, "Arn"),
+            ExecutionRoleArn=GetAtt(EXEC_ROLE_T, "Arn"),
+            ContainerDefinitions=self.containers,
+            RequiresCompatibilities=["EC2", "FARGATE"],
+            Tags=Tags(
+                {
+                    "Name": Ref(ecs_params.SERVICE_NAME),
+                    "Environment": Ref(AWS_STACK_NAME),
+                }
+            ),
+        )
 
 
 class Service(object):
@@ -434,14 +836,58 @@ class Service(object):
     :cvar dict service_attrs: Attributes defined to expand the troposphere.ecs.ServiceDefinition from prior settings.
     """
 
-    links = []
-    dependencies = []
-    network_settings = None
-    config = None
-    task_definition = None
-    ecs_service = None
-    eips = []
-    service_attrs = None
+    def __init__(self, template, service_name, task_definition, config, **kwargs):
+        """
+        Function to initialize the Service object
+        :param service_name: Name of the service
+        :type service_name: str
+        :param definition: the service definition as defined in compose file
+        :type definition: dict
+        :param kwargs: unordered arguments
+        :type kwargs: dict
+        """
+        self.template = template
+        self.config = config
+        self.links = []
+        self.eips = []
+        self.service_attrs = None
+        self.dependencies = []
+        self.network_settings = None
+        self.config = None
+        self.task_definition = None
+        self.ecs_service = None
+        # self.dependencies = (
+        #     definition["depends_on"] if keyisset("depends_on", definition) else []
+        # )
+        self.service_name = (
+            config.resource_name if config.family_name is None else config.family_name
+        )
+        self.resource_name = (
+            config.resource_name if config.family_name is None else config.family_name
+        )
+        self.parameters = {
+            vpc_params.VPC_ID_T: Ref(vpc_params.VPC_ID),
+            vpc_params.VPC_MAP_ID_T: Ref(vpc_params.VPC_MAP_ID),
+            vpc_params.APP_SUBNETS_T: Join(",", Ref(vpc_params.APP_SUBNETS)),
+            vpc_params.PUBLIC_SUBNETS_T: Join(",", Ref(vpc_params.PUBLIC_SUBNETS)),
+            ecs_params.CLUSTER_NAME_T: Ref(ecs_params.CLUSTER_NAME),
+        }
+        if config.family_name is not None:
+            self.parameters.update({ecs_params.SERVICE_NAME_T: config.family_name})
+        else:
+            self.parameters.update({ecs_params.SERVICE_NAME_T: service_name})
+        self.sgs = [ecs_params.SG_T]
+        self.sgs.append(
+            If(
+                ecs_conditions.USE_CLUSTER_SG_CON_T,
+                Ref(ecs_params.CLUSTER_SG_ID),
+                Ref("AWS::NoValue"),
+            )
+        )
+        self.config = config
+        self.define_service_ingress(**kwargs)
+        self.generate_service_definition(task_definition.definition)
+        self.generate_service_template_outputs()
 
     def add_service_default_sg(self):
         """
@@ -475,18 +921,18 @@ class Service(object):
         Method to create a new Service into CloudMap to represent the current service and add entry into the registry
         """
         sd_service = SdService(
-            "EcsDiscoveryService",
+            f"{self.resource_name}DiscoveryService",
             template=self.template,
             Condition=USE_VPC_MAP_ID_CON_T,
-            Description=f"{self.service_name}",
+            Description=Ref(SERVICE_NAME),
             NamespaceId=Ref(VPC_MAP_ID),
             HealthCheckCustomConfig=SdHealthCheckCustomConfig(FailureThreshold=1.0),
             DnsConfig=SdDnsConfig(
                 RoutingPolicy="MULTIVALUE",
                 NamespaceId=Ref(AWS_NO_VALUE),
                 DnsRecords=[
-                    SdDnsRecord(TTL="30", Type="A"),
-                    SdDnsRecord(TTL="30", Type="SRV"),
+                    SdDnsRecord(TTL="15", Type="A"),
+                    SdDnsRecord(TTL="15", Type="SRV"),
                 ],
             ),
             Name=If(USE_HOSTNAME_CON_T, Ref(SERVICE_HOSTNAME), Ref(SERVICE_NAME)),
@@ -734,18 +1180,19 @@ class Service(object):
         return tgt
 
     def add_load_balancer(self, ports, **kwargs):
-        """Function to add LB to template
+        """
+        Method to add LB to template
 
         :return: loadbalancer
         :rtype: troposphere.elasticloadbalancingv2.LoadBalancer
         """
         alb_sg = None
-        if self.config.is_public and self.config.lb_type == "network":
+        if self.config.is_public and self.config.use_nlb():
             self.add_public_ips(kwargs["AwsAzs"])
 
         no_value = Ref(AWS_NO_VALUE)
         public_mapping = define_public_mapping(self.eips, kwargs["AwsAzs"])
-        if ports and self.config.lb_type == "application":
+        if ports and self.config.use_alb():
             alb_sg = self.add_alb_sg(ports)
             self.add_lb_to_service_ingress(alb_sg, SG_T)
             lb_sg = [Ref(alb_sg)]
@@ -765,11 +1212,11 @@ class Service(object):
             else no_value,
             SecurityGroups=lb_sg,
             SubnetMappings=public_mapping
-            if self.config.is_public and self.config.lb_type == "network"
+            if self.config.is_public and self.config.use_nlb()
             else no_value,
             Subnets=Ref(PUBLIC_SUBNETS)
-            if self.config.is_public and self.config.lb_type == "application"
-            else no_value,
+            if self.config.is_public and self.config.use_alb()
+            else Ref(vpc_params.APP_SUBNETS),
             Type=self.config.lb_type,
             Tags=Tags(
                 {
@@ -780,14 +1227,15 @@ class Service(object):
             ),
         )
         if self.config.is_public:
-            if self.config.lb_type == "application" and alb_sg:
+            if self.config.use_alb() and alb_sg:
                 self.add_public_security_group_ingress(alb_sg)
-            elif self.config.lb_type == "network":
+            elif self.config.use_nlb():
                 self.add_public_security_group_ingress(SG_T)
         return loadbalancer
 
     def add_service_load_balancer(self, **kwargs):
-        """Function to add all ELBv2 resources for a microservice
+        """
+        Method to add all ELBv2 resources for a microservice
 
         :return: service_lbs, depends_on
         :rtype: tuple
@@ -804,13 +1252,11 @@ class Service(object):
             tgt_groups.append(tgt)
             depends_on.append(tgt.title)
             depends_on.append(listener.title)
-
-        for target in tgt_groups:
             service_lbs.append(
                 EcsLoadBalancer(
-                    TargetGroupArn=Ref(target),
+                    TargetGroupArn=Ref(tgt),
                     ContainerPort=tgt.Port,
-                    ContainerName=Ref(SERVICE_NAME),
+                    ContainerName=self.config.lb_service_name,
                 )
             )
         return service_lbs, depends_on
@@ -827,99 +1273,7 @@ class Service(object):
             )
         )
 
-    def define_container_definition(self):
-        """
-        Generates the container definition
-        """
-        env_vars = import_env_variables(self.config.environment)
-        mappings = generate_port_mappings(self.config.ports)
-        if not mappings:
-            mappings = Ref(AWS_NO_VALUE)
-        container = ContainerDefinition(
-            # EntryPoint=If(ENTRY_CON, Ref('AWS::NoValue'), Split(' ', Ref(params.SERVICE_ENTRYPOINT))),
-            Command=self.config.command.strip().split(";")
-            if self.config.command
-            else Ref(AWS_NO_VALUE),
-            Image=Ref(ecs_params.SERVICE_IMAGE),
-            Name=Ref(ecs_params.SERVICE_NAME),
-            MemoryReservation=If(
-                ecs_conditions.USE_FARGATE_CON_T,
-                ecs_params.FARGATE_RAM,
-                If(
-                    ecs_conditions.MEM_RES_IS_MEM_ALLOC_CON_T,
-                    Ref(ecs_params.MEMORY_ALLOC),
-                    Ref(ecs_params.MEMORY_RES),
-                ),
-            ),
-            PortMappings=mappings,
-            Environment=env_vars if env_vars else Ref(AWS_NO_VALUE),
-            LogConfiguration=LogConfiguration(
-                LogDriver="awslogs",
-                Options={
-                    "awslogs-group": Ref(ecs_params.CLUSTER_NAME),
-                    "awslogs-region": Ref("AWS::Region"),
-                    "awslogs-stream-prefix": Ref(ecs_params.LOG_GROUP),
-                },
-            ),
-        )
-        return container
-
-    def add_task_defnition(self):
-        """
-        Function to generate and add the task definition with container definitions
-        to the ecs_service template
-        """
-        add_parameters(
-            self.template,
-            [
-                ecs_params.MEMORY_ALLOC,
-                ecs_params.MEMORY_RES,
-                ecs_params.SERVICE_NAME,
-                ecs_params.SERVICE_IMAGE,
-                ecs_params.FARGATE_CPU_RAM_CONFIG,
-                ecs_params.TASK_CPU_COUNT,
-            ],
-        )
-        self.template.add_condition(
-            ecs_conditions.USE_FARGATE_CON_T, ecs_conditions.USE_FARGATE_CON
-        )
-        self.parameters.update(
-            {
-                ecs_params.SERVICE_IMAGE_T: self.config.image,
-                ecs_params.SERVICE_NAME_T: self.service_name,
-            }
-        )
-        containers = [self.define_container_definition()]
-        if self.config.use_xray:
-            containers.append(define_xray_container())
-        self.task_definition = TaskDefinition(
-            TASK_T,
-            template=self.template,
-            Cpu=If(
-                ecs_conditions.USE_FARGATE_CON_T,
-                ecs_params.FARGATE_CPU,
-                Ref(ecs_params.TASK_CPU_COUNT),
-            ),
-            Memory=If(
-                ecs_conditions.USE_FARGATE_CON_T,
-                ecs_params.FARGATE_RAM,
-                Ref(ecs_params.MEMORY_ALLOC),
-            ),
-            NetworkMode=NETWORK_MODE,
-            Family=Ref(ecs_params.SERVICE_NAME),
-            TaskRoleArn=GetAtt(self.template.resources[TASK_ROLE_T], "Arn"),
-            ExecutionRoleArn=GetAtt(self.template.resources[EXEC_ROLE_T], "Arn"),
-            ContainerDefinitions=containers,
-            RequiresCompatibilities=["EC2", "FARGATE"],
-            Tags=Tags(
-                {
-                    "Name": Ref(ecs_params.SERVICE_NAME),
-                    "Environment": Ref(AWS_STACK_NAME),
-                }
-            ),
-        )
-
-    def define_service_network_config(self, **kwargs):
+    def define_service_ingress(self, **kwargs):
         """
         Function to define microservice ingress.
 
@@ -945,14 +1299,14 @@ class Service(object):
                 f"{self.service_name} does not have any ports. No ingress necessary"
             )
             return self.service_attrs, external_dependencies
-        if self.config.use_alb or self.config.use_nlb:
+        if self.config.use_alb() or self.config.use_nlb():
             service_lb = self.add_service_load_balancer(**kwargs)
             self.service_attrs["LoadBalancers"] = service_lb[0]
             self.service_attrs["DependsOn"] = (
                 service_lb[-1] if isinstance(service_lb[-1], list) else []
             )
 
-    def generate_service_definition(self):
+    def generate_service_definition(self, task_definition):
         """
         Function to generate the Service definition.
         This is the last step in defining the service, after all other settings have been prepared.
@@ -961,6 +1315,8 @@ class Service(object):
             Ref(sg) for sg in self.sgs if not isinstance(sg, (Ref, Sub, If, GetAtt))
         ]
         service_sgs += [sg for sg in self.sgs if isinstance(sg, (Ref, Sub, If, GetAtt))]
+        if self.config.replicas != ecs_params.SERVICE_COUNT.Default:
+            self.parameters[ecs_params.SERVICE_COUNT_T] = self.config.replicas
         self.ecs_service = EcsService(
             ecs_params.SERVICE_T,
             template=self.template,
@@ -1002,7 +1358,7 @@ class Service(object):
                     Subnets=Ref(vpc_params.APP_SUBNETS), SecurityGroups=service_sgs
                 )
             ),
-            TaskDefinition=Ref(ecs_params.TASK_T),
+            TaskDefinition=Ref(task_definition),
             LaunchType=Ref(ecs_params.LAUNCH_TYPE),
             Tags=Tags(
                 {
@@ -1013,55 +1369,3 @@ class Service(object):
             PropagateTags="SERVICE",
             **self.service_attrs,
         )
-
-    def __init__(self, service_name, definition, content, **kwargs):
-        """
-        Function to initialize the Service object
-        :param service_name: Name of the service
-        :type service_name: str
-        :param definition: the service definition as defined in compose file
-        :type definition: dict
-        :param content: the docker compose content, in full
-        :type content: dict
-        :param kwargs: unordered arguments
-        :type kwargs: dict
-        """
-        self.definition = definition
-        self.config = ServiceConfig(content, service_name, definition)
-        LOG.debug(self.config)
-        self.links = definition["links"] if keyisset("links", definition) else []
-        self.dependencies = (
-            definition["depends_on"] if keyisset("depends_on", definition) else []
-        )
-        self.service_name = service_name
-        if not keyisset("image", definition):
-            raise KeyError(f"No image property set for ecs_service {service_name}")
-        self.environment = (
-            definition["environment"] if keyisset("environment", definition) else []
-        )
-        self.resource_name = NONALPHANUM.sub("", self.service_name)
-        self.hostname = (
-            self.config.hostname if self.config.hostname else self.resource_name
-        )
-        self.template = initialize_service_template(self.resource_name)
-        self.parameters = {
-            vpc_params.VPC_ID_T: Ref(vpc_params.VPC_ID),
-            vpc_params.VPC_MAP_ID_T: Ref(vpc_params.VPC_MAP_ID),
-            vpc_params.APP_SUBNETS_T: Join(",", Ref(vpc_params.APP_SUBNETS)),
-            vpc_params.PUBLIC_SUBNETS_T: Join(",", Ref(vpc_params.PUBLIC_SUBNETS)),
-            ecs_params.CLUSTER_NAME_T: Ref(ecs_params.CLUSTER_NAME),
-            ecs_params.LOG_GROUP.title: Ref(ecs_params.LOG_GROUP_T),
-        }
-        add_service_roles(self.template, self.config)
-        self.add_task_defnition()
-        self.sgs = [ecs_params.SG_T]
-        self.sgs.append(
-            If(
-                ecs_conditions.USE_CLUSTER_SG_CON_T,
-                Ref(ecs_params.CLUSTER_SG_ID),
-                Ref("AWS::NoValue"),
-            )
-        )
-        self.define_service_network_config(**kwargs)
-        self.generate_service_definition()
-        self.generate_service_template_outputs()

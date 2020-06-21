@@ -37,6 +37,7 @@ TASK_ROLE_T = "EcsTaskRole"
 SERVICE_T = "EcsServiceDefinition"
 TASK_T = "EcsTaskDefinition"
 RES_KEY = "services"
+ECS_TASK_FAMILY_LABEL = "ecs.task.family"
 
 LAUNCH_TYPE_T = "EcsLaunchType"
 LAUNCH_TYPE = Parameter(
@@ -45,14 +46,6 @@ LAUNCH_TYPE = Parameter(
 
 IS_PUBLIC_T = "ExposeServicePublicly"
 IS_PUBLIC = Parameter(IS_PUBLIC_T, AllowedValues=["True", "False"], Type="String")
-
-TASK_CPU_COUNT_T = "TaskCpuCount"
-TASK_CPU_COUNT = Parameter(TASK_CPU_COUNT_T, Type="Number", Default=1024)
-MEMORY_ALLOC_T = "ContainerMemoryAllocation"
-MEMORY_RES_T = "ContainerMemoryReservation"
-
-MEMORY_ALLOC = Parameter(MEMORY_ALLOC_T, Type="Number", Default=512)
-MEMORY_RES = Parameter(MEMORY_RES_T, Type="Number", Default=0)
 
 CLUSTER_NAME_T = "EcsClusterName"
 CLUSTER_NAME = Parameter(
@@ -90,65 +83,50 @@ ECS_CONTROLLER = Parameter(
 )
 
 LOG_GROUP = Parameter(f"Cluster{LOG_GROUP_T}", Type="String")
+LOG_GROUP_RETENTION_T = "ServiceLogGroupRetentionPeriod"
+LOG_GROUP_RETENTION = Parameter(
+    LOG_GROUP_RETENTION_T,
+    Type="Number",
+    Default=30,
+    AllowedValues=[
+        1,
+        3,
+        5,
+        7,
+        14,
+        30,
+        60,
+        90,
+        120,
+        150,
+        180,
+        365,
+        400,
+        545,
+        731,
+        1827,
+        3653,
+    ],
+)
+
+FARGATE_MODES = {
+    256: [2 ** i for i in [9, 10, 11]],
+    512: [(2 ** 10) * i for i in range(1, 5)],
+    1024: [(2 ** 10) * i for i in range(2, 9)],
+    2048: [(2 ** 10) * i for i in range(4, 17)],
+    4096: [(2 ** 10) * i for i in range(8, 33)],
+}
+
+FARGATE_MODES_VALUES = []
+for cpu in FARGATE_MODES.keys():
+    for ram in FARGATE_MODES[cpu]:
+        FARGATE_MODES_VALUES.append(f"{cpu}!{ram}")
 
 FARGATE_CPU_RAM_CONFIG_T = "FargateCpuRamConfiguration"
 FARGATE_CPU_RAM_CONFIG = Parameter(
     FARGATE_CPU_RAM_CONFIG_T,
     Type="String",
-    AllowedValues=[
-        "256!512",
-        "256!1024",
-        "256!2048",
-        "512!1024",
-        "512!2048",
-        "512!3072",
-        "512!4096",
-        "1024!2048",
-        "1024!3072",
-        "1024!4096",
-        "1024!5120",
-        "1024!6144",
-        "1024!7168",
-        "1024!8192",
-        "2048!2048",
-        "2048!3072",
-        "2048!4096",
-        "2048!5120",
-        "2048!6144",
-        "2048!7168",
-        "2048!8192",
-        "2048!9216",
-        "2048!10240",
-        "2048!11264",
-        "2048!12288",
-        "2048!13312",
-        "2048!14336",
-        "2048!15360",
-        "2048!16384",
-        "4096!8192",
-        "4096!9216",
-        "4096!10240",
-        "4096!11264",
-        "4096!12288",
-        "4096!13312",
-        "4096!14336",
-        "4096!15360",
-        "4096!16384",
-        "4096!17408",
-        "4096!18432",
-        "4096!19456",
-        "4096!20480",
-        "4096!21504",
-        "4096!22528",
-        "4096!23552",
-        "4096!24576",
-        "4096!25600",
-        "4096!26624",
-        "4096!27648",
-        "4096!28672",
-        "4096!29696",
-        "4096!30720",
-    ],
+    AllowedValues=FARGATE_MODES_VALUES,
     Default="256!512",
 )
 
@@ -165,6 +143,10 @@ CLUSTER_SG_ID = Parameter(
 
 SERVICE_GROUP_ID_T = "ServiceGroupId"
 SERVICE_GROUP_ID = Parameter(SERVICE_GROUP_ID_T, Type=SG_ID_TYPE, Default="<none>")
+
+AWS_XRAY_IMAGE = "amazon/aws-xray-daemon"
+XRAY_IMAGE_T = "AWSXRayImage"
+XRAY_IMAGE = Parameter(XRAY_IMAGE_T, Type="String", Default=AWS_XRAY_IMAGE)
 
 
 def get_import_service_group_id(remote_service_name):
