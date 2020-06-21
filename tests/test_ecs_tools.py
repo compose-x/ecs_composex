@@ -39,3 +39,5 @@ def test_fargate_config():
     assert find_closest_fargate_configuration(256, 512, True) == "256!512"
     assert find_closest_fargate_configuration(2018, 4000, True) == "2048!4096"
     assert find_closest_fargate_configuration(2048, 25555) == (2048, 16384)
+    assert find_closest_fargate_configuration(4096, 16385) == (4096, 17408)
+    assert find_closest_fargate_configuration(4096, 17400) == (4096, 17408)

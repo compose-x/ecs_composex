@@ -77,6 +77,27 @@ def set_memory_to_mb(value, allocating=False):
     return final_amount
 
 
+def find_closest_ram_config(ram, ram_range):
+    """
+    Function to find the closest RAM configuration
+
+    :param int ram: amount of RAM we are trying to match up
+    :param list ram_range: List of possible values for Fargate
+    :return: the closest amount of RAM.
+    :rtype: int
+    """
+    LOG.info(f"{ram} - {ram_range[0]} - {ram_range[-1]}")
+    if ram >= ram_range[-1]:
+        return ram_range[-1]
+    elif ram <= ram_range[0]:
+        return ram_range[0]
+    else:
+        for ram_value in ram_range:
+            if ram <= ram_value:
+                LOG.info(f"BEST RAM FOUND: {ram_value}")
+                return ram_value
+
+
 def find_closest_fargate_configuration(cpu, ram, as_param_string=False):
     """
     Function to get the closest Fargate CPU / RAM Configuration out of a CPU and RAM combination.
@@ -97,14 +118,7 @@ def find_closest_fargate_configuration(cpu, ram, as_param_string=False):
             fargate_cpu = fargate_cpus[0]
         elif fargate_cpu > fargate_cpus[-1]:
             fargate_cpu = fargate_cpus[-1]
-    fargate_ram = clpow2(ram)
-    if fargate_ram not in FARGATE_MODES[fargate_cpu]:
-        if nxtpow2(fargate_ram) in FARGATE_MODES[fargate_cpu]:
-            fargate_ram = nxtpow2(fargate_ram)
-        elif clpow2(fargate_ram) < FARGATE_MODES[fargate_cpu][0]:
-            fargate_ram = FARGATE_MODES[fargate_cpu][0]
-        elif clpow2(fargate_ram) >= FARGATE_MODES[fargate_cpu][-1]:
-            fargate_ram = FARGATE_MODES[fargate_cpu][-1]
+    fargate_ram = find_closest_ram_config(ram, FARGATE_MODES[fargate_cpu])
     if as_param_string:
         return f"{fargate_cpu}!{fargate_ram}"
     return fargate_cpu, fargate_ram
