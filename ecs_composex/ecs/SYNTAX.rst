@@ -11,7 +11,7 @@ However, there are only a limited number of settings that are today working:
 * `environment <https://docs.docker.com/compose/compose-file/#environment>`_
 * `links <https://docs.docker.com/compose/compose-file/#links>`_
 * `depends_on <https://docs.docker.com/compose/compose-file/#environment>`_
-* `configs`_
+* `x-configs`_
 * `deploy`_
 
 .. seealso::
@@ -257,3 +257,34 @@ To make this work, I simply update the MicroserviceCount parameter default value
 
     update_config will be use very soon to support replacement of services using a LB to possibly use CodeDeploy
     Blue/Green deployment.
+
+labels
+^^^^^^^
+
+These labels aren't used for much in native Docker compose as per the documentation. They are only used for the service,
+but not for the containers themselves. Which is great for us, as we can then leverage that structure to implement a
+merge of services.
+
+In AWS ECS, a Task definition is a group of one or more containers which are going to be running as a one task.
+The most usual use-case for this, is with web applications, which need to have a reverse proxy (ie. nginx) in front
+of the actual application. But also, if you used the *use_xray* option, you realized that ECS ComposeX automatically
+adds the x-ray-daemon sidecar. Equally, when we implement AppMesh, we will also have another side-car container for this.
+
+So, here is the tag that will allow you to merge your reverse proxy or waf (if you used a WAF in container) fronting
+your web application:
+
+**ecs.task.family**
+
+For example, you would have:
+
+.. literalinclude:: ../use-cases/blog.yml
+    :language: yaml
+    :emphasize-lines: 25-26, 45-46
+
+.. warning::
+
+    The example above illustrates that you can either use, for deploy labels
+
+    * a list of strings
+
+    * a dictionary
