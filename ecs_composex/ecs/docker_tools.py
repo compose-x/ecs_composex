@@ -89,6 +89,8 @@ def find_closest_fargate_configuration(cpu, ram, as_param_string=False):
     fargate_cpus = list(FARGATE_MODES.keys())
     fargate_cpus.sort()
     fargate_cpu = clpow2(cpu)
+    if fargate_cpu < cpu:
+        fargate_cpu = nxtpow2(cpu)
     if fargate_cpu not in fargate_cpus:
         LOG.warn(f"Value {cpu} is not valid for Fargate. Valid modes: {fargate_cpus}")
         if fargate_cpu < fargate_cpus[0]:

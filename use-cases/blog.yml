@@ -17,11 +17,11 @@ services:
       replicas: 2
       resources:
         reservations:
+          cpus: "0.1"
+          memory: "32M"
+        limits:
           cpus: "0.25"
           memory: "64M"
-        limits:
-          cpus: "0.5"
-          memory: "128M"
       labels:
         - "ecs.task.family=app01"
     x-configs:
@@ -31,23 +31,24 @@ services:
     depends_on:
       - app
   app:
-    image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-01:latest
+    image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-01:xray
     ports:
       - 5000
     deploy:
       resources:
         reservations:
           cpus: "0.25"
-          memory: "128M"
+          memory: "64M"
         limits:
           cpus: "0.5"
-          memory: "256M"
+          memory: "128M"
       labels:
         ecs.task.family: app01
     environment:
       LOGLEVEL: DEBUG
     x-configs:
       use_xray: True
-    healthcheck:
-      test: supervisorctl -c supervisord.config status
-      retries: 1
+
+x-tags:
+  owner: johnpreston
+  contact: john@lambda-my-aws.io

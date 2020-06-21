@@ -24,7 +24,7 @@ from importlib import import_module
 
 import boto3
 from troposphere import Ref, GetAtt, If, AWS_STACK_NAME
-from troposphere.ecs import Cluster
+from troposphere.ecs import Cluster, CapacityProviderStrategyItem
 
 from ecs_composex.common import (
     LOG,
@@ -468,6 +468,17 @@ def add_ecs_cluster(template, depends_on=None):
         template=template,
         ClusterName=If(CLUSTER_NAME_CON_T, Ref(AWS_STACK_NAME), Ref(CLUSTER_NAME_T)),
         DependsOn=depends_on,
+        CapacityProviders=["FARGATE", "FARGATE_SPOT"],
+        DefaultCapacityProviderStrategy=[
+            CapacityProviderStrategyItem(
+                Weight=2,
+                CapacityProvider="FARGATE_SPOT"
+            ),
+            CapacityProviderStrategyItem(
+                Weight=1,
+                CapacityProvider="FARGATE"
+            )
+        ]
     )
 
 

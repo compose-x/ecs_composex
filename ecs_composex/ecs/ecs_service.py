@@ -448,6 +448,7 @@ class ServiceConfig(ComposeXConfig):
         "entrypoint",
         "volumes",
         "deploy",
+        "external_links",
     ]
     service_config_keys = ["xray"]
     required_keys = ["image"]
@@ -472,7 +473,7 @@ class ServiceConfig(ComposeXConfig):
         self.family_dependents = []
         self.essential = False
         self.volumes = []
-        self.links = []
+        self.links = (keyset_else_novalue("external_links", definition, else_value=[]),)
         self.service = None
         self.use_xray = False
         self.replicas = int(ecs_params.SERVICE_COUNT.Default)
@@ -532,6 +533,8 @@ class ServiceConfig(ComposeXConfig):
         LOG.debug(f"LB TYPE: {self.lb_type}")
         if other.use_xray or self.use_xray:
             self.use_xray = True
+        if self.links or other.links:
+            self.links += other.links
         return self
 
     def use_nlb(self):
@@ -662,7 +665,10 @@ class Container(object):
             DependsOn=[ContainerDependency(**args) for args in config.family_dependents]
             if config.family_dependents
             else Ref(AWS_NO_VALUE),
-            Essential=config.essential
+            Essential=config.essential,
+            HealthCheck=config.healthcheck
+            if isinstance(config.healthcheck, HealthCheck)
+            else Ref(AWS_NO_VALUE),
         )
         template.add_output(
             formatted_outputs(
@@ -802,14 +808,58 @@ class Service(object):
     :cvar dict service_attrs: Attributes defined to expand the troposphere.ecs.ServiceDefinition from prior settings.
     """
 
-    links = []
-    dependencies = []
-    network_settings = None
-    config = None
-    task_definition = None
-    ecs_service = None
-    eips = []
-    service_attrs = None
+    def __init__(self, template, service_name, task_definition, config, **kwargs):
+        """
+        Function to initialize the Service object
+        :param service_name: Name of the service
+        :type service_name: str
+        :param definition: the service definition as defined in compose file
+        :type definition: dict
+        :param kwargs: unordered arguments
+        :type kwargs: dict
+        """
+        self.template = template
+        self.config = config
+        self.links = []
+        self.eips = []
+        self.service_attrs = None
+        self.dependencies = []
+        self.network_settings = None
+        self.config = None
+        self.task_definition = None
+        self.ecs_service = None
+        # self.dependencies = (
+        #     definition["depends_on"] if keyisset("depends_on", definition) else []
+        # )
+        self.service_name = (
+            config.resource_name if config.family_name is None else config.family_name
+        )
+        self.resource_name = (
+            config.resource_name if config.family_name is None else config.family_name
+        )
+        self.parameters = {
+            vpc_params.VPC_ID_T: Ref(vpc_params.VPC_ID),
+            vpc_params.VPC_MAP_ID_T: Ref(vpc_params.VPC_MAP_ID),
+            vpc_params.APP_SUBNETS_T: Join(",", Ref(vpc_params.APP_SUBNETS)),
+            vpc_params.PUBLIC_SUBNETS_T: Join(",", Ref(vpc_params.PUBLIC_SUBNETS)),
+            ecs_params.CLUSTER_NAME_T: Ref(ecs_params.CLUSTER_NAME),
+        }
+        if config.family_name is not None:
+            self.parameters.update({ecs_params.SERVICE_NAME_T: config.family_name})
+        else:
+            self.parameters.update({ecs_params.SERVICE_NAME_T: service_name})
+        self.sgs = [ecs_params.SG_T]
+        self.sgs.append(
+            If(
+                ecs_conditions.USE_CLUSTER_SG_CON_T,
+                Ref(ecs_params.CLUSTER_SG_ID),
+                Ref("AWS::NoValue"),
+            )
+        )
+        self.config = config
+        self.define_service_ingress(**kwargs)
+        self.generate_service_definition(task_definition)
+        self.generate_service_template_outputs()
 
     def add_service_default_sg(self):
         """
@@ -846,15 +896,15 @@ class Service(object):
             f"{self.resource_name}DiscoveryService",
             template=self.template,
             Condition=USE_VPC_MAP_ID_CON_T,
-            Description=f"{self.service_name}",
+            Description=Ref(SERVICE_NAME),
             NamespaceId=Ref(VPC_MAP_ID),
             HealthCheckCustomConfig=SdHealthCheckCustomConfig(FailureThreshold=1.0),
             DnsConfig=SdDnsConfig(
                 RoutingPolicy="MULTIVALUE",
                 NamespaceId=Ref(AWS_NO_VALUE),
                 DnsRecords=[
-                    SdDnsRecord(TTL="30", Type="A"),
-                    SdDnsRecord(TTL="30", Type="SRV"),
+                    SdDnsRecord(TTL="15", Type="A"),
+                    SdDnsRecord(TTL="15", Type="SRV"),
                 ],
             ),
             Name=If(USE_HOSTNAME_CON_T, Ref(SERVICE_HOSTNAME), Ref(SERVICE_NAME)),
@@ -1291,47 +1341,3 @@ class Service(object):
             PropagateTags="SERVICE",
             **self.service_attrs,
         )
-
-    def __init__(self, template, service_name, task_definition, config, **kwargs):
-        """
-        Function to initialize the Service object
-        :param service_name: Name of the service
-        :type service_name: str
-        :param definition: the service definition as defined in compose file
-        :type definition: dict
-        :param kwargs: unordered arguments
-        :type kwargs: dict
-        """
-        self.template = template
-        self.config = config
-        self.links = []
-        # self.links = definition["links"] if keyisset("links", definition) else []
-        # self.dependencies = (
-        #     definition["depends_on"] if keyisset("depends_on", definition) else []
-        # )
-        self.service_name = service_name
-        self.resource_name = (
-            config.resource_name if config.family_name is None else config.family_name
-        )
-        self.parameters = {
-            vpc_params.VPC_ID_T: Ref(vpc_params.VPC_ID),
-            vpc_params.VPC_MAP_ID_T: Ref(vpc_params.VPC_MAP_ID),
-            vpc_params.APP_SUBNETS_T: Join(",", Ref(vpc_params.APP_SUBNETS)),
-            vpc_params.PUBLIC_SUBNETS_T: Join(",", Ref(vpc_params.PUBLIC_SUBNETS)),
-            ecs_params.CLUSTER_NAME_T: Ref(ecs_params.CLUSTER_NAME),
-        }
-        if config.family_name is not None:
-            self.parameters.update({ecs_params.SERVICE_NAME_T: config.family_name})
-        else:
-            self.parameters.update({ecs_params.SERVICE_NAME_T: service_name})
-        self.sgs = [ecs_params.SG_T]
-        self.sgs.append(
-            If(
-                ecs_conditions.USE_CLUSTER_SG_CON_T,
-                Ref(ecs_params.CLUSTER_SG_ID),
-                Ref("AWS::NoValue"),
-            )
-        )
-        self.define_service_ingress(**kwargs)
-        self.generate_service_definition(task_definition)
-        self.generate_service_template_outputs()

@@ -19,8 +19,9 @@ from troposphere import Ref
 from troposphere.ecs import (
     ContainerDefinition,
     PortMapping,
+    LogConfiguration
 )
-from ecs_composex.ecs.ecs_params import XRAY_IMAGE
+from ecs_composex.ecs.ecs_params import XRAY_IMAGE, LOG_GROUP_T
 
 
 def define_xray_container():
@@ -30,11 +31,19 @@ def define_xray_container():
     """
     xray_container = ContainerDefinition(
         Image=Ref(XRAY_IMAGE),
-        Name="AWSXRAY",
+        Name="xray-daemon",
         PortMappings=[PortMapping(ContainerPort=2000, Protocol="UDP")],
         Cpu=32,
         Memory=256,
         MemoryReservation=256,
         Essential=False,
+        LogConfiguration=LogConfiguration(
+            LogDriver="awslogs",
+            Options={
+                "awslogs-group": Ref(LOG_GROUP_T),
+                "awslogs-region": Ref("AWS::Region"),
+                "awslogs-stream-prefix": "xray-daemon",
+            },
+        ),
     )
     return xray_container

@@ -58,19 +58,6 @@ class ServiceStack(ComposeXStack):
             }
 
 
-def validate_input(services):
-    """
-    Validates services docker format
-    """
-    props_must_have = ["image"]
-    for service_name in services:
-        service = services[service_name]
-        for prop in props_must_have:
-            if not keyisset(prop, service):
-                raise KeyError("Service {service_name} is missing property {prop}")
-    return True
-
-
 def add_clusterwide_security_group(template):
     """
     Function to generate the ecs_service Load Balancers (if Any)
