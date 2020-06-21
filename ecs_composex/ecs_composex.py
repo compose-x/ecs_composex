@@ -263,9 +263,9 @@ def apply_x_to_x_configs(root_template, content):
         if (
             issubclass(type(resource), ComposeXStack)
             and resource_name in SUPPORTED_X_MODULES
+            and hasattr(resource, "add_xdependencies")
         ):
-            if hasattr(resource, "add_xdependencies"):
-                resource.add_xdependencies(root_template, content)
+            resource.add_xdependencies(root_template, content)
 
 
 def generate_vpc_parameters(template, params, **kwargs):

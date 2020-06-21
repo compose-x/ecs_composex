@@ -47,8 +47,27 @@ from ecs_composex.common.tagging import add_all_tags
 from ecs_composex.common.tagging import generate_tags_parameters
 from ecs_composex.ecs import ecs_params
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME, CLUSTER_NAME_T
-from ecs_composex.ecs.ecs_template import ServiceStack, generate_services
+from ecs_composex.ecs.ecs_template import generate_services
 from ecs_composex.vpc import vpc_params
+
+
+class ServiceStack(ComposeXStack):
+    """
+    Class to handle individual ecs_service stack
+    """
+
+    def __init__(
+        self, title, template, service, template_file=None, extension=None, **kwargs
+    ):
+        self.service = service
+        super().__init__(title, template, template_file, extension, **kwargs)
+        if not keyisset("Parameters", kwargs):
+            self.Parameters = {
+                ROOT_STACK_NAME_T: Ref("AWS::StackName"),
+                vpc_params.VPC_ID_T: Ref(vpc_params.VPC_ID),
+                vpc_params.PUBLIC_SUBNETS_T: Join(",", Ref(vpc_params.PUBLIC_SUBNETS)),
+                vpc_params.APP_SUBNETS_T: Join(",", Ref(vpc_params.APP_SUBNETS)),
+            }
 
 
 class ServicesStack(ComposeXStack):

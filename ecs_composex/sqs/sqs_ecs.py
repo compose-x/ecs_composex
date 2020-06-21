@@ -21,7 +21,7 @@ Module to apply SQS settings onto ECS Services
 
 from ecs_composex.common import LOG, keyisset, NONALPHANUM
 from ecs_composex.ecs.ecs_iam import define_service_containers
-from ecs_composex.ecs.ecs_service import extend_env_vars
+from ecs_composex.ecs.ecs_container_config import extend_container_envvars
 from ecs_composex.ecs.ecs_params import TASK_ROLE_T
 from ecs_composex.ecs.ecs_template import get_service_family_name
 from ecs_composex.sqs.sqs_perms import generate_sqs_permissions, generate_sqs_envvars
@@ -36,9 +36,9 @@ def apply_settings_to_service(
     task_role.Policies.append(policy)
     for container in containers:
         if family_wide:
-            extend_env_vars(container, env_vars)
+            extend_container_envvars(container, env_vars)
         elif not family_wide and container.Name == service_name:
-            extend_env_vars(container, env_vars)
+            extend_container_envvars(container, env_vars)
             break
 
 

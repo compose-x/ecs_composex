@@ -29,7 +29,7 @@ from ecs_composex.common import keyisset, LOG
 from ecs_composex.common.outputs import define_import
 from ecs_composex.ecs.ecs_iam import define_service_containers
 from ecs_composex.ecs.ecs_params import TASK_ROLE_T, EXEC_ROLE_T, SG_T
-from ecs_composex.ecs.ecs_service import extend_service_secrets
+from ecs_composex.ecs.ecs_container_config import extend_container_secrets
 from ecs_composex.rds.rds_params import (
     DB_EXPORT_SECRET_ARN_T,
     DB_SECRET_POLICY_NAME,
@@ -139,7 +139,7 @@ def add_secret_to_containers(
             LOG.debug(f"Ignoring AWS Container {container.Name}")
             continue
         elif family_wide:
-            extend_service_secrets(container, db_secret)
+            extend_container_secrets(container, db_secret)
         elif not family_wide and container.Name == service_name:
-            extend_service_secrets(container, db_secret)
+            extend_container_secrets(container, db_secret)
             break

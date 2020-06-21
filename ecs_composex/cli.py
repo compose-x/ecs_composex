@@ -94,7 +94,10 @@ def validate_cluster_input(args):
 
 
 def main_parser():
-    """Console script for ecs_composex."""
+    """
+    Console script for ecs_composex.
+    """
+    SUBNETS_DESC = "List of Subnet IDs to use for the cluster when not creating VPC"
     parser = argparse.ArgumentParser()
     #  Generic settings
     parser.add_argument(
@@ -193,21 +196,21 @@ def main_parser():
         required=False,
         dest=PUBLIC_SUBNETS_T,
         action="append",
-        help="List of Subnet IDs to use for the cluster when not creating VPC",
+        help=SUBNETS_DESC,
     )
     parser.add_argument(
         "--app-subnets",
         required=False,
         dest=APP_SUBNETS_T,
         action="append",
-        help="List of Subnet IDs to use for the cluster when not creating VPC",
+        help=SUBNETS_DESC,
     )
     parser.add_argument(
         "--storage-subnets",
         required=False,
         dest=STORAGE_SUBNETS_T,
         action="append",
-        help="List of Subnet IDs to use for the cluster when not creating VPC",
+        help=SUBNETS_DESC,
     )
     parser.add_argument(
         "--discovery-map-id",
