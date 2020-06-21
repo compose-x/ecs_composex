@@ -15,16 +15,20 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-""" Core ECS Template building """
+"""
+Core ECS Template building
+"""
 
-from troposphere import Ref, Sub, Tags, Join
+from troposphere import Ref, Sub, Tags, GetAtt
 from troposphere.ec2 import SecurityGroup
+from troposphere.iam import PolicyType
+from troposphere.logs import LogGroup
 
-from ecs_composex.common import keyisset
 from ecs_composex.common import LOG, NONALPHANUM
+from ecs_composex.common import build_template
+from ecs_composex.common import keyisset
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T, ROOT_STACK_NAME
-from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.ecs import ecs_params
+from ecs_composex.ecs import ecs_conditions, ecs_params
 from ecs_composex.ecs.ecs_params import (
     CLUSTER_NAME,
     CLUSTER_NAME_T,
@@ -32,30 +36,96 @@ from ecs_composex.ecs.ecs_params import (
 )
 from ecs_composex.ecs.ecs_service import (
     Service,
-    ServiceConfig,
     Task,
-    initialize_service_template,
 )
-from ecs_composex.vpc import vpc_params
+from ecs_composex.ecs.ecs_service_config import ServiceConfig
+from ecs_composex.vpc import vpc_params, vpc_conditions
 
 
-class ServiceStack(ComposeXStack):
+def initialize_service_template(service_name):
+    """Function to initialize the base template for ECS Services with all
+    parameters and conditions necessary for CFN to work properly
+
+    :param service_name: Name of the ecs_service as defined in ComposeX File
+    :type service_name: str
+
+    :return: service_template
+    :rtype: troposphere.Template
     """
-    Class to handle individual ecs_service stack
-    """
-
-    def __init__(
-        self, title, template, service, template_file=None, extension=None, **kwargs
-    ):
-        self.service = service
-        super().__init__(title, template, template_file, extension, **kwargs)
-        if not keyisset("Parameters", kwargs):
-            self.Parameters = {
-                ROOT_STACK_NAME_T: Ref("AWS::StackName"),
-                vpc_params.VPC_ID_T: Ref(vpc_params.VPC_ID),
-                vpc_params.PUBLIC_SUBNETS_T: Join(",", Ref(vpc_params.PUBLIC_SUBNETS)),
-                vpc_params.APP_SUBNETS_T: Join(",", Ref(vpc_params.APP_SUBNETS)),
-            }
+    service_tpl = build_template(
+        f"Template for {service_name}",
+        [
+            ecs_params.CLUSTER_NAME,
+            ecs_params.LAUNCH_TYPE,
+            ecs_params.ECS_CONTROLLER,
+            ecs_params.SERVICE_COUNT,
+            ecs_params.CLUSTER_SG_ID,
+            vpc_params.VPC_ID,
+            vpc_params.APP_SUBNETS,
+            vpc_params.PUBLIC_SUBNETS,
+            vpc_params.VPC_MAP_ID,
+            ecs_params.SERVICE_HOSTNAME,
+            ecs_params.FARGATE_CPU_RAM_CONFIG,
+            ecs_params.SERVICE_NAME,
+            ecs_params.LOG_GROUP_RETENTION,
+        ],
+    )
+    service_tpl.add_condition(
+        ecs_conditions.SERVICE_COUNT_ZERO_CON_T, ecs_conditions.SERVICE_COUNT_ZERO_CON
+    )
+    service_tpl.add_condition(
+        ecs_conditions.SERVICE_COUNT_ZERO_AND_FARGATE_CON_T,
+        ecs_conditions.SERVICE_COUNT_ZERO_AND_FARGATE_CON,
+    )
+    service_tpl.add_condition(
+        vpc_conditions.USE_VPC_MAP_ID_CON_T, vpc_conditions.USE_VPC_MAP_ID_CON
+    )
+    service_tpl.add_condition(
+        vpc_conditions.NOT_USE_VPC_MAP_ID_CON_T, vpc_conditions.NOT_USE_VPC_MAP_ID_CON
+    )
+    service_tpl.add_condition(
+        ecs_conditions.USE_HOSTNAME_CON_T, ecs_conditions.USE_HOSTNAME_CON
+    )
+    service_tpl.add_condition(
+        ecs_conditions.NOT_USE_HOSTNAME_CON_T, ecs_conditions.NOT_USE_HOSTNAME_CON
+    )
+    service_tpl.add_condition(
+        ecs_conditions.NOT_USE_CLUSTER_SG_CON_T, ecs_conditions.NOT_USE_CLUSTER_SG_CON
+    )
+    service_tpl.add_condition(
+        ecs_conditions.USE_CLUSTER_SG_CON_T, ecs_conditions.USE_CLUSTER_SG_CON
+    )
+    service_tpl.add_condition(
+        ecs_conditions.USE_FARGATE_CON_T, ecs_conditions.USE_FARGATE_CON,
+    )
+    svc_log = service_tpl.add_resource(
+        LogGroup(
+            ecs_params.LOG_GROUP_T,
+            RetentionInDays=Ref(ecs_params.LOG_GROUP_RETENTION),
+            LogGroupName=Sub(
+                f"svc/${{{ecs_params.CLUSTER_NAME_T}}}/${{{ecs_params.SERVICE_NAME_T}}}"
+            ),
+        )
+    )
+    service_tpl.add_resource(
+        PolicyType(
+            "CloudWatchAcccess",
+            Roles=[Ref(ecs_params.EXEC_ROLE_T)],
+            PolicyName=Sub(f"CloudWatchAccessFor${{{ecs_params.SERVICE_NAME_T}}}"),
+            PolicyDocument={
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Sid": "AllowCloudWatchLoggingToSpecificLogGroup",
+                        "Effect": "Allow",
+                        "Action": ["logs:CreateLogStream", "logs:PutLogEvents"],
+                        "Resource": [GetAtt(svc_log, "Arn")],
+                    },
+                ],
+            },
+        )
+    )
+    return service_tpl
 
 
 def add_clusterwide_security_group(template):
