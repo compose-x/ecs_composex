@@ -493,7 +493,7 @@ def add_ecs_cluster(template, depends_on=None):
         )
     except ImportError as error:
         LOG.info("Capacity providers not yet available in troposphere")
-        LOG.warn(error)
+        LOG.warning(error)
         Cluster(
             ROOT_CLUSTER_NAME,
             template=template,

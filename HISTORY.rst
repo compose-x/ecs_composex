@@ -2,6 +2,25 @@
 History
 =======
 
+0.3.0 (2020-06-21)
+==================
+
+Refactored the way the services, task definitions and containers are put together, in order to support multiple new features:
+
+* `Allow multiple services to be merged into one Task definition <https://github.com/lambda-my-aws/ecs_composex/issues/78>`_
+* `Support Docker compose v3 compute definition <https://github.com/lambda-my-aws/ecs_composex/issues/32>`_
+
+The support for Docker compose compute settings allows to add up all the CPU / RAM of your service(s) and identify the
+closest Fargate CPU/RAM configuration for the **Task Definition** (the respective CPU/RAM of each task is unchanged).
+
+
+The docker-compose file is now more strictly close to the definition set in Docker Compose, with regards to attributes
+and their expected types.
+
+.. note::
+
+    In order to respect more closely the docker-compose definition, the key previously used **configs** now is **x-configs**
+
 0.2.3 (2020-04-16)
 ==================
 
