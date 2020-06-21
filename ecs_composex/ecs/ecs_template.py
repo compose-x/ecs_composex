@@ -199,11 +199,7 @@ def handle_families_services(families, cluster_sg, content, **kwargs):
         task = Task(template, family_service_configs, family_parameters)
         family_parameters.update(task.stack_parameters)
         service = Service(
-            template,
-            family_resource_name,
-            task,
-            task.family_config,
-            **kwargs,
+            template, family_resource_name, task, task.family_config, **kwargs,
         )
         service.parameters.update(
             {

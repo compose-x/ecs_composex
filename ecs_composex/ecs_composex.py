@@ -24,7 +24,7 @@ from importlib import import_module
 
 import boto3
 from troposphere import Ref, GetAtt, If, AWS_STACK_NAME
-from troposphere.ecs import Cluster, CapacityProviderStrategyItem
+from troposphere.ecs import Cluster
 
 from ecs_composex.common import (
     LOG,
@@ -473,17 +473,35 @@ def add_ecs_cluster(template, depends_on=None):
     template.add_condition(CLUSTER_NAME_CON_T, CLUSTER_NAME_CON)
     if depends_on is None:
         depends_on = []
-    Cluster(
-        ROOT_CLUSTER_NAME,
-        template=template,
-        ClusterName=If(CLUSTER_NAME_CON_T, Ref(AWS_STACK_NAME), Ref(CLUSTER_NAME_T)),
-        DependsOn=depends_on,
-        CapacityProviders=["FARGATE", "FARGATE_SPOT"],
-        DefaultCapacityProviderStrategy=[
-            CapacityProviderStrategyItem(Weight=2, CapacityProvider="FARGATE_SPOT"),
-            CapacityProviderStrategyItem(Weight=1, CapacityProvider="FARGATE"),
-        ],
-    )
+    # Pending next release to support CapacityProviders in Troposphere
+    # When released, will add settings to define cluster capacity
+    try:
+        from troposphere.ecs import CapacityProviderStrategyItem
+
+        Cluster(
+            ROOT_CLUSTER_NAME,
+            template=template,
+            ClusterName=If(
+                CLUSTER_NAME_CON_T, Ref(AWS_STACK_NAME), Ref(CLUSTER_NAME_T)
+            ),
+            DependsOn=depends_on,
+            CapacityProviders=["FARGATE", "FARGATE_SPOT"],
+            DefaultCapacityProviderStrategy=[
+                CapacityProviderStrategyItem(Weight=2, CapacityProvider="FARGATE_SPOT"),
+                CapacityProviderStrategyItem(Weight=1, CapacityProvider="FARGATE"),
+            ],
+        )
+    except ImportError as error:
+        LOG.info("Capacity providers not yet available in troposphere")
+        LOG.warn(error)
+        Cluster(
+            ROOT_CLUSTER_NAME,
+            template=template,
+            ClusterName=If(
+                CLUSTER_NAME_CON_T, Ref(AWS_STACK_NAME), Ref(CLUSTER_NAME_T)
+            ),
+            DependsOn=depends_on,
+        )
 
 
 def init_root_template(stack_params, tags=None):
