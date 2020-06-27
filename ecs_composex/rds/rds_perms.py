@@ -114,21 +114,38 @@ def add_security_group_ingress(service_stack, db_name):
     )
 
 
+def db_secrets_names(db_name, db_def):
+    """
+    Function to return the list of env vars set for the DB to use as env vars for the Secret.
+
+    :param db_def: Definition of the DB
+    :return: list of names to use.
+    :rtype: list
+    """
+    names = []
+    if keyisset("Settings", db_def) and keyisset("EnvNames", db_def["Settings"]):
+        names = db_def["Settings"]["EnvNames"]
+    if db_name not in names:
+        names.append(db_name)
+    return names
+
+
 def add_secret_to_containers(
-    service_template, db_name, secret_import, service_name, family_wide=False
+    service_template, db_name, db_def, secret_import, service_name, family_wide=False
 ):
     """
     Function to add DB secret to container
 
     :param troposphere.Template service_template: the ecs_service template
     :param str db_name: the name of the database used as environment variable name
+    :param dict db_def: Definition of the DB.
     :param str secret_import: secret arn
     :param str service_name: Name of the service that was explicitely listed as consuming the DB
     :param bool family_wide: Whether or not apply the secret to all services of the family.
     """
 
     containers = define_service_containers(service_template)
-    db_secret = EcsSecret(Name=db_name, ValueFrom=secret_import)
+    db_secrets = [EcsSecret(Name=name, ValueFrom=secret_import) for name in db_secrets_names(db_name, db_def)]
     for container in containers:
         if (
             isinstance(container, ContainerDefinition)
@@ -139,7 +156,9 @@ def add_secret_to_containers(
             LOG.debug(f"Ignoring AWS Container {container.Name}")
             continue
         elif family_wide:
-            extend_container_secrets(container, db_secret)
+            for db_secret in db_secrets:
+                extend_container_secrets(container, db_secret)
         elif not family_wide and container.Name == service_name:
-            extend_container_secrets(container, db_secret)
+            for db_secret in db_secrets:
+                extend_container_secrets(container, db_secret)
             break
