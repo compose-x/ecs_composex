@@ -12,7 +12,8 @@ import boto3
 import botocore.session
 from botocore.stub import Stubber
 
-from troposphere import Template, Parameter
+from troposphere import Template, Parameter, Tags, Ref, AWS_REGION
+from troposphere.ec2 import VPC
 
 from ecs_composex.common import (
     init_template,
@@ -28,11 +29,17 @@ from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common.files import FileArtifact
 from ecs_composex.vpc import vpc_params
 from ecs_composex.common.cfn_tools import import_parameters_into_config_file
+from ecs_composex.common.tagging import add_object_tags
 
 
 @pytest.fixture
 def here():
     return path.abspath(path.dirname(__file__))
+
+
+@pytest.fixture
+def vpc():
+    return VPC("default", CidrBlock="10.0.0.0/24", Tags=Tags(Name="default", Region=Ref(AWS_REGION)))
 
 
 def test_init_template():
@@ -206,3 +213,21 @@ def test_cfn_tools(here):
     with open(config_file, "r") as config_fd:
         config = json.loads(config_fd.read())
     assert expected == config
+
+
+def test_tags(vpc):
+    """
+    Function to verify tags integrity.
+
+    :param vpc: default VPC fixture
+    :return:
+    """
+    vpc_tags = getattr(vpc, "Tags").to_dict()
+    assert len(vpc_tags) == 2
+    new_tags = Tags(Region="eu-west-1", Owner="myself")
+    add_object_tags(vpc, new_tags)
+    vpc_tags = getattr(vpc, "Tags").to_dict()
+    assert len(vpc_tags) == 3
+    for tag in vpc_tags:
+        if tag["Key"] == "Region":
+            assert tag["Value"] == {"Ref": "AWS::Region"}

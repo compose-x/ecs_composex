@@ -145,29 +145,42 @@ def expand_launch_template_tags_specs(lt, tags):
         LOG.error(error)
 
 
+def merge_tags_lists(x_data, y_data):
+    x_keys = [x["Key"] for x in x_data]
+    result = [{a["Key"]: a["Value"]} for a in x_data]
+    for count, tag in enumerate(y_data):
+        if tag["Key"] not in x_keys:
+            result.append({y_data[count]["Key"]: y_data[count]["Value"]})
+    return result
+
+
 def add_object_tags(obj, tags):
     """
     Function to add tags to the object if the object supports it
 
     :param obj: Troposphere object to add the tags to
-    :param tags: list of tags as defined in Docker composeX file
-    :type tags: dict or list
+    :param troposphere.Tags tags: list of tags as defined in Docker composeX file
     """
     if tags is None:
         return
     clean_tags = copy.deepcopy(tags)
     if isinstance(obj, LaunchTemplate):
         expand_launch_template_tags_specs(obj, clean_tags)
+        return
     if hasattr(obj, "props") and "Tags" not in obj.props:
+        LOG.debug(f"Item {obj.title} - {obj.resource_type} does not support tags")
         return
     if hasattr(obj, "Tags") and isinstance(getattr(obj, "Tags"), Tags):
         LOG.debug(f"Adding the new tags {clean_tags} to {obj}")
-        existing_tags = getattr(obj, "Tags")
-        new_tags = existing_tags + clean_tags
-        setattr(obj, "Tags", new_tags)
+        existing_tags = getattr(obj, "Tags").to_dict()
+        new_tags = clean_tags.to_dict()
+        result = merge_tags_lists(existing_tags, new_tags)
+        result_tags = Tags(*result)
+        LOG.debug(result_tags)
+        setattr(obj, "Tags", result_tags)
     elif not hasattr(obj, "Tags"):
-        LOG.debug(f"Adding tags to {obj}")
-        setattr(obj, "Tags", tags)
+        LOG.debug(f"No existing tags. Adding tags to {obj}")
+        setattr(obj, "Tags", clean_tags)
 
 
 def add_all_tags(root_template, params_and_tags):
