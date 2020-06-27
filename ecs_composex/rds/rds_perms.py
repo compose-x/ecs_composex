@@ -145,7 +145,10 @@ def add_secret_to_containers(
     """
 
     containers = define_service_containers(service_template)
-    db_secrets = [EcsSecret(Name=name, ValueFrom=secret_import) for name in db_secrets_names(db_name, db_def)]
+    db_secrets = [
+        EcsSecret(Name=name, ValueFrom=secret_import)
+        for name in db_secrets_names(db_name, db_def)
+    ]
     for container in containers:
         if (
             isinstance(container, ContainerDefinition)
