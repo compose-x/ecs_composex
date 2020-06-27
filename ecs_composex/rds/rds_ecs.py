@@ -58,7 +58,7 @@ def rds_to_ecs(rdsdbs, services_stack, services_families, rds_root_stack, **kwar
             service_stack = services_stack.stack_template.resources[service_family]
             service_template = service_stack.stack_template
             add_secret_to_containers(
-                service_template, db_name, secret_import, service["name"], family_wide
+                service_template, db_name, db_def, secret_import, service["name"], family_wide
             )
             add_rds_policy(service_template, secret_import, db_name)
             add_security_group_ingress(service_stack, db_name)
