@@ -42,6 +42,7 @@ from ecs_composex.vpc.vpc_params import (
     VPC_ID_T,
     VPC_MAP_ID_T,
 )
+from ecs_composex.vpc.cli import DEFAULT_VPC_CIDR
 
 ACCOUNT_ID = get_account_id()
 BUCKET_NAME = f"cfn-templates-{ACCOUNT_ID[:6]}"
@@ -180,7 +181,7 @@ def main_parser():
     parser.add_argument(
         "--vpc-cidr",
         required=False,
-        default="192.168.36.0/22",
+        default=DEFAULT_VPC_CIDR,
         dest="VpcCidr",
         help="Specify the VPC CIDR if you use --create-vpc",
     )

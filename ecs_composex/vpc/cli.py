@@ -31,6 +31,7 @@ from ecs_composex.common.files import FileArtifact
 CURATED_AZS = get_curated_azs()
 ACCOUNT_ID = get_account_id()
 BUCKET_NAME = f"cfn-templates-{ACCOUNT_ID[:6]}"
+DEFAULT_VPC_CIDR = "100.127.254.0/23"
 
 
 def vpc_parser():
@@ -39,7 +40,7 @@ def vpc_parser():
     parser.add_argument(
         "--vpc-cidr",
         required=False,
-        default="192.168.36.0/22",
+        default=DEFAULT_VPC_CIDR,
         dest="VpcCidr",
         help="Specify the VPC CIDR",
     )
