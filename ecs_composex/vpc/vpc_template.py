@@ -67,8 +67,8 @@ def add_cloudmap_support(template, vpc):
         Vpc=Ref(vpc),
         Name=If(
             USE_STACK_NAME_CON_T,
-            Sub(f"${{AWS::StackName}}.${{{vpc_params.VPC_DNS_ZONE_T}}}"),
-            Sub(f"${{{ROOT_STACK_NAME_T}}}.${{{vpc_params.VPC_DNS_ZONE_T}}}"),
+            Sub(f"svc.${{AWS::StackName}}.${{{vpc_params.VPC_DNS_ZONE_T}}}"),
+            Sub(f"svc.${{{ROOT_STACK_NAME_T}}}.${{{vpc_params.VPC_DNS_ZONE_T}}}"),
         ),
     )
     template.add_output(
@@ -185,8 +185,14 @@ def add_vpc_core(template, vpc_cidr):
         template=template,
         DomainName=If(
             USE_STACK_NAME_CON_T,
-            Sub(f"${{AWS::StackName}}.${{{vpc_params.VPC_DNS_ZONE_T}}}"),
-            Sub(f"${{{ROOT_STACK_NAME_T}}}.${{{vpc_params.VPC_DNS_ZONE_T}}}"),
+            Sub(
+                f"svc.${{AWS::StackName}}.${{{vpc_params.VPC_DNS_ZONE_T}}} "
+                f"${{AWS::StackName}}.${{{vpc_params.VPC_DNS_ZONE_T}}}"
+            ),
+            Sub(
+                f"svc.${{{ROOT_STACK_NAME_T}}}.${{{vpc_params.VPC_DNS_ZONE_T}}} "
+                f"${{{ROOT_STACK_NAME_T}}}.${{{vpc_params.VPC_DNS_ZONE_T}}}"
+            ),
         ),
         DomainNameServers=["AmazonProvidedDNS"],
         Tags=Tags(Name=Sub(f"dhcp-${{{vpc.title}}}")),
@@ -207,8 +213,8 @@ def add_vpc_core(template, vpc_cidr):
         VPCs=[HostedZoneVPCs(VPCId=Ref(vpc), VPCRegion=Ref("AWS::Region"))],
         Name=If(
             USE_STACK_NAME_CON_T,
-            Sub(f"sub.${{AWS::StackName}}.${{{vpc_params.VPC_DNS_ZONE_T}}}"),
-            Sub(f"sub.${{{ROOT_STACK_NAME_T}}}.${{{vpc_params.VPC_DNS_ZONE_T}}}"),
+            Sub(f"${{AWS::StackName}}.${{{vpc_params.VPC_DNS_ZONE_T}}}"),
+            Sub(f"${{{ROOT_STACK_NAME_T}}}.${{{vpc_params.VPC_DNS_ZONE_T}}}"),
         ),
         HostedZoneTags=Tags(Name=Sub(f"ZoneFor-${{{vpc.title}}}")),
     )
