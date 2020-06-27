@@ -65,9 +65,9 @@ def import_parameters_into_config_file(parameters_file, config_file):
                 config["Parameters"] = {}
     except FileNotFoundError:
         config = {"Parameters": {}}
-    print(config)
+    LOG.debug(config)
     new_config = build_config_template_file(config, parameters)
-    LOG.info(new_config)
+    LOG.debug(new_config)
 
     with open(config_file, "w") as config_fd:
         config_fd.write(json.dumps(new_config, indent=4))
