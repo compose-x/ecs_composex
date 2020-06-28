@@ -297,9 +297,6 @@ def generate_services(compose_content, cluster_sg, **kwargs):
     :param kwargs: optional arguments
     :type kwargs: dicts or set
     """
-    services = {}
     families = define_services_families(compose_content[ecs_params.RES_KEY])
-    services.update(
-        handle_families_services(families, cluster_sg, compose_content, **kwargs)
-    )
+    services = handle_families_services(families, cluster_sg, compose_content, **kwargs)
     return services

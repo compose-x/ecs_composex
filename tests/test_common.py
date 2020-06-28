@@ -39,7 +39,11 @@ def here():
 
 @pytest.fixture
 def vpc():
-    return VPC("default", CidrBlock="10.0.0.0/24", Tags=Tags(Name="default", Region=Ref(AWS_REGION)))
+    return VPC(
+        "default",
+        CidrBlock="10.0.0.0/24",
+        Tags=Tags(Name="default", Region=Ref(AWS_REGION)),
+    )
 
 
 def test_init_template():

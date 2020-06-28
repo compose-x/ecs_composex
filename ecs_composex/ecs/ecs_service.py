@@ -367,6 +367,7 @@ class Service(object):
                 Port=port["published"],
             )
             registries.append(registry)
+            break
         return registries
 
     def add_lb_to_service_ingress(self, lb_sg, service_sg):

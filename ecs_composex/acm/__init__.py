@@ -99,11 +99,11 @@ def initialize_acm_stack_template(cert_name):
                 ),
             )
         ],
-        Tags=Tags(Name=Ref(CERT_CN))
+        Tags=Tags(Name=Ref(CERT_CN)),
     )
     tpl.add_output(
         formatted_outputs(
-            [{CERT_ARN.title: Ref(cert)}], export=True, obj_name=cert.title
+            [{CERT_CN.title: Ref(cert)}], export=True, obj_name=cert.title
         )
     )
     return tpl
