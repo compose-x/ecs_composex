@@ -671,7 +671,6 @@ class Service(object):
         for port_target in self.config.ingress_mappings:
             tgt = self.add_target_group(port_target, service_lb)
             for source in self.config.ingress_mappings[port_target]:
-                LOG.info(source)
                 listener = self.add_lb_listener(source, service_lb, tgt, port_target)
                 depends_on.append(listener.title)
             tgt_groups.append(tgt)

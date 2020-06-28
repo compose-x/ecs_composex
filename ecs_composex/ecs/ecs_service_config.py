@@ -237,8 +237,6 @@ class ServiceConfig(ComposeXConfig):
             else []
         )
         self.ingress_mappings = define_ingress_mappings(self.ports)
-        LOG.info(self.ports)
-        LOG.info(self.ingress_mappings)
         self.environment = keyset_else_novalue("environment", definition, else_value=[])
         self.hostname = keyset_else_novalue("hostname", definition, else_value=None)
         self.family_name = family_name
