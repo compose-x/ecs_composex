@@ -367,6 +367,7 @@ class Service(object):
                 Port=port["published"],
             )
             registries.append(registry)
+            break
         return registries
 
     def add_lb_to_service_ingress(self, lb_sg, service_sg):
@@ -446,18 +447,18 @@ class Service(object):
 
             for port in self.config.ports:
                 if keyisset("source_name", allowed_source):
-                    title = f"From{allowed_source['source_name'].title()}Onto{port['target']}{port['protocol']}"
+                    title = f"From{allowed_source['source_name'].title()}Onto{port['published']}{port['protocol']}"
                     description = Sub(
                         f"From {allowed_source['source_name'].title()} "
-                        f"To {port['target']}{port['protocol']} for ${{{SERVICE_NAME_T}}}"
+                        f"To {port['published']}{port['protocol']} for ${{{SERVICE_NAME_T}}}"
                     )
                 else:
                     title = (
                         f"From{flatten_ip(allowed_source['ipv4'])}"
-                        "To{port['target']}{port['protocol']}"
+                        "To{port['published']}{port['protocol']}"
                     )
                     description = Sub(
-                        f"Public {port['target']}{port['protocol']}"
+                        f"Public {port['published']}{port['protocol']}"
                         f" for ${{{SERVICE_NAME_T}}}"
                     )
                 SecurityGroupIngress(
@@ -466,8 +467,8 @@ class Service(object):
                     Description=description,
                     GroupId=GetAtt(security_group, "GroupId"),
                     IpProtocol=port["protocol"],
-                    FromPort=port["target"],
-                    ToPort=port["target"],
+                    FromPort=port["published"],
+                    ToPort=port["published"],
                     **props,
                 )
 
@@ -532,7 +533,7 @@ class Service(object):
             )
         return sg
 
-    def add_lb_listener(self, port, lb, tgt):
+    def add_lb_listener(self, port, lb, tgt, target_port):
         """
         Method to add a new listener for a given Load Balancer and Target Group combination.
 
@@ -550,7 +551,7 @@ class Service(object):
         if self.config.is_public:
             suffix = "Public"
         listener = Listener(
-            f"{self.config.lb_type.title()}{suffix}ListenerPort{port}",
+            f"{self.config.lb_type.title()}{suffix}ListenerPort{port}To{target_port}",
             template=self.template,
             DependsOn=[lb],
             DefaultActions=[ListenerAction(Type="forward", TargetGroupArn=Ref(tgt))],
@@ -601,7 +602,7 @@ class Service(object):
         )
         return tgt
 
-    def add_load_balancer(self, ports, **kwargs):
+    def add_load_balancer(self, **kwargs):
         """
         Method to add LB to template
 
@@ -614,9 +615,9 @@ class Service(object):
 
         no_value = Ref(AWS_NO_VALUE)
         public_mapping = define_public_mapping(self.eips, kwargs["AwsAzs"])
-        if ports and self.config.use_alb():
-            alb_sg = self.add_alb_sg(ports)
-            self.add_lb_to_service_ingress(alb_sg, SG_T)
+        if self.config.ingress_mappings and self.config.use_alb():
+            alb_sg = self.add_alb_sg(self.config.ingress_mappings.keys())
+            # self.add_lb_to_service_ingress(alb_sg, SG_T)
             lb_sg = [Ref(alb_sg)]
         else:
             lb_sg = no_value
@@ -665,15 +666,15 @@ class Service(object):
         service_lbs = []
         tgt_groups = []
         depends_on = []
-        curated_ports = [int(port["target"]) for port in self.config.ports]
-        service_lb = self.add_load_balancer(curated_ports, **kwargs)
+        service_lb = self.add_load_balancer(**kwargs)
         depends_on.append(service_lb.title)
-        for port in curated_ports:
-            tgt = self.add_target_group(port, service_lb)
-            listener = self.add_lb_listener(port, service_lb, tgt)
+        for port_target in self.config.ingress_mappings:
+            tgt = self.add_target_group(port_target, service_lb)
+            for source in self.config.ingress_mappings[port_target]:
+                listener = self.add_lb_listener(source, service_lb, tgt, port_target)
+                depends_on.append(listener.title)
             tgt_groups.append(tgt)
             depends_on.append(tgt.title)
-            depends_on.append(listener.title)
             service_lbs.append(
                 EcsLoadBalancer(
                     TargetGroupArn=Ref(tgt),

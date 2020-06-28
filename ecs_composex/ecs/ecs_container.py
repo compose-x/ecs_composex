@@ -25,16 +25,14 @@ from troposphere.ecs import (
     ContainerDefinition,
     HealthCheck,
     ContainerDependency,
+    PortMapping,
 )
 
 from ecs_composex.common import add_parameters
 from ecs_composex.common import keyisset
 from ecs_composex.common.outputs import formatted_outputs
 from ecs_composex.ecs import ecs_params
-from ecs_composex.ecs.ecs_container_config import (
-    generate_port_mappings,
-    import_env_variables,
-)
+from ecs_composex.ecs.ecs_container_config import import_env_variables
 
 
 class Container(object):
@@ -75,7 +73,10 @@ class Container(object):
             Cpu=cpu_config,
             Memory=config.mem_alloc,
             MemoryReservation=config.mem_resa,
-            PortMappings=generate_port_mappings(config.ports)
+            PortMappings=[
+                PortMapping(ContainerPort=port, HostPort=port)
+                for port in config.ingress_mappings.keys()
+            ]
             if keyisset("ports", definition)
             else Ref(AWS_NO_VALUE),
             Environment=import_env_variables(definition["environment"])

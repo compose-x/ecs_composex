@@ -18,7 +18,7 @@
 
 """Common Conditions across the templates"""
 
-from troposphere import Condition, Not, Ref, Equals, And
+from troposphere import Condition, Not, Ref, Equals, And, If
 
 from ecs_composex.common import cfn_params
 
@@ -63,3 +63,16 @@ USE_SPOT_CON = Equals(Ref(cfn_params.USE_FLEET), "True")
 
 NOT_USE_SPOT_CON_T = "NotUseSpotFleetHostsCondition"
 NOT_USE_SPOT_CON = Not(Condition(USE_SPOT_CON_T))
+
+
+def pass_root_stack_name():
+    """
+    Function to add root_stack to a stack parameters
+
+    :return: rootstack name value based on condition
+    """
+    return {
+        cfn_params.ROOT_STACK_NAME_T: If(
+            USE_STACK_NAME_CON_T, Ref("AWS::StackName"), Ref(cfn_params.ROOT_STACK_NAME)
+        )
+    }

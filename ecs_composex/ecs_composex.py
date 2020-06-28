@@ -90,7 +90,7 @@ VPC_ARGS = [
     vpc_params.VPC_MAP_ID_T,
 ]
 
-SUPPORTED_X_MODULES = ["x-rds", "rds", "x-sqs", "sqs", "x-sns", "sns"]
+SUPPORTED_X_MODULES = ["x-rds", "rds", "x-sqs", "sqs", "x-sns", "sns", "x-acm", "acm"]
 EXCLUDED_X_KEYS = ["x-configs", "x-tags"]
 
 

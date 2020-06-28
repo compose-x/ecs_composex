@@ -118,8 +118,8 @@ def set_service_ports(ports):
             service_ports.append(
                 {
                     "protocol": define_protocol(port),
-                    "published": port.split(":")[0],
-                    "target": port.split(":")[-1].split("/")[0].strip(),
+                    "published": int(port.split(":")[0]),
+                    "target": int(port.split(":")[-1].split("/")[0].strip()),
                     "mode": "awsvpc",
                 }
             )
@@ -139,6 +139,22 @@ def set_service_ports(ports):
             )
     LOG.debug(service_ports)
     return service_ports
+
+
+def define_ingress_mappings(service_ports):
+    """
+    Function to create a mapping of sources for a common target
+    """
+    ingress_mappings = {}
+    for port in service_ports:
+        if port["target"] not in ingress_mappings.keys():
+            ingress_mappings[port["target"]] = [port["published"]]
+        elif (
+            port["target"] in ingress_mappings.keys()
+            and not port["published"] in ingress_mappings[port["target"]]
+        ):
+            ingress_mappings[port["target"]].append(port["published"])
+    return ingress_mappings
 
 
 class ServiceConfig(ComposeXConfig):
@@ -220,6 +236,7 @@ class ServiceConfig(ComposeXConfig):
             if keyisset("ports", definition)
             else []
         )
+        self.ingress_mappings = define_ingress_mappings(self.ports)
         self.environment = keyset_else_novalue("environment", definition, else_value=[])
         self.hostname = keyset_else_novalue("hostname", definition, else_value=None)
         self.family_name = family_name
