@@ -21,10 +21,11 @@ Module for ACM Conditions
 
 """
 
-from troposphere import Equals, Not, Ref, And, Condition
+from troposphere import Equals, Not, Ref, And, Condition, Select
 from ecs_composex.acm.acm_params import (
     VALIDATION_DOMAIN_NAME,
     VALIDATION_DOMAIN_ZONE_ID,
+    CERT_ALT_NAMES,
 )
 
 ACM_ZONE_ID_IS_NONE_T = "AcmZoneIsNoneCondition"
@@ -42,6 +43,14 @@ USE_ZONE_ID = And(
     Not(Condition(ACM_ZONE_ID_IS_NONE_T)), Not(Condition(ACM_ZONE_NAME_IS_NONE_T))
 )
 
+NO_VALIDATION_CONDITION_T = "NoValidationConfiguredCondition"
+NO_VALIDATION_CONDITION = And(
+    Condition(ACM_ZONE_ID_IS_NONE_T), Condition(ACM_ZONE_NAME_IS_NONE_T)
+)
+
+NO_ALT_NAMES_T = "NoAlternativeSubNamesCondition"
+NO_ALT_NAMES = Equals(Select(0, Ref(CERT_ALT_NAMES)), CERT_ALT_NAMES.Default)
+
 
 def add_all_conditions(template):
     """
@@ -52,3 +61,5 @@ def add_all_conditions(template):
     template.add_condition(ACM_ZONE_ID_IS_NONE_T, ACM_ZONE_ID_IS_NONE)
     template.add_condition(ACM_ZONE_NAME_IS_NONE_T, ACM_ZONE_NAME_IS_NONE)
     template.add_condition(USE_ZONE_ID_T, USE_ZONE_ID)
+    template.add_condition(NO_VALIDATION_CONDITION_T, NO_VALIDATION_CONDITION)
+    template.add_condition(NO_ALT_NAMES_T, NO_ALT_NAMES)

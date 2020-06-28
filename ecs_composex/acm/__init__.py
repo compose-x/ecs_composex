@@ -20,7 +20,7 @@ Main module for ACM
 """
 
 from warnings import warn
-from troposphere import Ref, Sub, If, AWS_NO_VALUE
+from troposphere import Ref, Sub, If, AWS_NO_VALUE, Tags
 from troposphere.certificatemanager import (
     Certificate as AcmCert,
     DomainValidationOption,
@@ -37,6 +37,7 @@ from ecs_composex.common import (
 )
 from ecs_composex.common.outputs import formatted_outputs
 from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.common.cfn_conditions import pass_root_stack_name
 
 from ecs_composex.acm.acm_params import (
     RES_KEY,
@@ -71,10 +72,12 @@ def initialize_acm_stack_template(cert_name):
     )
     acm_conditions.add_all_conditions(tpl)
     cert = AcmCert(
-        f"{cert_name}Certificate",
+        f"{cert_name}",
         template=tpl,
         DomainName=Ref(CERT_CN),
-        SubjectAlternativeNames=Ref(CERT_ALT_NAMES_T),
+        SubjectAlternativeNames=If(
+            acm_conditions.NO_ALT_NAMES_T, Ref(AWS_NO_VALUE), Ref(CERT_ALT_NAMES_T)
+        ),
         ValidationMethod=Ref(CERT_VALIDATION_METHOD),
         DomainValidationOptions=[
             If(
@@ -96,13 +99,13 @@ def initialize_acm_stack_template(cert_name):
                 ),
             )
         ],
+        Tags=Tags(Name=Ref(CERT_CN))
     )
-    tpl.add_output(formatted_outputs(
-        [
-            {CERT_ARN.title: Ref(cert)}
-        ],
-        export=True, obj_name=cert.title
-    ))
+    tpl.add_output(
+        formatted_outputs(
+            [{CERT_ARN.title: Ref(cert)}], export=True, obj_name=cert.title
+        )
+    )
     return tpl
 
 
@@ -143,15 +146,14 @@ def build_cert_params(cert_def):
                 )
             )
         option = options[0]
-        cert_params["DomainZone"] = option["DomainZone"]
-        cert_params["HostedZoneId"] = (
+        cert_params[VALIDATION_DOMAIN_ZONE_ID_T] = (
             option["HostedZoneId"]
-            if keyisset("HostedZoneId", cert_def)
+            if keyisset("HostedZoneId", option)
             else VALIDATION_DOMAIN_ZONE_ID.Default
         )
-        cert_params["ValidationDomain"] = (
+        cert_params[VALIDATION_DOMAIN_NAME_T] = (
             cert_def["ValidationDomain"]
-            if keyisset("ValidationDomain", cert_def)
+            if keyisset("ValidationDomain", option)
             else VALIDATION_DOMAIN_NAME.Default
         )
     return cert_params
@@ -168,11 +170,16 @@ def add_certificates(acm_tpl, certs, **kwargs):
     for cert_name in certs:
         resource_name = NONALPHANUM.sub("", cert_name)
         cert_def = certs[cert_name]
-        cert_params = build_cert_params(cert_def)
+        cert_props = cert_def["Properties"]
+        cert_params = build_cert_params(cert_props)
+        cert_params.update(pass_root_stack_name())
         cert_template = initialize_acm_stack_template(resource_name)
         acm_tpl.add_resource(
             ComposeXStack(
-                resource_name, stack_template=cert_template, Parameters=cert_params, **kwargs
+                resource_name,
+                stack_template=cert_template,
+                Parameters=cert_params,
+                **kwargs,
             )
         )
 

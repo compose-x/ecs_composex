@@ -35,7 +35,10 @@ VALIDATION_DOMAIN_NAME = Parameter(
 
 VALIDATION_DOMAIN_ZONE_ID_T = "ValidationZoneId"
 VALIDATION_DOMAIN_ZONE_ID = Parameter(
-    VALIDATION_DOMAIN_ZONE_ID_T, Type="String", AllowedPattern=r"(none|^Z[A-Z0-9]+$)"
+    VALIDATION_DOMAIN_ZONE_ID_T,
+    Type="String",
+    AllowedPattern=r"(none|^Z[A-Z0-9]+$)",
+    Default="none",
 )
 
 CERT_CN_T = "CertificateCn"
@@ -46,7 +49,9 @@ CERT_CN = Parameter(
 )
 
 CERT_ALT_NAMES_T = "CerticateAlternativeNames"
-CERT_ALT_NAMES = Parameter(CERT_ALT_NAMES_T, Type="CommaDelimitedList", Default=[])
+CERT_ALT_NAMES = Parameter(
+    CERT_ALT_NAMES_T, Type="CommaDelimitedList", Default="<none>"
+)
 
 CERT_VALIDATION_METHOD_T = "CertificateValidationMethod"
 CERT_VALIDATION_METHOD = Parameter(
@@ -57,7 +62,4 @@ CERT_VALIDATION_METHOD = Parameter(
 )
 
 CERT_ARN_T = "AcmCertificateArn"
-CERT_ARN = Parameter(
-    CERT_ARN_T,
-    Type="String"
-)
+CERT_ARN = Parameter(CERT_ARN_T, Type="String")
