@@ -17,3 +17,4 @@ ComposeX Modules Syntax
 
 .. include:: ../ecs_composex/sns/SYNTAX.rst
 
+.. include:: ../ecs_composex/acm/SYNTAX.rst

@@ -19,19 +19,15 @@
 Module to map services LBs settings to ACM certificate settings.
 """
 
-
-from troposphere import Ref
 from troposphere.elasticloadbalancingv2 import (
     Listener,
-    ListenerCertificate,
-    ListenerRule,
     Certificate,
 )
 
+from ecs_composex.acm import acm_params
 from ecs_composex.common import LOG, keyisset
 from ecs_composex.common.outputs import define_import
 from ecs_composex.ecs.ecs_template import get_service_family_name
-from ecs_composex.acm import acm_params
 
 
 def find_service_listener(port_number, service_template):
@@ -74,9 +70,7 @@ def add_ssl_config_to_listeners(service_template, cert_import, ports):
         if listener.Protocol == "HTTP":
             listener.Protocol = "HTTPS"
             setattr(
-                listener,
-                "Certificates",
-                [Certificate(CertificateArn=cert_import)],
+                listener, "Certificates", [Certificate(CertificateArn=cert_import)],
             )
         elif listener.Protocol == "TCP":
             listener.Protocol = "TLS"

@@ -48,20 +48,15 @@ def generate_port_mappings(ports):
     Generates a port mapping from the Docker compose file.
     Given we are going to use AWS VPC mode, we are only considering the app port.
 
-    :param ports: list of ports used by the ecs_service
-    :type ports: list
+    :param list ports: list of ports used by the ecs_service
     :returns: mappings, list of port mappings
-    :rtype: list
+    :rtype: list<troposphere.ecs.PortMapping>
     """
     mappings = []
     if not isinstance(ports, list):
         return mappings
     for port in ports:
-        if not isinstance(port, dict):
-            continue
-        mappings.append(
-            PortMapping(ContainerPort=port["target"], HostPort=port["target"])
-        )
+        mappings.append(PortMapping(ContainerPort=port, HostPort=port))
     if mappings:
         return mappings
     return Ref(AWS_NO_VALUE)

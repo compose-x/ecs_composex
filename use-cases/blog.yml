@@ -13,6 +13,7 @@ services:
     image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-01-rproxy:latest
     ports:
       - 80:80
+      - 443:80
     deploy:
       replicas: 2
       resources:
@@ -52,3 +53,16 @@ services:
 x-tags:
   owner: johnpreston
   contact: john@lambda-my-aws.io
+
+
+x-acm:
+  blogdemo:
+    Properties:
+      DomainName: blog-demo.lambda-my-aws.io
+      DomainValidationOptions:
+        - DomainName: lambda-my-aws.io
+          HostedZoneId: Zredacted
+    Settings: {}
+    Services:
+      - name: app01
+        ports: [443]

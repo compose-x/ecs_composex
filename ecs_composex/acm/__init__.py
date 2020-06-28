@@ -20,39 +20,35 @@ Main module for ACM
 """
 
 from warnings import warn
-from troposphere import Ref, Sub, If, AWS_NO_VALUE, Tags
+
+from troposphere import Ref, If, AWS_NO_VALUE, Tags
 from troposphere.certificatemanager import (
     Certificate as AcmCert,
     DomainValidationOption,
 )
-from troposphere.cloudformation import Stack
-
-from ecs_composex.common.ecs_composex import XFILE_DEST
-from ecs_composex.common import (
-    NONALPHANUM,
-    keyisset,
-    load_composex_file,
-    build_template,
-    add_parameters,
-)
-from ecs_composex.common.outputs import formatted_outputs
-from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.common.cfn_conditions import pass_root_stack_name
-
 from ecs_composex.acm.acm_params import (
     RES_KEY,
     CERT_CN,
     CERT_CN_T,
     CERT_ALT_NAMES,
     CERT_ALT_NAMES_T,
-    CERT_ARN,
     VALIDATION_DOMAIN_ZONE_ID,
     VALIDATION_DOMAIN_ZONE_ID_T,
     VALIDATION_DOMAIN_NAME_T,
     VALIDATION_DOMAIN_NAME,
     CERT_VALIDATION_METHOD,
 )
-import ecs_composex.acm.acm_conditions
+from ecs_composex.acm import acm_conditions
+from ecs_composex.common import (
+    NONALPHANUM,
+    keyisset,
+    load_composex_file,
+    build_template,
+)
+from ecs_composex.common.cfn_conditions import pass_root_stack_name
+from ecs_composex.common.ecs_composex import XFILE_DEST
+from ecs_composex.common.outputs import formatted_outputs
+from ecs_composex.common.stacks import ComposeXStack
 
 
 def initialize_acm_stack_template(cert_name):
