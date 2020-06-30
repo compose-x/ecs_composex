@@ -75,7 +75,7 @@ from ecs_composex.ecs.ecs_params import (
     SERVICE_NAME_T,
     SG_T,
 )
-from ecs_composex.ecs.ecs_xray import define_xray_container
+from ecs_composex.ecs.ecs_aws_sidecars import define_xray_container
 from ecs_composex.vpc import vpc_params
 from ecs_composex.vpc.vpc_conditions import USE_VPC_MAP_ID_CON_T
 from ecs_composex.vpc.vpc_params import VPC_ID, PUBLIC_SUBNETS
@@ -354,7 +354,7 @@ class Service(object):
                 NamespaceId=Ref(AWS_NO_VALUE),
                 DnsRecords=[
                     SdDnsRecord(TTL="15", Type="A"),
-                    SdDnsRecord(TTL="15", Type="SRV"),
+                    # SdDnsRecord(TTL="15", Type="SRV"),
                 ],
             ),
             Name=If(USE_HOSTNAME_CON_T, Ref(SERVICE_HOSTNAME), Ref(SERVICE_NAME)),
@@ -696,6 +696,11 @@ class Service(object):
             )
         )
 
+    def create_service_mesh(self):
+        """
+        Method to create the AppMesh
+        """
+
     def define_service_ingress(self, **kwargs):
         """
         Function to define microservice ingress.
@@ -728,6 +733,8 @@ class Service(object):
             self.service_attrs["DependsOn"] = (
                 service_lb[-1] if isinstance(service_lb[-1], list) else []
             )
+        if keyisset("CreateMesh", kwargs):
+            self.create_service_mesh()
 
     def generate_service_definition(self, task_definition):
         """

@@ -25,6 +25,7 @@ from importlib import import_module
 import boto3
 from troposphere import Ref, GetAtt, If, AWS_STACK_NAME
 from troposphere.ecs import Cluster
+from ecs_composex.appmesh import Mesh
 
 from ecs_composex.common import (
     LOG,
@@ -81,6 +82,7 @@ RES_REGX = re.compile(r"(^([x-]+))")
 ROOT_CLUSTER_NAME = "EcsCluster"
 COMPUTE_STACK_NAME = "Ec2Compute"
 VPC_STACK_NAME = "vpc"
+MESH_TITLE = "RootMesh"
 
 VPC_ARGS = [
     vpc_params.PUBLIC_SUBNETS_T,
@@ -91,7 +93,7 @@ VPC_ARGS = [
 ]
 
 SUPPORTED_X_MODULES = ["x-rds", "rds", "x-sqs", "sqs", "x-sns", "sns", "x-acm", "acm"]
-EXCLUDED_X_KEYS = ["x-configs", "x-tags"]
+EXCLUDED_X_KEYS = ["x-configs", "x-tags", "x-appmesh"]
 
 
 def get_composex_globals(compose_content):
@@ -408,7 +410,7 @@ def add_x_resources(template, session, tags=None, vpc_stack=None, **kwargs):
     Function to add each X resource from the compose file
     """
     content = load_composex_file(kwargs[XFILE_DEST])
-    tcp_services = ["x-rds"]
+    tcp_services = ["x-rds", "x-appmesh"]
     depends_on = []
     if tags is None:
         tags = []
@@ -588,6 +590,8 @@ def generate_full_template(content, session=None, **kwargs):
         content, template, services_stack, services_families, **kwargs
     )
     apply_x_to_x_configs(template, content)
+    mesh = Mesh(content["x-appmesh"]["root"], services_stack, services_families)
+    mesh.render_mesh_template(services_stack, **kwargs)
     add_all_tags(template, tags_params)
     LOG.debug(stack_params)
     return template, stack_params

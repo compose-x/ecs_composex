@@ -57,9 +57,17 @@ class ServiceStack(ComposeXStack):
     """
 
     def __init__(
-        self, title, template, service, template_file=None, extension=None, **kwargs
+        self,
+        title,
+        template,
+        service,
+        service_config,
+        template_file=None,
+        extension=None,
+        **kwargs,
     ):
         self.service = service
+        self.config = service_config
         super().__init__(title, template, template_file, extension, **kwargs)
         if not keyisset("Parameters", kwargs):
             self.Parameters = {
@@ -216,6 +224,7 @@ class ServicesStack(ComposeXStack):
             self.stack_template.add_resource(
                 ServiceStack(
                     service.resource_name,
+                    service_config=service.config,
                     template=service.template,
                     service=service,
                     Parameters=service.parameters,

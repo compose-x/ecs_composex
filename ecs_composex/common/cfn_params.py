@@ -48,6 +48,11 @@ USE_CLOUDMAP = Parameter(
     USE_CLOUDMAP_T, Type="String", AllowedValues=["True", "False"], Default="True"
 )
 
+USE_APP_MESH_T = "UseAwsAppMesh"
+USE_APP_MESH = Parameter(
+    USE_APP_MESH_T, Type="String", AllowedValues=["True", "False"], Default="True"
+)
+
 USE_CFN_PARAMS_T = "UseCfnParametersValue"
 USE_CFN_PARAMS = Parameter(
     USE_CFN_PARAMS_T, Type="String", AllowedValues=["True", "False"], Default=True
