@@ -35,3 +35,10 @@ USE_APP_MESH_T = "UseAppMesh"
 USE_APP_MESH = Parameter(
     USE_APP_MESH_T, Type="String", AllowedValues=["True", "False"], Default="True"
 )
+
+ENVOY_IMAGE_URL_T = "EnvoyLatestImageUrl"
+ENVOY_IMAGE_URL = Parameter(
+    ENVOY_IMAGE_URL_T,
+    Type="AWS::SSM::Parameter::Value<String>",
+    Default="/aws/service/appmesh/envoy",
+)

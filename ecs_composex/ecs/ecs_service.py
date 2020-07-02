@@ -142,7 +142,57 @@ class Task(object):
     Class to handle the Task definition building and parsing along with the service config.
     """
 
-    definition = None
+    def __init__(self, template, containers_config, family_parameters):
+        """
+        Init method
+        """
+        self.family_config = None
+        self.containers = []
+        self.containers_config = containers_config
+        self.stack_parameters = {}
+        self.sort_container_configs(template, containers_config)
+        add_service_roles(template, self.family_config)
+        if self.family_config.use_xray:
+            self.containers.append(define_xray_container())
+            add_parameters(template, [ecs_params.XRAY_IMAGE])
+            self.stack_parameters.update(
+                {ecs_params.XRAY_IMAGE_T: Ref(ecs_params.XRAY_IMAGE)}
+            )
+        self.set_task_compute_parameter()
+        self.set_task_definition(template)
+
+    def set_task_definition(self, template):
+        """
+        Method to set or update the task definition
+
+        :param troposphere.Template template: the template to add the definition to
+        """
+        self.definition = TaskDefinition(
+            TASK_T,
+            template=template,
+            Cpu=ecs_params.FARGATE_CPU,
+            Memory=ecs_params.FARGATE_RAM,
+            NetworkMode=NETWORK_MODE,
+            Family=Ref(ecs_params.SERVICE_NAME),
+            TaskRoleArn=GetAtt(TASK_ROLE_T, "Arn"),
+            ExecutionRoleArn=GetAtt(EXEC_ROLE_T, "Arn"),
+            ContainerDefinitions=self.containers,
+            RequiresCompatibilities=["EC2", "FARGATE"],
+            Tags=Tags(
+                {
+                    "Name": Ref(ecs_params.SERVICE_NAME),
+                    "Environment": Ref(AWS_STACK_NAME),
+                }
+            ),
+        )
+
+    def add_appmesh_envoy(self, envoy_container, parameters):
+        """
+        Method to replay and update the definition to add the Envoy sidecar
+
+        :param ecs_composex.ecs.ecs_container.Conatainer envoy_container: The container to add to the definition
+        :param dict parameters: The stack parameters to update.
+        """
 
     def sort_container_configs(self, template, containers_config):
         """
@@ -208,42 +258,6 @@ class Task(object):
             cpu_ram = find_closest_fargate_configuration(tasks_cpu, tasks_ram, True)
             self.stack_parameters.update({ecs_params.FARGATE_CPU_RAM_CONFIG_T: cpu_ram})
 
-    def __init__(self, template, containers_config, family_parameters):
-        """
-        Init method
-        """
-        self.containers = []
-        self.containers_config = None
-        self.family_config = None
-        self.stack_parameters = {}
-        self.sort_container_configs(template, containers_config)
-        add_service_roles(template, self.family_config)
-        if self.family_config.use_xray:
-            self.containers.append(define_xray_container())
-            add_parameters(template, [ecs_params.XRAY_IMAGE])
-            self.stack_parameters.update(
-                {ecs_params.XRAY_IMAGE_T: Ref(ecs_params.XRAY_IMAGE)}
-            )
-        self.set_task_compute_parameter()
-        self.definition = TaskDefinition(
-            TASK_T,
-            template=template,
-            Cpu=ecs_params.FARGATE_CPU,
-            Memory=ecs_params.FARGATE_RAM,
-            NetworkMode=NETWORK_MODE,
-            Family=Ref(ecs_params.SERVICE_NAME),
-            TaskRoleArn=GetAtt(TASK_ROLE_T, "Arn"),
-            ExecutionRoleArn=GetAtt(EXEC_ROLE_T, "Arn"),
-            ContainerDefinitions=self.containers,
-            RequiresCompatibilities=["EC2", "FARGATE"],
-            Tags=Tags(
-                {
-                    "Name": Ref(ecs_params.SERVICE_NAME),
-                    "Environment": Ref(AWS_STACK_NAME),
-                }
-            ),
-        )
-
 
 class Service(object):
     """
@@ -270,17 +284,13 @@ class Service(object):
         """
         self.template = template
         self.config = config
+        self.task = task_definition
         self.links = []
         self.eips = []
         self.service_attrs = None
         self.dependencies = []
         self.network_settings = None
-        self.config = None
-        self.task_definition = None
         self.ecs_service = None
-        # self.dependencies = (
-        #     definition["depends_on"] if keyisset("depends_on", definition) else []
-        # )
         self.service_name = (
             config.resource_name if config.family_name is None else config.family_name
         )
@@ -306,9 +316,8 @@ class Service(object):
                 Ref("AWS::NoValue"),
             )
         )
-        self.config = config
         self.define_service_ingress(**kwargs)
-        self.generate_service_definition(task_definition.definition)
+        self.generate_service_definition(self.task.definition)
         self.generate_service_template_outputs()
 
     def add_service_default_sg(self):
@@ -696,10 +705,11 @@ class Service(object):
             )
         )
 
-    def create_service_mesh(self):
+    def update_for_service_mesh(self):
         """
         Method to create the AppMesh
         """
+
 
     def define_service_ingress(self, **kwargs):
         """
@@ -733,8 +743,6 @@ class Service(object):
             self.service_attrs["DependsOn"] = (
                 service_lb[-1] if isinstance(service_lb[-1], list) else []
             )
-        if keyisset("CreateMesh", kwargs):
-            self.create_service_mesh()
 
     def generate_service_definition(self, task_definition):
         """

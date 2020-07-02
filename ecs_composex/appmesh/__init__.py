@@ -21,16 +21,14 @@ Main module for AppMesh.
 Once all services have been deployed and their VirtualNodes are setup, we deploy the Mesh for it.
 """
 
+from troposphere import AWS_NO_VALUE
 from troposphere import Ref, GetAtt, Sub, Parameter
-from troposphere import AWS_ACCOUNT_ID, AWS_NO_VALUE
 from troposphere import appmesh
+from troposphere import ecs
 
-from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
-from ecs_composex.common.outputs import define_import, formatted_outputs
-from ecs_composex.vpc import vpc_params
+from ecs_composex.appmesh import appmesh_params, appmesh_conditions
 from ecs_composex.appmesh.appmesh_conditions import add_appmesh_conditions
 from ecs_composex.appmesh.appmesh_params import MESH_NAME, MESH_OWNER_ID
-from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common import (
     keyisset,
     build_template,
@@ -38,7 +36,13 @@ from ecs_composex.common import (
     NONALPHANUM,
     LOG,
 )
+from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
+from ecs_composex.common.outputs import formatted_outputs
+from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.ecs.ecs_params import SERVICE_NAME
+from ecs_composex.ecs.ecs_container import Container
+from ecs_composex.ecs import ecs_params
+from ecs_composex.vpc import vpc_params
 from ecs_composex.vpc.vpc_params import VPC_MAP_ID
 
 
@@ -76,6 +80,7 @@ class Node(object):
         self.set_port_mappings()
         self.set_listeners_port_mappings()
         self.extend_service_stack()
+        self.extend_service_definition()
 
     def set_port_mappings(self):
         """
@@ -164,18 +169,110 @@ class Node(object):
             backend_parameter = Parameter(
                 f"{backend}VirtualServiceBackend",
                 template=self.stack.stack_template,
-                Type="String"
+                Type="String",
             )
-            self.stack.Parameters.update({
-                backend_parameter.title: GetAtt(virtual_service, "VirtualServiceName")
-            })
-            backends.append(appmesh.Backend(
-                VirtualService=appmesh.VirtualServiceBackend(
-                    VirtualServiceName=Ref(backend_parameter)
+            self.stack.Parameters.update(
+                {backend_parameter.title: GetAtt(virtual_service, "VirtualServiceName")}
+            )
+            backends.append(
+                appmesh.Backend(
+                    VirtualService=appmesh.VirtualServiceBackend(
+                        VirtualServiceName=Ref(backend_parameter)
+                    )
                 )
-            ))
+            )
         node_spec = getattr(self.vnode, "Spec")
         setattr(node_spec, "Backends", backends)
+
+    def extend_service_definition(self):
+        """
+        Method to expand the containers configuration and add the Envoy SideCar.
+        """
+        task = self.stack.service.task
+        envoy_port_mapping = [
+            ecs.PortMapping(ContainerPort=port.Port, HostPort=port.Port)
+            for port in self.port_mappings
+        ]
+        envoy_port_mapping.append(ecs.PortMapping(ContainerPort=15000, HostPort=15000))
+        envoy_port_mapping.append(ecs.PortMapping(ContainerPort=15001, HostPort=15001))
+        envoy_environment = [
+            ecs.Environment(
+                Name="APPMESH_VIRTUAL_NODE_NAME",
+                Value=Sub(
+                    f"mesh/${{{MESH_NAME.title}}}/virtualNode/${{{self.vnode.title}.VirtualNodeName}}"
+                ),
+            ),
+            ecs.Environment(
+                Name="ENABLE_ENVOY_XRAY_TRACING",
+                Value="1" if task.family_config.use_xray else "0",
+            ),
+            ecs.Environment(Name="ENABLE_ENVOY_STATS_TAGS", Value="1"),
+        ]
+        envoy_log_config = ecs.LogConfiguration(
+            LogDriver="awslogs",
+            Options={
+                "awslogs-group": Ref(ecs_params.LOG_GROUP_T),
+                "awslogs-region": Ref("AWS::Region"),
+                "awslogs-stream-prefix": "envoy",
+            },
+        )
+        self.stack.stack_template.add_parameter(appmesh_params.ENVOY_IMAGE_URL)
+        envoy_container = ecs.ContainerDefinition(
+            Image=Ref(appmesh_params.ENVOY_IMAGE_URL),
+            Name="AWSAPPMESHENVOY",
+            Cpu="64",
+            Memory="256",
+            User="1337",
+            Essential=True,
+            LogConfiguration=envoy_log_config,
+            Environment=envoy_environment,
+            PortMappings=envoy_port_mapping,
+            Ulimits=[ecs.Ulimit(HardLimit=15000, SoftLimit=15000, Name="nofile")],
+            HealthCheck=ecs.HealthCheck(
+                Command=[
+                    "CMD-SHELL",
+                    "curl -s http://localhost:9901/server_info | grep state | grep -q LIVE",
+                ],
+                Interval=5,
+                Timeout=2,
+                Retries=3,
+            ),
+        )
+        proxy_config = ecs.ProxyConfiguration(
+            ContainerName="AWSAPPMESHENVOY",
+            Type="APPMESH",
+            ProxyConfigurationProperties=[
+                ecs.Environment(Name="IgnoredUID", Value="1337"),
+                ecs.Environment(Name="ProxyIngressPort", Value="15000",),
+                ecs.Environment(Name="ProxyEgressPort", Value="15001"),
+                ecs.Environment(
+                    Name="EgressIgnoredIPs", Value="169.254.170.2,169.254.169.254"
+                ),
+                ecs.Environment(
+                    Name="AppPorts",
+                    Value=",".join([f"{port.Port}" for port in self.port_mappings]),
+                ),
+            ],
+        )
+        for container in task.containers:
+            if hasattr(container, "PortMappings"):
+                mappings = getattr(container, "PortMappings")
+                print(container.Name, mappings, mappings[0].ContainerPort)
+                for count, mapping in enumerate(mappings):
+                    if (
+                        mapping.HostPort == self.port_mappings[0].Port
+                        or mapping.ContainerPort == self.port_mappings[0].Port
+                    ):
+                        mappings[count] = Ref(AWS_NO_VALUE)
+        service = self.stack.stack_template.resources[ecs_params.SERVICE_T]
+        if hasattr(service, "LoadBalancers") and isinstance(getattr(service, "LoadBalancers"), list):
+            lbs = getattr(service, "LoadBalancers")
+            for count, lb in enumerate(lbs):
+                if lb.ContainerPort == self.port_mappings[0].Port:
+                    lb.ContainerName = envoy_container.Name
+        task.containers.append(envoy_container)
+        setattr(task.definition, "ProxyConfiguration", proxy_config)
+        task.set_task_compute_parameter()
 
 
 class Mesh(object):
@@ -327,10 +424,8 @@ class Mesh(object):
                             raise ValueError(
                                 f'node {node["name"]} is not defined as a virtual node.'
                             )
-                    # for node in route_nodes:
                     for port_map in route_nodes[0].port_mappings:
                         if port_map.Protocol == route_protocol:
-                            router_listener = route_nodes[0].port_mappings[0]
                             setattr(
                                 router,
                                 "Spec",
@@ -356,8 +451,6 @@ class Mesh(object):
         Method to parse the services and map them to nodes and routers.
         """
         for service in self.mesh_settings["services"]:
-            service_routers = []
-            service_nodes = []
             name = service["name"]
             if keyisset("router", service):
                 if not service["router"] in self.routers.keys():

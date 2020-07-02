@@ -33,7 +33,7 @@ def define_xray_container():
     xray_container = ContainerDefinition(
         Image=Ref(XRAY_IMAGE),
         Name="xray-daemon",
-        PortMappings=[PortMapping(ContainerPort=2000, Protocol="UDP")],
+        PortMappings=[PortMapping(ContainerPort=2000, Protocol="UDP", HostPort=2000)],
         Cpu=32,
         Memory=256,
         MemoryReservation=256,
@@ -48,53 +48,3 @@ def define_xray_container():
         ),
     )
     return xray_container
-
-
-def add_envoy_image(service_node):
-    """
-    Function to create the container definition for the Envoy SideCar for AWS AppMesh
-
-    :param service_node: name of the service as per AppMesh VirtualNode
-    :return: container definition
-    :rtype: troposphere.ecs.ContainerDefinition
-    """
-    envoy_container = ContainerDefinition(
-        Image=Ref(XRAY_IMAGE),
-        Name="envoy-daemon",
-        PortMappings=[PortMapping(ContainerPort=2000, Protocol="UDP")],
-        Cpu=32,
-        Memory=256,
-        MemoryReservation=256,
-        Essential=False,
-        LogConfiguration=LogConfiguration(
-            LogDriver="awslogs",
-            Options={
-                "awslogs-group": Ref(LOG_GROUP_T),
-                "awslogs-region": Ref("AWS::Region"),
-                "awslogs-stream-prefix": "envoy-daemon",
-            },
-        ),
-        # Environment=[
-        #     Environment(
-        #         Name="IgnoredUID",
-        #         Value="1337"
-        #     ),
-        #     Environment(
-        #         Name="ProxyIngressPort",
-        #         Value="15000"
-        #     ),
-        #     Environment(
-        #         Name="ProxyEgressPort",
-        #         Value="15001"
-        #     ),
-        #     Environment(
-        #         Name="EgressIgnoredIPs",
-        #         Value="169.254.170.2,169.254.169.254"
-        #     ),
-        #     Environment(
-        #         Name="EgressIgnoredPorts",
-        #         Value="3306"
-        #     )
-        # ],
-    )
-    return envoy_container
