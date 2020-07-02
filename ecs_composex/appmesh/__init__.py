@@ -107,7 +107,7 @@ class Node(object):
         """
         sd_service_name = f"{self.stack.title}DiscoveryService"
         sd_service = self.stack.stack_template.resources[sd_service_name]
-        node = appmesh.VirtualNode(
+        self.vnode = appmesh.VirtualNode(
             f"{self.stack.title}VirtualNode",
             MeshName=Ref(MESH_NAME),
             MeshOwner=appmesh_conditions.set_mesh_owner_id(),
@@ -124,7 +124,7 @@ class Node(object):
                 ],
             ),
         )
-        self.stack.stack_template.add_resource(node)
+        self.stack.stack_template.add_resource(self.vnode)
         add_parameters(
             self.stack.stack_template,
             [appmesh_params.MESH_OWNER_ID, appmesh_params.MESH_NAME],
@@ -132,7 +132,7 @@ class Node(object):
         add_appmesh_conditions(self.stack.stack_template)
         self.stack.stack_template.add_output(
             formatted_outputs(
-                [{"VirtualNode": GetAtt(node, "VirtualNodeName")}],
+                [{"VirtualNode": GetAtt(self.vnode, "VirtualNodeName")}],
                 export=False,
                 obj_name=self.stack.title,
             )
@@ -154,12 +154,28 @@ class Node(object):
         :param ecs_composex.ecs.ServicesStack root_stack: the root stack to put a dependency from.
         :param dict services: the services in the mesh stack.
         """
+        backends = []
         for backend in self.backends:
             LOG.info(backend)
             virtual_service = services[backend]
             root_stack.stack_template.resources[self.stack.title].DependsOn.append(
                 virtual_service.title
             )
+            backend_parameter = Parameter(
+                f"{backend}VirtualServiceBackend",
+                template=self.stack.stack_template,
+                Type="String"
+            )
+            self.stack.Parameters.update({
+                backend_parameter.title: GetAtt(virtual_service, "VirtualServiceName")
+            })
+            backends.append(appmesh.Backend(
+                VirtualService=appmesh.VirtualServiceBackend(
+                    VirtualServiceName=Ref(backend_parameter)
+                )
+            ))
+        node_spec = getattr(self.vnode, "Spec")
+        setattr(node_spec, "Backends", backends)
 
 
 class Mesh(object):
