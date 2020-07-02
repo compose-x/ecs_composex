@@ -354,7 +354,7 @@ class Service(object):
                 NamespaceId=Ref(AWS_NO_VALUE),
                 DnsRecords=[
                     SdDnsRecord(TTL="15", Type="A"),
-                    # SdDnsRecord(TTL="15", Type="SRV"),
+                    SdDnsRecord(TTL="15", Type="SRV"),
                 ],
             ),
             Name=If(USE_HOSTNAME_CON_T, Ref(SERVICE_HOSTNAME), Ref(SERVICE_NAME)),

@@ -31,7 +31,13 @@ from ecs_composex.vpc import vpc_params
 from ecs_composex.appmesh.appmesh_conditions import add_appmesh_conditions
 from ecs_composex.appmesh.appmesh_params import MESH_NAME, MESH_OWNER_ID
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.common import keyisset, build_template, add_parameters, NONALPHANUM
+from ecs_composex.common import (
+    keyisset,
+    build_template,
+    add_parameters,
+    NONALPHANUM,
+    LOG,
+)
 from ecs_composex.ecs.ecs_params import SERVICE_NAME
 from ecs_composex.vpc.vpc_params import VPC_MAP_ID
 
@@ -41,7 +47,7 @@ def initialize_mesh_template():
     Initialize template
     """
     template = build_template(
-        "AppMesh Root Template", [MESH_NAME, MESH_OWNER_ID, vpc_params.VPC_ID]
+        "AppMesh Root Template", [MESH_NAME, MESH_OWNER_ID, vpc_params.VPC_DNS_ZONE],
     )
     add_appmesh_conditions(template)
     return template
@@ -54,7 +60,7 @@ class Node(object):
 
     weight = 1
 
-    def __init__(self, service_stack, protocol):
+    def __init__(self, service_stack, protocol, backends=None):
         """
 
         :param ecs_composex.ecs.ServiceStack service_stack: the service template
@@ -62,6 +68,7 @@ class Node(object):
         self.vnode = None
         self.param_name = service_stack.title
         self.get_param = None
+        self.backends = [] if backends is None else backends
         self.stack = service_stack
         self.protocol = protocol
         self.mappings = {}
@@ -124,7 +131,11 @@ class Node(object):
         )
         add_appmesh_conditions(self.stack.stack_template)
         self.stack.stack_template.add_output(
-            formatted_outputs([{"VirtualNode": Ref(node)}], export=True)
+            formatted_outputs(
+                [{"VirtualNode": GetAtt(node, "VirtualNodeName")}],
+                export=False,
+                obj_name=self.stack.title,
+            )
         )
 
     def set_node_weight(self, weight):
@@ -135,6 +146,20 @@ class Node(object):
         :return:
         """
         self.weight = weight
+
+    def expand_backends(self, root_stack, services):
+        """
+        Method to set the backends to the service node.
+
+        :param ecs_composex.ecs.ServicesStack root_stack: the root stack to put a dependency from.
+        :param dict services: the services in the mesh stack.
+        """
+        for backend in self.backends:
+            LOG.info(backend)
+            virtual_service = services[backend]
+            root_stack.stack_template.resources[self.stack.title].DependsOn.append(
+                virtual_service.title
+            )
 
 
 class Mesh(object):
@@ -163,7 +188,7 @@ class Mesh(object):
         self.mesh_settings = mesh_definition["Settings"]
         self.mesh_properties = mesh_definition["Properties"]
         self.stack_parameters = {MESH_NAME.title: self.mesh_properties["MeshName"]}
-        self.template = initialize_mesh_template()
+        self.template = services_root_stack.stack_template
         self.stack = None
 
         for key in self.required_keys:
@@ -172,43 +197,48 @@ class Mesh(object):
 
         self.mesh = appmesh.Mesh(
             self.mesh_title,
-            template=self.template,
             Condition=appmesh_conditions.USER_IS_SELF_CON_T,
-            MeshName=Ref(MESH_NAME),
+            MeshName=appmesh_conditions.set_mesh_name(),
             Spec=appmesh.MeshSpec(EgressFilter=appmesh.EgressFilter(Type="DROP_ALL")),
         )
+        self.stack_parameters.update(
+            {
+                appmesh_params.MESH_NAME_T: Ref(appmesh_params.MESH_NAME),
+                vpc_params.VPC_DNS_ZONE_T: Ref(vpc_params.VPC_DNS_ZONE),
+            }
+        )
+        nodes_keys = ["name", "protocol", "backends"]
         for node in self.mesh_settings["nodes"]:
-            if not all(key in ["name", "protocol"] for key in node.keys()):
+            if not set(node.keys()).issubset(nodes_keys):
                 raise AttributeError(
-                    f"Nodes must have set name, protocol. Got", node.keys()
+                    f"Nodes must have set {nodes_keys}. Got", node.keys()
                 )
             if node["name"] not in services_root_stack.stack_template.resources:
                 raise AttributeError(
                     f'Node definedd {node["name"]} is not defined in services stack',
                     services_root_stack.stack_template.resources,
                 )
+            LOG.info(node)
             self.nodes[node["name"]] = Node(
                 services_root_stack.stack_template.resources[node["name"]],
                 node["protocol"],
+                node["backends"] if keyisset("backends", node) else None,
             )
-            node_param = self.template.add_parameter(Parameter(
-                self.nodes[node["name"]].param_name,
-                Type="String",
-                Default=node["name"]
-            ))
-            self.nodes[node["name"]].get_param = node_param
-            self.stack_parameters.update(
-                {
-                    self.nodes[node["name"]].get_param.title: GetAtt(
-                        self.nodes[node["name"]].param_name, f"Outputs.VirtualNode"
-                    )
-                }
+            self.nodes[node["name"]].get_param = GetAtt(
+                self.nodes[node["name"]].param_name, f"Outputs.VirtualNode"
             )
-        self.init_routers()
+            self.nodes[node["name"]].stack.Parameters.update(
+                {MESH_NAME.title: appmesh_conditions.get_mesh_name(self.mesh)}
+            )
+        self.define_routes_and_routers()
+        self.define_virtual_services()
 
     def handle_http_route(self, route_match, nodes, router, http2=False):
         """
         Function to create a HTTP or HTTP/2 route
+        :param dict route_match: the route match definition
+        :param list<ecs_composex.appmesh.Nodes> nodes: list of nodes
+        :param troposphere.appmesh.VirtualRouter router: The virtual router to attach the route to.
         :param http2: whether it is http2
         :return:
         """
@@ -227,8 +257,7 @@ class Mesh(object):
             Action=appmesh.HttpRouteAction(
                 WeightedTargets=[
                     appmesh.WeightedTarget(
-                        VirtualNode=Ref(node.get_param),
-                        Weight=node.weight,
+                        VirtualNode=node.get_param, Weight=node.weight,
                     )
                     for node in nodes
                 ]
@@ -241,15 +270,15 @@ class Mesh(object):
             appmesh.Route(
                 f"{router.title}{protocol.title()}",
                 template=self.template,
-                MeshName=Ref(MESH_NAME),
+                MeshName=appmesh_conditions.get_mesh_name(self.mesh),
                 MeshOwner=appmesh_conditions.set_mesh_owner_id(),
-                VirtualRouterName=Ref(router),
-                RouteName=Sub(f"${{{router.title}}}${protocol.title()}"),
+                VirtualRouterName=GetAtt(router, "VirtualRouterName"),
+                RouteName=Sub(f"${{{router.title}.Uid}}{protocol.title()}"),
                 Spec=appmesh.RouteSpec(**{protocol: route}),
             )
         )
 
-    def init_routers(self):
+    def define_routes_and_routers(self):
         """
         Method to register routers
         :return:
@@ -262,12 +291,12 @@ class Mesh(object):
             router = appmesh.VirtualRouter(
                 f"{router_res_name}VirtualRouter",
                 template=self.template,
-                MeshName=Ref(MESH_NAME),
+                MeshName=appmesh_conditions.get_mesh_name(self.mesh),
                 MeshOwner=appmesh_conditions.set_mesh_owner_id(),
                 VirtualRouterName=Sub(f"{router_res_name}-vr-${{AWS::StackName}}"),
                 Spec=appmesh.VirtualRouterSpec(Listeners=router_listeners),
             )
-            self.routers[name] = router_res_name
+            self.routers[name] = router
             for route_protocol in routes.keys():
                 route_nodes = []
                 for route in routes[route_protocol]:
@@ -282,10 +311,22 @@ class Mesh(object):
                             raise ValueError(
                                 f'node {node["name"]} is not defined as a virtual node.'
                             )
-                    for node in route_nodes:
-                        for port_map in node.port_mappings:
-                            if port_map.Protocol == route_protocol:
-                                router_listeners.append(port_map)
+                    # for node in route_nodes:
+                    for port_map in route_nodes[0].port_mappings:
+                        if port_map.Protocol == route_protocol:
+                            router_listener = route_nodes[0].port_mappings[0]
+                            setattr(
+                                router,
+                                "Spec",
+                                appmesh.VirtualRouterSpec(
+                                    Listeners=[
+                                        appmesh.VirtualRouterListener(
+                                            PortMapping=route_nodes[0].port_mappings[0]
+                                        )
+                                    ]
+                                ),
+                            )
+                            break
                     if route_protocol == "http" or route_protocol == "http2":
                         self.handle_http_route(
                             route["match"],
@@ -294,18 +335,96 @@ class Mesh(object):
                             eval('route_protocol == "http2"'),
                         )
 
+    def define_virtual_services(self):
+        """
+        Method to parse the services and map them to nodes and routers.
+        """
+        for service in self.mesh_settings["services"]:
+            service_routers = []
+            service_nodes = []
+            name = service["name"]
+            if keyisset("router", service):
+                if not service["router"] in self.routers.keys():
+                    raise KeyError(
+                        "Routers provided not found in the routers description. Got",
+                        service["routers"],
+                        "Expected",
+                        self.routers.keys(),
+                    )
+            if keyisset("node", service):
+                if not service["node"] in self.nodes.keys():
+                    raise KeyError(
+                        f"Nodes provided not found in nodes defined. Got",
+                        service["node"],
+                        "Expected one of",
+                        self.nodes.keys(),
+                    )
+            service_node = (
+                self.nodes[service["node"]].get_param
+                if keyisset("node", service)
+                else None
+            )
+            service_router = (
+                GetAtt(self.routers[service["router"]], "VirtualRouterName")
+                if keyisset("router", service)
+                else None
+            )
+            if not service_router and not service_node:
+                raise AttributeError(
+                    f"The service {name} has neither nodes or routers defined. Define at least one"
+                )
+            depends = []
+            self.services[name] = appmesh.VirtualService(
+                NONALPHANUM.sub("", name).title(),
+                template=self.template,
+                DependsOn=depends,
+                MeshName=appmesh_conditions.get_mesh_name(self.mesh),
+                MeshOwner=appmesh_conditions.set_mesh_owner_id(),
+                VirtualServiceName=Sub(f"{name}.${{{vpc_params.VPC_DNS_ZONE_T}}}"),
+                Spec=appmesh.VirtualServiceSpec(
+                    Provider=appmesh.VirtualServiceProvider(
+                        VirtualNode=appmesh.VirtualNodeServiceProvider(
+                            VirtualNodeName=service_node
+                        )
+                        if service_node
+                        else Ref(AWS_NO_VALUE),
+                        VirtualRouter=appmesh.VirtualRouterServiceProvider(
+                            VirtualRouterName=service_router
+                        )
+                        if service_router
+                        else Ref(AWS_NO_VALUE),
+                    )
+                ),
+            )
+
     def render_mesh_template(self, services_stack, **kwargs):
         """
         Method to create the AppMesh template stack.
 
         :param ecs_composex.ecs.ServicesStack services_stack: The services root stack
         """
-        depends = [res for res in services_stack.stack_template.resources]
-        mesh_stack = ComposeXStack(
-            self.mesh_title,
-            stack_template=self.template,
-            Parameters=self.stack_parameters,
-            DependsOn=depends,
-            **kwargs,
-        )
-        services_stack.stack_template.add_resource(mesh_stack)
+        if self.mesh.title not in services_stack.stack_template.resources:
+            services_stack.stack_template.add_resource(self.mesh)
+            add_appmesh_conditions(services_stack.stack_template)
+            add_parameters(
+                services_stack.stack_template,
+                [
+                    appmesh_params.MESH_OWNER_ID,
+                    appmesh_params.MESH_NAME,
+                    vpc_params.VPC_DNS_ZONE,
+                ],
+            )
+            services_stack.Parameters.update(
+                {
+                    vpc_params.VPC_DNS_ZONE_T: GetAtt(
+                        "vpc", f"Outputs.{vpc_params.VPC_MAP_DNS_ZONE_T}"
+                    )
+                }
+            )
+        for res_name in services_stack.stack_template.resources:
+            res = services_stack.stack_template.resources[res_name]
+            if issubclass(type(res), ComposeXStack):
+                res.DependsOn.append(self.mesh.title)
+        for node_name in self.nodes:
+            if self.nodes[node_name].backends:
+                self.nodes[node_name].expand_backends(services_stack, self.services)

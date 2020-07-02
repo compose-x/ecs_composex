@@ -19,9 +19,10 @@
 AppMesh related conditions
 """
 
-from troposphere import Ref, Not, Equals, Condition, If, AWS_ACCOUNT_ID
+from troposphere import Ref, Not, Equals, Condition, If, AWS_ACCOUNT_ID, GetAtt
 
 from ecs_composex.appmesh import appmesh_params
+from ecs_composex.common.cfn_conditions import define_stack_name
 
 
 USE_APP_MESH_CON_T = "UseAppMeshCondition"
@@ -47,6 +48,26 @@ def set_mesh_owner_id():
     """
     return If(
         USER_IS_SELF_CON_T, Ref(AWS_ACCOUNT_ID), Ref(appmesh_params.MESH_OWNER_ID)
+    )
+
+
+def set_mesh_name():
+    """
+    Function to set the mesh name if default is passed, otherwise generate it.
+    :return: If
+    """
+    return If(USER_IS_SELF_CON_T, define_stack_name(), Ref(appmesh_params.MESH_NAME))
+
+
+def get_mesh_name(mesh):
+    """
+    Functiont to return either the Ref(mesh) or Ref(MESH_NAME).
+
+    :parm troposphere.appmesh.Mesh mesh: the mesh to refer to.
+    :return:
+    """
+    return If(
+        USER_IS_SELF_CON_T, GetAtt(mesh, "MeshName"), Ref(appmesh_params.MESH_NAME)
     )
 
 
