@@ -25,6 +25,7 @@ from troposphere import AWS_NO_VALUE
 from troposphere import Ref, GetAtt, Sub, Parameter
 from troposphere import appmesh
 from troposphere import ecs
+from troposphere.iam import Policy
 
 from ecs_composex.appmesh import appmesh_params, appmesh_conditions
 from ecs_composex.appmesh.appmesh_conditions import add_appmesh_conditions
@@ -41,6 +42,7 @@ from ecs_composex.common.outputs import formatted_outputs
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.ecs.ecs_params import SERVICE_NAME
 from ecs_composex.ecs.ecs_container import Container
+from ecs_composex.ecs.ecs_container_config import extend_container_envvars
 from ecs_composex.ecs import ecs_params
 from ecs_composex.vpc import vpc_params
 from ecs_composex.vpc.vpc_params import VPC_MAP_ID
@@ -81,6 +83,7 @@ class Node(object):
         self.set_listeners_port_mappings()
         self.extend_service_stack()
         self.extend_service_definition()
+        self.extend_task_policy()
 
     def set_port_mappings(self):
         """
@@ -116,11 +119,12 @@ class Node(object):
             f"{self.stack.title}VirtualNode",
             MeshName=Ref(MESH_NAME),
             MeshOwner=appmesh_conditions.set_mesh_owner_id(),
-            VirtualNodeName=Sub(f"${{{SERVICE_NAME.title}}}${{{ROOT_STACK_NAME_T}}}"),
+            VirtualNodeName=GetAtt(sd_service, "Name"),
             Spec=appmesh.VirtualNodeSpec(
                 ServiceDiscovery=appmesh.ServiceDiscovery(
                     AWSCloudMap=appmesh.AwsCloudMapServiceDiscovery(
-                        NamespaceName=Ref(VPC_MAP_ID), ServiceName=Ref(sd_service)
+                        NamespaceName=Ref(vpc_params.VPC_MAP_DNS_ZONE),
+                        ServiceName=GetAtt(sd_service, "Name"),
                     )
                 ),
                 Listeners=[
@@ -160,6 +164,8 @@ class Node(object):
         :param dict services: the services in the mesh stack.
         """
         backends = []
+        task_def = self.stack.stack_template.resources[ecs_params.TASK_T]
+        container_envvars = []
         for backend in self.backends:
             LOG.info(backend)
             virtual_service = services[backend]
@@ -181,6 +187,13 @@ class Node(object):
                     )
                 )
             )
+            container_envvars.append(
+                ecs.Environment(
+                    Name=f"{backend.upper()}_BACKEND", Value=Ref(backend_parameter)
+                )
+            )
+        for container in task_def.ContainerDefinitions:
+            extend_container_envvars(container, env_vars=container_envvars)
         node_spec = getattr(self.vnode, "Spec")
         setattr(node_spec, "Backends", backends)
 
@@ -207,6 +220,7 @@ class Node(object):
                 Value="1" if task.family_config.use_xray else "0",
             ),
             ecs.Environment(Name="ENABLE_ENVOY_STATS_TAGS", Value="1"),
+            ecs.Environment(Name="ENVOY_LOG_LEVEL", Value="debug"),
         ]
         envoy_log_config = ecs.LogConfiguration(
             LogDriver="awslogs",
@@ -219,7 +233,7 @@ class Node(object):
         self.stack.stack_template.add_parameter(appmesh_params.ENVOY_IMAGE_URL)
         envoy_container = ecs.ContainerDefinition(
             Image=Ref(appmesh_params.ENVOY_IMAGE_URL),
-            Name="AWSAPPMESHENVOY",
+            Name="envoy",
             Cpu="64",
             Memory="256",
             User="1337",
@@ -239,7 +253,7 @@ class Node(object):
             ),
         )
         proxy_config = ecs.ProxyConfiguration(
-            ContainerName="AWSAPPMESHENVOY",
+            ContainerName="envoy",
             Type="APPMESH",
             ProxyConfigurationProperties=[
                 ecs.Environment(Name="IgnoredUID", Value="1337"),
@@ -265,7 +279,9 @@ class Node(object):
                     ):
                         mappings[count] = Ref(AWS_NO_VALUE)
         service = self.stack.stack_template.resources[ecs_params.SERVICE_T]
-        if hasattr(service, "LoadBalancers") and isinstance(getattr(service, "LoadBalancers"), list):
+        if hasattr(service, "LoadBalancers") and isinstance(
+            getattr(service, "LoadBalancers"), list
+        ):
             lbs = getattr(service, "LoadBalancers")
             for count, lb in enumerate(lbs):
                 if lb.ContainerPort == self.port_mappings[0].Port:
@@ -273,6 +289,50 @@ class Node(object):
         task.containers.append(envoy_container)
         setattr(task.definition, "ProxyConfiguration", proxy_config)
         task.set_task_compute_parameter()
+
+    def extend_task_policy(self):
+        """
+        Method to add a policy for AppMesh Access
+        """
+        policy = Policy(
+            PolicyName="AppMeshAccess",
+            PolicyDocument={
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Sid": "AppMeshAccess",
+                        "Effect": "Allow",
+                        "Action": ["appmesh:StreamAggregatedResources"],
+                        "Resource": [
+                            "*"
+                            # Sub(
+                            #     r"arn:${AWS::Partition}:appmesh:${AWS::Region}:${AWS::AccountId}:"
+                            #     f"mesh/${{{MESH_NAME.title}}}/*"
+                            # )
+                        ],
+                    },
+                    {
+                        "Sid": "ServiceDiscoveryAccess",
+                        "Effect": "Allow",
+                        "Action": [
+                            "servicediscovery:Get*",
+                            "servicediscovery:Describe*",
+                            "servicediscovery:List*",
+                            "servicediscovery:DiscoverInstances*",
+                        ],
+                        "Resource": "*",
+                    },
+                ],
+            },
+        )
+        task_role = self.stack.stack_template.resources[ecs_params.TASK_ROLE_T]
+        if hasattr(task_role, "Policies") and isinstance(
+            getattr(task_role, "Policies"), list
+        ):
+            policies = getattr(task_role, "Policies")
+            policies.append(policy)
+        elif not hasattr(task_role, "Policies"):
+            setattr(task_role, "Policies", [policy])
 
 
 class Mesh(object):

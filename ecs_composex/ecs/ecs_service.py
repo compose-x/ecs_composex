@@ -303,6 +303,7 @@ class Service(object):
             vpc_params.APP_SUBNETS_T: Join(",", Ref(vpc_params.APP_SUBNETS)),
             vpc_params.PUBLIC_SUBNETS_T: Join(",", Ref(vpc_params.PUBLIC_SUBNETS)),
             ecs_params.CLUSTER_NAME_T: Ref(ecs_params.CLUSTER_NAME),
+            vpc_params.VPC_MAP_DNS_ZONE_T: Ref(vpc_params.VPC_MAP_DNS_ZONE),
         }
         if config.family_name is not None:
             self.parameters.update({ecs_params.SERVICE_NAME_T: config.family_name})
@@ -710,7 +711,6 @@ class Service(object):
         Method to create the AppMesh
         """
 
-
     def define_service_ingress(self, **kwargs):
         """
         Function to define microservice ingress.
@@ -797,7 +797,11 @@ class Service(object):
                 )
             ),
             TaskDefinition=Ref(task_definition),
-            LaunchType=Ref(ecs_params.LAUNCH_TYPE),
+            LaunchType=If(
+                ecs_conditions.USE_CLUSTER_CAPACITY_PROVIDERS_CON_T,
+                Ref(AWS_NO_VALUE),
+                Ref(ecs_params.LAUNCH_TYPE),
+            ),
             Tags=Tags(
                 {
                     "Name": Ref(ecs_params.SERVICE_NAME),

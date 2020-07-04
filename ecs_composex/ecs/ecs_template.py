@@ -64,6 +64,7 @@ def initialize_service_template(service_name):
             vpc_params.APP_SUBNETS,
             vpc_params.PUBLIC_SUBNETS,
             vpc_params.VPC_MAP_ID,
+            vpc_params.VPC_MAP_DNS_ZONE,
             ecs_params.SERVICE_HOSTNAME,
             ecs_params.FARGATE_CPU_RAM_CONFIG,
             ecs_params.SERVICE_NAME,
@@ -97,6 +98,10 @@ def initialize_service_template(service_name):
     )
     service_tpl.add_condition(
         ecs_conditions.USE_FARGATE_CON_T, ecs_conditions.USE_FARGATE_CON,
+    )
+    service_tpl.add_condition(
+        ecs_conditions.USE_CLUSTER_CAPACITY_PROVIDERS_CON_T,
+        ecs_conditions.USE_CLUSTER_CAPACITY_PROVIDERS_CON,
     )
     svc_log = service_tpl.add_resource(
         LogGroup(

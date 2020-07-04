@@ -172,6 +172,11 @@ class ServicesStack(ComposeXStack):
                     GetAtt(vpc_stack, f"Outputs.{vpc_params.VPC_MAP_ID_T}"),
                     Ref("AWS::NoValue"),
                 ),
+                vpc_params.VPC_MAP_DNS_ZONE_T: If(
+                    USE_CLOUDMAP_CON_T,
+                    GetAtt(vpc_stack, f"Outputs.{vpc_params.VPC_MAP_DNS_ZONE_T}"),
+                    Ref("AWS::NoValue"),
+                ),
             }
         )
         if not hasattr(self, "DependsOn"):
@@ -186,13 +191,13 @@ class ServicesStack(ComposeXStack):
         if keypresent("DependsOn", kwargs):
             kwargs.pop("DependsOn")
         content = load_composex_file(kwargs[XFILE_DEST])
-        tags_params = generate_tags_parameters(content)
         parameters = [
             CLUSTER_NAME,
             vpc_params.VPC_ID,
             vpc_params.PUBLIC_SUBNETS,
             vpc_params.APP_SUBNETS,
             vpc_params.VPC_MAP_ID,
+            vpc_params.VPC_MAP_DNS_ZONE,
             USE_CLOUDMAP,
             ecs_params.XRAY_IMAGE,
             ecs_params.LOG_GROUP_RETENTION,
@@ -232,7 +237,6 @@ class ServicesStack(ComposeXStack):
                     **kwargs,
                 )
             )
-        add_all_tags(self.stack_template, tags_params)
 
     def add_cluster_parameter(self, cluster_param):
         self.Parameters.update(cluster_param)
