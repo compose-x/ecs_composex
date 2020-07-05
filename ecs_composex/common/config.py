@@ -50,8 +50,12 @@ class ComposeXConfig(object):
         self.ext_sources = None
         self.is_public: False
         self.use_cloudmap = True
+        self.use_appmesh = False
         self.boundary = None
         self.service_name = service_name if service_name else "global"
+
+        if keyisset("x-appmesh", compose_content):
+            self.use_appmesh = True
 
         if keyisset(self.master_key, compose_content):
             self.set_from_top_configs(compose_content)
@@ -134,3 +138,8 @@ class ComposeXConfig(object):
             )
             self.set_service_config(compose_content[self.master_key][service_name])
         self.set_service_config(config_definition)
+        if self.use_appmesh and not self.use_cloudmap:
+            LOG.warning(
+                f"You turned CloudMap off, however aim to use AppMesh. So we are enabling ClouMap for the services"
+            )
+            self.use_cloudmap = True

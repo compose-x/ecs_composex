@@ -24,7 +24,6 @@ from troposphere import Ref, Not, Equals, Condition, If, AWS_ACCOUNT_ID, GetAtt
 from ecs_composex.appmesh import appmesh_params
 from ecs_composex.common.cfn_conditions import define_stack_name
 
-
 USE_APP_MESH_CON_T = "UseAppMeshCondition"
 USE_APP_MESH_CON = Equals(
     Ref(appmesh_params.MESH_NAME), appmesh_params.MESH_NAME.Default
@@ -59,15 +58,28 @@ def set_mesh_name():
     return If(USER_IS_SELF_CON_T, define_stack_name(), Ref(appmesh_params.MESH_NAME))
 
 
-def get_mesh_name(mesh):
+def get_mesh_name(obj):
     """
-    Functiont to return either the Ref(mesh) or Ref(MESH_NAME).
+    Function to return either the Ref(mesh) or Ref(MESH_NAME).
 
-    :parm troposphere.appmesh.Mesh mesh: the mesh to refer to.
+    :parm obj: the mesh to refer to.
+    :type obj: troposphere.appmesh.VirtualRouter or troposphere.appmesh.VirtualNode
     :return:
     """
     return If(
-        USER_IS_SELF_CON_T, GetAtt(mesh, "MeshName"), Ref(appmesh_params.MESH_NAME)
+        USER_IS_SELF_CON_T, GetAtt(obj, "MeshName"), Ref(appmesh_params.MESH_NAME)
+    )
+
+
+def get_mesh_owner(obj):
+    """
+    Function to return owner of the mesh.
+
+    :parm obj: the mesh to refer to. The object must have MeshOwner in GetAtt.
+    :return:
+    """
+    return If(
+        USER_IS_SELF_CON_T, GetAtt(obj, "MeshOwner"), Ref(appmesh_params.MESH_OWNER_ID)
     )
 
 
