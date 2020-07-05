@@ -43,8 +43,6 @@ from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T, USE_CLOUDMAP
 from ecs_composex.common.ecs_composex import XFILE_DEST
 from ecs_composex.common.outputs import define_import
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.common.tagging import add_all_tags
-from ecs_composex.common.tagging import generate_tags_parameters
 from ecs_composex.ecs import ecs_params
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME, CLUSTER_NAME_T
 from ecs_composex.ecs.ecs_template import generate_services

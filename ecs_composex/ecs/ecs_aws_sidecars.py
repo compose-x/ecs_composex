@@ -20,8 +20,8 @@ from troposphere.ecs import (
     ContainerDefinition,
     PortMapping,
     LogConfiguration,
-    Environment,
 )
+
 from ecs_composex.ecs.ecs_params import XRAY_IMAGE, LOG_GROUP_T
 
 

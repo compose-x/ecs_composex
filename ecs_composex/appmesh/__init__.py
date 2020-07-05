@@ -26,6 +26,12 @@ from troposphere import Ref, GetAtt, Sub, Parameter
 from troposphere import appmesh
 from troposphere import ecs
 from troposphere.iam import Policy
+from troposphere.servicediscovery import (
+    DnsConfig as SdDnsConfig,
+    Service as SdService,
+    DnsRecord as SdDnsRecord,
+    Instance as SdInstance,
+)
 
 from ecs_composex.appmesh import appmesh_params, appmesh_conditions
 from ecs_composex.appmesh.appmesh_conditions import add_appmesh_conditions
@@ -37,13 +43,10 @@ from ecs_composex.common import (
     NONALPHANUM,
     LOG,
 )
-from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.outputs import formatted_outputs
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.ecs.ecs_params import SERVICE_NAME
-from ecs_composex.ecs.ecs_container import Container
-from ecs_composex.ecs.ecs_container_config import extend_container_envvars
 from ecs_composex.ecs import ecs_params
+from ecs_composex.ecs.ecs_container_config import extend_container_envvars
 from ecs_composex.vpc import vpc_params
 from ecs_composex.vpc.vpc_params import VPC_MAP_ID
 
@@ -202,10 +205,11 @@ class Node(object):
         Method to expand the containers configuration and add the Envoy SideCar.
         """
         task = self.stack.service.task
-        envoy_port_mapping = [
-            ecs.PortMapping(ContainerPort=port.Port, HostPort=port.Port)
-            for port in self.port_mappings
-        ]
+        envoy_port_mapping = []
+        # envoy_port_mapping = [
+        #     ecs.PortMapping(ContainerPort=port.Port, HostPort=port.Port)
+        #     for port in self.port_mappings
+        # ]
         envoy_port_mapping.append(ecs.PortMapping(ContainerPort=15000, HostPort=15000))
         envoy_port_mapping.append(ecs.PortMapping(ContainerPort=15001, HostPort=15001))
         envoy_environment = [
@@ -259,33 +263,17 @@ class Node(object):
                 ecs.Environment(Name="IgnoredUID", Value="1337"),
                 ecs.Environment(Name="ProxyIngressPort", Value="15000",),
                 ecs.Environment(Name="ProxyEgressPort", Value="15001"),
+                ecs.Environment(Name="IgnoredGID", Value=""),
                 ecs.Environment(
                     Name="EgressIgnoredIPs", Value="169.254.170.2,169.254.169.254"
                 ),
+                ecs.Environment(Name="EgressIgnoredPorts", Value=""),
                 ecs.Environment(
                     Name="AppPorts",
                     Value=",".join([f"{port.Port}" for port in self.port_mappings]),
                 ),
             ],
         )
-        for container in task.containers:
-            if hasattr(container, "PortMappings"):
-                mappings = getattr(container, "PortMappings")
-                print(container.Name, mappings, mappings[0].ContainerPort)
-                for count, mapping in enumerate(mappings):
-                    if (
-                        mapping.HostPort == self.port_mappings[0].Port
-                        or mapping.ContainerPort == self.port_mappings[0].Port
-                    ):
-                        mappings[count] = Ref(AWS_NO_VALUE)
-        service = self.stack.stack_template.resources[ecs_params.SERVICE_T]
-        if hasattr(service, "LoadBalancers") and isinstance(
-            getattr(service, "LoadBalancers"), list
-        ):
-            lbs = getattr(service, "LoadBalancers")
-            for count, lb in enumerate(lbs):
-                if lb.ContainerPort == self.port_mappings[0].Port:
-                    lb.ContainerName = envoy_container.Name
         task.containers.append(envoy_container)
         setattr(task.definition, "ProxyConfiguration", proxy_config)
         task.set_task_compute_parameter()
@@ -303,13 +291,7 @@ class Node(object):
                         "Sid": "AppMeshAccess",
                         "Effect": "Allow",
                         "Action": ["appmesh:StreamAggregatedResources"],
-                        "Resource": [
-                            "*"
-                            # Sub(
-                            #     r"arn:${AWS::Partition}:appmesh:${AWS::Region}:${AWS::AccountId}:"
-                            #     f"mesh/${{{MESH_NAME.title}}}/*"
-                            # )
-                        ],
+                        "Resource": ["*"],
                     },
                     {
                         "Sid": "ServiceDiscoveryAccess",
@@ -510,6 +492,7 @@ class Mesh(object):
         """
         Method to parse the services and map them to nodes and routers.
         """
+        index = pow(2, 8) - 2
         for service in self.mesh_settings["services"]:
             name = service["name"]
             if keyisset("router", service):
@@ -565,6 +548,28 @@ class Mesh(object):
                     )
                 ),
             )
+            sd_entry = SdService(
+                f"{NONALPHANUM.sub('', name).title()}Service",
+                template=self.template,
+                DependsOn=[self.services[name].title],
+                Description=Sub(
+                    f"Record for VirtualService {name} in mesh ${{{self.services[name].title}.MeshName}}"
+                ),
+                NamespaceId=Ref(VPC_MAP_ID),
+                DnsConfig=SdDnsConfig(
+                    RoutingPolicy="MULTIVALUE",
+                    NamespaceId=Ref(AWS_NO_VALUE),
+                    DnsRecords=[SdDnsRecord(TTL="30", Type="A")],
+                ),
+                Name=GetAtt(self.services[name], "VirtualServiceName"),
+            )
+            SdInstance(
+                f"{NONALPHANUM.sub('', name).title()}ServiceFakeInstance",
+                template=self.template,
+                InstanceAttributes={"AWS_INSTANCE_IPV4": f"169.254.255.{index}"},
+                ServiceId=Ref(sd_entry),
+            )
+            index -= 1
 
     def render_mesh_template(self, services_stack, **kwargs):
         """
