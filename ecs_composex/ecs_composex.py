@@ -590,8 +590,9 @@ def generate_full_template(content, session=None, **kwargs):
         content, template, services_stack, services_families, **kwargs
     )
     apply_x_to_x_configs(template, content)
-    mesh = Mesh(content["x-appmesh"]["root"], services_stack)
-    mesh.render_mesh_template(services_stack, **kwargs)
+    if keyisset("x-appmesh", content):
+        mesh = Mesh(content["x-appmesh"], services_stack)
+        mesh.render_mesh_template(services_stack, **kwargs)
     add_all_tags(template, tags_params)
     LOG.debug(stack_params)
     return template, stack_params

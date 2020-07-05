@@ -81,38 +81,37 @@ x-tags:
   contact: john@lambda-my-aws.io
 
 x-appmesh:
-  root:
-    Properties:
-      MeshName: root
-    Settings:
-      nodes:
-        - name: app03
+  Properties:
+    MeshName: root
+  Settings:
+    nodes:
+      - name: app03
+        protocol: http
+      - name: app02
+        protocol: http
+      - name: app01
+        protocol: http
+        backends:
+          - dateteller # Points to the dateteller service, not router!
+    routers:
+      - name: dateteller
+        listener:
+          port: 5000
           protocol: http
-        - name: app02
-          protocol: http
-        - name: app01
-          protocol: http
-          backends:
-            - dateteller # Points to the dateteller service, not router!
-      routers:
-        - name: dateteller
-          listener:
-            port: 5000
-            protocol: http
-          routes:
-            http:
-              - match:
-                  prefix: /date
-                nodes:
-                  - name: app02
-                    weight: 1
-              - match:
-                  prefix: /date/utc
-                nodes:
-                  - name: app03
-                    weight: 1
-      services:
-        - name: api
-          node: app01
-        - name: dateteller
-          router: dateteller
+        routes:
+          http:
+            - match:
+                prefix: /date
+              nodes:
+                - name: app02
+                  weight: 1
+            - match:
+                prefix: /date/utc
+              nodes:
+                - name: app03
+                  weight: 1
+    services:
+      - name: api
+        node: app01
+      - name: dateteller
+        router: dateteller

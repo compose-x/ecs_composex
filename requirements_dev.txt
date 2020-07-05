@@ -12,3 +12,5 @@ sphinx-rtd-theme==0.4.3
 black==19.10b0
 wheel
 docker-compose==1.26.0
+behave==1.2.6
+pre-commit==2.6.0

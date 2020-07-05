@@ -161,6 +161,13 @@ For example,
           - name: app01
             access: RWMessages
 
+AWS AppMesh out of the box
+===========================
+
+.. seealso::
+
+    :ref:`appmesh_syntax_reference`
+
 
 ACM Certificates auto-create for public services
 ================================================
