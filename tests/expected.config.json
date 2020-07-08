@@ -1,7 +1,0 @@
-{
-    "Parameters": {
-        "UseSpotFleetHosts": "False",
-        "CostcentreTag": "lambda-my-aws",
-        "MailTag": "john@lambda-my-aws.io"
-    }
-}

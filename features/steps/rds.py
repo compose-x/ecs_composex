@@ -15,32 +15,28 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from ecs_composex.common.config import ComposeXConfig
-from ecs_composex.iam import add_role_boundaries, service_role_trust_policy
-from troposphere.iam import Role
+from behave import then
+from pytest import raises
 
-import pytest
-
-
-@pytest.fixture
-def configs():
-    return {"x-configs": {"composex": {"iam": {"boundary": "toto"}}}}
+from features.steps.common import *
+from ecs_composex.ecs_composex import generate_full_template
+from ecs_composex.common.stacks import ComposeXStack
 
 
-def test_service_policy():
+@then("I should have a RDS DB")
+def step_impl(context):
     """
-    Function to evaluate the ecs_service policy
+    Function to ensure we have a RDS stack and a DB stack within
+    :param context:
+    :return:
     """
-    role = Role("iamrole", AssumeRolePolicyDocument=service_role_trust_policy("ec2"))
-    role.to_dict()
+    template = generate_full_template(context.compose_content, **context.kwargs)[0]
+    db_root_stack = template.resources["rds"]
+    assert issubclass(type(db_root_stack), ComposeXStack)
 
 
-def test_service_role_with_boundary(configs):
+@then("services have access to it")
+def step_impl(context):
     """
-    :param config:
+    Function to ensure that the services have secret defined.
     """
-    config = ComposeXConfig(configs)
-    assert hasattr(config, "boundary")
-    role = Role("iamrole", AssumeRolePolicyDocument=service_role_trust_policy("ec2"))
-    add_role_boundaries(role, config.boundary)
-    assert hasattr(role, "PermissionsBoundary")

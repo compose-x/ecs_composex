@@ -61,13 +61,13 @@ lint-tests:
 	flake8 tests --exclude .git,_invoke*
 
 test: ## run tests quickly with the default Python
-	pytest -vv -s -x
+	behave features
 
 test-all: ## run tests on every Python version with tox
 	tox --skip-missing-interpreters
 
 coverage: ## check code coverage quickly with the default Python
-	coverage run --source ecs_composex -m pytest
+	coverage run --source ecs_composex -m behave
 	coverage report -m
 	coverage html
 	$(BROWSER) htmlcov/index.html
@@ -112,4 +112,4 @@ install: clean ## install the package to the active Python's site-packages
 	python setup.py install
 
 conform	: ## Conform to a standard of coding syntax
-	black ecs_composex tests
+	black ecs_composex features

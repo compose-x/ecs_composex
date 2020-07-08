@@ -1,0 +1,116 @@
+---
+# Blog applications
+
+version: '3.8'
+
+services:
+  rproxy:
+    image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-01-rproxy:latest
+    ports:
+      - 80:80
+    deploy:
+      replicas: 1
+      resources:
+        reservations:
+          cpus: "0.1"
+          memory: "32M"
+        limits:
+          cpus: "0.25"
+          memory: "64M"
+      labels:
+        ecs.task.family: app01
+    x-configs:
+      network:
+        is_public: True
+        lb_type: application
+    depends_on:
+      - app01
+  app01:
+    image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-01:appmesh
+    ports:
+      - 5000
+    deploy:
+      resources:
+        reservations:
+          cpus: "0.25"
+          memory: "64M"
+      labels:
+        ecs.task.family: app01
+    environment:
+      LOGLEVEL: DEBUG
+    x-configs:
+      use_xray: True
+    links:
+      - app03:dateteller
+
+  app02:
+    image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-02:appmesh
+    ports:
+      - 5000
+    deploy:
+      resources:
+        reservations:
+          cpus: "0.25"
+          memory: "64M"
+      labels:
+        ecs.task.family: app02
+    environment:
+      LOGLEVEL: DEBUG
+    x-configs:
+      use_xray: True
+
+  app03:
+    image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-02:appmesh
+    ports:
+      - 5000
+    deploy:
+      resources:
+        reservations:
+          cpus: "0.25"
+          memory: "64M"
+      labels:
+        ecs.task.family: app03
+    environment:
+      LOGLEVEL: DEBUG
+    x-configs:
+      use_xray: True
+
+
+x-tags:
+  owner: johnpreston
+  contact: john@lambda-my-aws.io
+
+x-appmesh:
+  Properties:
+    MeshName: root
+  Settings:
+    nodes:
+      - name: app03
+        protocol: http
+      - name: app02
+        protocol: http
+      - name: app01
+        backends:
+          - dateteller # Points to the dateteller service, not router!
+    routers:
+      - name: dateteller
+        listener:
+          port: 5000
+          protocol: http
+        routes:
+          http:
+            - match:
+                prefix: /date
+              nodes:
+                - name: app02
+                  weight: 1
+            - match:
+                prefix: /date/utc
+              nodes:
+                - name: app03
+                  weight: 1
+    services:
+      - name: api
+        node: app01
+      - name: dateteller
+        router: dateteller

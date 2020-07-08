@@ -15,6 +15,19 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""
-Tools functions for AppMesh which do not need to be in class
-"""
+from behave import then
+from pytest import raises
+
+from features.steps.common import *
+from ecs_composex.ecs_composex import generate_full_template
+from ecs_composex.common.stacks import ComposeXStack
+
+
+@then("I should have an ACM root stack")
+def step_impl(context):
+    """
+    Function to ensure we have an ACM stack and a DB stack within
+    """
+    template = generate_full_template(context.compose_content, **context.kwargs)[0]
+    acm_root_stack = template.resources["acm"]
+    assert issubclass(type(acm_root_stack), ComposeXStack)

@@ -13,4 +13,4 @@ repos:
     rev: 3.8.3
     hooks:
       - id: flake8
-        exclude: ^test|^docs
+        exclude: ^feature/*

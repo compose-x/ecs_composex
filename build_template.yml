@@ -6,13 +6,9 @@ Metadata:
   Author: https://github.com/johnpreston
 
 Parameters:
-  RepositoryUrl:
+  RepositoryOrganization:
     Type: String
-#    AllowedPattern: 'https:\/\/[a-z0-9.-]+'gi
-    Description: Name of VCS repo for the Docker composeX file
-  BranchName:
-    Type: String
-    Default: master
+
   RepositoryProvider:
     Type: String
     AllowedValues:
@@ -37,10 +33,8 @@ Mappings:
       Prefix: https://github.com/
 
 Conditions:
-  UseGitHub:
-    !Equals [ !Ref RepositoryProvider, 'GitHub']
-  UseCodeCommit:
-    !Equals [ !Ref RepositoryProvider, 'CodeCommit']
+  UseGitHub: !Equals [ !Ref RepositoryProvider, 'GitHub']
+  UseCodeCommit: !Equals [ !Ref RepositoryProvider, 'CodeCommit']
 
 Resources:
   BuildLogsGroup:
@@ -122,6 +116,7 @@ Resources:
   BuildUnittest:
     Type: AWS::CodeBuild::Project
     Properties:
+      Name: !Sub 'BUILD-${RepositoryName}'
       ServiceRole: !GetAtt 'CodeBuildRole.Arn'
       Description: !Sub 'Publishes blog on updates'
       LogsConfig:
@@ -146,7 +141,10 @@ Resources:
       Source:
         Type: GITHUB
         ReportBuildStatus: True
-        Location: !Ref RepositoryUrl
+        Location: !If
+          - UseGitHub
+          - !Sub 'https://github.com/${RepositoryOrganization}/${RepositoryName}'
+          - !Sub 'https://codecommit.${AWS::Region}.${AWS::URLSuffix}'
         InsecureSsl: False
         BuildSpec: buildspec_pr.yml
       Triggers:
