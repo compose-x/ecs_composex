@@ -67,6 +67,9 @@ VPC_MAP_ID = Parameter(VPC_MAP_ID_T, Type="String", Default="default")
 VPC_MAP_ARN_T = "VpcDiscoveryMapArn"
 VPC_MAP_ARN = Parameter(VPC_MAP_ARN_T, Type="String", Default="<none>")
 
+VPC_MAP_DNS_ZONE_T = "VpcDiscoveryMapDnsName"
+VPC_MAP_DNS_ZONE = Parameter(VPC_MAP_DNS_ZONE_T, Type="String")
+
 VPC_DNS_ZONE_T = "VpcDnsZoneName"
 VPC_DNS_ZONE = Parameter(VPC_DNS_ZONE_T, Type="String", Default="cluster.local")
 

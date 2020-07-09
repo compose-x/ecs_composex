@@ -43,8 +43,6 @@ from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T, USE_CLOUDMAP
 from ecs_composex.common.ecs_composex import XFILE_DEST
 from ecs_composex.common.outputs import define_import
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.common.tagging import add_all_tags
-from ecs_composex.common.tagging import generate_tags_parameters
 from ecs_composex.ecs import ecs_params
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME, CLUSTER_NAME_T
 from ecs_composex.ecs.ecs_template import generate_services
@@ -57,9 +55,17 @@ class ServiceStack(ComposeXStack):
     """
 
     def __init__(
-        self, title, template, service, template_file=None, extension=None, **kwargs
+        self,
+        title,
+        template,
+        service,
+        service_config,
+        template_file=None,
+        extension=None,
+        **kwargs,
     ):
         self.service = service
+        self.config = service_config
         super().__init__(title, template, template_file, extension, **kwargs)
         if not keyisset("Parameters", kwargs):
             self.Parameters = {
@@ -164,6 +170,11 @@ class ServicesStack(ComposeXStack):
                     GetAtt(vpc_stack, f"Outputs.{vpc_params.VPC_MAP_ID_T}"),
                     Ref("AWS::NoValue"),
                 ),
+                vpc_params.VPC_MAP_DNS_ZONE_T: If(
+                    USE_CLOUDMAP_CON_T,
+                    GetAtt(vpc_stack, f"Outputs.{vpc_params.VPC_MAP_DNS_ZONE_T}"),
+                    Ref("AWS::NoValue"),
+                ),
             }
         )
         if not hasattr(self, "DependsOn"):
@@ -178,13 +189,13 @@ class ServicesStack(ComposeXStack):
         if keypresent("DependsOn", kwargs):
             kwargs.pop("DependsOn")
         content = load_composex_file(kwargs[XFILE_DEST])
-        tags_params = generate_tags_parameters(content)
         parameters = [
             CLUSTER_NAME,
             vpc_params.VPC_ID,
             vpc_params.PUBLIC_SUBNETS,
             vpc_params.APP_SUBNETS,
             vpc_params.VPC_MAP_ID,
+            vpc_params.VPC_MAP_DNS_ZONE,
             USE_CLOUDMAP,
             ecs_params.XRAY_IMAGE,
             ecs_params.LOG_GROUP_RETENTION,
@@ -216,6 +227,7 @@ class ServicesStack(ComposeXStack):
             self.stack_template.add_resource(
                 ServiceStack(
                     service.resource_name,
+                    service_config=service.config,
                     template=service.template,
                     service=service,
                     Parameters=service.parameters,
@@ -223,7 +235,6 @@ class ServicesStack(ComposeXStack):
                     **kwargs,
                 )
             )
-        add_all_tags(self.stack_template, tags_params)
 
     def add_cluster_parameter(self, cluster_param):
         self.Parameters.update(cluster_param)
