@@ -201,7 +201,7 @@ def add_all_tags(root_template, params_and_tags):
         resource = resources[resource_name]
         if isinstance(resource, (XModuleStack, ComposeXStack)):
             LOG.debug(resource)
-            LOG.debug(resource.TemplateURL)
+            LOG.debug(resource.title)
             add_all_tags(resource.stack_template, params_and_tags)
             add_parameters(resource.stack_template, params_and_tags[0])
             if (

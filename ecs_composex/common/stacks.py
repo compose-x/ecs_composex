@@ -20,7 +20,6 @@ Module to handle Root stacks and substacks in ECS composeX. Allows to treat ever
 files into S3 and on disk.
 """
 
-from troposphere import Template
 from troposphere.cloudformation import Stack
 
 from ecs_composex.common import LOG, keyisset
@@ -32,14 +31,7 @@ class ComposeXStack(Stack, object):
     Class to define a CFN Stack as a composition of its template object, parameters, tags etc.
 
     :cvar ecs_composex.common.files.FileArtifact template_file: The FileArtifact associated with the stack.
-    :cvar cfn_params_file: CFN Parameters file for the stack
-    :cvar cfn_config_file: CFN Configuration file for the stack
     """
-
-    template_file = None
-    cfn_params_file = None
-    cfn_config_file = None
-    module_name = None
 
     attributes = [
         "Condition",
@@ -71,54 +63,44 @@ class ComposeXStack(Stack, object):
             raise TypeError("parameter must be of type", dict, "got", type(parameter))
         self.Parameters.update(parameter)
 
-    def render(self):
+    def render(self, extension=None, **kwargs):
         """
         Function to use when the template is finalized and can be uploaded to S3.
         """
+        if extension is None:
+            extension = "yml"
         LOG.debug(f"Rendering {self.title}")
-        self.template_file.define_body()
-        self.template_file.upload()
-        self.template_file.write()
-        self.template_file.validate()
-        LOG.debug(f"Rendered URL = {self.template_file.url}")
-        self.TemplateURL = self.template_file.url
+        template_file = FileArtifact(
+            file_name=f"{self.title}.{extension}",
+            template=self.stack_template,
+            **kwargs,
+        )
+        LOG.debug(kwargs)
+        template_file.define_body()
+        template_file.write()
+        template_file.upload()
+        template_file.validate()
+        LOG.debug(f"Rendered URL = {template_file.url}")
+        setattr(self, "TemplateURL", template_file.url)
 
-    def __init__(
-        self, title, stack_template, template_file=None, extension=None, **kwargs
-    ):
+    def __init__(self, title, stack_template, parameters=None, **kwargs):
         """
         Class to keep track of the template object along with the stack object it represents.
 
         :param title: title of the resource in the root template
         :param stack_template: the template object to keep track of
-        :param template_file: if the template file already exists, import
         :param extension: specify a specific file extension if you so wish
         :param render: whether the template should be rendered immediately
         :param kwargs: kwargs from composex along with the kwargs for the stack
         """
 
-        if extension is None and template_file is None:
-            extension = ".yml"
-        if not isinstance(stack_template, (Template, type(None))):
-            raise TypeError(
-                "template must be of type", Template, "got", type(stack_template)
-            )
         self.stack_template = stack_template
-        if template_file and isinstance(template_file, FileArtifact):
-            self.template_file = template_file
-        else:
-            file_name = f"{title}{extension}"
-            self.template_file = FileArtifact(
-                file_name, template=self.stack_template, **kwargs
-            )
-        if self.template_file.url is None:
-            self.template_file.url = self.template_file.file_path
+        self.stack_parameters = parameters
         stack_kwargs = dict((x, kwargs[x]) for x in self.props.keys() if x in kwargs)
         stack_kwargs.update(
             dict((x, kwargs[x]) for x in self.attributes if x in kwargs)
         )
         super().__init__(title, **stack_kwargs)
-        self.TemplateURL = self.template_file.url
         if not hasattr(self, "DependsOn") or not keyisset("DependsOn", kwargs):
             self.DependsOn = []
 
@@ -129,7 +111,7 @@ class XModuleStack(ComposeXStack):
     """
 
 
-def render_final_template(root_template):
+def render_final_template(root_template, **kwargs):
     """
     Function to go through all stacks of a given template and update the template
     It will recursively render sub stacks defined.
@@ -142,9 +124,9 @@ def render_final_template(root_template):
         resource = resources[resource_name]
         if isinstance(resource, (XModuleStack, ComposeXStack)):
             LOG.debug(resource)
-            LOG.debug(resource.TemplateURL)
-            render_final_template(resource.stack_template)
-            resource.render()
+            LOG.debug(resource.title)
+            render_final_template(resource.stack_template, **kwargs)
+            resource.render(**kwargs)
         elif isinstance(resource, Stack):
             LOG.warn(resource_name)
             LOG.warn(resource)

@@ -272,11 +272,11 @@ class Service(object):
     :cvar dict service_attrs: Attributes defined to expand the troposphere.ecs.ServiceDefinition from prior settings.
     """
 
-    def __init__(self, template, service_name, task_definition, config, **kwargs):
+    def __init__(self, template, family_name, task_definition, config, **kwargs):
         """
         Function to initialize the Service object
-        :param service_name: Name of the service
-        :type service_name: str
+        :param family_name: Name of the service
+        :type family_name: str
         :param definition: the service definition as defined in compose file
         :type definition: dict
         :param kwargs: unordered arguments
@@ -308,7 +308,7 @@ class Service(object):
         if config.family_name is not None:
             self.parameters.update({ecs_params.SERVICE_NAME_T: config.family_name})
         else:
-            self.parameters.update({ecs_params.SERVICE_NAME_T: service_name})
+            self.parameters.update({ecs_params.SERVICE_NAME_T: family_name})
         self.sgs = [ecs_params.SG_T]
         self.sgs.append(
             If(
