@@ -110,10 +110,8 @@ class CertificateStack(ComposeXStack):
     Class to manage certificates as stacks of their own
     """
 
-    def __init__(
-        self, title, stack_template, template_file=None, extension=None, **kwargs
-    ):
-        super().__init__(title, stack_template, template_file, extension, **kwargs)
+    def __init__(self, title, stack_template, **kwargs):
+        super().__init__(title, stack_template, **kwargs)
 
 
 def build_cert_params(cert_def):
@@ -203,9 +201,7 @@ class XResource(ComposeXStack):
     XResource for ComposeX
     """
 
-    def __init__(
-        self, title, stack_template, template_file=None, extension=None, **kwargs
-    ):
-        super().__init__(title, stack_template, template_file, extension, **kwargs)
+    def __init__(self, title, stack_template, **kwargs):
+        super().__init__(title, stack_template, **kwargs)
         if not keyisset("DependsOn", kwargs):
             self.DependsOn = []

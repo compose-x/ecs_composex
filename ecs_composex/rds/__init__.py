@@ -99,10 +99,8 @@ class XResource(ComposeXStack):
     def add_cluster_parameter(self, cluster_param):
         self.Parameters.update(cluster_param)
 
-    def __init__(
-        self, title, stack_template, template_file=None, extension=None, **kwargs
-    ):
-        super().__init__(title, stack_template, template_file, extension, **kwargs)
+    def __init__(self, title, stack_template, **kwargs):
+        super().__init__(title, stack_template, **kwargs)
         if not keyisset("DependsOn", kwargs):
             self.DependsOn = []
         if not keyisset("Parameters", kwargs):

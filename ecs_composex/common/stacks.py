@@ -20,6 +20,7 @@ Module to handle Root stacks and substacks in ECS composeX. Allows to treat ever
 files into S3 and on disk.
 """
 
+from troposphere import Template
 from troposphere.cloudformation import Stack
 
 from ecs_composex.common import LOG, keyisset
@@ -89,13 +90,19 @@ class ComposeXStack(Stack, object):
 
         :param title: title of the resource in the root template
         :param stack_template: the template object to keep track of
-        :param extension: specify a specific file extension if you so wish
-        :param render: whether the template should be rendered immediately
+        :param dict parameters: Stack parameters to set
         :param kwargs: kwargs from composex along with the kwargs for the stack
         """
 
+        if not isinstance(stack_template, Template):
+            raise TypeError(
+                "stack_template is", type(stack_template), "expected", Template
+            )
         self.stack_template = stack_template
-        self.stack_parameters = parameters
+        if parameters is None:
+            self.stack_parameters = {}
+        elif not isinstance(parameters, dict):
+            raise TypeError("parameters is", type(parameters), "expected", dict)
         stack_kwargs = dict((x, kwargs[x]) for x in self.props.keys() if x in kwargs)
         stack_kwargs.update(
             dict((x, kwargs[x]) for x in self.attributes if x in kwargs)
