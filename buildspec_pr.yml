@@ -20,19 +20,8 @@ phases:
       - pip install -r requirements.txt
       - pip install -r requirements_buildspec.txt
       - python setup.py install
+      - pip uninstall troposphere -y && pip install git+https://github.com/cloudtools/troposphere@master#egg-info
   build:
-    commands:
-      - mkdir -p ${PWD}/outputs
-      - ecs_composex --help || echo $PATH && which python
-      - ecs_composex-vpc -d outputs -o vpc_standalone.yml -b ${KNOWN_BUCKET} --no-upload
-      - ecs_composex-vpc -f tests/services_with_queues.yml -d outputs -o vpc_standalone_with_input.yml -b ${KNOWN_BUCKET} --no-upload
-      - ecs_composex-compute -d outputs -o compute_standalone.yml -b ${KNOWN_BUCKET} --no-upload
-      - ecs_composex-compute -f tests/services_with_queues.yml -d outputs -o compute_standalone_with_input.yml -b ${KNOWN_BUCKET} --no-upload
-      - ecs_composex --create-vpc --create-cluster -f tests/services_with_queues.yml -d outputs -o aio.yml -b ${KNOWN_BUCKET} --no-upload
-      - ecs_composex --create-vpc --create-cluster -f tests/all_features.yml -d outputs -o all_features.yml -b ${KNOWN_BUCKET} --no-upload
-      - ecs_composex --create-vpc --create-cluster -f tests/rds_only.yml -d outputs -o rds_only.yml -b ${KNOWN_BUCKET}
-
-  post_build:
     commands:
       - echo "Executing behave"
       - if ! [ -d reports ]; then mkdir reports ; fi
