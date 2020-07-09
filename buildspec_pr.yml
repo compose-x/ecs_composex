@@ -20,10 +20,6 @@ phases:
       - pip install -r requirements.txt
       - pip install -r requirements_buildspec.txt
       - python setup.py install
-  pre_build:
-    commands:
-      - make test
-      - make lint
   build:
     commands:
       - mkdir -p ${PWD}/outputs
