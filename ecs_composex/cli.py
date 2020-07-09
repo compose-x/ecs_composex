@@ -284,7 +284,7 @@ def main():
     print("Arguments: " + str(args._))
     templates_and_params = generate_full_template(content, **kwargs)
 
-    render_final_template(templates_and_params[0])
+    render_final_template(templates_and_params[0], **kwargs)
     cfn_config = build_config_template_file(
         config={}, parameters=templates_and_params[1]
     )

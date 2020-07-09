@@ -55,18 +55,11 @@ class ServiceStack(ComposeXStack):
     """
 
     def __init__(
-        self,
-        title,
-        template,
-        service,
-        service_config,
-        template_file=None,
-        extension=None,
-        **kwargs,
+        self, title, template, service, service_config, **kwargs,
     ):
         self.service = service
         self.config = service_config
-        super().__init__(title, template, template_file, extension, **kwargs)
+        super().__init__(title, template, **kwargs)
         if not keyisset("Parameters", kwargs):
             self.Parameters = {
                 ROOT_STACK_NAME_T: Ref("AWS::StackName"),
@@ -85,9 +78,9 @@ class ServicesStack(ComposeXStack):
     dependencies = []
     services = []
 
-    def __init__(self, title, template, template_file=None, extension=None, **kwargs):
+    def __init__(self, title, **kwargs):
         self.create_services_templates(**kwargs)
-        super().__init__(title, self.stack_template, template_file, extension, **kwargs)
+        super().__init__(title, self.stack_template, **kwargs)
         if not keyisset("Parameters", kwargs):
             self.Parameters = {
                 ROOT_STACK_NAME_T: Ref("AWS::StackName"),
@@ -226,7 +219,7 @@ class ServicesStack(ComposeXStack):
             )
             self.stack_template.add_resource(
                 ServiceStack(
-                    service.resource_name,
+                    title=service.resource_name,
                     service_config=service.config,
                     template=service.template,
                     service=service,

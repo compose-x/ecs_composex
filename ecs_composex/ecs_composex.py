@@ -452,7 +452,7 @@ def add_services(depends, session, vpc_stack=None, **kwargs):
     :type vpc_stack: troposphere.cloudformation.Template
     :param kwargs: optional parameters
     """
-    stack = ServicesStack("services", template=None, DependsOn=depends, **kwargs)
+    stack = ServicesStack("services", DependsOn=depends, **kwargs)
     if keyisset("CreateCluster", kwargs):
         stack.add_cluster_parameter({ecs_params.CLUSTER_NAME_T: Ref(ROOT_CLUSTER_NAME)})
     else:
