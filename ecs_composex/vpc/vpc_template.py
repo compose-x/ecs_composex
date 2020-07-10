@@ -243,9 +243,14 @@ def generate_vpc_template(cidr_block, azs, single_nat=False):
 
     :return: Template() representing the VPC and associated resources
     """
-
-    azs_index = [AZ_INDEX_RE.match(az).groups()[-1] for az in azs]
-    layers = get_subnet_layers(cidr_block, len(azs))
+    curated_azs = []
+    for az in azs:
+        if isinstance(az, dict):
+            curated_azs.append(az["ZoneName"])
+        elif isinstance(az, str):
+            curated_azs.append(az)
+    azs_index = [AZ_INDEX_RE.match(az).groups()[-1] for az in curated_azs]
+    layers = get_subnet_layers(cidr_block, len(curated_azs))
     template = build_template(
         "VpcTemplate generated via ECS Compose X",
         [cfn_params.USE_CLOUDMAP, vpc_params.VPC_DNS_ZONE, vpc_params.USE_SUB_ZONE],

@@ -87,3 +87,7 @@ x-rds:
         access: RW
       - name: app
         access: RW
+
+x-tags:
+  costcentre: abcd
+  contact: you@me.com

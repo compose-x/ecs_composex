@@ -80,7 +80,6 @@ services:
     x-configs:
       use_xray: True
 
-
 x-tags:
   owner: johnpreston
   contact: john@lambda-my-aws.io

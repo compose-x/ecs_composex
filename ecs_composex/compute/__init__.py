@@ -46,12 +46,10 @@ def create_compute_stack(session=None, **kwargs):
     :return: cluster template
     :rtype: troposphere.Template
     """
-    tags_params = ()
     stack_params = []
     compose_content = None
     if keyisset(XFILE_DEST, kwargs):
         compose_content = load_composex_file(kwargs[XFILE_DEST])
-        tags_params = generate_tags_parameters(compose_content)
     if not keyisset("AwsAzs", kwargs):
         if keyisset("AwsRegion", kwargs):
             azs = get_curated_azs(region=kwargs["AwsRegion"])
@@ -62,6 +60,6 @@ def create_compute_stack(session=None, **kwargs):
             azs = get_curated_azs()
     else:
         azs = kwargs["AwsAzs"]
-    template = generate_compute_template(azs, compose_content, tags_params, **kwargs)
+    template = generate_compute_template(azs, compose_content, **kwargs)
     build_default_stack_parameters(stack_params, **kwargs)
     return template, stack_params

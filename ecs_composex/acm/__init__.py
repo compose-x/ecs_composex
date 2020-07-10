@@ -153,7 +153,7 @@ def build_cert_params(cert_def):
     return cert_params
 
 
-def add_certificates(acm_tpl, certs, **kwargs):
+def add_certificates(acm_tpl, certs):
     """
     Function to add all the ACM certs together
     :param acm_tpl:
@@ -170,29 +170,24 @@ def add_certificates(acm_tpl, certs, **kwargs):
         cert_template = initialize_acm_stack_template(resource_name)
         acm_tpl.add_resource(
             ComposeXStack(
-                resource_name,
-                stack_template=cert_template,
-                Parameters=cert_params,
-                **kwargs,
+                resource_name, stack_template=cert_template, Parameters=cert_params,
             )
         )
 
 
-def create_acm_template(session=None, **kwargs):
+def create_acm_template(settings):
     """
     Main entrypoint for ACM root template creation
 
-    :param boto3.session.Session session:
-    :param dict kwargs: unordered arguments
+    :param ecs_composex.common.settings.ComposeXSettings settings: The execution settings
     :return: root stack template for ACM.
     :rtype: troposphere.Template
     """
-    content = load_composex_file(kwargs[XFILE_DEST])
-    if not keyisset(RES_KEY, content):
+    if not keyisset(RES_KEY, settings.compose_content):
         return
-    certs = content[RES_KEY]
+    certs = settings.compose_content[RES_KEY]
     root_acm_tpl = build_template("Root template for ACM")
-    add_certificates(root_acm_tpl, certs, **kwargs)
+    add_certificates(root_acm_tpl, certs)
     return root_acm_tpl
 
 

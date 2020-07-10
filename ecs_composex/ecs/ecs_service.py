@@ -272,7 +272,7 @@ class Service(object):
     :cvar dict service_attrs: Attributes defined to expand the troposphere.ecs.ServiceDefinition from prior settings.
     """
 
-    def __init__(self, template, family_name, task_definition, config, **kwargs):
+    def __init__(self, template, family_name, task_definition, config, settings):
         """
         Function to initialize the Service object
         :param family_name: Name of the service
@@ -317,7 +317,7 @@ class Service(object):
                 Ref("AWS::NoValue"),
             )
         )
-        self.define_service_ingress(**kwargs)
+        self.define_service_ingress(settings)
         self.generate_service_definition(self.task.definition)
         self.generate_service_template_outputs()
 
@@ -612,7 +612,7 @@ class Service(object):
         )
         return tgt
 
-    def add_load_balancer(self, **kwargs):
+    def add_load_balancer(self, settings):
         """
         Method to add LB to template
 
@@ -621,10 +621,10 @@ class Service(object):
         """
         alb_sg = None
         if self.config.is_public and self.config.use_nlb():
-            self.add_public_ips(kwargs["AwsAzs"])
+            self.add_public_ips(settings.aws_azs)
 
         no_value = Ref(AWS_NO_VALUE)
-        public_mapping = define_public_mapping(self.eips, kwargs["AwsAzs"])
+        public_mapping = define_public_mapping(self.eips, settings.aws_azs)
         if self.config.ingress_mappings and self.config.use_alb():
             alb_sg = self.add_alb_sg(self.config.ingress_mappings.keys())
             # self.add_lb_to_service_ingress(alb_sg, SG_T)
@@ -666,7 +666,7 @@ class Service(object):
                 self.add_public_security_group_ingress(SG_T)
         return loadbalancer
 
-    def add_service_load_balancer(self, **kwargs):
+    def add_service_load_balancer(self, settings):
         """
         Method to add all ELBv2 resources for a microservice
 
@@ -676,7 +676,7 @@ class Service(object):
         service_lbs = []
         tgt_groups = []
         depends_on = []
-        service_lb = self.add_load_balancer(**kwargs)
+        service_lb = self.add_load_balancer(settings)
         depends_on.append(service_lb.title)
         for port_target in self.config.ingress_mappings:
             tgt = self.add_target_group(port_target, service_lb)
@@ -711,7 +711,7 @@ class Service(object):
         Method to create the AppMesh
         """
 
-    def define_service_ingress(self, **kwargs):
+    def define_service_ingress(self, settings):
         """
         Function to define microservice ingress.
 
@@ -728,17 +728,13 @@ class Service(object):
             "ServiceRegistries": registries,
         }
         external_dependencies = []
-        if not keyisset("AwsAzs", kwargs):
-            raise KeyError(
-                "Missing AwsAzs from options. AZs are required to configure services networking"
-            )
         if not self.config.ports:
             LOG.debug(
                 f"{self.service_name} does not have any ports. No ingress necessary"
             )
             return self.service_attrs, external_dependencies
         if self.config.use_alb() or self.config.use_nlb():
-            service_lb = self.add_service_load_balancer(**kwargs)
+            service_lb = self.add_service_load_balancer(settings)
             self.service_attrs["LoadBalancers"] = service_lb[0]
             self.service_attrs["DependsOn"] = (
                 service_lb[-1] if isinstance(service_lb[-1], list) else []

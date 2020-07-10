@@ -91,4 +91,4 @@ def sns_to_ecs(topics, services_stack, services_families, sns_root_stack, **kwar
                     family_wide,
                 )
             if sns_root_stack.title not in services_stack.DependsOn:
-                services_stack.DependsOn.append(sns_root_stack.title)
+                services_stack.add_dependencies(sns_root_stack.title)

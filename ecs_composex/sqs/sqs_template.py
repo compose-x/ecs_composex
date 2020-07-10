@@ -194,7 +194,7 @@ def generate_queue_template(queue_name, properties, redrive_queue=None):
     return queue_template
 
 
-def add_queue_stack(queue_name, queue, queues, session, **kwargs):
+def add_queue_stack(queue_name, queue, queues, settings):
     """
     Function to define the Queue template settings for the Nested Stack
 
@@ -238,43 +238,32 @@ def add_queue_stack(queue_name, queue, queues, session, **kwargs):
     else:
         queue_tpl = generate_queue_template(queue_name, properties)
     LOG.debug(parameters)
-    LOG.debug(session)
     queue_stack = ComposeXStack(
         queue_name,
         stack_template=queue_tpl,
         Parameters=parameters,
         DependsOn=depends_on,
-        **kwargs,
     )
     return queue_stack
 
 
-def generate_sqs_root_template(compose_content, tags=None, session=None, **kwargs):
+def generate_sqs_root_template(settings):
     """
     Generates a base template for a sqs queues. Iterates over each queue defined
     in x-sqs of the ComposeX file and identify settings and properties for these
 
-    :param compose_content: The Docker compose content
-    :type compose_content: dict
-    :param session: boto3 session to override default
-    :type session: boto3.session.Session
-
+    :param settings:
+    :type settings: ecs_composex.common.settings.ComposeXSettings
     :return: SQS Root/Parent template
     :rtype: troposphere.Template
     """
-    if not session:
-        session = boto3.session.Session()
-    validate_kwargs(["BucketName"], kwargs)
-    description = "Root SQS Template"
-    if keyisset("EnvName", kwargs):
-        description = f"Root SQS Template for {kwargs['EnvName']}"
+    description = f"Root SQS Template for {settings.name}"
     root_tpl = build_template(description)
-    queues = compose_content[RES_KEY]
+    queues = settings.compose_content[RES_KEY]
     for queue_name in queues:
         LOG.debug(queue_name)
-        LOG.debug(session)
         queue_stack = add_queue_stack(
-            queue_name, queues[queue_name], queues.keys(), session, **kwargs,
+            queue_name, queues[queue_name], queues.keys(), settings
         )
         root_tpl.add_resource(queue_stack)
     return root_tpl

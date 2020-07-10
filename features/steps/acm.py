@@ -28,6 +28,6 @@ def step_impl(context):
     """
     Function to ensure we have an ACM stack and a DB stack within
     """
-    template = generate_full_template(context.compose_content, **context.kwargs)[0]
+    template = generate_full_template(context.settings)[0]
     acm_root_stack = template.resources["acm"]
     assert issubclass(type(acm_root_stack), ComposeXStack)

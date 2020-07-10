@@ -68,4 +68,4 @@ def rds_to_ecs(rdsdbs, services_stack, services_families, rds_root_stack, **kwar
             add_rds_policy(service_template, secret_import, db_name)
             add_security_group_ingress(service_stack, db_name)
             if rds_root_stack.title not in services_stack.DependsOn:
-                services_stack.DependsOn.append(rds_root_stack.title)
+                services_stack.add_dependencies(rds_root_stack.title)

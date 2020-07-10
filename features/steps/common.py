@@ -22,7 +22,7 @@ from pytest import raises
 
 
 from ecs_composex.common import load_composex_file
-from ecs_composex.common.ecs_composex import XFILE_DEST
+from ecs_composex.common.settings import ComposeXSettings
 
 
 def here():
@@ -39,26 +39,19 @@ def step_impl(context, file_path):
     :return:
     """
     cases_path = path.abspath(f"{here()}/../../{file_path}")
-    if not hasattr(context, "kwargs"):
-        context.kwargs = {}
-    if not "AwsRegion" in context.kwargs.keys():
-        context.kwargs["AwsRegion"] = session.Session().region_name
-        context.kwargs["NoUpload"] = True
-        context.kwargs["BucketName"] = "abcd"
-        context.kwargs["VpcCidr"] = "172.23.0.0/24"
-        context.kwargs[XFILE_DEST] = cases_path
-    context.compose_content = load_composex_file(cases_path)
+    context.settings = ComposeXSettings(
+        **{
+            ComposeXSettings.name_arg: "test",
+            ComposeXSettings.input_file_arg: cases_path,
+        }
+    )
 
 
 @given("I want to create a VPC")
 def step_impl(context):
-    if not hasattr(context, "kwargs"):
-        context.kwargs = {}
-    context.kwargs.update({"CreateVpc": True})
+    context.settings.create_vpc = True
 
 
 @given("I want to create a Cluster")
 def step_impl(context):
-    if not hasattr(context, "kwargs"):
-        context.kwargs = {}
-    context.kwargs.update({"CreateCluster": True})
+    context.settings.create_cluster = True

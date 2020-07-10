@@ -23,17 +23,18 @@ from ecs_composex.sns.sns_templates import generate_sns_templates
 from ecs_composex.sqs.sqs_params import RES_KEY as SQS_KEY
 
 
-def create_sns_template(**kwargs):
+def create_sns_template(settings):
     """
     Function to create SNS templates as part of ECS ComposeX.
-    :param dict kwargs: unordered arguments
+
+    :param settings:
+    :type settings: ecs_composex.common.settings.ComposeXSettings
     :return: SNS root template
     :rtype: troposphere.Template
     """
-    content = load_composex_file(kwargs[XFILE_DEST])
-    if keyisset(RES_KEY, content):
+    if keyisset(RES_KEY, settings.compose_content):
         LOG.debug(f"Processing {RES_KEY} package")
-        return generate_sns_templates(content, **kwargs)
+        return generate_sns_templates(settings)
 
 
 class XResource(ComposeXStack):

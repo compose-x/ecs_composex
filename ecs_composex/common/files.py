@@ -203,6 +203,21 @@ class FileArtifact(object):
     output_dir = f"/tmp/{dt.utcnow().strftime('%s')}"
     file_path = None
 
+    def transcribe(self):
+        """
+        Method to write or upload based on no_upload
+        """
+        write = False
+        if not self.can_upload and not self.no_upload:
+            write = True
+        elif self.no_upload:
+            write = True
+        if write:
+            self.write()
+            self.url = self.file_path
+        else:
+            self.upload()
+
     def upload(self):
         """
         Method to handle uploading the files to S3.
@@ -283,17 +298,15 @@ class FileArtifact(object):
         elif self.file_name.endswith(".yml") or self.file_name.endswith(".yaml"):
             self.mime = YAML_MIME
 
-    def set_from_kwargs(self, **kwargs):
+    def set_from_settings(self, settings):
         """
         Method to set internal settings based on kwargs keys
 
         :param kwargs: unordered parameters
         :type kwargs: dict
         """
-        if keyisset(DIR_DEST, kwargs):
-            self.output_dir = path.abspath(kwargs[DIR_DEST])
-        if keyisset("BucketName", kwargs):
-            self.bucket = kwargs["BucketName"]
+        self.output_dir = settings.output_dir
+        if settings.bucket_name:
             self.can_upload = True
 
     def create(self):
@@ -304,7 +317,9 @@ class FileArtifact(object):
         self.write()
         self.upload()
 
-    def __init__(self, file_name, template=None, content=None, session=None, **kwargs):
+    def __init__(
+        self, file_name, settings, template=None, content=None, session=None, **kwargs
+    ):
         """
         Init method for FileArtifact
 
@@ -323,13 +338,12 @@ class FileArtifact(object):
             self.template = template
         if session is not None:
             self.session = session
-        self.set_from_kwargs(**kwargs)
+        self.set_from_settings(settings)
         if content is not None and isinstance(content, (tuple, dict, str, list)):
             self.content = content
         self.define_file_specs()
         self.file_path = f"{self.output_dir}/{self.file_name}"
-        if keyisset("NoUpload", kwargs):
-            self.no_upload = True
+        self.no_upload = False if settings.upload is False else True
 
     def __repr__(self):
         return self.file_path

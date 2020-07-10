@@ -78,8 +78,8 @@ class ServicesStack(ComposeXStack):
     dependencies = []
     services = []
 
-    def __init__(self, title, **kwargs):
-        self.create_services_templates(**kwargs)
+    def __init__(self, title, settings, **kwargs):
+        self.create_services_templates(settings, **kwargs)
         super().__init__(title, self.stack_template, **kwargs)
         if not keyisset("Parameters", kwargs):
             self.Parameters = {
@@ -175,13 +175,12 @@ class ServicesStack(ComposeXStack):
         else:
             self.DependsOn.append(vpc)
 
-    def create_services_templates(self, **kwargs):
+    def create_services_templates(self, settings, **kwargs):
         """
         Function to create the services root template
         """
         if keypresent("DependsOn", kwargs):
             kwargs.pop("DependsOn")
-        content = load_composex_file(kwargs[XFILE_DEST])
         parameters = [
             CLUSTER_NAME,
             vpc_params.VPC_ID,
@@ -210,7 +209,7 @@ class ServicesStack(ComposeXStack):
                 VpcId=Ref(vpc_params.VPC_ID),
             )
         )
-        self.services = generate_services(content, cluster_sg, **kwargs)
+        self.services = generate_services(settings, cluster_sg)
         self.handle_services_dependencies()
         for service_name in self.services:
             service = self.services[service_name]

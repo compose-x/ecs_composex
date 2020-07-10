@@ -152,7 +152,7 @@ def add_topics_to_template(template, topics, content):
         )
 
 
-def add_sns_topics(root_template, content, res_count, count=170, **kwargs):
+def add_sns_topics(root_template, content, res_count, count=170):
     """
     Function to add SNS topics to the root template
 
@@ -171,7 +171,7 @@ def add_sns_topics(root_template, content, res_count, count=170, **kwargs):
         add_topics_to_template(template, content[RES_KEY][TOPICS_KEY], content)
         add_topics_outputs(template)
         root_template.add_resource(
-            ComposeXStack(title=TOPICS_STACK_NAME, stack_template=template, **kwargs)
+            ComposeXStack(title=TOPICS_STACK_NAME, stack_template=template)
         )
     else:
         add_topics_to_template(root_template, content[RES_KEY][TOPICS_KEY], content)
@@ -193,15 +193,16 @@ def define_resources(res_content):
     return res_count
 
 
-def generate_sns_templates(content, **kwargs):
+def generate_sns_templates(settings):
     """
     Entrypoint function to generate the SNS topics templates
-    :param content:
-    :param kwargs:
+
+    :param settings:
+    :type settings: ecs_composex.common.settings.ComposeXSettings
     :return:
     """
     allowed_keys = [TOPICS_KEY, SUBSCRIPTIONS_KEY]
-    res_content = content[RES_KEY]
+    res_content = settings.compose_content[RES_KEY]
     if not set(res_content).issubset(allowed_keys):
         raise KeyError(
             "SNS Only supports two types of resources",
@@ -212,7 +213,7 @@ def generate_sns_templates(content, **kwargs):
     root_template = build_template("SNS Root Template")
     res_count = define_resources(res_content)
     if keyisset(TOPICS_KEY, res_content):
-        add_sns_topics(root_template, content, res_count, **kwargs)
+        add_sns_topics(root_template, settings.compose_content, res_count)
     if keyisset(SUBSCRIPTIONS_KEY, res_content):
         pass
     add_topics_outputs(root_template)

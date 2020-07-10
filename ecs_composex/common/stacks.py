@@ -64,7 +64,7 @@ class ComposeXStack(Stack, object):
             raise TypeError("parameter must be of type", dict, "got", type(parameter))
         self.Parameters.update(parameter)
 
-    def render(self, extension=None, **kwargs):
+    def render(self, settings, extension=None, **kwargs):
         """
         Function to use when the template is finalized and can be uploaded to S3.
         """
@@ -74,12 +74,11 @@ class ComposeXStack(Stack, object):
         template_file = FileArtifact(
             file_name=f"{self.title}.{extension}",
             template=self.stack_template,
-            **kwargs,
+            settings=settings,
         )
         LOG.debug(kwargs)
         template_file.define_body()
-        template_file.write()
-        template_file.upload()
+        template_file.transcribe()
         template_file.validate()
         LOG.debug(f"Rendered URL = {template_file.url}")
         setattr(self, "TemplateURL", template_file.url)
@@ -118,7 +117,7 @@ class XModuleStack(ComposeXStack):
     """
 
 
-def render_final_template(root_template, **kwargs):
+def render_final_template(root_template, settings, **kwargs):
     """
     Function to go through all stacks of a given template and update the template
     It will recursively render sub stacks defined.
@@ -132,8 +131,8 @@ def render_final_template(root_template, **kwargs):
         if isinstance(resource, (XModuleStack, ComposeXStack)):
             LOG.debug(resource)
             LOG.debug(resource.title)
-            render_final_template(resource.stack_template, **kwargs)
-            resource.render(**kwargs)
+            render_final_template(resource.stack_template, settings, **kwargs)
+            resource.render(settings, **kwargs)
         elif isinstance(resource, Stack):
             LOG.warn(resource_name)
             LOG.warn(resource)

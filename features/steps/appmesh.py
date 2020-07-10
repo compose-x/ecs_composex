@@ -33,7 +33,7 @@ def step_impl(context):
 
     :param context:
     """
-    full_template = generate_full_template(context.compose_content, **context.kwargs)
+    full_template = generate_full_template(context.settings)
     assert isinstance(full_template[0], Template)
     services_stack = full_template[0].resources["services"]
     assert issubclass(type(services_stack), ComposeXStack)
@@ -50,7 +50,7 @@ def step_impl(context):
 
     :param context:
     """
-    full_template = generate_full_template(context.compose_content, **context.kwargs)
+    full_template = generate_full_template(context.settings)
     assert isinstance(full_template[0], Template)
     services_stack = full_template[0].resources["services"]
     assert issubclass(type(services_stack), ComposeXStack)
@@ -64,6 +64,4 @@ def step_impl(context):
     Function to ensure we raise errors on mistakes
     """
     with raises((ValueError, KeyError)):
-        full_template = generate_full_template(
-            context.compose_content, **context.kwargs
-        )
+        full_template = generate_full_template(context.settings)

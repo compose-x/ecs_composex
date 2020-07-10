@@ -147,7 +147,7 @@ class Mesh(object):
                 name, service, self.routers, self.nodes, self.appmesh
             )
 
-    def render_mesh_template(self, services_stack, **kwargs):
+    def render_mesh_template(self, services_stack):
         """
         Method to create the AppMesh template stack.
 
@@ -164,7 +164,7 @@ class Mesh(object):
                     vpc_params.VPC_DNS_ZONE,
                 ],
             )
-            services_stack.Parameters.update(
+            services_stack.add_parameter(
                 {
                     vpc_params.VPC_DNS_ZONE_T: GetAtt(
                         "vpc", f"Outputs.{vpc_params.VPC_MAP_DNS_ZONE_T}"
@@ -183,7 +183,7 @@ class Mesh(object):
         for res_name in services_stack.stack_template.resources:
             res = services_stack.stack_template.resources[res_name]
             if issubclass(type(res), ComposeXStack):
-                res.DependsOn.append(self.appmesh.title)
+                res.add_dependencies(self.appmesh.title)
         for node_name in self.nodes:
             if self.nodes[node_name].backends:
                 self.nodes[node_name].expand_backends(services_stack, self.services)

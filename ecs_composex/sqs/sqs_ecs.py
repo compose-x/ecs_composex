@@ -75,4 +75,4 @@ def sqs_to_ecs(queues, services_stack, services_families, sqs_root_stack, **kwar
                     family_wide,
                 )
             if sqs_root_stack.title not in services_stack.DependsOn:
-                services_stack.DependsOn.append(sqs_root_stack.title)
+                services_stack.add_dependencies(sqs_root_stack.title)
