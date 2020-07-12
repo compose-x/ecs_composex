@@ -91,7 +91,10 @@ class ComposeXSettings(object):
         self.format = (
             self.default_format
             if not keyisset(self.format_arg, kwargs)
-            and kwargs[self.format_arg] in self.allowed_formats
+            or (
+                keyisset(self.format_arg, kwargs)
+                and kwargs[self.format_arg] not in self.allowed_formats
+            )
             else kwargs[self.format_arg]
         )
 

@@ -16,11 +16,9 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from behave import then
-from pytest import raises
 
-from features.steps.common import *
-from ecs_composex.ecs_composex import generate_full_template
 from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.ecs_composex import generate_full_template
 
 
 @then("I should have a RDS DB")
@@ -30,7 +28,7 @@ def step_impl(context):
     :param context:
     :return:
     """
-    template = generate_full_template(context.settings)[0]
+    template = generate_full_template(context.settings).stack_template
     db_root_stack = template.resources["rds"]
     assert issubclass(type(db_root_stack), ComposeXStack)
 

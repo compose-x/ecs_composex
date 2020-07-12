@@ -31,7 +31,7 @@ def step_impl(context):
     :param context:
     :return:
     """
-    template = generate_full_template(context.settings)[0]
+    template = generate_full_template(context.settings).stack_template
     sqs_root_stack = template.resources["sqs"]
     services_root_stack = template.resources["services"]
     assert issubclass(type(sqs_root_stack), ComposeXStack)

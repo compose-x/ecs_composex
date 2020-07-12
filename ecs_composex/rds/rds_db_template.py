@@ -294,6 +294,12 @@ def add_parameter_group(template, db):
         db["Properties"][DB_ENGINE_NAME.title],
         db["Properties"][DB_ENGINE_VERSION.title],
     )
+    if not db_family:
+        raise ValueError(
+            "Failed to retrieve the DB Family for "
+            f"{db['Properties']['DB_ENGINE_NAME.title']}"
+            f"{db['Properties']['DB_ENGINE_VERSION.title']}"
+        )
     db_settings = get_family_settings(db_family)
     DBParameterGroup(
         PARAMETER_GROUP_T,

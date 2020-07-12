@@ -15,13 +15,10 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from boto3 import session
 from os import path
-from behave import given, when, then
-from pytest import raises
 
+from behave import given
 
-from ecs_composex.common import load_composex_file
 from ecs_composex.common.settings import ComposeXSettings
 
 
