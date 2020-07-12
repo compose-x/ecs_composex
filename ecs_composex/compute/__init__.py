@@ -23,43 +23,33 @@ The SpotFleet and OnDemand instances are optional, but the LaunchTemplate gets c
 for testing one would wish to run a new EC2 instance, you can simply do it from the launch template.
 """
 
-import boto3
-
-from ecs_composex.common import (
-    keyisset,
-    load_composex_file,
-    build_default_stack_parameters,
-)
-from ecs_composex.common.aws import get_curated_azs
-from ecs_composex.common.ecs_composex import XFILE_DEST
-from ecs_composex.common.tagging import generate_tags_parameters
+from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compute.compute_template import generate_compute_template
 
 
-def create_compute_stack(session=None, **kwargs):
+def create_compute_stack(settings):
     """
     Function entrypoint for CLI.
 
-    :param session: boto3 session to override API calls with
-    :type session: boto3.session.Session
+    :param ecs_composex.common.settings.ComposeXSettings settings: The settings for execution
 
     :return: cluster template
     :rtype: troposphere.Template
     """
-    stack_params = []
-    compose_content = None
-    if keyisset(XFILE_DEST, kwargs):
-        compose_content = load_composex_file(kwargs[XFILE_DEST])
-    if not keyisset("AwsAzs", kwargs):
-        if keyisset("AwsRegion", kwargs):
-            azs = get_curated_azs(region=kwargs["AwsRegion"])
-        elif session is None:
-            session = boto3.session.Session()
-            azs = get_curated_azs(session=session)
-        else:
-            azs = get_curated_azs()
-    else:
-        azs = kwargs["AwsAzs"]
-    template = generate_compute_template(azs, compose_content, **kwargs)
-    build_default_stack_parameters(stack_params, **kwargs)
-    return template, stack_params
+    template = generate_compute_template(settings)
+    return template
+
+
+class ComputeStack(ComposeXStack):
+    """
+    Class to handle the EC2 compute creation.
+    """
+
+    def __init__(self, title, settings, parameters):
+        """
+        Method to init the ComputeStack
+        :param ecs_composex.common.settings.ComposeXSettings settings: The settings for execution
+        """
+
+        template = generate_compute_template(settings)
+        super().__init__(title, stack_template=template, stack_parameters=parameters)

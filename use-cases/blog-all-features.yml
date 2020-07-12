@@ -53,16 +53,32 @@ services:
     image: nginx
     ports:
       - 80
+    x-configs:
+      iam:
+        boundary: arn:aws:iam::aws:policy/PowerUserAccess
 
 x-sqs:
   queueA:
-    Properties: {}
+    Properties:
+      QueueName: abcd
     Settings:
       EnvNames:
         - QUEUEA
     Services:
       - name: app
         access: RWMessages
+
+  queueB:
+    Properties:
+      QueueName: xyz
+    Settings:
+      EnvNames:
+        - QUEUEB
+    Services:
+      - name: rproxy
+        access: RWMessages
+
+
 
 x-sns:
   Topics:

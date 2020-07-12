@@ -13,7 +13,6 @@ services:
     image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-01-rproxy:latest
     ports:
       - 80:80
-      - 443:80
     deploy:
       replicas: 2
       resources:
@@ -42,42 +41,34 @@ services:
           memory: "64M"
         limits:
           cpus: "0.5"
-          memory: "128M"
+          memory: "134217728B"
       labels:
         ecs.task.family: app01
     environment:
       LOGLEVEL: DEBUG
     x-configs:
       use_xray: True
-      iam:
-        boundary: arn:aws:iam::aws:policy/PowerUser
 
   backend:
     image: nginx
     ports:
       - 80
-    x-configs:
-      network:
-        lb_type: network
 
-x-acm:
-  blogdemo:
+x-sqs:
+  queueA:
+    Properties: {}
+    Settings:
+      EnvNames:
+        - QUEUEA
+
+  queueB:
     Properties:
-      DomainName: blog-demo.lambda-my-aws.io
-      DomainValidationOptions:
-        - DomainName: lambda-my-aws.io
-          HostedZoneId: ZREDACTED111
-    Settings: {}
+      RedrivePolicy:
+        deadLetterTargetArn: undefined
+        maxReceiveCount: 10
+    Settings:
+      EnvNames:
+        - queueb
     Services:
       - name: app01
-        ports: [443]
-      - name: backend
-        ports: [80]
-
-  unused:
-    Properties:
-      DomainName: blog-demo.lambda-my-aws.io
-      DomainValidationOptions:
-        - DomainName: lambda-my-aws.io
-          HostedZoneId: ZREDACTED111
-    Services: []
+        access: RWMessages

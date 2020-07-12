@@ -41,7 +41,7 @@ services:
           memory: "64M"
         limits:
           cpus: "0.5"
-          memory: "128M"
+          memory: "134217728B"
       labels:
         ecs.task.family: app01
     environment:
@@ -60,15 +60,15 @@ x-sqs:
     Settings:
       EnvNames:
         - QUEUEA
-    Services:
-      - name: app01
-        access: RWMessages
 
   queueB:
-    Properties: {}
+    Properties:
+      RedrivePolicy:
+        deadLetterTargetArn: queueA
+        maxReceiveCount: 10
     Settings:
       EnvNames:
         - queueb
     Services:
-      - name: app
+      - name: app01
         access: RWMessages

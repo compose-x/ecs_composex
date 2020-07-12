@@ -105,15 +105,6 @@ def initialize_acm_stack_template(cert_name):
     return tpl
 
 
-class CertificateStack(ComposeXStack):
-    """
-    Class to manage certificates as stacks of their own
-    """
-
-    def __init__(self, title, stack_template, **kwargs):
-        super().__init__(title, stack_template, **kwargs)
-
-
 def build_cert_params(cert_def):
     """
     Function to build the certificate parameters

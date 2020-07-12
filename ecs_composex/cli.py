@@ -19,18 +19,13 @@
 """Console script for ecs_composex."""
 
 import argparse
-import os
 import sys
 import warnings
 
-from boto3 import session
-
+from ecs_composex.common import LOG
 from ecs_composex.common import keyisset
-from ecs_composex.common import LOG, load_composex_file
 from ecs_composex.common.cfn_params import USE_FLEET_T
-from ecs_composex.common.cfn_tools import build_config_template_file
-from ecs_composex.common.ecs_composex import XFILE_DEST, DIR_DEST
-from ecs_composex.common.files import FileArtifact
+from ecs_composex.common.settings import ComposeXSettings
 from ecs_composex.common.stacks import render_final_template
 from ecs_composex.compute.compute_params import CLUSTER_NAME_T
 from ecs_composex.ecs_composex import generate_full_template
@@ -41,8 +36,6 @@ from ecs_composex.vpc.vpc_params import (
     VPC_ID_T,
     VPC_MAP_ID_T,
 )
-
-from ecs_composex.common.settings import ComposeXSettings
 
 
 def validate_vpc_input(args):
@@ -253,16 +246,9 @@ def main_parser():
         required=False,
         default=False,
         action="store_true",
-        dest=USE_FLEET_T,
+        dest=ComposeXSettings.create_spotfleet_arg,
         help="Runs spotfleet for EC2. If used in combination "
         "of --use-fargate, it will create an additional SpotFleet",
-    )
-    parser.add_argument(
-        "--add-compute-resources",
-        dest="AddComputeResources",
-        action="store_true",
-        help="Whether you want to create a launch template to create EC2 resources for"
-        " to expand the ECS Cluster and run containers on EC2 instances you might have access to.",
     )
 
     parser.add_argument("_", nargs="*")
@@ -276,7 +262,6 @@ def main():
     settings.set_bucket_name_from_account_id()
     settings.set_azs_from_api()
 
-    kwargs = vars(args)
     validate_vpc_input(vars(args))
     validate_cluster_input(vars(args))
 

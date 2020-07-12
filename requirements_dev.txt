@@ -1,16 +1,17 @@
-pip>=20.0
-bump2version==1.0.0
-watchdog==0.10.2
+# TEST PROGRAMS
+pytest==5.4.1
+pytest-runner==5.2
 flake8==3.7.9
 tox==3.14.6
 coverage==5.1
-Sphinx==3.0.3
-twine==3.1.1
-pytest==5.4.1
-pytest-runner==5.2
-sphinx-rtd-theme==0.4.3
-black==19.10b0
-wheel
 docker-compose==1.26.0
 behave==1.2.6
+
+# DEVELOPMENT TOOLS
+Sphinx==3.0.3
+twine==3.1.1
+sphinx-rtd-theme==0.4.3
+black==19.10b0
 pre-commit==2.6.0
+bump2version==1.0.0
+watchdog==0.10.2

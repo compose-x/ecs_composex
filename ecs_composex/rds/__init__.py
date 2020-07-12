@@ -66,30 +66,6 @@ class XResource(ComposeXStack):
     vpc_stack = None
     dependencies = []
 
-    def add_vpc_stack(self, vpc_stack):
-        if isinstance(vpc_stack, ComposeXStack):
-            vpc = vpc_stack.title
-        elif isinstance(vpc_stack, str):
-            vpc = vpc_stack
-        else:
-            raise TypeError(
-                f"vpc_stack must be of type", ComposeXStack, str, "got", type(vpc_stack)
-            )
-        self.Parameters.update(
-            {
-                vpc_params.VPC_ID_T: GetAtt(
-                    vpc_stack, f"Outputs.{vpc_params.VPC_ID_T}"
-                ),
-                vpc_params.STORAGE_SUBNETS_T: GetAtt(
-                    vpc_stack, f"Outputs.{vpc_params.STORAGE_SUBNETS_T}"
-                ),
-            }
-        )
-        if not hasattr(self, "DependsOn"):
-            self.DependsOn = [vpc]
-        else:
-            self.DependsOn.append(vpc)
-
     def add_cluster_parameter(self, cluster_param):
         self.Parameters.update(cluster_param)
 

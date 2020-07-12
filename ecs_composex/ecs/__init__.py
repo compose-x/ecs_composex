@@ -36,11 +36,9 @@ It is going to also, based on the labels set in the compose file
 from troposphere import GetAtt, Sub, Ref, If, Join, Tags
 from troposphere.ec2 import SecurityGroup, SecurityGroupIngress
 
-from ecs_composex.common import build_template, keyisset, LOG
-from ecs_composex.common import load_composex_file, keypresent
+from ecs_composex.common import build_template, LOG
 from ecs_composex.common.cfn_conditions import USE_CLOUDMAP_CON_T
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T, USE_CLOUDMAP
-from ecs_composex.common.ecs_composex import XFILE_DEST
 from ecs_composex.common.outputs import define_import
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.ecs import ecs_params
@@ -55,18 +53,20 @@ class ServiceStack(ComposeXStack):
     """
 
     def __init__(
-        self, title, template, service, service_config, **kwargs,
+        self, title, template, parameters, service, service_config,
     ):
         self.service = service
         self.config = service_config
-        super().__init__(title, template, **kwargs)
-        if not keyisset("Parameters", kwargs):
-            self.Parameters = {
+        super().__init__(title, stack_template=template, stack_parameters=parameters)
+        self.Parameters.update(
+            {
                 ROOT_STACK_NAME_T: Ref("AWS::StackName"),
                 vpc_params.VPC_ID_T: Ref(vpc_params.VPC_ID),
                 vpc_params.PUBLIC_SUBNETS_T: Join(",", Ref(vpc_params.PUBLIC_SUBNETS)),
                 vpc_params.APP_SUBNETS_T: Join(",", Ref(vpc_params.APP_SUBNETS)),
             }
+        )
+        self.Parameters.update(parameters)
 
 
 class ServicesStack(ComposeXStack):
@@ -78,16 +78,41 @@ class ServicesStack(ComposeXStack):
     dependencies = []
     services = []
 
-    def __init__(self, title, settings, **kwargs):
-        self.create_services_templates(settings, **kwargs)
-        super().__init__(title, self.stack_template, **kwargs)
-        if not keyisset("Parameters", kwargs):
-            self.Parameters = {
-                ROOT_STACK_NAME_T: Ref("AWS::StackName"),
-                vpc_params.VPC_ID_T: Ref(vpc_params.VPC_ID),
-                vpc_params.PUBLIC_SUBNETS_T: Join(",", Ref(vpc_params.PUBLIC_SUBNETS)),
-                vpc_params.APP_SUBNETS_T: Join(",", Ref(vpc_params.APP_SUBNETS)),
-            }
+    def __init__(self, title, settings):
+        parameters = [
+            CLUSTER_NAME,
+            vpc_params.VPC_ID,
+            vpc_params.PUBLIC_SUBNETS,
+            vpc_params.APP_SUBNETS,
+            vpc_params.VPC_MAP_ID,
+            vpc_params.VPC_MAP_DNS_ZONE,
+            USE_CLOUDMAP,
+            ecs_params.XRAY_IMAGE,
+            ecs_params.LOG_GROUP_RETENTION,
+        ]
+        template = build_template("Root template for ECS Services", parameters)
+        default_params = {ROOT_STACK_NAME_T: Ref("AWS::StackName")}
+        cluster_sg = template.add_resource(
+            SecurityGroup(
+                "ClusterWideSecurityGroup",
+                GroupDescription=Sub(f"SG for ${{{CLUSTER_NAME_T}}}"),
+                GroupName=Sub(f"cluster-${{{CLUSTER_NAME_T}}}"),
+                Tags=Tags(
+                    {
+                        "Name": Sub(f"clustersg-${{{CLUSTER_NAME_T}}}"),
+                        "ClusterName": Ref(CLUSTER_NAME),
+                    }
+                ),
+                VpcId=Ref(vpc_params.VPC_ID),
+            )
+        )
+        services = generate_services(settings, cluster_sg)
+        super().__init__(
+            title, stack_template=template, stack_parameters=default_params,
+        )
+        self.create_services_templates(services)
+        if not settings.create_vpc:
+            self.no_vpc_parameters()
 
     def handle_service_links(self, service):
         """
@@ -138,81 +163,13 @@ class ServicesStack(ComposeXStack):
             if service.links:
                 self.handle_service_links(service)
 
-    def add_vpc_stack(self, vpc_stack):
-        if isinstance(vpc_stack, ComposeXStack):
-            vpc = vpc_stack.title
-        elif isinstance(vpc_stack, str):
-            vpc = vpc_stack
-        else:
-            raise TypeError(
-                f"vpc_stack must be of type", ComposeXStack, str, "got", type(vpc_stack)
-            )
-        self.Parameters.update(
-            {
-                vpc_params.VPC_ID_T: GetAtt(
-                    vpc_stack, f"Outputs.{vpc_params.VPC_ID_T}"
-                ),
-                vpc_params.PUBLIC_SUBNETS_T: GetAtt(
-                    vpc_stack, f"Outputs.{vpc_params.PUBLIC_SUBNETS_T}"
-                ),
-                vpc_params.APP_SUBNETS_T: GetAtt(
-                    vpc_stack, f"Outputs.{vpc_params.APP_SUBNETS_T}"
-                ),
-                vpc_params.VPC_MAP_ID_T: If(
-                    USE_CLOUDMAP_CON_T,
-                    GetAtt(vpc_stack, f"Outputs.{vpc_params.VPC_MAP_ID_T}"),
-                    Ref("AWS::NoValue"),
-                ),
-                vpc_params.VPC_MAP_DNS_ZONE_T: If(
-                    USE_CLOUDMAP_CON_T,
-                    GetAtt(vpc_stack, f"Outputs.{vpc_params.VPC_MAP_DNS_ZONE_T}"),
-                    Ref("AWS::NoValue"),
-                ),
-            }
-        )
-        if not hasattr(self, "DependsOn"):
-            self.DependsOn = [vpc]
-        else:
-            self.DependsOn.append(vpc)
-
-    def create_services_templates(self, settings, **kwargs):
+    def create_services_templates(self, services):
         """
         Function to create the services root template
         """
-        if keypresent("DependsOn", kwargs):
-            kwargs.pop("DependsOn")
-        parameters = [
-            CLUSTER_NAME,
-            vpc_params.VPC_ID,
-            vpc_params.PUBLIC_SUBNETS,
-            vpc_params.APP_SUBNETS,
-            vpc_params.VPC_MAP_ID,
-            vpc_params.VPC_MAP_DNS_ZONE,
-            USE_CLOUDMAP,
-            ecs_params.XRAY_IMAGE,
-            ecs_params.LOG_GROUP_RETENTION,
-        ]
-        self.stack_template = build_template(
-            "Root template for ECS Services", parameters
-        )
-        cluster_sg = self.stack_template.add_resource(
-            SecurityGroup(
-                "ClusterWideSecurityGroup",
-                GroupDescription=Sub(f"SG for ${{{CLUSTER_NAME_T}}}"),
-                GroupName=Sub(f"cluster-${{{CLUSTER_NAME_T}}}"),
-                Tags=Tags(
-                    {
-                        "Name": Sub(f"clustersg-${{{CLUSTER_NAME_T}}}"),
-                        "ClusterName": Ref(CLUSTER_NAME),
-                    }
-                ),
-                VpcId=Ref(vpc_params.VPC_ID),
-            )
-        )
-        self.services = generate_services(settings, cluster_sg)
-        self.handle_services_dependencies()
-        for service_name in self.services:
-            service = self.services[service_name]
+
+        for service_name in services:
+            service = services[service_name]
             service.parameters.update(
                 {ecs_params.LOG_GROUP_RETENTION_T: Ref(ecs_params.LOG_GROUP_RETENTION)}
             )
@@ -222,11 +179,6 @@ class ServicesStack(ComposeXStack):
                     service_config=service.config,
                     template=service.template,
                     service=service,
-                    Parameters=service.parameters,
-                    DependsOn=service.dependencies,
-                    **kwargs,
+                    parameters=service.parameters,
                 )
             )
-
-    def add_cluster_parameter(self, cluster_param):
-        self.Parameters.update(cluster_param)

@@ -4,6 +4,7 @@
 Functions to manage a template and wheter it should be stored in S3
 """
 from os.path import abspath
+
 import yaml
 
 try:
@@ -15,7 +16,6 @@ from os import mkdir
 import boto3
 import json
 from botocore.exceptions import ClientError
-from datetime import datetime as dt
 from troposphere import Template
 from ecs_composex.common import DATE_PREFIX
 from ecs_composex.common import LOG
@@ -41,27 +41,16 @@ def check_bucket(bucket_name, session):
     try:
         client.head_bucket(Bucket=bucket_name)
         LOG.debug(f"Bucket {bucket_name} available")
-        return True
     except ClientError as error:
         if error.response["Error"]["Code"] == "404":
-            try:
-                LOG.info(f"Attempting to create bucket {bucket_name}")
-                client.create_bucket(
-                    ACL="private",
-                    Bucket=bucket_name,
-                    ObjectLockEnabledForBucket=True,
-                    CreateBucketConfiguration=location,
-                )
-                LOG.info(f"Bucket {bucket_name} successfully created.")
-                return True
-            except Exception as error:
-                LOG.error(error)
-                return False
-    except Exception as error:
-        LOG.error(error)
-        LOG.error(f"Bucket name: {bucket_name}")
-        LOG.error(type(bucket_name))
-        return False
+            LOG.info(f"Attempting to create bucket {bucket_name}")
+            client.create_bucket(
+                ACL="private",
+                Bucket=bucket_name,
+                ObjectLockEnabledForBucket=True,
+                CreateBucketConfiguration=location,
+            )
+            LOG.info(f"Bucket {bucket_name} successfully created.")
 
 
 def validate_template(template_body, file_name, template_url=None, session=None):
@@ -115,7 +104,7 @@ def upload_file(
     :returns: url_path, the https://s3.amazonaws.com/ URL to the file
     :rtype: str
     """
-    assert check_bucket(bucket_name=bucket_name, session=settings.session)
+    check_bucket(bucket_name=bucket_name, session=settings.session)
     if mime is None:
         mime = JSON_MIME
     if prefix is None:
@@ -123,19 +112,15 @@ def upload_file(
 
     key = f"{prefix}/{file_name}"
     client = settings.session.client("s3")
-    try:
-        client.put_object(
-            Body=body,
-            Key=key,
-            Bucket=bucket_name,
-            ContentEncoding="utf-8",
-            ContentType=mime,
-            ServerSideEncryption="AES256",
-        )
-        return f"https://s3.amazonaws.com/{bucket_name}/{key}"
-    except Exception as error:
-        LOG.debug(error)
-        return None
+    client.put_object(
+        Body=body,
+        Key=key,
+        Bucket=bucket_name,
+        ContentEncoding="utf-8",
+        ContentType=mime,
+        ServerSideEncryption="AES256",
+    )
+    return f"https://s3.amazonaws.com/{bucket_name}/{key}"
 
 
 class FileArtifact(object):
@@ -242,9 +227,15 @@ class FileArtifact(object):
                 if not self.file_path:
                     self.write(settings)
                 LOG.debug(f"No upload - Validating template body - {self.file_path}")
-                settings.session.client("cloudformation").validate_template(
-                    TemplateBody=self.body
-                )
+                if len(self.body) >= 51200:
+                    LOG.warning(
+                        f"Template body for {self.file_name} is too big for local validation."
+                        " No upload is True, so skipping."
+                    )
+                else:
+                    settings.session.client("cloudformation").validate_template(
+                        TemplateBody=self.body
+                    )
             LOG.debug(f"Template {self.file_name} was validated successfully by CFN")
         except ClientError as error:
             LOG.error(error)

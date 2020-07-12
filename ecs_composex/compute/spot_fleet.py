@@ -46,17 +46,6 @@ from ecs_composex.vpc import vpc_params
 from ecs_composex.compute import compute_params, compute_conditions
 
 
-DEFAULT_SPOT_CONFIG = {
-    "use_spot": True,
-    "bid_price": 0.42,
-    "spot_instance_types": {
-        "m5a.xlarge": {"weight": 3},
-        "m5a.2xlarge": {"weight": 7},
-        "m5a.4xlarge": {"weight": 15},
-    },
-}
-
-
 def add_fleet_role(template):
     """Function to create the IAM Role for the EC2 Spot Fleet
 
@@ -78,13 +67,12 @@ def add_fleet_role(template):
     return role
 
 
-def define_overrides(region_azs, lt_id, lt_version, spot_config):
+def define_overrides(settings, lt_id, lt_version, spot_config):
     """
     From the list of AZs and the configurations set for spotfleet instances, it will generate an override that
     SpotFleet will use to diversify the compute resources.
 
-    :param region_azs: Availability Zones of the region to create the hosts into
-    :type region_azs: list
+    :param ecs_composex.common.settings.ComposeXSettings settings: The settings for execution
     :param lt_id: Launch template ID
     :param lt_version: Launch Template Version
     :param spot_config: SpotFleet configuration for pricing and instance types
@@ -111,7 +99,7 @@ def define_overrides(region_azs, lt_id, lt_version, spot_config):
     overrides = []
     configs = []
     LOG.debug(spot_config)
-    for count, az in enumerate(region_azs):
+    for count, az in enumerate(settings.aws_azs):
         LOG.debug(az)
         for itype in spot_config["spot_instance_types"]:
             overrides.append(
@@ -248,18 +236,17 @@ def define_default_cw_alarms(template, spot_fleet, scaling_set):
     )
 
 
-def define_spot_fleet(template, region_azs, lt_id, lt_version, **kwargs):
+def define_spot_fleet(template, settings, lt_id, lt_version, spot_config):
     """
     Function to add a spot fleet to the cluster template
 
+    :param ecs_composex.common.settings.ComposeXSettings settings: The settings for execution
     :param template: Source template
     :type template: troposphere.Template
-    :param region_azs: List of AZs to iterate onto, ie ['eu-west-1a', 'eu-west-1b']
-    :type region_azs: list
 
     :returns: NIL
     """
-    configs = define_overrides(region_azs, lt_id, lt_version, kwargs["spot_config"])
+    configs = define_overrides(settings, lt_id, lt_version, spot_config)
     role = add_fleet_role(template)
     fleet = SpotFleet(
         f"EcsClusterFleet",
@@ -271,7 +258,7 @@ def define_spot_fleet(template, region_azs, lt_id, lt_version, **kwargs):
             InstanceInterruptionBehavior="terminate",
             TargetCapacity=Ref(compute_params.TARGET_CAPACITY),
             Type="maintain",
-            SpotPrice=str(kwargs["spot_config"]["bid_price"]),
+            SpotPrice=str(spot_config["bid_price"]),
             ReplaceUnhealthyInstances=True,
             LaunchTemplateConfigs=configs,
         ),
@@ -280,7 +267,7 @@ def define_spot_fleet(template, region_azs, lt_id, lt_version, **kwargs):
     define_default_cw_alarms(template, fleet, scaling_set)
 
 
-def generate_spot_fleet_template(region_azs, **kwargs):
+def generate_spot_fleet_template(settings, spot_config):
     """
     Generates a standalone template for SpotFleet
     """
@@ -299,7 +286,5 @@ def generate_spot_fleet_template(region_azs, **kwargs):
     )
     lt_id = Ref(compute_params.LAUNCH_TEMPLATE_ID)
     lt_version = Ref(compute_params.LAUNCH_TEMPLATE_VersionNumber)
-    if not keyisset("spot_config", kwargs):
-        kwargs["spot_config"] = DEFAULT_SPOT_CONFIG
-    define_spot_fleet(template, region_azs, lt_id, lt_version, **kwargs)
+    define_spot_fleet(template, settings, lt_id, lt_version, spot_config)
     return template

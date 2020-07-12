@@ -20,12 +20,12 @@ phases:
       - pip install -r requirements.txt
       - pip install -r requirements_buildspec.txt
       - python setup.py install
-      - pip uninstall troposphere -y && pip install git+https://github.com/cloudtools/troposphere@master#egg-info
   build:
     commands:
       - echo "Executing behave"
       - if ! [ -d reports ]; then mkdir reports ; fi
-      - behave --junit
+      - make coverage
+      - curl -s https://codecov.io/bash | bash
 
 artifacts:
   files:

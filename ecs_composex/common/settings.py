@@ -141,6 +141,7 @@ class ComposeXSettings(object):
             if keyisset(CLUSTER_NAME.title, kwargs)
             else CLUSTER_NAME.Default
         )
+        self.create_compute = False if not keyisset(USE_FLEET_T, kwargs) else True
 
     def __repr__(self):
         return dumps(
@@ -158,7 +159,7 @@ class ComposeXSettings(object):
         :return:
         """
         try:
-            self.aws_azs = get_region_azs(self.aws_region)
+            self.aws_azs = get_region_azs(self.session)
         except ClientError as error:
             code = error.response["Error"]["Code"]
             message = error.response["Error"]["Message"]

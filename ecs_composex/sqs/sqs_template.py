@@ -17,7 +17,6 @@
 
 """Generates the individual SQS Queues templates."""
 
-import boto3
 from troposphere import Tags, Sub, GetAtt, If, Ref
 from troposphere.sqs import Queue, RedrivePolicy
 from troposphere.ssm import Parameter as SsmParameter
@@ -28,8 +27,8 @@ from ecs_composex.common import (
     keyisset,
     keypresent,
     LOG,
+    NONALPHANUM,
 )
-from ecs_composex.common import validate_kwargs
 from ecs_composex.common.cfn_conditions import (
     USE_SSM_ONLY_T,
     USE_SSM_EXPORTS_T,
@@ -167,19 +166,20 @@ def generate_queue_template(queue_name, properties, redrive_queue=None):
     queue_template = build_template(
         f"Queue {queue_name} in {{{ROOT_STACK_NAME_T}}}", [SQS_NAME]
     )
+    res_name = NONALPHANUM.sub("", queue_name)
     if redrive_queue is not None:
         properties.update(
             add_redrive_policy(queue_template, queue_name, properties, redrive_queue)
         )
-    properties["Tags"] = define_queue_tags(properties, queue_name)
-    if "QueueName" in properties.keys():
+    if keyisset("Tags", properties):
+        properties["Tags"] = define_queue_tags(properties, queue_name)
+    if keyisset("QueueName", properties):
+        queue_name = properties["QueueName"]
         properties.pop("QueueName")
-        properties["QueueName"] = Sub(
-            f"${{{ROOT_STACK_NAME_T}}}-${properties['QueueName']}"
-        )
+        properties["QueueName"] = Sub(f"${{{ROOT_STACK_NAME_T}}}-{queue_name}")
     else:
-        properties["QueueName"] = Sub(f"${{{ROOT_STACK_NAME_T}}}-${{{SQS_NAME_T}}}")
-    queue = Queue(queue_name, template=queue_template, **properties)
+        properties["QueueName"] = Sub(f"${{{ROOT_STACK_NAME_T}}}-${{{res_name}}}")
+    queue = Queue(res_name, template=queue_template, **properties)
     add_ssm_parameters(queue_template, queue)
     queue_template.add_output(
         formatted_outputs(
@@ -194,16 +194,13 @@ def generate_queue_template(queue_name, properties, redrive_queue=None):
     return queue_template
 
 
-def add_queue_stack(queue_name, queue, queues, settings):
+def add_queue_stack(queue_name, queue, queues):
     """
     Function to define the Queue template settings for the Nested Stack
 
-    :param tags: tags to add to the resources of the stack.
     :param queue_name: Name of the queue as defined in Docker ComposeX file
     :param queue: the queue
     :param queues: all the queues in a list
-    :param session: session to override
-    :param kwargs: optional arguments
 
     :return: Queue Stack object
     :rtype: ecs_composex.common.files.ComposeXStack
@@ -262,8 +259,6 @@ def generate_sqs_root_template(settings):
     queues = settings.compose_content[RES_KEY]
     for queue_name in queues:
         LOG.debug(queue_name)
-        queue_stack = add_queue_stack(
-            queue_name, queues[queue_name], queues.keys(), settings
-        )
+        queue_stack = add_queue_stack(queue_name, queues[queue_name], queues.keys())
         root_tpl.add_resource(queue_stack)
     return root_tpl

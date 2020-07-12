@@ -1,4 +1,4 @@
-#  -*- coding: utf-8 -*-
+﻿#  -*- coding: utf-8 -*-
 #   ECS ComposeX <https://github.com/lambda-my-aws/ecs_composex>
 #   Copyright (C) 2020  John Mille <john@lambda-my-aws.io>
 #  #
@@ -15,19 +15,9 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from behave import then
-from pytest import raises
+from os import path
 
-from features.steps.common import *
-from ecs_composex.ecs_composex import generate_full_template
-from ecs_composex.common.stacks import ComposeXStack
+RES_KEY = f"x-{path.basename(path.dirname(path.abspath(__file__)))}"
+SSM_PREFIX = f"/{RES_KEY}/"
 
-
-@then("I should have an ACM root stack")
-def step_impl(context):
-    """
-    Function to ensure we have an ACM stack and a DB stack within
-    """
-    template = generate_full_template(context.compose_content, **context.kwargs)[0]
-    acm_root_stack = template.resources["acm"]
-    assert issubclass(type(acm_root_stack), ComposeXStack)
+TOPIC_ARN_T = "TopicArn"
