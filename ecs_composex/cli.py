@@ -123,6 +123,14 @@ def main_parser():
         default=ComposeXSettings.default_output_dir,
     )
     parser.add_argument(
+        "--format",
+        help="Defines the format you want to use.",
+        type=str,
+        dest=ComposeXSettings.format_arg,
+        choices=ComposeXSettings.allowed_formats,
+        default=ComposeXSettings.default_format,
+    )
+    parser.add_argument(
         "--cfn-config-file",
         help="Path to AWS Template config file",
         required=False,
@@ -164,7 +172,7 @@ def main_parser():
         action="store_true",
         default=False,
         help="Whether the templates should be uploaded or not.",
-        dest=ComposeXSettings.upload_arg,
+        dest=ComposeXSettings.no_upload_arg,
     )
     # VPC SETTINGS
     parser.add_argument(
@@ -272,16 +280,8 @@ def main():
     validate_vpc_input(vars(args))
     validate_cluster_input(vars(args))
 
-    root_template = generate_full_template(settings)
-
-    render_final_template(root_template.stack_template, settings, **kwargs)
-    template_file = FileArtifact(
-        root_template.title,
-        settings=settings,
-        template=root_template.stack_template,
-        **vars(args),
-    )
-    template_file.create()
+    root_stack = generate_full_template(settings)
+    render_final_template(root_stack, settings)
 
 
 if __name__ == "__main__":

@@ -54,9 +54,12 @@ class ComposeXSettings(object):
     zones_arg = "Zones"
 
     bucket_arg = "BucketName"
-    upload_arg = "NoUpload"
+    no_upload_arg = "NoUpload"
     input_file_arg = "DockerComposeXFile"
     output_dir_arg = "OutputDirectory"
+    format_arg = "TemplateFormat"
+    default_format = "json"
+    allowed_formats = ["json", "yaml", "text"]
 
     vpc_cidr_arg = "VpcCidr"
     single_nat_arg = "SingleNat"
@@ -82,9 +85,18 @@ class ComposeXSettings(object):
         )
         self.aws_azs = self.default_azs
         self.account_id = None
-        self.bucket_name = None
+        self.bucket_name = (
+            None if not keyisset(self.bucket_arg, kwargs) else kwargs[self.bucket_arg]
+        )
+        self.format = (
+            self.default_format
+            if not keyisset(self.format_arg, kwargs)
+            and kwargs[self.format_arg] in self.allowed_formats
+            else kwargs[self.format_arg]
+        )
 
-        self.upload = False if keyisset(self.upload_arg, kwargs) else True
+        self.no_upload = True if keyisset(self.no_upload_arg, kwargs) else False
+        self.upload = False if self.no_upload else True
         self.output_dir = (
             kwargs[self.output_dir_arg]
             if keyisset(self.output_dir_arg, kwargs)
@@ -158,6 +170,8 @@ class ComposeXSettings(object):
                 LOG.error(error)
 
     def set_bucket_name_from_account_id(self):
+        if self.bucket_name:
+            return
         if self.account_id is None:
             try:
                 self.account_id = get_account_id(session=self.session)
@@ -174,6 +188,7 @@ class ComposeXSettings(object):
                     LOG.error(error)
                 self.bucket_name = None
                 self.upload = False
+                self.no_upload = True
 
     def create_root_stack_parameters_from_input(self):
         """

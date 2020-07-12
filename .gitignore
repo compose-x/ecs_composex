@@ -12,9 +12,7 @@ __pycache__/
 .scanner*
 
 OUTPUTS
-outputs/*.json
-outputs/*.yml
-outputs/*.yaml
+outputs/*
 
 # IDEA STUFF
 .idea
