@@ -85,48 +85,32 @@ class ComposeXSettings(object):
             else self.session.region_name
         )
         self.aws_azs = self.default_azs
+        self.compose_content = load_composex_file(kwargs[self.input_file_arg])
         self.account_id = None
-        self.bucket_name = (
-            None if not keyisset(self.bucket_arg, kwargs) else kwargs[self.bucket_arg]
-        )
+
+        self.bucket_name = None
+        self.output_dir = self.default_output_dir
         self.format = self.default_format
-        if (
-            keyisset(self.format_arg, kwargs)
-            and kwargs[self.format_arg] in self.allowed_formats
-        ):
-            self.format = kwargs[self.format_arg]
+        self.set_output_settings(kwargs)
 
         self.no_upload = True if keyisset(self.no_upload_arg, kwargs) else False
         self.upload = False if self.no_upload else True
-        self.output_dir = (
-            kwargs[self.output_dir_arg]
-            if keyisset(self.output_dir_arg, kwargs)
-            else self.default_output_dir
-        )
         self.name = kwargs[self.name_arg]
-
-        self.compose_content = load_composex_file(kwargs[self.input_file_arg])
-        self.create_cluster = (
-            True if keyisset(self.create_cluster_arg, kwargs) else False
-        )
-        self.cluster_name = (
-            kwargs[self.cluster_name_arg]
-            if keyisset(self.cluster_name_arg, kwargs)
-            else None
-        )
-        self.create_vpc = True if keyisset(self.create_vpc_arg, kwargs) else False
-        self.vpc_cidr = (
-            kwargs[self.vpc_cidr_arg]
-            if keyisset(self.vpc_cidr_arg, kwargs)
-            else self.default_vpc_cidr
-        )
-        self.cluster_name = (
-            kwargs[CLUSTER_NAME.title]
-            if keyisset(CLUSTER_NAME.title, kwargs)
-            else CLUSTER_NAME.Default
-        )
         self.create_compute = False if not keyisset(USE_FLEET_T, kwargs) else True
+
+        self.vpc_id = None
+        self.vpc_cidr = self.default_vpc_cidr
+        self.app_subnets = None
+        self.storage_subnets = None
+        self.single_nat = None
+        self.public_subnets = None
+        self.vpc_private_namespace_id = None
+        self.create_vpc = False
         self.set_vpc_settings(kwargs)
+
+        self.create_cluster = None
+        self.cluster_name = None
+        self.set_cluster_settings(kwargs)
 
     def __repr__(self):
         return dumps(
@@ -139,12 +123,49 @@ class ComposeXSettings(object):
             indent=4,
         )
 
+    def set_output_settings(self, kwargs):
+        """
+        Method to set the output settings based on kwargs
+        """
+        self.bucket_name = (
+            kwargs[self.bucket_arg] if keyisset(self.bucket_arg, kwargs) else None
+        )
+        self.format = self.default_format
+        if (
+            keyisset(self.format_arg, kwargs)
+            and kwargs[self.format_arg] in self.allowed_formats
+        ):
+            self.format = kwargs[self.format_arg]
+
+        self.output_dir = (
+            kwargs[self.output_dir_arg]
+            if keyisset(self.output_dir_arg, kwargs)
+            else self.default_output_dir
+        )
+
+    def set_cluster_settings(self, kwargs):
+        """
+        Method to set cluster settings based on kwargs
+        """
+        self.create_cluster = (
+            True if keyisset(self.create_cluster_arg, kwargs) else False
+        )
+        self.cluster_name = (
+            kwargs[self.cluster_name_arg]
+            if keyisset(self.cluster_name_arg, kwargs)
+            else None
+        )
+
     def set_vpc_settings(self, kwargs):
         """
         Method to set the values of subnets if present in kwargs
         :param kwargs:
         :return:
         """
+        self.vpc_cidr = (
+            kwargs[self.vpc_cidr_arg] if keyisset(self.vpc_cidr_arg, kwargs) else None
+        )
+        self.create_vpc = True if keyisset(self.create_vpc_arg, kwargs) else False
         self.vpc_id = kwargs[VPC_ID_T] if keyisset(VPC_ID_T, kwargs) else None
         self.single_nat = (
             kwargs[self.single_nat_arg]
