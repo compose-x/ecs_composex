@@ -65,3 +65,8 @@ NOT_USE_HOSTNAME_CON = Equals(
 
 USE_HOSTNAME_CON_T = "UseMicroserviceHostnameCondition"
 USE_HOSTNAME_CON = Not(Condition(NOT_USE_HOSTNAME_CON_T))
+
+USE_CLUSTER_CAPACITY_PROVIDERS_CON_T = "UseClusterDefaultCapacityProviders"
+USE_CLUSTER_CAPACITY_PROVIDERS_CON = Equals(
+    Ref(ecs_params.LAUNCH_TYPE), ecs_params.LAUNCH_TYPE.Default
+)

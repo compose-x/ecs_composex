@@ -23,15 +23,15 @@ services:
           cpus: "0.25"
           memory: "64M"
       labels:
-        - "ecs.task.family=app01"
+        ecs.task.family: app01
     x-configs:
       network:
         is_public: True
         lb_type: application
     depends_on:
-      - app
-  app:
-    image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-01:xray
+      - app01
+  app01:
+    image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-01:appmesh
     ports:
       - 5000
     deploy:
@@ -39,15 +39,47 @@ services:
         reservations:
           cpus: "0.25"
           memory: "64M"
-        limits:
-          cpus: "0.5"
-          memory: "128M"
       labels:
         ecs.task.family: app01
     environment:
       LOGLEVEL: DEBUG
     x-configs:
       use_xray: True
+    links:
+      - app03:dateteller
+
+  app02:
+    image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-02:latest
+    ports:
+      - 5000
+    deploy:
+      resources:
+        reservations:
+          cpus: "0.25"
+          memory: "64M"
+      labels:
+        ecs.task.family: app02
+    environment:
+      LOGLEVEL: DEBUG
+    x-configs:
+      use_xray: True
+
+  app03:
+    image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-02:latest
+    ports:
+      - 5000
+    deploy:
+      resources:
+        reservations:
+          cpus: "0.25"
+          memory: "64M"
+      labels:
+        ecs.task.family: app03
+    environment:
+      LOGLEVEL: DEBUG
+    x-configs:
+      use_xray: True
+
 
 x-tags:
   owner: johnpreston

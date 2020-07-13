@@ -70,6 +70,7 @@ setup(
             "ecs_composex-sqs=ecs_composex.sqs.cli:main",
             "ecs_composex-rds=ecs_composex.rds.cli:main",
             "ecs_composex-sns=ecs_composex.sns.cli:main",
+            "ecs_composex-acm=ecs_composex.acm.cli:main",
         ]
     },
     install_requires=requirements,

@@ -75,7 +75,7 @@ from ecs_composex.ecs.ecs_params import (
     SERVICE_NAME_T,
     SG_T,
 )
-from ecs_composex.ecs.ecs_xray import define_xray_container
+from ecs_composex.ecs.ecs_aws_sidecars import define_xray_container
 from ecs_composex.vpc import vpc_params
 from ecs_composex.vpc.vpc_conditions import USE_VPC_MAP_ID_CON_T
 from ecs_composex.vpc.vpc_params import VPC_ID, PUBLIC_SUBNETS
@@ -142,7 +142,57 @@ class Task(object):
     Class to handle the Task definition building and parsing along with the service config.
     """
 
-    definition = None
+    def __init__(self, template, containers_config, family_parameters):
+        """
+        Init method
+        """
+        self.family_config = None
+        self.containers = []
+        self.containers_config = containers_config
+        self.stack_parameters = {}
+        self.sort_container_configs(template, containers_config)
+        add_service_roles(template, self.family_config)
+        if self.family_config.use_xray:
+            self.containers.append(define_xray_container())
+            add_parameters(template, [ecs_params.XRAY_IMAGE])
+            self.stack_parameters.update(
+                {ecs_params.XRAY_IMAGE_T: Ref(ecs_params.XRAY_IMAGE)}
+            )
+        self.set_task_compute_parameter()
+        self.set_task_definition(template)
+
+    def set_task_definition(self, template):
+        """
+        Method to set or update the task definition
+
+        :param troposphere.Template template: the template to add the definition to
+        """
+        self.definition = TaskDefinition(
+            TASK_T,
+            template=template,
+            Cpu=ecs_params.FARGATE_CPU,
+            Memory=ecs_params.FARGATE_RAM,
+            NetworkMode=NETWORK_MODE,
+            Family=Ref(ecs_params.SERVICE_NAME),
+            TaskRoleArn=GetAtt(TASK_ROLE_T, "Arn"),
+            ExecutionRoleArn=GetAtt(EXEC_ROLE_T, "Arn"),
+            ContainerDefinitions=self.containers,
+            RequiresCompatibilities=["EC2", "FARGATE"],
+            Tags=Tags(
+                {
+                    "Name": Ref(ecs_params.SERVICE_NAME),
+                    "Environment": Ref(AWS_STACK_NAME),
+                }
+            ),
+        )
+
+    def add_appmesh_envoy(self, envoy_container, parameters):
+        """
+        Method to replay and update the definition to add the Envoy sidecar
+
+        :param ecs_composex.ecs.ecs_container.Conatainer envoy_container: The container to add to the definition
+        :param dict parameters: The stack parameters to update.
+        """
 
     def sort_container_configs(self, template, containers_config):
         """
@@ -208,42 +258,6 @@ class Task(object):
             cpu_ram = find_closest_fargate_configuration(tasks_cpu, tasks_ram, True)
             self.stack_parameters.update({ecs_params.FARGATE_CPU_RAM_CONFIG_T: cpu_ram})
 
-    def __init__(self, template, containers_config, family_parameters):
-        """
-        Init method
-        """
-        self.containers = []
-        self.containers_config = None
-        self.family_config = None
-        self.stack_parameters = {}
-        self.sort_container_configs(template, containers_config)
-        add_service_roles(template, self.family_config)
-        if self.family_config.use_xray:
-            self.containers.append(define_xray_container())
-            add_parameters(template, [ecs_params.XRAY_IMAGE])
-            self.stack_parameters.update(
-                {ecs_params.XRAY_IMAGE_T: Ref(ecs_params.XRAY_IMAGE)}
-            )
-        self.set_task_compute_parameter()
-        self.definition = TaskDefinition(
-            TASK_T,
-            template=template,
-            Cpu=ecs_params.FARGATE_CPU,
-            Memory=ecs_params.FARGATE_RAM,
-            NetworkMode=NETWORK_MODE,
-            Family=Ref(ecs_params.SERVICE_NAME),
-            TaskRoleArn=GetAtt(TASK_ROLE_T, "Arn"),
-            ExecutionRoleArn=GetAtt(EXEC_ROLE_T, "Arn"),
-            ContainerDefinitions=self.containers,
-            RequiresCompatibilities=["EC2", "FARGATE"],
-            Tags=Tags(
-                {
-                    "Name": Ref(ecs_params.SERVICE_NAME),
-                    "Environment": Ref(AWS_STACK_NAME),
-                }
-            ),
-        )
-
 
 class Service(object):
     """
@@ -270,17 +284,13 @@ class Service(object):
         """
         self.template = template
         self.config = config
+        self.task = task_definition
         self.links = []
         self.eips = []
         self.service_attrs = None
         self.dependencies = []
         self.network_settings = None
-        self.config = None
-        self.task_definition = None
         self.ecs_service = None
-        # self.dependencies = (
-        #     definition["depends_on"] if keyisset("depends_on", definition) else []
-        # )
         self.service_name = (
             config.resource_name if config.family_name is None else config.family_name
         )
@@ -293,6 +303,7 @@ class Service(object):
             vpc_params.APP_SUBNETS_T: Join(",", Ref(vpc_params.APP_SUBNETS)),
             vpc_params.PUBLIC_SUBNETS_T: Join(",", Ref(vpc_params.PUBLIC_SUBNETS)),
             ecs_params.CLUSTER_NAME_T: Ref(ecs_params.CLUSTER_NAME),
+            vpc_params.VPC_MAP_DNS_ZONE_T: Ref(vpc_params.VPC_MAP_DNS_ZONE),
         }
         if config.family_name is not None:
             self.parameters.update({ecs_params.SERVICE_NAME_T: config.family_name})
@@ -306,9 +317,8 @@ class Service(object):
                 Ref("AWS::NoValue"),
             )
         )
-        self.config = config
         self.define_service_ingress(**kwargs)
-        self.generate_service_definition(task_definition.definition)
+        self.generate_service_definition(self.task.definition)
         self.generate_service_template_outputs()
 
     def add_service_default_sg(self):
@@ -367,6 +377,7 @@ class Service(object):
                 Port=port["published"],
             )
             registries.append(registry)
+            break
         return registries
 
     def add_lb_to_service_ingress(self, lb_sg, service_sg):
@@ -446,18 +457,18 @@ class Service(object):
 
             for port in self.config.ports:
                 if keyisset("source_name", allowed_source):
-                    title = f"From{allowed_source['source_name'].title()}Onto{port['target']}{port['protocol']}"
+                    title = f"From{allowed_source['source_name'].title()}Onto{port['published']}{port['protocol']}"
                     description = Sub(
                         f"From {allowed_source['source_name'].title()} "
-                        f"To {port['target']}{port['protocol']} for ${{{SERVICE_NAME_T}}}"
+                        f"To {port['published']}{port['protocol']} for ${{{SERVICE_NAME_T}}}"
                     )
                 else:
                     title = (
                         f"From{flatten_ip(allowed_source['ipv4'])}"
-                        "To{port['target']}{port['protocol']}"
+                        "To{port['published']}{port['protocol']}"
                     )
                     description = Sub(
-                        f"Public {port['target']}{port['protocol']}"
+                        f"Public {port['published']}{port['protocol']}"
                         f" for ${{{SERVICE_NAME_T}}}"
                     )
                 SecurityGroupIngress(
@@ -466,8 +477,8 @@ class Service(object):
                     Description=description,
                     GroupId=GetAtt(security_group, "GroupId"),
                     IpProtocol=port["protocol"],
-                    FromPort=port["target"],
-                    ToPort=port["target"],
+                    FromPort=port["published"],
+                    ToPort=port["published"],
                     **props,
                 )
 
@@ -532,7 +543,7 @@ class Service(object):
             )
         return sg
 
-    def add_lb_listener(self, port, lb, tgt):
+    def add_lb_listener(self, port, lb, tgt, target_port):
         """
         Method to add a new listener for a given Load Balancer and Target Group combination.
 
@@ -550,7 +561,7 @@ class Service(object):
         if self.config.is_public:
             suffix = "Public"
         listener = Listener(
-            f"{self.config.lb_type.title()}{suffix}ListenerPort{port}",
+            f"{self.config.lb_type.title()}{suffix}ListenerPort{port}To{target_port}",
             template=self.template,
             DependsOn=[lb],
             DefaultActions=[ListenerAction(Type="forward", TargetGroupArn=Ref(tgt))],
@@ -601,7 +612,7 @@ class Service(object):
         )
         return tgt
 
-    def add_load_balancer(self, ports, **kwargs):
+    def add_load_balancer(self, **kwargs):
         """
         Method to add LB to template
 
@@ -614,9 +625,9 @@ class Service(object):
 
         no_value = Ref(AWS_NO_VALUE)
         public_mapping = define_public_mapping(self.eips, kwargs["AwsAzs"])
-        if ports and self.config.use_alb():
-            alb_sg = self.add_alb_sg(ports)
-            self.add_lb_to_service_ingress(alb_sg, SG_T)
+        if self.config.ingress_mappings and self.config.use_alb():
+            alb_sg = self.add_alb_sg(self.config.ingress_mappings.keys())
+            # self.add_lb_to_service_ingress(alb_sg, SG_T)
             lb_sg = [Ref(alb_sg)]
         else:
             lb_sg = no_value
@@ -665,15 +676,15 @@ class Service(object):
         service_lbs = []
         tgt_groups = []
         depends_on = []
-        curated_ports = [int(port["target"]) for port in self.config.ports]
-        service_lb = self.add_load_balancer(curated_ports, **kwargs)
+        service_lb = self.add_load_balancer(**kwargs)
         depends_on.append(service_lb.title)
-        for port in curated_ports:
-            tgt = self.add_target_group(port, service_lb)
-            listener = self.add_lb_listener(port, service_lb, tgt)
+        for port_target in self.config.ingress_mappings:
+            tgt = self.add_target_group(port_target, service_lb)
+            for source in self.config.ingress_mappings[port_target]:
+                listener = self.add_lb_listener(source, service_lb, tgt, port_target)
+                depends_on.append(listener.title)
             tgt_groups.append(tgt)
             depends_on.append(tgt.title)
-            depends_on.append(listener.title)
             service_lbs.append(
                 EcsLoadBalancer(
                     TargetGroupArn=Ref(tgt),
@@ -694,6 +705,11 @@ class Service(object):
                 obj_name=self.resource_name,
             )
         )
+
+    def update_for_service_mesh(self):
+        """
+        Method to create the AppMesh
+        """
 
     def define_service_ingress(self, **kwargs):
         """
@@ -781,7 +797,11 @@ class Service(object):
                 )
             ),
             TaskDefinition=Ref(task_definition),
-            LaunchType=Ref(ecs_params.LAUNCH_TYPE),
+            LaunchType=If(
+                ecs_conditions.USE_CLUSTER_CAPACITY_PROVIDERS_CON_T,
+                Ref(AWS_NO_VALUE),
+                Ref(ecs_params.LAUNCH_TYPE),
+            ),
             Tags=Tags(
                 {
                     "Name": Ref(ecs_params.SERVICE_NAME),

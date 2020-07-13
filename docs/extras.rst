@@ -160,3 +160,21 @@ For example,
         Services:
           - name: app01
             access: RWMessages
+
+AWS AppMesh out of the box
+===========================
+
+.. seealso::
+
+    :ref:`appmesh_syntax_reference`
+
+
+ACM Certificates auto-create for public services
+================================================
+
+AWS CloudFormation now supports to auto-validate the Certificate by adding on your behalf the CNAME validation entry
+into your Route53 hosted zone.
+
+.. seealso::
+
+    :ref:`acm_syntax_reference`

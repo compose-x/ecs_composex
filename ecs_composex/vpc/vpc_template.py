@@ -76,6 +76,17 @@ def add_cloudmap_support(template, vpc):
             [
                 {vpc_params.VPC_MAP_ID_T: GetAtt(map_id, "Id")},
                 {vpc_params.VPC_MAP_ARN_T: GetAtt(map_id, "Arn")},
+                {
+                    vpc_params.VPC_MAP_DNS_ZONE_T: If(
+                        USE_STACK_NAME_CON_T,
+                        Sub(
+                            f"svc.${{AWS::StackName}}.${{{vpc_params.VPC_DNS_ZONE_T}}}"
+                        ),
+                        Sub(
+                            f"svc.${{{ROOT_STACK_NAME_T}}}.${{{vpc_params.VPC_DNS_ZONE_T}}}"
+                        ),
+                    )
+                },
             ],
             export=True,
         )
