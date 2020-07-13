@@ -161,6 +161,12 @@ Resources:
             - Type: BASE_REF
               Pattern: '^refs/heads/master$'
               ExcludeMatchedPattern: False
+          - - Type: EVENT
+              Pattern: "PUSH"
+              ExcludeMatchedPattern: False
+            - Type: HEAD_REF
+              Pattern: '^refs/heads/master$'
+              ExcludeMatchedPattern: False
 
   ReportGroup:
     Type: AWS::CodeBuild::ReportGroup
