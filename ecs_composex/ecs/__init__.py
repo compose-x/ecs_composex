@@ -33,11 +33,10 @@ It is going to also, based on the labels set in the compose file
 
 """
 
-from troposphere import GetAtt, Sub, Ref, If, Join, Tags
+from troposphere import GetAtt, Sub, Ref, Join, Tags
 from troposphere.ec2 import SecurityGroup, SecurityGroupIngress
 
 from ecs_composex.common import build_template, LOG
-from ecs_composex.common.cfn_conditions import USE_CLOUDMAP_CON_T
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T, USE_CLOUDMAP
 from ecs_composex.common.outputs import define_import
 from ecs_composex.common.stacks import ComposeXStack

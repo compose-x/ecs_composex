@@ -21,7 +21,13 @@ Functions to add to the Cluster template when people want to use SpotFleet for t
 """
 
 from troposphere import Ref, Sub, GetAtt, Select, If, Split
-
+from troposphere.applicationautoscaling import (
+    ScalableTarget,
+    StepAdjustment,
+    StepScalingPolicyConfiguration,
+    ScalingPolicy,
+)
+from troposphere.cloudwatch import Alarm, MetricDimension as CwMetricDimension
 from troposphere.ec2 import (
     SpotFleet,
     SpotFleetRequestConfigData,
@@ -30,20 +36,12 @@ from troposphere.ec2 import (
     LaunchTemplateSpecification,
     LaunchTemplateOverrides,
 )
-
-from troposphere.applicationautoscaling import (
-    ScalableTarget,
-    StepAdjustment,
-    StepScalingPolicyConfiguration,
-    ScalingPolicy,
-)
-
-from troposphere.cloudwatch import Alarm, MetricDimension as CwMetricDimension
 from troposphere.iam import Role
-from ecs_composex.common import LOG, build_template, keyisset
+
+from ecs_composex.common import LOG, build_template
+from ecs_composex.compute import compute_params, compute_conditions
 from ecs_composex.iam import service_role_trust_policy
 from ecs_composex.vpc import vpc_params
-from ecs_composex.compute import compute_params, compute_conditions
 
 
 def add_fleet_role(template):

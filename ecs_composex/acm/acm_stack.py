@@ -26,6 +26,8 @@ from troposphere.certificatemanager import (
     Certificate as AcmCert,
     DomainValidationOption,
 )
+
+from ecs_composex.acm import acm_conditions
 from ecs_composex.acm.acm_params import (
     RES_KEY,
     CERT_CN,
@@ -38,15 +40,12 @@ from ecs_composex.acm.acm_params import (
     VALIDATION_DOMAIN_NAME,
     CERT_VALIDATION_METHOD,
 )
-from ecs_composex.acm import acm_conditions
 from ecs_composex.common import (
     NONALPHANUM,
     keyisset,
-    load_composex_file,
     build_template,
 )
 from ecs_composex.common.cfn_conditions import pass_root_stack_name
-from ecs_composex.common.ecs_composex import XFILE_DEST
 from ecs_composex.common.outputs import formatted_outputs
 from ecs_composex.common.stacks import ComposeXStack
 

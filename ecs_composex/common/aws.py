@@ -20,8 +20,6 @@
 Common functions and variables fetched from AWS.
 """
 
-import boto3
-
 
 def get_region_azs(session):
     """Function to return the AZ from a given region. Uses default region for this

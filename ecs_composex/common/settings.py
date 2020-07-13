@@ -78,6 +78,7 @@ class ComposeXSettings(object):
             self.session = session
         else:
             self.session = boto3.session.Session()
+
         self.aws_region = (
             kwargs[self.region_arg]
             if keyisset(self.region_arg, kwargs)
@@ -103,24 +104,7 @@ class ComposeXSettings(object):
             else self.default_output_dir
         )
         self.name = kwargs[self.name_arg]
-        self.vpc_id = kwargs[VPC_ID_T] if keyisset(VPC_ID_T, kwargs) else None
-        self.single_nat = (
-            kwargs[self.single_nat_arg]
-            if keyisset(self.single_nat_arg, kwargs)
-            else True
-        )
-        self.public_subnets = (
-            kwargs[PUBLIC_SUBNETS_T] if keyisset(PUBLIC_SUBNETS_T, kwargs) else None
-        )
-        self.storage_subnets = (
-            kwargs[STORAGE_SUBNETS_T] if keyisset(STORAGE_SUBNETS_T, kwargs) else None
-        )
-        self.app_subnets = (
-            kwargs[APP_SUBNETS_T] if keyisset(APP_SUBNETS_T, kwargs) else None
-        )
-        self.vpc_private_namespace_id = (
-            kwargs[VPC_MAP_ID_T] if keyisset(VPC_MAP_ID_T, kwargs) else None
-        )
+
         self.compose_content = load_composex_file(kwargs[self.input_file_arg])
         self.create_cluster = (
             True if keyisset(self.create_cluster_arg, kwargs) else False
@@ -142,6 +126,7 @@ class ComposeXSettings(object):
             else CLUSTER_NAME.Default
         )
         self.create_compute = False if not keyisset(USE_FLEET_T, kwargs) else True
+        self.set_vpc_settings(kwargs)
 
     def __repr__(self):
         return dumps(
@@ -149,8 +134,34 @@ class ComposeXSettings(object):
                 self.region_arg: self.aws_region,
                 self.zones_arg: self.aws_azs,
                 self.bucket_arg: self.bucket_name,
+                self.no_upload_arg: self.no_upload,
             },
             indent=4,
+        )
+
+    def set_vpc_settings(self, kwargs):
+        """
+        Method to set the values of subnets if present in kwargs
+        :param kwargs:
+        :return:
+        """
+        self.vpc_id = kwargs[VPC_ID_T] if keyisset(VPC_ID_T, kwargs) else None
+        self.single_nat = (
+            kwargs[self.single_nat_arg]
+            if keyisset(self.single_nat_arg, kwargs)
+            else True
+        )
+        self.public_subnets = (
+            kwargs[PUBLIC_SUBNETS_T] if keyisset(PUBLIC_SUBNETS_T, kwargs) else None
+        )
+        self.storage_subnets = (
+            kwargs[STORAGE_SUBNETS_T] if keyisset(STORAGE_SUBNETS_T, kwargs) else None
+        )
+        self.app_subnets = (
+            kwargs[APP_SUBNETS_T] if keyisset(APP_SUBNETS_T, kwargs) else None
+        )
+        self.vpc_private_namespace_id = (
+            kwargs[VPC_MAP_ID_T] if keyisset(VPC_MAP_ID_T, kwargs) else None
         )
 
     def set_azs_from_api(self):
@@ -171,7 +182,7 @@ class ComposeXSettings(object):
                 LOG.error(error)
 
     def set_bucket_name_from_account_id(self):
-        if self.bucket_name:
+        if self.bucket_name and isinstance(self.bucket_name, str):
             return
         if self.account_id is None:
             try:

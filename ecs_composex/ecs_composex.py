@@ -407,7 +407,7 @@ def create_vpc_root(root_stack, settings):
     if settings.create_vpc:
         vpc_stack = create_vpc_stack(settings)
         vpc_stack.stack_parameters.update(
-            {ROOT_STACK_NAME_T: Ref(AWS_STACK_NAME), USE_CLOUDMAP_T: Ref(USE_CLOUDMAP),}
+            {ROOT_STACK_NAME_T: Ref(AWS_STACK_NAME), USE_CLOUDMAP_T: Ref(USE_CLOUDMAP)}
         )
         return root_stack.stack_template.add_resource(vpc_stack)
     else:

@@ -24,7 +24,7 @@ That way it is easy for anyone to deploy an instance in standalone if you wanted
 
 from troposphere import Ref, If, GetAtt
 
-from ecs_composex.common import build_template, keyisset, LOG
+from ecs_composex.common import build_template
 from ecs_composex.common import cfn_conditions
 from ecs_composex.common.cfn_params import (
     ROOT_STACK_NAME,
@@ -32,7 +32,7 @@ from ecs_composex.common.cfn_params import (
     USE_FLEET,
     USE_ONDEMAND,
 )
-from ecs_composex.common.config import ComposeXConfig, ComputeConfig
+from ecs_composex.common.config import ComputeConfig
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compute import compute_params, compute_conditions
 from ecs_composex.compute.hosts_template import add_hosts_resources

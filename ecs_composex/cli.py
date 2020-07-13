@@ -24,7 +24,6 @@ import warnings
 
 from ecs_composex.common import LOG
 from ecs_composex.common import keyisset
-from ecs_composex.common.cfn_params import USE_FLEET_T
 from ecs_composex.common.settings import ComposeXSettings
 from ecs_composex.common.stacks import render_final_template
 from ecs_composex.compute.compute_params import CLUSTER_NAME_T
