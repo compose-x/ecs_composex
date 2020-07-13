@@ -18,30 +18,3 @@
 """
 ECS ComposeX - VPC module to simplify testing and deployment of services into AWS
 """
-
-from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.common.config import ComposeXConfig
-from ecs_composex.vpc.vpc_template import generate_vpc_template
-from ecs_composex.vpc.vpc_params import RES_KEY
-
-
-def create_vpc_stack(settings):
-    """Function to create the vpc template for a combined deployment. Invoked by CLI
-
-    :param settings: The Execution settings
-    :type settings: ecs_composex.common.settings.ComposeXSettings
-    :rtype: ComposeXStack
-    """
-    template = generate_vpc_template(
-        settings.vpc_cidr, settings.aws_azs, single_nat=settings.single_nat
-    )
-    return ComposeXStack(RES_KEY, stack_template=template)
-
-
-class VpcConfig(ComposeXConfig):
-    """
-    Class to determine the VPC Settings to use when deploying on existing VPC.
-    """
-
-    def __init__(self, settings):
-        super().__init__(settings)

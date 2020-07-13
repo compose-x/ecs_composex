@@ -1,7 +1,21 @@
-#!/usr/bin/env python
+﻿#!/usr/bin/env python
 # -*- coding: utf-8 -
-#  ECS ComposeX <https://github.com/lambda-my-aws/ecs_composex>
-#  Copyright (C) 2020  John Mille <john@lambda-my-aws.io>
+#  -*- coding: utf-8 -*-
+#   ECS ComposeX <https://github.com/lambda-my-aws/ecs_composex>
+#   Copyright (C) 2020  John Mille <john@lambda-my-aws.io>
+#  #
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#  #
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#  #
+#   You should have received a copy of the GNU General Public License
+#   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -16,14 +30,14 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Console script for ecs_composex.sqs"""
-import os
+"""Console script for ecs_composex.sns"""
 import sys
+import os
 
 from ecs_composex.cli import main_parser
 from ecs_composex.common.settings import ComposeXSettings
 from ecs_composex.common.stacks import render_final_template
-from ecs_composex.sqs.sqs_stack import XResource
+from ecs_composex.sns.sns_stack import XResource
 
 
 def main():

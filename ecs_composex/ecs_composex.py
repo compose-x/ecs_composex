@@ -22,7 +22,7 @@ Main module to generate a full stack with VPC, Cluster, Compute, Services and al
 import re
 from importlib import import_module
 
-from troposphere import Ref, GetAtt, If, AWS_STACK_NAME
+from troposphere import Ref, If, AWS_STACK_NAME
 from troposphere.ecs import Cluster
 
 from ecs_composex.appmesh import Mesh
@@ -47,15 +47,14 @@ from ecs_composex.common.cfn_params import (
     USE_CLOUDMAP,
 )
 from ecs_composex.common.ecs_composex import X_KEY
-from ecs_composex.common.files import FileArtifact
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common.tagging import generate_tags_parameters, add_all_tags
-from ecs_composex.compute import create_compute_stack, ComputeStack
 from ecs_composex.compute.compute_params import (
     TARGET_CAPACITY_T,
     TARGET_CAPACITY,
     MIN_CAPACITY_T,
 )
+from ecs_composex.compute.compute_stack import ComputeStack
 from ecs_composex.ecs import ServicesStack
 from ecs_composex.ecs import ecs_params
 from ecs_composex.ecs.ecs_conditions import (
@@ -70,8 +69,8 @@ from ecs_composex.ecs.ecs_params import (
     RES_KEY as SERVICES_KEY,
 )
 from ecs_composex.ecs.ecs_template import define_services_families
-from ecs_composex.vpc import create_vpc_stack
 from ecs_composex.vpc import vpc_params
+from ecs_composex.vpc.vpc_stack import create_vpc_stack
 
 RES_REGX = re.compile(r"(^([x-]+))")
 ROOT_CLUSTER_NAME = "EcsCluster"
@@ -96,10 +95,8 @@ SUPPORTED_X_MODULES = [
     "sns",
     f"{X_KEY}acm",
     "acm",
-    f"{X_KEY}appmesh",
-    "appmesh",
 ]
-EXCLUDED_X_KEYS = [f"{X_KEY}configs", f"{X_KEY}tags"]
+EXCLUDED_X_KEYS = [f"{X_KEY}configs", f"{X_KEY}tags", f"{X_KEY}appmesh"]
 
 
 def get_mod_function(module_name, function_name):
@@ -138,7 +135,7 @@ def get_mod_class(module_name):
     :param str module_name: Name of the x-module we are looking for.
     :return: the_class, maps to the main class for the given x-module
     """
-    composex_module_name = f"ecs_composex.{module_name}"
+    composex_module_name = f"ecs_composex.{module_name}.{module_name}_stack"
     LOG.debug(composex_module_name)
     the_class = None
     try:
@@ -291,33 +288,32 @@ def add_compute(root_template, settings, vpc_stack):
     return root_template.add_resource(compute_stack)
 
 
-def add_x_resources(template, settings, vpc_stack=None):
+def add_x_resources(root_template, settings, vpc_stack=None):
     """
     Function to add each X resource from the compose file
     """
     tcp_services = ["x-rds", "x-appmesh"]
-    depends_on = []
     for key in settings.compose_content:
         if key.startswith(X_KEY) and key not in EXCLUDED_X_KEYS:
             res_type = RES_REGX.sub("", key)
             function_name = f"create_{res_type}_template"
             xclass = get_mod_class(res_type)
-            create_function = get_mod_function(res_type, function_name)
-            if create_function:
-                x_template = create_function(settings)
-                if vpc_stack is not None and key in tcp_services:
-                    depends_on.append(VPC_STACK_NAME)
-                parameters = {ROOT_STACK_NAME_T: Ref(AWS_STACK_NAME)}
-                LOG.debug(xclass)
+            # create_function = get_mod_function(res_type, function_name)
+            # if create_function:
+            #     x_template = create_function(settings)
+            #     if vpc_stack is not None and key in tcp_services:
+            #         depends_on.append(VPC_STACK_NAME)
+            parameters = {ROOT_STACK_NAME_T: Ref(AWS_STACK_NAME)}
+            LOG.debug(xclass)
+            if not xclass:
+                LOG.info(f"Class for {res_type} not found")
+            else:
                 xstack = xclass(
-                    res_type.strip(),
-                    stack_template=x_template,
-                    Parameters=parameters,
-                    DependsOn=depends_on,
+                    res_type.strip(), settings=settings, Parameters=parameters,
                 )
                 if vpc_stack and key in tcp_services:
                     xstack.get_from_vpc_stack(vpc_stack)
-                template.add_resource(xstack)
+                root_template.add_resource(xstack)
 
 
 def create_services(root_stack, settings):

@@ -19,83 +19,13 @@
 """Console script for ecs_composex.vpc"""
 
 import sys
-import argparse
-from boto3 import session
 
-from ecs_composex.common import LOG
-from ecs_composex.common.aws import get_curated_azs, get_account_id
-from ecs_composex.vpc import create_vpc_template
-from ecs_composex.common.ecs_composex import XFILE_DEST, DIR_DEST
-from ecs_composex.common.files import FileArtifact
+from ecs_composex.cli import main_parser, validate_vpc_input
+from ecs_composex.common.settings import ComposeXSettings
+from ecs_composex.common.stacks import render_final_template
+from ecs_composex.vpc.vpc_stack import create_vpc_stack
 
-CURATED_AZS = get_curated_azs()
-ACCOUNT_ID = get_account_id()
-BUCKET_NAME = f"cfn-templates-{ACCOUNT_ID[:6]}"
 DEFAULT_VPC_CIDR = "100.127.254.0/23"
-
-
-def vpc_parser():
-    """Console script for ecs_composex."""
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--vpc-cidr",
-        required=False,
-        default=DEFAULT_VPC_CIDR,
-        dest="VpcCidr",
-        help="Specify the VPC CIDR",
-    )
-    parser.add_argument("-f", "--composex-file", dest=XFILE_DEST, required=False)
-    parser.add_argument(
-        "--region",
-        required=False,
-        default=session.Session().region_name,
-        dest="AwsRegion",
-        help="Specify the region you want to build for"
-        "default use default region from config or environment vars",
-    )
-    parser.add_argument(
-        "-d",
-        "--output-dir",
-        required=False,
-        help="Output directory to write all the templates to.",
-        type=str,
-        dest=DIR_DEST,
-    )
-    parser.add_argument(
-        "--az",
-        dest="AwsAzs",
-        action="append",
-        required=False,
-        default=[],
-        help="List AZs you want to deploy to specifically within the region",
-    )
-    parser.add_argument(
-        "-o", "--output-file", required=True, help="Output file for the template body"
-    )
-    parser.add_argument(
-        "--single-nat",
-        dest="SingleNat",
-        action="store_true",
-        help="Whether you want a single NAT for your application subnets or not. Not recommended for production",
-    )
-    parser.add_argument(
-        "-b",
-        "--bucket-name",
-        type=str,
-        required=False,
-        default=BUCKET_NAME,
-        help="Bucket name to upload the templates to",
-        dest="BucketName",
-    )
-    parser.add_argument(
-        "--no-upload",
-        action="store_true",
-        default=False,
-        help="Whether the templates should be uploaded or not.",
-        dest="NoUpload",
-    )
-    parser.add_argument("_", nargs="*")
-    return parser
 
 
 def main():
@@ -103,19 +33,16 @@ def main():
     Main Function
     :return:
     """
-    parser = vpc_parser()
+    parser = main_parser()
     args = parser.parse_args()
-    try:
-        template = create_vpc_template(**vars(args))
-        file_name = "vpc.yml"
-        if args.output_file:
-            file_name = args.output_file
-        template_file = FileArtifact(file_name, template=template, **vars(args))
-        template_file.create()
-        return 0
-    except Exception as error:
-        LOG.error(error)
-        return 1
+    settings = ComposeXSettings(**vars(args))
+    settings.set_bucket_name_from_account_id()
+    settings.set_azs_from_api()
+
+    validate_vpc_input(vars(args))
+    vpc_stack = create_vpc_stack(settings)
+    render_final_template(vpc_stack, settings)
+    return 0
 
 
 if __name__ == "__main__":

@@ -15,49 +15,6 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from ecs_composex.common import keyisset, LOG
-from ecs_composex.sns.sns_params import RES_KEY
-from ecs_composex.sns.sns_templates import generate_sns_templates
-from ecs_composex.sqs.sqs_params import RES_KEY as SQS_KEY
-from ecs_composex.common.stacks import ComposeXStack
-
-
-def create_sns_template(settings):
-    """
-    Function to create SNS templates as part of ECS ComposeX.
-
-    :param settings:
-    :type settings: ecs_composex.common.settings.ComposeXSettings
-    :return: SNS root template
-    :rtype: troposphere.Template
-    """
-    if keyisset(RES_KEY, settings.compose_content):
-        LOG.debug(f"Processing {RES_KEY} package")
-        return generate_sns_templates(settings)
-
-
-class XResource(ComposeXStack):
-    """
-    Class to handle SQS Root stack related actions
-    """
-
-    def __init__(self, title, settings, **kwargs):
-        template = create_sns_template(settings)
-        super().__init__(title, stack_template=template, **kwargs)
-
-    def handle_sqs(self, root_template, sqs_root_stack):
-        """
-        Function to handle the SQS configuration to allow SNS to send messages to queues.
-        """
-
-    def add_xdependencies(self, root_template, content):
-        """
-        Method to add a dependencies from other X-Resources
-        :param troposphere.Template root_template: The ComposeX Root template
-        :param dict content: the compose file content
-        """
-        resources = root_template.resources
-        sqs_res = SQS_KEY.strip("x-") if SQS_KEY.startswith("x-") else SQS_KEY
-        if SQS_KEY in content and sqs_res in resources:
-            self.DependsOn.append(sqs_res)
-            self.handle_sqs(root_template, resources[sqs_res])
+"""
+Root module for ECS ComposeX SNS
+"""

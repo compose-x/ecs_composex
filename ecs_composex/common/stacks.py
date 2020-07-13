@@ -25,8 +25,21 @@ from troposphere.cloudformation import Stack
 
 from ecs_composex.common import LOG, keyisset, add_parameters
 from ecs_composex.common.files import FileArtifact
-from ecs_composex.vpc import vpc_params
 from ecs_composex.common.cfn_conditions import USE_CLOUDMAP_CON_T
+from ecs_composex.vpc.vpc_params import (
+    VPC_ID,
+    VPC_ID_T,
+    STORAGE_SUBNETS_T,
+    STORAGE_SUBNETS,
+    APP_SUBNETS_T,
+    APP_SUBNETS,
+    PUBLIC_SUBNETS_T,
+    PUBLIC_SUBNETS,
+    VPC_MAP_ID_T,
+    VPC_MAP_ID,
+    VPC_MAP_DNS_ZONE_T,
+    VPC_MAP_DNS_ZONE,
+)
 
 
 class ComposeXStack(Stack, object):
@@ -152,38 +165,32 @@ class ComposeXStack(Stack, object):
                 f"vpc_stack must be of type", ComposeXStack, str, "got", type(vpc_stack)
             )
         default_parameters = [
-            vpc_params.VPC_ID,
-            vpc_params.PUBLIC_SUBNETS,
-            vpc_params.STORAGE_SUBNETS,
-            vpc_params.APP_SUBNETS,
-            vpc_params.APP_SUBNETS,
-            vpc_params.VPC_MAP_ID,
-            vpc_params.VPC_MAP_DNS_ZONE,
+            VPC_ID,
+            PUBLIC_SUBNETS,
+            STORAGE_SUBNETS,
+            APP_SUBNETS,
+            APP_SUBNETS,
+            VPC_MAP_ID,
+            VPC_MAP_DNS_ZONE,
         ]
         if not parameters:
             add_parameters(self.stack_template, default_parameters)
             self.Parameters.update(
                 {
-                    vpc_params.VPC_ID_T: GetAtt(
-                        vpc_stack, f"Outputs.{vpc_params.VPC_ID_T}"
+                    VPC_ID_T: GetAtt(vpc_stack, f"Outputs.{VPC_ID_T}"),
+                    PUBLIC_SUBNETS_T: GetAtt(vpc_stack, f"Outputs.{PUBLIC_SUBNETS_T}"),
+                    APP_SUBNETS_T: GetAtt(vpc_stack, f"Outputs.{APP_SUBNETS_T}"),
+                    STORAGE_SUBNETS_T: GetAtt(
+                        vpc_stack, f"Outputs.{STORAGE_SUBNETS_T}"
                     ),
-                    vpc_params.PUBLIC_SUBNETS_T: GetAtt(
-                        vpc_stack, f"Outputs.{vpc_params.PUBLIC_SUBNETS_T}"
-                    ),
-                    vpc_params.APP_SUBNETS_T: GetAtt(
-                        vpc_stack, f"Outputs.{vpc_params.APP_SUBNETS_T}"
-                    ),
-                    vpc_params.STORAGE_SUBNETS_T: GetAtt(
-                        vpc_stack, f"Outputs.{vpc_params.STORAGE_SUBNETS_T}"
-                    ),
-                    vpc_params.VPC_MAP_ID_T: If(
+                    VPC_MAP_ID_T: If(
                         USE_CLOUDMAP_CON_T,
-                        GetAtt(vpc_stack, f"Outputs.{vpc_params.VPC_MAP_ID_T}"),
+                        GetAtt(vpc_stack, f"Outputs.{VPC_MAP_ID_T}"),
                         Ref("AWS::NoValue"),
                     ),
-                    vpc_params.VPC_MAP_DNS_ZONE_T: If(
+                    VPC_MAP_DNS_ZONE_T: If(
                         USE_CLOUDMAP_CON_T,
-                        GetAtt(vpc_stack, f"Outputs.{vpc_params.VPC_MAP_DNS_ZONE_T}"),
+                        GetAtt(vpc_stack, f"Outputs.{VPC_MAP_DNS_ZONE_T}"),
                         Ref("AWS::NoValue"),
                     ),
                 }
@@ -204,13 +211,11 @@ class ComposeXStack(Stack, object):
         """
         self.Parameters.update(
             {
-                vpc_params.VPC_ID_T: Ref(vpc_params.VPC_ID),
-                vpc_params.APP_SUBNETS_T: Join(",", Ref(vpc_params.APP_SUBNETS)),
-                vpc_params.STORAGE_SUBNETS_T: Join(
-                    ",", Ref(vpc_params.STORAGE_SUBNETS)
-                ),
-                vpc_params.PUBLIC_SUBNETS_T: Join(",", Ref(vpc_params.PUBLIC_SUBNETS)),
-                vpc_params.VPC_MAP_ID_T: Ref(vpc_params.VPC_MAP_ID),
+                VPC_ID_T: Ref(VPC_ID),
+                APP_SUBNETS_T: Join(",", Ref(APP_SUBNETS)),
+                STORAGE_SUBNETS_T: Join(",", Ref(STORAGE_SUBNETS)),
+                PUBLIC_SUBNETS_T: Join(",", Ref(PUBLIC_SUBNETS)),
+                VPC_MAP_ID_T: Ref(VPC_MAP_ID),
             }
         )
 

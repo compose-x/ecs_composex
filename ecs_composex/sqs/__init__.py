@@ -15,34 +15,4 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Module to handle AWS SQS CFN Templates creation"""
-
-from ecs_composex.common import validate_input
-from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.sqs.sqs_params import RES_KEY
-from ecs_composex.sqs.sqs_template import generate_sqs_root_template
-
-
-def create_sqs_template(settings):
-    """
-    Creates the CFN Troposphere template
-
-    :param settings: The settings for execution
-    :type settings: ecs_composex.common.settings.ComposeXSettings
-    :return: sqs_tpl
-    :rtype: troposphere.Template
-    """
-    validate_input(settings.compose_content, RES_KEY)
-
-    sqs_tpl = generate_sqs_root_template(settings)
-    return sqs_tpl
-
-
-class XResource(ComposeXStack):
-    """
-    Class to handle SQS Root stack related actions
-    """
-
-    def __init__(self, title, settings, **kwargs):
-        template = create_sqs_template(settings)
-        super().__init__(title, stack_template=template, **kwargs)
+"""Root of ecs_composex.sqs"""
