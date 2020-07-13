@@ -42,3 +42,7 @@ class XResource(ComposeXStack):
     """
     Class to handle SQS Root stack related actions
     """
+
+    def __init__(self, title, settings, **kwargs):
+        template = create_sqs_template(settings)
+        super().__init__(title, stack_template=template, **kwargs)

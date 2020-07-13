@@ -187,7 +187,6 @@ class XResource(ComposeXStack):
     XResource for ComposeX
     """
 
-    def __init__(self, title, stack_template, **kwargs):
-        super().__init__(title, stack_template, **kwargs)
-        if not keyisset("DependsOn", kwargs):
-            self.DependsOn = []
+    def __init__(self, title, settings, **kwargs):
+        template = create_acm_template(settings)
+        super().__init__(title, stack_template=template, **kwargs)

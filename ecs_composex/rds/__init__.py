@@ -20,21 +20,14 @@ Module to handle AWS RDS CFN Templates creation
 """
 
 import os
-import boto3
 from warnings import warn
-from ecs_composex.common.ecs_composex import XFILE_DEST
+
 from ecs_composex.common import (
-    validate_input,
-    validate_kwargs,
-    load_composex_file,
     LOG,
     keyisset,
 )
-from troposphere import GetAtt, Ref, Join
-from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
-from ecs_composex.rds.rds_template import generate_rds_templates
-from ecs_composex.vpc import vpc_params
 from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.rds.rds_template import generate_rds_templates
 
 RES_KEY = f"x-{os.path.basename(os.path.dirname(os.path.abspath(__file__)))}"
 RDS_SSM_PREFIX = f"/{RES_KEY}/"
@@ -63,21 +56,6 @@ class XResource(ComposeXStack):
     Class to handle ECS root stack specific settings
     """
 
-    vpc_stack = None
-    dependencies = []
-
-    def add_cluster_parameter(self, cluster_param):
-        self.Parameters.update(cluster_param)
-
-    def __init__(self, title, stack_template, **kwargs):
-        super().__init__(title, stack_template, **kwargs)
-        if not keyisset("DependsOn", kwargs):
-            self.DependsOn = []
-        if not keyisset("Parameters", kwargs):
-            self.Parameters = {
-                ROOT_STACK_NAME_T: Ref("AWS::StackName"),
-                vpc_params.VPC_ID_T: Ref(vpc_params.VPC_ID),
-                vpc_params.STORAGE_SUBNETS_T: Join(
-                    ",", Ref(vpc_params.STORAGE_SUBNETS)
-                ),
-            }
+    def __init__(self, title, settings, **kwargs):
+        template = create_rds_template(settings)
+        super().__init__(title, stack_template=template, **kwargs)

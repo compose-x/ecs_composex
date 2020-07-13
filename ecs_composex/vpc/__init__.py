@@ -25,20 +25,6 @@ from ecs_composex.vpc.vpc_template import generate_vpc_template
 from ecs_composex.vpc.vpc_params import RES_KEY
 
 
-def create_vpc_template(settings):
-    """Function to create the vpc template for a combined deployment. Invoked by CLI
-
-    :param settings: The Execution settings
-    :type settings: ecs_composex.common.settings.ComposeXSettings
-    :return: vpc_template Template()
-    :rtype: troposphere.Template
-    """
-    template = generate_vpc_template(
-        settings.vpc_cidr, settings.aws_azs, single_nat=settings.single_nat
-    )
-    return template
-
-
 def create_vpc_stack(settings):
     """Function to create the vpc template for a combined deployment. Invoked by CLI
 
