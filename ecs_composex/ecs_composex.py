@@ -296,13 +296,7 @@ def add_x_resources(root_template, settings, vpc_stack=None):
     for key in settings.compose_content:
         if key.startswith(X_KEY) and key not in EXCLUDED_X_KEYS:
             res_type = RES_REGX.sub("", key)
-            function_name = f"create_{res_type}_template"
             xclass = get_mod_class(res_type)
-            # create_function = get_mod_function(res_type, function_name)
-            # if create_function:
-            #     x_template = create_function(settings)
-            #     if vpc_stack is not None and key in tcp_services:
-            #         depends_on.append(VPC_STACK_NAME)
             parameters = {ROOT_STACK_NAME_T: Ref(AWS_STACK_NAME)}
             LOG.debug(xclass)
             if not xclass:
