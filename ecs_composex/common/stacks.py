@@ -20,11 +20,26 @@ Module to handle Root stacks and substacks in ECS composeX. Allows to treat ever
 files into S3 and on disk.
 """
 
-from troposphere import Template
+from troposphere import Template, GetAtt, Ref, If, Join
 from troposphere.cloudformation import Stack
 
-from ecs_composex.common import LOG, keyisset
+from ecs_composex.common import LOG, keyisset, add_parameters
 from ecs_composex.common.files import FileArtifact
+from ecs_composex.common.cfn_conditions import USE_CLOUDMAP_CON_T
+from ecs_composex.vpc.vpc_params import (
+    VPC_ID,
+    VPC_ID_T,
+    STORAGE_SUBNETS_T,
+    STORAGE_SUBNETS,
+    APP_SUBNETS_T,
+    APP_SUBNETS,
+    PUBLIC_SUBNETS_T,
+    PUBLIC_SUBNETS,
+    VPC_MAP_ID_T,
+    VPC_MAP_ID,
+    VPC_MAP_DNS_ZONE_T,
+    VPC_MAP_DNS_ZONE,
+)
 
 
 class ComposeXStack(Stack, object):
@@ -32,14 +47,7 @@ class ComposeXStack(Stack, object):
     Class to define a CFN Stack as a composition of its template object, parameters, tags etc.
 
     :cvar ecs_composex.common.files.FileArtifact template_file: The FileArtifact associated with the stack.
-    :cvar cfn_params_file: CFN Parameters file for the stack
-    :cvar cfn_config_file: CFN Configuration file for the stack
     """
-
-    template_file = None
-    cfn_params_file = None
-    cfn_config_file = None
-    module_name = None
 
     attributes = [
         "Condition",
@@ -50,6 +58,35 @@ class ComposeXStack(Stack, object):
         "UpdatePolicy",
         "UpdateReplacePolicy",
     ]
+
+    def __init__(self, title, stack_template, stack_parameters=None, **kwargs):
+        """
+        Class to keep track of the template object along with the stack object it represents.
+
+        :param title: title of the resource in the root template
+        :param stack_template: the template object to keep track of
+        :param dict stack_parameters: Stack parameters to set
+        :param kwargs: kwargs from composex along with the kwargs for the stack
+        """
+
+        if not isinstance(stack_template, Template):
+            raise TypeError(
+                "stack_template is", type(stack_template), "expected", Template
+            )
+        self.stack_template = stack_template
+        if stack_parameters is None:
+            self.stack_parameters = {}
+        elif not isinstance(stack_parameters, dict):
+            raise TypeError("parameters is", type(stack_parameters), "expected", dict)
+        stack_kwargs = dict((x, kwargs[x]) for x in self.props.keys() if x in kwargs)
+        stack_kwargs.update(
+            dict((x, kwargs[x]) for x in self.attributes if x in kwargs)
+        )
+        if stack_parameters:
+            stack_kwargs.update({"Parameters": stack_parameters})
+        super().__init__(title, **stack_kwargs)
+        if not hasattr(self, "DependsOn") or not keyisset("DependsOn", kwargs):
+            self.DependsOn = []
 
     def add_dependencies(self, dependencies):
         """
@@ -71,80 +108,138 @@ class ComposeXStack(Stack, object):
             raise TypeError("parameter must be of type", dict, "got", type(parameter))
         self.Parameters.update(parameter)
 
-    def render(self):
+    def write_parameters_file(self, settings):
+        """
+        Method to write the parameters file for the stack. Only uses manual input.
+        """
+        if not hasattr(self, "Parameters"):
+            return
+        params = [
+            {param_name: self.Parameters[param_name]}
+            for param_name in self.Parameters.keys()
+            if isinstance(self.Parameters[param_name], str)
+        ]
+        if not params:
+            return
+        LOG.debug(f"Rendering {self.title}.params.json")
+        file = FileArtifact(
+            file_name=f"{self.title}.params",
+            content=params,
+            settings=settings,
+            file_format="json",
+        )
+        file.define_body()
+        file.write(settings)
+        if settings.upload:
+            file.upload(settings)
+            LOG.debug(f"Rendered URL = {file.url}")
+
+    def render(self, settings):
         """
         Function to use when the template is finalized and can be uploaded to S3.
         """
         LOG.debug(f"Rendering {self.title}")
-        self.template_file.define_body()
-        self.template_file.upload()
-        self.template_file.write()
-        self.template_file.validate()
-        LOG.debug(f"Rendered URL = {self.template_file.url}")
-        self.TemplateURL = self.template_file.url
-
-    def __init__(
-        self, title, stack_template, template_file=None, extension=None, **kwargs
-    ):
-        """
-        Class to keep track of the template object along with the stack object it represents.
-
-        :param title: title of the resource in the root template
-        :param stack_template: the template object to keep track of
-        :param template_file: if the template file already exists, import
-        :param extension: specify a specific file extension if you so wish
-        :param render: whether the template should be rendered immediately
-        :param kwargs: kwargs from composex along with the kwargs for the stack
-        """
-
-        if extension is None and template_file is None:
-            extension = ".yml"
-        if not isinstance(stack_template, (Template, type(None))):
-            raise TypeError(
-                "template must be of type", Template, "got", type(stack_template)
-            )
-        self.stack_template = stack_template
-        if template_file and isinstance(template_file, FileArtifact):
-            self.template_file = template_file
-        else:
-            file_name = f"{title}{extension}"
-            self.template_file = FileArtifact(
-                file_name, template=self.stack_template, **kwargs
-            )
-        if self.template_file.url is None:
-            self.template_file.url = self.template_file.file_path
-        stack_kwargs = dict((x, kwargs[x]) for x in self.props.keys() if x in kwargs)
-        stack_kwargs.update(
-            dict((x, kwargs[x]) for x in self.attributes if x in kwargs)
+        template_file = FileArtifact(
+            file_name=f"{self.title}",
+            template=self.stack_template,
+            settings=settings,
+            file_format=settings.format,
         )
-        super().__init__(title, **stack_kwargs)
-        self.TemplateURL = self.template_file.url
-        if not hasattr(self, "DependsOn") or not keyisset("DependsOn", kwargs):
-            self.DependsOn = []
+        template_file.define_body()
+        template_file.write(settings)
+        setattr(self, "TemplateURL", template_file.file_path)
+        if settings.upload:
+            template_file.upload(settings)
+            setattr(self, "TemplateURL", template_file.url)
+            LOG.debug(f"Rendered URL = {template_file.url}")
+        template_file.validate(settings)
+        self.write_parameters_file(settings)
+
+    def get_from_vpc_stack(self, vpc_stack, *parameters):
+        if isinstance(vpc_stack, ComposeXStack):
+            vpc = vpc_stack.title
+        elif isinstance(vpc_stack, str):
+            vpc = vpc_stack
+        else:
+            raise TypeError(
+                f"vpc_stack must be of type", ComposeXStack, str, "got", type(vpc_stack)
+            )
+        default_parameters = [
+            VPC_ID,
+            PUBLIC_SUBNETS,
+            STORAGE_SUBNETS,
+            APP_SUBNETS,
+            APP_SUBNETS,
+            VPC_MAP_ID,
+            VPC_MAP_DNS_ZONE,
+        ]
+        if not parameters:
+            add_parameters(self.stack_template, default_parameters)
+            self.Parameters.update(
+                {
+                    VPC_ID_T: GetAtt(vpc_stack, f"Outputs.{VPC_ID_T}"),
+                    PUBLIC_SUBNETS_T: GetAtt(vpc_stack, f"Outputs.{PUBLIC_SUBNETS_T}"),
+                    APP_SUBNETS_T: GetAtt(vpc_stack, f"Outputs.{APP_SUBNETS_T}"),
+                    STORAGE_SUBNETS_T: GetAtt(
+                        vpc_stack, f"Outputs.{STORAGE_SUBNETS_T}"
+                    ),
+                    VPC_MAP_ID_T: If(
+                        USE_CLOUDMAP_CON_T,
+                        GetAtt(vpc_stack, f"Outputs.{VPC_MAP_ID_T}"),
+                        Ref("AWS::NoValue"),
+                    ),
+                    VPC_MAP_DNS_ZONE_T: If(
+                        USE_CLOUDMAP_CON_T,
+                        GetAtt(vpc_stack, f"Outputs.{VPC_MAP_DNS_ZONE_T}"),
+                        Ref("AWS::NoValue"),
+                    ),
+                }
+            )
+        else:
+            for parameter in parameters:
+                self.Parameters.update(
+                    {parameter: GetAtt(vpc_stack, f"Outputs.{parameter}")}
+                )
+        if not hasattr(self, "DependsOn"):
+            self.DependsOn = [vpc]
+        elif hasattr(self, "DependsOn") and vpc not in getattr(self, "DependsOn"):
+            self.DependsOn.append(vpc)
+
+    def no_vpc_parameters(self):
+        """
+        Method to set the stack parameters when we are not creating a VPC.
+        """
+        self.Parameters.update(
+            {
+                VPC_ID_T: Ref(VPC_ID),
+                APP_SUBNETS_T: Join(",", Ref(APP_SUBNETS)),
+                STORAGE_SUBNETS_T: Join(",", Ref(STORAGE_SUBNETS)),
+                PUBLIC_SUBNETS_T: Join(",", Ref(PUBLIC_SUBNETS)),
+                VPC_MAP_ID_T: Ref(VPC_MAP_ID),
+            }
+        )
 
 
-class XModuleStack(ComposeXStack):
-    """
-    Class to deal specifically with x-modules root stacks
-    """
-
-
-def render_final_template(root_template):
+def render_final_template(root_stack, settings):
     """
     Function to go through all stacks of a given template and update the template
     It will recursively render sub stacks defined.
 
-    :param root_template: the root template to iterate over the resources.
-    :type root_template: troposphere.Template
+    :param root_stack: the root template to iterate over the resources.
+    :type root_stack: ecs_composex.common.stacks.ComposeXStack
+    :param settings: The settings for execution
+    :type settings: ecs_composex.common.settings.ComposeXSettings
     """
-    resources = root_template.resources
+    resources = root_stack.stack_template.resources
     for resource_name in resources:
         resource = resources[resource_name]
-        if isinstance(resource, (XModuleStack, ComposeXStack)):
+        if isinstance(resource, ComposeXStack) or issubclass(
+            type(resource), ComposeXStack
+        ):
             LOG.debug(resource)
-            LOG.debug(resource.TemplateURL)
-            render_final_template(resource.stack_template)
-            resource.render()
+            LOG.debug(resource.title)
+            render_final_template(resource, settings)
         elif isinstance(resource, Stack):
             LOG.warn(resource_name)
             LOG.warn(resource)
+    root_stack.render(settings)

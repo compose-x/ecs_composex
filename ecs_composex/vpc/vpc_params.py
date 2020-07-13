@@ -32,6 +32,7 @@ AZS_TYPE = "List<AWS::EC2::AvailabilityZone::Name>"
 SG_ID_TYPE = "AWS::EC2::SecurityGroup::Id"
 SG_NAME_TYPE = "AWS::EC2::SecurityGroup::GroupName"
 
+RES_KEY = "vpc"
 
 VPC_ID_T = "VpcId"
 VPC_ID = Parameter(VPC_ID_T, Type=VPC_TYPE)

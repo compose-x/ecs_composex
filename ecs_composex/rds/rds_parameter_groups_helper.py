@@ -19,36 +19,8 @@
 Helper to generate default parameter group settings from engine name and version
 """
 import boto3
+from botocore.exceptions import ClientError
 from ecs_composex.common import LOG
-
-
-def get_db_engine_settings(db_engine_name, db_engine_version, serverless=False):
-    """
-    Function to return just the details about that DB Engine Version
-
-    :param str db_engine_name: Name of the DB Engine
-    :param str db_engine_version: Version of the DB Engine to use
-    :param bool serverless: Whether we are looking for an engine version that supports Serverless for RDS Aurora
-    """
-    LOG.debug(f"Looking for the family of {db_engine_name}-{db_engine_version}")
-    client = boto3.client("rds")
-    req = client.describe_db_engine_versions(
-        Engine=db_engine_name, EngineVersion=db_engine_version
-    )
-    versions = req["DBEngineVersions"]
-    if not versions:
-        raise ValueError("No possible results from given parameters")
-    if serverless:
-        for version in versions:
-            if (
-                version["SupportedEngineModes"]
-                and "serverless" in version["SupportedEngineModes"]
-            ):
-                return version
-        raise ValueError(
-            f"No parameters found for the {db_engine_name} {db_engine_version} supporting serverless"
-        )
-    return versions[0]
 
 
 def get_db_cluster_engine_parameter_group_defaults(engine_family):
@@ -59,9 +31,13 @@ def get_db_cluster_engine_parameter_group_defaults(engine_family):
     """
 
     client = boto3.client("rds")
-    req = client.describe_engine_default_cluster_parameters(
-        DBParameterGroupFamily=engine_family
-    )
+    try:
+        req = client.describe_engine_default_cluster_parameters(
+            DBParameterGroupFamily=engine_family
+        )
+    except ClientError as error:
+        LOG.error(error)
+        return None
     params_return = {}
     if "EngineDefaults" in req.keys():
         params = req["EngineDefaults"]["Parameters"]
@@ -98,9 +74,14 @@ def get_family_from_engine_version(
         if not session:
             session = boto3.session.Session()
         client = session.client("rds")
-    req = client.describe_db_engine_versions(
-        Engine=engine_name, EngineVersion=engine_version
-    )
+    try:
+        req = client.describe_db_engine_versions(
+            Engine=engine_name, EngineVersion=engine_version
+        )
+    except ClientError as error:
+        LOG.error(error)
+        return None
+
     db_family = req["DBEngineVersions"][0]["DBParameterGroupFamily"]
     return db_family
 
@@ -112,7 +93,11 @@ def get_family_settings(db_family):
     :return: db settings or None
     :rtype: None or dict
     """
-    if db_family.startswith("aurora"):
+    if (
+        db_family is not None
+        and isinstance(db_family, str)
+        and db_family.startswith("aurora")
+    ):
         LOG.debug("Aurora based instance")
         LOG.debug(f"Looking for parameters for {db_family}")
         return get_db_cluster_engine_parameter_group_defaults(db_family)

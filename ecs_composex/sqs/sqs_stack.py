@@ -15,26 +15,36 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from behave import then
+"""
+Module for the XResource SQS
+"""
 
+from ecs_composex.common import validate_input
+from ecs_composex.sqs.sqs_params import RES_KEY
+from ecs_composex.sqs.sqs_template import generate_sqs_root_template
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.ecs_composex import generate_full_template
 
 
-@then("I should have a RDS DB")
-def step_impl(context):
+def create_sqs_template(settings):
     """
-    Function to ensure we have a RDS stack and a DB stack within
-    :param context:
-    :return:
+    Creates the CFN Troposphere template
+
+    :param settings: The settings for execution
+    :type settings: ecs_composex.common.settings.ComposeXSettings
+    :return: sqs_tpl
+    :rtype: troposphere.Template
     """
-    template = generate_full_template(context.settings).stack_template
-    db_root_stack = template.resources["rds"]
-    assert issubclass(type(db_root_stack), ComposeXStack)
+    validate_input(settings.compose_content, RES_KEY)
+
+    sqs_tpl = generate_sqs_root_template(settings)
+    return sqs_tpl
 
 
-@then("services have access to it")
-def step_impl(context):
+class XResource(ComposeXStack):
     """
-    Function to ensure that the services have secret defined.
+    Class to handle SQS Root stack related actions
     """
+
+    def __init__(self, title, settings, **kwargs):
+        template = create_sqs_template(settings)
+        super().__init__(title, stack_template=template, **kwargs)

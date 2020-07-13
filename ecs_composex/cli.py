@@ -19,19 +19,12 @@
 """Console script for ecs_composex."""
 
 import argparse
-import os
 import sys
 import warnings
 
-from boto3 import session
-
+from ecs_composex.common import LOG
 from ecs_composex.common import keyisset
-from ecs_composex.common import LOG, load_composex_file
-from ecs_composex.common.aws import get_account_id
-from ecs_composex.common.cfn_params import USE_FLEET_T
-from ecs_composex.common.cfn_tools import build_config_template_file
-from ecs_composex.common.ecs_composex import XFILE_DEST, DIR_DEST
-from ecs_composex.common.files import FileArtifact
+from ecs_composex.common.settings import ComposeXSettings
 from ecs_composex.common.stacks import render_final_template
 from ecs_composex.compute.compute_params import CLUSTER_NAME_T
 from ecs_composex.ecs_composex import generate_full_template
@@ -42,10 +35,6 @@ from ecs_composex.vpc.vpc_params import (
     VPC_ID_T,
     VPC_MAP_ID_T,
 )
-from ecs_composex.vpc.cli import DEFAULT_VPC_CIDR
-
-ACCOUNT_ID = get_account_id()
-BUCKET_NAME = f"cfn-templates-{ACCOUNT_ID[:6]}"
 
 
 def validate_vpc_input(args):
@@ -102,18 +91,19 @@ def main_parser():
     parser = argparse.ArgumentParser()
     #  Generic settings
     parser.add_argument(
-        "-f",
-        "--docker-compose-file",
-        dest=XFILE_DEST,
+        "-n",
+        "--name",
+        help="Name of your stack",
         required=True,
-        help="Path to the Docker compose file",
+        type=str,
+        dest=ComposeXSettings.name_arg,
     )
     parser.add_argument(
-        "-o",
-        "--output-file",
-        required=False,
-        default=f"{os.path.basename(os.path.dirname(__file__))}.yml",
-        help="Output file. Extension determines the file format",
+        "-f",
+        "--docker-compose-file",
+        dest=ComposeXSettings.input_file_arg,
+        required=True,
+        help="Path to the Docker compose file",
     )
     parser.add_argument(
         "-d",
@@ -121,7 +111,16 @@ def main_parser():
         required=False,
         help="Output directory to write all the templates to.",
         type=str,
-        dest=DIR_DEST,
+        dest=ComposeXSettings.output_dir_arg,
+        default=ComposeXSettings.default_output_dir,
+    )
+    parser.add_argument(
+        "--format",
+        help="Defines the format you want to use.",
+        type=str,
+        dest=ComposeXSettings.format_arg,
+        choices=ComposeXSettings.allowed_formats,
+        default=ComposeXSettings.default_format,
     )
     parser.add_argument(
         "--cfn-config-file",
@@ -140,17 +139,16 @@ def main_parser():
     parser.add_argument(
         "--region",
         required=False,
-        default=session.Session().region_name,
-        dest="AwsRegion",
+        dest=ComposeXSettings.region_arg,
         help="Specify the region you want to build for"
         "default use default region from config or environment vars",
     )
     parser.add_argument(
         "--az",
-        dest="AwsAzs",
+        dest=ComposeXSettings.zones_arg,
+        default=ComposeXSettings.default_azs,
         action="append",
         required=False,
-        default=[],
         help="List AZs you want to deploy to specifically within the region",
     )
     parser.add_argument(
@@ -158,7 +156,6 @@ def main_parser():
         "--bucket-name",
         type=str,
         required=False,
-        default=BUCKET_NAME,
         help="Bucket name to upload the templates to",
         dest="BucketName",
     )
@@ -167,7 +164,7 @@ def main_parser():
         action="store_true",
         default=False,
         help="Whether the templates should be uploaded or not.",
-        dest="NoUpload",
+        dest=ComposeXSettings.no_upload_arg,
     )
     # VPC SETTINGS
     parser.add_argument(
@@ -176,13 +173,13 @@ def main_parser():
         default=False,
         action="store_true",
         help="Create a VPC for this deployment",
-        dest="CreateVpc",
+        dest=ComposeXSettings.create_vpc_arg,
     )
     parser.add_argument(
         "--vpc-cidr",
         required=False,
-        default=DEFAULT_VPC_CIDR,
-        dest="VpcCidr",
+        default=ComposeXSettings.default_vpc_cidr,
+        dest=ComposeXSettings.vpc_cidr_arg,
         help="Specify the VPC CIDR if you use --create-vpc",
     )
     parser.add_argument(
@@ -248,24 +245,9 @@ def main_parser():
         required=False,
         default=False,
         action="store_true",
-        dest=USE_FLEET_T,
+        dest=ComposeXSettings.create_spotfleet_arg,
         help="Runs spotfleet for EC2. If used in combination "
         "of --use-fargate, it will create an additional SpotFleet",
-    )
-    parser.add_argument(
-        "--add-compute-resources",
-        dest="AddComputeResources",
-        action="store_true",
-        help="Whether you want to create a launch template to create EC2 resources for"
-        " to expand the ECS Cluster and run containers on EC2 instances you might have access to.",
-    )
-    #  ECS COMPOSEX SPECIALS
-    parser.add_argument(
-        "--iam-only",
-        default=False,
-        action="store_true",
-        required=False,
-        help="Generates only the IAM roles for the tasks",
     )
 
     parser.add_argument("_", nargs="*")
@@ -275,35 +257,15 @@ def main_parser():
 def main():
     parser = main_parser()
     args = parser.parse_args()
+    settings = ComposeXSettings(**vars(args))
+    settings.set_bucket_name_from_account_id()
+    settings.set_azs_from_api()
 
-    kwargs = vars(args)
-    content = load_composex_file(kwargs[XFILE_DEST])
     validate_vpc_input(vars(args))
     validate_cluster_input(vars(args))
 
-    print("Arguments: " + str(args._))
-    templates_and_params = generate_full_template(content, **kwargs)
-
-    render_final_template(templates_and_params[0])
-    cfn_config = build_config_template_file(
-        config={}, parameters=templates_and_params[1]
-    )
-    if keyisset("CfnConfigFile", vars(args)):
-        config_file_name = args.CfnConfigFile
-    else:
-        config_file_name = f"{args.output_file.split('.')[0]}.config.json"
-    config_file = FileArtifact(config_file_name, content=cfn_config, **vars(args))
-    params_file = FileArtifact(
-        f"{args.output_file.split('.')[0]}.params.json",
-        content=templates_and_params[1],
-        **vars(args),
-    )
-    template_file = FileArtifact(
-        args.output_file, template=templates_and_params[0], **vars(args)
-    )
-    template_file.create()
-    params_file.create()
-    config_file.create()
+    root_stack = generate_full_template(settings)
+    render_final_template(root_stack, settings)
 
 
 if __name__ == "__main__":

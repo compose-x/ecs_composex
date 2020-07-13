@@ -7,13 +7,23 @@ x-configs:
   app:
     network:
       use_cloudmap: True
+  composex:
+    spot_config:
+      bid_price: 0.42
+      use_spot: true
+      spot_instance_types:
+        m5a.xlarge:
+          weight: 4
+        m5a.2xlarge:
+          weight: 8
+        m5a.4xlarge:
+          weight: 16
 
 services:
   rproxy:
     image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-01-rproxy:latest
     ports:
       - 80:80
-      - 443:80
     deploy:
       replicas: 2
       resources:
@@ -49,35 +59,59 @@ services:
       LOGLEVEL: DEBUG
     x-configs:
       use_xray: True
-      iam:
-        boundary: arn:aws:iam::aws:policy/PowerUser
 
   backend:
     image: nginx
     ports:
       - 80
-    x-configs:
-      network:
-        lb_type: network
 
-x-acm:
-  blogdemo:
+x-sqs:
+  queueA:
     Properties:
-      DomainName: blog-demo.lambda-my-aws.io
-      DomainValidationOptions:
-        - DomainName: lambda-my-aws.io
-          HostedZoneId: ZREDACTED111
-    Settings: {}
+      QueueName: abcd
+    Settings:
+      EnvNames:
+        - QUEUEA
     Services:
-      - name: app01
-        ports: [443]
-      - name: backend
-        ports: [80]
+      - name: app
+        access: RWMessages
 
-  unused:
+  queueB:
     Properties:
-      DomainName: blog-demo.lambda-my-aws.io
-      DomainValidationOptions:
-        - DomainName: lambda-my-aws.io
-          HostedZoneId: ZREDACTED111
-    Services: []
+      QueueName: xyz
+    Settings:
+      EnvNames:
+        - QUEUEB
+    Services:
+      - name: rproxy
+        access: RWMessages
+
+
+
+x-sns:
+  Topics:
+    topicA:
+      Properties: {}
+      Services:
+        - name: backend
+          access: Publish
+        - name: app
+          access: Publish
+
+x-rds:
+  dbA:
+    Properties:
+      Engine: "aurora-mysql"
+      EngineVersion: "5.7.12"
+    Settings:
+      EnvNames:
+        - DBA
+    Services:
+      - name: backend
+        access: RW
+      - name: app
+        access: RW
+
+x-tags:
+  costcentre: abcd
+  contact: you@me.com

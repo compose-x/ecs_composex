@@ -1,7 +1,0 @@
-pytest==5.4.1
-pytest-runner==5.2
-flake8==3.7.9
-tox==3.14.6
-coverage==5.1
-docker-compose==1.26.0
-behave==1.2.6

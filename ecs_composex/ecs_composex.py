@@ -22,22 +22,18 @@ Main module to generate a full stack with VPC, Cluster, Compute, Services and al
 import re
 from importlib import import_module
 
-import boto3
-from troposphere import Ref, GetAtt, If, AWS_STACK_NAME
+from troposphere import Ref, If, AWS_STACK_NAME
 from troposphere.ecs import Cluster
-from ecs_composex.appmesh import Mesh
 
+from ecs_composex.appmesh import Mesh
 from ecs_composex.common import (
     LOG,
     add_parameters,
-    validate_kwargs,
     build_parameters_file,
-    build_default_stack_parameters,
 )
 from ecs_composex.common import (
     build_template,
     keyisset,
-    load_composex_file,
     validate_resource_title,
 )
 from ecs_composex.common import cfn_conditions
@@ -50,17 +46,15 @@ from ecs_composex.common.cfn_params import (
     USE_CLOUDMAP_T,
     USE_CLOUDMAP,
 )
-from ecs_composex.common.aws import get_curated_azs
-from ecs_composex.common.ecs_composex import XFILE_DEST
-from ecs_composex.common.files import FileArtifact
+from ecs_composex.common.ecs_composex import X_KEY
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common.tagging import generate_tags_parameters, add_all_tags
-from ecs_composex.compute import create_compute_stack
 from ecs_composex.compute.compute_params import (
     TARGET_CAPACITY_T,
     TARGET_CAPACITY,
     MIN_CAPACITY_T,
 )
+from ecs_composex.compute.compute_stack import ComputeStack
 from ecs_composex.ecs import ServicesStack
 from ecs_composex.ecs import ecs_params
 from ecs_composex.ecs.ecs_conditions import (
@@ -75,8 +69,8 @@ from ecs_composex.ecs.ecs_params import (
     RES_KEY as SERVICES_KEY,
 )
 from ecs_composex.ecs.ecs_template import define_services_families
-from ecs_composex.vpc import create_vpc_template
 from ecs_composex.vpc import vpc_params
+from ecs_composex.vpc.vpc_stack import create_vpc_stack
 
 RES_REGX = re.compile(r"(^([x-]+))")
 ROOT_CLUSTER_NAME = "EcsCluster"
@@ -92,25 +86,17 @@ VPC_ARGS = [
     vpc_params.VPC_MAP_ID_T,
 ]
 
-SUPPORTED_X_MODULES = ["x-rds", "rds", "x-sqs", "sqs", "x-sns", "sns", "x-acm", "acm"]
-EXCLUDED_X_KEYS = ["x-configs", "x-tags", "x-appmesh"]
-
-
-def get_composex_globals(compose_content):
-    """
-    Parses configs and looks for composex
-
-    :param compose_content: the docker composeX content
-    :type compose_content: dict
-
-    :return: docker compose globals
-    :rtype: dict
-    """
-    if keyisset("configs", compose_content) and keyisset(
-        "composex", compose_content["configs"]
-    ):
-        return compose_content["configs"]["composex"]
-    return {}
+SUPPORTED_X_MODULES = [
+    f"{X_KEY}rds",
+    "rds",
+    f"{X_KEY}sqs",
+    "sqs",
+    f"{X_KEY}sns",
+    "sns",
+    f"{X_KEY}acm",
+    "acm",
+]
+EXCLUDED_X_KEYS = [f"{X_KEY}configs", f"{X_KEY}tags", f"{X_KEY}appmesh"]
 
 
 def get_mod_function(module_name, function_name):
@@ -127,7 +113,6 @@ def get_mod_function(module_name, function_name):
     """
     composex_module_name = f"ecs_composex.{module_name}"
     LOG.debug(composex_module_name)
-    res_module = None
     function = None
     try:
         res_module = import_module(composex_module_name)
@@ -150,7 +135,7 @@ def get_mod_class(module_name):
     :param str module_name: Name of the x-module we are looking for.
     :return: the_class, maps to the main class for the given x-module
     """
-    composex_module_name = f"ecs_composex.{module_name}"
+    composex_module_name = f"ecs_composex.{module_name}.{module_name}_stack"
     LOG.debug(composex_module_name)
     the_class = None
     try:
@@ -194,41 +179,15 @@ def generate_x_resources_policies(resources, resource_type, function, **kwargs):
     return mod_policies
 
 
-def generate_x_resources_envvars(resources, resource_type, function, **kwargs):
-    """
-    Function to create the env vars for the resources of given type
-
-    :param resources: resources to go over for generating envvars
-    :type resources: dict
-    :param resource_type: resource type, i.e., sqs
-    :type resource_type: str
-    :param function: the function to use to fetch the information needed
-    :type function: function pointer
-    :param kwargs: optional arguments
-    :type kwargs: dict
-
-    :return: envvars for resources of the given resource type to be used by microservices for environment variables
-    :rtype: dict
-    """
-    mod_envvars = {}
-    for resource_name in resources:
-        assert validate_resource_title(resource_name, resource_type)
-        resource = resources[resource_name]
-
-        if keyisset("Services", resource):
-            mod_envvars[resource_name] = function(resource_name, resource, **kwargs)
-    return mod_envvars
-
-
 def apply_x_configs_to_ecs(
-    content, root_template, services_stack, services_families, **kwargs
+    settings, root_template, services_stack, services_families, **kwargs
 ):
     """
     Function that evaluates only the x- resources of the root template and iterates over the resources.
     If there is an implemented module in ECS ComposeX for that resource to map to the ECS Services, it will
     execute the function available in the module to apply defined settings to the services stack.
 
-    :param dict content: The compose file content
+    :param ecs_composex.common.settings.ComposeXSettings settings: The compose file content
     :param troposphere.Template root_template: The root template for ECS ComposeX
     :param ecs_composex.ecs.ServicesStack services_stack: root stack for services.
     :param dict kwargs: settings for building X related resources
@@ -248,16 +207,19 @@ def apply_x_configs_to_ecs(
             if ecs_function:
                 LOG.debug(ecs_function)
                 ecs_function(
-                    content[composex_key], services_stack, services_families, resource
+                    settings.compose_content[composex_key],
+                    services_stack,
+                    services_families,
+                    resource,
                 )
 
 
-def apply_x_to_x_configs(root_template, content):
+def apply_x_to_x_configs(root_template, settings):
     """
     Function to iterate over each XResource and trigger cross-x resources configurations functions
 
     :param troposphere.Template root_template: the ECS ComposeX root template
-    :param dict content: The Docker compose file content
+    :param ComposeXSettings settings: The execution settings
     :return:
     """
     for resource_name in root_template.resources:
@@ -267,7 +229,7 @@ def apply_x_to_x_configs(root_template, content):
             and resource_name in SUPPORTED_X_MODULES
             and hasattr(resource, "add_xdependencies")
         ):
-            resource.add_xdependencies(root_template, content)
+            resource.add_xdependencies(root_template, settings.compose_content)
 
 
 def generate_vpc_parameters(template, params, **kwargs):
@@ -292,40 +254,7 @@ def generate_vpc_parameters(template, params, **kwargs):
     add_parameters(template, params)
 
 
-def add_vpc_to_root(root_template, session, tags_params=None, **kwargs):
-    """
-    Function to add VPC stack to the root one.
-
-    :param tags_params: Tags to add to the stack
-    :param root_template: root stack template
-    :type root_template: troposphere.Template
-    :param session: boto session for override
-    :type session: boto3.session.Session
-    :param kwargs:
-
-    :return: vpc_stack
-    :rtype: troposphere.cloudformation.Stack
-    """
-    vpc_template = create_vpc_template(session=session, tags=tags_params, **kwargs)
-    parameters = {
-        ROOT_STACK_NAME_T: Ref(AWS_STACK_NAME),
-        USE_CLOUDMAP_T: Ref(USE_CLOUDMAP),
-    }
-    vpc_stack = root_template.add_resource(
-        ComposeXStack(VPC_STACK_NAME, vpc_template, Parameters=parameters, **kwargs)
-    )
-    return vpc_stack
-
-
-def add_compute(
-    root_template,
-    dependencies,
-    params,
-    vpc_stack=None,
-    tags=None,
-    session=None,
-    **kwargs,
-):
+def add_compute(root_template, settings, vpc_stack):
     """
     Function to add Cluster stack to root one. If any of the options related to compute resources are set in the CLI
     then this function will generate and add the compute template to the root stack template
@@ -334,27 +263,14 @@ def add_compute(
     :type dependencies: list
     :param root_template: the root template
     :type root_template: troposphere.Template
-    :param params: list of parameters
     :param vpc_stack: the VPC stack if any to pull the attributes from
-    :param session: override boto3 session
-    :param tags: tags to add to the stack
-    :type tags: tuple
-
+    :param ComposeXSettings settings: The settings for execution
     :return: compute_stack, the Compute stack
     :rtype: troposphere.cloudformation.Stack
     """
-    create_compute = False
-    args = [USE_FLEET_T, USE_ONDEMAND_T, "AddComputeResources"]
-    for arg in args:
-        if keyisset(arg, kwargs):
-            create_compute = True
-    if not create_compute:
-        return
-    if params is None:
-        params = []
-    depends_on = []
+    if not settings.create_compute:
+        return None
     root_template.add_parameter(TARGET_CAPACITY)
-    compute_template = create_compute_stack(session, **kwargs)
     parameters = {
         ROOT_STACK_NAME_T: Ref(AWS_STACK_NAME),
         TARGET_CAPACITY_T: Ref(TARGET_CAPACITY),
@@ -362,104 +278,50 @@ def add_compute(
         USE_FLEET_T: Ref(USE_FLEET),
         USE_ONDEMAND_T: Ref(USE_ONDEMAND),
     }
-    if tags:
-        for tag in tags[0]:
-            parameters.update({tag.title: Ref(tag.title)})
-    if vpc_stack is not None:
-        depends_on.append(vpc_stack)
-        parameters.update(
-            {
-                vpc_params.VPC_ID_T: GetAtt(
-                    vpc_stack, f"Outputs.{vpc_params.VPC_ID_T}"
-                ),
-                vpc_params.APP_SUBNETS_T: GetAtt(
-                    vpc_stack, f"Outputs.{vpc_params.APP_SUBNETS_T}"
-                ),
-            }
-        )
-    else:
-        # Setup parameters for compute stack without VPC pre-created
-        if not kwargs[vpc_params.APP_SUBNETS_T]:
-            raise ValueError(
-                "No application subnets were provided to create the compute"
-            )
-        if params is None:
-            raise TypeError("params is ", params, "expected", list)
-        root_template.add_parameter(vpc_params.APP_SUBNETS)
-        parameters.update({vpc_params.APP_SUBNETS_T: Ref(vpc_params.APP_SUBNETS)})
-        build_parameters_file(
-            params, vpc_params.APP_SUBNETS_T, kwargs[vpc_params.APP_SUBNETS_T]
-        )
-        params_file = FileArtifact("compute.params.json", content=parameters)
-        params_file.create()
-    compute_stack = root_template.add_resource(
-        ComposeXStack(
-            COMPUTE_STACK_NAME,
-            stack_template=compute_template[0],
-            Parameters=parameters,
-            DependsOn=dependencies,
-            **kwargs,
-        )
+    compute_stack = ComputeStack(
+        COMPUTE_STACK_NAME, settings=settings, parameters=parameters
     )
-    dependencies.append(COMPUTE_STACK_NAME)
-    return compute_stack
+    if vpc_stack is not None:
+        compute_stack.get_from_vpc_stack(vpc_stack)
+    else:
+        compute_stack.no_vpc_parameters()
+    return root_template.add_resource(compute_stack)
 
 
-def add_x_resources(template, session, tags=None, vpc_stack=None, **kwargs):
+def add_x_resources(root_template, settings, vpc_stack=None):
     """
     Function to add each X resource from the compose file
     """
-    content = load_composex_file(kwargs[XFILE_DEST])
     tcp_services = ["x-rds", "x-appmesh"]
-    depends_on = []
-    if tags is None:
-        tags = []
-    for key in content:
-        if key.startswith("x-") and key not in EXCLUDED_X_KEYS:
+    for key in settings.compose_content:
+        if key.startswith(X_KEY) and key not in EXCLUDED_X_KEYS:
             res_type = RES_REGX.sub("", key)
-            function_name = f"create_{res_type}_template"
             xclass = get_mod_class(res_type)
-            create_function = get_mod_function(res_type, function_name)
-            if create_function:
-                x_template = create_function(session=session, **kwargs)
-                if vpc_stack is not None and key in tcp_services:
-                    depends_on.append(VPC_STACK_NAME)
-                parameters = {ROOT_STACK_NAME_T: Ref(AWS_STACK_NAME)}
-                for tag in tags:
-                    parameters.update({tag.title: Ref(tag.title)})
-                LOG.debug(xclass)
+            parameters = {ROOT_STACK_NAME_T: Ref(AWS_STACK_NAME)}
+            LOG.debug(xclass)
+            if not xclass:
+                LOG.info(f"Class for {res_type} not found")
+            else:
                 xstack = xclass(
-                    res_type.strip(),
-                    stack_template=x_template,
-                    Parameters=parameters,
-                    DependsOn=depends_on,
-                    **kwargs,
+                    res_type.strip(), settings=settings, Parameters=parameters,
                 )
                 if vpc_stack and key in tcp_services:
-                    xstack.add_vpc_stack(vpc_stack)
-                template.add_resource(xstack)
+                    xstack.get_from_vpc_stack(vpc_stack)
+                root_template.add_resource(xstack)
 
 
-def add_services(depends, session, vpc_stack=None, **kwargs):
+def create_services(root_stack, settings):
     """
     Function to add the microservices root stack
 
-    :param depends: list of dependencies for the stack
-    :type depends: list
-    :param session: ovveride boto session for API calls
-    :type session: boto3.session.Session
-    :param vpc_stack: the VPC Stack
-    :type vpc_stack: troposphere.cloudformation.Template
-    :param kwargs: optional parameters
+    :param ComposeXSettings settings: The settings for execution
     """
-    stack = ServicesStack("services", template=None, DependsOn=depends, **kwargs)
-    if keyisset("CreateCluster", kwargs):
-        stack.add_cluster_parameter({ecs_params.CLUSTER_NAME_T: Ref(ROOT_CLUSTER_NAME)})
+    stack = ServicesStack("services", settings)
+    if settings.create_cluster:
+        stack.Parameters.update({ecs_params.CLUSTER_NAME_T: Ref(ROOT_CLUSTER_NAME)})
     else:
-        stack.add_cluster_parameter({ecs_params.CLUSTER_NAME_T: Ref(CLUSTER_NAME)})
-    if vpc_stack:
-        stack.add_vpc_stack(vpc_stack)
-    return stack
+        stack.Parameters.update({ecs_params.CLUSTER_NAME_T: Ref(CLUSTER_NAME)})
+    return root_stack.stack_template.add_resource(stack)
 
 
 def add_ecs_cluster(template, depends_on=None):
@@ -475,8 +337,6 @@ def add_ecs_cluster(template, depends_on=None):
     template.add_condition(CLUSTER_NAME_CON_T, CLUSTER_NAME_CON)
     if depends_on is None:
         depends_on = []
-    # Pending next release to support CapacityProviders in Troposphere
-    # When released, will add settings to define cluster capacity
     try:
         from troposphere.ecs import CapacityProviderStrategyItem
 
@@ -536,63 +396,83 @@ def init_root_template(stack_params, tags=None):
     return template
 
 
-def generate_full_template(content, session=None, **kwargs):
+def create_vpc_root(root_stack, settings):
     """
-    Function to generate the root template
+    Function to figure whether to create the VPC Stack and if not, set the parameters.
 
-    :param content: ComposeX file content
-    :type content: dict
-    :param session: boto3 session to override client
-    :type session: boto3.session.Session
-
-    :return template: Template, params
-    :rtype: template, list
+    :param root_stack:
+    :param settings:
+    :return:
     """
-    if session is None:
-        session = boto3.session.Session(region_name=kwargs["AwsRegion"])
-    if not keyisset("AwsAzs", kwargs):
-        kwargs["AwsAzs"] = get_curated_azs(session=session)
-    stack_params = []
-    build_default_stack_parameters(stack_params, **kwargs)
-    kwargs.update(get_composex_globals(content))
-    tags_params = generate_tags_parameters(content)
-    template = init_root_template(stack_params, tags_params)
-    LOG.debug(kwargs)
-    validate_kwargs(["BucketName"], kwargs)
-    vpc_stack = None
-    depends_on = []
-    services_families = define_services_families(content[SERVICES_KEY])
-    services_stack = template.add_resource(
-        add_services(depends_on, session=session, vpc_stack=vpc_stack, **kwargs)
-    )
-    if keyisset("CreateVpc", kwargs):
-        vpc_stack = add_vpc_to_root(template, session, tags_params, **kwargs)
-        depends_on.append(vpc_stack)
-        services_stack.add_vpc_stack(vpc_stack)
+    if settings.create_vpc:
+        vpc_stack = create_vpc_stack(settings)
+        vpc_stack.stack_parameters.update(
+            {ROOT_STACK_NAME_T: Ref(AWS_STACK_NAME), USE_CLOUDMAP_T: Ref(USE_CLOUDMAP)}
+        )
+        return root_stack.stack_template.add_resource(vpc_stack)
     else:
-        generate_vpc_parameters(template, stack_params, **kwargs)
-    if keyisset(CLUSTER_NAME_T, kwargs):
-        build_parameters_file(stack_params, CLUSTER_NAME_T, kwargs[CLUSTER_NAME_T])
-    if keyisset("CreateCluster", kwargs):
-        add_ecs_cluster(template, depends_on)
+        add_parameters(
+            root_stack.stack_template,
+            [
+                vpc_params.VPC_ID,
+                vpc_params.APP_SUBNETS,
+                vpc_params.STORAGE_SUBNETS,
+                vpc_params.PUBLIC_SUBNETS,
+                vpc_params.VPC_MAP_ID,
+            ],
+        )
+        root_stack.stack_parameters.update(
+            {
+                vpc_params.VPC_ID.title: settings.vpc_id,
+                vpc_params.APP_SUBNETS.title: settings.app_subnets,
+                vpc_params.STORAGE_SUBNETS.title: settings.storage_subnets,
+                vpc_params.PUBLIC_SUBNETS.title: settings.public_subnets,
+                vpc_params.VPC_MAP_ID.title: settings.vpc_private_namespace_id,
+            }
+        )
+    return None
+
+
+def generate_full_template(settings):
+    """
+    Function to generate the root root_template
+
+    :param ecs_composex.common.settings.ComposeXSettings settings: The settings for the execution
+    :return root_template: Template, params
+    :rtype: root_template, list
+    """
+    stack_params = []
+    tags_params = generate_tags_parameters(settings.compose_content)
+    LOG.debug(settings)
+    root_template = init_root_template(stack_params, tags_params)
+    root_stack = ComposeXStack(settings.name, stack_template=root_template)
+    root_stack.stack_parameters.update(
+        settings.create_root_stack_parameters_from_input()
+    )
+    depends_on = []
+    vpc_stack = create_vpc_root(root_stack, settings)
+    compute_stack = add_compute(root_stack.stack_template, settings, vpc_stack)
+    services_families = define_services_families(settings.compose_content[SERVICES_KEY])
+    services_stack = create_services(root_stack, settings)
+    if vpc_stack:
+        services_stack.get_from_vpc_stack(vpc_stack)
+
+    if settings.cluster_name != CLUSTER_NAME.Default:
+        root_stack.stack_parameters.update({CLUSTER_NAME_T: settings.cluster_name})
+
+    if settings.create_cluster:
+        add_ecs_cluster(root_template)
         depends_on.append(ROOT_CLUSTER_NAME)
-    add_compute(
-        template,
-        depends_on,
-        stack_params,
-        vpc_stack,
-        tags=tags_params,
-        session=session,
-        **kwargs,
-    )
-    add_x_resources(template, session=session, vpc_stack=vpc_stack, **kwargs)
-    apply_x_configs_to_ecs(
-        content, template, services_stack, services_families, **kwargs
-    )
-    apply_x_to_x_configs(template, content)
-    if keyisset("x-appmesh", content):
-        mesh = Mesh(content["x-appmesh"], services_stack)
-        mesh.render_mesh_template(services_stack, **kwargs)
-    add_all_tags(template, tags_params)
+        if settings.create_compute and compute_stack:
+            compute_stack.DependsOn.append(ROOT_CLUSTER_NAME)
+
+    add_x_resources(root_template, settings, vpc_stack=vpc_stack)
+    apply_x_configs_to_ecs(settings, root_template, services_stack, services_families)
+    apply_x_to_x_configs(root_template, settings)
+
+    if keyisset("x-appmesh", settings.compose_content):
+        mesh = Mesh(settings.compose_content["x-appmesh"], services_stack)
+        mesh.render_mesh_template(services_stack)
+    add_all_tags(root_template, tags_params)
     LOG.debug(stack_params)
-    return template, stack_params
+    return root_stack

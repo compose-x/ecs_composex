@@ -1,4 +1,4 @@
-#  -*- coding: utf-8 -*-
+﻿#  -*- coding: utf-8 -*-
 #   ECS ComposeX <https://github.com/lambda-my-aws/ecs_composex>
 #   Copyright (C) 2020  John Mille <john@lambda-my-aws.io>
 #  #
@@ -15,19 +15,33 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from behave import then
-from pytest import raises
+"""
+Module for VpcStack
+"""
 
-from features.steps.common import *
-from ecs_composex.ecs_composex import generate_full_template
 from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.common.config import ComposeXConfig
+from ecs_composex.vpc.vpc_params import RES_KEY
+from ecs_composex.vpc.vpc_template import generate_vpc_template
 
 
-@then("I should have an ACM root stack")
-def step_impl(context):
+def create_vpc_stack(settings):
+    """Function to create the vpc template for a combined deployment. Invoked by CLI
+
+    :param settings: The Execution settings
+    :type settings: ecs_composex.common.settings.ComposeXSettings
+    :rtype: ComposeXStack
     """
-    Function to ensure we have an ACM stack and a DB stack within
+    template = generate_vpc_template(
+        settings.vpc_cidr, settings.aws_azs, single_nat=settings.single_nat
+    )
+    return ComposeXStack(RES_KEY, stack_template=template)
+
+
+class VpcConfig(ComposeXConfig):
     """
-    template = generate_full_template(context.settings).stack_template
-    acm_root_stack = template.resources["acm"]
-    assert issubclass(type(acm_root_stack), ComposeXStack)
+    Class to determine the VPC Settings to use when deploying on existing VPC.
+    """
+
+    def __init__(self, settings):
+        super().__init__(settings)

@@ -102,6 +102,8 @@ x-appmesh:
           http:
             - match:
                 prefix: /date
+                method: GET
+                scheme: http
               nodes:
                 - name: app02
                   weight: 1

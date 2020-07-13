@@ -169,6 +169,14 @@ AWS AppMesh out of the box
     :ref:`appmesh_syntax_reference`
 
 
+AWS AppMesh out of the box
+===========================
+
+.. seealso::
+
+    :ref:`appmesh_syntax_reference`
+
+
 ACM Certificates auto-create for public services
 ================================================
 

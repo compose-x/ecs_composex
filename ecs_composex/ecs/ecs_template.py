@@ -250,7 +250,7 @@ def get_service_family_name(services_families, service_name):
     return None
 
 
-def handle_families_services(families, cluster_sg, content, **kwargs):
+def handle_families_services(families, cluster_sg, settings):
     """
     Function to handle creation of services within the same family.
     :return:
@@ -263,9 +263,12 @@ def handle_families_services(families, cluster_sg, content, **kwargs):
         family_service_configs = {}
         family_parameters = {}
         for service_name in family:
-            service = content[ecs_params.RES_KEY][service_name]
+            service = settings.compose_content[ecs_params.RES_KEY][service_name]
             service_config = ServiceConfig(
-                content, service_name, service, family_name=family_resource_name
+                settings.compose_content,
+                service_name,
+                service,
+                family_name=family_resource_name,
             )
             family_service_configs[service_name] = {
                 "config": service_config,
@@ -275,7 +278,11 @@ def handle_families_services(families, cluster_sg, content, **kwargs):
         task = Task(template, family_service_configs, family_parameters)
         family_parameters.update(task.stack_parameters)
         service = Service(
-            template, family_resource_name, task, task.family_config, **kwargs,
+            template=template,
+            family_name=family_resource_name,
+            task_definition=task,
+            config=task.family_config,
+            settings=settings,
         )
         service.parameters.update(
             {
@@ -291,7 +298,7 @@ def handle_families_services(families, cluster_sg, content, **kwargs):
     return services
 
 
-def generate_services(compose_content, cluster_sg, **kwargs):
+def generate_services(settings, cluster_sg, **kwargs):
     """
     Function putting together the ECS Service template
 
@@ -302,6 +309,6 @@ def generate_services(compose_content, cluster_sg, **kwargs):
     :param kwargs: optional arguments
     :type kwargs: dicts or set
     """
-    families = define_services_families(compose_content[ecs_params.RES_KEY])
-    services = handle_families_services(families, cluster_sg, compose_content, **kwargs)
+    families = define_services_families(settings.compose_content[ecs_params.RES_KEY])
+    services = handle_families_services(families, cluster_sg, settings)
     return services

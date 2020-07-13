@@ -24,7 +24,6 @@ from troposphere import Ref, Join
 from ecs_composex.common import build_template, validate_kwargs
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T, ROOT_STACK_NAME
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.common.tagging import add_all_tags, generate_tags_parameters
 from ecs_composex.rds.rds_db_template import (
     generate_database_template,
     create_db_subnet_group,
@@ -51,7 +50,7 @@ from ecs_composex.vpc.vpc_params import (
 )
 
 
-def add_db_stack(root_template, dbs_subnet_group, db_name, db, **kwargs):
+def add_db_stack(root_template, dbs_subnet_group, db_name, db, settings):
     """
     Function to add the DB stack to the root stack
 
@@ -80,13 +79,11 @@ def add_db_stack(root_template, dbs_subnet_group, db_name, db, **kwargs):
         ROOT_STACK_NAME_T: Ref(ROOT_STACK_NAME),
     }
     parameters.update(non_stack_params)
-    db_template = generate_database_template(db_name, db, **kwargs)
+    db_template = generate_database_template(db_name, db)
     if db_template is None:
         return
     root_template.add_resource(
-        ComposeXStack(
-            db_name, stack_template=db_template, Parameters=parameters, **kwargs
-        )
+        ComposeXStack(db_name, stack_template=db_template, Parameters=parameters)
     )
 
 
@@ -105,27 +102,20 @@ def init_rds_root_template():
     return template
 
 
-def generate_rds_templates(compose_content, tags=None, **kwargs):
+def generate_rds_templates(settings):
     """
     Function to generate the RDS root template for all the DBs defined in the x-rds section of the compose file
 
-    :param compose_content: the docker compose file content
-    :type compose_content: dict
-    :param kwargs: extra parameters
-    :param tags: tags and parameters to add to the resources
-    :type tags: tuple
+    :param ecs_composex.common.settings.ComposeXSettings settings: Settings for execution
 
     :return: rds_root_template, the RDS Root template with nested stacks
     :rtype: troposphere.Template
     """
     root_tpl = init_rds_root_template()
     dbs_subnet_group = create_db_subnet_group(root_tpl)
-    if tags is None:
-        tags = generate_tags_parameters(compose_content)
-    section = compose_content[RES_KEY]
+    section = settings.compose_content[RES_KEY]
     for db_name in section:
         add_db_stack(
-            root_tpl, dbs_subnet_group, db_name, section[db_name], **kwargs,
+            root_tpl, dbs_subnet_group, db_name, section[db_name], settings,
         )
-    add_all_tags(root_tpl, tags)
     return root_tpl

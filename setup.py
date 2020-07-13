@@ -39,7 +39,7 @@ with open(f"{DIR_HERE}/requirements.txt", "r") as req_fd:
         requirements.append(line.strip())
 
 test_requirements = []
-with open(f"{DIR_HERE}/requirements_test.txt", "r") as req_fd:
+with open(f"{DIR_HERE}/requirements_dev.txt", "r") as req_fd:
     for line in req_fd:
         test_requirements.append(line.strip())
 

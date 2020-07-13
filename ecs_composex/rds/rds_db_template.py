@@ -186,7 +186,7 @@ def add_db_secret(template):
     )
 
 
-def add_instance(template, db, **kwargs):
+def add_instance(template):
     """
     Function to add DB Instance(s)
 
@@ -238,7 +238,7 @@ def add_instance(template, db, **kwargs):
     )
 
 
-def add_cluster(template, db, **kwargs):
+def add_cluster(template):
     """
     Function to add the cluster to the template
 
@@ -294,6 +294,12 @@ def add_parameter_group(template, db):
         db["Properties"][DB_ENGINE_NAME.title],
         db["Properties"][DB_ENGINE_VERSION.title],
     )
+    if not db_family:
+        raise ValueError(
+            "Failed to retrieve the DB Family for "
+            f"{db['Properties']['DB_ENGINE_NAME.title']}"
+            f"{db['Properties']['DB_ENGINE_VERSION.title']}"
+        )
     db_settings = get_family_settings(db_family)
     DBParameterGroup(
         PARAMETER_GROUP_T,
@@ -375,7 +381,7 @@ def init_database_template(db_name):
     return template
 
 
-def generate_database_template(db_name, db, **kwargs):
+def generate_database_template(db_name, db):
     """
     Function to generate the database template
     :param str db_name: name of the database as defined in the compose file
@@ -386,10 +392,10 @@ def generate_database_template(db_name, db, **kwargs):
     :rtype: troposphere.Template
     """
     db_template = init_database_template(db_name)
-    add_cluster(db_template, db, **kwargs)
+    add_cluster(db_template)
     add_db_secret(db_template)
     add_db_sg(db_template, db_name)
-    add_instance(db_template, None, **kwargs)
+    add_instance(db_template)
     add_parameter_group(db_template, db)
     add_db_outputs(db_template, db_name)
     return db_template

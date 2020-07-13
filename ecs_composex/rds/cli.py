@@ -17,61 +17,13 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """Console script for ecs_composex.sqs"""
-import argparse
-import os
 import sys
+import os
 
-from ecs_composex.common.aws import get_account_id
-from ecs_composex.common.ecs_composex import DIR_DEST
-from ecs_composex.common.files import FileArtifact
+from ecs_composex.cli import main_parser
+from ecs_composex.common.settings import ComposeXSettings
 from ecs_composex.common.stacks import render_final_template
-from ecs_composex.rds import create_rds_template
-
-ACCOUNT_ID = get_account_id()
-BUCKET_NAME = f"cfn-templates-{ACCOUNT_ID[:6]}"
-
-
-def create_parser():
-    """
-    Function to create the parser
-    :return: parser
-    :rtype: argparse.ArgumentParser
-    """
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "-o",
-        "--output-file",
-        required=False,
-        default=f"{os.path.basename(os.path.dirname(__file__))}.yml",
-        help="Output file. Extension determines the file format",
-    )
-    parser.add_argument(
-        "-d",
-        "--output-dir",
-        required=False,
-        help="Output directory to write all the templates to.",
-        type=str,
-        dest=DIR_DEST,
-    )
-    parser.add_argument(
-        "-b",
-        "--bucket-name",
-        type=str,
-        required=False,
-        default=BUCKET_NAME,
-        help="Bucket name to upload the templates to",
-        dest="BucketName",
-    )
-    parser.add_argument(
-        "-f",
-        "--compose-file",
-        required=True,
-        dest="ComposeXFile",
-        help="Path to the Docker Compose / ComposeX file",
-    )
-    parser.add_argument("_", nargs="*")
-    return parser
+from ecs_composex.rds.rds_stack import XResource
 
 
 def main():
@@ -79,16 +31,16 @@ def main():
     Main function for CLI execution
     :return:
     """
-    parser = create_parser()
-    pargs = parser.parse_args()
-    args = vars(pargs)
-    template = create_rds_template(**args)
-    if template:
-        render_final_template(template)
-        template_file = FileArtifact(pargs.output_file, template=template, **args)
-        template_file.create()
-        return 0
-    return 1
+    res_key = os.path.basename(os.path.dirname(os.path.abspath(__file__)))
+    parser = main_parser()
+    args = parser.parse_args()
+
+    settings = ComposeXSettings(**vars(args))
+    settings.set_bucket_name_from_account_id()
+    settings.set_azs_from_api()
+
+    sns_stack = XResource(res_key, settings)
+    render_final_template(sns_stack, settings)
 
 
 if __name__ == "__main__":

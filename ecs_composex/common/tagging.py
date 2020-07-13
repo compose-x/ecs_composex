@@ -42,7 +42,7 @@ from troposphere.cloudformation import Stack
 from troposphere.ec2 import LaunchTemplate, TagSpecifications
 
 from ecs_composex.common import keyisset, NONALPHANUM, LOG, add_parameters
-from ecs_composex.common.stacks import XModuleStack, ComposeXStack
+from ecs_composex.common.stacks import ComposeXStack
 
 
 def define_tag_parameter_title(tag_name):
@@ -199,9 +199,11 @@ def add_all_tags(root_template, params_and_tags):
     resources = root_template.resources if root_template else []
     for resource_name in resources:
         resource = resources[resource_name]
-        if isinstance(resource, (XModuleStack, ComposeXStack)):
+        if isinstance(resource, ComposeXStack) or issubclass(
+            type(resource), ComposeXStack
+        ):
             LOG.debug(resource)
-            LOG.debug(resource.TemplateURL)
+            LOG.debug(resource.title)
             add_all_tags(resource.stack_template, params_and_tags)
             add_parameters(resource.stack_template, params_and_tags[0])
             if (

@@ -67,7 +67,7 @@ test-all: ## run tests on every Python version with tox
 	tox --skip-missing-interpreters
 
 coverage: ## check code coverage quickly with the default Python
-	coverage run --source ecs_composex -m behave
+	coverage run --source ecs_composex -m behave --junit
 	coverage report -m
 	coverage html
 	$(BROWSER) htmlcov/index.html

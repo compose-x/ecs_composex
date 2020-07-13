@@ -16,6 +16,7 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from behave import then
+from pytest import raises
 from troposphere import Template
 from troposphere.appmesh import Mesh
 
@@ -33,9 +34,9 @@ def step_impl(context):
 
     :param context:
     """
-    full_template = generate_full_template(context.compose_content, **context.kwargs)
-    assert isinstance(full_template[0], Template)
-    services_stack = full_template[0].resources["services"]
+    full_template = generate_full_template(context.settings).stack_template
+    assert isinstance(full_template, Template)
+    services_stack = full_template.resources["services"]
     assert issubclass(type(services_stack), ComposeXStack)
     services_resources = services_stack.stack_template.resources
     mesh = services_resources[AppMesh.mesh_title]
@@ -50,9 +51,9 @@ def step_impl(context):
 
     :param context:
     """
-    full_template = generate_full_template(context.compose_content, **context.kwargs)
-    assert isinstance(full_template[0], Template)
-    services_stack = full_template[0].resources["services"]
+    full_template = generate_full_template(context.settings).stack_template
+    assert isinstance(full_template, Template)
+    services_stack = full_template.resources["services"]
     assert issubclass(type(services_stack), ComposeXStack)
     services_resources = services_stack.stack_template.resources
     assert AppMesh.mesh_title not in services_resources.keys()
@@ -64,6 +65,4 @@ def step_impl(context):
     Function to ensure we raise errors on mistakes
     """
     with raises((ValueError, KeyError)):
-        full_template = generate_full_template(
-            context.compose_content, **context.kwargs
-        )
+        full_template = generate_full_template(context.settings)
