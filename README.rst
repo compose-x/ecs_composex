@@ -155,7 +155,7 @@ This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypack
 .. _ECS ComposeX Project: https://github.com/orgs/lambda-my-aws/projects/3
 .. _CICD Pipeline for multiple services on AWS ECS with ECS ComposeX: https://blog.ecs-composex.lambda-my-aws.io/posts/cicd-pipeline-for-multiple-services-on-aws-ecs-with-ecs-composex/
 
-.. |BUILD| image:: https://codebuild.eu-west-1.amazonaws.com/badges?uuid=eyJlbmNyeXB0ZWREYXRhIjoiRXloUWdET3RnVHF6MXJFZ0pkWkgvOVpZbTBUN202cG5kai9iOFZnOHI3NTU4NUNYYkRUdE9KWDBDSW54TW90aTlQWk5yWmJhelFxck5PbHlKRXNnUjF3PSIsIml2UGFyYW1ldGVyU3BlYyI6ImJZcVl2bUFaeE1DRFZ5UTEiLCJtYXRlcmlhbFNldFNlcmlhbCI6MX0%3D&branch=master
+.. |BUILD| image:: https://codebuild.eu-west-1.amazonaws.com/badges?uuid=eyJlbmNyeXB0ZWREYXRhIjoidThwNXVIKzVvSnlXcUNVRzVlNE5wN0FiWE4rYzYvaHRNMEM0ZHMxeXRLMytSanhsckozVEN3L1Y5Szl5ZEdJVGxXVElyalZmaFVzR2tSbDBHeFI5cHBRPSIsIml2UGFyYW1ldGVyU3BlYyI6IlZkaml2d28wSGR1YU1xb2ciLCJtYXRlcmlhbFNldFNlcmlhbCI6MX0%3D&branch=master
 
 .. |DOCS_BUILD| image:: https://readthedocs.org/projects/ecs-composex/badge/?version=latest
         :target: https://ecs-composex.readthedocs.io/en/latest/?badge=latest
