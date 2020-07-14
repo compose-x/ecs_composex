@@ -30,7 +30,7 @@ Welcome to ECS-ComposeX's documentation!
     extras
 
 .. toctree::
-    :maxdepth: 1
+    :maxdepth: 2
     :caption: Modules
 
     modules_docs

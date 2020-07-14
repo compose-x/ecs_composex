@@ -85,6 +85,20 @@ Also, thanks to using Python and with YAML as a common syntax method to write Do
 can marry the two very easily.
 
 
+Implementing least privileges at the heart of ECS ComposeX
+===========================================================
+
+One of the most important value add for a team of Cloud/DevOps engineers who have to look after an environment to use
+ECS ComposeX is the persistent implementation of best practices:
+
+* All microservices are using different sets of credentials
+* All microservices are isolated by default and allowed traffic only when explicitly permitted
+* All microservices must be defined as the consumer of a resource (DB, Queue, Table) to be granted access to it.
+
+There have been to many instances of breaches on AWS due to a lack of strict IAM definitions and permissions. Automation
+can solve that problem and with ECS ComposeX the effort is to constantly abide by the least privileges access principle.
+
+
 I want to use EKS. How can I use ECS ComposeX?
 ==============================================
 

@@ -16,6 +16,38 @@ Build your infrastructure and deploy your services to AWS services using docker-
     :local:
     :depth: 1
 
+Installation
+============
+
+.. code-block:: bash
+
+    pip install ecs_composex
+
+Usage
+=====
+
+.. code-block:: bash
+
+    sage: ecs_composex [-h] -n NAME -f DOCKERCOMPOSEXFILE [-d OUTPUTDIRECTORY]
+                    [--format {json,yaml,text}]
+                    [--cfn-config-file CFNCONFIGFILE]
+                    [--no-cfn-template-config-file] [--region REGIONNAME]
+                    [--az ZONES] [-b BUCKETNAME] [--no-upload] [--create-vpc]
+                    [--vpc-cidr VPCCIDR] [--vpc-id VPCID]
+                    [--public-subnets PUBLICSUBNETS]
+                    [--app-subnets APPSUBNETS]
+                    [--storage-subnets STORAGESUBNETS]
+                    [--discovery-map-id VPCDISCOVERYMAPID] [--single-nat]
+                    [--create-cluster] [--cluster-name ECSCLUSTERNAME]
+                    [--use-spot-fleet]
+                    [_ [_ ...]]
+
+
+.. code-block:: bash
+
+    ecs_composex -f docker-compose.yml -d outputs -n appstack
+
+
 Introduction
 ============
 
@@ -62,18 +94,24 @@ immediately.
 For services such as RDS or ElasticCache, it will create the security groups ingress rules as needed, and when applicable,
 will handle to generate secrets and expose these via ECS Secrets to your services.
 
-Implementing least privileges at the heart of ECS ComposeX
------------------------------------------------------------
+What does ECS ComposeX do differently?
+--------------------------------------
 
-One of the most important value add for a team of Cloud/DevOps engineers who have to look after an environment to use
-ECS ComposeX is the persistent implementation of best practices:
+Where ECS ComposeX distinguishes itself from other tools is embedding security for each service individually,
+so that developers only have to connect resources logically together in the same way they would use links between
+microservices in their Docker Compose definition. Each microservice needs to explicitly be declared as a consumer of a
+resource to get access to it, otherwise it won’t be able to access the resource or other microservices. This is done
+simply by using AWS IAM policies or security groups ingress, where applicable. In a future release, ECS ComposeX will
+allow using AWS App Mesh for service-to-service communication. This provides the cloud engineers the peace of mind that
+the surface of attack to the platform is limited in distributed environments as isolation is achieved for each
+microservice individually.
 
-* All microservices are using different sets of credentials
-* All microservices are isolated by default and allowed traffic only when explicitly permitted
-* All microservices must be defined as the consumer of a resource (DB, Queue, Table) to be granted access to it.
+That simplified way to define access between services and resources helps with defining a shared-responsibility model
+between application engineers and cloud engineers. Application engineers must know what their application does and how
+services interface to each other and to external services. This gives a sense of ownership to the maintainers of the
+Docker Compose file that defines the application stack resources and services along with resources access and
+permissions.
 
-There have been to many instances of breaches on AWS due to a lack of strict IAM definitions and permissions. Automation
-can solve that problem and with ECS ComposeX the effort is to constantly abide by the least privileges access principle.
 
 Plug-And-Play
 --------------

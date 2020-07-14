@@ -1,6 +1,18 @@
 ﻿ECS ComposeX aims to make life easy to take your application to AWS ECS, with using AWS Fargate as the primary
 focus (still, allows to run on EC2 should you need to).
 
+AWS AppMesh integration
+=======================
+
+AWS AppMesh is a service mesh which allows you to define how services talk to each other at an application L7) level,
+and optionally, TCP (layer 4) level. It is extremely powerful
+
+.. seealso::
+
+    :ref:`appmesh_syntax_reference`
+
+
+
 Fargate CPU/RAM auto configuration
 ==================================
 
@@ -160,22 +172,6 @@ For example,
         Services:
           - name: app01
             access: RWMessages
-
-AWS AppMesh out of the box
-===========================
-
-.. seealso::
-
-    :ref:`appmesh_syntax_reference`
-
-
-AWS AppMesh out of the box
-===========================
-
-.. seealso::
-
-    :ref:`appmesh_syntax_reference`
-
 
 ACM Certificates auto-create for public services
 ================================================
