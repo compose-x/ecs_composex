@@ -52,6 +52,7 @@ class ComposeXSettings(object):
 
     region_arg = "RegionName"
     zones_arg = "Zones"
+    deploy_arg = "DeployToCfn"
 
     bucket_arg = "BucketName"
     no_upload_arg = "NoUpload"
@@ -105,12 +106,15 @@ class ComposeXSettings(object):
         self.single_nat = None
         self.public_subnets = None
         self.vpc_private_namespace_id = None
+        self.vpc_private_namespace_zone_id = None
+        self.vpc_private_namespace_tld = None
         self.create_vpc = False
         self.set_vpc_settings(kwargs)
 
         self.create_cluster = None
         self.cluster_name = None
         self.set_cluster_settings(kwargs)
+        self.deploy = True if keyisset(self.deploy_arg, kwargs) else False
 
     def __repr__(self):
         return dumps(
@@ -119,6 +123,7 @@ class ComposeXSettings(object):
                 self.zones_arg: self.aws_azs,
                 self.bucket_arg: self.bucket_name,
                 self.no_upload_arg: self.no_upload,
+                self.deploy_arg: self.deploy,
             },
             indent=4,
         )
@@ -163,7 +168,9 @@ class ComposeXSettings(object):
         :return:
         """
         self.vpc_cidr = (
-            kwargs[self.vpc_cidr_arg] if keyisset(self.vpc_cidr_arg, kwargs) else None
+            kwargs[self.vpc_cidr_arg]
+            if keyisset(self.vpc_cidr_arg, kwargs)
+            else self.default_vpc_cidr
         )
         self.create_vpc = True if keyisset(self.create_vpc_arg, kwargs) else False
         self.vpc_id = kwargs[VPC_ID_T] if keyisset(VPC_ID_T, kwargs) else None
@@ -184,6 +191,22 @@ class ComposeXSettings(object):
         self.vpc_private_namespace_id = (
             kwargs[VPC_MAP_ID_T] if keyisset(VPC_MAP_ID_T, kwargs) else None
         )
+        if self.vpc_private_namespace_id:
+            client = self.session.client("servicediscovery")
+            try:
+                res = client.get_namespace(Id=self.vpc_private_namespace_id)
+                self.vpc_private_namespace_zone_id = res["Namespace"]["Properties"][
+                    "DnsProperties"
+                ]["HostedZoneId"]
+                self.vpc_private_namespace_tld = res["Namespace"]["Properties"][
+                    "HttpProperties"
+                ]["HttpName"]
+
+            except client.meta.exceptions.NamespaceNotFound as error:
+                LOG.error(
+                    f"Namespace {self.vpc_private_namespace_id} not found in this account."
+                )
+                raise error
 
     def set_azs_from_api(self):
         """

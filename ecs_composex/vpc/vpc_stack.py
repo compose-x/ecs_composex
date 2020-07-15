@@ -21,21 +21,19 @@ Module for VpcStack
 
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common.config import ComposeXConfig
-from ecs_composex.vpc.vpc_params import RES_KEY
 from ecs_composex.vpc.vpc_template import generate_vpc_template
 
 
-def create_vpc_stack(settings):
-    """Function to create the vpc template for a combined deployment. Invoked by CLI
-
-    :param settings: The Execution settings
-    :type settings: ecs_composex.common.settings.ComposeXSettings
-    :rtype: ComposeXStack
+class VpcStack(ComposeXStack):
     """
-    template = generate_vpc_template(
-        settings.vpc_cidr, settings.aws_azs, single_nat=settings.single_nat
-    )
-    return ComposeXStack(RES_KEY, stack_template=template)
+    Class to create the VPC Stack
+    """
+
+    def __init__(self, title, settings, **kwargs):
+        template = generate_vpc_template(
+            settings.vpc_cidr, settings.aws_azs, single_nat=settings.single_nat
+        )
+        super().__init__(title, stack_template=template, **kwargs)
 
 
 class VpcConfig(ComposeXConfig):

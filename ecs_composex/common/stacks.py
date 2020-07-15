@@ -108,17 +108,11 @@ class ComposeXStack(Stack, object):
             raise TypeError("parameter must be of type", dict, "got", type(parameter))
         self.Parameters.update(parameter)
 
-    def write_parameters_file(self, settings):
+    def write_config_file(self, settings):
         """
         Method to write the parameters file for the stack. Only uses manual input.
         """
-        if not hasattr(self, "Parameters"):
-            return
-        params = [
-            {param_name: self.Parameters[param_name]}
-            for param_name in self.Parameters.keys()
-            if isinstance(self.Parameters[param_name], str)
-        ]
+        params = self.render_parameters_list_cfn()
         if not params:
             return
         LOG.debug(f"Rendering {self.title}.params.json")
@@ -133,6 +127,37 @@ class ComposeXStack(Stack, object):
         if settings.upload:
             file.upload(settings)
             LOG.debug(f"Rendered URL = {file.url}")
+
+    def render_parameters(self):
+        """
+        Returns parameters to use for CFN Config file
+
+        :rtype: dict
+        :return: params
+        """
+        if not hasattr(self, "Parameters"):
+            return
+        params = {}
+        for param_name in self.Parameters.keys():
+            if isinstance(self.Parameters[param_name], str):
+                params[param_name] = self.Parameters[param_name]
+        return params
+
+    def render_parameters_list_cfn(self):
+        """
+        Renders parameters in a CFN parameters config file format
+
+        :return: params
+        :rtype: list
+        """
+        if not hasattr(self, "Parameters"):
+            return []
+        params = [
+            {"ParameterKey": param_name, "ParameterValue": self.Parameters[param_name]}
+            for param_name in self.Parameters.keys()
+            if isinstance(self.Parameters[param_name], str)
+        ]
+        return params
 
     def render(self, settings):
         """
@@ -153,7 +178,7 @@ class ComposeXStack(Stack, object):
             setattr(self, "TemplateURL", template_file.url)
             LOG.debug(f"Rendered URL = {template_file.url}")
         template_file.validate(settings)
-        self.write_parameters_file(settings)
+        self.write_config_file(settings)
 
     def get_from_vpc_stack(self, vpc_stack, *parameters):
         if isinstance(vpc_stack, ComposeXStack):

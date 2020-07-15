@@ -20,7 +20,7 @@
 Functions to add to the Cluster template when people want to use SpotFleet for their ECS Cluster.
 """
 
-from troposphere import Ref, Sub, GetAtt, Select, If, Split
+from troposphere import Ref, Sub, GetAtt, Select, If
 from troposphere.applicationautoscaling import (
     ScalableTarget,
     StepAdjustment,
@@ -102,7 +102,7 @@ def define_overrides(settings, lt_id, lt_version, spot_config):
         for itype in spot_config["spot_instance_types"]:
             overrides.append(
                 LaunchTemplateOverrides(
-                    SubnetId=Select(count, Split(",", vpc_params.APP_SUBNETS_IMPORT)),
+                    SubnetId=Select(count, Ref(vpc_params.APP_SUBNETS)),
                     WeightedCapacity=spot_config["spot_instance_types"][itype][
                         "weight"
                     ],
@@ -277,6 +277,7 @@ def generate_spot_fleet_template(settings, spot_config):
             compute_params.MIN_CAPACITY,
             compute_params.MAX_CAPACITY,
             compute_params.TARGET_CAPACITY,
+            vpc_params.APP_SUBNETS,
         ],
     )
     template.add_condition(

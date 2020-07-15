@@ -24,6 +24,7 @@ import warnings
 
 from ecs_composex.common import LOG
 from ecs_composex.common import keyisset
+from ecs_composex.common.aws import deploy
 from ecs_composex.common.settings import ComposeXSettings
 from ecs_composex.common.stacks import render_final_template
 from ecs_composex.compute.compute_params import CLUSTER_NAME_T
@@ -166,6 +167,14 @@ def main_parser():
         help="Whether the templates should be uploaded or not.",
         dest=ComposeXSettings.no_upload_arg,
     )
+    parser.add_argument(
+        "--deploy",
+        action="store_true",
+        default=False,
+        required=False,
+        help="Whether or not you would like to deploy the stack to CFN.",
+        dest=ComposeXSettings.deploy_arg,
+    )
     # VPC SETTINGS
     parser.add_argument(
         "--create-vpc",
@@ -212,7 +221,7 @@ def main_parser():
     )
     parser.add_argument(
         "--discovery-map-id",
-        "--map",
+        "--cloud-map-id",
         dest=VPC_MAP_ID_T,
         required=False,
         help="Service Discovery ID, ie. ns-xxx",
@@ -260,12 +269,22 @@ def main():
     settings = ComposeXSettings(**vars(args))
     settings.set_bucket_name_from_account_id()
     settings.set_azs_from_api()
+    LOG.debug(settings)
+
+    if settings.deploy and not settings.upload:
+        LOG.warning(
+            "You must update the templates in order to deploy. We won't be deploying."
+        )
+        settings.deploy = False
 
     validate_vpc_input(vars(args))
     validate_cluster_input(vars(args))
 
     root_stack = generate_full_template(settings)
     render_final_template(root_stack, settings)
+
+    if settings.deploy:
+        deploy(settings, root_stack)
 
 
 if __name__ == "__main__":

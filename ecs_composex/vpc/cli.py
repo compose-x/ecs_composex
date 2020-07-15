@@ -23,9 +23,8 @@ import sys
 from ecs_composex.cli import main_parser, validate_vpc_input
 from ecs_composex.common.settings import ComposeXSettings
 from ecs_composex.common.stacks import render_final_template
-from ecs_composex.vpc.vpc_stack import create_vpc_stack
-
-DEFAULT_VPC_CIDR = "100.127.254.0/23"
+from ecs_composex.vpc.vpc_stack import VpcStack
+from ecs_composex.vpc.vpc_params import RES_KEY
 
 
 def main():
@@ -40,7 +39,7 @@ def main():
     settings.set_azs_from_api()
 
     validate_vpc_input(vars(args))
-    vpc_stack = create_vpc_stack(settings)
+    vpc_stack = VpcStack(RES_KEY, settings)
     render_final_template(vpc_stack, settings)
     return 0
 

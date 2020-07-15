@@ -54,6 +54,7 @@ def step_impl(context, file_path):
 @given("I want to create a VPC")
 def step_impl(context):
     context.settings.create_vpc = True
+    context.settings.vpc_cidr = ComposeXSettings.default_vpc_cidr
 
 
 @given("I want to create a Cluster")

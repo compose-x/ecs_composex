@@ -44,6 +44,22 @@ def step_impl(context):
     assert isinstance(mesh, Mesh)
 
 
+@then("I should not have a mesh created")
+def step_impl(context):
+    """
+    Function to verify a mesh was created
+
+    :param context:
+    """
+    full_template = generate_full_template(context.settings).stack_template
+    assert isinstance(full_template, Template)
+    services_stack = full_template.resources["services"]
+    assert issubclass(type(services_stack), ComposeXStack)
+    services_resources = services_stack.stack_template.resources
+    with raises(KeyError):
+        mesh = services_resources[AppMesh.mesh_title]
+
+
 @then("I should not have a mesh")
 def step_impl(context):
     """
