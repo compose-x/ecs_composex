@@ -7,17 +7,6 @@ x-configs:
   app:
     network:
       use_cloudmap: True
-  composex:
-    spot_config:
-      bid_price: 0.42
-      use_spot: true
-      spot_instance_types:
-        m5a.xlarge:
-          weight: 4
-        m5a.2xlarge:
-          weight: 8
-        m5a.4xlarge:
-          weight: 16
 
 services:
   rproxy:
@@ -29,10 +18,10 @@ services:
       resources:
         reservations:
           cpus: "0.1"
-          memory: "32768kB"
+          memory: "32M"
         limits:
           cpus: "0.25"
-          memory: "67108864B"
+          memory: "64M"
       labels:
         - "ecs.task.family=app01"
     x-configs:
@@ -64,6 +53,9 @@ services:
     image: nginx
     ports:
       - 80
+    x-configs:
+      iam:
+        boundary: arn:aws:iam::aws:policy/PowerUserAccess
 
 x-sqs:
   queueA:
@@ -97,6 +89,11 @@ x-sns:
           access: Publish
         - name: app
           access: Publish
+    topicB:
+      Properties:
+        Subscription:
+          - Endpoint: unknown
+            Protocol: sqs
 
 x-rds:
   dbA:

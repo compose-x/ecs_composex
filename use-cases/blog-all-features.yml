@@ -89,6 +89,11 @@ x-sns:
           access: Publish
         - name: app
           access: Publish
+    topicB:
+      Properties:
+        Subscription:
+          - Endpoint: queueB
+            Protocol: sqs
 
 x-rds:
   dbA:

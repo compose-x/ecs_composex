@@ -47,18 +47,6 @@ def get_account_id(session):
     return session.client("sts").get_caller_identity()["Account"]
 
 
-def get_curated_azs(session):
-    """Function to return curated list of AZs
-
-    :param boto3.session.Session session: Boto3 Session to make the API call.
-
-    :return: list of AZs from AWS
-    :rtype: list
-    """
-    azs = get_region_azs(session)
-    return [az["ZoneName"] for az in azs]
-
-
 def assert_can_create_stack(client, name):
     """
     Checks whether a stack already exists or not
@@ -120,6 +108,7 @@ def deploy(settings, root_stack):
         )
         LOG.info(f"Stack {settings.name} successfully deployed.")
         LOG.info(res["StackId"])
+        return res["StackId"]
     elif assert_can_update_stack(client, settings.name):
         LOG.warning(f"Stack {settings.name} already exists. Updating.")
         res = client.update_stack(
@@ -130,3 +119,5 @@ def deploy(settings, root_stack):
         )
         LOG.info(f"Stack {settings.name} successfully updating.")
         LOG.info(res["StackId"])
+        return res["StackId"]
+    return None

@@ -22,6 +22,14 @@ from features.steps.common import *
 from ecs_composex.ecs_composex import generate_full_template
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.ecs import ServiceStack
+from ecs_composex.sqs.sqs_stack import XResource
+from ecs_composex.common.stacks import render_final_template
+
+
+@given("I process and render the queues")
+def step_impl(context):
+    context.root_stack = XResource("sqs", context.settings)
+    render_final_template(context.root_stack, context.settings)
 
 
 @then("I should have SQS queues")

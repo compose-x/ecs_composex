@@ -178,7 +178,7 @@ def generate_queue_template(queue_name, properties, redrive_queue=None):
         properties.pop("QueueName")
         properties["QueueName"] = Sub(f"${{{ROOT_STACK_NAME_T}}}-{queue_name}")
     else:
-        properties["QueueName"] = Sub(f"${{{ROOT_STACK_NAME_T}}}-${{{res_name}}}")
+        properties["QueueName"] = Sub(f"${{{ROOT_STACK_NAME_T}}}-{res_name}")
     queue = Queue(res_name, template=queue_template, **properties)
     add_ssm_parameters(queue_template, queue)
     queue_template.add_output(

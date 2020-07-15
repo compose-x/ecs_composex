@@ -14,7 +14,7 @@ phases:
       - export PY_FULL_VERSION=`python --version| awk '{print $NF}'`
       - export PATH=/root/.pyenv/versions/${PY_FULL_VERSION}/bin:${PATH}
       - pip --version || curl -s https://bootstrap.pypa.io/get-pip.py | python
-      - pip install -r requirements_buildspec.txt
+      - pip install -r requirements_dev.txt
       - python setup.py install
       - python setup.py develop
   pre_build:

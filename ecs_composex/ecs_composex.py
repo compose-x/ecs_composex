@@ -232,41 +232,17 @@ def apply_x_to_x_configs(root_template, settings):
             resource.add_xdependencies(root_template, settings.compose_content)
 
 
-def generate_vpc_parameters(template, params, **kwargs):
-    """
-    Function to add the VPC arguments to the root stack
-
-    :param template: the root template to add the parameters to
-    :type template: troposphere.Template
-    :param params: list of parameters
-    :type params: list
-    """
-    for arg in VPC_ARGS:
-        if keyisset(arg, kwargs):
-            build_parameters_file(params, arg, kwargs[arg])
-    params = [
-        vpc_params.VPC_ID,
-        vpc_params.APP_SUBNETS,
-        vpc_params.STORAGE_SUBNETS,
-        vpc_params.PUBLIC_SUBNETS,
-        vpc_params.VPC_MAP_ID,
-    ]
-    add_parameters(template, params)
-
-
 def add_compute(root_template, settings, vpc_stack):
     """
     Function to add Cluster stack to root one. If any of the options related to compute resources are set in the CLI
     then this function will generate and add the compute template to the root stack template
 
-    :param dependencies: list of dependencies that need created before creating the Compute stack
-    :type dependencies: list
     :param root_template: the root template
     :type root_template: troposphere.Template
     :param vpc_stack: the VPC stack if any to pull the attributes from
     :param ComposeXSettings settings: The settings for execution
     :return: compute_stack, the Compute stack
-    :rtype: troposphere.cloudformation.Stack
+    :rtype: ComposeXStack
     """
     if not settings.create_compute:
         return None
