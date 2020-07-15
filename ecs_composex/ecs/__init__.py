@@ -33,12 +33,11 @@ It is going to also, based on the labels set in the compose file
 
 """
 
-from troposphere import GetAtt, Sub, Ref, Join, Tags
-from troposphere.ec2 import SecurityGroup, SecurityGroupIngress
+from troposphere import Sub, Ref, Join, Tags
+from troposphere.ec2 import SecurityGroup
 
-from ecs_composex.common import build_template, LOG
+from ecs_composex.common import build_template
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T, USE_CLOUDMAP
-from ecs_composex.common.outputs import define_import
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.ecs import ecs_params
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME, CLUSTER_NAME_T
@@ -112,55 +111,6 @@ class ServicesStack(ComposeXStack):
         self.create_services_templates(services)
         if not settings.create_vpc:
             self.no_vpc_parameters()
-
-    def handle_service_links(self, service):
-        """
-        Function to handle links between services
-        :param service:
-        """
-        LOG.debug(f"Adding services link for {service.service_name}")
-        for link in service.links:
-            if link not in self.services:
-                raise KeyError(f"{link} is not defined in the services of the template")
-            dest_service = self.services[link]
-            for port in dest_service.config.ports:
-                SecurityGroupIngress(
-                    f"From{service.resource_name}To{dest_service.resource_name}Port{port['target']}",
-                    template=service.template,
-                    SourceSecurityGroupOwnerId=Ref("AWS::AccountId"),
-                    SourceSecurityGroupId=GetAtt(ecs_params.SG_T, "GroupId"),
-                    IpProtocol=port["protocol"],
-                    FromPort=port["target"],
-                    ToPort=port["target"],
-                    GroupId=define_import(
-                        dest_service.resource_name, ecs_params.SERVICE_GROUP_ID_T
-                    ),
-                    Description=f"From{service.resource_name}To{dest_service.resource_name}Port{port['target']}",
-                )
-            if dest_service.resource_name not in service.dependencies:
-                LOG.debug(
-                    f"Adding new dependency from {service.service_name} to {dest_service.service_name}"
-                )
-                service.dependencies.append(dest_service.resource_name)
-            else:
-                LOG.debug(
-                    f"Dependency between {service.service_name} to {dest_service.service_name} already exists"
-                )
-
-    def handle_services_dependencies(self):
-        """
-        Function to handle dependencies between services as per depends_on in compose file
-        """
-        for service_name in self.services:
-            service = self.services[service_name]
-            for count, depend in enumerate(service.dependencies):
-                if depend in self.services:
-                    LOG.debug(
-                        f"Adding dependency for {depend} using name {self.services[depend].resource_name}"
-                    )
-                    service.dependencies[count] = self.services[depend].resource_name
-            if service.links:
-                self.handle_service_links(service)
 
     def create_services_templates(self, services):
         """

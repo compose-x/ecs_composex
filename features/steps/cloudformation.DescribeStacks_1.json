@@ -1,0 +1,22 @@
+{
+    "status_code": 400,
+    "data": {
+        "Error": {
+            "Type": "Sender",
+            "Code": "ValidationError",
+            "Message": "Stack with id test does not exist"
+        },
+        "ResponseMetadata": {
+            "RequestId": "9e4fffd0-f711-424c-93d9-21d6b79b8c35",
+            "HTTPStatusCode": 400,
+            "HTTPHeaders": {
+                "x-amzn-requestid": "9e4fffd0-f711-424c-93d9-21d6b79b8c35",
+                "content-type": "text/xml",
+                "content-length": "290",
+                "date": "Wed, 15 Jul 2020 13:08:33 GMT",
+                "connection": "close"
+            },
+            "RetryAttempts": 0
+        }
+    }
+}

@@ -20,91 +20,27 @@
 CLI for ecs_composex.acm
 """
 
-import argparse
 import os
 import sys
 
-from boto3 import session
-
-from ecs_composex.common.aws import get_curated_azs, get_account_id
-from ecs_composex.common.ecs_composex import XFILE_DEST, DIR_DEST
-from ecs_composex.common.files import FileArtifact
-from ecs_composex.acm import create_acm_template
+from ecs_composex.acm.acm_stack import XResource
+from ecs_composex.cli import main_parser
+from ecs_composex.common.settings import ComposeXSettings
 from ecs_composex.common.stacks import render_final_template
-
-CURATED_AZS = get_curated_azs()
-ACCOUNT_ID = get_account_id()
-BUCKET_NAME = f"cfn-templates-{ACCOUNT_ID[:6]}"
-
-
-def root_parser():
-    """
-    Function to create the VPC specific arguments for argparse
-    """
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "-f",
-        "--docker-compose-file",
-        required=False,
-        dest=XFILE_DEST,
-        help="Optionally use the YAML ComposeX file to add options and settings",
-    )
-    parser.add_argument(
-        "-o",
-        "--output-file",
-        required=False,
-        default=f"{os.path.basename(os.path.dirname(__file__))}.yml",
-        help="Output file. Extension determines the file format",
-    )
-    parser.add_argument(
-        "-d",
-        "--output-dir",
-        required=False,
-        help="Output directory to write all the templates to.",
-        type=str,
-        dest=DIR_DEST,
-    )
-    #  AWS SETTINGS
-    parser.add_argument(
-        "--region",
-        required=False,
-        default=session.Session().region_name,
-        dest="AwsRegion",
-        help="Specify the region you want to build for"
-        "default use default region from config or environment vars",
-    )
-    parser.add_argument(
-        "-b",
-        "--bucket-name",
-        type=str,
-        required=False,
-        default=BUCKET_NAME,
-        help="Bucket name to upload the templates to",
-        dest="BucketName",
-    )
-    parser.add_argument(
-        "--no-upload",
-        action="store_true",
-        default=False,
-        help="Do not upload the file to S3.",
-    )
-    return parser
 
 
 def main():
-    """Console script for ecs_composex."""
-    parser = root_parser()
-    parser.add_argument("_", nargs="*")
+    """Console script for ecs_composex.acm"""
+    res_key = os.path.basename(os.path.dirname(os.path.abspath(__file__)))
+    parser = main_parser()
     args = parser.parse_args()
 
-    template = create_acm_template(**vars(args))
-    render_final_template(template)
-    template_file = FileArtifact(args.output_file, template=template, **vars(args))
-    if args.no_upload:
-        template_file.write()
-    else:
-        template_file.create()
-    return 0
+    settings = ComposeXSettings(**vars(args))
+    settings.set_bucket_name_from_account_id()
+    settings.set_azs_from_api()
+
+    stack = XResource(res_key, settings)
+    render_final_template(stack, settings)
 
 
 if __name__ == "__main__":

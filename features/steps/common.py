@@ -16,12 +16,15 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from os import path
+from pytest import raises
 
 from behave import given, then
+import placebo
 
 from ecs_composex.common.settings import ComposeXSettings
 from ecs_composex.common.stacks import render_final_template
 from ecs_composex.ecs_composex import generate_full_template
+from ecs_composex.common.aws import deploy
 
 
 def here():
@@ -49,11 +52,14 @@ def step_impl(context, file_path):
             ComposeXSettings.format_arg: "yaml",
         },
     )
+    context.settings.set_azs_from_api()
+    context.settings.set_bucket_name_from_account_id()
 
 
 @given("I want to create a VPC")
 def step_impl(context):
     context.settings.create_vpc = True
+    context.settings.vpc_cidr = ComposeXSettings.default_vpc_cidr
 
 
 @given("I want to create a Cluster")
@@ -63,7 +69,8 @@ def step_impl(context):
 
 @then("I render all files to verify execution")
 def set_impl(context):
-    render_final_template(generate_full_template(context.settings), context.settings)
+    context.root_stack = generate_full_template(context.settings)
+    render_final_template(context.root_stack, context.settings)
 
 
 @given("I want to use aws profile {profile_name}")
@@ -79,3 +86,35 @@ def step_impl(context, bucket_name):
     context.settings.upload = True
     context.settings.no_upload = False
     context.settings.bucket_name = bucket_name
+
+
+@given("I want to deploy to CFN stack named test")
+def step_impl(context):
+    """
+    Function to test the deployment.
+    """
+    pill = placebo.attach(session=context.settings.session, data_path=here())
+    pill.playback()
+    context.stack_id = deploy(context.settings, context.root_stack)
+
+
+@given("I set I did not want to upload")
+def step_impl(context):
+    context.settings.upload = False
+    context.settings.no_upload = True
+
+
+@then("I should have a stack ID")
+def step_impl(context):
+    """
+    Function to check we got a stack ID
+    """
+    assert context.stack_id is not None
+
+
+@then("I should not have a stack ID")
+def step_impl(context):
+    """
+    Function to check we got a stack ID
+    """
+    assert context.stack_id is None

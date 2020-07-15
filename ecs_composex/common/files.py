@@ -239,6 +239,12 @@ class FileArtifact(object):
             LOG.debug(f"Template {self.file_name} was validated successfully by CFN")
         except ClientError as error:
             LOG.error(error)
+            with open(f"/tmp/{settings.name}.{settings.format}", "w") as failed_file_fd:
+                failed_file_fd.write(self.body)
+                LOG.error(
+                    f"Failed validation template written at /tmp/{settings.name}.{settings.format}"
+                )
+                raise
 
     def define_body(self):
         """

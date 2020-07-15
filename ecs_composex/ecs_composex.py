@@ -70,7 +70,7 @@ from ecs_composex.ecs.ecs_params import (
 )
 from ecs_composex.ecs.ecs_template import define_services_families
 from ecs_composex.vpc import vpc_params
-from ecs_composex.vpc.vpc_stack import create_vpc_stack
+from ecs_composex.vpc.vpc_stack import VpcStack
 
 RES_REGX = re.compile(r"(^([x-]+))")
 ROOT_CLUSTER_NAME = "EcsCluster"
@@ -232,41 +232,17 @@ def apply_x_to_x_configs(root_template, settings):
             resource.add_xdependencies(root_template, settings.compose_content)
 
 
-def generate_vpc_parameters(template, params, **kwargs):
-    """
-    Function to add the VPC arguments to the root stack
-
-    :param template: the root template to add the parameters to
-    :type template: troposphere.Template
-    :param params: list of parameters
-    :type params: list
-    """
-    for arg in VPC_ARGS:
-        if keyisset(arg, kwargs):
-            build_parameters_file(params, arg, kwargs[arg])
-    params = [
-        vpc_params.VPC_ID,
-        vpc_params.APP_SUBNETS,
-        vpc_params.STORAGE_SUBNETS,
-        vpc_params.PUBLIC_SUBNETS,
-        vpc_params.VPC_MAP_ID,
-    ]
-    add_parameters(template, params)
-
-
 def add_compute(root_template, settings, vpc_stack):
     """
     Function to add Cluster stack to root one. If any of the options related to compute resources are set in the CLI
     then this function will generate and add the compute template to the root stack template
 
-    :param dependencies: list of dependencies that need created before creating the Compute stack
-    :type dependencies: list
     :param root_template: the root template
     :type root_template: troposphere.Template
     :param vpc_stack: the VPC stack if any to pull the attributes from
     :param ComposeXSettings settings: The settings for execution
     :return: compute_stack, the Compute stack
-    :rtype: troposphere.cloudformation.Stack
+    :rtype: ComposeXStack
     """
     if not settings.create_compute:
         return None
@@ -405,9 +381,15 @@ def create_vpc_root(root_stack, settings):
     :return:
     """
     if settings.create_vpc:
-        vpc_stack = create_vpc_stack(settings)
-        vpc_stack.stack_parameters.update(
-            {ROOT_STACK_NAME_T: Ref(AWS_STACK_NAME), USE_CLOUDMAP_T: Ref(USE_CLOUDMAP)}
+        vpc_stack = VpcStack(
+            VPC_STACK_NAME,
+            settings,
+            **{
+                "Parameters": {
+                    ROOT_STACK_NAME_T: Ref(AWS_STACK_NAME),
+                    USE_CLOUDMAP_T: Ref(USE_CLOUDMAP),
+                }
+            },
         )
         return root_stack.stack_template.add_resource(vpc_stack)
     else:
@@ -419,6 +401,7 @@ def create_vpc_root(root_stack, settings):
                 vpc_params.STORAGE_SUBNETS,
                 vpc_params.PUBLIC_SUBNETS,
                 vpc_params.VPC_MAP_ID,
+                vpc_params.VPC_MAP_DNS_ZONE,
             ],
         )
         root_stack.stack_parameters.update(
@@ -428,6 +411,7 @@ def create_vpc_root(root_stack, settings):
                 vpc_params.STORAGE_SUBNETS.title: settings.storage_subnets,
                 vpc_params.PUBLIC_SUBNETS.title: settings.public_subnets,
                 vpc_params.VPC_MAP_ID.title: settings.vpc_private_namespace_id,
+                vpc_params.VPC_MAP_DNS_ZONE.title: "cluster.local",
             }
         )
     return None
@@ -470,9 +454,13 @@ def generate_full_template(settings):
     apply_x_configs_to_ecs(settings, root_template, services_stack, services_families)
     apply_x_to_x_configs(root_template, settings)
 
-    if keyisset("x-appmesh", settings.compose_content):
+    if keyisset("x-appmesh", settings.compose_content) and settings.create_vpc:
         mesh = Mesh(settings.compose_content["x-appmesh"], services_stack)
         mesh.render_mesh_template(services_stack)
+    else:
+        LOG.warning(
+            "ComposeX only supports appmesh if you create the VPC at the same time"
+        )
     add_all_tags(root_template, tags_params)
     LOG.debug(stack_params)
     return root_stack

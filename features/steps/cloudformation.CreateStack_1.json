@@ -1,0 +1,17 @@
+{
+    "status_code": 200,
+    "data": {
+        "StackId": "arn:aws:cloudformation:eu-west-1:123456789012:stack/test/4a32c320-c69c-11ea-afe2-0ae6572120e6",
+        "ResponseMetadata": {
+            "RequestId": "2ef25da1-3169-4052-9cc8-cf0dc70b9706",
+            "HTTPStatusCode": 200,
+            "HTTPHeaders": {
+                "x-amzn-requestid": "2ef25da1-3169-4052-9cc8-cf0dc70b9706",
+                "content-type": "text/xml",
+                "content-length": "374",
+                "date": "Wed, 15 Jul 2020 13:08:35 GMT"
+            },
+            "RetryAttempts": 0
+        }
+    }
+}

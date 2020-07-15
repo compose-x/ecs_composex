@@ -19,9 +19,7 @@
 Parameters related to the VPC settings. Used by ecs_composex.vpc and others
 """
 
-from troposphere import Parameter, Sub, ImportValue
-from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
-
+from troposphere import Parameter
 
 VPC_TYPE = "AWS::EC2::VPC::Id"
 AMI_TYPE = "AWS::EC2::Image::Id"
@@ -73,16 +71,3 @@ VPC_MAP_DNS_ZONE = Parameter(VPC_MAP_DNS_ZONE_T, Type="String")
 
 VPC_DNS_ZONE_T = "VpcDnsZoneName"
 VPC_DNS_ZONE = Parameter(VPC_DNS_ZONE_T, Type="String", Default="cluster.local")
-
-VPC_ID_IMPORT = ImportValue(Sub(f"${{{ROOT_STACK_NAME_T}}}-{VPC_ID_T}"))
-APP_SUBNETS_IMPORT = ImportValue(Sub(f"${{{ROOT_STACK_NAME_T}}}-{APP_SUBNETS_T}"))
-PUBLIC_SUBNETS_IMPORT = ImportValue(Sub(f"${{{ROOT_STACK_NAME_T}}}-{PUBLIC_SUBNETS_T}"))
-STORAGE_SUBNETS_IMPORT = ImportValue(
-    Sub(f"${{{ROOT_STACK_NAME_T}}}-{STORAGE_SUBNETS_T}")
-)
-NAMESPACE_ID_IMPORT = ImportValue(Sub(f"${{{ROOT_STACK_NAME_T}}}-{VPC_MAP_ID_T}"))
-NAMESPACE_ARN_IMPORT = ImportValue(Sub(f"${{{ROOT_STACK_NAME_T}}}-{VPC_MAP_ARN_T}"))
-
-APP_SUBNETS_CIDR_IMPORT = ImportValue(
-    Sub(f"${{{ROOT_STACK_NAME_T}}}-{APP_SUBNETS_CIDR_T}")
-)
