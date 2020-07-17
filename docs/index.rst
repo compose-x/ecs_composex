@@ -25,9 +25,9 @@ Welcome to ECS-ComposeX's documentation!
 
 .. toctree::
     :maxdepth: 1
-    :caption: The Extras
+    :caption: Features
 
-    extras
+    features
 
 .. toctree::
     :maxdepth: 2

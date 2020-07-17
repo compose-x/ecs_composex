@@ -43,11 +43,6 @@ Usage
                     [_ [_ ...]]
 
 
-.. code-block:: bash
-
-    ecs_composex -f docker-compose.yml -d outputs -n appstack
-
-
 Introduction
 ============
 
