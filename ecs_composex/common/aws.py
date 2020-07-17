@@ -77,6 +77,7 @@ def assert_can_update_stack(client, name):
     if not res["Stacks"]:
         return False
     stack = res["Stacks"][0]
+    LOG.info(stack["StackStatus"])
     if stack["StackStatus"] in can_update_statuses:
         return True
     return False

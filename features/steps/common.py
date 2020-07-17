@@ -87,20 +87,46 @@ def step_impl(context, bucket_name):
     context.settings.bucket_name = bucket_name
 
 
+@given("I set I did not want to upload")
+def step_impl(context):
+    context.settings.upload = False
+    context.settings.no_upload = True
+
+
 @given("I want to deploy to CFN stack named test")
 def step_impl(context):
     """
     Function to test the deployment.
     """
-    pill = placebo.attach(session=context.settings.session, data_path=here())
+    pill = placebo.attach(
+        session=context.settings.session, data_path=f"{here()}/cfn_create"
+    )
     pill.playback()
     context.stack_id = deploy(context.settings, context.root_stack)
 
 
-@given("I set I did not want to upload")
+@given("I want to update to CFN stack named test")
 def step_impl(context):
-    context.settings.upload = False
-    context.settings.no_upload = True
+    """
+    Function to test the deployment.
+    """
+    pill = placebo.attach(
+        session=context.settings.session, data_path=f"{here()}/cfn_update"
+    )
+    pill.playback()
+    context.stack_id = deploy(context.settings, context.root_stack)
+
+
+@given("I want to update a failed stack named test")
+def step_impl(context):
+    """
+    Function to test the deployment.
+    """
+    pill = placebo.attach(
+        session=context.settings.session, data_path=f"{here()}/cfn_cannot_update"
+    )
+    pill.playback()
+    context.stack_id = deploy(context.settings, context.root_stack)
 
 
 @then("I should have a stack ID")

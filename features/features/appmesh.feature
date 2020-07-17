@@ -20,6 +20,7 @@ Feature: ecs_composex.appmesh
     Examples:
     |file_path|
     |use-cases/appmesh/shared_mesh.yml|
+    |use-cases/appmesh/allow_all.yml|
 
   @static @appmesh
   Scenario Outline: Mesh requested but no VPC

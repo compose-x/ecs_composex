@@ -1,0 +1,59 @@
+{
+    "status_code": 200,
+    "data": {
+        "Stacks": [
+            {
+                "StackId": "arn:aws:cloudformation:eu-west-1:012345678912:stack/test/e419c810-c1f3-11ea-a56d-0ad4772b7a1e",
+                "StackName": "cicd--build-ecs-composex",
+                "Description": "Pipeline to release Lambda layers publicly when new release is created",
+                "Parameters": [],
+                "CreationTime": {
+                    "__class__": "datetime",
+                    "year": 2020,
+                    "month": 7,
+                    "day": 9,
+                    "hour": 14,
+                    "minute": 55,
+                    "second": 12,
+                    "microsecond": 180000
+                },
+                "LastUpdatedTime": {
+                    "__class__": "datetime",
+                    "year": 2020,
+                    "month": 7,
+                    "day": 13,
+                    "hour": 22,
+                    "minute": 30,
+                    "second": 40,
+                    "microsecond": 406000
+                },
+                "RollbackConfiguration": {
+                    "RollbackTriggers": []
+                },
+                "StackStatus": "CREATE_FAILED",
+                "DisableRollback": false,
+                "NotificationARNs": [],
+                "Capabilities": [
+                    "CAPABILITY_IAM"
+                ],
+                "Tags": [],
+                "EnableTerminationProtection": false,
+                "DriftInformation": {
+                    "StackDriftStatus": "NOT_CHECKED"
+                }
+            }
+        ],
+        "ResponseMetadata": {
+            "RequestId": "1e856917-d39d-4dd4-b98a-afeab197b4cb",
+            "HTTPStatusCode": 200,
+            "HTTPHeaders": {
+                "x-amzn-requestid": "1e856917-d39d-4dd4-b98a-afeab197b4cb",
+                "content-type": "text/xml",
+                "content-length": "2289",
+                "vary": "accept-encoding",
+                "date": "Fri, 17 Jul 2020 21:23:44 GMT"
+            },
+            "RetryAttempts": 0
+        }
+    }
+}
