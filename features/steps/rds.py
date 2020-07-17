@@ -28,7 +28,7 @@ def step_impl(context):
     :param context:
     :return:
     """
-    template = generate_full_template(context.settings).stack_template
+    template = context.root_stack.stack_template
     db_root_stack = template.resources["rds"]
     assert issubclass(type(db_root_stack), ComposeXStack)
 

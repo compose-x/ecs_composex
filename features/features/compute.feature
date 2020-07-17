@@ -4,7 +4,7 @@ Feature: ecs_composex.appmesh
   Scenario Outline: No mesh created with the services
     Given I use <file_path> as my docker-compose file
     And I want to use spot fleet
-    Then I render all files to verify execution
+    Then  I render the docker compose to composex to validate
     Examples:
     |file_path|
     |use-cases/blog-all-features-with-compute.yml|
@@ -15,6 +15,7 @@ Feature: ecs_composex.appmesh
     Given I use <file_path> as my docker-compose file
     And I want to use aws profile <profile_name>
     And I want to use spot fleet
+    And I render the docker compose to composex
     Then I render all files to verify execution
     Examples:
     |file_path|profile_name|

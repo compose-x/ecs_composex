@@ -2,6 +2,7 @@ Feature: ecs_composex.rds
   @static @rds
   Scenario Outline: Simple RDS with services
     Given I use <file_path> as my docker-compose file
+    And I render the docker compose to composex
     Then I should have a RDS DB
     And services have access to it
 

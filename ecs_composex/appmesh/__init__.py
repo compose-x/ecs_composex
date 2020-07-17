@@ -70,7 +70,8 @@ class Mesh(object):
         """
         Method to initialize the Mesh
 
-        :param ecs_composex.ecs.ServicesStack services_root_stack: The services root stack
+        :param services_root_stack: The services root stack
+        :type services_root_stack: ecs_composex.ecs.ServicesStack
         """
         self.nodes = {}
         self.routers = {}
@@ -107,7 +108,9 @@ class Mesh(object):
             and self.mesh_properties["EgressFilter"] not in allowed_values
         ):
             LOG.warning(
-                f"Invalid EgressFilter value {self.mesh_properties['EgressFilter']}. Allowed values: {allowed_values}"
+                f"Invalid EgressFilter value {self.mesh_properties['EgressFilter']}."
+                f" Allowed values: {allowed_values} "
+                "Setting to default: DROP_ALL"
             )
         self.appmesh = appmesh.Mesh(
             self.mesh_title,
@@ -121,6 +124,18 @@ class Mesh(object):
                 vpc_params.VPC_DNS_ZONE_T: Ref(vpc_params.VPC_DNS_ZONE),
             }
         )
+        self.define_nodes(services_root_stack=services_root_stack)
+        self.define_routes_and_routers()
+        self.define_virtual_services()
+
+    def define_nodes(self, services_root_stack):
+        """
+        Method to compile the nodes for the Mesh.
+
+        :param services_root_stack: The services root stack where the services are.
+        :type services_root_stack: ecs_composex.ecs.ServicesStack
+        :return:
+        """
         nodes_keys = ["name", "protocol", "backends"]
         for node in self.mesh_settings["nodes"]:
             if not set(node.keys()).issubset(nodes_keys):
@@ -148,8 +163,6 @@ class Mesh(object):
             self.nodes[node["name"]].stack.Parameters.update(
                 {MESH_NAME.title: appmesh_conditions.get_mesh_name(self.appmesh)}
             )
-        self.define_routes_and_routers()
-        self.define_virtual_services()
 
     def define_routes_and_routers(self):
         """

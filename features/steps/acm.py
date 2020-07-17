@@ -19,7 +19,6 @@ from behave import then
 from pytest import raises
 
 from features.steps.common import *
-from ecs_composex.ecs_composex import generate_full_template
 from ecs_composex.common.stacks import ComposeXStack
 
 
@@ -28,6 +27,6 @@ def step_impl(context):
     """
     Function to ensure we have an ACM stack and a DB stack within
     """
-    template = generate_full_template(context.settings).stack_template
+    template = context.root_stack.stack_template
     acm_root_stack = template.resources["acm"]
     assert issubclass(type(acm_root_stack), ComposeXStack)

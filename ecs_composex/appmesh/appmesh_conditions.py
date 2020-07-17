@@ -63,7 +63,6 @@ def get_mesh_name(obj):
     Function to return either the Ref(mesh) or Ref(MESH_NAME).
 
     :parm obj: the mesh to refer to.
-    :type obj: troposphere.appmesh.VirtualRouter or troposphere.appmesh.VirtualNode
     :return:
     """
     return If(

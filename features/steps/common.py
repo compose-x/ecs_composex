@@ -69,7 +69,6 @@ def step_impl(context):
 
 @then("I render all files to verify execution")
 def set_impl(context):
-    context.root_stack = generate_full_template(context.settings)
     render_final_template(context.root_stack, context.settings)
 
 
@@ -118,3 +117,13 @@ def step_impl(context):
     Function to check we got a stack ID
     """
     assert context.stack_id is None
+
+
+@given("I render the docker compose to composex")
+def step_impl(context):
+    context.root_stack = generate_full_template(context.settings)
+
+
+@then("I render the docker compose to composex to validate")
+def step_impl(context):
+    context.root_stack = generate_full_template(context.settings)
