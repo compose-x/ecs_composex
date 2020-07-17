@@ -1,0 +1,22 @@
+{
+    "status_code": 400,
+    "data": {
+        "Error": {
+            "Type": "Sender",
+            "Code": "AlreadyExistsException",
+            "Message": "Stack [test] already exists"
+        },
+        "ResponseMetadata": {
+            "RequestId": "fb72631a-940b-47bc-bc6b-f43a3aafbc01",
+            "HTTPStatusCode": 400,
+            "HTTPHeaders": {
+                "x-amzn-requestid": "fb72631a-940b-47bc-bc6b-f43a3aafbc01",
+                "content-type": "text/xml",
+                "content-length": "311",
+                "date": "Fri, 17 Jul 2020 21:08:34 GMT",
+                "connection": "close"
+            },
+            "RetryAttempts": 0
+        }
+    }
+}

@@ -19,7 +19,8 @@
 Module for the XResource SQS
 """
 
-from ecs_composex.common import validate_input
+import sys
+from ecs_composex.common import validate_input, keyisset, LOG, EXIT_CODES
 from ecs_composex.sqs.sqs_params import RES_KEY
 from ecs_composex.sqs.sqs_template import generate_sqs_root_template
 from ecs_composex.common.stacks import ComposeXStack
@@ -34,8 +35,12 @@ def create_sqs_template(settings):
     :return: sqs_tpl
     :rtype: troposphere.Template
     """
+    if not keyisset(RES_KEY, settings.compose_content):
+        LOG.error(
+            f"{RES_KEY} is not defined at all in the docker-compose file {settings.input_file}. Aborting"
+        )
+        sys.exit(EXIT_CODES["MISSING_RESOURCE_DEFINITION"])
     validate_input(settings.compose_content, RES_KEY)
-
     sqs_tpl = generate_sqs_root_template(settings)
     return sqs_tpl
 

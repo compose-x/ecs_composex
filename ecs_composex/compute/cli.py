@@ -26,7 +26,7 @@ import sys
 
 from ecs_composex.cli import main_parser
 from ecs_composex.common.settings import ComposeXSettings
-from ecs_composex.common.stacks import render_final_template
+from ecs_composex.common.stacks import process_stacks
 from ecs_composex.compute.compute_stack import ComputeStack
 
 
@@ -41,7 +41,7 @@ def main():
     settings.set_azs_from_api()
 
     stack = ComputeStack(res_key, settings, None)
-    render_final_template(stack, settings)
+    process_stacks(stack, settings)
 
 
 if __name__ == "__main__":

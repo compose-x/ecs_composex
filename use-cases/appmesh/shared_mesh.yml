@@ -51,6 +51,7 @@ services:
       resources:
         reservations:
           cpus: "0.25"
+          memory: "64M"
       labels:
         ecs.task.family: app02
     environment:
@@ -66,6 +67,7 @@ services:
       resources:
         reservations:
           cpus: "0.25"
+          memory: "64M"
       labels:
         ecs.task.family: app03
     environment:
@@ -80,7 +82,9 @@ x-tags:
 
 x-appmesh:
   Properties:
-    MeshName: root
+    MeshName: test-shared-mesh
+    MeshOwner: 965289391954
+    EgressFilter: SMTH_WRONG
   Settings:
     nodes:
       - name: app03

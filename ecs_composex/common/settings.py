@@ -87,6 +87,7 @@ class ComposeXSettings(object):
         )
         self.aws_azs = self.default_azs
         self.compose_content = load_composex_file(kwargs[self.input_file_arg])
+        self.input_file = kwargs[self.input_file_arg]
         self.account_id = None
 
         self.bucket_name = None

@@ -22,7 +22,7 @@ import os
 
 from ecs_composex.cli import main_parser
 from ecs_composex.common.settings import ComposeXSettings
-from ecs_composex.common.stacks import render_final_template
+from ecs_composex.common.stacks import process_stacks
 from ecs_composex.rds.rds_stack import XResource
 
 
@@ -40,7 +40,7 @@ def main():
     settings.set_azs_from_api()
 
     sns_stack = XResource(res_key, settings)
-    render_final_template(sns_stack, settings)
+    process_stacks(sns_stack, settings)
 
 
 if __name__ == "__main__":

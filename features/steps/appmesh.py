@@ -23,7 +23,6 @@ from troposphere.appmesh import Mesh
 from ecs_composex.appmesh import Mesh as AppMesh
 from ecs_composex.common import LOG
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.ecs_composex import generate_full_template
 from features.steps.common import *
 
 
@@ -51,7 +50,7 @@ def step_impl(context):
 
     :param context:
     """
-    full_template = generate_full_template(context.settings).stack_template
+    full_template = context.root_stack.stack_template
     assert isinstance(full_template, Template)
     services_stack = full_template.resources["services"]
     assert issubclass(type(services_stack), ComposeXStack)

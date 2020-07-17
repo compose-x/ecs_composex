@@ -22,7 +22,7 @@ from behave import given, then
 import placebo
 
 from ecs_composex.common.settings import ComposeXSettings
-from ecs_composex.common.stacks import render_final_template
+from ecs_composex.common.stacks import process_stacks
 from ecs_composex.ecs_composex import generate_full_template
 from ecs_composex.common.aws import deploy
 
@@ -69,8 +69,7 @@ def step_impl(context):
 
 @then("I render all files to verify execution")
 def set_impl(context):
-    context.root_stack = generate_full_template(context.settings)
-    render_final_template(context.root_stack, context.settings)
+    process_stacks(context.root_stack, context.settings)
 
 
 @given("I want to use aws profile {profile_name}")
@@ -88,20 +87,46 @@ def step_impl(context, bucket_name):
     context.settings.bucket_name = bucket_name
 
 
+@given("I set I did not want to upload")
+def step_impl(context):
+    context.settings.upload = False
+    context.settings.no_upload = True
+
+
 @given("I want to deploy to CFN stack named test")
 def step_impl(context):
     """
     Function to test the deployment.
     """
-    pill = placebo.attach(session=context.settings.session, data_path=here())
+    pill = placebo.attach(
+        session=context.settings.session, data_path=f"{here()}/cfn_create"
+    )
     pill.playback()
     context.stack_id = deploy(context.settings, context.root_stack)
 
 
-@given("I set I did not want to upload")
+@given("I want to update to CFN stack named test")
 def step_impl(context):
-    context.settings.upload = False
-    context.settings.no_upload = True
+    """
+    Function to test the deployment.
+    """
+    pill = placebo.attach(
+        session=context.settings.session, data_path=f"{here()}/cfn_update"
+    )
+    pill.playback()
+    context.stack_id = deploy(context.settings, context.root_stack)
+
+
+@given("I want to update a failed stack named test")
+def step_impl(context):
+    """
+    Function to test the deployment.
+    """
+    pill = placebo.attach(
+        session=context.settings.session, data_path=f"{here()}/cfn_cannot_update"
+    )
+    pill.playback()
+    context.stack_id = deploy(context.settings, context.root_stack)
 
 
 @then("I should have a stack ID")
@@ -118,3 +143,20 @@ def step_impl(context):
     Function to check we got a stack ID
     """
     assert context.stack_id is None
+
+
+@given("I render the docker-compose to composex")
+def step_impl(context):
+    context.root_stack = generate_full_template(context.settings)
+
+
+@then("I render the docker-compose to composex to validate")
+def step_impl(context):
+    context.root_stack = generate_full_template(context.settings)
+
+
+@then("With missing module from file, program quits with code {code:d}")
+def step_impl(context, code):
+    with raises(SystemExit) as exit_error:
+        context.resource_type(context.settings.compose_content, context.settings)
+    assert exit_error.value.code == code

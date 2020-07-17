@@ -15,21 +15,21 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from features.steps.common import *
 from behave import then
 from pytest import raises
 
-from features.steps.common import *
-from ecs_composex.ecs_composex import generate_full_template
+
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.ecs import ServiceStack
 from ecs_composex.sqs.sqs_stack import XResource
-from ecs_composex.common.stacks import render_final_template
+from ecs_composex.common.stacks import process_stacks
 
 
 @given("I process and render the queues")
 def step_impl(context):
     context.root_stack = XResource("sqs", context.settings)
-    render_final_template(context.root_stack, context.settings)
+    process_stacks(context.root_stack, context.settings)
 
 
 @then("I should have SQS queues")
@@ -39,13 +39,18 @@ def step_impl(context):
     :param context:
     :return:
     """
-    template = generate_full_template(context.settings).stack_template
+    template = context.root_stack.stack_template
     sqs_root_stack = template.resources["sqs"]
     services_root_stack = template.resources["services"]
     assert issubclass(type(sqs_root_stack), ComposeXStack)
     assert issubclass(type(services_root_stack), ComposeXStack)
     context.svc_stack = services_root_stack
     context.sqs_stack = sqs_root_stack
+
+
+@given("I want to deploy only SQS")
+def step_impl(context):
+    context.resource_type = XResource
 
 
 @then("services have access to the queues")

@@ -26,7 +26,7 @@ from ecs_composex.common import LOG
 from ecs_composex.common import keyisset
 from ecs_composex.common.aws import deploy
 from ecs_composex.common.settings import ComposeXSettings
-from ecs_composex.common.stacks import render_final_template
+from ecs_composex.common.stacks import process_stacks
 from ecs_composex.compute.compute_params import CLUSTER_NAME_T
 from ecs_composex.ecs_composex import generate_full_template
 from ecs_composex.vpc.vpc_params import (
@@ -281,7 +281,7 @@ def main():
     validate_cluster_input(vars(args))
 
     root_stack = generate_full_template(settings)
-    render_final_template(root_stack, settings)
+    process_stacks(root_stack, settings)
 
     if settings.deploy:
         deploy(settings, root_stack)

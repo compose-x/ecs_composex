@@ -41,6 +41,9 @@ DATE_PREFIX = dt.utcnow().strftime("%Y/%m/%d/%H%M")
 NONALPHANUM = re.compile(r"([^a-zA-Z0-9])")
 
 
+EXIT_CODES = {"MODULE_NOT_FOUND": 8, "MISSING_RESOURCE_DEFINITION": 9}
+
+
 def keyisset(x, y):
     """Macro to figure if the the dictionary contains a key and that the key is not empty
 

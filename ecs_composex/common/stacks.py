@@ -25,7 +25,7 @@ from troposphere.cloudformation import Stack
 
 from ecs_composex.common import LOG, keyisset, add_parameters
 from ecs_composex.common.files import FileArtifact
-from ecs_composex.common.cfn_conditions import USE_CLOUDMAP_CON_T
+from ecs_composex.common.cfn_conditions import USE_CLOUDMAP_CON_T, pass_root_stack_name
 from ecs_composex.vpc.vpc_params import (
     VPC_ID,
     VPC_ID_T,
@@ -245,7 +245,7 @@ class ComposeXStack(Stack, object):
         )
 
 
-def render_final_template(root_stack, settings):
+def process_stacks(root_stack, settings):
     """
     Function to go through all stacks of a given template and update the template
     It will recursively render sub stacks defined.
@@ -263,7 +263,8 @@ def render_final_template(root_stack, settings):
         ):
             LOG.debug(resource)
             LOG.debug(resource.title)
-            render_final_template(resource, settings)
+            process_stacks(resource, settings)
+            resource.Parameters.update(pass_root_stack_name())
         elif isinstance(resource, Stack):
             LOG.warn(resource_name)
             LOG.warn(resource)
