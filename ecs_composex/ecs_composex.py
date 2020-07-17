@@ -457,7 +457,7 @@ def generate_full_template(settings):
     if keyisset("x-appmesh", settings.compose_content) and settings.create_vpc:
         mesh = Mesh(settings.compose_content["x-appmesh"], services_stack)
         mesh.render_mesh_template(services_stack)
-    else:
+    elif keyisset("x-appmesh", settings.compose_content) and not settings.create_vpc:
         LOG.warning(
             "ComposeX only supports appmesh if you create the VPC at the same time"
         )

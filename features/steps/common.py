@@ -22,7 +22,7 @@ from behave import given, then
 import placebo
 
 from ecs_composex.common.settings import ComposeXSettings
-from ecs_composex.common.stacks import render_final_template
+from ecs_composex.common.stacks import process_stacks
 from ecs_composex.ecs_composex import generate_full_template
 from ecs_composex.common.aws import deploy
 
@@ -69,7 +69,7 @@ def step_impl(context):
 
 @then("I render all files to verify execution")
 def set_impl(context):
-    render_final_template(context.root_stack, context.settings)
+    process_stacks(context.root_stack, context.settings)
 
 
 @given("I want to use aws profile {profile_name}")
@@ -119,11 +119,18 @@ def step_impl(context):
     assert context.stack_id is None
 
 
-@given("I render the docker compose to composex")
+@given("I render the docker-compose to composex")
 def step_impl(context):
     context.root_stack = generate_full_template(context.settings)
 
 
-@then("I render the docker compose to composex to validate")
+@then("I render the docker-compose to composex to validate")
 def step_impl(context):
     context.root_stack = generate_full_template(context.settings)
+
+
+@then("With missing module from file, program quits with code {code:d}")
+def step_impl(context, code):
+    with raises(SystemExit) as exit_error:
+        context.resource_type(context.settings.compose_content, context.settings)
+    assert exit_error.value.code == code

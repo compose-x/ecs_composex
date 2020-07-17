@@ -4,7 +4,7 @@ Feature: ecs_composex.appmesh
     Given I use <file_path> as my docker-compose file
     And I want to create a VPC
     And I want to create a Cluster
-    And I render the docker compose to composex
+    And I render the docker-compose to composex
     Then I should have a mesh created
 
     Examples:
@@ -16,8 +16,7 @@ Feature: ecs_composex.appmesh
     Given I use <file_path> as my docker-compose file
     And I want to create a VPC
     And I want to create a Cluster
-    Then I render the docker compose to composex to validate
-
+    Then I render the docker-compose to composex to validate
     Examples:
     |file_path|
     |use-cases/appmesh/shared_mesh.yml|
@@ -26,7 +25,7 @@ Feature: ecs_composex.appmesh
   Scenario Outline: Mesh requested but no VPC
     Given I use <file_path> as my docker-compose file
     And I want to create a Cluster
-    Then I render the docker compose to composex to validate
+    Then I render the docker-compose to composex to validate
 
     Examples:
     |file_path|
@@ -35,7 +34,7 @@ Feature: ecs_composex.appmesh
 
   Scenario Outline: No mesh created with the services
     Given I use <file_path> as my docker-compose file
-    And I render the docker compose to composex
+    And I render the docker-compose to composex
     Then I should not have a mesh
     Examples:
     |file_path|

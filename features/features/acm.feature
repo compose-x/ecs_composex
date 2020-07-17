@@ -2,7 +2,7 @@ Feature: ecs_composex.acm
   @static @acm
   Scenario Outline: Mesh created with the services
     Given I use <file_path> as my docker-compose file
-    And I render the docker compose to composex
+    And I render the docker-compose to composex
     Then I should have an ACM root stack
 
     Examples:
