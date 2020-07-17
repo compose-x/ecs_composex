@@ -37,6 +37,7 @@ from ecs_composex.common import (
     LOG,
 )
 from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.common.cfn_params import ROOT_STACK_NAME
 from ecs_composex.ecs import ecs_params
 from ecs_composex.vpc import vpc_params
 
@@ -77,19 +78,42 @@ class Mesh(object):
         self.routes = []
         self.mesh_settings = mesh_definition["Settings"]
         self.mesh_properties = mesh_definition["Properties"]
-        self.stack_parameters = {MESH_NAME.title: self.mesh_properties["MeshName"]}
-        self.template = services_root_stack.stack_template
+        self.stack_parameters = {MESH_NAME.title: Ref(ROOT_STACK_NAME)}
         self.stack = None
+
+        if keyisset("MeshName", self.mesh_properties) and keyisset(
+            "MeshOwner", self.mesh_properties
+        ):
+            services_root_stack.Parameters.update(
+                {
+                    appmesh_params.MESH_NAME_T: self.mesh_properties["MeshName"],
+                    appmesh_params.MESH_OWNER_ID_T: self.mesh_properties["MeshOwner"],
+                }
+            )
 
         for key in self.required_keys:
             if key not in self.mesh_settings.keys():
                 raise KeyError(f"Key {key} is missing. Required {self.required_keys}")
 
+        allowed_values = ["ALLOW_ALL", "DROP_ALL"]
+        egress_type = "DROP_ALL"
+        if (
+            keyisset("EgressFilter", self.mesh_properties)
+            and self.mesh_properties["EgressFilter"] in allowed_values
+        ):
+            egress_type = self.mesh_properties["EgressFilter"]
+        elif (
+            keyisset("EgressFilter", self.mesh_properties)
+            and self.mesh_properties["EgressFilter"] not in allowed_values
+        ):
+            LOG.warning(
+                f"Invalid EgressFilter value {self.mesh_properties['EgressFilter']}. Allowed values: {allowed_values}"
+            )
         self.appmesh = appmesh.Mesh(
             self.mesh_title,
             Condition=appmesh_conditions.USER_IS_SELF_CON_T,
             MeshName=appmesh_conditions.set_mesh_name(),
-            Spec=appmesh.MeshSpec(EgressFilter=appmesh.EgressFilter(Type="DROP_ALL")),
+            Spec=appmesh.MeshSpec(EgressFilter=appmesh.EgressFilter(Type=egress_type)),
         )
         self.stack_parameters.update(
             {
@@ -171,15 +195,20 @@ class Mesh(object):
                     )
                 }
             )
+
+        self.process_mesh_components(services_stack)
+
+    def process_mesh_components(self, services_stack):
+
         for router_name in self.routers:
             router = self.routers[router_name]
-            self.template.add_resource(router.router)
+            services_stack.stack_template.add_resource(router.router)
             for route in router.routes:
-                self.template.add_resource(route)
+                services_stack.stack_template.add_resource(route)
         for service_name in self.services:
             service = self.services[service_name]
-            self.template.add_resource(service.service)
-            service.add_dns_entries(self.template)
+            services_stack.stack_template.add_resource(service.service)
+            service.add_dns_entries(services_stack.stack_template)
         for res_name in services_stack.stack_template.resources:
             res = services_stack.stack_template.resources[res_name]
             if issubclass(type(res), ComposeXStack):
