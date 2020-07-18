@@ -1,0 +1,99 @@
+---
+# Blog applications
+
+version: '3.8'
+
+x-configs:
+  app:
+    network:
+      use_cloudmap: True
+
+services:
+  rproxy:
+    image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-01-rproxy:latest
+    ports:
+      - 80:80
+    deploy:
+      replicas: 2
+      resources:
+        reservations:
+          cpus: "0.1"
+          memory: "32M"
+        limits:
+          cpus: "0.25"
+          memory: "64M"
+      labels:
+        ecs.task.family: app01
+    x-configs:
+      network:
+        is_public: True
+        lb_type: application
+    depends_on:
+      - app01
+  app01:
+    image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-01:appmesh
+    ports:
+      - 5000
+    deploy:
+      resources:
+        reservations:
+          cpus: "0.25"
+          memory: "64M"
+      labels:
+        ecs.task.family: app01
+    environment:
+      LOGLEVEL: DEBUG
+    x-configs:
+      use_xray: True
+    links:
+      - app03:dateteller
+
+  app02:
+    image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-02:latest
+    ports:
+      - 5000
+    deploy:
+      resources:
+        reservations:
+          cpus: "0.25"
+          memory: "64M"
+      labels:
+        ecs.task.family: app02
+    environment:
+      LOGLEVEL: DEBUG
+    x-configs:
+      use_xray: True
+
+  app03:
+    image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-02:latest
+    ports:
+      - 5000
+    deploy:
+      resources:
+        reservations:
+          cpus: "0.25"
+          memory: "64M"
+      labels:
+        ecs.task.family: app03
+    environment:
+      LOGLEVEL: DEBUG
+    x-configs:
+      use_xray: True
+
+x-tags:
+  owner: johnpreston
+  contact: john@lambda-my-aws.io
+
+x-vpc:
+  Lookup:
+    VpcId:
+      tags:
+        - Name: vpcwork
+    AppSubnets: subnet-0b0d3c7251ad0af8c,subnet-0b0e0f4f2ac3fa46d,subnet-06d3130b79d277b1b
+    StorageSubnets:
+      - subnet-004e206426fdaef17
+      - subnet-0d49c1240b794118d
+      - subnet-04270d634ef29f545
+    PublicSubnets:
+      tags:
+        - vpc::usage: public

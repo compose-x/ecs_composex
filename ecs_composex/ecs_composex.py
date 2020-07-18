@@ -96,7 +96,7 @@ SUPPORTED_X_MODULES = [
     f"{X_KEY}acm",
     "acm",
 ]
-EXCLUDED_X_KEYS = [f"{X_KEY}configs", f"{X_KEY}tags", f"{X_KEY}appmesh"]
+EXCLUDED_X_KEYS = [f"{X_KEY}configs", f"{X_KEY}tags", f"{X_KEY}appmesh", f"{X_KEY}vpc"]
 
 
 def get_mod_function(module_name, function_name):
@@ -406,10 +406,16 @@ def create_vpc_root(root_stack, settings):
         )
         root_stack.stack_parameters.update(
             {
-                vpc_params.VPC_ID.title: settings.vpc_id,
-                vpc_params.APP_SUBNETS.title: settings.app_subnets,
-                vpc_params.STORAGE_SUBNETS.title: settings.storage_subnets,
-                vpc_params.PUBLIC_SUBNETS.title: settings.public_subnets,
+                vpc_params.VPC_ID.title: getattr(settings, vpc_params.VPC_ID_T),
+                vpc_params.APP_SUBNETS.title: getattr(
+                    settings, vpc_params.APP_SUBNETS_T
+                ),
+                vpc_params.STORAGE_SUBNETS.title: getattr(
+                    settings, vpc_params.STORAGE_SUBNETS_T
+                ),
+                vpc_params.PUBLIC_SUBNETS.title: getattr(
+                    settings, vpc_params.PUBLIC_SUBNETS_T
+                ),
                 vpc_params.VPC_MAP_ID.title: settings.vpc_private_namespace_id,
                 vpc_params.VPC_MAP_DNS_ZONE.title: "cluster.local",
             }

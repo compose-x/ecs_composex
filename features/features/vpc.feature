@@ -1,10 +1,10 @@
 Feature: ecs_composex.vpc
-  @static @vpc
+  @vpc
   Scenario: VPC standalone single AZ
     Given I want a VPC
     When I want single NAT
     Then I should have only one nat gateway
-  @static @vpc
+  @vpc
   Scenario: VPC standalone all AZs
     Given I want a VPC
     When this is for production
