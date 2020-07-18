@@ -16,49 +16,12 @@ Build your infrastructure and deploy your services to AWS services using docker-
     :local:
     :depth: 1
 
-Features
-========
-
-* From docker-compose to AWS ECS
-    * Support for EC2 and Fargate deployments (built for Fargate first)
-    * One-liner integration for your services to Load-Balancers
-    * Automatically configures the Task CPU and RAM requirements.
-    * One-liner expansion of your tasks to using AWS X-Ray for distributed tracing.
-    * Automatic dependencies and network access control via Security Group rules.
-
-* AWS AppMesh and CloudMap
-    * Built-in integration to CloudMap to automatically register your services to Service Discovery
-    * Simplified definition of your mesh, routers, nodes and services.
-
-* AWS RDS
-    * Simplified syntax to create DBs
-    * Automatically creates secret for your database and exposes these to select services via Secrets definition.
-    * Allows ECS Services to have TCP access by automatically managing Ingress Rules for AWS Security Groups.
-
-* AWS SQS
-    * Create queues and link them to your ECS Services with least-privileges
-    * Exposes env vars with the Queue ARN to your ECS tasks
-    * Logically link a queue and its DLQ simply referencing it by name.
-
-* AWS SNS
-    * Create topics and allow ECS Services to publish messages
-    * Create subscriptions from SNS to SQS
-
-And a lot more to come!
-
 Installation
 ============
 
 .. code-block:: bash
 
     pip install ecs_composex
-
-Example Usage
-==============
-
-.. raw:: html
-
-    <script id="asciicast-ORH1AVrFRJxhRbJdst8X44AqB" src="https://asciinema.org/a/ORH1AVrFRJxhRbJdst8X44AqB.js" async></script>
 
 Usage
 =====
@@ -79,71 +42,46 @@ Usage
                     [--use-spot-fleet]
                     [_ [_ ...]]
 
+Features
+========
 
-Introduction
-============
+* AWS ECS & EC2 components
+    * Support for EC2 and Fargate deployments (built for Fargate first)
+    * One-liner integration for your services to Load-Balancers
+    * Automatically configures the Task CPU and RAM requirements.
+    * One-liner expansion of your tasks to using AWS X-Ray for distributed tracing.
+    * Automatic dependencies and network access control via Security Group rules.
 
-`Docker Compose`_ has been around for a long while and enabled developers to perform local integration testing between
-their microservices as well as with other dependencies their application have (i.e. a redis or MySQL server).
+* AWS AppMesh and CloudMap
+    * Built-in integration to CloudMap to automatically register your services to Service Discovery
+    * Simplified definition of your mesh, routers, nodes and services.
 
-However, for developers to translate their docker compose file into an AWS infrastructure can be a lot of work. And for
-the cloud engineers (or DevOps engineers) it can very quickly become something overwhelming to manage at very large scale
-to ensure best-practices are in place, for example, ensuring least privileges access from a service to another.
+* AWS RDS via *x-rds*
+    * Simplified syntax to create DBs
+    * Automatically creates secret for your database and exposes these to select services via Secrets definition.
+    * Allows ECS Services to have TCP access by automatically managing Ingress Rules for AWS Security Groups.
 
-This is where `ECS ComposeX`_ comes into play.
+* AWS SQS *via x-sqs*
+    * Create queues and link them to your ECS Services with least-privileges
+    * Exposes env vars with the Queue ARN to your ECS tasks
+    * Logically link a queue and its DLQ simply referencing it by name.
 
-Translate Docker services into AWS ECS
----------------------------------------
-
-First ECS ComposeX translates the services definition in the docker compose file into the ECS definitions to allow the service to
-run on AWS. It will, doing so, create all the necessary elements to ensure a successful and feature rich deployment into ECS.
+* AWS SNS *via x-sns*
+    * Create topics and allow ECS Services to publish messages
+    * Create subscriptions from SNS to SQS
 
 .. note::
 
-    ECS ComposeX has been built to allow services to run with Fargate or EC2.
+    Each component can also use the docker-compose file but be deployed on its own, allowing, for production workloads,
+    to deploy each component separately to avoid dependencies on each other.
 
+And a lot more to come!
 
-Provision other AWS resources your services need
--------------------------------------------------
+Fargate First
+-------------
 
-So you have the definitions of your services and they are running on ECS.
-But what about these other services that you need for your application to work? DBs, notifications, streams etc.
-Are you going to run your MySQL server onto ECS too or are you going to want to use AWS RDS?
-How are you going to define the IAM roles and policies for each service? Access Secrets? Configuration settings?
-
-That is the second focus of ECS ComposeX: defining extra sections in the YAML document of your docker compose file, you
-can define, for your databases, queues, secrets etc.
-
-ECS ComposeX will parse every single one of these components. These components can exist on their own but what is of interest
-is to allow the services to access these.
-
-That is where ECS ComposeX will automatically take care of all of that for you.
-
-For services like SQS or SNS, it will create the IAM policies and assign the permissions to your ECS Task Role so the service
-gets access to these via IAM and STS. Credentials will be available through the metadata endpoint, which your SDK will pick
-immediately.
-
-For services such as RDS or ElasticCache, it will create the security groups ingress rules as needed, and when applicable,
-will handle to generate secrets and expose these via ECS Secrets to your services.
-
-What does ECS ComposeX do differently?
---------------------------------------
-
-Where ECS ComposeX distinguishes itself from other tools is embedding security for each service individually,
-so that developers only have to connect resources logically together in the same way they would use links between
-microservices in their Docker Compose definition. Each microservice needs to explicitly be declared as a consumer of a
-resource to get access to it, otherwise it won’t be able to access the resource or other microservices. This is done
-simply by using AWS IAM policies or security groups ingress, where applicable. In a future release, ECS ComposeX will
-allow using AWS App Mesh for service-to-service communication. This provides the cloud engineers the peace of mind that
-the surface of attack to the platform is limited in distributed environments as isolation is achieved for each
-microservice individually.
-
-That simplified way to define access between services and resources helps with defining a shared-responsibility model
-between application engineers and cloud engineers. Application engineers must know what their application does and how
-services interface to each other and to external services. This gives a sense of ownership to the maintainers of the
-Docker Compose file that defines the application stack resources and services along with resources access and
-permissions.
-
+However the original deployments and work on this project was done using EC2 instances (using SpotFleet mostly), everything
+is now implemented to work on AWS Fargate First (2020-06-06).
 
 Plug-And-Play
 --------------
@@ -151,7 +89,7 @@ Plug-And-Play
 ECS ComposeX allows to create not only the resources your application stack needs, but also the underlying infrastrcuture,
 for example, your networking layer (VPC, subnets etc.) as well as the compute (using SpotFleet by default).
 
-This is to allow developers to deploy in their development accounts without having to concern themselves with network
+This is to allow developers to deploy in their development accounts without having to worry about network
 design and capacity planning.
 
 .. note::
@@ -165,12 +103,6 @@ design and capacity planning.
     If you do not need extra AWS resources such as SQS queues to be created as part of these microservices deployments, I would recommend to use `AWS ECS CLI`_ which does already a lot of the work for the services.
     Alternatively, use the AWS CLI v2. It is absolutely smashing-ly awesome and might be just what you need
     This tool aims to reproduce the original ECS CLI behaviour whilst adding logic for non ECS resources that you want to create in your environment.
-
-Fargate First
--------------
-
-However the original deployments and work on this project was done using EC2 instances (using SpotFleet mostly), everything
-is now implemented to work on AWS Fargate First (2020-06-06).
 
 License and documentation
 ==========================
