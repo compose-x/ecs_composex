@@ -16,12 +16,49 @@ Build your infrastructure and deploy your services to AWS services using docker-
     :local:
     :depth: 1
 
+Features
+========
+
+* From docker-compose to AWS ECS
+    * Support for EC2 and Fargate deployments (built for Fargate first)
+    * One-liner integration for your services to Load-Balancers
+    * Automatically configures the Task CPU and RAM requirements.
+    * One-liner expansion of your tasks to using AWS X-Ray for distributed tracing.
+    * Automatic dependencies and network access control via Security Group rules.
+
+* AWS AppMesh and CloudMap
+    * Built-in integration to CloudMap to automatically register your services to Service Discovery
+    * Simplified definition of your mesh, routers, nodes and services.
+
+* AWS RDS
+    * Simplified syntax to create DBs
+    * Automatically creates secret for your database and exposes these to select services via Secrets definition.
+    * Allows ECS Services to have TCP access by automatically managing Ingress Rules for AWS Security Groups.
+
+* AWS SQS
+    * Create queues and link them to your ECS Services with least-privileges
+    * Exposes env vars with the Queue ARN to your ECS tasks
+    * Logically link a queue and its DLQ simply referencing it by name.
+
+* AWS SNS
+    * Create topics and allow ECS Services to publish messages
+    * Create subscriptions from SNS to SQS
+
+And a lot more to come!
+
 Installation
 ============
 
 .. code-block:: bash
 
     pip install ecs_composex
+
+Example Usage
+==============
+
+.. raw:: html
+
+    <script id="asciicast-ORH1AVrFRJxhRbJdst8X44AqB" src="https://asciinema.org/a/ORH1AVrFRJxhRbJdst8X44AqB.js" async></script>
 
 Usage
 =====

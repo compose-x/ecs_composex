@@ -8,13 +8,6 @@ Welcome to ECS-ComposeX's documentation!
 
     readme
     getstarted
-    usage
-
-.. toctree::
-    :maxdepth: 2
-    :caption: Requisites
-
-    requisites
 
 .. toctree::
     :maxdepth: 2
@@ -28,6 +21,13 @@ Welcome to ECS-ComposeX's documentation!
     :caption: Features
 
     features
+
+.. toctree::
+    :maxdepth: 2
+    :caption: Requisites
+
+    requisites
+
 
 .. toctree::
     :maxdepth: 2
