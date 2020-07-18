@@ -64,7 +64,7 @@ def lookup_vpc_id(session, vpc_id):
             "VpcIds": [re_vpc_id],
             "Filters": [{"Name": "owner-id", "Values": [re_vpc_owner]}],
         }
-    else:
+    elif vpc_id.startswith("arn:") and not arn_re.match(vpc_id):
         raise ValueError(
             "Vpc ARN is not valid. Got", vpc_id, "Valid ARN Regexp", arn_regexp
         )

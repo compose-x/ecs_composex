@@ -116,12 +116,14 @@ class ComposeXSettings(object):
         if keyisset("x-vpc", self.compose_content) and keyisset(
             "Lookup", self.compose_content["x-vpc"]
         ):
+            self.create_vpc = False
             self.lookup_x_vpc_settings(self.compose_content["x-vpc"]["Lookup"])
         if keyisset("x-vpc", self.compose_content) and keyisset(
             "Create", self.compose_content["x-vpc"]
         ):
+            self.create_vpc = True
             self.set_x_vpc_settings(self.compose_content["x-vpc"]["Create"])
-        else:
+        elif not keyisset("x-vpc", self.compose_content):
             self.set_cli_vpc_settings(kwargs)
 
         self.create_cluster = None
@@ -253,6 +255,7 @@ class ComposeXSettings(object):
                 "Expected",
                 required_keys,
             )
+        print(settings)
         self.lookup_vpc = True
         self.lookup_vpc_id(settings[VPC_ID_T])
         for subnet_key in subnets_keys:
@@ -265,7 +268,6 @@ class ComposeXSettings(object):
         :param dict settings:
         :return:
         """
-        self.create_vpc = True
         self.single_nat = (
             settings[self.single_nat_arg]
             if keyisset(self.single_nat_arg, settings)
@@ -329,10 +331,10 @@ class ComposeXSettings(object):
 
     def get_vpc_params(self):
         return {
-            APP_SUBNETS_T: self.app_subnets,
-            STORAGE_SUBNETS_T: self.storage_subnets,
-            PUBLIC_SUBNETS_T: self.public_subnets,
-            VPC_ID_T: self.vpc_id,
+            APP_SUBNETS_T: getattr(self, APP_SUBNETS_T),
+            STORAGE_SUBNETS_T: getattr(self, STORAGE_SUBNETS_T),
+            PUBLIC_SUBNETS_T: getattr(self, PUBLIC_SUBNETS_T),
+            VPC_ID_T: getattr(self, VPC_ID_T),
         }
 
     def set_azs_from_api(self):
