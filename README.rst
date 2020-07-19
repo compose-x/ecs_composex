@@ -86,7 +86,7 @@ RoadMap
 Blog
 ====
 
-Follow the news and technical articles on using ECS ComposeX on the `Blog`_ |BLOG_RELEASE|
+Follow the news and technical articles on using ECS ComposeX on the `Blog`_
 
 * `CICD Pipeline for multiple services on AWS ECS with ECS ComposeX`_
 
