@@ -1,7 +1,3 @@
-=======================
-ComposeX Modules Syntax
-=======================
-
 .. contents::
     :depth: 1
 

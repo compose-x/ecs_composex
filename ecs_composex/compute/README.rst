@@ -1,6 +1,5 @@
-ecs_composex.compute
-=====================
-
+EC2 resources for ECS Cluster
+=============================
 
 This module is here to create the compute resources if so chosen instead of using Fargate.
 Given that the default it to use AWS Fargate (soon will make it use Fargate Spot as well),

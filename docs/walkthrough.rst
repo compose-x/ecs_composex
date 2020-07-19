@@ -1,8 +1,8 @@
 ﻿.. highlight:: shell
 
-==================
-Getting started
-==================
+===================
+Example walkthrough
+===================
 
 Let's take an existing very simple docker compose file with two services.
 

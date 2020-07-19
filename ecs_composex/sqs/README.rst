@@ -1,5 +1,5 @@
-ecs_composex.sqs
-================
+AWS SQS
+=======
 
 This module aims to create the SQS Queues and expose there properties via *AWS CFN exports* so that they can be used and
 referenced to/by services stacks to create IAM policies accordingly.

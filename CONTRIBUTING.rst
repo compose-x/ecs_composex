@@ -80,7 +80,7 @@ Ready to contribute? Here's how to set up `ecs_composex` for local development.
    tests, including testing other Python versions with tox::
 
     $ make lint
-    $ make test
+    $ make coverage
 
    To get flake8 and tox, just pip install them into your virtualenv.
 
@@ -97,13 +97,10 @@ Pull Request Guidelines
 
 Before you submit a pull request, check that it meets these guidelines:
 
-1. The pull request should include tests.
+1. The pull request should include tests. Use `make coverage` to run both tests and coverage analysis.
 2. If the pull request adds functionality, the docs should be updated. Put
    your new functionality into a function with a docstring, and add the
-   feature to the list in README.rst.
-3. The pull request should work for Python 3.6, 3.7 and 3.8. Check
-   https://travis-ci.org/johnpreston/ecs_composex/pull_requests
-   and make sure that the tests pass for all supported Python versions.
+   feature to the list in README.rst of the module.
 
 Tips
 ----
@@ -111,6 +108,7 @@ Tips
 To run a subset of tests::
 
 $ make test
+$ make coverage
 
 
 Deploying
@@ -124,4 +122,4 @@ $ bump2version patch # possible: major / minor / patch
 $ git push
 $ git push --tags
 
-AWS CodeCommit will build and run the tests
+AWS CodeBuild will build and run the tests

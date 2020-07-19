@@ -1,5 +1,5 @@
-ecs_composex.vpc
-================
+AWS VPC, needs no introduction
+==============================
 
 I am not here to tell you what a VPC should look like. So in that spirit, this is really here to be one
 less thing developers who wish to use that tool are going to have to think about.
@@ -20,7 +20,11 @@ You might already have network configuration and VPC setup all done, and want to
 network configuration you have.
 
 To help with that, we have added the **x-vpc** key support in the docker-compose file, with allows you to find your VPC
-in and subnets with many options. Head to :ref:`vpc_syntax_reference` to see how to use that feature.
+in and subnets with many options.
+
+.. seealso::
+
+    Head to :ref:`vpc_syntax_reference` to see how to use that feature.
 
 
 .. _vpc_network_design:

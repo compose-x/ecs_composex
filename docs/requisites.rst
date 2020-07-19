@@ -48,39 +48,9 @@ ECS Account settings can be found at https://docs.aws.amazon.com/AmazonECS/lates
 IAM Permissions to execute ECS ComposeX
 ----------------------------------------
 
-.. code-block:: yaml
 
-    PolicyDocument:
-        Statement:
-          - Sid: CloudFormationAccess
-            Resource:
-              - '*'
-            Effect: Allow
-            Action:
-              - 'cloudformation:ValidateTemplate'
-          - Sid: S3BucketAccess
-            Resource:
-                - cfn-templates-bucket-arn
-            Effect: Allow
-            Action:
-              - 's3:ListBucket'
-          - Sid: S3BucketObjectsAccess
-            Resource:
-                - cfn-templates-bucket-arn/*
-            Effect: Allow
-            Action:
-              - 's3:GetObject*'
-              - 's3:PutObject*
-          - Sid: Ec2Access
-            Effect: Allow
-            Action:
-              - ec2:DescribeAvailabilityZones
-            Resource:
-              - "*"
-          - Sid: RDSAccess
-            Effect: Allow
-            Resource:
-              - '*'
-            Action:
-              - rds:DescribeDBEngine*
-              - rds:DescribeEngineDefaultClusterParameters
+
+.. literalinclude:: composex_iam_policy.json
+    :name: PolicyDocument
+    :caption: PolicyDocument
+    :language: JSON

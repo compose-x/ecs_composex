@@ -19,7 +19,7 @@ to ensure best-practices are in place, for example, ensuring least privileges ac
 This is where `ECS ComposeX`_ comes into play.
 
 Translate Docker services into AWS ECS
----------------------------------------
+--------------------------------------
 
 First ECS ComposeX translates the services definition in the docker compose file into the ECS definitions to allow the service to
 run on AWS. It will, doing so, create all the necessary elements to ensure a successful and feature rich deployment into ECS.
@@ -30,7 +30,7 @@ run on AWS. It will, doing so, create all the necessary elements to ensure a suc
 
 
 Provision other AWS resources your services need
--------------------------------------------------
+------------------------------------------------
 
 So you have the definitions of your services and they are running on ECS.
 But what about these other services that you need for your application to work? DBs, notifications, streams etc.
@@ -53,7 +53,7 @@ For services such as RDS or ElasticCache, it will create the security groups ing
 will handle to generate secrets and expose these via ECS Secrets to your services.
 
 What does ECS ComposeX do differently?
---------------------------------------
+======================================
 
 Where ECS ComposeX distinguishes itself from other tools is embedding security for each service individually,
 so that developers only have to connect resources logically together in the same way they would use links between

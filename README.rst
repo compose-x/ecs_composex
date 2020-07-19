@@ -42,74 +42,26 @@ Usage
                     [--use-spot-fleet]
                     [_ [_ ...]]
 
-Features
-========
-
-* AWS ECS & EC2 components
-    * Support for EC2 and Fargate deployments (built for Fargate first)
-    * One-liner integration for your services to Load-Balancers
-    * Automatically configures the Task CPU and RAM requirements.
-    * One-liner expansion of your tasks to using AWS X-Ray for distributed tracing.
-    * Automatic dependencies and network access control via Security Group rules.
-
-* AWS AppMesh and CloudMap
-    * Built-in integration to CloudMap to automatically register your services to Service Discovery
-    * Simplified definition of your mesh, routers, nodes and services.
-
-* AWS RDS via *x-rds*
-    * Simplified syntax to create DBs
-    * Automatically creates secret for your database and exposes these to select services via Secrets definition.
-    * Allows ECS Services to have TCP access by automatically managing Ingress Rules for AWS Security Groups.
-
-* AWS SQS *via x-sqs*
-    * Create queues and link them to your ECS Services with least-privileges
-    * Exposes env vars with the Queue ARN to your ECS tasks
-    * Logically link a queue and its DLQ simply referencing it by name.
-
-* AWS SNS *via x-sns*
-    * Create topics and allow ECS Services to publish messages
-    * Create subscriptions from SNS to SQS
 
 .. note::
 
     Each component can also use the docker-compose file but be deployed on its own, allowing, for production workloads,
     to deploy each component separately to avoid dependencies on each other.
 
-And a lot more to come!
+BDD test driven
+===============
 
-Fargate First
--------------
+Find sample files used to test the software in its development in the use-cases.
 
-However the original deployments and work on this project was done using EC2 instances (using SpotFleet mostly), everything
-is now implemented to work on AWS Fargate First (2020-06-06).
+Documentation
+=============
 
-Plug-And-Play
---------------
+`Find all the documentation to get started and all the features references here. <https://docs.ecs-composex.lambda-my-aws.io>`_
 
-ECS ComposeX allows to create not only the resources your application stack needs, but also the underlying infrastrcuture,
-for example, your networking layer (VPC, subnets etc.) as well as the compute (using SpotFleet by default).
+.. seealso::
 
-This is to allow developers to deploy in their development accounts without having to worry about network
-design and capacity planning.
+    `Nightly documentation <https://nightly.docs.ecs-composex.lambda-my-aws.io/>`_ following the master branch.
 
-.. note::
-
-    | :ref:`vpc_network_design`
-    | :ref:`ec2_compute_design`
-    | :ref:`syntax_reference`
-
-.. note::
-
-    If you do not need extra AWS resources such as SQS queues to be created as part of these microservices deployments, I would recommend to use `AWS ECS CLI`_ which does already a lot of the work for the services.
-    Alternatively, use the AWS CLI v2. It is absolutely smashing-ly awesome and might be just what you need
-    This tool aims to reproduce the original ECS CLI behaviour whilst adding logic for non ECS resources that you want to create in your environment.
-
-License and documentation
-==========================
-
-* Free software: GPLv3+
-* Documentation:
-    * https://docs.ecs-composex.lambda-my-aws.io
 
 Blog
 ====
@@ -120,21 +72,14 @@ Follow the news and technical articles on using ECS ComposeX on the `Blog`_ |BLO
 
 * `CICD Pipeline for multiple services on AWS ECS with ECS ComposeX`_
 
+.. tip::
 
-GitHub project
-==============
+    If you do not need extra AWS resources such as SQS queues to be created as part of these microservices deployments,
+    I would recommend to use `AWS ECS CLI`_ which does already a lot of the work for the services.
+    Alternatively, use the AWS CLI v2. It is absolutely smashing-ly awesome and might be just what you need
+    This tool aims to reproduce the original ECS CLI behaviour whilst adding logic for non ECS resources that you want
+    to create in your environment.
 
-To follow the progress of ECS ComposeX and raise issues/feature requests, you can go to to the `ECS ComposeX Project`_
-
-
-What is next for ECS ComposeX ?
-===============================
-
-* Add more resources supports (DynamoDB tables, SNS Topics).
-* Enable definition of service mesh and service discovery
-
-First, move this into a CFN Macro, with a simple root template that would take a few settings in and the URL to the Compose file and render all templates within CFN itself via Lambda.
-Then, with the newly released CFN Private Registries, mutate this system to have fully integrated to CFN objects which will resolve all this.
 
 
 Credits

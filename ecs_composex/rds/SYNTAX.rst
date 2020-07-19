@@ -1,7 +1,7 @@
 .. _rds_syntax_reference:
 
-RDS Syntax Reference
-====================
+x-rds
+=====
 
 Services
 --------
