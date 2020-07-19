@@ -1,5 +1,5 @@
 Feature: ecs_composex.appmesh
-  @static @appmesh
+  @appmesh
   Scenario Outline: Mesh created with the services
     Given I use <file_path> as my docker-compose file
     And I want to create a VPC
@@ -11,7 +11,7 @@ Feature: ecs_composex.appmesh
     |file_path|
     |use-cases/blog.with_mesh.yml|
 
-  @static @appmesh
+  @appmesh
   Scenario Outline: Shared or existing mesh
     Given I use <file_path> as my docker-compose file
     And I want to create a VPC
@@ -22,7 +22,7 @@ Feature: ecs_composex.appmesh
     |use-cases/appmesh/shared_mesh.yml|
     |use-cases/appmesh/allow_all.yml|
 
-  @static @appmesh
+  @appmesh
   Scenario Outline: Mesh requested but no VPC
     Given I use <file_path> as my docker-compose file
     And I want to create a Cluster
@@ -32,17 +32,18 @@ Feature: ecs_composex.appmesh
     |file_path|
     |use-cases/blog.with_mesh.yml|
 
-
+  @appmesh
   Scenario Outline: No mesh created with the services
     Given I use <file_path> as my docker-compose file
     And I render the docker-compose to composex
     Then I should not have a mesh
     Examples:
     |file_path|
-    |use-cases/blog.yml|
-    |use-cases/blog-all-features.yml|
     |use-cases/blog-all-features-with-compute.yml|
+    |use-cases/blog.yml                          |
+    |use-cases/blog-all-features.yml             |
 
+  @appmesh
   Scenario Outline: Meshes are incorrect
     Given I use <file_path> as my docker-compose file
     And I want to create a VPC

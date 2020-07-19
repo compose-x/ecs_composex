@@ -1,5 +1,5 @@
 Feature: ecs_composex.appmesh
-  @static @compute
+  @compute
 
   Scenario Outline: No mesh created with the services
     Given I use <file_path> as my docker-compose file
@@ -9,7 +9,7 @@ Feature: ecs_composex.appmesh
     |file_path|
     |use-cases/blog-all-features-with-compute.yml|
 
-  @static @compute @iam
+  @compute @iam
 
   Scenario Outline: No mesh created with the services
     Given I use <file_path> as my docker-compose file
