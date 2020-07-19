@@ -13,10 +13,20 @@ or something else like Terraform to identify and get subnet IDs, CIDR and otherw
 from CFN exports.
 
 
+Using an existing VPC
+---------------------
+
+You might already have network configuration and VPC setup all done, and want to simply plug-and-play to that existing
+network configuration you have.
+
+To help with that, we have added the **x-vpc** key support in the docker-compose file, with allows you to find your VPC
+in and subnets with many options. Head to :ref:`vpc_syntax_reference` to see how to use that feature.
+
+
 .. _vpc_network_design:
 
-VPC Network design
--------------------
+Default VPC Network design
+--------------------------
 
 The design of the VPC generated is very simple 3-tiers:
 

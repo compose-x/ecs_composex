@@ -117,7 +117,6 @@ If defined as a object, it will expect tags list, in the same syntax as for VPC.
     If you are doing a lookup, you **must** configure the VpcId so that all subnets will be queried against that VPC
     for higher accuracy.
 
-Namespace
-"""""""""
+.. warning::
 
-Finding the AWS CloudMap Namespace to register the services into.
+    If you specify both **Create** and **Lookup** in x-vpc, then the default behaviour is applied.
