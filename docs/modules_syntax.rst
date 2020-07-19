@@ -11,6 +11,8 @@ ComposeX Modules Syntax
 
 .. include:: ../ecs_composex/appmesh/SYNTAX.rst
 
+.. include:: ../ecs_composex/vpc/SYNTAX.rst
+
 .. include:: ../ecs_composex/sqs/SYNTAX.rst
 
 .. include:: ../ecs_composex/rds/SYNTAX.rst

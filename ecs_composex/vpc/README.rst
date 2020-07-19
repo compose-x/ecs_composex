@@ -46,9 +46,9 @@ sensible way, use the *--create-vpc* argument of the CLI.
 Default range
 -------------
 
-The default CIDR range for the VPC is 192.168.36.0/22. It can be overridden with *--vpc-cidr*
+The default CIDR range for the VPC is **100.127.254.0/24**. It can be overridden with *--vpc-cidr*
 
-This leaves a little less than 500 IP address for the EC2 hosts and/or Docker containers.
+This leaves a little less than 120 IP address for the EC2 hosts and/or Docker containers.
 
 RoadMap
 -------
