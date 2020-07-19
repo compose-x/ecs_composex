@@ -151,8 +151,10 @@ def test_vpc_import_from_tags(content, x_vpc_tags):
     content.update({"x-vpc": {"Lookup": x_vpc_tags}})
     print(content["x-vpc"])
     settings = create_settings(content)
-    settings.lookup_x_vpc_settings(x_vpc_tags)
     assert hasattr(settings, VPC_ID_T) and getattr(settings, VPC_ID_T) is not None
+    with pytest.raises(ValueError):
+        """Validates double VPC raises an error"""
+        settings.lookup_x_vpc_settings(x_vpc_tags)
 
 
 def test_vpc_import_from_arn(content, x_vpc_arn):
@@ -186,4 +188,11 @@ def test_negative_testing_subnets(
         settings = create_settings(content)
     content.update({"x-vpc": {"Lookup": invalid_x_subnets_ids_list}})
     with pytest.raises(ValueError):
+        settings = create_settings(content)
+
+    with pytest.raises(ValueError):
+        """On 4th call, no subnets are returned"""
+        settings = create_settings(content)
+        settings = create_settings(content)
+        settings = create_settings(content)
         settings = create_settings(content)
