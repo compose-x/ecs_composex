@@ -144,22 +144,25 @@ def lookup_subnets_ids(session, ids, vpc_id):
     raise ValueError("No Subnets found with provided IDs", ids)
 
 
-def lookup_subnets_from_tags(session, tags, vpc_id):
+def lookup_subnets_from_tags(session, tags, vpc_id, subnet_key=None):
     """
     Function to find a VPC from defined Tags
 
     :param boto3.session.Session session: boto3 session
     :param list tags: list of tags
     :param str vpc_id: The VPC ID to use to search for the subnets
+    :param str subnet_key: For troubleshooting, allows to figure which subnets this was for.
     :return:
     """
+    if subnet_key is None:
+        subnet_key = "Subnets "
     client = session.client("ec2")
     filters = define_filter_tags(tags)
     filters.append({"Name": "vpc-id", "Values": [vpc_id]})
     subnets_r = client.describe_subnets(Filters=filters)
     if keyisset("Subnets", subnets_r):
         subnets = [subnet["SubnetId"] for subnet in subnets_r["Subnets"]]
-        LOG.info(f"Subnets found and confirmed: {subnets}")
+        LOG.info(f"{subnet_key} found and confirmed: {subnets}")
         return subnets
     raise ValueError("No Subnets found with tags", filters)
 

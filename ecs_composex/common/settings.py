@@ -250,7 +250,10 @@ class ComposeXSettings(object):
                 self,
                 subnet_key,
                 lookup_subnets_from_tags(
-                    self.session, subnet_id_settings["tags"], getattr(self, VPC_ID_T)
+                    self.session,
+                    subnet_id_settings["tags"],
+                    getattr(self, VPC_ID_T),
+                    subnet_key,
                 ),
             )
         else:
@@ -274,7 +277,6 @@ class ComposeXSettings(object):
                 "Expected",
                 required_keys,
             )
-        print(settings)
         self.lookup_vpc = True
         self.lookup_vpc_id(settings[VPC_ID_T])
         for subnet_key in subnets_keys:

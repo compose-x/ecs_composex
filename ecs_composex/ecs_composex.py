@@ -404,22 +404,19 @@ def create_vpc_root(root_stack, settings):
                 vpc_params.VPC_MAP_DNS_ZONE,
             ],
         )
-        root_stack.stack_parameters.update(
-            {
-                vpc_params.VPC_ID.title: getattr(settings, vpc_params.VPC_ID_T),
-                vpc_params.APP_SUBNETS.title: getattr(
-                    settings, vpc_params.APP_SUBNETS_T
-                ),
-                vpc_params.STORAGE_SUBNETS.title: getattr(
-                    settings, vpc_params.STORAGE_SUBNETS_T
-                ),
-                vpc_params.PUBLIC_SUBNETS.title: getattr(
-                    settings, vpc_params.PUBLIC_SUBNETS_T
-                ),
-                vpc_params.VPC_MAP_ID.title: settings.vpc_private_namespace_id,
-                vpc_params.VPC_MAP_DNS_ZONE.title: "cluster.local",
-            }
-        )
+        settings_params = {
+            vpc_params.VPC_ID.title: getattr(settings, vpc_params.VPC_ID_T),
+            vpc_params.APP_SUBNETS.title: getattr(settings, vpc_params.APP_SUBNETS_T),
+            vpc_params.STORAGE_SUBNETS.title: getattr(
+                settings, vpc_params.STORAGE_SUBNETS_T
+            ),
+            vpc_params.PUBLIC_SUBNETS.title: getattr(
+                settings, vpc_params.PUBLIC_SUBNETS_T
+            ),
+            vpc_params.VPC_MAP_ID.title: settings.vpc_private_namespace_id,
+            vpc_params.VPC_MAP_DNS_ZONE.title: "cluster.local",
+        }
+        root_stack.Parameters.update(settings_params)
     return None
 
 
@@ -436,9 +433,7 @@ def generate_full_template(settings):
     LOG.debug(settings)
     root_template = init_root_template(stack_params, tags_params)
     root_stack = ComposeXStack(settings.name, stack_template=root_template)
-    root_stack.stack_parameters.update(
-        settings.create_root_stack_parameters_from_input()
-    )
+    root_stack.Parameters.update(settings.create_root_stack_parameters_from_input())
     depends_on = []
     vpc_stack = create_vpc_root(root_stack, settings)
     compute_stack = add_compute(root_stack.stack_template, settings, vpc_stack)
