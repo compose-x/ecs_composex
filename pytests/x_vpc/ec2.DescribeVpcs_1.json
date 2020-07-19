@@ -7,7 +7,7 @@
                 "DhcpOptionsId": "dopt-025b6ac7336dccc9d",
                 "State": "available",
                 "VpcId": "vpc-08144c139f0a4a671",
-                "OwnerId": "0123456798912",
+                "OwnerId": "012345678912",
                 "InstanceTenancy": "default",
                 "CidrBlockAssociationSet": [
                     {

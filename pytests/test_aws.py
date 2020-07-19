@@ -28,7 +28,7 @@ def here():
     return path.abspath(path.dirname(__file__))
 
 
-def test_vpc_import(here):
+def test_vpc_import_from_tags(here):
     session = boto3.session.Session()
     pill = placebo.attach(session, data_path=f"{here}/x_vpc")
     pill.playback()
@@ -36,7 +36,39 @@ def test_vpc_import(here):
         session=session,
         **{
             ComposeXSettings.name_arg: "test",
-            ComposeXSettings.input_file_arg: f"{here}/../use-cases/blog-with-existing-vpc.yml",
+            ComposeXSettings.input_file_arg: f"{here}/../use-cases/vpc/vpc_from_tags.yml",
+            ComposeXSettings.no_upload_arg: True,
+            ComposeXSettings.format_arg: "yaml",
+        },
+    )
+    assert hasattr(settings, VPC_ID_T) and getattr(settings, VPC_ID_T) is not None
+
+
+def test_vpc_import_from_id(here):
+    session = boto3.session.Session()
+    pill = placebo.attach(session, data_path=f"{here}/x_vpc")
+    pill.playback()
+    settings = ComposeXSettings(
+        session=session,
+        **{
+            ComposeXSettings.name_arg: "test",
+            ComposeXSettings.input_file_arg: f"{here}/../use-cases/vpc/vpc_from_id.yml",
+            ComposeXSettings.no_upload_arg: True,
+            ComposeXSettings.format_arg: "yaml",
+        },
+    )
+    assert hasattr(settings, VPC_ID_T) and getattr(settings, VPC_ID_T) is not None
+
+
+def test_vpc_import_from_arn(here):
+    session = boto3.session.Session()
+    pill = placebo.attach(session, data_path=f"{here}/x_vpc")
+    pill.playback()
+    settings = ComposeXSettings(
+        session=session,
+        **{
+            ComposeXSettings.name_arg: "test",
+            ComposeXSettings.input_file_arg: f"{here}/../use-cases/vpc/vpc_from_arn.yml",
             ComposeXSettings.no_upload_arg: True,
             ComposeXSettings.format_arg: "yaml",
         },

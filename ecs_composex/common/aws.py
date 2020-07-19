@@ -55,15 +55,17 @@ def lookup_vpc_id(session, vpc_id):
     :return:
     """
     args = {"VpcIds": [vpc_id]}
-    arn_regexp = r"(^arn:(aws|aws-cn|aws-us-gov):ec2:([a-z]{2}-[\w]{2,6}-[0-9]{1}):[0-9]{12}:vpc\/vpc-[a-z0-9]+$)"
+    arn_regexp = r"(^arn:(aws|aws-cn|aws-us-gov):ec2:([a-z]{2}-[\w]{2,6}-[0-9]{1}):([0-9]{12}):vpc\/(vpc-[a-z0-9]+)$)"
     arn_re = re.compile(arn_regexp)
     if vpc_id.startswith("arn:") and arn_re.match(vpc_id):
+        LOG.info(arn_re.findall(vpc_id))
         re_vpc_id = arn_re.findall(vpc_id)[-1][-1]
         re_vpc_owner = arn_re.findall(vpc_id)[-1][-2]
         args = {
             "VpcIds": [re_vpc_id],
             "Filters": [{"Name": "owner-id", "Values": [re_vpc_owner]}],
         }
+        vpc_id = re_vpc_id
     elif vpc_id.startswith("arn:") and not arn_re.match(vpc_id):
         raise ValueError(
             "Vpc ARN is not valid. Got", vpc_id, "Valid ARN Regexp", arn_regexp
@@ -71,6 +73,8 @@ def lookup_vpc_id(session, vpc_id):
 
     client = session.client("ec2")
     vpcs_r = client.describe_vpcs(**args)
+    LOG.info(vpcs_r)
+    LOG.info(vpcs_r["Vpcs"][0]["VpcId"])
     if keyisset("Vpcs", vpcs_r) and vpcs_r["Vpcs"][0]["VpcId"] == vpc_id:
         LOG.info(f"VPC Found and confirmed: {vpcs_r['Vpcs'][0]['VpcId']}")
         return vpcs_r["Vpcs"][0]["VpcId"]
@@ -121,7 +125,7 @@ def lookup_subnets_ids(session, ids, vpc_id):
 
     :param session: boto3 session
     :param ids: list of subneet IDs
-    :param vpc_id: the VPC IDs associated with the subnets
+    :param str vpc_id: The VPC ID to use to search for the subnets
     :return: list of subnets
     :rtype: list
     """
@@ -141,6 +145,7 @@ def lookup_subnets_from_tags(session, tags, vpc_id):
 
     :param boto3.session.Session session: boto3 session
     :param list tags: list of tags
+    :param str vpc_id: The VPC ID to use to search for the subnets
     :return:
     """
     client = session.client("ec2")
