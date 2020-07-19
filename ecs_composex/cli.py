@@ -38,34 +38,6 @@ from ecs_composex.vpc.vpc_params import (
 )
 
 
-# def validate_vpc_input(settings):
-#     """
-#     Function to validate the VPC arguments are all present
-#     """
-#     nocreate_requirements = [
-#         PUBLIC_SUBNETS_T,
-#         APP_SUBNETS_T,
-#         STORAGE_SUBNETS_T,
-#         VPC_ID_T,
-#         VPC_MAP_ID_T,
-#     ]
-#     if not settings.create_vpc:
-#         for key in nocreate_requirements:
-#             if not keyisset(key, args):
-#                 warnings.warn(
-#                     f"{key} was not provided. Not adding to the parameters file",
-#                     UserWarning,
-#                 )
-#     else:
-#         for key in nocreate_requirements:
-#             if keyisset(key, args):
-#                 LOG.info(args[key])
-#                 warnings.warn(
-#                     f"Creating VPC is set. Ignoring value for {key}", UserWarning
-#                 )
-#
-
-
 def validate_cluster_input(args):
     """Function to validate the cluster arguments
 

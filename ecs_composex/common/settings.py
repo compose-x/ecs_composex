@@ -79,13 +79,8 @@ class ComposeXSettings(object):
         """
         Class to init the configuration
         """
-        if profile_name and not session:
-            self.session = boto3.session.Session(profile_name=profile_name)
-        elif session and not profile_name:
-            self.session = session
-        else:
-            self.session = boto3.session.Session()
-
+        self.session = boto3.session.Session()
+        self.override_session(session, profile_name)
         self.aws_region = (
             kwargs[self.region_arg]
             if keyisset(self.region_arg, kwargs)
@@ -109,25 +104,15 @@ class ComposeXSettings(object):
         self.name = kwargs[self.name_arg]
         self.create_compute = False if not keyisset(USE_FLEET_T, kwargs) else True
 
-        self.vpc_cidr = self.default_vpc_cidr
-        self.single_nat = None
         self.vpc_private_namespace_id = None
         self.vpc_private_namespace_zone_id = None
         self.vpc_private_namespace_tld = None
+
         self.create_vpc = False
+        self.vpc_cidr = self.default_vpc_cidr
+        self.single_nat = None
         self.lookup_vpc = False
-        if keyisset("x-vpc", self.compose_content) and keyisset(
-            "Lookup", self.compose_content["x-vpc"]
-        ):
-            self.create_vpc = False
-            self.lookup_x_vpc_settings(self.compose_content["x-vpc"]["Lookup"])
-        if keyisset("x-vpc", self.compose_content) and keyisset(
-            "Create", self.compose_content["x-vpc"]
-        ):
-            self.create_vpc = True
-            self.set_x_vpc_settings(self.compose_content["x-vpc"]["Create"])
-        elif not keyisset("x-vpc", self.compose_content):
-            self.set_cli_vpc_settings(kwargs)
+        self.set_vpc(kwargs)
 
         self.create_cluster = None
         self.cluster_name = None
@@ -145,6 +130,37 @@ class ComposeXSettings(object):
             },
             indent=4,
         )
+
+    def set_vpc(self, kwargs):
+        """
+        Method to set the VPC settings.
+
+        :param kwargs: the execution arguments
+        """
+        if keyisset("x-vpc", self.compose_content) and keyisset(
+            "Lookup", self.compose_content["x-vpc"]
+        ):
+            self.create_vpc = False
+            self.lookup_x_vpc_settings(self.compose_content["x-vpc"]["Lookup"])
+        if keyisset("x-vpc", self.compose_content) and keyisset(
+            "Create", self.compose_content["x-vpc"]
+        ):
+            self.create_vpc = True
+            self.set_x_vpc_settings(self.compose_content["x-vpc"]["Create"])
+        elif not keyisset("x-vpc", self.compose_content):
+            self.set_cli_vpc_settings(kwargs)
+
+    def override_session(self, session, profile_name):
+        """
+        Method to set the session based on input params
+
+        :param boto3.session.Session session: The session to override the API calls with
+        :param str profile_name: Name of a profile configured in .aws/config
+        """
+        if profile_name and not session:
+            self.session = boto3.session.Session(profile_name=profile_name)
+        elif session and not profile_name:
+            self.session = session
 
     def set_output_settings(self, kwargs):
         """
