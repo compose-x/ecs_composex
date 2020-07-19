@@ -11,7 +11,7 @@ Welcome to ECS-ComposeX's documentation!
     story
 
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 1
     :caption: Installation
 
     requisites

@@ -9,7 +9,7 @@ ECS ComposeX
 |BUILD|
 
 ----------------------------------------------------------------------------------------------------
-Build your infrastructure and deploy your services to AWS services using docker-compose file format.
+Be for AWS ECS and docker-compose what AWS SAM is to Lambda
 ----------------------------------------------------------------------------------------------------
 
 .. contents::
@@ -28,30 +28,41 @@ Usage
 
 .. code-block:: bash
 
-    sage: ecs_composex [-h] -n NAME -f DOCKERCOMPOSEXFILE [-d OUTPUTDIRECTORY]
+    sage: ecs_composex [-h] -n NAME -f DOCKERCOMPOSEXFILE
+                    [-d OUTPUTDIRECTORY]
+                    [--deploy]
                     [--format {json,yaml,text}]
                     [--cfn-config-file CFNCONFIGFILE]
-                    [--no-cfn-template-config-file] [--region REGIONNAME]
-                    [--az ZONES] [-b BUCKETNAME] [--no-upload] [--create-vpc]
-                    [--vpc-cidr VPCCIDR] [--vpc-id VPCID]
+                    [--no-cfn-template-config-file]
+                    [--region REGIONNAME]
+                    [--az ZONES]
+                    [-b BUCKETNAME] [--no-upload]
+                    [--create-vpc]
+                    [--vpc-cidr VPCCIDR]
+                    [--vpc-id VPCID]
                     [--public-subnets PUBLICSUBNETS]
                     [--app-subnets APPSUBNETS]
                     [--storage-subnets STORAGESUBNETS]
-                    [--discovery-map-id VPCDISCOVERYMAPID] [--single-nat]
-                    [--create-cluster] [--cluster-name ECSCLUSTERNAME]
-                    [--use-spot-fleet]
-                    [_ [_ ...]]
-
+                    [--discovery-map-id VPCDISCOVERYMAPID]
+                    [--single-nat]
+                    [--create-cluster]
+                    [--cluster-name ECSCLUSTERNAME]
 
 .. note::
 
     Each component can also use the docker-compose file but be deployed on its own, allowing, for production workloads,
     to deploy each component separately to avoid dependencies on each other.
 
-BDD test driven
-===============
+AWS Resources support
+=====================
 
-Find sample files used to test the software in its development in the use-cases.
+* AWS ECS: from docker-compose to ECS transparently, using AWS Fargate primarily.
+* AWS VPC: create or use existing VPC to deploy your services
+* AWS SQS: queues for distributed workloads
+* AWS RDS: databases integration made easy
+* AWS SNS: send notifications.
+* AWS EC2: Deploy your services on EC2 for custom settings. Features SpotFleet by default.
+
 
 Documentation
 =============
@@ -63,10 +74,15 @@ Documentation
     `Nightly documentation <https://nightly.docs.ecs-composex.lambda-my-aws.io/>`_ following the master branch.
 
 
+RoadMap
+========
+
+* `Feature requests <https://github.com/lambda-my-aws/ecs_composex/projects/2>`_
+* `Issues <https://github.com/lambda-my-aws/ecs_composex/projects/3>`_
+
+
 Blog
 ====
-
-.. |BLOG_RELEASE| image:: https://codebuild.eu-west-1.amazonaws.com/badges?uuid=eyJlbmNyeXB0ZWREYXRhIjoicHZaQXFLNGYya3pzWExXM09ZTDZqbkU4cXZENzlZc2grQ0s5RXNxN0tYSXF6U3hJSkZWd3JqZkcrd29RUExmZGw1VXVsTTd6ckE4RjhSenl4QUtUY3I0PSIsIml2UGFyYW1ldGVyU3BlYyI6IjdleGRRTS9rbTRIUUY4TkoiLCJtYXRlcmlhbFNldFNlcmlhbCI6MX0%3D&branch=master
 
 Follow the news and technical articles on using ECS ComposeX on the `Blog`_ |BLOG_RELEASE|
 
@@ -96,11 +112,17 @@ This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypack
 .. _Troposphere: https://github.com/cloudtools/troposphere
 .. _Blog: https://blog.ecs-composex.lambda-my-aws.io/
 .. _Docker Compose: https://docs.docker.com/compose/
-.. _ECS ComposeX: https://github.com/lambda-my-aws/ecs_composex
+.. _ECS ComposeX: https://docs.ecs-composex.lambda-my-aws.io
 .. _YAML Specifications: https://yaml.org/spec/
 .. _Extensions fields:  https://docs.docker.com/compose/compose-file/#extension-fields
 .. _ECS ComposeX Project: https://github.com/orgs/lambda-my-aws/projects/3
 .. _CICD Pipeline for multiple services on AWS ECS with ECS ComposeX: https://blog.ecs-composex.lambda-my-aws.io/posts/cicd-pipeline-for-multiple-services-on-aws-ecs-with-ecs-composex/
+
+.. _AWS ECS: https://nightly.docs.ecs-composex.lambda-my-aws.io/features.html#services
+.. _AWS VPC: https://nightly.docs.ecs-composex.lambda-my-aws.io/features.html#aws-vpc-needs-no-introduction
+.. _AWS RDS: https://nightly.docs.ecs-composex.lambda-my-aws.io/features.html#aws-rds
+.. _AWS SQS: https://nightly.docs.ecs-composex.lambda-my-aws.io/features.html#aws-sqs
+.. _AWS EC2: https://nightly.docs.ecs-composex.lambda-my-aws.io/features.html#ec2-resources-for-ecs-cluster
 
 .. |BUILD| image:: https://codebuild.eu-west-1.amazonaws.com/badges?uuid=eyJlbmNyeXB0ZWREYXRhIjoidThwNXVIKzVvSnlXcUNVRzVlNE5wN0FiWE4rYzYvaHRNMEM0ZHMxeXRLMytSanhsckozVEN3L1Y5Szl5ZEdJVGxXVElyalZmaFVzR2tSbDBHeFI5cHBRPSIsIml2UGFyYW1ldGVyU3BlYyI6IlZkaml2d28wSGR1YU1xb2ciLCJtYXRlcmlhbFNldFNlcmlhbCI6MX0%3D&branch=master
 
@@ -143,3 +165,5 @@ This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypack
 .. |BDD| image:: https://img.shields.io/badge/bdd-behave-black
     :alt: BDD with Behave
     :target: https://behave.readthedocs.io/en/latest/
+
+.. |BLOG_RELEASE| image:: https://codebuild.eu-west-1.amazonaws.com/badges?uuid=eyJlbmNyeXB0ZWREYXRhIjoicHZaQXFLNGYya3pzWExXM09ZTDZqbkU4cXZENzlZc2grQ0s5RXNxN0tYSXF6U3hJSkZWd3JqZkcrd29RUExmZGw1VXVsTTd6ckE4RjhSenl4QUtUY3I0PSIsIml2UGFyYW1ldGVyU3BlYyI6IjdleGRRTS9rbTRIUUY4TkoiLCJtYXRlcmlhbFNldFNlcmlhbCI6MX0%3D&branch=master
