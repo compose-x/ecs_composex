@@ -109,7 +109,7 @@ class ComposeXSettings(object):
         self.vpc_private_namespace_tld = None
 
         self.create_vpc = False
-        self.vpc_cidr = self.default_vpc_cidr
+        self.vpc_cidr = None
         self.single_nat = None
         self.lookup_vpc = False
         self.set_vpc(kwargs)
@@ -137,16 +137,26 @@ class ComposeXSettings(object):
 
         :param kwargs: the execution arguments
         """
-        if keyisset("x-vpc", self.compose_content) and keyisset(
-            "Lookup", self.compose_content["x-vpc"]
-        ):
-            self.create_vpc = False
-            self.lookup_x_vpc_settings(self.compose_content["x-vpc"]["Lookup"])
-        if keyisset("x-vpc", self.compose_content) and keyisset(
-            "Create", self.compose_content["x-vpc"]
-        ):
-            self.create_vpc = True
-            self.set_x_vpc_settings(self.compose_content["x-vpc"]["Create"])
+        if keyisset("x-vpc", self.compose_content):
+            if keyisset("Create", self.compose_content["x-vpc"]) and keyisset(
+                "Lookup", self.compose_content["x-vpc"]
+            ):
+                LOG.warning(
+                    "We have both Create and Lookup set for x-vpc. Applying default behaviour."
+                )
+                self.set_vpc_default_settings()
+            elif keyisset("Lookup", self.compose_content["x-vpc"]):
+                self.create_vpc = False
+                self.lookup_x_vpc_settings(self.compose_content["x-vpc"]["Lookup"])
+            elif keyisset("Create", self.compose_content["x-vpc"]):
+                self.create_vpc = True
+                self.set_x_vpc_settings(self.compose_content["x-vpc"]["Create"])
+
+            else:
+                LOG.error(
+                    "x-vpc indicated but neither Create or Update is indicated. Going with default behaviour"
+                )
+                self.set_vpc_default_settings()
         elif not keyisset("x-vpc", self.compose_content):
             self.set_cli_vpc_settings(kwargs)
 
@@ -312,7 +322,7 @@ class ComposeXSettings(object):
             if keyisset(self.vpc_cidr_arg, kwargs)
             else self.default_vpc_cidr
         )
-        self.create_vpc = True if keyisset(self.create_vpc_arg, kwargs) else False
+        self.create_vpc = True
         vpc_id = kwargs[VPC_ID_T] if keyisset(VPC_ID_T, kwargs) else None
         self.single_nat = (
             kwargs[self.single_nat_arg]
@@ -326,29 +336,21 @@ class ComposeXSettings(object):
             kwargs[STORAGE_SUBNETS_T] if keyisset(STORAGE_SUBNETS_T, kwargs) else None
         )
         app_subnets = kwargs[APP_SUBNETS_T] if keyisset(APP_SUBNETS_T, kwargs) else None
+        vpc_private_namespace_id = (
+            kwargs[VPC_MAP_ID_T] if keyisset(VPC_MAP_ID_T, kwargs) else None
+        )
         setattr(self, VPC_ID_T, vpc_id)
         setattr(self, APP_SUBNETS_T, app_subnets)
         setattr(self, STORAGE_SUBNETS_T, storage_subnets)
         setattr(self, PUBLIC_SUBNETS_T, public_subnets)
-        self.vpc_private_namespace_id = (
-            kwargs[VPC_MAP_ID_T] if keyisset(VPC_MAP_ID_T, kwargs) else None
-        )
-        if self.vpc_private_namespace_id:
-            client = self.session.client("servicediscovery")
-            try:
-                res = client.get_namespace(Id=self.vpc_private_namespace_id)
-                self.vpc_private_namespace_zone_id = res["Namespace"]["Properties"][
-                    "DnsProperties"
-                ]["HostedZoneId"]
-                self.vpc_private_namespace_tld = res["Namespace"]["Properties"][
-                    "HttpProperties"
-                ]["HttpName"]
+        setattr(self, VPC_MAP_ID_T, vpc_private_namespace_id)
 
-            except client.meta.exceptions.NamespaceNotFound as error:
-                LOG.error(
-                    f"Namespace {self.vpc_private_namespace_id} not found in this account."
-                )
-                raise error
+    def set_vpc_default_settings(self):
+        LOG.info(
+            f"Setting default VPC settings. Creating VPC and VPC CIDR is {self.default_vpc_cidr}"
+        )
+        self.create_vpc = True
+        self.vpc_cidr = self.default_vpc_cidr
 
     def get_vpc_params(self):
         return {
