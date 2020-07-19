@@ -1,5 +1,5 @@
 Feature: ecs_composex.rds
-  @static @rds
+  @rds
   Scenario Outline: Simple RDS with services
     Given I use <file_path> as my docker-compose file
     And I render the docker-compose to composex

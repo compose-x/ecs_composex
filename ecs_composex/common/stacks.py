@@ -20,7 +20,7 @@ Module to handle Root stacks and substacks in ECS composeX. Allows to treat ever
 files into S3 and on disk.
 """
 
-from troposphere import Template, GetAtt, Ref, If, Join
+from troposphere import Template, GetAtt, Ref, If, Join, ImportValue
 from troposphere.cloudformation import Stack
 
 from ecs_composex.common import LOG, keyisset, add_parameters
@@ -84,6 +84,8 @@ class ComposeXStack(Stack, object):
         )
         if stack_parameters:
             stack_kwargs.update({"Parameters": stack_parameters})
+        else:
+            stack_kwargs.update({"Parameters": {}})
         super().__init__(title, **stack_kwargs)
         if not hasattr(self, "DependsOn") or not keyisset("DependsOn", kwargs):
             self.DependsOn = []
@@ -128,21 +130,6 @@ class ComposeXStack(Stack, object):
             file.upload(settings)
             LOG.debug(f"Rendered URL = {file.url}")
 
-    def render_parameters(self):
-        """
-        Returns parameters to use for CFN Config file
-
-        :rtype: dict
-        :return: params
-        """
-        if not hasattr(self, "Parameters"):
-            return
-        params = {}
-        for param_name in self.Parameters.keys():
-            if isinstance(self.Parameters[param_name], str):
-                params[param_name] = self.Parameters[param_name]
-        return params
-
     def render_parameters_list_cfn(self):
         """
         Renders parameters in a CFN parameters config file format
@@ -152,11 +139,27 @@ class ComposeXStack(Stack, object):
         """
         if not hasattr(self, "Parameters"):
             return []
-        params = [
-            {"ParameterKey": param_name, "ParameterValue": self.Parameters[param_name]}
-            for param_name in self.Parameters.keys()
-            if isinstance(self.Parameters[param_name], str)
-        ]
+        params = []
+        for param_name in self.Parameters.keys():
+            LOG.debug(f"{param_name} - {self.Parameters[param_name]}")
+            if not isinstance(
+                self.Parameters[param_name],
+                (Ref, GetAtt, ImportValue, If, Join, type(None)),
+            ):
+                if isinstance(self.Parameters[param_name], str):
+                    params.append(
+                        {
+                            "ParameterKey": param_name,
+                            "ParameterValue": self.Parameters[param_name],
+                        }
+                    )
+                elif isinstance(self.Parameters[param_name], list):
+                    params.append(
+                        {
+                            "ParameterKey": param_name,
+                            "ParameterValue": ",".join(self.Parameters[param_name]),
+                        }
+                    )
         return params
 
     def render(self, settings):

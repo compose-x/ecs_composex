@@ -1,0 +1,143 @@
+{
+    "status_code": 200,
+    "data": {
+        "Subnets": [
+            {
+                "AvailabilityZone": "eu-west-1c",
+                "AvailabilityZoneId": "euw1-az1",
+                "AvailableIpAddressCount": 11,
+                "CidrBlock": "100.127.254.176/28",
+                "DefaultForAz": false,
+                "MapPublicIpOnLaunch": false,
+                "State": "available",
+                "SubnetId": "subnet-04270d634ef29f545",
+                "VpcId": "vpc-08144c139f0a4a671",
+                "OwnerId": "012345678912",
+                "AssignIpv6AddressOnCreation": false,
+                "Ipv6CidrBlockAssociationSet": [],
+                "Tags": [
+                    {
+                        "Key": "vpc::vpc-id",
+                        "Value": "vpc-08144c139f0a4a671"
+                    },
+                    {
+                        "Key": "aws:cloudformation:stack-id",
+                        "Value": "arn:aws:cloudformation:eu-west-1:373709687836:stack/vpcwork/7d8f4060-c8d9-11ea-9b25-06ef30f3415c"
+                    },
+                    {
+                        "Key": "vpc::usage",
+                        "Value": "storage"
+                    },
+                    {
+                        "Key": "aws:cloudformation:stack-name",
+                        "Value": "vpcwork"
+                    },
+                    {
+                        "Key": "aws:cloudformation:logical-id",
+                        "Value": "StorageSubnetC"
+                    },
+                    {
+                        "Key": "Name",
+                        "Value": "vpcwork-Storage-c"
+                    }
+                ],
+                "SubnetArn": "arn:aws:ec2:eu-west-1:373709687836:subnet/subnet-04270d634ef29f545"
+            },
+            {
+                "AvailabilityZone": "eu-west-1a",
+                "AvailabilityZoneId": "euw1-az2",
+                "AvailableIpAddressCount": 11,
+                "CidrBlock": "100.127.254.48/28",
+                "DefaultForAz": false,
+                "MapPublicIpOnLaunch": false,
+                "State": "available",
+                "SubnetId": "subnet-004e206426fdaef17",
+                "VpcId": "vpc-08144c139f0a4a671",
+                "OwnerId": "012345678912",
+                "AssignIpv6AddressOnCreation": false,
+                "Ipv6CidrBlockAssociationSet": [],
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "vpcwork-Storage-a"
+                    },
+                    {
+                        "Key": "aws:cloudformation:stack-name",
+                        "Value": "vpcwork"
+                    },
+                    {
+                        "Key": "vpc::vpc-id",
+                        "Value": "vpc-08144c139f0a4a671"
+                    },
+                    {
+                        "Key": "vpc::usage",
+                        "Value": "storage"
+                    },
+                    {
+                        "Key": "aws:cloudformation:logical-id",
+                        "Value": "StorageSubnetA"
+                    },
+                    {
+                        "Key": "aws:cloudformation:stack-id",
+                        "Value": "arn:aws:cloudformation:eu-west-1:373709687836:stack/vpcwork/7d8f4060-c8d9-11ea-9b25-06ef30f3415c"
+                    }
+                ],
+                "SubnetArn": "arn:aws:ec2:eu-west-1:373709687836:subnet/subnet-004e206426fdaef17"
+            },
+            {
+                "AvailabilityZone": "eu-west-1b",
+                "AvailabilityZoneId": "euw1-az3",
+                "AvailableIpAddressCount": 11,
+                "CidrBlock": "100.127.254.112/28",
+                "DefaultForAz": false,
+                "MapPublicIpOnLaunch": false,
+                "State": "available",
+                "SubnetId": "subnet-0d49c1240b794118d",
+                "VpcId": "vpc-08144c139f0a4a671",
+                "OwnerId": "012345678912",
+                "AssignIpv6AddressOnCreation": false,
+                "Ipv6CidrBlockAssociationSet": [],
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "vpcwork-Storage-b"
+                    },
+                    {
+                        "Key": "aws:cloudformation:stack-name",
+                        "Value": "vpcwork"
+                    },
+                    {
+                        "Key": "vpc::vpc-id",
+                        "Value": "vpc-08144c139f0a4a671"
+                    },
+                    {
+                        "Key": "aws:cloudformation:logical-id",
+                        "Value": "StorageSubnetB"
+                    },
+                    {
+                        "Key": "vpc::usage",
+                        "Value": "storage"
+                    },
+                    {
+                        "Key": "aws:cloudformation:stack-id",
+                        "Value": "arn:aws:cloudformation:eu-west-1:373709687836:stack/vpcwork/7d8f4060-c8d9-11ea-9b25-06ef30f3415c"
+                    }
+                ],
+                "SubnetArn": "arn:aws:ec2:eu-west-1:373709687836:subnet/subnet-0d49c1240b794118d"
+            }
+        ],
+        "ResponseMetadata": {
+            "RequestId": "37662db6-9832-4ebc-82bb-dab73bd94035",
+            "HTTPStatusCode": 200,
+            "HTTPHeaders": {
+                "x-amzn-requestid": "37662db6-9832-4ebc-82bb-dab73bd94035",
+                "content-type": "text/xml;charset=UTF-8",
+                "content-length": "5624",
+                "vary": "accept-encoding",
+                "date": "Sat, 18 Jul 2020 10:52:30 GMT",
+                "server": "AmazonEC2"
+            },
+            "RetryAttempts": 0
+        }
+    }
+}

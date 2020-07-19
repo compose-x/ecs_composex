@@ -20,11 +20,12 @@
 
 import sys
 
-from ecs_composex.cli import main_parser, validate_vpc_input
+from ecs_composex.cli import main_parser
 from ecs_composex.common.settings import ComposeXSettings
 from ecs_composex.common.stacks import process_stacks
 from ecs_composex.vpc.vpc_stack import VpcStack
 from ecs_composex.vpc.vpc_params import RES_KEY
+from ecs_composex.common.aws import deploy
 
 
 def main():
@@ -38,9 +39,10 @@ def main():
     settings.set_bucket_name_from_account_id()
     settings.set_azs_from_api()
 
-    validate_vpc_input(vars(args))
     vpc_stack = VpcStack(RES_KEY, settings)
     process_stacks(vpc_stack, settings)
+    if settings.deploy:
+        deploy(settings, vpc_stack)
     return 0
 
 

@@ -62,12 +62,14 @@ lint-tests:
 
 test: ## run tests quickly with the default Python
 	behave features
+	pytest pytests -vv -s -x
 
 test-all: ## run tests on every Python version with tox
 	tox --skip-missing-interpreters
 
 coverage: ## check code coverage quickly with the default Python
 	coverage run --source ecs_composex -m behave --junit
+	coverage run --source ecs_composex -a -m pytest pytests -vv -s -x
 	coverage report -m
 	coverage html
 	$(BROWSER) htmlcov/index.html

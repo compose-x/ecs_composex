@@ -1,6 +1,13 @@
-﻿from troposphere.ec2 import NatGateway
+﻿from os import path
+
 from behave import given, when, then
+from troposphere.ec2 import NatGateway
+
 from ecs_composex.vpc.vpc_template import generate_vpc_template
+
+
+def here():
+    return path.abspath(path.dirname(__file__))
 
 
 @given("I want a VPC")

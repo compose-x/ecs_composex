@@ -13,10 +13,20 @@ or something else like Terraform to identify and get subnet IDs, CIDR and otherw
 from CFN exports.
 
 
+Using an existing VPC
+---------------------
+
+You might already have network configuration and VPC setup all done, and want to simply plug-and-play to that existing
+network configuration you have.
+
+To help with that, we have added the **x-vpc** key support in the docker-compose file, with allows you to find your VPC
+in and subnets with many options. Head to :ref:`vpc_syntax_reference` to see how to use that feature.
+
+
 .. _vpc_network_design:
 
-VPC Network design
--------------------
+Default VPC Network design
+--------------------------
 
 The design of the VPC generated is very simple 3-tiers:
 
@@ -36,9 +46,9 @@ sensible way, use the *--create-vpc* argument of the CLI.
 Default range
 -------------
 
-The default CIDR range for the VPC is 192.168.36.0/22. It can be overridden with *--vpc-cidr*
+The default CIDR range for the VPC is **100.127.254.0/24**. It can be overridden with *--vpc-cidr*
 
-This leaves a little less than 500 IP address for the EC2 hosts and/or Docker containers.
+This leaves a little less than 120 IP address for the EC2 hosts and/or Docker containers.
 
 RoadMap
 -------
