@@ -56,12 +56,14 @@ Usage
 AWS Resources support
 =====================
 
-* AWS ECS: from docker-compose to ECS transparently, using AWS Fargate primarily.
-* AWS VPC: create or use existing VPC to deploy your services
-* AWS SQS: queues for distributed workloads
-* AWS RDS: databases integration made easy
-* AWS SNS: send notifications.
-* AWS EC2: Deploy your services on EC2 for custom settings. Features SpotFleet by default.
+* `AWS ECS`_: from docker-compose to ECS transparently, using AWS Fargate primarily.
+* `AWS VPC`_: create or use existing VPC to deploy your services
+* `AWS AppMesh`_: Services mesh for your services.
+* `AWS SQS`_: queues for distributed workloads
+* `AWS RDS`_: databases integration made easy
+* `AWS EC2`_: Deploy your services on EC2 for custom settings. Features SpotFleet by default.
+* AWS SNS
+
 
 
 Documentation
@@ -123,6 +125,7 @@ This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypack
 .. _AWS RDS: https://nightly.docs.ecs-composex.lambda-my-aws.io/features.html#aws-rds
 .. _AWS SQS: https://nightly.docs.ecs-composex.lambda-my-aws.io/features.html#aws-sqs
 .. _AWS EC2: https://nightly.docs.ecs-composex.lambda-my-aws.io/features.html#ec2-resources-for-ecs-cluster
+.. _AWS AppMesh: https://nightly.docs.ecs-composex.lambda-my-aws.io/features.html#aws-appmesh-aws-cloud-map-for-services-mesh-discovery
 
 .. |BUILD| image:: https://codebuild.eu-west-1.amazonaws.com/badges?uuid=eyJlbmNyeXB0ZWREYXRhIjoidThwNXVIKzVvSnlXcUNVRzVlNE5wN0FiWE4rYzYvaHRNMEM0ZHMxeXRLMytSanhsckozVEN3L1Y5Szl5ZEdJVGxXVElyalZmaFVzR2tSbDBHeFI5cHBRPSIsIml2UGFyYW1ldGVyU3BlYyI6IlZkaml2d28wSGR1YU1xb2ciLCJtYXRlcmlhbFNldFNlcmlhbCI6MX0%3D&branch=master
 
