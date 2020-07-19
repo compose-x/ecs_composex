@@ -20,19 +20,122 @@ import pytest
 import placebo
 import boto3
 from ecs_composex.common.settings import ComposeXSettings
+from ecs_composex.common import load_composex_file
 from ecs_composex.vpc.vpc_params import VPC_ID_T
 
 
 @pytest.fixture
-def here():
-    return path.abspath(path.dirname(__file__))
+def content():
+    here = path.abspath(path.dirname(__file__))
+    return load_composex_file(f"{here}/../use-cases/blog.yml")
 
 
-def test_vpc_import_from_tags(here):
+@pytest.fixture
+def x_vpc_arn():
+    return {
+        "VpcId": "arn:aws:ec2:eu-west-1:012345678912:vpc/vpc-08144c139f0a4a671",
+        "AppSubnets": "subnet-0b0d3c7251ad0af8c,subnet-0b0e0f4f2ac3fa46d,subnet-06d3130b79d277b1b",
+        "StorageSubnets": [
+            "subnet-004e206426fdaef17",
+            "subnet-0d49c1240b794118d",
+            "subnet-04270d634ef29f545",
+        ],
+        "PublicSubnets": {"tags": [{"vpc::usage": "public"}]},
+    }
+
+
+@pytest.fixture
+def invalid_x_vpc_arn():
+    return {
+        "VpcId": "arn:aws:ec2:eu-west-1:01234678912:vpc-08144c139f0a4a671",
+        "AppSubnets": "subnet-0b0d3c7251ad0af8c,subnet-0b0e0f4f2ac3fa46d,subnet-06d3130b79d277b1b",
+        "StorageSubnets": [
+            "subnet-004e206426fdaef17",
+            "subnet-0d49c1240b794118d",
+            "subnet-04270d634ef29f545",
+        ],
+        "PublicSubnets": {"tags": [{"vpc::usage": "public"}]},
+    }
+
+
+@pytest.fixture
+def x_vpc_id():
+    return {
+        "VpcId": "vpc-08144c139f0a4a671",
+        "AppSubnets": "subnet-0b0d3c7251ad0af8c,subnet-0b0e0f4f2ac3fa46d,subnet-06d3130b79d277b1b",
+        "StorageSubnets": [
+            "subnet-004e206426fdaef17",
+            "subnet-0d49c1240b794118d",
+            "subnet-04270d634ef29f545",
+        ],
+        "PublicSubnets": {"tags": [{"vpc::usage": "public"}]},
+    }
+
+
+@pytest.fixture
+def invalid_x_vpc_id():
+    return {
+        "VpcId": "vpc-08144c139fABCD",
+        "AppSubnets": "subnet-0b0d3c7251ad0af8c,subnet-0b0e0f4f2ac3fa46d,subnet-06d3130b79d277b1b",
+        "StorageSubnets": [
+            "subnet-004e206426fdaef17",
+            "subnet-0d49c1240b794118d",
+            "subnet-04270d634ef29f545",
+        ],
+        "PublicSubnets": {"tags": [{"vpc::usage": "public"}]},
+    }
+
+
+@pytest.fixture
+def x_vpc_tags():
+    return {
+        "VpcId": {"tags": [{"Name": "vpcwork"}]},
+        "AppSubnets": "subnet-0b0d3c7251ad0af8c,subnet-0b0e0f4f2ac3fa46d,subnet-06d3130b79d277b1b",
+        "StorageSubnets": [
+            "subnet-004e206426fdaef17",
+            "subnet-0d49c1240b794118d",
+            "subnet-04270d634ef29f545",
+        ],
+        "PublicSubnets": {"tags": [{"vpc::usage": "public"}]},
+    }
+
+
+@pytest.fixture
+def invalid_x_subnets_ids():
+    return {
+        "VpcId": {"tags": [{"Name": "vpcwork"}]},
+        "AppSubnets": "subnet-0b0d3c7251ad0af8csubnet-0b0e0f4f2ac3fa46d,subnet-06d3130b79d277b1b",
+        "StorageSubnets": [
+            "subnet-004e206426fdaef17",
+            "subnet-0d49c1240b794118d",
+            "subnet-04270d634ef29f545",
+        ],
+        "PublicSubnets": {"tags": [{"usage": "public"}]},
+    }
+
+
+@pytest.fixture
+def invalid_x_subnets_ids_list():
+    return {
+        "VpcId": {"tags": [{"Name": "vpcwork"}]},
+        "AppSubnets": "subnet-0b0d3c7251ad0af8c,subnet-0b0e0f4f2ac3fa46d,subnet-06d3130b79d277b1b",
+        "StorageSubnets": [
+            "subnet-004e206426fdaef1A",
+            "subnet-0d49c1240b794118A",
+            "subnet-04270d634ef29f54A",
+        ],
+        "PublicSubnets": {"tags": [{"usage": "public"}]},
+    }
+
+
+def create_settings(updated_content):
+    here = path.abspath(path.dirname(__file__))
     session = boto3.session.Session()
     pill = placebo.attach(session, data_path=f"{here}/x_vpc")
     pill.playback()
+    print(updated_content)
     settings = ComposeXSettings(
+        content=updated_content,
         session=session,
         **{
             ComposeXSettings.name_arg: "test",
@@ -41,36 +144,46 @@ def test_vpc_import_from_tags(here):
             ComposeXSettings.format_arg: "yaml",
         },
     )
+    return settings
+
+
+def test_vpc_import_from_tags(content, x_vpc_tags):
+    content.update({"x-vpc": {"Lookup": x_vpc_tags}})
+    print(content["x-vpc"])
+    settings = create_settings(content)
+    settings.lookup_x_vpc_settings(x_vpc_tags)
     assert hasattr(settings, VPC_ID_T) and getattr(settings, VPC_ID_T) is not None
 
 
-def test_vpc_import_from_id(here):
-    session = boto3.session.Session()
-    pill = placebo.attach(session, data_path=f"{here}/x_vpc")
-    pill.playback()
-    settings = ComposeXSettings(
-        session=session,
-        **{
-            ComposeXSettings.name_arg: "test",
-            ComposeXSettings.input_file_arg: f"{here}/../use-cases/vpc/vpc_from_id.yml",
-            ComposeXSettings.no_upload_arg: True,
-            ComposeXSettings.format_arg: "yaml",
-        },
-    )
+def test_vpc_import_from_arn(content, x_vpc_arn):
+    content.update({"x-vpc": {"Lookup": x_vpc_arn}})
+    print(content["x-vpc"])
+    settings = create_settings(content)
     assert hasattr(settings, VPC_ID_T) and getattr(settings, VPC_ID_T) is not None
 
 
-def test_vpc_import_from_arn(here):
-    session = boto3.session.Session()
-    pill = placebo.attach(session, data_path=f"{here}/x_vpc")
-    pill.playback()
-    settings = ComposeXSettings(
-        session=session,
-        **{
-            ComposeXSettings.name_arg: "test",
-            ComposeXSettings.input_file_arg: f"{here}/../use-cases/vpc/vpc_from_arn.yml",
-            ComposeXSettings.no_upload_arg: True,
-            ComposeXSettings.format_arg: "yaml",
-        },
-    )
+def test_vpc_import_from_id(content, x_vpc_id):
+    content.update({"x-vpc": {"Lookup": x_vpc_id}})
+    print(content["x-vpc"])
+    settings = create_settings(content)
     assert hasattr(settings, VPC_ID_T) and getattr(settings, VPC_ID_T) is not None
+
+
+def test_negative_testing_vpc(content, invalid_x_vpc_id, invalid_x_vpc_arn):
+    content.update({"x-vpc": {"Lookup": invalid_x_vpc_id}})
+    with pytest.raises(ValueError):
+        settings = create_settings(content)
+    content.update({"x-vpc": {"Lookup": invalid_x_vpc_arn}})
+    with pytest.raises(ValueError):
+        settings = create_settings(content)
+
+
+def test_negative_testing_subnets(
+    content, invalid_x_subnets_ids, invalid_x_subnets_ids_list
+):
+    content.update({"x-vpc": {"Lookup": invalid_x_subnets_ids}})
+    with pytest.raises(ValueError):
+        settings = create_settings(content)
+    content.update({"x-vpc": {"Lookup": invalid_x_subnets_ids_list}})
+    with pytest.raises(ValueError):
+        settings = create_settings(content)

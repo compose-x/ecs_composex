@@ -58,7 +58,7 @@ def lookup_vpc_id(session, vpc_id):
     arn_regexp = r"(^arn:(aws|aws-cn|aws-us-gov):ec2:([a-z]{2}-[\w]{2,6}-[0-9]{1}):([0-9]{12}):vpc\/(vpc-[a-z0-9]+)$)"
     arn_re = re.compile(arn_regexp)
     if vpc_id.startswith("arn:") and arn_re.match(vpc_id):
-        LOG.info(arn_re.findall(vpc_id))
+        LOG.debug(arn_re.findall(vpc_id))
         re_vpc_id = arn_re.findall(vpc_id)[-1][-1]
         re_vpc_owner = arn_re.findall(vpc_id)[-1][-2]
         args = {
@@ -73,8 +73,8 @@ def lookup_vpc_id(session, vpc_id):
 
     client = session.client("ec2")
     vpcs_r = client.describe_vpcs(**args)
-    LOG.info(vpcs_r)
-    LOG.info(vpcs_r["Vpcs"][0]["VpcId"])
+    LOG.debug(vpcs_r)
+    LOG.debug(vpcs_r["Vpcs"][0]["VpcId"])
     if keyisset("Vpcs", vpcs_r) and vpcs_r["Vpcs"][0]["VpcId"] == vpc_id:
         LOG.info(f"VPC Found and confirmed: {vpcs_r['Vpcs'][0]['VpcId']}")
         return vpcs_r["Vpcs"][0]["VpcId"]
@@ -134,6 +134,11 @@ def lookup_subnets_ids(session, ids, vpc_id):
     subnets_r = client.describe_subnets(SubnetIds=ids, Filters=filters)
     if keyisset("Subnets", subnets_r):
         subnets = [subnet["SubnetId"] for subnet in subnets_r["Subnets"]]
+        if not all(subnet["SubnetId"] in ids for subnet in subnets_r["Subnets"]):
+            raise ValueError(
+                "Subnets returned are invalid. Expected", ids, "got", subnets
+            )
+        print(subnets, ids)
         LOG.info(f"Subnets found and confirmed: {subnets}")
         return subnets
     raise ValueError("No Subnets found with provided IDs", ids)

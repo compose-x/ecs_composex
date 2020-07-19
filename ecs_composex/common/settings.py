@@ -75,7 +75,7 @@ class ComposeXSettings(object):
     default_azs = ["eu-west-1a", "eu-west-1b"]
     default_output_dir = f"/tmp/{dt.utcnow().strftime('%s')}"
 
-    def __init__(self, profile_name=None, session=None, **kwargs):
+    def __init__(self, content=None, profile_name=None, session=None, **kwargs):
         """
         Class to init the configuration
         """
@@ -92,7 +92,10 @@ class ComposeXSettings(object):
             else self.session.region_name
         )
         self.aws_azs = self.default_azs
-        self.compose_content = load_composex_file(kwargs[self.input_file_arg])
+        if content is None:
+            self.compose_content = load_composex_file(kwargs[self.input_file_arg])
+        elif content and isinstance(content, dict):
+            self.compose_content = content
         self.input_file = kwargs[self.input_file_arg]
         self.account_id = None
 
