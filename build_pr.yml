@@ -1,0 +1,184 @@
+---
+Description: >-
+  Pipeline to release Lambda layers publicly when new release is created
+
+Metadata:
+  Author: https://github.com/johnpreston
+
+Parameters:
+  RepositoryOrganization:
+    Type: String
+
+  RepositoryProvider:
+    Type: String
+    AllowedValues:
+      - GitHub
+      - CodeCommit
+    Default: GitHub
+  RepositoryName:
+    Type: String
+  BuildLogsRetentionDays:
+    Type: Number
+    AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
+    Default: 14
+  TemplatesBucket:
+    Type: String
+
+  ReportsBucket:
+    Type: String
+
+Mappings:
+  RepoUrlPrefixes:
+    GitHub:
+      Prefix: https://github.com/
+
+Conditions:
+  UseGitHub: !Equals [ !Ref RepositoryProvider, 'GitHub']
+  UseCodeCommit: !Equals [ !Ref RepositoryProvider, 'CodeCommit']
+
+Resources:
+  BuildLogsGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub 'codebuild/blog/${RepositoryName}'
+      RetentionInDays: !Ref BuildLogsRetentionDays
+  CodeBuildRole:
+    Type: AWS::IAM::Role
+    Properties:
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - !Sub 'codebuild.${AWS::URLSuffix}'
+      Policies:
+        - PolicyName: ContentAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: S3ObjectsAccess
+                Action:
+                  - s3:PutObject*
+                  - s3:GetObject*
+                Effect: Allow
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:s3:::${TemplatesBucket}/*'
+                  - !Sub 'arn:${AWS::Partition}:s3:::${ReportsBucket}/*'
+                  - !Sub 'arn:${AWS::Partition}:s3:::ecs-composex-${AWS::AccountId}-${AWS::Region}/*'
+              - Sid: S3BucketAccess
+                Action:
+                  - s3:ListBucket
+                Effect: Allow
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:s3:::${TemplatesBucket}'
+                  - !Sub 'arn:${AWS::Partition}:s3:::${ReportsBucket}'
+                  - !Sub 'arn:${AWS::Partition}:s3:::ecs-composex-${AWS::AccountId}-${AWS::Region}'
+              - Sid: CloudWatchLogs
+                Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource:
+                  - !Sub '${BuildLogsGroup.Arn}'
+              - Sid: CloudFormationAccess
+                Resource:
+                  - '*'
+                Effect: Allow
+                Action:
+                  - 'cloudformation:ValidateTemplate'
+              - Sid: Ec2Access
+                Effect: Allow
+                Action:
+                  - ec2:DescribeAvailabilityZones
+                Resource:
+                  - "*"
+              - Sid: RDSHelpersAccess
+                Effect: Allow
+                Resource:
+                  - "*"
+                Action:
+                  - rds:DescribeDBEngine*
+                  - rds:DescribeEngineDefaultClusterParameters
+              - Sid: CodeBuildAccess
+                Effect: Allow
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:codebuild:${AWS::Region}:${AWS::AccountId}:report-group/*'
+                Action:
+                  - codebuild:UpdateReportGroup
+                  - codebuild:CreateReportGroup
+                  - codebuild:CreateReport
+                  - codebuild:BatchPutTestCases
+                  - codebuild:UpdateReport
+
+  BuildUnittest:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub 'BUILD-${RepositoryName}'
+      ServiceRole: !GetAtt 'CodeBuildRole.Arn'
+      Description: !Sub 'Publishes blog on updates'
+      LogsConfig:
+        CloudWatchLogs:
+          GroupName: !Ref BuildLogsGroup
+          Status: ENABLED
+          StreamName: prerelease
+      BadgeEnabled: True
+      Artifacts:
+        Type: NO_ARTIFACTS
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:3.0
+        Type: LINUX_CONTAINER
+        EnvironmentVariables:
+          - Name: PY_VERSION
+            Type: PLAINTEXT
+            Value: 3.8
+          - Name: KNOWN_BUCKET
+            Type: PLAINTEXT
+            Value: !Ref TemplatesBucket
+      Source:
+        Type: GITHUB
+        ReportBuildStatus: True
+        Location: !If
+          - UseGitHub
+          - !Sub 'https://github.com/${RepositoryOrganization}/${RepositoryName}'
+          - !Sub 'https://codecommit.${AWS::Region}.${AWS::URLSuffix}'
+        InsecureSsl: False
+        BuildSpec: buildspec_pr.yml
+      Triggers:
+        Webhook: True
+        FilterGroups:
+          - - Type: EVENT
+              Pattern: "PULL_REQUEST_CREATED, PULL_REQUEST_UPDATED, PULL_REQUEST_REOPENED"
+              ExcludeMatchedPattern: False
+            - Type: HEAD_REF
+              Pattern: '^refs/heads/.*$'
+              ExcludeMatchedPattern: False
+            - Type: BASE_REF
+              Pattern: '^refs/heads/master$'
+              ExcludeMatchedPattern: False
+            - Type: FILE_PATH
+              Pattern: "(\\S.rst$)"
+              ExcludeMatchedPattern: True
+          - - Type: EVENT
+              Pattern: "PUSH"
+              ExcludeMatchedPattern: False
+            - Type: HEAD_REF
+              Pattern: '^refs/heads/master$'
+              ExcludeMatchedPattern: False
+
+  ReportGroup:
+    Type: AWS::CodeBuild::ReportGroup
+    Properties:
+      ExportConfig:
+        S3Destination:
+          Bucket: !Ref ReportsBucket
+          EncryptionDisabled: True
+          Path: !Sub '/builds/reports/${RepositoryName}'
+        ExportConfigType: S3
+      Type: TEST
+      Name: !Sub "${BuildUnittest}-composexbehave"
