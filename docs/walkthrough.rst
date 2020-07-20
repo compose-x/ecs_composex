@@ -1,8 +1,8 @@
 ﻿.. highlight:: shell
 
-==================
-Getting started
-==================
+===================
+Example walkthrough
+===================
 
 Let's take an existing very simple docker compose file with two services.
 
@@ -114,7 +114,7 @@ have an HTTP based application. So we need to indicate to ECS ComposeX that it s
     x-configs:
       serviceA:
         network:
-          use_alb: True
+          lb_type: application
           is_public: True
           ext_sources:
             - ipv4: 0.0.0.0/0

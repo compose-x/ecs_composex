@@ -1,7 +1,7 @@
 ﻿.. _acm_syntax_reference:
 
-ACM Syntax Reference
-=====================
+x-acm
+=====
 
 This module is here to allow people to create ACM certificates, auto-validate these with their DNS registration,
 and front their applications with HTTPS.

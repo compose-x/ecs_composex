@@ -1,5 +1,5 @@
-ecs_composex.rds
-===========================
+AWS RDS
+=======
 
 This package is here to create all the CFN templates necessary to create RDS instances and allow microservices
 to access the databases.

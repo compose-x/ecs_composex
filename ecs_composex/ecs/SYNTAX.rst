@@ -87,9 +87,7 @@ Subkeys of the section:
         - 80:80
         x-configs:
           network:
-            use_alb: False
-            use_nlb: False
-            use_cloudmap: False
+	    lb_type: application
             ext_sources: []
             healthcheck: {}
 

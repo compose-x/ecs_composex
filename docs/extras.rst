@@ -1,6 +1,32 @@
 ﻿ECS ComposeX aims to make life easy to take your application to AWS ECS, with using AWS Fargate as the primary
 focus (still, allows to run on EC2 should you need to).
 
+AWS AppMesh integration
+=======================
+
+AWS AppMesh is a service mesh which allows you to define how services talk to each other at an application L7) level,
+and optionally, TCP (layer 4) level. It is extremely powerful
+
+
+Since the beginning of the project, we have been using AWS Cloud Map to create a private DNS Hosted Zone linked to the
+VPC created at the same time. This allowed us to very simply register into the PHZ (private hosted zone) via Service
+Discovery.
+
+We are going to use these entries to make a 1-1 mapping between our services defined in the *services* section of the
+docker-compose file and the *nodes* listed in the *x-appmesh* section.
+
+AppMesh uses envoy as a side-car proxy that will capture our services packets and route these to their defined backends.
+Using AWS AppMesh empowers developers to declare how services are supposed to communicate together, what to do in case
+of errors, and administrators can define whether or not the traffic between all the components should be done using TLS
+termination end-to-end, to ensure no man-in-the-middle attacks could happen.
+
+The syntax for AppMesh in ECS ComposeX is a mix of Istio, Envoy and AWS AppMesh definitions.
+
+.. seealso::
+
+    :ref:`appmesh_syntax_reference`
+
+
 Fargate CPU/RAM auto configuration
 ==================================
 
@@ -160,22 +186,6 @@ For example,
         Services:
           - name: app01
             access: RWMessages
-
-AWS AppMesh out of the box
-===========================
-
-.. seealso::
-
-    :ref:`appmesh_syntax_reference`
-
-
-AWS AppMesh out of the box
-===========================
-
-.. seealso::
-
-    :ref:`appmesh_syntax_reference`
-
 
 ACM Certificates auto-create for public services
 ================================================

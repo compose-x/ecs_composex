@@ -1,7 +1,7 @@
 ﻿.. _syntax_reference:
 
-ECS ComposeX Syntax Reference
-=============================
+x-Resources common syntax
+=========================
 
 ECS ComposeX requires to expands onto the original Docker compose file defintion in order to map the docker compose
 properties to their equivalent settings on AWS ECS and otherwise for the other "Extra" resources.

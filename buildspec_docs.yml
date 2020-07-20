@@ -2,7 +2,6 @@ version: 0.2
 
 env:
   variables:
-    KNOWN_BUCKET: lambda-dev-eu-west-1
     PY_VERSION: 3.8
   git-credential-helper: yes
 
@@ -16,26 +15,9 @@ phases:
       - export LC_CTYPE="en_US.UTF-8"
       - export PATH=/root/.pyenv/versions/${PY_FULL_VERSION}/bin:${PATH}
       - pip --version || curl -s https://bootstrap.pypa.io/get-pip.py | python
-      - pip install -r requirements.txt
       - pip install -r requirements_dev.txt
-      - python setup.py install
   build:
     commands:
-      - echo "Executing behave"
-      - if ! [ -d reports ]; then mkdir reports ; fi
-      - make coverage
-      - curl -s https://codecov.io/bash | bash
-
-artifacts:
-  files:
-    - '*.yml'
-    - '*.json'
-  base-directory: outputs
-  name: outputs
-
-reports:
-  composexbehave:
-    files:
-      - "*.xml"
-    base-directory: reports
-    file-format: JunitXml
+      - echo "Building nightly docs"
+      - make nightly-docs
+      - aws cloudfront create-invalidation --distribution-id ${DISTRIBUTION_ID} --paths "/*"

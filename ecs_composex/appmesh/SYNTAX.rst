@@ -1,7 +1,7 @@
 ﻿.. _appmesh_syntax_reference:
 
-AppMesh syntax reference
-========================
+x-appmesh
+=========
 
 The properties for the mesh are very straight forward. Even though, the wish with ECS ComposeX is to keep the Properties
 the same as the ones defined in CFN as much as possible, for AWS AppMesh, given the simplicity of the properties,

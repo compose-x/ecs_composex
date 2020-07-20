@@ -1,7 +1,7 @@
 .. _sqs_syntax_reference:
 
-SQS Syntax Reference
-====================
+x-sqs
+=====
 
 Services
 --------

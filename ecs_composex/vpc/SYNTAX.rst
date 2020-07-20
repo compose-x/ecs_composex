@@ -1,7 +1,7 @@
 ﻿.. _vpc_syntax_reference:
 
-VPC Syntax reference
-=====================
+x-vpc
+=====
 
 The VPC module is here to allow you to define settings for the VPC from docker-compose file directly instead of the
 CLI, using the same arguments. Equally, for ease of use, you can also define lookup settings to use an existing VPC.

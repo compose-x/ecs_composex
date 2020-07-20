@@ -1,0 +1,56 @@
+﻿{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "CloudFormationAccess",
+            "Effect": "Allow",
+            "Resource": [
+                "*"
+            ],
+            "Action": [
+                "cloudformation:*"
+            ]
+        },
+        {
+            "Sid": "S3BucketObjectsAccess",
+            "Effect": "Allow",
+            "Resource": [
+                "arn:aws:s3:::${BucketName}/*"
+            ],
+            "Action": [
+                "s3:PutObject"
+            ]
+        },
+        {
+            "Sid": "S3BucketAccess",
+            "Effect": "Allow",
+            "Resource": [
+                "arn:aws:s3:::${BucketName}"
+            ],
+            "Action": [
+                // "CreateBucket is only necessary if you do not specify an S3 bucket when running ComposeX",
+                "s3:CreateBucket",
+                "s3:ListBucket"
+            ]
+        },
+        {
+            "Sid": "EC2Access",
+            "Effect": "Allow",
+            "Resource": [
+                "*"
+            ],
+            "Action": [
+                "ec2:Describe*"
+            ]
+        },
+        {
+            "Sid": "RdsAccess",
+            "Effect": "Allow",
+            "Resource": ["*"],
+            "Action": [
+                "rds:DescribeDBEngine",
+                "rds:DescribeEngineDefaultClusterParameters"
+            ]
+        }
+    ]
+}

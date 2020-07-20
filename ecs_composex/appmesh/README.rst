@@ -1,5 +1,5 @@
-﻿ecs_composex.appmesh
-====================
+﻿AWS AppMesh & AWS Cloud Map for services mesh & discovery
+=========================================================
 
 AWS AppMesh is a service mesh which takes care of routing your services packets logically among the different nodes.
 What this allows you to do, it to explicitly declare which services have access to others, either on http, tcp or gRPC.

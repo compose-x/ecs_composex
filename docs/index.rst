@@ -8,49 +8,44 @@ Welcome to ECS-ComposeX's documentation!
 
     readme
     getstarted
-    usage
+    story
 
 .. toctree::
-    :maxdepth: 2
-    :caption: Requisites
-
-    requisites
-
-.. toctree::
-    :maxdepth: 2
+    :maxdepth: 1
     :caption: Installation
 
+    requisites
     installation
     contributing
 
 .. toctree::
     :maxdepth: 1
-    :caption: The Extras
+    :caption: Features & AWS Services support
+
+    features
+
+
+.. toctree::
+    :maxdepth: 1
+    :caption: Extra Features
 
     extras
 
 .. toctree::
     :maxdepth: 1
-    :caption: Modules
+    :caption: Modules Syntax Reference
 
-    modules_docs
     modules_syntax
 
 .. toctree::
     :maxdepth: 2
-    :caption: Package Modules
+    :caption: Library Modules
 
     modules
 
 .. toctree::
     :maxdepth: 2
-    :caption: The story
-
-    story
-
-.. toctree::
-    :maxdepth: 2
-    :caption: Contributions
+    :caption: Thanks & Credits
 
     authors
     credits
