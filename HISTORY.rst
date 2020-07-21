@@ -2,6 +2,20 @@
 History
 =======
 
+0.4.0 (2020-07-20)
+==================
+
+* `ACM Support for ALB/NLB for public services. <https://github.com/lambda-my-aws/ecs_composex/issues/93>`_
+* `AWS AppMesh support <https://github.com/lambda-my-aws/ecs_composex/issues/57>`_
+* Attempt to making navigation through docs better.
+* Automatic release to https://nightly.docs.ecs-composex.lambda-my-aws.io/ from master
+
+To help with code quality and support, I subscribed to the following services:
+
+* `CodeScanning using SonarCloud.io <https://sonarcloud.io/dashboard?id=lambda-my-aws_ecs_composex>`_
+* `CodeCoverage reports with Codecov <https://codecov.io/gh/lambda-my-aws/ecs_composex>`_
+
+
 0.3.0 (2020-06-21)
 ==================
 

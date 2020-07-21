@@ -1,7 +1,7 @@
 ﻿.. _services_syntax_reference:
 
-Services Syntax Reference
-==========================
+x-configs & services reference
+==============================
 
 This is where we try to re-use as much as possible the docker compose (v3) reference as much as possible.
 For the definition of the services, you can simply use the already existing Docker compose definition for your services.
@@ -17,18 +17,6 @@ However, there are only a limited number of settings that are today working:
 .. seealso::
 
     `Docker Compose file reference <https://docs.docker.com/compose/compose-file>`_
-
-
-Something you should know
--------------------------
-
-With the rapid adoption of service discovery and service meshes, by default, all services will be added to an AWS
-CloudMap which is associated with your VPC. If however the CloudMap ID is not provided, they won't be.
-
-I truly believe that using Service Discovery for service to service communication is the way forward.
-
-This really allows to have the same experience on AWS as you would locally with docker compose, only this time, everything
-is further isolated and only explicitly allowed traffic will be allowed.
 
 ECS ComposeX configurations
 ---------------------------
@@ -87,7 +75,7 @@ Subkeys of the section:
         - 80:80
         x-configs:
           network:
-	    lb_type: application
+        lb_type: application
             ext_sources: []
             healthcheck: {}
 
@@ -116,6 +104,8 @@ name which will be shown in the EC2 security group description of the ingress ru
 
     Future feature is to allow to input a security group ID and the remote account ID to allow ingress traffic from
     a security group owned by another of your account (or 3rd party).
+    This feature was implemented before AWS released AWS EC2 PrefixLists.
+    It will be migrated to PrefixLists eventually.
 
 
 is_public
