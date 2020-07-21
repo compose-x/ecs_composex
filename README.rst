@@ -71,7 +71,7 @@ Documentation
 
 `Find all the documentation to get started and all the features references here. <https://docs.ecs-composex.lambda-my-aws.io>`_
 
-.. seealso::
+.. tip::
 
     `Nightly documentation <https://nightly.docs.ecs-composex.lambda-my-aws.io/>`_ following the master branch.
 
