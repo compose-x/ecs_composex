@@ -28,7 +28,7 @@ Usage
 
 .. code-block:: bash
 
-    sage: ecs_composex [-h] -n NAME -f DOCKERCOMPOSEXFILE
+    usage: ecs_composex [-h] -n NAME -f DOCKERCOMPOSEXFILE
                     [-d OUTPUTDIRECTORY]
                     [--deploy]
                     [--format {json,yaml,text}]

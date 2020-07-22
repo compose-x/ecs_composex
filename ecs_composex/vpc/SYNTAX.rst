@@ -12,7 +12,7 @@ Creating a new VPC
 .. code-block::
 
     x-vpc:
-      CreateVpc:
+      Create:
         SingleNat: true
         VpcCidr: 172.6.7.42/24
 
