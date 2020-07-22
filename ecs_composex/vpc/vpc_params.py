@@ -59,15 +59,3 @@ USE_SUB_ZONE_T = "UseSubDnsZone"
 USE_SUB_ZONE = Parameter(
     USE_SUB_ZONE_T, Type="String", AllowedValues=["True", "False"], Default="True"
 )
-
-VPC_MAP_ID_T = "VpcDiscoveryMapId"
-VPC_MAP_ID = Parameter(VPC_MAP_ID_T, Type="String", Default="default")
-
-VPC_MAP_ARN_T = "VpcDiscoveryMapArn"
-VPC_MAP_ARN = Parameter(VPC_MAP_ARN_T, Type="String", Default="<none>")
-
-VPC_MAP_DNS_ZONE_T = "VpcDiscoveryMapDnsName"
-VPC_MAP_DNS_ZONE = Parameter(VPC_MAP_DNS_ZONE_T, Type="String")
-
-VPC_DNS_ZONE_T = "VpcDnsZoneName"
-VPC_DNS_ZONE = Parameter(VPC_DNS_ZONE_T, Type="String", Default="cluster.local")

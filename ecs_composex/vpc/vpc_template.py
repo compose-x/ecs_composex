@@ -22,7 +22,7 @@ TODO : Implement VPC Endpoints, NetworkACLs, VPC Flow logging to S3.
 
 import re
 
-from troposphere import GetAtt, Tags, Join, Ref, Sub, If
+from troposphere import Tags, Join, Ref, Sub, If
 from troposphere.ec2 import (
     VPC as VPCType,
     VPCGatewayAttachment,
@@ -30,14 +30,13 @@ from troposphere.ec2 import (
     DHCPOptions,
     VPCDHCPOptionsAssociation,
 )
-from troposphere.route53 import HostedZoneVPCs, HostedZone
-from troposphere.servicediscovery import PrivateDnsNamespace as VpcSpace
 
-from ecs_composex.common import cfn_params, cfn_conditions, build_template, LOG
-from ecs_composex.common.cfn_conditions import USE_CLOUDMAP_CON_T, USE_STACK_NAME_CON_T
+from ecs_composex.common import build_template, LOG
+from ecs_composex.common.cfn_conditions import USE_STACK_NAME_CON_T
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME, ROOT_STACK_NAME_T
 from ecs_composex.common.outputs import formatted_outputs
-from ecs_composex.vpc import vpc_params, aws_mappings, vpc_conditions
+from ecs_composex.dns.dns_params import PRIVATE_DNS_ZONE_NAME
+from ecs_composex.vpc import vpc_params, aws_mappings
 from ecs_composex.vpc.vpc_maths import get_subnet_layers
 from ecs_composex.vpc.vpc_subnets import (
     add_public_subnets,
@@ -50,47 +49,6 @@ AZ_INDEX_RE = re.compile(AZ_INDEX_PATTERN)
 
 VPC_T = "Vpc"
 IGW_T = "InternetGatewayV4"
-
-
-def add_cloudmap_support(template, vpc):
-    """
-    Function add a VPC CloudMap instance
-
-    :param template: VPC Template()
-    :param vpc: Vpc() object for Ref()
-    """
-    map_id = VpcSpace(
-        "VpcCloudMapNameSpace",
-        Condition=USE_CLOUDMAP_CON_T,
-        template=template,
-        Description=Sub(f"Map for VPC ${{{vpc.title}}}"),
-        Vpc=Ref(vpc),
-        Name=If(
-            USE_STACK_NAME_CON_T,
-            Sub(f"svc.${{AWS::StackName}}.${{{vpc_params.VPC_DNS_ZONE_T}}}"),
-            Sub(f"svc.${{{ROOT_STACK_NAME_T}}}.${{{vpc_params.VPC_DNS_ZONE_T}}}"),
-        ),
-    )
-    template.add_output(
-        formatted_outputs(
-            [
-                {vpc_params.VPC_MAP_ID_T: GetAtt(map_id, "Id")},
-                {vpc_params.VPC_MAP_ARN_T: GetAtt(map_id, "Arn")},
-                {
-                    vpc_params.VPC_MAP_DNS_ZONE_T: If(
-                        USE_STACK_NAME_CON_T,
-                        Sub(
-                            f"svc.${{AWS::StackName}}.${{{vpc_params.VPC_DNS_ZONE_T}}}"
-                        ),
-                        Sub(
-                            f"svc.${{{ROOT_STACK_NAME_T}}}.${{{vpc_params.VPC_DNS_ZONE_T}}}"
-                        ),
-                    )
-                },
-            ],
-            export=True,
-        )
-    )
 
 
 def add_template_outputs(template, vpc, storage_subnets, public_subnets, app_subnets):
@@ -197,12 +155,12 @@ def add_vpc_core(template, vpc_cidr):
         DomainName=If(
             USE_STACK_NAME_CON_T,
             Sub(
-                f"svc.${{AWS::StackName}}.${{{vpc_params.VPC_DNS_ZONE_T}}} "
-                f"${{AWS::StackName}}.${{{vpc_params.VPC_DNS_ZONE_T}}}"
+                f"svc.${{AWS::StackName}}.${{{PRIVATE_DNS_ZONE_NAME.title}}} "
+                f"${{AWS::StackName}}.${{{PRIVATE_DNS_ZONE_NAME.title}}}"
             ),
             Sub(
-                f"svc.${{{ROOT_STACK_NAME_T}}}.${{{vpc_params.VPC_DNS_ZONE_T}}} "
-                f"${{{ROOT_STACK_NAME_T}}}.${{{vpc_params.VPC_DNS_ZONE_T}}}"
+                f"svc.${{{ROOT_STACK_NAME_T}}}.${{{PRIVATE_DNS_ZONE_NAME.title}}} "
+                f"${{{ROOT_STACK_NAME_T}}}.${{{PRIVATE_DNS_ZONE_NAME.title}}}"
             ),
         ),
         DomainNameServers=["AmazonProvidedDNS"],
@@ -213,21 +171,6 @@ def add_vpc_core(template, vpc_cidr):
         template=template,
         DhcpOptionsId=Ref(dhcp_opts),
         VpcId=Ref(vpc),
-    )
-    zone_con = template.add_condition(
-        vpc_conditions.USE_SUB_ZONE_CON_T, vpc_conditions.USE_SUB_ZONE_CON
-    )
-    HostedZone(
-        "VpcHostedZone",
-        template=template,
-        Condition=zone_con,
-        VPCs=[HostedZoneVPCs(VPCId=Ref(vpc), VPCRegion=Ref("AWS::Region"))],
-        Name=If(
-            USE_STACK_NAME_CON_T,
-            Sub(f"${{AWS::StackName}}.${{{vpc_params.VPC_DNS_ZONE_T}}}"),
-            Sub(f"${{{ROOT_STACK_NAME_T}}}.${{{vpc_params.VPC_DNS_ZONE_T}}}"),
-        ),
-        HostedZoneTags=Tags(Name=Sub(f"ZoneFor-${{{vpc.title}}}")),
     )
     return (vpc, igw)
 
@@ -252,15 +195,10 @@ def generate_vpc_template(cidr_block, azs, single_nat=False):
     azs_index = [AZ_INDEX_RE.match(az).groups()[-1] for az in curated_azs]
     layers = get_subnet_layers(cidr_block, len(curated_azs))
     template = build_template(
-        "VpcTemplate generated via ECS Compose X",
-        [cfn_params.USE_CLOUDMAP, vpc_params.VPC_DNS_ZONE, vpc_params.USE_SUB_ZONE],
+        "VpcTemplate generated via ECS Compose X", [PRIVATE_DNS_ZONE_NAME],
     )
     LOG.debug(azs_index)
     template.add_mapping("AwsLbAccounts", aws_mappings.AWS_LB_ACCOUNTS)
-    template.add_condition(USE_CLOUDMAP_CON_T, cfn_conditions.USE_CLOUDMAP_CON)
-    template.add_condition(
-        cfn_conditions.NOT_USE_CLOUDMAP_CON_T, cfn_conditions.NOT_USE_CLOUDMAP_CON
-    )
     vpc = add_vpc_core(template, cidr_block)
     storage_subnets = add_storage_subnets(template, vpc[0], azs_index, layers)
     public_subnets = add_public_subnets(
@@ -273,5 +211,4 @@ def generate_vpc_template(cidr_block, azs, single_nat=False):
         template, vpc[0], storage_subnets[1], public_subnets[1], app_subnets[1],
     )
     add_vpc_cidrs_outputs(template, layers)
-    add_cloudmap_support(template, vpc[0])
     return template

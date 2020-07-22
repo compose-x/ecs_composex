@@ -35,7 +35,7 @@ from ecs_composex.common import LOG, add_parameters
 from ecs_composex.common.outputs import formatted_outputs
 from ecs_composex.ecs import ecs_params
 from ecs_composex.ecs.ecs_container_config import extend_container_envvars
-from ecs_composex.vpc import vpc_params
+from ecs_composex.dns.dns_params import PRIVATE_DNS_ZONE_NAME, PRIVATE_DNS_ZONE_ID
 
 
 class MeshNode(object):
@@ -103,7 +103,7 @@ class MeshNode(object):
             Spec=appmesh.VirtualNodeSpec(
                 ServiceDiscovery=appmesh.ServiceDiscovery(
                     AWSCloudMap=appmesh.AwsCloudMapServiceDiscovery(
-                        NamespaceName=Ref(vpc_params.VPC_MAP_DNS_ZONE),
+                        NamespaceName=Ref(PRIVATE_DNS_ZONE_NAME),
                         ServiceName=GetAtt(sd_service, "Name"),
                     )
                 ),

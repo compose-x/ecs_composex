@@ -77,9 +77,13 @@ from ecs_composex.ecs.ecs_params import (
 )
 from ecs_composex.ecs.ecs_aws_sidecars import define_xray_container
 from ecs_composex.vpc import vpc_params
-from ecs_composex.vpc.vpc_conditions import USE_VPC_MAP_ID_CON_T
 from ecs_composex.vpc.vpc_params import VPC_ID, PUBLIC_SUBNETS
-from ecs_composex.vpc.vpc_params import VPC_MAP_ID
+from ecs_composex.dns.dns_params import (
+    PRIVATE_DNS_ZONE_NAME,
+    PRIVATE_DNS_ZONE_ID,
+    PUBLIC_DNS_ZONE_ID,
+    PUBLIC_DNS_ZONE_NAME,
+)
 
 CIDR_REG = r"""((((((([0-9]{1}\.))|([0-9]{2}\.)|
 (1[0-9]{2}\.)|(2[0-5]{2}\.)))){3})(((((([0-9]{1}))|
@@ -299,11 +303,13 @@ class Service(object):
         )
         self.parameters = {
             vpc_params.VPC_ID_T: Ref(vpc_params.VPC_ID),
-            vpc_params.VPC_MAP_ID_T: Ref(vpc_params.VPC_MAP_ID),
+            PRIVATE_DNS_ZONE_ID.title: Ref(PRIVATE_DNS_ZONE_ID),
+            PRIVATE_DNS_ZONE_NAME.title: Ref(PRIVATE_DNS_ZONE_NAME),
+            PUBLIC_DNS_ZONE_ID.title: Ref(PUBLIC_DNS_ZONE_ID),
+            PUBLIC_DNS_ZONE_NAME.title: Ref(PUBLIC_DNS_ZONE_ID),
             vpc_params.APP_SUBNETS_T: Join(",", Ref(vpc_params.APP_SUBNETS)),
             vpc_params.PUBLIC_SUBNETS_T: Join(",", Ref(vpc_params.PUBLIC_SUBNETS)),
             ecs_params.CLUSTER_NAME_T: Ref(ecs_params.CLUSTER_NAME),
-            vpc_params.VPC_MAP_DNS_ZONE_T: Ref(vpc_params.VPC_MAP_DNS_ZONE),
         }
         if config.family_name is not None:
             self.parameters.update({ecs_params.SERVICE_NAME_T: config.family_name})
@@ -352,12 +358,14 @@ class Service(object):
         """
         Method to create a new Service into CloudMap to represent the current service and add entry into the registry
         """
+        registries = []
+        if not self.config.ports:
+            return registries
         sd_service = SdService(
             f"{self.resource_name}DiscoveryService",
             template=self.template,
-            Condition=USE_VPC_MAP_ID_CON_T,
             Description=Ref(SERVICE_NAME),
-            NamespaceId=Ref(VPC_MAP_ID),
+            NamespaceId=Ref(PRIVATE_DNS_ZONE_ID),
             HealthCheckCustomConfig=SdHealthCheckCustomConfig(FailureThreshold=1.0),
             DnsConfig=SdDnsConfig(
                 RoutingPolicy="MULTIVALUE",
@@ -369,7 +377,6 @@ class Service(object):
             ),
             Name=If(USE_HOSTNAME_CON_T, Ref(SERVICE_HOSTNAME), Ref(SERVICE_NAME)),
         )
-        registries = []
         for port in self.config.ports:
             registry = ServiceRegistry(
                 f"ServiceRegistry{port['published']}",

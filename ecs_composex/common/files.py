@@ -4,6 +4,7 @@
 Functions to manage a template and wheter it should be stored in S3
 """
 from os.path import abspath
+import pprint
 
 import yaml
 
@@ -251,10 +252,15 @@ class FileArtifact(object):
         Method to define the body of the file artifact. Sets the mime type that will be used for upload into S3.
         """
         if isinstance(self.template, Template):
-            if self.mime == YAML_MIME:
-                self.body = self.template.to_yaml()
-            else:
-                self.body = self.template.to_json()
+            try:
+                if self.mime == YAML_MIME:
+                    self.body = self.template.to_yaml()
+                else:
+                    self.body = self.template.to_json()
+            except Exception as error:
+                pp = pprint.PrettyPrinter(indent=2)
+                pp.pprint(self.template.to_dict())
+                raise error
         elif isinstance(self.content, (list, dict, tuple)):
             if self.mime == YAML_MIME:
                 self.body = yaml.dump(self.content, Dumper=Dumper)

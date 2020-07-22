@@ -20,7 +20,7 @@ Module to manage the AppMesh Virtual service
 """
 
 from troposphere import AWS_NO_VALUE
-from troposphere import Ref, Sub, GetAtt
+from troposphere import Ref, Sub, GetAtt, Select, Split
 from troposphere import appmesh
 from troposphere.servicediscovery import (
     DnsConfig as SdDnsConfig,
@@ -31,7 +31,10 @@ from troposphere.servicediscovery import (
 
 from ecs_composex.appmesh import appmesh_conditions
 from ecs_composex.common import NONALPHANUM, keyisset
-from ecs_composex.vpc.vpc_params import VPC_MAP_DNS_ZONE_T, VPC_MAP_ID
+from ecs_composex.dns.dns_params import (
+    PRIVATE_DNS_ZONE_ID,
+    PRIVATE_DNS_ZONE_NAME,
+)
 
 
 def validate_service_backend(service, routers, nodes):
@@ -98,7 +101,7 @@ class MeshService(object):
             DependsOn=depends,
             MeshName=appmesh_conditions.get_mesh_name(mesh),
             MeshOwner=appmesh_conditions.get_mesh_owner(mesh),
-            VirtualServiceName=Sub(f"{name}.${{{VPC_MAP_DNS_ZONE_T}}}"),
+            VirtualServiceName=Sub(f"{name}.${{{PRIVATE_DNS_ZONE_NAME.title}}}"),
             Spec=appmesh.VirtualServiceSpec(
                 Provider=appmesh.VirtualServiceProvider(
                     VirtualNode=appmesh.VirtualNodeServiceProvider(
@@ -128,13 +131,13 @@ class MeshService(object):
             Description=Sub(
                 f"Record for VirtualService {self.title} in mesh ${{{self.service.title}.MeshName}}"
             ),
-            NamespaceId=Ref(VPC_MAP_ID),
+            NamespaceId=Ref(PRIVATE_DNS_ZONE_ID),
             DnsConfig=SdDnsConfig(
                 RoutingPolicy="MULTIVALUE",
                 NamespaceId=Ref(AWS_NO_VALUE),
                 DnsRecords=[SdDnsRecord(TTL="30", Type="A")],
             ),
-            Name=GetAtt(self.service, "VirtualServiceName"),
+            Name=Select(0, Split(".", GetAtt(self.service, "VirtualServiceName"))),
         )
         SdInstance(
             f"{self.title.title()}ServiceDiscoveryFakeInstance",

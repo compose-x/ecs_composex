@@ -34,8 +34,9 @@ from ecs_composex.vpc.vpc_params import (
     PUBLIC_SUBNETS_T,
     STORAGE_SUBNETS_T,
     VPC_ID_T,
-    VPC_MAP_ID_T,
 )
+
+from ecs_composex.dns.dns_params import PRIVATE_DNS_ZONE_ID_T
 
 
 def validate_cluster_input(args):
@@ -189,7 +190,7 @@ def main_parser():
     parser.add_argument(
         "--discovery-map-id",
         "--cloud-map-id",
-        dest=VPC_MAP_ID_T,
+        dest=PRIVATE_DNS_ZONE_ID_T,
         required=False,
         help="Service Discovery ID, ie. ns-xxx",
     )

@@ -21,17 +21,12 @@
 from troposphere import Condition, Not, Ref, Equals, And, If
 
 from ecs_composex.common import cfn_params
+from ecs_composex.vpc import vpc_params
 
 USE_STACK_NAME_CON_T = "UseStackName"
 USE_STACK_NAME_CON = Equals(
     Ref(cfn_params.ROOT_STACK_NAME), cfn_params.ROOT_STACK_NAME.Default
 )
-
-USE_CLOUDMAP_CON_T = "UseCloudMapCondition"
-USE_CLOUDMAP_CON = Equals(Ref(cfn_params.USE_CLOUDMAP), "True")
-
-NOT_USE_CLOUDMAP_CON_T = "NotUseCloudMapCondition"
-NOT_USE_CLOUDMAP_CON = Not(Condition(USE_CLOUDMAP_CON_T))
 
 USE_CFN_PARAMS_CON_T = "UseCfnParametersValueCondition"
 USE_CFN_PARAMS_CON = Equals(

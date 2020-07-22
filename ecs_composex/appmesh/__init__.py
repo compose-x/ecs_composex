@@ -21,7 +21,7 @@ Main module for AppMesh.
 Once all services have been deployed and their VirtualNodes are setup, we deploy the Mesh for it.
 """
 
-from troposphere import Ref, GetAtt
+from troposphere import Ref, GetAtt, Sub, If
 from troposphere import appmesh
 
 from ecs_composex.appmesh import appmesh_params, appmesh_conditions
@@ -32,7 +32,6 @@ from ecs_composex.appmesh.appmesh_router import MeshRouter
 from ecs_composex.appmesh.appmesh_service import MeshService
 from ecs_composex.common import (
     keyisset,
-    build_template,
     add_parameters,
     LOG,
 )
@@ -40,17 +39,8 @@ from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME
 from ecs_composex.ecs import ecs_params
 from ecs_composex.vpc import vpc_params
-
-
-def initialize_mesh_template():
-    """
-    Initialize template
-    """
-    template = build_template(
-        "AppMesh Root Template", [MESH_NAME, MESH_OWNER_ID, vpc_params.VPC_DNS_ZONE],
-    )
-    add_appmesh_conditions(template)
-    return template
+from ecs_composex.dns.dns_params import PRIVATE_DNS_ZONE_NAME, DEFAULT_PRIVATE_DNS_ZONE
+from ecs_composex.dns.dns_conditions import USE_DEFAULT_ZONE_NAME_CON_T
 
 
 class Mesh(object):
@@ -121,7 +111,7 @@ class Mesh(object):
         self.stack_parameters.update(
             {
                 appmesh_params.MESH_NAME_T: Ref(appmesh_params.MESH_NAME),
-                vpc_params.VPC_DNS_ZONE_T: Ref(vpc_params.VPC_DNS_ZONE),
+                PRIVATE_DNS_ZONE_NAME.title: Ref(PRIVATE_DNS_ZONE_NAME),
             }
         )
         self.define_nodes(services_root_stack=services_root_stack)
@@ -198,13 +188,15 @@ class Mesh(object):
                 [
                     appmesh_params.MESH_OWNER_ID,
                     appmesh_params.MESH_NAME,
-                    vpc_params.VPC_DNS_ZONE,
+                    PRIVATE_DNS_ZONE_NAME,
                 ],
             )
             services_stack.add_parameter(
                 {
-                    vpc_params.VPC_DNS_ZONE_T: GetAtt(
-                        "vpc", f"Outputs.{vpc_params.VPC_MAP_DNS_ZONE_T}"
+                    PRIVATE_DNS_ZONE_NAME.title: If(
+                        USE_DEFAULT_ZONE_NAME_CON_T,
+                        DEFAULT_PRIVATE_DNS_ZONE,
+                        Ref(PRIVATE_DNS_ZONE_NAME),
                     )
                 }
             )

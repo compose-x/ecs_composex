@@ -27,6 +27,12 @@ You can change the names *values* so you like so long as you keep it Alphanumeri
 
 from troposphere import Parameter
 
+ROOT_CLUSTER_NAME = "EcsCluster"
+COMPUTE_STACK_NAME = "Ec2Compute"
+VPC_STACK_NAME = "vpc"
+MESH_TITLE = "RootMesh"
+PRIVATE_MAP_TITLE = "CloudMapVpcNamespace"
+PUBLIC_MAP_TITLE = "CloudMapPublicNamespace"
 
 ROOT_STACK_NAME_T = "RootStackName"
 ROOT_STACK_NAME = Parameter(

@@ -115,3 +115,24 @@ x-appmesh:
         node: app01
       - name: dateteller
         router: dateteller
+
+x-dns:
+  PrivateNamespace:
+    Name: mycluster.lan
+  PublicNamespace:
+    Name: lambda-my-aws.io
+
+x-vpc:
+  Lookup:
+    VpcId:
+      tags:
+        - Name: vpcwork4
+    AppSubnets:
+      tags:
+        - vpc::usage: application
+    StorageSubnets:
+      tags:
+        - vpc::usage: storage
+    PublicSubnets:
+      tags:
+        - vpc::usage: public

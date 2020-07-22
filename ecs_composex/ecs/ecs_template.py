@@ -27,7 +27,11 @@ from troposphere.logs import LogGroup
 from ecs_composex.common import LOG, NONALPHANUM
 from ecs_composex.common import build_template
 from ecs_composex.common import keyisset
-from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T, ROOT_STACK_NAME
+from ecs_composex.common.cfn_params import (
+    ROOT_STACK_NAME_T,
+    ROOT_STACK_NAME,
+)
+from ecs_composex.dns import dns_params, dns_conditions
 from ecs_composex.ecs import ecs_conditions, ecs_params
 from ecs_composex.ecs.ecs_params import (
     CLUSTER_NAME,
@@ -55,6 +59,10 @@ def initialize_service_template(service_name):
     service_tpl = build_template(
         f"Template for {service_name}",
         [
+            dns_params.PUBLIC_DNS_ZONE_NAME,
+            dns_params.PRIVATE_DNS_ZONE_NAME,
+            dns_params.PUBLIC_DNS_ZONE_ID,
+            dns_params.PRIVATE_DNS_ZONE_ID,
             ecs_params.CLUSTER_NAME,
             ecs_params.LAUNCH_TYPE,
             ecs_params.ECS_CONTROLLER,
@@ -63,8 +71,6 @@ def initialize_service_template(service_name):
             vpc_params.VPC_ID,
             vpc_params.APP_SUBNETS,
             vpc_params.PUBLIC_SUBNETS,
-            vpc_params.VPC_MAP_ID,
-            vpc_params.VPC_MAP_DNS_ZONE,
             ecs_params.SERVICE_HOSTNAME,
             ecs_params.FARGATE_CPU_RAM_CONFIG,
             ecs_params.SERVICE_NAME,
@@ -77,12 +83,6 @@ def initialize_service_template(service_name):
     service_tpl.add_condition(
         ecs_conditions.SERVICE_COUNT_ZERO_AND_FARGATE_CON_T,
         ecs_conditions.SERVICE_COUNT_ZERO_AND_FARGATE_CON,
-    )
-    service_tpl.add_condition(
-        vpc_conditions.USE_VPC_MAP_ID_CON_T, vpc_conditions.USE_VPC_MAP_ID_CON
-    )
-    service_tpl.add_condition(
-        vpc_conditions.NOT_USE_VPC_MAP_ID_CON_T, vpc_conditions.NOT_USE_VPC_MAP_ID_CON
     )
     service_tpl.add_condition(
         ecs_conditions.USE_HOSTNAME_CON_T, ecs_conditions.USE_HOSTNAME_CON
@@ -289,7 +289,16 @@ def handle_families_services(families, cluster_sg, settings):
                 CLUSTER_NAME_T: Ref(CLUSTER_NAME),
                 ROOT_STACK_NAME_T: Ref(ROOT_STACK_NAME),
                 ecs_params.CLUSTER_SG_ID_T: Ref(cluster_sg),
-                vpc_params.VPC_MAP_ID_T: Ref(vpc_params.VPC_MAP_ID_T),
+                dns_params.PRIVATE_DNS_ZONE_ID.title: Ref(
+                    dns_params.PRIVATE_DNS_ZONE_ID
+                ),
+                dns_params.PRIVATE_DNS_ZONE_NAME.title: Ref(
+                    dns_params.PRIVATE_DNS_ZONE_NAME
+                ),
+                dns_params.PUBLIC_DNS_ZONE_ID.title: Ref(dns_params.PUBLIC_DNS_ZONE_ID),
+                dns_params.PUBLIC_DNS_ZONE_NAME.title: Ref(
+                    dns_params.PUBLIC_DNS_ZONE_NAME
+                ),
             }
         )
         service.parameters.update(family_parameters)
@@ -302,8 +311,7 @@ def generate_services(settings, cluster_sg, **kwargs):
     """
     Function putting together the ECS Service template
 
-    :param compose_content: Docker/ComposeX file content
-    :type compose_content: dict
+    :param ComposeXSettings settings: The settings for execution
     :param cluster_sg: cluster default security group
     :type cluster_sg: troposphere.ec2.SecurityGroup
     :param kwargs: optional arguments
