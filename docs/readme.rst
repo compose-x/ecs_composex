@@ -21,7 +21,7 @@ Usage
 
 .. code-block:: bash
 
-    sage: ecs_composex [-h] -n NAME -f DOCKERCOMPOSEXFILE [-d OUTPUTDIRECTORY]
+    usage: ecs_composex [-h] -n NAME -f DOCKERCOMPOSEXFILE [-d OUTPUTDIRECTORY]
                     [--format {json,yaml,text}]
                     [--cfn-config-file CFNCONFIGFILE]
                     [--no-cfn-template-config-file] [--region REGIONNAME]
