@@ -15,9 +15,12 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+"""
+Module for DNS parameters
+"""
+
 from troposphere import Parameter, Sub
 
-# ZONES_PATTERN = r"^none$|^Z[A-Z0-9]{6,24}$|^ns-[a-z0-9]{6,24}$"
 ZONES_PATTERN = r"^none$|^ns-[a-z0-9]{6,24}$"
 
 PUBLIC_DNS_ZONE_NAME_T = "PublicDnsZoneName"

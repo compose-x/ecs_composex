@@ -679,7 +679,7 @@ class Service(object):
                 ),
                 Name=If(USE_HOSTNAME_CON_T, Ref(SERVICE_HOSTNAME), Ref(SERVICE_NAME)),
             )
-            sd_instance = SdInstance(
+            SdInstance(
                 f"{self.resource_name}PublicLB",
                 template=self.template,
                 ServiceId=GetAtt(sd_service, "Id"),

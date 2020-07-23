@@ -70,7 +70,7 @@ def lookup_route53_namespace(zone_id, session, private):
             "ZoneId": zone_r["Id"].split(r"/")[-1],
             "ZoneTld": LAST_DOT_RE.sub("", zone_r["Name"]),
         }
-    except client.exceptions.NoSuchHostedZone as error:
+    except client.exceptions.NoSuchHostedZone:
         LOG.warning(f"Zone {zone_id} not found in your account.")
 
 

@@ -32,13 +32,10 @@ def find_mesh_in_list(mesh_name, client, next_token=None):
     :param next_token: token for next api call
     :return:
     """
-    try:
-        if next_token is not None:
-            mesh_r = client.list_meshes(nexToken=next_token)
-        else:
-            mesh_r = client.list_meshes()
-    except ClientError as error:
-        raise error
+    if next_token is not None:
+        mesh_r = client.list_meshes(nexToken=next_token)
+    else:
+        mesh_r = client.list_meshes()
     if not keyisset("meshes", mesh_r):
         return {}
     for mesh in mesh_r["meshes"]:
@@ -84,5 +81,3 @@ def lookup_mesh_by_name(session, mesh_name, mesh_owner=None):
         )
         mesh_info = find_mesh_in_list(mesh_name, client)
         return mesh_info
-    except ClientError as error:
-        raise error
