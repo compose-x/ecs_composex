@@ -49,10 +49,10 @@ services:
       resources:
         reservations:
           cpus: "0.25"
-          memory: "64M"
+          memory: "3M"
         limits:
           cpus: "0.5"
-          memory: "128M"
+          memory: "3G"
       labels:
         ecs.task.family: app01
     environment:

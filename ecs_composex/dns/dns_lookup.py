@@ -55,9 +55,9 @@ def lookup_service_discovery_namespace(zone_id, session, private):
             "ZoneTld": LAST_DOT_RE.sub("", properties["HttpProperties"]["HttpName"]),
             "NamespaceId": zone_r["Namespace"]["Id"],
         }
-    except client.exceptions.NamespaceNotFound as error:
+    except client.exceptions.NamespaceNotFound:
         LOG.error(f"Namespace ID {zone_id} not found")
-        raise error
+        raise
 
 
 def lookup_route53_namespace(zone_id, session, private):

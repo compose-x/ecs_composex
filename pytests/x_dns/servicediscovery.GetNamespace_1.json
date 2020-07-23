@@ -1,0 +1,21 @@
+{
+    "status_code": 400,
+    "data": {
+        "Error": {
+            "Message": "",
+            "Code": "NamespaceNotFound"
+        },
+        "ResponseMetadata": {
+            "RequestId": "b2c0ed3d-1486-4d0d-ad4a-574ee682608c",
+            "HTTPStatusCode": 400,
+            "HTTPHeaders": {
+                "content-type": "application/x-amz-json-1.1",
+                "date": "Thu, 23 Jul 2020 21:47:04 GMT",
+                "x-amzn-requestid": "b2c0ed3d-1486-4d0d-ad4a-574ee682608c",
+                "content-length": "30",
+                "connection": "keep-alive"
+            },
+            "RetryAttempts": 0
+        }
+    }
+}

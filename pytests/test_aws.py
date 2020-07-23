@@ -128,17 +128,19 @@ def invalid_x_subnets_ids_list():
     }
 
 
-def create_settings(updated_content):
+def create_settings(updated_content, case_path):
     here = path.abspath(path.dirname(__file__))
     session = boto3.session.Session()
-    pill = placebo.attach(session, data_path=f"{here}/x_vpc")
+    pill = placebo.attach(session, data_path=f"{here}/{case_path}")
     pill.playback()
     settings = ComposeXSettings(
         content=updated_content,
         session=session,
         **{
             ComposeXSettings.name_arg: "test",
-            ComposeXSettings.input_file_arg: f"{here}/../use-cases/vpc/vpc_from_tags.yml",
+            ComposeXSettings.input_file_arg: path.abspath(
+                f"{here}/../features/use-cases/vpc/vpc_from_tags.yml"
+            ),
             ComposeXSettings.no_upload_arg: True,
             ComposeXSettings.format_arg: "yaml",
         },
@@ -148,7 +150,7 @@ def create_settings(updated_content):
 
 def test_vpc_import_from_tags(content, x_vpc_tags):
     content.update({"x-vpc": {"Lookup": x_vpc_tags}})
-    settings = create_settings(content)
+    settings = create_settings(content, "x_vpc")
     assert hasattr(settings, VPC_ID_T) and getattr(settings, VPC_ID_T) is not None
     with pytest.raises(ValueError):
         """Validates double VPC raises an error"""
@@ -157,23 +159,23 @@ def test_vpc_import_from_tags(content, x_vpc_tags):
 
 def test_vpc_import_from_arn(content, x_vpc_arn):
     content.update({"x-vpc": {"Lookup": x_vpc_arn}})
-    settings = create_settings(content)
+    settings = create_settings(content, "x_vpc")
     assert hasattr(settings, VPC_ID_T) and getattr(settings, VPC_ID_T) is not None
 
 
 def test_vpc_import_from_id(content, x_vpc_id):
     content.update({"x-vpc": {"Lookup": x_vpc_id}})
-    settings = create_settings(content)
+    settings = create_settings(content, "x_vpc")
     assert hasattr(settings, VPC_ID_T) and getattr(settings, VPC_ID_T) is not None
 
 
 def test_negative_testing_vpc(content, invalid_x_vpc_id, invalid_x_vpc_arn):
     content.update({"x-vpc": {"Lookup": invalid_x_vpc_id}})
     with pytest.raises(ValueError):
-        settings = create_settings(content)
+        settings = create_settings(content, "x_vpc")
     content.update({"x-vpc": {"Lookup": invalid_x_vpc_arn}})
     with pytest.raises(ValueError):
-        settings = create_settings(content)
+        settings = create_settings(content, "x_vpc")
 
 
 def test_negative_testing_subnets(
@@ -181,14 +183,14 @@ def test_negative_testing_subnets(
 ):
     content.update({"x-vpc": {"Lookup": invalid_x_subnets_ids}})
     with pytest.raises(ValueError):
-        settings = create_settings(content)
+        settings = create_settings(content, "x_vpc")
     content.update({"x-vpc": {"Lookup": invalid_x_subnets_ids_list}})
     with pytest.raises(ValueError):
-        settings = create_settings(content)
+        settings = create_settings(content, "x_vpc")
 
     with pytest.raises(ValueError):
         """On 4th call, no subnets are returned"""
-        settings = create_settings(content)
-        settings = create_settings(content)
-        settings = create_settings(content)
-        settings = create_settings(content)
+        settings = create_settings(content, "x_vpc")
+        settings = create_settings(content, "x_vpc")
+        settings = create_settings(content, "x_vpc")
+        settings = create_settings(content, "x_vpc")

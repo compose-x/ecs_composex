@@ -41,7 +41,6 @@ from ecs_composex.common.cfn_params import (
     USE_FLEET_T,
     USE_ONDEMAND,
     USE_ONDEMAND_T,
-    PRIVATE_MAP_TITLE,
 )
 from ecs_composex.common.ecs_composex import X_KEY
 from ecs_composex.common.outputs import formatted_outputs
@@ -51,6 +50,7 @@ from ecs_composex.compute.compute_params import (
     TARGET_CAPACITY,
     MIN_CAPACITY_T,
 )
+from ecs_composex.common.tagging import add_all_tags
 from ecs_composex.compute.compute_stack import ComputeStack
 from ecs_composex.dns import add_parameters_and_conditions as dns_inputs, DnsSettings
 from ecs_composex.dns import dns_params, dns_conditions
@@ -466,4 +466,5 @@ def generate_full_template(settings):
     if keyisset("x-appmesh", settings.compose_content):
         mesh = Mesh(settings.compose_content["x-appmesh"], services_stack, settings)
         mesh.render_mesh_template(services_stack)
+    add_all_tags(root_stack.stack_template, settings)
     return root_stack

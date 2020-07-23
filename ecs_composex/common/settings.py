@@ -90,7 +90,9 @@ class ComposeXSettings(object):
             self.compose_content = load_composex_file(kwargs[self.input_file_arg])
         elif content and isinstance(content, dict):
             self.compose_content = content
-        self.input_file = kwargs[self.input_file_arg]
+        self.input_file = (
+            kwargs[self.input_file_arg] if keyisset(self.input_file_arg, kwargs) else {}
+        )
         self.account_id = None
 
         self.bucket_name = None

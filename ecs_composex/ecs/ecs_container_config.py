@@ -43,25 +43,6 @@ def import_env_variables(environment):
     return env_vars
 
 
-def generate_port_mappings(ports):
-    """
-    Generates a port mapping from the Docker compose file.
-    Given we are going to use AWS VPC mode, we are only considering the app port.
-
-    :param list ports: list of ports used by the ecs_service
-    :returns: mappings, list of port mappings
-    :rtype: list<troposphere.ecs.PortMapping>
-    """
-    mappings = []
-    if not isinstance(ports, list):
-        return mappings
-    for port in ports:
-        mappings.append(PortMapping(ContainerPort=port, HostPort=port))
-    if mappings:
-        return mappings
-    return Ref(AWS_NO_VALUE)
-
-
 def extend_container_secrets(container, secret):
     """
     Function to add secrets to a Container definition

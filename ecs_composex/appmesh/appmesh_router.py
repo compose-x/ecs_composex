@@ -204,9 +204,7 @@ class MeshRouter(object):
         """
         for route in routes:
             if not all(key in ["nodes"] for key in route.keys()):
-                raise AttributeError(
-                    f"Each route must have match and nodes. Got", route.keys()
-                )
+                raise AttributeError(f"Each route must have nodes. Got", route.keys())
             route_nodes = []
             for node in route["nodes"]:
                 if node["name"] in nodes.keys():

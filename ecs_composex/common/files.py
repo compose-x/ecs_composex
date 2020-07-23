@@ -54,41 +54,6 @@ def check_bucket(bucket_name, session):
             LOG.info(f"Bucket {bucket_name} successfully created.")
 
 
-def validate_template(template_body, file_name, template_url=None, session=None):
-    """
-    Uses AWS CFN validate-template API to validate the template
-
-    :param template_body: Template body, would come from troposphere template to_json() or to_yaml()
-    :type template_body: str
-    :param file_name: Name of the file
-    :type file_name: str
-    :param template_url: Template URL to check if template was uploaded to S3 already, optional
-    :type template_url: str
-    :param session: boto3 session to override and use for the client, optional
-    :type session: boto3.session.Session() to override client
-
-    :returns: True if template is validated by CFN, false if error
-    :rtype: bool
-    """
-    if session is None:
-        client = boto3.client("cloudformation")
-    else:
-        client = session.client("cloudformation")
-
-    try:
-        if template_url is None:
-            client.validate_template(TemplateBody=template_body)
-        else:
-            client.validate_template(TemplateURL=template_url)
-        return True
-    except Exception as error:
-        LOG.error(error)
-        with open(f"/tmp/{file_name}", "w") as fd:
-            fd.write(template_body.strip("\n"))
-        LOG.error(f"Non valid template successfully written to /tmp/{file_name}")
-    return False
-
-
 def upload_file(
     body, bucket_name, file_name, settings, prefix=None, mime=None,
 ):
