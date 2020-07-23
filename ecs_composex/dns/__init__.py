@@ -86,7 +86,7 @@ class DnsSettings(object):
             Condition=dns_conditions.CREATE_PUBLIC_NAMESPACE_CON_T,
             Description=Sub(r"Public DnsNamespace for ${AWS::StackName}"),
             Name=Sub(
-                f"${{AWS::StackName}}.{{{dns_params.PUBLIC_DNS_ZONE_NAME.title}}}"
+                f"${{AWS::StackName}}.${{{dns_params.PUBLIC_DNS_ZONE_NAME.title}}}"
             ),
         )
         self.private_map = VpcSpace(
@@ -225,8 +225,8 @@ class DnsSettings(object):
             )
             self.nested_params.update(
                 {
-                    dns_params.PUBLIC_DNS_ZONE_NAME.title: Ref(
-                        dns_params.PUBLIC_DNS_ZONE_NAME
+                    dns_params.PUBLIC_DNS_ZONE_NAME.title: Sub(
+                        f"${{AWS::StackName}}.${{{dns_params.PUBLIC_DNS_ZONE_NAME.title}}}"
                     ),
                     dns_params.PUBLIC_DNS_ZONE_ID.title: GetAtt(self.public_map, "Id"),
                 }

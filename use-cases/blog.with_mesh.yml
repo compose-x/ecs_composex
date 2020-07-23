@@ -126,7 +126,7 @@ x-vpc:
   Lookup:
     VpcId:
       tags:
-        - Name: vpcwork4
+        - Name: vpwork4
     AppSubnets:
       tags:
         - vpc::usage: application
