@@ -83,7 +83,6 @@ x-tags:
 x-appmesh:
   Properties:
     MeshName: test-shared-mesh
-    MeshOwner: 965289391954
     EgressFilter: ALLOW_ALL
   Settings:
     nodes:

@@ -2,13 +2,14 @@
 # Blog applications
 
 version: '3.8'
+
 services:
   rproxy:
     image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-01-rproxy:latest
     ports:
       - 80:80
     deploy:
-      replicas: 2
+      replicas: 1
       resources:
         reservations:
           cpus: "0.1"
@@ -43,7 +44,7 @@ services:
       - app03:dateteller
 
   app02:
-    image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-02:latest
+    image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-02:appmesh
     ports:
       - 5000
     deploy:
@@ -59,7 +60,7 @@ services:
       use_xray: True
 
   app03:
-    image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-02:latest
+    image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-02:appmesh
     ports:
       - 5000
     deploy:
@@ -74,6 +75,51 @@ services:
     x-configs:
       use_xray: True
 
+
 x-tags:
   owner: johnpreston
   contact: john@lambda-my-aws.io
+
+x-appmesh:
+  Properties:
+    MeshName: test-shared-mesh
+    MeshOwner: 965289391954
+    EgressFilter: ALLOW_ALL
+  Settings:
+    nodes:
+      - name: app03
+        protocol: tcp
+      - name: app02
+        protocol: http
+      - name: app01
+        protocol: http
+        backends:
+          - dateteller # Points to the dateteller service, not router!
+    routers:
+      - name: dateteller
+        listener:
+          port: 5000
+          protocol: http
+        routes:
+          http:
+            - match:
+                prefix: /date
+                method: GET
+                scheme: http
+              nodes:
+                - name: app02
+                  weight: 1
+      - name: datetellertcp
+        listener:
+          port: 5000
+          protocol: tcp
+        routes:
+          tcp:
+            - nodes:
+                - name: app03
+                  weight: 1
+    services:
+      - name: api
+        node: app01
+      - name: dateteller
+        router: dateteller

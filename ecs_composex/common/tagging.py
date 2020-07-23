@@ -85,36 +85,29 @@ def define_extended_tags(tags):
     return None
 
 
-def generate_tags_parameters(composex_content):
+def generate_tags_parameters(tags):
     """
     Function to generate a list of parameters used for the tags values
 
-    :param composex_content: docker composeX file content
-    :type composex_content: dict
     :return: list of parameters and tags to add to objects
     :rtype: tuple
     """
-    if not keyisset("x-tags", composex_content):
-        LOG.info("No x-tags found. Skipping")
-        return []
-    xtags = composex_content["x-tags"]
-    object_tags = define_extended_tags(xtags)
     parameters = []
-    for tag in xtags:
+    for tag in tags:
         parameters.append(
             Parameter(
                 define_tag_parameter_title(tag["name"])
-                if isinstance(xtags, list)
+                if isinstance(tags, list)
                 else define_tag_parameter_title(tag),
                 Type="String",
                 MinLength=2,
                 MaxLength=128,
                 AllowedPattern=r"[\x20-\x7E]+",
                 ConstraintDescription="Must be ASCII",
-                Default=tag["value"] if isinstance(xtags, list) else xtags[tag],
+                Default=tag["value"] if isinstance(tags, list) else tags[tag],
             )
         )
-    return parameters, object_tags
+    return parameters
 
 
 def expand_launch_template_tags_specs(lt, tags):
@@ -183,7 +176,7 @@ def add_object_tags(obj, tags):
         setattr(obj, "Tags", clean_tags)
 
 
-def add_all_tags(root_template, params_and_tags):
+def add_all_tags(root_template, settings, params=None, xtags=None):
     """
     Function to go through all stacks of a given template and update the template
     It will recursively render sub stacks defined.
@@ -191,11 +184,16 @@ def add_all_tags(root_template, params_and_tags):
 
     :param root_template: the root template to iterate over the resources.
     :type root_template: troposphere.Template
-    :param params_and_tags: parameters and tags to add to the stack resources
-    :type params_and_tags: ()
+    :param ecs_composex.common.settings.ComposeXSettings settings:
     """
-    if not params_and_tags:
-        return None
+    if not params or not xtags:
+        if not keyisset("x-tags", settings.compose_content):
+            return None
+        else:
+            tags = settings.compose_content["x-tags"]
+            params = generate_tags_parameters(tags)
+            xtags = define_extended_tags(tags)
+
     resources = root_template.resources if root_template else []
     for resource_name in resources:
         resource = resources[resource_name]
@@ -204,8 +202,8 @@ def add_all_tags(root_template, params_and_tags):
         ):
             LOG.debug(resource)
             LOG.debug(resource.title)
-            add_all_tags(resource.stack_template, params_and_tags)
-            add_parameters(resource.stack_template, params_and_tags[0])
+            add_all_tags(resource.stack_template, settings, params, xtags)
+            add_parameters(resource.stack_template, params)
             if (
                 not resource
                 or not hasattr(resource, "stack_template")
@@ -213,9 +211,7 @@ def add_all_tags(root_template, params_and_tags):
             ):
                 return
             for stack_resname in resource.stack_template.resources:
-                add_object_tags(
-                    resource.stack_template.resources[stack_resname], params_and_tags[1]
-                )
+                add_object_tags(resource.stack_template.resources[stack_resname], xtags)
         elif isinstance(resource, Stack):
             LOG.warn(resource_name)
             LOG.warn(resource)

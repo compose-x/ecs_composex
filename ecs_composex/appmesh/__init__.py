@@ -25,6 +25,7 @@ from troposphere import Ref, GetAtt
 from troposphere import appmesh
 
 from ecs_composex.appmesh import appmesh_params, appmesh_conditions
+from ecs_composex.appmesh.appmesh_aws import lookup_mesh_by_name
 from ecs_composex.appmesh.appmesh_conditions import add_appmesh_conditions
 from ecs_composex.appmesh.appmesh_node import MeshNode
 from ecs_composex.appmesh.appmesh_params import MESH_NAME, MESH_OWNER_ID
@@ -32,25 +33,12 @@ from ecs_composex.appmesh.appmesh_router import MeshRouter
 from ecs_composex.appmesh.appmesh_service import MeshService
 from ecs_composex.common import (
     keyisset,
-    build_template,
     add_parameters,
     LOG,
 )
-from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME
+from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.ecs import ecs_params
-from ecs_composex.vpc import vpc_params
-
-
-def initialize_mesh_template():
-    """
-    Initialize template
-    """
-    template = build_template(
-        "AppMesh Root Template", [MESH_NAME, MESH_OWNER_ID, vpc_params.VPC_DNS_ZONE],
-    )
-    add_appmesh_conditions(template)
-    return template
 
 
 class Mesh(object):
@@ -58,15 +46,13 @@ class Mesh(object):
     Class for AppMesh mesh
     """
 
-    mesh_title = "AppMesh"
-    nodes = "nodes"
-    routers = "routers"
-    services = "services"
-    required_keys = [nodes, routers, services]
+    mesh_title = "ServiceMesh"
+    nodes_key = "nodes"
+    routers_key = "routers"
+    services_key = "services"
+    required_keys = [nodes_key, routers_key, services_key]
 
-    def __init__(
-        self, mesh_definition, services_root_stack,
-    ):
+    def __init__(self, mesh_definition, services_root_stack, settings):
         """
         Method to initialize the Mesh
 
@@ -81,49 +67,64 @@ class Mesh(object):
         self.mesh_properties = mesh_definition["Properties"]
         self.stack_parameters = {MESH_NAME.title: Ref(ROOT_STACK_NAME)}
         self.stack = None
+        self.appmesh = Ref(MESH_NAME)
+        add_parameters(
+            services_root_stack.stack_template,
+            [appmesh_params.MESH_OWNER_ID, appmesh_params.MESH_NAME,],
+        )
+        appmesh_conditions.add_appmesh_conditions(services_root_stack.stack_template)
+        if keyisset("MeshName", self.mesh_properties):
+            self.mesh_name = self.mesh_properties["MeshName"]
+        else:
+            self.mesh_name = MESH_NAME.Default
 
-        if keyisset("MeshName", self.mesh_properties) and keyisset(
-            "MeshOwner", self.mesh_properties
-        ):
+        mesh_info = lookup_mesh_by_name(
+            session=settings.session,
+            mesh_name=self.mesh_name,
+            mesh_owner=str(self.mesh_properties["MeshOwner"])
+            if keyisset("MeshOwner", self.mesh_properties)
+            else None,
+        )
+        if mesh_info:
             services_root_stack.Parameters.update(
                 {
-                    appmesh_params.MESH_NAME_T: self.mesh_properties["MeshName"],
-                    appmesh_params.MESH_OWNER_ID_T: self.mesh_properties["MeshOwner"],
+                    appmesh_params.MESH_NAME_T: mesh_info[MESH_NAME.title],
+                    appmesh_params.MESH_OWNER_ID_T: mesh_info[MESH_OWNER_ID.title],
                 }
             )
-
+        else:
+            self.mesh_name = MESH_NAME.Default
+            allowed_values = ["ALLOW_ALL", "DROP_ALL"]
+            egress_type = "DROP_ALL"
+            if (
+                keyisset("EgressFilter", self.mesh_properties)
+                and self.mesh_properties["EgressFilter"] in allowed_values
+            ):
+                egress_type = self.mesh_properties["EgressFilter"]
+            elif (
+                keyisset("EgressFilter", self.mesh_properties)
+                and self.mesh_properties["EgressFilter"] not in allowed_values
+            ):
+                LOG.warning(
+                    f"Invalid EgressFilter value {self.mesh_properties['EgressFilter']}."
+                    f" Allowed values: {allowed_values} "
+                    "Setting to default: DROP_ALL"
+                )
+            self.appmesh = appmesh.Mesh(
+                self.mesh_title,
+                template=services_root_stack.stack_template,
+                Condition=appmesh_conditions.USER_IS_SELF_CON_T,
+                MeshName=appmesh_conditions.set_mesh_name(),
+                Spec=appmesh.MeshSpec(
+                    EgressFilter=appmesh.EgressFilter(Type=egress_type)
+                ),
+            )
+            self.stack_parameters.update(
+                {appmesh_params.MESH_NAME_T: Ref(appmesh_params.MESH_NAME)}
+            )
         for key in self.required_keys:
             if key not in self.mesh_settings.keys():
                 raise KeyError(f"Key {key} is missing. Required {self.required_keys}")
-
-        allowed_values = ["ALLOW_ALL", "DROP_ALL"]
-        egress_type = "DROP_ALL"
-        if (
-            keyisset("EgressFilter", self.mesh_properties)
-            and self.mesh_properties["EgressFilter"] in allowed_values
-        ):
-            egress_type = self.mesh_properties["EgressFilter"]
-        elif (
-            keyisset("EgressFilter", self.mesh_properties)
-            and self.mesh_properties["EgressFilter"] not in allowed_values
-        ):
-            LOG.warning(
-                f"Invalid EgressFilter value {self.mesh_properties['EgressFilter']}."
-                f" Allowed values: {allowed_values} "
-                "Setting to default: DROP_ALL"
-            )
-        self.appmesh = appmesh.Mesh(
-            self.mesh_title,
-            Condition=appmesh_conditions.USER_IS_SELF_CON_T,
-            MeshName=appmesh_conditions.set_mesh_name(),
-            Spec=appmesh.MeshSpec(EgressFilter=appmesh.EgressFilter(Type=egress_type)),
-        )
-        self.stack_parameters.update(
-            {
-                appmesh_params.MESH_NAME_T: Ref(appmesh_params.MESH_NAME),
-                vpc_params.VPC_DNS_ZONE_T: Ref(vpc_params.VPC_DNS_ZONE),
-            }
-        )
         self.define_nodes(services_root_stack=services_root_stack)
         self.define_routes_and_routers()
         self.define_virtual_services()
@@ -160,9 +161,6 @@ class Mesh(object):
                 self.nodes[node["name"]].param_name,
                 f"Outputs.{ecs_params.SERVICE_GROUP_ID_T}",
             )
-            self.nodes[node["name"]].stack.Parameters.update(
-                {MESH_NAME.title: appmesh_conditions.get_mesh_name(self.appmesh)}
-            )
 
     def define_routes_and_routers(self):
         """
@@ -190,25 +188,12 @@ class Mesh(object):
 
         :param ecs_composex.ecs.ServicesStack services_stack: The services root stack
         """
-        if self.appmesh.title not in services_stack.stack_template.resources:
+        if (
+            isinstance(self.appmesh, Mesh)
+            and self.appmesh.title not in services_stack.stack_template.resources
+        ):
             services_stack.stack_template.add_resource(self.appmesh)
             add_appmesh_conditions(services_stack.stack_template)
-            add_parameters(
-                services_stack.stack_template,
-                [
-                    appmesh_params.MESH_OWNER_ID,
-                    appmesh_params.MESH_NAME,
-                    vpc_params.VPC_DNS_ZONE,
-                ],
-            )
-            services_stack.add_parameter(
-                {
-                    vpc_params.VPC_DNS_ZONE_T: GetAtt(
-                        "vpc", f"Outputs.{vpc_params.VPC_MAP_DNS_ZONE_T}"
-                    )
-                }
-            )
-
         self.process_mesh_components(services_stack)
 
     def process_mesh_components(self, services_stack):
@@ -224,7 +209,7 @@ class Mesh(object):
             service.add_dns_entries(services_stack.stack_template)
         for res_name in services_stack.stack_template.resources:
             res = services_stack.stack_template.resources[res_name]
-            if issubclass(type(res), ComposeXStack):
+            if issubclass(type(res), ComposeXStack) and isinstance(self.appmesh, Mesh):
                 res.add_dependencies(self.appmesh.title)
         for node_name in self.nodes:
             if self.nodes[node_name].backends:

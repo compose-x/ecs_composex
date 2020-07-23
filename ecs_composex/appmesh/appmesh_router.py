@@ -24,6 +24,7 @@ from troposphere import Sub, Ref, GetAtt
 from troposphere import appmesh
 
 from ecs_composex.appmesh import appmesh_conditions
+from ecs_composex.appmesh.appmesh_params import MESH_NAME, MESH_OWNER_ID
 from ecs_composex.common import NONALPHANUM, keyisset, LOG
 
 
@@ -203,9 +204,7 @@ class MeshRouter(object):
         """
         for route in routes:
             if not all(key in ["nodes"] for key in route.keys()):
-                raise AttributeError(
-                    f"Each route must have match and nodes. Got", route.keys()
-                )
+                raise AttributeError(f"Each route must have nodes. Got", route.keys())
             route_nodes = []
             for node in route["nodes"]:
                 if node["name"] in nodes.keys():

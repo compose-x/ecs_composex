@@ -4,6 +4,7 @@
 Functions to manage a template and wheter it should be stored in S3
 """
 from os.path import abspath
+import pprint
 
 import yaml
 
@@ -51,41 +52,6 @@ def check_bucket(bucket_name, session):
                 CreateBucketConfiguration=location,
             )
             LOG.info(f"Bucket {bucket_name} successfully created.")
-
-
-def validate_template(template_body, file_name, template_url=None, session=None):
-    """
-    Uses AWS CFN validate-template API to validate the template
-
-    :param template_body: Template body, would come from troposphere template to_json() or to_yaml()
-    :type template_body: str
-    :param file_name: Name of the file
-    :type file_name: str
-    :param template_url: Template URL to check if template was uploaded to S3 already, optional
-    :type template_url: str
-    :param session: boto3 session to override and use for the client, optional
-    :type session: boto3.session.Session() to override client
-
-    :returns: True if template is validated by CFN, false if error
-    :rtype: bool
-    """
-    if session is None:
-        client = boto3.client("cloudformation")
-    else:
-        client = session.client("cloudformation")
-
-    try:
-        if template_url is None:
-            client.validate_template(TemplateBody=template_body)
-        else:
-            client.validate_template(TemplateURL=template_url)
-        return True
-    except Exception as error:
-        LOG.error(error)
-        with open(f"/tmp/{file_name}", "w") as fd:
-            fd.write(template_body.strip("\n"))
-        LOG.error(f"Non valid template successfully written to /tmp/{file_name}")
-    return False
 
 
 def upload_file(
@@ -251,10 +217,15 @@ class FileArtifact(object):
         Method to define the body of the file artifact. Sets the mime type that will be used for upload into S3.
         """
         if isinstance(self.template, Template):
-            if self.mime == YAML_MIME:
-                self.body = self.template.to_yaml()
-            else:
-                self.body = self.template.to_json()
+            try:
+                if self.mime == YAML_MIME:
+                    self.body = self.template.to_yaml()
+                else:
+                    self.body = self.template.to_json()
+            except Exception as error:
+                pp = pprint.PrettyPrinter(indent=2)
+                pp.pprint(self.template.to_dict())
+                raise error
         elif isinstance(self.content, (list, dict, tuple)):
             if self.mime == YAML_MIME:
                 self.body = yaml.dump(self.content, Dumper=Dumper)

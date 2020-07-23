@@ -35,7 +35,7 @@ from ecs_composex.common import LOG, add_parameters
 from ecs_composex.common.outputs import formatted_outputs
 from ecs_composex.ecs import ecs_params
 from ecs_composex.ecs.ecs_container_config import extend_container_envvars
-from ecs_composex.vpc import vpc_params
+from ecs_composex.dns.dns_params import PRIVATE_DNS_ZONE_NAME, PRIVATE_DNS_ZONE_ID
 
 
 class MeshNode(object):
@@ -98,12 +98,12 @@ class MeshNode(object):
         self.node = appmesh.VirtualNode(
             f"{self.stack.title}VirtualNode",
             MeshName=Ref(appmesh_params.MESH_NAME),
-            MeshOwner=appmesh_conditions.set_mesh_owner_id(),
+            MeshOwner=Ref(appmesh_params.MESH_OWNER_ID),
             VirtualNodeName=GetAtt(sd_service, "Name"),
             Spec=appmesh.VirtualNodeSpec(
                 ServiceDiscovery=appmesh.ServiceDiscovery(
                     AWSCloudMap=appmesh.AwsCloudMapServiceDiscovery(
-                        NamespaceName=Ref(vpc_params.VPC_MAP_DNS_ZONE),
+                        NamespaceName=Ref(PRIVATE_DNS_ZONE_NAME),
                         ServiceName=GetAtt(sd_service, "Name"),
                     )
                 ),
@@ -117,6 +117,12 @@ class MeshNode(object):
         add_parameters(
             self.stack.stack_template,
             [appmesh_params.MESH_OWNER_ID, appmesh_params.MESH_NAME],
+        )
+        self.stack.Parameters.update(
+            {
+                appmesh_params.MESH_NAME.title: Ref(appmesh_params.MESH_NAME),
+                appmesh_params.MESH_OWNER_ID.title: Ref(appmesh_params.MESH_OWNER_ID),
+            }
         )
         appmesh_conditions.add_appmesh_conditions(self.stack.stack_template)
         self.stack.stack_template.add_output(

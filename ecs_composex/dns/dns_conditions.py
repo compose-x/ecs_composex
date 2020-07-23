@@ -15,30 +15,22 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""
-AppMesh parameters
-"""
+from troposphere import Not, Ref, Equals
 
-from troposphere import Parameter
+from ecs_composex.dns import dns_params
 
-RES_KEY = "appmesh"
-
-MESH_NAME_T = "AppMeshName"
-MESH_NAME = Parameter(MESH_NAME_T, Type="String", Default="AutoCreate")
-
-MESH_OWNER_ID_T = "MeshOwnerId"
-MESH_OWNER_ID = Parameter(
-    MESH_OWNER_ID_T, Type="String", AllowedPattern=r"[0-9]{12}", Default="000000000042"
+CREATE_PUBLIC_NAMESPACE_CON_T = "CreatePublicServicesNamespaceCondition"
+CREATE_PUBLIC_NAMESPACE_CON = Not(
+    Equals(
+        Ref(dns_params.PUBLIC_DNS_ZONE_NAME), dns_params.PUBLIC_DNS_ZONE_NAME.Default
+    )
+)
+CREATE_PRIVATE_NAMESPACE_CON_T = "CreatePrivateServicesNamespaceCondition"
+CREATE_PRIVATE_NAMESPACE_CON = Equals(
+    Ref(dns_params.PRIVATE_DNS_ZONE_ID), dns_params.PRIVATE_DNS_ZONE_ID.Default
 )
 
-USE_APP_MESH_T = "UseAppMesh"
-USE_APP_MESH = Parameter(
-    USE_APP_MESH_T, Type="String", AllowedValues=["True", "False"], Default="True"
-)
-
-ENVOY_IMAGE_URL_T = "EnvoyLatestImageUrl"
-ENVOY_IMAGE_URL = Parameter(
-    ENVOY_IMAGE_URL_T,
-    Type="AWS::SSM::Parameter::Value<String>",
-    Default="/aws/service/appmesh/envoy",
+USE_DEFAULT_ZONE_NAME_CON_T = "UseDefaultPrivateZoneName"
+USE_DEFAULT_ZONE_NAME_CON = Equals(
+    Ref(dns_params.PRIVATE_DNS_ZONE_NAME), dns_params.PRIVATE_DNS_ZONE_NAME.Default
 )

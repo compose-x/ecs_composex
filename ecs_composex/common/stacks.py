@@ -24,8 +24,8 @@ from troposphere import Template, GetAtt, Ref, If, Join, ImportValue
 from troposphere.cloudformation import Stack
 
 from ecs_composex.common import LOG, keyisset, add_parameters
+from ecs_composex.common import cfn_conditions
 from ecs_composex.common.files import FileArtifact
-from ecs_composex.common.cfn_conditions import USE_CLOUDMAP_CON_T, pass_root_stack_name
 from ecs_composex.vpc.vpc_params import (
     VPC_ID,
     VPC_ID_T,
@@ -35,10 +35,6 @@ from ecs_composex.vpc.vpc_params import (
     APP_SUBNETS,
     PUBLIC_SUBNETS_T,
     PUBLIC_SUBNETS,
-    VPC_MAP_ID_T,
-    VPC_MAP_ID,
-    VPC_MAP_DNS_ZONE_T,
-    VPC_MAP_DNS_ZONE,
 )
 
 
@@ -198,8 +194,6 @@ class ComposeXStack(Stack, object):
             STORAGE_SUBNETS,
             APP_SUBNETS,
             APP_SUBNETS,
-            VPC_MAP_ID,
-            VPC_MAP_DNS_ZONE,
         ]
         if not parameters:
             add_parameters(self.stack_template, default_parameters)
@@ -210,16 +204,6 @@ class ComposeXStack(Stack, object):
                     APP_SUBNETS_T: GetAtt(vpc_stack, f"Outputs.{APP_SUBNETS_T}"),
                     STORAGE_SUBNETS_T: GetAtt(
                         vpc_stack, f"Outputs.{STORAGE_SUBNETS_T}"
-                    ),
-                    VPC_MAP_ID_T: If(
-                        USE_CLOUDMAP_CON_T,
-                        GetAtt(vpc_stack, f"Outputs.{VPC_MAP_ID_T}"),
-                        Ref("AWS::NoValue"),
-                    ),
-                    VPC_MAP_DNS_ZONE_T: If(
-                        USE_CLOUDMAP_CON_T,
-                        GetAtt(vpc_stack, f"Outputs.{VPC_MAP_DNS_ZONE_T}"),
-                        Ref("AWS::NoValue"),
                     ),
                 }
             )
@@ -237,13 +221,20 @@ class ComposeXStack(Stack, object):
         """
         Method to set the stack parameters when we are not creating a VPC.
         """
+        default_parameters = [
+            VPC_ID,
+            PUBLIC_SUBNETS,
+            STORAGE_SUBNETS,
+            APP_SUBNETS,
+            APP_SUBNETS,
+        ]
+        add_parameters(self.stack_template, default_parameters)
         self.Parameters.update(
             {
                 VPC_ID_T: Ref(VPC_ID),
                 APP_SUBNETS_T: Join(",", Ref(APP_SUBNETS)),
                 STORAGE_SUBNETS_T: Join(",", Ref(STORAGE_SUBNETS)),
                 PUBLIC_SUBNETS_T: Join(",", Ref(PUBLIC_SUBNETS)),
-                VPC_MAP_ID_T: Ref(VPC_MAP_ID),
             }
         )
 
@@ -267,7 +258,7 @@ def process_stacks(root_stack, settings):
             LOG.debug(resource)
             LOG.debug(resource.title)
             process_stacks(resource, settings)
-            resource.Parameters.update(pass_root_stack_name())
+            resource.Parameters.update(cfn_conditions.pass_root_stack_name())
         elif isinstance(resource, Stack):
             LOG.warn(resource_name)
             LOG.warn(resource)

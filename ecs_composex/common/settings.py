@@ -31,7 +31,6 @@ from ecs_composex.vpc.vpc_params import (
     PUBLIC_SUBNETS_T,
     APP_SUBNETS_T,
     STORAGE_SUBNETS_T,
-    VPC_MAP_ID_T,
 )
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME
 from ecs_composex.common.cfn_params import USE_FLEET_T
@@ -91,7 +90,9 @@ class ComposeXSettings(object):
             self.compose_content = load_composex_file(kwargs[self.input_file_arg])
         elif content and isinstance(content, dict):
             self.compose_content = content
-        self.input_file = kwargs[self.input_file_arg]
+        self.input_file = (
+            kwargs[self.input_file_arg] if keyisset(self.input_file_arg, kwargs) else {}
+        )
         self.account_id = None
 
         self.bucket_name = None
@@ -336,14 +337,10 @@ class ComposeXSettings(object):
             kwargs[STORAGE_SUBNETS_T] if keyisset(STORAGE_SUBNETS_T, kwargs) else None
         )
         app_subnets = kwargs[APP_SUBNETS_T] if keyisset(APP_SUBNETS_T, kwargs) else None
-        vpc_private_namespace_id = (
-            kwargs[VPC_MAP_ID_T] if keyisset(VPC_MAP_ID_T, kwargs) else None
-        )
         setattr(self, VPC_ID_T, vpc_id)
         setattr(self, APP_SUBNETS_T, app_subnets)
         setattr(self, STORAGE_SUBNETS_T, storage_subnets)
         setattr(self, PUBLIC_SUBNETS_T, public_subnets)
-        setattr(self, VPC_MAP_ID_T, vpc_private_namespace_id)
 
     def set_vpc_default_settings(self):
         LOG.info(

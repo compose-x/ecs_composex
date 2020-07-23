@@ -37,8 +37,8 @@ from troposphere import Sub, Ref, Join, Tags
 from troposphere.ec2 import SecurityGroup
 
 from ecs_composex.common import build_template
-from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T, USE_CLOUDMAP
 from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.dns import dns_params
 from ecs_composex.ecs import ecs_params
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME, CLUSTER_NAME_T
 from ecs_composex.ecs.ecs_template import generate_services
@@ -58,7 +58,6 @@ class ServiceStack(ComposeXStack):
         super().__init__(title, stack_template=template, stack_parameters=parameters)
         self.Parameters.update(
             {
-                ROOT_STACK_NAME_T: Ref("AWS::StackName"),
                 vpc_params.VPC_ID_T: Ref(vpc_params.VPC_ID),
                 vpc_params.PUBLIC_SUBNETS_T: Join(",", Ref(vpc_params.PUBLIC_SUBNETS)),
                 vpc_params.APP_SUBNETS_T: Join(",", Ref(vpc_params.APP_SUBNETS)),
@@ -76,20 +75,20 @@ class ServicesStack(ComposeXStack):
     dependencies = []
     services = []
 
-    def __init__(self, title, settings):
+    def __init__(self, title, settings, **cfn_params):
         parameters = [
             CLUSTER_NAME,
             vpc_params.VPC_ID,
             vpc_params.PUBLIC_SUBNETS,
             vpc_params.APP_SUBNETS,
-            vpc_params.VPC_MAP_ID,
-            vpc_params.VPC_MAP_DNS_ZONE,
-            USE_CLOUDMAP,
             ecs_params.XRAY_IMAGE,
             ecs_params.LOG_GROUP_RETENTION,
+            dns_params.PUBLIC_DNS_ZONE_NAME,
+            dns_params.PUBLIC_DNS_ZONE_ID,
+            dns_params.PRIVATE_DNS_ZONE_ID,
+            dns_params.PRIVATE_DNS_ZONE_NAME,
         ]
         template = build_template("Root template for ECS Services", parameters)
-        default_params = {ROOT_STACK_NAME_T: Ref("AWS::StackName")}
         cluster_sg = template.add_resource(
             SecurityGroup(
                 "ClusterWideSecurityGroup",
@@ -106,7 +105,7 @@ class ServicesStack(ComposeXStack):
         )
         services = generate_services(settings, cluster_sg)
         super().__init__(
-            title, stack_template=template, stack_parameters=default_params,
+            title, stack_template=template, **cfn_params,
         )
         self.create_services_templates(services)
         if not settings.create_vpc:

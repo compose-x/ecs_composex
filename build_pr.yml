@@ -91,10 +91,17 @@ Resources:
                 Effect: Allow
                 Action:
                   - 'cloudformation:ValidateTemplate'
+              - Sid: AppMeshAccess
+                Action:
+                  - appmesh:ListMeshes
+                  - appmesh:DescribeMesh
+                Resource:
+                  - "*"
+                Effect: Allow
               - Sid: Ec2Access
                 Effect: Allow
                 Action:
-                  - ec2:DescribeAvailabilityZones
+                  - ec2:Describe*
                 Resource:
                   - "*"
               - Sid: RDSHelpersAccess
