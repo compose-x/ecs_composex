@@ -17,7 +17,8 @@
 
 from troposphere import Parameter, Sub
 
-ZONES_PATTERN = r"^none$|^Z[A-Z0-9]{6,24}$|^ns-[a-z0-9]{6,24}$"
+# ZONES_PATTERN = r"^none$|^Z[A-Z0-9]{6,24}$|^ns-[a-z0-9]{6,24}$"
+ZONES_PATTERN = r"^none$|^ns-[a-z0-9]{6,24}$"
 
 PUBLIC_DNS_ZONE_NAME_T = "PublicDnsZoneName"
 PUBLIC_DNS_ZONE_NAME = Parameter(

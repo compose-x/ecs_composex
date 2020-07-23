@@ -20,6 +20,9 @@ from ecs_composex.dns.dns_params import ZONES_PATTERN
 from ecs_composex.common import LOG
 
 
+LAST_DOT_RE = re.compile(r"(\.{1}$)")
+
+
 def validate_zone_id_input(zone_id):
     """
     Function to validate the ZoneID is conform to expectations
@@ -40,16 +43,17 @@ def validate_zone_id_input(zone_id):
 def lookup_service_discovery_namespace(zone_id, session, private):
     client = session.client("servicediscovery")
     try:
-        zone_r = client.get_namspeace(Id=zone_id)
-        if zone_r["Namespace"]["Properties"]["Type"] == "HTTP":
+        zone_r = client.get_namespace(Id=zone_id)
+        properties = zone_r["Namespace"]["Properties"]
+        if zone_r["Namespace"]["Type"] == "HTTP":
             raise TypeError(
                 "Unsupported CloudMap namespace HTTP. "
                 "Only DNS namespaces, private or public, are supported"
             )
-        properties = zone_r["Namespace"]["Properties"]
         return {
             "ZoneId": properties["DnsProperties"]["HostedZoneId"],
-            "ZoneTld": properties["HttpProperties"]["HttpName"],
+            "ZoneTld": LAST_DOT_RE.sub("", properties["HttpProperties"]["HttpName"]),
+            "NamespaceId": zone_r["Namespace"]["Id"],
         }
     except client.exceptions.NamespaceNotFound as error:
         LOG.error(f"Namespace ID {zone_id} not found")
@@ -62,7 +66,10 @@ def lookup_route53_namespace(zone_id, session, private):
         zone_r = client.get_hosted_zone(Id=zone_id)["HostedZone"]
         if zone_r["Config"]["PrivateZone"] != private:
             raise ValueError(f"The zone {zone_id} is not a private zone.")
-        return {"ZoneId": ["Id"], "ZoneTld": ["Name"]}
+        return {
+            "ZoneId": zone_r["Id"].split(r"/")[-1],
+            "ZoneTld": LAST_DOT_RE.sub("", zone_r["Name"]),
+        }
     except client.exceptions.NoSuchHostedZone as error:
         LOG.warning(f"Zone {zone_id} not found in your account.")
 

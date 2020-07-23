@@ -291,7 +291,7 @@ def add_x_resources(root_template, settings, vpc_stack=None):
                 root_template.add_resource(xstack)
 
 
-def create_services(root_stack, settings, vpc_stack):
+def create_services(root_stack, settings, vpc_stack, dns_params):
     """
     Function to add the microservices root stack
 
@@ -304,19 +304,10 @@ def create_services(root_stack, settings, vpc_stack):
         {
             ecs_params.CLUSTER_NAME_T: If(
                 CLUSTER_NAME_CON_T, Ref(AWS_STACK_NAME), Ref(CLUSTER_NAME_T)
-            ),
-            dns_params.PRIVATE_DNS_ZONE_ID.title: If(
-                dns_conditions.CREATE_PRIVATE_NAMESPACE_CON_T,
-                GetAtt(PRIVATE_MAP_TITLE, "Id"),
-                Ref(dns_params.PRIVATE_DNS_ZONE_ID),
-            ),
-            dns_params.PRIVATE_DNS_ZONE_NAME.title: If(
-                dns_conditions.USE_DEFAULT_ZONE_NAME_CON_T,
-                dns_params.DEFAULT_PRIVATE_DNS_ZONE,
-                Ref(dns_params.PRIVATE_DNS_ZONE_NAME),
-            ),
+            )
         }
     )
+    stack.Parameters.update(dns_params)
     if vpc_stack:
         stack.get_from_vpc_stack(vpc_stack)
     if settings.create_cluster:
@@ -464,7 +455,9 @@ def generate_full_template(settings):
     root_stack.Parameters.update(dns_settings.root_params)
     compute_stack = add_compute(root_stack.stack_template, settings, vpc_stack)
     services_families = define_services_families(settings.compose_content[SERVICES_KEY])
-    services_stack = create_services(root_stack, settings, vpc_stack)
+    services_stack = create_services(
+        root_stack, settings, vpc_stack, dns_settings.nested_params
+    )
 
     if settings.cluster_name != CLUSTER_NAME.Default:
         root_stack.Parameters.update({CLUSTER_NAME_T: settings.cluster_name})

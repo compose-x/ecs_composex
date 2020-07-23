@@ -37,7 +37,6 @@ from troposphere import Sub, Ref, Join, Tags
 from troposphere.ec2 import SecurityGroup
 
 from ecs_composex.common import build_template
-from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.dns import dns_params
 from ecs_composex.ecs import ecs_params

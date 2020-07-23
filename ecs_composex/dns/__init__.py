@@ -80,6 +80,29 @@ class DnsSettings(object):
         self.root_params = {}
         self.nested_params = {}
 
+        self.public_map = PublicSpace(
+            cfn_params.PUBLIC_MAP_TITLE,
+            template=root_stack.stack_template,
+            Condition=dns_conditions.CREATE_PUBLIC_NAMESPACE_CON_T,
+            Description=Sub(r"Public DnsNamespace for ${AWS::StackName}"),
+            Name=Sub(
+                f"${{AWS::StackName}}.{{{dns_params.PUBLIC_DNS_ZONE_NAME.title}}}"
+            ),
+        )
+        self.private_map = VpcSpace(
+            cfn_params.PRIVATE_MAP_TITLE,
+            template=root_stack.stack_template,
+            Condition=dns_conditions.CREATE_PRIVATE_NAMESPACE_CON_T,
+            Description=Sub(r"CloudMap VpcNamespace for ${AWS::StackName}"),
+            Name=If(
+                dns_conditions.USE_DEFAULT_ZONE_NAME_CON_T,
+                dns_params.DEFAULT_PRIVATE_DNS_ZONE,
+                Ref(dns_params.PRIVATE_DNS_ZONE_NAME),
+            ),
+            Vpc=vpc,
+            DependsOn=[] if isinstance(vpc, Ref) else [cfn_params.VPC_STACK_NAME],
+        )
+
         if not keyisset("x-dns", settings.compose_content):
             dns_settings = {}
             self.private_params = {
@@ -92,9 +115,7 @@ class DnsSettings(object):
         if keyisset(self.private_namespace_key, dns_settings):
             self.add_private_zone(root_stack, settings, dns_settings, vpc)
 
-        if keyisset(self.public_namespace_key, dns_settings) and keyisset(
-            "Name", dns_settings[self.public_namespace_key]
-        ):
+        if keyisset(self.public_namespace_key, dns_settings):
             self.add_public_zone(root_stack, settings, dns_settings)
 
     def add_private_zone(self, root_stack, settings, dns_settings, vpc):
@@ -105,6 +126,7 @@ class DnsSettings(object):
         """
         if keyisset("Name", dns_settings[self.private_namespace_key]):
             self.private_zone_name = dns_settings[self.private_namespace_key]["Name"]
+
         if keyisset("Lookup", dns_settings[self.private_namespace_key]):
             namespace_info = lookup_namespace(
                 dns_settings[self.private_namespace_key]["Lookup"],
@@ -125,7 +147,17 @@ class DnsSettings(object):
             self.root_params.update(
                 {
                     dns_params.PRIVATE_DNS_ZONE_NAME.title: namespace_info["ZoneTld"],
-                    dns_params.PRIVATE_DNS_ZONE_ID.title: namespace_info["ZoneId"],
+                    dns_params.PRIVATE_DNS_ZONE_ID.title: namespace_info["NamespaceId"],
+                }
+            )
+            self.nested_params.update(
+                {
+                    dns_params.PRIVATE_DNS_ZONE_NAME.title: If(
+                        dns_conditions.USE_DEFAULT_ZONE_NAME_CON_T,
+                        dns_params.DEFAULT_PRIVATE_DNS_ZONE,
+                        Ref(dns_params.PRIVATE_DNS_ZONE_NAME),
+                    ),
+                    dns_params.PRIVATE_DNS_ZONE_ID: GetAtt(self.private_map, "Id"),
                 }
             )
         else:
@@ -133,25 +165,13 @@ class DnsSettings(object):
             self.root_params.update(
                 {dns_params.PRIVATE_DNS_ZONE_NAME.title: self.private_zone_name}
             )
-            private_map_id = VpcSpace(
-                cfn_params.PRIVATE_MAP_TITLE,
-                template=root_stack.stack_template,
-                Condition=dns_conditions.CREATE_PRIVATE_NAMESPACE_CON_T,
-                Description=Sub(r"CloudMap VpcNamespace for ${AWS::StackName}"),
-                Name=If(
-                    dns_conditions.USE_DEFAULT_ZONE_NAME_CON_T,
-                    dns_params.DEFAULT_PRIVATE_DNS_ZONE,
-                    Ref(dns_params.PRIVATE_DNS_ZONE_NAME),
-                ),
-                Vpc=vpc,
-                DependsOn=[] if isinstance(vpc, Ref) else [cfn_params.VPC_STACK_NAME],
-            )
-            self.root_params.update(
-                {dns_params.PRIVATE_DNS_ZONE_NAME.title: self.private_zone_name}
-            )
             self.nested_params.update(
                 {
-                    dns_params.PRIVATE_DNS_ZONE_ID.title: GetAtt(private_map_id, "Id"),
+                    dns_params.PRIVATE_DNS_ZONE_ID.title: If(
+                        dns_conditions.CREATE_PRIVATE_NAMESPACE_CON_T,
+                        GetAtt(self.private_map, "Id"),
+                        Ref(dns_params.PRIVATE_DNS_ZONE_ID),
+                    ),
                     dns_params.PRIVATE_DNS_ZONE_NAME.title: If(
                         dns_conditions.USE_DEFAULT_ZONE_NAME_CON_T,
                         dns_params.DEFAULT_PRIVATE_DNS_ZONE,
@@ -166,38 +186,48 @@ class DnsSettings(object):
         :param root_stack:
         :return:
         """
-        self.public_zone_name = dns_settings[self.public_namespace_key]["Name"]
+        if keyisset("Name", dns_settings[self.public_namespace_key]):
+            self.public_zone_name = dns_settings[self.public_namespace_key]["Name"]
+
         if keyisset("Lookup", dns_settings[self.public_namespace_key]):
             namespace_info = lookup_namespace(
                 dns_settings[self.public_namespace_key]["Lookup"],
                 settings.session,
                 private=False,
             )
-            if not self.public_zone_name == namespace_info["ZoneTld"]:
+            print(namespace_info)
+            if not namespace_info["ZoneTld"].find(self.public_zone_name) == 0:
                 raise ValueError(
                     "Zone name provided does not match the value looked up. Got",
                     self.public_zone_name,
                     "Resolved via ID",
                     namespace_info["ZoneTld"],
                 )
-            root_stack.Parameters.update(
+            self.root_params.update(
                 {
-                    dns_params.PRIVATE_DNS_ZONE_NAME.title: namespace_info["ZoneTld"],
-                    dns_params.PRIVATE_DNS_ZONE_ID.title: namespace_info["ZoneId"],
+                    dns_params.PUBLIC_DNS_ZONE_NAME.title: namespace_info["ZoneTld"],
+                    dns_params.PUBLIC_DNS_ZONE_ID.title: namespace_info["ZoneId"],
+                }
+            )
+            self.nested_params.update(
+                {
+                    dns_params.PUBLIC_DNS_ZONE_NAME: Sub(
+                        f"${{AWS::StackName}}.{{{dns_params.PUBLIC_DNS_ZONE_NAME.title}}}"
+                    ),
+                    dns_params.PUBLIC_DNS_ZONE_ID.title: Ref(
+                        dns_params.PUBLIC_DNS_ZONE_ID
+                    ),
                 }
             )
         else:
-            public_map = PublicSpace(
-                cfn_params.PUBLIC_MAP_TITLE,
-                template=root_stack.stack_template,
-                Condition=dns_conditions.CREATE_PUBLIC_NAMESPACE_CON_T,
-                Description=Sub(r"Public DnsNamespace for ${AWS::StackName}"),
-                Name=Ref(dns_params.PUBLIC_DNS_ZONE_NAME),
+            self.root_params.update(
+                {dns_params.PUBLIC_DNS_ZONE_NAME.title: self.public_zone_name}
             )
-            root_stack.Parameters.update(
+            self.nested_params.update(
                 {
-                    dns_params.PRIVATE_DNS_ZONE_NAME.title: Ref(
+                    dns_params.PUBLIC_DNS_ZONE_NAME.title: Ref(
                         dns_params.PUBLIC_DNS_ZONE_NAME
-                    )
+                    ),
+                    dns_params.PUBLIC_DNS_ZONE_ID.title: GetAtt(self.public_map, "Id"),
                 }
             )
