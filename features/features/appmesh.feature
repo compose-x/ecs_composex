@@ -23,16 +23,6 @@ Feature: ecs_composex.appmesh
     |use-cases/appmesh/allow_all.yml|
 
   @appmesh
-  Scenario Outline: Mesh requested but no VPC
-    Given I use <file_path> as my docker-compose file
-    And I want to create a Cluster
-    Then I render the docker-compose to composex to validate
-
-    Examples:
-    |file_path|
-    |use-cases/blog.with_mesh.yml|
-
-  @appmesh
   Scenario Outline: No mesh created with the services
     Given I use <file_path> as my docker-compose file
     And I render the docker-compose to composex

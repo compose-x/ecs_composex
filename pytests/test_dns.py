@@ -15,30 +15,17 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""
-AppMesh parameters
-"""
+from os import path
+import pytest
+import placebo
+import boto3
+from ecs_composex.common.settings import ComposeXSettings
+from ecs_composex.common import load_composex_file
 
-from troposphere import Parameter
+from .test_aws import create_settings
 
-RES_KEY = "appmesh"
 
-MESH_NAME_T = "AppMeshName"
-MESH_NAME = Parameter(MESH_NAME_T, Type="String", Default="AutoCreate")
-
-MESH_OWNER_ID_T = "MeshOwnerId"
-MESH_OWNER_ID = Parameter(
-    MESH_OWNER_ID_T, Type="String", AllowedPattern=r"[0-9]{12}", Default="000000000042"
-)
-
-USE_APP_MESH_T = "UseAppMesh"
-USE_APP_MESH = Parameter(
-    USE_APP_MESH_T, Type="String", AllowedValues=["True", "False"], Default="True"
-)
-
-ENVOY_IMAGE_URL_T = "EnvoyLatestImageUrl"
-ENVOY_IMAGE_URL = Parameter(
-    ENVOY_IMAGE_URL_T,
-    Type="AWS::SSM::Parameter::Value<String>",
-    Default="/aws/service/appmesh/envoy",
-)
+@pytest.fixture
+def content():
+    here = path.abspath(path.dirname(__file__))
+    return load_composex_file(f"{here}/../use-cases/blog.yml")

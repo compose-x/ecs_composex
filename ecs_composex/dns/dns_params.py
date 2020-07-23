@@ -41,5 +41,7 @@ PRIVATE_DNS_ZONE_ID = Parameter(
 )
 
 DEFAULT_PRIVATE_DNS_ZONE = Sub(
-    f"svc.${{AWS::StackName}}.${{{PRIVATE_DNS_ZONE_NAME.title}}}"
+    f"${{AWS::StackName}}.${{{PRIVATE_DNS_ZONE_NAME.title}}}"
 )
+
+DEFAULT_PUBLIC_DNS_ZONE = Sub(f"${{AWS::StackName}}.${{{PUBLIC_DNS_ZONE_NAME.title}}}")

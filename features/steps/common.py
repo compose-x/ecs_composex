@@ -40,7 +40,7 @@ def step_impl(context, file_path):
     :param str file_path:
     :return:
     """
-    cases_path = path.abspath(f"{here()}/../../{file_path}")
+    cases_path = path.abspath(f"{here()}/../{file_path}")
     context.settings = ComposeXSettings(
         profile_name=getattr(context, "profile_name")
         if hasattr(context, "profile_name")

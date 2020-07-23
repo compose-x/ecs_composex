@@ -85,20 +85,14 @@ class DnsSettings(object):
             template=root_stack.stack_template,
             Condition=dns_conditions.CREATE_PUBLIC_NAMESPACE_CON_T,
             Description=Sub(r"Public DnsNamespace for ${AWS::StackName}"),
-            Name=Sub(
-                f"${{AWS::StackName}}.${{{dns_params.PUBLIC_DNS_ZONE_NAME.title}}}"
-            ),
+            Name=dns_params.DEFAULT_PUBLIC_DNS_ZONE,
         )
         self.private_map = VpcSpace(
             cfn_params.PRIVATE_MAP_TITLE,
             template=root_stack.stack_template,
             Condition=dns_conditions.CREATE_PRIVATE_NAMESPACE_CON_T,
             Description=Sub(r"CloudMap VpcNamespace for ${AWS::StackName}"),
-            Name=If(
-                dns_conditions.USE_DEFAULT_ZONE_NAME_CON_T,
-                dns_params.DEFAULT_PRIVATE_DNS_ZONE,
-                Ref(dns_params.PRIVATE_DNS_ZONE_NAME),
-            ),
+            Name=dns_params.DEFAULT_PRIVATE_DNS_ZONE,
             Vpc=vpc,
             DependsOn=[] if isinstance(vpc, Ref) else [cfn_params.VPC_STACK_NAME],
         )
@@ -113,12 +107,12 @@ class DnsSettings(object):
             dns_settings = settings.compose_content["x-dns"]
 
         if keyisset(self.private_namespace_key, dns_settings):
-            self.add_private_zone(root_stack, settings, dns_settings, vpc)
+            self.add_private_zone(settings, dns_settings)
 
         if keyisset(self.public_namespace_key, dns_settings):
-            self.add_public_zone(root_stack, settings, dns_settings)
+            self.add_public_zone(settings, dns_settings)
 
-    def add_private_zone(self, root_stack, settings, dns_settings, vpc):
+    def add_private_zone(self, settings, dns_settings):
         """
         Add private zone to root template
 
@@ -152,11 +146,7 @@ class DnsSettings(object):
             )
             self.nested_params.update(
                 {
-                    dns_params.PRIVATE_DNS_ZONE_NAME.title: If(
-                        dns_conditions.USE_DEFAULT_ZONE_NAME_CON_T,
-                        dns_params.DEFAULT_PRIVATE_DNS_ZONE,
-                        Ref(dns_params.PRIVATE_DNS_ZONE_NAME),
-                    ),
+                    dns_params.PRIVATE_DNS_ZONE_NAME.title: dns_params.DEFAULT_PRIVATE_DNS_ZONE,
                     dns_params.PRIVATE_DNS_ZONE_ID: GetAtt(self.private_map, "Id"),
                 }
             )
@@ -172,18 +162,13 @@ class DnsSettings(object):
                         GetAtt(self.private_map, "Id"),
                         Ref(dns_params.PRIVATE_DNS_ZONE_ID),
                     ),
-                    dns_params.PRIVATE_DNS_ZONE_NAME.title: If(
-                        dns_conditions.USE_DEFAULT_ZONE_NAME_CON_T,
-                        dns_params.DEFAULT_PRIVATE_DNS_ZONE,
-                        Ref(dns_params.PRIVATE_DNS_ZONE_NAME),
-                    ),
+                    dns_params.PRIVATE_DNS_ZONE_NAME.title: dns_params.DEFAULT_PRIVATE_DNS_ZONE,
                 }
             )
 
-    def add_public_zone(self, root_stack, settings, dns_settings):
+    def add_public_zone(self, settings, dns_settings):
         """
 
-        :param root_stack:
         :return:
         """
         if keyisset("Name", dns_settings[self.public_namespace_key]):
@@ -211,9 +196,7 @@ class DnsSettings(object):
             )
             self.nested_params.update(
                 {
-                    dns_params.PUBLIC_DNS_ZONE_NAME: Sub(
-                        f"${{AWS::StackName}}.{{{dns_params.PUBLIC_DNS_ZONE_NAME.title}}}"
-                    ),
+                    dns_params.PUBLIC_DNS_ZONE_NAME: dns_params.DEFAULT_PUBLIC_DNS_ZONE,
                     dns_params.PUBLIC_DNS_ZONE_ID.title: Ref(
                         dns_params.PUBLIC_DNS_ZONE_ID
                     ),
@@ -225,9 +208,7 @@ class DnsSettings(object):
             )
             self.nested_params.update(
                 {
-                    dns_params.PUBLIC_DNS_ZONE_NAME.title: Sub(
-                        f"${{AWS::StackName}}.${{{dns_params.PUBLIC_DNS_ZONE_NAME.title}}}"
-                    ),
+                    dns_params.PUBLIC_DNS_ZONE_NAME.title: dns_params.DEFAULT_PUBLIC_DNS_ZONE,
                     dns_params.PUBLIC_DNS_ZONE_ID.title: GetAtt(self.public_map, "Id"),
                 }
             )

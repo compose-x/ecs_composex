@@ -98,7 +98,7 @@ class MeshNode(object):
         self.node = appmesh.VirtualNode(
             f"{self.stack.title}VirtualNode",
             MeshName=Ref(appmesh_params.MESH_NAME),
-            MeshOwner=appmesh_conditions.set_mesh_owner_id(),
+            MeshOwner=Ref(appmesh_params.MESH_OWNER_ID),
             VirtualNodeName=GetAtt(sd_service, "Name"),
             Spec=appmesh.VirtualNodeSpec(
                 ServiceDiscovery=appmesh.ServiceDiscovery(
@@ -117,6 +117,12 @@ class MeshNode(object):
         add_parameters(
             self.stack.stack_template,
             [appmesh_params.MESH_OWNER_ID, appmesh_params.MESH_NAME],
+        )
+        self.stack.Parameters.update(
+            {
+                appmesh_params.MESH_NAME.title: Ref(appmesh_params.MESH_NAME),
+                appmesh_params.MESH_OWNER_ID.title: Ref(appmesh_params.MESH_OWNER_ID),
+            }
         )
         appmesh_conditions.add_appmesh_conditions(self.stack.stack_template)
         self.stack.stack_template.add_output(

@@ -2,6 +2,12 @@
 # Blog applications
 
 version: '3.8'
+
+x-configs:
+  app:
+    network:
+      use_cloudmap: True
+
 services:
   rproxy:
     image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-01-rproxy:latest
@@ -77,3 +83,18 @@ services:
 x-tags:
   owner: johnpreston
   contact: john@lambda-my-aws.io
+
+x-vpc:
+  Lookup:
+    VpcId:
+      tags:
+        - Name: vpcwork
+    AppSubnets:
+      tags:
+        - vpc::usage: application
+    StorageSubnets:
+      tags:
+        - vpc::usage: storage
+    PublicSubnets:
+      tags:
+        - vpc::usage: public

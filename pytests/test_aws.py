@@ -133,7 +133,6 @@ def create_settings(updated_content):
     session = boto3.session.Session()
     pill = placebo.attach(session, data_path=f"{here}/x_vpc")
     pill.playback()
-    print(updated_content)
     settings = ComposeXSettings(
         content=updated_content,
         session=session,
@@ -149,7 +148,6 @@ def create_settings(updated_content):
 
 def test_vpc_import_from_tags(content, x_vpc_tags):
     content.update({"x-vpc": {"Lookup": x_vpc_tags}})
-    print(content["x-vpc"])
     settings = create_settings(content)
     assert hasattr(settings, VPC_ID_T) and getattr(settings, VPC_ID_T) is not None
     with pytest.raises(ValueError):
@@ -159,14 +157,12 @@ def test_vpc_import_from_tags(content, x_vpc_tags):
 
 def test_vpc_import_from_arn(content, x_vpc_arn):
     content.update({"x-vpc": {"Lookup": x_vpc_arn}})
-    print(content["x-vpc"])
     settings = create_settings(content)
     assert hasattr(settings, VPC_ID_T) and getattr(settings, VPC_ID_T) is not None
 
 
 def test_vpc_import_from_id(content, x_vpc_id):
     content.update({"x-vpc": {"Lookup": x_vpc_id}})
-    print(content["x-vpc"])
     settings = create_settings(content)
     assert hasattr(settings, VPC_ID_T) and getattr(settings, VPC_ID_T) is not None
 

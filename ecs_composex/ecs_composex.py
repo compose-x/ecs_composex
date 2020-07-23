@@ -421,16 +421,6 @@ def create_vpc_root(root_stack, settings):
             vpc_params.PUBLIC_SUBNETS.title: getattr(
                 settings, vpc_params.PUBLIC_SUBNETS_T
             ),
-            dns_params.PRIVATE_DNS_ZONE_ID.title: If(
-                dns_conditions.CREATE_PRIVATE_NAMESPACE_CON_T,
-                GetAtt(PRIVATE_MAP_TITLE, "Id"),
-                Ref(dns_params.PRIVATE_DNS_ZONE_ID),
-            ),
-            dns_params.PRIVATE_DNS_ZONE_NAME.title: If(
-                dns_conditions.USE_DEFAULT_ZONE_NAME_CON_T,
-                dns_params.DEFAULT_PRIVATE_DNS_ZONE,
-                Ref(dns_params.PRIVATE_DNS_ZONE_NAME),
-            ),
         }
         root_stack.Parameters.update(settings_params)
     if isinstance(vpc_stack, VpcStack):
@@ -474,6 +464,6 @@ def generate_full_template(settings):
     apply_x_to_x_configs(root_stack.stack_template, settings)
 
     if keyisset("x-appmesh", settings.compose_content):
-        mesh = Mesh(settings.compose_content["x-appmesh"], services_stack)
+        mesh = Mesh(settings.compose_content["x-appmesh"], services_stack, settings)
         mesh.render_mesh_template(services_stack)
     return root_stack

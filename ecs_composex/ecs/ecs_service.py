@@ -57,6 +57,7 @@ from troposphere.servicediscovery import (
     Service as SdService,
     DnsRecord as SdDnsRecord,
     HealthCheckCustomConfig as SdHealthCheckCustomConfig,
+    Instance as SdInstance,
 )
 
 from ecs_composex.common import add_parameters
@@ -84,6 +85,7 @@ from ecs_composex.dns.dns_params import (
     PUBLIC_DNS_ZONE_ID,
     PUBLIC_DNS_ZONE_NAME,
 )
+from ecs_composex.dns.dns_conditions import CREATE_PUBLIC_NAMESPACE_CON_T
 
 CIDR_REG = r"""((((((([0-9]{1}\.))|([0-9]{2}\.)|
 (1[0-9]{2}\.)|(2[0-5]{2}\.)))){3})(((((([0-9]{1}))|
@@ -281,10 +283,6 @@ class Service(object):
         Function to initialize the Service object
         :param family_name: Name of the service
         :type family_name: str
-        :param definition: the service definition as defined in compose file
-        :type definition: dict
-        :param kwargs: unordered arguments
-        :type kwargs: dict
         """
         self.template = template
         self.config = config
@@ -667,6 +665,28 @@ class Service(object):
             ),
         )
         if self.config.is_public:
+            sd_service = SdService(
+                f"{self.resource_name}PublicDiscoveryService",
+                template=self.template,
+                Description=Ref(SERVICE_NAME),
+                Condition=CREATE_PUBLIC_NAMESPACE_CON_T,
+                NamespaceId=Ref(PUBLIC_DNS_ZONE_ID),
+                HealthCheckCustomConfig=SdHealthCheckCustomConfig(FailureThreshold=1.0),
+                DnsConfig=SdDnsConfig(
+                    RoutingPolicy="WEIGHTED",
+                    NamespaceId=Ref(AWS_NO_VALUE),
+                    DnsRecords=[SdDnsRecord(TTL="15", Type="A"),],
+                ),
+                Name=If(USE_HOSTNAME_CON_T, Ref(SERVICE_HOSTNAME), Ref(SERVICE_NAME)),
+            )
+            sd_instance = SdInstance(
+                f"{self.resource_name}PublicLB",
+                template=self.template,
+                ServiceId=GetAtt(sd_service, "Id"),
+                InstanceAttributes={
+                    "AWS_ALIAS_DNS_NAME": GetAtt(loadbalancer, "DNSName")
+                },
+            )
             if self.config.use_alb() and alb_sg:
                 self.add_public_security_group_ingress(alb_sg)
             elif self.config.use_nlb():

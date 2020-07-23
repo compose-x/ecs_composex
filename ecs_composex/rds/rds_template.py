@@ -35,16 +35,9 @@ from ecs_composex.rds.rds_params import (
     DB_ENGINE_VERSION_T,
     DB_ENGINE_NAME_T,
 )
-from ecs_composex.vpc.vpc_conditions import (
-    USE_VPC_MAP_ID_CON_T,
-    USE_VPC_MAP_ID_CON,
-    NOT_USE_VPC_MAP_ID_CON_T,
-    NOT_USE_VPC_MAP_ID_CON,
-)
 from ecs_composex.vpc.vpc_params import (
     VPC_ID,
     VPC_ID_T,
-    VPC_MAP_ID,
     STORAGE_SUBNETS,
     STORAGE_SUBNETS_T,
 )
@@ -94,11 +87,7 @@ def init_rds_root_template():
     :return: template
     :rtype: troposphere.Template
     """
-    template = build_template(
-        "RDS Root Template", [VPC_MAP_ID, VPC_ID, STORAGE_SUBNETS]
-    )
-    template.add_condition(USE_VPC_MAP_ID_CON_T, USE_VPC_MAP_ID_CON)
-    template.add_condition(NOT_USE_VPC_MAP_ID_CON_T, NOT_USE_VPC_MAP_ID_CON)
+    template = build_template("RDS Root Template", [VPC_ID, STORAGE_SUBNETS])
     return template
 
 

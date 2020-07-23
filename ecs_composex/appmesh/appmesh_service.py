@@ -35,6 +35,7 @@ from ecs_composex.dns.dns_params import (
     PRIVATE_DNS_ZONE_ID,
     PRIVATE_DNS_ZONE_NAME,
 )
+from ecs_composex.appmesh.appmesh_params import MESH_NAME, MESH_OWNER_ID
 
 
 def validate_service_backend(service, routers, nodes):
@@ -100,7 +101,7 @@ class MeshService(object):
             f"{NONALPHANUM.sub('', name).title()}VirtualService",
             DependsOn=depends,
             MeshName=appmesh_conditions.get_mesh_name(mesh),
-            MeshOwner=appmesh_conditions.get_mesh_owner(mesh),
+            MeshOwner=appmesh_conditions.set_mesh_owner_id(),
             VirtualServiceName=Sub(f"{name}.${{{PRIVATE_DNS_ZONE_NAME.title}}}"),
             Spec=appmesh.VirtualServiceSpec(
                 Provider=appmesh.VirtualServiceProvider(

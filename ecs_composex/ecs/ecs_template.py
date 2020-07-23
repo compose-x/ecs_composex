@@ -43,7 +43,11 @@ from ecs_composex.ecs.ecs_service import (
     Task,
 )
 from ecs_composex.ecs.ecs_service_config import ServiceConfig
-from ecs_composex.vpc import vpc_params, vpc_conditions
+from ecs_composex.vpc import vpc_params
+from ecs_composex.dns.dns_conditions import (
+    CREATE_PUBLIC_NAMESPACE_CON_T,
+    CREATE_PUBLIC_NAMESPACE_CON,
+)
 
 
 def initialize_service_template(service_name):
@@ -102,6 +106,9 @@ def initialize_service_template(service_name):
     service_tpl.add_condition(
         ecs_conditions.USE_CLUSTER_CAPACITY_PROVIDERS_CON_T,
         ecs_conditions.USE_CLUSTER_CAPACITY_PROVIDERS_CON,
+    )
+    service_tpl.add_condition(
+        CREATE_PUBLIC_NAMESPACE_CON_T, CREATE_PUBLIC_NAMESPACE_CON
     )
     svc_log = service_tpl.add_resource(
         LogGroup(
