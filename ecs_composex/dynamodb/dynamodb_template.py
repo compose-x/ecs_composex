@@ -19,12 +19,26 @@
 Module for DynamoDB to create the root template
 """
 
+from troposphere import GetAtt, Ref
+
 from ecs_composex.dynamodb.dynamodb_params import RES_KEY
 from ecs_composex.common import keyisset, LOG, build_template, NONALPHANUM
+from ecs_composex.common.outputs import formatted_outputs
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.dynamodb.dynamodb_table import add_table_to_template
+from ecs_composex.dynamodb.dynamodb_table import generate_table
+from ecs_composex.dynamodb.dynamodb_params import TABLE_NAME_T, TABLE_ARN_T
 
 CFN_MAX_RESOURCES = 1
+
+
+def add_table_output(template, table):
+    template.add_output(
+        formatted_outputs(
+            [{f"{TABLE_NAME_T}": Ref(table)}, {f"{TABLE_ARN_T}": GetAtt(table, "Arn")}],
+            export=True,
+            obj_name=table.title,
+        )
+    )
 
 
 def create_dynamodb_template(settings):
@@ -43,14 +57,17 @@ def create_dynamodb_template(settings):
 
     template = build_template("DynamoDB for ECS ComposeX")
     for table_name in tables:
-        if mono_template:
-            add_table_to_template(template, table_name, tables[table_name])
-        else:
-            table_res_name = NONALPHANUM.sub("", table_name)
+        table_res_name = NONALPHANUM.sub("", table_name)
+        table = generate_table(table_name, table_res_name, tables[table_name])
+        if mono_template and table:
+            template.add_resource(table)
+            add_table_output(template, table)
+        elif not mono_template and table:
             table_template = build_template(
-                f"Template for DynamoDB table {table_res_name}"
+                f"Template for DynamoDB table {table.title}"
             )
-            add_table_to_template(table_template, table_name, tables[table_name])
+            table_template.add_resource(table)
+            add_table_output(table_template, table)
             table_stack = ComposeXStack(table_res_name, stack_template=table_template)
             template.add_resource(table_stack)
     return template

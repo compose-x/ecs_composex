@@ -23,7 +23,7 @@ services:
           cpus: "0.25"
           memory: "64M"
       labels:
-        ecs.task.family: app01
+        ecs.task.family: bignicefamily
     x-configs:
       network:
         is_public: True
@@ -40,7 +40,7 @@ services:
           cpus: "0.25"
           memory: "64M"
       labels:
-        ecs.task.family: app01
+        ecs.task.family: bignicefamily
     environment:
       LOGLEVEL: DEBUG
     x-configs:
@@ -86,6 +86,39 @@ x-tags:
 
 x-dynamodb:
   tableA:
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: "ArtistId"
+          AttributeType: "S"
+        - AttributeName: "Concert"
+          AttributeType: "S"
+        - AttributeName: "TicketSales"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "ArtistId"
+          KeyType: "HASH"
+        - AttributeName: "Concert"
+          KeyType: "RANGE"
+      GlobalSecondaryIndexes:
+        - IndexName: "GSI"
+          KeySchema:
+            - AttributeName: "TicketSales"
+              KeyType: "HASH"
+          Projection:
+            ProjectionType: "KEYS_ONLY"
+          ProvisionedThroughput:
+            ReadCapacityUnits: 5
+            WriteCapacityUnits: 5
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+    Services:
+      - name: app03
+        access: RW
+      - name: bignicefamily
+        access: RO
+
+  tableB:
     Properties:
       AttributeDefinitions:
         - AttributeName: "Album"
@@ -147,20 +180,17 @@ x-dynamodb:
             ProjectionType: "INCLUDE"
 
     Services:
-      - name: app03
+      - name: app02
         access: RW
 
+  tableC:
+    Lookup:
+      tags:
+        - Name: tableB
+    Services:
+      - name: app02
+        access: RO
+
 x-vpc:
-  Lookup:
-    VpcId:
-      tags:
-        - Name: vpcwork
-    AppSubnets:
-      tags:
-        - vpc::usage: application
-    StorageSubnets:
-      tags:
-        - vpc::usage: storage
-    PublicSubnets:
-      tags:
-        - vpc::usage: public
+  Create:
+    VpcCidr: 10.21.0.0/16

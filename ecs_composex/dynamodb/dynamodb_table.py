@@ -16,11 +16,11 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from troposphere import Ref, Sub, GetAtt
+from troposphere import Ref, GetAtt, Tags
 from troposphere import AWS_NO_VALUE
 from troposphere import dynamodb
 
-from ecs_composex.common import keyisset, LOG, NONALPHANUM
+from ecs_composex.common import keyisset, LOG
 from ecs_composex.common.outputs import formatted_outputs
 from ecs_composex.dynamodb.dynamodb_params import TABLE_NAME_T, TABLE_ARN_T
 
@@ -179,18 +179,18 @@ def define_attributes_definition(attribute_definitions):
     return attributes
 
 
-def add_table_to_template(template, table_name, table_definition):
+def define_table(table_name, table_res_name, table_definition):
     """
     Function to create the DynamoDB table resource
 
-    :param troposphere.Template template:
-    :param str table_name: Name of the table as defined in compose file
-    :param dict table_definition:
+    :param table_name:
+    :param str table_res_name:
+    :param table_definition:
+    :return: the DynamoDB Table
+    :rtype: dynamodb.Table
     """
     required_keys = ["AttributeDefinitions", "KeySchema"]
-    table_res_name = NONALPHANUM.sub("", table_name)
-    if keyisset("Lookup", table_definition):
-        LOG.info("Function to lookup existing table not implemented")
+
     properties = table_definition["Properties"]
     if not all(required_key in properties.keys() for required_key in required_keys):
         raise KeyError("You must at least specify properties", required_keys)
@@ -209,13 +209,27 @@ def add_table_to_template(template, table_name, table_definition):
         "BillingMode": properties["BillingMode"]
         if keyisset("BillingMode", properties)
         else Ref(AWS_NO_VALUE),
+        "Tags": Tags(
+            Name=table_name, ResourceName=table_res_name, CreatedByComposex=True
+        ),
     }
-    table = dynamodb.Table(table_res_name, **table_props)
-    template.add_resource(table)
-    template.add_output(
-        formatted_outputs(
-            [{f"{TABLE_NAME_T}": Ref(table)}, {f"{TABLE_ARN_T}": GetAtt(table, "Arn")}],
-            export=True,
-            obj_name=table_res_name,
-        )
-    )
+    return dynamodb.Table(table_res_name, **table_props)
+
+
+def generate_table(table_name, table_res_name, table_definition):
+    """
+    Function to add or lookup the DynamoDB table
+
+    :param str table_name: Name of the table as defined in compose file
+    :param str table_res_name: Resource name for CFN.
+    :param dict table_definition:
+    :return: table
+    :rtype: dynamodb.Table or None
+    """
+    if keyisset("Lookup", table_definition):
+        LOG.info("Function to lookup existing table not implemented")
+        return
+    if not keyisset("Properties", table_definition):
+        return
+    table = define_table(table_name, table_res_name, table_definition)
+    return table
