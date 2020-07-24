@@ -179,6 +179,11 @@ x-dynamodb:
               - "NumberOfSongs"
             ProjectionType: "INCLUDE"
 
+  tableC:
+    Lookup:
+      tags:
+        - Name: TABLEC
+
     Services:
       - name: app02
         access: RW
