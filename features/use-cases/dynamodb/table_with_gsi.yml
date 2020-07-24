@@ -88,17 +88,69 @@ x-dynamodb:
   tableA:
     Properties:
       AttributeDefinitions:
-        - AttributeName: "ArtistId"
+        - AttributeName: "Album"
           AttributeType: "S"
-        - AttributeName: "Concert"
+        - AttributeName: "Artist"
           AttributeType: "S"
-        - AttributeName: "TicketSales"
-          AttributeType: "S"
+        - AttributeName: "Sales"
+          AttributeType: "N"
+        - AttributeName: "NumberOfSongs"
+          AttributeType: "N"
       KeySchema:
-        - AttributeName: "ArtistId"
+        - AttributeName: "Album"
           KeyType: "HASH"
-        - AttributeName: "Concert"
+        - AttributeName: "Artist"
           KeyType: "RANGE"
       ProvisionedThroughput:
-        ReadCapacityUnits: 5
-        WriteCapacityUnits: 5
+        ReadCapacityUnits: "5"
+        WriteCapacityUnits: "5"
+      GlobalSecondaryIndexes:
+        - IndexName: "myGSI"
+          KeySchema:
+            - AttributeName: "Sales"
+              KeyType: "HASH"
+            - AttributeName: "Artist"
+              KeyType: "RANGE"
+          Projection:
+            NonKeyAttributes:
+              - "Album"
+              - "NumberOfSongs"
+            ProjectionType: "INCLUDE"
+          ProvisionedThroughput:
+            ReadCapacityUnits: "5"
+            WriteCapacityUnits: "5"
+        - IndexName: "myGSI2"
+          KeySchema:
+            - AttributeName: "NumberOfSongs"
+              KeyType: "HASH"
+            - AttributeName: "Sales"
+              KeyType: "RANGE"
+          Projection:
+            NonKeyAttributes:
+              - "Album"
+              - "Artist"
+            ProjectionType: "INCLUDE"
+          ProvisionedThroughput:
+            ReadCapacityUnits: "5"
+            WriteCapacityUnits: "5"
+      LocalSecondaryIndexes:
+        - IndexName: "myLSI"
+          KeySchema:
+            - AttributeName: "Album"
+              KeyType: "HASH"
+            - AttributeName: "Sales"
+              KeyType: "RANGE"
+          Projection:
+            NonKeyAttributes:
+              - "Artist"
+              - "NumberOfSongs"
+            ProjectionType: "INCLUDE"
+
+    Services:
+      - name: app03
+        access: RW
+
+x-vpc:
+  Create:
+    VpcCidr: 172.23.0.0/24
+    SingleNat: False
