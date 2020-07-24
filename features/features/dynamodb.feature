@@ -6,5 +6,6 @@ Feature: ecs_composex.dynamodb
 
     Examples:
     |file_path|
-    |use-cases/dynamodb/table.yml|
     |use-cases/dynamodb/table_with_gsi.yml|
+    |use-cases/dynamodb/table.yml         |
+    |use-cases/dynamodb/tables.yml        |
