@@ -47,7 +47,7 @@ from ecs_composex.vpc.vpc_subnets import (
 AZ_INDEX_PATTERN = r"(([a-z0-9-]+)([a-z]{1}$))"
 AZ_INDEX_RE = re.compile(AZ_INDEX_PATTERN)
 
-VPC_T = "Vpc"
+VPC_T = "vpc"
 IGW_T = "InternetGatewayV4"
 
 
@@ -63,7 +63,7 @@ def add_template_outputs(template, vpc, storage_subnets, public_subnets, app_sub
     """
     template.add_output(
         ComposeXOutput(
-            "",
+            None,
             [
                 (vpc_params.VPC_ID_T, vpc_params.VPC_ID_T, Ref(vpc)),
                 (
@@ -82,7 +82,6 @@ def add_template_outputs(template, vpc, storage_subnets, public_subnets, app_sub
                     Join(",", [Ref(subnet) for subnet in app_subnets]),
                 ),
             ],
-            export=False,
         ).outputs
     )
 
@@ -98,7 +97,7 @@ def add_vpc_cidrs_outputs(template, vpc, layers):
     """
     template.add_output(
         ComposeXOutput(
-            "",
+            None,
             [
                 (
                     vpc_params.STORAGE_SUBNETS_CIDR_T,
@@ -116,7 +115,6 @@ def add_vpc_cidrs_outputs(template, vpc, layers):
                     Join(",", [cidr for cidr in layers["app"]]),
                 ),
             ],
-            export=False,
         ).outputs
     )
 

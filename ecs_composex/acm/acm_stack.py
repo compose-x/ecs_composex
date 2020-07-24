@@ -96,7 +96,7 @@ def initialize_acm_stack_template(cert_name):
         ],
         Tags=Tags(Name=Ref(CERT_CN)),
     )
-    tpl.add_output(ComposeXOutput(cert, [(CERT_CN, cert, Ref(cert))]).outputs)
+    tpl.add_output(ComposeXOutput(cert, [(CERT_CN, "", Ref(cert))]).outputs)
     return tpl
 
 

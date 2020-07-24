@@ -46,9 +46,7 @@ def validate(value):
         raise ValueError(
             "Output argument expects Name, AttributeName, Value. Only got", len(value)
         )
-    if isinstance(value[0], Parameter):
-        value[0] = value[0].title
-    elif not isinstance(value[0], str):
+    if not isinstance(value[0], (Parameter, str)):
         raise ValueError(
             "Name should be of type", str, Parameter, "Got", type(value[0])
         )
@@ -70,7 +68,7 @@ class ComposeXOutput(object):
     stack_string_base = f"${{{AWS_STACK_NAME}}}{delim}"
     root_string_base = f"${{{ROOT_STACK_NAME_T}}}{delim}"
 
-    def __init__(self, resource, values, export=True):
+    def __init__(self, resource, values, export=True, duplicate_attr=False):
         """
         Initialize the output class.
 
@@ -82,6 +80,12 @@ class ComposeXOutput(object):
             self.object_repr = resource.title
         elif isinstance(resource, str):
             self.object_repr = resource
+        elif isinstance(resource, Parameter):
+            self.object_repr = resource.title
+        elif resource is None:
+            self.object_repr = ""
+            if duplicate_attr:
+                duplicate_attr = False
         else:
             raise TypeError(
                 "object should be a subclass of", AWSObject, "Got", type(resource)
@@ -97,7 +101,9 @@ class ComposeXOutput(object):
                     "All values should be a tuple of (str, value). Got", type(value)
                 )
             validate(value)
-            attr_name = value[0]
+            attr_name = (
+                value[0] if not isinstance(value[0], Parameter) else value[0].title
+            )
             output_ext = value[1]
             attr_value = value[2]
             stack_string = (
@@ -106,12 +112,16 @@ class ComposeXOutput(object):
             root_string = (
                 f"{self.root_string_base}{self.object_repr}{self.delim}{attr_name}"
             )
-            output = Output(f"{self.object_repr}{output_ext}", Value=attr_value)
+            output_name = f"{self.object_repr}{output_ext}"
+            output = Output(output_name, Value=attr_value)
             if export:
                 output.Export = Export(
                     If(USE_STACK_NAME_CON_T, Sub(stack_string), Sub(root_string))
                 )
             self.outputs.append(output)
+            if duplicate_attr:
+                output = Output(attr_name, Value=attr_value)
+                self.outputs.append(output)
 
 
 def get_import_value(title, attribute_name, delimiter=None):
