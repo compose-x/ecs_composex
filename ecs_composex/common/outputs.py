@@ -19,104 +19,118 @@
 Functions to format CFN template Outputs
 """
 
-from troposphere import Output, Export, Sub, If, ImportValue
-from ecs_composex.common.ecs_composex import CFN_EXPORT_DELIMITER
+from troposphere import (
+    Output,
+    Export,
+    Sub,
+    If,
+    ImportValue,
+    AWSObject,
+    AWSHelperFn,
+    AWS_STACK_NAME,
+    Parameter,
+)
+
 from ecs_composex.common import LOG
-from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.cfn_conditions import USE_STACK_NAME_CON_T
+from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
+from ecs_composex.common.ecs_composex import CFN_EXPORT_DELIMITER
 
 
-def cfn_resource_type(object_name, strip=True):
-    """Returns the Resource Type property removing the AWS:: prefix
-
-    :returns: res_type
-    :rtype: str
+def validate(value):
     """
-    res_type = object_name.resource_type.replace(":", "")
-    if strip:
-        return res_type.replace("AWS", "")
-    return res_type
-
-
-def formatted_outputs(
-    comments, obj_name=None, attribute_name=None, export=True, delimiter=None
-):
-    """Function to format the outputs easily and add exports based on a prefix
-
-    :param delimiter: delimimiter to use between parts of the export
-    :param comments: List of KeyPair values representing the output
-    :type comments: list
-    :param export: Whether or not this output should export to CFN Exports. Default: False
-    :type export: bool
-    :param str attribute_name: Name of the attribute to export instead of using the title.
-    :param str obj_name: Name of the object
-
-    :return: outputs
-    :rtype: list
+    Method to validate the input
+    :raises: ValueError
     """
-    outputs = []
-    if delimiter is None:
-        delimiter = CFN_EXPORT_DELIMITER
-    if isinstance(obj_name, str):
-        obj_name = f"{delimiter}{obj_name}"
-    elif obj_name is not None and hasattr(obj_name, "title"):
-        obj_name = f"{delimiter}${{{obj_name.title}}}"
-    elif obj_name is None:
-        obj_name = ""
-    LOG.debug(obj_name)
-    if isinstance(comments, list):
-        for comment in comments:
-            if isinstance(comment, dict):
-                keys = list(comment.keys())
-                title = keys[0]
-                export_attribute = (
-                    attribute_name if isinstance(attribute_name, str) else title
+    if not len(value) == 3:
+        raise ValueError(
+            "Output argument expects Name, AttributeName, Value. Only got", len(value)
+        )
+    if isinstance(value[0], Parameter):
+        value[0] = value[0].title
+    elif not isinstance(value[0], str):
+        raise ValueError(
+            "Name should be of type", str, Parameter, "Got", type(value[0])
+        )
+    if not isinstance(value[1], str):
+        raise ValueError("AttributeName should be of type", str, "Got", type(value[1]))
+
+    valid_type = issubclass(type(value[2]), AWSHelperFn)
+    if not (valid_type or isinstance(value[2], (str, int))):
+        print(valid_type)
+        raise ValueError("Value type is", type(value[2]), "Expected", str, AWSHelperFn)
+
+
+class ComposeXOutput(object):
+    """
+    Class to make the output easier.
+    """
+
+    delim = CFN_EXPORT_DELIMITER
+    stack_string_base = f"${{{AWS_STACK_NAME}}}{delim}"
+    root_string_base = f"${{{ROOT_STACK_NAME_T}}}{delim}"
+
+    def __init__(self, resource, values, export=True):
+        """
+        Initialize the output class.
+
+        :param resource: The object to export attributes for.
+        :param bool export:
+        """
+
+        if issubclass(type(resource), AWSObject) and hasattr(resource, "title"):
+            self.object_repr = resource.title
+        elif isinstance(resource, str):
+            self.object_repr = resource
+        else:
+            raise TypeError(
+                "object should be a subclass of", AWSObject, "Got", type(resource)
+            )
+        if not isinstance(values, list):
+            raise TypeError("values must be of type", list)
+        self.values = values
+        self.outputs = []
+
+        for value in self.values:
+            if not isinstance(value, tuple):
+                raise TypeError(
+                    "All values should be a tuple of (str, value). Got", type(value)
                 )
-                args = {"title": title, "Value": comment[title]}
-                if export:
-                    stack_string = (
-                        f"${{AWS::StackName}}{obj_name}{delimiter}{export_attribute}"
-                    )
-                    root_stack_string = f"${{{ROOT_STACK_NAME_T}}}{obj_name}{delimiter}{export_attribute}"
-                    LOG.debug(title)
-                    LOG.debug(stack_string)
-                    LOG.debug(root_stack_string)
-                    args["Export"] = Export(
-                        If(
-                            USE_STACK_NAME_CON_T,
-                            Sub(stack_string),
-                            Sub(root_stack_string),
-                        )
-                    )
-                output = Output(**args)
-                outputs.append(output)
-    return outputs
+            validate(value)
+            attr_name = value[0]
+            output_ext = value[1]
+            attr_value = value[2]
+            stack_string = (
+                f"{self.stack_string_base}{self.object_repr}{self.delim}{attr_name}"
+            )
+            root_string = (
+                f"{self.root_string_base}{self.object_repr}{self.delim}{attr_name}"
+            )
+            output = Output(f"{self.object_repr}{output_ext}", Value=attr_value)
+            if export:
+                output.Export = Export(
+                    If(USE_STACK_NAME_CON_T, Sub(stack_string), Sub(root_string))
+                )
+            self.outputs.append(output)
 
 
-def define_import(resource_name, attribute_name, delimiter=None):
+def get_import_value(title, attribute_name, delimiter=None):
     """
     Wrapper function to define ImportValue for defined resource name
 
-    :param delimiter: delimiter between stack name, resource name and attribute
-    :param resource_name: name of the resource exported
+    :param title: name of the resource exported
     :param attribute_name: attribute exported
-    :type attribute_name: str
-    :type resource_name: str
+    :param delimiter: delimiter between stack name, resource name and attribute
     :return:
     """
 
     if delimiter is None:
         delimiter = CFN_EXPORT_DELIMITER
-    return If(
-        USE_STACK_NAME_CON_T,
-        ImportValue(
-            Sub(
-                f"${{AWS::StackName}}{delimiter}{resource_name}{delimiter}{attribute_name}"
-            )
-        ),
-        ImportValue(
-            Sub(
-                f"${{{ROOT_STACK_NAME_T}}}{delimiter}{resource_name}{delimiter}{attribute_name}"
-            )
-        ),
+    elif not isinstance(delimiter, str):
+        LOG.error(
+            f"delimiter must be of type str, got {type(delimiter)}. Setting to default"
+        )
+        delimiter = CFN_EXPORT_DELIMITER
+    return ImportValue(
+        Sub(f"${{{ROOT_STACK_NAME_T}}}{delimiter}{title}{delimiter}{attribute_name}")
     )

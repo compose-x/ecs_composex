@@ -26,7 +26,7 @@ from troposphere.iam import PolicyType
 from troposphere.ecs import ContainerDefinition
 
 from ecs_composex.common import keyisset, LOG
-from ecs_composex.common.outputs import define_import
+from ecs_composex.common.outputs import get_import_value
 from ecs_composex.ecs.ecs_iam import define_service_containers
 from ecs_composex.ecs.ecs_params import TASK_ROLE_T, EXEC_ROLE_T, SG_T
 from ecs_composex.ecs.ecs_container_config import extend_container_secrets
@@ -88,7 +88,7 @@ def define_db_secret_import(db_name):
     :param str db_name: Name of the DB as defined in the compose file.
     :return: the import function to the DB.
     """
-    return define_import(db_name, DB_EXPORT_SECRET_ARN_T)
+    return get_import_value(db_name, DB_EXPORT_SECRET_ARN_T)
 
 
 def add_security_group_ingress(service_stack, db_name):
@@ -99,8 +99,8 @@ def add_security_group_ingress(service_stack, db_name):
     :param str db_name: the name of the database to use for imports
     """
     service_template = service_stack.stack_template
-    sg_id = define_import(db_name, DB_EXPORT_SG_ID_T)
-    port = define_import(db_name, DB_EXPORT_PORT_T)
+    sg_id = get_import_value(db_name, DB_EXPORT_SG_ID_T)
+    port = get_import_value(db_name, DB_EXPORT_PORT_T)
     SecurityGroupIngress(
         f"AllowRdsFrom{db_name}to{service_stack.title}",
         template=service_template,

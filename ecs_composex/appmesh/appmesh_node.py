@@ -32,7 +32,7 @@ from troposphere.ec2 import SecurityGroupIngress
 
 from ecs_composex.appmesh import appmesh_params, appmesh_conditions
 from ecs_composex.common import LOG, add_parameters
-from ecs_composex.common.outputs import formatted_outputs
+from ecs_composex.common.outputs import ComposeXOutput
 from ecs_composex.ecs import ecs_params
 from ecs_composex.ecs.ecs_container_config import extend_container_envvars
 from ecs_composex.dns.dns_params import PRIVATE_DNS_ZONE_NAME, PRIVATE_DNS_ZONE_ID
@@ -126,10 +126,9 @@ class MeshNode(object):
         )
         appmesh_conditions.add_appmesh_conditions(self.stack.stack_template)
         self.stack.stack_template.add_output(
-            formatted_outputs(
-                [{"VirtualNode": GetAtt(self.node, "VirtualNodeName")}],
-                export=False,
-                obj_name=self.stack.title,
+            ComposeXOutput(
+                self.node,
+                [("VirtualNode", "VirtualNode", GetAtt(self.node, "VirtualNode"))],
             )
         )
 

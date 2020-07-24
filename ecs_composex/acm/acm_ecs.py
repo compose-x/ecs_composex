@@ -26,7 +26,7 @@ from troposphere.elasticloadbalancingv2 import (
 
 from ecs_composex.acm import acm_params
 from ecs_composex.common import LOG, keyisset
-from ecs_composex.common.outputs import define_import
+from ecs_composex.common.outputs import get_import_value
 from ecs_composex.ecs.ecs_template import get_service_family_name
 
 
@@ -93,7 +93,7 @@ def acm_to_ecs(acms, services_stack, services_families, acm_root_stack, **kwargs
         if not keyisset("Services", cert_def):
             LOG.warn(f"DB {cert_name} has no services defined.")
             continue
-        cert_import = define_import(cert_name, acm_params.CERT_CN_T)
+        cert_import = get_import_value(cert_name, acm_params.CERT_CN_T)
         for service in cert_def["Services"]:
             service_family = get_service_family_name(services_families, service["name"])
             if service_family not in services_stack.stack_template.resources:

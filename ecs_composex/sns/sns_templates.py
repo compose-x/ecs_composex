@@ -21,12 +21,13 @@ Module to add topics and subscriptions to the SNS stack
 
 from troposphere import Ref
 from troposphere.sns import Topic, Subscription
+
 from ecs_composex.common import LOG, keyisset, keypresent, build_template, NONALPHANUM
+from ecs_composex.common.outputs import ComposeXOutput
+from ecs_composex.common.outputs import get_import_value
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.common.outputs import define_import
-from ecs_composex.sqs.sqs_params import SQS_ARN_T, RES_KEY as SQS_KEY
 from ecs_composex.sns.sns_params import RES_KEY, TOPIC_ARN_T
-from ecs_composex.common.outputs import formatted_outputs
+from ecs_composex.sqs.sqs_params import SQS_ARN_T, RES_KEY as SQS_KEY
 
 TOPICS_KEY = "Topics"
 SUBSCRIPTIONS_KEY = "Subscription"
@@ -46,11 +47,9 @@ def add_topics_outputs(template):
         resource = resources[resource_name]
         if isinstance(resource, Topic):
             template.add_output(
-                formatted_outputs(
-                    [{f"{resource_name}{TOPIC_ARN_T}": Ref(resource)}],
-                    obj_name=resource_name,
-                    attribute_name=TOPIC_ARN_T,
-                )
+                ComposeXOutput(
+                    resource, [(TOPIC_ARN_T, resource_name, Ref(resource))]
+                ).outputs
             )
 
 
@@ -85,7 +84,7 @@ def set_sqs_topic(subscription, content):
     ].startswith("arn:"):
         assert check_queue_exists(subscription[ENDPOINT_KEY], content)
     endpoint = (
-        define_import(subscription[ENDPOINT_KEY], SQS_ARN_T)
+        get_import_value(subscription[ENDPOINT_KEY], SQS_ARN_T)
         if not subscription[ENDPOINT_KEY].startswith("arn:")
         else subscription[ENDPOINT_KEY]
     )

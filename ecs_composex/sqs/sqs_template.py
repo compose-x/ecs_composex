@@ -35,7 +35,7 @@ from ecs_composex.common.cfn_conditions import (
     USE_STACK_NAME_CON_T,
 )
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME, ROOT_STACK_NAME_T
-from ecs_composex.common.outputs import formatted_outputs
+from ecs_composex.common.outputs import ComposeXOutput
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.sqs.sqs_params import RES_KEY, SQS_SSM_PREFIX
 from ecs_composex.sqs.sqs_params import (
@@ -182,14 +182,13 @@ def generate_queue_template(queue_name, properties, redrive_queue=None):
     queue = Queue(res_name, template=queue_template, **properties)
     add_ssm_parameters(queue_template, queue)
     queue_template.add_output(
-        formatted_outputs(
+        ComposeXOutput(
+            queue,
             [
-                {SQS_NAME_T: GetAtt(queue, SQS_NAME_T)},
-                {SQS_ARN_T: GetAtt(queue, "Arn")},
+                (SQS_NAME_T, "Name", GetAtt(queue, SQS_NAME_T)),
+                (SQS_ARN_T, "Arn", GetAtt(queue, "Arn")),
             ],
-            obj_name=SQS_NAME,
-            export=True,
-        )
+        ).outputs
     )
     return queue_template
 

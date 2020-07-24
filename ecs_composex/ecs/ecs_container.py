@@ -30,7 +30,7 @@ from troposphere.ecs import (
 
 from ecs_composex.common import add_parameters
 from ecs_composex.common import keyisset
-from ecs_composex.common.outputs import formatted_outputs
+from ecs_composex.common.outputs import ComposeXOutput
 from ecs_composex.ecs import ecs_params
 from ecs_composex.ecs.ecs_container_config import import_env_variables
 
@@ -101,19 +101,13 @@ class Container(object):
             if isinstance(config.healthcheck, HealthCheck)
             else Ref(AWS_NO_VALUE),
         )
-        template.add_output(
-            formatted_outputs(
-                [
-                    {f"{title}Cpu": str(config.cpu_resa)}
-                    if isinstance(config.cpu_resa, int)
-                    else Ref(AWS_NO_VALUE),
-                    {f"{title}Memory": str(config.mem_alloc)}
-                    if isinstance(config.cpu_resa, int)
-                    else Ref(AWS_NO_VALUE),
-                    {f"{title}MemoryReservation": str(config.mem_resa)}
-                    if isinstance(config.cpu_resa, int)
-                    else Ref(AWS_NO_VALUE),
-                ],
-                export=False,
+        values = []
+        if isinstance(config.cpu_resa, int):
+            values.append(("Cpu", "Cpu", str(config.cpu_resa)))
+        if isinstance(config.cpu_resa, int):
+            values.append(("Memory", "Memory", str(config.mem_alloc)))
+        if isinstance(config.cpu_resa, int):
+            values.append(
+                ("MemoryReservation", "MemoryReservation", str(config.mem_resa))
             )
-        )
+        template.add_output(ComposeXOutput(title, values, export=False).outputs)

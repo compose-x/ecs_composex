@@ -46,7 +46,7 @@ from ecs_composex.common import (
     build_template,
 )
 from ecs_composex.common.cfn_conditions import pass_root_stack_name
-from ecs_composex.common.outputs import formatted_outputs
+from ecs_composex.common.outputs import ComposeXOutput
 from ecs_composex.common.stacks import ComposeXStack
 
 
@@ -96,11 +96,7 @@ def initialize_acm_stack_template(cert_name):
         ],
         Tags=Tags(Name=Ref(CERT_CN)),
     )
-    tpl.add_output(
-        formatted_outputs(
-            [{CERT_CN.title: Ref(cert)}], export=True, obj_name=cert.title
-        )
-    )
+    tpl.add_output(ComposeXOutput(cert, [(CERT_CN, cert, Ref(cert))]).outputs)
     return tpl
 
 

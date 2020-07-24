@@ -34,7 +34,7 @@ from troposphere.ec2 import (
 from ecs_composex.common import build_template, LOG
 from ecs_composex.common.cfn_conditions import USE_STACK_NAME_CON_T
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME, ROOT_STACK_NAME_T
-from ecs_composex.common.outputs import formatted_outputs
+from ecs_composex.common.outputs import ComposeXOutput
 from ecs_composex.dns.dns_params import PRIVATE_DNS_ZONE_NAME
 from ecs_composex.vpc import vpc_params, aws_mappings
 from ecs_composex.vpc.vpc_maths import get_subnet_layers
@@ -62,31 +62,32 @@ def add_template_outputs(template, vpc, storage_subnets, public_subnets, app_sub
     :param app_subnets: List of Subnet()
     """
     template.add_output(
-        formatted_outputs(
+        ComposeXOutput(
+            "",
             [
-                {vpc_params.VPC_ID_T: Ref(vpc)},
-                {
-                    vpc_params.STORAGE_SUBNETS_T: Join(
-                        ",", [Ref(subnet) for subnet in storage_subnets]
-                    )
-                },
-                {
-                    vpc_params.PUBLIC_SUBNETS_T: Join(
-                        ",", [Ref(subnet) for subnet in public_subnets]
-                    )
-                },
-                {
-                    vpc_params.APP_SUBNETS_T: Join(
-                        ",", [Ref(subnet) for subnet in app_subnets]
-                    )
-                },
+                (vpc_params.VPC_ID_T, vpc_params.VPC_ID_T, Ref(vpc)),
+                (
+                    vpc_params.STORAGE_SUBNETS_T,
+                    vpc_params.STORAGE_SUBNETS_T,
+                    Join(",", [Ref(subnet) for subnet in storage_subnets]),
+                ),
+                (
+                    vpc_params.PUBLIC_SUBNETS_T,
+                    vpc_params.PUBLIC_SUBNETS_T,
+                    Join(",", [Ref(subnet) for subnet in storage_subnets]),
+                ),
+                (
+                    vpc_params.APP_SUBNETS_T,
+                    vpc_params.APP_SUBNETS_T,
+                    Join(",", [Ref(subnet) for subnet in app_subnets]),
+                ),
             ],
-            export=True,
-        )
+            export=False,
+        ).outputs
     )
 
 
-def add_vpc_cidrs_outputs(template, layers):
+def add_vpc_cidrs_outputs(template, vpc, layers):
     """
     Function to add outputs / exports to the template
 
@@ -96,26 +97,27 @@ def add_vpc_cidrs_outputs(template, layers):
     :type layers: dict
     """
     template.add_output(
-        formatted_outputs(
+        ComposeXOutput(
+            "",
             [
-                {
-                    vpc_params.STORAGE_SUBNETS_CIDR_T: Join(
-                        ",", [cidr for cidr in layers["stor"]]
-                    )
-                },
-                {
-                    vpc_params.PUBLIC_SUBNETS_CIDR_T: Join(
-                        ",", [cidr for cidr in layers["pub"]]
-                    )
-                },
-                {
-                    vpc_params.APP_SUBNETS_CIDR_T: Join(
-                        ",", [cidr for cidr in layers["app"]]
-                    )
-                },
+                (
+                    vpc_params.STORAGE_SUBNETS_CIDR_T,
+                    vpc_params.STORAGE_SUBNETS_CIDR_T,
+                    Join(",", [cidr for cidr in layers["stor"]]),
+                ),
+                (
+                    vpc_params.PUBLIC_SUBNETS_CIDR_T,
+                    vpc_params.PUBLIC_SUBNETS_CIDR_T,
+                    Join(",", [cidr for cidr in layers["pub"]]),
+                ),
+                (
+                    vpc_params.APP_SUBNETS_CIDR_T,
+                    vpc_params.APP_SUBNETS_CIDR_T,
+                    Join(",", [cidr for cidr in layers["app"]]),
+                ),
             ],
-            export=True,
-        )
+            export=False,
+        ).outputs
     )
 
 
@@ -210,5 +212,5 @@ def generate_vpc_template(cidr_block, azs, single_nat=False):
     add_template_outputs(
         template, vpc[0], storage_subnets[1], public_subnets[1], app_subnets[1],
     )
-    add_vpc_cidrs_outputs(template, layers)
+    add_vpc_cidrs_outputs(template, vpc[0], layers)
     return template

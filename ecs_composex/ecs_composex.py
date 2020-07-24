@@ -33,7 +33,6 @@ from ecs_composex.common import (
 from ecs_composex.common import (
     build_template,
     keyisset,
-    validate_resource_title,
 )
 from ecs_composex.common.cfn_params import (
     ROOT_STACK_NAME_T,
@@ -43,14 +42,14 @@ from ecs_composex.common.cfn_params import (
     USE_ONDEMAND_T,
 )
 from ecs_composex.common.ecs_composex import X_KEY
-from ecs_composex.common.outputs import formatted_outputs
+from ecs_composex.common.outputs import ComposeXOutput
 from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.common.tagging import add_all_tags
 from ecs_composex.compute.compute_params import (
     TARGET_CAPACITY_T,
     TARGET_CAPACITY,
     MIN_CAPACITY_T,
 )
-from ecs_composex.common.tagging import add_all_tags
 from ecs_composex.compute.compute_stack import ComputeStack
 from ecs_composex.dns import add_parameters_and_conditions as dns_inputs, DnsSettings
 from ecs_composex.dns import dns_params, dns_conditions
@@ -337,9 +336,10 @@ def add_ecs_cluster(template):
                 CLUSTER_NAME_CON_T, Ref(AWS_STACK_NAME), Ref(CLUSTER_NAME_T)
             ),
         )
-
     template.add_output(
-        formatted_outputs([{CLUSTER_NAME_T: Ref(cluster)}], export=False)
+        ComposeXOutput(
+            cluster, [(CLUSTER_NAME_T, "Name", Ref(cluster))], export=False
+        ).outputs
     )
 
 

@@ -16,13 +16,11 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from troposphere import Ref, GetAtt, Tags
 from troposphere import AWS_NO_VALUE
+from troposphere import Ref, Tags
 from troposphere import dynamodb
 
 from ecs_composex.common import keyisset, LOG
-from ecs_composex.common.outputs import formatted_outputs
-from ecs_composex.dynamodb.dynamodb_params import TABLE_NAME_T, TABLE_ARN_T
 
 
 def define_global_sec_indexes(properties):
