@@ -98,10 +98,8 @@ class DnsSettings(object):
         )
 
         if not keyisset("x-dns", settings.compose_content):
-            dns_settings = {}
-            self.private_params = {
-                dns_params.PRIVATE_DNS_ZONE_NAME.title: self.private_zone_name,
-                dns_params.PUBLIC_DNS_ZONE_NAME.title: self.public_zone_name,
+            dns_settings = {
+                self.private_namespace_key: {"Name": self.default_private_name}
             }
         else:
             dns_settings = settings.compose_content["x-dns"]

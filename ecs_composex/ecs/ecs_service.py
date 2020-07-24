@@ -682,6 +682,7 @@ class Service(object):
             SdInstance(
                 f"{self.resource_name}PublicLB",
                 template=self.template,
+                Condition=CREATE_PUBLIC_NAMESPACE_CON_T,
                 ServiceId=GetAtt(sd_service, "Id"),
                 InstanceAttributes={
                     "AWS_ALIAS_DNS_NAME": GetAtt(loadbalancer, "DNSName")

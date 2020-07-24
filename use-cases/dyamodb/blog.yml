@@ -1,0 +1,166 @@
+---
+# Blog applications
+
+version: '3.8'
+
+x-configs:
+  app:
+    network:
+      use_cloudmap: True
+
+services:
+  rproxy:
+    image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-01-rproxy:latest
+    ports:
+      - 80:80
+    deploy:
+      replicas: 2
+      resources:
+        reservations:
+          cpus: "0.1"
+          memory: "32M"
+        limits:
+          cpus: "0.25"
+          memory: "64M"
+      labels:
+        ecs.task.family: app01
+    x-configs:
+      network:
+        is_public: True
+        lb_type: application
+    depends_on:
+      - app01
+  app01:
+    image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-01:appmesh
+    ports:
+      - 5000
+    deploy:
+      resources:
+        reservations:
+          cpus: "0.25"
+          memory: "64M"
+      labels:
+        ecs.task.family: app01
+    environment:
+      LOGLEVEL: DEBUG
+    x-configs:
+      use_xray: True
+    links:
+      - app03:dateteller
+
+  app02:
+    image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-02:latest
+    ports:
+      - 5000
+    deploy:
+      resources:
+        reservations:
+          cpus: "0.25"
+          memory: "64M"
+      labels:
+        ecs.task.family: app02
+    environment:
+      LOGLEVEL: DEBUG
+    x-configs:
+      use_xray: True
+
+  app03:
+    image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-02:latest
+    ports:
+      - 5000
+    deploy:
+      resources:
+        reservations:
+          cpus: "0.25"
+          memory: "64M"
+      labels:
+        ecs.task.family: app03
+    environment:
+      LOGLEVEL: DEBUG
+    x-configs:
+      use_xray: True
+
+x-tags:
+  owner: johnpreston
+  contact: john@lambda-my-aws.io
+
+x-dynamodb:
+  tableA:
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: "Album"
+          AttributeType: "S"
+        - AttributeName: "Artist"
+          AttributeType: "S"
+        - AttributeName: "Sales"
+          AttributeType: "N"
+        - AttributeName: "NumberOfSongs"
+          AttributeType: "N"
+      KeySchema:
+        - AttributeName: "Album"
+          KeyType: "HASH"
+        - AttributeName: "Artist"
+          KeyType: "RANGE"
+      ProvisionedThroughput:
+        ReadCapacityUnits: "5"
+        WriteCapacityUnits: "5"
+      GlobalSecondaryIndexes:
+        - IndexName: "myGSI"
+          KeySchema:
+            - AttributeName: "Sales"
+              KeyType: "HASH"
+            - AttributeName: "Artist"
+              KeyType: "RANGE"
+          Projection:
+            NonKeyAttributes:
+              - "Album"
+              - "NumberOfSongs"
+            ProjectionType: "INCLUDE"
+          ProvisionedThroughput:
+            ReadCapacityUnits: "5"
+            WriteCapacityUnits: "5"
+        - IndexName: "myGSI2"
+          KeySchema:
+            - AttributeName: "NumberOfSongs"
+              KeyType: "HASH"
+            - AttributeName: "Sales"
+              KeyType: "RANGE"
+          Projection:
+            NonKeyAttributes:
+              - "Album"
+              - "Artist"
+            ProjectionType: "INCLUDE"
+          ProvisionedThroughput:
+            ReadCapacityUnits: "5"
+            WriteCapacityUnits: "5"
+      LocalSecondaryIndexes:
+        - IndexName: "myLSI"
+          KeySchema:
+            - AttributeName: "Album"
+              KeyType: "HASH"
+            - AttributeName: "Sales"
+              KeyType: "RANGE"
+          Projection:
+            NonKeyAttributes:
+              - "Artist"
+              - "NumberOfSongs"
+            ProjectionType: "INCLUDE"
+
+    Services:
+      - name: app03
+        access: RW
+
+x-vpc:
+  Lookup:
+    VpcId:
+      tags:
+        - Name: vpcwork
+    AppSubnets:
+      tags:
+        - vpc::usage: application
+    StorageSubnets:
+      tags:
+        - vpc::usage: storage
+    PublicSubnets:
+      tags:
+        - vpc::usage: public
