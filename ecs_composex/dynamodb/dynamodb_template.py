@@ -40,7 +40,6 @@ def create_dynamodb_template(settings):
     tables = settings.compose_content[RES_KEY]
     if len(list(tables.keys())) <= CFN_MAX_RESOURCES:
         mono_template = True
-        LOG.debug(len(list(tables.keys())))
 
     template = build_template("DynamoDB for ECS ComposeX")
     for table_name in tables:
@@ -48,7 +47,9 @@ def create_dynamodb_template(settings):
             add_table_to_template(template, table_name, tables[table_name])
         else:
             table_res_name = NONALPHANUM.sub("", table_name)
-            table_template = build_template(f"Template for DynamoDB table {table_res_name}")
+            table_template = build_template(
+                f"Template for DynamoDB table {table_res_name}"
+            )
             add_table_to_template(table_template, table_name, tables[table_name])
             table_stack = ComposeXStack(table_res_name, stack_template=table_template)
             template.add_resource(table_stack)
