@@ -94,6 +94,8 @@ SUPPORTED_X_MODULES = [
     "sns",
     f"{X_KEY}acm",
     "acm",
+    f"{X_KEY}dynamodb",
+    "dynamodb",
 ]
 EXCLUDED_X_KEYS = [
     f"{X_KEY}configs",
@@ -158,32 +160,6 @@ def get_mod_class(module_name):
     return the_class
 
 
-def generate_x_resources_policies(resources, resource_type, function, **kwargs):
-    """
-    Function to create the policies for the resources of a given type
-
-    :param resources: resources to go over from docker ComposeX file
-    :type resources: dict
-    :param resource_type: resource type, ie. sqs
-    :type resource_type: str
-    :param function: the function to call to get IAM policies to add to ecs_service role
-    :type function: function pointer
-    :param kwargs: optional arguments
-    :type kwargs: dict
-
-    :return: policies for each resource of given resource type to use for roles
-    :rtype: dict
-    """
-    mod_policies = {}
-    for resource_name in resources:
-        assert validate_resource_title(resource_name, resource_type)
-        resource = resources[resource_name]
-
-        if keyisset("Services", resource):
-            mod_policies[resource_name] = function(resource_name, resource, **kwargs)
-    return mod_policies
-
-
 def apply_x_configs_to_ecs(
     settings, root_template, services_stack, services_families, **kwargs
 ):
@@ -205,7 +181,7 @@ def apply_x_configs_to_ecs(
             and resource_name in SUPPORTED_X_MODULES
         ):
             module = getattr(resource, "title")
-            composex_key = f"x-{module}"
+            composex_key = f"{X_KEY}{module}"
             ecs_function = get_mod_function(
                 f"{module}.{module}_ecs", f"{module}_to_ecs"
             )
