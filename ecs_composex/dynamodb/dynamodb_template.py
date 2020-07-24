@@ -21,24 +21,14 @@ Module for DynamoDB to create the root template
 
 from troposphere import GetAtt, Ref
 
-from ecs_composex.dynamodb.dynamodb_params import RES_KEY
-from ecs_composex.common import keyisset, LOG, build_template, NONALPHANUM
-from ecs_composex.common.outputs import formatted_outputs
+from ecs_composex.common import keyisset, build_template, NONALPHANUM
+from ecs_composex.common.outputs import ComposeXOutput
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.dynamodb.dynamodb_table import generate_table
+from ecs_composex.dynamodb.dynamodb_params import RES_KEY
 from ecs_composex.dynamodb.dynamodb_params import TABLE_NAME_T, TABLE_ARN_T
+from ecs_composex.dynamodb.dynamodb_table import generate_table
 
 CFN_MAX_RESOURCES = 1
-
-
-def add_table_output(template, table):
-    template.add_output(
-        formatted_outputs(
-            [{f"{TABLE_NAME_T}": Ref(table)}, {f"{TABLE_ARN_T}": GetAtt(table, "Arn")}],
-            export=True,
-            obj_name=table.title,
-        )
-    )
 
 
 def create_dynamodb_template(settings):
@@ -59,15 +49,23 @@ def create_dynamodb_template(settings):
     for table_name in tables:
         table_res_name = NONALPHANUM.sub("", table_name)
         table = generate_table(table_name, table_res_name, tables[table_name])
-        if mono_template and table:
-            template.add_resource(table)
-            add_table_output(template, table)
-        elif not mono_template and table:
-            table_template = build_template(
-                f"Template for DynamoDB table {table.title}"
-            )
-            table_template.add_resource(table)
-            add_table_output(table_template, table)
-            table_stack = ComposeXStack(table_res_name, stack_template=table_template)
-            template.add_resource(table_stack)
+        if table:
+            values = [
+                (TABLE_ARN_T, "Arn", GetAtt(table, "Arn")),
+                (TABLE_NAME_T, "Name", Ref(table)),
+            ]
+            outputs = ComposeXOutput(table, values, True)
+            if mono_template:
+                template.add_resource(table)
+                template.add_output(outputs.outputs)
+            elif not mono_template:
+                table_template = build_template(
+                    f"Template for DynamoDB table {table.title}"
+                )
+                table_template.add_resource(table)
+                table_template.add_output(outputs.outputs)
+                table_stack = ComposeXStack(
+                    table_res_name, stack_template=table_template
+                )
+                template.add_resource(table_stack)
     return template

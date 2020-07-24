@@ -36,7 +36,7 @@ from troposphere.secretsmanager import (
 
 from ecs_composex.common import build_template, cfn_conditions
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
-from ecs_composex.common.outputs import formatted_outputs
+from ecs_composex.common.outputs import ComposeXOutput
 from ecs_composex.rds import rds_conditions
 from ecs_composex.rds.rds_parameter_groups_helper import (
     get_family_from_engine_version,
@@ -82,15 +82,15 @@ def add_db_outputs(db_template, db_name):
     :param str db_name: Name of the database
     """
     db_template.add_output(
-        formatted_outputs(
+        ComposeXOutput(
+            db_name,
             [
-                {DB_EXPORT_SECRET_ARN_T: Ref(DB_SECRET_T)},
-                {DB_EXPORT_PORT_T: GetAtt(CLUSTER_T, "Endpoint.Port")},
-                {DB_NAME_T: Ref(DATABASE_T)},
-                {DB_EXPORT_SG_ID_T: GetAtt(DB_SG_T, "GroupId")},
+                (DB_EXPORT_SECRET_ARN_T, "SecretArn", Ref(DB_SECRET_T)),
+                (DB_EXPORT_PORT_T, "Port", GetAtt(CLUSTER_T, "Endpoint.Port")),
+                (DB_NAME_T, "DbName", Ref(DATABASE_T)),
+                (DB_EXPORT_SG_ID_T, "GroupId", GetAtt(DB_SG_T, "GroupId")),
             ],
-            obj_name=db_name,
-        )
+        ).outputs
     )
 
 
