@@ -28,7 +28,7 @@ from ecs_composex.dynamodb.dynamodb_params import RES_KEY
 from ecs_composex.dynamodb.dynamodb_params import TABLE_NAME_T, TABLE_ARN_T
 from ecs_composex.dynamodb.dynamodb_table import generate_table
 
-CFN_MAX_RESOURCES = 1
+CFN_MAX_OUTPUTS = 50
 
 
 def create_dynamodb_template(settings):
@@ -42,7 +42,7 @@ def create_dynamodb_template(settings):
     if not keyisset(RES_KEY, settings.compose_content):
         return None
     tables = settings.compose_content[RES_KEY]
-    if len(list(tables.keys())) <= CFN_MAX_RESOURCES:
+    if len(list(tables.keys())) <= CFN_MAX_OUTPUTS:
         mono_template = True
 
     template = build_template("DynamoDB for ECS ComposeX")

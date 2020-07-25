@@ -21,6 +21,7 @@ from troposphere import Ref, Tags
 from troposphere import dynamodb
 
 from ecs_composex.common import keyisset, LOG
+from ecs_composex.common.cfn_params import ROOT_STACK_NAME
 
 
 def define_global_sec_indexes(properties):
@@ -208,7 +209,10 @@ def define_table(table_name, table_res_name, table_definition):
         if keyisset("BillingMode", properties)
         else Ref(AWS_NO_VALUE),
         "Tags": Tags(
-            Name=table_name, ResourceName=table_res_name, CreatedByComposex=True
+            Name=table_name,
+            ResourceName=table_res_name,
+            CreatedByComposex=True,
+            RootStackName=Ref(ROOT_STACK_NAME),
         ),
     }
     return dynamodb.Table(table_res_name, **table_props)

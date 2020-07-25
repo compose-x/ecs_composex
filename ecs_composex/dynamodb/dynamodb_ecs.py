@@ -61,10 +61,15 @@ def dynamodb_to_ecs(
 
     for table_name, table_name_r in zip(tables, tables_r):
         table = tables[table_name]
-        if table_name not in dyndb_root_stack.stack_template.resources:
+        if table_name_r not in dyndb_root_stack.stack_template.resources:
             raise KeyError(
                 f"Table {table_name} not a resource of the {dyndb_root_stack.title} stack"
             )
+        elif (
+            keyisset("Lookup", table)
+            and table_name not in dyndb_root_stack.stack_template.resources
+        ):
+            lookup_dynamodb_table(table_name)
 
         perms = generate_dynamodb_permissions(table_name_r)
         envvars = generate_dynamodb_envvars(table_name_r, table)
