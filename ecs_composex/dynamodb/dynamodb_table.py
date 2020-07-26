@@ -229,9 +229,10 @@ def generate_table(table_name, table_res_name, table_definition):
     :rtype: dynamodb.Table or None
     """
     if keyisset("Lookup", table_definition):
-        LOG.info("Function to lookup existing table not implemented")
+        LOG.info("If table is found, its ARN will be added to the task")
         return
     if not keyisset("Properties", table_definition):
+        LOG.warning(f"Properties for table {table_name} were not defined. Skipping")
         return
     table = define_table(table_name, table_res_name, table_definition)
     return table

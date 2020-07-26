@@ -191,6 +191,7 @@ def apply_x_configs_to_ecs(
                     services_stack,
                     services_families,
                     resource,
+                    settings,
                 )
 
 

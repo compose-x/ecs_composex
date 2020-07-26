@@ -29,7 +29,9 @@ from ecs_composex.rds.rds_perms import (
 from ecs_composex.ecs.ecs_template import get_service_family_name
 
 
-def rds_to_ecs(rdsdbs, services_stack, services_families, rds_root_stack, **kwargs):
+def rds_to_ecs(
+    rdsdbs, services_stack, services_families, rds_root_stack, settings, **kwargs
+):
     """
     Function to apply onto existing ECS Templates the various settings
 

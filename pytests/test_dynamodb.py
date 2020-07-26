@@ -27,6 +27,11 @@ def existing_table_tags():
     return [{"name": "tableC"}, {"createdbycomposex": True}]
 
 
+@pytest.fixture
+def overlaping_existing_table_tags():
+    return [{"name": "tableC"}]
+
+
 def test_lookup(existing_table_tags):
     """
     Function to test the dynamodb table lookup
@@ -37,11 +42,21 @@ def test_lookup(existing_table_tags):
     here = path.abspath(path.dirname(__file__))
     session = boto3.session.Session()
     pill = placebo.attach(session, data_path=f"{here}/x_dynamodb")
-    # try:
-    #     pill.playback()
-    # except:
-    #     pill.record()
-    #
-    #
+    pill.playback()
     tables = lookup_dyn_table(session, existing_table_tags)
-    print(tables)
+    assert len(tables) == 1
+
+
+def test_lookup_multiple(overlaping_existing_table_tags):
+    """
+    Function to test the dynamodb table lookup
+
+    :param overlaping_existing_table_tags:
+    :return:
+    """
+    here = path.abspath(path.dirname(__file__))
+    session = boto3.session.Session()
+    pill = placebo.attach(session, data_path=f"{here}/x_dynamodb")
+    pill.playback()
+    tables = lookup_dyn_table(session, overlaping_existing_table_tags)
+    assert len(tables) == 2

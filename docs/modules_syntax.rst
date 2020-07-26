@@ -13,6 +13,8 @@
 
 .. include:: ../ecs_composex/rds/SYNTAX.rst
 
+.. include:: ../ecs_composex/dynamodb/SYNTAX.rst
+
 .. include:: ../ecs_composex/sns/SYNTAX.rst
 
 .. include:: ../ecs_composex/acm/SYNTAX.rst

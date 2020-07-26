@@ -81,27 +81,26 @@ def generate_queue_strings(table_name):
     return ssm_export, cfn_import
 
 
-def generate_dynamodb_permissions(table_name):
+def generate_dynamodb_permissions(table_name, arn=None):
     """
     Generates an IAM policy for each access type and returns a dictionnary of these.
 
     :params table_name: String of the name of the queue as defined in Docker compose
     :type table_name: str
-    :param config: Dictionnary containing the configuration for rendering the permissions
-    :type config: dict
 
     :returns: Dictionnary of IAM policies (PolicyType)
     :rtype: dict
     """
-
     export_strings = generate_queue_strings(table_name)
     queue_policies = {}
     for a_type in QUEUES_ACCESS_TYPES:
         clean_policy = {"Version": "2012-10-17", "Statement": []}
         LOG.debug(a_type)
         policy_doc = QUEUES_ACCESS_TYPES[a_type].copy()
-        policy_doc["Resource"] = If(
-            USE_SSM_ONLY_T, export_strings[0], export_strings[1]
+        policy_doc["Resource"] = (
+            arn
+            if isinstance(arn, str)
+            else If(USE_SSM_ONLY_T, export_strings[0], export_strings[1])
         )
         clean_policy["Statement"].append(policy_doc)
         queue_policies[a_type] = IamPolicy(
@@ -111,7 +110,7 @@ def generate_dynamodb_permissions(table_name):
     return queue_policies
 
 
-def generate_dynamodb_envvars(table_name, resource):
+def generate_dynamodb_envvars(table_name, resource, arn=None):
     """
     Function to generate environment variables that can be added to a container definition
     shall the ecs_service need to know about the Queue
@@ -125,21 +124,27 @@ def generate_dynamodb_envvars(table_name, resource):
             env_names.append(
                 Environment(
                     Name=env_name,
-                    Value=If(USE_SSM_ONLY_T, export_strings[0], export_strings[1]),
+                    Value=If(USE_SSM_ONLY_T, export_strings[0], export_strings[1])
+                    if arn is None
+                    else arn,
                 )
             )
         if table_name not in resource["Settings"]["EnvNames"]:
             env_names.append(
                 Environment(
                     Name=table_name,
-                    Value=If(USE_SSM_ONLY_T, export_strings[0], export_strings[1]),
+                    Value=If(USE_SSM_ONLY_T, export_strings[0], export_strings[1])
+                    if arn is None
+                    else arn,
                 )
             )
     else:
         env_names.append(
             Environment(
                 Name=table_name,
-                Value=If(USE_SSM_ONLY_T, export_strings[0], export_strings[1]),
+                Value=If(USE_SSM_ONLY_T, export_strings[0], export_strings[1])
+                if arn is None
+                else arn,
             )
         )
     return env_names

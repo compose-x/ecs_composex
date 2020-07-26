@@ -29,6 +29,7 @@ from ecs_composex.dynamodb.dynamodb_perms import (
     generate_dynamodb_permissions,
     generate_dynamodb_envvars,
 )
+from ecs_composex.dynamodb.dynamodb_aws import lookup_dyn_table
 
 
 def apply_settings_to_service(
@@ -47,54 +48,109 @@ def apply_settings_to_service(
 
 
 def dynamodb_to_ecs(
-    tables, services_stack, services_families, dyndb_root_stack, **kwargs
+    tables, services_stack, services_families, res_root_stack, settings
 ):
     """
-    Function to apply SQS settings to ECS Services
+    Function to link the resource and the ECS Services.
+
+    :param dict tables:
+    :param ecs_composex.common.stacks.ComposeXStack services_stack:
+    :param dict services_families:
+    :param ecs_composex.common.stacks.ComposeXStack res_root_stack:
+    :param ecs_composex.common.settings.ComposeXSettings settings:
     :return:
     """
     tables_r = []
-    resources = dyndb_root_stack.stack_template.resources
+    resources = res_root_stack.stack_template.resources
     for resource_name in resources:
         if isinstance(resources[resource_name], Table):
             tables_r.append(resources[resource_name].title)
 
-    for table_name, table_name_r in zip(tables, tables_r):
-        table = tables[table_name]
-        if table_name_r not in dyndb_root_stack.stack_template.resources:
-            raise KeyError(
-                f"Table {table_name} not a resource of the {dyndb_root_stack.title} stack"
+    l_tables = tables.copy()
+    for table_name in tables:
+        if table_name in tables_r:
+            define_resource_assignments(
+                tables[table_name],
+                table_name,
+                services_families,
+                services_stack,
+                res_root_stack,
             )
-        elif (
+            del l_tables[table_name]
+
+    for table_name in l_tables:
+        table = tables[table_name]
+        if not (
             keyisset("Lookup", table)
-            and table_name not in dyndb_root_stack.stack_template.resources
+            and table_name not in res_root_stack.stack_template.resources
         ):
-            lookup_dynamodb_table(table_name)
+            raise KeyError(
+                f"Table {table_name} is not created in ComposeX and does not have Lookup attribute"
+            )
+        if not keyisset("Tags", table["Lookup"]):
+            raise KeyError(
+                f"Table {table_name} is defined for lookup but there are no tags indicated."
+            )
+        found_tables = lookup_dyn_table(settings.session, table["Lookup"]["Tags"])
+        if not found_tables:
+            LOG.warning(
+                f"404 not tables found with the provided tags was found in defintion {table_name}."
+            )
+            continue
+        for found_table in found_tables:
+            table.update(found_table)
+            define_resource_assignments(
+                table,
+                found_table["Name"],
+                services_families,
+                services_stack,
+                res_root_stack,
+                arn=found_table["Arn"],
+            )
 
-        perms = generate_dynamodb_permissions(table_name_r)
-        envvars = generate_dynamodb_envvars(table_name_r, table)
 
-        LOG.debug([var.Name for var in envvars])
+def define_resource_assignments(
+    resource_def,
+    resource_name,
+    services_families,
+    services_stack,
+    res_root_stack,
+    arn=None,
+):
+    """
+    Function to assign resource to services stack
 
-        if perms and envvars and keyisset("Services", table):
-            for service in table["Services"]:
-                service_family = get_service_family_name(
-                    services_families, service["name"]
+    :param dict resource_def:
+    :param str resource_name:
+    :param dict services_families:
+    :param ecs_composex.common.stacks.ComposeXStack services_stack:
+    :param ecs_composex.common.stacks.ComposeXStack res_root_stack:
+    :param str arn: The ARN of the resource to use for lookedup resources.
+    :raises KeyError: if the service name is not a listed service in docker-compose.
+    """
+
+    perms = generate_dynamodb_permissions(resource_name, arn)
+    envvars = generate_dynamodb_envvars(resource_name, resource_def, arn)
+
+    LOG.debug([var.Name for var in envvars])
+
+    if perms and envvars and keyisset("Services", resource_def):
+        for service in resource_def["Services"]:
+            service_family = get_service_family_name(services_families, service["name"])
+            family_wide = True if service["name"] in services_families else False
+            if service_family not in services_stack.stack_template.resources:
+                raise KeyError(
+                    f"Service {service_family} not in the services stack",
+                    services_stack.stack_template.resources,
                 )
-                family_wide = True if service["name"] in services_families else False
-                if service_family not in services_stack.stack_template.resources:
-                    raise KeyError(
-                        f"Service {service_family} not in the services stack",
-                        services_stack.stack_template.resources,
-                    )
-                service_stack = services_stack.stack_template.resources[service_family]
-                apply_settings_to_service(
-                    service_stack.stack_template,
-                    perms,
-                    envvars,
-                    service["access"],
-                    NONALPHANUM.sub("", service["name"]),
-                    family_wide,
-                )
-            if dyndb_root_stack.title not in services_stack.DependsOn:
-                services_stack.add_dependencies(dyndb_root_stack.title)
+            service_stack = services_stack.stack_template.resources[service_family]
+            apply_settings_to_service(
+                service_stack.stack_template,
+                perms,
+                envvars,
+                service["access"],
+                NONALPHANUM.sub("", service["name"]),
+                family_wide,
+            )
+        if res_root_stack.title not in services_stack.DependsOn:
+            services_stack.add_dependencies(res_root_stack.title)

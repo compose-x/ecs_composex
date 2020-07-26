@@ -76,7 +76,9 @@ def add_ssl_config_to_listeners(service_template, cert_import, ports):
             listener.Protocol = "TLS"
 
 
-def acm_to_ecs(acms, services_stack, services_families, acm_root_stack, **kwargs):
+def acm_to_ecs(
+    acms, services_stack, services_families, acm_root_stack, settings, **kwargs
+):
     """
     Function to apply ACM settings to ECS Services
 

@@ -57,8 +57,6 @@ def get_table_tags(session, table_arn, tags=None, next_token=None):
         tags_r = client.list_tags_of_resource(ResourceArn=table_arn)
         for tag in tags_r["Tags"]:
             tags.append(tag)
-    LOG.info(tags)
-    LOG.info("END TAGS SEARCH")
     return tags
 
 
@@ -76,7 +74,7 @@ def get_tables_tags(session, tables_list):
     for table_name in tables_list:
         table_attributes = client.describe_table(TableName=table_name)
         table_def = {"Name": table_name, "Arn": table_attributes["Table"]["TableArn"]}
-        LOG.info(table_def)
+        LOG.debug(table_def)
         table_def["Tags"] = get_table_tags(session, table_def["Arn"])
         tables.append(table_def)
     return tables
@@ -104,7 +102,7 @@ def get_tables_list(session, tables=None, next_token=None):
         list_r = client.list_tables(ExclusiveStartTableName=next_token)
         for table in list_r["Tables"]:
             tables.append(table)
-    LOG.info(tables)
+    LOG.debug(tables)
     return tables
 
 
@@ -114,7 +112,8 @@ def lookup_dyn_table(session, tags, is_global=False):
     :param boto3.session.Session session:
     :param list tags:
     :param bool is_global:
-    :return:
+    :return: the matching table
+    :rtype: list
     """
     matching_tables = []
     filters = define_dyn_filter_tags(tags)
@@ -124,21 +123,20 @@ def lookup_dyn_table(session, tags, is_global=False):
 
     for table in tables_defs:
         if not keyisset("Tags", table):
-            LOG.info(f"Table {table['Name']} has no tags. Skipping")
+            LOG.debug(f"Table {table['Name']} has no tags. Skipping")
             continue
         tags = table["Tags"]
         filters_match = 0
         for tag in tags:
             tag_key = tag["Key"]
             tag_value = tag["Value"]
-            for filter in filters:
-                print(tag_key, tag_value, filter)
-                if filter["Name"] == tag_key and filter["Value"] == tag_value:
-                    filters_match += 1
-                else:
-                    print()
-        LOG.info(f"Filters count: {filters_count}. Match: {filters_match}")
+            for filter_r in filters:
+                if isinstance(filter_r["Value"], bool):
+                    filter_r["Value"] = str(filter_r["Value"])
+                if filter_r["Name"] == tag_key:
+                    if filter_r["Value"] == tag_value:
+                        filters_match += 1
+        LOG.debug(f"Filters count: {filters_count}. Match: {filters_match}")
         if filters_match == filters_count:
             matching_tables.append(table)
-
     return matching_tables

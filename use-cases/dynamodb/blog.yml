@@ -185,8 +185,8 @@ x-dynamodb:
 
   tableC:
     Lookup:
-      tags:
-        - Name: tableB
+      Tags:
+        - name: tableC
     Services:
       - name: app02
         access: RO

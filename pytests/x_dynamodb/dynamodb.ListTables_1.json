@@ -1,0 +1,23 @@
+{
+    "status_code": 200,
+    "data": {
+        "TableNames": [
+            "table2",
+            "test"
+        ],
+        "ResponseMetadata": {
+            "RequestId": "ILTCA6TKVEPOU0CDNA2KP0EFVRVV4KQNSO5AEMVJF66Q9ASUAAJG",
+            "HTTPStatusCode": 200,
+            "HTTPHeaders": {
+                "server": "Server",
+                "date": "Mon, 27 Jul 2020 07:39:34 GMT",
+                "content-type": "application/x-amz-json-1.0",
+                "content-length": "32",
+                "connection": "keep-alive",
+                "x-amzn-requestid": "ILTCA6TKVEPOU0CDNA2KP0EFVRVV4KQNSO5AEMVJF66Q9ASUAAJG",
+                "x-amz-crc32": "1997512518"
+            },
+            "RetryAttempts": 0
+        }
+    }
+}
