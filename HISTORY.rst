@@ -2,6 +2,15 @@
 History
 =======
 
+0.5.0 (2020-07-27)
+==================
+
+New features:
+
+* `Add support for DynamoDB tables <https://github.com/lambda-my-aws/ecs_composex/issues/31>`_
+* Lookup existing tables via DynamoDB Table tags, will grant access to the table to the microservices deployed.
+
+
 0.4.0 (2020-07-20)
 ==================
 
