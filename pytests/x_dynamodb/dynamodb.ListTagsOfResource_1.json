@@ -1,0 +1,33 @@
+{
+    "status_code": 200,
+    "data": {
+        "Tags": [
+            {
+                "Key": "createdbycomposex",
+                "Value": "False"
+            },
+            {
+                "Key": "someothertab",
+                "Value": "alfkef"
+            },
+            {
+                "Key": "name",
+                "Value": "tableC"
+            }
+        ],
+        "ResponseMetadata": {
+            "RequestId": "0M5CIP4E9HSGFKTQP43I5PRQJBVV4KQNSO5AEMVJF66Q9ASUAAJG",
+            "HTTPStatusCode": 200,
+            "HTTPHeaders": {
+                "server": "Server",
+                "date": "Mon, 27 Jul 2020 07:39:34 GMT",
+                "content-type": "application/x-amz-json-1.0",
+                "content-length": "126",
+                "connection": "keep-alive",
+                "x-amzn-requestid": "0M5CIP4E9HSGFKTQP43I5PRQJBVV4KQNSO5AEMVJF66Q9ASUAAJG",
+                "x-amz-crc32": "3104517815"
+            },
+            "RetryAttempts": 0
+        }
+    }
+}

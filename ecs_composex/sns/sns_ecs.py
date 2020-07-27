@@ -54,7 +54,9 @@ def apply_settings_to_service(
             break
 
 
-def sns_to_ecs(topics, services_stack, services_families, sns_root_stack, **kwargs):
+def sns_to_ecs(
+    topics, services_stack, services_families, sns_root_stack, settings, **kwargs
+):
     """
     Function to apply SQS settings to ECS Services
     :return:

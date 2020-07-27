@@ -64,7 +64,7 @@ class ComposeXStack(Stack, object):
         :param dict stack_parameters: Stack parameters to set
         :param kwargs: kwargs from composex along with the kwargs for the stack
         """
-
+        self.lookup_resources = []
         if not isinstance(stack_template, Template):
             raise TypeError(
                 "stack_template is", type(stack_template), "expected", Template
