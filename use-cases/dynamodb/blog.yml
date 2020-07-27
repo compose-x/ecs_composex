@@ -182,6 +182,10 @@ x-dynamodb:
     Services:
       - name: app02
         access: RW
+    Settings:
+      EnvNames:
+        - TABLEB
+        - tableb
 
   tableC:
     Lookup:

@@ -117,8 +117,16 @@ x-dynamodb:
         access: RW
       - name: bignicefamily
         access: RO
+    Settings:
+      EnvNames:
+        - TABLEA
+        - tablea
+        - tableA
 
   tableB:
+    Settings:
+      EnvNames:
+        - TABLEB
     Properties:
       AttributeDefinitions:
         - AttributeName: "Album"
@@ -181,12 +189,20 @@ x-dynamodb:
 
   tableC:
     Lookup:
-      tags:
-        - Name: TABLEC
-
+      Tags:
+        - name: tableC
     Services:
       - name: app02
         access: RW
+
+  tableD:
+    Lookup:
+      tags:
+        - name: tableC
+    Services:
+      - name: app03
+        access: RO
+
 
 x-vpc:
   Create:
