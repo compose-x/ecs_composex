@@ -25,11 +25,11 @@ from ecs_composex.ecs.ecs_iam import define_service_containers
 from ecs_composex.ecs.ecs_container_config import extend_container_envvars
 from ecs_composex.ecs.ecs_params import TASK_ROLE_T
 from ecs_composex.ecs.ecs_template import get_service_family_name
-from ecs_composex.dynamodb.dynamodb_perms import (
-    generate_dynamodb_permissions,
-    generate_dynamodb_envvars,
-)
+
+from ecs_composex.resource_settings import generate_resource_envvars, generate_resource_permissions
+from ecs_composex.dynamodb.dynamodb_perms import ACCESS_TYPES
 from ecs_composex.dynamodb.dynamodb_aws import lookup_dyn_table
+from ecs_composex.dynamodb.dynamodb_params import TABLE_ARN
 
 
 def apply_settings_to_service(
@@ -129,8 +129,8 @@ def define_resource_assignments(
     :raises KeyError: if the service name is not a listed service in docker-compose.
     """
 
-    perms = generate_dynamodb_permissions(resource_name, arn)
-    envvars = generate_dynamodb_envvars(resource_name, resource_def, arn)
+    perms = generate_resource_permissions(resource_name, ACCESS_TYPES, TABLE_ARN, arn)
+    envvars = generate_resource_envvars(resource_name, resource_def, TABLE_ARN, arn)
 
     LOG.debug([var.Name for var in envvars])
 

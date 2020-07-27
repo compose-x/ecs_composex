@@ -24,8 +24,10 @@ from ecs_composex.ecs.ecs_iam import define_service_containers
 from ecs_composex.ecs.ecs_container_config import extend_container_envvars
 from ecs_composex.ecs.ecs_params import TASK_ROLE_T
 from ecs_composex.ecs.ecs_template import get_service_family_name
-from ecs_composex.sns.sns_perms import generate_sns_permissions, generate_sns_envvars
+from ecs_composex.sns.sns_perms import ACCESS_TYPES
 from ecs_composex.sns.sns_templates import TOPICS_KEY
+from ecs_composex.sns.sns_params import TOPIC_ARN_T
+from ecs_composex.resource_settings import generate_resource_envvars, generate_resource_permissions
 
 
 def apply_settings_to_service(
@@ -65,8 +67,8 @@ def sns_to_ecs(
         topic = topics[TOPICS_KEY][topic_name]
         if topic_name not in sns_root_stack.stack_template.resources:
             raise KeyError(f"SQS topic {topic_name} not a resource of the SQS stack")
-        perms = generate_sns_permissions(topic_name)
-        envvars = generate_sns_envvars(topic_name, topic)
+        perms = generate_resource_permissions(topic_name, ACCESS_TYPES, TOPIC_ARN_T)
+        envvars = generate_resource_envvars(topic_name, topic, TOPIC_ARN_T)
         LOG.debug(topic_name)
         LOG.debug(perms)
         LOG.debug(envvars)

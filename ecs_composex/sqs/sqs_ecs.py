@@ -24,7 +24,9 @@ from ecs_composex.ecs.ecs_iam import define_service_containers
 from ecs_composex.ecs.ecs_container_config import extend_container_envvars
 from ecs_composex.ecs.ecs_params import TASK_ROLE_T
 from ecs_composex.ecs.ecs_template import get_service_family_name
-from ecs_composex.sqs.sqs_perms import generate_sqs_permissions, generate_sqs_envvars
+from ecs_composex.sqs.sqs_perms import ACCESS_TYPES
+from ecs_composex.sqs.sqs_params import SQS_ARN_T
+from ecs_composex.resource_settings import generate_resource_permissions, generate_resource_envvars
 
 
 def apply_settings_to_service(
@@ -53,8 +55,8 @@ def sqs_to_ecs(
         queue = queues[queue_name]
         if queue_name not in sqs_root_stack.stack_template.resources:
             raise KeyError(f"SQS queue {queue_name} not a resource of the SQS stack")
-        perms = generate_sqs_permissions(queue_name, queue, **kwargs)
-        envvars = generate_sqs_envvars(queue_name, queue, **kwargs)
+        perms = generate_resource_permissions(queue_name, ACCESS_TYPES, SQS_ARN_T)
+        envvars = generate_resource_envvars(queue_name, queue, SQS_ARN_T)
         LOG.debug([var.Name for var in envvars])
         if perms and envvars and keyisset("Services", queue):
             for service in queue["Services"]:
