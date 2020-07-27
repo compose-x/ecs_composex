@@ -2,6 +2,15 @@
 History
 =======
 
+0.5.0 (2020-07-27)
+==================
+
+New features
+------------
+
+* `DynamoDB support <https://github.com/lambda-my-aws/ecs_composex/issues/31>`_
+* Lookup for existing tables which the services get IAM access to.
+
 0.4.0 (2020-07-20)
 ==================
 
