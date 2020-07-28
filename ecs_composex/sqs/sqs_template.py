@@ -42,31 +42,6 @@ from ecs_composex.sqs.sqs_params import (
 CFN_MAX_OUTPUTS = 50
 
 
-def define_queue_tags(properties, queue_name):
-    """
-    Function to define the SQS Queue Tags
-
-    :param properties: Properties imported from Compose File
-    :type properties: dict
-    :param queue_name: The Queue name as defined in ComposeX
-    :type queue_name: str
-
-    :returns: Tags()
-    :rtype: troposphere.Tags
-    """
-    tag_name_exists = False
-    if keyisset("Tags", properties):
-        for key in properties["Tags"]:
-            if key == "Name":
-                tag_name_exists = True
-    else:
-        properties["Tags"] = {}
-
-    if not tag_name_exists:
-        properties["Tags"]["Name"] = queue_name
-    return Tags(properties["Tags"])
-
-
 def define_redrive_policy(target_queue, retries=None, mono_template=True):
 
     policy = {
@@ -85,8 +60,6 @@ def set_queue(queue_name, properties, redrive_policy=None):
     res_name = NONALPHANUM.sub("", queue_name)
     if redrive_policy is not None:
         properties.update(redrive_policy)
-    if keyisset("Tags", properties):
-        properties["Tags"] = define_queue_tags(properties, queue_name)
     if keyisset("QueueName", properties):
         queue_name = properties["QueueName"]
         properties.pop("QueueName")
@@ -166,19 +139,28 @@ def generate_sqs_root_template(settings):
             elif not mono_template:
                 parameters = {}
                 if hasattr(queue, "RedrivePolicy"):
-                    parameters.update({
-                        DLQ_ARN_T: GetAtt(
-                            NONALPHANUM.sub(
-                                "", queue_def["Properties"]["RedrivePolicy"]["deadLetterTargetArn"]
-                            ),
-                            f"Outputs.{SQS_ARN_T}",
-                        )
-                    })
-                queue_template = build_template(f"Template for SQS queue {queue.title}", [DLQ_ARN])
+                    parameters.update(
+                        {
+                            DLQ_ARN_T: GetAtt(
+                                NONALPHANUM.sub(
+                                    "",
+                                    queue_def["Properties"]["RedrivePolicy"][
+                                        "deadLetterTargetArn"
+                                    ],
+                                ),
+                                f"Outputs.{SQS_ARN_T}",
+                            )
+                        }
+                    )
+                queue_template = build_template(
+                    f"Template for SQS queue {queue.title}", [DLQ_ARN]
+                )
                 queue_template.add_resource(queue)
                 queue_template.add_output(outputs.outputs)
                 queue_stack = ComposeXStack(
-                    queue_res_name, stack_template=queue_template, stack_parameters=parameters
+                    queue_res_name,
+                    stack_template=queue_template,
+                    stack_parameters=parameters,
                 )
                 template.add_resource(queue_stack)
     return template
