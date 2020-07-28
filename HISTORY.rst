@@ -2,6 +2,12 @@
 History
 =======
 
+0.5.1 (2020-07-28)
+===================
+
+Small bug patches and code refactoring.
+SQS now into a single stack unless there are more than 30 queues.
+
 0.5.0 (2020-07-27)
 ==================
 
