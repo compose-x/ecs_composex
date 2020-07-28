@@ -442,7 +442,12 @@ def generate_full_template(settings):
     apply_x_to_x_configs(root_stack.stack_template, settings)
 
     if keyisset("x-appmesh", settings.compose_content):
-        mesh = Mesh(settings.compose_content["x-appmesh"], services_families, services_stack, settings)
+        mesh = Mesh(
+            settings.compose_content["x-appmesh"],
+            services_families,
+            services_stack,
+            settings,
+        )
         mesh.render_mesh_template(services_stack)
     add_all_tags(root_stack.stack_template, settings)
     return root_stack

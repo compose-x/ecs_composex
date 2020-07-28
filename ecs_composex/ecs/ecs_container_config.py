@@ -65,7 +65,7 @@ def extend_container_secrets(container, secret):
 
 
 def extend_container_envvars(container, env_vars):
-    ignored_containers = [ "xray-daemon", "envoy"]
+    ignored_containers = ["xray-daemon", "envoy"]
     if (
         isinstance(container, ContainerDefinition)
         and not isinstance(container.Name, (Ref, Sub, GetAtt, ImportValue))

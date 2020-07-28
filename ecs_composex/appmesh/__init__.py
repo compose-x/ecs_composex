@@ -53,7 +53,9 @@ class Mesh(object):
     services_key = "services"
     required_keys = [nodes_key, routers_key, services_key]
 
-    def __init__(self, mesh_definition, services_families, services_root_stack, settings):
+    def __init__(
+        self, mesh_definition, services_families, services_root_stack, settings
+    ):
         """
         Method to initialize the Mesh
 
@@ -123,8 +125,8 @@ class Mesh(object):
             services_root_stack.Parameters.update(
                 {
                     appmesh_params.MESH_NAME_T: Ref(AWS_STACK_NAME),
-                    appmesh_params.MESH_OWNER_ID_T: Ref(AWS_ACCOUNT_ID)
-                 }
+                    appmesh_params.MESH_OWNER_ID_T: Ref(AWS_ACCOUNT_ID),
+                }
             )
         for key in self.required_keys:
             if key not in self.mesh_settings.keys():
@@ -151,7 +153,7 @@ class Mesh(object):
             LOG.debug(service_family)
             if service_family not in services_root_stack.stack_template.resources:
                 raise AttributeError(
-                    f'Node defined {service_family} is not defined in services stack',
+                    f"Node defined {service_family} is not defined in services stack",
                     services_root_stack.stack_template.resources,
                 )
             LOG.debug(node)

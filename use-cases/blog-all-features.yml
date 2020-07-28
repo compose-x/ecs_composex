@@ -122,26 +122,29 @@ x-dns:
   PublicNamespace:
     Name: lambda-my-aws.io
 
-#x-sqs:
-#  queueA:
-#    Properties:
-#      QueueName: abcd
-#    Settings:
-#      EnvNames:
-#        - QUEUEA
-#    Services:
-#      - name: app03
-#        access: RWMessages
-#
-#  queueB:
-#    Properties:
-#      QueueName: xyz
-#    Settings:
-#      EnvNames:
-#        - QUEUEB
-#    Services:
-#      - name: rproxy
-#        access: RWMessages
+x-sqs:
+  queueA:
+    Properties:
+      QueueName: abcd
+      RedrivePolicy:
+        deadLetterTargetArn: queueB
+        maxReceiveCount: 4
+    Settings:
+      EnvNames:
+        - QUEUEA
+    Services:
+      - name: app03
+        access: RWMessages
+
+  queueB:
+    Properties:
+      QueueName: xyz
+    Settings:
+      EnvNames:
+        - QUEUEB
+    Services:
+      - name: rproxy
+        access: RWMessages
 
 x-sns:
   Topics:
@@ -152,11 +155,11 @@ x-sns:
           access: Publish
         - name: app03
           access: Publish
-#    topicB:
-#      Properties:
-#        Subscription:
-#          - Endpoint: queueB
-#            Protocol: sqs
+    topicB:
+      Properties:
+        Subscription:
+          - Endpoint: queueB
+            Protocol: sqs
 
 x-rds:
   dbA:

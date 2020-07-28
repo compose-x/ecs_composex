@@ -736,7 +736,7 @@ class Service(object):
                         GetAtt(ecs_params.SG_T, "GroupId"),
                     )
                 ],
-                duplicate_attr=True
+                duplicate_attr=True,
             ).outputs
         )
 
