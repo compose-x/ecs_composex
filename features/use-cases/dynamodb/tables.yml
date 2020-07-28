@@ -197,12 +197,11 @@ x-dynamodb:
 
   tableD:
     Lookup:
-      tags:
+      Tags:
         - name: tableC
     Services:
       - name: app03
         access: RO
-
 
 x-vpc:
   Create:

@@ -75,9 +75,9 @@ def add_db_stack(root_template, dbs_subnet_group, db_name, db, settings):
     db_template = generate_database_template(db_name, db)
     if db_template is None:
         return
-    root_template.add_resource(
-        ComposeXStack(db_name, stack_template=db_template, Parameters=parameters)
-    )
+    db_stack = ComposeXStack(db_name, stack_template=db_template, stack_parameters=parameters)
+    print(db_stack.Parameters)
+    root_template.add_resource(db_stack)
 
 
 def init_rds_root_template():

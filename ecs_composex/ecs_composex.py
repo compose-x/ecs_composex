@@ -263,6 +263,8 @@ def add_x_resources(root_template, settings, vpc_stack=None):
                 )
                 if vpc_stack and key in tcp_services:
                     xstack.get_from_vpc_stack(vpc_stack)
+                elif not vpc_stack and key in tcp_services:
+                    xstack.no_vpc_parameters()
                 root_template.add_resource(xstack)
 
 
