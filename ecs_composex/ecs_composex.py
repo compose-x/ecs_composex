@@ -25,7 +25,7 @@ from importlib import import_module
 from troposphere import Ref, If, AWS_STACK_NAME, GetAtt
 from troposphere.ecs import Cluster
 
-from ecs_composex.appmesh import Mesh
+from ecs_composex.appmesh.appmesh_mesh import Mesh
 from ecs_composex.common import (
     LOG,
     add_parameters,
@@ -218,9 +218,8 @@ def add_compute(root_template, settings, vpc_stack):
     Function to add Cluster stack to root one. If any of the options related to compute resources are set in the CLI
     then this function will generate and add the compute template to the root stack template
 
-    :param root_template: the root template
-    :type root_template: troposphere.Template
-    :param vpc_stack: the VPC stack if any to pull the attributes from
+    :param troposphere.Template root_template: the root template
+    :param ComposeXStack vpc_stack: the VPC stack if any to pull the attributes from
     :param ComposeXSettings settings: The settings for execution
     :return: compute_stack, the Compute stack
     :rtype: ComposeXStack
@@ -264,6 +263,8 @@ def add_x_resources(root_template, settings, vpc_stack=None):
                 )
                 if vpc_stack and key in tcp_services:
                     xstack.get_from_vpc_stack(vpc_stack)
+                elif not vpc_stack and key in tcp_services:
+                    xstack.no_vpc_parameters()
                 root_template.add_resource(xstack)
 
 
@@ -441,7 +442,12 @@ def generate_full_template(settings):
     apply_x_to_x_configs(root_stack.stack_template, settings)
 
     if keyisset("x-appmesh", settings.compose_content):
-        mesh = Mesh(settings.compose_content["x-appmesh"], services_stack, settings)
+        mesh = Mesh(
+            settings.compose_content["x-appmesh"],
+            services_families,
+            services_stack,
+            settings,
+        )
         mesh.render_mesh_template(services_stack)
     add_all_tags(root_stack.stack_template, settings)
     return root_stack

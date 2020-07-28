@@ -15,9 +15,22 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from ecs_composex import __version__ as version
+"""
+Module to test ecs_composex generic oneliner raise functions.
+"""
 
-metadata = {
-    "Type": "ComposeX",
-    "Properties": {"ecs_composex::module": "ecs_composex.dynamodb", "Version": version},
-}
+from pytest import raises
+
+from troposphere import ImportValue
+from ecs_composex.resource_settings import generate_export_strings
+
+
+def test_export_attribute():
+    """
+    Function to verify the raise for invalid attribute
+    """
+    export_string = generate_export_strings("toto", "Arn")
+    assert isinstance(export_string, ImportValue)
+
+    with raises(TypeError):
+        generate_export_strings("toto", 123)

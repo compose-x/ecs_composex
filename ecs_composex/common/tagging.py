@@ -176,6 +176,10 @@ def add_object_tags(obj, tags):
         setattr(obj, "Tags", clean_tags)
 
 
+def default_tags():
+    return Tags(CreatedByComposeX=True)
+
+
 def add_all_tags(root_template, settings, params=None, xtags=None):
     """
     Function to go through all stacks of a given template and update the template
@@ -188,11 +192,13 @@ def add_all_tags(root_template, settings, params=None, xtags=None):
     """
     if not params or not xtags:
         if not keyisset("x-tags", settings.compose_content):
-            return None
+            xtags = default_tags()
+            params = None
         else:
             tags = settings.compose_content["x-tags"]
             params = generate_tags_parameters(tags)
             xtags = define_extended_tags(tags)
+            xtags += default_tags()
 
     resources = root_template.resources if root_template else []
     for resource_name in resources:
@@ -203,7 +209,8 @@ def add_all_tags(root_template, settings, params=None, xtags=None):
             LOG.debug(resource)
             LOG.debug(resource.title)
             add_all_tags(resource.stack_template, settings, params, xtags)
-            add_parameters(resource.stack_template, params)
+            if params:
+                add_parameters(resource.stack_template, params)
             if (
                 not resource
                 or not hasattr(resource, "stack_template")
@@ -212,6 +219,3 @@ def add_all_tags(root_template, settings, params=None, xtags=None):
                 return
             for stack_resname in resource.stack_template.resources:
                 add_object_tags(resource.stack_template.resources[stack_resname], xtags)
-        elif isinstance(resource, Stack):
-            LOG.warn(resource_name)
-            LOG.warn(resource)

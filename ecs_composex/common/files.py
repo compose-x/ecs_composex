@@ -3,8 +3,8 @@
 """
 Functions to manage a template and wheter it should be stored in S3
 """
-from os.path import abspath
 import pprint
+from os.path import abspath
 
 import yaml
 
@@ -14,7 +14,6 @@ except ImportError:
     from yaml import Dumper
 from os import mkdir
 
-import boto3
 import json
 from botocore.exceptions import ClientError
 from troposphere import Template

@@ -65,10 +65,11 @@ def extend_container_secrets(container, secret):
 
 
 def extend_container_envvars(container, env_vars):
+    ignored_containers = ["xray-daemon", "envoy"]
     if (
         isinstance(container, ContainerDefinition)
         and not isinstance(container.Name, (Ref, Sub, GetAtt, ImportValue))
-        and container.Name.startswith("AWS")
+        and container.Name in ignored_containers
     ):
         LOG.debug(f"Ignoring AWS Container {container.Name}")
         return
@@ -87,4 +88,4 @@ def extend_container_envvars(container, env_vars):
 
     else:
         setattr(container, "Environment", env_vars)
-    LOG.debug(environment)
+    LOG.debug(f"{container.Name}, {[env.Name for env in environment]}")

@@ -24,6 +24,7 @@ from ecs_composex.cli import main_parser
 from ecs_composex.common.settings import ComposeXSettings
 from ecs_composex.common.stacks import process_stacks
 from ecs_composex.sqs.sqs_stack import XResource
+from ecs_composex.common.aws import deploy
 
 
 def main():
@@ -39,8 +40,11 @@ def main():
     settings.set_bucket_name_from_account_id()
     settings.set_azs_from_api()
 
-    sns_stack = XResource(res_key, settings)
-    process_stacks(sns_stack, settings)
+    sqs_stack = XResource(res_key, settings)
+    process_stacks(sqs_stack, settings)
+
+    if settings.deploy:
+        deploy(settings, sqs_stack)
 
     return 0
 

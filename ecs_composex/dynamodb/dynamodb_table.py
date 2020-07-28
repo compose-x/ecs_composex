@@ -22,6 +22,7 @@ from troposphere import dynamodb
 
 from ecs_composex.common import keyisset, LOG
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME
+from ecs_composex.dynamodb import metadata
 
 
 def define_global_sec_indexes(properties):
@@ -189,7 +190,6 @@ def define_table(table_name, table_res_name, table_definition):
     :rtype: dynamodb.Table
     """
     required_keys = ["AttributeDefinitions", "KeySchema"]
-
     properties = table_definition["Properties"]
     if not all(required_key in properties.keys() for required_key in required_keys):
         raise KeyError("You must at least specify properties", required_keys)
@@ -214,8 +214,10 @@ def define_table(table_name, table_res_name, table_definition):
             CreatedByComposex=True,
             RootStackName=Ref(ROOT_STACK_NAME),
         ),
+        "Metadata": metadata,
     }
-    return dynamodb.Table(table_res_name, **table_props)
+    table = dynamodb.Table(table_res_name, **table_props)
+    return table
 
 
 def generate_table(table_name, table_res_name, table_definition):

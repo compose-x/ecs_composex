@@ -20,7 +20,7 @@ from pytest import raises
 from troposphere import Template
 from troposphere.appmesh import Mesh
 
-from ecs_composex.appmesh import Mesh as AppMesh
+from ecs_composex.appmesh.appmesh_mesh import Mesh as AppMesh
 from ecs_composex.common import LOG
 from ecs_composex.common.stacks import ComposeXStack
 from features.steps.common import *

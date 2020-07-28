@@ -58,7 +58,7 @@ def add_role_boundaries(iam_role, policy):
     :type policy: str
     """
     if not isinstance(iam_role, Role):
-        raise TypeError(f"{iam_role} is of type", type(iam_role), "execpted", Role)
+        raise TypeError(f"{iam_role} is of type", type(iam_role), "expected", Role)
     if not POLICY_RE.match(policy):
         raise ValueError(
             f"policy name {policy} does not match expected regexp", POLICY_PATTERN

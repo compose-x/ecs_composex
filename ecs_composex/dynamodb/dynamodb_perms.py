@@ -20,18 +20,7 @@ Set of functions to generate permissions to access queues
 based on pre-defined TABLE policies for consumers
 """
 
-from troposphere import Sub, ImportValue, If
-from troposphere.ecs import Environment
-from troposphere.iam import Policy as IamPolicy
-
-from ecs_composex.common.ecs_composex import CFN_EXPORT_DELIMITER as DELIM
-from ecs_composex.common import keyisset
-from ecs_composex.common import LOG
-from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
-from ecs_composex.common.cfn_conditions import USE_SSM_ONLY_T
-from ecs_composex.dynamodb import dynamodb_params
-
-QUEUES_ACCESS_TYPES = {
+ACCESS_TYPES = {
     "RW": {
         "Action": [
             "dynamodb:BatchGet*",
@@ -59,92 +48,3 @@ QUEUES_ACCESS_TYPES = {
         ]
     },
 }
-
-
-def generate_queue_strings(table_name):
-    """
-    Function to generate the SSM and CFN import/export strings
-    Returns the import in a tuple
-
-    :param table_name: name of the queue as defined in ComposeX File
-    :type table_name:
-
-    :returns: tuple(ssm_export, cfn_export)
-    :rtype: tuple(Sub, ImportValue)
-    """
-    ssm_string = (
-        f"/${{{ROOT_STACK_NAME_T}}}{dynamodb_params.TABLE_SSM_PREFIX}{table_name}"
-    )
-    ssm_export = Sub(r"{{resolve:ssm:%s:1}}" % ssm_string)
-    cfn_string = f"${{{ROOT_STACK_NAME_T}}}{DELIM}{table_name}{DELIM}{dynamodb_params.TABLE_ARN_T}"
-    cfn_import = ImportValue(Sub(cfn_string))
-    return ssm_export, cfn_import
-
-
-def generate_dynamodb_permissions(table_name, arn=None):
-    """
-    Generates an IAM policy for each access type and returns a dictionnary of these.
-
-    :params table_name: String of the name of the queue as defined in Docker compose
-    :type table_name: str
-
-    :returns: Dictionnary of IAM policies (PolicyType)
-    :rtype: dict
-    """
-    export_strings = generate_queue_strings(table_name)
-    queue_policies = {}
-    for a_type in QUEUES_ACCESS_TYPES:
-        clean_policy = {"Version": "2012-10-17", "Statement": []}
-        LOG.debug(a_type)
-        policy_doc = QUEUES_ACCESS_TYPES[a_type].copy()
-        policy_doc["Resource"] = (
-            arn
-            if isinstance(arn, str)
-            else If(USE_SSM_ONLY_T, export_strings[0], export_strings[1])
-        )
-        clean_policy["Statement"].append(policy_doc)
-        queue_policies[a_type] = IamPolicy(
-            PolicyName=Sub(f"AccessTo{table_name}In${{{ROOT_STACK_NAME_T}}}"),
-            PolicyDocument=clean_policy,
-        )
-    return queue_policies
-
-
-def generate_dynamodb_envvars(table_name, resource, arn=None):
-    """
-    Function to generate environment variables that can be added to a container definition
-    shall the ecs_service need to know about the Queue
-    :return: environment key/pairs
-    :rtype: list<troposphere.ecs.Environment>
-    """
-    env_names = []
-    export_strings = generate_queue_strings(table_name)
-    if keyisset("Settings", resource) and keyisset("EnvNames", resource["Settings"]):
-        for env_name in resource["Settings"]["EnvNames"]:
-            env_names.append(
-                Environment(
-                    Name=env_name,
-                    Value=If(USE_SSM_ONLY_T, export_strings[0], export_strings[1])
-                    if arn is None
-                    else arn,
-                )
-            )
-        if table_name not in resource["Settings"]["EnvNames"]:
-            env_names.append(
-                Environment(
-                    Name=table_name,
-                    Value=If(USE_SSM_ONLY_T, export_strings[0], export_strings[1])
-                    if arn is None
-                    else arn,
-                )
-            )
-    else:
-        env_names.append(
-            Environment(
-                Name=table_name,
-                Value=If(USE_SSM_ONLY_T, export_strings[0], export_strings[1])
-                if arn is None
-                else arn,
-            )
-        )
-    return env_names

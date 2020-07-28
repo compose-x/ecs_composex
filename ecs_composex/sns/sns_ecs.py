@@ -19,78 +19,73 @@
 Module to apply SNS settings onto ECS Services
 """
 
-from ecs_composex.common import LOG, keyisset, NONALPHANUM
-from ecs_composex.ecs.ecs_iam import define_service_containers
-from ecs_composex.ecs.ecs_container_config import extend_container_envvars
-from ecs_composex.ecs.ecs_params import TASK_ROLE_T
-from ecs_composex.ecs.ecs_template import get_service_family_name
-from ecs_composex.sns.sns_perms import generate_sns_permissions, generate_sns_envvars
-from ecs_composex.sns.sns_templates import TOPICS_KEY
+from troposphere.sns import Topic
+
+from ecs_composex.common import keyisset
+from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.resource_permissions import apply_iam_based_resources
+from ecs_composex.resource_settings import (
+    generate_resource_envvars,
+    generate_resource_permissions,
+)
+from ecs_composex.sns.sns_params import TOPIC_ARN_T
+from ecs_composex.sns.sns_perms import ACCESS_TYPES
 
 
-def apply_settings_to_service(
-    service_template, perms, env_vars, access_type, service_name, family_wide=False
+def handle_new_topics(
+    xresources,
+    services_families,
+    services_stack,
+    res_root_stack,
+    l_topics,
+    nested=False,
 ):
-    """
-    Function to extend task definition and task role permissions
+    topics_r = []
+    s_resources = res_root_stack.stack_template.resources
+    for resource_name in s_resources:
+        if isinstance(s_resources[resource_name], Topic):
+            topics_r.append(s_resources[resource_name].title)
+        elif issubclass(type(s_resources[resource_name]), ComposeXStack):
+            handle_new_topics(
+                xresources,
+                services_families,
+                services_stack,
+                s_resources[resource_name],
+                l_topics,
+                nested=True,
+            )
 
-    :param troposphere.Template service_template:
-    :param dict perms:
-    :param list env_vars:
-    :param str access_type:
-    :return:
-    """
-    LOG.debug(f"Adding SNS access for service {service_template}")
-    containers = define_service_containers(service_template)
-    policy = perms[access_type]
-    task_role = service_template.resources[TASK_ROLE_T]
-    task_role.Policies.append(policy)
-    for container in containers:
-        if family_wide:
-            extend_container_envvars(container, env_vars)
-        elif not family_wide and container.Name == service_name:
-            LOG.debug(f"Adding env vars to {service_name} - {container.Name}")
-            extend_container_envvars(container, env_vars)
-            break
+    for topic_name in xresources:
+        if topic_name in topics_r:
+            perms = generate_resource_permissions(topic_name, ACCESS_TYPES, TOPIC_ARN_T)
+            envvars = generate_resource_envvars(
+                topic_name, xresources[topic_name], TOPIC_ARN_T
+            )
+            apply_iam_based_resources(
+                xresources[topic_name],
+                services_families,
+                services_stack,
+                res_root_stack,
+                envvars,
+                perms,
+                nested,
+            )
+            del l_topics[topic_name]
 
 
 def sns_to_ecs(
-    topics, services_stack, services_families, sns_root_stack, settings, **kwargs
+    topics, services_stack, services_families, res_root_stack, settings, **kwargs
 ):
     """
     Function to apply SQS settings to ECS Services
     :return:
     """
-    for topic_name in topics[TOPICS_KEY]:
-        topic = topics[TOPICS_KEY][topic_name]
-        if topic_name not in sns_root_stack.stack_template.resources:
-            raise KeyError(f"SQS topic {topic_name} not a resource of the SQS stack")
-        perms = generate_sns_permissions(topic_name)
-        envvars = generate_sns_envvars(topic_name, topic)
-        LOG.debug(topic_name)
-        LOG.debug(perms)
-        LOG.debug(envvars)
-        LOG.debug(services_stack.stack_template.resources.keys())
-        if perms and envvars and keyisset("Services", topic):
-            for service in topic["Services"]:
-                service_family = get_service_family_name(
-                    services_families, service["name"]
-                )
-                family_wide = True if service["name"] in services_families else False
-                if service_family not in services_stack.stack_template.resources:
-                    raise KeyError(
-                        f"Service {service_family} not in the services stack",
-                        services_stack.stack_template.resources,
-                    )
-                LOG.debug(f"{service_family} detected as destination for {topic_name}")
-                service_stack = services_stack.stack_template.resources[service_family]
-                apply_settings_to_service(
-                    service_stack.stack_template,
-                    perms,
-                    envvars,
-                    service["access"],
-                    NONALPHANUM.sub("", service["name"]),
-                    family_wide,
-                )
-            if sns_root_stack.title not in services_stack.DependsOn:
-                services_stack.add_dependencies(sns_root_stack.title)
+    l_topics = topics["Topics"].copy()
+    if keyisset("Topics", topics):
+        handle_new_topics(
+            topics["Topics"],
+            services_families,
+            services_stack,
+            res_root_stack,
+            l_topics,
+        )

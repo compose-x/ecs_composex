@@ -30,7 +30,7 @@ from troposphere.ecs import (
 from troposphere.iam import Policy
 from troposphere.ec2 import SecurityGroupIngress
 
-from ecs_composex.appmesh import appmesh_params, appmesh_conditions
+from ecs_composex.appmesh import appmesh_params, appmesh_conditions, metadata
 from ecs_composex.common import LOG, add_parameters
 from ecs_composex.common.outputs import ComposeXOutput
 from ecs_composex.ecs import ecs_params
@@ -112,6 +112,7 @@ class MeshNode(object):
                     for port_mapping in self.port_mappings
                 ],
             ),
+            Metadata=metadata,
         )
         self.stack.stack_template.add_resource(self.node)
         add_parameters(
@@ -128,7 +129,7 @@ class MeshNode(object):
         self.stack.stack_template.add_output(
             ComposeXOutput(
                 self.node,
-                [("VirtualNode", "", GetAtt(self.node, "VirtualNode"))],
+                [("VirtualNode", "", GetAtt(self.node, "VirtualNodeName"))],
                 duplicate_attr=True,
                 export=False,
             ).outputs
@@ -196,6 +197,7 @@ class MeshNode(object):
                 Retries=3,
                 StartPeriod=10,
             ),
+            Metadata=metadata,
         )
         proxy_config = ProxyConfiguration(
             ContainerName="envoy",

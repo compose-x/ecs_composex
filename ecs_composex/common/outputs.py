@@ -47,16 +47,13 @@ def validate(value):
             "Output argument expects Name, AttributeName, Value. Only got", len(value)
         )
     if not isinstance(value[0], (Parameter, str)):
-        raise ValueError(
-            "Name should be of type", str, Parameter, "Got", type(value[0])
-        )
+        raise TypeError("Name should be of type", str, Parameter, "Got", type(value[0]))
     if not isinstance(value[1], str):
-        raise ValueError("AttributeName should be of type", str, "Got", type(value[1]))
+        raise TypeError("AttributeName should be of type", str, "Got", type(value[1]))
 
     valid_type = issubclass(type(value[2]), AWSHelperFn)
     if not (valid_type or isinstance(value[2], (str, int))):
-        print(valid_type)
-        raise ValueError("Value type is", type(value[2]), "Expected", str, AWSHelperFn)
+        raise TypeError("Value type is", type(value[2]), "Expected", str, AWSHelperFn)
 
 
 class ComposeXOutput(object):

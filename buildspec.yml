@@ -12,8 +12,6 @@ phases:
       python: "$(echo $PY_VERSION)"
     commands:
       - export PY_FULL_VERSION=`python --version| awk '{print $NF}'`
-      - export LC_ALL="en_US.UTF-8"
-      - export LC_CTYPE="en_US.UTF-8"
       - export PATH=/root/.pyenv/versions/${PY_FULL_VERSION}/bin:${PATH}
       - pip --version || curl -s https://bootstrap.pypa.io/get-pip.py | python
       - pip install -r requirements.txt

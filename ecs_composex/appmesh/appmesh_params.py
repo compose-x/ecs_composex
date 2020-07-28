@@ -27,9 +27,7 @@ MESH_NAME_T = "AppMeshName"
 MESH_NAME = Parameter(MESH_NAME_T, Type="String", Default="AutoCreate")
 
 MESH_OWNER_ID_T = "MeshOwnerId"
-MESH_OWNER_ID = Parameter(
-    MESH_OWNER_ID_T, Type="String", AllowedPattern=r"[0-9]{12}", Default="000000000042"
-)
+MESH_OWNER_ID = Parameter(MESH_OWNER_ID_T, Type="String", AllowedPattern=r"[0-9]{12}")
 
 USE_APP_MESH_T = "UseAppMesh"
 USE_APP_MESH = Parameter(

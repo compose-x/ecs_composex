@@ -20,137 +20,103 @@ Module to manage IAM policies to grant access to ECS Services to DynamodbTables
 """
 
 from troposphere.dynamodb import Table
+
+from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common import LOG, keyisset, NONALPHANUM
-from ecs_composex.ecs.ecs_iam import define_service_containers
-from ecs_composex.ecs.ecs_container_config import extend_container_envvars
-from ecs_composex.ecs.ecs_params import TASK_ROLE_T
-from ecs_composex.ecs.ecs_template import get_service_family_name
-from ecs_composex.dynamodb.dynamodb_perms import (
-    generate_dynamodb_permissions,
-    generate_dynamodb_envvars,
-)
 from ecs_composex.dynamodb.dynamodb_aws import lookup_dyn_table
+from ecs_composex.dynamodb.dynamodb_params import TABLE_ARN
+from ecs_composex.dynamodb.dynamodb_perms import ACCESS_TYPES
+from ecs_composex.resource_settings import (
+    generate_resource_envvars,
+    generate_resource_permissions,
+    validate_lookup_resource,
+)
+from ecs_composex.resource_permissions import apply_iam_based_resources
 
 
-def apply_settings_to_service(
-    service_template, perms, env_vars, access_type, service_name, family_wide
+def handle_new_tables(
+    xresources,
+    services_families,
+    services_stack,
+    res_root_stack,
+    l_tables,
+    nested=False,
 ):
-    containers = define_service_containers(service_template)
-    policy = perms[access_type]
-    task_role = service_template.resources[TASK_ROLE_T]
-    task_role.Policies.append(policy)
-    for container in containers:
-        if family_wide:
-            extend_container_envvars(container, env_vars)
-        elif not family_wide and container.Name == service_name:
-            extend_container_envvars(container, env_vars)
-            break
+    tables_r = []
+    s_resources = res_root_stack.stack_template.resources
+    for resource_name in s_resources:
+        if isinstance(s_resources[resource_name], Table):
+            tables_r.append(s_resources[resource_name].title)
+        elif issubclass(type(s_resources[resource_name]), ComposeXStack):
+            handle_new_tables(
+                xresources,
+                services_families,
+                services_stack,
+                s_resources[resource_name],
+                l_tables,
+                nested=True,
+            )
+
+    for table_name in xresources:
+        if table_name in tables_r:
+            perms = generate_resource_permissions(table_name, ACCESS_TYPES, TABLE_ARN)
+            envvars = generate_resource_envvars(
+                table_name, xresources[table_name], TABLE_ARN
+            )
+            apply_iam_based_resources(
+                xresources[table_name],
+                services_families,
+                services_stack,
+                res_root_stack,
+                envvars,
+                perms,
+                nested,
+            )
+            del l_tables[table_name]
 
 
 def dynamodb_to_ecs(
-    tables, services_stack, services_families, res_root_stack, settings
+    xresources, services_stack, services_families, res_root_stack, settings
 ):
     """
     Function to link the resource and the ECS Services.
 
-    :param dict tables:
+    :param dict xresources:
     :param ecs_composex.common.stacks.ComposeXStack services_stack:
     :param dict services_families:
     :param ecs_composex.common.stacks.ComposeXStack res_root_stack:
     :param ecs_composex.common.settings.ComposeXSettings settings:
     :return:
     """
-    tables_r = []
-    resources = res_root_stack.stack_template.resources
-    for resource_name in resources:
-        if isinstance(resources[resource_name], Table):
-            tables_r.append(resources[resource_name].title)
-
-    l_tables = tables.copy()
-    for table_name in tables:
-        if table_name in tables_r:
-            define_resource_assignments(
-                tables[table_name],
-                table_name,
-                services_families,
-                services_stack,
-                res_root_stack,
-            )
-            del l_tables[table_name]
-
+    l_tables = xresources.copy()
+    handle_new_tables(
+        xresources, services_families, services_stack, res_root_stack, l_tables
+    )
     for table_name in l_tables:
-        table = tables[table_name]
-        if not (
-            keyisset("Lookup", table)
-            and table_name not in res_root_stack.stack_template.resources
-        ):
-            raise KeyError(
-                f"Table {table_name} is not created in ComposeX and does not have Lookup attribute"
-            )
-        if not keyisset("Tags", table["Lookup"]):
-            raise KeyError(
-                f"Table {table_name} is defined for lookup but there are no tags indicated."
-            )
-        found_tables = lookup_dyn_table(settings.session, table["Lookup"]["Tags"])
-        if not found_tables:
+        table = xresources[table_name]
+        validate_lookup_resource(table_name, table, res_root_stack)
+        found_resources = lookup_dyn_table(settings.session, table["Lookup"]["Tags"])
+        if not found_resources:
             LOG.warning(
                 f"404 not tables found with the provided tags was found in defintion {table_name}."
             )
             continue
-        for found_table in found_tables:
+        for found_table in found_resources:
             table.update(found_table)
-            define_resource_assignments(
-                table,
+            perms = generate_resource_permissions(
+                found_table["Name"], ACCESS_TYPES, TABLE_ARN, arn=found_table["Arn"]
+            )
+            envvars = generate_resource_envvars(
                 found_table["Name"],
+                xresources[table_name],
+                TABLE_ARN,
+                arn=found_table["Arn"],
+            )
+            apply_iam_based_resources(
+                table,
                 services_families,
                 services_stack,
                 res_root_stack,
-                arn=found_table["Arn"],
-            )
-
-
-def define_resource_assignments(
-    resource_def,
-    resource_name,
-    services_families,
-    services_stack,
-    res_root_stack,
-    arn=None,
-):
-    """
-    Function to assign resource to services stack
-
-    :param dict resource_def:
-    :param str resource_name:
-    :param dict services_families:
-    :param ecs_composex.common.stacks.ComposeXStack services_stack:
-    :param ecs_composex.common.stacks.ComposeXStack res_root_stack:
-    :param str arn: The ARN of the resource to use for lookedup resources.
-    :raises KeyError: if the service name is not a listed service in docker-compose.
-    """
-
-    perms = generate_dynamodb_permissions(resource_name, arn)
-    envvars = generate_dynamodb_envvars(resource_name, resource_def, arn)
-
-    LOG.debug([var.Name for var in envvars])
-
-    if perms and envvars and keyisset("Services", resource_def):
-        for service in resource_def["Services"]:
-            service_family = get_service_family_name(services_families, service["name"])
-            family_wide = True if service["name"] in services_families else False
-            if service_family not in services_stack.stack_template.resources:
-                raise KeyError(
-                    f"Service {service_family} not in the services stack",
-                    services_stack.stack_template.resources,
-                )
-            service_stack = services_stack.stack_template.resources[service_family]
-            apply_settings_to_service(
-                service_stack.stack_template,
-                perms,
                 envvars,
-                service["access"],
-                NONALPHANUM.sub("", service["name"]),
-                family_wide,
+                perms,
             )
-        if res_root_stack.title not in services_stack.DependsOn:
-            services_stack.add_dependencies(res_root_stack.title)

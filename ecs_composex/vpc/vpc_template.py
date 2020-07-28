@@ -43,6 +43,7 @@ from ecs_composex.vpc.vpc_subnets import (
     add_storage_subnets,
     add_apps_subnets,
 )
+from ecs_composex.vpc import metadata
 
 AZ_INDEX_PATTERN = r"(([a-z0-9-]+)([a-z]{1}$))"
 AZ_INDEX_RE = re.compile(AZ_INDEX_PATTERN)
@@ -141,6 +142,7 @@ def add_vpc_core(template, vpc_cidr):
                 USE_STACK_NAME_CON_T, Ref("AWS::StackName"), Ref(ROOT_STACK_NAME)
             ),
         ),
+        Metadata=metadata,
     )
     igw = InternetGateway(IGW_T, template=template)
     VPCGatewayAttachment(
@@ -148,6 +150,7 @@ def add_vpc_core(template, vpc_cidr):
         template=template,
         InternetGatewayId=Ref(igw),
         VpcId=Ref(vpc),
+        Metadata=metadata,
     )
     dhcp_opts = DHCPOptions(
         "VpcDhcpOptions",
@@ -165,12 +168,14 @@ def add_vpc_core(template, vpc_cidr):
         ),
         DomainNameServers=["AmazonProvidedDNS"],
         Tags=Tags(Name=Sub(f"dhcp-${{{vpc.title}}}")),
+        Metadata=metadata,
     )
     VPCDHCPOptionsAssociation(
         "VpcDhcpOptionsAssociate",
         template=template,
         DhcpOptionsId=Ref(dhcp_opts),
         VpcId=Ref(vpc),
+        Metadata=metadata,
     )
     return (vpc, igw)
 

@@ -17,247 +17,160 @@
 
 """Generates the individual SQS Queues templates."""
 
-from troposphere import Tags, Sub, GetAtt, If, Ref
+from copy import deepcopy
+from troposphere import Tags, Sub, GetAtt, Ref
 from troposphere.sqs import Queue, RedrivePolicy
-from troposphere.ssm import Parameter as SsmParameter
+from ecs_composex.sqs import metadata
 
 from ecs_composex.common import (
     build_template,
-    cfn_params,
     keyisset,
     keypresent,
     LOG,
     NONALPHANUM,
 )
-from ecs_composex.common.cfn_conditions import (
-    USE_SSM_ONLY_T,
-    USE_SSM_EXPORTS_T,
-    USE_STACK_NAME_CON_T,
-)
-from ecs_composex.common.cfn_params import ROOT_STACK_NAME, ROOT_STACK_NAME_T
+from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.outputs import ComposeXOutput
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.sqs.sqs_params import RES_KEY, SQS_SSM_PREFIX
+from ecs_composex.sqs.sqs_params import RES_KEY
 from ecs_composex.sqs.sqs_params import (
     SQS_NAME_T,
-    SQS_NAME,
-    DLQ_NAME_T,
-    DLQ_NAME,
     SQS_ARN_T,
     DLQ_ARN,
     DLQ_ARN_T,
 )
 
-
-def define_queue_tags(properties, queue_name):
-    """
-    Function to define the SQS Queue Tags
-
-    :param properties: Properties imported from Compose File
-    :type properties: dict
-    :param queue_name: The Queue name as defined in ComposeX
-    :type queue_name: str
-
-    :returns: Tags()
-    :rtype: troposphere.Tags
-    """
-    tag_name_exists = False
-    if keyisset("Tags", properties):
-        for key in properties["Tags"]:
-            if key == "Name":
-                tag_name_exists = True
-    else:
-        properties["Tags"] = {}
-
-    if not tag_name_exists:
-        properties["Tags"]["Name"] = queue_name
-    return Tags(properties["Tags"])
+CFN_MAX_OUTPUTS = 50
 
 
-def add_redrive_policy(queue_tpl, queue_name, properties, dlq_name):
-    """
-    Function to add a DLQ redrive policy to the SQS Queue
+def define_redrive_policy(target_queue, retries=None, mono_template=True):
 
-    :param queue_tpl: Template of the queue to add the redrive for
-    :type queue_tpl: troposphere.Template
-    :param queue_name: Name of the Queue as defined in ComposeX file
-    :type queue_name: str
-    :param properties: Queue properties as defined in ComposeX file
-    :type properties: dict
-    :param dlq_name: Name of the redrive queue as defined in ComposeX File
-    :type dlq_name: str
-
-    :returns: dict containing the RedrivePolicy
-    :rtype: dict
-    """
-    ssm_string = (
-        f"/${{{ROOT_STACK_NAME_T}}}{SQS_SSM_PREFIX}${{{DLQ_NAME_T}}}/{SQS_ARN_T}"
-    )
-    ssm_resolve = Sub(r"{{resolve:ssm:%s:1}}" % (ssm_string))
-    # cfn_import = ImportValue(
-    #     Sub(
-    #         f"${{{ROOT_STACK_NAME_T}}}"
-    #         f"{DELIM}"
-    #         f"${{{DLQ_NAME_T}}}"
-    #         f"{DELIM}"
-    #         f"{SQS_ARN_T}"
-    #     )
-    # )
-    redrive_queue_import = If(USE_SSM_ONLY_T, ssm_resolve, Ref(DLQ_ARN))
-    queue_tpl.add_parameter(DLQ_ARN)
-    queue_tpl.add_parameter(DLQ_NAME)
-    policy = properties["RedrivePolicy"]
-    policy["deadLetterTargetArn"] = redrive_queue_import
-    policy_obj = RedrivePolicy(**policy)
-    return {"RedrivePolicy": policy_obj}
-
-
-def add_ssm_parameters(src_template, queue_obj):
-    """
-    Function to add SSM parameters to store Queue information
-
-    :param src_template: Template to add the SSM params to
-    :type src_template: troposphere.Template
-    :param queue_obj: Queue to ref/getatt from
-    :type queue_obj: troposphere.sqs.Queue
-    """
-    ssm_name_string = f"/${{{ROOT_STACK_NAME_T}}}{SQS_SSM_PREFIX}${{{SQS_NAME_T}}}"
-    LOG.debug(ssm_name_string)
-    SsmParameter(
-        "QueueArnSsmParameter",
-        template=src_template,
-        Condition=USE_SSM_EXPORTS_T,
-        DependsOn=[queue_obj],
-        Name=Sub(f"{ssm_name_string}/{SQS_ARN_T}"),
-        Value=GetAtt(queue_obj, "Arn"),
-        Tier="Standard",
-        Type="String",
-    )
-    SsmParameter(
-        "QueueNameSsmParameter",
-        template=src_template,
-        Condition=USE_SSM_EXPORTS_T,
-        DependsOn=[queue_obj],
-        Name=Sub(f"{ssm_name_string}/{SQS_NAME_T}"),
-        Value=GetAtt(queue_obj, "QueueName"),
-        Tier="Standard",
-        Type="String",
-    )
-
-
-def generate_queue_template(queue_name, properties, redrive_queue=None):
-    """
-    Function that generates a single queue template
-
-    :param redrive_queue: SQS Redrive queue for DLQ
-    :type redrive_queue: str
-    :param queue_name: Name of the Queue as defined in ComposeX File
-    :type queue_name: str
-    :param properties: The queue properties
-    :type properties: dict
-    :param tags: tags to add to the queue
-    :type tags: troposphere.Tags
-
-    :returns: queue_template
-    :rtype: troposphere.Template
-    """
-    if not queue_name:
-        raise TypeError("Parameter queue_name must be a non-empty string")
-    queue_template = build_template(
-        f"Queue {queue_name} in {{{ROOT_STACK_NAME_T}}}", [SQS_NAME]
-    )
-    res_name = NONALPHANUM.sub("", queue_name)
-    if redrive_queue is not None:
-        properties.update(
-            add_redrive_policy(queue_template, queue_name, properties, redrive_queue)
+    policy = {
+        "RedrivePolicy": RedrivePolicy(
+            deadLetterTargetArn=GetAtt(target_queue, "Arn")
+            if mono_template
+            else Ref(DLQ_ARN),
+            maxReceiveCount=retries,
         )
-    if keyisset("Tags", properties):
-        properties["Tags"] = define_queue_tags(properties, queue_name)
+    }
+    return policy
+
+
+def set_queue(queue_name, properties, redrive_policy=None):
+    """
+    Function to define and set the SQS Queue
+
+    :param str queue_name: name of the queue
+    :param dict properties: queue properties
+    :param dict redrive_policy: redrive policy in case it has been defined
+
+    :return: queue
+    :rtype: troposphere.sqs.Queue
+    """
+    res_name = NONALPHANUM.sub("", queue_name)
+    if redrive_policy is not None:
+        properties.update(redrive_policy)
     if keyisset("QueueName", properties):
         queue_name = properties["QueueName"]
         properties.pop("QueueName")
         properties["QueueName"] = Sub(f"${{{ROOT_STACK_NAME_T}}}-{queue_name}")
     else:
         properties["QueueName"] = Sub(f"${{{ROOT_STACK_NAME_T}}}-{res_name}")
-    queue = Queue(res_name, template=queue_template, **properties)
-    add_ssm_parameters(queue_template, queue)
-    queue_template.add_output(
-        ComposeXOutput(
-            queue,
-            [
-                (SQS_NAME_T, "Name", GetAtt(queue, SQS_NAME_T)),
-                (SQS_ARN_T, "Arn", GetAtt(queue, "Arn")),
-            ],
-        ).outputs
-    )
-    return queue_template
+    queue = Queue(res_name, **properties)
+    return queue
 
 
-def add_queue_stack(queue_name, queue, queues):
+def define_queue(queue_name, queue_def, queues, mono_template=True):
     """
-    Function to define the Queue template settings for the Nested Stack
+    Function to parse the queue definition and generate the queue accordingly. Created the redrive policy if necessary
 
-    :param queue_name: Name of the queue as defined in Docker ComposeX file
-    :param queue: the queue
-    :param queues: all the queues in a list
+    :param str queue_name: name of the queue
+    :param dict queue_def: queue definition as found in composex file
+    :param dict queues: the queues defined in x-sqs
+    :param bool mono_template: whether or not there are so many outputs we need to split.
 
-    :return: Queue Stack object
-    :rtype: ecs_composex.common.files.ComposeXStack
+    :return: queue
+    :rtype: troposphere.sqs.Queue
     """
-    depends_on = []
-    parameters = {
-        SQS_NAME_T: queue_name,
-        ROOT_STACK_NAME_T: If(
-            USE_STACK_NAME_CON_T, Ref("AWS::StackName"), Ref(ROOT_STACK_NAME)
-        ),
-        cfn_params.USE_CFN_EXPORTS_T: Ref(cfn_params.USE_CFN_EXPORTS),
-        cfn_params.USE_SSM_EXPORTS_T: Ref(cfn_params.USE_SSM_EXPORTS),
-    }
-    if keypresent("Properties", queue):
-        properties = queue["Properties"]
+    redrive_policy = None
+    if keypresent("Properties", queue_def):
+        props = deepcopy(queue_def)
+        properties = props["Properties"]
+        properties.update({"Metadata": metadata})
     else:
-        properties = {}
-    if keyisset("RedrivePolicy", properties):
+        properties = {"Metadata": metadata}
+    if keyisset("RedrivePolicy", properties) and keyisset(
+        "deadLetterTargetArn", properties["RedrivePolicy"]
+    ):
         redrive_target = properties["RedrivePolicy"]["deadLetterTargetArn"]
         if redrive_target not in queues:
             raise KeyError(
                 f"Queue {redrive_target} defined as DLQ for {queue_name} but is not defined"
             )
-        depends_on.append(redrive_target)
-        parameters.update(
-            {
-                DLQ_ARN_T: GetAtt(redrive_target, f"Outputs.{SQS_ARN_T}"),
-                DLQ_NAME_T: GetAtt(redrive_target, f"Outputs.{SQS_NAME_T}"),
-            }
-        )
-        queue_tpl = generate_queue_template(queue_name, properties, redrive_target)
-    else:
-        queue_tpl = generate_queue_template(queue_name, properties)
-    LOG.debug(parameters)
-    queue_stack = ComposeXStack(
-        queue_name,
-        stack_template=queue_tpl,
-        Parameters=parameters,
-        DependsOn=depends_on,
-    )
-    return queue_stack
+        if keyisset("maxReceiveCount", properties["RedrivePolicy"]):
+            retries = int(properties["RedrivePolicy"]["maxReceiveCount"])
+        else:
+            retries = 5
+        redrive_policy = define_redrive_policy(redrive_target, retries, mono_template)
+    queue = set_queue(queue_name, properties, redrive_policy)
+    LOG.debug(queue.title)
+    return queue
 
 
 def generate_sqs_root_template(settings):
     """
-    Generates a base template for a sqs queues. Iterates over each queue defined
-    in x-sqs of the ComposeX file and identify settings and properties for these
+    Function to create the root DynamdoDB template.
 
-    :param settings:
-    :type settings: ecs_composex.common.settings.ComposeXSettings
-    :return: SQS Root/Parent template
-    :rtype: troposphere.Template
+    :param ecs_composex.common.settings.ComposeXSettings settings: Execution settings.
+    :return:
     """
-    description = f"Root SQS Template for {settings.name}"
-    root_tpl = build_template(description)
+    mono_template = False
+    output_per_resource = 2
+    if not keyisset(RES_KEY, settings.compose_content):
+        return None
+
     queues = settings.compose_content[RES_KEY]
+    if (len(list(queues.keys())) * output_per_resource) <= CFN_MAX_OUTPUTS:
+        mono_template = True
+    template = build_template("DynamoDB for ECS ComposeX")
     for queue_name in queues:
-        LOG.debug(queue_name)
-        queue_stack = add_queue_stack(queue_name, queues[queue_name], queues.keys())
-        root_tpl.add_resource(queue_stack)
-    return root_tpl
+        queue_res_name = NONALPHANUM.sub("", queue_name)
+        queue_def = queues[queue_name]
+        queue = define_queue(queue_name, queue_def, queues, mono_template)
+        if queue:
+            values = [
+                (SQS_ARN_T, "Arn", GetAtt(queue, "Arn")),
+                (SQS_NAME_T, "Name", Ref(queue)),
+            ]
+            outputs = ComposeXOutput(queue, values, duplicate_attr=(not mono_template))
+            if mono_template:
+                template.add_resource(queue)
+                template.add_output(outputs.outputs)
+            elif not mono_template:
+                parameters = {}
+                if hasattr(queue, "RedrivePolicy"):
+                    parameters.update(
+                        {
+                            DLQ_ARN_T: GetAtt(
+                                NONALPHANUM.sub(
+                                    "",
+                                    queue_def["Properties"]["RedrivePolicy"][
+                                        "deadLetterTargetArn"
+                                    ],
+                                ),
+                                f"Outputs.{SQS_ARN_T}",
+                            )
+                        }
+                    )
+                queue_template = build_template(
+                    f"Template for SQS queue {queue.title}", [DLQ_ARN]
+                )
+                queue_template.add_resource(queue)
+                queue_template.add_output(outputs.outputs)
+                queue_stack = ComposeXStack(
+                    queue_res_name,
+                    stack_template=queue_template,
+                    stack_parameters=parameters,
+                )
+                template.add_resource(queue_stack)
+    return template
