@@ -56,7 +56,16 @@ def define_redrive_policy(target_queue, retries=None, mono_template=True):
 
 
 def set_queue(queue_name, properties, redrive_policy=None):
-    print(redrive_policy)
+    """
+    Function to define and set the SQS Queue
+
+    :param str queue_name: name of the queue
+    :param dict properties: queue properties
+    :param dict redrive_policy: redrive policy in case it has been defined
+
+    :return: queue
+    :rtype: troposphere.sqs.Queue
+    """
     res_name = NONALPHANUM.sub("", queue_name)
     if redrive_policy is not None:
         properties.update(redrive_policy)
@@ -72,14 +81,15 @@ def set_queue(queue_name, properties, redrive_policy=None):
 
 def define_queue(queue_name, queue_def, queues, mono_template=True):
     """
-    Function to define the Queue template settings for the Nested Stack
+    Function to parse the queue definition and generate the queue accordingly. Created the redrive policy if necessary
 
-    :param queue_name: Name of the queue as defined in Docker ComposeX file
-    :param queue_def: the queue
-    :param queues: all the queues in a list
+    :param str queue_name: name of the queue
+    :param dict queue_def: queue definition as found in composex file
+    :param dict queues: the queues defined in x-sqs
+    :param bool mono_template: whether or not there are so many outputs we need to split.
 
-    :return: Queue Stack object
-    :rtype: ecs_composex.common.files.ComposeXStack
+    :return: queue
+    :rtype: troposphere.sqs.Queue
     """
     redrive_policy = None
     if keypresent("Properties", queue_def):
@@ -100,7 +110,6 @@ def define_queue(queue_name, queue_def, queues, mono_template=True):
         else:
             retries = 5
         redrive_policy = define_redrive_policy(redrive_target, retries, mono_template)
-    print(queue_name, redrive_policy)
     queue = set_queue(queue_name, properties, redrive_policy)
     LOG.debug(queue.title)
     return queue
@@ -110,7 +119,7 @@ def generate_sqs_root_template(settings):
     """
     Function to create the root DynamdoDB template.
 
-    :param ecs_composex.common.settings.ComposeXSettings settings:
+    :param ecs_composex.common.settings.ComposeXSettings settings: Execution settings.
     :return:
     """
     mono_template = False
@@ -126,7 +135,6 @@ def generate_sqs_root_template(settings):
         queue_res_name = NONALPHANUM.sub("", queue_name)
         queue_def = queues[queue_name]
         queue = define_queue(queue_name, queue_def, queues, mono_template)
-        print(queue_def)
         if queue:
             values = [
                 (SQS_ARN_T, "Arn", GetAtt(queue, "Arn")),

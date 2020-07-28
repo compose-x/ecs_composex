@@ -286,22 +286,22 @@ x-dynamodb:
       - name: app02
         access: RO
 
-x-vpc:
-  Lookup:
-    VpcId:
-      tags:
-        - Name: vpcwork
-    AppSubnets:
-      tags:
-        - vpc::usage: application
-    StorageSubnets:
-      tags:
-        - vpc::usage: storage
-    PublicSubnets:
-      tags:
-        - vpc::usage: public
+#x-vpc:
+#  Lookup:
+#    VpcId:
+#      tags:
+#        - Name: vpcwork
+#    AppSubnets:
+#      tags:
+#        - vpc::usage: application
+#    StorageSubnets:
+#      tags:
+#        - vpc::usage: storage
+#    PublicSubnets:
+#      tags:
+#        - vpc::usage: public
 
 
-x-tags:
-  costcentre: abcd
-  contact: you@me.com
+#x-tags:
+#  costcentre: abcd
+#  contact: you@me.com

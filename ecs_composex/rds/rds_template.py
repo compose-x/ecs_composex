@@ -78,7 +78,6 @@ def add_db_stack(root_template, dbs_subnet_group, db_name, db, settings):
     db_stack = ComposeXStack(
         db_name, stack_template=db_template, stack_parameters=parameters
     )
-    print(db_stack.Parameters)
     root_template.add_resource(db_stack)
 
 

@@ -178,7 +178,6 @@ class DnsSettings(object):
                 settings.session,
                 private=False,
             )
-            print(namespace_info)
             if not namespace_info["ZoneTld"].find(self.public_zone_name) == 0:
                 raise ValueError(
                     "Zone name provided does not match the value looked up. Got",
