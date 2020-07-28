@@ -47,9 +47,7 @@ def validate(value):
             "Output argument expects Name, AttributeName, Value. Only got", len(value)
         )
     if not isinstance(value[0], (Parameter, str)):
-        raise TypeError(
-            "Name should be of type", str, Parameter, "Got", type(value[0])
-        )
+        raise TypeError("Name should be of type", str, Parameter, "Got", type(value[0]))
     if not isinstance(value[1], str):
         raise TypeError("AttributeName should be of type", str, "Got", type(value[1]))
 
