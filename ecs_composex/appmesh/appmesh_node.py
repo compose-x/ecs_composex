@@ -128,7 +128,7 @@ class MeshNode(object):
         self.stack.stack_template.add_output(
             ComposeXOutput(
                 self.node,
-                [("VirtualNode", "", GetAtt(self.node, "VirtualNode"))],
+                [("VirtualNode", "", GetAtt(self.node, "VirtualNodeName"))],
                 duplicate_attr=True,
                 export=False,
             ).outputs

@@ -21,9 +21,10 @@ Main module for AppMesh.
 Once all services have been deployed and their VirtualNodes are setup, we deploy the Mesh for it.
 """
 
-from troposphere import Ref, GetAtt
+from troposphere import Ref, GetAtt, AWS_ACCOUNT_ID, AWS_STACK_NAME
 from troposphere import appmesh
 
+from ecs_composex.ecs.ecs_template import get_service_family_name
 from ecs_composex.appmesh import appmesh_params, appmesh_conditions
 from ecs_composex.appmesh.appmesh_aws import lookup_mesh_by_name
 from ecs_composex.appmesh.appmesh_conditions import add_appmesh_conditions
@@ -52,7 +53,7 @@ class Mesh(object):
     services_key = "services"
     required_keys = [nodes_key, routers_key, services_key]
 
-    def __init__(self, mesh_definition, services_root_stack, settings):
+    def __init__(self, mesh_definition, services_families, services_root_stack, settings):
         """
         Method to initialize the Mesh
 
@@ -113,23 +114,26 @@ class Mesh(object):
             self.appmesh = appmesh.Mesh(
                 self.mesh_title,
                 template=services_root_stack.stack_template,
-                Condition=appmesh_conditions.USER_IS_SELF_CON_T,
+                # Condition=appmesh_conditions.USER_IS_SELF_CON_T,
                 MeshName=appmesh_conditions.set_mesh_name(),
                 Spec=appmesh.MeshSpec(
                     EgressFilter=appmesh.EgressFilter(Type=egress_type)
                 ),
             )
-            self.stack_parameters.update(
-                {appmesh_params.MESH_NAME_T: Ref(appmesh_params.MESH_NAME)}
+            services_root_stack.Parameters.update(
+                {
+                    appmesh_params.MESH_NAME_T: Ref(AWS_STACK_NAME),
+                    appmesh_params.MESH_OWNER_ID_T: Ref(AWS_ACCOUNT_ID)
+                 }
             )
         for key in self.required_keys:
             if key not in self.mesh_settings.keys():
                 raise KeyError(f"Key {key} is missing. Required {self.required_keys}")
-        self.define_nodes(services_root_stack=services_root_stack)
+        self.define_nodes(services_families, services_root_stack)
         self.define_routes_and_routers()
         self.define_virtual_services()
 
-    def define_nodes(self, services_root_stack):
+    def define_nodes(self, services_families, services_root_stack):
         """
         Method to compile the nodes for the Mesh.
 
@@ -143,22 +147,24 @@ class Mesh(object):
                 raise AttributeError(
                     f"Nodes must have set {nodes_keys}. Got", node.keys()
                 )
-            if node["name"] not in services_root_stack.stack_template.resources:
+            service_family = get_service_family_name(services_families, node["name"])
+            LOG.debug(service_family)
+            if service_family not in services_root_stack.stack_template.resources:
                 raise AttributeError(
-                    f'Node defined {node["name"]} is not defined in services stack',
+                    f'Node defined {service_family} is not defined in services stack',
                     services_root_stack.stack_template.resources,
                 )
             LOG.debug(node)
-            self.nodes[node["name"]] = MeshNode(
-                services_root_stack.stack_template.resources[node["name"]],
+            self.nodes[service_family] = MeshNode(
+                services_root_stack.stack_template.resources[service_family],
                 node["protocol"],
                 node["backends"] if keyisset("backends", node) else None,
             )
-            self.nodes[node["name"]].get_node_param = GetAtt(
-                self.nodes[node["name"]].param_name, f"Outputs.VirtualNode"
+            self.nodes[service_family].get_node_param = GetAtt(
+                self.nodes[service_family].param_name, f"Outputs.VirtualNode"
             )
-            self.nodes[node["name"]].get_sg_param = GetAtt(
-                self.nodes[node["name"]].param_name,
+            self.nodes[service_family].get_sg_param = GetAtt(
+                self.nodes[service_family].param_name,
                 f"Outputs.{ecs_params.SERVICE_GROUP_ID_T}",
             )
 

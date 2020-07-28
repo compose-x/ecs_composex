@@ -68,7 +68,7 @@ def extend_container_envvars(container, env_vars):
     if (
         isinstance(container, ContainerDefinition)
         and not isinstance(container.Name, (Ref, Sub, GetAtt, ImportValue))
-        and container.Name.startswith("AWS")
+        and (container.Name == "xray-daemon" or container.Name == "envoy")
     ):
         LOG.debug(f"Ignoring AWS Container {container.Name}")
         return
@@ -87,4 +87,4 @@ def extend_container_envvars(container, env_vars):
 
     else:
         setattr(container, "Environment", env_vars)
-    LOG.debug(environment)
+    LOG.debug(f"{container.Name}, {[env.Name for env in environment]}")

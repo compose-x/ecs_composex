@@ -73,7 +73,6 @@ def apply_iam_based_resources(
         return
     for service in resource_def["Services"]:
         service_family = get_service_family_name(services_families, service["name"])
-        print(service_family)
         if (
             not service_family
             or service_family not in services_stack.stack_template.resources
