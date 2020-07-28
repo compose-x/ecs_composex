@@ -19,15 +19,11 @@
 Module to handle permissions from x-resource to ECS service
 """
 
-from ecs_composex.common import LOG, keyisset, NONALPHANUM
+from ecs_composex.common import keyisset, NONALPHANUM, LOG
 from ecs_composex.ecs.ecs_container_config import extend_container_envvars
-from ecs_composex.ecs.ecs_template import get_service_family_name
-from ecs_composex.resource_settings import (
-    generate_resource_envvars,
-    generate_resource_permissions,
-)
 from ecs_composex.ecs.ecs_iam import define_service_containers
 from ecs_composex.ecs.ecs_params import TASK_ROLE_T
+from ecs_composex.ecs.ecs_template import get_service_family_name
 
 
 def add_iam_policy_to_service_task_role(
@@ -73,7 +69,6 @@ def apply_iam_based_resources(
     :param ecs_composex.common.stacks.ComposeXStack res_root_stack:
     :raises KeyError: if the service name is not a listed service in docker-compose.
     """
-    print(res_root_stack.title)
     if not keyisset("Services", resource_def):
         return
     for service in resource_def["Services"]:
@@ -97,6 +92,6 @@ def apply_iam_based_resources(
             NONALPHANUM.sub("", service["name"]),
             family_wide,
         )
-    print(res_root_stack.title, nested)
+    LOG.debug(f"{res_root_stack.title} - {nested}")
     if res_root_stack.title not in services_stack.DependsOn and not nested:
         services_stack.add_dependencies(res_root_stack.title)

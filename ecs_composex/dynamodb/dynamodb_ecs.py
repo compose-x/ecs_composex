@@ -21,6 +21,7 @@ Module to manage IAM policies to grant access to ECS Services to DynamodbTables
 
 from troposphere.dynamodb import Table
 
+from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common import LOG, keyisset, NONALPHANUM
 from ecs_composex.dynamodb.dynamodb_aws import lookup_dyn_table
 from ecs_composex.dynamodb.dynamodb_params import TABLE_ARN
@@ -34,13 +35,27 @@ from ecs_composex.resource_permissions import apply_iam_based_resources
 
 
 def handle_new_tables(
-    xresources, services_families, services_stack, res_root_stack, l_tables
+    xresources,
+    services_families,
+    services_stack,
+    res_root_stack,
+    l_tables,
+    nested=False,
 ):
     tables_r = []
     s_resources = res_root_stack.stack_template.resources
     for resource_name in s_resources:
         if isinstance(s_resources[resource_name], Table):
             tables_r.append(s_resources[resource_name].title)
+        elif issubclass(type(s_resources[resource_name]), ComposeXStack):
+            handle_new_tables(
+                xresources,
+                services_families,
+                services_stack,
+                s_resources[resource_name],
+                l_tables,
+                nested=True,
+            )
 
     for table_name in xresources:
         if table_name in tables_r:
@@ -55,6 +70,7 @@ def handle_new_tables(
                 res_root_stack,
                 envvars,
                 perms,
+                nested,
             )
             del l_tables[table_name]
 

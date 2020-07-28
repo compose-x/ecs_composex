@@ -22,6 +22,7 @@ Module to apply SNS settings onto ECS Services
 from troposphere.sns import Topic
 
 from ecs_composex.common import keyisset
+from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.resource_permissions import apply_iam_based_resources
 from ecs_composex.resource_settings import (
     generate_resource_envvars,
@@ -32,13 +33,27 @@ from ecs_composex.sns.sns_perms import ACCESS_TYPES
 
 
 def handle_new_topics(
-    xresources, services_families, services_stack, res_root_stack, l_topics
+    xresources,
+    services_families,
+    services_stack,
+    res_root_stack,
+    l_topics,
+    nested=False,
 ):
     topics_r = []
     s_resources = res_root_stack.stack_template.resources
     for resource_name in s_resources:
         if isinstance(s_resources[resource_name], Topic):
             topics_r.append(s_resources[resource_name].title)
+        elif issubclass(type(s_resources[resource_name]), ComposeXStack):
+            handle_new_topics(
+                xresources,
+                services_families,
+                services_stack,
+                s_resources[resource_name],
+                l_topics,
+                nested=True,
+            )
 
     for topic_name in xresources:
         if topic_name in topics_r:
@@ -53,6 +68,7 @@ def handle_new_topics(
                 res_root_stack,
                 envvars,
                 perms,
+                nested,
             )
             del l_topics[topic_name]
 

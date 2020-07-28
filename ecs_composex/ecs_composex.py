@@ -218,9 +218,8 @@ def add_compute(root_template, settings, vpc_stack):
     Function to add Cluster stack to root one. If any of the options related to compute resources are set in the CLI
     then this function will generate and add the compute template to the root stack template
 
-    :param root_template: the root template
-    :type root_template: troposphere.Template
-    :param vpc_stack: the VPC stack if any to pull the attributes from
+    :param troposphere.Template root_template: the root template
+    :param ComposeXStack vpc_stack: the VPC stack if any to pull the attributes from
     :param ComposeXSettings settings: The settings for execution
     :return: compute_stack, the Compute stack
     :rtype: ComposeXStack
