@@ -116,7 +116,6 @@ class Mesh(object):
             self.appmesh = appmesh.Mesh(
                 self.mesh_title,
                 template=services_root_stack.stack_template,
-                # Condition=appmesh_conditions.USER_IS_SELF_CON_T,
                 MeshName=appmesh_conditions.set_mesh_name(),
                 Spec=appmesh.MeshSpec(
                     EgressFilter=appmesh.EgressFilter(Type=egress_type)
