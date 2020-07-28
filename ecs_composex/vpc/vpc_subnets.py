@@ -44,6 +44,7 @@ from troposphere.ec2 import (
 from ecs_composex.common.cfn_conditions import USE_STACK_NAME_CON_T
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.ecs_composex import CFN_EXPORT_DELIMITER as DELIM
+from ecs_composex.vpc import metadata
 
 
 def add_storage_subnets(template, vpc, az_index, layers):
@@ -66,6 +67,7 @@ def add_storage_subnets(template, vpc, az_index, layers):
         template=template,
         VpcId=Ref(vpc),
         Tags=Tags(Name="StorageRtb") + Tags({f"vpc{DELIM}usage": "storage"}),
+        Metadata=metadata,
     )
 
     subnets = []
@@ -84,12 +86,14 @@ def add_storage_subnets(template, vpc, az_index, layers):
                 ),
             )
             + Tags({f"vpc{DELIM}usage": "storage", f"vpc{DELIM}vpc-id": Ref(vpc)}),
+            Metadata=metadata,
         )
         SubnetRouteTableAssociation(
             f"StorageSubnetAssoc{index.upper()}",
             template=template,
             SubnetId=Ref(subnet),
             RouteTableId=Ref(rtb),
+            Metadata=metadata,
         )
         subnets.append(subnet)
     return [rtb], subnets
@@ -119,6 +123,7 @@ def add_public_subnets(template, vpc, az_index, layers, igw, single_nat):
         template=template,
         VpcId=Ref(vpc),
         Tags=Tags(Name="PublicRtb") + Tags({f"vpc{DELIM}usage": "public"}),
+        Metadata=metadata,
     )
     Route(
         "PublicDefaultRoute",
@@ -145,6 +150,7 @@ def add_public_subnets(template, vpc, az_index, layers, igw, single_nat):
                 ),
             )
             + Tags({f"vpc{DELIM}usage": "public", f"vpc{DELIM}vpc-id": Ref(vpc)}),
+            Metadata=metadata,
         )
         if (single_nat and not nats) or not single_nat:
             eip = EIP(f"NatGatewayEip{index.upper()}", template=template, Domain="vpc")
@@ -153,6 +159,7 @@ def add_public_subnets(template, vpc, az_index, layers, igw, single_nat):
                 template=template,
                 AllocationId=GetAtt(eip, "AllocationId"),
                 SubnetId=Ref(subnet),
+                Metadata=metadata,
             )
             nats.append(nat)
         SubnetRouteTableAssociation(
@@ -199,12 +206,14 @@ def add_apps_subnets(template, vpc, az_index, layers, nats):
                 ),
             )
             + Tags({f"vpc{DELIM}usage": "application", f"vpc{DELIM}vpc-id": Ref(vpc)}),
+            Metadata=metadata,
         )
         rtb = RouteTable(
             f"AppRtb{index.upper()}",
             template=template,
             VpcId=Ref(vpc),
             Tags=Tags(Name=f"AppRtb{index.upper()}"),
+            Metadata=metadata,
         )
         Route(
             f"AppRoute{index.upper()}",
@@ -218,6 +227,7 @@ def add_apps_subnets(template, vpc, az_index, layers, nats):
             template=template,
             RouteTableId=Ref(rtb),
             SubnetId=Ref(subnet),
+            Metadata=metadata,
         )
         rtbs.append(rtb)
         subnets.append(subnet)

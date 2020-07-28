@@ -20,6 +20,7 @@
 from copy import deepcopy
 from troposphere import Tags, Sub, GetAtt, Ref
 from troposphere.sqs import Queue, RedrivePolicy
+from ecs_composex.sqs import metadata
 
 from ecs_composex.common import (
     build_template,
@@ -95,8 +96,9 @@ def define_queue(queue_name, queue_def, queues, mono_template=True):
     if keypresent("Properties", queue_def):
         props = deepcopy(queue_def)
         properties = props["Properties"]
+        properties.update({"Metadata": metadata})
     else:
-        properties = {}
+        properties = {"Metadata": metadata}
     if keyisset("RedrivePolicy", properties) and keyisset(
         "deadLetterTargetArn", properties["RedrivePolicy"]
     ):

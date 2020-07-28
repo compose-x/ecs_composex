@@ -25,7 +25,7 @@ from importlib import import_module
 from troposphere import Ref, If, AWS_STACK_NAME, GetAtt
 from troposphere.ecs import Cluster
 
-from ecs_composex.appmesh import Mesh
+from ecs_composex.appmesh.appmesh_mesh import Mesh
 from ecs_composex.common import (
     LOG,
     add_parameters,

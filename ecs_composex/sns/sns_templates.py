@@ -28,6 +28,7 @@ from ecs_composex.common.outputs import get_import_value
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.sns.sns_params import RES_KEY, TOPIC_ARN_T
 from ecs_composex.sqs.sqs_params import SQS_ARN_T, RES_KEY as SQS_KEY
+from ecs_composex.sns import metadata
 
 TOPICS_KEY = "Topics"
 SUBSCRIPTIONS_KEY = "Subscription"
@@ -88,7 +89,7 @@ def set_sqs_topic(subscription, content):
         if not subscription[ENDPOINT_KEY].startswith("arn:")
         else subscription[ENDPOINT_KEY]
     )
-    return Subscription(Protocol="sqs", Endpoint=endpoint)
+    return Subscription(Protocol="sqs", Endpoint=endpoint, Metadata=metadata)
 
 
 def define_topic_subscriptions(subscriptions, content):
@@ -124,7 +125,7 @@ def define_topic(topic_name, topic, content):
     Function that builds the SNS topic template from Dockerfile Properties
     """
     properties = topic["Properties"] if keyisset("Properties", topic) else {}
-    topic = Topic(NONALPHANUM.sub("", topic_name))
+    topic = Topic(NONALPHANUM.sub("", topic_name), Metadata=metadata)
     if keyisset(SUBSCRIPTIONS_KEY, properties):
         subscriptions = define_topic_subscriptions(
             properties[SUBSCRIPTIONS_KEY], content

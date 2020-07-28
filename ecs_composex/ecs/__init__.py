@@ -43,6 +43,12 @@ from ecs_composex.ecs import ecs_params
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME, CLUSTER_NAME_T
 from ecs_composex.ecs.ecs_template import generate_services
 from ecs_composex.vpc import vpc_params
+from ecs_composex import __version__ as version
+
+metadata = {
+    "Type": "ComposeX",
+    "Properties": {"ecs_composex::module": "ecs_composex.ecs", "Version": version},
+}
 
 
 class ServiceStack(ComposeXStack):
@@ -64,6 +70,7 @@ class ServiceStack(ComposeXStack):
             }
         )
         self.Parameters.update(parameters)
+        self.stack_template.set_metadata(metadata)
 
 
 class ServicesStack(ComposeXStack):
@@ -110,6 +117,7 @@ class ServicesStack(ComposeXStack):
         self.create_services_templates(services)
         if not settings.create_vpc:
             self.no_vpc_parameters()
+        self.stack_template.set_metadata(metadata)
 
     def create_services_templates(self, services):
         """

@@ -15,4 +15,9 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Root of ecs_composex.sqs"""
+from ecs_composex import __version__ as version
+
+metadata = {
+    "Type": "ComposeX",
+    "Properties": {"ecs_composex::module": "ecs_composex.sqs", "Version": version},
+}
