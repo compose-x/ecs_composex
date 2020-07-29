@@ -286,6 +286,32 @@ x-dynamodb:
       - name: app02
         access: RO
 
+x-kms:
+  keyA:
+    Properties: {}
+    Settings:
+      Alias: alias/keyA
+    Services:
+      - name: bignicefamily
+        access: EncryptDecrypt
+
+  keyB:
+    Properties:
+      PendingWindowInDays: 14
+    Settings:
+      Alias: keyB
+    Services:
+      - name: app02
+        access: SQS
+      - name: app03
+        access: EncryptOnly
+      - name: bignicefamily
+        access: DecryptOnly
+
+x-tags:
+  costcentre: abcd
+  contact: you@me.com
+
 #x-vpc:
 #  Lookup:
 #    VpcId:
@@ -300,8 +326,3 @@ x-dynamodb:
 #    PublicSubnets:
 #      tags:
 #        - vpc::usage: public
-
-
-#x-tags:
-#  costcentre: abcd
-#  contact: you@me.com

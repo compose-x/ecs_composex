@@ -95,6 +95,8 @@ SUPPORTED_X_MODULES = [
     "acm",
     f"{X_KEY}dynamodb",
     "dynamodb",
+    f"{X_KEY}kms",
+    "kms"
 ]
 EXCLUDED_X_KEYS = [
     f"{X_KEY}configs",
