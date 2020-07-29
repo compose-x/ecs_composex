@@ -89,7 +89,7 @@ def set_sqs_topic(subscription, content):
         if not subscription[ENDPOINT_KEY].startswith("arn:")
         else subscription[ENDPOINT_KEY]
     )
-    return Subscription(Protocol="sqs", Endpoint=endpoint, Metadata=metadata)
+    return Subscription(Protocol="sqs", Endpoint=endpoint)
 
 
 def define_topic_subscriptions(subscriptions, content):
