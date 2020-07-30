@@ -41,9 +41,8 @@ def find_service_listener(port_number, service_template):
     """
     for resource_name in service_template.resources:
         resource = service_template.resources[resource_name]
-        if isinstance(resource, Listener):
-            if resource.Port == port_number:
-                return resource
+        if isinstance(resource, Listener) and resource.Port == port_number:
+            return resource
 
 
 def add_ssl_config_to_listeners(service_template, cert_import, ports):
@@ -59,14 +58,6 @@ def add_ssl_config_to_listeners(service_template, cert_import, ports):
         if not isinstance(port, int):
             raise TypeError(f"Port must be of type", int, "got", type(port))
         listener = find_service_listener(port, service_template)
-        # listener_cert = ListenerCertificate(
-        #     f"{listener.title}Ssl",
-        #     Certificates=[
-        #         Certificate(CertificateArn=cert_import)
-        #     ],
-        #     ListenerArn=Ref(listener)
-        # )
-        # service_template.add_resource(listener_cert)
         if listener.Protocol == "HTTP":
             listener.Protocol = "HTTPS"
             setattr(
@@ -76,9 +67,25 @@ def add_ssl_config_to_listeners(service_template, cert_import, ports):
             listener.Protocol = "TLS"
 
 
-def acm_to_ecs(
-    acms, services_stack, services_families, acm_root_stack, settings, **kwargs
+def apply_to_ecs(
+    cert_import, cert_def, services_families, services_stack, acm_root_stack
 ):
+    for service in cert_def["Services"]:
+        service_family = get_service_family_name(services_families, service["name"])
+        if service_family not in services_stack.stack_template.resources:
+            raise AttributeError(
+                f"No service {service_family} present in services stack"
+            )
+        if not keyisset("ports", service):
+            raise AttributeError(f"Missing ports for service {service_family}")
+        service_stack = services_stack.stack_template.resources[service_family]
+        service_template = service_stack.stack_template
+        add_ssl_config_to_listeners(service_template, cert_import, service["ports"])
+        if acm_root_stack.title not in services_stack.DependsOn:
+            services_stack.DependsOn.append(acm_root_stack.title)
+
+
+def acm_to_ecs(acms, services_stack, services_families, acm_root_stack, settings):
     """
     Function to apply ACM settings to ECS Services
 
@@ -86,7 +93,6 @@ def acm_to_ecs(
     :param services_stack:
     :param services_families:
     :param acm_root_stack:
-    :param kwargs:
     """
     for cert_name in acms:
         cert_def = acms[cert_name]
@@ -96,16 +102,6 @@ def acm_to_ecs(
             LOG.warn(f"DB {cert_name} has no services defined.")
             continue
         cert_import = get_import_value(cert_name, acm_params.CERT_CN_T)
-        for service in cert_def["Services"]:
-            service_family = get_service_family_name(services_families, service["name"])
-            if service_family not in services_stack.stack_template.resources:
-                raise AttributeError(
-                    f"No service {service_family} present in services stack"
-                )
-            if not keyisset("ports", service):
-                raise AttributeError(f"Missing ports for service {service_family}")
-            service_stack = services_stack.stack_template.resources[service_family]
-            service_template = service_stack.stack_template
-            add_ssl_config_to_listeners(service_template, cert_import, service["ports"])
-            if acm_root_stack.title not in services_stack.DependsOn:
-                services_stack.DependsOn.append(acm_root_stack.title)
+        apply_to_ecs(
+            cert_import, cert_def, services_families, services_stack, acm_root_stack
+        )
