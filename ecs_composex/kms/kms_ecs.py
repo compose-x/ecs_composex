@@ -67,9 +67,7 @@ def handle_new_keys(
             del l_keys[key_name]
 
 
-def kms_to_ecs(
-    xresources, services_stack, services_families, res_root_stack, settings
-):
+def kms_to_ecs(xresources, services_stack, services_families, res_root_stack, settings):
     """
     Function to link the resource and the ECS Services.
 
