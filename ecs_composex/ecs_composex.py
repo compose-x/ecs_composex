@@ -54,9 +54,8 @@ from ecs_composex.dns import dns_params, dns_conditions
 from ecs_composex.ecs import ServicesStack
 from ecs_composex.ecs import ecs_params
 from ecs_composex.ecs.ecs_cluster import add_ecs_cluster
-from ecs_composex.ecs.ecs_conditions import CLUSTER_NAME_CON_T
+from ecs_composex.ecs.ecs_conditions import GENERATED_CLUSTER_NAME_CON_T
 from ecs_composex.ecs.ecs_params import (
-    CLUSTER_NAME_T,
     CLUSTER_NAME,
     CLUSTER_T as ROOT_CLUSTER_NAME,
     RES_KEY as SERVICES_KEY,
@@ -264,26 +263,28 @@ def add_x_resources(root_template, settings, vpc_stack=None):
                 root_template.add_resource(xstack)
 
 
-def create_services(root_stack, settings, vpc_stack, dns_params):
+def create_services(root_stack, settings, vpc_stack, dns_params, create_cluster):
     """
     Function to add the microservices root stack
 
     :param ComposeXStack root_stack: ComposeX root stack
     :param ComposeXSettings settings: The settings for execution
     :param ComposeXStack vpc_stack: The VPC Stack
+    :param dict dns_params: DNS Parameters for the execution
+    :param bool create_cluster: Indicates whether the cluster is created from this stack
     """
     stack = ServicesStack("services", settings)
     stack.Parameters.update(
         {
-            ecs_params.CLUSTER_NAME_T: If(
-                CLUSTER_NAME_CON_T, Ref(AWS_STACK_NAME), Ref(CLUSTER_NAME_T)
-            )
+            ecs_params.CLUSTER_NAME_T: Ref(CLUSTER_NAME)
+            if not create_cluster
+            else Ref(ROOT_CLUSTER_NAME)
         }
     )
     stack.Parameters.update(dns_params)
     if vpc_stack:
         stack.get_from_vpc_stack(vpc_stack)
-    if settings.create_cluster:
+    if create_cluster:
         stack.DependsOn.append(ROOT_CLUSTER_NAME)
     return root_stack.stack_template.add_resource(stack)
 
@@ -371,24 +372,18 @@ def generate_full_template(settings):
     """
     LOG.debug(settings)
     root_stack = ComposeXStack(settings.name, stack_template=init_root_template())
-    root_stack.Parameters.update(settings.create_root_stack_parameters_from_input())
     dns_inputs(root_stack)
     vpc_stack = create_vpc_root(root_stack, settings)
     dns_settings = DnsSettings(root_stack, settings, get_vpc_id(vpc_stack))
     root_stack.Parameters.update(dns_settings.root_params)
-    compute_stack = add_compute(root_stack.stack_template, settings, vpc_stack)
-    services_families = define_services_families(settings.compose_content[SERVICES_KEY])
-    services_stack = create_services(
-        root_stack, settings, vpc_stack, dns_settings.nested_params
-    )
-
-    if settings.cluster_name != CLUSTER_NAME.Default:
-        root_stack.Parameters.update({CLUSTER_NAME_T: settings.cluster_name})
-
     create_cluster = add_ecs_cluster(settings, root_stack)
+    compute_stack = add_compute(root_stack.stack_template, settings, vpc_stack)
     if create_cluster and settings.create_compute and compute_stack:
         compute_stack.DependsOn.append(ROOT_CLUSTER_NAME)
-
+    services_families = define_services_families(settings.compose_content[SERVICES_KEY])
+    services_stack = create_services(
+        root_stack, settings, vpc_stack, dns_settings.nested_params, create_cluster
+    )
     add_x_resources(root_stack.stack_template, settings, vpc_stack=vpc_stack)
     apply_x_configs_to_ecs(
         settings, root_stack.stack_template, services_stack, services_families

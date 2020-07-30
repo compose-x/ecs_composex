@@ -50,7 +50,6 @@ class ComposeXSettings(object):
     name_arg = "Name"
     cluster_name_arg = "ClusterName"
 
-    create_cluster_arg = "CreateCluster"
     create_vpc_arg = "CreateVpc"
     create_ec2_arg = "AddComputeResources"
     create_spotfleet_arg = USE_FLEET_T
@@ -115,9 +114,6 @@ class ComposeXSettings(object):
         self.lookup_vpc = False
         self.set_vpc(kwargs)
 
-        self.create_cluster = None
-        self.cluster_name = None
-        self.set_cluster_settings(kwargs)
         self.deploy = True if keyisset(self.deploy_arg, kwargs) else False
 
     def __repr__(self):
@@ -191,19 +187,6 @@ class ComposeXSettings(object):
             kwargs[self.output_dir_arg]
             if keyisset(self.output_dir_arg, kwargs)
             else self.default_output_dir
-        )
-
-    def set_cluster_settings(self, kwargs):
-        """
-        Method to set cluster settings based on kwargs
-        """
-        self.create_cluster = (
-            True if keyisset(self.create_cluster_arg, kwargs) else False
-        )
-        self.cluster_name = (
-            kwargs[self.cluster_name_arg]
-            if keyisset(self.cluster_name_arg, kwargs)
-            else None
         )
 
     def lookup_vpc_id(self, vpc_id_settings):
@@ -394,13 +377,3 @@ class ComposeXSettings(object):
                 self.bucket_name = None
                 self.upload = False
                 self.no_upload = True
-
-    def create_root_stack_parameters_from_input(self):
-        """
-        Method to create the parameters for the root stack from CLI input.
-        :return:
-        """
-        parameters = {}
-        if self.cluster_name != CLUSTER_NAME.Default:
-            parameters[CLUSTER_NAME.title] = self.cluster_name
-        return parameters

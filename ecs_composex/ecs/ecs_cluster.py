@@ -24,10 +24,8 @@ from troposphere.ecs import Cluster, CapacityProviderStrategyItem
 
 from ecs_composex.common import LOG, keyisset
 from ecs_composex.ecs.ecs_conditions import (
-    CLUSTER_NAME_CON_T,
     GENERATED_CLUSTER_NAME_CON_T,
     GENERATED_CLUSTER_NAME_CON,
-    CLUSTER_NAME_CON,
 )
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME_T, CLUSTER_T
 from ecs_composex.ecs import metadata
@@ -55,7 +53,9 @@ def get_default_cluster_config():
 
     return Cluster(
         CLUSTER_T,
-        ClusterName=If(CLUSTER_NAME_CON_T, Ref(AWS_STACK_NAME), Ref(CLUSTER_NAME_T)),
+        ClusterName=If(
+            GENERATED_CLUSTER_NAME_CON_T, Ref(AWS_STACK_NAME), Ref(CLUSTER_NAME_T)
+        ),
         CapacityProviders=DEFAULT_PROVIDERS,
         DefaultCapacityProviderStrategy=DEFAULT_STRATEGY,
         Metadata=metadata,
@@ -138,8 +138,9 @@ def define_cluster(root_stack, cluster_def):
             props["DefaultCapacityProviderStrategy"]
         )
     cluster_params["Metadata"] = metadata
-    cluster_params["ClusterName"] = Ref(CLUSTER_NAME_T)
-    cluster_params["Condition"] = CLUSTER_NAME_CON_T
+    cluster_params["ClusterName"] = If(
+        GENERATED_CLUSTER_NAME_CON_T, Ref(AWS_STACK_NAME), Ref(CLUSTER_NAME_T)
+    )
     cluster = Cluster(CLUSTER_T, **cluster_params)
     return cluster
 
@@ -176,12 +177,10 @@ def add_ecs_cluster(settings, root_stack):
     root_stack.stack_template.add_condition(
         GENERATED_CLUSTER_NAME_CON_T, GENERATED_CLUSTER_NAME_CON
     )
-    root_stack.stack_template.add_condition(CLUSTER_NAME_CON_T, CLUSTER_NAME_CON)
     cluster = generate_cluster(root_stack, settings)
     if isinstance(cluster, Cluster):
         root_stack.stack_template.add_resource(cluster)
         return True
     elif isinstance(cluster, str):
-        root_stack.stack_template.add_resource(get_default_cluster_config())
         root_stack.Parameters.update({CLUSTER_NAME_T: cluster})
         return False

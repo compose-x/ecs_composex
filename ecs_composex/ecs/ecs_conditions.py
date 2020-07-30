@@ -27,7 +27,6 @@ You can change the names *values* so you like so long as you keep it Alphanumeri
 
 from troposphere import Condition, Ref, Equals, And, Not
 
-from ecs_composex.common.cfn_conditions import USE_STACK_NAME_CON_T
 from ecs_composex.ecs import ecs_params
 
 GENERATED_CLUSTER_NAME_CON_T = "UsCfnGeneratedClusterName"
@@ -43,10 +42,6 @@ NOT_USE_CLUSTER_SG_CON = Equals(
 USE_CLUSTER_SG_CON_T = "UseClusterSecurityGroupCondition"
 USE_CLUSTER_SG_CON = Not(Condition(NOT_USE_CLUSTER_SG_CON_T))
 
-CLUSTER_NAME_CON_T = "SetClusterNameFromRootStack"
-CLUSTER_NAME_CON = And(
-    Condition(USE_STACK_NAME_CON_T), Condition(GENERATED_CLUSTER_NAME_CON_T)
-)
 SERVICE_COUNT_ZERO_CON_T = "ServiceCountIsZeroCondition"
 SERVICE_COUNT_ZERO_CON = Equals(Ref(ecs_params.SERVICE_COUNT), "0")
 
