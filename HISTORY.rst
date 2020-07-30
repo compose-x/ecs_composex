@@ -2,6 +2,11 @@
 History
 =======
 
+0.5.3 (2020-07-30)
+==================
+
+A lot of minor bug fixes and removing CLI commands to the benefit of better implementation via the compose file.
+
 0.5.2 (2020-07-30)
 ==================
 
