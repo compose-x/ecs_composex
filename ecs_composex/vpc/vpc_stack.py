@@ -20,7 +20,6 @@ Module for VpcStack
 """
 
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.common.config import ComposeXConfig
 from ecs_composex.vpc.vpc_template import generate_vpc_template
 
 
@@ -34,12 +33,3 @@ class VpcStack(ComposeXStack):
             settings.vpc_cidr, settings.aws_azs, single_nat=settings.single_nat
         )
         super().__init__(title, stack_template=template, **kwargs)
-
-
-class VpcConfig(ComposeXConfig):
-    """
-    Class to determine the VPC Settings to use when deploying on existing VPC.
-    """
-
-    def __init__(self, settings):
-        super().__init__(settings)

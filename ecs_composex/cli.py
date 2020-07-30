@@ -75,19 +75,6 @@ def main_parser():
         choices=ComposeXSettings.allowed_formats,
         default=ComposeXSettings.default_format,
     )
-    parser.add_argument(
-        "--cfn-config-file",
-        help="Path to AWS Template config file",
-        required=False,
-        dest="CfnConfigFile",
-        type=str,
-    )
-    parser.add_argument(
-        "--no-cfn-template-config-file",
-        action="store_true",
-        default=True,
-        help="Do not generate the CFN Configuration template file",
-    )
     #  AWS SETTINGS
     parser.add_argument(
         "--region",
@@ -126,63 +113,6 @@ def main_parser():
         required=False,
         help="Whether or not you would like to deploy the stack to CFN.",
         dest=ComposeXSettings.deploy_arg,
-    )
-    # VPC SETTINGS
-    parser.add_argument(
-        "--create-vpc",
-        required=False,
-        default=False,
-        action="store_true",
-        help="Create a VPC for this deployment",
-        dest=ComposeXSettings.create_vpc_arg,
-    )
-    parser.add_argument(
-        "--vpc-cidr",
-        required=False,
-        default=ComposeXSettings.default_vpc_cidr,
-        dest=ComposeXSettings.vpc_cidr_arg,
-        help="Specify the VPC CIDR if you use --create-vpc",
-    )
-    parser.add_argument(
-        "--vpc-id",
-        dest=VPC_ID_T,
-        required=False,
-        type=str,
-        help="Specify VPC ID when not creating one",
-    )
-    parser.add_argument(
-        "--public-subnets",
-        required=False,
-        dest=PUBLIC_SUBNETS_T,
-        action="append",
-        help=SUBNETS_DESC,
-    )
-    parser.add_argument(
-        "--app-subnets",
-        required=False,
-        dest=APP_SUBNETS_T,
-        action="append",
-        help=SUBNETS_DESC,
-    )
-    parser.add_argument(
-        "--storage-subnets",
-        required=False,
-        dest=STORAGE_SUBNETS_T,
-        action="append",
-        help=SUBNETS_DESC,
-    )
-    parser.add_argument(
-        "--discovery-map-id",
-        "--cloud-map-id",
-        dest=PRIVATE_DNS_ZONE_ID_T,
-        required=False,
-        help="Service Discovery ID, ie. ns-xxx",
-    )
-    parser.add_argument(
-        "--single-nat",
-        dest="SingleNat",
-        action="store_true",
-        help="Whether you want a single NAT for your application subnets or not. Not recommended for production",
     )
     # COMPUTE SETTINGS
     parser.add_argument(

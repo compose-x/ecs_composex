@@ -30,23 +30,35 @@ Usage
 
 .. code-block:: bash
 
-    usage: ecs_composex [-h] -n NAME -f DOCKERCOMPOSEXFILE
-                    [-d OUTPUTDIRECTORY]
-                    [--deploy]
-                    [--format {json,yaml,text}]
-                    [--cfn-config-file CFNCONFIGFILE]
-                    [--no-cfn-template-config-file]
-                    [--region REGIONNAME]
-                    [--az ZONES]
-                    [-b BUCKETNAME] [--no-upload]
-                    [--create-vpc]
-                    [--vpc-cidr VPCCIDR]
-                    [--vpc-id VPCID]
-                    [--public-subnets PUBLICSUBNETS]
-                    [--app-subnets APPSUBNETS]
-                    [--storage-subnets STORAGESUBNETS]
-                    [--discovery-map-id VPCDISCOVERYMAPID]
-                    [--single-nat]
+    usage: ecs_composex [-h] -n NAME -f DOCKERCOMPOSEXFILE [-d OUTPUTDIRECTORY]
+                    [--format {json,yaml,text}] [--region REGIONNAME]
+                    [--az ZONES] [-b BUCKETNAME] [--no-upload] [--deploy]
+                    [--use-spot-fleet]
+                    [_ [_ ...]]
+
+    positional arguments:
+      _
+
+    optional arguments:
+      -h, --help            show this help message and exit
+      -n NAME, --name NAME  Name of your stack
+      -f DOCKERCOMPOSEXFILE, --docker-compose-file DOCKERCOMPOSEXFILE
+                            Path to the Docker compose file
+      -d OUTPUTDIRECTORY, --output-dir OUTPUTDIRECTORY
+                            Output directory to write all the templates to.
+      --format {json,yaml,text}
+                            Defines the format you want to use.
+      --region REGIONNAME   Specify the region you want to build fordefault use
+                            default region from config or environment vars
+      --az ZONES            List AZs you want to deploy to specifically within the
+                            region
+      -b BUCKETNAME, --bucket-name BUCKETNAME
+                            Bucket name to upload the templates to
+      --no-upload           Whether the templates should be uploaded or not.
+      --deploy              Whether or not you would like to deploy the stack to
+                            CFN.
+      --use-spot-fleet      Runs spotfleet for EC2. If used in combination of
+                            --use-fargate, it will create an additional SpotFleet
 
 
 .. note::

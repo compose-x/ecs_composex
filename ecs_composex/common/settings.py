@@ -19,26 +19,26 @@
 Module for the ComposeXSettings class
 """
 
+from datetime import datetime as dt
+from json import dumps
+
 import boto3
 from botocore.exceptions import ClientError
-from json import dumps
-from datetime import datetime as dt
 
 from ecs_composex.common import keyisset, LOG, load_composex_file
 from ecs_composex.common.aws import get_account_id, get_region_azs
-from ecs_composex.vpc.vpc_params import (
-    VPC_ID_T,
-    PUBLIC_SUBNETS_T,
-    APP_SUBNETS_T,
-    STORAGE_SUBNETS_T,
-)
-from ecs_composex.ecs.ecs_params import CLUSTER_NAME
-from ecs_composex.common.cfn_params import USE_FLEET_T
 from ecs_composex.common.aws import (
     lookup_vpc_id,
     lookup_vpc_from_tags,
     lookup_subnets_from_tags,
     lookup_subnets_ids,
+)
+from ecs_composex.common.cfn_params import USE_FLEET_T
+from ecs_composex.vpc.vpc_params import (
+    VPC_ID_T,
+    PUBLIC_SUBNETS_T,
+    APP_SUBNETS_T,
+    STORAGE_SUBNETS_T,
 )
 
 
@@ -155,7 +155,10 @@ class ComposeXSettings(object):
                 )
                 self.set_vpc_default_settings()
         elif not keyisset("x-vpc", self.compose_content):
-            self.set_cli_vpc_settings(kwargs)
+            LOG.warning(
+                "No x-vpc definition found in the docker-compose file. Creating a new VPC with default settings"
+            )
+            self.set_vpc_defaults(kwargs)
 
     def override_session(self, session, profile_name):
         """
@@ -294,36 +297,20 @@ class ComposeXSettings(object):
             else self.default_vpc_cidr
         )
 
-    def set_cli_vpc_settings(self, kwargs):
+    def set_vpc_defaults(self, kwargs):
         """
         Method to set the values of subnets if present in kwargs
 
         :param dict kwargs:
         :return:
         """
-        self.vpc_cidr = (
-            kwargs[self.vpc_cidr_arg]
-            if keyisset(self.vpc_cidr_arg, kwargs)
-            else self.default_vpc_cidr
-        )
         self.create_vpc = True
-        vpc_id = kwargs[VPC_ID_T] if keyisset(VPC_ID_T, kwargs) else None
-        self.single_nat = (
-            kwargs[self.single_nat_arg]
-            if keyisset(self.single_nat_arg, kwargs)
-            else True
-        )
-        public_subnets = (
-            kwargs[PUBLIC_SUBNETS_T] if keyisset(PUBLIC_SUBNETS_T, kwargs) else None
-        )
-        storage_subnets = (
-            kwargs[STORAGE_SUBNETS_T] if keyisset(STORAGE_SUBNETS_T, kwargs) else None
-        )
-        app_subnets = kwargs[APP_SUBNETS_T] if keyisset(APP_SUBNETS_T, kwargs) else None
-        setattr(self, VPC_ID_T, vpc_id)
-        setattr(self, APP_SUBNETS_T, app_subnets)
-        setattr(self, STORAGE_SUBNETS_T, storage_subnets)
-        setattr(self, PUBLIC_SUBNETS_T, public_subnets)
+        self.vpc_cidr = self.default_vpc_cidr
+        self.single_nat = True
+        setattr(self, VPC_ID_T, None)
+        setattr(self, APP_SUBNETS_T, None)
+        setattr(self, STORAGE_SUBNETS_T, None)
+        setattr(self, PUBLIC_SUBNETS_T, None)
 
     def set_vpc_default_settings(self):
         LOG.info(
