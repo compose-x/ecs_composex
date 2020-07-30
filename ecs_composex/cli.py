@@ -89,21 +89,6 @@ def main_parser():
         help="Bucket name to upload the templates to",
         dest="BucketName",
     )
-    parser.add_argument(
-        "--no-upload",
-        action="store_true",
-        default=False,
-        help="Whether the templates should be uploaded or not.",
-        dest=ComposeXSettings.no_upload_arg,
-    )
-    parser.add_argument(
-        "--deploy",
-        action="store_true",
-        default=False,
-        required=False,
-        help="Whether or not you would like to deploy the stack to CFN.",
-        dest=ComposeXSettings.deploy_arg,
-    )
     # COMPUTE SETTINGS
     parser.add_argument(
         "--use-spot-fleet",
@@ -115,6 +100,11 @@ def main_parser():
         "of --use-fargate, it will create an additional SpotFleet",
     )
 
+    parser.add_argument(
+        ComposeXSettings.command_arg,
+        default=False,
+        help="Whether you want to build the templates locally first.",
+    )
     parser.add_argument("_", nargs="*")
     return parser
 

@@ -48,9 +48,9 @@ setup_requirements = []
 setup(
     author="John Preston",
     author_email="john@lambda-my-aws.io",
-    python_requires="!=2.*, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*",
+    python_requires=">=3.6.*",
     classifiers=[
-        "Development Status :: 3 - Alpha",
+        "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
         "Intended Audience :: System Administrators",
         "Intended Audience :: Information Technology",
@@ -64,6 +64,8 @@ setup(
     description="Implement for AWS ECS and Docker Compose what SAM is to Serverless for AWS Lambda",
     entry_points={
         "console_scripts": [
+            "composex=ecs_composex.cli:main",
+            "ecs-composex=ecs_composex.cli:main",
             "ecs_composex=ecs_composex.cli:main",
             "ecs_composex-compute=ecs_composex.compute.cli:main",
             "ecs_composex-vpc=ecs_composex.vpc.cli:main",

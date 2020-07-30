@@ -22,9 +22,11 @@ Module for the ComposeXSettings class
 from datetime import datetime as dt
 from json import dumps
 
+
 import boto3
 from botocore.exceptions import ClientError
 
+from ecs_composex import __version__
 from ecs_composex.common import keyisset, LOG, load_composex_file
 from ecs_composex.common.aws import get_account_id, get_region_azs
 from ecs_composex.common.aws import (
@@ -56,10 +58,12 @@ class ComposeXSettings(object):
 
     region_arg = "RegionName"
     zones_arg = "Zones"
-    deploy_arg = "DeployToCfn"
+
+    deploy_arg = "up"
+    no_upload_arg = "config"
+    command_arg = "command"
 
     bucket_arg = "BucketName"
-    no_upload_arg = "NoUpload"
     input_file_arg = "DockerComposeXFile"
     output_dir_arg = "OutputDirectory"
     format_arg = "TemplateFormat"
@@ -72,6 +76,8 @@ class ComposeXSettings(object):
     default_vpc_cidr = "100.127.254.0/24"
     default_azs = ["eu-west-1a", "eu-west-1b"]
     default_output_dir = f"/tmp/{dt.utcnow().strftime('%s')}"
+
+    commands = ["up", "config", "version"]
 
     def __init__(self, content=None, profile_name=None, session=None, **kwargs):
         """
@@ -115,6 +121,7 @@ class ComposeXSettings(object):
         self.set_vpc(kwargs)
 
         self.deploy = True if keyisset(self.deploy_arg, kwargs) else False
+        self.parse_command(kwargs)
 
     def __repr__(self):
         return dumps(
@@ -127,6 +134,27 @@ class ComposeXSettings(object):
             },
             indent=4,
         )
+
+    def parse_command(self, kwargs):
+        """
+        Method to analyze the command and set execution settings accordingly.
+
+        :param kwargs:
+        :return:
+        """
+        command = kwargs[self.command_arg]
+        if command not in self.commands:
+            raise ValueError(f"{command} unknown. Valid commands are", self.commands)
+        if command == self.bucket_arg:
+            self.deploy = True
+            self.upload = True
+        elif command == self.no_upload_arg:
+            self.no_upload = True
+            self.upload = not self.no_upload
+        elif command == "version":
+            print("ECS ComposeX", __version__)
+            exit(0)
+
 
     def set_vpc(self, kwargs):
         """
