@@ -2,6 +2,19 @@
 History
 =======
 
+0.5.2 (2020-07-30)
+==================
+
+New features:
+
+* `Support for AWS KMS <https://github.com/lambda-my-aws/ecs_composex/issues/77>`_
+
+The support for KMS will be extended to use the CMK for RDS/SQS/SNS and any resource that can use KMS for encryption
+at rest.
+
+.. hint:: Mind, this might occur a few extra costs.
+
+
 0.5.1 (2020-07-28)
 ===================
 
