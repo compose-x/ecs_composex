@@ -197,7 +197,6 @@ class MeshNode(object):
                 Retries=3,
                 StartPeriod=10,
             ),
-            Metadata=metadata,
         )
         proxy_config = ProxyConfiguration(
             ContainerName="envoy",

@@ -47,8 +47,7 @@ Usage
                     [--storage-subnets STORAGESUBNETS]
                     [--discovery-map-id VPCDISCOVERYMAPID]
                     [--single-nat]
-                    [--create-cluster]
-                    [--cluster-name ECSCLUSTERNAME]
+
 
 .. note::
 
