@@ -4,7 +4,9 @@ ECS ComposeX
 
 |PYPI_VERSION| |PYPI_LICENSE|
 
-|CODE_STYLE| |TDD| |BDD| |CODECOV|
+|CODE_STYLE| |TDD| |BDD|
+
+|CODECOV| |QUALITY|
 
 |BUILD|
 
@@ -136,3 +138,7 @@ This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypack
 .. |BDD| image:: https://img.shields.io/badge/bdd-behave-black
     :alt: BDD with Behave
     :target: https://behave.readthedocs.io/en/latest/
+
+.. |QUALITY| image:: https://sonarcloud.io/api/project_badges/measure?project=lambda-my-aws_ecs_composex&metric=alert_status
+    :alt: Code scan with SonarCloud
+    :target: https://sonarcloud.io/dashboard?id=lambda-my-aws_ecs_composex
