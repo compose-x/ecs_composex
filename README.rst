@@ -4,7 +4,9 @@ ECS ComposeX
 
 |PYPI_VERSION| |PYPI_LICENSE|
 
-|CODE_STYLE| |TDD| |BDD| |CODECOV|
+|CODE_STYLE| |TDD| |BDD|
+
+|CODECOV| |QUALITY|
 
 |BUILD|
 
@@ -62,6 +64,7 @@ AWS Resources support
 * `AWS SQS`_: queues for distributed workloads
 * `AWS RDS`_: databases integration made easy
 * `AWS EC2`_: Deploy your services on EC2 for custom settings. Features SpotFleet by default.
+* `AWS KMS`_: Manage CMK for your deployments
 * AWS SNS
 
 
@@ -124,6 +127,8 @@ This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypack
 .. _AWS VPC: https://nightly.docs.ecs-composex.lambda-my-aws.io/features.html#aws-vpc-needs-no-introduction
 .. _AWS RDS: https://nightly.docs.ecs-composex.lambda-my-aws.io/features.html#aws-rds
 .. _AWS SQS: https://nightly.docs.ecs-composex.lambda-my-aws.io/features.html#aws-sqs
+.. _AWS KMS: https://nightly.docs.ecs-composex.lambda-my-aws.io/features.html#aws-kms
+
 .. _AWS EC2: https://nightly.docs.ecs-composex.lambda-my-aws.io/features.html#ec2-resources-for-ecs-cluster
 .. _AWS AppMesh: https://nightly.docs.ecs-composex.lambda-my-aws.io/features.html#aws-appmesh-aws-cloud-map-for-services-mesh-discovery
 
@@ -170,3 +175,7 @@ This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypack
     :target: https://behave.readthedocs.io/en/latest/
 
 .. |BLOG_RELEASE| image:: https://codebuild.eu-west-1.amazonaws.com/badges?uuid=eyJlbmNyeXB0ZWREYXRhIjoicHZaQXFLNGYya3pzWExXM09ZTDZqbkU4cXZENzlZc2grQ0s5RXNxN0tYSXF6U3hJSkZWd3JqZkcrd29RUExmZGw1VXVsTTd6ckE4RjhSenl4QUtUY3I0PSIsIml2UGFyYW1ldGVyU3BlYyI6IjdleGRRTS9rbTRIUUY4TkoiLCJtYXRlcmlhbFNldFNlcmlhbCI6MX0%3D&branch=master
+
+.. |QUALITY| image:: https://sonarcloud.io/api/project_badges/measure?project=lambda-my-aws_ecs_composex&metric=alert_status
+    :alt: Code scan with SonarCloud
+    :target: https://sonarcloud.io/dashboard?id=lambda-my-aws_ecs_composex

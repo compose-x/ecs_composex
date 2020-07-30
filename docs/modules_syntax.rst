@@ -17,6 +17,8 @@
 
 .. include:: ../ecs_composex/sns/SYNTAX.rst
 
+.. include:: ../ecs_composex/kms/SYNTAX.rst
+
 .. include:: ../ecs_composex/acm/SYNTAX.rst
 
 .. include:: ../ecs_composex/compute/SYNTAX.rst
