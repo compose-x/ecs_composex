@@ -15,8 +15,6 @@ Creating a new VPC
       Create:
         SingleNat: true
         VpcCidr: 172.6.7.42/24
-        PublicServicesNamespace: svc.lambda-my-aws.io
-        PrivateServicesNamespace: svc.cluster.lan
 
 Using an existing VPC
 ---------------------
