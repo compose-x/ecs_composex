@@ -1,0 +1,51 @@
+{
+    "status_code": 200,
+    "data": {
+        "clusters": [
+            {
+                "clusterArn": "arn:aws:ecs:eu-west-1:373709687836:cluster/test",
+                "clusterName": "test",
+                "status": "ACTIVE",
+                "registeredContainerInstancesCount": 0,
+                "runningTasksCount": 0,
+                "pendingTasksCount": 0,
+                "activeServicesCount": 0,
+                "statistics": [],
+                "tags": [],
+                "settings": [
+                    {
+                        "name": "containerInsights",
+                        "value": "enabled"
+                    }
+                ],
+                "capacityProviders": [
+                    "FARGATE_SPOT",
+                    "FARGATE"
+                ],
+                "defaultCapacityProviderStrategy": [
+                    {
+                        "capacityProvider": "FARGATE_SPOT",
+                        "weight": 2,
+                        "base": 0
+                    },
+                    {
+                        "capacityProvider": "FARGATE",
+                        "weight": 1,
+                        "base": 0
+                    }
+                ]
+            }
+        ],
+        "failures": [],
+        "ResponseMetadata": {
+            "RequestId": "f9777900-bf07-49bc-a56d-4dc9180bf3a9",
+            "HTTPStatusCode": 200,
+            "HTTPHeaders": {
+                "x-amzn-requestid": "f9777900-bf07-49bc-a56d-4dc9180bf3a9",
+                "content-type": "application/x-amz-json-1.1",
+                "content-length": "514"
+            },
+            "RetryAttempts": 0
+        }
+    }
+}

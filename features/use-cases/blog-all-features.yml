@@ -311,3 +311,16 @@ x-kms:
 x-tags:
   costcentre: abcd
   contact: you@me.com
+
+x-cluster:
+  Properties:
+    CapacityProviders:
+      - FARGATE
+      - FARGATE_SPOT
+    ClusterName: testabcd
+    DefaultCapacityProviderStrategy:
+      - CapacityProvider: FARGATE_SPOT
+        Weight: 4
+        Base: 2
+      - CapacityProvider: FARGATE
+        Weight: 1
