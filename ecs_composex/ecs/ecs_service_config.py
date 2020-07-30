@@ -17,8 +17,8 @@
 
 """
 Module for the ServiceConfig Class which is used for Container, Task and Service definitions.
-
 """
+
 from troposphere import AWS_NO_VALUE
 from troposphere import Ref
 from troposphere.ecs import HealthCheck
@@ -270,12 +270,6 @@ class ServiceConfig(object):
         self.healthcheck = set_healthcheck(definition)
         self.depends_on = keyset_else_novalue("depends_on", definition, else_value=[])
 
-    def handle_add_with_dependency(self, other):
-        """
-        :param other:
-        :return:
-        """
-
     def __add__(self, other):
         """
         Function to merge two services config.
@@ -295,10 +289,6 @@ class ServiceConfig(object):
                 self.lb_type = other.lb_type
                 self.lb_service_name = other.lb_service_name
                 self.is_public = other.is_public
-            elif not other.is_public and self.is_public:
-                pass
-        elif self.lb_type is not None and other.lb_type is None:
-            pass
         LOG.debug(f"LB TYPE: {self.lb_type}")
         if other.use_xray or self.use_xray:
             self.use_xray = True

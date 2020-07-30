@@ -25,24 +25,14 @@ from ecs_composex.common import LOG
 from ecs_composex.common.aws import deploy
 from ecs_composex.common.settings import ComposeXSettings
 from ecs_composex.common.stacks import process_stacks
-from ecs_composex.compute.compute_params import CLUSTER_NAME_T
-from ecs_composex.dns.dns_params import PRIVATE_DNS_ZONE_ID_T
 from ecs_composex.ecs_composex import generate_full_template
-from ecs_composex.vpc.vpc_params import (
-    APP_SUBNETS_T,
-    PUBLIC_SUBNETS_T,
-    STORAGE_SUBNETS_T,
-    VPC_ID_T,
-)
 
 
 def main_parser():
     """
     Console script for ecs_composex.
     """
-    SUBNETS_DESC = "List of Subnet IDs to use for the cluster when not creating VPC"
     parser = argparse.ArgumentParser()
-    #  Generic settings
     parser.add_argument(
         "-n",
         "--name",
