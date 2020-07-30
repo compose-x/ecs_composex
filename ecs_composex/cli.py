@@ -20,14 +20,13 @@
 
 import argparse
 import sys
-import warnings
 
 from ecs_composex.common import LOG
-from ecs_composex.common import keyisset
 from ecs_composex.common.aws import deploy
 from ecs_composex.common.settings import ComposeXSettings
 from ecs_composex.common.stacks import process_stacks
 from ecs_composex.compute.compute_params import CLUSTER_NAME_T
+from ecs_composex.dns.dns_params import PRIVATE_DNS_ZONE_ID_T
 from ecs_composex.ecs_composex import generate_full_template
 from ecs_composex.vpc.vpc_params import (
     APP_SUBNETS_T,
@@ -35,21 +34,6 @@ from ecs_composex.vpc.vpc_params import (
     STORAGE_SUBNETS_T,
     VPC_ID_T,
 )
-
-from ecs_composex.dns.dns_params import PRIVATE_DNS_ZONE_ID_T
-
-
-def validate_cluster_input(args):
-    """Function to validate the cluster arguments
-
-    :param args: Parser arguments
-    :raise: KeyError
-    """
-    if not keyisset("CreateCluster", args) and not keyisset(CLUSTER_NAME_T, args):
-        warnings.warn(
-            f"You must provide an ECS Cluster name if you do not want ECS ComposeX to create one for you",
-            UserWarning,
-        )
 
 
 def main_parser():
@@ -200,22 +184,6 @@ def main_parser():
         action="store_true",
         help="Whether you want a single NAT for your application subnets or not. Not recommended for production",
     )
-    # CLUSTER SETTINGS
-    parser.add_argument(
-        "--create-cluster",
-        required=False,
-        default=False,
-        action="store_true",
-        help="Create an ECS Cluster for this deployment",
-        dest="CreateCluster",
-    )
-    parser.add_argument(
-        "--cluster-name",
-        type=str,
-        required=False,
-        dest=CLUSTER_NAME_T,
-        help="Override/Provide ECS Cluster name",
-    )
     # COMPUTE SETTINGS
     parser.add_argument(
         "--use-spot-fleet",
@@ -244,9 +212,6 @@ def main():
             "You must update the templates in order to deploy. We won't be deploying."
         )
         settings.deploy = False
-
-    # validate_vpc_input(settings)
-    validate_cluster_input(vars(args))
 
     root_stack = generate_full_template(settings)
     process_stacks(root_stack, settings)

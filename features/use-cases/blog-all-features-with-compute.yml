@@ -115,3 +115,7 @@ x-rds:
 x-tags:
   costcentre: abcd
   contact: you@me.com
+
+x-cluster:
+  Properties:
+    ClusterName: testabcd

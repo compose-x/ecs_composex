@@ -33,7 +33,6 @@ Usage
                     [--app-subnets APPSUBNETS]
                     [--storage-subnets STORAGESUBNETS]
                     [--discovery-map-id VPCDISCOVERYMAPID] [--single-nat]
-                    [--create-cluster] [--cluster-name ECSCLUSTERNAME]
                     [--use-spot-fleet]
                     [_ [_ ...]]
 

@@ -1,0 +1,22 @@
+{
+    "status_code": 200,
+    "data": {
+        "clusters": [],
+        "failures": [
+            {
+                "arn": "arn:aws:ecs:eu-west-1:373709687836:cluster/test2",
+                "reason": "MISSING"
+            }
+        ],
+        "ResponseMetadata": {
+            "RequestId": "c9a22a9a-5461-4329-99a1-af3fef532700",
+            "HTTPStatusCode": 200,
+            "HTTPHeaders": {
+                "x-amzn-requestid": "c9a22a9a-5461-4329-99a1-af3fef532700",
+                "content-type": "application/x-amz-json-1.1",
+                "content-length": "106"
+            },
+            "RetryAttempts": 0
+        }
+    }
+}
