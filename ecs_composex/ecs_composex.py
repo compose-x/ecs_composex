@@ -23,7 +23,6 @@ import re
 from importlib import import_module
 
 from troposphere import Ref, If, AWS_STACK_NAME, GetAtt
-from troposphere.ecs import Cluster
 
 from ecs_composex.appmesh.appmesh_mesh import Mesh
 from ecs_composex.common import (
@@ -42,7 +41,6 @@ from ecs_composex.common.cfn_params import (
     USE_ONDEMAND_T,
 )
 from ecs_composex.common.ecs_composex import X_KEY
-from ecs_composex.common.outputs import ComposeXOutput
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common.tagging import add_all_tags
 from ecs_composex.compute.compute_params import (
@@ -55,15 +53,12 @@ from ecs_composex.dns import add_parameters_and_conditions as dns_inputs, DnsSet
 from ecs_composex.dns import dns_params, dns_conditions
 from ecs_composex.ecs import ServicesStack
 from ecs_composex.ecs import ecs_params
-from ecs_composex.ecs.ecs_conditions import (
-    GENERATED_CLUSTER_NAME_CON_T,
-    GENERATED_CLUSTER_NAME_CON,
-    CLUSTER_NAME_CON_T,
-    CLUSTER_NAME_CON,
-)
+from ecs_composex.ecs.ecs_cluster import add_ecs_cluster
+from ecs_composex.ecs.ecs_conditions import CLUSTER_NAME_CON_T
 from ecs_composex.ecs.ecs_params import (
     CLUSTER_NAME_T,
     CLUSTER_NAME,
+    CLUSTER_T as ROOT_CLUSTER_NAME,
     RES_KEY as SERVICES_KEY,
 )
 from ecs_composex.ecs.ecs_template import define_services_families
@@ -71,11 +66,9 @@ from ecs_composex.vpc import vpc_params
 from ecs_composex.vpc.vpc_stack import VpcStack
 
 RES_REGX = re.compile(r"(^([x-]+))")
-ROOT_CLUSTER_NAME = "EcsCluster"
 COMPUTE_STACK_NAME = "Ec2Compute"
 VPC_STACK_NAME = "vpc"
 MESH_TITLE = "RootMesh"
-
 
 VPC_ARGS = [
     vpc_params.PUBLIC_SUBNETS_T,
@@ -104,6 +97,7 @@ EXCLUDED_X_KEYS = [
     f"{X_KEY}appmesh",
     f"{X_KEY}vpc",
     f"{X_KEY}dns",
+    f"{X_KEY}cluster",
 ]
 
 
@@ -306,47 +300,6 @@ def get_vpc_id(vpc_stack):
         return Ref(vpc_params.VPC_ID)
 
 
-def add_ecs_cluster(template):
-    """
-    Function to add the cluster to the root template.
-
-    :param template: the root stack template
-    :type template: troposphere.Template
-    """
-    template.add_condition(GENERATED_CLUSTER_NAME_CON_T, GENERATED_CLUSTER_NAME_CON)
-    template.add_condition(CLUSTER_NAME_CON_T, CLUSTER_NAME_CON)
-    try:
-        from troposphere.ecs import CapacityProviderStrategyItem
-
-        cluster = Cluster(
-            ROOT_CLUSTER_NAME,
-            template=template,
-            ClusterName=If(
-                CLUSTER_NAME_CON_T, Ref(AWS_STACK_NAME), Ref(CLUSTER_NAME_T)
-            ),
-            CapacityProviders=["FARGATE", "FARGATE_SPOT"],
-            DefaultCapacityProviderStrategy=[
-                CapacityProviderStrategyItem(Weight=2, CapacityProvider="FARGATE_SPOT"),
-                CapacityProviderStrategyItem(Weight=1, CapacityProvider="FARGATE"),
-            ],
-        )
-    except ImportError as error:
-        LOG.info("Capacity providers not yet available in troposphere")
-        LOG.warning(error)
-        cluster = Cluster(
-            ROOT_CLUSTER_NAME,
-            template=template,
-            ClusterName=If(
-                CLUSTER_NAME_CON_T, Ref(AWS_STACK_NAME), Ref(CLUSTER_NAME_T)
-            ),
-        )
-    template.add_output(
-        ComposeXOutput(
-            cluster, [(CLUSTER_NAME_T, "Name", Ref(cluster))], export=False
-        ).outputs
-    )
-
-
 def init_root_template():
     """
     Function to initialize the root template
@@ -432,10 +385,9 @@ def generate_full_template(settings):
     if settings.cluster_name != CLUSTER_NAME.Default:
         root_stack.Parameters.update({CLUSTER_NAME_T: settings.cluster_name})
 
-    if settings.create_cluster:
-        add_ecs_cluster(root_stack.stack_template)
-        if settings.create_compute and compute_stack:
-            compute_stack.DependsOn.append(ROOT_CLUSTER_NAME)
+    create_cluster = add_ecs_cluster(settings, root_stack)
+    if create_cluster and settings.create_compute and compute_stack:
+        compute_stack.DependsOn.append(ROOT_CLUSTER_NAME)
 
     add_x_resources(root_stack.stack_template, settings, vpc_stack=vpc_stack)
     apply_x_configs_to_ecs(

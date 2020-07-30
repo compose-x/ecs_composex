@@ -27,7 +27,6 @@ You can change the names *values* so you like so long as you keep it Alphanumeri
 
 from troposphere import Parameter
 
-ROOT_CLUSTER_NAME = "EcsCluster"
 COMPUTE_STACK_NAME = "Ec2Compute"
 VPC_STACK_NAME = "vpc"
 MESH_TITLE = "RootMesh"

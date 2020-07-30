@@ -312,7 +312,11 @@ x-tags:
   costcentre: abcd
   contact: you@me.com
 
-#x-vpc:
+x-vpc:
+  Create:
+    VpcCidr: 10.21.42.0/24
+    SingleNat: True
+
 #  Lookup:
 #    VpcId:
 #      tags:
@@ -326,3 +330,17 @@ x-tags:
 #    PublicSubnets:
 #      tags:
 #        - vpc::usage: public
+
+
+x-cluster:
+  Properties:
+    CapacityProviders:
+      - FARGATE
+      - FARGATE_SPOT
+    ClusterName: testabcd
+    DefaultCapacityProviderStrategy:
+      - CapacityProvider: FARGATE_SPOT
+        Weight: 4
+        Base: 2
+      - CapacityProvider: FARGATE
+        Weight: 1
