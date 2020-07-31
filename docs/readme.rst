@@ -30,14 +30,18 @@ Usage
 
 .. code-block:: bash
 
-    usage: ecs_composex [-h] -n NAME -f DOCKERCOMPOSEXFILE [-d OUTPUTDIRECTORY]
-                    [--format {json,yaml,text}] [--region REGIONNAME]
-                    [--az ZONES] [-b BUCKETNAME] [--no-upload] [--deploy]
-                    [--use-spot-fleet]
-                    [_ [_ ...]]
+    usage: ecs-composex [-h] -n NAME -f DOCKERCOMPOSEXFILE [-d OUTPUTDIRECTORY]
+                        [--format {json,yaml,text}] [--region REGIONNAME]
+                        [--az ZONES] [-b BUCKETNAME] [--use-spot-fleet]
+                        {up,config,version} ...
 
     positional arguments:
-      _
+      {up,config,version}   Command to execute.
+        up                  Generates & Validates the CFN templates,
+                            Creates/Updates stack in CFN
+        config              Generates & Validates the CFN templates locally. No
+                            upload to S3.
+        version             ECS ComposeX Version
 
     optional arguments:
       -h, --help            show this help message and exit
@@ -54,9 +58,6 @@ Usage
                             region
       -b BUCKETNAME, --bucket-name BUCKETNAME
                             Bucket name to upload the templates to
-      --no-upload           Whether the templates should be uploaded or not.
-      --deploy              Whether or not you would like to deploy the stack to
-                            CFN.
       --use-spot-fleet      Runs spotfleet for EC2. If used in combination of
                             --use-fargate, it will create an additional SpotFleet
 

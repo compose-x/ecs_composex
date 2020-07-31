@@ -77,7 +77,17 @@ class ComposeXSettings(object):
     default_azs = ["eu-west-1a", "eu-west-1b"]
     default_output_dir = f"/tmp/{dt.utcnow().strftime('%s')}"
 
-    commands = ["up", "config", "version"]
+    commands = [
+        {
+            "name": "up",
+            "help": "Generates & Validates the CFN templates, Creates/Updates stack in CFN",
+        },
+        {
+            "name": "config",
+            "help": "Generates & Validates the CFN templates locally. No upload to S3.",
+        },
+        {"name": "version", "help": "ECS ComposeX Version"},
+    ]
 
     def __init__(self, content=None, profile_name=None, session=None, **kwargs):
         """
@@ -143,8 +153,9 @@ class ComposeXSettings(object):
         :return:
         """
         command = kwargs[self.command_arg]
-        if command not in self.commands:
-            raise ValueError(f"{command} unknown. Valid commands are", self.commands)
+        command_names = [cmd["name"] for cmd in self.commands]
+        if command not in command_names:
+            raise ValueError(f"{command} unknown. Valid commands are", command_names)
         if command == self.bucket_arg:
             self.deploy = True
             self.upload = True

@@ -28,11 +28,33 @@ from ecs_composex.common.stacks import process_stacks
 from ecs_composex.ecs_composex import generate_full_template
 
 
+class ArgparseHelper(argparse._HelpAction):
+    """
+    Used to help print top level '--help' arguments from argparse
+    when used with subparsers
+
+    Usage:
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument('-h', '--help', action=ArgparseHelper,
+                        help='show this help message and exit')
+    """
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        parser.print_help()
+        # print()
+
+
 def main_parser():
     """
     Console script for ecs_composex.
     """
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument(
+        "-h", "--help", action=ArgparseHelper, help="show this help message and exit"
+    )
+    cmd_parsers = parser.add_subparsers(
+        dest=ComposeXSettings.command_arg, help="Command to execute."
+    )
     parser.add_argument(
         "-n",
         "--name",
@@ -99,18 +121,20 @@ def main_parser():
         help="Runs spotfleet for EC2. If used in combination "
         "of --use-fargate, it will create an additional SpotFleet",
     )
-
-    parser.add_argument(
-        ComposeXSettings.command_arg,
-        default=False,
-        help="Whether you want to build the templates locally first.",
-    )
-    parser.add_argument("_", nargs="*")
+    for command in ComposeXSettings.commands:
+        cmd_parsers.add_parser(name=command["name"], help=command["help"])
     return parser
 
 
 def main():
+    """
+    Main entry point for CLI
+    :return: status code
+    """
     parser = main_parser()
+    if len(sys.argv) == 1:
+        parser.print_help()
+        sys.exit(0)
     args = parser.parse_args()
     settings = ComposeXSettings(**vars(args))
     settings.set_bucket_name_from_account_id()
@@ -128,6 +152,7 @@ def main():
 
     if settings.deploy:
         deploy(settings, root_stack)
+    return 0
 
 
 if __name__ == "__main__":
