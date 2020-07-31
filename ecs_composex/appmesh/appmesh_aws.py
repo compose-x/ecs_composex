@@ -19,7 +19,6 @@
 Module to interact with AWS AppMesh API
 """
 
-from botocore.exceptions import ClientError
 from ecs_composex.appmesh.appmesh_params import MESH_NAME, MESH_OWNER_ID
 from ecs_composex.common import LOG, keyisset
 

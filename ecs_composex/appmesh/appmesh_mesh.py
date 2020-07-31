@@ -24,8 +24,8 @@ Once all services have been deployed and their VirtualNodes are setup, we deploy
 from troposphere import Ref, GetAtt, AWS_ACCOUNT_ID, AWS_STACK_NAME
 from troposphere import appmesh
 
-from ecs_composex.ecs.ecs_template import get_service_family_name
 from ecs_composex.appmesh import appmesh_params, appmesh_conditions
+from ecs_composex.appmesh import metadata
 from ecs_composex.appmesh.appmesh_aws import lookup_mesh_by_name
 from ecs_composex.appmesh.appmesh_conditions import add_appmesh_conditions
 from ecs_composex.appmesh.appmesh_node import MeshNode
@@ -40,7 +40,7 @@ from ecs_composex.common import (
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.ecs import ecs_params
-from ecs_composex.appmesh import metadata
+from ecs_composex.ecs.ecs_template import get_service_family_name
 
 
 class Mesh(object):
@@ -74,7 +74,7 @@ class Mesh(object):
         self.appmesh = Ref(MESH_NAME)
         add_parameters(
             services_root_stack.stack_template,
-            [appmesh_params.MESH_OWNER_ID, appmesh_params.MESH_NAME,],
+            [appmesh_params.MESH_OWNER_ID, appmesh_params.MESH_NAME],
         )
         appmesh_conditions.add_appmesh_conditions(services_root_stack.stack_template)
         if keyisset("MeshName", self.mesh_properties):

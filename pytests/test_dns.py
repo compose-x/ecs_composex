@@ -70,6 +70,7 @@ def create_settings(updated_content, case_path):
         session=session,
         **{
             ComposeXSettings.name_arg: "test",
+            ComposeXSettings.command_arg: "config",
             ComposeXSettings.input_file_arg: path.abspath(
                 f"{here}/../use-cases/blog.yml"
             ),

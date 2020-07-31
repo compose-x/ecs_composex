@@ -72,23 +72,9 @@ class ComposeXOutput(object):
         :param resource: The object to export attributes for.
         :param bool export:
         """
-
-        if issubclass(type(resource), AWSObject) and hasattr(resource, "title"):
-            self.object_repr = resource.title
-        elif isinstance(resource, str):
-            self.object_repr = resource
-        elif isinstance(resource, Parameter):
-            self.object_repr = resource.title
-        elif resource is None:
-            self.object_repr = ""
-            if duplicate_attr:
-                duplicate_attr = False
-        else:
-            raise TypeError(
-                "object should be a subclass of", AWSObject, "Got", type(resource)
-            )
-        if not isinstance(values, list):
-            raise TypeError("values must be of type", list)
+        self.object_repr = None
+        self.duplicate_attr = duplicate_attr
+        self.validate_input(resource, values, export, duplicate_attr)
         self.values = values
         self.outputs = []
 
@@ -116,9 +102,27 @@ class ComposeXOutput(object):
                     If(USE_STACK_NAME_CON_T, Sub(stack_string), Sub(root_string))
                 )
             self.outputs.append(output)
-            if duplicate_attr:
+            if self.duplicate_attr:
                 output = Output(attr_name, Value=attr_value)
                 self.outputs.append(output)
+
+    def validate_input(self, resource, values, export=True, duplicate_attr=False):
+        if issubclass(type(resource), AWSObject) and hasattr(resource, "title"):
+            self.object_repr = resource.title
+        elif isinstance(resource, str):
+            self.object_repr = resource
+        elif isinstance(resource, Parameter):
+            self.object_repr = resource.title
+        elif resource is None:
+            self.object_repr = ""
+            if duplicate_attr:
+                self.duplicate_attr = False
+        else:
+            raise TypeError(
+                "object should be a subclass of", AWSObject, "Got", type(resource)
+            )
+        if not isinstance(values, list):
+            raise TypeError("values must be of type", list)
 
 
 def get_import_value(title, attribute_name, delimiter=None):

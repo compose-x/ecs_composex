@@ -47,6 +47,7 @@ def step_impl(context, file_path):
         else None,
         **{
             ComposeXSettings.name_arg: "test",
+            ComposeXSettings.command_arg: "config",
             ComposeXSettings.input_file_arg: cases_path,
             ComposeXSettings.no_upload_arg: True,
             ComposeXSettings.format_arg: "yaml",

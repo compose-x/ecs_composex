@@ -35,7 +35,6 @@ from ecs_composex.dns.dns_params import (
     PRIVATE_DNS_ZONE_ID,
     PRIVATE_DNS_ZONE_NAME,
 )
-from ecs_composex.appmesh.appmesh_params import MESH_NAME, MESH_OWNER_ID
 
 
 def validate_service_backend(service, routers, nodes):

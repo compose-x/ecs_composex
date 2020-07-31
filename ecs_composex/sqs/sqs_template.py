@@ -18,9 +18,9 @@
 """Generates the individual SQS Queues templates."""
 
 from copy import deepcopy
-from troposphere import Tags, Sub, GetAtt, Ref
+
+from troposphere import Sub, GetAtt, Ref
 from troposphere.sqs import Queue, RedrivePolicy
-from ecs_composex.sqs import metadata
 
 from ecs_composex.common import (
     build_template,
@@ -32,6 +32,7 @@ from ecs_composex.common import (
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.outputs import ComposeXOutput
 from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.sqs import metadata
 from ecs_composex.sqs.sqs_params import RES_KEY
 from ecs_composex.sqs.sqs_params import (
     SQS_NAME_T,

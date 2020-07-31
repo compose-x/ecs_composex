@@ -21,17 +21,17 @@ Module to manage IAM policies to grant access to ECS Services to DynamodbTables
 
 from troposphere.dynamodb import Table
 
+from ecs_composex.common import LOG
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.common import LOG, keyisset, NONALPHANUM
 from ecs_composex.dynamodb.dynamodb_aws import lookup_dyn_table
 from ecs_composex.dynamodb.dynamodb_params import TABLE_ARN
 from ecs_composex.dynamodb.dynamodb_perms import ACCESS_TYPES
+from ecs_composex.resource_permissions import apply_iam_based_resources
 from ecs_composex.resource_settings import (
     generate_resource_envvars,
     generate_resource_permissions,
     validate_lookup_resource,
 )
-from ecs_composex.resource_permissions import apply_iam_based_resources
 
 
 def handle_new_tables(

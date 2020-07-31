@@ -155,7 +155,6 @@ class ComposeXSettings(object):
             print("ECS ComposeX", __version__)
             exit(0)
 
-
     def set_vpc(self, kwargs):
         """
         Method to set the VPC settings.
