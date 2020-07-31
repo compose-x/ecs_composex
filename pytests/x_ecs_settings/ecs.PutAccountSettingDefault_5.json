@@ -1,0 +1,20 @@
+{
+    "status_code": 200,
+    "data": {
+        "setting": {
+            "name": "containerInsights",
+            "value": "enabled",
+            "principalArn": "arn:aws:iam::012345678912:root"
+        },
+        "ResponseMetadata": {
+            "RequestId": "782f78ba-c069-461e-a5a8-57e1923300b6",
+            "HTTPStatusCode": 200,
+            "HTTPHeaders": {
+                "x-amzn-requestid": "782f78ba-c069-461e-a5a8-57e1923300b6",
+                "content-type": "application/x-amz-json-1.1",
+                "content-length": "106"
+            },
+            "RetryAttempts": 0
+        }
+    }
+}

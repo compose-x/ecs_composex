@@ -1,0 +1,24 @@
+{
+    "status_code": 409,
+    "data": {
+        "Error": {
+            "Code": "BucketAlreadyOwnedByYou",
+            "Message": "Your previous request to create the named bucket succeeded and you already own it.",
+            "BucketName": "ecs-composex-eu-west-1"
+        },
+        "ResponseMetadata": {
+            "RequestId": "AC61E0085D68C424",
+            "HostId": "cAnwtZ1kiW92LPs15LVuuvAoDcCvoJJn4grUIXM+ydArY5AXN9Pxbgy3taxVaNzZqbaDkZrXC9Q=",
+            "HTTPStatusCode": 409,
+            "HTTPHeaders": {
+                "x-amz-bucket-region": "eu-west-1",
+                "x-amz-request-id": "AC61E0085D68C424",
+                "x-amz-id-2": "cAnwtZ1kiW92LPs15LVuuvAoDcCvoJJn4grUIXM+ydArY5AXN9Pxbgy3taxVaNzZqbaDkZrXC9Q=",
+                "content-type": "application/xml",
+                "transfer-encoding": "chunked",
+                "server": "AmazonS3"
+            },
+            "RetryAttempts": 0
+        }
+    }
+}

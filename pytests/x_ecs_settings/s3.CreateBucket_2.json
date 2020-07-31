@@ -1,0 +1,19 @@
+{
+    "status_code": 200,
+    "data": {
+        "ResponseMetadata": {
+            "RequestId": "680FF8CA67FF6C07",
+            "HostId": "ydVN1NEfJCgR1RjoTpQI5tNNq5Hi3+pI6pPiXs1m+hdQJaqIcZQR8JKu0JIimoNipuUvfPB1sCY=",
+            "HTTPStatusCode": 200,
+            "HTTPHeaders": {
+                "x-amz-id-2": "ydVN1NEfJCgR1RjoTpQI5tNNq5Hi3+pI6pPiXs1m+hdQJaqIcZQR8JKu0JIimoNipuUvfPB1sCY=",
+                "x-amz-request-id": "680FF8CA67FF6C07",
+                "location": "http://ecs-composex-eu-west-2.s3.amazonaws.com/",
+                "content-length": "0",
+                "server": "AmazonS3"
+            },
+            "RetryAttempts": 0
+        },
+        "Location": "http://ecs-composex-eu-west-2.s3.amazonaws.com/"
+    }
+}

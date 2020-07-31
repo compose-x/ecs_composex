@@ -24,35 +24,6 @@ JSON_MIME = "application/json"
 YAML_MIME = "application/x-yaml"
 
 
-def check_bucket(bucket_name, session):
-    """
-    Function that checks if the S3 bucket exists and if not attempts to create it.
-
-    :param bucket_name: name of the s3 bucket
-    :type bucket_name: str
-    :param session: boto3 session to use if wanted to override settings.
-    :type session: boto3.session.Session
-    :returns: True/False, Returns whether the bucket exists or not for upload
-    :rtype: bool
-    """
-    client = session.client("s3")
-    region = session.region_name
-    location = {"LocationConstraint": region}
-    try:
-        client.head_bucket(Bucket=bucket_name)
-        LOG.debug(f"Bucket {bucket_name} available")
-    except ClientError as error:
-        if error.response["Error"]["Code"] == "404":
-            LOG.info(f"Attempting to create bucket {bucket_name}")
-            client.create_bucket(
-                ACL="private",
-                Bucket=bucket_name,
-                ObjectLockEnabledForBucket=True,
-                CreateBucketConfiguration=location,
-            )
-            LOG.info(f"Bucket {bucket_name} successfully created.")
-
-
 def upload_file(
     body, bucket_name, file_name, settings, prefix=None, mime=None,
 ):
@@ -69,7 +40,6 @@ def upload_file(
     :returns: url_path, the https://s3.amazonaws.com/ URL to the file
     :rtype: str
     """
-    check_bucket(bucket_name=bucket_name, session=settings.session)
     if mime is None:
         mime = JSON_MIME
     if prefix is None:

@@ -22,7 +22,6 @@ Module for the ComposeXSettings class
 from datetime import datetime as dt
 from json import dumps
 
-
 import boto3
 from botocore.exceptions import ClientError
 
@@ -42,6 +41,8 @@ from ecs_composex.vpc.vpc_params import (
     APP_SUBNETS_T,
     STORAGE_SUBNETS_T,
 )
+from ecs_composex.utils.init_ecs import set_ecs_settings
+from ecs_composex.utils.init_s3 import create_bucket
 
 
 class ComposeXSettings(object):
@@ -87,6 +88,10 @@ class ComposeXSettings(object):
             "help": "Generates & Validates the CFN templates locally. No upload to S3.",
         },
         {"name": "version", "help": "ECS ComposeX Version"},
+        {
+            "name": "init",
+            "help": "Initializes your AWS Account with prerequisites settings for ECS",
+        },
     ]
 
     def __init__(self, content=None, profile_name=None, session=None, **kwargs):
@@ -101,37 +106,40 @@ class ComposeXSettings(object):
             else self.session.region_name
         )
         self.aws_azs = self.default_azs
-        if content is None:
-            self.compose_content = load_composex_file(kwargs[self.input_file_arg])
-        elif content and isinstance(content, dict):
-            self.compose_content = content
-        self.input_file = (
-            kwargs[self.input_file_arg] if keyisset(self.input_file_arg, kwargs) else {}
-        )
-        self.account_id = None
-
-        self.bucket_name = None
-        self.output_dir = self.default_output_dir
-        self.format = self.default_format
-        self.set_output_settings(kwargs)
-
-        self.no_upload = True if keyisset(self.no_upload_arg, kwargs) else False
-        self.upload = False if self.no_upload else True
-        self.name = kwargs[self.name_arg]
-        self.create_compute = False if not keyisset(USE_FLEET_T, kwargs) else True
-
         self.vpc_private_namespace_id = None
         self.vpc_private_namespace_zone_id = None
         self.vpc_private_namespace_tld = None
+
+        self.bucket_name = (
+            None if not keyisset(self.bucket_arg, kwargs) else kwargs[self.bucket_arg]
+        )
+        self.account_id = None
+        self.output_dir = self.default_output_dir
+        self.format = self.default_format
 
         self.create_vpc = False
         self.vpc_cidr = None
         self.single_nat = None
         self.lookup_vpc = False
-        self.set_vpc(kwargs)
-
         self.deploy = True if keyisset(self.deploy_arg, kwargs) else False
+        self.no_upload = True if keyisset(self.no_upload_arg, kwargs) else False
+
+        self.upload = False if self.no_upload else True
+        self.create_compute = False if not keyisset(USE_FLEET_T, kwargs) else True
         self.parse_command(kwargs)
+
+        if content is None:
+            self.compose_content = load_composex_file(kwargs[self.input_file_arg])
+        elif content and isinstance(content, dict):
+            self.compose_content = content
+
+        self.input_file = (
+            kwargs[self.input_file_arg] if keyisset(self.input_file_arg, kwargs) else {}
+        )
+
+        self.set_output_settings(kwargs)
+        self.name = kwargs[self.name_arg]
+        self.set_vpc(kwargs)
 
     def __repr__(self):
         return dumps(
@@ -155,7 +163,7 @@ class ComposeXSettings(object):
         command = kwargs[self.command_arg]
         command_names = [cmd["name"] for cmd in self.commands]
         if command not in command_names:
-            raise ValueError(f"{command} unknown. Valid commands are", command_names)
+            exit(1)
         if command == self.bucket_arg:
             self.deploy = True
             self.upload = True
@@ -164,6 +172,10 @@ class ComposeXSettings(object):
             self.upload = not self.no_upload
         elif command == "version":
             print("ECS ComposeX", __version__)
+            exit(0)
+        elif command == "init":
+            set_ecs_settings(self.session)
+            self.init_s3()
             exit(0)
 
     def set_vpc(self, kwargs):
@@ -214,9 +226,6 @@ class ComposeXSettings(object):
         """
         Method to set the output settings based on kwargs
         """
-        self.bucket_name = (
-            kwargs[self.bucket_arg] if keyisset(self.bucket_arg, kwargs) else None
-        )
         self.format = self.default_format
         if (
             keyisset(self.format_arg, kwargs)
@@ -402,3 +411,13 @@ class ComposeXSettings(object):
                 self.bucket_name = None
                 self.upload = False
                 self.no_upload = True
+
+    def init_s3(self):
+        """
+        Method to initialize S3 settings
+
+        :return:
+        """
+        self.set_bucket_name_from_account_id()
+        if self.bucket_name:
+            create_bucket(self.bucket_name, self.session)

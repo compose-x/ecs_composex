@@ -1,0 +1,24 @@
+{
+    "status_code": 409,
+    "data": {
+        "Error": {
+            "Code": "BucketAlreadyExists",
+            "Message": "The requested bucket name is not available. The bucket namespace is shared by all users of the system. Please select a different name and try again.",
+            "BucketName": "cfn-templates"
+        },
+        "ResponseMetadata": {
+            "RequestId": "897AEB83B807F84F",
+            "HostId": "hrErBLGUEEPhOY8+FU9f5hdEExvre3oKE94zmVpYzhl1ul4mDufIyzu44EX4fM83a63S3lhbkEk=",
+            "HTTPStatusCode": 409,
+            "HTTPHeaders": {
+                "x-amz-bucket-region": "us-east-1",
+                "x-amz-request-id": "897AEB83B807F84F",
+                "x-amz-id-2": "hrErBLGUEEPhOY8+FU9f5hdEExvre3oKE94zmVpYzhl1ul4mDufIyzu44EX4fM83a63S3lhbkEk=",
+                "content-type": "application/xml",
+                "transfer-encoding": "chunked",
+                "server": "AmazonS3"
+            },
+            "RetryAttempts": 0
+        }
+    }
+}

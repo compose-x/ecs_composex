@@ -59,7 +59,7 @@ def main_parser():
         "-n",
         "--name",
         help="Name of your stack",
-        required=True,
+        # required=True,
         type=str,
         dest=ComposeXSettings.name_arg,
     )
@@ -67,7 +67,7 @@ def main_parser():
         "-f",
         "--docker-compose-file",
         dest=ComposeXSettings.input_file_arg,
-        required=True,
+        # required=True,
         help="Path to the Docker compose file",
     )
     parser.add_argument(

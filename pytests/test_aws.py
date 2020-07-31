@@ -22,6 +22,8 @@ import boto3
 from ecs_composex.common.settings import ComposeXSettings
 from ecs_composex.common import load_composex_file
 from ecs_composex.vpc.vpc_params import VPC_ID_T
+from ecs_composex.utils.init_ecs import set_ecs_settings
+from ecs_composex.utils.init_s3 import create_bucket
 
 
 @pytest.fixture
@@ -195,3 +197,14 @@ def test_negative_testing_subnets(
         settings = create_settings(content, "x_vpc")
         settings = create_settings(content, "x_vpc")
         settings = create_settings(content, "x_vpc")
+
+
+def test_ecs_settings():
+    session = boto3.session.Session()
+    here = path.abspath(path.dirname(__file__))
+    pill = placebo.attach(session=session, data_path=f"{here}/x_ecs_settings")
+    pill.playback()
+    set_ecs_settings(session)
+    create_bucket("ecs-composex-eu-west-1", session)
+    create_bucket("ecs-composex-eu-west-2", session)
+    create_bucket("cfn-templates", session)
