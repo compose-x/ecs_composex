@@ -675,7 +675,7 @@ class Service(object):
                 DnsConfig=SdDnsConfig(
                     RoutingPolicy="WEIGHTED",
                     NamespaceId=Ref(AWS_NO_VALUE),
-                    DnsRecords=[SdDnsRecord(TTL="15", Type="A"),],
+                    DnsRecords=[SdDnsRecord(TTL="15", Type="A")],
                 ),
                 Name=If(USE_HOSTNAME_CON_T, Ref(SERVICE_HOSTNAME), Ref(SERVICE_NAME)),
             )

@@ -20,8 +20,9 @@ Module of functions to help with container definition
 """
 
 
-from troposphere import Ref, GetAtt, ImportValue, Sub, AWS_NO_VALUE
-from troposphere.ecs import ContainerDefinition, Environment, PortMapping
+from troposphere import Ref, GetAtt, ImportValue, Sub
+from troposphere.ecs import ContainerDefinition, Environment
+
 from ecs_composex.common import LOG
 
 

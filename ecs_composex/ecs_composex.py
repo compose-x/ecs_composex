@@ -54,7 +54,6 @@ from ecs_composex.dns import dns_params, dns_conditions
 from ecs_composex.ecs import ServicesStack
 from ecs_composex.ecs import ecs_params
 from ecs_composex.ecs.ecs_cluster import add_ecs_cluster
-from ecs_composex.ecs.ecs_conditions import GENERATED_CLUSTER_NAME_CON_T
 from ecs_composex.ecs.ecs_params import (
     CLUSTER_NAME,
     CLUSTER_T as ROOT_CLUSTER_NAME,

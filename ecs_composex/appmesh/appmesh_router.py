@@ -24,7 +24,6 @@ from troposphere import Sub, Ref, GetAtt
 from troposphere import appmesh
 
 from ecs_composex.appmesh import appmesh_conditions
-from ecs_composex.appmesh.appmesh_params import MESH_NAME, MESH_OWNER_ID
 from ecs_composex.common import NONALPHANUM, keyisset, LOG
 
 

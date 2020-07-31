@@ -45,14 +45,30 @@ def test_lookup(existing_cluster, nonexisting_cluster):
     pill.playback()
     template = Template()
     stack = ComposeXStack("test", stack_template=template)
-    settings = ComposeXSettings(content=existing_cluster, session=session, Name="abcd")
+    settings = ComposeXSettings(
+        content=existing_cluster,
+        session=session,
+        **{
+            ComposeXSettings.name_arg: "test",
+            ComposeXSettings.command_arg: "config",
+            ComposeXSettings.no_upload_arg: True,
+            ComposeXSettings.format_arg: "yaml",
+        },
+    )
     cluster = add_ecs_cluster(settings, stack)
     assert cluster is False
 
     template = Template()
     stack = ComposeXStack("test", stack_template=template)
     settings = ComposeXSettings(
-        content=nonexisting_cluster, session=session, Name="abcd"
+        content=existing_cluster,
+        session=session,
+        **{
+            ComposeXSettings.name_arg: "test",
+            ComposeXSettings.command_arg: "config",
+            ComposeXSettings.no_upload_arg: True,
+            ComposeXSettings.format_arg: "yaml",
+        },
     )
     cluster = add_ecs_cluster(settings, stack)
     assert cluster is True

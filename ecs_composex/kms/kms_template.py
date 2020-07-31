@@ -16,8 +16,8 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from troposphere import AWS_PARTITION, AWS_ACCOUNT_ID
 from troposphere import Sub, Ref, GetAtt, If
-from troposphere import AWS_PARTITION, AWS_ACCOUNT_ID, AWS_REGION
 from troposphere.kms import Key, Alias
 
 from ecs_composex.common import LOG, keyisset, build_template, NONALPHANUM

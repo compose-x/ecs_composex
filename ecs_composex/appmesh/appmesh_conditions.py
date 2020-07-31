@@ -19,17 +19,15 @@
 AppMesh related conditions
 """
 
-from troposphere.appmesh import Mesh
 from troposphere import (
     Ref,
-    Not,
     Equals,
-    Condition,
     If,
     AWS_ACCOUNT_ID,
     GetAtt,
     AWS_STACK_NAME,
 )
+from troposphere.appmesh import Mesh
 
 from ecs_composex.appmesh.appmesh_params import MESH_NAME, MESH_OWNER_ID
 

@@ -18,6 +18,7 @@
 from troposphere import Parameter
 from troposphere import Ref, Sub, GetAtt
 from troposphere import appmesh
+from troposphere.ec2 import SecurityGroupIngress
 from troposphere.ecs import (
     Environment,
     PortMapping,
@@ -28,14 +29,13 @@ from troposphere.ecs import (
     HealthCheck,
 )
 from troposphere.iam import Policy
-from troposphere.ec2 import SecurityGroupIngress
 
 from ecs_composex.appmesh import appmesh_params, appmesh_conditions, metadata
 from ecs_composex.common import LOG, add_parameters
 from ecs_composex.common.outputs import ComposeXOutput
+from ecs_composex.dns.dns_params import PRIVATE_DNS_ZONE_NAME
 from ecs_composex.ecs import ecs_params
 from ecs_composex.ecs.ecs_container_config import extend_container_envvars
-from ecs_composex.dns.dns_params import PRIVATE_DNS_ZONE_NAME, PRIVATE_DNS_ZONE_ID
 
 
 class MeshNode(object):

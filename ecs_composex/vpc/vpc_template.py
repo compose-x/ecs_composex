@@ -64,7 +64,7 @@ def add_template_outputs(template, vpc, storage_subnets, public_subnets, app_sub
     """
     template.add_output(
         ComposeXOutput(
-            None,
+            vpc,
             [
                 (vpc_params.VPC_ID_T, vpc_params.VPC_ID_T, Ref(vpc)),
                 (
@@ -83,6 +83,7 @@ def add_template_outputs(template, vpc, storage_subnets, public_subnets, app_sub
                     Join(",", [Ref(subnet) for subnet in app_subnets]),
                 ),
             ],
+            duplicate_attr=True,
         ).outputs
     )
 
@@ -98,7 +99,7 @@ def add_vpc_cidrs_outputs(template, vpc, layers):
     """
     template.add_output(
         ComposeXOutput(
-            None,
+            vpc,
             [
                 (
                     vpc_params.STORAGE_SUBNETS_CIDR_T,
@@ -116,6 +117,7 @@ def add_vpc_cidrs_outputs(template, vpc, layers):
                     Join(",", [cidr for cidr in layers["app"]]),
                 ),
             ],
+            duplicate_attr=True,
         ).outputs
     )
 
