@@ -1,0 +1,20 @@
+{
+    "status_code": 200,
+    "data": {
+        "setting": {
+            "name": "taskLongArnFormat",
+            "value": "enabled",
+            "principalArn": "arn:aws:iam::012345678912:root"
+        },
+        "ResponseMetadata": {
+            "RequestId": "c7b4295d-37ab-4d8b-9252-243729d74210",
+            "HTTPStatusCode": 200,
+            "HTTPHeaders": {
+                "x-amzn-requestid": "c7b4295d-37ab-4d8b-9252-243729d74210",
+                "content-type": "application/x-amz-json-1.1",
+                "content-length": "106"
+            },
+            "RetryAttempts": 0
+        }
+    }
+}

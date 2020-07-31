@@ -1,0 +1,20 @@
+{
+    "status_code": 200,
+    "data": {
+        "setting": {
+            "name": "awsvpcTrunking",
+            "value": "enabled",
+            "principalArn": "arn:aws:iam::012345678912:root"
+        },
+        "ResponseMetadata": {
+            "RequestId": "4510b400-621e-4643-ae44-a1317576a92b",
+            "HTTPStatusCode": 200,
+            "HTTPHeaders": {
+                "x-amzn-requestid": "4510b400-621e-4643-ae44-a1317576a92b",
+                "content-type": "application/x-amz-json-1.1",
+                "content-length": "103"
+            },
+            "RetryAttempts": 0
+        }
+    }
+}

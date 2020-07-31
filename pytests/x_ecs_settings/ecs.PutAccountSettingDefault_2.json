@@ -1,0 +1,20 @@
+{
+    "status_code": 200,
+    "data": {
+        "setting": {
+            "name": "serviceLongArnFormat",
+            "value": "enabled",
+            "principalArn": "arn:aws:iam::012345678912:root"
+        },
+        "ResponseMetadata": {
+            "RequestId": "cb3be8d3-7bb4-4346-bc49-8fc685d92af3",
+            "HTTPStatusCode": 200,
+            "HTTPHeaders": {
+                "x-amzn-requestid": "cb3be8d3-7bb4-4346-bc49-8fc685d92af3",
+                "content-type": "application/x-amz-json-1.1",
+                "content-length": "109"
+            },
+            "RetryAttempts": 0
+        }
+    }
+}
