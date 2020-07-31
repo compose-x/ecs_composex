@@ -88,10 +88,13 @@ class ComposeXSettings(object):
             "help": "Generates & Validates the CFN templates locally. No upload to S3.",
         },
         {"name": "version", "help": "ECS ComposeX Version"},
+    ]
+    neutral_commands = [
         {
             "name": "init",
             "help": "Initializes your AWS Account with prerequisites settings for ECS",
         },
+        {"name": "version", "help": "ECS ComposeX Version"},
     ]
 
     def __init__(self, content=None, profile_name=None, session=None, **kwargs):
@@ -161,10 +164,12 @@ class ComposeXSettings(object):
         :return:
         """
         command = kwargs[self.command_arg]
-        command_names = [cmd["name"] for cmd in self.commands]
+        command_names = [cmd["name"] for cmd in self.commands] + [
+            cmd["name"] for cmd in self.neutral_commands
+        ]
         if command not in command_names:
             exit(1)
-        if command == self.bucket_arg:
+        if command == self.deploy_arg:
             self.deploy = True
             self.upload = True
         elif command == self.no_upload_arg:

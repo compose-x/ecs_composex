@@ -41,7 +41,17 @@ class ArgparseHelper(argparse._HelpAction):
 
     def __call__(self, parser, namespace, values, option_string=None):
         parser.print_help()
-        # print()
+        print()
+        subparsers_actions = [
+            action
+            for action in parser._actions
+            if isinstance(action, argparse._SubParsersAction)
+        ]
+        for subparsers_action in subparsers_actions:
+            for choice, subparser in list(subparsers_action.choices.items()):
+                if choice in [cmd["name"] for cmd in ComposeXSettings.commands]:
+                    print(f"Command '{choice}'")
+                    print(subparser.format_usage())
 
 
 def main_parser():
@@ -55,22 +65,23 @@ def main_parser():
     cmd_parsers = parser.add_subparsers(
         dest=ComposeXSettings.command_arg, help="Command to execute."
     )
-    parser.add_argument(
+    base_command_parser = argparse.ArgumentParser(add_help=False)
+    base_command_parser.add_argument(
         "-n",
         "--name",
         help="Name of your stack",
-        # required=True,
+        required=True,
         type=str,
         dest=ComposeXSettings.name_arg,
     )
-    parser.add_argument(
+    base_command_parser.add_argument(
         "-f",
         "--docker-compose-file",
         dest=ComposeXSettings.input_file_arg,
-        # required=True,
+        required=True,
         help="Path to the Docker compose file",
     )
-    parser.add_argument(
+    base_command_parser.add_argument(
         "-d",
         "--output-dir",
         required=False,
@@ -79,7 +90,7 @@ def main_parser():
         dest=ComposeXSettings.output_dir_arg,
         default=ComposeXSettings.default_output_dir,
     )
-    parser.add_argument(
+    base_command_parser.add_argument(
         "--format",
         help="Defines the format you want to use.",
         type=str,
@@ -88,14 +99,14 @@ def main_parser():
         default=ComposeXSettings.default_format,
     )
     #  AWS SETTINGS
-    parser.add_argument(
+    base_command_parser.add_argument(
         "--region",
         required=False,
         dest=ComposeXSettings.region_arg,
         help="Specify the region you want to build for"
         "default use default region from config or environment vars",
     )
-    parser.add_argument(
+    base_command_parser.add_argument(
         "--az",
         dest=ComposeXSettings.zones_arg,
         default=ComposeXSettings.default_azs,
@@ -103,7 +114,7 @@ def main_parser():
         required=False,
         help="List AZs you want to deploy to specifically within the region",
     )
-    parser.add_argument(
+    base_command_parser.add_argument(
         "-b",
         "--bucket-name",
         type=str,
@@ -112,7 +123,7 @@ def main_parser():
         dest="BucketName",
     )
     # COMPUTE SETTINGS
-    parser.add_argument(
+    base_command_parser.add_argument(
         "--use-spot-fleet",
         required=False,
         default=False,
@@ -122,6 +133,10 @@ def main_parser():
         "of --use-fargate, it will create an additional SpotFleet",
     )
     for command in ComposeXSettings.commands:
+        cmd_parsers.add_parser(
+            name=command["name"], help=command["help"], parents=[base_command_parser]
+        )
+    for command in ComposeXSettings.neutral_commands:
         cmd_parsers.add_parser(name=command["name"], help=command["help"])
     return parser
 
