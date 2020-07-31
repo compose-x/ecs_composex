@@ -106,7 +106,7 @@ class Container(object):
             values.append(("Cpu", "Cpu", str(config.cpu_resa)))
         if isinstance(config.cpu_resa, int):
             values.append(("Memory", "Memory", str(config.mem_alloc)))
-        if isinstance(config.cpu_resa, int):
+        if isinstance(config.mem_resa, int):
             values.append(
                 ("MemoryReservation", "MemoryReservation", str(config.mem_resa))
             )

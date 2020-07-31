@@ -179,15 +179,41 @@ def default_tags():
     return Tags(CreatedByComposeX=True)
 
 
+def apply_tags_to_resources(settings, resource, params, xtags):
+    """
+
+    :param ecs_composex.common.settings.ComposeXSettings settings: Execution settings
+    :param resource: The resource to add the tags to
+    :param list params: Parameters to add to template if any
+    :param troposphere.Tags xtags: List of Tags to add to the resources.
+    :return:
+    """
+    if isinstance(resource, ComposeXStack) or issubclass(type(resource), ComposeXStack):
+        LOG.debug(resource)
+        LOG.debug(resource.title)
+        add_all_tags(resource.stack_template, settings, params, xtags)
+        if params:
+            add_parameters(resource.stack_template, params)
+        if (
+            not resource
+            or not hasattr(resource, "stack_template")
+            or not resource.stack_template
+        ):
+            return
+        for stack_resname in resource.stack_template.resources:
+            add_object_tags(resource.stack_template.resources[stack_resname], xtags)
+
+
 def add_all_tags(root_template, settings, params=None, xtags=None):
     """
     Function to go through all stacks of a given template and update the template
     It will recursively render sub stacks defined.
     If there are no substacks, it will go over the resources of the template add the tags.
 
-    :param root_template: the root template to iterate over the resources.
-    :type root_template: troposphere.Template
-    :param ecs_composex.common.settings.ComposeXSettings settings:
+    :param troposphere.Template root_template: the root template to iterate over the resources.
+    :param ecs_composex.common.settings.ComposeXSettings settings: Execution settings
+    :param list params: Parameters to add to template if any
+    :param troposphere.Tags xtags: List of Tags to add to the resources.
     """
     if not params or not xtags:
         if not keyisset("x-tags", settings.compose_content):
@@ -202,19 +228,4 @@ def add_all_tags(root_template, settings, params=None, xtags=None):
     resources = root_template.resources if root_template else []
     for resource_name in resources:
         resource = resources[resource_name]
-        if isinstance(resource, ComposeXStack) or issubclass(
-            type(resource), ComposeXStack
-        ):
-            LOG.debug(resource)
-            LOG.debug(resource.title)
-            add_all_tags(resource.stack_template, settings, params, xtags)
-            if params:
-                add_parameters(resource.stack_template, params)
-            if (
-                not resource
-                or not hasattr(resource, "stack_template")
-                or not resource.stack_template
-            ):
-                return
-            for stack_resname in resource.stack_template.resources:
-                add_object_tags(resource.stack_template.resources[stack_resname], xtags)
+        apply_tags_to_resources(settings, resource, params, xtags)
