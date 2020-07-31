@@ -29,6 +29,30 @@ from ecs_composex.rds.rds_perms import (
 from ecs_composex.ecs.ecs_template import get_service_family_name
 
 
+def handle_db_to_service_settings(
+    db_name,
+    db_def,
+    secret_import,
+    service,
+    services_families,
+    services_stack,
+    rds_root_stack,
+):
+    service_family = get_service_family_name(services_families, service["name"])
+    if service_family not in services_stack.stack_template.resources:
+        raise AttributeError(f"No service {service_family} present in services stack")
+    family_wide = True if service["name"] in services_families else False
+    service_stack = services_stack.stack_template.resources[service_family]
+    service_template = service_stack.stack_template
+    add_secret_to_containers(
+        service_template, db_name, db_def, secret_import, service["name"], family_wide,
+    )
+    add_rds_policy(service_template, secret_import, db_name)
+    add_security_group_ingress(service_stack, db_name)
+    if rds_root_stack.title not in services_stack.DependsOn:
+        services_stack.add_dependencies(rds_root_stack.title)
+
+
 def rds_to_ecs(rdsdbs, services_stack, services_families, rds_root_stack, settings):
     """
     Function to apply onto existing ECS Templates the various settings
@@ -48,23 +72,12 @@ def rds_to_ecs(rdsdbs, services_stack, services_families, rds_root_stack, settin
             continue
         secret_import = define_db_secret_import(db_name)
         for service in db_def["Services"]:
-            service_family = get_service_family_name(services_families, service["name"])
-            if service_family not in services_stack.stack_template.resources:
-                raise AttributeError(
-                    f"No service {service_family} present in services stack"
-                )
-            family_wide = True if service["name"] in services_families else False
-            service_stack = services_stack.stack_template.resources[service_family]
-            service_template = service_stack.stack_template
-            add_secret_to_containers(
-                service_template,
+            handle_db_to_service_settings(
                 db_name,
                 db_def,
                 secret_import,
-                service["name"],
-                family_wide,
+                service,
+                services_families,
+                services_stack,
+                rds_root_stack,
             )
-            add_rds_policy(service_template, secret_import, db_name)
-            add_security_group_ingress(service_stack, db_name)
-            if rds_root_stack.title not in services_stack.DependsOn:
-                services_stack.add_dependencies(rds_root_stack.title)

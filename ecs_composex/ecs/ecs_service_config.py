@@ -46,6 +46,23 @@ def keyset_else_novalue(key, obj, else_value=None):
         return obj[key]
 
 
+def validate_healthcheck(healthcheck, valid_keys, required_keys):
+    """
+    Healthcheck definition validation
+
+    :param dict healthcheck:
+    :param list valid_keys:
+    :param list required_keys:
+    """
+    for key in healthcheck.keys():
+        if key not in valid_keys:
+            raise AttributeError(f"Key {key} is not valid. Expected", valid_keys)
+    if not all(required_keys) not in healthcheck.keys():
+        raise AttributeError(
+            f"Expected at least {required_keys}. Got", healthcheck.keys()
+        )
+
+
 def set_healthcheck(definition):
     """
     Function to set healtcheck configuration
@@ -63,23 +80,16 @@ def set_healthcheck(definition):
     required_keys = ["test"]
     if not keyisset(key, definition):
         return None
-    else:
-        healthcheck = definition[key]
-        for key in healthcheck.keys():
-            if key not in valid_keys:
-                raise AttributeError(f"Key {key} is not valid. Expected", valid_keys)
-        if not all(required_keys) not in healthcheck.keys():
-            raise AttributeError(
-                f"Expected at least {required_keys}. Got", healthcheck.keys()
-            )
-        params = {}
-        for key in healthcheck.keys():
-            params[attr_mappings[key]] = healthcheck[key]
-        if isinstance(params["Command"], str):
-            params["Command"] = [healthcheck["test"]]
-        if keyisset("Interval", params) and isinstance(params["Interval"], str):
-            params["Interval"] = int(healthcheck["interval"])
-        return HealthCheck(**params)
+    healthcheck = definition[key]
+    validate_healthcheck(healthcheck, valid_keys, required_keys)
+    params = {}
+    for key in healthcheck.keys():
+        params[attr_mappings[key]] = healthcheck[key]
+    if isinstance(params["Command"], str):
+        params["Command"] = [healthcheck["test"]]
+    if keyisset("Interval", params) and isinstance(params["Interval"], str):
+        params["Interval"] = int(healthcheck["interval"])
+    return HealthCheck(**params)
 
 
 def define_protocol(port_string):

@@ -143,6 +143,28 @@ def define_public_mapping(eips, azs):
     return public_mappings
 
 
+def handle_same_task_services_dependencies(
+    services_names, containers_config, config_key, priority_key
+):
+    for service_name in services_names:
+        service_config = containers_config[service_name][config_key]
+        if service_config.depends_on and any(
+            i in services_names for i in service_config.depends_on
+        ):
+            for count, dependency in enumerate(service_config.depends_on):
+                containers_config[dependency][priority_key] += 1
+                containers_config[dependency]["config"].essential = False
+                service_config.family_dependents.append(
+                    {
+                        "ContainerName": dependency,
+                        "Condition": "START"
+                        if not containers_config[dependency]["config"].healthcheck
+                        else "HEALTHY",
+                    }
+                )
+                service_config.depends_on.pop(count)
+
+
 class Task(object):
     """
     Class to handle the Task definition building and parsing along with the service config.
@@ -192,14 +214,6 @@ class Task(object):
             ),
         )
 
-    def add_appmesh_envoy(self, envoy_container, parameters):
-        """
-        Method to replay and update the definition to add the Envoy sidecar
-
-        :param ecs_composex.ecs.ecs_container.Conatainer envoy_container: The container to add to the definition
-        :param dict parameters: The stack parameters to update.
-        """
-
     def sort_container_configs(self, template, containers_config):
         """
         Method to sort out the containers dependencies and create the containers definitions based on the configs.
@@ -209,23 +223,9 @@ class Task(object):
         priority_key = "priority"
         services_names = list(containers_config.keys())
         unordered = []
-        for service_name in services_names:
-            service_config = containers_config[service_name][config_key]
-            if service_config.depends_on and any(
-                i in services_names for i in service_config.depends_on
-            ):
-                for count, dependency in enumerate(service_config.depends_on):
-                    containers_config[dependency][priority_key] += 1
-                    containers_config[dependency]["config"].essential = False
-                    service_config.family_dependents.append(
-                        {
-                            "ContainerName": dependency,
-                            "Condition": "START"
-                            if not containers_config[dependency]["config"].healthcheck
-                            else "HEALTHY",
-                        }
-                    )
-                    service_config.depends_on.pop(count)
+        handle_same_task_services_dependencies(
+            services_names, containers_config, config_key, priority_key
+        )
         for service in containers_config:
             unordered.append(containers_config[service])
         ordered_containers_config = sorted(unordered, key=lambda i: i["priority"])
@@ -263,6 +263,40 @@ class Task(object):
         if tasks_cpu > 0 and tasks_ram > 0:
             cpu_ram = find_closest_fargate_configuration(tasks_cpu, tasks_ram, True)
             self.stack_parameters.update({ecs_params.FARGATE_CPU_RAM_CONFIG_T: cpu_ram})
+
+
+def generate_security_group_props(allowed_source, service_name):
+    """
+    Function to parse the allowed source and create the SG Opening options accordingly.
+
+    :param dict allowed_source: The allowed source defined in configs
+    :param str service_name:
+    :return: security group ingress properties
+    :rtype: dict
+    """
+    props = {
+        "CidrIp": (
+            allowed_source["ipv4"]
+            if keyisset("ipv4", allowed_source)
+            else Ref(AWS_NO_VALUE)
+        ),
+        "CidrIpv6": (
+            allowed_source["ipv6"]
+            if keyisset("ipv6", allowed_source)
+            else Ref(AWS_NO_VALUE)
+        ),
+    }
+
+    if (
+        keyisset("CidrIp", props)
+        and isinstance(props["CidrIp"], str)
+        and not CIDR_PAT.match(props["CidrIp"])
+    ):
+        LOG.error(f"Falty IP Address: {allowed_source} - ecs_service {service_name}")
+        raise ValueError(
+            "Not a valid IPv4 CIDR notation", props["CidrIp"], "Expected", CIDR_REG,
+        )
+    return props
 
 
 class Service(object):
@@ -410,6 +444,34 @@ class Service(object):
                 ),
             )
 
+    def create_lb_ingress_rule(self, allowed_source, security_group, **props):
+        for port in self.config.ports:
+            if keyisset("source_name", allowed_source):
+                title = f"From{allowed_source['source_name'].title()}Onto{port['published']}{port['protocol']}"
+                description = Sub(
+                    f"From {allowed_source['source_name'].title()} "
+                    f"To {port['published']}{port['protocol']} for ${{{SERVICE_NAME_T}}}"
+                )
+            else:
+                title = (
+                    f"From{flatten_ip(allowed_source['ipv4'])}"
+                    "To{port['published']}{port['protocol']}"
+                )
+                description = Sub(
+                    f"Public {port['published']}{port['protocol']}"
+                    f" for ${{{SERVICE_NAME_T}}}"
+                )
+            SecurityGroupIngress(
+                title,
+                template=self.template,
+                Description=description,
+                GroupId=GetAtt(security_group, "GroupId"),
+                IpProtocol=port["protocol"],
+                FromPort=port["published"],
+                ToPort=port["published"],
+                **props,
+            )
+
     def add_public_security_group_ingress(self, security_group):
         """
         Method to add ingress rules from external sources to a given Security Group (ie. ALB Security Group).
@@ -425,67 +487,15 @@ class Service(object):
             ]
 
         for allowed_source in self.config.ext_sources:
-            props = {}
             if not keyisset("ipv4", allowed_source) and not keyisset(
                 "ipv6", allowed_source
             ):
                 LOG.warn("No IPv4 or IPv6 set. Skipping")
                 continue
-
-            props["CidrIp"] = (
-                allowed_source["ipv4"]
-                if keyisset("ipv4", allowed_source)
-                else Ref(AWS_NO_VALUE)
-            )
-            props["CidrIpv6"] = (
-                allowed_source["ipv6"]
-                if keyisset("ipv6", allowed_source)
-                else Ref(AWS_NO_VALUE)
-            )
-
-            if (
-                keyisset("CidrIp", props)
-                and isinstance(props["CidrIp"], str)
-                and not CIDR_PAT.match(props["CidrIp"])
-            ):
-                LOG.error(
-                    f"Falty IP Address: {allowed_source} - ecs_service {self.service_name}"
-                )
-                raise ValueError(
-                    "Not a valid IPv4 CIDR notation",
-                    props["CidrIp"],
-                    "Expected",
-                    CIDR_REG,
-                )
-
-            LOG.debug(f"Adding {allowed_source} for ingress")
-
-            for port in self.config.ports:
-                if keyisset("source_name", allowed_source):
-                    title = f"From{allowed_source['source_name'].title()}Onto{port['published']}{port['protocol']}"
-                    description = Sub(
-                        f"From {allowed_source['source_name'].title()} "
-                        f"To {port['published']}{port['protocol']} for ${{{SERVICE_NAME_T}}}"
-                    )
-                else:
-                    title = (
-                        f"From{flatten_ip(allowed_source['ipv4'])}"
-                        "To{port['published']}{port['protocol']}"
-                    )
-                    description = Sub(
-                        f"Public {port['published']}{port['protocol']}"
-                        f" for ${{{SERVICE_NAME_T}}}"
-                    )
-                SecurityGroupIngress(
-                    title,
-                    template=self.template,
-                    Description=description,
-                    GroupId=GetAtt(security_group, "GroupId"),
-                    IpProtocol=port["protocol"],
-                    FromPort=port["published"],
-                    ToPort=port["published"],
-                    **props,
-                )
+            props = generate_security_group_props(allowed_source, self.service_name)
+            if props:
+                LOG.debug(f"Adding {allowed_source} for ingress")
+                self.create_lb_ingress_rule(allowed_source, security_group, **props)
 
     def add_public_ips(self, azs):
         """

@@ -27,6 +27,31 @@ from ecs_composex.appmesh import appmesh_conditions
 from ecs_composex.common import NONALPHANUM, keyisset, LOG
 
 
+def define_http_route(route_match, route_nodes):
+    route = appmesh.HttpRoute(
+        Match=appmesh.HttpRouteMatch(
+            Prefix=route_match["prefix"]
+            if keyisset("prefix", route_match)
+            else Ref(AWS_NO_VALUE),
+            Scheme=route_match["scheme"]
+            if keyisset("scheme", route_match)
+            else Ref(AWS_NO_VALUE),
+            Method=route_match["method"]
+            if keyisset("method", route_match)
+            else Ref(AWS_NO_VALUE),
+        ),
+        Action=appmesh.HttpRouteAction(
+            WeightedTargets=[
+                appmesh.WeightedTarget(
+                    VirtualNode=node.get_node_param, Weight=node.weight,
+                )
+                for node in route_nodes
+            ]
+        ),
+    )
+    return route
+
+
 def define_route_name(route_match):
     """
     Function to create the route name for an AppMesh Router.
@@ -156,27 +181,7 @@ class MeshRouter(object):
                         f'node {node["name"]} is not defined as a virtual node.'
                     )
             route_match = route["match"]
-            route = appmesh.HttpRoute(
-                Match=appmesh.HttpRouteMatch(
-                    Prefix=route_match["prefix"]
-                    if keyisset("prefix", route_match)
-                    else Ref(AWS_NO_VALUE),
-                    Scheme=route_match["scheme"]
-                    if keyisset("scheme", route_match)
-                    else Ref(AWS_NO_VALUE),
-                    Method=route_match["method"]
-                    if keyisset("method", route_match)
-                    else Ref(AWS_NO_VALUE),
-                ),
-                Action=appmesh.HttpRouteAction(
-                    WeightedTargets=[
-                        appmesh.WeightedTarget(
-                            VirtualNode=node.get_node_param, Weight=node.weight,
-                        )
-                        for node in route_nodes
-                    ]
-                ),
-            )
+            route = define_http_route(route_match, route_nodes)
             self.nodes += [node for node in route_nodes]
             route_name = define_route_name(route_match)
             protocol = "HttpRoute"

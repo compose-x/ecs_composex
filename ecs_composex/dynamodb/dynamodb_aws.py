@@ -65,8 +65,7 @@ def get_tables_tags(session, tables_list):
     Function to go through all tables and retrieve their tags attributes.
 
     :param boto3.session.Session session:
-    :param tables_list:
-    :param tables:
+    :param list tables_list:
     :return:
     """
     tables = []
@@ -106,6 +105,20 @@ def get_tables_list(session, tables=None, next_token=None):
     return tables
 
 
+def evaluate_table_tags(table, filters):
+    tags = table["Tags"]
+    filters_match = 0
+    for tag in tags:
+        tag_key = tag["Key"]
+        tag_value = tag["Value"]
+        for filter_r in filters:
+            if isinstance(filter_r["Value"], bool):
+                filter_r["Value"] = str(filter_r["Value"])
+            if filter_r["Name"] == tag_key and filter_r["Value"] == tag_value:
+                filters_match += 1
+    return filters_match
+
+
 def lookup_dyn_table(session, tags, is_global=False):
     """
     Function to look up for table based on its tags
@@ -125,17 +138,7 @@ def lookup_dyn_table(session, tags, is_global=False):
         if not keyisset("Tags", table):
             LOG.debug(f"Table {table['Name']} has no tags. Skipping")
             continue
-        tags = table["Tags"]
-        filters_match = 0
-        for tag in tags:
-            tag_key = tag["Key"]
-            tag_value = tag["Value"]
-            for filter_r in filters:
-                if isinstance(filter_r["Value"], bool):
-                    filter_r["Value"] = str(filter_r["Value"])
-                if filter_r["Name"] == tag_key:
-                    if filter_r["Value"] == tag_value:
-                        filters_match += 1
+        filters_match = evaluate_table_tags(table, filters)
         LOG.debug(f"Filters count: {filters_count}. Match: {filters_match}")
         if filters_match == filters_count:
             matching_tables.append(table)
