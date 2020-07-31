@@ -28,19 +28,7 @@ from botocore.exceptions import ClientError
 from ecs_composex import __version__
 from ecs_composex.common import keyisset, LOG, load_composex_file
 from ecs_composex.common.aws import get_account_id, get_region_azs
-from ecs_composex.common.aws import (
-    lookup_vpc_id,
-    lookup_vpc_from_tags,
-    lookup_subnets_from_tags,
-    lookup_subnets_ids,
-)
 from ecs_composex.common.cfn_params import USE_FLEET_T
-from ecs_composex.vpc.vpc_params import (
-    VPC_ID_T,
-    PUBLIC_SUBNETS_T,
-    APP_SUBNETS_T,
-    STORAGE_SUBNETS_T,
-)
 from ecs_composex.utils.init_ecs import set_ecs_settings
 from ecs_composex.utils.init_s3 import create_bucket
 
@@ -109,9 +97,6 @@ class ComposeXSettings(object):
             else self.session.region_name
         )
         self.aws_azs = self.default_azs
-        self.vpc_private_namespace_id = None
-        self.vpc_private_namespace_zone_id = None
-        self.vpc_private_namespace_tld = None
 
         self.bucket_name = (
             None if not keyisset(self.bucket_arg, kwargs) else kwargs[self.bucket_arg]
@@ -142,7 +127,6 @@ class ComposeXSettings(object):
 
         self.set_output_settings(kwargs)
         self.name = kwargs[self.name_arg]
-        self.set_vpc(kwargs)
 
     def __repr__(self):
         return dumps(
@@ -183,38 +167,6 @@ class ComposeXSettings(object):
             self.init_s3()
             exit(0)
 
-    def set_vpc(self, kwargs):
-        """
-        Method to set the VPC settings.
-
-        :param kwargs: the execution arguments
-        """
-        if keyisset("x-vpc", self.compose_content):
-            if keyisset("Create", self.compose_content["x-vpc"]) and keyisset(
-                "Lookup", self.compose_content["x-vpc"]
-            ):
-                LOG.warning(
-                    "We have both Create and Lookup set for x-vpc. Applying default behaviour."
-                )
-                self.set_vpc_default_settings()
-            elif keyisset("Lookup", self.compose_content["x-vpc"]):
-                self.create_vpc = False
-                self.lookup_x_vpc_settings(self.compose_content["x-vpc"]["Lookup"])
-            elif keyisset("Create", self.compose_content["x-vpc"]):
-                self.create_vpc = True
-                self.set_x_vpc_settings(self.compose_content["x-vpc"]["Create"])
-
-            else:
-                LOG.error(
-                    "x-vpc indicated but neither Create or Update is indicated. Going with default behaviour"
-                )
-                self.set_vpc_default_settings()
-        elif not keyisset("x-vpc", self.compose_content):
-            LOG.warning(
-                "No x-vpc definition found in the docker-compose file. Creating a new VPC with default settings"
-            )
-            self.set_vpc_defaults(kwargs)
-
     def override_session(self, session, profile_name):
         """
         Method to set the session based on input params
@@ -243,141 +195,6 @@ class ComposeXSettings(object):
             if keyisset(self.output_dir_arg, kwargs)
             else self.default_output_dir
         )
-
-    def lookup_vpc_id(self, vpc_id_settings):
-        """
-        Method to confirm or find VPC ID
-
-        :param vpc_id_settings:
-        """
-        if isinstance(vpc_id_settings, str):
-            setattr(self, VPC_ID_T, lookup_vpc_id(self.session, vpc_id_settings))
-        elif (
-            isinstance(vpc_id_settings, dict)
-            and keyisset("tags", vpc_id_settings)
-            and isinstance(vpc_id_settings["tags"], list)
-        ):
-            setattr(
-                self,
-                VPC_ID_T,
-                lookup_vpc_from_tags(self.session, vpc_id_settings["tags"]),
-            )
-        else:
-            raise ValueError(
-                "VpcId is neither the VPC ID, the VPC Arn or a set of tags"
-            )
-
-    def lookup_subnets_ids(self, subnet_key, subnet_id_settings):
-        """
-        Method to confirm or find VPC ID
-
-        :param str subnet_key: Attribute name
-        :param subnet_id_settings:
-        """
-        if isinstance(subnet_id_settings, str):
-            setattr(
-                self,
-                subnet_key,
-                lookup_subnets_ids(
-                    self.session, subnet_id_settings.split(","), getattr(self, VPC_ID_T)
-                ),
-            )
-        elif isinstance(subnet_id_settings, list):
-            setattr(
-                self,
-                subnet_key,
-                lookup_subnets_ids(
-                    self.session, subnet_id_settings, getattr(self, VPC_ID_T)
-                ),
-            )
-        elif (
-            isinstance(subnet_id_settings, dict)
-            and keyisset("tags", subnet_id_settings)
-            and isinstance(subnet_id_settings["tags"], list)
-        ):
-            setattr(
-                self,
-                subnet_key,
-                lookup_subnets_from_tags(
-                    self.session,
-                    subnet_id_settings["tags"],
-                    getattr(self, VPC_ID_T),
-                    subnet_key,
-                ),
-            )
-        else:
-            raise ValueError(
-                "VpcId is neither the VPC ID, the VPC Arn or a set of tags"
-            )
-
-    def lookup_x_vpc_settings(self, settings):
-        """
-        Method to set VPC settings from x-vpc
-
-        :param dict settings:
-        :return:
-        """
-        required_keys = [VPC_ID_T, PUBLIC_SUBNETS_T, APP_SUBNETS_T, STORAGE_SUBNETS_T]
-        subnets_keys = [PUBLIC_SUBNETS_T, APP_SUBNETS_T, STORAGE_SUBNETS_T]
-        if not all(key in settings.keys() for key in required_keys):
-            raise KeyError(
-                "Missing keys for x-vpc Lookup. Got",
-                settings.keys(),
-                "Expected",
-                required_keys,
-            )
-        self.lookup_vpc = True
-        self.lookup_vpc_id(settings[VPC_ID_T])
-        for subnet_key in subnets_keys:
-            self.lookup_subnets_ids(subnet_key, settings[subnet_key])
-
-    def set_x_vpc_settings(self, settings):
-        """
-        Method to set VpcCreate from x-vpc
-
-        :param dict settings:
-        :return:
-        """
-        self.single_nat = (
-            settings[self.single_nat_arg]
-            if keyisset(self.single_nat_arg, settings)
-            else True
-        )
-        self.vpc_cidr = (
-            settings[self.vpc_cidr_arg]
-            if keyisset(self.vpc_cidr_arg, settings)
-            else self.default_vpc_cidr
-        )
-
-    def set_vpc_defaults(self, kwargs):
-        """
-        Method to set the values of subnets if present in kwargs
-
-        :param dict kwargs:
-        :return:
-        """
-        self.create_vpc = True
-        self.vpc_cidr = self.default_vpc_cidr
-        self.single_nat = True
-        setattr(self, VPC_ID_T, None)
-        setattr(self, APP_SUBNETS_T, None)
-        setattr(self, STORAGE_SUBNETS_T, None)
-        setattr(self, PUBLIC_SUBNETS_T, None)
-
-    def set_vpc_default_settings(self):
-        LOG.info(
-            f"Setting default VPC settings. Creating VPC and VPC CIDR is {self.default_vpc_cidr}"
-        )
-        self.create_vpc = True
-        self.vpc_cidr = self.default_vpc_cidr
-
-    def get_vpc_params(self):
-        return {
-            APP_SUBNETS_T: getattr(self, APP_SUBNETS_T),
-            STORAGE_SUBNETS_T: getattr(self, STORAGE_SUBNETS_T),
-            PUBLIC_SUBNETS_T: getattr(self, PUBLIC_SUBNETS_T),
-            VPC_ID_T: getattr(self, VPC_ID_T),
-        }
 
     def set_azs_from_api(self):
         """
