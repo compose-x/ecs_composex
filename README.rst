@@ -30,18 +30,44 @@ Usage
 
 .. code-block:: bash
 
-    usage: ecs-composex [-h] -n NAME -f DOCKERCOMPOSEXFILE [-d OUTPUTDIRECTORY]
-                        [--format {json,yaml,text}] [--region REGIONNAME]
-                        [--az ZONES] [-b BUCKETNAME] [--use-spot-fleet]
-                        {up,config,version} ...
+    usage: ecs_composex [-h] {up,config,version,init} ...
 
     positional arguments:
-      {up,config,version}   Command to execute.
+      {up,config,version,init}
+                            Command to execute.
         up                  Generates & Validates the CFN templates,
                             Creates/Updates stack in CFN
         config              Generates & Validates the CFN templates locally. No
                             upload to S3.
         version             ECS ComposeX Version
+        init                Initializes your AWS Account with prerequisites
+                            settings for ECS
+        version             ECS ComposeX Version
+
+    optional arguments:
+      -h, --help            show this help message and exit
+
+    Command 'up'
+    usage: ecs_composex up [-h] -n NAME -f DOCKERCOMPOSEXFILE [-d OUTPUTDIRECTORY]
+                           [--format {json,yaml,text}] [--region REGIONNAME]
+                           [--az ZONES] [-b BUCKETNAME] [--use-spot-fleet]
+
+    Command 'config'
+    usage: ecs_composex config [-h] -n NAME -f DOCKERCOMPOSEXFILE
+                               [-d OUTPUTDIRECTORY] [--format {json,yaml,text}]
+                               [--region REGIONNAME] [--az ZONES] [-b BUCKETNAME]
+                               [--use-spot-fleet]
+
+    Command 'version'
+    usage: ecs_composex version [-h]
+
+
+.. code-block:: bash
+    :caption: Up/Config subparser
+
+    usage: ecs_composex up [-h] -n NAME -f DOCKERCOMPOSEXFILE [-d OUTPUTDIRECTORY]
+                           [--format {json,yaml,text}] [--region REGIONNAME]
+                           [--az ZONES] [-b BUCKETNAME] [--use-spot-fleet]
 
     optional arguments:
       -h, --help            show this help message and exit
