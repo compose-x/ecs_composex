@@ -1,2 +1,2 @@
 troposphere==2.6.2
-boto3==1.14.28
+boto3==1.14.33
