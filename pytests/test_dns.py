@@ -70,11 +70,10 @@ def create_settings(updated_content, case_path):
         session=session,
         **{
             ComposeXSettings.name_arg: "test",
-            ComposeXSettings.command_arg: "config",
+            ComposeXSettings.command_arg: ComposeXSettings.no_upload_arg,
             ComposeXSettings.input_file_arg: path.abspath(
                 f"{here}/../use-cases/blog.yml"
             ),
-            ComposeXSettings.no_upload_arg: True,
             ComposeXSettings.format_arg: "yaml",
         },
     )

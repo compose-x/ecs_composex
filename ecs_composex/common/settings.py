@@ -21,6 +21,13 @@ Module for the ComposeXSettings class
 
 from datetime import datetime as dt
 from json import dumps
+from copy import deepcopy
+import yaml
+
+try:
+    from yaml import CDumper as Dumper
+except ImportError:
+    from yaml import Dumper
 
 import boto3
 from botocore.exceptions import ClientError
@@ -31,6 +38,119 @@ from ecs_composex.common.aws import get_account_id, get_region_azs
 from ecs_composex.common.cfn_params import USE_FLEET_T
 from ecs_composex.utils.init_ecs import set_ecs_settings
 from ecs_composex.utils.init_s3 import create_bucket
+from ecs_composex.ecs.ecs_service_config import set_service_ports
+from cfn_flip.yaml_dumper import LongCleanDumper
+
+
+def render_services_ports(services):
+    """
+    Function to set and render ports as docker-compose does for config
+
+    :param dict services:
+    :return:
+    """
+    for service_name in services:
+        if keyisset("ports", services[service_name]):
+            ports = set_service_ports(services[service_name]["ports"])
+            services[service_name]["ports"] = ports
+
+
+def merge_ports(source_ports, new_ports):
+    """
+    Function to merge two sections of ports
+
+    :param source_ports:
+    :param new_ports:
+    :return:
+    """
+    f_source_ports = set_service_ports(source_ports)
+    f_override_ports = set_service_ports(new_ports)
+    f_overide_ports_targets = [port["target"] for port in f_override_ports]
+    new_ports = []
+    for port in f_override_ports:
+        new_ports.append(port)
+        for s_port in f_source_ports:
+            if s_port["target"] not in f_overide_ports_targets:
+                new_ports.append(s_port)
+    return new_ports
+
+
+def merge_service_definition(original_def, override_def, nested=False):
+    """
+    Merges two services definitions if service exists in both compose files.
+
+    :param dict original_def:
+    :param dict override_def:
+    :return:
+    """
+    if not nested:
+        original_def = deepcopy(original_def)
+    for key in override_def.keys():
+        if (
+            isinstance(override_def[key], dict)
+            and keyisset(key, original_def)
+            and isinstance(original_def[key], dict)
+        ):
+            merge_service_definition(original_def[key], override_def[key], nested=True)
+        elif key not in original_def:
+            original_def[key] = override_def[key]
+        elif (
+            isinstance(override_def[key], list)
+            and key in original_def.keys()
+            and key != "ports"
+        ):
+            original_def[key] = list(
+                dict.fromkeys(original_def[key] + override_def[key])
+            )
+        elif (
+            isinstance(override_def[key], list)
+            and key in original_def.keys()
+            and key == "ports"
+        ):
+            original_def[key] = merge_ports(original_def[key], override_def[key])
+
+        elif not isinstance(override_def[key], (list, dict)):
+            original_def[key] = override_def[key]
+    return original_def
+
+
+def merge_config_file(original_content, override_content):
+    """
+    Function to merge two docker compose files content.
+
+    :param original_content:
+    :param override_content:
+    :return:
+    """
+
+    if not keyisset("services", original_content):
+        raise KeyError(
+            "No services defined in the source file. Keys found",
+            original_content.keys(),
+        )
+    if not keyisset("services", override_content):
+        return original_content.update(override_content)
+
+    original_services = deepcopy(original_content["services"])
+    override_services = override_content["services"]
+
+    for service_name in override_content["services"]:
+        if keyisset(service_name, original_services):
+            original_services.update(
+                {
+                    service_name: merge_service_definition(
+                        original_services[service_name],
+                        override_services[service_name],
+                    )
+                }
+            )
+        else:
+            original_content["services"].update(
+                {service_name: override_content["services"][service_name]}
+            )
+    original_content.update(override_content)
+    original_content["services"] = original_services
+    return original_content
 
 
 class ComposeXSettings(object):
@@ -49,7 +169,8 @@ class ComposeXSettings(object):
     zones_arg = "Zones"
 
     deploy_arg = "up"
-    no_upload_arg = "config"
+    no_upload_arg = "render"
+    config_render_arg = "config"
     command_arg = "command"
 
     bucket_arg = "BucketName"
@@ -66,16 +187,21 @@ class ComposeXSettings(object):
     default_azs = ["eu-west-1a", "eu-west-1b"]
     default_output_dir = f"/tmp/{dt.utcnow().strftime('%s')}"
 
-    commands = [
+    active_commands = [
         {
-            "name": "up",
+            "name": deploy_arg,
             "help": "Generates & Validates the CFN templates, Creates/Updates stack in CFN",
         },
         {
-            "name": "config",
-            "help": "Generates & Validates the CFN templates locally. No upload to S3.",
+            "name": no_upload_arg,
+            "help": "Merges docker-compose files to provide with the final compose content version",
         },
-        {"name": "version", "help": "ECS ComposeX Version"},
+    ]
+    validation_commands = [
+        {
+            "name": config_render_arg,
+            "help": "Generates & Validates the CFN templates locally. No upload to S3",
+        }
     ]
     neutral_commands = [
         {
@@ -84,6 +210,7 @@ class ComposeXSettings(object):
         },
         {"name": "version", "help": "ECS ComposeX Version"},
     ]
+    all_commands = active_commands + validation_commands + neutral_commands
 
     def __init__(self, content=None, profile_name=None, session=None, **kwargs):
         """
@@ -114,16 +241,12 @@ class ComposeXSettings(object):
 
         self.upload = False if self.no_upload else True
         self.create_compute = False if not keyisset(USE_FLEET_T, kwargs) else True
-        self.parse_command(kwargs)
-
-        if content is None:
-            self.compose_content = load_composex_file(kwargs[self.input_file_arg])
-        elif content and isinstance(content, dict):
-            self.compose_content = content
-
+        self.parse_command(kwargs, content)
+        self.compose_content = None
         self.input_file = (
             kwargs[self.input_file_arg] if keyisset(self.input_file_arg, kwargs) else {}
         )
+        self.set_content(kwargs, content)
 
         self.set_output_settings(kwargs)
         self.name = kwargs[self.name_arg]
@@ -140,17 +263,39 @@ class ComposeXSettings(object):
             indent=4,
         )
 
-    def parse_command(self, kwargs):
+    def set_content(self, kwargs, content=None):
+        """
+        Method to initialize the compose content
+
+        :param dict kwargs:
+        :param dict content:
+        :return:
+        """
+        if content is None and len(kwargs[self.input_file_arg]) == 1:
+            self.compose_content = load_composex_file(kwargs[self.input_file_arg][0])
+        elif content is None and len(kwargs[self.input_file_arg]) > 1:
+            files_list = kwargs[self.input_file_arg]
+            source_content = load_composex_file(files_list[0])
+            files_list.pop(0)
+            for file in files_list:
+                self.compose_content = merge_config_file(
+                    source_content, load_composex_file(file)
+                )
+        elif content and isinstance(content, dict):
+            self.compose_content = content
+        if keyisset("services", self.compose_content):
+            render_services_ports(self.compose_content["services"])
+
+    def parse_command(self, kwargs, content=None):
         """
         Method to analyze the command and set execution settings accordingly.
 
-        :param kwargs:
+        :param dict kwargs:
+        :param dict content:
         :return:
         """
         command = kwargs[self.command_arg]
-        command_names = [cmd["name"] for cmd in self.commands] + [
-            cmd["name"] for cmd in self.neutral_commands
-        ]
+        command_names = [cmd["name"] for cmd in self.all_commands]
         if command not in command_names:
             exit(1)
         if command == self.deploy_arg:
@@ -159,6 +304,10 @@ class ComposeXSettings(object):
         elif command == self.no_upload_arg:
             self.no_upload = True
             self.upload = not self.no_upload
+        elif command == self.config_render_arg:
+            self.set_content(kwargs, content)
+            print(yaml.dump(self.compose_content, Dumper=LongCleanDumper))
+            exit()
         elif command == "version":
             print("ECS ComposeX", __version__)
             exit(0)

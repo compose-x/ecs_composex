@@ -47,9 +47,37 @@ def step_impl(context, file_path):
         else None,
         **{
             ComposeXSettings.name_arg: "test",
-            ComposeXSettings.command_arg: "config",
-            ComposeXSettings.input_file_arg: cases_path,
-            ComposeXSettings.no_upload_arg: True,
+            ComposeXSettings.command_arg: ComposeXSettings.no_upload_arg,
+            ComposeXSettings.input_file_arg: [cases_path],
+            ComposeXSettings.format_arg: "yaml",
+        },
+    )
+    context.settings.set_azs_from_api()
+    context.settings.set_bucket_name_from_account_id()
+
+
+@given(
+    "I use {file_path} as my docker-compose file and {override_file} as override file"
+)
+def step_impl(context, file_path, override_file):
+    """
+    Function to import the Docker file from use-cases.
+
+    :param context:
+    :param str file_path:
+    :param str override_file:
+    :return:
+    """
+    cases_path = path.abspath(f"{here()}/../{file_path}")
+    override_path = path.abspath(f"{here()}/../{override_file}")
+    context.settings = ComposeXSettings(
+        profile_name=getattr(context, "profile_name")
+        if hasattr(context, "profile_name")
+        else None,
+        **{
+            ComposeXSettings.name_arg: "test",
+            ComposeXSettings.command_arg: ComposeXSettings.no_upload_arg,
+            ComposeXSettings.input_file_arg: [cases_path, override_path],
             ComposeXSettings.format_arg: "yaml",
         },
     )

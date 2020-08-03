@@ -13,6 +13,7 @@ services:
     image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-01-rproxy:latest
     ports:
       - 80:80
+      - 443:443
     deploy:
       replicas: 2
       resources:
@@ -79,7 +80,3 @@ services:
       LOGLEVEL: DEBUG
     x-configs:
       use_xray: True
-
-x-tags:
-  owner: johnpreston
-  contact: john@lambda-my-aws.io
