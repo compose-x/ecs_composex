@@ -194,13 +194,13 @@ class ComposeXSettings(object):
         },
         {
             "name": no_upload_arg,
-            "help": "Merges docker-compose files to provide with the final compose content version",
+            "help": "Generates & Validates the CFN templates locally. No upload to S3",
         },
     ]
     validation_commands = [
         {
             "name": config_render_arg,
-            "help": "Generates & Validates the CFN templates locally. No upload to S3",
+            "help": "Merges docker-compose files to provide with the final compose content version",
         }
     ]
     neutral_commands = [
