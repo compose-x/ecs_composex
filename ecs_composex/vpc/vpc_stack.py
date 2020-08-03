@@ -72,10 +72,13 @@ def define_create_settings(create_def):
     return create_settings
 
 
-def create_new_vpc(vpc_xkey, settings):
-    create_settings = define_create_settings(
-        settings.compose_content[vpc_xkey]["Create"]
-    )
+def create_new_vpc(vpc_xkey, settings, default=False):
+    if not default:
+        create_settings = define_create_settings(
+            settings.compose_content[vpc_xkey]["Create"]
+        )
+    else:
+        create_settings = {VPC_CIDR.title: DEFAULT_VPC_CIDR, VPC_SINGLE_NAT.title: True}
     vpc_stack = VpcStack(RES_KEY, settings, create_settings)
     vpc_stack.add_parameter(
         {
@@ -127,7 +130,7 @@ def add_vpc_to_root(root_stack, settings):
             vpc_stack = create_new_vpc(vpc_xkey, settings)
     else:
         LOG.info(f"No {vpc_xkey} detected. Creating a new VPC.")
-        vpc_stack = create_new_vpc(vpc_xkey, settings)
+        vpc_stack = create_new_vpc(vpc_xkey, settings, default=True)
     if isinstance(vpc_stack, VpcStack):
         root_stack.stack_template.add_resource(vpc_stack)
     return vpc_stack
