@@ -50,8 +50,7 @@ def test_lookup(existing_cluster, nonexisting_cluster):
         session=session,
         **{
             ComposeXSettings.name_arg: "test",
-            ComposeXSettings.command_arg: "config",
-            ComposeXSettings.no_upload_arg: True,
+            ComposeXSettings.command_arg: ComposeXSettings.no_upload_arg,
             ComposeXSettings.format_arg: "yaml",
         },
     )
@@ -65,8 +64,7 @@ def test_lookup(existing_cluster, nonexisting_cluster):
         session=session,
         **{
             ComposeXSettings.name_arg: "test",
-            ComposeXSettings.command_arg: "config",
-            ComposeXSettings.no_upload_arg: True,
+            ComposeXSettings.command_arg: ComposeXSettings.no_upload_arg,
             ComposeXSettings.format_arg: "yaml",
         },
     )

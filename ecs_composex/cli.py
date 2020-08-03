@@ -49,7 +49,11 @@ class ArgparseHelper(argparse._HelpAction):
         ]
         for subparsers_action in subparsers_actions:
             for choice, subparser in list(subparsers_action.choices.items()):
-                if choice in [cmd["name"] for cmd in ComposeXSettings.commands]:
+                if choice in [
+                    cmd["name"] for cmd in ComposeXSettings.active_commands
+                ] or choice in [
+                    cmd["name"] for cmd in ComposeXSettings.validation_commands
+                ]:
                     print(f"Command '{choice}'")
                     print(subparser.format_usage())
 
@@ -66,22 +70,16 @@ def main_parser():
         dest=ComposeXSettings.command_arg, help="Command to execute."
     )
     base_command_parser = argparse.ArgumentParser(add_help=False)
-    base_command_parser.add_argument(
-        "-n",
-        "--name",
-        help="Name of your stack",
-        required=True,
-        type=str,
-        dest=ComposeXSettings.name_arg,
-    )
-    base_command_parser.add_argument(
+    files_parser = argparse.ArgumentParser(add_help=False)
+    files_parser.add_argument(
         "-f",
         "--docker-compose-file",
         dest=ComposeXSettings.input_file_arg,
         required=True,
         help="Path to the Docker compose file",
+        action="append",
     )
-    base_command_parser.add_argument(
+    files_parser.add_argument(
         "-d",
         "--output-dir",
         required=False,
@@ -89,6 +87,14 @@ def main_parser():
         type=str,
         dest=ComposeXSettings.output_dir_arg,
         default=ComposeXSettings.default_output_dir,
+    )
+    base_command_parser.add_argument(
+        "-n",
+        "--name",
+        help="Name of your stack",
+        required=True,
+        type=str,
+        dest=ComposeXSettings.name_arg,
     )
     base_command_parser.add_argument(
         "--format",
@@ -132,10 +138,17 @@ def main_parser():
         help="Runs spotfleet for EC2. If used in combination "
         "of --use-fargate, it will create an additional SpotFleet",
     )
-    for command in ComposeXSettings.commands:
+    for command in ComposeXSettings.active_commands:
         cmd_parsers.add_parser(
-            name=command["name"], help=command["help"], parents=[base_command_parser]
+            name=command["name"],
+            help=command["help"],
+            parents=[base_command_parser, files_parser],
         )
+    for command in ComposeXSettings.validation_commands:
+        cmd_parsers.add_parser(
+            name=command["name"], help=command["help"], parents=[files_parser]
+        )
+
     for command in ComposeXSettings.neutral_commands:
         cmd_parsers.add_parser(name=command["name"], help=command["help"])
     return parser
@@ -151,6 +164,7 @@ def main():
         parser.print_help()
         sys.exit()
     args = parser.parse_args()
+    LOG.debug(args)
     settings = ComposeXSettings(**vars(args))
     settings.set_bucket_name_from_account_id()
     settings.set_azs_from_api()

@@ -30,16 +30,17 @@ Usage
 
 .. code-block:: bash
 
-    usage: ecs_composex [-h] {up,config,version,init} ...
+    usage: ecs-composex [-h] {up,render,config,init,version} ...
 
     positional arguments:
-      {up,config,version,init}
-                            Command to execute.
+      {up,render,config,init,version}
+
         up                  Generates & Validates the CFN templates,
                             Creates/Updates stack in CFN
-        config              Generates & Validates the CFN templates locally. No
-                            upload to S3.
-        version             ECS ComposeX Version
+        render              Generates & Validates the CFN templates locally. No
+                            upload to S3
+        config              Merges docker-compose files to provide with the final
+                            compose content version
         init                Initializes your AWS Account with prerequisites
                             settings for ECS
         version             ECS ComposeX Version
@@ -48,21 +49,23 @@ Usage
       -h, --help            show this help message and exit
 
     Command 'up'
-    usage: ecs_composex up [-h] -n NAME -f DOCKERCOMPOSEXFILE [-d OUTPUTDIRECTORY]
-                           [--format {json,yaml,text}] [--region REGIONNAME]
-                           [--az ZONES] [-b BUCKETNAME] [--use-spot-fleet]
+    usage: ecs-composex up [-h] -n NAME [--format {json,yaml,text}]
+                           [--region REGIONNAME] [--az ZONES] [-b BUCKETNAME]
+                           [--use-spot-fleet] -f DOCKERCOMPOSEXFILE
+                           [-d OUTPUTDIRECTORY]
+
+    Command 'render'
+    usage: ecs-composex render [-h] -n NAME [--format {json,yaml,text}]
+                               [--region REGIONNAME] [--az ZONES] [-b BUCKETNAME]
+                               [--use-spot-fleet] -f DOCKERCOMPOSEXFILE
+                               [-d OUTPUTDIRECTORY]
 
     Command 'config'
-    usage: ecs_composex config [-h] -n NAME -f DOCKERCOMPOSEXFILE
-                               [-d OUTPUTDIRECTORY] [--format {json,yaml,text}]
-                               [--region REGIONNAME] [--az ZONES] [-b BUCKETNAME]
-                               [--use-spot-fleet]
-
-    Command 'version'
-    usage: ecs_composex version [-h]
+    usage: ecs-composex config [-h] -f DOCKERCOMPOSEXFILE [-d OUTPUTDIRECTORY]
 
 
-CLI for `up` and `config`
+
+CLI for `up` and `render`
 
 .. code-block:: bash
 
@@ -87,6 +90,21 @@ CLI for `up` and `config`
                             Bucket name to upload the templates to
       --use-spot-fleet      Runs spotfleet for EC2. If used in combination of
                             --use-fargate, it will create an additional SpotFleet
+
+
+CLI for `config`
+
+.. code-block:: bash
+
+    usage: ecs-composex config [-h] -f DOCKERCOMPOSEXFILE [-d OUTPUTDIRECTORY]
+
+    optional arguments:
+      -h, --help            show this help message and exit
+      -f DOCKERCOMPOSEXFILE, --docker-compose-file DOCKERCOMPOSEXFILE
+                            Path to the Docker compose file
+      -d OUTPUTDIRECTORY, --output-dir OUTPUTDIRECTORY
+                            Output directory to write all the templates to.
+
 
 
 AWS Resources support

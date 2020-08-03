@@ -1,15 +1,15 @@
 Feature: ecs_composex.appmesh
   @appmesh
   Scenario Outline: Mesh created with the services
-    Given I use <file_path> as my docker-compose file
+    Given I use <file_path> as my docker-compose file and <override_file> as override file
     And I want to create a VPC
     And I want to create a Cluster
     And I render the docker-compose to composex
     Then I should have a mesh created
 
     Examples:
-    |file_path|
-    |use-cases/blog.with_mesh.yml|
+    |file_path|override_file|
+    |use-cases/blog.yml|use-cases/blog.with_mesh.yml|
 
   @appmesh
   Scenario Outline: Shared or existing mesh

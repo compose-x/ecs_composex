@@ -16,8 +16,6 @@ services:
         limits:
           cpus: "0.25"
           memory: "64M"
-      labels:
-        ecs.task.family: app01
     x-configs:
       network:
         is_public: True
@@ -33,8 +31,6 @@ services:
         reservations:
           cpus: "0.25"
           memory: "64M"
-      labels:
-        ecs.task.family: app01
     environment:
       LOGLEVEL: DEBUG
     x-configs:
@@ -51,8 +47,6 @@ services:
         reservations:
           cpus: "0.25"
           memory: "64M"
-      labels:
-        ecs.task.family: app02
     environment:
       LOGLEVEL: DEBUG
     x-configs:
@@ -67,8 +61,6 @@ services:
         reservations:
           cpus: "0.25"
           memory: "64M"
-      labels:
-        ecs.task.family: app03
     environment:
       LOGLEVEL: DEBUG
     x-configs:
