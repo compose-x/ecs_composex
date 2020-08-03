@@ -61,19 +61,12 @@ from ecs_composex.ecs.ecs_params import (
 )
 from ecs_composex.ecs.ecs_template import define_services_families
 from ecs_composex.vpc import vpc_params
-from ecs_composex.vpc.vpc_stack import VpcStack
+from ecs_composex.vpc.vpc_stack import add_vpc_to_root
 
 RES_REGX = re.compile(r"(^([x-]+))")
 COMPUTE_STACK_NAME = "Ec2Compute"
 VPC_STACK_NAME = "vpc"
 MESH_TITLE = "RootMesh"
-
-VPC_ARGS = [
-    vpc_params.PUBLIC_SUBNETS_T,
-    vpc_params.APP_SUBNETS_T,
-    vpc_params.STORAGE_SUBNETS_T,
-    vpc_params.VPC_ID_T,
-]
 
 SUPPORTED_X_MODULES = [
     f"{X_KEY}rds",
@@ -315,52 +308,6 @@ def init_root_template():
     return template
 
 
-def create_vpc_root(root_stack, settings):
-    """
-    Function to figure whether to create the VPC Stack and if not, set the parameters.
-
-    :param root_stack:
-    :param settings:
-    :return:
-    """
-    vpc_stack = None
-    if settings.create_vpc:
-        vpc_stack = VpcStack(VPC_STACK_NAME, settings)
-        vpc_stack.add_parameter(
-            {
-                dns_params.PRIVATE_DNS_ZONE_NAME.title: If(
-                    dns_conditions.USE_DEFAULT_ZONE_NAME_CON_T,
-                    dns_params.DEFAULT_PRIVATE_DNS_ZONE,
-                    Ref(dns_params.PRIVATE_DNS_ZONE_NAME),
-                ),
-            }
-        )
-    else:
-        add_parameters(
-            root_stack.stack_template,
-            [
-                vpc_params.VPC_ID,
-                vpc_params.APP_SUBNETS,
-                vpc_params.STORAGE_SUBNETS,
-                vpc_params.PUBLIC_SUBNETS,
-            ],
-        )
-        settings_params = {
-            vpc_params.VPC_ID.title: getattr(settings, vpc_params.VPC_ID_T),
-            vpc_params.APP_SUBNETS.title: getattr(settings, vpc_params.APP_SUBNETS_T),
-            vpc_params.STORAGE_SUBNETS.title: getattr(
-                settings, vpc_params.STORAGE_SUBNETS_T
-            ),
-            vpc_params.PUBLIC_SUBNETS.title: getattr(
-                settings, vpc_params.PUBLIC_SUBNETS_T
-            ),
-        }
-        root_stack.Parameters.update(settings_params)
-    if isinstance(vpc_stack, VpcStack):
-        root_stack.stack_template.add_resource(vpc_stack)
-    return vpc_stack
-
-
 def generate_full_template(settings):
     """
     Function to generate the root root_template
@@ -372,7 +319,7 @@ def generate_full_template(settings):
     LOG.debug(settings)
     root_stack = ComposeXStack(settings.name, stack_template=init_root_template())
     dns_inputs(root_stack)
-    vpc_stack = create_vpc_root(root_stack, settings)
+    vpc_stack = add_vpc_to_root(root_stack, settings)
     dns_settings = DnsSettings(root_stack, settings, get_vpc_id(vpc_stack))
     root_stack.Parameters.update(dns_settings.root_params)
     create_cluster = add_ecs_cluster(settings, root_stack)

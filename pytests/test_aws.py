@@ -16,14 +16,24 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from os import path
-import pytest
-import placebo
+
 import boto3
-from ecs_composex.common.settings import ComposeXSettings
+import placebo
+import pytest
+from troposphere import Template
+
 from ecs_composex.common import load_composex_file
-from ecs_composex.vpc.vpc_params import VPC_ID_T
+from ecs_composex.common.settings import ComposeXSettings
+from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.utils.init_ecs import set_ecs_settings
 from ecs_composex.utils.init_s3 import create_bucket
+from ecs_composex.vpc.vpc_stack import add_vpc_to_root
+
+
+@pytest.fixture()
+def root_stack():
+    tpl = Template("Template for testing")
+    return ComposeXStack("root", stack_template=tpl)
 
 
 @pytest.fixture
@@ -151,52 +161,58 @@ def create_settings(updated_content, case_path):
     return settings
 
 
-def test_vpc_import_from_tags(content, x_vpc_tags):
+def test_vpc_import_from_tags(content, root_stack, x_vpc_tags):
     content.update({"x-vpc": {"Lookup": x_vpc_tags}})
     settings = create_settings(content, "x_vpc")
-    assert hasattr(settings, VPC_ID_T) and getattr(settings, VPC_ID_T) is not None
     with pytest.raises(ValueError):
         """Validates double VPC raises an error"""
-        settings.lookup_x_vpc_settings(x_vpc_tags)
+        add_vpc_to_root(root_stack, settings)
+        add_vpc_to_root(root_stack, settings)
 
 
-def test_vpc_import_from_arn(content, x_vpc_arn):
+def test_vpc_import_from_arn(content, root_stack, x_vpc_arn):
     content.update({"x-vpc": {"Lookup": x_vpc_arn}})
     settings = create_settings(content, "x_vpc")
-    assert hasattr(settings, VPC_ID_T) and getattr(settings, VPC_ID_T) is not None
+    vpc_stack = add_vpc_to_root(root_stack, settings)
+    assert vpc_stack is None
 
 
-def test_vpc_import_from_id(content, x_vpc_id):
+def test_vpc_import_from_id(content, root_stack, x_vpc_id):
     content.update({"x-vpc": {"Lookup": x_vpc_id}})
     settings = create_settings(content, "x_vpc")
-    assert hasattr(settings, VPC_ID_T) and getattr(settings, VPC_ID_T) is not None
+    vpc_stack = add_vpc_to_root(root_stack, settings)
+    assert vpc_stack is None
 
 
 def test_negative_testing_vpc(content, invalid_x_vpc_id, invalid_x_vpc_arn):
     content.update({"x-vpc": {"Lookup": invalid_x_vpc_id}})
+    settings = create_settings(content, "x_vpc")
     with pytest.raises(ValueError):
-        settings = create_settings(content, "x_vpc")
+        add_vpc_to_root(root_stack, settings)
     content.update({"x-vpc": {"Lookup": invalid_x_vpc_arn}})
     with pytest.raises(ValueError):
-        settings = create_settings(content, "x_vpc")
+        add_vpc_to_root(root_stack, settings)
 
 
 def test_negative_testing_subnets(
-    content, invalid_x_subnets_ids, invalid_x_subnets_ids_list
+    content, root_stack, invalid_x_subnets_ids, invalid_x_subnets_ids_list
 ):
     content.update({"x-vpc": {"Lookup": invalid_x_subnets_ids}})
     with pytest.raises(ValueError):
         settings = create_settings(content, "x_vpc")
+        add_vpc_to_root(root_stack, settings)
     content.update({"x-vpc": {"Lookup": invalid_x_subnets_ids_list}})
     with pytest.raises(ValueError):
         settings = create_settings(content, "x_vpc")
+        add_vpc_to_root(root_stack, settings)
 
     with pytest.raises(ValueError):
         """On 4th call, no subnets are returned"""
         settings = create_settings(content, "x_vpc")
-        settings = create_settings(content, "x_vpc")
-        settings = create_settings(content, "x_vpc")
-        settings = create_settings(content, "x_vpc")
+        add_vpc_to_root(root_stack, settings)
+        add_vpc_to_root(root_stack, settings)
+        add_vpc_to_root(root_stack, settings)
+        add_vpc_to_root(root_stack, settings)
 
 
 def test_ecs_settings():

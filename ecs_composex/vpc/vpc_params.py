@@ -30,10 +30,18 @@ AZS_TYPE = "List<AWS::EC2::AvailabilityZone::Name>"
 SG_ID_TYPE = "AWS::EC2::SecurityGroup::Id"
 SG_NAME_TYPE = "AWS::EC2::SecurityGroup::GroupName"
 
-RES_KEY = "vpc"
+DEFAULT_VPC_CIDR = "100.64.72.0/24"
+DEFAULT_SINGLE_NAT = True
 
+RES_KEY = "vpc"
 VPC_ID_T = "VpcId"
 VPC_ID = Parameter(VPC_ID_T, Type=VPC_TYPE)
+
+VPC_CIDR_T = "VpcCidr"
+VPC_CIDR = Parameter(VPC_CIDR_T, Type="String", Default=DEFAULT_VPC_CIDR)
+
+VPC_SINGLE_NAT_T = "SingleNat"
+VPC_SINGLE_NAT = Parameter(VPC_SINGLE_NAT_T, Type="String", Default="True")
 
 STORAGE_SUBNETS_CIDR_T = "StorageSubnetsCidr"
 STORAGE_SUBNETS_CIDR = Parameter(STORAGE_SUBNETS_CIDR_T, Type="CommaDelimitedList")

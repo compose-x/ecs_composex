@@ -19,8 +19,25 @@
 Module for VpcStack
 """
 
+from troposphere import Ref, If
+
+from ecs_composex.common.ecs_composex import X_KEY
+from ecs_composex.common import add_parameters, LOG
+from ecs_composex.common import keyisset
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.vpc.vpc_template import generate_vpc_template
+from ecs_composex.vpc.vpc_params import (
+    RES_KEY,
+    VPC_ID,
+    APP_SUBNETS,
+    STORAGE_SUBNETS,
+    PUBLIC_SUBNETS,
+    DEFAULT_VPC_CIDR,
+    VPC_CIDR,
+    VPC_SINGLE_NAT,
+)
+from ecs_composex.dns import dns_params, dns_conditions
+from ecs_composex.vpc.vpc_aws import lookup_x_vpc_settings
 
 
 class VpcStack(ComposeXStack):
@@ -28,8 +45,92 @@ class VpcStack(ComposeXStack):
     Class to create the VPC Stack
     """
 
-    def __init__(self, title, settings, **kwargs):
+    def __init__(self, title, settings, vpc_settings, **kwargs):
         template = generate_vpc_template(
-            settings.vpc_cidr, settings.aws_azs, single_nat=settings.single_nat
+            cidr_block=vpc_settings[VPC_CIDR.title],
+            azs=settings.aws_azs,
+            single_nat=vpc_settings[VPC_SINGLE_NAT.title],
         )
         super().__init__(title, stack_template=template, **kwargs)
+
+
+def define_create_settings(create_def):
+    """
+    Function to create the VPC creation settings
+
+    :param dict create_def:
+    :return:
+    """
+    create_settings = {
+        VPC_CIDR.title: create_def[VPC_CIDR.title]
+        if keyisset(VPC_CIDR.title, create_def)
+        else DEFAULT_VPC_CIDR,
+        VPC_SINGLE_NAT.title: True
+        if not keyisset(VPC_SINGLE_NAT.title, create_def)
+        else create_def[VPC_SINGLE_NAT.title],
+    }
+    return create_settings
+
+
+def create_new_vpc(vpc_xkey, settings, default=False):
+    if not default:
+        create_settings = define_create_settings(
+            settings.compose_content[vpc_xkey]["Create"]
+        )
+    else:
+        create_settings = {VPC_CIDR.title: DEFAULT_VPC_CIDR, VPC_SINGLE_NAT.title: True}
+    vpc_stack = VpcStack(RES_KEY, settings, create_settings)
+    vpc_stack.add_parameter(
+        {
+            dns_params.PRIVATE_DNS_ZONE_NAME.title: If(
+                dns_conditions.USE_DEFAULT_ZONE_NAME_CON_T,
+                dns_params.DEFAULT_PRIVATE_DNS_ZONE,
+                Ref(dns_params.PRIVATE_DNS_ZONE_NAME),
+            ),
+        }
+    )
+    return vpc_stack
+
+
+def add_vpc_to_root(root_stack, settings):
+    """
+    Function to figure whether to create the VPC Stack and if not, set the parameters.
+
+    :param root_stack:
+    :param settings:
+    :return: vpc_stack
+    :rtype: VpcStack
+    """
+    vpc_stack = None
+    vpc_xkey = f"{X_KEY}{RES_KEY}"
+
+    if keyisset(vpc_xkey, settings.compose_content):
+        if keyisset("Lookup", settings.compose_content[vpc_xkey]):
+            x_settings = lookup_x_vpc_settings(
+                settings.session, settings.compose_content[vpc_xkey]["Lookup"]
+            )
+            add_parameters(
+                root_stack.stack_template,
+                [VPC_ID, APP_SUBNETS, STORAGE_SUBNETS, PUBLIC_SUBNETS,],
+            )
+            settings_params = {
+                VPC_ID.title: x_settings[VPC_ID.title],
+                APP_SUBNETS.title: x_settings[APP_SUBNETS.title],
+                STORAGE_SUBNETS.title: x_settings[STORAGE_SUBNETS.title],
+                PUBLIC_SUBNETS.title: x_settings[PUBLIC_SUBNETS.title],
+            }
+            root_stack.Parameters.update(settings_params)
+        else:
+            if keyisset("Create", settings.compose_content[vpc_xkey]) and keyisset(
+                "Lookup", settings.compose_content[vpc_xkey]
+            ):
+                LOG.warning(
+                    "We have both Create and Lookup set for x-vpc." "Creating a new VPC"
+                )
+            vpc_stack = create_new_vpc(vpc_xkey, settings)
+    else:
+        LOG.info(f"No {vpc_xkey} detected. Creating a new VPC.")
+        vpc_stack = create_new_vpc(vpc_xkey, settings, default=True)
+    if isinstance(vpc_stack, VpcStack):
+        root_stack.stack_template.add_resource(vpc_stack)
+    return vpc_stack
