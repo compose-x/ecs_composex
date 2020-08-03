@@ -29,6 +29,7 @@ Usage
 =====
 
 .. code-block:: bash
+    :caption: Top level CLI
 
     usage: ecs_composex [-h] {up,config,version,init} ...
 
@@ -62,8 +63,9 @@ Usage
     usage: ecs_composex version [-h]
 
 
+
 .. code-block:: bash
-    :caption: Up/Config subparser
+    :caption: Up/Config CLI
 
     usage: ecs_composex up [-h] -n NAME -f DOCKERCOMPOSEXFILE [-d OUTPUTDIRECTORY]
                            [--format {json,yaml,text}] [--region REGIONNAME]

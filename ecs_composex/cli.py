@@ -149,7 +149,7 @@ def main():
     parser = main_parser()
     if len(sys.argv) == 1:
         parser.print_help()
-        sys.exit(0)
+        sys.exit()
     args = parser.parse_args()
     settings = ComposeXSettings(**vars(args))
     settings.set_bucket_name_from_account_id()

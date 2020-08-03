@@ -67,12 +67,6 @@ setup(
             "composex=ecs_composex.cli:main",
             "ecs-composex=ecs_composex.cli:main",
             "ecs_composex=ecs_composex.cli:main",
-            "ecs_composex-compute=ecs_composex.compute.cli:main",
-            "ecs_composex-vpc=ecs_composex.vpc.cli:main",
-            "ecs_composex-sqs=ecs_composex.sqs.cli:main",
-            "ecs_composex-rds=ecs_composex.rds.cli:main",
-            "ecs_composex-sns=ecs_composex.sns.cli:main",
-            "ecs_composex-acm=ecs_composex.acm.cli:main",
         ]
     },
     install_requires=requirements,

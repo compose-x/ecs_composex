@@ -29,6 +29,7 @@ Usage
 =====
 
 .. code-block:: bash
+    :caption: Top level CLI
 
     usage: ecs_composex [-h] {up,config,version,init} ...
 
@@ -62,8 +63,9 @@ Usage
     usage: ecs_composex version [-h]
 
 
+
 .. code-block:: bash
-    :caption: Up/Config subparser
+    :caption: Up/Config CLI
 
     usage: ecs_composex up [-h] -n NAME -f DOCKERCOMPOSEXFILE [-d OUTPUTDIRECTORY]
                            [--format {json,yaml,text}] [--region REGIONNAME]
@@ -87,10 +89,6 @@ Usage
       --use-spot-fleet      Runs spotfleet for EC2. If used in combination of
                             --use-fargate, it will create an additional SpotFleet
 
-.. note::
-
-    Each component can also use the docker-compose file but be deployed on its own, allowing, for production workloads,
-    to deploy each component separately to avoid dependencies on each other.
 
 AWS Resources support
 =====================
