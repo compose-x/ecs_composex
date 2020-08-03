@@ -2,6 +2,20 @@
 History
 =======
 
+0.6.0 (2020-08-03)
+===================
+
+New features:
+* `Docker-compose multi-files (override support) <https://github.com/lambda-my-aws/ecs_composex/issues/121>`_
+
+The new CLI uses positional arguments matching a specific command which drives what's executed onwards.
+Trying to re-implement features as close to the docker-compose CLI as possible.
+
+* **config** allows to get the YAML file render of the docker-compose files put together.
+* **render** will put all input files together and generate the CFN templates accordingly.
+* **up** will deploy do the same as render, and deploy to AWS CFN.
+
+
 0.5.3 (2020-07-30)
 ==================
 
