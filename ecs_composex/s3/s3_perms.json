@@ -1,0 +1,27 @@
+﻿{
+    "RWObjects": {
+        "Action": [
+            "s3:GetObject*",
+            "s3:PutObject*"
+        ],
+        "Effect": "Allow"
+    },
+    "ReadOnlyObjects": {
+        "Action": [
+            "s3:GetObject*"
+        ],
+        "Effect": "Allow"
+    },
+    "WriteOnlyObjects": {
+        "Action": [
+            "s3:PutObject*"
+        ],
+        "Effect": "Allow"
+    },
+    "PowerUser": {
+        "NotAction": [
+            "s3:CreateBucket",
+            "s3:DeleteBucket"
+        ]
+    }
+}
