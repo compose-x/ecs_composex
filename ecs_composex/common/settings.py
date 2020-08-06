@@ -169,7 +169,8 @@ class ComposeXSettings(object):
     zones_arg = "Zones"
 
     deploy_arg = "up"
-    no_upload_arg = "render"
+    render_arg = "render"
+    create_arg = "create"
     config_render_arg = "config"
     command_arg = "command"
 
@@ -193,8 +194,12 @@ class ComposeXSettings(object):
             "help": "Generates & Validates the CFN templates, Creates/Updates stack in CFN",
         },
         {
-            "name": no_upload_arg,
+            "name": render_arg,
             "help": "Generates & Validates the CFN templates locally. No upload to S3",
+        },
+        {
+            "name": create_arg,
+            "help": "Generates & Validates the CFN templates locally. Uploads files to S3",
         },
     ]
     validation_commands = [
@@ -237,7 +242,7 @@ class ComposeXSettings(object):
         self.single_nat = None
         self.lookup_vpc = False
         self.deploy = True if keyisset(self.deploy_arg, kwargs) else False
-        self.no_upload = True if keyisset(self.no_upload_arg, kwargs) else False
+        self.no_upload = True if keyisset(self.render_arg, kwargs) else False
 
         self.upload = False if self.no_upload else True
         self.create_compute = False if not keyisset(USE_FLEET_T, kwargs) else True
@@ -257,7 +262,7 @@ class ComposeXSettings(object):
                 self.region_arg: self.aws_region,
                 self.zones_arg: self.aws_azs,
                 self.bucket_arg: self.bucket_name,
-                self.no_upload_arg: self.no_upload,
+                self.render_arg: self.no_upload,
                 self.deploy_arg: self.deploy,
             },
             indent=4,
@@ -301,8 +306,11 @@ class ComposeXSettings(object):
         if command == self.deploy_arg:
             self.deploy = True
             self.upload = True
-        elif command == self.no_upload_arg:
+        elif command == self.render_arg:
             self.no_upload = True
+            self.upload = not self.no_upload
+        elif command == self.create_arg:
+            self.no_upload = False
             self.upload = not self.no_upload
         elif command == self.config_render_arg:
             self.set_content(kwargs, content)
