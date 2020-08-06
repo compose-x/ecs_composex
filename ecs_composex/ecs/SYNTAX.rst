@@ -169,12 +169,44 @@ Examples:
         image: nginx
         x-configs:
           iam:
-            boundary: containers # this will resolve into arn:${partition}:iam::${accountId}:policy/containers
+            boundary: containers
       serviceB:
         image: redis
         x-configs:
           iam:
             boundary: arn:aws:iam::aws:policy/PowerUserAccess
+
+.. note::
+
+    if you specify ony the name, ie. containers, this will resolve into arn:${partition}:iam::${accountId}:policy/containers
+
+policies
+"""""""""
+
+Allows you to define additional IAM policies.
+Follows the same pattern as CFN IAM Policies
+
+.. code-block:: yaml
+
+    x-configs:
+      iam:
+        policies:
+          - name: somenewpolicy
+            document:
+              Version: "2012-10-17"
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - ec2:Describe*
+                  Resource:
+                    - "*"
+                  Sid: "AllowDescribeAll"
+
+managed_policies
+""""""""""""""""
+
+Allows you to add additional managed policies. You can specify the full ARN or just a string for the name / path of the
+policy. If will resolve into the same regexp as for `boundary`_
 
 
 xray

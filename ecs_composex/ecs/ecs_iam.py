@@ -113,6 +113,10 @@ def add_service_roles(template, config):
     if config and config.boundary:
         add_role_boundaries(role, config.boundary)
         add_role_boundaries(execution_role, config.boundary)
+    if config and config.policies:
+        role.Policies += config.policies
+    if config and config.managed_policies:
+        role.ManagedPolicyArns += config.managed_policies
 
 
 def define_service_containers(service_template):

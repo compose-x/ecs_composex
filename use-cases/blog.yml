@@ -65,6 +65,18 @@ services:
       LOGLEVEL: DEBUG
     x-configs:
       use_xray: True
+      iam:
+        policies:
+          - name: somenewpolicy
+            document:
+              Version: 2012-10-17
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - ec2:Describe*
+                  Resource:
+                    - "*"
+                  Sid: "AllowDescribeAll"
 
 x-tags:
   owner: johnpreston
