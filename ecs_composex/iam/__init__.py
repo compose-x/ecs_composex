@@ -48,6 +48,21 @@ def service_role_trust_policy(service_name):
     return policy_doc
 
 
+def define_iam_policy(policy):
+    policy_def = policy
+    if not POLICY_RE.match(policy):
+        raise ValueError(
+            f"policy name {policy} does not match expected regexp", POLICY_PATTERN
+        )
+    if isinstance(policy, str) and not policy.startswith("arn:aws:iam::"):
+        policy_def = Sub(
+            f"arn:${{AWS::Partition}}:iam::${{AWS::AccountId}}:policy/{policy}"
+        )
+    elif isinstance(policy, (Sub, Ref, Join)):
+        LOG.debug(f"policy {policy}")
+    return policy_def
+
+
 def add_role_boundaries(iam_role, policy):
     """
     Function to set permission boundary onto an IAM role
@@ -59,16 +74,7 @@ def add_role_boundaries(iam_role, policy):
     """
     if not isinstance(iam_role, Role):
         raise TypeError(f"{iam_role} is of type", type(iam_role), "expected", Role)
-    if not POLICY_RE.match(policy):
-        raise ValueError(
-            f"policy name {policy} does not match expected regexp", POLICY_PATTERN
-        )
-    if isinstance(policy, str) and not policy.startswith("arn:aws:iam::"):
-        policy = Sub(
-            f"arn:${{AWS::Partition}}:iam::${{AWS::AccountId}}:policy/{policy}"
-        )
-    elif isinstance(policy, (Sub, Ref, Join)):
-        LOG.debug(f"policy {policy}")
+    policy = define_iam_policy(policy)
     if hasattr(iam_role, "PermissionsBoundary"):
         LOG.warn(
             f"IAM Role {iam_role.title} already has PermissionsBoundary set. Overriding"

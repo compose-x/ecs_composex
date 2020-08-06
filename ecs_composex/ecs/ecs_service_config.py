@@ -22,11 +22,13 @@ Module for the ServiceConfig Class which is used for Container, Task and Service
 from troposphere import AWS_NO_VALUE
 from troposphere import Ref
 from troposphere.ecs import HealthCheck
+from troposphere.iam import Policy
 
 from ecs_composex.common import NONALPHANUM
 from ecs_composex.common import keyisset, LOG
 from ecs_composex.ecs import ecs_params
 from ecs_composex.ecs.docker_tools import set_memory_to_mb
+from ecs_composex.iam import define_iam_policy
 
 
 def keyset_else_novalue(key, obj, else_value=None):
@@ -234,6 +236,8 @@ class ServiceConfig(object):
         self.use_cloudmap = True
         self.use_appmesh = False
         self.boundary = None
+        self.policies = []
+        self.managed_policies = []
         self.service_name = service_name if service_name else "global"
 
         if keyisset("x-appmesh", content):
@@ -306,19 +310,50 @@ class ServiceConfig(object):
             self.links += other.links
         return self
 
+    def add_managed_policies(self, policies):
+        for policy in policies:
+            policy_def = define_iam_policy(policy)
+            self.managed_policies.append(policy_def)
+
+    def add_policies(self, policies):
+
+        for count, policy in enumerate(policies):
+            name = (
+                f"PolicyGenerated{count}"
+                if not keyisset("name", policy)
+                else policy["name"]
+            )
+            if not keyisset("document", policy):
+                raise KeyError("You must set the policy document for the policy")
+            if (
+                keyisset("Version", policy["document"])
+                and not isinstance(policy["document"]["Version"], str)
+                or not keyisset("Version", policy["document"])
+            ):
+                policy["document"]["Version"] = "2012-10-17"
+            policy_object = Policy(PolicyName=name, PolicyDocument=policy["document"])
+            self.policies.append(policy_object)
+
     def init_iam(self, config):
         """
         Function to set IAM
         :return:
         """
-        valid_keys = ["boundary"]
+        valid_keys = ["boundary", "managed_policies", "policies"]
         for key_name in config.keys():
             if key_name not in valid_keys:
                 raise KeyError(
                     f"{key_name} is not a valid configuration for IAM. Accepted",
                     valid_keys,
                 )
-            setattr(self, key_name, config[key_name])
+            if key_name == "boundary":
+                setattr(self, key_name, config[key_name])
+            elif key_name == "managed_policies" and isinstance(
+                config["managed_policies"], list
+            ):
+                self.add_managed_policies(config["managed_policies"])
+            elif key_name == "policies" and isinstance(config["policies"], list):
+                self.add_policies(config["policies"])
 
     def init_network(self, config):
         """

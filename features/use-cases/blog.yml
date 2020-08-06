@@ -46,6 +46,20 @@ services:
       LOGLEVEL: DEBUG
     x-configs:
       use_xray: True
+      iam:
+        boundary: arn:aws:iam::aws:policy/ViewOnly
+        policies:
+          - document:
+              Version: 2012-10-17
+              Statement:
+                - Sid: SomethingInteresting
+                  Action:
+                    - cloudwatch:PutMetric*
+                  Resource:
+                    - "*"
+                  Effect: Allow
+        managed_policies:
+          - arn:aws:iam::aws:policy/AdministratorAccess
     links:
       - app03:dateteller
 
