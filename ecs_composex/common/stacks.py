@@ -38,6 +38,23 @@ from ecs_composex.vpc.vpc_params import (
 )
 
 
+def render_codepipeline_config_file(parameters):
+    """
+    Method to write all the parameters in the AWS CFN Config format for Codepipeline
+    :param list parameters:
+    :return:
+    """
+    if not parameters:
+        return
+    config = {
+        "Parameters": {},
+        "Tags": {}
+    }
+    for param in parameters:
+        config["Parameters"].update({param["ParameterKey"]: param["ParameterValue"]})
+    return config
+
+
 class ComposeXStack(Stack, object):
     """
     Class to define a CFN Stack as a composition of its template object, parameters, tags etc.
@@ -120,11 +137,24 @@ class ComposeXStack(Stack, object):
             settings=settings,
             file_format="json",
         )
+        config = render_codepipeline_config_file(params)
         file.define_body()
         file.write(settings)
         if settings.upload:
             file.upload(settings)
             LOG.debug(f"Rendered URL = {file.url}")
+        config_file = FileArtifact(
+            file_name=f"{self.title}.config",
+            content=config,
+            settings=settings,
+            file_format="json",
+        )
+        config_file.define_body()
+        config_file.write(settings)
+        if settings.upload:
+            file.upload(settings)
+            LOG.debug(f"Rendered URL = {file.url}")
+
 
     def render_parameters_list_cfn(self):
         """
