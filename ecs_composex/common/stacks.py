@@ -152,7 +152,7 @@ class ComposeXStack(Stack, object):
         config_file.define_body()
         config_file.write(settings)
         if settings.upload:
-            file.upload(settings)
+            config_file.upload(settings)
             LOG.debug(f"Rendered URL = {file.url}")
 
 
