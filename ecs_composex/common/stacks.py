@@ -47,6 +47,7 @@ def render_codepipeline_config_file(parameters):
     if not parameters:
         return
     config = {"Parameters": {}, "Tags": {}}
+
     for param in parameters:
         config["Parameters"].update({param["ParameterKey"]: param["ParameterValue"]})
     return config
