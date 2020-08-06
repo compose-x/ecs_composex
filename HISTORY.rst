@@ -2,6 +2,12 @@
 History
 =======
 
+0.6.2 (2020-08-06)
+==================
+
+Quick release enabling additional configuration file to use with CodePipeline
+
+
 0.6.0 (2020-08-03)
 ===================
 
