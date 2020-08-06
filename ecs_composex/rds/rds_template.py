@@ -21,7 +21,7 @@ Main module template to generate the RDS Root template and all stacks according 
 
 from troposphere import Ref, Join
 
-from ecs_composex.common import build_template, validate_kwargs
+from ecs_composex.common import build_template, validate_kwargs, keyisset, LOG
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T, ROOT_STACK_NAME
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.rds.rds_db_template import (
@@ -108,4 +108,15 @@ def generate_rds_templates(settings):
             section[db_name],
             settings,
         )
+        if keyisset("Lookup", section[db_name]) and not keyisset(
+            "Properties", section[db_name]
+        ):
+            LOG.info(f"If {db_name} is found, service will be granted access to it.")
+        elif keyisset("Lookup", section[db_name]) and keyisset(
+            "Properties", section[db_name]
+        ):
+            LOG.warning("Both indicating Lookup and properties")
+            add_db_stack(
+                root_tpl, dbs_subnet_group, db_name, section[db_name], settings,
+            )
     return root_tpl
