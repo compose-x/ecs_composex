@@ -150,7 +150,7 @@ def create_settings(updated_content, case_path):
         session=session,
         **{
             ComposeXSettings.name_arg: "test",
-            ComposeXSettings.command_arg: ComposeXSettings.no_upload_arg,
+            ComposeXSettings.command_arg: ComposeXSettings.render_arg,
             ComposeXSettings.input_file_arg: path.abspath(
                 f"{here}/../features/use-cases/vpc/vpc_from_tags.yml"
             ),
