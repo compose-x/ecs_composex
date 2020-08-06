@@ -30,15 +30,19 @@ Usage
 
 .. code-block:: bash
 
-    usage: ecs-composex [-h] {up,render,config,init,version} ...
+.. code-block:: bash
+
+    usage: ecs-composex [-h] {up,render,create,config,init,version} ...
 
     positional arguments:
-      {up,render,config,init,version}
+      {up,render,create,config,init,version}
                             Command to execute.
         up                  Generates & Validates the CFN templates,
                             Creates/Updates stack in CFN
         render              Generates & Validates the CFN templates locally. No
                             upload to S3
+        create              Generates & Validates the CFN templates locally.
+                            Uploads files to S3
         config              Merges docker-compose files to provide with the final
                             compose content version
         init                Initializes your AWS Account with prerequisites
@@ -47,22 +51,6 @@ Usage
 
     optional arguments:
       -h, --help            show this help message and exit
-
-    Command 'up'
-    usage: ecs-composex up [-h] -n NAME [--format {json,yaml,text}]
-                           [--region REGIONNAME] [--az ZONES] [-b BUCKETNAME]
-                           [--use-spot-fleet] -f DOCKERCOMPOSEXFILE
-                           [-d OUTPUTDIRECTORY]
-
-    Command 'render'
-    usage: ecs-composex render [-h] -n NAME [--format {json,yaml,text}]
-                               [--region REGIONNAME] [--az ZONES] [-b BUCKETNAME]
-                               [--use-spot-fleet] -f DOCKERCOMPOSEXFILE
-                               [-d OUTPUTDIRECTORY]
-
-    Command 'config'
-    usage: ecs-composex config [-h] -f DOCKERCOMPOSEXFILE [-d OUTPUTDIRECTORY]
-
 
 
 .. code-block:: bash

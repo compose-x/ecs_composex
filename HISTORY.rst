@@ -2,7 +2,7 @@
 History
 =======
 
-0.6.1 (2020-08-06)
+0.6.2 (2020-08-06)
 ==================
 
 Quick release enabling additional configuration file to use with CodePipeline
