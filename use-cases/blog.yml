@@ -90,3 +90,6 @@ secrets:
     external: true
     x-secrets:
       Name: /path/to/my/secret
+      LinksTo:
+        - EcsTaskRole
+        - EcsExecutionRole
