@@ -77,7 +77,8 @@ from ecs_composex.ecs.docker_tools import find_closest_fargate_configuration
 from ecs_composex.ecs.ecs_aws_sidecars import define_xray_container
 from ecs_composex.ecs.ecs_conditions import USE_HOSTNAME_CON_T
 from ecs_composex.ecs.ecs_container import Container
-from ecs_composex.ecs.ecs_iam import add_service_roles
+from ecs_composex.ecs.ecs_container_config import import_secrets
+from ecs_composex.ecs.ecs_iam import add_service_roles, expand_role_polices
 from ecs_composex.ecs.ecs_params import NETWORK_MODE, EXEC_ROLE_T, TASK_ROLE_T, TASK_T
 from ecs_composex.ecs.ecs_params import SERVICE_NAME, SERVICE_HOSTNAME
 from ecs_composex.ecs.ecs_params import (
@@ -174,12 +175,13 @@ class Task(object):
         """
         Init method
         """
+        add_service_roles(template)
         self.family_config = None
         self.containers = []
         self.containers_config = containers_config
         self.stack_parameters = {}
-        add_service_roles(template, self.family_config)
         self.sort_container_configs(template, containers_config, settings)
+        expand_role_polices(template, self.family_config)
         if self.family_config.use_xray:
             self.containers.append(define_xray_container())
             add_parameters(template, [ecs_params.XRAY_IMAGE])
@@ -236,8 +238,8 @@ class Task(object):
                 service_config["config"].resource_name,
                 service_config["definition"],
                 service_config["config"],
-                settings,
             )
+            import_secrets(template, service_config["definition"], container.definition, settings)
             self.containers.append(container.definition)
             self.stack_parameters.update(container.stack_parameters)
             if self.family_config is None:
