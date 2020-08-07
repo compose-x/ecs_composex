@@ -53,6 +53,12 @@ def import_secrets(template, definition, container, settings):
             settings_secrets[secret]["ComposeSecret"].assign_to_task_definition(
                 template, container
             )
+        elif isinstance(secret, dict) and keyisset("source", secret):
+            secret_name = secret["source"]
+            if keyisset("ComposeSecret", settings_secrets[secret_name]):
+                settings_secrets[secret_name][
+                    "ComposeSecret"
+                ].assign_to_task_definition(template, container)
 
 
 def import_env_variables(environment):

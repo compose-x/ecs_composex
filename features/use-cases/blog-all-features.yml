@@ -66,6 +66,9 @@ services:
 
   app03:
     image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-02:latest
+    secrets:
+      - undefined
+      - source: testsecret
     ports:
       - 5000
     deploy:
@@ -344,3 +347,8 @@ secrets:
     external: true
     x-secrets:
       Name: /path/to/my/secret
+
+  testabcdsecret:
+    file: /dev/null
+    x-secrets:
+      Name: /nowhere

@@ -93,7 +93,6 @@ class ComposeSecret(object):
                 ],
             },
         )
-        print(exec_role.__dict__)
         if EXEC_ROLE_T in self.links and hasattr(exec_role, "Policies"):
             exec_role.Policies.append(policy)
         elif EXEC_ROLE_T in self.links and not hasattr(exec_role, "Policies"):
