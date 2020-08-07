@@ -100,4 +100,4 @@ x-vpc:
         - vpc::usage: public
 
 x-cluster:
-  Use: dev
+  Use: ${CLUSTER_NAME}
