@@ -154,12 +154,25 @@ def generate_cluster(root_stack, settings):
     :return:
     """
     cluster = get_default_cluster_config()
+    if not keyisset(RES_KEY, settings.compose_content):
+        return cluster
     if keyisset(RES_KEY, settings.compose_content) and keyisset(
         "Lookup", settings.compose_content[RES_KEY]
     ):
         cluster = lookup_ecs_cluster(
             settings.session, settings.compose_content[RES_KEY]["Lookup"]
         )
+    elif keyisset(RES_KEY, settings.compose_content) and isinstance(
+        settings.compose_content[RES_KEY], str
+    ):
+        cluster = settings.compose_content[RES_KEY]
+        LOG.info(f"Using cluster {settings.compose_content[RES_KEY]}")
+
+    elif isinstance(settings.compose_content[RES_KEY], dict) and keyisset(
+        "Use", settings.compose_content[RES_KEY]
+    ):
+        cluster = settings.compose_content[RES_KEY]["Use"]
+        LOG.info(f"Using cluster {settings.compose_content[RES_KEY]['Use']}")
     elif keyisset(RES_KEY, settings.compose_content) and not keyisset(
         "Lookup", settings.compose_content[RES_KEY]
     ):

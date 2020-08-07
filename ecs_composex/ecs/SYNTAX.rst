@@ -355,4 +355,11 @@ Allows you to enter the name of an existing ECS Cluster that you want to deploy 
 
     If the cluster name is not found, by default, a new cluster will be created with the default settings.
 
+Use
+----
+
+This key allows you to set a cluster to use, that you do not wish to lookup, you just know the name you want to use.
+(Useful for multi-account where you can't lookup cross-account).
+
+
 .. _AWS CFN reference for ECS Cluster: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ecs-cluster.html

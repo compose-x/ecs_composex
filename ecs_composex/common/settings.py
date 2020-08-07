@@ -19,6 +19,8 @@
 Module for the ComposeXSettings class
 """
 
+import re
+from os import environ
 from datetime import datetime as dt
 from json import dumps
 from copy import deepcopy
@@ -75,14 +77,33 @@ def merge_ports(source_ports, new_ports):
     return new_ports
 
 
+def parse_environment_variables(key):
+    """
+    Method to go over the content and interpolate possibly existing environment variables.
+
+    :param str key: the key to find the value for in environment
+    :return: env_key
+    :rtype: str
+    :raises: EnvironmentError
+    """
+    strip_re = re.compile(r"([^\${}]+)")
+    env_key = strip_re.findall(key)[0]
+    LOG.debug(f"Key {key} gives {env_key}")
+    if environ.get(env_key):
+        return environ.get(env_key)
+    raise EnvironmentError(f"Key {key} not found in environment variables.")
+
+
 def merge_service_definition(original_def, override_def, nested=False):
     """
     Merges two services definitions if service exists in both compose files.
 
+    :param bool nested:
     :param dict original_def:
     :param dict override_def:
     :return:
     """
+
     if not nested:
         original_def = deepcopy(original_def)
     for key in override_def.keys():
@@ -112,6 +133,21 @@ def merge_service_definition(original_def, override_def, nested=False):
         elif not isinstance(override_def[key], (list, dict)):
             original_def[key] = override_def[key]
     return original_def
+
+
+def interpolate_env_vars(content):
+    """
+    Function to interpolate env vars from content
+
+    :param dict content:
+    :return:
+    """
+    env_var_regex = re.compile(r"^\$\{[\w\d-]+\}$")
+    for key in content.keys():
+        if isinstance(content[key], dict):
+            interpolate_env_vars(content[key])
+        elif isinstance(content[key], str) and env_var_regex.match(content[key]):
+            content[key] = parse_environment_variables(content[key])
 
 
 def merge_config_file(original_content, override_content):
@@ -290,6 +326,7 @@ class ComposeXSettings(object):
             self.compose_content = content
         if keyisset("services", self.compose_content):
             render_services_ports(self.compose_content["services"])
+        interpolate_env_vars(self.compose_content)
 
     def parse_command(self, kwargs, content=None):
         """

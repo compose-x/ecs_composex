@@ -52,7 +52,7 @@ def x_vpc_arn():
             "subnet-0d49c1240b794118d",
             "subnet-04270d634ef29f545",
         ],
-        "PublicSubnets": {"tags": [{"vpc::usage": "public"}]},
+        "PublicSubnets": {"Tags": [{"vpc::usage": "public"}]},
     }
 
 
@@ -66,7 +66,7 @@ def invalid_x_vpc_arn():
             "subnet-0d49c1240b794118d",
             "subnet-04270d634ef29f545",
         ],
-        "PublicSubnets": {"tags": [{"vpc::usage": "public"}]},
+        "PublicSubnets": {"Tags": [{"vpc::usage": "public"}]},
     }
 
 
@@ -80,7 +80,7 @@ def x_vpc_id():
             "subnet-0d49c1240b794118d",
             "subnet-04270d634ef29f545",
         ],
-        "PublicSubnets": {"tags": [{"vpc::usage": "public"}]},
+        "PublicSubnets": {"Tags": [{"vpc::usage": "public"}]},
     }
 
 
@@ -94,49 +94,49 @@ def invalid_x_vpc_id():
             "subnet-0d49c1240b794118d",
             "subnet-04270d634ef29f545",
         ],
-        "PublicSubnets": {"tags": [{"vpc::usage": "public"}]},
+        "PublicSubnets": {"Tags": [{"vpc::usage": "public"}]},
     }
 
 
 @pytest.fixture
 def x_vpc_tags():
     return {
-        "VpcId": {"tags": [{"Name": "vpcwork"}]},
+        "VpcId": {"Tags": [{"Name": "vpcwork"}]},
         "AppSubnets": "subnet-0b0d3c7251ad0af8c,subnet-0b0e0f4f2ac3fa46d,subnet-06d3130b79d277b1b",
         "StorageSubnets": [
             "subnet-004e206426fdaef17",
             "subnet-0d49c1240b794118d",
             "subnet-04270d634ef29f545",
         ],
-        "PublicSubnets": {"tags": [{"vpc::usage": "public"}]},
+        "PublicSubnets": {"Tags": [{"vpc::usage": "public"}]},
     }
 
 
 @pytest.fixture
 def invalid_x_subnets_ids():
     return {
-        "VpcId": {"tags": [{"Name": "vpcwork"}]},
+        "VpcId": {"Tags": [{"Name": "vpcwork"}]},
         "AppSubnets": "subnet-0b0d3c7251ad0af8csubnet-0b0e0f4f2ac3fa46d,subnet-06d3130b79d277b1b",
         "StorageSubnets": [
             "subnet-004e206426fdaef17",
             "subnet-0d49c1240b794118d",
             "subnet-04270d634ef29f545",
         ],
-        "PublicSubnets": {"tags": [{"usage": "public"}]},
+        "PublicSubnets": {"Tags": [{"usage": "public"}]},
     }
 
 
 @pytest.fixture
 def invalid_x_subnets_ids_list():
     return {
-        "VpcId": {"tags": [{"Name": "vpcwork"}]},
+        "VpcId": {"Tags": [{"Name": "vpcwork"}]},
         "AppSubnets": "subnet-0b0d3c7251ad0af8c,subnet-0b0e0f4f2ac3fa46d,subnet-06d3130b79d277b1b",
         "StorageSubnets": [
             "subnet-004e206426fdaef1A",
             "subnet-0d49c1240b794118A",
             "subnet-04270d634ef29f54A",
         ],
-        "PublicSubnets": {"tags": [{"usage": "public"}]},
+        "PublicSubnets": {"Tags": [{"usage": "public"}]},
     }
 
 
