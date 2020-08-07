@@ -87,14 +87,14 @@ x-tags:
 x-vpc:
   Lookup:
     VpcId:
-      tags:
-        - Name: vpcwork
+      Tags:
+        - Name: vpc--blackeye-prod
     AppSubnets:
-      tags:
+      Tags:
         - vpc::usage: application
     StorageSubnets:
-      tags:
+      Tags:
         - vpc::usage: storage
     PublicSubnets:
-      tags:
+      Tags:
         - vpc::usage: public

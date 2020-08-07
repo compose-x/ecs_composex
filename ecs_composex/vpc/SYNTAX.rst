@@ -24,16 +24,13 @@ Using an existing VPC
     x-vpc:
       Lookup:
         VpcId:
-          tags:
-            - key: name
-              value: demo
+          Tags:
+            - key: value
         StorageSubnets:
             - subnet-abcd
         PublicSubnets:
-          filters:
-            tags:
-              - key: vpc::usage
-                value: public
+          Tags:
+            - vpc::usage: public
         AppSubnets: subnet-abcd,subnet-1234
 
 Supported filters
@@ -65,7 +62,7 @@ VpcId
     x-vpc:
       Lookup:
         VpcId:
-          tags:
+          Tags:
             - Name: vpc-shared
 
 
@@ -102,7 +99,7 @@ If defined as a object, it will expect tags list, in the same syntax as for VPC.
     x-vpc:
       Lookup:
         PublicSubnets:
-          tags:
+          Tags:
             - Name: vpc-shared
 
 

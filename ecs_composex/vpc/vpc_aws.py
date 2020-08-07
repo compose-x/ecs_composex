@@ -24,6 +24,8 @@ from ecs_composex.vpc.vpc_params import (
     STORAGE_SUBNETS,
 )
 
+TAGS_KEY = "Tags"
+
 
 def lookup_vpc_id(session, vpc_id):
     """
@@ -156,10 +158,10 @@ def define_vpc_id(session, vpc_id_settings):
         vpc_id = lookup_vpc_id(session, vpc_id_settings)
     elif (
         isinstance(vpc_id_settings, dict)
-        and keyisset("tags", vpc_id_settings)
-        and isinstance(vpc_id_settings["tags"], list)
+        and keyisset(TAGS_KEY, vpc_id_settings)
+        and isinstance(vpc_id_settings[TAGS_KEY], list)
     ):
-        vpc_id = lookup_vpc_from_tags(session, vpc_id_settings["tags"])
+        vpc_id = lookup_vpc_from_tags(session, vpc_id_settings[TAGS_KEY])
     else:
         raise ValueError("VpcId is neither the VPC ID, the VPC Arn or a set of tags")
     return vpc_id
@@ -183,11 +185,14 @@ def define_subnet_ids(session, subnet_key, subnet_id_settings, vpc_settings):
         )
     elif (
         isinstance(subnet_id_settings, dict)
-        and keyisset("tags", subnet_id_settings)
-        and isinstance(subnet_id_settings["tags"], list)
+        and keyisset(TAGS_KEY, subnet_id_settings)
+        and isinstance(subnet_id_settings[TAGS_KEY], list)
     ):
         vpc_settings[subnet_key] = lookup_subnets_from_tags(
-            session, subnet_id_settings["tags"], vpc_settings[VPC_ID.title], subnet_key,
+            session,
+            subnet_id_settings[TAGS_KEY],
+            vpc_settings[VPC_ID.title],
+            subnet_key,
         )
     else:
         raise ValueError(
