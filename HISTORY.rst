@@ -2,7 +2,7 @@
 History
 =======
 
-0.6.3 (2020-08-07)
+0.6.4 (2020-08-07)
 ===================
 
 * `Support for AWS Secrets mapping to secrets in docker-compose <https://github.com/lambda-my-aws/ecs_composex/pull/142>`_

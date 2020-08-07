@@ -122,9 +122,15 @@ def expand_role_polices(template, config):
     task_role = template.resources[TASK_ROLE_T]
     if config and config.use_xray:
         if hasattr(task_role, "ManagedPolicyArns"):
-            task_role.ManagedPolicyArns.append("arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess")
+            task_role.ManagedPolicyArns.append(
+                "arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess"
+            )
         else:
-            setattr(task_role, "ManagedPolicyArns", ["arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess"])
+            setattr(
+                task_role,
+                "ManagedPolicyArns",
+                ["arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess"],
+            )
     if config and config.boundary:
         add_role_boundaries(task_role, config.boundary)
         add_role_boundaries(exec_role, config.boundary)
