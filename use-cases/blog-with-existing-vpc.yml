@@ -98,3 +98,6 @@ x-vpc:
     PublicSubnets:
       Tags:
         - vpc::usage: public
+
+x-cluster:
+  Use: dev
