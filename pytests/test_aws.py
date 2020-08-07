@@ -52,7 +52,7 @@ def x_vpc_arn():
             "subnet-0d49c1240b794118d",
             "subnet-04270d634ef29f545",
         ],
-        "PublicSubnets": {"tags": [{"vpc::usage": "public"}]},
+        "PublicSubnets": {"Tags": [{"vpc::usage": "public"}]},
     }
 
 
@@ -66,7 +66,7 @@ def invalid_x_vpc_arn():
             "subnet-0d49c1240b794118d",
             "subnet-04270d634ef29f545",
         ],
-        "PublicSubnets": {"tags": [{"vpc::usage": "public"}]},
+        "PublicSubnets": {"Tags": [{"vpc::usage": "public"}]},
     }
 
 
@@ -80,7 +80,7 @@ def x_vpc_id():
             "subnet-0d49c1240b794118d",
             "subnet-04270d634ef29f545",
         ],
-        "PublicSubnets": {"tags": [{"vpc::usage": "public"}]},
+        "PublicSubnets": {"Tags": [{"vpc::usage": "public"}]},
     }
 
 
@@ -94,7 +94,7 @@ def invalid_x_vpc_id():
             "subnet-0d49c1240b794118d",
             "subnet-04270d634ef29f545",
         ],
-        "PublicSubnets": {"tags": [{"vpc::usage": "public"}]},
+        "PublicSubnets": {"Tags": [{"vpc::usage": "public"}]},
     }
 
 
@@ -108,7 +108,7 @@ def x_vpc_tags():
             "subnet-0d49c1240b794118d",
             "subnet-04270d634ef29f545",
         ],
-        "PublicSubnets": {"tags": [{"vpc::usage": "public"}]},
+        "PublicSubnets": {"Tags": [{"vpc::usage": "public"}]},
     }
 
 
@@ -122,7 +122,7 @@ def invalid_x_subnets_ids():
             "subnet-0d49c1240b794118d",
             "subnet-04270d634ef29f545",
         ],
-        "PublicSubnets": {"tags": [{"usage": "public"}]},
+        "PublicSubnets": {"Tags": [{"usage": "public"}]},
     }
 
 
@@ -136,7 +136,7 @@ def invalid_x_subnets_ids_list():
             "subnet-0d49c1240b794118A",
             "subnet-04270d634ef29f54A",
         ],
-        "PublicSubnets": {"tags": [{"usage": "public"}]},
+        "PublicSubnets": {"Tags": [{"usage": "public"}]},
     }
 
 
