@@ -101,7 +101,7 @@ def invalid_x_vpc_id():
 @pytest.fixture
 def x_vpc_tags():
     return {
-        "VpcId": {"tags": [{"Name": "vpcwork"}]},
+        "VpcId": {"Tags": [{"Name": "vpcwork"}]},
         "AppSubnets": "subnet-0b0d3c7251ad0af8c,subnet-0b0e0f4f2ac3fa46d,subnet-06d3130b79d277b1b",
         "StorageSubnets": [
             "subnet-004e206426fdaef17",
@@ -115,7 +115,7 @@ def x_vpc_tags():
 @pytest.fixture
 def invalid_x_subnets_ids():
     return {
-        "VpcId": {"tags": [{"Name": "vpcwork"}]},
+        "VpcId": {"Tags": [{"Name": "vpcwork"}]},
         "AppSubnets": "subnet-0b0d3c7251ad0af8csubnet-0b0e0f4f2ac3fa46d,subnet-06d3130b79d277b1b",
         "StorageSubnets": [
             "subnet-004e206426fdaef17",
@@ -129,7 +129,7 @@ def invalid_x_subnets_ids():
 @pytest.fixture
 def invalid_x_subnets_ids_list():
     return {
-        "VpcId": {"tags": [{"Name": "vpcwork"}]},
+        "VpcId": {"Tags": [{"Name": "vpcwork"}]},
         "AppSubnets": "subnet-0b0d3c7251ad0af8c,subnet-0b0e0f4f2ac3fa46d,subnet-06d3130b79d277b1b",
         "StorageSubnets": [
             "subnet-004e206426fdaef1A",

@@ -1,4 +1,4 @@
-#  -*- coding: utf-8 -*-
+﻿#  -*- coding: utf-8 -*-
 #   ECS ComposeX <https://github.com/lambda-my-aws/ecs_composex>
 #   Copyright (C) 2020  John Mille <john@lambda-my-aws.io>
 #  #
@@ -20,11 +20,16 @@ Module to test ecs_composex generic oneliner raise functions.
 """
 
 from os import environ
-from pytest import raises
+from pytest import raises, fixture
 
 from troposphere import ImportValue
 from ecs_composex.resource_settings import generate_export_strings
 from ecs_composex.common.settings import parse_environment_variables
+
+
+@fixture(autouse=True)
+def env_setup(monkeypatch):
+    monkeypatch.setenv("AWS_PROFILE", "ANCD")
 
 
 def test_export_attribute():
@@ -38,9 +43,8 @@ def test_export_attribute():
         generate_export_strings("toto", 123)
 
 
-def test_env_vars_interpolate():
+def test_env_vars_interpolate(env_setup):
     with raises(EnvironmentError):
         parse_environment_variables("AWS_PROFILE_WHATEVER")
-    environ.update({"AWS_PROFILE": "ANCD"})
     key = "${AWS_PROFILE}"
     assert parse_environment_variables(key) == "ANCD"
