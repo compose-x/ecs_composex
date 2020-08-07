@@ -32,7 +32,7 @@ from ecs_composex.common import add_parameters
 from ecs_composex.common import keyisset
 from ecs_composex.common.outputs import ComposeXOutput
 from ecs_composex.ecs import ecs_params
-from ecs_composex.ecs.ecs_container_config import import_env_variables
+from ecs_composex.ecs.ecs_container_config import import_env_variables, import_secrets
 
 
 class Container(object):
@@ -43,7 +43,7 @@ class Container(object):
     parameters = {}
     required_keys = ["image"]
 
-    def __init__(self, template, title, definition, config):
+    def __init__(self, template, title, definition, config, settings):
         """
 
         :param troposphere.Template template: template to add the container definition to
@@ -101,6 +101,7 @@ class Container(object):
             if isinstance(config.healthcheck, HealthCheck)
             else Ref(AWS_NO_VALUE),
         )
+        import_secrets(template, definition, self.definition, settings)
         values = []
         if isinstance(config.cpu_resa, int):
             values.append(("Cpu", "Cpu", str(config.cpu_resa)))

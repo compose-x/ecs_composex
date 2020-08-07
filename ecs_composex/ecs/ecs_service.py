@@ -170,7 +170,7 @@ class Task(object):
     Class to handle the Task definition building and parsing along with the service config.
     """
 
-    def __init__(self, template, containers_config, family_parameters):
+    def __init__(self, template, containers_config, family_parameters, settings):
         """
         Init method
         """
@@ -178,8 +178,8 @@ class Task(object):
         self.containers = []
         self.containers_config = containers_config
         self.stack_parameters = {}
-        self.sort_container_configs(template, containers_config)
         add_service_roles(template, self.family_config)
+        self.sort_container_configs(template, containers_config, settings)
         if self.family_config.use_xray:
             self.containers.append(define_xray_container())
             add_parameters(template, [ecs_params.XRAY_IMAGE])
@@ -214,7 +214,7 @@ class Task(object):
             ),
         )
 
-    def sort_container_configs(self, template, containers_config):
+    def sort_container_configs(self, template, containers_config, settings):
         """
         Method to sort out the containers dependencies and create the containers definitions based on the configs.
         :return:
@@ -236,6 +236,7 @@ class Task(object):
                 service_config["config"].resource_name,
                 service_config["definition"],
                 service_config["config"],
+                settings,
             )
             self.containers.append(container.definition)
             self.stack_parameters.update(container.stack_parameters)

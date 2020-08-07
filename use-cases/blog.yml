@@ -40,6 +40,8 @@ services:
 
   app02:
     image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-02:latest
+    secrets:
+      - testsecret
     ports:
       - 5000
     deploy:
@@ -81,3 +83,13 @@ services:
 x-tags:
   owner: johnpreston
   contact: john@lambda-my-aws.io
+
+
+secrets:
+  testsecret:
+    external: true
+    x-secrets:
+      Name: /path/to/my/secret
+      LinksTo:
+        - EcsTaskRole
+        - EcsExecutionRole
