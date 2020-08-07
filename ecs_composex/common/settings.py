@@ -42,6 +42,7 @@ from ecs_composex.utils.init_ecs import set_ecs_settings
 from ecs_composex.utils.init_s3 import create_bucket
 from ecs_composex.ecs.ecs_service_config import set_service_ports
 from cfn_flip.yaml_dumper import LongCleanDumper
+from ecs_composex.secrets.secrets_config import parse_secrets
 
 
 def render_services_ports(services):
@@ -327,6 +328,7 @@ class ComposeXSettings(object):
         if keyisset("services", self.compose_content):
             render_services_ports(self.compose_content["services"])
         interpolate_env_vars(self.compose_content)
+        parse_secrets(self)
 
     def parse_command(self, kwargs, content=None):
         """

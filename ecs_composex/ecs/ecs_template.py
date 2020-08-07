@@ -282,7 +282,7 @@ def handle_families_services(families, cluster_sg, settings):
                 "priority": 0,
                 "definition": service,
             }
-        task = Task(template, family_service_configs, family_parameters)
+        task = Task(template, family_service_configs, family_parameters, settings)
         family_parameters.update(task.stack_parameters)
         service = Service(
             template=template,

@@ -23,7 +23,36 @@ Module of functions to help with container definition
 from troposphere import Ref, GetAtt, ImportValue, Sub
 from troposphere.ecs import ContainerDefinition, Environment
 
-from ecs_composex.common import LOG
+from ecs_composex.common import LOG, keyisset
+
+
+def import_secrets(template, definition, container, settings):
+    """
+    Function to import secrets from composex mapping to AWS Secrets in Secrets Manager
+
+    :param troposphere.Template template:
+    :param dict definition:
+    :param troposhere.ecs.ContainerDefinition container:
+    :param ecs_composex.common.settings.ComposeXSettings settings:
+    :return:
+    """
+    if keyisset("secrets", definition) and isinstance(definition["secrets"], list):
+        secrets = definition["secrets"]
+    else:
+        return
+    if not keyisset("secrets", settings.compose_content):
+        return
+    else:
+        settings_secrets = settings.compose_content["secrets"]
+    for secret in secrets:
+        if (
+            isinstance(secret, str)
+            and secret in settings_secrets
+            and keyisset("ComposeSecret", settings_secrets[secret])
+        ):
+            settings_secrets[secret]["ComposeSecret"].assign_to_task_definition(
+                template, container
+            )
 
 
 def import_env_variables(environment):
