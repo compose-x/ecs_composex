@@ -30,7 +30,7 @@ from ecs_composex.ecs.ecs_params import (
 from ecs_composex.iam import service_role_trust_policy, add_role_boundaries
 
 
-def add_service_roles(template, config):
+def add_service_roles(template):
     """
     Function to create the IAM roles for the ECS task
 
@@ -100,9 +100,7 @@ def add_service_roles(template, config):
     )
     policies = []
     managed_policies = []
-    if config and config.use_xray:
-        managed_policies.append("arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess")
-    role = Role(
+    Role(
         TASK_ROLE_T,
         template=template,
         AssumeRolePolicyDocument=service_role_trust_policy("ecs-tasks"),
@@ -110,13 +108,30 @@ def add_service_roles(template, config):
         ManagedPolicyArns=managed_policies,
         Policies=policies,
     )
+
+
+def expand_role_polices(template, config):
+    """
+    Function to expand the role policies
+
+    :param config:
+    :param troposphere.Template template:
+    :return:
+    """
+    exec_role = template.resources[EXEC_ROLE_T]
+    task_role = template.resources[TASK_ROLE_T]
+    if config and config.use_xray:
+        if hasattr(task_role, "ManagedPolicyArns"):
+            task_role.ManagedPolicyArns.append("arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess")
+        else:
+            setattr(task_role, "ManagedPolicyArns", ["arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess"])
     if config and config.boundary:
-        add_role_boundaries(role, config.boundary)
-        add_role_boundaries(execution_role, config.boundary)
+        add_role_boundaries(task_role, config.boundary)
+        add_role_boundaries(exec_role, config.boundary)
     if config and config.policies:
-        role.Policies += config.policies
+        task_role.Policies += config.policies
     if config and config.managed_policies:
-        role.ManagedPolicyArns += config.managed_policies
+        task_role.ManagedPolicyArns += config.managed_policies
 
 
 def define_service_containers(service_template):
