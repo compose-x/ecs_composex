@@ -154,6 +154,8 @@ def generate_cluster(root_stack, settings):
     :return:
     """
     cluster = get_default_cluster_config()
+    if not keyisset(RES_KEY, settings.compose_content):
+        return cluster
     if keyisset(RES_KEY, settings.compose_content) and keyisset(
         "Lookup", settings.compose_content[RES_KEY]
     ):
