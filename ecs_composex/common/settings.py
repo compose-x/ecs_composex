@@ -144,6 +144,8 @@ def interpolate_env_vars(content):
     :return:
     """
     env_var_regex = re.compile(r"^\$\{[\w\d-]+\}$")
+    if not content:
+        return
     for key in content.keys():
         if isinstance(content[key], dict):
             interpolate_env_vars(content[key])
@@ -187,7 +189,6 @@ def merge_config_file(original_content, override_content):
             )
     original_content.update(override_content)
     original_content["services"] = original_services
-    return original_content
 
 
 class ComposeXSettings(object):
@@ -317,16 +318,19 @@ class ComposeXSettings(object):
             self.compose_content = load_composex_file(kwargs[self.input_file_arg][0])
         elif content is None and len(kwargs[self.input_file_arg]) > 1:
             files_list = kwargs[self.input_file_arg]
-            source_content = load_composex_file(files_list[0])
+            self.compose_content = load_composex_file(files_list[0])
             files_list.pop(0)
             for file in files_list:
-                self.compose_content = merge_config_file(
-                    source_content, load_composex_file(file)
+                merge_config_file(
+                    self.compose_content, load_composex_file(file)
                 )
+                LOG.info(yaml.dump(self.compose_content))
+
         elif content and isinstance(content, dict):
             self.compose_content = content
         if keyisset("services", self.compose_content):
             render_services_ports(self.compose_content["services"])
+        LOG.debug(yaml.dump(self.compose_content))
         interpolate_env_vars(self.compose_content)
         parse_secrets(self)
 
