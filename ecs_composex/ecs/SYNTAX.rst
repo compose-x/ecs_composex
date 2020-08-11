@@ -13,6 +13,7 @@ However, there are only a limited number of settings that are today working:
 * `depends_on <https://docs.docker.com/compose/compose-file/#environment>`_
 * `x-configs`_
 * `deploy`_
+* `secrets`_
 
 .. seealso::
 

@@ -1,4 +1,4 @@
-﻿
+﻿.. _secrets_syntax_reference:
 
 secrets
 =======
@@ -47,6 +47,5 @@ LinksTo
 
 List to determine whether the TaskRole or ExecutionRole (or both) should have access to the Secret.
 If set as TaskRole, then the secret **value will not be exposed in env vars** and only the secret name will be set.
-
 
 .. _docker-compose secrets reference: https://docs.docker.com/compose/compose-file/#secrets
