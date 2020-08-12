@@ -47,7 +47,7 @@ class ComposeSecret(object):
             self.aws_name = definition[XRES_KEY]["Name"]
         else:
             self.aws_name = Sub(
-                f"arn:${{{AWS_PARTITION}}}:secretsmanager:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:secret:${aws_name}"
+                f"arn:${{{AWS_PARTITION}}}:secretsmanager:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:secret:{aws_name}"
             )
         self.links = (
             definition[XRES_KEY]["LinksTo"]
@@ -60,7 +60,7 @@ class ComposeSecret(object):
 
     def validate_links(self):
         for link in self.links:
-            if not link in [EXEC_ROLE_T, TASK_ROLE_T]:
+            if link not in [EXEC_ROLE_T, TASK_ROLE_T]:
                 raise ValueError(
                     "Links in LinksTo can only be one of",
                     EXEC_ROLE_T,
