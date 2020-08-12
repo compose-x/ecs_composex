@@ -92,6 +92,54 @@ def create_new_vpc(vpc_xkey, settings, default=False):
     return vpc_stack
 
 
+def import_vpc_settings(vpc_settings):
+    """
+    Function to import settings set "in-stone" from docker-compose definition
+
+    :param dict vpc_settings:
+    :return: settings
+    :rtype dict:
+    """
+    if not keyisset(VPC_ID.title, vpc_settings):
+        raise KeyError("You must specify the VPC ID to use for deployment")
+    settings = {VPC_ID.title: vpc_settings[VPC_ID.title]}
+    required_subnets = [APP_SUBNETS.title, PUBLIC_SUBNETS.title, STORAGE_SUBNETS.title]
+    if not all(subnet in vpc_settings.keys() for subnet in required_subnets):
+        raise KeyError("All subnets must be indicated", required_subnets)
+    for subnet_name in required_subnets:
+        if not isinstance(vpc_settings[subnet_name], (list, str)):
+            raise TypeError(
+                "The subnet_name must be of type", str, list, "Got", type(subnet_name)
+            )
+        subnets = (
+            vpc_settings[subnet_name].split(",")
+            if isinstance(vpc_settings[subnet_name], str)
+            else vpc_settings[subnet_name]
+        )
+        settings[subnet_name] = subnets
+    return settings
+
+
+def apply_vpc_settings(x_settings, root_stack):
+    """
+
+    :param x_settings:
+    :param root_stack:
+    :return:
+    """
+    add_parameters(
+        root_stack.stack_template,
+        [VPC_ID, APP_SUBNETS, STORAGE_SUBNETS, PUBLIC_SUBNETS],
+    )
+    settings_params = {
+        VPC_ID.title: x_settings[VPC_ID.title],
+        APP_SUBNETS.title: x_settings[APP_SUBNETS.title],
+        STORAGE_SUBNETS.title: x_settings[STORAGE_SUBNETS.title],
+        PUBLIC_SUBNETS.title: x_settings[PUBLIC_SUBNETS.title],
+    }
+    root_stack.Parameters.update(settings_params)
+
+
 def add_vpc_to_root(root_stack, settings):
     """
     Function to figure whether to create the VPC Stack and if not, set the parameters.
@@ -109,17 +157,10 @@ def add_vpc_to_root(root_stack, settings):
             x_settings = lookup_x_vpc_settings(
                 settings.session, settings.compose_content[vpc_xkey]["Lookup"]
             )
-            add_parameters(
-                root_stack.stack_template,
-                [VPC_ID, APP_SUBNETS, STORAGE_SUBNETS, PUBLIC_SUBNETS,],
-            )
-            settings_params = {
-                VPC_ID.title: x_settings[VPC_ID.title],
-                APP_SUBNETS.title: x_settings[APP_SUBNETS.title],
-                STORAGE_SUBNETS.title: x_settings[STORAGE_SUBNETS.title],
-                PUBLIC_SUBNETS.title: x_settings[PUBLIC_SUBNETS.title],
-            }
-            root_stack.Parameters.update(settings_params)
+            apply_vpc_settings(x_settings, root_stack)
+        elif keyisset("Use", settings.compose_content[vpc_xkey]):
+            x_settings = import_vpc_settings(settings.compose_content[vpc_xkey]["Use"])
+            apply_vpc_settings(x_settings, root_stack)
         else:
             if keyisset("Create", settings.compose_content[vpc_xkey]) and keyisset(
                 "Lookup", settings.compose_content[vpc_xkey]

@@ -321,10 +321,8 @@ class ComposeXSettings(object):
             self.compose_content = load_composex_file(files_list[0])
             files_list.pop(0)
             for file in files_list:
-                merge_config_file(
-                    self.compose_content, load_composex_file(file)
-                )
-                LOG.info(yaml.dump(self.compose_content))
+                merge_config_file(self.compose_content, load_composex_file(file))
+                LOG.debug(yaml.dump(self.compose_content))
 
         elif content and isinstance(content, dict):
             self.compose_content = content
