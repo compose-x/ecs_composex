@@ -24,7 +24,7 @@ from json import loads
 
 
 def get_access_types():
-    with open("kms_perms.json", "r") as perms_fd:
+    with open("kms_perms.json", "r", encoding="utf-8-sig") as perms_fd:
         return loads(perms_fd.read())
 
 

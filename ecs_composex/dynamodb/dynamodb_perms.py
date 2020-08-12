@@ -20,11 +20,12 @@ Set of functions to generate permissions to access queues
 based on pre-defined TABLE policies for consumers
 """
 
+from os import path
 from json import loads
 
 
 def get_access_types():
-    with open("dynamodb_perms.json", "r") as perms_fd:
+    with open(f"{path.abspath(path.dirname(__file__))}/dynamodb_perms.json", "r", encoding="utf-8-sig") as perms_fd:
         return loads(perms_fd.read())
 
 
