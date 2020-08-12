@@ -2,19 +2,19 @@
 History
 =======
 
-0.6.5 (2020-08-11)
+0.7.0 (2020-08-12)
 ===================
 
+New features:
+
 * `Support for AWS Secrets mapping to secrets in docker-compose <https://github.com/lambda-my-aws/ecs_composex/pull/142>`_
-* Documentation corrections
-* Updates to cover more use-cases
+* Support for `Use` on VPC which needs no lookup
+* Support for IAM policies to manually add ad-hoc permissions outside of the pre-defined ones
+* Additional configuration file to use with CodePipeline
 
-0.6.5 is a fix for 0.6.4 (2020-08-07)
-
-0.6.2 (2020-08-06)
-==================
-
-Quick release enabling additional configuration file to use with CodePipeline
+Various bug fixes and some small features to help making plug-and-play easier.
+Introduction to `Use` which should allow for resources reference outside of your account
+without cross-account lookup.
 
 
 0.6.0 (2020-08-03)
@@ -61,7 +61,7 @@ SQS now into a single stack unless there are more than 30 queues.
 New features
 ------------
 
-* `DynamoDB support <https://github.com/lambda-my-aws/ecs_composex/issues/31>`_
+* `DynOAamoDB support <https://github.com/lambda-my-aws/ecs_composex/issues/31>`_
 * Lookup for existing tables which the services get IAM access to.
 
 0.4.0 (2020-07-20)
