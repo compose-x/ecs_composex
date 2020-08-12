@@ -25,7 +25,11 @@ from json import loads
 
 
 def get_access_types():
-    with open(f"{path.abspath(path.dirname(__file__))}/dynamodb_perms.json", "r", encoding="utf-8-sig") as perms_fd:
+    with open(
+        f"{path.abspath(path.dirname(__file__))}/dynamodb_perms.json",
+        "r",
+        encoding="utf-8-sig",
+    ) as perms_fd:
         return loads(perms_fd.read())
 
 
