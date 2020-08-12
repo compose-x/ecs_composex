@@ -20,40 +20,12 @@ Set of functions to generate permissions to access queues
 based on pre-defined SQS policies for consumers
 """
 
-ACCESS_TYPES = {
-    "RWMessages": {
-        "NotAction": [
-            "sqs:TagQueue",
-            "sqs:RemovePermission",
-            "sqs:AddPermission",
-            "sqs:UntagQueue",
-            "sqs:PurgeQueue",
-            "sqs:DeleteQueue",
-            "sqs:CreateQueue",
-            "sqs:SetQueueAttributes",
-        ],
-        "Effect": "Allow",
-    },
-    "RWPermissions": {
-        "NotAction": [
-            "sqs:RemovePermission",
-            "sqs:AddPermission",
-            "sqs:PurgeQueue",
-            "sqs:SetQueueAttributes",
-        ],
-        "Effect": "Allow",
-    },
-    "RO": {
-        "NotAction": [
-            "sqs:TagQueue",
-            "sqs:RemovePermission",
-            "sqs:AddPermission",
-            "sqs:UntagQueue",
-            "sqs:PurgeQueue",
-            "sqs:Delete*",
-            "sqs:Create*",
-            "sqs:Set*",
-        ],
-        "Effect": "Allow",
-    },
-}
+from json import loads
+
+
+def get_access_types():
+    with open("sqs_perms.json", "r") as perms_fd:
+        return loads(perms_fd.read())
+
+
+ACCESS_TYPES = get_access_types()

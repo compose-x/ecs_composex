@@ -20,22 +20,12 @@ Set of functions to generate permissions to access queues
 based on pre-defined TABLE policies for consumers
 """
 
-ACCESS_TYPES = {
-    "SQS": {"Action": ["kms:GenerateDataKey", "kms:Decrypt"], "Effect": "Allow"},
-    "DecryptOnly": {"Action": ["kms:Decrypt"], "Effect": "Allow"},
-    "EncryptOnly": {
-        "Action": ["kms:Encrypt", "kms:GenerateDataKey*", "kms:ReEncrypt*"],
-        "Effect": "Allow",
-    },
-    "EncryptDecrypt": {
-        "Action": [
-            "kms:Encrypt",
-            "kms:Decrypt",
-            "kms:ReEncrypt*",
-            "kms:GenerateDataKey*",
-            "kms:CreateGrant",
-            "kms:DescribeKey",
-        ],
-        "Effect": "Allow",
-    },
-}
+from json import loads
+
+
+def get_access_types():
+    with open("kms_perms.json", "r") as perms_fd:
+        return loads(perms_fd.read())
+
+
+ACCESS_TYPES = get_access_types()

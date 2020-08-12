@@ -20,31 +20,12 @@ Set of functions to generate permissions to access queues
 based on pre-defined TABLE policies for consumers
 """
 
-ACCESS_TYPES = {
-    "RW": {
-        "Action": [
-            "dynamodb:BatchGet*",
-            "dynamodb:DescribeStream",
-            "dynamodb:DescribeTable",
-            "dynamodb:Get*",
-            "dynamodb:Query",
-            "dynamodb:Scan",
-            "dynamodb:BatchWrite*",
-            "dynamodb:DeleteItem",
-            "dynamodb:UpdateItem",
-            "dynamodb:PutItem",
-        ],
-        "Effect": "Allow",
-    },
-    "RO": {
-        "Action": ["dynamodb:DescribeTable", "dynamodb:Query", "dynamodb:Scan"],
-        "Effect": "Allow",
-    },
-    "PowerUser": {
-        "NotAction": [
-            "dynamodb:CreateTable",
-            "dynamodb:DeleteTable",
-            "dynamodb:DeleteBackup",
-        ]
-    },
-}
+from json import loads
+
+
+def get_access_types():
+    with open("dynamodb_perms.json", "r") as perms_fd:
+        return loads(perms_fd.read())
+
+
+ACCESS_TYPES = get_access_types()
