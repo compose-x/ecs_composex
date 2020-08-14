@@ -20,3 +20,13 @@ x-sqs:
     Services:
       - name: app01
         access: RWMessages
+
+  queueC:
+    Properties:
+      FifoQueue: True
+    Services:
+      - name: app01
+        access: RWMessages
+    Settings:
+      EnvNames:
+        - FIFO_QUEUE
