@@ -68,7 +68,7 @@ def generate_resource_permissions(resource_name, policies, attribute, arn=None):
         clean_policy = {"Version": "2012-10-17", "Statement": []}
         LOG.debug(a_type)
         policy_doc = policies[a_type].copy()
-        policy_doc["Sid"] = Sub(f"{a_type}To{resource_name}In${{{ROOT_STACK_NAME_T}}}")
+        policy_doc["Sid"] = Sub(f"{a_type}To{resource_name}")
         policy_doc["Resource"] = (
             generate_export_strings(resource_name, attribute) if not arn else arn
         )
