@@ -17,7 +17,7 @@ from os import mkdir
 import json
 from botocore.exceptions import ClientError
 from troposphere import Template
-from ecs_composex.common import DATE_PREFIX
+from ecs_composex.common import FILE_PREFIX
 from ecs_composex.common import LOG
 
 JSON_MIME = "application/json"
@@ -43,7 +43,7 @@ def upload_file(
     if mime is None:
         mime = JSON_MIME
     if prefix is None:
-        prefix = DATE_PREFIX
+        prefix = FILE_PREFIX
 
     key = f"{prefix}/{file_name}"
     client = settings.session.client("s3")

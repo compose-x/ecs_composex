@@ -20,9 +20,11 @@
 Most commonly used functions shared across all modules.
 """
 
+
 import logging as logthings
 import re
 import sys
+from uuid import uuid4
 from datetime import datetime as dt
 from os import environ
 
@@ -39,7 +41,7 @@ from ecs_composex.common import cfn_conditions
 from ecs_composex import __version__ as version
 
 DATE = dt.utcnow().isoformat()
-DATE_PREFIX = dt.utcnow().strftime("%Y/%m/%d/%H%M")
+FILE_PREFIX = f'{dt.utcnow().strftime("%Y/%m/%d/%H%M")}/{str(uuid4().hex)[:6]}'
 NONALPHANUM = re.compile(r"([^a-zA-Z0-9])")
 
 EXIT_CODES = {"MODULE_NOT_FOUND": 8, "MISSING_RESOURCE_DEFINITION": 9}
