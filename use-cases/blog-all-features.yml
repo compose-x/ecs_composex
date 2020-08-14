@@ -83,7 +83,8 @@ x-sqs:
 
   queueB:
     Properties:
-      QueueName: xyz
+      FifoQueue: True
+      QueueName: x-y-z
     Settings:
       EnvNames:
         - QUEUEB

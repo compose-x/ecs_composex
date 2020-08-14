@@ -77,6 +77,8 @@ def set_queue(queue_name, properties, redrive_policy=None):
         properties["QueueName"] = Sub(f"${{{ROOT_STACK_NAME_T}}}-{queue_name}")
     else:
         properties["QueueName"] = Sub(f"${{{ROOT_STACK_NAME_T}}}-{res_name}")
+    if keyisset("FifoQueue", properties):
+        properties["QueueName"] = f"{NONALPHANUM.sub('', queue_name)}.fifo"
     queue = Queue(res_name, **properties)
     return queue
 
