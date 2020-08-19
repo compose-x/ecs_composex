@@ -20,6 +20,9 @@
 from os import path
 from troposphere import Parameter
 
+SQS_URL_T = "Url"
+SQS_URL = Parameter(SQS_URL_T, Type="String")
+
 SQS_ARN_T = "Arn"
 SQS_ARN = Parameter(SQS_ARN_T, Type="String")
 
