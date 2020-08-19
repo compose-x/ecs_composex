@@ -37,6 +37,7 @@ from troposphere import Sub, Ref, Join, Tags
 from troposphere.ec2 import SecurityGroup
 
 from ecs_composex.common import build_template
+from ecs_composex.common.cfn_params import ROOT_STACK_NAME
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.dns import dns_params
 from ecs_composex.ecs import ecs_params
@@ -99,11 +100,11 @@ class ServicesStack(ComposeXStack):
         cluster_sg = template.add_resource(
             SecurityGroup(
                 "ClusterWideSecurityGroup",
-                GroupDescription=Sub(f"SG for ${{{CLUSTER_NAME_T}}}"),
-                GroupName=Sub(f"cluster-${{{CLUSTER_NAME_T}}}"),
+                GroupDescription=Sub(f"SG for ${{{ROOT_STACK_NAME.title}}}"),
+                GroupName=Sub(f"cluster-${{{ROOT_STACK_NAME.title}}}"),
                 Tags=Tags(
                     {
-                        "Name": Sub(f"clustersg-${{{CLUSTER_NAME_T}}}"),
+                        "Name": Sub(f"clustersg-${{{ROOT_STACK_NAME.title}}}"),
                         "ClusterName": Ref(CLUSTER_NAME),
                     }
                 ),
