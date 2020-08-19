@@ -39,6 +39,7 @@ from ecs_composex.sqs.sqs_params import (
     SQS_ARN_T,
     DLQ_ARN,
     DLQ_ARN_T,
+    SQS_URL
 )
 
 CFN_MAX_OUTPUTS = 50
@@ -140,6 +141,7 @@ def generate_sqs_root_template(settings):
         queue = define_queue(queue_name, queue_def, queues, mono_template)
         if queue:
             values = [
+                (SQS_URL, "Url", Ref(queue)),
                 (SQS_ARN_T, "Arn", GetAtt(queue, "Arn")),
                 (SQS_NAME_T, "Name", Ref(queue)),
             ]
