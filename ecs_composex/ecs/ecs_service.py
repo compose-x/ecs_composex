@@ -61,7 +61,7 @@ from troposphere.servicediscovery import (
 )
 
 from ecs_composex.common import add_parameters
-from ecs_composex.common import keyisset, LOG
+from ecs_composex.common import keyisset, LOG, NONALPHANUM
 from ecs_composex.common.cfn_conditions import USE_STACK_NAME_CON_T
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.outputs import ComposeXOutput
@@ -323,6 +323,7 @@ class Service(object):
         :param family_name: Name of the service
         :type family_name: str
         """
+        self.alb_sg = None
         self.template = template
         self.config = config
         self.task = task_definition
@@ -364,11 +365,86 @@ class Service(object):
         self.generate_service_definition(self.task.definition)
         self.generate_service_template_outputs()
 
+    def add_self_ingress(self, sg):
+        """
+        Method to allow communications internally to the group on set ports
+        :param sg:
+        :return:
+        """
+        for port in self.config.ports:
+            SecurityGroupIngress(
+                f"AllowingMyselfToMyselfOnPort{port['published']}",
+                template=self.template,
+                FromPort=port["published"],
+                ToPort=port["published"],
+                IpProtocol=port["protocol"],
+                GroupId=GetAtt(sg, "GroupId"),
+                SourceSecurityGroupId=GetAtt(sg, "GroupId"),
+                SourceSecurityGroupOwnerId=Ref(AWS_ACCOUNT_ID),
+                Description=Sub(
+                    f"Allowing traffic internally on port {port['published']}"
+                ),
+            )
+
+    def add_aws_sources(self, sg):
+        """
+        Method to add ingress rules from other AWS Sources
+        :param sg:
+        :return:
+        """
+        allowed_keys = ["type", "id"]
+        allowed_types = ["SecurityGroup", "PrefixList"]
+        for source in self.config.aws_sources:
+            if not all(key in allowed_keys for key in source.keys()):
+                raise KeyError(
+                    "Missing ingress properties. Got",
+                    source.keys,
+                    "Expected",
+                    allowed_keys,
+                )
+            if not source["type"] in allowed_types:
+                raise ValueError(
+                    "Invalid type specified. Got",
+                    source["type"],
+                    "Allowed one of ",
+                    allowed_types,
+                )
+            if source["type"] == "SecurityGroup":
+                for port in self.config.ports:
+                    SecurityGroupIngress(
+                        f"From{NONALPHANUM.sub('', source['id'])}ToServiceOn{port['published']}",
+                        template=self.template,
+                        FromPort=port["published"],
+                        ToPort=port["published"],
+                        IpProtocol=port["protocol"],
+                        GroupId=GetAtt(sg, "GroupId"),
+                        SourceSecurityGroupOwnerId=Ref(AWS_ACCOUNT_ID),
+                        SourceSecurityGroupId=source["id"],
+                        Description=Sub(
+                            f"From {source['id']} to ${{{SERVICE_NAME_T}}} on port {port['published']}"
+                        ),
+                    )
+            elif source["type"] == "PrefixList":
+                for port in self.config.ports:
+                    SecurityGroupIngress(
+                        f"From{NONALPHANUM.sub('', source['id'])}ToServiceOn{port['published']}",
+                        template=self.template,
+                        FromPort=port["published"],
+                        ToPort=port["published"],
+                        IpProtocol=port["protocol"],
+                        GroupId=GetAtt(sg, "GroupId"),
+                        SourceSecurityGroupOwnerId=Ref(AWS_ACCOUNT_ID),
+                        SourcePrefixListId=source["id"],
+                        Description=Sub(
+                            f"From {source['id']} to ${{{SERVICE_NAME_T}}} on port {port['published']}"
+                        ),
+                    )
+
     def add_service_default_sg(self):
         """
         Adds a default security group for the microservice.
         """
-        self.template.add_resource(
+        sg = self.template.add_resource(
             SecurityGroup(
                 SG_T,
                 GroupDescription=If(
@@ -390,6 +466,7 @@ class Service(object):
                 VpcId=Ref(VPC_ID),
             )
         )
+        return sg
 
     def add_service_to_map(self):
         """
@@ -423,31 +500,6 @@ class Service(object):
             registries.append(registry)
             break
         return registries
-
-    def add_lb_to_service_ingress(self, lb_sg, service_sg):
-        """
-        Method to add ingress rules between the LB and the microservice according to the ports defined by the service.
-
-        :param lb_sg: Load Balancer security group
-        :type lb_sg: troposphere.ec2.SecurityGroup
-        :param service_sg: security group of the microservice
-        :type service_sg: str or troposphere.ec2.SecurityGroup
-        """
-        LOG.debug(f"Adding ALB ingress to ecs_service")
-        for port in self.config.ports:
-            SecurityGroupIngress(
-                f"From{self.config.lb_type.title()}ToServicePort{port['target']}",
-                template=self.template,
-                FromPort=port["target"],
-                ToPort=port["target"],
-                IpProtocol=port["protocol"],
-                GroupId=GetAtt(service_sg, "GroupId"),
-                SourceSecurityGroupOwnerId=Ref(AWS_ACCOUNT_ID),
-                SourceSecurityGroupId=GetAtt(lb_sg, "GroupId"),
-                Description=Sub(
-                    f"From LB to ${{{SERVICE_NAME_T}}} on port {port['target']}"
-                ),
-            )
 
     def create_lb_ingress_rule(self, allowed_source, security_group, **props):
         for port in self.config.ports:
@@ -533,7 +585,7 @@ class Service(object):
         suffix = "Private"
         if self.config.is_public:
             suffix = "Public"
-        sg = SecurityGroup(
+        self.alb_sg = SecurityGroup(
             f"AlbSecurityGroup{suffix}",
             template=self.template,
             GroupDescription=Sub(
@@ -557,11 +609,10 @@ class Service(object):
                 FromPort=port,
                 ToPort=port,
                 GroupId=GetAtt(SG_T, "GroupId"),
-                SourceSecurityGroupId=GetAtt(sg, "GroupId"),
+                SourceSecurityGroupId=GetAtt(self.alb_sg, "GroupId"),
                 SourceSecurityGroupOwnerId=Ref(AWS_ACCOUNT_ID),
                 IpProtocol="tcp",
             )
-        return sg
 
     def add_lb_listener(self, port, lb, tgt, target_port):
         """
@@ -639,16 +690,14 @@ class Service(object):
         :return: loadbalancer
         :rtype: troposphere.elasticloadbalancingv2.LoadBalancer
         """
-        alb_sg = None
         if self.config.is_public and self.config.use_nlb():
             self.add_public_ips(settings.aws_azs)
 
         no_value = Ref(AWS_NO_VALUE)
         public_mapping = define_public_mapping(self.eips, settings.aws_azs)
         if self.config.ingress_mappings and self.config.use_alb():
-            alb_sg = self.add_alb_sg(self.config.ingress_mappings.keys())
-            # self.add_lb_to_service_ingress(alb_sg, SG_T)
-            lb_sg = [Ref(alb_sg)]
+            self.add_alb_sg(self.config.ingress_mappings.keys())
+            lb_sg = [Ref(self.alb_sg)]
         else:
             lb_sg = no_value
 
@@ -703,8 +752,8 @@ class Service(object):
                     "AWS_ALIAS_DNS_NAME": GetAtt(loadbalancer, "DNSName")
                 },
             )
-            if self.config.use_alb() and alb_sg:
-                self.add_public_security_group_ingress(alb_sg)
+            if self.config.use_alb() and self.alb_sg:
+                self.add_public_security_group_ingress(self.alb_sg)
             elif self.config.use_nlb():
                 self.add_public_security_group_ingress(SG_T)
         return loadbalancer
@@ -766,7 +815,7 @@ class Service(object):
 
         :param ecs_composex.common.settings.ComposeXSettings settings: Execution settings
         """
-        self.add_service_default_sg()
+        sg = self.add_service_default_sg()
         service_lbs = Ref(AWS_NO_VALUE)
         registries = self.add_service_to_map()
         if not registries:
@@ -787,6 +836,14 @@ class Service(object):
             self.service_attrs["DependsOn"] = (
                 service_lb[-1] if isinstance(service_lb[-1], list) else []
             )
+            if self.config.use_alb() and self.config.aws_sources:
+                self.add_aws_sources(self.alb_sg)
+        elif (
+            self.config.use_nlb() and self.config.aws_sources
+        ) or self.config.aws_sources:
+            self.add_aws_sources(sg)
+        if self.config.ingress_from_self:
+            self.add_self_ingress(sg)
 
     def generate_service_definition(self, task_definition):
         """

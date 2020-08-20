@@ -56,7 +56,9 @@ def handle_new_queues(
 
     for queue_name in xresources:
         if queue_name in queues_r:
-            perms = generate_resource_permissions(queue_name, ACCESS_TYPES, SQS_ARN.title)
+            perms = generate_resource_permissions(
+                queue_name, ACCESS_TYPES, SQS_ARN.title
+            )
             envvars = generate_resource_envvars(
                 queue_name, xresources[queue_name], SQS_URL
             )
