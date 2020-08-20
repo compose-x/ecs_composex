@@ -433,7 +433,6 @@ class Service(object):
                         ToPort=port["published"],
                         IpProtocol=port["protocol"],
                         GroupId=GetAtt(sg, "GroupId"),
-                        SourceSecurityGroupOwnerId=Ref(AWS_ACCOUNT_ID),
                         SourcePrefixListId=source["id"],
                         Description=Sub(
                             f"From {source['id']} to ${{{SERVICE_NAME_T}}} on port {port['published']}"
