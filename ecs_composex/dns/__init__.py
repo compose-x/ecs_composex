@@ -148,6 +148,23 @@ class DnsSettings(object):
                     dns_params.PRIVATE_DNS_ZONE_ID: GetAtt(self.private_map, "Id"),
                 }
             )
+        elif keyisset("Use", dns_settings[self.private_namespace_key]):
+            self.root_params.update(
+                {
+                    dns_params.PRIVATE_DNS_ZONE_ID.title: dns_settings[self.private_namespace_key]["Use"],
+                    dns_params.PRIVATE_DNS_ZONE_NAME.title: self.private_zone_name
+                }
+            )
+            self.nested_params.update(
+                {
+                    dns_params.PRIVATE_DNS_ZONE_ID.title: If(
+                        dns_conditions.CREATE_PRIVATE_NAMESPACE_CON_T,
+                        GetAtt(self.private_map, "Id"),
+                        Ref(dns_params.PRIVATE_DNS_ZONE_ID),
+                    ),
+                    dns_params.PRIVATE_DNS_ZONE_NAME.title: dns_params.DEFAULT_PRIVATE_DNS_ZONE,
+                }
+            )
         else:
             LOG.info(self.private_zone_name)
             self.root_params.update(
