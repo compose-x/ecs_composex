@@ -23,7 +23,7 @@ from troposphere import Sub, AWS_PARTITION, AWS_REGION, AWS_ACCOUNT_ID
 from troposphere.ecs import Secret as EcsSecret
 from troposphere.iam import Policy
 
-from ecs_composex.common import LOG, keyisset
+from ecs_composex.common import LOG, keyisset, NONALPHANUM
 from ecs_composex.ecs.ecs_params import TASK_ROLE_T, EXEC_ROLE_T
 from ecs_composex.ecs.ecs_iam import define_service_containers
 from ecs_composex.ecs.ecs_container_config import extend_container_secrets
@@ -84,7 +84,7 @@ class ComposeSecret(object):
         task_role = template.resources[TASK_ROLE_T]
         exec_role = template.resources[EXEC_ROLE_T]
         policy = Policy(
-            PolicyName=f"AccessSecret{self.name}",
+            PolicyName=f"AccessSecret{NONALPHANUM.sub('', self.name)}",
             PolicyDocument={
                 "Version": "2012-10-17",
                 "Statement": [
@@ -92,7 +92,7 @@ class ComposeSecret(object):
                         "Action": ["secretsmanager:GetSecretValue"],
                         "Effect": "Allow",
                         "Resource": self.aws_iam_name,
-                        "Sid": f"AccessToSecret{self.name}",
+                        "Sid": f"AccessToSecret{NONALPHANUM.sub('', self.name)}",
                     }
                 ],
             },
