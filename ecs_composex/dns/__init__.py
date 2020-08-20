@@ -151,8 +151,10 @@ class DnsSettings(object):
         elif keyisset("Use", dns_settings[self.private_namespace_key]):
             self.root_params.update(
                 {
-                    dns_params.PRIVATE_DNS_ZONE_ID.title: dns_settings[self.private_namespace_key]["Use"],
-                    dns_params.PRIVATE_DNS_ZONE_NAME.title: self.private_zone_name
+                    dns_params.PRIVATE_DNS_ZONE_ID.title: dns_settings[
+                        self.private_namespace_key
+                    ]["Use"],
+                    dns_params.PRIVATE_DNS_ZONE_NAME.title: self.private_zone_name,
                 }
             )
             self.nested_params.update(

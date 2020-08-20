@@ -45,6 +45,14 @@ services:
       LOGLEVEL: DEBUG
     x-configs:
       use_xray: True
+      network:
+        ingress:
+          myself: True
+          aws_sources:
+            - type: SecurityGroup
+              id: sg-abcd
+            - type: PrefixList
+              id: pl-abcd
     links:
       - app03:dateteller
 
@@ -96,4 +104,3 @@ x-vpc:
 
 x-cluster:
   Use: dev
-

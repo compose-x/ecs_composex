@@ -215,7 +215,7 @@ class ServiceConfig(object):
         "use_cloudmap": True,
         "is_public": False,
         "lb_type": None,
-        "ext_sources": None,
+        "ingress": None,
     }
 
     def __init__(self, content, service_name, definition, family_name=None):
@@ -232,6 +232,8 @@ class ServiceConfig(object):
         self.lb_type = None
         self.healthcheck = None
         self.ext_sources = None
+        self.aws_sources = None
+        self.ingress_from_self = False
         self.is_public: False
         self.use_cloudmap = True
         self.use_appmesh = False
@@ -355,6 +357,25 @@ class ServiceConfig(object):
             elif key_name == "policies" and isinstance(config["policies"], list):
                 self.add_policies(config["policies"])
 
+    def parse_ingress(self, ingress_settings):
+        """
+        Method to set the ingress_name for the service.
+        :param ingress_settings:
+        :return:
+        """
+        allowed_keys = ["ext_sources", "aws_sources", "myself"]
+        for ingress_name in ingress_settings:
+            if ingress_name not in allowed_keys:
+                raise ValueError(
+                    f"Setting {ingress_name} is not valid. Allowed", allowed_keys
+                )
+            if ingress_name == "myself" and ingress_settings["myself"]:
+                self.ingress_from_self = True
+            elif ingress_name == "ext_sources":
+                self.ext_sources = ingress_settings[ingress_name]
+            elif ingress_name == "aws_sources":
+                self.aws_sources = ingress_settings[ingress_name]
+
     def init_network(self, config):
         """
         Function to define networking properties
@@ -372,7 +393,10 @@ class ServiceConfig(object):
                 setattr(self, key_name, self.network_defaults[key_name])
             elif key_name in config.keys():
                 LOG.debug(f"ELSE - {key_name}- {config[key_name]}")
-                setattr(self, key_name, config[key_name])
+                if key_name == "ingress":
+                    self.parse_ingress(config[key_name])
+                else:
+                    setattr(self, key_name, config[key_name])
 
     def set_from_top_configs(self, compose_content):
         """

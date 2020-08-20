@@ -56,7 +56,7 @@ This is a top section describing the network configuration in play for the servi
 
 Subkeys of the section:
 
-*   `ext_sources`_
+*   `ingress`_
 
 *   `is_public`_
 
@@ -76,13 +76,13 @@ Subkeys of the section:
         - 80:80
         x-configs:
           network:
-        lb_type: application
-            ext_sources: []
+	    lb_type: application
+            ingress: {}
             healthcheck: {}
 
 
-ext_sources
-"""""""""""
+ingress
+"""""""
 
 This allows you to define specific ingress control from external sources to your environment. For example, if you have
 to whitelist IP addresses that are to be allowed communication to the services, you can list these, and indicate their
@@ -93,20 +93,25 @@ name which will be shown in the EC2 security group description of the ingress ru
     x-configs:
       app01:
         network:
-          ext_sources:
-            - ipv4: 0.0.0.0/0
-              protocol: tcp
-              source_name: all
-            - ipv4: 1.1.1.1/32
-              protocol: icmp
-              source_name: CloudFlareDNS
+	  ingress:
+	    ext_sources:
+	      - ipv4: 0.0.0.0/0
+		protocol: tcp
+		source_name: all
+	      - ipv4: 1.1.1.1/32
+		protocol: icmp
+                source_name: CloudFlareDNS
+	    aws_sources:
+	      - type: SecurityGroup
+	        id: sg-abcd
+	      - type: PrefixList
+		id: pl-abcd
+	    myself: True/False
 
 .. note::
 
     Future feature is to allow to input a security group ID and the remote account ID to allow ingress traffic from
     a security group owned by another of your account (or 3rd party).
-    This feature was implemented before AWS released AWS EC2 PrefixLists.
-    It will be migrated to PrefixLists eventually.
 
 
 is_public

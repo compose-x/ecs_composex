@@ -39,7 +39,7 @@ from ecs_composex.sqs.sqs_params import (
     SQS_ARN_T,
     DLQ_ARN,
     DLQ_ARN_T,
-    SQS_URL
+    SQS_URL,
 )
 
 CFN_MAX_OUTPUTS = 50
