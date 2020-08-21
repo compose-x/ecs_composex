@@ -22,6 +22,9 @@ services:
         ecs.task.family: app01
 
   app03:
+    x-configs:
+      logging:
+        logs_retention_period: 60
     ports:
       - 5000
     deploy:

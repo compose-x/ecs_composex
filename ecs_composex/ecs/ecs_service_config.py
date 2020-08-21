@@ -209,7 +209,7 @@ class ServiceConfig(object):
 
     master_key = "x-configs"
     composex_key = "composex"
-    valid_config_keys = ["network", "iam", "x-ray"]
+    valid_config_keys = ["network", "iam", "x-ray", "logging"]
 
     network_defaults = {
         "use_cloudmap": True,
@@ -241,7 +241,7 @@ class ServiceConfig(object):
         self.policies = []
         self.managed_policies = []
         self.service_name = service_name if service_name else "global"
-
+        self.logs_retention_period = ecs_params.LOG_GROUP_RETENTION.Default
         if keyisset("x-appmesh", content):
             self.use_appmesh = True
 
@@ -356,6 +356,27 @@ class ServiceConfig(object):
                 self.add_managed_policies(config["managed_policies"])
             elif key_name == "policies" and isinstance(config["policies"], list):
                 self.add_policies(config["policies"])
+
+    def init_logging(self, config):
+        """
+        Method to handle `logging`
+        :param config:
+        """
+        allowed_keys = ["logs_retention_period"]
+        for key in allowed_keys:
+            if key not in allowed_keys:
+                raise KeyError(
+                    f"{key} not allowed setting for logging. Allowed", allowed_keys
+                )
+            if key in config and key == "logs_retention_period":
+                setattr(
+                    self,
+                    key,
+                    min(
+                        ecs_params.LOG_GROUP_RETENTION.AllowedValues,
+                        key=lambda x: abs(x - config[key]),
+                    ),
+                )
 
     def parse_ingress(self, ingress_settings):
         """

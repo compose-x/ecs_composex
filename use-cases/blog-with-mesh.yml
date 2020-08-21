@@ -17,6 +17,8 @@ services:
 
   app03:
     x-configs:
+      logging:
+        logs_retention_period: 61
       use_xray: True
       iam:
         boundary: arn:aws:iam::aws:policy/PowerUserAccess
