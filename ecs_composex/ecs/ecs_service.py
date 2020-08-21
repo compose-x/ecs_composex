@@ -349,7 +349,7 @@ class Service(object):
             vpc_params.APP_SUBNETS_T: Join(",", Ref(vpc_params.APP_SUBNETS)),
             vpc_params.PUBLIC_SUBNETS_T: Join(",", Ref(vpc_params.PUBLIC_SUBNETS)),
             ecs_params.CLUSTER_NAME_T: Ref(ecs_params.CLUSTER_NAME),
-            ecs_params.LOG_GROUP_RETENTION.title: self.config.logs_retention_period
+            ecs_params.LOG_GROUP_RETENTION.title: self.config.logs_retention_period,
         }
         if config.family_name is not None:
             self.parameters.update({ecs_params.SERVICE_NAME_T: config.family_name})

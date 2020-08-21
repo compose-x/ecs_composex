@@ -39,7 +39,9 @@ from troposphere.ec2 import (
     EIP,
     Route,
     RouteTable,
-    VPCEndpoint, SecurityGroup, SecurityGroupRule
+    VPCEndpoint,
+    SecurityGroup,
+    SecurityGroupRule,
 )
 
 from ecs_composex.common import keyisset, NONALPHANUM
@@ -180,7 +182,7 @@ def add_gateway_endpoint(service, rtbs, template):
     Function to add a service endpoint for gateways
     """
     VPCEndpoint(
-        NONALPHANUM.sub('', f"{service['service']}Endpoint"),
+        NONALPHANUM.sub("", f"{service['service']}Endpoint"),
         template=template,
         ServiceName=Sub(f"com.amazonaws.${{AWS::Region}}.{service['service']}"),
         RouteTableIds=[Ref(rtb) for rtb in rtbs],
@@ -194,14 +196,14 @@ def add_interface_endpoint(sg, service, subnets, template):
     Function to add a service endpoint for gateways
     """
     VPCEndpoint(
-        NONALPHANUM.sub('', f"{service['service']}Endpoint"),
+        NONALPHANUM.sub("", f"{service['service']}Endpoint"),
         template=template,
         ServiceName=Sub(f"com.amazonaws.${{AWS::Region}}.{service['service']}"),
         SubnetIds=[Ref(subnet) for subnet in subnets],
         VpcEndpointType="Interface",
         VpcId=Ref(template.resources[VPC_T]),
         SecurityGroupIds=[Ref(sg)],
-        PrivateDnsEnabled=True
+        PrivateDnsEnabled=True,
     )
 
 
@@ -278,9 +280,9 @@ def add_apps_subnets(template, vpc, az_index, layers, nats, endpoints=None):
                         FromPort=443,
                         ToPort=443,
                         IpProtocol="TCP",
-                        Description="HTTPs to VPC Endpoint"
+                        Description="HTTPs to VPC Endpoint",
                     )
-                ]
+                ],
             )
             for service in endpoints["AwsServices"]:
                 if service["service"] == "s3":
