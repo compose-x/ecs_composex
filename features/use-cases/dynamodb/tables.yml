@@ -207,3 +207,9 @@ x-vpc:
   Create:
     VpcCidr: 172.23.0.0/24
     SingleNat: False
+    Endpoints:
+      AwsServices:
+        - service: s3
+        - service: ecr.dkr
+        - service: ecr.api
+
