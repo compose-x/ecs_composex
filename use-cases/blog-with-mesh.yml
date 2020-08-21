@@ -75,33 +75,20 @@ x-vpc:
   Create:
     VpcCidr: 10.21.42.0/24
     SingleNat: True
-
-#  Lookup:
-#    VpcId:
-#      tags:
-#        - Name: vpcwork
-#    AppSubnets:
-#      tags:
-#        - vpc::usage: application
-#    StorageSubnets:
-#      tags:
-#        - vpc::usage: storage
-#    PublicSubnets:
-#      tags:
-#        - vpc::usage: public
-
+    Endpoints:
+      AwsServices:
+        - service: s3
+        - service: ecr.dkr
+        - service: ecr.api
 
 x-cluster:
-#  Properties:
-#    CapacityProviders:
-#      - FARGATE
-#      - FARGATE_SPOT
-#    ClusterName: testabcd
-#    DefaultCapacityProviderStrategy:
-#      - CapacityProvider: FARGATE_SPOT
-#        Weight: 4
-#        Base: 2
-#      - CapacityProvider: FARGATE
-#        Weight: 1
-
-  Lookup: test2
+ Properties:
+   CapacityProviders:
+     - FARGATE
+     - FARGATE_SPOT
+   DefaultCapacityProviderStrategy:
+     - CapacityProvider: FARGATE_SPOT
+       Weight: 4
+       Base: 2
+     - CapacityProvider: FARGATE
+       Weight: 1

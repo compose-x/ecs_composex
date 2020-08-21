@@ -33,6 +33,10 @@ SG_NAME_TYPE = "AWS::EC2::SecurityGroup::GroupName"
 DEFAULT_VPC_CIDR = "100.64.72.0/24"
 DEFAULT_SINGLE_NAT = True
 
+
+VPC_T = "Vpc"
+IGW_T = "InternetGatewayV4"
+
 RES_KEY = "vpc"
 VPC_ID_T = "VpcId"
 VPC_ID = Parameter(VPC_ID_T, Type=VPC_TYPE)

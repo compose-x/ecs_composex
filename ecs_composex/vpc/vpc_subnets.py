@@ -39,12 +39,15 @@ from troposphere.ec2 import (
     EIP,
     Route,
     RouteTable,
+    VPCEndpoint, SecurityGroup, SecurityGroupRule
 )
 
+from ecs_composex.common import keyisset, NONALPHANUM
 from ecs_composex.common.cfn_conditions import USE_STACK_NAME_CON_T
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.ecs_composex import CFN_EXPORT_DELIMITER as DELIM
 from ecs_composex.vpc import metadata
+from ecs_composex.vpc.vpc_params import VPC_T, IGW_T
 
 
 def add_storage_subnets(template, vpc, az_index, layers):
@@ -172,7 +175,37 @@ def add_public_subnets(template, vpc, az_index, layers, igw, single_nat):
     return [rtb], subnets, nats
 
 
-def add_apps_subnets(template, vpc, az_index, layers, nats):
+def add_gateway_endpoint(service, rtbs, template):
+    """
+    Function to add a service endpoint for gateways
+    """
+    VPCEndpoint(
+        NONALPHANUM.sub('', f"{service['service']}Endpoint"),
+        template=template,
+        ServiceName=Sub(f"com.amazonaws.${{AWS::Region}}.{service['service']}"),
+        RouteTableIds=[Ref(rtb) for rtb in rtbs],
+        VpcEndpointType="Gateway",
+        VpcId=Ref(template.resources[VPC_T]),
+    )
+
+
+def add_interface_endpoint(sg, service, subnets, template):
+    """
+    Function to add a service endpoint for gateways
+    """
+    VPCEndpoint(
+        NONALPHANUM.sub('', f"{service['service']}Endpoint"),
+        template=template,
+        ServiceName=Sub(f"com.amazonaws.${{AWS::Region}}.{service['service']}"),
+        SubnetIds=[Ref(subnet) for subnet in subnets],
+        VpcEndpointType="Interface",
+        VpcId=Ref(template.resources[VPC_T]),
+        SecurityGroupIds=[Ref(sg)],
+        PrivateDnsEnabled=True
+    )
+
+
+def add_apps_subnets(template, vpc, az_index, layers, nats, endpoints=None):
     """
     Function to add application/hosts subnets to the VPC
 
@@ -231,4 +264,27 @@ def add_apps_subnets(template, vpc, az_index, layers, nats):
         )
         rtbs.append(rtb)
         subnets.append(subnet)
+    if endpoints is not None:
+        if keyisset("AwsServices", endpoints):
+            sg_endpoints = SecurityGroup(
+                "VpcEndpointsSg",
+                template=template,
+                GroupName=Sub(f"vpc-endpoints-${{{VPC_T}}}"),
+                GroupDescription=Sub(f"VPC Endpoints for VPC ${{{VPC_T}}}"),
+                VpcId=Ref(template.resources[VPC_T]),
+                SecurityGroupIngress=[
+                    SecurityGroupRule(
+                        CidrIp=GetAtt(template.resources[VPC_T], "CidrBlock"),
+                        FromPort=443,
+                        ToPort=443,
+                        IpProtocol="TCP",
+                        Description="HTTPs to VPC Endpoint"
+                    )
+                ]
+            )
+            for service in endpoints["AwsServices"]:
+                if service["service"] == "s3":
+                    add_gateway_endpoint(service, rtbs, template)
+                else:
+                    add_interface_endpoint(sg_endpoints, service, subnets, template)
     return rtbs, subnets

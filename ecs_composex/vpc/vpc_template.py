@@ -37,6 +37,7 @@ from ecs_composex.common.cfn_params import ROOT_STACK_NAME, ROOT_STACK_NAME_T
 from ecs_composex.common.outputs import ComposeXOutput
 from ecs_composex.dns.dns_params import PRIVATE_DNS_ZONE_NAME
 from ecs_composex.vpc import vpc_params, aws_mappings
+from ecs_composex.vpc.vpc_params import VPC_T, IGW_T
 from ecs_composex.vpc.vpc_maths import get_subnet_layers
 from ecs_composex.vpc.vpc_subnets import (
     add_public_subnets,
@@ -47,9 +48,6 @@ from ecs_composex.vpc import metadata
 
 AZ_INDEX_PATTERN = r"(([a-z0-9-]+)([a-z]{1}$))"
 AZ_INDEX_RE = re.compile(AZ_INDEX_PATTERN)
-
-VPC_T = "vpc"
-IGW_T = "InternetGatewayV4"
 
 
 def add_template_outputs(template, vpc, storage_subnets, public_subnets, app_subnets):
@@ -182,7 +180,7 @@ def add_vpc_core(template, vpc_cidr):
     return (vpc, igw)
 
 
-def generate_vpc_template(cidr_block, azs, single_nat=False):
+def generate_vpc_template(cidr_block, azs, endpoints=None, single_nat=False):
     """
     Function to generate a new VPC template for CFN
 
@@ -193,6 +191,8 @@ def generate_vpc_template(cidr_block, azs, single_nat=False):
 
     :return: Template() representing the VPC and associated resources
     """
+    if endpoints is None:
+        endpoints = []
     curated_azs = []
     for az in azs:
         if isinstance(az, dict):
@@ -212,7 +212,7 @@ def generate_vpc_template(cidr_block, azs, single_nat=False):
         template, vpc[0], azs_index, layers, vpc[-1], single_nat
     )
     app_subnets = add_apps_subnets(
-        template, vpc[0], azs_index, layers, public_subnets[-1]
+        template, vpc[0], azs_index, layers, public_subnets[-1], endpoints
     )
     add_template_outputs(
         template, vpc[0], storage_subnets[1], public_subnets[1], app_subnets[1],

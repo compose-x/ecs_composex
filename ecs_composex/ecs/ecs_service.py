@@ -340,7 +340,6 @@ class Service(object):
         self.resource_name = (
             config.resource_name if config.family_name is None else config.family_name
         )
-        print(self.config.logs_retention_period)
         self.parameters = {
             vpc_params.VPC_ID_T: Ref(vpc_params.VPC_ID),
             PRIVATE_DNS_ZONE_ID.title: Ref(PRIVATE_DNS_ZONE_ID),

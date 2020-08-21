@@ -50,6 +50,7 @@ class VpcStack(ComposeXStack):
             cidr_block=vpc_settings[VPC_CIDR.title],
             azs=settings.aws_azs,
             single_nat=vpc_settings[VPC_SINGLE_NAT.title],
+            endpoints=vpc_settings["endpoints"]
         )
         super().__init__(title, stack_template=template, **kwargs)
 
@@ -68,6 +69,7 @@ def define_create_settings(create_def):
         VPC_SINGLE_NAT.title: True
         if not keyisset(VPC_SINGLE_NAT.title, create_def)
         else create_def[VPC_SINGLE_NAT.title],
+        "endpoints": create_def["Endpoints"] if keyisset("Endpoints", create_def) else []
     }
     return create_settings
 
