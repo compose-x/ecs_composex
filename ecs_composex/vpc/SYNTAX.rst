@@ -15,9 +15,37 @@ Creating a new VPC
       Create:
         SingleNat: true
         VpcCidr: 172.6.7.42/24
+        Endpoints:
+          AwsServices:
+            - service: s3
+            - service: ecr.api
+            - service: ecr.dkr
 
-Using an existing VPC
----------------------
+Use and existing VPC and subnets
+---------------------------------
+
+.. code-block:: yaml
+
+    x-vpc:
+      Use:
+        VpcId: vpc-id
+        AppSubnets:
+          - subnet-id
+          - subnet-id
+        StorageSubnets:
+          - subnet-id
+          - subnet-id
+        PublicSubnets:
+          - subnet-id
+          - subnet-id
+
+.. hint::
+
+    The difference with Lookup is that, it won't try to find the VPC and Subnets, allow to "hardcode" static
+    values.
+
+Looking up for an existing VPC
+-------------------------------
 
 .. code-block:: yaml
 

@@ -340,7 +340,6 @@ class Service(object):
         self.resource_name = (
             config.resource_name if config.family_name is None else config.family_name
         )
-        print(self.config.logs_retention_period)
         self.parameters = {
             vpc_params.VPC_ID_T: Ref(vpc_params.VPC_ID),
             PRIVATE_DNS_ZONE_ID.title: Ref(PRIVATE_DNS_ZONE_ID),
@@ -350,7 +349,7 @@ class Service(object):
             vpc_params.APP_SUBNETS_T: Join(",", Ref(vpc_params.APP_SUBNETS)),
             vpc_params.PUBLIC_SUBNETS_T: Join(",", Ref(vpc_params.PUBLIC_SUBNETS)),
             ecs_params.CLUSTER_NAME_T: Ref(ecs_params.CLUSTER_NAME),
-            ecs_params.LOG_GROUP_RETENTION.title: self.config.logs_retention_period
+            ecs_params.LOG_GROUP_RETENTION.title: self.config.logs_retention_period,
         }
         if config.family_name is not None:
             self.parameters.update({ecs_params.SERVICE_NAME_T: config.family_name})

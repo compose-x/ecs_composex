@@ -50,6 +50,9 @@ class VpcStack(ComposeXStack):
             cidr_block=vpc_settings[VPC_CIDR.title],
             azs=settings.aws_azs,
             single_nat=vpc_settings[VPC_SINGLE_NAT.title],
+            endpoints=vpc_settings["Endpoints"]
+            if keyisset("Endpoints", vpc_settings)
+            else None,
         )
         super().__init__(title, stack_template=template, **kwargs)
 
@@ -68,6 +71,9 @@ def define_create_settings(create_def):
         VPC_SINGLE_NAT.title: True
         if not keyisset(VPC_SINGLE_NAT.title, create_def)
         else create_def[VPC_SINGLE_NAT.title],
+        "Endpoints": create_def["Endpoints"]
+        if keyisset("Endpoints", create_def)
+        else [],
     }
     return create_settings
 
@@ -78,7 +84,13 @@ def create_new_vpc(vpc_xkey, settings, default=False):
             settings.compose_content[vpc_xkey]["Create"]
         )
     else:
-        create_settings = {VPC_CIDR.title: DEFAULT_VPC_CIDR, VPC_SINGLE_NAT.title: True}
+        create_settings = {
+            VPC_CIDR.title: DEFAULT_VPC_CIDR,
+            VPC_SINGLE_NAT.title: True,
+            "Endpoints": {
+                "AwsServices": [{"service": "ecr.dkr"}, {"service": "ecr.api"}]
+            },
+        }
     vpc_stack = VpcStack(RES_KEY, settings, create_settings)
     vpc_stack.add_parameter(
         {
