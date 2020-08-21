@@ -169,7 +169,7 @@ class ComposeXStack(Stack, object):
                 self.Parameters[param_name],
                 (Ref, GetAtt, ImportValue, If, Join, type(None)),
             ):
-                if isinstance(self.Parameters[param_name], str):
+                if isinstance(self.Parameters[param_name], (int, str)):
                     params.append(
                         {
                             "ParameterKey": param_name,

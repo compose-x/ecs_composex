@@ -90,7 +90,6 @@ class ServicesStack(ComposeXStack):
             vpc_params.PUBLIC_SUBNETS,
             vpc_params.APP_SUBNETS,
             ecs_params.XRAY_IMAGE,
-            ecs_params.LOG_GROUP_RETENTION,
             dns_params.PUBLIC_DNS_ZONE_NAME,
             dns_params.PUBLIC_DNS_ZONE_ID,
             dns_params.PRIVATE_DNS_ZONE_ID,
@@ -127,9 +126,6 @@ class ServicesStack(ComposeXStack):
 
         for service_name in services:
             service = services[service_name]
-            service.parameters.update(
-                {ecs_params.LOG_GROUP_RETENTION_T: Ref(ecs_params.LOG_GROUP_RETENTION)}
-            )
             self.stack_template.add_resource(
                 ServiceStack(
                     title=service.resource_name,
