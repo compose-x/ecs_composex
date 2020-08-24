@@ -240,6 +240,7 @@ class ServiceConfig(object):
         self.boundary = None
         self.policies = []
         self.managed_policies = []
+        self.container_start_condition = "START"
         self.service_name = service_name if service_name else "global"
         self.logs_retention_period = ecs_params.LOG_GROUP_RETENTION.Default
         if keyisset("x-appmesh", content):
@@ -524,6 +525,11 @@ class ServiceConfig(object):
         if keyisset("resources", deployment):
             self.set_compute_resources(deployment["resources"])
         self.set_deployment_settings(deployment)
+        if keyisset("labels", deployment) and keyisset("ecs.depends.condition", deployment["labels"]):
+            allowed_values = ["START", "COMPLETE", "SUCCESS", "HEALTHY"]
+            if deployment["labels"]["ecs.depends.condition"] not in allowed_values:
+                raise ValueError("Attribute ecs.depends.condition is invalid. Must be one of", allowed_values)
+            self.container_start_condition = deployment["labels"]["ecs.depends.condition"]
 
     def set_xray(self, definition):
         """
