@@ -41,6 +41,7 @@ services:
           memory: "64M"
       labels:
         ecs.task.family: bignicefamily
+        ecs.depends.condition: COMPLETE
     environment:
       LOGLEVEL: DEBUG
     x-configs:

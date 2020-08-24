@@ -331,6 +331,19 @@ For example, you would have:
 
 .. _cluster_syntax_reference:
 
+
+**ecs.depends.condition**
+
+This label allows to define what condition should this service be monitored under by ECS. Useful when container is set
+as a dependency to another.
+
+.. hint::
+
+    Allowed values are : START, SUCCESS, COMPLETE, HEALTHY. By default, sets to START, and if you defined **healthcheck**,
+    defaults to HEALTHY.
+    See `Dependency reference for more information <https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ecs-taskdefinition-containerdependency.html>`_
+
+
 x-cluster
 ==========
 

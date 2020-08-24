@@ -271,6 +271,9 @@ def handle_families_services(families, cluster_sg, settings):
         family_parameters = {}
         for service_name in family:
             service = settings.compose_content[ecs_params.RES_KEY][service_name]
+            if keyisset("deploy", service):
+                service["deploy"].update(get_deploy_labels(service))
+                print(service["deploy"])
             service_config = ServiceConfig(
                 settings.compose_content,
                 service_name,
@@ -314,15 +317,12 @@ def handle_families_services(families, cluster_sg, settings):
     return services
 
 
-def generate_services(settings, cluster_sg, **kwargs):
+def generate_services(settings, cluster_sg):
     """
     Function putting together the ECS Service template
 
     :param ComposeXSettings settings: The settings for execution
-    :param cluster_sg: cluster default security group
-    :type cluster_sg: troposphere.ec2.SecurityGroup
-    :param kwargs: optional arguments
-    :type kwargs: dicts or set
+    :param troposphere.ec2.SecurityGroup cluster_sg: cluster default security group
     """
     families = define_services_families(settings.compose_content[ecs_params.RES_KEY])
     services = handle_families_services(families, cluster_sg, settings)

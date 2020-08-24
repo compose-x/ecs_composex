@@ -158,7 +158,7 @@ def handle_same_task_services_dependencies(
                 service_config.family_dependents.append(
                     {
                         "ContainerName": dependency,
-                        "Condition": "START"
+                        "Condition": containers_config[dependency]["config"].container_start_condition
                         if not containers_config[dependency]["config"].healthcheck
                         else "HEALTHY",
                     }
