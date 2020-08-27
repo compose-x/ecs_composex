@@ -163,7 +163,6 @@ def handle_same_task_services_dependencies(
                         else "HEALTHY",
                     }
                 )
-                service_config.depends_on.pop(count)
 
 
 class Task(object):
