@@ -793,7 +793,7 @@ class Service(object):
                 EcsLoadBalancer(
                     TargetGroupArn=Ref(tgt),
                     ContainerPort=tgt.Port,
-                    ContainerName=self.config.lb_service_name,
+                    ContainerName=NONALPHANUM.sub("", self.config.lb_service_name),
                 )
             )
         return service_lbs, depends_on

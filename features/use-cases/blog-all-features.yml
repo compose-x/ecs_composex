@@ -87,6 +87,9 @@ services:
     environment:
       LOGLEVEL: DEBUG
     x-configs:
+      network:
+        lb_type: network
+        is_public: True
       use_xray: True
       iam:
         boundary: arn:aws:iam::aws:policy/ViewOnly
