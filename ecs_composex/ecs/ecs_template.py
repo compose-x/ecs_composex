@@ -273,7 +273,7 @@ def handle_families_services(families, cluster_sg, settings):
             service = settings.compose_content[ecs_params.RES_KEY][service_name]
             if keyisset("deploy", service):
                 service["deploy"].update(get_deploy_labels(service))
-                print(service["deploy"])
+                LOG.debug(service["deploy"])
             service_config = ServiceConfig(
                 settings.compose_content,
                 service_name,
