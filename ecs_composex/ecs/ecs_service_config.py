@@ -521,21 +521,22 @@ class ServiceConfig(object):
         """
         if not keyisset("deploy", definition):
             return
+        depends_key = "ecs.depends.condition"
         deployment = definition["deploy"]
         if keyisset("resources", deployment):
             self.set_compute_resources(deployment["resources"])
         self.set_deployment_settings(deployment)
         if keyisset("labels", deployment) and keyisset(
-            "ecs.depends.condition", deployment["labels"]
+            depends_key, deployment["labels"]
         ):
             allowed_values = ["START", "COMPLETE", "SUCCESS", "HEALTHY"]
-            if deployment["labels"]["ecs.depends.condition"] not in allowed_values:
+            if deployment["labels"][depends_key] not in allowed_values:
                 raise ValueError(
-                    "Attribute ecs.depends.condition is invalid. Must be one of",
+                    f"Attribute {depends_key} is invalid. Must be one of",
                     allowed_values,
                 )
             self.container_start_condition = deployment["labels"][
-                "ecs.depends.condition"
+                depends_key
             ]
 
     def set_xray(self, definition):
