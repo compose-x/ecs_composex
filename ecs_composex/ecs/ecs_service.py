@@ -158,7 +158,9 @@ def handle_same_task_services_dependencies(
                 service_config.family_dependents.append(
                     {
                         "ContainerName": dependency,
-                        "Condition": containers_config[dependency]["config"].container_start_condition
+                        "Condition": containers_config[dependency][
+                            "config"
+                        ].container_start_condition
                         if not containers_config[dependency]["config"].healthcheck
                         else "HEALTHY",
                     }
@@ -566,9 +568,17 @@ class Service(object):
         :rtype: list
         """
         for az in azs:
+            if isinstance(az, dict) and keyisset("ZoneName", az):
+                az_name = NONALPHANUM.sub(
+                    "", az["ZoneName"].title().replace("-", "").strip()
+                )
+            elif isinstance(az, str):
+                az_name = NONALPHANUM.sub("", az)
+            else:
+                raise TypeError("az is neither a dict or a str. Got", type(az))
             self.eips.append(
                 EIP(
-                    f"EipPublicNlb{az.replace('-', '').strip()}{self.service_name}",
+                    f"EipPublicNlb{az_name}{self.service_name}",
                     template=self.template,
                     Domain="vpc",
                 )
@@ -711,15 +721,9 @@ class Service(object):
                     Key="load_balancing.cross_zone.enabled", Value="true"
                 )
             ]
-            if self.config.lb_type == "network"
+            if self.config.use_nlb()
             else no_value,
-            SecurityGroups=lb_sg,
-            SubnetMappings=public_mapping
-            if self.config.is_public and self.config.use_nlb()
-            else no_value,
-            Subnets=Ref(PUBLIC_SUBNETS)
-            if self.config.is_public and self.config.use_alb()
-            else Ref(vpc_params.APP_SUBNETS),
+            SecurityGroups=lb_sg if self.config.use_alb() else no_value,
             Type=self.config.lb_type,
             Tags=Tags(
                 {
@@ -729,6 +733,13 @@ class Service(object):
                 }
             ),
         )
+        if self.config.is_public and self.config.use_alb():
+            setattr(loadbalancer, "Subnets", Ref(PUBLIC_SUBNETS))
+        elif self.config.is_public and self.config.use_nlb():
+            setattr(loadbalancer, "SubnetMappings", public_mapping)
+            setattr(loadbalancer, "Subnets", Ref(AWS_NO_VALUE))
+        elif not self.config.is_public:
+            setattr(loadbalancer, "Subnets", Ref(vpc_params.APP_SUBNETS))
         if self.config.is_public:
             sd_service = SdService(
                 f"{self.resource_name}PublicDiscoveryService",
@@ -782,7 +793,7 @@ class Service(object):
                 EcsLoadBalancer(
                     TargetGroupArn=Ref(tgt),
                     ContainerPort=tgt.Port,
-                    ContainerName=self.config.lb_service_name,
+                    ContainerName=NONALPHANUM.sub("", self.config.lb_service_name),
                 )
             )
         return service_lbs, depends_on

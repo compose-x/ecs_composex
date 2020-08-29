@@ -73,7 +73,7 @@ def add_template_outputs(template, vpc, storage_subnets, public_subnets, app_sub
                 (
                     vpc_params.PUBLIC_SUBNETS_T,
                     vpc_params.PUBLIC_SUBNETS_T,
-                    Join(",", [Ref(subnet) for subnet in storage_subnets]),
+                    Join(",", [Ref(subnet) for subnet in public_subnets]),
                 ),
                 (
                     vpc_params.APP_SUBNETS_T,
