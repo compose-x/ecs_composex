@@ -291,17 +291,14 @@ def generate_security_group_props(allowed_source, service_name):
         ),
     }
 
-    if (
-        keyisset("CidrIp", props)
-        and isinstance(props["CidrIp"], str)
-    ):
+    if keyisset("CidrIp", props) and isinstance(props["CidrIp"], str):
         try:
             IPv4Interface(props["CidrIp"])
         except Exception as error:
-            LOG.error(f"Falty IP Address: {allowed_source} - ecs_service {service_name}")
-            raise ValueError(
-                "Not a valid IPv4 CIDR notation", props["CidrIp"], error
+            LOG.error(
+                f"Falty IP Address: {allowed_source} - ecs_service {service_name}"
             )
+            raise ValueError("Not a valid IPv4 CIDR notation", props["CidrIp"], error)
     return props
 
 

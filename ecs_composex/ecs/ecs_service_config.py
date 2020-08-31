@@ -535,9 +535,7 @@ class ServiceConfig(object):
                     f"Attribute {depends_key} is invalid. Must be one of",
                     allowed_values,
                 )
-            self.container_start_condition = deployment["labels"][
-                depends_key
-            ]
+            self.container_start_condition = deployment["labels"][depends_key]
 
     def set_xray(self, definition):
         """
