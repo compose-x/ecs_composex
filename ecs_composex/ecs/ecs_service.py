@@ -60,6 +60,8 @@ from troposphere.servicediscovery import (
     Instance as SdInstance,
 )
 
+from ipaddress import IPv4Interface
+
 from ecs_composex.common import add_parameters
 from ecs_composex.common import keyisset, LOG, NONALPHANUM
 from ecs_composex.common.cfn_conditions import USE_STACK_NAME_CON_T
@@ -88,9 +90,7 @@ from ecs_composex.ecs.ecs_params import (
 from ecs_composex.vpc import vpc_params
 from ecs_composex.vpc.vpc_params import VPC_ID, PUBLIC_SUBNETS
 
-CIDR_REG = r"""((((((([0-9]{1}\.))|([0-9]{2}\.)|
-(1[0-9]{2}\.)|(2[0-5]{2}\.)))){3})(((((([0-9]{1}))|
-([0-9]{2})|(1[0-9]{2})|(2[0-5]{2}))))){1,3})\/(([0-9])|([1-2][0-9])|((3[0-2])))$"""
+CIDR_REG = r"^([0-9]{1,3}\.){3}[0-9]{1,3}(\/([0-9]|[1-2][0-9]|3[0-2]))?$"
 CIDR_PAT = re.compile(CIDR_REG)
 
 
@@ -298,6 +298,7 @@ def generate_security_group_props(allowed_source, service_name):
         keyisset("CidrIp", props)
         and isinstance(props["CidrIp"], str)
         and not CIDR_PAT.match(props["CidrIp"])
+        and not IPv4Interface(props["CidrIp"])
     ):
         LOG.error(f"Falty IP Address: {allowed_source} - ecs_service {service_name}")
         raise ValueError(
