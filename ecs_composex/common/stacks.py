@@ -70,7 +70,7 @@ class ComposeXStack(Stack, object):
         "UpdateReplacePolicy",
     ]
 
-    def __init__(self, title, stack_template, stack_parameters=None, **kwargs):
+    def __init__(self, title, stack_template, stack_parameters=None, file_name=None, **kwargs):
         """
         Class to keep track of the template object along with the stack object it represents.
 
@@ -79,6 +79,7 @@ class ComposeXStack(Stack, object):
         :param dict stack_parameters: Stack parameters to set
         :param kwargs: kwargs from composex along with the kwargs for the stack
         """
+        self.file_name = file_name if file_name else title
         self.lookup_resources = []
         if not isinstance(stack_template, Template):
             raise TypeError(
@@ -130,7 +131,7 @@ class ComposeXStack(Stack, object):
             return
         LOG.debug(f"Rendering {self.title}.params.json")
         file = FileArtifact(
-            file_name=f"{self.title}.params",
+            file_name=f"{self.file_name}.params",
             content=params,
             settings=settings,
             file_format="json",
@@ -142,7 +143,7 @@ class ComposeXStack(Stack, object):
             file.upload(settings)
             LOG.debug(f"Rendered URL = {file.url}")
         config_file = FileArtifact(
-            file_name=f"{self.title}.config",
+            file_name=f"{self.file_name}.config",
             content=config,
             settings=settings,
             file_format="json",
@@ -191,7 +192,7 @@ class ComposeXStack(Stack, object):
         """
         LOG.debug(f"Rendering {self.title}")
         template_file = FileArtifact(
-            file_name=f"{self.title}",
+            file_name=self.file_name,
             template=self.stack_template,
             settings=settings,
             file_format=settings.format,
