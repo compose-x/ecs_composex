@@ -72,7 +72,7 @@ SERVICE_COUNT = Parameter(SERVICE_COUNT_T, Type="Number", MinValue=0, Default=0)
 
 ELB_GRACE_PERIOD_T = "ElbGracePeriod"
 ELB_GRACE_PERIOD = Parameter(
-    ELB_GRACE_PERIOD_T, Type="Number", MinValue=0, Default=90, MaxValue=300
+    ELB_GRACE_PERIOD_T, Type="Number", MinValue=0, Default=300, MaxValue=2147483647
 )
 
 ECS_CONTROLLER_T = "EcsServiceDeploymentController"

@@ -70,7 +70,9 @@ class ComposeXStack(Stack, object):
         "UpdateReplacePolicy",
     ]
 
-    def __init__(self, title, stack_template, stack_parameters=None, file_name=None, **kwargs):
+    def __init__(
+        self, title, stack_template, stack_parameters=None, file_name=None, **kwargs
+    ):
         """
         Class to keep track of the template object along with the stack object it represents.
 
