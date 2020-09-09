@@ -25,11 +25,7 @@ from importlib import import_module
 from troposphere import Ref, If, AWS_STACK_NAME, GetAtt
 
 from ecs_composex.appmesh.appmesh_mesh import Mesh
-from ecs_composex.common import (
-    LOG,
-    add_parameters,
-    NONALPHANUM
-)
+from ecs_composex.common import LOG, add_parameters, NONALPHANUM
 from ecs_composex.common import (
     build_template,
     keyisset,
@@ -319,7 +315,9 @@ def generate_full_template(settings):
     """
     LOG.debug(settings)
     root_stack_title = NONALPHANUM.sub("", settings.name.title())
-    root_stack = ComposeXStack(root_stack_title, stack_template=init_root_template(), file_name=settings.name)
+    root_stack = ComposeXStack(
+        root_stack_title, stack_template=init_root_template(), file_name=settings.name
+    )
     dns_inputs(root_stack)
     vpc_stack = add_vpc_to_root(root_stack, settings)
     dns_settings = DnsSettings(root_stack, settings, get_vpc_id(vpc_stack))

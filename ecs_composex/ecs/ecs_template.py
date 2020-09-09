@@ -79,6 +79,7 @@ def initialize_service_template(service_name):
             ecs_params.FARGATE_CPU_RAM_CONFIG,
             ecs_params.SERVICE_NAME,
             ecs_params.LOG_GROUP_RETENTION,
+            ecs_params.ELB_GRACE_PERIOD,
         ],
     )
     service_tpl.add_condition(

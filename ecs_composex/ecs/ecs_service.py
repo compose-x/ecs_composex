@@ -511,7 +511,7 @@ class Service(object):
             else:
                 title = (
                     f"From{flatten_ip(allowed_source['ipv4'])}"
-                    "To{port['published']}{port['protocol']}"
+                    f"To{port['published']}{port['protocol']}"
                 )
                 description = Sub(
                     f"Public {port['published']}{port['protocol']}"
@@ -528,7 +528,7 @@ class Service(object):
                 **props,
             )
 
-    def add_public_security_group_ingress(self, security_group):
+    def add_ext_sources_ingress(self, security_group):
         """
         Method to add ingress rules from external sources to a given Security Group (ie. ALB Security Group).
         If a list of IPs is found in the config['ext_sources'] part of the network section of configs for the service,
@@ -760,10 +760,10 @@ class Service(object):
                     "AWS_ALIAS_DNS_NAME": GetAtt(loadbalancer, "DNSName")
                 },
             )
-            if self.config.use_alb() and self.alb_sg:
-                self.add_public_security_group_ingress(self.alb_sg)
-            elif self.config.use_nlb():
-                self.add_public_security_group_ingress(SG_T)
+        if self.config.use_alb() and self.alb_sg:
+            self.add_ext_sources_ingress(self.alb_sg)
+        elif self.config.use_nlb():
+            self.add_ext_sources_ingress(SG_T)
         return loadbalancer
 
     def add_service_load_balancer(self, settings):
@@ -844,6 +844,11 @@ class Service(object):
             self.service_attrs["DependsOn"] = (
                 service_lb[-1] if isinstance(service_lb[-1], list) else []
             )
+            self.service_attrs["HealthCheckGracePeriodSeconds"] = (
+                Ref(ecs_params.ELB_GRACE_PERIOD)
+                if self.service_attrs["LoadBalancers"]
+                else Ref(AWS_NO_VALUE)
+            )
             if self.config.use_alb() and self.config.aws_sources:
                 self.add_aws_sources(self.alb_sg)
         elif (
@@ -894,7 +899,6 @@ class Service(object):
                     "DAEMON",
                 ),
             ),
-            HealthCheckGracePeriodSeconds=Ref(AWS_NO_VALUE),
             PlacementStrategies=If(
                 ecs_conditions.USE_FARGATE_CON_T,
                 Ref(AWS_NO_VALUE),
