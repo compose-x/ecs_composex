@@ -491,10 +491,13 @@ class Service(object):
             Name=If(USE_HOSTNAME_CON_T, Ref(SERVICE_HOSTNAME), Ref(SERVICE_NAME)),
         )
         for port in self.config.ports:
+            used_port = port['published']
+            if self.config.use_nlb() or self.config.use_alb():
+                used_port = port['target']
             registry = ServiceRegistry(
-                f"ServiceRegistry{port['published']}",
+                f"ServiceRegistry{used_port}",
                 RegistryArn=GetAtt(sd_service, "Arn"),
-                Port=port["published"],
+                Port=used_port,
             )
             registries.append(registry)
             break
