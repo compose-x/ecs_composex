@@ -25,7 +25,7 @@ from troposphere.ecs import HealthCheck
 from troposphere.iam import Policy
 
 from ecs_composex.common import NONALPHANUM
-from ecs_composex.common import keyisset, LOG
+from ecs_composex.common import keyisset, keypresent, LOG
 from ecs_composex.ecs import ecs_params
 from ecs_composex.ecs.docker_tools import set_memory_to_mb
 from ecs_composex.iam import define_iam_policy
@@ -205,11 +205,12 @@ class ServiceConfig(object):
         "deploy",
         "external_links",
     ]
+    target_scaling_key = "target_scaling"
     required_keys = ["image"]
 
     master_key = "x-configs"
     composex_key = "composex"
-    valid_config_keys = ["network", "iam", "x-ray", "logging"]
+    valid_config_keys = ["network", "iam", "x-ray", "logging", target_scaling_key]
 
     network_defaults = {
         "use_cloudmap": True,
@@ -228,7 +229,6 @@ class ServiceConfig(object):
         )
         self.network = None
         self.iam = None
-
         self.lb_type = None
         self.healthcheck = None
         self.ext_sources = None
@@ -238,10 +238,23 @@ class ServiceConfig(object):
         self.use_cloudmap = True
         self.use_appmesh = False
         self.boundary = None
+        self.target_scaling_config = None
         self.policies = []
         self.managed_policies = []
         self.container_start_condition = "START"
         self.service_name = service_name if service_name else "global"
+        self.replicas = int(ecs_params.SERVICE_COUNT.Default)
+        self.family_dependents = []
+        self.essential = False
+        self.volumes = []
+        self.cpu_alloc = Ref(AWS_NO_VALUE)
+        self.cpu_resa = Ref(AWS_NO_VALUE)
+        self.mem_alloc = Ref(AWS_NO_VALUE)
+        self.mem_resa = Ref(AWS_NO_VALUE)
+        self.service_name = service_name
+        self.service = None
+        self.use_xray = False
+        self.resource_name = NONALPHANUM.sub("", service_name)
         self.logs_retention_period = ecs_params.LOG_GROUP_RETENTION.Default
         if keyisset("x-appmesh", content):
             self.use_appmesh = True
@@ -255,19 +268,8 @@ class ServiceConfig(object):
             raise AttributeError(
                 "Required attributes for a ecs_service are", self.required_keys
             )
-        self.family_dependents = []
-        self.essential = False
-        self.volumes = []
-        self.links = (keyset_else_novalue("external_links", definition, else_value=[]),)
-        self.service = None
-        self.use_xray = False
-        self.replicas = int(ecs_params.SERVICE_COUNT.Default)
-        self.cpu_alloc = Ref(AWS_NO_VALUE)
-        self.cpu_resa = Ref(AWS_NO_VALUE)
-        self.mem_alloc = Ref(AWS_NO_VALUE)
-        self.mem_resa = Ref(AWS_NO_VALUE)
-        self.service_name = service_name
-        self.resource_name = NONALPHANUM.sub("", service_name)
+
+        self.links = keyset_else_novalue("external_links", definition, else_value=[])
         self.command = (
             definition["command"].strip() if keyisset("command", definition) else None
         )
@@ -297,7 +299,6 @@ class ServiceConfig(object):
                 self.ports = other.ports
                 self.lb_type = other.lb_type
                 self.is_public = other.is_public
-
         elif self.lb_type is not None and other.lb_type is not None:
             if self.is_public:
                 pass
@@ -311,12 +312,66 @@ class ServiceConfig(object):
             self.use_xray = True
         if self.links or other.links:
             self.links += other.links
+        if not self.target_scaling_config and other.target_scaling_config:
+            self.target_scaling_config = other.target_scaling_config
         return self
 
     def add_managed_policies(self, policies):
         for policy in policies:
             policy_def = define_iam_policy(policy)
             self.managed_policies.append(policy_def)
+
+    def init_target_scaling(self, config):
+        """
+        Method to setup target scaling for the service.
+        :return:
+        """
+        LOG.debug("Setting target scaling")
+        scaling_configuration = {}
+        allowed_keys = {
+            "range": str,
+            "cpu_target": int,
+            "memory_target": int,
+            "lb_targets": int,
+            "scale_in_cooldown": int,
+            "scale_out_cooldown": int,
+            "disable_scale_in": bool,
+        }
+        if not all(key in list(allowed_keys.keys()) for key in config.keys()):
+            raise KeyError(
+                "Found invalid key. Got", config, "Allowed", allowed_keys,
+            )
+        default_values = {
+            "scale_out_cooldown": 300,
+            "scale_in_cooldown": 300,
+            "disable_scale_in": False,
+        }
+        if not keyisset("range", config):
+            raise KeyError(
+                "Missing range property. Range should written as follows: {min}-{max}"
+            )
+        for key in allowed_keys.keys():
+            if not keyisset(key, config) and keyisset(key, default_values):
+                scaling_configuration[key] = default_values[key]
+            elif keypresent(key, config) and isinstance(config[key], allowed_keys[key]):
+                scaling_configuration[key] = config[key]
+            elif keyisset(key, config) and not isinstance(
+                config[key], allowed_keys[key]
+            ):
+                raise TypeError(
+                    f"Scaling configuration {key} is of type",
+                    type(config[key]),
+                    "Expected",
+                    allowed_keys[key],
+                )
+        scaling_configuration.update(
+            {
+                "max": int(config["range"].split("-")[-1]),
+                "min": int(config["range"].split("-")[0]),
+            }
+        )
+        LOG.debug(scaling_configuration)
+        self.target_scaling_config = scaling_configuration
 
     def add_policies(self, policies):
 

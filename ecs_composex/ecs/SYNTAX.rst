@@ -136,7 +136,7 @@ This indicates whether or not you want the service to be added to your VPC Cloud
 automatically register the service to the discovery instance.
 
 healthcheck
-"""""""""""""
+"""""""""""
 
 At this time, this does not replace the docker compose native functionality of healthcheck. It is a simplified expression of it
 which is used for cloudmap or the load-balancer to register the targets.
@@ -145,6 +145,19 @@ which is used for cloudmap or the load-balancer to register the targets.
 
     This is used for network healthchecks, not service healthcheck
 
+
+target_scaling
+^^^^^^^^^^^^^^
+
+Allows you to define target scaling for the service based on CPU/RAM.
+
+.. code-block:: yaml
+
+    x-configs:
+      target_scaling:
+        range: "1-10"
+        cpu_target: 75
+        memory_target: 80
 
 iam
 ^^^^
