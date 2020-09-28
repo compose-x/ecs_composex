@@ -61,6 +61,20 @@ def import_secrets(template, definition, container, settings):
                 ].assign_to_task_definition(template, container)
 
 
+def define_string_interpolation(var_value):
+    """
+    Function to determine whether an env variable string should use Sub.
+
+    :param str var_value: The env var string as defined in compose file
+    :return: String as is or Sub for interpolation
+    :rtype: str
+    """
+    if var_value.find(r"${AWS::") >= 0:
+        LOG.debug(var_value)
+        return Sub(var_value)
+    return var_value
+
+
 def import_env_variables(environment):
     """
     Function to import Docker compose env variables into ECS Env Variables
@@ -75,7 +89,11 @@ def import_env_variables(environment):
         if not isinstance(environment[key], str):
             env_vars.append(Environment(Name=key, Value=str(environment[key])))
         else:
-            env_vars.append(Environment(Name=key, Value=environment[key]))
+            env_vars.append(
+                Environment(
+                    Name=key, Value=define_string_interpolation(environment[key])
+                )
+            )
     return env_vars
 
 
