@@ -159,6 +159,19 @@ Allows you to define target scaling for the service based on CPU/RAM.
         cpu_target: 75
         memory_target: 80
 
+Available options:
+
+.. code-block:: yaml
+
+    x-configs:
+      target_scaling:
+        range: str (range such as "0-100")
+        cpu_target: int (will be casted to fload)
+        memory_target: int (will be casted to float)
+        scale_in_cooldown: int (ie. 60)
+        scale_out_cooldown: int (ie. 60)
+        disable_scale_in: boolean (True/False)
+
 iam
 ^^^^
 
