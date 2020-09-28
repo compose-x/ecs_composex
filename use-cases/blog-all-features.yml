@@ -4,7 +4,6 @@
 version: '3.8'
 
 services:
-
   rproxy:
     deploy:
       labels:
@@ -16,9 +15,19 @@ services:
     environment:
       name: toto
       LOGLEVEL: INFO
+    x-configs:
+      network:
+        is_public: True
+        lb_type: application
 
   app03:
     x-configs:
+      target_scaling:
+        cpu_target: 75
+        range: "0-10"
+        memory_target: 80
+        disable_scale_in: False
+        scale_out_cooldown: 60
       use_xray: True
       iam:
         boundary: arn:aws:iam::aws:policy/PowerUserAccess

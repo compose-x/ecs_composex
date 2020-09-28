@@ -39,6 +39,7 @@ SERVICE_T = "EcsServiceDefinition"
 TASK_T = "EcsTaskDefinition"
 RES_KEY = "services"
 ECS_TASK_FAMILY_LABEL = "ecs.task.family"
+SERVICE_SCALING_TARGET = "ServiceScalingTarget"
 
 LAUNCH_TYPE_T = "EcsLaunchType"
 LAUNCH_TYPE = Parameter(

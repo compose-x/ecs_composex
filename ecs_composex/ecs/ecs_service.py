@@ -60,6 +60,8 @@ from troposphere.servicediscovery import (
     Instance as SdInstance,
 )
 
+from troposphere import applicationautoscaling
+
 from ipaddress import IPv4Interface
 
 from ecs_composex.common import add_parameters
@@ -174,6 +176,7 @@ class Task(object):
         """
         Init method
         """
+        self.definition = None
         add_service_roles(template)
         self.family_config = None
         self.containers = []
@@ -338,6 +341,7 @@ class Service(object):
         self.resource_name = (
             config.resource_name if config.family_name is None else config.family_name
         )
+        self.scalable_target = None
         self.parameters = {
             vpc_params.VPC_ID_T: Ref(vpc_params.VPC_ID),
             PRIVATE_DNS_ZONE_ID.title: Ref(PRIVATE_DNS_ZONE_ID),
@@ -363,7 +367,86 @@ class Service(object):
         )
         self.define_service_ingress(settings)
         self.generate_service_definition(self.task.definition)
+        self.create_scalable_target()
         self.generate_service_template_outputs()
+
+    def create_scalable_target(self):
+        """
+        Method to automatically create a scalable target
+        """
+        LOG.debug(self.config.target_scaling_config)
+        if self.config.target_scaling_config:
+            self.scalable_target = applicationautoscaling.ScalableTarget(
+                ecs_params.SERVICE_SCALING_TARGET,
+                template=self.template,
+                MaxCapacity=self.config.target_scaling_config["max"],
+                MinCapacity=self.config.target_scaling_config["min"],
+                ScalableDimension="ecs:service:DesiredCount",
+                ServiceNamespace="ecs",
+                RoleARN=Sub(
+                    "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/"
+                    "ecs.application-autoscaling.${AWS::URLSuffix}/"
+                    "AWSServiceRoleForApplicationAutoScaling_ECSService"
+                ),
+                ResourceId=Sub(
+                    f"service/${{{ecs_params.CLUSTER_NAME.title}}}/${{{self.ecs_service.title}}}"
+                ),
+                SuspendedState=applicationautoscaling.SuspendedState(
+                    DynamicScalingInSuspended=self.config.target_scaling_config[
+                        "disable_scale_in"
+                    ]
+                ),
+            )
+            if keyisset("cpu_target", self.config.target_scaling_config):
+                applicationautoscaling.ScalingPolicy(
+                    "ServiceCpuTrackingPolicy",
+                    template=self.template,
+                    ScalingTargetId=Ref(self.scalable_target),
+                    PolicyName="CpuTrackingScalingPolicy",
+                    PolicyType="TargetTrackingScaling",
+                    TargetTrackingScalingPolicyConfiguration=applicationautoscaling.TargetTrackingScalingPolicyConfiguration(
+                        DisableScaleIn=self.config.target_scaling_config[
+                            "disable_scale_in"
+                        ],
+                        ScaleInCooldown=self.config.target_scaling_config[
+                            "scale_in_cooldown"
+                        ],
+                        ScaleOutCooldown=self.config.target_scaling_config[
+                            "scale_out_cooldown"
+                        ],
+                        TargetValue=float(
+                            self.config.target_scaling_config["cpu_target"]
+                        ),
+                        PredefinedMetricSpecification=applicationautoscaling.PredefinedMetricSpecification(
+                            PredefinedMetricType="ECSServiceAverageCPUUtilization"
+                        ),
+                    ),
+                )
+            if keyisset("memory_target", self.config.target_scaling_config):
+                applicationautoscaling.ScalingPolicy(
+                    "ServiceMemoryTrackingPolicy",
+                    template=self.template,
+                    ScalingTargetId=Ref(self.scalable_target),
+                    PolicyName="CpuTrackingScalingPolicy",
+                    PolicyType="TargetTrackingScaling",
+                    TargetTrackingScalingPolicyConfiguration=applicationautoscaling.TargetTrackingScalingPolicyConfiguration(
+                        DisableScaleIn=self.config.target_scaling_config[
+                            "disable_scale_in"
+                        ],
+                        ScaleInCooldown=self.config.target_scaling_config[
+                            "scale_in_cooldown"
+                        ],
+                        ScaleOutCooldown=self.config.target_scaling_config[
+                            "scale_out_cooldown"
+                        ],
+                        TargetValue=float(
+                            self.config.target_scaling_config["memory_target"]
+                        ),
+                        PredefinedMetricSpecification=applicationautoscaling.PredefinedMetricSpecification(
+                            PredefinedMetricType="ECSServiceAverageMemoryUtilization"
+                        ),
+                    ),
+                )
 
     def add_self_ingress(self, sg):
         """
@@ -491,9 +574,9 @@ class Service(object):
             Name=If(USE_HOSTNAME_CON_T, Ref(SERVICE_HOSTNAME), Ref(SERVICE_NAME)),
         )
         for port in self.config.ports:
-            used_port = port['published']
+            used_port = port["published"]
             if self.config.use_nlb() or self.config.use_alb():
-                used_port = port['target']
+                used_port = port["target"]
             registry = ServiceRegistry(
                 f"ServiceRegistry{used_port}",
                 RegistryArn=GetAtt(sd_service, "Arn"),

@@ -16,10 +16,6 @@ services:
         limits:
           cpus: "0.25"
           memory: "64M"
-    x-configs:
-      network:
-        is_public: True
-        lb_type: application
     depends_on:
       - app01
   app01:
