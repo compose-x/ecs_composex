@@ -127,13 +127,20 @@ def interpolate_env_vars(content):
     :param dict content:
     :return:
     """
-    env_var_regex = re.compile(r"^\$\{[\w\d-]+\}$")
     if not content:
         return
     for key in content.keys():
         if isinstance(content[key], dict):
             interpolate_env_vars(content[key])
-        elif isinstance(content[key], str) and env_var_regex.match(content[key]):
+        elif isinstance(content[key], list):
+            for count, item in enumerate(content[key]):
+                if isinstance(item, dict):
+                    interpolate_env_vars(item)
+                elif isinstance(item, str):
+                    print(item)
+                    content[key][count] = expandvars(item)
+        elif isinstance(content[key], str):
+            print(content[key])
             content[key] = expandvars(content[key])
 
 

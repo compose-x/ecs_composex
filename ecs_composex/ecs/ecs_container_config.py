@@ -24,7 +24,6 @@ from troposphere import Ref, GetAtt, ImportValue, Sub
 from troposphere.ecs import ContainerDefinition, Environment
 
 from ecs_composex.common import LOG, keyisset
-from ecs_composex.common.envsubst import expandvars
 
 
 def import_secrets(template, definition, container, settings):
@@ -70,7 +69,6 @@ def define_string_interpolation(var_value):
     :return: String as is or Sub for interpolation
     :rtype: str
     """
-    var_value = expandvars(var_value)
     if var_value.find(r"${AWS::") >= 0:
         LOG.debug(var_value)
         return Sub(var_value)
