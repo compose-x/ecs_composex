@@ -16,7 +16,6 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from pytest import fixture
-from os import environ
 from ecs_composex.common.envsubst import expandvars
 
 @fixture
