@@ -79,23 +79,6 @@ def merge_ports(source_ports, new_ports):
     return new_ports
 
 
-def parse_environment_variables(key):
-    """
-    Method to go over the content and interpolate possibly existing environment variables.
-
-    :param str key: the key to find the value for in environment
-    :return: env_key
-    :rtype: str
-    :raises: EnvironmentError
-    """
-    strip_re = re.compile(r"([^\${}]+)")
-    env_key = strip_re.findall(key)[0]
-    LOG.debug(f"Key {key} gives {env_key}")
-    if environ.get(env_key):
-        return environ.get(env_key)
-    raise EnvironmentError(f"Key {key} not found in environment variables.")
-
-
 def merge_service_definition(original_def, override_def, nested=False):
     """
     Merges two services definitions if service exists in both compose files.
