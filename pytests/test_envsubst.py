@@ -15,27 +15,29 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""
-Module to test ecs_composex generic oneliner raise functions.
-"""
+from pytest import fixture
+from ecs_composex.common.envsubst import expandvars
 
-from pytest import raises, fixture
-
-from troposphere import ImportValue
-from ecs_composex.resource_settings import generate_export_strings
-
-
-@fixture(autouse=True)
-def env_setup(monkeypatch):
-    monkeypatch.setenv("AWS_PROFILE", "ANCD")
+@fixture
+def mock_env_vars(monkeypatch):
+    monkeypatch.setenv("TOTO", "toto")
+    monkeypatch.setenv("TATA", "tata")
 
 
-def test_export_attribute():
+def test_envsubst(mock_env_vars):
     """
-    Function to verify the raise for invalid attribute
-    """
-    export_string = generate_export_strings("toto", "Arn")
-    assert isinstance(export_string, ImportValue)
+    Function to test envsubst.
 
-    with raises(TypeError):
-        generate_export_strings("toto", 123)
+    [(ENV string, expected result)]
+    """
+    tests = [
+        ("${TOTO}", "toto"),
+        ("${TOTO}$TATA$TOTO", "tototatatoto"),
+        ("$TOTO $TATA", "toto tata"),
+        ("$TOTO -- $TATA", "toto -- tata"),
+        ("${ABCD:-Cake}", "Cake"),
+        ("${TOTO:-Cake}", "toto"),
+        ("$TOTO -- ${TATA:+SUCCESS} -- ${AWS::AccountId}", "toto -- SUCCESS -- ${AWS::AccountId}")
+    ]
+    for test in tests:
+        assert expandvars(test[0]) == test[1]

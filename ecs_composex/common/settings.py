@@ -36,6 +36,7 @@ from botocore.exceptions import ClientError
 
 from ecs_composex import __version__
 from ecs_composex.common import keyisset, LOG, load_composex_file
+from ecs_composex.common.envsubst import expandvars
 from ecs_composex.common.aws import get_account_id, get_region_azs
 from ecs_composex.common.cfn_params import USE_FLEET_T
 from ecs_composex.utils.init_ecs import set_ecs_settings
@@ -76,23 +77,6 @@ def merge_ports(source_ports, new_ports):
             if s_port["target"] not in f_overide_ports_targets:
                 new_ports.append(s_port)
     return new_ports
-
-
-def parse_environment_variables(key):
-    """
-    Method to go over the content and interpolate possibly existing environment variables.
-
-    :param str key: the key to find the value for in environment
-    :return: env_key
-    :rtype: str
-    :raises: EnvironmentError
-    """
-    strip_re = re.compile(r"([^\${}]+)")
-    env_key = strip_re.findall(key)[0]
-    LOG.debug(f"Key {key} gives {env_key}")
-    if environ.get(env_key):
-        return environ.get(env_key)
-    raise EnvironmentError(f"Key {key} not found in environment variables.")
 
 
 def merge_service_definition(original_def, override_def, nested=False):
@@ -143,14 +127,21 @@ def interpolate_env_vars(content):
     :param dict content:
     :return:
     """
-    env_var_regex = re.compile(r"^\$\{[\w\d-]+\}$")
     if not content:
         return
     for key in content.keys():
         if isinstance(content[key], dict):
             interpolate_env_vars(content[key])
-        elif isinstance(content[key], str) and env_var_regex.match(content[key]):
-            content[key] = parse_environment_variables(content[key])
+        elif isinstance(content[key], list):
+            for count, item in enumerate(content[key]):
+                if isinstance(item, dict):
+                    interpolate_env_vars(item)
+                elif isinstance(item, str):
+                    print(item)
+                    content[key][count] = expandvars(item)
+        elif isinstance(content[key], str):
+            print(content[key])
+            content[key] = expandvars(content[key])
 
 
 def merge_config_file(original_content, override_content):

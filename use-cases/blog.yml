@@ -29,6 +29,9 @@ services:
           memory: "64M"
     environment:
       LOGLEVEL: DEBUG
+      SHELLY: ${SHELL}
+      TERMY: "$TERM"
+      SHELL_TERM: $SHELL$TERM
     x-configs:
       use_xray: True
     links:
