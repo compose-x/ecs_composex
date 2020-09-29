@@ -36,6 +36,7 @@ from botocore.exceptions import ClientError
 
 from ecs_composex import __version__
 from ecs_composex.common import keyisset, LOG, load_composex_file
+from ecs_composex.common.envsubst import expandvars
 from ecs_composex.common.aws import get_account_id, get_region_azs
 from ecs_composex.common.cfn_params import USE_FLEET_T
 from ecs_composex.utils.init_ecs import set_ecs_settings
@@ -150,7 +151,7 @@ def interpolate_env_vars(content):
         if isinstance(content[key], dict):
             interpolate_env_vars(content[key])
         elif isinstance(content[key], str) and env_var_regex.match(content[key]):
-            content[key] = parse_environment_variables(content[key])
+            content[key] = expandvars(content[key])
 
 
 def merge_config_file(original_content, override_content):
