@@ -137,10 +137,8 @@ def interpolate_env_vars(content):
                 if isinstance(item, dict):
                     interpolate_env_vars(item)
                 elif isinstance(item, str):
-                    print(item)
                     content[key][count] = expandvars(item)
         elif isinstance(content[key], str):
-            print(content[key])
             content[key] = expandvars(content[key])
 
 
