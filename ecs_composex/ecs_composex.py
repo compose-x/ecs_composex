@@ -22,10 +22,10 @@ Main module to generate a full stack with VPC, Cluster, Compute, Services and al
 import re
 from importlib import import_module
 
-from troposphere import Ref, If, AWS_STACK_NAME, GetAtt
+from troposphere import Ref, AWS_STACK_NAME, GetAtt
 
 from ecs_composex.appmesh.appmesh_mesh import Mesh
-from ecs_composex.common import LOG, add_parameters, NONALPHANUM
+from ecs_composex.common import LOG, NONALPHANUM
 from ecs_composex.common import (
     build_template,
     keyisset,
@@ -47,7 +47,6 @@ from ecs_composex.compute.compute_params import (
 )
 from ecs_composex.compute.compute_stack import ComputeStack
 from ecs_composex.dns import add_parameters_and_conditions as dns_inputs, DnsSettings
-from ecs_composex.dns import dns_params, dns_conditions
 from ecs_composex.ecs import ServicesStack
 from ecs_composex.ecs import ecs_params
 from ecs_composex.ecs.ecs_cluster import add_ecs_cluster
@@ -243,7 +242,9 @@ def add_x_resources(root_template, settings, vpc_stack=None):
                 LOG.info(f"Class for {res_type} not found")
             else:
                 xstack = xclass(
-                    res_type.strip(), settings=settings, Parameters=parameters,
+                    res_type.strip(),
+                    settings=settings,
+                    Parameters=parameters,
                 )
                 if vpc_stack and key in tcp_services:
                     xstack.get_from_vpc_stack(vpc_stack)

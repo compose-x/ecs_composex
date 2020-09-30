@@ -106,6 +106,10 @@ def generate_rds_templates(settings):
     section = settings.compose_content[RES_KEY]
     for db_name in section:
         add_db_stack(
-            root_tpl, dbs_subnet_group, db_name, section[db_name], settings,
+            root_tpl,
+            dbs_subnet_group,
+            db_name,
+            section[db_name],
+            settings,
         )
     return root_tpl

@@ -81,7 +81,8 @@ def define_ttl_spec(properties):
                 "TTL Specification requires", required_keys, "Got", ttl_params.keys()
             )
         dynamodb.TimeToLiveSpecification(
-            AttributeName=ttl_params["AttributeName"], Enabled=ttl_params["Enabled"],
+            AttributeName=ttl_params["AttributeName"],
+            Enabled=ttl_params["Enabled"],
         )
     return Ref(AWS_NO_VALUE)
 

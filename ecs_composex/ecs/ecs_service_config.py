@@ -136,7 +136,7 @@ def set_service_ports(ports):
             )
         elif isinstance(port, dict):
             if not set(port).issubset(valid_keys):
-                raise KeyError(f"Valid keys are", valid_keys, "got", port.keys())
+                raise KeyError("Valid keys are", valid_keys, "got", port.keys())
             port["mode"] = "awsvpc"
             service_ports.append(port)
         elif isinstance(port, int):
@@ -339,7 +339,10 @@ class ServiceConfig(object):
         }
         if not all(key in list(allowed_keys.keys()) for key in config.keys()):
             raise KeyError(
-                "Found invalid key. Got", config, "Allowed", allowed_keys,
+                "Found invalid key. Got",
+                config,
+                "Allowed",
+                allowed_keys,
             )
         default_values = {
             "scale_out_cooldown": 300,
@@ -517,7 +520,7 @@ class ServiceConfig(object):
         self.set_service_config(config_definition)
         if self.use_appmesh and not self.use_cloudmap:
             LOG.warning(
-                f"You turned CloudMap off, however aim to use AppMesh. So we are enabling ClouMap for the services"
+                "You turned CloudMap off, however aim to use AppMesh. So we are enabling ClouMap for the services"
             )
             self.use_cloudmap = True
 

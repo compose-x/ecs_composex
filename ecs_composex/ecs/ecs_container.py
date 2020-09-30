@@ -56,7 +56,9 @@ class Container(object):
                 "Required attributes for a ecs_service are", self.required_keys
             )
         image_param = Parameter(
-            f"{title}ImageUrl", Type="String", Description=f"ImageURL for {title}",
+            f"{title}ImageUrl",
+            Type="String",
+            Description=f"ImageURL for {title}",
         )
         add_parameters(template, [image_param])
         self.stack_parameters = {image_param.title: definition["image"]}

@@ -55,7 +55,7 @@ def validate_service_backend(service, routers, nodes):
         )
     if keyisset("node", service) and service["node"] not in nodes.keys():
         raise KeyError(
-            f"Nodes provided not found in nodes defined. Got",
+            "Nodes provided not found in nodes defined. Got",
             service["node"],
             "Expected one of",
             nodes.keys(),
@@ -142,7 +142,7 @@ class MeshService(object):
         SdInstance(
             f"{self.title.title()}ServiceDiscoveryFakeInstance",
             template=template,
-            InstanceAttributes={"AWS_INSTANCE_IPV4": f"169.254.255.254"},
+            InstanceAttributes={"AWS_INSTANCE_IPV4": "169.254.255.254"},
             ServiceId=Ref(sd_entry),
         )
 

@@ -41,7 +41,7 @@ from ecs_composex.common.cfn_params import ROOT_STACK_NAME
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.dns import dns_params
 from ecs_composex.ecs import ecs_params
-from ecs_composex.ecs.ecs_params import CLUSTER_NAME, CLUSTER_NAME_T
+from ecs_composex.ecs.ecs_params import CLUSTER_NAME
 from ecs_composex.ecs.ecs_template import generate_services
 from ecs_composex.vpc import vpc_params
 from ecs_composex import __version__ as version
@@ -58,7 +58,12 @@ class ServiceStack(ComposeXStack):
     """
 
     def __init__(
-        self, title, template, parameters, service, service_config,
+        self,
+        title,
+        template,
+        parameters,
+        service,
+        service_config,
     ):
         self.service = service
         self.config = service_config
@@ -112,7 +117,9 @@ class ServicesStack(ComposeXStack):
         )
         services = generate_services(settings, cluster_sg)
         super().__init__(
-            title, stack_template=template, **cfn_params,
+            title,
+            stack_template=template,
+            **cfn_params,
         )
         self.create_services_templates(services)
         if not settings.create_vpc:

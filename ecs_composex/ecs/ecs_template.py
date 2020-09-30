@@ -102,7 +102,8 @@ def initialize_service_template(service_name):
         ecs_conditions.USE_CLUSTER_SG_CON_T, ecs_conditions.USE_CLUSTER_SG_CON
     )
     service_tpl.add_condition(
-        ecs_conditions.USE_FARGATE_CON_T, ecs_conditions.USE_FARGATE_CON,
+        ecs_conditions.USE_FARGATE_CON_T,
+        ecs_conditions.USE_FARGATE_CON,
     )
     service_tpl.add_condition(
         ecs_conditions.USE_CLUSTER_CAPACITY_PROVIDERS_CON_T,
@@ -213,7 +214,7 @@ def get_deploy_labels(service_definition):
             for item in svc_labels:
                 if not isinstance(item, str):
                     raise TypeError(
-                        f"When using a list for deploy labels, all labels must be of type string"
+                        "When using a list for deploy labels, all labels must be of type string"
                     )
                 parse_string_labels(labels, svc_labels)
         elif isinstance(svc_labels, dict):

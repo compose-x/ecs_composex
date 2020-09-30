@@ -43,7 +43,8 @@ def define_http_route(route_match, route_nodes):
         Action=appmesh.HttpRouteAction(
             WeightedTargets=[
                 appmesh.WeightedTarget(
-                    VirtualNode=node.get_node_param, Weight=node.weight,
+                    VirtualNode=node.get_node_param,
+                    Weight=node.weight,
                 )
                 for node in route_nodes
             ]
@@ -170,7 +171,7 @@ class MeshRouter(object):
         for route in routes:
             if not all(key in ["match", "nodes"] for key in route.keys()):
                 raise AttributeError(
-                    f"Each route must have match and nodes. Got", route.keys()
+                    "Each route must have match and nodes. Got", route.keys()
                 )
             route_nodes = []
             for node in route["nodes"]:
@@ -208,7 +209,7 @@ class MeshRouter(object):
         """
         for route in routes:
             if not all(key in ["nodes"] for key in route.keys()):
-                raise AttributeError(f"Each route must have nodes. Got", route.keys())
+                raise AttributeError("Each route must have nodes. Got", route.keys())
             route_nodes = []
             for node in route["nodes"]:
                 if node["name"] in nodes.keys():
@@ -224,7 +225,8 @@ class MeshRouter(object):
                 Action=appmesh.TcpRouteAction(
                     WeightedTargets=[
                         appmesh.WeightedTarget(
-                            VirtualNode=node.get_node_param, Weight=node.weight,
+                            VirtualNode=node.get_node_param,
+                            Weight=node.weight,
                         )
                         for node in route_nodes
                     ]
@@ -265,4 +267,4 @@ class MeshRouter(object):
                     self.raw_routes[route_protocol], self.router, nodes
                 )
             elif route_protocol == "grcp":
-                LOG.warn(f"gRPC is not yet supported. Sorry.")
+                LOG.warn("gRPC is not yet supported. Sorry.")

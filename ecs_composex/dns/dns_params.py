@@ -30,7 +30,10 @@ PUBLIC_DNS_ZONE_NAME = Parameter(
 
 PUBLIC_DNS_ZONE_ID_T = "PublicDnsZoneId"
 PUBLIC_DNS_ZONE_ID = Parameter(
-    PUBLIC_DNS_ZONE_ID_T, Type="String", Default="none", AllowedPattern=ZONES_PATTERN,
+    PUBLIC_DNS_ZONE_ID_T,
+    Type="String",
+    Default="none",
+    AllowedPattern=ZONES_PATTERN,
 )
 
 PRIVATE_DNS_ZONE_NAME_T = "PrivateDnsZoneName"
@@ -40,7 +43,10 @@ PRIVATE_DNS_ZONE_NAME = Parameter(
 
 PRIVATE_DNS_ZONE_ID_T = "PrivateDnsZoneId"
 PRIVATE_DNS_ZONE_ID = Parameter(
-    PRIVATE_DNS_ZONE_ID_T, Type="String", Default="none", AllowedPattern=ZONES_PATTERN,
+    PRIVATE_DNS_ZONE_ID_T,
+    Type="String",
+    Default="none",
+    AllowedPattern=ZONES_PATTERN,
 )
 
 DEFAULT_PRIVATE_DNS_ZONE = Sub(

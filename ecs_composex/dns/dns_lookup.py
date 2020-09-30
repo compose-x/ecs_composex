@@ -34,9 +34,7 @@ def validate_zone_id_input(zone_id):
     zones_re = re.compile(ZONES_PATTERN)
     zones_groups = zones_re.findall(zone_id)
     if not zones_groups:
-        raise ValueError(
-            f"ZoneID is not valid. Got", zone_id, "Expected", ZONES_PATTERN
-        )
+        raise ValueError("ZoneID is not valid. Got", zone_id, "Expected", ZONES_PATTERN)
     return zones_groups[0]
 
 

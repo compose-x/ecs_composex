@@ -82,7 +82,7 @@ def define_overrides(settings, lt_id, lt_version, spot_config):
         template_version = GetAtt(lt_id, "LatestVersionNumber")
     elif not isinstance(lt_id, Ref) or not isinstance(lt_version, Ref):
         raise TypeError(
-            f"The launch template and/or version are of type",
+            "The launch template and/or version are of type",
             lt_id,
             lt_version,
             "Expected",
@@ -247,7 +247,7 @@ def define_spot_fleet(template, settings, lt_id, lt_version, spot_config):
     configs = define_overrides(settings, lt_id, lt_version, spot_config)
     role = add_fleet_role(template)
     fleet = SpotFleet(
-        f"EcsClusterFleet",
+        "EcsClusterFleet",
         template=template,
         SpotFleetRequestConfigData=SpotFleetRequestConfigData(
             AllocationStrategy="diversified",

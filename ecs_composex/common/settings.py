@@ -19,17 +19,11 @@
 Module for the ComposeXSettings class
 """
 
-import re
-from os import environ
+from copy import deepcopy
 from datetime import datetime as dt
 from json import dumps
-from copy import deepcopy
-import yaml
 
-try:
-    from yaml import CDumper as Dumper
-except ImportError:
-    from yaml import Dumper
+import yaml
 
 import boto3
 from botocore.exceptions import ClientError
@@ -413,7 +407,7 @@ class ComposeXSettings(object):
                 if code == "ExpiredToken":
                     LOG.error(message)
                     LOG.warning(
-                        f"Due to credentials error, we won't attempt to upload to S3."
+                        "Due to credentials error, we won't attempt to upload to S3."
                     )
                 else:
                     LOG.error(error)

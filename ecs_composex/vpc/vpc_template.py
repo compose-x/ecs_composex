@@ -202,7 +202,8 @@ def generate_vpc_template(cidr_block, azs, endpoints=None, single_nat=False):
     azs_index = [AZ_INDEX_RE.match(az).groups()[-1] for az in curated_azs]
     layers = get_subnet_layers(cidr_block, len(curated_azs))
     template = build_template(
-        "VpcTemplate generated via ECS Compose X", [PRIVATE_DNS_ZONE_NAME],
+        "VpcTemplate generated via ECS Compose X",
+        [PRIVATE_DNS_ZONE_NAME],
     )
     LOG.debug(azs_index)
     template.add_mapping("AwsLbAccounts", aws_mappings.AWS_LB_ACCOUNTS)
@@ -215,7 +216,11 @@ def generate_vpc_template(cidr_block, azs, endpoints=None, single_nat=False):
         template, vpc[0], azs_index, layers, public_subnets[-1], endpoints
     )
     add_template_outputs(
-        template, vpc[0], storage_subnets[1], public_subnets[1], app_subnets[1],
+        template,
+        vpc[0],
+        storage_subnets[1],
+        public_subnets[1],
+        app_subnets[1],
     )
     add_vpc_cidrs_outputs(template, vpc[0], layers)
     return template

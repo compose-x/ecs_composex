@@ -164,7 +164,7 @@ class Mesh(object):
                 node["backends"] if keyisset("backends", node) else None,
             )
             self.nodes[service_family].get_node_param = GetAtt(
-                self.nodes[service_family].param_name, f"Outputs.VirtualNode"
+                self.nodes[service_family].param_name, "Outputs.VirtualNode"
             )
             self.nodes[service_family].get_sg_param = GetAtt(
                 self.nodes[service_family].param_name,

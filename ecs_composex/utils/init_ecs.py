@@ -19,8 +19,6 @@
 Module to initialize the AWS Account.
 """
 
-from botocore.exceptions import ClientError
-
 from ecs_composex.common import LOG
 
 

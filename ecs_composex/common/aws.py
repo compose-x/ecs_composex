@@ -19,9 +19,9 @@
 """
 Common functions and variables fetched from AWS.
 """
-import re
 from botocore.exceptions import ClientError
-from ecs_composex.common import LOG, keyisset
+
+from ecs_composex.common import LOG
 
 
 def get_region_azs(session):

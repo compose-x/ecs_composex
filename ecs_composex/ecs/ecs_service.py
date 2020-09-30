@@ -19,7 +19,7 @@
 Functions to build the ECS Service Definition
 """
 
-import re
+from ipaddress import IPv4Interface
 
 from troposphere import (
     Join,
@@ -31,6 +31,7 @@ from troposphere import (
     AWS_STACK_NAME,
 )
 from troposphere import Ref, Sub, GetAtt
+from troposphere import applicationautoscaling
 from troposphere.ec2 import EIP, SecurityGroup
 from troposphere.ec2 import SecurityGroupIngress
 from troposphere.ecs import LoadBalancer as EcsLoadBalancer
@@ -59,10 +60,6 @@ from troposphere.servicediscovery import (
     HealthCheckCustomConfig as SdHealthCheckCustomConfig,
     Instance as SdInstance,
 )
-
-from troposphere import applicationautoscaling
-
-from ipaddress import IPv4Interface
 
 from ecs_composex.common import add_parameters
 from ecs_composex.common import keyisset, LOG, NONALPHANUM
@@ -305,6 +302,34 @@ def generate_security_group_props(allowed_source, service_name):
     return props
 
 
+def define_tracking_target_configuration(target_scaling_config, config_key):
+    """
+    Function to create the configuration for target tracking scaling
+
+    :param dict target_scaling_config:
+    :param str config_key:
+    :return:
+    """
+    settings = {
+        "cpu": {"key": "cpu_target", "property": "ECSServiceAverageCPUUtilization"},
+        "memory": {
+            "key": "memory_target",
+            "property": "ECSServiceAverageMemoryUtilization",
+        },
+    }
+    if config_key not in settings.keys():
+        raise KeyError(config_key, "Is invalid. Expected one of", settings.keys())
+    return applicationautoscaling.TargetTrackingScalingPolicyConfiguration(
+        DisableScaleIn=target_scaling_config["disable_scale_in"],
+        ScaleInCooldown=target_scaling_config["scale_in_cooldown"],
+        ScaleOutCooldown=target_scaling_config["scale_out_cooldown"],
+        TargetValue=float(target_scaling_config[settings[config_key]["key"]]),
+        PredefinedMetricSpecification=applicationautoscaling.PredefinedMetricSpecification(
+            PredefinedMetricType=settings[config_key]["property"]
+        ),
+    )
+
+
 class Service(object):
     """
     Class representing the service from the Docker compose file and translate it into
@@ -404,22 +429,8 @@ class Service(object):
                     ScalingTargetId=Ref(self.scalable_target),
                     PolicyName="CpuTrackingScalingPolicy",
                     PolicyType="TargetTrackingScaling",
-                    TargetTrackingScalingPolicyConfiguration=applicationautoscaling.TargetTrackingScalingPolicyConfiguration(
-                        DisableScaleIn=self.config.target_scaling_config[
-                            "disable_scale_in"
-                        ],
-                        ScaleInCooldown=self.config.target_scaling_config[
-                            "scale_in_cooldown"
-                        ],
-                        ScaleOutCooldown=self.config.target_scaling_config[
-                            "scale_out_cooldown"
-                        ],
-                        TargetValue=float(
-                            self.config.target_scaling_config["cpu_target"]
-                        ),
-                        PredefinedMetricSpecification=applicationautoscaling.PredefinedMetricSpecification(
-                            PredefinedMetricType="ECSServiceAverageCPUUtilization"
-                        ),
+                    TargetTrackingScalingPolicyConfiguration=define_tracking_target_configuration(
+                        self.config.target_scaling_config, "cpu"
                     ),
                 )
             if keyisset("memory_target", self.config.target_scaling_config):
@@ -429,22 +440,8 @@ class Service(object):
                     ScalingTargetId=Ref(self.scalable_target),
                     PolicyName="MemoryTrackingScalingPolicy",
                     PolicyType="TargetTrackingScaling",
-                    TargetTrackingScalingPolicyConfiguration=applicationautoscaling.TargetTrackingScalingPolicyConfiguration(
-                        DisableScaleIn=self.config.target_scaling_config[
-                            "disable_scale_in"
-                        ],
-                        ScaleInCooldown=self.config.target_scaling_config[
-                            "scale_in_cooldown"
-                        ],
-                        ScaleOutCooldown=self.config.target_scaling_config[
-                            "scale_out_cooldown"
-                        ],
-                        TargetValue=float(
-                            self.config.target_scaling_config["memory_target"]
-                        ),
-                        PredefinedMetricSpecification=applicationautoscaling.PredefinedMetricSpecification(
-                            PredefinedMetricType="ECSServiceAverageMemoryUtilization"
-                        ),
+                    TargetTrackingScalingPolicyConfiguration=define_tracking_target_configuration(
+                        self.config.target_scaling_config, "memory"
                     ),
                 )
 
