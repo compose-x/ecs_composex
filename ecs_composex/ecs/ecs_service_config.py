@@ -351,7 +351,7 @@ class ServiceConfig(object):
                 "Missing range property. Range should written as follows: {min}-{max}"
             )
         for key in allowed_keys.keys():
-            if not keyisset(key, config) and keyisset(key, default_values):
+            if not keyisset(key, config) and keypresent(key, default_values):
                 scaling_configuration[key] = default_values[key]
             elif keypresent(key, config) and isinstance(config[key], allowed_keys[key]):
                 scaling_configuration[key] = config[key]
