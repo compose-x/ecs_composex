@@ -389,7 +389,7 @@ class Service(object):
                     "AWSServiceRoleForApplicationAutoScaling_ECSService"
                 ),
                 ResourceId=Sub(
-                    f"service/${{{ecs_params.CLUSTER_NAME.title}}}/${{{self.ecs_service.title}}}"
+                    f"service/${{{ecs_params.CLUSTER_NAME.title}}}/${{{self.ecs_service.title}.Name}}"
                 ),
                 SuspendedState=applicationautoscaling.SuspendedState(
                     DynamicScalingInSuspended=self.config.target_scaling_config[
@@ -427,7 +427,7 @@ class Service(object):
                     "ServiceMemoryTrackingPolicy",
                     template=self.template,
                     ScalingTargetId=Ref(self.scalable_target),
-                    PolicyName="CpuTrackingScalingPolicy",
+                    PolicyName="MemoryTrackingScalingPolicy",
                     PolicyType="TargetTrackingScaling",
                     TargetTrackingScalingPolicyConfiguration=applicationautoscaling.TargetTrackingScalingPolicyConfiguration(
                         DisableScaleIn=self.config.target_scaling_config[
