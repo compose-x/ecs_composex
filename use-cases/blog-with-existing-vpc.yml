@@ -88,7 +88,7 @@ x-vpc:
   Lookup:
     VpcId:
       Tags:
-        - Name: vpc--blackeye-prod
+        - Name: vpcwork
     AppSubnets:
       Tags:
         - vpc::usage: application
@@ -98,6 +98,3 @@ x-vpc:
     PublicSubnets:
       Tags:
         - vpc::usage: public
-
-x-cluster:
-  Use: ${CLUSTER_NAME}

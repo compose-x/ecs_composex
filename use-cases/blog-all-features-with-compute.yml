@@ -1,7 +1,24 @@
 ---
-# RDS Use-case.
+# Blog applications
 
 version: '3.8'
+
+x-configs:
+  app:
+    network:
+      use_cloudmap: True
+  composex:
+    spot_config:
+      bid_price: 0.42
+      use_spot: true
+      spot_instance_types:
+        m5a.xlarge:
+          weight: 4
+        m5a.2xlarge:
+          weight: 8
+        m5a.4xlarge:
+          weight: 16
+
 services:
   rproxy:
     image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-01-rproxy:latest
@@ -12,10 +29,10 @@ services:
       resources:
         reservations:
           cpus: "0.1"
-          memory: "32M"
+          memory: "32768kB"
         limits:
           cpus: "0.25"
-          memory: "64M"
+          memory: "67108864B"
       labels:
         - "ecs.task.family=app01"
     x-configs:
@@ -32,10 +49,10 @@ services:
       resources:
         reservations:
           cpus: "0.25"
-          memory: "64M"
+          memory: "3M"
         limits:
           cpus: "0.5"
-          memory: "128M"
+          memory: "3G"
       labels:
         ecs.task.family: app01
     environment:
@@ -48,16 +65,10 @@ services:
     ports:
       - 80
 
-x-rds:
-  dbA:
-    Properties:
-      Engine: "aurora-mysql"
-      EngineVersion: "5.7.12"
-    Settings:
-      EnvNames:
-        - DBA
-    Services:
-      - name: backend
-        access: RW
-      - name: app
-        access: RW
+x-tags:
+  costcentre: abcd
+  contact: you@me.com
+
+x-cluster:
+  Properties:
+    ClusterName: testabcd

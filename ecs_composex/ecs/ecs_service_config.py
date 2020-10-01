@@ -266,7 +266,9 @@ class ServiceConfig(object):
 
         if not set(self.required_keys).issubset(set(definition)):
             raise AttributeError(
-                "Required attributes for a ecs_service are", self.required_keys
+                f"Service {service_name} is missing required attributes."
+                "Required attributes for a ecs_service are",
+                self.required_keys,
             )
 
         self.links = keyset_else_novalue("external_links", definition, else_value=[])

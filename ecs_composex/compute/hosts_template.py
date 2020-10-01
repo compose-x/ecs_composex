@@ -278,7 +278,7 @@ def add_launch_template(template, hosts_sg):
                         "export PATH=$PATH:/opt/aws/bin",
                         "cfn-init -v || yum install aws-cfn-bootstrap -y",
                         Sub(
-                            "cfn-init --region ${{AWS::Region}} -r LaunchTemplate -s ${{AWS::StackName}}"
+                            "cfn-init --region ${AWS::Region} -r LaunchTemplate -s ${AWS::StackName}"
                         ),
                         # 'if [ $? -ne 0 ]; then',
                         # Sub(f'cfn-signal -e 1 -r "Failed to bootstrap" \'${{{wait_handle.title}}}\''),

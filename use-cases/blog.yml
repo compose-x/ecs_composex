@@ -18,6 +18,7 @@ services:
           memory: "64M"
     depends_on:
       - app01
+
   app01:
     image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-01:appmesh
     ports:
@@ -31,16 +32,11 @@ services:
       LOGLEVEL: DEBUG
       SHELLY: ${SHELL}
       TERMY: "$TERM"
-      SHELL_TERM: $SHELL$TERM
-    x-configs:
-      use_xray: True
     links:
       - app03:dateteller
 
   app02:
     image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-02:latest
-    secrets:
-      - testsecret
     ports:
       - 5000
     deploy:
@@ -50,8 +46,6 @@ services:
           memory: "64M"
     environment:
       LOGLEVEL: DEBUG
-    x-configs:
-      use_xray: True
 
   app03:
     image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-02:latest
@@ -64,31 +58,3 @@ services:
           memory: "64M"
     environment:
       LOGLEVEL: DEBUG
-    x-configs:
-      use_xray: True
-      iam:
-        policies:
-          - name: somenewpolicy
-            document:
-              Version: 2012-10-17
-              Statement:
-                - Effect: Allow
-                  Action:
-                    - ec2:Describe*
-                  Resource:
-                    - "*"
-                  Sid: "AllowDescribeAll"
-
-x-tags:
-  owner: johnpreston
-  contact: john@lambda-my-aws.io
-
-
-secrets:
-  testsecret:
-    external: true
-    x-secrets:
-      Name: /path/to/my/secret
-      LinksTo:
-        - EcsTaskRole
-        - EcsExecutionRole
