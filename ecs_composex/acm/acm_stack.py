@@ -156,7 +156,9 @@ def add_certificates(acm_tpl, certs):
         cert_template = initialize_acm_stack_template(resource_name)
         acm_tpl.add_resource(
             ComposeXStack(
-                resource_name, stack_template=cert_template, Parameters=cert_params,
+                resource_name,
+                stack_template=cert_template,
+                Parameters=cert_params,
             )
         )
 

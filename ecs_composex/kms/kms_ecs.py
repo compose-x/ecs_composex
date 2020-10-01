@@ -32,7 +32,12 @@ from ecs_composex.resource_settings import (
 
 
 def handle_new_keys(
-    xresources, services_families, services_stack, res_root_stack, l_keys, nested=False,
+    xresources,
+    services_families,
+    services_stack,
+    res_root_stack,
+    l_keys,
+    nested=False,
 ):
     keys_r = []
     s_resources = res_root_stack.stack_template.resources

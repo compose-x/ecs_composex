@@ -50,7 +50,7 @@ def add_service_roles(template):
     PolicyType(
         f"{EXEC_ROLE_T}Policy",
         template=template,
-        PolicyName=Sub(f"EcsExecRole"),
+        PolicyName=Sub("EcsExecRole"),
         PolicyDocument={
             "Version": "2012-10-17",
             "Statement": [

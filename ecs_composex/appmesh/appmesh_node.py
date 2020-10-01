@@ -203,7 +203,10 @@ class MeshNode(object):
             Type="APPMESH",
             ProxyConfigurationProperties=[
                 Environment(Name="IgnoredUID", Value="1337"),
-                Environment(Name="ProxyIngressPort", Value="15000",),
+                Environment(
+                    Name="ProxyIngressPort",
+                    Value="15000",
+                ),
                 Environment(Name="ProxyEgressPort", Value="15001"),
                 Environment(Name="IgnoredGID", Value=""),
                 Environment(

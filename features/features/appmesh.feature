@@ -24,14 +24,12 @@ Feature: ecs_composex.appmesh
 
   @appmesh
   Scenario Outline: No mesh created with the services
-    Given I use <file_path> as my docker-compose file
+    Given I use <file_path> as my docker-compose file and <override_file> as override file
     And I render the docker-compose to composex
     Then I should not have a mesh
     Examples:
-    |file_path|
-    |use-cases/blog-all-features-with-compute.yml|
-    |use-cases/blog.yml                          |
-    |use-cases/blog-all-features.yml             |
+    |file_path|override_file|
+    |use-cases/blog.yml|use-cases/blog-all-features-with-compute.yml|
 
   @appmesh
   Scenario Outline: Meshes are incorrect

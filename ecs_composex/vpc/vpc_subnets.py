@@ -49,7 +49,7 @@ from ecs_composex.common.cfn_conditions import USE_STACK_NAME_CON_T
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.ecs_composex import CFN_EXPORT_DELIMITER as DELIM
 from ecs_composex.vpc import metadata
-from ecs_composex.vpc.vpc_params import VPC_T, IGW_T
+from ecs_composex.vpc.vpc_params import VPC_T
 
 
 def add_storage_subnets(template, vpc, az_index, layers):

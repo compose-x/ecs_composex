@@ -56,12 +56,14 @@ def add_ssl_config_to_listeners(service_template, cert_import, ports):
     """
     for port in ports:
         if not isinstance(port, int):
-            raise TypeError(f"Port must be of type", int, "got", type(port))
+            raise TypeError("Port must be of type", int, "got", type(port))
         listener = find_service_listener(port, service_template)
         if listener.Protocol == "HTTP":
             listener.Protocol = "HTTPS"
             setattr(
-                listener, "Certificates", [Certificate(CertificateArn=cert_import)],
+                listener,
+                "Certificates",
+                [Certificate(CertificateArn=cert_import)],
             )
         elif listener.Protocol == "TCP":
             listener.Protocol = "TLS"

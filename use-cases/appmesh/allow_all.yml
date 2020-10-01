@@ -83,11 +83,12 @@ x-tags:
 x-appmesh:
   Properties:
     MeshName: test-shared-mesh
+    MeshOwner: 965289391954
     EgressFilter: ALLOW_ALL
   Settings:
     nodes:
       - name: app03
-        protocol: http
+        protocol: tcp
       - name: app02
         protocol: http
       - name: app01
@@ -108,9 +109,13 @@ x-appmesh:
               nodes:
                 - name: app02
                   weight: 1
-            - match:
-                prefix: /date/utc
-              nodes:
+      - name: datetellertcp
+        listener:
+          port: 5000
+          protocol: tcp
+        routes:
+          tcp:
+            - nodes:
                 - name: app03
                   weight: 1
     services:

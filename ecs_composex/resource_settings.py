@@ -99,11 +99,26 @@ def generate_resource_envvars(resource_name, resource, attribute, arn=None):
     )
     if keyisset("Settings", resource) and keyisset("EnvNames", resource["Settings"]):
         for env_name in resource["Settings"]["EnvNames"]:
-            env_names.append(Environment(Name=env_name, Value=export_strings,))
+            env_names.append(
+                Environment(
+                    Name=env_name,
+                    Value=export_strings,
+                )
+            )
         if resource_name not in resource["Settings"]["EnvNames"]:
-            env_names.append(Environment(Name=resource_name, Value=export_strings,))
+            env_names.append(
+                Environment(
+                    Name=resource_name,
+                    Value=export_strings,
+                )
+            )
     else:
-        env_names.append(Environment(Name=resource_name, Value=export_strings,))
+        env_names.append(
+            Environment(
+                Name=resource_name,
+                Value=export_strings,
+            )
+        )
     return env_names
 
 

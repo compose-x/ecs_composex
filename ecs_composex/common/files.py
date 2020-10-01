@@ -25,7 +25,12 @@ YAML_MIME = "application/x-yaml"
 
 
 def upload_file(
-    body, bucket_name, file_name, settings, prefix=None, mime=None,
+    body,
+    bucket_name,
+    file_name,
+    settings,
+    prefix=None,
+    mime=None,
 ):
     """Upload template_body to a file in s3 with given prefix and bucket_name
 

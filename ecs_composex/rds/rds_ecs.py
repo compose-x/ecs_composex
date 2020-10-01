@@ -45,7 +45,12 @@ def handle_db_to_service_settings(
     service_stack = services_stack.stack_template.resources[service_family]
     service_template = service_stack.stack_template
     add_secret_to_containers(
-        service_template, db_name, db_def, secret_import, service["name"], family_wide,
+        service_template,
+        db_name,
+        db_def,
+        secret_import,
+        service["name"],
+        family_wide,
     )
     add_rds_policy(service_template, secret_import, db_name)
     add_security_group_ingress(service_stack, db_name)

@@ -24,10 +24,8 @@ from troposphere.ecs import Secret as EcsSecret
 from troposphere.iam import Policy
 
 from ecs_composex.common import LOG, keyisset, NONALPHANUM
-from ecs_composex.ecs.ecs_params import TASK_ROLE_T, EXEC_ROLE_T
-from ecs_composex.ecs.ecs_iam import define_service_containers
 from ecs_composex.ecs.ecs_container_config import extend_container_secrets
-
+from ecs_composex.ecs.ecs_params import TASK_ROLE_T, EXEC_ROLE_T
 
 RES_KEY = "secrets"
 XRES_KEY = "x-secrets"

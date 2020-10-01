@@ -216,7 +216,7 @@ class ComposeXStack(Stack, object):
             vpc = vpc_stack
         else:
             raise TypeError(
-                f"vpc_stack must be of type", ComposeXStack, str, "got", type(vpc_stack)
+                "vpc_stack must be of type", ComposeXStack, str, "got", type(vpc_stack)
             )
         default_parameters = [
             VPC_ID,

@@ -71,6 +71,7 @@ def step_impl(context):
     services_stack = full_template.resources["services"]
     assert issubclass(type(services_stack), ComposeXStack)
     services_resources = services_stack.stack_template.resources
+    print(services_resources.keys())
     assert AppMesh.mesh_title not in services_resources.keys()
 
 
