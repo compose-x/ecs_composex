@@ -234,8 +234,8 @@ class Task(object):
         for service_config in ordered_containers_config:
             container = Container(
                 template,
-                service_config["config"].resource_name,
-                service_config["definition"],
+                service_config["config"].resource.container_name,
+                service_config["config"].resource.definition,
                 service_config["config"],
             )
             import_secrets(
@@ -872,7 +872,7 @@ class Service(object):
                 EcsLoadBalancer(
                     TargetGroupArn=Ref(tgt),
                     ContainerPort=tgt.Port,
-                    ContainerName=NONALPHANUM.sub("", self.config.lb_service_name),
+                    ContainerName=self.config.resource.container_name,
                 )
             )
         return service_lbs, depends_on

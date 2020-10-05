@@ -219,13 +219,15 @@ class ServiceConfig(object):
         "ingress": None,
     }
 
-    def __init__(self, content, service_name, definition, family_name=None):
+    def __init__(self, service, content, family_name=None):
         """
         Function to initialize the ecs_service configuration
         :param content:
+        :param ecs_composex.common.compose_resources.ComposeXResource service:
         """
+        self.resource = service
         service_configs = keyset_else_novalue(
-            self.master_key, definition, else_value={}
+            self.master_key, self.resource.definition, else_value={}
         )
         self.network = None
         self.iam = None
@@ -242,7 +244,6 @@ class ServiceConfig(object):
         self.policies = []
         self.managed_policies = []
         self.container_start_condition = "START"
-        self.service_name = service_name if service_name else "global"
         self.replicas = int(ecs_params.SERVICE_COUNT.Default)
         self.family_dependents = []
         self.essential = False
@@ -251,45 +252,55 @@ class ServiceConfig(object):
         self.cpu_resa = Ref(AWS_NO_VALUE)
         self.mem_alloc = Ref(AWS_NO_VALUE)
         self.mem_resa = Ref(AWS_NO_VALUE)
-        self.service_name = service_name
         self.service = None
         self.use_xray = False
-        self.resource_name = NONALPHANUM.sub("", service_name)
         self.logs_retention_period = ecs_params.LOG_GROUP_RETENTION.Default
         if keyisset("x-appmesh", content):
             self.use_appmesh = True
 
         if keyisset(self.master_key, content):
             self.set_from_top_configs(content)
-        if service_name and isinstance(service_configs, dict):
-            self.define_service_config(content, service_name, service_configs)
+        if self.resource.name and isinstance(service_configs, dict):
+            self.define_service_config(content, self.resource.name, service_configs)
 
-        if not set(self.required_keys).issubset(set(definition)):
+        if not set(self.required_keys).issubset(set(self.resource.definition)):
             raise AttributeError(
-                f"Service {service_name} is missing required attributes."
+                f"Service {self.resource.name} is missing required attributes."
                 "Required attributes for a ecs_service are",
                 self.required_keys,
             )
 
-        self.links = keyset_else_novalue("external_links", definition, else_value=[])
-        self.command = (
-            definition["command"].strip() if keyisset("command", definition) else None
+        self.links = keyset_else_novalue(
+            "external_links", self.resource.definition, else_value=[]
         )
-        self.entrypoint = keyset_else_novalue("entrypoint", definition, else_value=None)
+        self.command = (
+            self.resource.definition["command"].strip()
+            if keyisset("command", self.resource.definition)
+            else None
+        )
+        self.entrypoint = keyset_else_novalue(
+            "entrypoint", self.resource.definition, else_value=None
+        )
         self.ports = (
-            set_service_ports(definition["ports"])
-            if keyisset("ports", definition)
+            set_service_ports(self.resource.definition["ports"])
+            if keyisset("ports", self.resource.definition)
             else []
         )
         self.ingress_mappings = define_ingress_mappings(self.ports)
-        self.environment = keyset_else_novalue("environment", definition, else_value=[])
-        self.hostname = keyset_else_novalue("hostname", definition, else_value=None)
+        self.environment = keyset_else_novalue(
+            "environment", self.resource.definition, else_value=[]
+        )
+        self.hostname = keyset_else_novalue(
+            "hostname", self.resource.definition, else_value=None
+        )
         self.family_name = family_name
-        self.set_service_deploy(definition)
-        self.lb_service_name = service_name
-        self.set_xray(definition)
-        self.healthcheck = set_healthcheck(definition)
-        self.depends_on = keyset_else_novalue("depends_on", definition, else_value=[])
+        self.set_service_deploy(self.resource.definition)
+        self.lb_service_name = self.family_name
+        self.set_xray(self.resource.definition)
+        self.healthcheck = set_healthcheck(self.resource.definition)
+        self.depends_on = keyset_else_novalue(
+            "depends_on", self.resource.definition, else_value=[]
+        )
 
     def __add__(self, other):
         """
@@ -470,7 +481,7 @@ class ServiceConfig(object):
         for key_name in self.network_defaults:
             if key_name not in config.keys() and not hasattr(self, key_name):
                 LOG.info(
-                    f"Missing {key_name}. Setting to default - {self.service_name}"
+                    f"Missing {key_name}. Setting to default - {self.resource.name}"
                 )
                 setattr(self, key_name, self.network_defaults[key_name])
             elif key_name in config.keys():

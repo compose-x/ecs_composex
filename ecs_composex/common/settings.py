@@ -38,6 +38,7 @@ from ecs_composex.utils.init_s3 import create_bucket
 from ecs_composex.ecs.ecs_service_config import set_service_ports
 from cfn_flip.yaml_dumper import LongCleanDumper
 from ecs_composex.secrets.secrets_config import parse_secrets
+from ecs_composex.common.compose_resources import Service
 
 
 def render_services_ports(services):
@@ -289,6 +290,16 @@ class ComposeXSettings(object):
             indent=4,
         )
 
+    def set_services(self):
+        """
+        Method to define the ComposeXResource for each service.
+        :return:
+        """
+        for service_name in self.compose_content["services"]:
+            self.compose_content["services"][service_name] = Service(
+                service_name, self.compose_content["services"][service_name]
+            )
+
     def set_content(self, kwargs, content=None):
         """
         Method to initialize the compose content
@@ -314,6 +325,7 @@ class ComposeXSettings(object):
         LOG.debug(yaml.dump(self.compose_content))
         interpolate_env_vars(self.compose_content)
         parse_secrets(self)
+        self.set_services()
 
     def parse_command(self, kwargs, content=None):
         """
