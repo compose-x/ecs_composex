@@ -19,7 +19,7 @@ from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.kms.kms_template import create_kms_template
 
 
-class XResource(ComposeXStack):
+class XStack(ComposeXStack):
     """
     Class for Dynamodb
     """

@@ -16,7 +16,7 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-Module for the XResource SQS
+Module for the XStack SQS
 """
 
 import sys
@@ -45,7 +45,7 @@ def create_sqs_template(settings):
     return sqs_tpl
 
 
-class XResource(ComposeXStack):
+class XStack(ComposeXStack):
     """
     Class to handle SQS Root stack related actions
     """

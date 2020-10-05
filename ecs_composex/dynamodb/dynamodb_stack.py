@@ -24,7 +24,7 @@ from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.dynamodb.dynamodb_template import create_dynamodb_template
 
 
-class XResource(ComposeXStack):
+class XStack(ComposeXStack):
     """
     Class for Dynamodb
     """

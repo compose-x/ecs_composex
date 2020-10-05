@@ -131,10 +131,10 @@ def get_mod_class(module_name):
         res_module = import_module(composex_module_name)
         LOG.debug(res_module)
         try:
-            the_class = getattr(res_module, "XResource")
+            the_class = getattr(res_module, "XStack")
             return the_class
         except AttributeError:
-            LOG.info(f"No XResource class for {module_name} found - skipping")
+            LOG.info(f"No XStack class for {module_name} found - skipping")
             return None
     except ImportError as error:
         LOG.error(f"Failure to process the module {composex_module_name}")
@@ -180,7 +180,7 @@ def apply_x_configs_to_ecs(
 
 def apply_x_to_x_configs(root_template, settings):
     """
-    Function to iterate over each XResource and trigger cross-x resources configurations functions
+    Function to iterate over each XStack and trigger cross-x resources configurations functions
 
     :param troposphere.Template root_template: the ECS ComposeX root template
     :param ComposeXSettings settings: The execution settings

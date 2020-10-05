@@ -36,7 +36,7 @@ def create_sns_template(settings):
         return generate_sns_templates(settings)
 
 
-class XResource(ComposeXStack):
+class XStack(ComposeXStack):
     """
     Class to handle SQS Root stack related actions
     """

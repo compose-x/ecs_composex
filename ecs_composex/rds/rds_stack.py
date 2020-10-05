@@ -48,7 +48,7 @@ def create_rds_template(settings):
     return rds_tpl
 
 
-class XResource(ComposeXStack):
+class XStack(ComposeXStack):
     """
     Class to handle ECS root stack specific settings
     """
