@@ -27,7 +27,7 @@ from ecs_composex.dynamodb.dynamodb_aws import lookup_dyn_table
 from ecs_composex.dynamodb.dynamodb_params import TABLE_ARN
 from ecs_composex.dynamodb.dynamodb_perms import ACCESS_TYPES
 from ecs_composex.resource_permissions import (
-    apply_iam_based_resources_v2,
+    apply_iam_based_resources,
 )
 from ecs_composex.resource_settings import (
     generate_resource_permissions,
@@ -64,7 +64,7 @@ def handle_new_tables(
             perms = generate_resource_permissions(
                 table.logical_name, ACCESS_TYPES, TABLE_ARN
             )
-            apply_iam_based_resources_v2(
+            apply_iam_based_resources(
                 table,
                 services_families,
                 services_stack,
@@ -108,7 +108,7 @@ def dynamodb_to_ecs(
             perms = generate_resource_permissions(
                 found_table["Name"], ACCESS_TYPES, TABLE_ARN, arn=found_table["Arn"]
             )
-            apply_iam_based_resources_v2(
+            apply_iam_based_resources(
                 table,
                 services_families,
                 services_stack,

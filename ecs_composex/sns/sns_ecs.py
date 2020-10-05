@@ -23,7 +23,7 @@ from troposphere.sns import Topic
 
 from ecs_composex.common import keyisset
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.resource_permissions import apply_iam_based_resources_v2
+from ecs_composex.resource_permissions import apply_iam_based_resources
 from ecs_composex.resource_settings import (
     generate_resource_permissions,
 )
@@ -59,7 +59,7 @@ def handle_new_topics(
             topic = xresources[topic_name]
             topic.generate_resource_envvars(TOPIC_ARN_T)
             perms = generate_resource_permissions(topic_name, ACCESS_TYPES, TOPIC_ARN_T)
-            apply_iam_based_resources_v2(
+            apply_iam_based_resources(
                 topic,
                 services_families,
                 services_stack,
