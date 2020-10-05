@@ -35,63 +35,6 @@ from ecs_composex.kms.kms_params import (
 CFN_MAX_OUTPUTS = 50
 
 
-def define_default_key_policy():
-    """
-    Function to return the default KMS management policy allowing root account access.
-    :return: policy
-    :rtype: dict
-    """
-    policy = {
-        "Version": "2012-10-17",
-        "Id": "auto-secretsmanager-1",
-        "Statement": [
-            {
-                "Sid": "Allow direct access to key metadata to the account",
-                "Effect": "Allow",
-                "Principal": {
-                    "AWS": Sub(
-                        f"arn:${{{AWS_PARTITION}}}:iam::${{{AWS_ACCOUNT_ID}}}:root"
-                    )
-                },
-                "Action": ["kms:*"],
-                "Resource": "*",
-                "Condition": {
-                    "StringEquals": {"kms:CallerAccount": Ref(AWS_ACCOUNT_ID)}
-                },
-            }
-        ],
-    }
-    return policy
-
-
-def generate_key(key):
-    """
-    Function to create the KMS Key
-
-    :param key:
-    :type key: ecs_composex.common.compose_resources.Kms
-    :param key_name:
-    :param res_name:
-    :param key_def:
-    :return: key
-    :rtype: troposphere.kms.Key
-    """
-    if not key.properties:
-        key.properties = {
-            "Description": Sub(f"{key.name} created in ${{{ROOT_STACK_NAME.title}}}"),
-            "Enabled": True,
-            "EnableKeyRotation": True,
-            "KeyUsage": "ENCRYPT_DECRYPT",
-            "PendingWindowInDays": 7,
-        }
-    if not keyisset("KeyPolicy", key.properties):
-        key.properties.update({"KeyPolicy": define_default_key_policy()})
-    key.properties.update({"Metadata": metadata})
-    LOG.debug(key.properties)
-    kms_key = Key(key.logical_name, **key.properties)
-    return kms_key
-
-
 def handle_key_settings(template, key, key_def):
     """
     Function to add to the template for additional KMS key related resources.
@@ -135,24 +78,24 @@ def create_kms_template(settings):
         mono_template = True
 
     for key_name in keys:
-        xkey = keys[key_name]
-        key = generate_key(xkey)
+        key = keys[key_name]
+        key.define_kms_key()
         if key:
             values = [
-                (KMS_KEY_ARN_T, "Arn", GetAtt(key, "Arn")),
-                (KMS_KEY_ID_T, "Name", Ref(key)),
+                (KMS_KEY_ARN_T, "Arn", GetAtt(key.cfn_resource, "Arn")),
+                (KMS_KEY_ID_T, "Name", Ref(key.cfn_resource)),
             ]
-            outputs = ComposeXOutput(key, values, True)
+            outputs = ComposeXOutput(key.cfn_resource, values, True)
             if mono_template:
-                template.add_resource(key)
+                template.add_resource(key.cfn_resource)
                 handle_key_settings(template, key, keys[key_name])
                 template.add_output(outputs.outputs)
             elif not mono_template:
-                key_template = build_template(f"Template for DynamoDB key {key.title}")
-                key_template.add_resource(key)
-                key_template.add_output(outputs.outputs)
-                key_stack = ComposeXStack(
-                    xkey.logical_name, stack_template=key_template
+                key_template = build_template(
+                    f"Template for KMS key {key.logical_name}"
                 )
+                key_template.add_resource(key.cfn_resource)
+                key_template.add_output(outputs.outputs)
+                key_stack = ComposeXStack(key.logical_name, stack_template=key_template)
                 template.add_resource(key_stack)
     return template
