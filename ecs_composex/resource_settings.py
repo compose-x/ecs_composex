@@ -27,6 +27,7 @@ from troposphere.iam import Policy as IamPolicy
 from ecs_composex.common import LOG, keyisset
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.ecs_composex import CFN_EXPORT_DELIMITER as DELIM
+from ecs_composex.common.compose_resources import XResource
 
 
 def generate_export_strings(res_name, attribute):
@@ -122,23 +123,23 @@ def generate_resource_envvars(resource_name, resource, attribute, arn=None):
     return env_names
 
 
-def validate_lookup_resource(resource_name, resource_def, res_root_stack):
+def validate_lookup_resource(resource, res_root_stack):
     """
     Function to validate a resource has attributes to lookup.
 
-    :param str resource_name:
-    :param dict resource_def:
-    :param ecs_composex.common.stacks.ComposeXStack res_root_stack:
+    :param resource: The XResource to verify if there is Lookup information
+    :type resource: ecs_composex.common.compose_resources.XResource
     :return:
     """
-    if not (
-        keyisset("Lookup", resource_def)
-        and resource_name not in res_root_stack.stack_template.resources
+    if (
+        not resource.lookup
+        and resource.name not in res_root_stack.stack_template.resources
+        and resource.logical_name not in res_root_stack.stack_template.resources
     ):
         raise KeyError(
-            f"Table {resource_name} is not created in ComposeX and does not have Lookup attribute"
+            f"{resource.name} is not created in ComposeX and does not have Lookup attribute"
         )
-    if not keyisset("Tags", resource_def["Lookup"]):
+    elif resource.lookup and not keyisset("Tags", resource.lookup):
         raise KeyError(
-            f"Table {resource_name} is defined for lookup but there are no tags indicated."
+            f"{resource.name} is defined for lookup but there are no tags indicated."
         )

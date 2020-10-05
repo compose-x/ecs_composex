@@ -43,7 +43,7 @@ from ecs_composex.vpc.vpc_params import (
 )
 
 
-def add_db_stack(root_template, dbs_subnet_group, db_name, db, settings):
+def add_db_stack(root_template, dbs_subnet_group, db, settings):
     """
     Function to add the DB stack to the root stack
 
@@ -51,13 +51,10 @@ def add_db_stack(root_template, dbs_subnet_group, db_name, db, settings):
     :type dbs_subnet_group: troposphere.rds.DBSubnetGroup
     :param root_template: root template to add the nested stack to
     :type root_template: troposphere.Template
-    :param db_name: name of the DB as defined in the x-rds section
-    :type db_name: str
     :param db: the database definition from the compose file
-    :type db: dict
-    :param kwargs: extra arguments
+    :type db: ecs_composex.common.compose_resources.Rds
     """
-    props = db["Properties"]
+    props = db.properties
     required_props = [DB_ENGINE_NAME_T, DB_ENGINE_VERSION_T]
     validate_kwargs(required_props, props)
     non_stack_params = {
@@ -67,16 +64,16 @@ def add_db_stack(root_template, dbs_subnet_group, db_name, db, settings):
     parameters = {
         VPC_ID_T: Ref(VPC_ID),
         DBS_SUBNET_GROUP_T: Ref(dbs_subnet_group),
-        DB_NAME_T: db_name,
+        DB_NAME_T: db.logical_name,
         STORAGE_SUBNETS_T: Join(",", Ref(STORAGE_SUBNETS)),
         ROOT_STACK_NAME_T: Ref(ROOT_STACK_NAME),
     }
     parameters.update(non_stack_params)
-    db_template = generate_database_template(db_name, db)
+    db_template = generate_database_template(db)
     if db_template is None:
         return
     db_stack = ComposeXStack(
-        db_name, stack_template=db_template, stack_parameters=parameters
+        db.logical_name, stack_template=db_template, stack_parameters=parameters
     )
     root_template.add_resource(db_stack)
 
@@ -108,7 +105,6 @@ def generate_rds_templates(settings):
         add_db_stack(
             root_tpl,
             dbs_subnet_group,
-            db_name,
             section[db_name],
             settings,
         )

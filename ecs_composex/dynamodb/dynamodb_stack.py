@@ -21,6 +21,8 @@ Module to create the root stack for DynamoDB tables
 
 
 from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.common.compose_resources import set_resources, Table
+from ecs_composex.dynamodb.dynamodb_params import RES_KEY
 from ecs_composex.dynamodb.dynamodb_template import create_dynamodb_template
 
 
@@ -30,5 +32,6 @@ class XStack(ComposeXStack):
     """
 
     def __init__(self, title, settings, **kwargs):
+        set_resources(settings, Table, RES_KEY)
         stack_template = create_dynamodb_template(settings)
         super().__init__(title, stack_template, **kwargs)

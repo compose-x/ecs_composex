@@ -24,6 +24,7 @@ from ecs_composex.common import validate_input, keyisset, LOG, EXIT_CODES
 from ecs_composex.sqs.sqs_params import RES_KEY
 from ecs_composex.sqs.sqs_template import generate_sqs_root_template
 from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.common.compose_resources import set_resources, Queue
 
 
 def create_sqs_template(settings):
@@ -51,5 +52,6 @@ class XStack(ComposeXStack):
     """
 
     def __init__(self, title, settings, **kwargs):
+        set_resources(settings, Queue, RES_KEY)
         template = create_sqs_template(settings)
         super().__init__(title, stack_template=template, **kwargs)

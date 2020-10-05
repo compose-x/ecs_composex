@@ -16,7 +16,9 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.common.compose_resources import set_resources, Kms
 from ecs_composex.kms.kms_template import create_kms_template
+from ecs_composex.kms.kms_params import RES_KEY
 
 
 class XStack(ComposeXStack):
@@ -25,5 +27,6 @@ class XStack(ComposeXStack):
     """
 
     def __init__(self, title, settings, **kwargs):
+        set_resources(settings, Kms, RES_KEY)
         stack_template = create_kms_template(settings)
         super().__init__(title, stack_template, **kwargs)

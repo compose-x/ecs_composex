@@ -94,15 +94,17 @@ def dynamodb_to_ecs(
     )
     for table_name in l_tables:
         table = xresources[table_name]
-        validate_lookup_resource(table_name, table, res_root_stack)
-        found_resources = lookup_dyn_table(settings.session, table["Lookup"]["Tags"])
+        found_resources = lookup_dyn_table(settings.session, table.lookup["Tags"])
         if not found_resources:
             LOG.warning(
                 f"404 not tables found with the provided tags was found in defintion {table_name}."
             )
             continue
         for found_table in found_resources:
-            table.update(found_table)
+            if table.properties:
+                table.properties.update(found_table)
+            else:
+                table.properties = found_table
             perms = generate_resource_permissions(
                 found_table["Name"], ACCESS_TYPES, TABLE_ARN, arn=found_table["Arn"]
             )

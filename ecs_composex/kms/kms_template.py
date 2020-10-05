@@ -64,32 +64,31 @@ def define_default_key_policy():
     return policy
 
 
-def generate_key(key_name, res_name, key_def):
+def generate_key(key):
     """
     Function to create the KMS Key
 
+    :param key:
+    :type key: ecs_composex.common.compose_resources.Kms
     :param key_name:
     :param res_name:
     :param key_def:
     :return: key
     :rtype: troposphere.kms.Key
     """
-    properties = (
-        key_def["Properties"]
-        if keyisset("Properties", key_def)
-        else {
-            "Description": Sub(f"{key_name} created in ${{{ROOT_STACK_NAME.title}}}"),
+    if not key.properties:
+        key.properties = {
+            "Description": Sub(f"{key.name} created in ${{{ROOT_STACK_NAME.title}}}"),
             "Enabled": True,
             "EnableKeyRotation": True,
             "KeyUsage": "ENCRYPT_DECRYPT",
             "PendingWindowInDays": 7,
         }
-    )
-    if not keyisset("KeyPolicy", properties):
-        properties.update({"KeyPolicy": define_default_key_policy()})
-    properties.update({"Metadata": metadata})
-    LOG.debug(properties)
-    kms_key = Key(res_name, **properties)
+    if not keyisset("KeyPolicy", key.properties):
+        key.properties.update({"KeyPolicy": define_default_key_policy()})
+    key.properties.update({"Metadata": metadata})
+    LOG.debug(key.properties)
+    kms_key = Key(key.logical_name, **key.properties)
     return kms_key
 
 
@@ -136,8 +135,8 @@ def create_kms_template(settings):
         mono_template = True
 
     for key_name in keys:
-        key_res_name = NONALPHANUM.sub("", key_name)
-        key = generate_key(key_name, key_res_name, keys[key_name])
+        xkey = keys[key_name]
+        key = generate_key(xkey)
         if key:
             values = [
                 (KMS_KEY_ARN_T, "Arn", GetAtt(key, "Arn")),
@@ -152,6 +151,8 @@ def create_kms_template(settings):
                 key_template = build_template(f"Template for DynamoDB key {key.title}")
                 key_template.add_resource(key)
                 key_template.add_output(outputs.outputs)
-                key_stack = ComposeXStack(key_res_name, stack_template=key_template)
+                key_stack = ComposeXStack(
+                    xkey.logical_name, stack_template=key_template
+                )
                 template.add_resource(key_stack)
     return template

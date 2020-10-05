@@ -30,8 +30,7 @@ from ecs_composex.ecs.ecs_template import get_service_family_name
 
 
 def handle_db_to_service_settings(
-    db_name,
-    db_def,
+    db,
     secret_import,
     service,
     services_families,
@@ -46,14 +45,13 @@ def handle_db_to_service_settings(
     service_template = service_stack.stack_template
     add_secret_to_containers(
         service_template,
-        db_name,
-        db_def,
+        db,
         secret_import,
         service["name"],
         family_wide,
     )
-    add_rds_policy(service_template, secret_import, db_name)
-    add_security_group_ingress(service_stack, db_name)
+    add_rds_policy(service_template, secret_import, db.logical_name)
+    add_security_group_ingress(service_stack, db.logical_name)
     if rds_root_stack.title not in services_stack.DependsOn:
         services_stack.add_dependencies(rds_root_stack.title)
 
@@ -69,17 +67,16 @@ def rds_to_ecs(rdsdbs, services_stack, services_families, rds_root_stack, settin
     :return:
     """
     for db_name in rdsdbs:
-        db_def = rdsdbs[db_name]
-        if db_name not in rds_root_stack.stack_template.resources:
-            raise KeyError(f"DB {db_name} not defined in RDS Root template")
-        if not keyisset("Services", db_def):
-            LOG.warn(f"DB {db_name} has no services defined.")
+        db = rdsdbs[db_name]
+        if db.logical_name not in rds_root_stack.stack_template.resources:
+            raise KeyError(f"DB {db.logical_name} not defined in RDS Root template")
+        if not db.services:
+            LOG.warn(f"DB {db.logical_name} has no services defined.")
             continue
         secret_import = define_db_secret_import(db_name)
-        for service in db_def["Services"]:
+        for service in rdsdbs[db_name].services:
             handle_db_to_service_settings(
-                db_name,
-                db_def,
+                db,
                 secret_import,
                 service,
                 services_families,

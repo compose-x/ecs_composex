@@ -47,8 +47,8 @@ def create_dynamodb_template(settings):
 
     template = build_template("DynamoDB for ECS ComposeX")
     for table_name in tables:
-        table_res_name = NONALPHANUM.sub("", table_name)
-        table = generate_table(table_name, table_res_name, tables[table_name])
+        xtable = tables[table_name]
+        table = generate_table(xtable)
         if table:
             values = [
                 (TABLE_ARN_T, "Arn", GetAtt(table, "Arn")),

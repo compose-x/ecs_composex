@@ -22,10 +22,40 @@ Module to define the ComposeX Resources into a simple object to make it easier t
 from troposphere import Sub
 
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME
-from ecs_composex.common import NONALPHANUM
+from ecs_composex.common import NONALPHANUM, keyisset
 
 
-class ComposeXResource(object):
+def set_resources(settings, resource_class, res_key):
+    """
+    Method to define the ComposeXResource for each service.
+
+    :param ecs_composex.common.settings.ComposeXSettings settings:
+    :param resource_class:
+    :param str res_key:
+    """
+    for resource_name in settings.compose_content[res_key]:
+        settings.compose_content[res_key][resource_name] = resource_class(
+            resource_name, settings.compose_content[res_key][resource_name]
+        )
+
+
+class Service(object):
+    """
+    Class to represent a service
+
+    :cvar str container_name: name of the container to use in definitions
+    """
+
+    def __init__(self, name, definition):
+        self.name = name
+        self.definition = definition
+        self.logical_name = NONALPHANUM.sub("", self.name)
+        self.container_name = name
+        self.service_name = Sub(f"${{{ROOT_STACK_NAME.title}}}-{self.name}")
+        self.cfn_resource = None
+
+
+class XResource(object):
     """
     Class to represent each defined resource in the template
 
@@ -38,32 +68,71 @@ class ComposeXResource(object):
         """
         Init the class
         :param str name: Name of the resource in the template
+        :param str resource_type: The category of resource.
         :param dict definition: The definition of the resource as-is
         """
         self.name = name
         self.definition = definition
         self.logical_name = NONALPHANUM.sub("", self.name)
+        self.settings = (
+            None
+            if not keyisset("Settings", self.definition)
+            else self.definition["Settings"]
+        )
+        self.properties = (
+            None
+            if not keyisset("Properties", self.definition)
+            else self.definition["Properties"]
+        )
+        self.services = (
+            []
+            if not keyisset("Services", self.definition)
+            else self.definition["Services"]
+        )
+        self.lookup = (
+            None
+            if not keyisset("Lookup", self.definition)
+            else self.definition["Lookup"]
+        )
+        self.use = (
+            None if not keyisset("Use", self.definition) else self.definition["Use"]
+        )
+        self.cfn_resource = None
 
     def __repr__(self):
         return self.logical_name
 
 
-class Service(ComposeXResource):
+class Queue(XResource):
     """
-    Class to represent a service
-
-    :cvar str container_name: name of the container to use in definitions
+    Class to represent a SQS Queue
     """
 
     def __init__(self, name, definition):
         super().__init__(name, definition)
-        self.container_name = name
-        self.service_name = Sub(f"${{{ROOT_STACK_NAME.title}}}-{self.name}")
 
 
-class Queue(ComposeXResource):
+class Rds(XResource):
     """
-    Class to represent a SQS Queue
+    Class to represent a RDS DB
+    """
+
+    def __init__(self, name, definition):
+        super().__init__(name, definition)
+
+
+class Kms(XResource):
+    """
+    Class to represent a KMS Key
+    """
+
+    def __init__(self, name, definition):
+        super().__init__(name, definition)
+
+
+class Table(XResource):
+    """
+    Class to represent a DynamoDB Table
     """
 
     def __init__(self, name, definition):

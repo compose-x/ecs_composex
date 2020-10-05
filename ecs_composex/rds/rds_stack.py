@@ -25,6 +25,7 @@ from warnings import warn
 from ecs_composex.common import LOG, keyisset
 from ecs_composex.rds.rds_template import generate_rds_templates
 from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.common.compose_resources import Rds, set_resources
 
 RES_KEY = f"x-{os.path.basename(os.path.dirname(os.path.abspath(__file__)))}"
 RDS_SSM_PREFIX = f"/{RES_KEY}/"
@@ -54,5 +55,6 @@ class XStack(ComposeXStack):
     """
 
     def __init__(self, title, settings, **kwargs):
+        set_resources(settings, Rds, RES_KEY)
         template = create_rds_template(settings)
         super().__init__(title, stack_template=template, **kwargs)

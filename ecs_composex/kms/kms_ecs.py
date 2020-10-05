@@ -55,7 +55,8 @@ def handle_new_keys(
             )
 
     for key_name in xresources:
-        if key_name in keys_r:
+        xkey = xresources[key_name]
+        if xkey.logical_name in keys_r:
             perms = generate_resource_permissions(key_name, ACCESS_TYPES, KMS_KEY_ARN_T)
             envvars = generate_resource_envvars(
                 key_name, xresources[key_name], KMS_KEY_ARN_T

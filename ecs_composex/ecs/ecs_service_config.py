@@ -24,7 +24,6 @@ from troposphere import Ref
 from troposphere.ecs import HealthCheck
 from troposphere.iam import Policy
 
-from ecs_composex.common import NONALPHANUM
 from ecs_composex.common import keyisset, keypresent, LOG
 from ecs_composex.ecs import ecs_params
 from ecs_composex.ecs.docker_tools import set_memory_to_mb
@@ -223,7 +222,7 @@ class ServiceConfig(object):
         """
         Function to initialize the ecs_service configuration
         :param content:
-        :param ecs_composex.common.compose_resources.ComposeXResource service:
+        :param ecs_composex.common.compose_resources.XResource service:
         """
         self.resource = service
         service_configs = keyset_else_novalue(
