@@ -186,8 +186,6 @@ def define_table(table):
 
     :param table:
     :type table: ecs_composex.common.compose_resources.Table
-    :return: the DynamoDB Table
-    :rtype: dynamodb.Table
     """
     required_keys = ["AttributeDefinitions", "KeySchema"]
     if not all(
@@ -217,8 +215,8 @@ def define_table(table):
         ),
         "Metadata": metadata,
     }
-    table = dynamodb.Table(table.logical_name, **table_props)
-    return table
+    cfn_table = dynamodb.Table(table.logical_name, **table_props)
+    table.cfn_resource = cfn_table
 
 
 def generate_table(table):
@@ -236,5 +234,5 @@ def generate_table(table):
     if not table.properties:
         LOG.warning(f"Properties for table {table.name} were not defined. Skipping")
         return
-    table = define_table(table)
+    define_table(table)
     return table

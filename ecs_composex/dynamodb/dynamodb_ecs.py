@@ -26,7 +26,10 @@ from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.dynamodb.dynamodb_aws import lookup_dyn_table
 from ecs_composex.dynamodb.dynamodb_params import TABLE_ARN
 from ecs_composex.dynamodb.dynamodb_perms import ACCESS_TYPES
-from ecs_composex.resource_permissions import apply_iam_based_resources
+from ecs_composex.resource_permissions import (
+    apply_iam_based_resources,
+    apply_iam_based_resources_v2,
+)
 from ecs_composex.resource_settings import (
     generate_resource_envvars,
     generate_resource_permissions,
@@ -59,16 +62,16 @@ def handle_new_tables(
 
     for table_name in xresources:
         if table_name in tables_r:
-            perms = generate_resource_permissions(table_name, ACCESS_TYPES, TABLE_ARN)
-            envvars = generate_resource_envvars(
-                table_name, xresources[table_name], TABLE_ARN
+            table = xresources[table_name]
+            table.generate_resource_envvars(TABLE_ARN)
+            perms = generate_resource_permissions(
+                table.logical_name, ACCESS_TYPES, TABLE_ARN
             )
-            apply_iam_based_resources(
-                xresources[table_name],
+            apply_iam_based_resources_v2(
+                table,
                 services_families,
                 services_stack,
                 res_root_stack,
-                envvars,
                 perms,
                 nested,
             )
@@ -108,17 +111,10 @@ def dynamodb_to_ecs(
             perms = generate_resource_permissions(
                 found_table["Name"], ACCESS_TYPES, TABLE_ARN, arn=found_table["Arn"]
             )
-            envvars = generate_resource_envvars(
-                found_table["Name"],
-                xresources[table_name],
-                TABLE_ARN,
-                arn=found_table["Arn"],
-            )
-            apply_iam_based_resources(
+            apply_iam_based_resources_v2(
                 table,
                 services_families,
                 services_stack,
                 res_root_stack,
-                envvars,
                 perms,
             )

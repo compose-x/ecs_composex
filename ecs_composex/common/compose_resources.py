@@ -20,9 +20,12 @@ Module to define the ComposeX Resources into a simple object to make it easier t
 """
 
 from troposphere import Sub
+from troposphere.ecs import Environment
 
-from ecs_composex.common.cfn_params import ROOT_STACK_NAME
 from ecs_composex.common import NONALPHANUM, keyisset
+from ecs_composex.resource_settings import generate_export_strings
+from ecs_composex.common.cfn_params import ROOT_STACK_NAME
+from ecs_composex.dynamodb.dynamodb_params import TABLE_ARN, TABLE_NAME
 
 
 def set_resources(settings, resource_class, res_key):
@@ -73,6 +76,7 @@ class XResource(object):
         """
         self.name = name
         self.definition = definition
+        self.env_vars = []
         self.logical_name = NONALPHANUM.sub("", self.name)
         self.settings = (
             None
@@ -102,6 +106,38 @@ class XResource(object):
     def __repr__(self):
         return self.logical_name
 
+    def generate_resource_envvars(self, attribute):
+        """
+        :return: environment key/pairs
+        :rtype: list<troposphere.ecs.Environment>
+        """
+        export_string = generate_export_strings(self.logical_name, attribute)
+        if self.settings and keyisset("EnvNames", self.settings):
+            for env_name in self.settings["EnvNames"]:
+                self.env_vars.append(
+                    Environment(
+                        Name=env_name,
+                        Value=export_string,
+                    )
+                )
+            if self.name not in self.settings["EnvNames"]:
+                self.env_vars.append(
+                    Environment(
+                        Name=self.name,
+                        Value=export_string,
+                    )
+                )
+                self.env_vars.append(
+                    Environment(Name=self.logical_name, Value=export_string)
+                )
+        else:
+            self.env_vars.append(
+                Environment(
+                    Name=self.name,
+                    Value=export_string,
+                )
+            )
+
 
 class Queue(XResource):
     """
@@ -130,10 +166,37 @@ class Kms(XResource):
         super().__init__(name, definition)
 
 
+class Topic(XResource):
+    """
+    Class for SNS Topics
+    """
+
+
+class Subscrition(XResource):
+    """
+    Class for SNS Subscriptions
+    """
+
+
 class Table(XResource):
     """
     Class to represent a DynamoDB Table
     """
 
+    name_attr = TABLE_NAME.title
+    arn_attr = TABLE_ARN.title
+
     def __init__(self, name, definition):
         super().__init__(name, definition)
+        self.name_export = None
+        self.name_import = None
+        self.arn_export = None
+        self.arn_import = None
+
+    def set_outputs(self):
+        """
+        Method to set the outputs and imports settings.
+        :return:
+        """
+        if not self.cfn_resource:
+            return

@@ -22,7 +22,7 @@ Module to apply SQS settings onto ECS Services
 from troposphere.sqs import Queue
 
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.resource_permissions import apply_iam_based_resources
+from ecs_composex.resource_permissions import apply_iam_based_resources_v2
 from ecs_composex.resource_settings import (
     generate_resource_permissions,
     generate_resource_envvars,
@@ -56,18 +56,16 @@ def handle_new_queues(
 
     for queue_name in xresources:
         if queue_name in queues_r:
+            queue = xresources[queue_name]
+            queue.generate_resource_envvars(SQS_URL)
             perms = generate_resource_permissions(
-                queue_name, ACCESS_TYPES, SQS_ARN.title
+                queue.logical_name, ACCESS_TYPES, SQS_ARN.title
             )
-            envvars = generate_resource_envvars(
-                queue_name, xresources[queue_name], SQS_URL
-            )
-            apply_iam_based_resources(
-                xresources[queue_name],
+            apply_iam_based_resources_v2(
+                queue,
                 services_families,
                 services_stack,
                 res_root_stack,
-                envvars,
                 perms,
                 nested,
             )

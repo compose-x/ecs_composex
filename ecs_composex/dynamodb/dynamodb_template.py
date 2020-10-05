@@ -47,16 +47,16 @@ def create_dynamodb_template(settings):
 
     template = build_template("DynamoDB for ECS ComposeX")
     for table_name in tables:
-        xtable = tables[table_name]
-        table = generate_table(xtable)
-        if table:
+        table = tables[table_name]
+        generate_table(table)
+        if table.cfn_resource:
             values = [
-                (TABLE_ARN_T, "Arn", GetAtt(table, "Arn")),
-                (TABLE_NAME_T, "Name", Ref(table)),
+                (TABLE_ARN_T, "Arn", GetAtt(table.cfn_resource, "Arn")),
+                (TABLE_NAME_T, "Name", Ref(table.cfn_resource)),
             ]
-            outputs = ComposeXOutput(table, values, True)
+            outputs = ComposeXOutput(table.cfn_resource, values, True)
             if mono_template:
-                template.add_resource(table)
+                template.add_resource(table.cfn_resource)
                 template.add_output(outputs.outputs)
             elif not mono_template:
                 table_template = build_template(
@@ -65,7 +65,7 @@ def create_dynamodb_template(settings):
                 table_template.add_resource(table)
                 table_template.add_output(outputs.outputs)
                 table_stack = ComposeXStack(
-                    table_res_name, stack_template=table_template
+                    table.logical_name, stack_template=table_template
                 )
                 template.add_resource(table_stack)
     return template
