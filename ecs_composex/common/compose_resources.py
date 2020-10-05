@@ -35,6 +35,8 @@ def set_resources(settings, resource_class, res_key):
     :param resource_class:
     :param str res_key:
     """
+    if not keyisset(res_key, settings.compose_content):
+        return
     for resource_name in settings.compose_content[res_key]:
         settings.compose_content[res_key][resource_name] = resource_class(
             resource_name, settings.compose_content[res_key][resource_name]

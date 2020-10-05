@@ -295,6 +295,8 @@ class ComposeXSettings(object):
         Method to define the ComposeXResource for each service.
         :return:
         """
+        if not keyisset("services", self.compose_content):
+            return
         for service_name in self.compose_content["services"]:
             self.compose_content["services"][service_name] = Service(
                 service_name, self.compose_content["services"][service_name]

@@ -22,13 +22,13 @@ from pytest import raises
 
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.ecs import ServiceStack
-from ecs_composex.sqs.sqs_stack import XResource
+from ecs_composex.sqs.sqs_stack import XStack
 from ecs_composex.common.stacks import process_stacks
 
 
 @given("I process and render the queues")
 def step_impl(context):
-    context.root_stack = XResource("sqs", context.settings)
+    context.root_stack = XStack("sqs", context.settings)
     process_stacks(context.root_stack, context.settings)
 
 
@@ -50,7 +50,7 @@ def step_impl(context):
 
 @given("I want to deploy only SQS")
 def step_impl(context):
-    context.resource_type = XResource
+    context.resource_type = XStack
 
 
 @then("services have access to the queues")

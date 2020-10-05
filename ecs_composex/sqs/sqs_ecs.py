@@ -25,7 +25,6 @@ from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.resource_permissions import apply_iam_based_resources_v2
 from ecs_composex.resource_settings import (
     generate_resource_permissions,
-    generate_resource_envvars,
 )
 from ecs_composex.sqs.sqs_params import SQS_URL, SQS_ARN
 from ecs_composex.sqs.sqs_perms import ACCESS_TYPES

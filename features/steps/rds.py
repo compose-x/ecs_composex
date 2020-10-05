@@ -18,7 +18,6 @@
 from behave import then
 
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.ecs_composex import generate_full_template
 
 
 @then("I should have a RDS DB")
