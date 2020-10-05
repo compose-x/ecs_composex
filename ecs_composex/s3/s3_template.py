@@ -82,12 +82,16 @@ def define_accelerate_config(properties, settings):
     :param settings:
     :return:
     """
-    config = s3.AccelerateConfiguration(AccelerationStatus="SUSPENDED")
+    config = s3.AccelerateConfiguration(
+        AccelerationStatus=s3.s3_transfer_acceleration_status("Suspended")
+    )
     if keyisset("AccelerateConfiguration", properties):
         config = s3.AccelerateConfiguration(
-            AccelerationStatus="SUSPENDED"
+            AccelerationStatus=s3.s3_transfer_acceleration_status("Suspended")
             if not keyisset("AccelerationStatus", properties["AccelerateConfiguration"])
-            else properties["AccelerateConfiguration"]["AccelerationStatus"]
+            else s3.s3_transfer_acceleration_status(
+                properties["AccelerateConfiguration"]["AccelerationStatus"]
+            )
         )
     elif keyisset("AccelerationStatus", settings):
         config = s3.AccelerateConfiguration(
@@ -113,7 +117,9 @@ def define_bucket(bucket_name, res_name, definition):
         if not keyisset("AccessControl", properties)
         else properties["AccessControl"],
         "BucketEncryption": handle_bucket_encryption(definition, settings),
-        "BucketName": bucket_name,
+        "BucketName": definition["BucketName"]
+        if keyisset("BucketName", definition)
+        else Ref(AWS_NO_VALUE),
         "ObjectLockEnabled": False
         if not keyisset("ObjectLockEnabled", properties)
         else properties["ObjectLockEnabled"],
@@ -132,7 +138,6 @@ def define_bucket(bucket_name, res_name, definition):
         )
         if keyisset("VersioningConfiguration", properties)
         else Ref(AWS_NO_VALUE),
-        "WebsiteConfiguration": s3.WebsiteConfiguration,
         "Metadata": metadata,
     }
     bucket = s3.Bucket(res_name, **props)

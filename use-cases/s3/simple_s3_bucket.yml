@@ -1,0 +1,9 @@
+﻿version: "3.8"
+
+x-s3:
+  bucket-01:
+    Properties:
+      BucketName: bucket-01
+    Services:
+      - name: app03
+        access: RWObjects

@@ -77,6 +77,8 @@ SUPPORTED_X_MODULES = [
     "dynamodb",
     f"{X_KEY}kms",
     "kms",
+    f"{X_KEY}s3",
+    "s3",
 ]
 EXCLUDED_X_KEYS = [
     f"{X_KEY}configs",

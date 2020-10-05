@@ -176,6 +176,23 @@ def find_aws_resource_arn_from_tags_api(
     return handle_search_results(arns, name, res_types, res_type, service_code)
 
 
+def define_tagsgroups_filter_tags(tags):
+    """
+    Function to create the filters out of tags list
+
+    :param list tags: list of Key/Value dict
+    :return: filters
+    :rtype: list
+    """
+    filters = []
+    for tag in tags:
+        key = list(tag.keys())[0]
+        filter_name = key
+        filter_value = tag[key]
+        filters.append({"Key": filter_name, "Values": (filter_value,)})
+    return filters
+
+
 def get_region_azs(session):
     """Function to return the AZ from a given region. Uses default region for this
 

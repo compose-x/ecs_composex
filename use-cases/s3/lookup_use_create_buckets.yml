@@ -1,0 +1,19 @@
+﻿version: "3.8"
+
+x-s3:
+  bucket-01:
+    Properties:
+      BucketName: bucket-01
+    Settings: {}
+    Services:
+      - name: app03
+        access: RWObjects
+
+  bucket-02:
+    Lookup:
+      Tags:
+        - aws:cloudformation:logical-id: ArtifactsBucket
+        - aws:cloudformation:stack-name: pipeline-shared-buckets
+    Services:
+      - name: app03
+        access: RWObjects
