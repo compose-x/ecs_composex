@@ -120,25 +120,3 @@ def generate_resource_envvars(resource_name, resource, attribute, arn=None):
             )
         )
     return env_names
-
-
-def validate_lookup_resource(resource, res_root_stack):
-    """
-    Function to validate a resource has attributes to lookup.
-
-    :param resource: The XResource to verify if there is Lookup information
-    :type resource: ecs_composex.common.compose_resources.XResource
-    :return:
-    """
-    if (
-        not resource.lookup
-        and resource.name not in res_root_stack.stack_template.resources
-        and resource.logical_name not in res_root_stack.stack_template.resources
-    ):
-        raise KeyError(
-            f"{resource.name} is not created in ComposeX and does not have Lookup attribute"
-        )
-    elif resource.lookup and not keyisset("Tags", resource.lookup):
-        raise KeyError(
-            f"{resource.name} is defined for lookup but there are no tags indicated."
-        )

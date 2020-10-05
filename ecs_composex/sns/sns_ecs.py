@@ -23,13 +23,13 @@ from troposphere.sns import Topic
 
 from ecs_composex.common import keyisset
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.resource_permissions import apply_iam_based_resources
+from ecs_composex.resource_permissions import apply_iam_based_resources_v2
 from ecs_composex.resource_settings import (
-    generate_resource_envvars,
     generate_resource_permissions,
 )
 from ecs_composex.sns.sns_params import TOPIC_ARN_T
 from ecs_composex.sns.sns_perms import ACCESS_TYPES
+from ecs_composex.sns.sns_stack import Topic as XTopic
 
 
 def handle_new_topics(
@@ -54,19 +54,16 @@ def handle_new_topics(
                 l_topics,
                 nested=True,
             )
-
     for topic_name in xresources:
         if topic_name in topics_r:
+            topic = xresources[topic_name]
+            topic.generate_resource_envvars(TOPIC_ARN_T)
             perms = generate_resource_permissions(topic_name, ACCESS_TYPES, TOPIC_ARN_T)
-            envvars = generate_resource_envvars(
-                topic_name, xresources[topic_name], TOPIC_ARN_T
-            )
-            apply_iam_based_resources(
-                xresources[topic_name],
+            apply_iam_based_resources_v2(
+                topic,
                 services_families,
                 services_stack,
                 res_root_stack,
-                envvars,
                 perms,
                 nested,
             )
@@ -80,10 +77,10 @@ def sns_to_ecs(
     Function to apply SQS settings to ECS Services
     :return:
     """
-    l_topics = topics["Topics"].copy()
-    if keyisset("Topics", topics):
+    l_topics = topics[XTopic.keyword].copy()
+    if keyisset(XTopic.keyword, topics):
         handle_new_topics(
-            topics["Topics"],
+            topics[XTopic.keyword],
             services_families,
             services_stack,
             res_root_stack,

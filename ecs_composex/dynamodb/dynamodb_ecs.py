@@ -27,13 +27,10 @@ from ecs_composex.dynamodb.dynamodb_aws import lookup_dyn_table
 from ecs_composex.dynamodb.dynamodb_params import TABLE_ARN
 from ecs_composex.dynamodb.dynamodb_perms import ACCESS_TYPES
 from ecs_composex.resource_permissions import (
-    apply_iam_based_resources,
     apply_iam_based_resources_v2,
 )
 from ecs_composex.resource_settings import (
-    generate_resource_envvars,
     generate_resource_permissions,
-    validate_lookup_resource,
 )
 
 

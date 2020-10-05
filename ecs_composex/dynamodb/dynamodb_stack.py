@@ -21,9 +21,34 @@ Module to create the root stack for DynamoDB tables
 
 
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.common.compose_resources import set_resources, Table
+from ecs_composex.common.compose_resources import set_resources, XResource
 from ecs_composex.dynamodb.dynamodb_params import RES_KEY
 from ecs_composex.dynamodb.dynamodb_template import create_dynamodb_template
+from ecs_composex.dynamodb.dynamodb_params import TABLE_ARN, TABLE_NAME
+
+
+class Table(XResource):
+    """
+    Class to represent a DynamoDB Table
+    """
+
+    name_attr = TABLE_NAME.title
+    arn_attr = TABLE_ARN.title
+
+    def __init__(self, name, definition):
+        super().__init__(name, definition)
+        self.name_export = None
+        self.name_import = None
+        self.arn_export = None
+        self.arn_import = None
+
+    def set_outputs(self):
+        """
+        Method to set the outputs and imports settings.
+        :return:
+        """
+        if not self.cfn_resource:
+            return
 
 
 class XStack(ComposeXStack):

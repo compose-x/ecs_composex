@@ -24,9 +24,8 @@ from troposphere.kms import Key
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.kms.kms_params import KMS_KEY_ARN_T
 from ecs_composex.kms.kms_perms import ACCESS_TYPES
-from ecs_composex.resource_permissions import apply_iam_based_resources
+from ecs_composex.resource_permissions import apply_iam_based_resources_v2
 from ecs_composex.resource_settings import (
-    generate_resource_envvars,
     generate_resource_permissions,
 )
 
@@ -55,18 +54,16 @@ def handle_new_keys(
             )
 
     for key_name in xresources:
-        xkey = xresources[key_name]
-        if xkey.logical_name in keys_r:
-            perms = generate_resource_permissions(key_name, ACCESS_TYPES, KMS_KEY_ARN_T)
-            envvars = generate_resource_envvars(
-                key_name, xresources[key_name], KMS_KEY_ARN_T
+        key = xresources[key_name]
+        if key.logical_name in keys_r:
+            perms = generate_resource_permissions(
+                key.logical_name, ACCESS_TYPES, KMS_KEY_ARN_T
             )
-            apply_iam_based_resources(
-                xresources[key_name],
+            apply_iam_based_resources_v2(
+                key,
                 services_families,
                 services_stack,
                 res_root_stack,
-                envvars,
                 perms,
                 nested,
             )

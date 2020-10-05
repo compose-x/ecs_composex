@@ -120,21 +120,23 @@ def define_topic_subscriptions(subscriptions, content):
     return subscriptions_objs
 
 
-def define_topic(topic_name, topic, content):
+def define_topic(topic, content):
     """
     Function that builds the SNS topic template from Dockerfile Properties
-    """
-    properties = topic["Properties"] if keyisset("Properties", topic) else {}
-    topic = Topic(NONALPHANUM.sub("", topic_name), Metadata=metadata)
-    if keyisset(SUBSCRIPTIONS_KEY, properties):
-        subscriptions = define_topic_subscriptions(
-            properties[SUBSCRIPTIONS_KEY], content
-        )
-        setattr(topic, "Subscription", subscriptions)
 
-    for key in properties.keys():
-        if type(properties[key]) != list:
-            setattr(topic, key, properties[key])
+    :param topic: The topic and its definition
+    :type topic: ecs_composex.sns.sns_stack.Topic
+    """
+    topic.cfn_resource = Topic(topic.logical_name, Metadata=metadata)
+    if keyisset(SUBSCRIPTIONS_KEY, topic.properties):
+        subscriptions = define_topic_subscriptions(
+            topic.properties[SUBSCRIPTIONS_KEY], content
+        )
+        setattr(topic.cfn_resource, "Subscription", subscriptions)
+
+        for key in topic.properties.keys():
+            if type(topic.properties[key]) != list:
+                setattr(topic.cfn_resource, key, topic.properties[key])
     return topic
 
 
@@ -147,20 +149,18 @@ def add_topics_to_template(template, topics, content):
     :param dict content: Content of the compose file
     """
     for topic_name in topics:
-        template.add_resource(
-            define_topic(topic_name, content[RES_KEY][TOPICS_KEY][topic_name], content)
-        )
+        define_topic(topics[topic_name], content)
+        template.add_resource(topics[topic_name].cfn_resource)
 
 
-def add_sns_topics(root_template, content, res_count, count=170):
+def add_sns_topics(root_template, content, res_count, count=50):
     """
     Function to add SNS topics to the root template
 
     :param int count: quantity of resources that should trigger the split into nested stacks
-    :param root_template:
-    :param content:
+    :param troposphere.Template root_template:
+    :param dict content:
     :param int res_count: Number of resources created related to SNS
-    :param kwargs:
     :return:
     """
     if res_count > count:

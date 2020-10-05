@@ -25,7 +25,6 @@ from troposphere.ecs import Environment
 from ecs_composex.common import NONALPHANUM, keyisset
 from ecs_composex.resource_settings import generate_export_strings
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME
-from ecs_composex.dynamodb.dynamodb_params import TABLE_ARN, TABLE_NAME
 
 
 def set_resources(settings, resource_class, res_key):
@@ -139,33 +138,6 @@ class XResource(object):
             )
 
 
-class Queue(XResource):
-    """
-    Class to represent a SQS Queue
-    """
-
-    def __init__(self, name, definition):
-        super().__init__(name, definition)
-
-
-class Rds(XResource):
-    """
-    Class to represent a RDS DB
-    """
-
-    def __init__(self, name, definition):
-        super().__init__(name, definition)
-
-
-class Kms(XResource):
-    """
-    Class to represent a KMS Key
-    """
-
-    def __init__(self, name, definition):
-        super().__init__(name, definition)
-
-
 class Topic(XResource):
     """
     Class for SNS Topics
@@ -176,27 +148,3 @@ class Subscrition(XResource):
     """
     Class for SNS Subscriptions
     """
-
-
-class Table(XResource):
-    """
-    Class to represent a DynamoDB Table
-    """
-
-    name_attr = TABLE_NAME.title
-    arn_attr = TABLE_ARN.title
-
-    def __init__(self, name, definition):
-        super().__init__(name, definition)
-        self.name_export = None
-        self.name_import = None
-        self.arn_export = None
-        self.arn_import = None
-
-    def set_outputs(self):
-        """
-        Method to set the outputs and imports settings.
-        :return:
-        """
-        if not self.cfn_resource:
-            return
