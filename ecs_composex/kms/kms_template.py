@@ -16,16 +16,11 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from troposphere import AWS_PARTITION, AWS_ACCOUNT_ID
-from troposphere import Sub, Ref, GetAtt, If
-from troposphere.kms import Key, Alias
+from troposphere import Ref, GetAtt
 
-from ecs_composex.common import LOG, keyisset, build_template, NONALPHANUM
-from ecs_composex.common.cfn_conditions import USE_STACK_NAME_CON_T
-from ecs_composex.common.cfn_params import ROOT_STACK_NAME
+from ecs_composex.common import keyisset, build_template
 from ecs_composex.common.outputs import ComposeXOutput
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.kms import metadata
 from ecs_composex.kms.kms_params import (
     RES_KEY,
     KMS_KEY_ID_T,
@@ -33,34 +28,6 @@ from ecs_composex.kms.kms_params import (
 )
 
 CFN_MAX_OUTPUTS = 50
-
-
-def handle_key_settings(template, key, key_def):
-    """
-    Function to add to the template for additional KMS key related resources.
-
-    :param troposphere.Template template:
-    :param key: the KMS key
-    :param dict key_def:
-    :return:
-    """
-    if keyisset("Settings", key_def) and keyisset("Alias", key_def["Settings"]):
-        alias_name = key_def["Settings"]["Alias"]
-        if not (alias_name.startswith("alias/") or alias_name.startswith("aws")):
-            alias_name = If(
-                USE_STACK_NAME_CON_T,
-                Sub(f"alias/${{AWS::StackName}}/{alias_name}"),
-                Sub(f"alias/${{{ROOT_STACK_NAME.title}}}/{alias_name}"),
-            )
-        elif alias_name.startswith("alias/aws") or alias_name.startswith("aws"):
-            raise ValueError(f"Alias {alias_name} cannot start with alias/aws.")
-        Alias(
-            f"{key.title}Alias",
-            template=template,
-            AliasName=alias_name,
-            TargetKeyId=Ref(key),
-            Metadata=metadata,
-        )
 
 
 def create_kms_template(settings):
@@ -88,13 +55,14 @@ def create_kms_template(settings):
             outputs = ComposeXOutput(key.cfn_resource, values, True)
             if mono_template:
                 template.add_resource(key.cfn_resource)
-                handle_key_settings(template, key, keys[key_name])
+                key.handle_key_settings(template)
                 template.add_output(outputs.outputs)
             elif not mono_template:
                 key_template = build_template(
                     f"Template for KMS key {key.logical_name}"
                 )
                 key_template.add_resource(key.cfn_resource)
+                key.handle_key_settings(key_template)
                 key_template.add_output(outputs.outputs)
                 key_stack = ComposeXStack(key.logical_name, stack_template=key_template)
                 template.add_resource(key_stack)

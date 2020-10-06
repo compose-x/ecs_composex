@@ -109,6 +109,16 @@ x-sqs:
 
   queueB:
     Properties:
+      QueueName: x-y-z
+    Settings:
+      EnvNames:
+        - QUEUEB
+    Services:
+      - name: rproxy
+        access: RWMessages
+
+  queueC:
+    Properties:
       FifoQueue: True
       QueueName: x-y-z
     Settings:

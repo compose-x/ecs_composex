@@ -21,10 +21,9 @@ Module to handle resource settings definition to containers.
 
 from troposphere import Parameter
 from troposphere import Sub, ImportValue
-from troposphere.ecs import Environment
 from troposphere.iam import Policy as IamPolicy
 
-from ecs_composex.common import LOG, keyisset
+from ecs_composex.common import LOG
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.ecs_composex import CFN_EXPORT_DELIMITER as DELIM
 

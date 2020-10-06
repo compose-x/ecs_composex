@@ -22,13 +22,13 @@ Module to add topics and subscriptions to the SNS stack
 from troposphere import Ref
 from troposphere.sns import Topic, Subscription
 
-from ecs_composex.common import LOG, keyisset, keypresent, build_template, NONALPHANUM
+from ecs_composex.common import LOG, keyisset, keypresent, build_template
 from ecs_composex.common.outputs import ComposeXOutput
 from ecs_composex.common.outputs import get_import_value
 from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.sns import metadata
 from ecs_composex.sns.sns_params import RES_KEY, TOPIC_ARN_T
 from ecs_composex.sqs.sqs_params import SQS_ARN_T, RES_KEY as SQS_KEY
-from ecs_composex.sns import metadata
 
 TOPICS_KEY = "Topics"
 SUBSCRIPTIONS_KEY = "Subscription"

@@ -15,10 +15,11 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from troposphere import Ref, Sub, AWS_PARTITION, AWS_ACCOUNT_ID
-from troposphere.kms import Key
+from troposphere import Ref, Sub, If, AWS_PARTITION, AWS_ACCOUNT_ID
+from troposphere.kms import Key, Alias
 from ecs_composex.common import keyisset, LOG
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME
+from ecs_composex.common.cfn_conditions import USE_STACK_NAME_CON_T
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common.compose_resources import set_resources, XResource
 from ecs_composex.kms import metadata
@@ -55,7 +56,7 @@ def define_default_key_policy():
     return policy
 
 
-class Kms(XResource):
+class KmsKey(XResource):
     """
     Class to represent a KMS Key
     """
@@ -83,13 +84,37 @@ class Kms(XResource):
         LOG.debug(self.properties)
         self.cfn_resource = Key(self.logical_name, **self.properties)
 
+    def handle_key_settings(self, template):
+        """
+        Method to add to the template for additional KMS key related resources.
+
+        :param troposphere.Template template:
+        """
+        if self.settings and keyisset("Alias", self.settings):
+            alias_name = self.settings["Alias"]
+            if not (alias_name.startswith("alias/") or alias_name.startswith("aws")):
+                alias_name = If(
+                    USE_STACK_NAME_CON_T,
+                    Sub(f"alias/${{AWS::StackName}}/{alias_name}"),
+                    Sub(f"alias/${{{ROOT_STACK_NAME.title}}}/{alias_name}"),
+                )
+            elif alias_name.startswith("alias/aws") or alias_name.startswith("aws"):
+                raise ValueError(f"Alias {alias_name} cannot start with alias/aws.")
+            Alias(
+                f"{self.logical_name}Alias",
+                template=template,
+                AliasName=alias_name,
+                TargetKeyId=Ref(self.cfn_resource),
+                Metadata=metadata,
+            )
+
 
 class XStack(ComposeXStack):
     """
-    Class for Dynamodb
+    Class for KMS Root stack
     """
 
     def __init__(self, title, settings, **kwargs):
-        set_resources(settings, Kms, RES_KEY)
+        set_resources(settings, KmsKey, RES_KEY)
         stack_template = create_kms_template(settings)
         super().__init__(title, stack_template, **kwargs)

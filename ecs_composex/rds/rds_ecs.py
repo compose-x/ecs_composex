@@ -19,14 +19,14 @@
 Module to provide services with access to the RDS databases.
 """
 
-from ecs_composex.common import LOG, keyisset
+from ecs_composex.common import LOG
+from ecs_composex.ecs.ecs_template import get_service_family_name
 from ecs_composex.rds.rds_perms import (
     add_secret_to_containers,
     define_db_secret_import,
     add_rds_policy,
     add_security_group_ingress,
 )
-from ecs_composex.ecs.ecs_template import get_service_family_name
 
 
 def handle_db_to_service_settings(

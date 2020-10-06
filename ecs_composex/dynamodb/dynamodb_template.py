@@ -21,7 +21,7 @@ Module for DynamoDB to create the root template
 
 from troposphere import GetAtt, Ref
 
-from ecs_composex.common import keyisset, build_template, NONALPHANUM
+from ecs_composex.common import keyisset, build_template
 from ecs_composex.common.outputs import ComposeXOutput
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.dynamodb.dynamodb_params import RES_KEY

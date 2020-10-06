@@ -19,7 +19,7 @@
 RDS DB template generator
 """
 
-from troposphere import Sub, Ref, If, GetAtt, AWS_NO_VALUE
+from troposphere import Sub, Ref, If, GetAtt, Tags, AWS_NO_VALUE
 from troposphere.ec2 import SecurityGroup
 from troposphere.rds import (
     DBSubnetGroup,
@@ -157,6 +157,11 @@ def add_db_secret(template):
             IncludeSpace=False,
             RequireEachIncludedType=True,
             PasswordLength=Ref(DB_PASSWORD_LENGTH),
+        ),
+        Tags=Tags(
+            AssociatedDb=If(
+                rds_conditions.USE_CLUSTER_CON_T, Ref(CLUSTER_T), Ref(DATABASE_T)
+            )
         ),
     )
     SecretTargetAttachment(
