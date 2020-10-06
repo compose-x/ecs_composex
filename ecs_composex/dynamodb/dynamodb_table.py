@@ -180,62 +180,59 @@ def define_attributes_definition(attribute_definitions):
     return attributes
 
 
-def define_table(table_name, table_res_name, table_definition):
+def define_table(table):
     """
     Function to create the DynamoDB table resource
 
-    :param table_name:
-    :param str table_res_name:
-    :param table_definition:
-    :return: the DynamoDB Table
-    :rtype: dynamodb.Table
+    :param table:
+    :type table: ecs_composex.common.compose_resources.Table
     """
     required_keys = ["AttributeDefinitions", "KeySchema"]
-    properties = table_definition["Properties"]
-    if not all(required_key in properties.keys() for required_key in required_keys):
-        raise KeyError("You must at least specify properties", required_keys)
+    if not all(
+        required_key in table.properties.keys() for required_key in required_keys
+    ):
+        raise KeyError("You must at least specify table.properties", required_keys)
     table_props = {
         "AttributeDefinitions": define_attributes_definition(
-            properties["AttributeDefinitions"]
+            table.properties["AttributeDefinitions"]
         ),
-        "KeySchema": define_key_schema(properties["KeySchema"]),
-        "ProvisionedThroughput": define_provisioned_throughput(properties),
-        "LocalSecondaryIndexes": define_local_secondary_index(properties),
-        "PointInTimeRecoverySpecification": define_pit_spec(properties),
-        "SSESpecification": define_sse_spec(properties),
-        "TimeToLiveSpecification": define_ttl_spec(properties),
-        "StreamSpecification": define_stream_spec(properties),
-        "GlobalSecondaryIndexes": define_global_sec_indexes(properties),
-        "BillingMode": properties["BillingMode"]
-        if keyisset("BillingMode", properties)
+        "KeySchema": define_key_schema(table.properties["KeySchema"]),
+        "ProvisionedThroughput": define_provisioned_throughput(table.properties),
+        "LocalSecondaryIndexes": define_local_secondary_index(table.properties),
+        "PointInTimeRecoverySpecification": define_pit_spec(table.properties),
+        "SSESpecification": define_sse_spec(table.properties),
+        "TimeToLiveSpecification": define_ttl_spec(table.properties),
+        "StreamSpecification": define_stream_spec(table.properties),
+        "GlobalSecondaryIndexes": define_global_sec_indexes(table.properties),
+        "BillingMode": table.properties["BillingMode"]
+        if keyisset("BillingMode", table.properties)
         else Ref(AWS_NO_VALUE),
         "Tags": Tags(
-            Name=table_name,
-            ResourceName=table_res_name,
+            Name=table.name,
+            ResourceName=table.logical_name,
             CreatedByComposex=True,
             RootStackName=Ref(ROOT_STACK_NAME),
         ),
         "Metadata": metadata,
     }
-    table = dynamodb.Table(table_res_name, **table_props)
-    return table
+    cfn_table = dynamodb.Table(table.logical_name, **table_props)
+    table.cfn_resource = cfn_table
 
 
-def generate_table(table_name, table_res_name, table_definition):
+def generate_table(table):
     """
     Function to add or lookup the DynamoDB table
 
-    :param str table_name: Name of the table as defined in compose file
-    :param str table_res_name: Resource name for CFN.
-    :param dict table_definition:
+    :param table:
+    :type table: ecs_composex.common.compose_resources.Table
     :return: table
     :rtype: dynamodb.Table or None
     """
-    if keyisset("Lookup", table_definition):
+    if table.lookup:
         LOG.info("If table is found, its ARN will be added to the task")
         return
-    if not keyisset("Properties", table_definition):
-        LOG.warning(f"Properties for table {table_name} were not defined. Skipping")
+    if not table.properties:
+        LOG.warning(f"Properties for table {table.name} were not defined. Skipping")
         return
-    table = define_table(table_name, table_res_name, table_definition)
+    define_table(table)
     return table

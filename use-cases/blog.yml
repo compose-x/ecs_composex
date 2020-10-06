@@ -4,7 +4,7 @@
 version: '3.8'
 services:
   rproxy:
-    image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-01-rproxy:latest
+    image: ${IMAGE:-nginx}
     ports:
       - 80:80
     deploy:
@@ -20,7 +20,7 @@ services:
       - app01
 
   app01:
-    image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-01:appmesh
+    image: ${IMAGE:-nginx}
     ports:
       - 5000
     deploy:
@@ -36,7 +36,7 @@ services:
       - app03:dateteller
 
   app02:
-    image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-02:latest
+    image: ${IMAGE:-nginx}
     ports:
       - 5000
     deploy:
@@ -48,7 +48,7 @@ services:
       LOGLEVEL: DEBUG
 
   app03:
-    image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-02:latest
+    image: ${IMAGE:-nginx}
     ports:
       - 5000
     deploy:

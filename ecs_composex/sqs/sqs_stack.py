@@ -16,7 +16,7 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-Module for the XResource SQS
+Module for the XStack SQS
 """
 
 import sys
@@ -24,6 +24,7 @@ from ecs_composex.common import validate_input, keyisset, LOG, EXIT_CODES
 from ecs_composex.sqs.sqs_params import RES_KEY
 from ecs_composex.sqs.sqs_template import generate_sqs_root_template
 from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.common.compose_resources import set_resources, XResource
 
 
 def create_sqs_template(settings):
@@ -45,11 +46,21 @@ def create_sqs_template(settings):
     return sqs_tpl
 
 
-class XResource(ComposeXStack):
+class Queue(XResource):
+    """
+    Class to represent a SQS Queue
+    """
+
+    def __init__(self, name, definition):
+        super().__init__(name, definition)
+
+
+class XStack(ComposeXStack):
     """
     Class to handle SQS Root stack related actions
     """
 
     def __init__(self, title, settings, **kwargs):
+        set_resources(settings, Queue, RES_KEY)
         template = create_sqs_template(settings)
         super().__init__(title, stack_template=template, **kwargs)

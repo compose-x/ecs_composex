@@ -179,9 +179,9 @@ def create_acm_template(settings):
     return root_acm_tpl
 
 
-class XResource(ComposeXStack):
+class XStack(ComposeXStack):
     """
-    XResource for ComposeX
+    XStack for ComposeX
     """
 
     def __init__(self, title, settings, **kwargs):

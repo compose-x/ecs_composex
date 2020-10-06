@@ -233,7 +233,7 @@ def define_services_families(services):
     for service_name in services:
         labels = {}
         service = services[service_name]
-        svc_labels = get_deploy_labels(service)
+        svc_labels = get_deploy_labels(service.definition)
         LOG.debug(f"service {service_name} - labels {svc_labels}")
         labels.update(svc_labels)
         if not labels:
@@ -273,13 +273,14 @@ def handle_families_services(families, cluster_sg, settings):
         family_parameters = {}
         for service_name in family:
             service = settings.compose_content[ecs_params.RES_KEY][service_name]
-            if keyisset("deploy", service):
-                service["deploy"].update(get_deploy_labels(service))
-                LOG.debug(service["deploy"])
+            if keyisset("deploy", service.definition):
+                service.definition["deploy"].update(
+                    get_deploy_labels(service.definition)
+                )
+                LOG.debug(service.definition["deploy"])
             service_config = ServiceConfig(
-                settings.compose_content,
-                service_name,
                 service,
+                settings.compose_content,
                 family_name=family_resource_name,
             )
             family_service_configs[service_name] = {

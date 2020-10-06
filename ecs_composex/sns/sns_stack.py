@@ -20,6 +20,7 @@ from ecs_composex.sns.sns_params import RES_KEY
 from ecs_composex.sns.sns_templates import generate_sns_templates
 from ecs_composex.sqs.sqs_params import RES_KEY as SQS_KEY
 from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.common.compose_resources import XResource
 
 
 def create_sns_template(settings):
@@ -36,12 +37,48 @@ def create_sns_template(settings):
         return generate_sns_templates(settings)
 
 
-class XResource(ComposeXStack):
+class Topic(XResource):
+    """
+    Class for SNS Topics
+    """
+
+    keyword = "Topics"
+
+
+class Subscription(XResource):
+    """
+    Class for SNS Subscriptions
+    """
+
+    keyword = "Subscriptions"
+
+
+class XStack(ComposeXStack):
     """
     Class to handle SQS Root stack related actions
     """
 
     def __init__(self, title, settings, **kwargs):
+        if keyisset(Topic.keyword, settings.compose_content[RES_KEY]):
+            for resource_name in settings.compose_content[RES_KEY][Topic.keyword]:
+                settings.compose_content[RES_KEY][Topic.keyword][resource_name] = Topic(
+                    resource_name,
+                    settings.compose_content[RES_KEY][Topic.keyword][resource_name],
+                )
+
+        if keyisset(Subscription.keyword, settings.compose_content[RES_KEY]):
+            for resource_name in settings.compose_content[RES_KEY][
+                Subscription.keyword
+            ]:
+                settings.compose_content[RES_KEY][Subscription.keyword][
+                    resource_name
+                ] = Topic(
+                    resource_name,
+                    settings.compose_content[RES_KEY][Subscription.keyword][
+                        resource_name
+                    ],
+                )
+
         template = create_sns_template(settings)
         super().__init__(title, stack_template=template, **kwargs)
 

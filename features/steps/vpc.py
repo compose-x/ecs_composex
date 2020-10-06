@@ -28,9 +28,8 @@ def step_impl(context):
 
 @then("I should have only one nat gateway")
 def step_impl(context):
-    print(context.single_nat)
     template = generate_vpc_template(
-        context.cidr_block, context.azs, context.single_nat
+        context.cidr_block, context.azs, single_nat=context.single_nat
     )
     resources = template.resources
     nats = 0
@@ -43,7 +42,7 @@ def step_impl(context):
 @then("I should have one nat gateway per az")
 def step_impl(context):
     template = generate_vpc_template(
-        context.cidr_block, context.azs, context.single_nat
+        context.cidr_block, context.azs, single_nat=context.single_nat
     )
     resources = template.resources
     nats = 0

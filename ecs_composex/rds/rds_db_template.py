@@ -19,7 +19,7 @@
 RDS DB template generator
 """
 
-from troposphere import Sub, Ref, If, GetAtt, AWS_NO_VALUE
+from troposphere import Sub, Ref, If, GetAtt, Tags, AWS_NO_VALUE
 from troposphere.ec2 import SecurityGroup
 from troposphere.rds import (
     DBSubnetGroup,
@@ -228,6 +228,7 @@ def add_instance(template):
         VPCSecurityGroups=If(
             rds_conditions.USE_CLUSTER_CON_T, Ref(AWS_NO_VALUE), [Ref(DB_SG_T)]
         ),
+        Tags=Tags(SecretName=Ref(DB_SECRET_T)),
     )
 
 
@@ -272,6 +273,7 @@ def add_cluster(template):
         EngineVersion=Ref(DB_ENGINE_VERSION),
         DBClusterParameterGroupName=Ref(CLUSTER_PARAMETER_GROUP_T),
         VpcSecurityGroupIds=[Ref(DB_SG_T)],
+        Tags=Tags(SecretName=Ref(DB_SECRET_T)),
     )
     return cluster
 
@@ -281,17 +283,18 @@ def add_parameter_group(template, db):
     Function to create a parameter group which uses the same values as default which can later be altered
 
     :param troposphere.Template template: the RDS template
-    :param dict db: the db object as imported from Docker composeX file
+    :param db: the db object as imported from Docker composeX file
+    :type db: ecs_composex.common.compose_resources.Rds
     """
     db_family = get_family_from_engine_version(
-        db["Properties"][DB_ENGINE_NAME.title],
-        db["Properties"][DB_ENGINE_VERSION.title],
+        db.properties[DB_ENGINE_NAME.title],
+        db.properties[DB_ENGINE_VERSION.title],
     )
     if not db_family:
         raise ValueError(
             "Failed to retrieve the DB Family for "
-            f"{db['Properties']['DB_ENGINE_NAME.title']}"
-            f"{db['Properties']['DB_ENGINE_VERSION.title']}"
+            f"{db.properties['DB_ENGINE_NAME.title']}"
+            f"{db.properties['DB_ENGINE_VERSION.title']}"
         )
     db_settings = get_family_settings(db_family)
     DBParameterGroup(
@@ -371,21 +374,19 @@ def init_database_template(db_name):
     return template
 
 
-def generate_database_template(db_name, db):
+def generate_database_template(db):
     """
     Function to generate the database template
-    :param str db_name: name of the database as defined in the compose file
-    :param dict db: the DB definition as defined in the compose file
-    :param dict kwargs: unordered arguments
+    :param ecs_composex.common.compose_resources.Rds db: The database object
 
     :return: db_template
     :rtype: troposphere.Template
     """
-    db_template = init_database_template(db_name)
+    db_template = init_database_template(db.name)
     add_cluster(db_template)
     add_db_secret(db_template)
-    add_db_sg(db_template, db_name)
+    add_db_sg(db_template, db.logical_name)
     add_instance(db_template)
     add_parameter_group(db_template, db)
-    add_db_outputs(db_template, db_name)
+    add_db_outputs(db_template, db.logical_name)
     return db_template

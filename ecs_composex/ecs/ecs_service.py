@@ -234,8 +234,8 @@ class Task(object):
         for service_config in ordered_containers_config:
             container = Container(
                 template,
-                service_config["config"].resource_name,
-                service_config["definition"],
+                service_config["config"].resource.container_name,
+                service_config["config"].resource.definition,
                 service_config["config"],
             )
             import_secrets(
@@ -254,7 +254,9 @@ class Task(object):
         """
         tasks_cpu = 0
         tasks_ram = 0
+        LOG.debug([container.Name for container in self.containers])
         for container in self.containers:
+            LOG.debug(container.title)
             if isinstance(container.Cpu, int):
                 tasks_cpu += container.Cpu
             if isinstance(container.Memory, int):
@@ -266,6 +268,7 @@ class Task(object):
         LOG.debug(f"CPU: {tasks_cpu}, RAM: {tasks_ram}")
         if tasks_cpu > 0 and tasks_ram > 0:
             cpu_ram = find_closest_fargate_configuration(tasks_cpu, tasks_ram, True)
+            LOG.debug(cpu_ram)
             self.stack_parameters.update({ecs_params.FARGATE_CPU_RAM_CONFIG_T: cpu_ram})
 
 
@@ -872,7 +875,7 @@ class Service(object):
                 EcsLoadBalancer(
                     TargetGroupArn=Ref(tgt),
                     ContainerPort=tgt.Port,
-                    ContainerName=NONALPHANUM.sub("", self.config.lb_service_name),
+                    ContainerName=self.config.resource.container_name,
                 )
             )
         return service_lbs, depends_on

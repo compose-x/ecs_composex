@@ -19,7 +19,7 @@
 Module to handle permissions from x-resource to ECS service
 """
 
-from ecs_composex.common import keyisset, NONALPHANUM, LOG
+from ecs_composex.common import NONALPHANUM, LOG
 from ecs_composex.ecs.ecs_container_config import extend_container_envvars
 from ecs_composex.ecs.ecs_iam import define_service_containers
 from ecs_composex.ecs.ecs_params import TASK_ROLE_T
@@ -27,13 +27,13 @@ from ecs_composex.ecs.ecs_template import get_service_family_name
 
 
 def add_iam_policy_to_service_task_role(
-    service_template, perms, env_vars, access_type, service_name, family_wide
+    service_template, resource, perms, access_type, service_name, family_wide
 ):
     """
     Function to expand the ECS Task Role policy with the permissions for the resource
     :param troposphere.Template service_template:
+    :param resource:
     :param perms:
-    :param list env_vars:
     :param access_type:
     :param service_name:
     :param family_wide:
@@ -45,33 +45,33 @@ def add_iam_policy_to_service_task_role(
     task_role.Policies.append(policy)
     for container in containers:
         if family_wide:
-            extend_container_envvars(container, env_vars)
+            extend_container_envvars(container, resource.env_vars)
         elif not family_wide and container.Name == service_name:
-            extend_container_envvars(container, env_vars)
+            extend_container_envvars(container, resource.env_vars)
             break
 
 
 def apply_iam_based_resources(
-    resource_def,
+    resource,
     services_families,
     services_stack,
     res_root_stack,
-    envvars,
     perms,
     nested=False,
 ):
     """
     Function to assign resource to services stack
 
-    :param dict resource_def:
+    :param resource:
+    :type resource: ecs_composex.common.compose_resources.XResource
     :param dict services_families:
     :param ecs_composex.common.stacks.ComposeXStack services_stack:
     :param ecs_composex.common.stacks.ComposeXStack res_root_stack:
     :raises KeyError: if the service name is not a listed service in docker-compose.
     """
-    if not keyisset("Services", resource_def):
+    if not resource.services:
         return
-    for service in resource_def["Services"]:
+    for service in resource.services:
         service_family = get_service_family_name(services_families, service["name"])
         if (
             not service_family
@@ -85,8 +85,8 @@ def apply_iam_based_resources(
         service_stack = services_stack.stack_template.resources[service_family]
         add_iam_policy_to_service_task_role(
             service_stack.stack_template,
+            resource,
             perms,
-            envvars,
             service["access"],
             NONALPHANUM.sub("", service["name"]),
             family_wide,

@@ -58,36 +58,33 @@ def define_redrive_policy(target_queue, retries=None, mono_template=True):
     return policy
 
 
-def set_queue(queue_name, properties, redrive_policy=None):
+def set_queue(queue, properties, redrive_policy=None):
     """
     Function to define and set the SQS Queue
 
-    :param str queue_name: name of the queue
+    :param queue: Queue object
     :param dict properties: queue properties
     :param dict redrive_policy: redrive policy in case it has been defined
 
     :return: queue
     :rtype: troposphere.sqs.Queue
     """
-    res_name = NONALPHANUM.sub("", queue_name)
     if redrive_policy is not None:
         properties.update(redrive_policy)
     if keyisset("QueueName", properties):
-        queue_name = properties["QueueName"]
         properties.pop("QueueName")
-        properties["QueueName"] = Sub(f"${{{ROOT_STACK_NAME_T}}}-{queue_name}")
+        properties["QueueName"] = Sub(f"${{{ROOT_STACK_NAME_T}}}-{queue.name}")
         if keyisset("FifoQueue", properties):
-            properties["QueueName"] = Sub(f"${{{ROOT_STACK_NAME_T}}}-{queue_name}.fifo")
-    queue = Queue(res_name, **properties)
+            properties["QueueName"] = Sub(f"${{{ROOT_STACK_NAME_T}}}-{queue.name}.fifo")
+    queue = Queue(queue.logical_name, **properties)
     return queue
 
 
-def define_queue(queue_name, queue_def, queues, mono_template=True):
+def define_queue(queue, queues, mono_template=True):
     """
     Function to parse the queue definition and generate the queue accordingly. Created the redrive policy if necessary
 
-    :param str queue_name: name of the queue
-    :param dict queue_def: queue definition as found in composex file
+    :param ecs_composex.common.compose_resources.Queue queue: name of the queue
     :param dict queues: the queues defined in x-sqs
     :param bool mono_template: whether or not there are so many outputs we need to split.
 
@@ -95,8 +92,8 @@ def define_queue(queue_name, queue_def, queues, mono_template=True):
     :rtype: troposphere.sqs.Queue
     """
     redrive_policy = None
-    if keypresent("Properties", queue_def):
-        props = deepcopy(queue_def)
+    if keypresent("Properties", queue.definition):
+        props = deepcopy(queue.definition)
         properties = props["Properties"]
         properties.update({"Metadata": metadata})
     else:
@@ -107,14 +104,14 @@ def define_queue(queue_name, queue_def, queues, mono_template=True):
         redrive_target = properties["RedrivePolicy"]["deadLetterTargetArn"]
         if redrive_target not in queues:
             raise KeyError(
-                f"Queue {redrive_target} defined as DLQ for {queue_name} but is not defined"
+                f"Queue {redrive_target} defined as DLQ for {queue.name} but is not defined"
             )
         if keyisset("maxReceiveCount", properties["RedrivePolicy"]):
             retries = int(properties["RedrivePolicy"]["maxReceiveCount"])
         else:
             retries = 5
         redrive_policy = define_redrive_policy(redrive_target, retries, mono_template)
-    queue = set_queue(queue_name, properties, redrive_policy)
+    queue = set_queue(queue, properties, redrive_policy)
     LOG.debug(queue.title)
     return queue
 
@@ -127,7 +124,7 @@ def generate_sqs_root_template(settings):
     :return:
     """
     mono_template = False
-    output_per_resource = 2
+    output_per_resource = 3
     if not keyisset(RES_KEY, settings.compose_content):
         return None
 
@@ -136,9 +133,7 @@ def generate_sqs_root_template(settings):
         mono_template = True
     template = build_template("DynamoDB for ECS ComposeX")
     for queue_name in queues:
-        queue_res_name = NONALPHANUM.sub("", queue_name)
-        queue_def = queues[queue_name]
-        queue = define_queue(queue_name, queue_def, queues, mono_template)
+        queue = define_queue(queues[queue_name], queues, mono_template)
         if queue:
             values = [
                 (SQS_URL, "Url", Ref(queue)),
@@ -157,9 +152,9 @@ def generate_sqs_root_template(settings):
                             DLQ_ARN_T: GetAtt(
                                 NONALPHANUM.sub(
                                     "",
-                                    queue_def["Properties"]["RedrivePolicy"][
-                                        "deadLetterTargetArn"
-                                    ],
+                                    queues[queue_name].definition["Properties"][
+                                        "RedrivePolicy"
+                                    ]["deadLetterTargetArn"],
                                 ),
                                 f"Outputs.{SQS_ARN_T}",
                             )
@@ -171,7 +166,7 @@ def generate_sqs_root_template(settings):
                 queue_template.add_resource(queue)
                 queue_template.add_output(outputs.outputs)
                 queue_stack = ComposeXStack(
-                    queue_res_name,
+                    queues[queue_name].logical_name,
                     stack_template=queue_template,
                     stack_parameters=parameters,
                 )

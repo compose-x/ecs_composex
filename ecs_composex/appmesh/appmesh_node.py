@@ -179,8 +179,8 @@ class MeshNode(object):
         envoy_container = ContainerDefinition(
             Image=Ref(appmesh_params.ENVOY_IMAGE_URL),
             Name=envoy_container_name,
-            Cpu="128",
-            Memory="256",
+            Cpu=128,
+            Memory=256,
             User="1337",
             Essential=True,
             LogConfiguration=envoy_log_config,
@@ -222,6 +222,7 @@ class MeshNode(object):
         task.containers.append(envoy_container)
         setattr(task.definition, "ProxyConfiguration", proxy_config)
         task.set_task_compute_parameter()
+        self.stack.Parameters.update(task.stack_parameters)
 
     def extend_task_policy(self):
         """
