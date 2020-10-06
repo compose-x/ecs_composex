@@ -121,17 +121,24 @@ class XResource(object):
                         Value=export_string,
                     )
                 )
-            if self.name not in self.settings["EnvNames"]:
+            if self.name not in self.settings["EnvNames"] and self.name not in [
+                var.Name for var in self.env_vars
+            ]:
                 self.env_vars.append(
                     Environment(
                         Name=self.name,
                         Value=export_string,
                     )
                 )
-                self.env_vars.append(
-                    Environment(Name=self.logical_name, Value=export_string)
-                )
-        else:
+                if self.name != self.logical_name:
+                    self.env_vars.append(
+                        Environment(Name=self.logical_name, Value=export_string)
+                    )
+        elif (
+            not self.settings
+            and not keyisset("EnvNames", self.settings)
+            and self.name not in [var.Name for var in self.env_vars]
+        ):
             self.env_vars.append(
                 Environment(
                     Name=self.name,

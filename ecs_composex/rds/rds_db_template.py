@@ -158,11 +158,6 @@ def add_db_secret(template):
             RequireEachIncludedType=True,
             PasswordLength=Ref(DB_PASSWORD_LENGTH),
         ),
-        Tags=Tags(
-            AssociatedDb=If(
-                rds_conditions.USE_CLUSTER_CON_T, Ref(CLUSTER_T), Ref(DATABASE_T)
-            )
-        ),
     )
     SecretTargetAttachment(
         "ClusterRdsSecretAttachment",
@@ -233,6 +228,7 @@ def add_instance(template):
         VPCSecurityGroups=If(
             rds_conditions.USE_CLUSTER_CON_T, Ref(AWS_NO_VALUE), [Ref(DB_SG_T)]
         ),
+        Tags=Tags(SecretName=Ref(DB_SECRET_T)),
     )
 
 
@@ -277,6 +273,7 @@ def add_cluster(template):
         EngineVersion=Ref(DB_ENGINE_VERSION),
         DBClusterParameterGroupName=Ref(CLUSTER_PARAMETER_GROUP_T),
         VpcSecurityGroupIds=[Ref(DB_SG_T)],
+        Tags=Tags(SecretName=Ref(DB_SECRET_T)),
     )
     return cluster
 

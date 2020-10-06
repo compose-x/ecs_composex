@@ -254,7 +254,9 @@ class Task(object):
         """
         tasks_cpu = 0
         tasks_ram = 0
+        LOG.debug([container.Name for container in self.containers])
         for container in self.containers:
+            LOG.debug(container.title)
             if isinstance(container.Cpu, int):
                 tasks_cpu += container.Cpu
             if isinstance(container.Memory, int):
@@ -266,6 +268,7 @@ class Task(object):
         LOG.debug(f"CPU: {tasks_cpu}, RAM: {tasks_ram}")
         if tasks_cpu > 0 and tasks_ram > 0:
             cpu_ram = find_closest_fargate_configuration(tasks_cpu, tasks_ram, True)
+            LOG.debug(cpu_ram)
             self.stack_parameters.update({ecs_params.FARGATE_CPU_RAM_CONFIG_T: cpu_ram})
 
 
