@@ -234,7 +234,7 @@ class Task(object):
         for service_config in ordered_containers_config:
             container = Container(
                 template,
-                service_config["config"].resource.container_name,
+                service_config["config"].resource.logical_name,
                 service_config["config"].resource.definition,
                 service_config["config"],
             )
