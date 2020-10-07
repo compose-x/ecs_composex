@@ -21,6 +21,7 @@ Module to apply SQS settings onto ECS Services
 
 from troposphere.sqs import Queue
 
+from ecs_composex.common import keyisset, LOG
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.resource_permissions import apply_iam_based_resources
 from ecs_composex.resource_settings import (
@@ -82,3 +83,9 @@ def sqs_to_ecs(
     handle_new_queues(
         queues, services_families, services_stack, res_root_stack, l_queues
     )
+
+    for queue_name in queues:
+        queue = queues[queue_name]
+        for service_def in queue.services:
+            if keyisset("scaling", service_def):
+                handle_service_scaling(service_def, queue, res_root_stack)
