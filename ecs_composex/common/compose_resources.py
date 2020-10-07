@@ -57,6 +57,12 @@ class Service(object):
         self.container_name = name
         self.service_name = Sub(f"${{{ROOT_STACK_NAME.title}}}-{self.name}")
         self.cfn_resource = None
+        self.secrets = (
+            definition["secrets"] if keyisset("secrets", self.definition) else None
+        )
+
+    def __repr__(self):
+        return self.name
 
 
 class XResource(object):

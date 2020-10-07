@@ -239,7 +239,10 @@ class Task(object):
                 service_config["config"],
             )
             import_secrets(
-                template, service_config["definition"], container.definition, settings
+                template,
+                service_config["config"].resource,
+                container.definition,
+                settings,
             )
             self.containers.append(container.definition)
             self.stack_parameters.update(container.stack_parameters)
