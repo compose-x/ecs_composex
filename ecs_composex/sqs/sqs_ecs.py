@@ -37,6 +37,7 @@ from ecs_composex.ecs.ecs_scaling import (
     generate_alarm_scaling_out_policy,
     reset_to_zero_policy,
 )
+from ecs_composex.ecs.ecs_params import SERVICE_SCALING_TARGET
 
 
 def handle_new_queues(
@@ -112,6 +113,11 @@ def handle_service_scaling(
                 services_stack.stack_template.resources,
             )
         service_stack = services_stack.stack_template.resources[service_family]
+        if SERVICE_SCALING_TARGET not in services_stack.stack_template.resources:
+            LOG.warn(
+                "No Scalable target defined. You need to define `scaling.range` in x-configs first. No scaling applied"
+            )
+            return
         scaling_out_policy = generate_alarm_scaling_out_policy(
             service_family,
             service_stack.stack_template,

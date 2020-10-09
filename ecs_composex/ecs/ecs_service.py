@@ -405,13 +405,14 @@ class Service(object):
         """
         Method to automatically create a scalable target
         """
-        LOG.debug(self.config.target_scaling_config)
-        if self.config.target_scaling_config:
+        LOG.debug(self.config.scaling_range)
+        if self.config.scaling_range:
+            print(self.config.scaling_range)
             self.scalable_target = applicationautoscaling.ScalableTarget(
                 ecs_params.SERVICE_SCALING_TARGET,
                 template=self.template,
-                MaxCapacity=self.config.target_scaling_config["max"],
-                MinCapacity=self.config.target_scaling_config["min"],
+                MaxCapacity=self.config.scaling_range["max"],
+                MinCapacity=self.config.scaling_range["min"],
                 ScalableDimension="ecs:service:DesiredCount",
                 ServiceNamespace="ecs",
                 RoleARN=Sub(
@@ -423,11 +424,10 @@ class Service(object):
                     f"service/${{{ecs_params.CLUSTER_NAME.title}}}/${{{self.ecs_service.title}.Name}}"
                 ),
                 SuspendedState=applicationautoscaling.SuspendedState(
-                    DynamicScalingInSuspended=self.config.target_scaling_config[
-                        "disable_scale_in"
-                    ]
+                    DynamicScalingInSuspended=False
                 ),
             )
+        if self.scalable_target and self.scalable_target:
             if keyisset("cpu_target", self.config.target_scaling_config):
                 applicationautoscaling.ScalingPolicy(
                     "ServiceCpuTrackingPolicy",

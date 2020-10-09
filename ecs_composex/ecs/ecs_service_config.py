@@ -204,12 +204,12 @@ class ServiceConfig(object):
         "deploy",
         "external_links",
     ]
-    target_scaling_key = "target_scaling"
+    scaling_key = "scaling"
     required_keys = ["image"]
 
     master_key = "x-configs"
     composex_key = "composex"
-    valid_config_keys = ["network", "iam", "x-ray", "logging", target_scaling_key]
+    valid_config_keys = ["network", "iam", "x-ray", "logging", scaling_key]
 
     network_defaults = {
         "use_cloudmap": True,
@@ -240,6 +240,7 @@ class ServiceConfig(object):
         self.use_appmesh = False
         self.boundary = None
         self.target_scaling_config = None
+        self.scaling_range = None
         self.policies = []
         self.managed_policies = []
         self.container_start_condition = "START"
@@ -333,15 +334,14 @@ class ServiceConfig(object):
             policy_def = define_iam_policy(policy)
             self.managed_policies.append(policy_def)
 
-    def init_target_scaling(self, config):
+    def set_target_scaling(self, config):
         """
-        Method to setup target scaling for the service.
+        Method to define target_scaling
+
+        :param dict config:
         :return:
         """
-        LOG.debug("Setting target scaling")
-        scaling_configuration = {}
         allowed_keys = {
-            "range": str,
             "cpu_target": int,
             "memory_target": int,
             "lb_targets": int,
@@ -349,22 +349,12 @@ class ServiceConfig(object):
             "scale_out_cooldown": int,
             "disable_scale_in": bool,
         }
-        if not all(key in list(allowed_keys.keys()) for key in config.keys()):
-            raise KeyError(
-                "Found invalid key. Got",
-                config,
-                "Allowed",
-                allowed_keys,
-            )
         default_values = {
             "scale_out_cooldown": 300,
             "scale_in_cooldown": 300,
             "disable_scale_in": False,
         }
-        if not keyisset("range", config):
-            raise KeyError(
-                "Missing range property. Range should written as follows: {min}-{max}"
-            )
+        scaling_configuration = {}
         for key in allowed_keys.keys():
             if not keyisset(key, config) and keypresent(key, default_values):
                 scaling_configuration[key] = default_values[key]
@@ -379,14 +369,33 @@ class ServiceConfig(object):
                     "Expected",
                     allowed_keys[key],
                 )
-        scaling_configuration.update(
-            {
-                "max": int(config["range"].split("-")[-1]),
-                "min": int(config["range"].split("-")[0]),
-            }
-        )
         LOG.debug(scaling_configuration)
         self.target_scaling_config = scaling_configuration
+
+    def init_scaling(self, config):
+        """
+        Method to setup target scaling for the service.
+        :return:
+        """
+        LOG.debug("Setting target scaling")
+        allowed_keys = {"range": str, "target_scaling": dict}
+        if not all(key in list(allowed_keys.keys()) for key in config.keys()):
+            raise KeyError(
+                "Found invalid key. Got",
+                config,
+                "Allowed",
+                allowed_keys,
+            )
+        if not keyisset("range", config):
+            raise KeyError(
+                "Missing range property. Range should written as follows: {min}-{max}"
+            )
+        self.scaling_range = {
+            "max": int(config["range"].split("-")[-1]),
+            "min": int(config["range"].split("-")[0]),
+        }
+        if keyisset("target_scaling", config):
+            self.set_target_scaling(config["target_scaling"])
 
     def add_policies(self, policies):
 
