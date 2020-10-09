@@ -95,15 +95,21 @@ class ComposeSecret(object):
                 ],
             },
         )
-        if EXEC_ROLE_T in self.links and hasattr(exec_role, "Policies"):
-            exec_role.Policies.append(policy)
-        elif EXEC_ROLE_T in self.links and not hasattr(exec_role, "Policies"):
-            setattr(exec_role, "Policies", [policy])
+        if EXEC_ROLE_T in self.links:
+            if hasattr(exec_role, "Policies"):
+                exec_role.Policies.append(policy)
+            elif not hasattr(exec_role, "Policies"):
+                setattr(exec_role, "Policies", [policy])
+            extend_container_secrets(container, self.ecs_secret)
+        else:
+            LOG.warn(
+                f"You did not specify {EXEC_ROLE_T} in your LinksTo for this secret. You will not have ECS"
+                "Expose the value of the secret to your container."
+            )
         if TASK_ROLE_T in self.links and hasattr(task_role, "Policies"):
             task_role.Policies.append(policy)
         elif TASK_ROLE_T in self.links and not hasattr(task_role, "Policies"):
             setattr(task_role, "Policies", [policy])
-        extend_container_secrets(container, self.ecs_secret)
 
 
 def parse_secrets(settings):

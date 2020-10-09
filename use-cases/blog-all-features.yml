@@ -370,3 +370,5 @@ secrets:
     file: /dev/null
     x-secrets:
       Name: /nowhere
+      LinksTo:
+        - EcsTaskRole
