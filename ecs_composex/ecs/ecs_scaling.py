@@ -47,7 +47,10 @@ def generate_scaling_out_steps(steps):
             raise KeyError(
                 "Step definition only allows", allowed_keys, "Got", step_def.keys()
             )
-        if step_def["lower_bound"] >= step_def["upper_bound"]:
+        if (
+            keyisset("upper_bound", step_def)
+            and step_def["lower_bound"] >= step_def["upper_bound"]
+        ):
             raise ValueError(
                 "The lower_bound value must strictly lower than the upper bound",
                 step_def,
@@ -57,7 +60,7 @@ def generate_scaling_out_steps(steps):
     cfn_steps = []
     pre_upper = 0
     for step_def in ordered:
-        if not int(step_def["lower_bound"]) >= pre_upper:
+        if pre_upper and not int(step_def["lower_bound"]) >= pre_upper:
             raise ValueError(
                 f"The value for lower bound is {step_def['lower_bound']},"
                 f"which is higher than the previous upper_bound, {pre_upper}"
@@ -65,34 +68,46 @@ def generate_scaling_out_steps(steps):
         cfn_steps.append(
             StepAdjustment(
                 MetricIntervalLowerBound=int(step_def["lower_bound"]),
-                MetricIntervalUpperBound=int(step_def["upper_bound"]),
+                MetricIntervalUpperBound=int(step_def["upper_bound"])
+                if keyisset("upper_bound", step_def)
+                else Ref(AWS_NO_VALUE),
                 ScalingAdjustment=int(step_def["count"]),
             )
         )
-        pre_upper = int(step_def["upper_bound"])
+        pre_upper = (
+            int(step_def["upper_bound"]) if keyisset("upper_bound", step_def) else None
+        )
+    if hasattr(cfn_steps[-1], "MetricIntervalUpperBound") and not isinstance(
+        getattr(cfn_steps[-1], "MetricIntervalUpperBound"), Ref
+    ):
+        LOG.warn("The last upper bound shall not be set. Deleting value to comply}")
+        setattr(cfn_steps[-1], "MetricIntervalUpperBound", Ref(AWS_NO_VALUE))
     return cfn_steps
 
 
 def generate_alarm_scaling_out_policy(
-    service, service_template, steps_definition, scaling_source=None
+    service_name, service_template, scaling_def, scaling_source=None
 ):
     """
-
-    :param ecs_composex.common.compose_resources.Service service:
+    :param str service_name: The name of the service/family
     :param troposphere.Template service_template:
-    :param list steps_definition:
+    :param dict scaling_def:
     :param str scaling_source:
     :return:
     """
+    if not keyisset("steps", scaling_def):
+        raise KeyError("No steps were defined in the scaling definition", scaling_def)
+    steps_definition = scaling_def["steps"]
     length = 6
     if not scaling_source:
         scaling_source = "".join(
-            random.choice(string.ascii_lowercase) for count in range(length)
+            random.choice(string.ascii_lowercase) for _ in range(length)
         )
+    print(service_name)
     policy = ScalingPolicy(
-        f"ScalingOutPolicy${scaling_source}{service.logical_name}",
+        f"ScalingOutPolicy{scaling_source}{service_name}",
         template=service_template,
-        PolicyName=f"ScalingOutPolicy${scaling_source}{service.logical_name}",
+        PolicyName=f"ScalingOutPolicy{scaling_source}{service_name}",
         PolicyType="StepScaling",
         ScalingTargetId=Ref(SERVICE_SCALING_TARGET),
         ServiceNamespace="ecs",
@@ -104,20 +119,38 @@ def generate_alarm_scaling_out_policy(
     return policy
 
 
-def generate_alarm_scaling_in_policy():
+def reset_to_zero_policy(service_name, service_template, scaling_source=None):
     """
 
     :return:
     """
-    policy = ScalingPolicy(f"ScalingInPolicy")
+    length = 6
+    if not scaling_source:
+        scaling_source = "".join(
+            random.choice(string.ascii_lowercase) for _ in range(length)
+        )
+    policy = ScalingPolicy(
+        f"ScalingInPolicy{scaling_source}{service_name}",
+        template=service_template,
+        PolicyName=f"ScalingInPolicy{scaling_source}{service_name}",
+        PolicyType="StepScaling",
+        ScalingTargetId=Ref(SERVICE_SCALING_TARGET),
+        ServiceNamespace="ecs",
+        StepScalingPolicyConfiguration=StepScalingPolicyConfiguration(
+            AdjustmentType="ExactCapacity",
+            StepAdjustments=[
+                StepAdjustment(
+                    MetricIntervalUpperBound=0,
+                    ScalingAdjustment=0,
+                )
+            ],
+        ),
+    )
+    return policy
 
 
 if __name__ == "__main__":
-    steps = generate_scaling_out_steps(
-        [
-            {"lower_bound": 0, "upper_bound": 20, "count": 1},
-            {"lower_bound": 20, "upper_bound": 52, "count": 5},
-        ]
-    )
-    for step in steps:
-        print(step, step.MetricIntervalLowerBound)
+    good_steps = [
+        {"lower_bound": 0, "upper_bound": 20, "count": 1},
+        {"lower_bound": 20, "upper_bound": 52, "count": 5},
+    ]
