@@ -143,7 +143,7 @@ def handle_service_scaling(
             ),
         ],
         EvaluationPeriods=1,
-        InsufficientDataActions=Ref(AWS_NO_VALUE),
+        InsufficientDataActions=[Ref(scaling_in_policy)],
         MetricName="ApproximateNumberOfMessagesVisible",
         Namespace="AWS/SQS",
         OKActions=[Ref(scaling_in_policy)],
