@@ -27,6 +27,9 @@ Features that ECS ComposeX takes care of for you, if you needed to:
 * Adds X-Ray side car when you need distributed tracing
 * Calculates the compute requirements based on the docker-compose v3 declaration
 * Supports to add IAM permission boundary for extended security precautions.
+* Supports for scaling definitions
+    * SQS based step scaling
+    * Target Tracking scaling for CPU/RAM
 
 .. note::
 

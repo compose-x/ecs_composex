@@ -25,14 +25,21 @@ services:
         is_public: True
         lb_type: application
 
+  app02:
+    x-configs:
+      scaling:
+        range: "0-20"
+
   app03:
     x-configs:
-      target_scaling:
-        cpu_target: 75
-        range: "0-10"
-        memory_target: 80
-        disable_scale_in: False
-        scale_out_cooldown: 60
+      scaling:
+        range: "1-10"
+        allow_zero: True
+        target_scaling:
+          cpu_target: 75
+          memory_target: 80
+          disable_scale_in: False
+          scale_out_cooldown: 60
       use_xray: True
       iam:
         boundary: arn:aws:iam::aws:policy/PowerUserAccess
@@ -106,6 +113,16 @@ x-sqs:
     Services:
       - name: app03
         access: RWMessages
+        scaling:
+          steps:
+            - lower_bound: 0
+              upper_bound: 10
+              count: 1
+            - lower_bound: 10
+              upper_bound: 20
+              count: 2
+            - lower_bound: 20
+              count: 21
 
   queueB:
     Properties:
