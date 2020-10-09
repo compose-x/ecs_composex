@@ -27,6 +27,72 @@ The syntax for AppMesh in ECS ComposeX is a mix of Istio, Envoy and AWS AppMesh 
     :ref:`appmesh_syntax_reference`
 
 
+Services autoscaling integration
+=================================
+
+You can now define scaling for your ECS Services using
+* CPU / RAM Target Tracking scaling
+* SQS Messages (visible) depth with step scaling.
+
+For example, we want to scale our front-end based on CPU usage and our backend, dealing with queues, based on messages
+numbers.
+
+.. code-block::
+
+    services:
+      frontend:
+        ports:
+          - 80:80
+        image: my-nginx
+        deploy:
+          replicas: 2 # by default I want 2 containers
+        x-configs:
+          scaling:
+            range: "1-10" # 1 to 10 containers to deploy for the service
+            target_scaling:
+              cpu_target: 80 # Means 80% average for all containers in the service.
+      backend:
+        image: my-worker
+        deploy:
+          replicas: 1  # Initially I want 1 container running to make sure everything is working
+        x-configs:
+          scaling:
+            range: "0-10" # I can have between 0 to 10 containers. 0 because I am happy not paying when nothing to do
+
+    x-sqs:
+      jobs-queue:
+        Properties: {}
+        Settings: {}
+        Services:
+          - name: frontend
+            access: RWMessages
+          - name: backend
+            access: RWMessages
+            scaling:
+              steps:
+                - lower_bound: 0
+                  upper_bound: 10
+                  count: 1
+                - lower_bound: 10
+                  upper_bound: 20
+                  count: 2
+                - lower_bound: 20
+                  count: 21
+
+As you can see we defined scaling for SQS only on the backend, as we don't need to scale the frontend based on that.
+Also we set the count for final step to 21, which is higher than the range indicated.
+
+Our frontend will be managed by ECS itself which will be ensuring that the average CPU usage across the service remains under 80%.
+
+.. hint::
+
+    In composex, you must define a generic range first, and if you override it in the scaling, it will take the highest count of all scaling policies.
+
+.. note::
+
+    Scaling with target tracking based on ELBv2 metrics is coming too.
+
+
 Fargate CPU/RAM auto configuration
 ==================================
 
