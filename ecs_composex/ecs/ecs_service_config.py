@@ -378,7 +378,7 @@ class ServiceConfig(object):
         :return:
         """
         LOG.debug("Setting target scaling")
-        allowed_keys = {"range": str, "target_scaling": dict}
+        allowed_keys = {"range": str, "target_scaling": dict, "allow_zero": bool}
         if not all(key in list(allowed_keys.keys()) for key in config.keys()):
             raise KeyError(
                 "Found invalid key. Got",
@@ -394,6 +394,8 @@ class ServiceConfig(object):
             "max": int(config["range"].split("-")[-1]),
             "min": int(config["range"].split("-")[0]),
         }
+        if keyisset("allow_zero", config) and not self.scaling_range["min"] == 0:
+            self.scaling_range["min"] = 0
         if keyisset("target_scaling", config):
             self.set_target_scaling(config["target_scaling"])
 

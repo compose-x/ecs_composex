@@ -407,7 +407,6 @@ class Service(object):
         """
         LOG.debug(self.config.scaling_range)
         if self.config.scaling_range:
-            print(self.config.scaling_range)
             self.scalable_target = applicationautoscaling.ScalableTarget(
                 ecs_params.SERVICE_SCALING_TARGET,
                 template=self.template,

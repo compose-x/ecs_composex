@@ -35,7 +35,6 @@ def import_secrets(template, service, container, settings):
     :param ecs_composex.common.settings.ComposeXSettings settings:
     :return:
     """
-    print(service, type(service))
     if not service.secrets:
         return
     if not keyisset("secrets", settings.compose_content):

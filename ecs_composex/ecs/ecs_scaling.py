@@ -22,8 +22,7 @@ Module to help generate target scaling policies for given alarms.
 import random
 import string
 
-from troposphere import Ref, Sub, AWS_NO_VALUE, AWS_ACCOUNT_ID
-from troposphere.cloudwatch import Alarm
+from troposphere import Ref, AWS_NO_VALUE
 from troposphere.applicationautoscaling import (
     ScalingPolicy,
     StepScalingPolicyConfiguration,
@@ -34,10 +33,11 @@ from ecs_composex.common import LOG, keyisset
 from ecs_composex.ecs.ecs_params import SERVICE_SCALING_TARGET
 
 
-def generate_scaling_out_steps(steps):
+def generate_scaling_out_steps(steps, target):
     """
 
-    :param steps:
+    :param list steps:
+    :param tropsphere.applicationautoscaling.ScalingTarget target: The defined max in the Scalable Target
     :return:
     """
     unordered = []
@@ -57,6 +57,12 @@ def generate_scaling_out_steps(steps):
             )
         unordered.append(step_def)
     ordered = sorted(unordered, key=lambda i: i["lower_bound"])
+    if target and ordered[-1]["count"] > target.MaxCapacity:
+        LOG.warn(
+            f"The current maximum in your range is {target.MaxCapacity} whereas you defined {ordered[-1]['count']}"
+            " for step scaling. Adjusting to step scaling max."
+        )
+        setattr(target, "MaxCapacity", ordered[-1]["count"])
     cfn_steps = []
     pre_upper = 0
     for step_def in ordered:
@@ -103,7 +109,10 @@ def generate_alarm_scaling_out_policy(
         scaling_source = "".join(
             random.choice(string.ascii_lowercase) for _ in range(length)
         )
-    print(service_name)
+    scalable_target = service_template.resources[SERVICE_SCALING_TARGET]
+    step_adjustments = generate_scaling_out_steps(
+        steps_definition, target=scalable_target
+    )
     policy = ScalingPolicy(
         f"ScalingOutPolicy{scaling_source}{service_name}",
         template=service_template,
@@ -113,7 +122,7 @@ def generate_alarm_scaling_out_policy(
         ServiceNamespace="ecs",
         StepScalingPolicyConfiguration=StepScalingPolicyConfiguration(
             AdjustmentType="ExactCapacity",
-            StepAdjustments=generate_scaling_out_steps(steps_definition),
+            StepAdjustments=step_adjustments,
         ),
     )
     return policy
