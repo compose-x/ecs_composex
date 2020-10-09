@@ -453,7 +453,12 @@ to your container, using the same name as in the compose file.
 
 .. warning::
 
-    You must specify both Execution
+    If you do not specify **EcsExecutionRole** when specifying **LinksTo** then you will not get the secret exposed
+    to your container via AWS ECS Secrets property of your Container Definition
+
+.. hint::
+
+    For security purposes, the containers **envoy** and **xray-daemon** are not getting assigned the secrets.
 
 x-cluster
 ==========
