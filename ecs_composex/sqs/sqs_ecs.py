@@ -19,7 +19,7 @@
 Module to apply SQS settings onto ECS Services
 """
 
-from troposphere import Ref, AWS_NO_VALUE
+from troposphere import Ref
 from troposphere.cloudwatch import Alarm, MetricDimension
 from troposphere.sqs import Queue
 
