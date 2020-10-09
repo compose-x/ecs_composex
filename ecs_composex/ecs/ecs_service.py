@@ -426,7 +426,7 @@ class Service(object):
                     DynamicScalingInSuspended=False
                 ),
             )
-        if self.scalable_target and self.scalable_target:
+        if self.scalable_target and self.config.target_scaling_config:
             if keyisset("cpu_target", self.config.target_scaling_config):
                 applicationautoscaling.ScalingPolicy(
                     "ServiceCpuTrackingPolicy",
