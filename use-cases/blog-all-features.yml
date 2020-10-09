@@ -14,12 +14,17 @@ services:
     deploy:
       labels:
         ecs.task.family: bignicefamily
+      replicas: 2
     environment:
       name: toto
       LOGLEVEL: INFO
       ACCOUNT_ID: "${AWS::AccountId}"
       REGION: "${AWS::Region}"
     x-configs:
+      scaling:
+        range: "1-10"
+        target_scaling:
+          cpu_target: 80
       use_xray: True
       network:
         is_public: True
@@ -133,7 +138,16 @@ x-sqs:
     Services:
       - name: rproxy
         access: RWMessages
-
+      - name: app02
+        access: RWMessages
+        scaling:
+          steps:
+            - lower_bound: 0
+              upper_bound: 10
+              count: 1
+            - lower_bound: 10
+              upper_bound: 20
+              count: 2
   queueC:
     Properties:
       FifoQueue: True
