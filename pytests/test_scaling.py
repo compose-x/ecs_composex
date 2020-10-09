@@ -29,7 +29,8 @@ def test_steps_definition():
         [
             {"lower_bound": 0, "upper_bound": 20, "count": 1},
             {"lower_bound": 20, "upper_bound": 52, "count": 5},
-        ]
+        ],
+        target=None,
     )
     assert [0, 20] == [step.MetricIntervalLowerBound for step in steps]
 
@@ -38,11 +39,13 @@ def test_steps_definition():
             [
                 {"lower_bound": 0, "upper_bound": 21, "count": 1},
                 {"lower_bound": 20, "upper_bound": 52, "count": 5},
-            ]
+            ],
+            target=None,
         )
         generate_scaling_out_steps(
             [
                 {"lower_bound": 22, "upper_bound": 21, "count": 1},
                 {"lower_bound": 20, "upper_bound": 52, "count": 5},
-            ]
+            ],
+            target=None,
         )
