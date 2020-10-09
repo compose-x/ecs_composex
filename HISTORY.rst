@@ -2,6 +2,26 @@
 History
 =======
 
+0.8.0 (2020-10-09)
+==================
+
+New features:
+--------------
+* `Support for ECS Scaling based on SQS Messages in queue <https://github.com/lambda-my-aws/ecs_composex/pull/194>`.
+* `Support for ECS Scaling based on Service CPU/RAM values (TargetTracking) <https://github.com/lambda-my-aws/ecs_composex/issues/188>`_
+* `Support for using existing Secrets in AWS Secrets Manager <https://github.com/lambda-my-aws/ecs_composex/pull/193>`_
+* `Support for Service logs expiry from compose definition <https://github.com/lambda-my-aws/ecs_composex/issues/165>`_
+* `Enable to use AWS CFN native PseudoParameters in string values <https://github.com/lambda-my-aws/ecs_composex/issues/182>`_
+* `Improved Environment variables interpolation to follow the docker-compose behaviour <https://github.com/lambda-my-aws/ecs_composex/issues/185>`_
+
+
+Closed reported issues:
+------------------------
+* https://github.com/lambda-my-aws/ecs_composex/issues/175
+
+Some code refactor and bug fixes have gone in as well to improve stability and addition of new services.
+
+
 0.7.0 (2020-08-12)
 ===================
 
