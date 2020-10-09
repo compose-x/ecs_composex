@@ -156,10 +156,3 @@ def reset_to_zero_policy(service_name, service_template, scaling_source=None):
         ),
     )
     return policy
-
-
-if __name__ == "__main__":
-    good_steps = [
-        {"lower_bound": 0, "upper_bound": 20, "count": 1},
-        {"lower_bound": 20, "upper_bound": 52, "count": 5},
-    ]
