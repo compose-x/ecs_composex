@@ -410,6 +410,56 @@ as a dependency to another.
     See `Dependency reference for more information <https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ecs-taskdefinition-containerdependency.html>`_
 
 
+secrets
+-------
+
+As you might have already used these, docker-compose allows you to define secrets to use for the application.
+To help continue with docker-compose syntax compatiblity, you can now declare your secret in docker-compose,
+and add an extension field which will be a direct mapping to the secret name you have in AWS Secrets Manager.
+
+.. code-block:: yaml
+
+    secrets:
+      topsecret_info:
+        external: True
+        x-secrets:
+          Name: /path/to/my/secret
+
+    services:
+      serviceA:
+        secrets:
+          - topsecret_info
+
+This will automatically add IAM permissions to **the execution** role of your Task definition and will export the secret
+to your container, using the same name as in the compose file.
+
+.. note::
+
+    At this time, AWS Fargate does not support to specify the secret JSON key of secrets, so not implementing this here.
+
+.. hint::
+
+    If you believe that your service application should have access to the secret via **Task Role**, simply add to the
+    secret definition as follows:
+
+    .. code-block:: yaml
+
+        secret-name:
+          x-secrets:
+            Name: String
+            LinksTo:
+              - EcsExecutionRole
+              - EcsTaskRole
+
+.. warning::
+
+    If you do not specify **EcsExecutionRole** when specifying **LinksTo** then you will not get the secret exposed
+    to your container via AWS ECS Secrets property of your Container Definition
+
+.. hint::
+
+    For security purposes, the containers **envoy** and **xray-daemon** are not getting assigned the secrets.
+
 x-cluster
 ==========
 
