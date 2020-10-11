@@ -32,7 +32,7 @@ def test_steps_definition():
         ],
         target=None,
     )
-    assert [0, 20] == [step.MetricIntervalLowerBound for step in steps]
+    assert [1, 20] == [step.MetricIntervalLowerBound for step in steps]
 
     with raises(ValueError):
         generate_scaling_out_steps(
