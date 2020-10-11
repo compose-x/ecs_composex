@@ -20,4 +20,4 @@
 
 __author__ = """John Preston"""
 __email__ = "john@lambda-my-aws.io"
-__version__ = "0.8.1"
+__version__ = "0.8.2"
