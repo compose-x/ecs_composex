@@ -138,7 +138,7 @@ def generate_sqs_root_template(settings):
             values = [
                 (SQS_URL, "Url", Ref(queue)),
                 (SQS_ARN_T, SQS_ARN_T, GetAtt(queue, SQS_ARN_T)),
-                (SQS_NAME_T, SQS_NAME_T, Ref(queue)),
+                (SQS_NAME_T, SQS_NAME_T, GetAtt(queue, SQS_NAME_T)),
             ]
             outputs = ComposeXOutput(queue, values, duplicate_attr=(not mono_template))
             if mono_template:

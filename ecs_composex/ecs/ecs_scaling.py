@@ -88,6 +88,11 @@ def generate_scaling_out_steps(steps, target):
     ):
         LOG.warn("The last upper bound shall not be set. Deleting value to comply}")
         setattr(cfn_steps[-1], "MetricIntervalUpperBound", Ref(AWS_NO_VALUE))
+    if cfn_steps[0].MetricIntervalLowerBound == 0:
+        LOG.warn(
+            "You defined the lower bound to 0. To enable alarm threshold we are setting it to 1"
+        )
+        setattr(cfn_steps[0], "MetricIntervalLowerBound", 1)
     return cfn_steps
 
 
@@ -99,7 +104,8 @@ def generate_alarm_scaling_out_policy(
     :param troposphere.Template service_template:
     :param dict scaling_def:
     :param str scaling_source:
-    :return:
+    :return: The scaling out policy
+    :rtype: ScalingPolicy
     """
     if not keyisset("steps", scaling_def):
         raise KeyError("No steps were defined in the scaling definition", scaling_def)

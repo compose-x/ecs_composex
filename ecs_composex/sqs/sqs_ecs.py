@@ -129,7 +129,7 @@ def handle_service_scaling(
         scaling_source=resource.logical_name,
     )
     Alarm(
-        f"AlarmFor{resource.logical_name}To{service_family}",
+        f"SqsScalingAlarm{resource.logical_name}To{service_family}",
         template=service_stack.stack_template,
         ActionsEnabled=True,
         AlarmActions=[Ref(scaling_out_policy)],
@@ -149,9 +149,13 @@ def handle_service_scaling(
         OKActions=[Ref(scaling_in_policy)],
         Period="60",
         Statistic="Sum",
-        Threshold="0.0",
+        TreatMissingData="notBreaching",
+        Threshold=float(
+            scaling_out_policy.StepScalingPolicyConfiguration.StepAdjustments[
+                0
+            ].MetricIntervalLowerBound
+        ),
     )
-
     LOG.debug(f"{res_root_stack.title} - {nested}")
     if res_root_stack.title not in services_stack.DependsOn and not nested:
         services_stack.add_dependencies(res_root_stack.title)
