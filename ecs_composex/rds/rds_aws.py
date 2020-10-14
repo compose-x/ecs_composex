@@ -58,14 +58,14 @@ def validate_rds_lookup(lookup):
     :raises: KeyError
     """
     if not lookup or not isinstance(lookup, dict):
-        raise TypeError("The Lookup section for RDS must be an object/dictionary. Got", type(lookup))
+        raise TypeError(
+            "The Lookup section for RDS must be an object/dictionary. Got", type(lookup)
+        )
     allowed_keys = ["secret", "cluster", "db"]
     if not all(key in allowed_keys for key in lookup.keys()):
-        raise KeyError(
-            "Lookup section allows only", allowed_keys, "Got", lookup.keys()
-        )
-    if not any(key in ['cluster', 'db'] for key in lookup.keys()):
-        raise KeyError("You must define at least one of", ['cluster', 'db'])
+        raise KeyError("Lookup section allows only", allowed_keys, "Got", lookup.keys())
+    if not any(key in ["cluster", "db"] for key in lookup.keys()):
+        raise KeyError("You must define at least one of", ["cluster", "db"])
     for key_name in lookup:
         if not isinstance(lookup[key_name], dict):
             raise TypeError(
@@ -81,3 +81,44 @@ def validate_rds_lookup(lookup):
             " You might encounter authentication issues."
         )
     validate_rds_settings(lookup)
+
+
+def find_rds_db(info, settings):
+    """
+    Function to find the RDS DB based on info
+
+    :param info:
+    :type info: dict
+    :param settings:
+    :type settings: ecs_composex.common.settings.ComposeXSettings
+    :return:
+    """
+
+
+def find_rds_cluster(info, settings):
+    """
+    Function to find the RDS Cluster based on info
+
+    :param info:
+    :type info: dict
+    :param settings:
+    :type settings: ecs_composex.common.settings.ComposeXSettings
+    :return:
+    """
+    cluster_arn_re = ""
+
+
+def lookup_rds_resource(lookup, settings):
+    """
+    Function to find the DB in AWS account
+
+    :param lookup: The Lookup definition for DB
+    :type lookup: dict
+    :param settings: The ComposeX execution settings
+    :type settings: ecs_composex.common.settings.ComposeXSettings
+    :return:
+    """
+    if keyisset("cluster", lookup):
+        find_rds_cluster(lookup["cluster"], settings)
+    elif keyisset("db", lookup):
+        find_rds_db(lookup["db"], settings)
