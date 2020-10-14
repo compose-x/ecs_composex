@@ -46,7 +46,6 @@ CFN_MAX_OUTPUTS = 50
 
 
 def define_redrive_policy(target_queue, retries=None, mono_template=True):
-
     policy = {
         "RedrivePolicy": RedrivePolicy(
             deadLetterTargetArn=GetAtt(target_queue, "Arn")
@@ -69,13 +68,24 @@ def set_queue(queue, properties, redrive_policy=None):
     :return: queue
     :rtype: troposphere.sqs.Queue
     """
+    name = None
     if redrive_policy is not None:
         properties.update(redrive_policy)
     if keyisset("QueueName", properties):
+        name = properties["QueueName"]
         properties.pop("QueueName")
-        properties["QueueName"] = Sub(f"${{{ROOT_STACK_NAME_T}}}-{queue.name}")
-        if keyisset("FifoQueue", properties):
-            properties["QueueName"] = Sub(f"${{{ROOT_STACK_NAME_T}}}-{queue.name}.fifo")
+    if keyisset("FifoQueue", properties):
+        properties["QueueName"] = (
+            Sub(f"${{{ROOT_STACK_NAME_T}}}-{queue.name}.fifo")
+            if not name
+            else Sub(f"${{{ROOT_STACK_NAME_T}}}-{name}.fifo")
+        )
+    else:
+        properties["QueueName"] = (
+            Sub(f"${{{ROOT_STACK_NAME_T}}}-{queue.name}")
+            if not name
+            else Sub(f"${{{ROOT_STACK_NAME_T}}}-{name}")
+        )
     queue = Queue(queue.logical_name, **properties)
     return queue
 
