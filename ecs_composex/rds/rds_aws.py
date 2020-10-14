@@ -20,65 +20,64 @@ Module to scan and find the DB and Secret for Lookup of x-rds
 """
 
 from ecs_composex.common import keyisset, LOG
-from ecs_composex.dynamodb.dynamodb_aws import (
-    define_dyn_filter_tags as define_filter_tags,
-    evaluate_table_tags as evaluate_tags,
-)
 
 
-def get_clusters_list(session, clusters=None, next_token=None):
+def validate_rds_settings(lookup_properties):
     """
-    Function to return the list of clusters in the account
+    Function to validate RDS properties for lookup
+    :param dict lookup_properties:
+    :raises: KeyError, TypeError
+    """
+    rds_allowed_keys = {"Name": str, "Tags": list}
+    for key_name in ["cluster", "db", "secret"]:
+        if keyisset(key_name, lookup_properties):
+            for property_name in lookup_properties[key_name]:
+                if property_name not in rds_allowed_keys.keys():
+                    raise KeyError(
+                        f"{property_name} not allowed for cluster. Expected",
+                        rds_allowed_keys.keys(),
+                    )
+                elif property_name in rds_allowed_keys.keys() and not isinstance(
+                    lookup_properties[key_name][property_name],
+                    rds_allowed_keys[property_name],
+                ):
+                    raise TypeError(
+                        f"{property_name} is of type",
+                        type(lookup_properties[key_name][property_name]),
+                        "Expected",
+                        rds_allowed_keys[property_name],
+                    )
 
-    :param session:
+
+def validate_rds_lookup(lookup):
+    """
+    Function to validate the lookup settings are correct
+    :param lookup: The DB Lookup property
+    :type lookup: dict
     :return:
+    :raises: KeyError
     """
-    if clusters is None:
-        clusters = []
-    client = session.client("rds")
-    if next_token is None:
-        clusters_r = client.describe_db_clusters(IncludeShared=True)
-    else:
-        clusters_r = client.describe_db_clusters(IncludeShared=True, Marker=next_token)
-    for cluster in clusters_r["DBClusters"]:
-        clusters.append({cluster["DBClusterArn"]: cluster})
-    if keyisset("Marker", clusters_r):
-        return get_clusters_list(session, clusters, next_token)
-    return clusters
-
-
-def find_cluster_from_tags(session, tags):
-    """
-    Function to find the cluster from its tags
-    :return:
-    """
-    matching_clusters = []
-    filter_tags = define_filter_tags(tags)
-    tags_count = len(filter_tags)
-    clusters = get_clusters_list(session)
-
-
-
-def find_cluster(session, tags=None, cluster_id=None):
-    """
-    Function to find the cluster based on tags or name.
-
-    :param boto3.session.Session session:
-    :param tags:
-    :param cluster_id:
-    :return:
-    """
-    client = session.client("rds")
-    if cluster_id and isinstance(cluster_id, str):
-        try:
-            cluster_r = client.describe_clusters(DBClusterIdentifier=cluster_id)
-            if cluster_r["DBClusters"] and len(cluster_r["DBClusters"]) == 1:
-                return cluster_r["DBClusters"][0]
-            elif cluster_r["DBClusters"] and len(cluster_r["DBClusters"]) > 1:
-                raise ValueError(
-                    "More than one cluster was found with given identifier"
-                )
-        except client.exceptions.DBClusterNotFoundFault:
-            LOG.error(f"Cluster not found with identifier {cluster_id}")
-    if tags:
-        cluster = find_cluster_from_tags(session, tags)
+    if not lookup or not isinstance(lookup, dict):
+        raise TypeError("The Lookup section for RDS must be an object/dictionary. Got", type(lookup))
+    allowed_keys = ["secret", "cluster", "db"]
+    if not all(key in allowed_keys for key in lookup.keys()):
+        raise KeyError(
+            "Lookup section allows only", allowed_keys, "Got", lookup.keys()
+        )
+    if not any(key in ['cluster', 'db'] for key in lookup.keys()):
+        raise KeyError("You must define at least one of", ['cluster', 'db'])
+    for key_name in lookup:
+        if not isinstance(lookup[key_name], dict):
+            raise TypeError(
+                f"{key_name} is of type", type(lookup[key_name]), "Expected", dict
+            )
+    if keyisset("cluster", lookup) and keyisset("db", lookup):
+        raise KeyError(
+            "You can only search for RDS cluster or db but not both at the same time."
+        )
+    if not keyisset("secret", lookup):
+        LOG.warn(
+            "You did not define the secret to use, therefore we cannot assign that to the container."
+            " You might encounter authentication issues."
+        )
+    validate_rds_settings(lookup)

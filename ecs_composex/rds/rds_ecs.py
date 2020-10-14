@@ -27,6 +27,7 @@ from ecs_composex.rds.rds_perms import (
     add_rds_policy,
     add_security_group_ingress,
 )
+from ecs_composex.rds.rds_aws import validate_rds_lookup
 
 
 def handle_db_to_service_settings(
@@ -68,18 +69,22 @@ def rds_to_ecs(rdsdbs, services_stack, services_families, rds_root_stack, settin
     """
     for db_name in rdsdbs:
         db = rdsdbs[db_name]
-        if db.logical_name not in rds_root_stack.stack_template.resources:
-            raise KeyError(f"DB {db.logical_name} not defined in RDS Root template")
-        if not db.services:
-            LOG.warn(f"DB {db.logical_name} has no services defined.")
-            continue
-        secret_import = define_db_secret_import(db_name)
-        for service in rdsdbs[db_name].services:
-            handle_db_to_service_settings(
-                db,
-                secret_import,
-                service,
-                services_families,
-                services_stack,
-                rds_root_stack,
-            )
+        if db.properties and not db.lookup:
+            if db.logical_name not in rds_root_stack.stack_template.resources:
+                raise KeyError(f"DB {db.logical_name} not defined in RDS Root template")
+            if not db.services:
+                LOG.warn(f"DB {db.logical_name} has no services defined.")
+                continue
+            secret_import = define_db_secret_import(db_name)
+            for service in rdsdbs[db_name].services:
+                handle_db_to_service_settings(
+                    db,
+                    secret_import,
+                    service,
+                    services_families,
+                    services_stack,
+                    rds_root_stack,
+                )
+        elif not db.properties and db.lookup:
+            validate_rds_lookup(db.lookup)
+

@@ -50,17 +50,17 @@ It will also find the DB security group and add an ingress rule.
       dba:
         Lookup:
           cluster:
-            DBClusterIdentifier: cluster-identifier
+            Name: cluster-identifier
             Tags:
-              - Name: value
+              - sometag: value
           instance:
-            Id: DB Instance Id
+            Name: DB Instance Id
             Tags:
-              - Name: value
+              - sometag: value
           secret:
             Tags:
-              - Name: value
-            Path: secret/in/secretsmanager
+              - sometag: value
+            Name: secret/in/secretsmanager
 
 When using AWS RDS Aurora, you should be specifying the cluster, otherwise the instance for "traditional" RDS instances.
 
