@@ -24,6 +24,44 @@ from botocore.exceptions import ClientError
 from ecs_composex.common import LOG
 
 
+def define_tagsgroups_filter_tags(tags):
+    """
+    Function to create the filters out of tags list
+
+    :param list tags: list of Key/Value dict
+    :return: filters
+    :rtype: list
+    """
+    filters = []
+    for tag in tags:
+        key = list(tag.keys())[0]
+        filter_name = key
+        filter_value = tag[key]
+        filters.append({"Key": filter_name, "Values": (filter_value,)})
+    return filters
+
+
+def get_resources_from_tags(settings, service_code, res_type, search_tags):
+    """
+
+    :param ecs_composex.common.settings.ComposeXSettings settings: The ComposeX settings for exec.
+    :param str service_code: AWS Service short code, ie. rds, ec2
+    :param str res_type: Resource type we are after within the AWS Service, ie. cluster, instance
+    :param list search_tags: The tags to search the resource with.
+    :return:
+    """
+    try:
+        client = settings.session.client("resourcegroupstaggingapi")
+        resources_r = client.get_resources(
+            ResourceTypeFilters=[f"{service_code}:{res_type}"], TagFilters=search_tags
+        )
+        return resources_r
+    except ClientError as error:
+        LOG.error(error)
+        LOG.error("Not processing this DB. Skipping")
+        return None
+
+
 def get_region_azs(session):
     """Function to return the AZ from a given region. Uses default region for this
 
