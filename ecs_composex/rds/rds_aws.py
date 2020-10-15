@@ -19,11 +19,9 @@
 Module to scan and find the DB and Secret for Lookup of x-rds
 """
 
-import re
 from ecs_composex.common import keyisset, LOG
 from ecs_composex.common.aws import (
-    define_tagsgroups_filter_tags,
-    get_resources_from_tags,
+    find_aws_resource_arn_from_tags_api,
 )
 
 
@@ -54,9 +52,11 @@ def validate_rds_settings(lookup_properties):
                     )
 
 
-def validate_rds_lookup(lookup):
+def validate_rds_lookup(db_name, lookup):
     """
     Function to validate the lookup settings are correct
+    :param db_name: The composex resource
+    :type db_name: str
     :param lookup: The DB Lookup property
     :type lookup: dict
     :return:
@@ -78,78 +78,28 @@ def validate_rds_lookup(lookup):
             )
     if keyisset("cluster", lookup) and keyisset("db", lookup):
         raise KeyError(
-            "You can only search for RDS cluster or db but not both at the same time."
+            f"{db_name} - You can only search for RDS cluster or db but not both at the same time."
         )
     if not keyisset("secret", lookup):
         LOG.warn(
-            "You did not define the secret to use, therefore we cannot assign that to the container."
+            f"You did not define the secret to use for {db_name}, therefore we cannot assign that to the container."
             " You might encounter authentication issues."
         )
     validate_rds_settings(lookup)
 
 
-def find_rds_resource(info, settings, service_code, res_type):
-    """
-    Function to find the RDS DB based on info
-
-    :param dict info:
-    :param ecs_composex.common.settings.ComposeXSettings settings:
-    :param str res_type: Resource type we are after within the AWS Service, ie. cluster, instance
-    :param str service_code: AWS Service short code, ie. rds, ec2
-    :return:
-    """
-    res_types = {
-        "db": {"regexp": r"(?:^arn:aws(?:-[a-z]+)?:rds:[\w-]+:[0-9]{12}:db:)([\S]+)$"},
-        "cluster": {
-            "regexp": r"(?:^arn:aws(?:-[a-z]+)?:rds:[\w-]+:[0-9]{12}:cluster:)([\S]+)$"
-        },
-        "secret": {
-            "regexp": r"(?:^arn:aws(?:-[a-z]+)?:secretsmanager:[\w-]+:[0-9]{12}:secret:)([\S]+)(?:-[A-Za-z0-9]+)$"
-        },
-    }
-    if not isinstance(res_type, str) and res_type not in res_types.keys():
-        raise KeyError("type must be one of", res_types.keys(), "Got", res_type)
-    search_tags = []
-    name = None
-    if keyisset("Tags", info):
-        search_tags = define_tagsgroups_filter_tags(info["Tags"])
-    if keyisset("Name", info):
-        name = info["Name"]
-    resources_r = get_resources_from_tags(settings, service_code, res_type, search_tags)
-    arns = [i["ResourceARN"] for i in resources_r["ResourceTagMappingList"]]
-    if not arns:
-        LOG.warn("No resources were found with the provided tags and information")
-        return None
-    if len(arns) > 1 and name:
-        for arn in arns:
-            re_finder = re.compile(res_types[res_type]["regexp"])
-            found_name = (
-                re_finder.match(arn).groups()[0] if re_finder.match(arn) else None
-            )
-            if name and found_name and found_name == name:
-                return arn
-    elif len(arns) == 1:
-        return arns[0]
-    elif not name and len(arns) != 1:
-        raise LookupError(
-            f"More than one {service_code}:{res_type} was found with the current tags."
-            "Found",
-            arns,
-        )
-
-
-def return_db_config(db_arn, settings, res_type):
+def return_db_config(db_arn, session, res_type):
     """
     Function to retrieve the DB information we need for services integration
     :param db_arn:
-    :param settings:
+    :param session:
     :param res_type:
     :type db_arn: str
-    :type settings: ecs_composex.common.settings.ComposeXSettings
+    :type session: boto3.session.Session
     :type res_type: str
     :return: the DB details
     """
-    client = settings.session.client("rds")
+    client = session.client("rds")
     try:
         if res_type == "db":
             db_r = client.describe_db_instances(DBInstanceIdentifier=db_arn)
@@ -166,14 +116,14 @@ def return_db_config(db_arn, settings, res_type):
         return None
 
 
-def lookup_rds_resource(db, settings):
+def lookup_rds_resource(db, session):
     """
     Function to find the DB in AWS account
 
     :param db: The Lookup definition for DB
     :type db: ecs_composex.rds.rds_stacks.Rds
-    :param settings: The ComposeX execution settings
-    :type settings: ecs_composex.common.settings.ComposeXSettings
+    :param session: Boto3 session for clients
+    :type session: boto3.session.Session
     :return:
     """
     res_type = None
@@ -181,13 +131,15 @@ def lookup_rds_resource(db, settings):
         res_type = "cluster"
     elif keyisset("db", db.lookup):
         res_type = "db"
-    db_arn = find_rds_resource(db.lookup[res_type], settings, "rds", res_type)
+    db_arn = find_aws_resource_arn_from_tags_api(
+        db.lookup[res_type], session, "rds", res_type
+    )
     if not db_arn:
         return None
-    db_config = return_db_config(db_arn, settings, res_type)
+    db_config = return_db_config(db_arn, session, res_type)
     if keyisset("secret", db.lookup):
-        secret_arn = find_rds_resource(
-            db.lookup["secret"], settings, "secretsmanager", "secret"
+        secret_arn = find_aws_resource_arn_from_tags_api(
+            db.lookup["secret"], session, "secretsmanager", "secret"
         )
         if secret_arn and db_config:
             db_config.update({"SecretArn": secret_arn})

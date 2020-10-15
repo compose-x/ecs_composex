@@ -153,8 +153,8 @@ def rds_to_ecs(rdsdbs, services_stack, services_families, rds_root_stack, settin
                     rds_root_stack,
                 )
         elif not db.properties and db.lookup:
-            validate_rds_lookup(db.lookup)
-            db_config = lookup_rds_resource(db, settings)
+            validate_rds_lookup(db.name, db.lookup)
+            db_config = lookup_rds_resource(db, settings.session)
             if not db_config:
                 continue
             db_mappings.update(create_rds_db_config_mapping(db, db_config))

@@ -16,7 +16,8 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from pytest import fixture, raises
-from ecs_composex.rds.rds_aws import validate_rds_lookup
+from placebo import pill
+from ecs_composex.rds.rds_aws import validate_rds_lookup, lookup_rds_resource
 
 
 @fixture(autouse=True)
@@ -68,8 +69,8 @@ def both_db_cluster_defined():
 
 
 def test_lookup_validation(valid_db_lookup, valid_cluster_lookup):
-    validate_rds_lookup(valid_db_lookup)
-    validate_rds_lookup(valid_cluster_lookup)
+    validate_rds_lookup("test", valid_db_lookup)
+    validate_rds_lookup("test", valid_cluster_lookup)
 
 
 def test_neg_lookup_validation(
@@ -81,16 +82,16 @@ def test_neg_lookup_validation(
     secret_only_lookup_property
 ):
     with raises(KeyError):
-        validate_rds_lookup(secret_only_lookup_property)
+        validate_rds_lookup("test", secret_only_lookup_property)
     with raises(KeyError):
-        validate_rds_lookup(unknown_lookup_property)
+        validate_rds_lookup("test", unknown_lookup_property)
     with raises(KeyError):
-        validate_rds_lookup(both_db_cluster_defined)
+        validate_rds_lookup("test", both_db_cluster_defined)
     with raises(KeyError):
-        validate_rds_lookup(unknown_cluster_property)
+        validate_rds_lookup("test", unknown_cluster_property)
     with raises(TypeError):
-        validate_rds_lookup(1)
+        validate_rds_lookup("test", 1)
     with raises(TypeError):
-        validate_rds_lookup(invalid_cluster_property_type)
+        validate_rds_lookup("test", invalid_cluster_property_type)
     with raises(TypeError):
-        validate_rds_lookup(invalid_cluster_type)
+        validate_rds_lookup("test", invalid_cluster_type)
