@@ -4,7 +4,7 @@
         "setting": {
             "name": "containerInstanceLongArnFormat",
             "value": "enabled",
-            "principalArn": "arn:aws:iam::012345678912:root"
+            "principalArn": "arn:aws:iam::000000000000:root"
         },
         "ResponseMetadata": {
             "RequestId": "b3151849-0a2d-4da0-9a5a-6517881a878a",

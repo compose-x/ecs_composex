@@ -4,7 +4,7 @@
         "setting": {
             "name": "taskLongArnFormat",
             "value": "enabled",
-            "principalArn": "arn:aws:iam::012345678912:root"
+            "principalArn": "arn:aws:iam::000000000000:root"
         },
         "ResponseMetadata": {
             "RequestId": "c7b4295d-37ab-4d8b-9252-243729d74210",

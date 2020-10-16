@@ -12,7 +12,7 @@
                 "State": "available",
                 "SubnetId": "subnet-04270d634ef29f545",
                 "VpcId": "vpc-08144c139f0a4a671",
-                "OwnerId": "012345678912",
+                "OwnerId": "000000000000",
                 "AssignIpv6AddressOnCreation": false,
                 "Ipv6CidrBlockAssociationSet": [],
                 "Tags": [
@@ -22,7 +22,7 @@
                     },
                     {
                         "Key": "aws:cloudformation:stack-id",
-                        "Value": "arn:aws:cloudformation:eu-west-1:373709687836:stack/vpcwork/7d8f4060-c8d9-11ea-9b25-06ef30f3415c"
+                        "Value": "arn:aws:cloudformation:eu-west-1:000000000000:stack/vpcwork/7d8f4060-c8d9-11ea-9b25-06ef30f3415c"
                     },
                     {
                         "Key": "vpc::usage",
@@ -41,7 +41,7 @@
                         "Value": "vpcwork-Storage-c"
                     }
                 ],
-                "SubnetArn": "arn:aws:ec2:eu-west-1:373709687836:subnet/subnet-04270d634ef29f545"
+                "SubnetArn": "arn:aws:ec2:eu-west-1:000000000000:subnet/subnet-04270d634ef29f545"
             },
             {
                 "AvailabilityZone": "eu-west-1a",
@@ -53,7 +53,7 @@
                 "State": "available",
                 "SubnetId": "subnet-004e206426fdaef17",
                 "VpcId": "vpc-08144c139f0a4a671",
-                "OwnerId": "012345678912",
+                "OwnerId": "000000000000",
                 "AssignIpv6AddressOnCreation": false,
                 "Ipv6CidrBlockAssociationSet": [],
                 "Tags": [
@@ -79,10 +79,10 @@
                     },
                     {
                         "Key": "aws:cloudformation:stack-id",
-                        "Value": "arn:aws:cloudformation:eu-west-1:373709687836:stack/vpcwork/7d8f4060-c8d9-11ea-9b25-06ef30f3415c"
+                        "Value": "arn:aws:cloudformation:eu-west-1:000000000000:stack/vpcwork/7d8f4060-c8d9-11ea-9b25-06ef30f3415c"
                     }
                 ],
-                "SubnetArn": "arn:aws:ec2:eu-west-1:373709687836:subnet/subnet-004e206426fdaef17"
+                "SubnetArn": "arn:aws:ec2:eu-west-1:000000000000:subnet/subnet-004e206426fdaef17"
             },
             {
                 "AvailabilityZone": "eu-west-1b",
@@ -94,7 +94,7 @@
                 "State": "available",
                 "SubnetId": "subnet-0d49c1240b794118d",
                 "VpcId": "vpc-08144c139f0a4a671",
-                "OwnerId": "012345678912",
+                "OwnerId": "000000000000",
                 "AssignIpv6AddressOnCreation": false,
                 "Ipv6CidrBlockAssociationSet": [],
                 "Tags": [
@@ -120,10 +120,10 @@
                     },
                     {
                         "Key": "aws:cloudformation:stack-id",
-                        "Value": "arn:aws:cloudformation:eu-west-1:373709687836:stack/vpcwork/7d8f4060-c8d9-11ea-9b25-06ef30f3415c"
+                        "Value": "arn:aws:cloudformation:eu-west-1:000000000000:stack/vpcwork/7d8f4060-c8d9-11ea-9b25-06ef30f3415c"
                     }
                 ],
-                "SubnetArn": "arn:aws:ec2:eu-west-1:373709687836:subnet/subnet-0d49c1240b794118d"
+                "SubnetArn": "arn:aws:ec2:eu-west-1:000000000000:subnet/subnet-0d49c1240b794118d"
             }
         ],
         "ResponseMetadata": {

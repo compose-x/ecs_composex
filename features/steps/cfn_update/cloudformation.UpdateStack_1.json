@@ -1,7 +1,7 @@
 {
     "status_code": 200,
     "data": {
-        "StackId": "arn:aws:cloudformation:eu-west-1:373709687836:stack/test/3f0ccbb0-deb9-11e9-aeee-0a1f01fad44c",
+        "StackId": "arn:aws:cloudformation:eu-west-1:000000000000:stack/test/3f0ccbb0-deb9-11e9-aeee-0a1f01fad44c",
         "ResponseMetadata": {
             "RequestId": "6083a0ea-a430-4d66-b3eb-e5e93bfef27b",
             "HTTPStatusCode": 200,

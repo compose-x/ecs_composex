@@ -4,7 +4,7 @@
         "clusters": [],
         "failures": [
             {
-                "arn": "arn:aws:ecs:eu-west-1:373709687836:cluster/test2",
+                "arn": "arn:aws:ecs:eu-west-1:000000000000:cluster/test2",
                 "reason": "MISSING"
             }
         ],

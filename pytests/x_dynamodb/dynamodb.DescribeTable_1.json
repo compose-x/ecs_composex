@@ -33,7 +33,7 @@
             },
             "TableSizeBytes": 0,
             "ItemCount": 0,
-            "TableArn": "arn:aws:dynamodb:eu-west-1:373709687836:table/table2",
+            "TableArn": "arn:aws:dynamodb:eu-west-1:000000000000:table/table2",
             "TableId": "e5e244ab-0418-432d-bcad-509f215addd9"
         },
         "ResponseMetadata": {
