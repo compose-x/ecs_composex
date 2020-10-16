@@ -15,3 +15,4 @@ repos:
         language: script
         entry: .scripts/cleanup_placebo.sh
         require_serial: true
+        files: ".json$"
