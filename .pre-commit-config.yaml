@@ -8,3 +8,9 @@ repos:
     rev: 20.8b1
     hooks:
       - id: black
+  - repo: local
+    hooks:
+      - id: arn-reset
+        name: replacing arn from test files
+        language: script
+        entry: .scripts/cleanup_arn.sh

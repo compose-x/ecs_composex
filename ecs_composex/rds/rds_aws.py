@@ -116,20 +116,19 @@ def return_db_config(db_arn, session, res_type):
         return None
 
 
-def handle_secret(db, db_config, session):
+def handle_secret(lookup, db_config, session):
     """
     Function to identify and update definition with secret if defined and found
 
-    :param db: The Lookup definition for DB
-    :type db: ecs_composex.rds.rds_stacks.Rds
+    :param dict lookup: The Lookup definition for DB
     :param session: Boto3 session for clients
     :type session: boto3.session.Session
     :param dict db_config:
     :return:
     """
-    if keyisset("secret", db.lookup):
+    if keyisset("secret", lookup):
         secret_arn = find_aws_resource_arn_from_tags_api(
-            db.lookup["secret"], session, "secretsmanager", "secret"
+            lookup["secret"], session, "secretsmanager", "secret"
         )
         if secret_arn and db_config:
             db_config.update({"SecretArn": secret_arn})
@@ -151,28 +150,26 @@ def patch_db_vs_cluster(db_config, res_type):
         db_config["Port"] = db_config["Endpoint"]["Port"]
 
 
-def lookup_rds_resource(db, session):
+def lookup_rds_resource(lookup, session):
     """
     Function to find the DB in AWS account
 
-    :param db: The Lookup definition for DB
-    :type db: ecs_composex.rds.rds_stacks.Rds
-    :param session: Boto3 session for clients
-    :type session: boto3.session.Session
+    :param dict lookup: The Lookup definition for DB
+    :param boto3.session.Session session: Boto3 session for clients
     :return:
     """
     res_type = None
-    if keyisset("cluster", db.lookup):
+    if keyisset("cluster", lookup):
         res_type = "cluster"
-    elif keyisset("db", db.lookup):
+    elif keyisset("db", lookup):
         res_type = "db"
     db_arn = find_aws_resource_arn_from_tags_api(
-        db.lookup[res_type], session, "rds", res_type
+        lookup[res_type], session, "rds", res_type
     )
     if not db_arn:
         return None
     db_config = return_db_config(db_arn, session, res_type)
-    handle_secret(db, db_config, session)
+    handle_secret(lookup, db_config, session)
     patch_db_vs_cluster(db_config, res_type)
 
     LOG.debug(db_config)

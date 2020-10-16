@@ -33,12 +33,12 @@ from ecs_composex.rds.rds_aws import validate_rds_lookup, lookup_rds_resource
 
 
 def handle_new_dbs_to_services(
-        db,
-        secret_import,
-        service,
-        services_families,
-        services_stack,
-        rds_root_stack,
+    db,
+    secret_import,
+    service,
+    services_families,
+    services_stack,
+    rds_root_stack,
 ):
     service_family = get_service_family_name(services_families, service["name"])
     if service_family not in services_stack.stack_template.resources:
@@ -60,11 +60,11 @@ def handle_new_dbs_to_services(
 
 
 def handle_import_dbs_to_services(
-        db,
-        rds_mapping,
-        service,
-        services_families,
-        services_stack,
+    db,
+    rds_mapping,
+    service,
+    services_families,
+    services_stack,
 ):
     service_family = get_service_family_name(services_families, service["name"])
     if service_family not in services_stack.stack_template.resources:
@@ -74,7 +74,7 @@ def handle_import_dbs_to_services(
     service_stack.stack_template.add_mapping("Rds", rds_mapping)
     service_template = service_stack.stack_template
     if keyisset(db.logical_name, rds_mapping) and keyisset(
-            "SecretArn", rds_mapping[db.logical_name]
+        "SecretArn", rds_mapping[db.logical_name]
     ):
         add_secret_to_containers(
             service_template,
@@ -159,9 +159,11 @@ def import_dbs(db, db_name, db_mappings, services_families, services_stack, sett
     :return:
     """
     validate_rds_lookup(db.name, db.lookup)
-    db_config = lookup_rds_resource(db, settings.session)
+    db_config = lookup_rds_resource(db.lookup, settings.session)
     if not db_config:
-        LOG.warn(f"No RDS DB Configuration could be defined from provided lookup. Skipping {db_name}")
+        LOG.warn(
+            f"No RDS DB Configuration could be defined from provided lookup. Skipping {db_name}"
+        )
         return
     db_mappings.update(create_rds_db_config_mapping(db, db_config))
     for service_def in db.services:
@@ -194,4 +196,6 @@ def rds_to_ecs(rds_dbs, services_stack, services_families, rds_root_stack, setti
         if db.properties and not db.lookup and db.services:
             add_new_dbs(db, rds_root_stack, db_name, services_stack, services_families)
         elif not db.properties and db.lookup:
-            import_dbs(db, db_name, db_mappings, services_families, services_stack, settings)
+            import_dbs(
+                db, db_name, db_mappings, services_families, services_stack, settings
+            )
