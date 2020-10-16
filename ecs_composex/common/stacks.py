@@ -69,6 +69,7 @@ class ComposeXStack(Stack, object):
         "UpdatePolicy",
         "UpdateReplacePolicy",
     ]
+    is_void = False
 
     def __init__(
         self, title, stack_template, stack_parameters=None, file_name=None, **kwargs

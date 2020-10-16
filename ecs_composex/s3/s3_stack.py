@@ -20,11 +20,12 @@ Module to control S3 stack
 """
 
 from troposphere import Ref, GetAtt
-from troposphere.s3 import Bucket
+from troposphere.s3 import Bucket as S3Bucket
 
 from ecs_composex.common import LOG, keyisset, build_template, NONALPHANUM
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common.outputs import ComposeXOutput
+from ecs_composex.common.compose_resources import XResource, set_resources
 from ecs_composex.s3.s3_params import RES_KEY, S3_BUCKET_NAME_T
 from ecs_composex.s3.s3_template import generate_bucket
 
@@ -43,6 +44,14 @@ def create_s3_template(settings):
     if not keyisset(RES_KEY, settings.compose_content):
         return None
     buckets = settings.compose_content[RES_KEY]
+    if not [
+        buckets[bucket_name]
+        for bucket_name in buckets
+        if buckets[bucket_name].properties
+    ]:
+        LOG.info("There are no buckets to create.")
+        return None
+
     if len(list(buckets.keys())) <= CFN_MAX_OUTPUTS:
         mono_template = True
 
@@ -74,11 +83,21 @@ def create_s3_template(settings):
     return template
 
 
-class XResource(ComposeXStack):
+class Bucket(XResource):
+    """
+    Class for S3 bucket.
+    """
+
+
+class XStack(ComposeXStack):
     """
     Class to handle S3 buckets
     """
 
     def __init__(self, title, settings, **kwargs):
+        set_resources(settings, Bucket, RES_KEY)
         stack_template = create_s3_template(settings)
-        super().__init__(title, stack_template, **kwargs)
+        if stack_template:
+            super().__init__(title, stack_template, **kwargs)
+        else:
+            self.is_void = True

@@ -26,49 +26,52 @@ from botocore.exceptions import ClientError
 from ecs_composex.common import LOG, keyisset
 from ecs_composex.common.aws import define_tagsgroups_filter_tags
 from ecs_composex.s3.s3_params import S3_ARN_REGEX
+from ecs_composex.common.aws import find_aws_resource_arn_from_tags_api
 
 
-def lookup_s3_bucket(session, bucket_name=None, tags=None):
+# def return_db_config(bucket_arn, session):
+#     """
+#
+#     :param str bucket_arn:
+#     :param boto3.session.Session session:
+#     :return:
+#     """
+#     client = session.client("s3")
+#     try:
+#         client.head_bucket(Bucket=bucket_name)
+#             return bucket_name
+#         except client.exceptions.NoSuchBucket:
+#             return None
+#         except ClientError as error:
+#             LOG.error(error)
+#             raise
+
+
+def lookup_bucket(lookup, session):
     """
+    Function to find the DB in AWS account
 
-    :param boto3.session.Session session:
-    :param str bucket_name:
-    :param list tags:
+    :param dict lookup: The Lookup definition for DB
+    :param boto3.session.Session session: Boto3 session for clients
     :return:
     """
-    if bucket_name is not None:
-        client = session.client("s3")
-        try:
-            client.head_bucket(Bucket=bucket_name)
-            return bucket_name
-        except client.exceptions.NoSuchBucket:
-            return None
-        except ClientError as error:
-            LOG.error(error)
-            raise
-
-    elif bucket_name is None and tags:
-        if not isinstance(tags, list):
-            raise TypeError("Tags must be a list of key/value dict")
-        filters = define_tagsgroups_filter_tags(tags)
-        print(filters)
-        client = session.client("resourcegroupstaggingapi")
-        buckets_r = client.get_resources(
-            ResourceTypeFilters=("s3",), TagFilters=filters
-        )
-        if keyisset("ResourceTagMappingList", buckets_r):
-            resources = buckets_r["ResourceTagMappingList"]
-            if len(resources) != 1:
-                raise LookupError(
-                    "Found more than one bucket with the current tags",
-                    [resource["ResourceARN"] for resource in resources],
-                    "Expected to match only 1 bucket.",
-                )
-            s3_filter = re.compile(S3_ARN_REGEX)
-            return [
-                {
-                    "Name": s3_filter.match(resources[0]["ResourceARN"]).groups()[-1],
-                    "Arn": resources[0]["ResourceARN"],
-                }
-            ]
-    return None
+    rds_types = {
+        "s3": {"regexp": r"(?:^arn:aws(?:-[a-z]+)?:s3:::)([\S]+)$"},
+    }
+    res_type = None
+    if keyisset("bucket", lookup):
+        res_type = "bucket"
+    bucket_arn = find_aws_resource_arn_from_tags_api(
+        lookup[res_type],
+        session,
+        "rds",
+        res_type,
+        types=rds_types,
+        service_is_type=True,
+    )
+    print(bucket_arn)
+    if not bucket_arn:
+        return None
+    # bucket_config = return_db_config(bucket_arn, session)
+    # LOG.debug(bucket_config)
+    # return bucket_config

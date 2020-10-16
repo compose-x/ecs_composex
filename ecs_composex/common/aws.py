@@ -42,19 +42,20 @@ def define_tagsgroups_filter_tags(tags):
     return filters
 
 
-def get_resources_from_tags(session, service_code, res_type, search_tags):
+def get_resources_from_tags(session, aws_resource_search, search_tags):
     """
 
     :param boto3.session.Session session: The boto3 session for API calls
-    :param str service_code: AWS Service short code, ie. rds, ec2
+    :param str aws_resource_search: AWS Service short code, ie. rds, ec2
     :param str res_type: Resource type we are after within the AWS Service, ie. cluster, instance
     :param list search_tags: The tags to search the resource with.
     :return:
     """
+    LOG.info(aws_resource_search)
     try:
         client = session.client("resourcegroupstaggingapi")
         resources_r = client.get_resources(
-            ResourceTypeFilters=[f"{service_code}:{res_type}"], TagFilters=search_tags
+            ResourceTypeFilters=[aws_resource_search], TagFilters=search_tags
         )
         return resources_r
     except ClientError as error:
@@ -100,15 +101,14 @@ def handle_multi_results(arns, name, res_type, regexp):
         )
 
 
-def handle_search_results(arns, name, res_types, res_type, service_code):
+def handle_search_results(arns, name, res_types, aws_resource_search):
     """
     Function to parse tag resource search results
 
     :param list arns:
     :param str name:
     :param dict res_types:
-    :param str res_type:
-    :param str service_code:
+    :param str aws_resource_search:
     :return:
     """
     if not arns:
@@ -116,13 +116,15 @@ def handle_search_results(arns, name, res_types, res_type, service_code):
             "No resources were found with the provided tags and information"
         )
     if arns and isinstance(name, str):
-        return handle_multi_results(arns, name, res_type, res_types[res_type]["regexp"])
+        return handle_multi_results(
+            arns, name, aws_resource_search, res_types[aws_resource_search]["regexp"]
+        )
     elif not name and len(arns) == 1:
-        LOG.info(f"Matched {service_code}:{res_type}")
+        LOG.info(f"Matched {aws_resource_search} to AWS Resource")
         return arns[0]
     elif not name and len(arns) != 1:
         raise LookupError(
-            f"More than one {service_code}:{res_type} was found with the current tags."
+            f"More than one resource {name}:{aws_resource_search} was found with the current tags."
             "Found",
             arns,
         )
@@ -146,51 +148,32 @@ def validate_search_input(res_types, res_type):
         )
 
 
-def find_aws_resource_arn_from_tags_api(
-    info, session, service_code, res_type, types=None
-):
+def find_aws_resource_arn_from_tags_api(info, session, aws_resource_search, types=None):
     """
     Function to find the RDS DB based on info
 
     :param dict info:
     :param boto3.session.Session session: Boto3 session for clients
-    :param str res_type: Resource type we are after within the AWS Service, ie. cluster, instance
-    :param str service_code: AWS Service short code, ie. rds, ec2
+    :param str aws_resource_search: Resource type we are after within the AWS Service, ie. cluster, instance
     :param dict types: Additional types to match.
     :return:
     """
     res_types = {
-        "secret": {
+        "secretsmanager:secret": {
             "regexp": r"(?:^arn:aws(?:-[a-z]+)?:secretsmanager:[\w-]+:[0-9]{12}:secret:)([\S]+)(?:-[A-Za-z0-9]+)$"
         },
     }
     if types is not None and isinstance(types, dict):
         res_types.update(types)
-    validate_search_input(res_types, res_type)
+    validate_search_input(res_types, aws_resource_search)
     search_tags = (
         define_tagsgroups_filter_tags(info["Tags"]) if keyisset("Tags", info) else ()
     )
     name = info["Name"] if keyisset("Name", info) else None
-    resources_r = get_resources_from_tags(session, service_code, res_type, search_tags)
+
+    resources_r = get_resources_from_tags(session, aws_resource_search, search_tags)
     arns = [i["ResourceARN"] for i in resources_r["ResourceTagMappingList"]]
-    return handle_search_results(arns, name, res_types, res_type, service_code)
-
-
-def define_tagsgroups_filter_tags(tags):
-    """
-    Function to create the filters out of tags list
-
-    :param list tags: list of Key/Value dict
-    :return: filters
-    :rtype: list
-    """
-    filters = []
-    for tag in tags:
-        key = list(tag.keys())[0]
-        filter_name = key
-        filter_value = tag[key]
-        filters.append({"Key": filter_name, "Values": (filter_value,)})
-    return filters
+    return handle_search_results(arns, name, res_types, aws_resource_search)
 
 
 def get_region_azs(session):

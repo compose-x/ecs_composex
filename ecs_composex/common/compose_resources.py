@@ -22,7 +22,7 @@ Module to define the ComposeX Resources into a simple object to make it easier t
 from troposphere import Sub
 from troposphere.ecs import Environment
 
-from ecs_composex.common import NONALPHANUM, keyisset
+from ecs_composex.common import LOG, NONALPHANUM, keyisset
 from ecs_composex.resource_settings import generate_export_strings
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME
 
@@ -38,9 +38,12 @@ def set_resources(settings, resource_class, res_key):
     if not keyisset(res_key, settings.compose_content):
         return
     for resource_name in settings.compose_content[res_key]:
-        settings.compose_content[res_key][resource_name] = resource_class(
+        new_definition = resource_class(
             resource_name, settings.compose_content[res_key][resource_name]
         )
+        LOG.debug(type(new_definition))
+        LOG.debug(new_definition.__dict__)
+        settings.compose_content[res_key][resource_name] = new_definition
 
 
 class Service(object):

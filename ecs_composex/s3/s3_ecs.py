@@ -29,7 +29,6 @@ from ecs_composex.resource_settings import (
     generate_resource_permissions,
     validate_lookup_resource,
 )
-from ecs_composex.s3.s3_aws import lookup_s3_bucket
 from ecs_composex.s3.s3_params import S3_BUCKET_NAME
 from ecs_composex.s3.s3_perms import generate_s3_permissions
 
@@ -43,6 +42,8 @@ def handle_new_buckets(
     nested=False,
 ):
     buckets_r = []
+    if res_root_stack.is_void:
+        return
     s_resources = res_root_stack.stack_template.resources
     for resource_name in s_resources:
         if isinstance(s_resources[resource_name], Bucket):
@@ -92,39 +93,45 @@ def s3_to_ecs(
     :return:
     """
     l_buckets = xresources.copy()
-    handle_new_buckets(
-        xresources, services_families, services_stack, res_root_stack, l_buckets
-    )
-    for bucket_name in l_buckets:
-        bucket = xresources[bucket_name]
-        bucket_res_name = NONALPHANUM.sub("", bucket_name)
-        validate_lookup_resource(bucket_res_name, bucket, res_root_stack)
-        found_resources = lookup_s3_bucket(
-            settings.session, tags=bucket["Lookup"]["Tags"]
-        )
-        if not found_resources:
-            LOG.warning(
-                f"404 not buckets found with the provided tags was found in definition {bucket_name}."
+    for res_name in xresources:
+        res = xresources[res_name]
+        if res.properties and not res.lookup:
+            print(f"New resource to create {res.logical_name}")
+            handle_new_buckets(
+                xresources, services_families, services_stack, res_root_stack, l_buckets
             )
-            continue
-        for found_bucket in found_resources:
-            bucket.update(found_bucket)
-            perms = generate_s3_permissions(
-                found_bucket["Name"],
-                S3_BUCKET_NAME,
-                arn=found_bucket["Arn"],
-            )
-            envvars = generate_resource_envvars(
-                bucket_name,
-                xresources[bucket_name],
-                S3_BUCKET_NAME,
-                arn=found_bucket["Name"],
-            )
-            apply_iam_based_resources(
-                bucket,
-                services_families,
-                services_stack,
-                res_root_stack,
-                envvars,
-                perms,
-            )
+        elif res.lookup:
+            print(f"Resource to find, {res.logical_name}")
+    # handle_new_buckets(
+    #     xresources, services_families, services_stack, res_root_stack, l_buckets
+    # )
+    # for bucket_name in l_buckets:
+    #     bucket = xresources[bucket_name]
+    #     bucket_res_name = NONALPHANUM.sub("", bucket_name)
+    #     validate_lookup_resource(bucket_res_name, bucket, res_root_stack)
+    #     if not found_resources:
+    #         LOG.warning(
+    #             f"404 not buckets found with the provided tags was found in definition {bucket_name}."
+    #         )
+    #         continue
+    #     for found_bucket in found_resources:
+    #         bucket.update(found_bucket)
+    #         perms = generate_s3_permissions(
+    #             found_bucket["Name"],
+    #             S3_BUCKET_NAME,
+    #             arn=found_bucket["Arn"],
+    #         )
+    #         envvars = generate_resource_envvars(
+    #             bucket_name,
+    #             xresources[bucket_name],
+    #             S3_BUCKET_NAME,
+    #             arn=found_bucket["Name"],
+    #         )
+    #         apply_iam_based_resources(
+    #             bucket,
+    #             services_families,
+    #             services_stack,
+    #             res_root_stack,
+    #             envvars,
+    #             perms,
+    #         )

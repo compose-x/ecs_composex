@@ -59,16 +59,12 @@ def test_multi_arns_exceptions(multi_matching_arns):
 
 
 def test_handle_results_exceptions():
-    handle_search_results(["arn:aws:s3:::sombucket-found"], None, {}, "bucket", "s3")
+    handle_search_results(["arn:aws:s3:::sombucket-found"], None, {}, "s3")
     with raises(LookupError):
-        handle_search_results([], None, {}, "bucket", "s3")
+        handle_search_results([], None, {}, "s3")
     with raises(LookupError):
         handle_search_results(
-            ["arn:aws:s3:::bucket1", "arn:aws:s3:::anotherone"],
-            None,
-            {},
-            "bucket",
-            "s3",
+            ["arn:aws:s3:::bucket1", "arn:aws:s3:::anotherone"], None, {}, "s3"
         )
 
 
