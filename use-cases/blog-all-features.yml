@@ -194,7 +194,9 @@ x-rds:
         - serverless: "yes"
     Settings:
       EnvNames:
-        - DBA
+        - DBB
+        - dbB
+        - dBB
     Services:
       - name: bignicefamily
         access: RW
