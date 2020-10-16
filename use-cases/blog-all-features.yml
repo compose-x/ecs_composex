@@ -189,9 +189,10 @@ x-rds:
         access: RW
   dbB:
     Lookup:
-      cluster: database-1
-      Tags:
-        - serverless: "yes"
+      cluster:
+        Name: database-1
+        Tags:
+          - serverless: "yes"
     Settings:
       EnvNames:
         - DBB
