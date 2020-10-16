@@ -187,6 +187,19 @@ x-rds:
         access: RW
       - name: app03
         access: RW
+  dbB:
+    Lookup:
+      cluster: database-1
+      Tags:
+        - serverless: "yes"
+    Settings:
+      EnvNames:
+        - DBA
+    Services:
+      - name: bignicefamily
+        access: RW
+      - name: app03
+        access: RW
 
 x-dynamodb:
   tableA:
