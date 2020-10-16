@@ -69,7 +69,7 @@ def handle_multi_results(arns, name, res_type, regexp):
 
     :param list arns:
     :param str name:
-    :param dict res_type:
+    :param str res_type:
     :param str regexp:
     :raises LookupError:
     :return: The ARN of the resource matching the name.
@@ -128,7 +128,7 @@ def validate_search_input(res_types, res_type):
     :return:
     """
 
-    if not isinstance(res_type, str) and res_type not in res_types.keys():
+    if not isinstance(res_type, str):
         raise KeyError("type must be one of", res_types.keys(), "Got", res_type)
     if res_type not in res_types.keys():
         raise KeyError(
@@ -150,10 +150,6 @@ def find_aws_resource_arn_from_tags_api(
     :return:
     """
     res_types = {
-        "db": {"regexp": r"(?:^arn:aws(?:-[a-z]+)?:rds:[\w-]+:[0-9]{12}:db:)([\S]+)$"},
-        "cluster": {
-            "regexp": r"(?:^arn:aws(?:-[a-z]+)?:rds:[\w-]+:[0-9]{12}:cluster:)([\S]+)$"
-        },
         "secret": {
             "regexp": r"(?:^arn:aws(?:-[a-z]+)?:secretsmanager:[\w-]+:[0-9]{12}:secret:)([\S]+)(?:-[A-Za-z0-9]+)$"
         },

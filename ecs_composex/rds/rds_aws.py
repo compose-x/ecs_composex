@@ -158,13 +158,19 @@ def lookup_rds_resource(lookup, session):
     :param boto3.session.Session session: Boto3 session for clients
     :return:
     """
+    rds_types = {
+        "db": {"regexp": r"(?:^arn:aws(?:-[a-z]+)?:rds:[\w-]+:[0-9]{12}:db:)([\S]+)$"},
+        "cluster": {
+            "regexp": r"(?:^arn:aws(?:-[a-z]+)?:rds:[\w-]+:[0-9]{12}:cluster:)([\S]+)$"
+        },
+    }
     res_type = None
     if keyisset("cluster", lookup):
         res_type = "cluster"
     elif keyisset("db", lookup):
         res_type = "db"
     db_arn = find_aws_resource_arn_from_tags_api(
-        lookup[res_type], session, "rds", res_type
+        lookup[res_type], session, "rds", res_type, types=rds_types
     )
     if not db_arn:
         return None

@@ -61,3 +61,19 @@ x-rds:
         access: RW
       - name: app
         access: RW
+
+  dbB:
+    Properties: {}
+    Settings: {}
+    Services:
+      - name: app
+        access: RW
+    Lookup:
+      cluster:
+        Name: database-1
+        Tags:
+          - serverless: "True"
+      secret:
+        Name: GHToken
+        Tags:
+          - useless: "yes"
