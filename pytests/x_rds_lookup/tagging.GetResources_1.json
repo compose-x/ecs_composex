@@ -1,0 +1,45 @@
+{
+    "status_code": 200,
+    "data": {
+        "PaginationToken": "",
+        "ResourceTagMappingList": [
+            {
+                "ResourceARN": "arn:aws:rds:eu-west-1:000000000000:cluster:cluster-uavh2z4htibx6mug3f4fquy64i",
+                "Tags": [
+                    {
+                        "Key": "dbname",
+                        "Value": "test-1"
+                    },
+                    {
+                        "Key": "serverless",
+                        "Value": "True"
+                    }
+                ]
+            },
+            {
+                "ResourceARN": "arn:aws:rds:eu-west-1:000000000000:cluster:database-1",
+                "Tags": [
+                    {
+                        "Key": "dbname",
+                        "Value": "test-1"
+                    },
+                    {
+                        "Key": "serverless",
+                        "Value": "True"
+                    }
+                ]
+            }
+        ],
+        "ResponseMetadata": {
+            "RequestId": "8e8f65ae-f72a-4698-8bf8-03882a467c76",
+            "HTTPStatusCode": 200,
+            "HTTPHeaders": {
+                "x-amzn-requestid": "8e8f65ae-f72a-4698-8bf8-03882a467c76",
+                "content-type": "application/x-amz-json-1.1",
+                "content-length": "375",
+                "date": "Fri, 16 Oct 2020 08:06:41 GMT"
+            },
+            "RetryAttempts": 0
+        }
+    }
+}

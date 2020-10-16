@@ -1,0 +1,32 @@
+{
+    "status_code": 200,
+    "data": {
+        "PaginationToken": "",
+        "ResourceTagMappingList": [
+            {
+                "ResourceARN": "arn:aws:secretsmanager:eu-west-1:000000000000:secret:GHToken-1PrxDr",
+                "Tags": [
+                    {
+                        "Key": "decommissioned",
+                        "Value": "true"
+                    },
+                    {
+                        "Key": "useless",
+                        "Value": "yes"
+                    }
+                ]
+            }
+        ],
+        "ResponseMetadata": {
+            "RequestId": "634e2c06-467e-447f-b5db-773a6a835730",
+            "HTTPStatusCode": 200,
+            "HTTPHeaders": {
+                "x-amzn-requestid": "634e2c06-467e-447f-b5db-773a6a835730",
+                "content-type": "application/x-amz-json-1.1",
+                "content-length": "216",
+                "date": "Fri, 16 Oct 2020 08:06:42 GMT"
+            },
+            "RetryAttempts": 0
+        }
+    }
+}
