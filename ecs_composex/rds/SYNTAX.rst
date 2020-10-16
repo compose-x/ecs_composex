@@ -36,6 +36,35 @@ This avoids the bug where only default.aurora-mysql5.6 settings are found if the
 
     The function performing the import of settings in ecs_composex.rds.rds_parameter_groups_helper.py
 
+Lookup
+------
+
+The lookup allows you to find your cluster or db instance and also the Secret associated with them to allow ECS Services
+to get access to these.
+
+It will also find the DB security group and add an ingress rule.
+
+.. code-block:: yaml
+
+    x-rds:
+      dba:
+        Lookup:
+          cluster:
+            Name: cluster-identifier
+            Tags:
+              - sometag: value
+          instance:
+            Name: DB Instance Id
+            Tags:
+              - sometag: value
+          secret:
+            Tags:
+              - sometag: value
+            Name: secret/in/secretsmanager
+
+When using AWS RDS Aurora, you should be specifying the cluster, otherwise the instance for "traditional" RDS instances.
+
+
 Properties
 ----------
 

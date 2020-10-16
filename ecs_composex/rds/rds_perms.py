@@ -91,16 +91,20 @@ def define_db_secret_import(db_name):
     return get_import_value(db_name, DB_EXPORT_SECRET_ARN_T)
 
 
-def add_security_group_ingress(service_stack, db_name):
+def add_security_group_ingress(service_stack, db_name, sg_id=None, port=None):
     """
     Function to add a SecurityGroupIngress rule into the ECS Service template
 
     :param ecs_composex.ecs.ServicesStack service_stack: The root stack for the services
     :param str db_name: the name of the database to use for imports
+    :param sg_id: The security group Id to use for ingress. DB Security group, not service's
+    :param port: The port for Ingress to the DB.
     """
     service_template = service_stack.stack_template
-    sg_id = get_import_value(db_name, DB_EXPORT_SG_ID_T)
-    port = get_import_value(db_name, DB_EXPORT_PORT_T)
+    if sg_id is None:
+        sg_id = get_import_value(db_name, DB_EXPORT_SG_ID_T)
+    if port is None:
+        port = get_import_value(db_name, DB_EXPORT_PORT_T)
     SecurityGroupIngress(
         f"AllowRdsFrom{db_name}to{service_stack.title}",
         template=service_template,
@@ -137,7 +141,7 @@ def add_secret_to_containers(
 
     :param troposphere.Template service_template: the ecs_service template
     :param ecs_composex.common.compose_resources.Rds db: the RDS DB object
-    :param str secret_import: secret arn
+    :param str,AWSHelper secret_import: secret arn
     :param str service_name: Name of the service that was explicitely listed as consuming the DB
     :param bool family_wide: Whether or not apply the secret to all services of the family.
     """

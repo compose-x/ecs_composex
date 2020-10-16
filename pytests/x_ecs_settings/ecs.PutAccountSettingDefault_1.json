@@ -4,7 +4,7 @@
         "setting": {
             "name": "awsvpcTrunking",
             "value": "enabled",
-            "principalArn": "arn:aws:iam::012345678912:root"
+            "principalArn": "arn:aws:iam::000000000000:root"
         },
         "ResponseMetadata": {
             "RequestId": "4510b400-621e-4643-ae44-a1317576a92b",

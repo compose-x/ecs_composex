@@ -7,7 +7,7 @@
                 "DhcpOptionsId": "dopt-025b6ac7336dccc9d",
                 "State": "available",
                 "VpcId": "vpc-08144c139f0a4a671",
-                "OwnerId": "012345678912",
+                "OwnerId": "000000000000",
                 "InstanceTenancy": "default",
                 "CidrBlockAssociationSet": [
                     {
@@ -22,7 +22,7 @@
                 "Tags": [
                     {
                         "Key": "aws:cloudformation:stack-id",
-                        "Value": "arn:aws:cloudformation:eu-west-1:373709687836:stack/vpcwork/7d8f4060-c8d9-11ea-9b25-06ef30f3415c"
+                        "Value": "arn:aws:cloudformation:eu-west-1:000000000000:stack/vpcwork/7d8f4060-c8d9-11ea-9b25-06ef30f3415c"
                     },
                     {
                         "Key": "aws:cloudformation:stack-name",

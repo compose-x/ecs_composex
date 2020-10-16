@@ -3,7 +3,7 @@
     "data": {
         "Stacks": [
             {
-                "StackId": "arn:aws:cloudformation:eu-west-1:012345678912:stack/test/e419c810-c1f3-11ea-a56d-0ad4772b7a1e",
+                "StackId": "arn:aws:cloudformation:eu-west-1:000000000000:stack/test/e419c810-c1f3-11ea-a56d-0ad4772b7a1e",
                 "StackName": "cicd--build-ecs-composex",
                 "Description": "Pipeline to release Lambda layers publicly when new release is created",
                 "Parameters": [],

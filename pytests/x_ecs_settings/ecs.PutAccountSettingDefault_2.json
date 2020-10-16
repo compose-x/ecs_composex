@@ -4,7 +4,7 @@
         "setting": {
             "name": "serviceLongArnFormat",
             "value": "enabled",
-            "principalArn": "arn:aws:iam::012345678912:root"
+            "principalArn": "arn:aws:iam::000000000000:root"
         },
         "ResponseMetadata": {
             "RequestId": "cb3be8d3-7bb4-4346-bc49-8fc685d92af3",

@@ -4,7 +4,7 @@
         "setting": {
             "name": "containerInsights",
             "value": "enabled",
-            "principalArn": "arn:aws:iam::012345678912:root"
+            "principalArn": "arn:aws:iam::000000000000:root"
         },
         "ResponseMetadata": {
             "RequestId": "782f78ba-c069-461e-a5a8-57e1923300b6",

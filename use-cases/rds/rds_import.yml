@@ -50,21 +50,6 @@ services:
 
 x-rds:
   dbA:
-    Properties:
-      Engine: "aurora-mysql"
-      EngineVersion: "5.7.12"
-    Settings:
-      EnvNames:
-        - DBA
-    Services:
-      - name: backend
-        access: RW
-      - name: app
-        access: RW
-
-  dbB:
-    Properties: {}
-    Settings: {}
     Services:
       - name: app
         access: RW
@@ -77,3 +62,12 @@ x-rds:
         Name: GHToken
         Tags:
           - useless: "yes"
+  dbB:
+    Services:
+      - name: app
+        access: RW
+    Lookup:
+      cluster:
+        Name: database-1
+        Tags:
+          - serverless: "True"

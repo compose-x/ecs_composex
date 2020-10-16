@@ -19,9 +19,161 @@
 """
 Common functions and variables fetched from AWS.
 """
+import re
 from botocore.exceptions import ClientError
 
-from ecs_composex.common import LOG
+from ecs_composex.common import LOG, keyisset
+
+
+def define_tagsgroups_filter_tags(tags):
+    """
+    Function to create the filters out of tags list
+
+    :param list tags: list of Key/Value dict
+    :return: filters
+    :rtype: list
+    """
+    filters = []
+    for tag in tags:
+        key = list(tag.keys())[0]
+        filter_name = key
+        filter_value = tag[key]
+        filters.append({"Key": filter_name, "Values": (filter_value,)})
+    return filters
+
+
+def get_resources_from_tags(session, service_code, res_type, search_tags):
+    """
+
+    :param boto3.session.Session session: The boto3 session for API calls
+    :param str service_code: AWS Service short code, ie. rds, ec2
+    :param str res_type: Resource type we are after within the AWS Service, ie. cluster, instance
+    :param list search_tags: The tags to search the resource with.
+    :return:
+    """
+    try:
+        client = session.client("resourcegroupstaggingapi")
+        resources_r = client.get_resources(
+            ResourceTypeFilters=[f"{service_code}:{res_type}"], TagFilters=search_tags
+        )
+        return resources_r
+    except ClientError as error:
+        LOG.error(error)
+        LOG.error("Not processing this resource. Skipping")
+        return None
+
+
+def handle_multi_results(arns, name, res_type, regexp):
+    """
+    Function to evaluate more than one result to see if we can match an unique name.
+
+    :param list arns:
+    :param str name:
+    :param str res_type:
+    :param str regexp:
+    :raises LookupError:
+    :return: The ARN of the resource matching the name.
+    """
+    found = 0
+    found_arn = None
+    re_finder = re.compile(regexp)
+    for arn in arns:
+        found_name = re_finder.match(arn).groups()[0]
+        if found_name and found_name == name:
+            found += 1
+            found_arn = arn
+    if found == 1:
+        LOG.info(f"Matched {res_type} {name}")
+        return found_arn
+    elif found > 1:
+        raise LookupError(
+            f"More than one result was found for {name} / {res_type} "
+            "but could not match the name to a single resource."
+            "Found",
+            arns,
+        )
+    elif found == 0:
+        raise LookupError(
+            f"No {res_type} named {name} was found with the provided tags."
+            " Found with provided tags",
+            [re_finder.match(arn).groups()[0] for arn in arns],
+        )
+
+
+def handle_search_results(arns, name, res_types, res_type, service_code):
+    """
+    Function to parse tag resource search results
+
+    :param list arns:
+    :param str name:
+    :param dict res_types:
+    :param str res_type:
+    :param str service_code:
+    :return:
+    """
+    if not arns:
+        raise LookupError(
+            "No resources were found with the provided tags and information"
+        )
+    if arns and isinstance(name, str):
+        return handle_multi_results(arns, name, res_type, res_types[res_type]["regexp"])
+    elif not name and len(arns) == 1:
+        LOG.info(f"Matched {service_code}:{res_type}")
+        return arns[0]
+    elif not name and len(arns) != 1:
+        raise LookupError(
+            f"More than one {service_code}:{res_type} was found with the current tags."
+            "Found",
+            arns,
+        )
+
+
+def validate_search_input(res_types, res_type):
+    """
+    Function to validate the search query
+
+    :param info:
+    :param res_types:
+    :param res_type:
+    :return:
+    """
+
+    if not isinstance(res_type, str):
+        raise KeyError("type must be one of", res_types.keys(), "Got", res_type)
+    if res_type not in res_types.keys():
+        raise KeyError(
+            f"There is not resource type {res_type} defined. Got", res_types.keys()
+        )
+
+
+def find_aws_resource_arn_from_tags_api(
+    info, session, service_code, res_type, types=None
+):
+    """
+    Function to find the RDS DB based on info
+
+    :param dict info:
+    :param boto3.session.Session session: Boto3 session for clients
+    :param str res_type: Resource type we are after within the AWS Service, ie. cluster, instance
+    :param str service_code: AWS Service short code, ie. rds, ec2
+    :param dict types: Additional types to match.
+    :return:
+    """
+    res_types = {
+        "secret": {
+            "regexp": r"(?:^arn:aws(?:-[a-z]+)?:secretsmanager:[\w-]+:[0-9]{12}:secret:)([\S]+)(?:-[A-Za-z0-9]+)$"
+        },
+    }
+    if types is not None and isinstance(types, dict):
+        res_types.update(types)
+    validate_search_input(res_types, res_type)
+    search_tags = (
+        define_tagsgroups_filter_tags(info["Tags"]) if keyisset("Tags", info) else ()
+    )
+    name = info["Name"] if keyisset("Name", info) else None
+    resources_r = get_resources_from_tags(session, service_code, res_type, search_tags)
+    arns = [i["ResourceARN"] for i in resources_r["ResourceTagMappingList"]]
+    return handle_search_results(arns, name, res_types, res_type, service_code)
 
 
 def get_region_azs(session):

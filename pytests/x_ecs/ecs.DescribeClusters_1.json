@@ -3,7 +3,7 @@
     "data": {
         "clusters": [
             {
-                "clusterArn": "arn:aws:ecs:eu-west-1:373709687836:cluster/test",
+                "clusterArn": "arn:aws:ecs:eu-west-1:000000000000:cluster/test",
                 "clusterName": "test",
                 "status": "ACTIVE",
                 "registeredContainerInstancesCount": 0,

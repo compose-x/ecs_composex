@@ -121,3 +121,4 @@ ENV/
 /codebuild_build.sh
 /tests/test.config.json
 /reports/
+*portal.sso.GetRoleCredentials*.json

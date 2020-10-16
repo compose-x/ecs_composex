@@ -1,4 +1,5 @@
 Feature: ecs_composex.rds
+
   @rds
   Scenario Outline: Simple RDS with services
     Given I use <file_path> as my docker-compose file
@@ -7,8 +8,9 @@ Feature: ecs_composex.rds
     And services have access to it
 
     Examples:
-    |file_path|
-    |use-cases/rds/rds_basic.yml|
+      | file_path                    |
+      | use-cases/rds/rds_basic.yml  |
+      | use-cases/rds/rds_import.yml |
 
 #  @static @negative-testing
 #  Scenario Outline: Wrong engine version

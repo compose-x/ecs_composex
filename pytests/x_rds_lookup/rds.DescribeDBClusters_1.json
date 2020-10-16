@@ -1,0 +1,101 @@
+{
+    "status_code": 200,
+    "data": {
+        "DBClusters": [
+            {
+                "AllocatedStorage": 1,
+                "AvailabilityZones": [
+                    "eu-west-1c",
+                    "eu-west-1b",
+                    "eu-west-1a"
+                ],
+                "BackupRetentionPeriod": 1,
+                "DatabaseName": "",
+                "DBClusterIdentifier": "database-1",
+                "DBClusterParameterGroup": "default.aurora-mysql5.7",
+                "DBSubnetGroup": "default-vpc-0bea6323bb0e06d3a",
+                "Status": "available",
+                "EarliestRestorableTime": {
+                    "__class__": "datetime",
+                    "year": 2020,
+                    "month": 10,
+                    "day": 16,
+                    "hour": 7,
+                    "minute": 23,
+                    "second": 10,
+                    "microsecond": 587000
+                },
+                "Endpoint": "database-1.cluster-cvjpaxz5wqkd.eu-west-1.rds.amazonaws.com",
+                "MultiAZ": false,
+                "Engine": "aurora-mysql",
+                "EngineVersion": "5.7.mysql_aurora.2.07.1",
+                "LatestRestorableTime": {
+                    "__class__": "datetime",
+                    "year": 2020,
+                    "month": 10,
+                    "day": 16,
+                    "hour": 8,
+                    "minute": 4,
+                    "second": 52,
+                    "microsecond": 308000
+                },
+                "Port": 3306,
+                "MasterUsername": "admin",
+                "PreferredBackupWindow": "00:47-01:17",
+                "PreferredMaintenanceWindow": "wed:04:45-wed:05:15",
+                "ReadReplicaIdentifiers": [],
+                "DBClusterMembers": [],
+                "VpcSecurityGroups": [
+                    {
+                        "VpcSecurityGroupId": "sg-07726e3f84c493d8d",
+                        "Status": "active"
+                    }
+                ],
+                "HostedZoneId": "ZONEREDACTED123",
+                "StorageEncrypted": true,
+                "KmsKeyId": "arn:aws:kms:eu-west-1:000000000000:key/9c9acb95-35b5-4888-9154-43425f2cfcd5",
+                "DbClusterResourceId": "cluster-UAVH2ZONEREDACTED123",
+                "DBClusterArn": "arn:aws:rds:eu-west-1:000000000000:cluster:database-1",
+                "AssociatedRoles": [],
+                "IAMDatabaseAuthenticationEnabled": false,
+                "ClusterCreateTime": {
+                    "__class__": "datetime",
+                    "year": 2020,
+                    "month": 10,
+                    "day": 16,
+                    "hour": 7,
+                    "minute": 21,
+                    "second": 30,
+                    "microsecond": 10000
+                },
+                "Capacity": 1,
+                "EngineMode": "serverless",
+                "ScalingConfigurationInfo": {
+                    "MinCapacity": 1,
+                    "MaxCapacity": 1,
+                    "AutoPause": false,
+                    "SecondsUntilAutoPause": 300,
+                    "TimeoutAction": "RollbackCapacityChange"
+                },
+                "DeletionProtection": false,
+                "HttpEndpointEnabled": false,
+                "ActivityStreamStatus": "stopped",
+                "CopyTagsToSnapshot": false,
+                "CrossAccountClone": false,
+                "DomainMemberships": []
+            }
+        ],
+        "ResponseMetadata": {
+            "RequestId": "302902b2-8778-4edb-a3a6-b62797da2965",
+            "HTTPStatusCode": 200,
+            "HTTPHeaders": {
+                "x-amzn-requestid": "302902b2-8778-4edb-a3a6-b62797da2965",
+                "content-type": "text/xml",
+                "content-length": "3432",
+                "vary": "accept-encoding",
+                "date": "Fri, 16 Oct 2020 08:06:41 GMT"
+            },
+            "RetryAttempts": 0
+        }
+    }
+}

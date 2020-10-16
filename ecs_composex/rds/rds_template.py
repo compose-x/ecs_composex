@@ -21,7 +21,7 @@ Main module template to generate the RDS Root template and all stacks according 
 
 from troposphere import Ref, Join
 
-from ecs_composex.common import build_template, validate_kwargs
+from ecs_composex.common import build_template, validate_kwargs, keyisset, LOG
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T, ROOT_STACK_NAME
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.rds.rds_db_template import (
@@ -43,7 +43,7 @@ from ecs_composex.vpc.vpc_params import (
 )
 
 
-def add_db_stack(root_template, dbs_subnet_group, db, settings):
+def add_db_stack(root_template, dbs_subnet_group, db):
     """
     Function to add the DB stack to the root stack
 
@@ -94,7 +94,6 @@ def generate_rds_templates(settings):
     Function to generate the RDS root template for all the DBs defined in the x-rds section of the compose file
 
     :param ecs_composex.common.settings.ComposeXSettings settings: Settings for execution
-
     :return: rds_root_template, the RDS Root template with nested stacks
     :rtype: troposphere.Template
     """
@@ -102,10 +101,9 @@ def generate_rds_templates(settings):
     dbs_subnet_group = create_db_subnet_group(root_tpl)
     section = settings.compose_content[RES_KEY]
     for db_name in section:
-        add_db_stack(
-            root_tpl,
-            dbs_subnet_group,
-            section[db_name],
-            settings,
-        )
+        db = section[db_name]
+        if db.properties and not db.lookup:
+            add_db_stack(root_tpl, dbs_subnet_group, section[db_name])
+        elif db.properties and db.lookup:
+            LOG.warn("Both lookup and properties are defined. Looking up the DB.")
     return root_tpl
