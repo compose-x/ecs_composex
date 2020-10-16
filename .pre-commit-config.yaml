@@ -13,4 +13,4 @@ repos:
       - id: arn-reset
         name: replacing arn from test files
         language: script
-        entry: .scripts/cleanup_arn.sh
+        entry: .scripts/cleanup_placebo.sh
