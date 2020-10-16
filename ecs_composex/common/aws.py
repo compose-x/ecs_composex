@@ -101,13 +101,23 @@ def handle_multi_results(arns, name, res_type, regexp):
 
 
 def handle_search_results(arns, name, res_types, res_type, service_code):
+    """
+    Function to parse tag resource search results
+
+    :param list arns:
+    :param str name:
+    :param dict res_types:
+    :param str res_type:
+    :param str service_code:
+    :return:
+    """
     if not arns:
         raise LookupError(
             "No resources were found with the provided tags and information"
         )
-    if arns and name:
+    if arns and isinstance(name, str):
         return handle_multi_results(arns, name, res_type, res_types[res_type]["regexp"])
-    elif len(arns) == 1:
+    elif not name and len(arns) == 1:
         LOG.info(f"Matched {service_code}:{res_type}")
         return arns[0]
     elif not name and len(arns) != 1:
