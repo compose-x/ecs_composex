@@ -84,8 +84,8 @@ def test_valid_rds_lookup(valid_cluster_lookup):
     here = path.abspath(path.dirname(__file__))
     session = boto3.session.Session()
     pill = placebo.attach(session, data_path=f"{here}/x_rds_lookup")
-    # pill.playback()
-    pill.record()
+    pill.playback()
+    # pill.record()
     lookup_rds_resource(valid_cluster_lookup, session)
 
 
