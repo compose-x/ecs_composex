@@ -29,25 +29,45 @@ from ecs_composex.s3.s3_params import S3_ARN_REGEX
 from ecs_composex.common.aws import find_aws_resource_arn_from_tags_api
 
 
-# def return_db_config(bucket_arn, session):
-#     """
-#
-#     :param str bucket_arn:
-#     :param boto3.session.Session session:
-#     :return:
-#     """
-#     client = session.client("s3")
-#     try:
-#         client.head_bucket(Bucket=bucket_name)
-#             return bucket_name
-#         except client.exceptions.NoSuchBucket:
-#             return None
-#         except ClientError as error:
-#             LOG.error(error)
-#             raise
+def return_bucket_config(bucket_arn, session):
+    """
+
+    :param str bucket_arn:
+    :param boto3.session.Session session:
+    :return:
+    """
+    bucket_name_finder = re.compile(r"([a-zA-Z0-9.\-_]{1,255}$)")
+    bucket_name = bucket_name_finder.findall(bucket_arn)[-1]
+    bucket_config = {"Name": bucket_name, "Arn": bucket_arn}
+    client = session.client("s3")
+    try:
+        client.head_bucket(Bucket=bucket_name)
+        try:
+            encryption_config_r = client.get_bucket_encryption(Bucket=bucket_name)
+            if keyisset("ServerSideEncryptionConfiguration", encryption_config_r):
+                bucket_config.update(
+                    {
+                        "ServerSideEncryptionConfiguration": encryption_config_r[
+                            "ServerSideEncryptionConfiguration"
+                        ]
+                    }
+                )
+        except ClientError as error:
+            if (
+                not error.response["Error"]["Code"]
+                == "ServerSideEncryptionConfigurationNotFoundError"
+            ):
+                raise
+            LOG.error(error.response["Error"]["Message"])
+        return bucket_config
+    except client.exceptions.NoSuchBucket:
+        return None
+    except ClientError as error:
+        LOG.error(error)
+        raise
 
 
-def lookup_bucket(lookup, session):
+def lookup_bucket_config(lookup, session):
     """
     Function to find the DB in AWS account
 
@@ -55,23 +75,17 @@ def lookup_bucket(lookup, session):
     :param boto3.session.Session session: Boto3 session for clients
     :return:
     """
-    rds_types = {
+    s3_types = {
         "s3": {"regexp": r"(?:^arn:aws(?:-[a-z]+)?:s3:::)([\S]+)$"},
     }
-    res_type = None
-    if keyisset("bucket", lookup):
-        res_type = "bucket"
     bucket_arn = find_aws_resource_arn_from_tags_api(
-        lookup[res_type],
+        lookup,
         session,
-        "rds",
-        res_type,
-        types=rds_types,
-        service_is_type=True,
+        "s3",
+        types=s3_types,
     )
-    print(bucket_arn)
     if not bucket_arn:
         return None
-    # bucket_config = return_db_config(bucket_arn, session)
-    # LOG.debug(bucket_config)
-    # return bucket_config
+    config = return_bucket_config(bucket_arn, session)
+    LOG.debug(config)
+    return config

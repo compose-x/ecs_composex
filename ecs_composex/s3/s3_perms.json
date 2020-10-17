@@ -1,27 +1,74 @@
 ﻿{
-    "RWObjects": {
-        "Action": [
-            "s3:GetObject*",
-            "s3:PutObject*"
-        ],
-        "Effect": "Allow"
+    "objects": {
+        "RW": {
+            "Action": [
+                "s3:GetObject*",
+                "s3:PutObject*"
+            ],
+            "Effect": "Allow"
+        },
+        "StrictRW": {
+            "Action": [
+                "s3:GetObject",
+                "s3:PutObject"
+            ],
+            "Effect": "Allow"
+        },
+        "StrictRWDelete": {
+            "Action": [
+                "s3:GetObject",
+                "s3:PutObject",
+                "s3:DeleteObject"
+            ],
+            "Effect": "Allow"
+        },
+        "RWDelete": {
+            "Action": [
+                "s3:GetObject*",
+                "s3:PutObject*",
+                "s3:DeleteObject*"
+            ],
+            "Effect": "Allow"
+        },
+        "ReadOnly": {
+            "Action": [
+                "s3:GetObject*"
+            ],
+            "Effect": "Allow"
+        },
+        "StrictReadOnly": {
+            "Action": [
+                "s3:GetObject"
+            ],
+            "Effect": "Allow"
+        },
+        "WriteOnly": {
+            "Action": [
+                "s3:PutObject*"
+            ],
+            "Effect": "Allow"
+        },
+        "StrictWriteOnly": {
+            "Action": [
+                "s3:PutObject"
+            ],
+            "Effect": "Allow"
+        }
     },
-    "ReadOnlyObjects": {
-        "Action": [
-            "s3:GetObject*"
-        ],
-        "Effect": "Allow"
-    },
-    "WriteOnlyObjects": {
-        "Action": [
-            "s3:PutObject*"
-        ],
-        "Effect": "Allow"
-    },
-    "PowerUser": {
-        "NotAction": [
-            "s3:CreateBucket",
-            "s3:DeleteBucket"
-        ]
+    "bucket": {
+        "ListOnly": {
+            "Effect": "Allow",
+            "Action": [
+                "s3:ListBucket"
+            ]
+        },
+        "PowerUser": {
+            "Effect": "Allow",
+            "Action": [
+                "s3:ListBucket",
+                "s3:GetBucket*",
+                "s3:SetBucket*"
+            ]
+        }
     }
 }

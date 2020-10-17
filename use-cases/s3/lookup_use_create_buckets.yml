@@ -7,7 +7,9 @@ x-s3:
     Settings: {}
     Services:
       - name: app03
-        access: RWObjects
+        access:
+          bucket: ListOnly
+          objects: RW
 
   bucket-02:
     Lookup:
@@ -16,4 +18,6 @@ x-s3:
         - aws:cloudformation:stack-name: pipeline-shared-buckets
     Services:
       - name: app03
-        access: RWObjects
+        access:
+          bucket: PowerUser
+          objects: RW

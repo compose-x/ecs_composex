@@ -36,6 +36,9 @@ def get_access_types():
         return loads(perms_fd.read())
 
 
+ACCESS_TYPES = get_access_types()
+
+
 def generate_s3_bucket_resource_strings(res_name, attribute):
     """
     Function to generate the SSM and CFN import/export strings

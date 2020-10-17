@@ -19,18 +19,26 @@
 Functions to pass permissions to Services to access S3 buckets.
 """
 
+from json import dumps
+from troposphere import FindInMap, Sub
 from troposphere.s3 import Bucket
 
-from ecs_composex.common import LOG, NONALPHANUM
+from ecs_composex.common import LOG, NONALPHANUM, keyisset
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.resource_permissions import apply_iam_based_resources
+from ecs_composex.resource_permissions import (
+    apply_iam_based_resources,
+    add_iam_policy_to_service_task_role,
+)
 from ecs_composex.resource_settings import (
     generate_resource_envvars,
     generate_resource_permissions,
     validate_lookup_resource,
 )
+from ecs_composex.ecs.ecs_template import get_service_family_name
 from ecs_composex.s3.s3_params import S3_BUCKET_NAME
-from ecs_composex.s3.s3_perms import generate_s3_permissions
+from ecs_composex.s3.s3_perms import ACCESS_TYPES, generate_s3_permissions
+from ecs_composex.s3.s3_aws import lookup_bucket_config
+from ecs_composex.kms.kms_perms import ACCESS_TYPES as KMS_ACCESS_TYPES
 
 
 def handle_new_buckets(
@@ -78,6 +86,158 @@ def handle_new_buckets(
             del l_buckets[bucket_name]
 
 
+def get_bucket_kms_key_from_config(bucket_config):
+    """
+    Functiont to get the KMS Encryption key if defined.
+
+    :param bucket_config:
+    :return:
+    """
+    rules = (
+        []
+        if not (
+            keyisset("ServerSideEncryptionConfiguration", bucket_config)
+            and keyisset("Rules", bucket_config["ServerSideEncryptionConfiguration"])
+        )
+        else bucket_config["ServerSideEncryptionConfiguration"]["Rules"]
+    )
+    for rule in rules:
+        if keyisset("ApplyServerSideEncryptionByDefault", rule):
+            settings = rule["ApplyServerSideEncryptionByDefault"]
+            if (
+                keyisset("SSEAlgorithm", settings)
+                and settings["SSEAlgorithm"] == "aws:kms"
+                and keyisset("KMSMasterKeyID", settings)
+            ):
+                return settings["KMSMasterKeyID"]
+    return None
+
+
+def define_bucket_mappings(buckets_mappings, buckets, settings):
+    """
+    Function to populate bucket mapping
+
+    :param buckets_mappings:
+    :return:
+    """
+    for bucket in buckets:
+        bucket_config = lookup_bucket_config(bucket.lookup, settings.session)
+        buckets_mappings.update(
+            {
+                bucket.logical_name: {
+                    "Name": bucket_config["Name"],
+                    "Arn": bucket_config["Arn"],
+                }
+            }
+        )
+        bucket_key = get_bucket_kms_key_from_config(bucket_config)
+        if bucket_key:
+            LOG.info(f"Identified CMK {bucket_key} to be default key for encryption")
+            buckets_mappings[bucket.logical_name]["KmsKey"] = bucket_key
+        else:
+            LOG.info(
+                "No KMS Key has been identified to encrypt the bucket. Won't grant service access."
+            )
+
+
+def define_bucket_access(bucket, access, service_template, service_family, family_wide):
+    """
+    Function to create the IAM policy for the service access to bucket
+
+    :param bucket:
+    :param access:
+    :return:
+    """
+    bucket_key = "bucket"
+    objects_key = "objects"
+    bucket_perms = None
+    objects_perms = None
+    if isinstance(access, str):
+        LOG.warn(
+            "For s3 buckets, you should define a dict for access, with bucket and/or object policies separate."
+            " Using default RW Objects and ListBucket"
+        )
+        access = {objects_key: "RW", bucket_key: "ListOnly"}
+    elif isinstance(access, dict):
+        if not keyisset(objects_key, access) or not keyisset(bucket_key, access):
+            raise KeyError("You must define at least bucket or object access")
+    if keyisset(bucket_key, access):
+        bucket_perms = generate_resource_permissions(
+            f"BucketAccess{bucket.logical_name}",
+            ACCESS_TYPES[bucket_key],
+            None,
+            arn=FindInMap("s3", bucket.logical_name, "Arn"),
+        )
+        add_iam_policy_to_service_task_role(
+            service_template,
+            bucket,
+            bucket_perms,
+            access[bucket_key],
+            service_family,
+            family_wide,
+        )
+    if keyisset(objects_key, access):
+        objects_perms = generate_resource_permissions(
+            f"ObjectsAccess{bucket.logical_name}",
+            ACCESS_TYPES[objects_key],
+            None,
+            arn=Sub(
+                "${BucketArn}/*", BucketArn=FindInMap("s3", bucket.logical_name, "Arn")
+            ),
+        )
+        add_iam_policy_to_service_task_role(
+            service_template,
+            bucket,
+            objects_perms,
+            access[objects_key],
+            service_family,
+            family_wide,
+        )
+
+
+def assign_lookup_buckets(bucket, mappings, service, services_stack, services_families):
+    """
+    Function to add the lookup bucket to service access
+
+    :param ecs_composex.s3.s3_stacks.Bucket bucket:
+    :param dict mappings:
+    :param dict service:
+    :param ecs_composex.common.stacks.ComposeXStack services_stack:
+    :param dict services_families:
+    """
+    if not keyisset(bucket.logical_name, mappings):
+        LOG.warn(f"Bucket {bucket.logical_name} was not found in mappings. Skipping")
+        return
+    service_family = get_service_family_name(services_families, service["name"])
+    if service_family not in services_stack.stack_template.resources:
+        raise AttributeError(f"No service {service_family} present in services stack")
+    family_wide = True if service["name"] in services_families else False
+    service_stack = services_stack.stack_template.resources[service_family]
+    service_stack.stack_template.add_mapping("s3", mappings)
+    service_template = service_stack.stack_template
+    if keyisset("KmsKey", mappings[bucket.logical_name]):
+        kms_perms = generate_resource_permissions(
+            f"{bucket.logical_name}KmsKey",
+            KMS_ACCESS_TYPES,
+            None,
+            arn=FindInMap("s3", bucket.logical_name, "KmsKey"),
+        )
+        add_iam_policy_to_service_task_role(
+            service_template,
+            bucket,
+            kms_perms,
+            "EncryptDecrypt",
+            service_family,
+            family_wide,
+        )
+    if not keyisset("access", service):
+        LOG.error(f"No access defined for s3 bucket {bucket.name}")
+        return
+    define_bucket_access(
+        bucket, service["access"], service_template, service_family, family_wide
+    )
+
+
 def s3_to_ecs(
     xresources, services_stack, services_families, res_root_stack, settings, **kwargs
 ):
@@ -92,46 +252,25 @@ def s3_to_ecs(
     :param dict kwargs:
     :return:
     """
+    buckets_mappings = {}
     l_buckets = xresources.copy()
-    for res_name in xresources:
-        res = xresources[res_name]
-        if res.properties and not res.lookup:
-            print(f"New resource to create {res.logical_name}")
-            handle_new_buckets(
-                xresources, services_families, services_stack, res_root_stack, l_buckets
+    new_buckets = [
+        xresources[name]
+        for name in xresources
+        if xresources[name].properties and not xresources[name].lookup
+    ]
+    lookup_buckets = [
+        xresources[name] for name in xresources if xresources[name].lookup
+    ]
+    define_bucket_mappings(buckets_mappings, lookup_buckets, settings)
+    LOG.debug(dumps(buckets_mappings, indent=4))
+    for res in new_buckets:
+        print(f"New resource to create {res.logical_name}")
+        handle_new_buckets(
+            xresources, services_families, services_stack, res_root_stack, l_buckets
+        )
+    for res in lookup_buckets:
+        for service_def in res.services:
+            assign_lookup_buckets(
+                res, buckets_mappings, service_def, services_stack, services_families
             )
-        elif res.lookup:
-            print(f"Resource to find, {res.logical_name}")
-    # handle_new_buckets(
-    #     xresources, services_families, services_stack, res_root_stack, l_buckets
-    # )
-    # for bucket_name in l_buckets:
-    #     bucket = xresources[bucket_name]
-    #     bucket_res_name = NONALPHANUM.sub("", bucket_name)
-    #     validate_lookup_resource(bucket_res_name, bucket, res_root_stack)
-    #     if not found_resources:
-    #         LOG.warning(
-    #             f"404 not buckets found with the provided tags was found in definition {bucket_name}."
-    #         )
-    #         continue
-    #     for found_bucket in found_resources:
-    #         bucket.update(found_bucket)
-    #         perms = generate_s3_permissions(
-    #             found_bucket["Name"],
-    #             S3_BUCKET_NAME,
-    #             arn=found_bucket["Arn"],
-    #         )
-    #         envvars = generate_resource_envvars(
-    #             bucket_name,
-    #             xresources[bucket_name],
-    #             S3_BUCKET_NAME,
-    #             arn=found_bucket["Name"],
-    #         )
-    #         apply_iam_based_resources(
-    #             bucket,
-    #             services_families,
-    #             services_stack,
-    #             res_root_stack,
-    #             envvars,
-    #             perms,
-    #         )

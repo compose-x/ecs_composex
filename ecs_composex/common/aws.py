@@ -47,11 +47,9 @@ def get_resources_from_tags(session, aws_resource_search, search_tags):
 
     :param boto3.session.Session session: The boto3 session for API calls
     :param str aws_resource_search: AWS Service short code, ie. rds, ec2
-    :param str res_type: Resource type we are after within the AWS Service, ie. cluster, instance
     :param list search_tags: The tags to search the resource with.
     :return:
     """
-    LOG.info(aws_resource_search)
     try:
         client = session.client("resourcegroupstaggingapi")
         resources_r = client.get_resources(
@@ -134,9 +132,8 @@ def validate_search_input(res_types, res_type):
     """
     Function to validate the search query
 
-    :param info:
-    :param res_types:
-    :param res_type:
+    :param dict res_types:
+    :param str res_type:
     :return:
     """
 
