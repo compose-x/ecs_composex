@@ -100,33 +100,34 @@ def define_accelerate_config(properties, settings):
     return config
 
 
-def define_bucket(bucket_name, res_name, definition):
+def define_bucket(bucket):
     """
     Function to generate the S3 bucket object
 
-    :param bucket_name:
-    :param res_name:
+    :param ecs_composex.s3.s3_stack.Bucket bucket:
     :param definition:
     :return:
     """
-    properties = definition["Properties"] if keyisset("Properties", definition) else {}
-    settings = definition["Settings"] if keyisset("Settings", definition) else {}
     props = {
-        "AccelerateConfiguration": define_accelerate_config(properties, settings),
+        "AccelerateConfiguration": define_accelerate_config(
+            bucket.properties, bucket.settings
+        ),
         "AccessControl": s3.BucketOwnerFullControl
-        if not keyisset("AccessControl", properties)
-        else properties["AccessControl"],
-        "BucketEncryption": handle_bucket_encryption(definition, settings),
-        "BucketName": definition["BucketName"]
-        if keyisset("BucketName", definition)
+        if not keyisset("AccessControl", bucket.properties)
+        else bucket.properties["AccessControl"],
+        "BucketEncryption": handle_bucket_encryption(
+            bucket.properties, bucket.settings
+        ),
+        "BucketName": bucket.properties["BucketName"]
+        if keyisset("BucketName", bucket.properties)
         else Ref(AWS_NO_VALUE),
         "ObjectLockEnabled": False
-        if not keyisset("ObjectLockEnabled", properties)
-        else properties["ObjectLockEnabled"],
+        if not keyisset("ObjectLockEnabled", bucket.properties)
+        else bucket.properties["ObjectLockEnabled"],
         "PublicAccessBlockConfiguration": s3.PublicAccessBlockConfiguration(
-            **properties["PublicAccessBlockConfiguration"]
+            **bucket.properties["PublicAccessBlockConfiguration"]
         )
-        if keyisset("PublicAccessBlockConfiguration", properties)
+        if keyisset("PublicAccessBlockConfiguration", bucket.properties)
         else s3.PublicAccessBlockConfiguration(
             BlockPublicAcls=True,
             BlockPublicPolicy=True,
@@ -134,34 +135,23 @@ def define_bucket(bucket_name, res_name, definition):
             RestrictPublicBuckets=True,
         ),
         "VersioningConfiguration": s3.VersioningConfiguration(
-            Status=properties["VersioningConfiguration"]["Status"]
+            Status=bucket.properties["VersioningConfiguration"]["Status"]
         )
-        if keyisset("VersioningConfiguration", properties)
+        if keyisset("VersioningConfiguration", bucket.properties)
         else Ref(AWS_NO_VALUE),
         "Metadata": metadata,
     }
-    bucket = s3.Bucket(res_name, **props)
+    bucket = s3.Bucket(bucket.logical_name, **props)
     return bucket
 
 
-def generate_bucket(bucket_name, bucket_res_name, bucket_definition, settings):
+def generate_bucket(bucket, settings):
     """
     Function to identify whether create new bucket or lookup for existing bucket
 
-    :param bucket_name:
-    :param bucket_res_name:
-    :param bucket_definition:
+    :param ecs_composex.s3.s3_stack.Bucket bucket:
     :param settings:
     :return:
     """
-    if keyisset("Lookup", bucket_definition):
-        LOG.info("If bucket is found, its ARN will be added to the task")
-        return
-    elif keyisset("Use", bucket_definition):
-        LOG.info(f"Assuming bucket {bucket_name} exists to use.")
-        return
-    if not keyisset("Properties", bucket_definition):
-        LOG.warning(f"Properties for bucket {bucket_name} were not defined. Skipping")
-        return
-    bucket = define_bucket(bucket_name, bucket_res_name, bucket_definition)
+    bucket = define_bucket(bucket)
     return bucket

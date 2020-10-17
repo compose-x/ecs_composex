@@ -19,7 +19,7 @@
 Module to handle permissions from x-resource to ECS service
 """
 
-from ecs_composex.common import NONALPHANUM, LOG
+from ecs_composex.common import NONALPHANUM, LOG, keyisset
 from ecs_composex.ecs.ecs_container_config import extend_container_envvars
 from ecs_composex.ecs.ecs_iam import define_service_containers
 from ecs_composex.ecs.ecs_params import TASK_ROLE_T

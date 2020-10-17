@@ -26,7 +26,7 @@ from ecs_composex.common import LOG, keyisset, build_template, NONALPHANUM
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common.outputs import ComposeXOutput
 from ecs_composex.common.compose_resources import XResource, set_resources
-from ecs_composex.s3.s3_params import RES_KEY, S3_BUCKET_NAME_T
+from ecs_composex.s3.s3_params import RES_KEY, S3_BUCKET_NAME, S3_BUCKET_ARN
 from ecs_composex.s3.s3_template import generate_bucket
 
 
@@ -43,28 +43,26 @@ def create_s3_template(settings):
     mono_template = False
     if not keyisset(RES_KEY, settings.compose_content):
         return None
-    buckets = settings.compose_content[RES_KEY]
-    if not [
-        buckets[bucket_name]
-        for bucket_name in buckets
-        if buckets[bucket_name].properties
-    ]:
+    xresources = settings.compose_content[RES_KEY]
+    new_buckets = [
+        xresources[bucket_name]
+        for bucket_name in xresources
+        if xresources[bucket_name].properties
+    ]
+    if not new_buckets:
         LOG.info("There are no buckets to create.")
         return None
 
-    if len(list(buckets.keys())) <= CFN_MAX_OUTPUTS:
+    if len(list(new_buckets)) <= CFN_MAX_OUTPUTS:
         mono_template = True
 
     template = build_template(f"S3 root by ECS ComposeX for {settings.name}")
-    for bucket_name in buckets:
-        bucket_res_name = NONALPHANUM.sub("", bucket_name)
-        bucket = generate_bucket(
-            bucket_name, bucket_res_name, buckets[bucket_name], settings
-        )
+    for bucket in new_buckets:
+        bucket = generate_bucket(bucket, settings)
         if bucket:
             values = [
-                (S3_BUCKET_NAME_T, "Arn", GetAtt(bucket, "Arn")),
-                (S3_BUCKET_NAME_T, "Name", Ref(bucket)),
+                (S3_BUCKET_ARN, S3_BUCKET_ARN.title, GetAtt(bucket, "Arn")),
+                (S3_BUCKET_NAME, S3_BUCKET_NAME.title, Ref(bucket)),
             ]
             outputs = ComposeXOutput(bucket, values, True)
             if mono_template:
@@ -77,7 +75,7 @@ def create_s3_template(settings):
                 bucket_template.add_resource(bucket)
                 bucket_template.add_output(outputs.outputs)
                 bucket_stack = ComposeXStack(
-                    bucket_res_name, stack_template=bucket_template
+                    bucket.logical_name, stack_template=bucket_template
                 )
                 template.add_resource(bucket_stack)
     return template

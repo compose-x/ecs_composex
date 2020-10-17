@@ -32,7 +32,6 @@ from ecs_composex.resource_permissions import (
 from ecs_composex.resource_settings import (
     generate_resource_envvars,
     generate_resource_permissions,
-    validate_lookup_resource,
 )
 from ecs_composex.ecs.ecs_template import get_service_family_name
 from ecs_composex.s3.s3_params import S3_BUCKET_NAME
@@ -146,12 +145,13 @@ def define_bucket_access(bucket, access, service_template, service_family, famil
 
     :param bucket:
     :param access:
+    :param troposphere.Template service_template:
+    :param str service_family:
+    :param bool family_wide:
     :return:
     """
     bucket_key = "bucket"
     objects_key = "objects"
-    bucket_perms = None
-    objects_perms = None
     if isinstance(access, str):
         LOG.warn(
             "For s3 buckets, you should define a dict for access, with bucket and/or object policies separate."
@@ -238,9 +238,7 @@ def assign_lookup_buckets(bucket, mappings, service, services_stack, services_fa
     )
 
 
-def s3_to_ecs(
-    xresources, services_stack, services_families, res_root_stack, settings, **kwargs
-):
+def s3_to_ecs(xresources, services_stack, services_families, res_root_stack, settings):
     """
     Function to handle permissions assignment to ECS services.
 
@@ -249,7 +247,6 @@ def s3_to_ecs(
     :param services_families: services families
     :param ecs_composex.common.stack.ComposeXStack res_root_stack: s3 root stack
     :param ecs_composex.common.settings.ComposeXSettings settings: ComposeX Settings for execution
-    :param dict kwargs:
     :return:
     """
     buckets_mappings = {}
@@ -265,10 +262,10 @@ def s3_to_ecs(
     define_bucket_mappings(buckets_mappings, lookup_buckets, settings)
     LOG.debug(dumps(buckets_mappings, indent=4))
     for res in new_buckets:
-        print(f"New resource to create {res.logical_name}")
-        handle_new_buckets(
-            xresources, services_families, services_stack, res_root_stack, l_buckets
-        )
+        LOG.debug(f"Creating {res.name} as {res.logical_name}")
+        # handle_new_buckets(
+        #     xresources, services_families, services_stack, res_root_stack, l_buckets
+        # )
     for res in lookup_buckets:
         for service_def in res.services:
             assign_lookup_buckets(

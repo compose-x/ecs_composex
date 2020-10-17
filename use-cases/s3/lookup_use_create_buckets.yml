@@ -21,3 +21,14 @@ x-s3:
         access:
           bucket: PowerUser
           objects: RW
+
+  bucket-03:
+    Lookup:
+      Name: sacrificial-lamb
+      Tags:
+        - composex: "True"
+    Services:
+      - name: app03
+        access:
+          bucket: PowerUser
+          objects: RW
