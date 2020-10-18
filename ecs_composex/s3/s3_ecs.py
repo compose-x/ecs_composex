@@ -32,57 +32,120 @@ from ecs_composex.resource_permissions import (
 from ecs_composex.resource_settings import (
     generate_resource_envvars,
     generate_resource_permissions,
+    generate_export_strings,
 )
 from ecs_composex.ecs.ecs_template import get_service_family_name
-from ecs_composex.s3.s3_params import S3_BUCKET_NAME
-from ecs_composex.s3.s3_perms import ACCESS_TYPES, generate_s3_permissions
+from ecs_composex.s3.s3_params import S3_BUCKET_NAME, S3_BUCKET_ARN
+from ecs_composex.s3.s3_perms import ACCESS_TYPES
 from ecs_composex.s3.s3_aws import lookup_bucket_config
 from ecs_composex.kms.kms_perms import ACCESS_TYPES as KMS_ACCESS_TYPES
 
 
+def assign_service_permissions_to_bucket(
+    bucket, access, service_template, service_family, family_wide
+):
+    bucket_key = "bucket"
+    objects_key = "objects"
+    bucket_arn_import = generate_export_strings(bucket.logical_name, S3_BUCKET_ARN)
+    if keyisset(bucket_key, access):
+        bucket_perms = generate_resource_permissions(
+            f"BucketAccess{bucket.logical_name}",
+            ACCESS_TYPES[bucket_key],
+            None,
+            arn=bucket_arn_import,
+        )
+        add_iam_policy_to_service_task_role(
+            service_template,
+            bucket,
+            bucket_perms,
+            access[bucket_key],
+            service_family,
+            family_wide,
+        )
+    if keyisset(objects_key, access):
+        objects_perms = generate_resource_permissions(
+            f"ObjectsAccess{bucket.logical_name}",
+            ACCESS_TYPES[objects_key],
+            None,
+            arn=Sub("${BucketArn}/*", BucketArn=bucket_arn_import),
+        )
+        add_iam_policy_to_service_task_role(
+            service_template,
+            bucket,
+            objects_perms,
+            access[objects_key],
+            service_family,
+            family_wide,
+        )
+
+
+def assign_new_bucket_to_services(
+    bucket, services_stack, services_families, res_root_stack
+):
+    """
+    Function to assign the bucket services permissions to access the s3 bucket.
+    :param bucket:
+    :param services_stack:
+    :param services_families:
+    :param res_root_stack:
+    :return:
+    """
+    bucket_key = "bucket"
+    objects_key = "objects"
+    access = {objects_key: "RW", bucket_key: "ListOnly"}
+    for service in bucket.services:
+        if not keyisset("access", service) or isinstance(service["access"], str):
+            LOG.warn(
+                f"No permissions associated for {service['name']}. Setting default."
+            )
+        else:
+            access = service["access"]
+        service_family = get_service_family_name(services_families, service["name"])
+        if service_family not in services_stack.stack_template.resources:
+            raise AttributeError(
+                f"No service {service_family} present in services stack"
+            )
+        family_wide = True if service["name"] in services_families else False
+        service_stack = services_stack.stack_template.resources[service_family]
+        service_template = service_stack.stack_template
+        assign_service_permissions_to_bucket(
+            bucket, access, service_template, service_family, family_wide
+        )
+
+
 def handle_new_buckets(
-    xresources,
+    resource,
     services_families,
     services_stack,
     res_root_stack,
-    l_buckets,
     nested=False,
 ):
-    buckets_r = []
+    """
+
+    :param resource: The resource
+    :type resource: ecs_composex.s3.s3_stack.Bucket
+    :param services_families:
+    :param services_stack:
+    :param res_root_stack:
+    :param nested:
+    :return:
+    """
     if res_root_stack.is_void:
         return
     s_resources = res_root_stack.stack_template.resources
     for resource_name in s_resources:
-        if isinstance(s_resources[resource_name], Bucket):
-            buckets_r.append(s_resources[resource_name].title)
-        elif issubclass(type(s_resources[resource_name]), ComposeXStack):
+        if issubclass(type(s_resources[resource_name]), ComposeXStack):
             handle_new_buckets(
-                xresources,
+                resource,
                 services_families,
                 services_stack,
                 s_resources[resource_name],
-                l_buckets,
                 nested=True,
             )
-
-    for bucket_name in xresources:
-        if bucket_name in buckets_r or NONALPHANUM.sub("", bucket_name) in buckets_r:
-            perms = generate_s3_permissions(
-                NONALPHANUM.sub("", bucket_name), S3_BUCKET_NAME
+        else:
+            assign_new_bucket_to_services(
+                resource, services_stack, services_families, res_root_stack
             )
-            envvars = generate_resource_envvars(
-                bucket_name, xresources[bucket_name], S3_BUCKET_NAME
-            )
-            apply_iam_based_resources(
-                xresources[bucket_name],
-                services_families,
-                services_stack,
-                res_root_stack,
-                envvars,
-                perms,
-                nested,
-            )
-            del l_buckets[bucket_name]
 
 
 def get_bucket_kms_key_from_config(bucket_config):
@@ -139,7 +202,9 @@ def define_bucket_mappings(buckets_mappings, buckets, settings):
             )
 
 
-def define_bucket_access(bucket, access, service_template, service_family, family_wide):
+def define_lookup_buckets_access(
+    bucket, access, service_template, service_family, family_wide
+):
     """
     Function to create the IAM policy for the service access to bucket
 
@@ -233,7 +298,7 @@ def assign_lookup_buckets(bucket, mappings, service, services_stack, services_fa
     if not keyisset("access", service):
         LOG.error(f"No access defined for s3 bucket {bucket.name}")
         return
-    define_bucket_access(
+    define_lookup_buckets_access(
         bucket, service["access"], service_template, service_family, family_wide
     )
 
@@ -250,7 +315,6 @@ def s3_to_ecs(xresources, services_stack, services_families, res_root_stack, set
     :return:
     """
     buckets_mappings = {}
-    l_buckets = xresources.copy()
     new_buckets = [
         xresources[name]
         for name in xresources
@@ -263,9 +327,12 @@ def s3_to_ecs(xresources, services_stack, services_families, res_root_stack, set
     LOG.debug(dumps(buckets_mappings, indent=4))
     for res in new_buckets:
         LOG.debug(f"Creating {res.name} as {res.logical_name}")
-        # handle_new_buckets(
-        #     xresources, services_families, services_stack, res_root_stack, l_buckets
-        # )
+        handle_new_buckets(
+            res,
+            services_families,
+            services_stack,
+            res_root_stack,
+        )
     for res in lookup_buckets:
         for service_def in res.services:
             assign_lookup_buckets(
