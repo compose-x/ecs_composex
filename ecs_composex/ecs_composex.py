@@ -242,13 +242,39 @@ def add_compute(root_template, settings, vpc_stack):
     return root_template.add_resource(compute_stack)
 
 
+def handle_new_xstack(
+    key,
+    res_type,
+    settings,
+    services_families,
+    services_stack,
+    vpc_stack,
+    root_template,
+    xstack,
+):
+    tcp_services = ["x-rds", "x-appmesh"]
+    if vpc_stack and key in tcp_services:
+        xstack.get_from_vpc_stack(vpc_stack)
+    elif not vpc_stack and key in tcp_services:
+        xstack.no_vpc_parameters()
+    LOG.debug(xstack, xstack.is_void)
+    if xstack.is_void:
+        invoke_x_to_ecs(res_type, settings, services_stack, services_families, xstack)
+    elif (
+        hasattr(xstack, "title")
+        and hasattr(xstack, "stack_template")
+        and not xstack.is_void
+    ):
+        root_template.add_resource(xstack)
+
+
 def add_x_resources(
     root_template, settings, services_stack, services_families, vpc_stack=None
 ):
     """
     Function to add each X resource from the compose file
     """
-    tcp_services = ["x-rds", "x-appmesh"]
+
     for key in settings.compose_content:
         if key.startswith(X_KEY) and key not in EXCLUDED_X_KEYS:
             res_type = RES_REGX.sub("", key)
@@ -263,21 +289,16 @@ def add_x_resources(
                     settings=settings,
                     Parameters=parameters,
                 )
-                if vpc_stack and key in tcp_services:
-                    xstack.get_from_vpc_stack(vpc_stack)
-                elif not vpc_stack and key in tcp_services:
-                    xstack.no_vpc_parameters()
-                LOG.debug(xstack, xstack.is_void)
-                if xstack.is_void:
-                    invoke_x_to_ecs(
-                        res_type, settings, services_stack, services_families, xstack
-                    )
-                elif (
-                    hasattr(xstack, "title")
-                    and hasattr(xstack, "stack_template")
-                    and not xclass.is_void
-                ):
-                    root_template.add_resource(xstack)
+            handle_new_xstack(
+                key,
+                res_type,
+                settings,
+                services_families,
+                services_stack,
+                vpc_stack,
+                root_template,
+                xstack,
+            )
 
 
 def create_services(root_stack, settings, vpc_stack, dns_params, create_cluster):

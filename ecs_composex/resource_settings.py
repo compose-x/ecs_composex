@@ -22,6 +22,7 @@ Module to handle resource settings definition to containers.
 from troposphere import Parameter
 from troposphere import Sub, ImportValue
 from troposphere.iam import Policy as IamPolicy
+from troposphere.ecs import Environment
 
 from ecs_composex.common import LOG, keyisset
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
@@ -137,7 +138,7 @@ def validate_lookup_resource(resource_name, resource_def, res_root_stack):
             f"{resource_name} is not created in ComposeX and does not have Lookup attribute"
         )
     if (
-        not resource_name in res_root_stack.stack_template.resources
+        resource_name not in res_root_stack.stack_template.resources
         and keyisset("Lookup", resource_def)
         and not keyisset("Tags", resource_def["Lookup"])
     ):

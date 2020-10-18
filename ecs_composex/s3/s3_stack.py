@@ -20,15 +20,13 @@ Module to control S3 stack
 """
 
 from troposphere import Ref, GetAtt
-from troposphere.s3 import Bucket as S3Bucket
 
-from ecs_composex.common import LOG, keyisset, build_template, NONALPHANUM
-from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.common.outputs import ComposeXOutput
+from ecs_composex.common import LOG, keyisset, build_template
 from ecs_composex.common.compose_resources import XResource, set_resources
+from ecs_composex.common.outputs import ComposeXOutput
+from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.s3.s3_params import RES_KEY, S3_BUCKET_NAME, S3_BUCKET_ARN
 from ecs_composex.s3.s3_template import generate_bucket
-
 
 CFN_MAX_OUTPUTS = 50
 
@@ -70,7 +68,7 @@ def create_s3_template(settings):
                 template.add_output(outputs.outputs)
             elif not mono_template:
                 bucket_template = build_template(
-                    f"Template for DynamoDB bucket {bucket.title}"
+                    f"Template for S3 Bucket {bucket.title}"
                 )
                 bucket_template.add_resource(bucket)
                 bucket_template.add_output(outputs.outputs)

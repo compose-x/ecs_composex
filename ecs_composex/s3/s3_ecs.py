@@ -20,25 +20,23 @@ Functions to pass permissions to Services to access S3 buckets.
 """
 
 from json import dumps
-from troposphere import FindInMap, Sub
-from troposphere.s3 import Bucket
 
-from ecs_composex.common import LOG, NONALPHANUM, keyisset
+from troposphere import FindInMap, Sub
+
+from ecs_composex.common import LOG, keyisset
 from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.ecs.ecs_template import get_service_family_name
+from ecs_composex.kms.kms_perms import ACCESS_TYPES as KMS_ACCESS_TYPES
 from ecs_composex.resource_permissions import (
-    apply_iam_based_resources,
     add_iam_policy_to_service_task_role,
 )
 from ecs_composex.resource_settings import (
-    generate_resource_envvars,
     generate_resource_permissions,
     generate_export_strings,
 )
-from ecs_composex.ecs.ecs_template import get_service_family_name
-from ecs_composex.s3.s3_params import S3_BUCKET_NAME, S3_BUCKET_ARN
-from ecs_composex.s3.s3_perms import ACCESS_TYPES
 from ecs_composex.s3.s3_aws import lookup_bucket_config
-from ecs_composex.kms.kms_perms import ACCESS_TYPES as KMS_ACCESS_TYPES
+from ecs_composex.s3.s3_params import S3_BUCKET_ARN
+from ecs_composex.s3.s3_perms import ACCESS_TYPES
 
 
 def assign_service_permissions_to_bucket(
@@ -223,9 +221,12 @@ def define_lookup_buckets_access(
             " Using default RW Objects and ListBucket"
         )
         access = {objects_key: "RW", bucket_key: "ListOnly"}
-    elif isinstance(access, dict):
-        if not keyisset(objects_key, access) or not keyisset(bucket_key, access):
-            raise KeyError("You must define at least bucket or object access")
+    elif (
+        isinstance(access, dict)
+        and not keyisset(objects_key, access)
+        or not keyisset(bucket_key, access)
+    ):
+        raise KeyError("You must define at least bucket or object access")
     if keyisset(bucket_key, access):
         bucket_perms = generate_resource_permissions(
             f"BucketAccess{bucket.logical_name}",

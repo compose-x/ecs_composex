@@ -15,13 +15,10 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from troposphere import s3
-from troposphere import Ref, GetAtt, Sub
-from troposphere import AWS_NO_VALUE
+from troposphere import Ref, s3, AWS_NO_VALUE
 
-from ecs_composex.common import LOG, keyisset
+from ecs_composex.common import keyisset
 from ecs_composex.s3 import metadata
-from ecs_composex.s3.s3_params import S3_BUCKET_NAME
 
 
 def create_bucket_encryption_default(props=None):

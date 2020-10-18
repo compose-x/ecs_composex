@@ -24,8 +24,6 @@ import re
 from botocore.exceptions import ClientError
 
 from ecs_composex.common import LOG, keyisset
-from ecs_composex.common.aws import define_tagsgroups_filter_tags
-from ecs_composex.s3.s3_params import S3_ARN_REGEX
 from ecs_composex.common.aws import find_aws_resource_arn_from_tags_api
 
 
