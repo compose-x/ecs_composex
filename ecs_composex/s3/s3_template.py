@@ -15,7 +15,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from troposphere import Ref, Sub, s3, AWS_NO_VALUE
+from troposphere import Ref, Sub, s3, AWS_NO_VALUE, AWS_ACCOUNT_ID, AWS_REGION
 
 from ecs_composex.common import keyisset, keypresent, LOG
 from ecs_composex.s3 import metadata
@@ -162,17 +162,26 @@ def define_access_control(properties):
         return properties["AccessControl"]
 
 
-def define_accelerate_config(properties, settings):
+def define_accelerate_config(properties, settings, bucket_name):
     """
     Function to define AccelerateConfiguration
 
     :param properties:
     :param settings:
+    :param bucket_name: The name of the bucket.
     :return:
     """
-    config = s3.AccelerateConfiguration(
-        AccelerationStatus=s3.s3_transfer_acceleration_status("Suspended")
-    )
+    config = Ref(AWS_NO_VALUE)
+    if (
+        isinstance(bucket_name, str)
+        and bucket_name.find(".") >= 0
+        or keyisset("BucketName", properties)
+        and properties["BucketName"].find(".") > 0
+    ):
+        LOG.warn(
+            "Your bucket name contains a `.` which is incompatible with Acceleration"
+        )
+        return Ref(AWS_NO_VALUE)
     if keyisset("AccelerateConfiguration", properties):
         config = s3.AccelerateConfiguration(
             AccelerationStatus=s3.s3_transfer_acceleration_status("Suspended")
@@ -189,6 +198,21 @@ def define_accelerate_config(properties, settings):
 
 
 def define_bucket_name(properties, settings):
+    """
+    Function to automatically add Region and Account ID to the bucket name.
+    If set, will use a user-defined separator, else, `-`
+
+    :param dict properties:
+    :param dict settings:
+    :return: The bucket name
+    :rtype: str
+    """
+    separator = (
+        settings["NameSeparator"]
+        if keyisset("NameSeparator", settings)
+        and isinstance(settings["NameSeparator"], str)
+        else r"-"
+    )
     expand_region_key = "ExpandRegionToBucket"
     expand_account_id = "ExpandAccountIdToBucket"
     base_name = (
@@ -203,15 +227,15 @@ def define_bucket_name(properties, settings):
         if keyisset(expand_region_key, settings) and keyisset(
             expand_account_id, settings
         ):
-            return Sub(f"{base_name}.${{AWS::AccountId}}.${{AWS::Region}}")
+            return f"{base_name}{separator}${{{AWS_ACCOUNT_ID}}}{separator}${{{AWS_REGION}}}"
         elif keyisset(expand_region_key, settings) and not keyisset(
             expand_account_id, settings
         ):
-            return Sub(f"{base_name}.${{AWS::Region}}")
+            return f"{base_name}{separator}${{{AWS_REGION}}}"
         elif not keyisset(expand_region_key, settings) and keyisset(
             expand_account_id, settings
         ):
-            return Sub(f"{base_name}.${{AWS::AccountId}}")
+            return f"{base_name}{separator}${{{AWS_ACCOUNT_ID}}}"
         elif not keyisset(expand_account_id, settings) and not keyisset(
             expand_region_key, settings
         ):
@@ -230,15 +254,24 @@ def define_bucket(bucket):
     :param ecs_composex.s3.s3_stack.Bucket bucket:
     :return:
     """
+    bucket_name = define_bucket_name(bucket.properties, bucket.settings)
+    final_bucket_name = (
+        Sub(bucket_name)
+        if isinstance(bucket_name, str)
+        and (bucket_name.find(AWS_REGION) >= 0 or bucket_name.find(AWS_ACCOUNT_ID) >= 0)
+        else bucket_name
+    )
+    LOG.debug(bucket_name)
+    LOG.debug(final_bucket_name)
     props = {
         "AccelerateConfiguration": define_accelerate_config(
-            bucket.properties, bucket.settings
+            bucket.properties, bucket.settings, bucket_name
         ),
         "BucketEncryption": handle_bucket_encryption(
             bucket.properties, bucket.settings
         ),
         "AccessControl": define_access_control(bucket.properties),
-        "BucketName": define_bucket_name(bucket.properties, bucket.settings),
+        "BucketName": final_bucket_name,
         "ObjectLockEnabled": define_objects_locking(bucket.properties),
         "PublicAccessBlockConfiguration": define_public_block_access(bucket.properties),
         "VersioningConfiguration": define_bucket_versioning(bucket.properties),

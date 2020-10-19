@@ -43,7 +43,7 @@ Results into
 
 .. code-block:: yaml
 
-    !Sub abcd-01.${AWS::Region}
+    !Sub abcd-01-${AWS::Region}
 
 ExpandAccountIdToBucket
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -61,7 +61,7 @@ Results into
 
 .. code-block:: yaml
 
-    !Sub 'abcd-01.${AWS::AccountId}'
+    !Sub 'abcd-01-${AWS::AccountId}'
 
 .. hint::
 
@@ -69,7 +69,22 @@ Results into
 
     .. code-block:: yaml
 
-        !Sub 'abcd-01.${AWS::Region}.${AWS::AccountId}'
+        !Sub 'abcd-01-${AWS::Region}-${AWS::AccountId}'
+
+NameSeparator
+^^^^^^^^^^^^^
+
+As shown above, the separator between the bucket name and AWS::AccountId or AWS::Region is **-**. This parameter allows
+you to define something else.
+
+.. note::
+
+    I would recommend not more than 2 characters separator.
+
+.. warning::
+
+    The separator must allow for DNS compliance **[a-z0-9.-]**
+
 
 EnableEncryption
 ^^^^^^^^^^^^^^^^

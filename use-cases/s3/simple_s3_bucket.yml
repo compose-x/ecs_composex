@@ -78,6 +78,7 @@ x-s3:
     Properties:
       BucketName: bucket-04
     Settings:
+      NameSeparator: "."
       ExpandRegionToBucket: False
       ExpandAccountIdToBucket: False
       EnableEncryption: AES256

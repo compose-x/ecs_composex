@@ -111,6 +111,8 @@ def assign_new_bucket_to_services(
         assign_service_permissions_to_bucket(
             bucket, access, service_template, service_family, family_wide
         )
+        if res_root_stack.title not in services_stack.DependsOn:
+            services_stack.DependsOn.append(res_root_stack.title)
 
 
 def handle_new_buckets(
