@@ -22,7 +22,7 @@ Module to define the ComposeX Resources into a simple object to make it easier t
 from troposphere import Sub
 from troposphere.ecs import Environment
 
-from ecs_composex.common import NONALPHANUM, keyisset
+from ecs_composex.common import LOG, NONALPHANUM, keyisset, keypresent
 from ecs_composex.resource_settings import generate_export_strings
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME
 
@@ -38,9 +38,12 @@ def set_resources(settings, resource_class, res_key):
     if not keyisset(res_key, settings.compose_content):
         return
     for resource_name in settings.compose_content[res_key]:
-        settings.compose_content[res_key][resource_name] = resource_class(
+        new_definition = resource_class(
             resource_name, settings.compose_content[res_key][resource_name]
         )
+        LOG.debug(type(new_definition))
+        LOG.debug(new_definition.__dict__)
+        settings.compose_content[res_key][resource_name] = new_definition
 
 
 class Service(object):
@@ -90,11 +93,14 @@ class XResource(object):
             if not keyisset("Settings", self.definition)
             else self.definition["Settings"]
         )
-        self.properties = (
-            None
-            if not keyisset("Properties", self.definition)
-            else self.definition["Properties"]
-        )
+        if keyisset("Properties", self.definition):
+            self.properties = self.definition["Properties"]
+        elif not keyisset("Properties", self.definition) and keypresent(
+            "Properties", self.definition
+        ):
+            self.properties = {}
+        else:
+            self.properties = None
         self.services = (
             []
             if not keyisset("Services", self.definition)
@@ -113,12 +119,14 @@ class XResource(object):
     def __repr__(self):
         return self.logical_name
 
-    def generate_resource_envvars(self, attribute):
+    def generate_resource_envvars(self, attribute, arn=None):
         """
         :return: environment key/pairs
         :rtype: list<troposphere.ecs.Environment>
         """
-        export_string = generate_export_strings(self.logical_name, attribute)
+        export_string = (
+            generate_export_strings(self.logical_name, attribute) if not arn else arn
+        )
         if self.settings and keyisset("EnvNames", self.settings):
             for env_name in self.settings["EnvNames"]:
                 self.env_vars.append(

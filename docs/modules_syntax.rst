@@ -15,6 +15,8 @@
 
 .. include:: ../ecs_composex/dynamodb/SYNTAX.rst
 
+.. include:: ../ecs_composex/s3/SYNTAX.rst
+
 .. include:: ../ecs_composex/secrets/SYNTAX.rst
 
 .. include:: ../ecs_composex/sns/SYNTAX.rst

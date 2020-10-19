@@ -128,7 +128,7 @@ def handle_secret(lookup, db_config, session):
     """
     if keyisset("secret", lookup):
         secret_arn = find_aws_resource_arn_from_tags_api(
-            lookup["secret"], session, "secretsmanager", "secret"
+            lookup["secret"], session, "secretsmanager:secret"
         )
         if secret_arn and db_config:
             db_config.update({"SecretArn": secret_arn})
@@ -159,8 +159,10 @@ def lookup_rds_resource(lookup, session):
     :return:
     """
     rds_types = {
-        "db": {"regexp": r"(?:^arn:aws(?:-[a-z]+)?:rds:[\w-]+:[0-9]{12}:db:)([\S]+)$"},
-        "cluster": {
+        "rds:db": {
+            "regexp": r"(?:^arn:aws(?:-[a-z]+)?:rds:[\w-]+:[0-9]{12}:db:)([\S]+)$"
+        },
+        "rds:cluster": {
             "regexp": r"(?:^arn:aws(?:-[a-z]+)?:rds:[\w-]+:[0-9]{12}:cluster:)([\S]+)$"
         },
     }
@@ -170,7 +172,7 @@ def lookup_rds_resource(lookup, session):
     elif keyisset("db", lookup):
         res_type = "db"
     db_arn = find_aws_resource_arn_from_tags_api(
-        lookup[res_type], session, "rds", res_type, types=rds_types
+        lookup[res_type], session, f"rds:{res_type}", types=rds_types
     )
     if not db_arn:
         return None

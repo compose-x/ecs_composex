@@ -7,8 +7,9 @@ services:
     image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-01-rproxy:latest
     ports:
       - 80:80
+      - 443:443
     deploy:
-      replicas: 2
+      replicas: 6
       resources:
         reservations:
           cpus: "0.1"
@@ -24,42 +25,17 @@ services:
         lb_type: application
     depends_on:
       - app
-  app:
-    image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-01:xray
-    ports:
-      - 5000
-    deploy:
-      resources:
-        reservations:
-          cpus: "0.25"
-          memory: "64M"
-        limits:
-          cpus: "0.5"
-          memory: "128M"
-      labels:
-        ecs.task.family: app01
-    environment:
-      LOGLEVEL: DEBUG
-    x-configs:
-      use_xray: True
-
-  backend:
-    image: nginx
-    ports:
-      - 80
 
 x-rds:
   dbA:
     Properties:
-      Engine: "aurora-mysql"
-      EngineVersion: "5.7.12"
+      Engine: "aurora-postgresql"
+      EngineVersion: "11.7"
     Settings:
       EnvNames:
         - DBA
     Services:
-      - name: backend
-        access: RW
-      - name: app
+      - name: app01
         access: RW
 
   dbB:

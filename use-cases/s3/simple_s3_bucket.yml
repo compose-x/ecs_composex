@@ -1,0 +1,93 @@
+﻿version: "3.8"
+
+x-s3:
+  bucket-01:
+    Properties:
+      BucketName: bucket-01
+      AccessControl: BucketOwnerFullControl
+      ObjectLockEnabled: True
+      PublicAccessBlockConfiguration:
+          BlockPublicAcls: True
+          BlockPublicPolicy: True
+          IgnorePublicAcls: True
+          RestrictPublicBuckets: False
+      AccelerateConfiguration:
+        AccelerateStatus: Suspended
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: "aws:kms"
+              KMSMasterKeyID: "aws/s3"
+      VersioningConfiguration:
+        Status: "Enabled"
+
+    Settings:
+      ExpandRegionToBucket: True
+      ExpandAccountIdToBucket: True
+      EnvNames:
+        - bucket01
+        - BUCKET_ABCD-01
+    Services:
+      - name: app03
+        access: RWObjects
+  bucket-03:
+    Properties:
+      BucketName: bucket-03
+      AccessControl: BucketOwnerFullControl
+      ObjectLockEnabled: True
+      PublicAccessBlockConfiguration:
+          BlockPublicAcls: True
+          BlockPublicPolicy: True
+          IgnorePublicAcls: True
+          RestrictPublicBuckets: False
+      AccelerateConfiguration:
+        AccelerateStatus: Suspended
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      VersioningConfiguration:
+        Status: "Enabled"
+
+    Settings:
+      ExpandRegionToBucket: True
+      ExpandAccountIdToBucket: False
+      EnvNames:
+        - bucket01
+        - BUCKET_ABCD-01
+    Services:
+      - name: app03
+        access: RWObjects
+  bucket-02:
+    Properties: {}
+    Settings:
+      ExpandRegionToBucket: False
+      ExpandAccountIdToBucket: False
+      EnableEncryption: AES256
+      EnableAcceleration: True
+      EnvNames:
+        - bucket01
+        - BUCKET_ABCD-01
+    Services:
+      - name: app03
+        access:
+          bucket: ListOnly
+          objects: RW
+
+  bucket-04:
+    Properties:
+      BucketName: bucket-04
+    Settings:
+      NameSeparator: "."
+      ExpandRegionToBucket: False
+      ExpandAccountIdToBucket: False
+      EnableEncryption: AES256
+      EnableAcceleration: True
+      EnvNames:
+        - bucket01
+        - BUCKET_ABCD-01
+    Services:
+      - name: app03
+        access:
+          bucket: ListOnly
+          objects: RW

@@ -1,4 +1,4 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 #   ECS ComposeX <https://github.com/lambda-my-aws/ecs_composex>
 #   Copyright (C) 2020  John Mille <john@lambda-my-aws.io>
 #  #
@@ -56,9 +56,9 @@ def generate_resource_permissions(resource_name, policies, attribute, arn=None):
     Function to generate IAM permissions for a given x-resource. Returns the mapping of these for the given resource.
 
     :param str resource_name: The name of the resource
-    :param str attribute: the attribute of the resource we are using for Import
+    :param str,None attribute: the attribute of the resource we are using for Import
     :param dict policies: the policies associated with the x-resource type.
-    :param str arn: The ARN of the resource if already looked up.
+    :param str,AWSHelper arn: The ARN of the resource if already looked up.
     :return: dict of the IAM policies associated with the resource.
     :rtype dict:
     """

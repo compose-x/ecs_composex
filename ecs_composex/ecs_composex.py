@@ -77,6 +77,8 @@ SUPPORTED_X_MODULES = [
     "dynamodb",
     f"{X_KEY}kms",
     "kms",
+    f"{X_KEY}s3",
+    "s3",
 ]
 EXCLUDED_X_KEYS = [
     f"{X_KEY}configs",
@@ -142,6 +144,29 @@ def get_mod_class(module_name):
     return the_class
 
 
+def invoke_x_to_ecs(module, settings, services_stack, services_families, resource):
+    """
+
+    :param str module:
+    :param ecs_composex.common.settings.ComposeXSettings settings: The compose file content
+    :param ecs_composex.ecs.ServicesStack services_stack: root stack for services.
+    :param dict services_families: Families and services mappings
+    :param resource: The XStack resource
+    :return:
+    """
+    composex_key = f"{X_KEY}{module}"
+    ecs_function = get_mod_function(f"{module}.{module}_ecs", f"{module}_to_ecs")
+    if ecs_function:
+        LOG.debug(ecs_function)
+        ecs_function(
+            settings.compose_content[composex_key],
+            services_stack,
+            services_families,
+            resource,
+            settings,
+        )
+
+
 def apply_x_configs_to_ecs(
     settings, root_template, services_stack, services_families, **kwargs
 ):
@@ -161,21 +186,12 @@ def apply_x_configs_to_ecs(
         if (
             issubclass(type(resource), ComposeXStack)
             and resource_name in SUPPORTED_X_MODULES
+            and not resource.is_void
         ):
             module = getattr(resource, "title")
-            composex_key = f"{X_KEY}{module}"
-            ecs_function = get_mod_function(
-                f"{module}.{module}_ecs", f"{module}_to_ecs"
+            invoke_x_to_ecs(
+                module, settings, services_stack, services_families, resource
             )
-            if ecs_function:
-                LOG.debug(ecs_function)
-                ecs_function(
-                    settings.compose_content[composex_key],
-                    services_stack,
-                    services_families,
-                    resource,
-                    settings,
-                )
 
 
 def apply_x_to_x_configs(root_template, settings):
@@ -192,6 +208,7 @@ def apply_x_to_x_configs(root_template, settings):
             issubclass(type(resource), ComposeXStack)
             and resource_name in SUPPORTED_X_MODULES
             and hasattr(resource, "add_xdependencies")
+            and not resource.is_void
         ):
             resource.add_xdependencies(root_template, settings.compose_content)
 
@@ -227,11 +244,39 @@ def add_compute(root_template, settings, vpc_stack):
     return root_template.add_resource(compute_stack)
 
 
-def add_x_resources(root_template, settings, vpc_stack=None):
+def handle_new_xstack(
+    key,
+    res_type,
+    settings,
+    services_families,
+    services_stack,
+    vpc_stack,
+    root_template,
+    xstack,
+):
+    tcp_services = ["x-rds", "x-appmesh"]
+    if vpc_stack and key in tcp_services:
+        xstack.get_from_vpc_stack(vpc_stack)
+    elif not vpc_stack and key in tcp_services:
+        xstack.no_vpc_parameters()
+    LOG.debug(xstack, xstack.is_void)
+    if xstack.is_void:
+        invoke_x_to_ecs(res_type, settings, services_stack, services_families, xstack)
+    elif (
+        hasattr(xstack, "title")
+        and hasattr(xstack, "stack_template")
+        and not xstack.is_void
+    ):
+        root_template.add_resource(xstack)
+
+
+def add_x_resources(
+    root_template, settings, services_stack, services_families, vpc_stack=None
+):
     """
     Function to add each X resource from the compose file
     """
-    tcp_services = ["x-rds", "x-appmesh"]
+
     for key in settings.compose_content:
         if key.startswith(X_KEY) and key not in EXCLUDED_X_KEYS:
             res_type = RES_REGX.sub("", key)
@@ -240,17 +285,23 @@ def add_x_resources(root_template, settings, vpc_stack=None):
             LOG.debug(xclass)
             if not xclass:
                 LOG.info(f"Class for {res_type} not found")
+                xstack = None
             else:
                 xstack = xclass(
                     res_type.strip(),
                     settings=settings,
                     Parameters=parameters,
                 )
-                if vpc_stack and key in tcp_services:
-                    xstack.get_from_vpc_stack(vpc_stack)
-                elif not vpc_stack and key in tcp_services:
-                    xstack.no_vpc_parameters()
-                root_template.add_resource(xstack)
+            handle_new_xstack(
+                key,
+                res_type,
+                settings,
+                services_families,
+                services_stack,
+                vpc_stack,
+                root_template,
+                xstack,
+            )
 
 
 def create_services(root_stack, settings, vpc_stack, dns_params, create_cluster):
@@ -331,7 +382,13 @@ def generate_full_template(settings):
     services_stack = create_services(
         root_stack, settings, vpc_stack, dns_settings.nested_params, create_cluster
     )
-    add_x_resources(root_stack.stack_template, settings, vpc_stack=vpc_stack)
+    add_x_resources(
+        root_stack.stack_template,
+        settings,
+        services_stack,
+        services_families,
+        vpc_stack=vpc_stack,
+    )
     apply_x_configs_to_ecs(
         settings, root_stack.stack_template, services_stack, services_families
     )
