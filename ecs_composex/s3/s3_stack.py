@@ -56,7 +56,7 @@ def create_s3_template(settings):
 
     template = build_template(f"S3 root by ECS ComposeX for {settings.name}")
     for bucket in new_buckets:
-        bucket = generate_bucket(bucket, settings)
+        bucket = generate_bucket(bucket)
         if bucket:
             values = [
                 (S3_BUCKET_ARN, S3_BUCKET_ARN.title, GetAtt(bucket, "Arn")),

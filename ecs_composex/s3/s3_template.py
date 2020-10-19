@@ -15,9 +15,9 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from troposphere import Ref, s3, AWS_NO_VALUE
+from troposphere import Ref, Sub, s3, AWS_NO_VALUE
 
-from ecs_composex.common import keyisset, keypresent
+from ecs_composex.common import keyisset, keypresent, LOG
 from ecs_composex.s3 import metadata
 
 
@@ -188,6 +188,41 @@ def define_accelerate_config(properties, settings):
     return config
 
 
+def define_bucket_name(properties, settings):
+    expand_region_key = "ExpandRegionToBucket"
+    expand_account_id = "ExpandAccountIdToBucket"
+    base_name = (
+        None if not keyisset("BucketName", properties) else properties["BucketName"]
+    )
+    print(
+        base_name,
+        keyisset(expand_region_key, settings),
+        keyisset(expand_account_id, settings),
+    )
+    if base_name:
+        if keyisset(expand_region_key, settings) and keyisset(
+            expand_account_id, settings
+        ):
+            return Sub(f"{base_name}.${{AWS::AccountId}}.${{AWS::Region}}")
+        elif keyisset(expand_region_key, settings) and not keyisset(
+            expand_account_id, settings
+        ):
+            return Sub(f"{base_name}.${{AWS::Region}}")
+        elif not keyisset(expand_region_key, settings) and keyisset(
+            expand_account_id, settings
+        ):
+            return Sub(f"{base_name}.${{AWS::AccountId}}")
+        elif not keyisset(expand_account_id, settings) and not keyisset(
+            expand_region_key, settings
+        ):
+            LOG.warn(
+                f"{base_name} - You defined the bucket without any extension. "
+                "Bucket names must be unique. Make sure it is not already in-use"
+            )
+        return base_name
+    return Ref(AWS_NO_VALUE)
+
+
 def define_bucket(bucket):
     """
     Function to generate the S3 bucket object
@@ -203,9 +238,7 @@ def define_bucket(bucket):
             bucket.properties, bucket.settings
         ),
         "AccessControl": define_access_control(bucket.properties),
-        "BucketName": bucket.properties["BucketName"]
-        if keyisset("BucketName", bucket.properties)
-        else Ref(AWS_NO_VALUE),
+        "BucketName": define_bucket_name(bucket.properties, bucket.settings),
         "ObjectLockEnabled": define_objects_locking(bucket.properties),
         "PublicAccessBlockConfiguration": define_public_block_access(bucket.properties),
         "VersioningConfiguration": define_bucket_versioning(bucket.properties),
@@ -218,7 +251,7 @@ def define_bucket(bucket):
     return bucket
 
 
-def generate_bucket(bucket, settings):
+def generate_bucket(bucket):
     """
     Function to identify whether create new bucket or lookup for existing bucket
 
