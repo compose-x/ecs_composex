@@ -11,6 +11,8 @@
 
 .. include:: ../ecs_composex/dynamodb/README.rst
 
+.. include:: ../ecs_composex/s3/README.rst
+
 .. include:: ../ecs_composex/vpc/README.rst
 
 .. include:: ../ecs_composex/kms/README.rst
