@@ -4,6 +4,23 @@ x-s3:
   bucket-01:
     Properties:
       BucketName: bucket-01
+      AccessControl: BucketOwnerFullControl
+      ObjectLockEnabled: True
+      PublicAccessBlockConfiguration:
+          BlockPublicAcls: True
+          BlockPublicPolicy: True
+          IgnorePublicAcls: True
+          RestrictPublicBuckets: False
+      AccelerateConfiguration:
+        AccelerateStatus: Suspended
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: "aws:kms"
+              KMSMasterKeyID: "aws/s3"
+      VersioningConfiguration:
+        Status: "Enabled"
+
     Settings:
       EnvNames:
         - bucket01
@@ -11,3 +28,43 @@ x-s3:
     Services:
       - name: app03
         access: RWObjects
+  bucket-03:
+    Properties:
+      BucketName: bucket-01
+      AccessControl: BucketOwnerFullControl
+      ObjectLockEnabled: True
+      PublicAccessBlockConfiguration:
+          BlockPublicAcls: True
+          BlockPublicPolicy: True
+          IgnorePublicAcls: True
+          RestrictPublicBuckets: False
+      AccelerateConfiguration:
+        AccelerateStatus: Suspended
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      VersioningConfiguration:
+        Status: "Enabled"
+
+    Settings:
+      EnvNames:
+        - bucket01
+        - BUCKET_ABCD-01
+    Services:
+      - name: app03
+        access: RWObjects
+  bucket-02:
+    Properties:
+      BucketName: bucket-01
+    Settings:
+      EnableEncryption: AES256
+      EnableAcceleration: True
+      EnvNames:
+        - bucket01
+        - BUCKET_ABCD-01
+    Services:
+      - name: app03
+        access:
+          bucket: ListOnly
+          objects: RW
