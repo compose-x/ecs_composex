@@ -152,3 +152,4 @@ services:
     deploy:
       labels:
         ecs.task.family: bignicefamily
+        ecs.depends.condition: COMPLETE
