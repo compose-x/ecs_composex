@@ -116,12 +116,14 @@ class XResource(object):
     def __repr__(self):
         return self.logical_name
 
-    def generate_resource_envvars(self, attribute):
+    def generate_resource_envvars(self, attribute, arn=None):
         """
         :return: environment key/pairs
         :rtype: list<troposphere.ecs.Environment>
         """
-        export_string = generate_export_strings(self.logical_name, attribute)
+        export_string = (
+            generate_export_strings(self.logical_name, attribute) if not arn else arn
+        )
         if self.settings and keyisset("EnvNames", self.settings):
             for env_name in self.settings["EnvNames"]:
                 self.env_vars.append(

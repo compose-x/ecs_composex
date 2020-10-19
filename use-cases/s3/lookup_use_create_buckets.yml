@@ -23,6 +23,9 @@ x-s3:
           objects: RW
 
   bucket-03:
+    Settings:
+      EnvNames:
+        - BUCKET03
     Lookup:
       Name: sacrificial-lamb
       Tags:

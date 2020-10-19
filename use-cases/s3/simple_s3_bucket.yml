@@ -4,6 +4,10 @@ x-s3:
   bucket-01:
     Properties:
       BucketName: bucket-01
+    Settings:
+      EnvNames:
+        - bucket01
+        - BUCKET_ABCD-01
     Services:
       - name: app03
         access: RWObjects

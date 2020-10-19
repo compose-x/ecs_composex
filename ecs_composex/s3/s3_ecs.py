@@ -35,7 +35,7 @@ from ecs_composex.resource_settings import (
     generate_export_strings,
 )
 from ecs_composex.s3.s3_aws import lookup_bucket_config
-from ecs_composex.s3.s3_params import S3_BUCKET_ARN
+from ecs_composex.s3.s3_params import S3_BUCKET_ARN, S3_BUCKET_NAME
 from ecs_composex.s3.s3_perms import ACCESS_TYPES
 
 
@@ -45,6 +45,8 @@ def assign_service_permissions_to_bucket(
     bucket_key = "bucket"
     objects_key = "objects"
     bucket_arn_import = generate_export_strings(bucket.logical_name, S3_BUCKET_ARN)
+    bucket_name_import = generate_export_strings(bucket.logical_name, S3_BUCKET_NAME)
+    bucket.generate_resource_envvars(None, bucket_name_import)
     if keyisset(bucket_key, access):
         bucket_perms = generate_resource_permissions(
             f"BucketAccess{bucket.logical_name}",
@@ -128,8 +130,6 @@ def handle_new_buckets(
     :param nested:
     :return:
     """
-    if res_root_stack.is_void:
-        return
     s_resources = res_root_stack.stack_template.resources
     for resource_name in s_resources:
         if issubclass(type(s_resources[resource_name]), ComposeXStack):
@@ -227,6 +227,9 @@ def define_lookup_buckets_access(
         or not keyisset(bucket_key, access)
     ):
         raise KeyError("You must define at least bucket or object access")
+    bucket.generate_resource_envvars(
+        None, arn=FindInMap("s3", bucket.logical_name, "Name")
+    )
     if keyisset(bucket_key, access):
         bucket_perms = generate_resource_permissions(
             f"BucketAccess{bucket.logical_name}",

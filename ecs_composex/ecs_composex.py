@@ -186,6 +186,7 @@ def apply_x_configs_to_ecs(
         if (
             issubclass(type(resource), ComposeXStack)
             and resource_name in SUPPORTED_X_MODULES
+            and not resource.is_void
         ):
             module = getattr(resource, "title")
             invoke_x_to_ecs(
@@ -207,6 +208,7 @@ def apply_x_to_x_configs(root_template, settings):
             issubclass(type(resource), ComposeXStack)
             and resource_name in SUPPORTED_X_MODULES
             and hasattr(resource, "add_xdependencies")
+            and not resource.is_void
         ):
             resource.add_xdependencies(root_template, settings.compose_content)
 
@@ -283,6 +285,7 @@ def add_x_resources(
             LOG.debug(xclass)
             if not xclass:
                 LOG.info(f"Class for {res_type} not found")
+                xstack = None
             else:
                 xstack = xclass(
                     res_type.strip(),

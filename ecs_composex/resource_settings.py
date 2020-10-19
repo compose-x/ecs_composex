@@ -22,9 +22,8 @@ Module to handle resource settings definition to containers.
 from troposphere import Parameter
 from troposphere import Sub, ImportValue
 from troposphere.iam import Policy as IamPolicy
-from troposphere.ecs import Environment
 
-from ecs_composex.common import LOG, keyisset
+from ecs_composex.common import LOG
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.ecs_composex import CFN_EXPORT_DELIMITER as DELIM
 
@@ -78,70 +77,3 @@ def generate_resource_permissions(resource_name, policies, attribute, arn=None):
             PolicyDocument=clean_policy,
         )
     return resource_policies
-
-
-def generate_resource_envvars(resource_name, resource, attribute, arn=None):
-    """
-    Function to generate environment variables that can be added to a container definition
-    shall the ecs_service need to know about the Queue
-
-    :param str resource_name: The name of the resource
-    :param dict resource: The resource definition as defined in docker-compose file.
-    :param str attribute: the attribute of the resource we are using for Import
-    :param str arn: The ARN of the resource if already looked up.
-
-    :return: environment key/pairs
-    :rtype: list<troposphere.ecs.Environment>
-    """
-    env_names = []
-    export_strings = (
-        generate_export_strings(resource_name, attribute) if not arn else arn
-    )
-    if keyisset("Settings", resource) and keyisset("EnvNames", resource["Settings"]):
-        for env_name in resource["Settings"]["EnvNames"]:
-            env_names.append(
-                Environment(
-                    Name=env_name,
-                    Value=export_strings,
-                )
-            )
-        if resource_name not in resource["Settings"]["EnvNames"]:
-            env_names.append(
-                Environment(
-                    Name=resource_name,
-                    Value=export_strings,
-                )
-            )
-    else:
-        env_names.append(
-            Environment(
-                Name=resource_name,
-                Value=export_strings,
-            )
-        )
-    return env_names
-
-
-def validate_lookup_resource(resource_name, resource_def, res_root_stack):
-    """
-    Function to validate a resource has attributes to lookup.
-
-    :param str resource_name:
-    :param dict resource_def:
-    :param ecs_composex.common.stacks.ComposeXStack res_root_stack:
-    :return:
-    """
-    if resource_name not in res_root_stack.stack_template.resources and not keyisset(
-        "Lookup", resource_def
-    ):
-        raise KeyError(
-            f"{resource_name} is not created in ComposeX and does not have Lookup attribute"
-        )
-    if (
-        resource_name not in res_root_stack.stack_template.resources
-        and keyisset("Lookup", resource_def)
-        and not keyisset("Tags", resource_def["Lookup"])
-    ):
-        raise KeyError(
-            f"{resource_name} is defined for lookup but there are no tags indicated."
-        )
