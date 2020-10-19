@@ -320,9 +320,7 @@ def s3_to_ecs(xresources, services_stack, services_families, res_root_stack, set
     """
     buckets_mappings = {}
     new_buckets = [
-        xresources[name]
-        for name in xresources
-        if xresources[name].properties and not xresources[name].lookup
+        xresources[name] for name in xresources if not xresources[name].lookup
     ]
     lookup_buckets = [
         xresources[name] for name in xresources if xresources[name].lookup

@@ -22,7 +22,7 @@ Module to define the ComposeX Resources into a simple object to make it easier t
 from troposphere import Sub
 from troposphere.ecs import Environment
 
-from ecs_composex.common import LOG, NONALPHANUM, keyisset
+from ecs_composex.common import LOG, NONALPHANUM, keyisset, keypresent
 from ecs_composex.resource_settings import generate_export_strings
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME
 
@@ -93,11 +93,14 @@ class XResource(object):
             if not keyisset("Settings", self.definition)
             else self.definition["Settings"]
         )
-        self.properties = (
-            None
-            if not keyisset("Properties", self.definition)
-            else self.definition["Properties"]
-        )
+        if keyisset("Properties", self.definition):
+            self.properties = self.definition["Properties"]
+        elif not keyisset("Properties", self.definition) and keypresent(
+            "Properties", self.definition
+        ):
+            self.properties = {}
+        else:
+            self.properties = None
         self.services = (
             []
             if not keyisset("Services", self.definition)

@@ -45,7 +45,7 @@ def create_s3_template(settings):
     new_buckets = [
         xresources[bucket_name]
         for bucket_name in xresources
-        if xresources[bucket_name].properties
+        if not xresources[bucket_name].lookup
     ]
     if not new_buckets:
         LOG.info("There are no buckets to create.")

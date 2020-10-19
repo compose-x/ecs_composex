@@ -1,15 +1,6 @@
 ﻿version: "3.8"
 
 x-s3:
-  bucket-01:
-    Properties: {}
-    Settings: {}
-    Services:
-      - name: app03
-        access:
-          bucket: ListOnly
-          objects: RW
-
   bucket-02:
     Lookup:
       Tags:
