@@ -8,79 +8,6 @@ x-configs:
     network:
       use_cloudmap: True
 
-services:
-  rproxy:
-    image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-01-rproxy:latest
-    ports:
-      - 80:80
-    deploy:
-      replicas: 2
-      resources:
-        reservations:
-          cpus: "0.1"
-          memory: "32M"
-        limits:
-          cpus: "0.25"
-          memory: "64M"
-      labels:
-        ecs.task.family: bignicefamily
-    x-configs:
-      network:
-        is_public: True
-        lb_type: application
-    depends_on:
-      - app01
-  app01:
-    image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-01:appmesh
-    ports:
-      - 5000
-    deploy:
-      resources:
-        reservations:
-          cpus: "0.25"
-          memory: "64M"
-      labels:
-        ecs.task.family: bignicefamily
-        ecs.depends.condition: COMPLETE
-    environment:
-      LOGLEVEL: DEBUG
-    x-configs:
-      use_xray: True
-    links:
-      - app03:dateteller
-
-  app02:
-    image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-02:latest
-    ports:
-      - 5000
-    deploy:
-      resources:
-        reservations:
-          cpus: "0.25"
-          memory: "64M"
-      labels:
-        ecs.task.family: app02
-    environment:
-      LOGLEVEL: DEBUG
-    x-configs:
-      use_xray: True
-
-  app03:
-    image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-02:latest
-    ports:
-      - 5000
-    deploy:
-      resources:
-        reservations:
-          cpus: "0.25"
-          memory: "64M"
-      labels:
-        ecs.task.family: app03
-    environment:
-      LOGLEVEL: DEBUG
-    x-configs:
-      use_xray: True
-
 x-tags:
   owner: johnpreston
   contact: john@lambda-my-aws.io
@@ -213,3 +140,16 @@ x-vpc:
         - service: s3
         - service: ecr.dkr
         - service: ecr.api
+
+services:
+  rproxy:
+    deploy:
+      labels:
+        ecs.task.family: bignicefamily
+    depends_on:
+      - app01
+  app01:
+    deploy:
+      labels:
+        ecs.task.family: bignicefamily
+        ecs.depends.condition: COMPLETE
