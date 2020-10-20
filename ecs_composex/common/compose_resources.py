@@ -19,6 +19,8 @@
 Module to define the ComposeX Resources into a simple object to make it easier to navigate through.
 """
 
+from json import dumps
+
 from troposphere import Sub
 from troposphere.ecs import Environment
 
@@ -53,6 +55,8 @@ class Service(object):
     :cvar str container_name: name of the container to use in definitions
     """
 
+    main_key = "services"
+
     def __init__(self, name, definition):
         self.name = name
         self.definition = definition
@@ -63,9 +67,50 @@ class Service(object):
         self.secrets = (
             definition["secrets"] if keyisset("secrets", self.definition) else None
         )
+        self.volumes = []
 
     def __repr__(self):
         return self.name
+
+
+class Volume(object):
+    """
+    Class to keep track of the Docker-compose Volumes
+    """
+
+    main_key = "volumes"
+    driver_opts_key = "driver_opts"
+
+    def __init__(self, name, definition):
+        self.name = name
+        self.volume_name = name
+        self.efs_volume = (
+            definition["x-efs"]
+            if keyisset("x-efs", definition) and isinstance(definition["x-efs"], str)
+            else None
+        )
+        self.device = None
+        self.cfn_fs = None
+        self.cfn_ap = None
+        self.type = "local" if not self.efs_volume else "nfs"
+
+        if (
+            keyisset(self.driver_opts_key, definition)
+            and isinstance(definition[self.driver_opts_key], dict)
+            and keyisset("type", definition[self.driver_opts_key])
+            and isinstance(definition[self.driver_opts_key]["type"], str)
+            and definition[self.driver_opts_key]["type"] == "nfs"
+        ):
+            self.type = "efs"
+            if keyisset("device", definition[self.driver_opts_key]):
+                self.root_folder = definition[self.driver_opts_key]["device"]
+            if keyisset("o", definition[self.driver_opts_key]):
+                self.mount_options_raw = definition[self.driver_opts_key]["o"]
+
+    def __repr__(self):
+        return dumps(
+            {"name": self.name, "efs": self.efs_volume, "type": self.type}, indent=4
+        )
 
 
 class XResource(object):

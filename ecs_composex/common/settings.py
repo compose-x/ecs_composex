@@ -38,7 +38,7 @@ from ecs_composex.utils.init_s3 import create_bucket
 from ecs_composex.ecs.ecs_service_config import set_service_ports
 from cfn_flip.yaml_dumper import LongCleanDumper
 from ecs_composex.secrets.secrets_config import parse_secrets
-from ecs_composex.common.compose_resources import Service
+from ecs_composex.common.compose_resources import Service, Volume
 
 
 def render_services_ports(services):
@@ -146,18 +146,18 @@ def merge_config_file(original_content, override_content):
     :return:
     """
 
-    if not keyisset("services", original_content):
+    if not keyisset(Service.main_key, original_content):
         raise KeyError(
             "No services defined in the source file. Keys found",
             original_content.keys(),
         )
-    if not keyisset("services", override_content):
+    if not keyisset(Service.main_key, override_content):
         return original_content.update(override_content)
 
-    original_services = deepcopy(original_content["services"])
-    override_services = override_content["services"]
+    original_services = deepcopy(original_content[Service.main_key])
+    override_services = override_content[Service.main_key]
 
-    for service_name in override_content["services"]:
+    for service_name in override_content[Service.main_key]:
         if keyisset(service_name, original_services):
             original_services.update(
                 {
@@ -168,11 +168,11 @@ def merge_config_file(original_content, override_content):
                 }
             )
         else:
-            original_content["services"].update(
-                {service_name: override_content["services"][service_name]}
+            original_content[Service.main_key].update(
+                {service_name: override_content[Service.main_key][service_name]}
             )
     original_content.update(override_content)
-    original_content["services"] = original_services
+    original_content[Service.main_key] = original_services
 
 
 class ComposeXSettings(object):
@@ -266,6 +266,7 @@ class ComposeXSettings(object):
         self.storage_subnets = []
         self.public_subnets = []
         self.app_subnets = []
+        self.volumes = []
         self.deploy = True if keyisset(self.deploy_arg, kwargs) else False
         self.no_upload = True if keyisset(self.render_arg, kwargs) else False
 
@@ -277,6 +278,7 @@ class ComposeXSettings(object):
             kwargs[self.input_file_arg] if keyisset(self.input_file_arg, kwargs) else {}
         )
         self.set_content(kwargs, content)
+        self.set_volumes()
 
         self.set_output_settings(kwargs)
         self.name = kwargs[self.name_arg]
@@ -293,16 +295,29 @@ class ComposeXSettings(object):
             indent=4,
         )
 
+    def set_volumes(self):
+        """
+        Method configuring the volumes at root level
+        :return:
+        """
+        if not keyisset(Volume.main_key, self.compose_content):
+            LOG.debug("No volumes detected at the root level of compose file")
+            return
+        for volume_name in self.compose_content[Volume.main_key]:
+            self.compose_content[Volume.main_key][volume_name] = Volume(
+                volume_name, self.compose_content[Volume.main_key][volume_name]
+            )
+
     def set_services(self):
         """
         Method to define the ComposeXResource for each service.
         :return:
         """
-        if not keyisset("services", self.compose_content):
+        if not keyisset(Service.main_key, self.compose_content):
             return
-        for service_name in self.compose_content["services"]:
-            self.compose_content["services"][service_name] = Service(
-                service_name, self.compose_content["services"][service_name]
+        for service_name in self.compose_content[Service.main_key]:
+            self.compose_content[Service.main_key][service_name] = Service(
+                service_name, self.compose_content[Service.main_key][service_name]
             )
 
     def set_content(self, kwargs, content=None):
@@ -325,8 +340,8 @@ class ComposeXSettings(object):
 
         elif content and isinstance(content, dict):
             self.compose_content = content
-        if keyisset("services", self.compose_content):
-            render_services_ports(self.compose_content["services"])
+        if keyisset(Service.main_key, self.compose_content):
+            render_services_ports(self.compose_content[Service.main_key])
         LOG.debug(yaml.dump(self.compose_content))
         interpolate_env_vars(self.compose_content)
         parse_secrets(self)

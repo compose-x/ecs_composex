@@ -19,12 +19,15 @@
 Module for the ServiceConfig Class which is used for Container, Task and Service definitions.
 """
 
+import re
+
 from troposphere import AWS_NO_VALUE
 from troposphere import Ref
 from troposphere.ecs import HealthCheck
 from troposphere.iam import Policy
 
 from ecs_composex.common import keyisset, keypresent, LOG
+from ecs_composex.common.compose_resources import Volume
 from ecs_composex.ecs import ecs_params
 from ecs_composex.ecs.docker_tools import set_memory_to_mb
 from ecs_composex.iam import define_iam_policy
@@ -167,6 +170,75 @@ def define_ingress_mappings(service_ports):
     return ingress_mappings
 
 
+def handle_volume_str_config(config, content):
+    """
+    Function to return the volume configuration (long)
+    :param str config:
+    :param dict content:
+    :return: volume long syntax config
+    :rtype: dict
+    """
+    volume_config = {"read_only": False}
+    path_pattern = r"(^[^:]+$)|(^[^:]+)(:\/[\d\w\/]+)(:ro$|:rw$)?"
+    path_finder = re.compile(path_pattern)
+    path_match = path_finder.match(config)
+    if not path_match:
+        raise ValueError(
+            f"Volume syntaxt {config} is invalid. Must follow the pattern", path_pattern
+        )
+    if path_match.groups()[0]:
+        volume_config["source"] = path_match.groups()[0]
+        volume_config["target"] = f"/{path_match.groups()[0]}"
+    elif path_match.groups()[1] and path_match.groups()[2]:
+        volume_config["source"] = path_match.groups()[1]
+        volume_config["target"] = path_match.groups()[2]
+        if path_match.groups()[3] and path_match.groups()[3] == "ro":
+            volume_config["read_only"] = True
+    if keyisset(Volume.main_key, content) and keyisset(
+        volume_config["source"], content[Volume.main_key]
+    ):
+        volume_config["volume"] = content[Volume.main_key][volume_config["source"]]
+    elif keyisset(Volume.main_key, content) and not keyisset(
+        volume_config["source"], content[Volume.main_key]
+    ):
+        raise LookupError(
+            f"Volume {volume_config['source']} is defined in service but "
+            "there is no matching volume defined at top-level"
+        )
+    return volume_config
+
+
+def handle_volume_dict_config(config, content):
+    """
+
+    :param dict config:
+    :param dict content:
+    :return:
+    """
+    volume_config = {"read_only": False}
+    required_keys = ["target", "source"]
+    if not all(key in required_keys for key in config.keys()):
+        raise KeyError(
+            "Volume configuration requires at least",
+            required_keys,
+            "Got",
+            config.keys(),
+        )
+    volume_config.update(config)
+    if keyisset(Volume.main_key, content) and keyisset(
+        volume_config["source"], content[Volume.main_key]
+    ):
+        volume_config["volume"] = content[Volume.main_key][volume_config["source"]]
+    elif keyisset(Volume.main_key, content) and not keyisset(
+        volume_config["source"], content[Volume.main_key]
+    ):
+        raise LookupError(
+            f"Volume {volume_config['source']} is defined in service but "
+            "there is no matching volume defined at top-level"
+        )
+    return volume_config
+
+
 class ServiceConfig(object):
     """
     Class specifically dealing with the configuration and settings of the ecs_service from how it was defined in
@@ -301,6 +373,7 @@ class ServiceConfig(object):
         self.depends_on = keyset_else_novalue(
             "depends_on", self.resource.definition, else_value=[]
         )
+        self.init_volumes(service.definition, content)
 
     def __add__(self, other):
         """
@@ -329,12 +402,34 @@ class ServiceConfig(object):
             self.target_scaling_config = other.target_scaling_config
         elif self.target_scaling_config and other.target_scaling_config:
             self.target_scaling_config.update(other.target_scaling_config)
+        if self.volumes and other.volumes:
+            self.volumes += other.volumes
+        elif not self.volumes and other.volumes:
+            self.volumes = other.volumes
         return self
 
     def add_managed_policies(self, policies):
         for policy in policies:
             policy_def = define_iam_policy(policy)
             self.managed_policies.append(policy_def)
+
+    def init_volumes(self, config, content):
+        """
+        Method to map a volume defined to a volume in compose file
+        :return:
+        """
+        if keyisset(Volume.main_key, config) and isinstance(
+            config[Volume.main_key], list
+        ):
+            for volume in config[Volume.main_key]:
+                volume_config = None
+                if isinstance(volume, str):
+                    volume_config = handle_volume_str_config(volume, content)
+                elif isinstance(volume, dict):
+                    volume_config = handle_volume_dict_config(volume, content)
+                self.volumes.append(volume_config)
+                self.resource.volumes.append(volume_config)
+        LOG.debug([vol["volume"] for vol in self.volumes])
 
     def set_target_scaling(self, config):
         """

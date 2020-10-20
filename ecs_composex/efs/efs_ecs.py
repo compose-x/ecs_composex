@@ -20,12 +20,16 @@ Module to allow EFS and ECS Linking
 """
 
 from troposphere import Ref, Sub, GetAtt
-from troposphere import AWS_URL_SUFFIX, AWS_REGION
+from troposphere import AWS_URL_SUFFIX, AWS_REGION, AWS_NO_VALUE
 from troposphere.ec2 import SecurityGroupIngress
+from troposphere.ecs import EFSVolumeConfiguration, Volume as EcsVolume
 
 from ecs_composex.resource_settings import generate_export_strings
-from ecs_composex.common import LOG
+
+from ecs_composex.common import keyisset, LOG
 from ecs_composex.common.outputs import get_import_value
+from ecs_composex.common.compose_resources import Volume
+from ecs_composex.ecs.ecs_params import TASK_T
 from ecs_composex.ecs.ecs_template import get_service_family_name
 from ecs_composex.ecs.ecs_container_config import (
     assign_resource_envvars_to_service_containers,
@@ -62,7 +66,70 @@ def add_security_group_ingress(service_stack, fs_name, sg_id=None, port=None):
     )
 
 
-def handle_new_fs(fs, services_stack, services_families, res_root_stack):
+def assign_volume_to_task(fs, service, service_stack, compose_content):
+    """
+    Function to add to the Task definition the Volume configuration for EFS
+
+    :param fs:
+    :param service_stack:
+    :param compose_content:
+    :return:
+    """
+    the_service = None
+    for service_name in compose_content["services"]:
+        if service_name == service["name"]:
+            the_service = compose_content["services"][service_name]
+            break
+    if not the_service:
+        return
+    service_efs = [
+        volume
+        for volume in the_service.volumes
+        if volume["volume"].efs_volume == fs.name
+    ]
+    if not service_efs:
+        return
+    volumes_configs = []
+    for efs_def in service_efs:
+        print(efs_def)
+        volume_config = EcsVolume(
+            Name=efs_def["source"],
+            EFSVolumeConfiguration=EFSVolumeConfiguration(
+                FilesystemId=generate_export_strings(fs.logical_name, EFS_ID),
+                RootDirectory=Ref(AWS_NO_VALUE)
+                if not keyisset("target", efs_def)
+                else efs_def["target"],
+            ),
+        )
+        volumes_configs.append(volume_config)
+        service_task_def = service_stack.stack_template.resources[TASK_T]
+        setattr(service_task_def, "Volumes", volumes_configs)
+
+
+def assign_volume_to_efs(fs, compose_content):
+    """
+    Function to add to the Task definition the Volume configuration for EFS
+
+    :param fs:
+    :param compose_content:
+    :return:
+    """
+    if not keyisset(Volume.main_key, compose_content):
+        LOG.warn("No volumes defined at the top-level, skipping")
+        return
+    compose_volumes = [
+        compose_content[Volume.main_key][name]
+        for name in compose_content[Volume.main_key]
+        if compose_content[Volume.main_key][name].efs_volume
+    ]
+    for volume in compose_volumes:
+        if not volume.efs_volume == fs.name:
+            continue
+        LOG.info(f"Mapped volume {volume.name} to EFS {fs.name}")
+        volume.cfn_fs = fs
+
+
+def handle_new_fs(fs, services_stack, services_families, res_root_stack, settings):
     """
     Function to link the FS and the ECS Service.
 
@@ -70,6 +137,7 @@ def handle_new_fs(fs, services_stack, services_families, res_root_stack):
     :param services_stack:
     :param services_families:
     :param res_root_stack:
+    :param ecs_composex.common.settings.ComposeXSettings settings:
     :return:
     """
     fs_id = generate_export_strings(fs.logical_name, EFS_ID)
@@ -85,9 +153,9 @@ def handle_new_fs(fs, services_stack, services_families, res_root_stack):
             )
         family_wide = True if service["name"] in services_families else False
         service_stack = services_stack.stack_template.resources[service_family]
-        service_template = service_stack.stack_template
         add_security_group_ingress(service_stack, fs.logical_name)
         assign_resource_envvars_to_service_containers(service_stack, fs, family_wide)
+        assign_volume_to_task(fs, service, service_stack, settings.compose_content)
         if res_root_stack.title not in services_stack.DependsOn:
             services_stack.DependsOn.append(res_root_stack.title)
 
@@ -110,10 +178,13 @@ def efs_to_ecs(xresources, services_stack, services_families, res_root_stack, se
         xresources[name] for name in xresources if xresources[name].lookup
     ]
     for new_fs in new_resources:
+        assign_volume_to_efs(new_fs, settings.compose_content)
         if not new_fs.services:
             LOG.warn(f"EFS {new_fs.name} does not have any service defined")
             continue
-        handle_new_fs(new_fs, services_stack, services_families, res_root_stack)
+        handle_new_fs(
+            new_fs, services_stack, services_families, res_root_stack, settings
+        )
     for lookup_fs in lookup_resources:
         if not lookup_fs.services:
             LOG.warn(f"EFS {lookup_fs.name} does not have any service defined")

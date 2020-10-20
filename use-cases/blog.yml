@@ -48,6 +48,8 @@ services:
       LOGLEVEL: DEBUG
 
   app03:
+    volumes:
+      - shared-images
     image: ${IMAGE:-nginx}
     ports:
       - 5000
@@ -58,3 +60,7 @@ services:
           memory: "64M"
     environment:
       LOGLEVEL: DEBUG
+
+
+volumes:
+  shared-images:

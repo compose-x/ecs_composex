@@ -1,6 +1,10 @@
 ---
 # EFS Creation
 
+volumes:
+  shared-images:
+    x-efs: share-01
+
 services:
   rproxy:
     deploy:
@@ -36,4 +40,3 @@ x-efs:
     Services:
       - name: together
         access: RW
-
