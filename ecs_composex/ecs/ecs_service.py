@@ -464,10 +464,6 @@ class Service(object):
                         self.config.target_scaling_config, "memory"
                     ),
                 )
-            print(
-                keyisset("tgt_targets_count", self.config.target_scaling_config),
-                self.config.target_scaling_config,
-            )
             if keyisset("tgt_targets_count", self.config.target_scaling_config):
                 applicationautoscaling.ScalingPolicy(
                     "ServiceAlbTargetTracking",
