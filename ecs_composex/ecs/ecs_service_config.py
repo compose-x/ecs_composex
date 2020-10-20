@@ -327,6 +327,8 @@ class ServiceConfig(object):
             self.links += other.links
         if not self.target_scaling_config and other.target_scaling_config:
             self.target_scaling_config = other.target_scaling_config
+        elif self.target_scaling_config and other.target_scaling_config:
+            self.target_scaling_config.update(other.target_scaling_config)
         return self
 
     def add_managed_policies(self, policies):
@@ -344,7 +346,7 @@ class ServiceConfig(object):
         allowed_keys = {
             "cpu_target": int,
             "memory_target": int,
-            "lb_targets": int,
+            "tgt_targets_count": int,
             "scale_in_cooldown": int,
             "scale_out_cooldown": int,
             "disable_scale_in": bool,
