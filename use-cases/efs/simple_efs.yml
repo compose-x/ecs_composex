@@ -1,0 +1,39 @@
+---
+# EFS Creation
+
+services:
+  rproxy:
+    deploy:
+      labels:
+        ecs.task.family: together
+  app01:
+    deploy:
+      labels:
+        ecs.task.family: together
+
+x-efs:
+  share-01:
+    Properties: {}
+    Settings: {}
+    Services:
+      - name: app03
+        access: RW
+
+  Share02:
+    Properties:
+      LifecyclePolicies:
+        - TransitionToIA: AFTER_14_DAYS
+      BackupPolicy:
+        Status: ENABLING
+      FileSystemTags:
+        - Key: Name
+          Value: Share02
+        - Key: Somekey
+          Value: SomeValue
+    Settings:
+      EnvNames:
+        - IMAGES_SHARE
+    Services:
+      - name: together
+        access: RW
+

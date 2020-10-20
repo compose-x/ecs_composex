@@ -1,0 +1,24 @@
+﻿{
+    "RO": {
+        "Action": [
+            "elasticfilesystem:ClientMount",
+        ],
+        "Effect": "Allow"
+    },
+    "RW": {
+        "Action": [
+            "elasticfilesystem:ClientMount",
+            "elasticfilesystem:ClientWrite"
+        ],
+        "Effect": "Allow"
+    },
+    "Root": {
+        "Action": [
+            "elasticfilesystem:ClientMount",
+            "elasticfilesystem:ClientWrite",
+            "elasticfilesystem:ClientRootAccess"
+
+        ],
+        "Effect": "Allow"
+    }
+}

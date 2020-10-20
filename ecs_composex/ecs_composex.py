@@ -79,6 +79,8 @@ SUPPORTED_X_MODULES = [
     "kms",
     f"{X_KEY}s3",
     "s3",
+    f"{X_KEY}efs",
+    "efs",
 ]
 EXCLUDED_X_KEYS = [
     f"{X_KEY}configs",
@@ -254,7 +256,7 @@ def handle_new_xstack(
     root_template,
     xstack,
 ):
-    tcp_services = ["x-rds", "x-appmesh"]
+    tcp_services = [f"{X_KEY}rds", f"{X_KEY}appmesh", f"{X_KEY}efs"]
     if vpc_stack and key in tcp_services:
         xstack.get_from_vpc_stack(vpc_stack)
     elif not vpc_stack and key in tcp_services:

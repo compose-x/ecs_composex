@@ -24,6 +24,7 @@ from troposphere import Ref, GetAtt, ImportValue, Sub
 from troposphere.ecs import ContainerDefinition, Environment
 
 from ecs_composex.common import LOG, keyisset
+from ecs_composex.ecs.ecs_iam import define_service_containers
 
 
 def import_secrets(template, service, container, settings):
@@ -140,3 +141,21 @@ def extend_container_envvars(container, env_vars):
     else:
         setattr(container, "Environment", env_vars)
     LOG.debug(f"{container.Name}, {[env.Name for env in environment]}")
+
+
+def assign_resource_envvars_to_service_containers(service_stack, resource, family_wide=True):
+    """
+    Function to assign resource env vars to containers.
+
+    :param service_stack: 
+    :param resource: 
+    :param family_wide: 
+    :return: 
+    """
+    containers = define_service_containers(service_stack.stack_template)
+    for container in containers:
+        if family_wide:
+            extend_container_envvars(container, resource.env_vars)
+        elif not family_wide and container.Name == resource.logical_name:
+            extend_container_envvars(container, resource.env_vars)
+            break

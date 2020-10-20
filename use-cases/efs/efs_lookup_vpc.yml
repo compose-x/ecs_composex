@@ -1,0 +1,21 @@
+---
+# EFS Creation
+
+x-efs:
+  share-01:
+    Properties: {}
+    Settings: {}
+    Services: []
+
+x-vpc:
+  Use:
+    VpcId: vpc-0bea6323bb0e06d3a
+    AppSubnets:
+      - subnet-05b258019b10e497d
+      - subnet-096eec492ab18ab90
+    StorageSubnets:
+      - subnet-05b258019b10e497d
+      - subnet-096eec492ab18ab90
+    PublicSubnets:
+      - subnet-05b258019b10e497d
+      - subnet-096eec492ab18ab90

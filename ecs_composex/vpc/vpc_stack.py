@@ -132,7 +132,7 @@ def import_vpc_settings(vpc_settings):
     return settings
 
 
-def apply_vpc_settings(x_settings, root_stack):
+def apply_vpc_settings(x_settings, root_stack, settings):
     """
 
     :param x_settings:
@@ -150,6 +150,9 @@ def apply_vpc_settings(x_settings, root_stack):
         PUBLIC_SUBNETS.title: x_settings[PUBLIC_SUBNETS.title],
     }
     root_stack.Parameters.update(settings_params)
+    settings.public_subnets = x_settings[PUBLIC_SUBNETS.title]
+    settings.app_subnets = x_settings[APP_SUBNETS.title]
+    settings.storage_subnets = x_settings[STORAGE_SUBNETS.title]
 
 
 def add_vpc_to_root(root_stack, settings):
@@ -169,10 +172,10 @@ def add_vpc_to_root(root_stack, settings):
             x_settings = lookup_x_vpc_settings(
                 settings.session, settings.compose_content[vpc_xkey]["Lookup"]
             )
-            apply_vpc_settings(x_settings, root_stack)
+            apply_vpc_settings(x_settings, root_stack, settings)
         elif keyisset("Use", settings.compose_content[vpc_xkey]):
             x_settings = import_vpc_settings(settings.compose_content[vpc_xkey]["Use"])
-            apply_vpc_settings(x_settings, root_stack)
+            apply_vpc_settings(x_settings, root_stack, settings)
         else:
             if keyisset("Create", settings.compose_content[vpc_xkey]) and keyisset(
                 "Lookup", settings.compose_content[vpc_xkey]

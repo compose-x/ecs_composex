@@ -263,6 +263,9 @@ class ComposeXSettings(object):
         self.vpc_cidr = None
         self.single_nat = None
         self.lookup_vpc = False
+        self.storage_subnets = []
+        self.public_subnets = []
+        self.app_subnets = []
         self.deploy = True if keyisset(self.deploy_arg, kwargs) else False
         self.no_upload = True if keyisset(self.render_arg, kwargs) else False
 
