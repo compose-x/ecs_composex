@@ -23,8 +23,6 @@ services:
     x-configs:
       scaling:
         range: "1-10"
-        target_scaling:
-          cpu_target: 80
       use_xray: True
       network:
         is_public: True
@@ -34,6 +32,11 @@ services:
     x-configs:
       scaling:
         range: "0-20"
+        target_scaling:
+          tgt_targets_count: 100
+      network:
+        lb_type: application
+        is_public: False
 
   app03:
     x-configs:

@@ -218,11 +218,6 @@ def define_bucket_name(properties, settings):
     base_name = (
         None if not keyisset("BucketName", properties) else properties["BucketName"]
     )
-    print(
-        base_name,
-        keyisset(expand_region_key, settings),
-        keyisset(expand_account_id, settings),
-    )
     if base_name:
         if keyisset(expand_region_key, settings) and keyisset(
             expand_account_id, settings

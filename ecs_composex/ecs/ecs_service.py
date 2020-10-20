@@ -229,7 +229,7 @@ class Task(object):
         )
         for service in containers_config:
             unordered.append(containers_config[service])
-        ordered_containers_config = sorted(unordered, key=lambda i: i["priority"])
+        ordered_containers_config = sorted(unordered, key=lambda i: i[priority_key])
         ordered_containers_config[0]["config"].essential = True
         for service_config in ordered_containers_config:
             container = Container(
@@ -308,34 +308,6 @@ def generate_security_group_props(allowed_source, service_name):
     return props
 
 
-def define_tracking_target_configuration(target_scaling_config, config_key):
-    """
-    Function to create the configuration for target tracking scaling
-
-    :param dict target_scaling_config:
-    :param str config_key:
-    :return:
-    """
-    settings = {
-        "cpu": {"key": "cpu_target", "property": "ECSServiceAverageCPUUtilization"},
-        "memory": {
-            "key": "memory_target",
-            "property": "ECSServiceAverageMemoryUtilization",
-        },
-    }
-    if config_key not in settings.keys():
-        raise KeyError(config_key, "Is invalid. Expected one of", settings.keys())
-    return applicationautoscaling.TargetTrackingScalingPolicyConfiguration(
-        DisableScaleIn=target_scaling_config["disable_scale_in"],
-        ScaleInCooldown=target_scaling_config["scale_in_cooldown"],
-        ScaleOutCooldown=target_scaling_config["scale_out_cooldown"],
-        TargetValue=float(target_scaling_config[settings[config_key]["key"]]),
-        PredefinedMetricSpecification=applicationautoscaling.PredefinedMetricSpecification(
-            PredefinedMetricType=settings[config_key]["property"]
-        ),
-    )
-
-
 class Service(object):
     """
     Class representing the service from the Docker compose file and translate it into
@@ -362,6 +334,8 @@ class Service(object):
         self.task = task_definition
         self.links = []
         self.eips = []
+        self.tgt_groups = []
+        self.lbs = []
         self.service_attrs = None
         self.dependencies = []
         self.network_settings = None
@@ -401,6 +375,47 @@ class Service(object):
         self.create_scalable_target()
         self.generate_service_template_outputs()
 
+    def define_tracking_target_configuration(self, target_scaling_config, config_key):
+        """
+        Function to create the configuration for target tracking scaling
+
+        :param dict target_scaling_config:
+        :param str config_key:
+        :return:
+        """
+        settings = {
+            "cpu": {"key": "cpu_target", "property": "ECSServiceAverageCPUUtilization"},
+            "memory": {
+                "key": "memory_target",
+                "property": "ECSServiceAverageMemoryUtilization",
+            },
+            "targets": {
+                "key": "tgt_targets_count",
+                "property": "ALBRequestCountPerTarget",
+            },
+        }
+        if config_key not in settings.keys():
+            raise KeyError(config_key, "Is invalid. Expected one of", settings.keys())
+        specification = applicationautoscaling.PredefinedMetricSpecification(
+            PredefinedMetricType=settings[config_key]["property"]
+        )
+        if config_key == "targets" and self.tgt_groups:
+            specification = applicationautoscaling.PredefinedMetricSpecification(
+                PredefinedMetricType=settings[config_key]["property"],
+                ResourceLabel=GetAtt(self.tgt_groups[0], "TargetGroupFullName"),
+            )
+        elif config_key == "targets" and not self.tgt_groups:
+            raise ValueError(
+                f"{self.service_name} - Invalid target tracking for TGT Groups: No load-balancing defined"
+            )
+        return applicationautoscaling.TargetTrackingScalingPolicyConfiguration(
+            DisableScaleIn=target_scaling_config["disable_scale_in"],
+            ScaleInCooldown=target_scaling_config["scale_in_cooldown"],
+            ScaleOutCooldown=target_scaling_config["scale_out_cooldown"],
+            TargetValue=float(target_scaling_config[settings[config_key]["key"]]),
+            PredefinedMetricSpecification=specification,
+        )
+
     def create_scalable_target(self):
         """
         Method to automatically create a scalable target
@@ -434,7 +449,7 @@ class Service(object):
                     ScalingTargetId=Ref(self.scalable_target),
                     PolicyName="CpuTrackingScalingPolicy",
                     PolicyType="TargetTrackingScaling",
-                    TargetTrackingScalingPolicyConfiguration=define_tracking_target_configuration(
+                    TargetTrackingScalingPolicyConfiguration=self.define_tracking_target_configuration(
                         self.config.target_scaling_config, "cpu"
                     ),
                 )
@@ -445,8 +460,23 @@ class Service(object):
                     ScalingTargetId=Ref(self.scalable_target),
                     PolicyName="MemoryTrackingScalingPolicy",
                     PolicyType="TargetTrackingScaling",
-                    TargetTrackingScalingPolicyConfiguration=define_tracking_target_configuration(
+                    TargetTrackingScalingPolicyConfiguration=self.define_tracking_target_configuration(
                         self.config.target_scaling_config, "memory"
+                    ),
+                )
+            print(
+                keyisset("tgt_targets_count", self.config.target_scaling_config),
+                self.config.target_scaling_config,
+            )
+            if keyisset("tgt_targets_count", self.config.target_scaling_config):
+                applicationautoscaling.ScalingPolicy(
+                    "ServiceAlbTargetTracking",
+                    template=self.template,
+                    ScalingTargetId=Ref(self.scalable_target),
+                    PolicyName="ALBTargetTrackingPolicy",
+                    PolicyType="TargetTrackingScaling",
+                    TargetTrackingScalingPolicyConfiguration=self.define_tracking_target_configuration(
+                        self.config.target_scaling_config, "targets"
                     ),
                 )
 
@@ -776,6 +806,7 @@ class Service(object):
                 }
             ),
         )
+        self.tgt_groups.append(tgt)
         return tgt
 
     def add_load_balancer(self, settings):
@@ -852,6 +883,7 @@ class Service(object):
             self.add_ext_sources_ingress(self.alb_sg)
         elif self.config.use_nlb():
             self.add_ext_sources_ingress(SG_T)
+        self.lbs.append(loadbalancer)
         return loadbalancer
 
     def add_service_load_balancer(self, settings):

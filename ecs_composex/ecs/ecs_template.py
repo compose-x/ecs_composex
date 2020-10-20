@@ -272,32 +272,32 @@ def handle_families_services(families, cluster_sg, settings):
         family_service_configs = {}
         family_parameters = {}
         for service_name in family:
-            service = settings.compose_content[ecs_params.RES_KEY][service_name]
-            if keyisset("deploy", service.definition):
-                service.definition["deploy"].update(
-                    get_deploy_labels(service.definition)
+            service_def = settings.compose_content[ecs_params.RES_KEY][service_name]
+            if keyisset("deploy", service_def.definition):
+                service_def.definition["deploy"].update(
+                    get_deploy_labels(service_def.definition)
                 )
-                LOG.debug(service.definition["deploy"])
+                LOG.debug(service_def.definition["deploy"])
             service_config = ServiceConfig(
-                service,
+                service_def,
                 settings.compose_content,
                 family_name=family_resource_name,
             )
             family_service_configs[service_name] = {
                 "config": service_config,
                 "priority": 0,
-                "definition": service,
+                "definition": service_def,
             }
         task = Task(template, family_service_configs, family_parameters, settings)
         family_parameters.update(task.stack_parameters)
-        service = Service(
+        ecs_service = Service(
             template=template,
             family_name=family_resource_name,
             task_definition=task,
             config=task.family_config,
             settings=settings,
         )
-        service.parameters.update(
+        ecs_service.parameters.update(
             {
                 CLUSTER_NAME_T: Ref(CLUSTER_NAME),
                 ROOT_STACK_NAME_T: Ref(ROOT_STACK_NAME),
@@ -314,9 +314,9 @@ def handle_families_services(families, cluster_sg, settings):
                 ),
             }
         )
-        service.parameters.update(family_parameters)
+        ecs_service.parameters.update(family_parameters)
         LOG.debug(f"Service {family_resource_name} added.")
-        services[family_resource_name] = service
+        services[family_resource_name] = ecs_service
     return services
 
 
