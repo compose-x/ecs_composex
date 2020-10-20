@@ -27,7 +27,9 @@ from ecs_composex.resource_settings import generate_export_strings
 from ecs_composex.common import LOG
 from ecs_composex.common.outputs import get_import_value
 from ecs_composex.ecs.ecs_template import get_service_family_name
-from ecs_composex.ecs.ecs_container_config import assign_resource_envvars_to_service_containers
+from ecs_composex.ecs.ecs_container_config import (
+    assign_resource_envvars_to_service_containers,
+)
 from ecs_composex.ecs.ecs_params import SG_T
 from ecs_composex.efs.efs_params import EFS_ID, EFS_SG_ID_T, NFS_PORT
 
@@ -52,7 +54,9 @@ def add_security_group_ingress(service_stack, fs_name, sg_id=None, port=None):
         FromPort=port,
         ToPort=port,
         Description=Sub(f"Allow FROM {service_stack.title} TO {fs_name}"),
-        SourceSecurityGroupId=GetAtt(service_stack.stack_template.resources[SG_T], "GroupId"),
+        SourceSecurityGroupId=GetAtt(
+            service_stack.stack_template.resources[SG_T], "GroupId"
+        ),
         SourceSecurityGroupOwnerId=Ref("AWS::AccountId"),
         IpProtocol="6",
     )
@@ -69,11 +73,16 @@ def handle_new_fs(fs, services_stack, services_families, res_root_stack):
     :return:
     """
     fs_id = generate_export_strings(fs.logical_name, EFS_ID)
-    fs.generate_resource_envvars(None, arn=Sub(f"${{FsId}}.efs.${{{AWS_REGION}}}.${{{AWS_URL_SUFFIX}}}", FsId=fs_id))
+    fs.generate_resource_envvars(
+        None,
+        arn=Sub(f"${{FsId}}.efs.${{{AWS_REGION}}}.${{{AWS_URL_SUFFIX}}}", FsId=fs_id),
+    )
     for service in fs.services:
         service_family = get_service_family_name(services_families, service["name"])
         if service_family not in services_stack.stack_template.resources:
-            raise AttributeError(f"No service {service_family} present in services stack")
+            raise AttributeError(
+                f"No service {service_family} present in services stack"
+            )
         family_wide = True if service["name"] in services_families else False
         service_stack = services_stack.stack_template.resources[service_family]
         service_template = service_stack.stack_template
@@ -81,7 +90,6 @@ def handle_new_fs(fs, services_stack, services_families, res_root_stack):
         assign_resource_envvars_to_service_containers(service_stack, fs, family_wide)
         if res_root_stack.title not in services_stack.DependsOn:
             services_stack.DependsOn.append(res_root_stack.title)
-
 
 
 def efs_to_ecs(xresources, services_stack, services_families, res_root_stack, settings):
@@ -95,8 +103,12 @@ def efs_to_ecs(xresources, services_stack, services_families, res_root_stack, se
     :param settings:
     :return:
     """
-    new_resources = [xresources[name] for name in xresources if not xresources[name].lookup]
-    lookup_resources = [xresources[name] for name in xresources if xresources[name].lookup]
+    new_resources = [
+        xresources[name] for name in xresources if not xresources[name].lookup
+    ]
+    lookup_resources = [
+        xresources[name] for name in xresources if xresources[name].lookup
+    ]
     for new_fs in new_resources:
         if not new_fs.services:
             LOG.warn(f"EFS {new_fs.name} does not have any service defined")

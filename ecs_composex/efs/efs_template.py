@@ -128,16 +128,18 @@ class Efs(XResource):
                 Sub(f"efs-${self.logical_name}-${{{ROOT_STACK_NAME.title}}}"),
             ),
             GroupDescription=Sub(f"SG for EFS FS ${self.cfn_resource}"),
-            VpcId=Ref(VPC_ID)
+            VpcId=Ref(VPC_ID),
         )
-        iter_list = settings.storage_subnets if settings.storage_subnets else settings.aws_azs
+        iter_list = (
+            settings.storage_subnets if settings.storage_subnets else settings.aws_azs
+        )
         for count, az in enumerate(iter_list):
             efs.MountTarget(
                 f"{self.logical_name}MountPoint{count}",
                 template=template,
                 FileSystemId=Ref(self.cfn_resource),
                 SecurityGroups=[Ref(self.security_group)],
-                SubnetId=Select(count, Ref(STORAGE_SUBNETS))
+                SubnetId=Select(count, Ref(STORAGE_SUBNETS)),
             )
 
     def define_fs(self):
@@ -175,7 +177,7 @@ def create_efs_template(settings):
         fs.define_fs()
         values = [
             (EFS_ARN.title, "Arn", GetAtt(fs.cfn_resource, "Arn")),
-            (EFS_ID.title, "Name", GetAtt(fs.cfn_resource, "FileSystemId"))
+            (EFS_ID.title, "Name", GetAtt(fs.cfn_resource, "FileSystemId")),
         ]
         if mono_template:
             root_template.add_resource(fs.cfn_resource)

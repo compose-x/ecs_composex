@@ -143,14 +143,16 @@ def extend_container_envvars(container, env_vars):
     LOG.debug(f"{container.Name}, {[env.Name for env in environment]}")
 
 
-def assign_resource_envvars_to_service_containers(service_stack, resource, family_wide=True):
+def assign_resource_envvars_to_service_containers(
+    service_stack, resource, family_wide=True
+):
     """
     Function to assign resource env vars to containers.
 
-    :param service_stack: 
-    :param resource: 
-    :param family_wide: 
-    :return: 
+    :param service_stack:
+    :param resource:
+    :param family_wide:
+    :return:
     """
     containers = define_service_containers(service_stack.stack_template)
     for container in containers:
