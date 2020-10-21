@@ -60,7 +60,16 @@ services:
       LOGLEVEL: DEBUG
     volumes:
       - shared-images
+    secrets:
+      - abcd
+      - zyx
 
 
 volumes:
   shared-images: {}
+
+secrets:
+  abcd: {}
+  zyx:
+    x-secrets:
+      Name: /something/in/aws

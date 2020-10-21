@@ -28,6 +28,7 @@ from troposphere.ecs import Environment
 from ecs_composex.common import LOG, NONALPHANUM, keyisset, keypresent
 from ecs_composex.resource_settings import generate_export_strings
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME
+from ecs_composex.secrets.secrets_resource import ComposeSecret
 
 
 def set_resources(settings, resource_class, res_key):
@@ -73,7 +74,7 @@ def match_volumes_services_config(service, vol_config, volumes):
 def handle_volume_str_config(service, config, volumes):
     """
     Function to return the volume configuration (long)
-    :param Service service:
+    :param ComposeService service:
     :param str config:
     :param list volumes:
     """
@@ -98,7 +99,7 @@ def handle_volume_str_config(service, config, volumes):
 
 def handle_volume_dict_config(service, config, volumes):
     """
-    :param Service service:
+    :param ComposeService service:
     :param dict config:
     :param list volumes:
     """
@@ -115,7 +116,28 @@ def handle_volume_dict_config(service, config, volumes):
     match_volumes_services_config(service, volume_config, volumes)
 
 
-class Volume(object):
+def match_secrets_services_config(service, s_secret, secrets):
+    """
+    Function to match the services and secrets
+    :param service:
+    :param s_secret:
+    :param secrets:
+    :return:
+    """
+    if isinstance(s_secret, str):
+        secret_name = s_secret
+    elif isinstance(s_secret, dict) and keyisset("source", s_secret):
+        secret_name = s_secret["source"]
+    else:
+        raise LookupError("Could not identify the secret source", s_secret)
+    for gl_secret in secrets:
+        if gl_secret.name == secret_name:
+            LOG.info(f"Matched secret {gl_secret.name} with {service.name}")
+            service.secrets.append(gl_secret)
+            gl_secret.services.append(service)
+
+
+class ComposeVolume(object):
     """
     Class to keep track of the Docker-compose Volumes
     """
@@ -156,7 +178,7 @@ class Volume(object):
         )
 
 
-class Service(object):
+class ComposeService(object):
     """
     Class to represent a service
 
@@ -165,21 +187,30 @@ class Service(object):
 
     main_key = "services"
 
-    def __init__(self, name, definition, volumes=None):
-        if volumes is None:
-            volumes = []
+    def __init__(self, name, definition, volumes=None, secrets=None):
         self.name = name
         self.volumes = []
+        self.secrets = []
         self.definition = definition
         self.logical_name = NONALPHANUM.sub("", self.name)
         self.container_name = name
         self.service_name = Sub(f"${{{ROOT_STACK_NAME.title}}}-{self.name}")
         self.cfn_resource = None
-        self.secrets = (
-            definition["secrets"] if keyisset("secrets", self.definition) else None
-        )
-        if keyisset(Volume.main_key, self.definition) and volumes:
-            for s_volume in self.definition[Volume.main_key]:
+        self.map_volumes(volumes)
+        self.map_secrets(secrets)
+
+    def __repr__(self):
+        return self.name
+
+    def map_volumes(self, volumes=None):
+        """
+        Method to apply mapping of volumes to the service and define the mapping configuration
+
+        :param list volumes:
+        :return:
+        """
+        if keyisset(ComposeVolume.main_key, self.definition) and volumes:
+            for s_volume in self.definition[ComposeVolume.main_key]:
                 volume_config = None
                 if isinstance(s_volume, str):
                     handle_volume_str_config(self, s_volume, volumes)
@@ -187,8 +218,10 @@ class Service(object):
                     handle_volume_dict_config(self, s_volume, volumes)
                 self.volumes.append(volume_config)
 
-    def __repr__(self):
-        return self.name
+    def map_secrets(self, secrets):
+        if keyisset(ComposeSecret.main_key, self.definition) and secrets:
+            for s_secret in self.definition[ComposeSecret.main_key]:
+                match_secrets_services_config(self, s_secret, secrets)
 
 
 class XResource(object):

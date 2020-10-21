@@ -37,8 +37,8 @@ from ecs_composex.utils.init_ecs import set_ecs_settings
 from ecs_composex.utils.init_s3 import create_bucket
 from ecs_composex.ecs.ecs_service_config import set_service_ports
 from cfn_flip.yaml_dumper import LongCleanDumper
-from ecs_composex.secrets.secrets_config import parse_secrets
-from ecs_composex.common.compose_resources import Service, Volume
+from ecs_composex.secrets.secrets_resource import ComposeSecret
+from ecs_composex.common.compose_resources import ComposeService, ComposeVolume
 
 
 def render_services_ports(services):
@@ -146,18 +146,18 @@ def merge_config_file(original_content, override_content):
     :return:
     """
 
-    if not keyisset(Service.main_key, original_content):
+    if not keyisset(ComposeService.main_key, original_content):
         raise KeyError(
             "No services defined in the source file. Keys found",
             original_content.keys(),
         )
-    if not keyisset(Service.main_key, override_content):
+    if not keyisset(ComposeService.main_key, override_content):
         return original_content.update(override_content)
 
-    original_services = deepcopy(original_content[Service.main_key])
-    override_services = override_content[Service.main_key]
+    original_services = deepcopy(original_content[ComposeService.main_key])
+    override_services = override_content[ComposeService.main_key]
 
-    for service_name in override_content[Service.main_key]:
+    for service_name in override_content[ComposeService.main_key]:
         if keyisset(service_name, original_services):
             original_services.update(
                 {
@@ -168,11 +168,11 @@ def merge_config_file(original_content, override_content):
                 }
             )
         else:
-            original_content[Service.main_key].update(
-                {service_name: override_content[Service.main_key][service_name]}
+            original_content[ComposeService.main_key].update(
+                {service_name: override_content[ComposeService.main_key][service_name]}
             )
     original_content.update(override_content)
-    original_content[Service.main_key] = original_services
+    original_content[ComposeService.main_key] = original_services
 
 
 class ComposeXSettings(object):
@@ -257,6 +257,7 @@ class ComposeXSettings(object):
         )
         self.volumes = []
         self.services = []
+        self.secrets = []
         self.account_id = None
         self.output_dir = self.default_output_dir
         self.format = self.default_format
@@ -292,19 +293,38 @@ class ComposeXSettings(object):
             indent=4,
         )
 
+    def set_secrets(self):
+        """
+        Function to parse the settings compose content and define the secrets.
+
+        :param ecs_composex.common.settings.ComposeXSettings settings:
+        :return:
+        """
+        if not keyisset(ComposeSecret.main_key, self.compose_content):
+            return
+        for secret_name in self.compose_content[ComposeSecret.main_key]:
+            secret_def = self.compose_content[ComposeSecret.main_key][secret_name]
+            if keyisset("x-secrets", secret_def) and isinstance(
+                secret_def["x-secrets"], dict
+            ):
+                LOG.info(f"Adding secret {secret_name} to settings")
+                secret = ComposeSecret(secret_name, secret_def)
+                self.secrets.append(secret)
+                self.compose_content[ComposeSecret.main_key][secret_name] = secret
+
     def set_volumes(self):
         """
         Method configuring the volumes at root level
         :return:
         """
-        if not keyisset(Volume.main_key, self.compose_content):
+        if not keyisset(ComposeVolume.main_key, self.compose_content):
             LOG.debug("No volumes detected at the root level of compose file")
             return
-        for volume_name in self.compose_content[Volume.main_key]:
-            volume = Volume(
-                volume_name, self.compose_content[Volume.main_key][volume_name]
+        for volume_name in self.compose_content[ComposeVolume.main_key]:
+            volume = ComposeVolume(
+                volume_name, self.compose_content[ComposeVolume.main_key][volume_name]
             )
-            self.compose_content[Volume.main_key][volume_name] = volume
+            self.compose_content[ComposeVolume.main_key][volume_name] = volume
             self.volumes.append(volume)
 
     def set_services(self):
@@ -312,15 +332,16 @@ class ComposeXSettings(object):
         Method to define the ComposeXResource for each service.
         :return:
         """
-        if not keyisset(Service.main_key, self.compose_content):
+        if not keyisset(ComposeService.main_key, self.compose_content):
             return
-        for service_name in self.compose_content[Service.main_key]:
-            service = Service(
+        for service_name in self.compose_content[ComposeService.main_key]:
+            service = ComposeService(
                 service_name,
-                self.compose_content[Service.main_key][service_name],
+                self.compose_content[ComposeService.main_key][service_name],
                 self.volumes,
+                self.secrets,
             )
-            self.compose_content[Service.main_key][service_name] = service
+            self.compose_content[ComposeService.main_key][service_name] = service
             self.services.append(service)
 
     def set_content(self, kwargs, content=None):
@@ -343,11 +364,11 @@ class ComposeXSettings(object):
 
         elif content and isinstance(content, dict):
             self.compose_content = content
-        if keyisset(Service.main_key, self.compose_content):
-            render_services_ports(self.compose_content[Service.main_key])
+        if keyisset(ComposeService.main_key, self.compose_content):
+            render_services_ports(self.compose_content[ComposeService.main_key])
         LOG.debug(yaml.dump(self.compose_content))
         interpolate_env_vars(self.compose_content)
-        parse_secrets(self)
+        self.set_secrets()
         self.set_volumes()
         self.set_services()
 

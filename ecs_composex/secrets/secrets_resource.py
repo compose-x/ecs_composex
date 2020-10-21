@@ -36,7 +36,10 @@ class ComposeSecret(object):
     Class to represent a Compose secret.
     """
 
+    main_key = "secrets"
+
     def __init__(self, name, definition):
+        self.services = []
         if not keyisset("Name", definition[XRES_KEY]):
             raise KeyError(f"Missing Name in the {XRES_KEY} defintion")
         self.name = name
@@ -110,20 +113,3 @@ class ComposeSecret(object):
             task_role.Policies.append(policy)
         elif TASK_ROLE_T in self.links and not hasattr(task_role, "Policies"):
             setattr(task_role, "Policies", [policy])
-
-
-def parse_secrets(settings):
-    """
-    Function to parse the settings compose content and define the secrets.
-
-    :param ecs_composex.common.settings.ComposeXSettings settings:
-    :return:
-    """
-    if not keyisset(RES_KEY, settings.compose_content):
-        return
-    secrets = settings.compose_content[RES_KEY]
-    for secret_name in secrets:
-        secret_def = secrets[secret_name]
-        if keyisset("external", secret_def):
-            LOG.info(f"Adding secret {secret_name} to settings")
-            secret_def["ComposeSecret"] = ComposeSecret(secret_name, secret_def)
