@@ -58,3 +58,9 @@ services:
           memory: "64M"
     environment:
       LOGLEVEL: DEBUG
+    volumes:
+      - shared-images
+
+
+volumes:
+  shared-images: {}

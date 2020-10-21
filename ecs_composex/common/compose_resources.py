@@ -19,6 +19,9 @@
 Module to define the ComposeX Resources into a simple object to make it easier to navigate through.
 """
 
+import re
+from json import dumps
+
 from troposphere import Sub
 from troposphere.ecs import Environment
 
@@ -46,6 +49,113 @@ def set_resources(settings, resource_class, res_key):
         settings.compose_content[res_key][resource_name] = new_definition
 
 
+def match_volumes_services_config(service, vol_config, volumes):
+    """
+    Function to map volume config in services and top-level volumes
+
+    :param service:
+    :param vol_config:
+    :param volumes:
+    :raises LookupError:
+    """
+    for volume in volumes:
+        if volume.name == vol_config["source"]:
+            volume.services.append(service)
+            vol_config["volume"] = volume
+            service.volumes.append(vol_config)
+            LOG.info(f"Mapped {volume.name} to {service.name}")
+            return
+    raise LookupError(
+        f"Volume {vol_config['source']} was not found in {[vol.name for vol in volumes]}"
+    )
+
+
+def handle_volume_str_config(service, config, volumes):
+    """
+    Function to return the volume configuration (long)
+    :param Service service:
+    :param str config:
+    :param list volumes:
+    """
+    volume_config = {"read_only": False}
+    path_pattern = r"(^[^:]+$)|(^[^:]+)(:\/[\d\w\/]+)(:ro$|:rw$)?"
+    path_finder = re.compile(path_pattern)
+    path_match = path_finder.match(config)
+    if not path_match:
+        raise ValueError(
+            f"Volume syntax {config} is invalid. Must follow the pattern", path_pattern
+        )
+    if path_match.groups()[0]:
+        volume_config["source"] = path_match.groups()[0]
+        volume_config["target"] = f"/{path_match.groups()[0]}"
+    elif path_match.groups()[1] and path_match.groups()[2]:
+        volume_config["source"] = path_match.groups()[1]
+        volume_config["target"] = path_match.groups()[2]
+        if path_match.groups()[3] and path_match.groups()[3] == "ro":
+            volume_config["read_only"] = True
+    match_volumes_services_config(service, volume_config, volumes)
+
+
+def handle_volume_dict_config(service, config, volumes):
+    """
+    :param Service service:
+    :param dict config:
+    :param list volumes:
+    """
+    volume_config = {"read_only": False}
+    required_keys = ["target", "source"]
+    if not all(key in required_keys for key in config.keys()):
+        raise KeyError(
+            "Volume configuration requires at least",
+            required_keys,
+            "Got",
+            config.keys(),
+        )
+    volume_config.update(config)
+    match_volumes_services_config(service, volume_config, volumes)
+
+
+class Volume(object):
+    """
+    Class to keep track of the Docker-compose Volumes
+    """
+
+    main_key = "volumes"
+    driver_opts_key = "driver_opts"
+
+    def __init__(self, name, definition):
+        self.name = name
+        self.volume_name = name
+        self.efs_volume = (
+            definition["x-efs"]
+            if keyisset("x-efs", definition) and isinstance(definition["x-efs"], str)
+            else None
+        )
+        self.services = []
+        self.device = None
+        self.cfn_fs = None
+        self.cfn_ap = None
+        self.type = "local" if not self.efs_volume else "nfs"
+
+        if (
+            keyisset(self.driver_opts_key, definition)
+            and isinstance(definition[self.driver_opts_key], dict)
+            and keyisset("type", definition[self.driver_opts_key])
+            and isinstance(definition[self.driver_opts_key]["type"], str)
+            and definition[self.driver_opts_key]["type"] == "nfs"
+        ):
+            self.type = "efs"
+            if keyisset("device", definition[self.driver_opts_key]):
+                self.root_folder = definition[self.driver_opts_key]["device"]
+            if keyisset("o", definition[self.driver_opts_key]):
+                self.mount_options_raw = definition[self.driver_opts_key]["o"]
+
+    def __repr__(self):
+        return dumps(
+            {"name": self.name, "efs": self.efs_volume, "type": self.type}, indent=4
+        )
+
+
 class Service(object):
     """
     Class to represent a service
@@ -53,8 +163,13 @@ class Service(object):
     :cvar str container_name: name of the container to use in definitions
     """
 
-    def __init__(self, name, definition):
+    main_key = "services"
+
+    def __init__(self, name, definition, volumes=None):
+        if volumes is None:
+            volumes = []
         self.name = name
+        self.volumes = []
         self.definition = definition
         self.logical_name = NONALPHANUM.sub("", self.name)
         self.container_name = name
@@ -63,6 +178,14 @@ class Service(object):
         self.secrets = (
             definition["secrets"] if keyisset("secrets", self.definition) else None
         )
+        if keyisset(Volume.main_key, self.definition) and volumes:
+            for s_volume in self.definition[Volume.main_key]:
+                volume_config = None
+                if isinstance(s_volume, str):
+                    handle_volume_str_config(self, s_volume, volumes)
+                elif isinstance(s_volume, dict):
+                    handle_volume_dict_config(self, s_volume, volumes)
+                self.volumes.append(volume_config)
 
     def __repr__(self):
         return self.name
