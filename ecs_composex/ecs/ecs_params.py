@@ -84,7 +84,7 @@ ECS_CONTROLLER = Parameter(
     Default="ECS",
 )
 
-LOG_GROUP = Parameter(f"Cluster{LOG_GROUP_T}", Type="String")
+LOG_GROUP = Parameter(LOG_GROUP_T, Type="String")
 LOG_GROUP_RETENTION_T = "ServiceLogGroupRetentionPeriod"
 LOG_GROUP_RETENTION = Parameter(
     LOG_GROUP_RETENTION_T,

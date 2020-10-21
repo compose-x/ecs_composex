@@ -19,6 +19,7 @@
 Functions to build the ECS Service Definition
 """
 
+from json import dumps
 from ipaddress import IPv4Interface
 
 from troposphere import (
@@ -75,10 +76,7 @@ from ecs_composex.dns.dns_params import (
 )
 from ecs_composex.ecs import ecs_params, ecs_conditions
 from ecs_composex.ecs.docker_tools import find_closest_fargate_configuration
-from ecs_composex.ecs.ecs_aws_sidecars import define_xray_container
 from ecs_composex.ecs.ecs_conditions import USE_HOSTNAME_CON_T
-from ecs_composex.ecs.ecs_container import Container
-from ecs_composex.ecs.ecs_container_config import import_secrets
 from ecs_composex.ecs.ecs_iam import add_service_roles, expand_role_polices
 from ecs_composex.ecs.ecs_params import NETWORK_MODE, EXEC_ROLE_T, TASK_ROLE_T, TASK_T
 from ecs_composex.ecs.ecs_params import SERVICE_NAME, SERVICE_HOSTNAME
@@ -88,6 +86,39 @@ from ecs_composex.ecs.ecs_params import (
 )
 from ecs_composex.vpc import vpc_params
 from ecs_composex.vpc.vpc_params import VPC_ID, PUBLIC_SUBNETS
+
+
+def generate_security_group_props(allowed_source, service_name):
+    """
+    Function to parse the allowed source and create the SG Opening options accordingly.
+
+    :param dict allowed_source: The allowed source defined in configs
+    :param str service_name:
+    :return: security group ingress properties
+    :rtype: dict
+    """
+    props = {
+        "CidrIp": (
+            allowed_source["ipv4"]
+            if keyisset("ipv4", allowed_source)
+            else Ref(AWS_NO_VALUE)
+        ),
+        "CidrIpv6": (
+            allowed_source["ipv6"]
+            if keyisset("ipv6", allowed_source)
+            else Ref(AWS_NO_VALUE)
+        ),
+    }
+
+    if keyisset("CidrIp", props) and isinstance(props["CidrIp"], str):
+        try:
+            IPv4Interface(props["CidrIp"])
+        except Exception as error:
+            LOG.error(
+                f"Falty IP Address: {allowed_source} - ecs_service {service_name}"
+            )
+            raise ValueError("Not a valid IPv4 CIDR notation", props["CidrIp"], error)
+    return props
 
 
 def flatten_ip(ip_str):
@@ -140,172 +171,33 @@ def define_public_mapping(eips, azs):
     return public_mappings
 
 
-def handle_same_task_services_dependencies(
-    services_names, containers_config, config_key, priority_key
-):
-    for service_name in services_names:
-        service_config = containers_config[service_name][config_key]
-        if service_config.depends_on and any(
-            i in services_names for i in service_config.depends_on
-        ):
-            for count, dependency in enumerate(service_config.depends_on):
-                containers_config[dependency][priority_key] += 1
-                containers_config[dependency]["config"].essential = False
-                service_config.family_dependents.append(
-                    {
-                        "ContainerName": dependency,
-                        "Condition": containers_config[dependency][
-                            "config"
-                        ].container_start_condition
-                        if not containers_config[dependency]["config"].healthcheck
-                        else "HEALTHY",
-                    }
-                )
-                service_config.depends_on.pop(count)
-
-
-class Task(object):
+def add_service_default_sg(template):
     """
-    Class to handle the Task definition building and parsing along with the service config.
+    Adds a default security group for the microservice.
     """
-
-    def __init__(self, template, containers_config, family_parameters, settings):
-        """
-        Init method
-        """
-        self.definition = None
-        add_service_roles(template)
-        self.family_config = None
-        self.containers = []
-        self.containers_config = containers_config
-        self.stack_parameters = {}
-        self.sort_container_configs(template, containers_config, settings)
-        expand_role_polices(template, self.family_config)
-        if self.family_config.use_xray:
-            self.containers.append(define_xray_container())
-            add_parameters(template, [ecs_params.XRAY_IMAGE])
-            self.stack_parameters.update(
-                {ecs_params.XRAY_IMAGE_T: Ref(ecs_params.XRAY_IMAGE)}
-            )
-        self.set_task_compute_parameter()
-        self.set_task_definition(template)
-
-    def set_task_definition(self, template):
-        """
-        Method to set or update the task definition
-
-        :param troposphere.Template template: the template to add the definition to
-        """
-        self.definition = TaskDefinition(
-            TASK_T,
-            template=template,
-            Cpu=ecs_params.FARGATE_CPU,
-            Memory=ecs_params.FARGATE_RAM,
-            NetworkMode=NETWORK_MODE,
-            Family=Ref(ecs_params.SERVICE_NAME),
-            TaskRoleArn=GetAtt(TASK_ROLE_T, "Arn"),
-            ExecutionRoleArn=GetAtt(EXEC_ROLE_T, "Arn"),
-            ContainerDefinitions=self.containers,
-            RequiresCompatibilities=["EC2", "FARGATE"],
+    sg = template.add_resource(
+        SecurityGroup(
+            SG_T,
+            GroupDescription=If(
+                USE_STACK_NAME_CON_T,
+                Sub(f"SG for ${{{SERVICE_NAME_T}}} - ${{AWS::StackName}}"),
+                Sub(f"SG for ${{{SERVICE_NAME_T}}} - ${{{ROOT_STACK_NAME_T}}}"),
+            ),
             Tags=Tags(
                 {
-                    "Name": Ref(ecs_params.SERVICE_NAME),
-                    "Environment": Ref(AWS_STACK_NAME),
+                    "Name": If(
+                        USE_STACK_NAME_CON_T,
+                        Sub(f"${{{SERVICE_NAME_T}}}-${{AWS::StackName}}"),
+                        Sub(f"${{{SERVICE_NAME_T}}}-${{{ROOT_STACK_NAME_T}}}"),
+                    ),
+                    "StackName": Ref(AWS_STACK_NAME),
+                    "MicroserviceName": Ref(SERVICE_NAME),
                 }
             ),
+            VpcId=Ref(VPC_ID),
         )
-
-    def sort_container_configs(self, template, containers_config, settings):
-        """
-        Method to sort out the containers dependencies and create the containers definitions based on the configs.
-        :return:
-        """
-        config_key = "config"
-        priority_key = "priority"
-        services_names = list(containers_config.keys())
-        unordered = []
-        handle_same_task_services_dependencies(
-            services_names, containers_config, config_key, priority_key
-        )
-        for service in containers_config:
-            unordered.append(containers_config[service])
-        ordered_containers_config = sorted(unordered, key=lambda i: i[priority_key])
-        ordered_containers_config[0]["config"].essential = True
-        for service_config in ordered_containers_config:
-            container = Container(
-                template,
-                service_config["config"].resource.logical_name,
-                service_config["config"].resource.definition,
-                service_config["config"],
-            )
-            import_secrets(
-                template,
-                service_config["config"].resource,
-                container.definition,
-                settings,
-            )
-            self.containers.append(container.definition)
-            self.stack_parameters.update(container.stack_parameters)
-            if self.family_config is None:
-                self.family_config = service_config["config"]
-            else:
-                self.family_config += service_config["config"]
-
-    def set_task_compute_parameter(self):
-        """
-        Method to update task parameter for CPU/RAM profile
-        """
-        tasks_cpu = 0
-        tasks_ram = 0
-        LOG.debug([container.Name for container in self.containers])
-        for container in self.containers:
-            LOG.debug(container.title)
-            if isinstance(container.Cpu, int):
-                tasks_cpu += container.Cpu
-            if isinstance(container.Memory, int):
-                tasks_ram += container.Memory
-            elif isinstance(container.Memory, Ref) and isinstance(
-                container.MemoryReservation, int
-            ):
-                tasks_ram += container.MemoryReservation
-        LOG.debug(f"CPU: {tasks_cpu}, RAM: {tasks_ram}")
-        if tasks_cpu > 0 and tasks_ram > 0:
-            cpu_ram = find_closest_fargate_configuration(tasks_cpu, tasks_ram, True)
-            LOG.debug(cpu_ram)
-            self.stack_parameters.update({ecs_params.FARGATE_CPU_RAM_CONFIG_T: cpu_ram})
-
-
-def generate_security_group_props(allowed_source, service_name):
-    """
-    Function to parse the allowed source and create the SG Opening options accordingly.
-
-    :param dict allowed_source: The allowed source defined in configs
-    :param str service_name:
-    :return: security group ingress properties
-    :rtype: dict
-    """
-    props = {
-        "CidrIp": (
-            allowed_source["ipv4"]
-            if keyisset("ipv4", allowed_source)
-            else Ref(AWS_NO_VALUE)
-        ),
-        "CidrIpv6": (
-            allowed_source["ipv6"]
-            if keyisset("ipv6", allowed_source)
-            else Ref(AWS_NO_VALUE)
-        ),
-    }
-
-    if keyisset("CidrIp", props) and isinstance(props["CidrIp"], str):
-        try:
-            IPv4Interface(props["CidrIp"])
-        except Exception as error:
-            LOG.error(
-                f"Falty IP Address: {allowed_source} - ecs_service {service_name}"
-            )
-            raise ValueError("Not a valid IPv4 CIDR notation", props["CidrIp"], error)
-    return props
+    )
+    return sg
 
 
 class Service(object):
@@ -321,31 +213,23 @@ class Service(object):
     :cvar dict service_attrs: Attributes defined to expand the troposphere.ecs.ServiceDefinition from prior settings.
     """
 
-    def __init__(self, template, family_name, task_definition, config, settings):
+    def __init__(self, family, settings):
         """
         Function to initialize the Service object
-        :param ecs_composex.ecs.ecs_service_config.ServiceConfig config: the configuration for service
-        :param family_name: Name of the service
-        :type family_name: str
+
+        :param template:
+        :param ecs_composex.ecs.ecs_service_config.ServiceConfig service_config:
+        :param ecs_composex.common.settings.ComposeXSettings settings:
         """
         self.alb_sg = None
-        self.template = template
-        self.config = config
-        self.task = task_definition
         self.links = []
         self.eips = []
         self.tgt_groups = []
         self.lbs = []
-        self.service_attrs = None
+        self.service_attrs = {}
         self.dependencies = []
         self.network_settings = None
         self.ecs_service = None
-        self.service_name = (
-            config.resource_name if config.family_name is None else config.family_name
-        )
-        self.resource_name = (
-            config.resource_name if config.family_name is None else config.family_name
-        )
         self.scalable_target = None
         self.parameters = {
             vpc_params.VPC_ID_T: Ref(vpc_params.VPC_ID),
@@ -356,24 +240,15 @@ class Service(object):
             vpc_params.APP_SUBNETS_T: Join(",", Ref(vpc_params.APP_SUBNETS)),
             vpc_params.PUBLIC_SUBNETS_T: Join(",", Ref(vpc_params.PUBLIC_SUBNETS)),
             ecs_params.CLUSTER_NAME_T: Ref(ecs_params.CLUSTER_NAME),
-            ecs_params.LOG_GROUP_RETENTION.title: self.config.logs_retention_period,
+            ecs_params.SERVICE_NAME_T: family.name,
         }
-        if config.family_name is not None:
-            self.parameters.update({ecs_params.SERVICE_NAME_T: config.family_name})
-        else:
-            self.parameters.update({ecs_params.SERVICE_NAME_T: family_name})
         self.sgs = [ecs_params.SG_T]
-        self.sgs.append(
-            If(
-                ecs_conditions.USE_CLUSTER_SG_CON_T,
-                Ref(ecs_params.CLUSTER_SG_ID),
-                Ref("AWS::NoValue"),
-            )
-        )
-        self.define_service_ingress(settings)
-        self.generate_service_definition(self.task.definition)
-        self.create_scalable_target()
-        self.generate_service_template_outputs()
+        self.sg = add_service_default_sg(family.template)
+        self.sgs.append(Ref(self.sg))
+        # self.define_service_ingress(settings)
+        self.generate_service_definition(family)
+        # self.create_scalable_target()
+        # self.generate_service_template_outputs()
 
     def define_tracking_target_configuration(self, target_scaling_config, config_key):
         """
@@ -406,7 +281,7 @@ class Service(object):
             )
         elif config_key == "targets" and not self.tgt_groups:
             raise ValueError(
-                f"{self.service_name} - Invalid target tracking for TGT Groups: No load-balancing defined"
+                f"{self.family.logical_name} - Invalid target tracking for TGT Groups: No load-balancing defined"
             )
         return applicationautoscaling.TargetTrackingScalingPolicyConfiguration(
             DisableScaleIn=target_scaling_config["disable_scale_in"],
@@ -550,34 +425,6 @@ class Service(object):
                         ),
                     )
 
-    def add_service_default_sg(self):
-        """
-        Adds a default security group for the microservice.
-        """
-        sg = self.template.add_resource(
-            SecurityGroup(
-                SG_T,
-                GroupDescription=If(
-                    USE_STACK_NAME_CON_T,
-                    Sub(f"SG for ${{{SERVICE_NAME_T}}} - ${{AWS::StackName}}"),
-                    Sub(f"SG for ${{{SERVICE_NAME_T}}} - ${{{ROOT_STACK_NAME_T}}}"),
-                ),
-                Tags=Tags(
-                    {
-                        "Name": If(
-                            USE_STACK_NAME_CON_T,
-                            Sub(f"${{{SERVICE_NAME_T}}}-${{AWS::StackName}}"),
-                            Sub(f"${{{SERVICE_NAME_T}}}-${{{ROOT_STACK_NAME_T}}}"),
-                        ),
-                        "StackName": Ref(AWS_STACK_NAME),
-                        "MicroserviceName": Ref(SERVICE_NAME),
-                    }
-                ),
-                VpcId=Ref(VPC_ID),
-            )
-        )
-        return sg
-
     def add_service_to_map(self):
         """
         Method to create a new Service into CloudMap to represent the current service and add entry into the registry
@@ -662,7 +509,9 @@ class Service(object):
             ):
                 LOG.warn("No IPv4 or IPv6 set. Skipping")
                 continue
-            props = generate_security_group_props(allowed_source, self.service_name)
+            props = generate_security_group_props(
+                allowed_source, self.family.logical_name
+            )
             if props:
                 LOG.debug(f"Adding {allowed_source} for ingress")
                 self.create_lb_ingress_rule(allowed_source, security_group, **props)
@@ -688,7 +537,7 @@ class Service(object):
                 raise TypeError("az is neither a dict or a str. Got", type(az))
             self.eips.append(
                 EIP(
-                    f"EipPublicNlb{az_name}{self.service_name}",
+                    f"EipPublicNlb{az_name}{self.family.logical_name}",
                     template=self.template,
                     Domain="vpc",
                 )
@@ -951,7 +800,7 @@ class Service(object):
         external_dependencies = []
         if not self.config.ports:
             LOG.debug(
-                f"{self.service_name} does not have any ports. No ingress necessary"
+                f"{self.family.logical_name} does not have any ports. No ingress necessary"
             )
             return self.service_attrs, external_dependencies
         if self.config.use_alb() or self.config.use_nlb():
@@ -974,20 +823,20 @@ class Service(object):
         if self.config.ingress_from_self:
             self.add_self_ingress(sg)
 
-    def generate_service_definition(self, task_definition):
+    def generate_service_definition(self, family):
         """
         Function to generate the Service definition.
         This is the last step in defining the service, after all other settings have been prepared.
+
+        :param ecs_composex.common.compose_services.ComposeFamily family:
         """
         service_sgs = [
             Ref(sg) for sg in self.sgs if not isinstance(sg, (Ref, Sub, If, GetAtt))
         ]
         service_sgs += [sg for sg in self.sgs if isinstance(sg, (Ref, Sub, If, GetAtt))]
-        if self.config.replicas != ecs_params.SERVICE_COUNT.Default:
-            self.parameters[ecs_params.SERVICE_COUNT_T] = self.config.replicas
         self.ecs_service = EcsService(
             ecs_params.SERVICE_T,
-            template=self.template,
+            template=family.template,
             Cluster=Ref(ecs_params.CLUSTER_NAME),
             DeploymentController=DeploymentController(
                 Type=Ref(ecs_params.ECS_CONTROLLER)
@@ -1025,7 +874,7 @@ class Service(object):
                     Subnets=Ref(vpc_params.APP_SUBNETS), SecurityGroups=service_sgs
                 )
             ),
-            TaskDefinition=Ref(task_definition),
+            TaskDefinition=Ref(family.task_definition),
             LaunchType=If(
                 ecs_conditions.USE_CLUSTER_CAPACITY_PROVIDERS_CON_T,
                 Ref(AWS_NO_VALUE),

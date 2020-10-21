@@ -3,67 +3,6 @@
 
 version: '3.8'
 
-services:
-  rproxy:
-    deploy:
-      labels:
-        ecs.task.family: bignicefamily
-  app01:
-    secrets:
-      - testsecret
-    deploy:
-      labels:
-        ecs.task.family: bignicefamily
-      replicas: 2
-    environment:
-      name: toto
-      LOGLEVEL: INFO
-      ACCOUNT_ID: "${AWS::AccountId}"
-      REGION: "${AWS::Region}"
-    x-configs:
-      scaling:
-        range: "1-10"
-      use_xray: True
-      network:
-        is_public: True
-        lb_type: application
-
-  app02:
-    x-configs:
-      scaling:
-        range: "0-20"
-        target_scaling:
-          tgt_targets_count: 100
-      network:
-        lb_type: application
-        is_public: False
-
-  app03:
-    x-configs:
-      scaling:
-        range: "1-10"
-        allow_zero: True
-        target_scaling:
-          cpu_target: 75
-          memory_target: 80
-          disable_scale_in: False
-          scale_out_cooldown: 60
-      use_xray: True
-      iam:
-        boundary: arn:aws:iam::aws:policy/PowerUserAccess
-        policies:
-          - name: somenewpolicy
-            document:
-              Version: 2012-10-17
-              Statement:
-                - Effect: Allow
-                  Action:
-                    - ec2:Describe*
-                  Resource:
-                    - "*"
-                  Sid: "AllowDescribeAll"
-
-
 x-appmesh:
   Properties:
     MeshName: root

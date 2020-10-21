@@ -62,11 +62,7 @@ class ServiceStack(ComposeXStack):
         title,
         template,
         parameters,
-        service,
-        service_config,
     ):
-        self.service = service
-        self.config = service_config
         super().__init__(title, stack_template=template, stack_parameters=parameters)
         self.Parameters.update(
             {
@@ -101,44 +97,28 @@ class ServicesStack(ComposeXStack):
             dns_params.PRIVATE_DNS_ZONE_NAME,
         ]
         template = build_template("Root template for ECS Services", parameters)
-        cluster_sg = template.add_resource(
-            SecurityGroup(
-                "ClusterWideSecurityGroup",
-                GroupDescription=Sub(f"SG for ${{{ROOT_STACK_NAME.title}}}"),
-                GroupName=Sub(f"cluster-${{{ROOT_STACK_NAME.title}}}"),
-                Tags=Tags(
-                    {
-                        "Name": Sub(f"clustersg-${{{ROOT_STACK_NAME.title}}}"),
-                        "ClusterName": Ref(CLUSTER_NAME),
-                    }
-                ),
-                VpcId=Ref(vpc_params.VPC_ID),
-            )
-        )
-        services = generate_services(settings, cluster_sg)
+        generate_services(settings)
         super().__init__(
             title,
             stack_template=template,
             **cfn_params,
         )
-        self.create_services_templates(services)
+        self.create_services_templates(settings)
         if not settings.create_vpc:
             self.no_vpc_parameters()
         self.stack_template.set_metadata(metadata)
 
-    def create_services_templates(self, services):
+    def create_services_templates(self, settings):
         """
         Function to create the services root template
         """
 
-        for service_name in services:
-            service = services[service_name]
+        for family_name in settings.families:
+            family = settings.families[family_name]
             self.stack_template.add_resource(
                 ServiceStack(
-                    title=service.resource_name,
-                    service_config=service.config,
-                    template=service.template,
-                    service=service,
-                    parameters=service.parameters,
+                    title=family.logical_name,
+                    template=family.template,
+                    parameters=family.stack_parameters,
                 )
             )

@@ -16,7 +16,7 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-Module to parse secrets from the compose content file.
+Represent a service from the docker-compose services
 """
 
 from troposphere import Sub, AWS_PARTITION, AWS_REGION, AWS_ACCOUNT_ID
@@ -24,11 +24,31 @@ from troposphere.ecs import Secret as EcsSecret
 from troposphere.iam import Policy
 
 from ecs_composex.common import LOG, keyisset, NONALPHANUM
-from ecs_composex.ecs.ecs_container_config import extend_container_secrets
 from ecs_composex.ecs.ecs_params import TASK_ROLE_T, EXEC_ROLE_T
 
 RES_KEY = "secrets"
 XRES_KEY = "x-secrets"
+
+
+def match_secrets_services_config(service, s_secret, secrets):
+    """
+    Function to match the services and secrets
+    :param service:
+    :param s_secret:
+    :param secrets:
+    :return:
+    """
+    if isinstance(s_secret, str):
+        secret_name = s_secret
+    elif isinstance(s_secret, dict) and keyisset("source", s_secret):
+        secret_name = s_secret["source"]
+    else:
+        raise LookupError("Could not identify the secret source", s_secret)
+    for gl_secret in secrets:
+        if gl_secret.name == secret_name:
+            LOG.info(f"Matched secret {gl_secret.name} with {service.name}")
+            service.secrets.append(gl_secret)
+            gl_secret.services.append(service)
 
 
 class ComposeSecret(object):
@@ -60,10 +80,11 @@ class ComposeSecret(object):
             else [EXEC_ROLE_T]
         )
         self.ecs_secret = EcsSecret(Name=self.name, ValueFrom=self.aws_name)
-
         self.validate_links()
 
     def validate_links(self):
+        if not isinstance(self.links, list):
+            raise TypeError("LinksTo must be of type", list, "Got", type(self.links))
         for link in self.links:
             if link not in [EXEC_ROLE_T, TASK_ROLE_T]:
                 raise ValueError(
@@ -73,43 +94,3 @@ class ComposeSecret(object):
                     "Got",
                     link,
                 )
-
-    def assign_to_task_definition(self, template, container):
-        """
-        Method to add the secret to the given task definition
-
-        :param troposphere.Template template:
-        :param troposphere.ecs.ContainerDefinition container:
-        :return:
-        """
-        task_role = template.resources[TASK_ROLE_T]
-        exec_role = template.resources[EXEC_ROLE_T]
-        policy = Policy(
-            PolicyName=f"AccessSecret{NONALPHANUM.sub('', self.name)}",
-            PolicyDocument={
-                "Version": "2012-10-17",
-                "Statement": [
-                    {
-                        "Action": ["secretsmanager:GetSecretValue"],
-                        "Effect": "Allow",
-                        "Resource": self.aws_iam_name,
-                        "Sid": f"AccessToSecret{NONALPHANUM.sub('', self.name)}",
-                    }
-                ],
-            },
-        )
-        if EXEC_ROLE_T in self.links:
-            if hasattr(exec_role, "Policies"):
-                exec_role.Policies.append(policy)
-            elif not hasattr(exec_role, "Policies"):
-                setattr(exec_role, "Policies", [policy])
-            extend_container_secrets(container, self.ecs_secret)
-        else:
-            LOG.warn(
-                f"You did not specify {EXEC_ROLE_T} in your LinksTo for this secret. You will not have ECS"
-                "Expose the value of the secret to your container."
-            )
-        if TASK_ROLE_T in self.links and hasattr(task_role, "Policies"):
-            task_role.Policies.append(policy)
-        elif TASK_ROLE_T in self.links and not hasattr(task_role, "Policies"):
-            setattr(task_role, "Policies", [policy])

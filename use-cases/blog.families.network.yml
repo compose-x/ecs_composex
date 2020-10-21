@@ -1,0 +1,54 @@
+---
+# Blog applications
+
+version: '3.8'
+services:
+  rproxy:
+    x-configs:
+      use_xray: True
+      network:
+        is_public: False
+        lb_type: application
+        use_cloudmap: True
+        ingress:
+          myself: False
+          ext_sources:
+            - ipv4: 0.0.0.0/0
+              description: ANY RPROXY
+          aws_sources:
+            - type: SecurityGroup
+              id: sg-rproxy
+  app01:
+    x-configs:
+      use_xray: False
+      network:
+        is_public: False
+        lb_type: application
+        use_cloudmap: True
+        ingress:
+          myself: True
+          aws_sources:
+            - type: SecurityGroup
+              id: sg-app01
+            - type: PrefixList
+              id: pl-abcd
+  app02:
+    x-configs:
+      use_xray: False
+
+  app03:
+    x-configs:
+      network:
+        is_public: True
+        lb_type: application
+        use_cloudmap: True
+        ingress:
+          myself: True
+          ext_sources:
+            - ipv4: 0.0.0.0/0
+              description: ANY
+            - ipv4: 1.1.1.1/32
+              description: CloudflareDNS
+          aws_sources:
+            - type: SecurityGroup
+              id: sg-abcd0123
