@@ -35,7 +35,7 @@ from ecs_composex.common import LOG, add_parameters
 from ecs_composex.common.outputs import ComposeXOutput
 from ecs_composex.dns.dns_params import PRIVATE_DNS_ZONE_NAME
 from ecs_composex.ecs import ecs_params
-from ecs_composex.ecs.ecs_container_config import extend_container_envvars
+from ecs_composex.common.compose_services import extend_container_envvars
 
 
 class MeshNode(object):

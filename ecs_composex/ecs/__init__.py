@@ -52,29 +52,6 @@ metadata = {
 }
 
 
-class ServiceStack(ComposeXStack):
-    """
-    Class to handle individual ecs_service stack
-    """
-
-    def __init__(
-        self,
-        title,
-        template,
-        parameters,
-    ):
-        super().__init__(title, stack_template=template, stack_parameters=parameters)
-        self.Parameters.update(
-            {
-                vpc_params.VPC_ID_T: Ref(vpc_params.VPC_ID),
-                vpc_params.PUBLIC_SUBNETS_T: Join(",", Ref(vpc_params.PUBLIC_SUBNETS)),
-                vpc_params.APP_SUBNETS_T: Join(",", Ref(vpc_params.APP_SUBNETS)),
-            }
-        )
-        self.Parameters.update(parameters)
-        self.stack_template.set_metadata(metadata)
-
-
 class ServicesStack(ComposeXStack):
     """
     Class to handle ECS root stack specific settings
@@ -103,22 +80,23 @@ class ServicesStack(ComposeXStack):
             stack_template=template,
             **cfn_params,
         )
-        self.create_services_templates(settings)
+        for family_name in settings.families:
+            family = settings.families[family_name]
+            family.stack_parameters.update(
+                {
+                    vpc_params.VPC_ID_T: Ref(vpc_params.VPC_ID),
+                    vpc_params.PUBLIC_SUBNETS_T: Join(
+                        ",", Ref(vpc_params.PUBLIC_SUBNETS)
+                    ),
+                    vpc_params.APP_SUBNETS_T: Join(",", Ref(vpc_params.APP_SUBNETS)),
+                }
+            )
+            family.stack = ComposeXStack(
+                family.logical_name,
+                stack_template=family.template,
+                stack_parameters=family.stack_parameters,
+            )
+            self.stack_template.add_resource(family.stack)
         if not settings.create_vpc:
             self.no_vpc_parameters()
         self.stack_template.set_metadata(metadata)
-
-    def create_services_templates(self, settings):
-        """
-        Function to create the services root template
-        """
-
-        for family_name in settings.families:
-            family = settings.families[family_name]
-            self.stack_template.add_resource(
-                ServiceStack(
-                    title=family.logical_name,
-                    template=family.template,
-                    parameters=family.stack_parameters,
-                )
-            )

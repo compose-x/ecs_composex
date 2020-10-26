@@ -787,6 +787,7 @@ class ComposeFamily(object):
         self.iam = {"boundary": None, "managed_policies": [], "policies": []}
         self.template = None
         self.use_xray = None
+        self.stack = None
         self.task_definition = None
         self.service_definition = None
         self.service_config = None

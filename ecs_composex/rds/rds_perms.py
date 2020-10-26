@@ -27,7 +27,7 @@ from troposphere.iam import PolicyType
 
 from ecs_composex.common import keyisset, LOG
 from ecs_composex.common.outputs import get_import_value
-from ecs_composex.ecs.ecs_container_config import extend_container_secrets
+from ecs_composex.common.compose_services import extend_container_secrets
 from ecs_composex.ecs.ecs_iam import define_service_containers
 from ecs_composex.ecs.ecs_params import TASK_ROLE_T, EXEC_ROLE_T, SG_T
 from ecs_composex.rds.rds_params import (

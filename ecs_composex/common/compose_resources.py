@@ -68,7 +68,12 @@ class XResource(object):
             if not keyisset("Settings", self.definition)
             else self.definition["Settings"]
         )
-        if keyisset("Properties", self.definition):
+        self.lookup = (
+            None
+            if not keyisset("Lookup", self.definition)
+            else self.definition["Lookup"]
+        )
+        if keyisset("Properties", self.definition) and not self.lookup:
             self.properties = self.definition["Properties"]
         elif not keyisset("Properties", self.definition) and keypresent(
             "Properties", self.definition
@@ -80,11 +85,6 @@ class XResource(object):
             []
             if not keyisset("Services", self.definition)
             else self.definition["Services"]
-        )
-        self.lookup = (
-            None
-            if not keyisset("Lookup", self.definition)
-            else self.definition["Lookup"]
         )
         self.use = (
             None if not keyisset("Use", self.definition) else self.definition["Use"]
@@ -116,10 +116,16 @@ class XResource(object):
                     service.keys(),
                 )
             service_name = service["name"]
-            if service_name in settings.families:
+            if service_name in settings.families and service_name not in [
+                f[0].name for f in self.families_targets
+            ]:
                 self.families_targets.append(
                     (settings.families[service_name], True, [])
                 )
+            elif service_name in settings.families and service_name in [
+                f[0].name for f in self.families_targets
+            ]:
+                LOG.warn(f"The family {service_name} has already been added. Skipping")
             elif service_name in [s.name for s in settings.services]:
                 the_service = [
                     s for s in settings.services if s.name == service["name"]

@@ -376,9 +376,11 @@ def generate_full_template(settings):
         services_stack,
         vpc_stack=vpc_stack,
     )
-    # apply_x_configs_to_ecs(
-    #     settings, root_stack.stack_template, services_stack,
-    # )
+    apply_x_configs_to_ecs(
+        settings,
+        root_stack.stack_template,
+        services_stack,
+    )
     # apply_x_to_x_configs(root_stack.stack_template, settings)
 
     # if keyisset("x-appmesh", settings.compose_content):

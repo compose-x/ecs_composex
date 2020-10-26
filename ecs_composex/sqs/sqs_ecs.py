@@ -40,45 +40,43 @@ from ecs_composex.sqs.sqs_params import SQS_URL, SQS_ARN, SQS_NAME
 from ecs_composex.sqs.sqs_perms import ACCESS_TYPES
 
 
+def assign_new_queue_to_service(resource, services_stack, res_root_stack, settings):
+    """
+    Function to assign the new resource to the service/family using it.
+
+    :param ecs_composex.common.compose_resources.XResource resource:
+    :param services_stack:
+    :param res_root_stack:
+    :param settings:
+    :return:
+    """
+    print(resource.name, "TARGETS", resource.families_targets)
+    for target in resource.families_targets:
+        if not target[1] and target[2]:
+            print(f"Resource {resource.name} only applies to {target[2]}")
+        elif target[1]:
+            print(f"Resource {resource.name} applies to {target[0].name} - {target[2]}")
+
+
 def handle_new_queues(
-    xresources,
-    services_families,
+    xresource,
     services_stack,
     res_root_stack,
-    l_queues,
+    settings,
     nested=False,
 ):
     queues_r = []
     s_resources = res_root_stack.stack_template.resources
     for resource_name in s_resources:
-        if isinstance(s_resources[resource_name], Queue):
-            queues_r.append(s_resources[resource_name].title)
-        elif issubclass(type(s_resources[resource_name]), ComposeXStack):
+        if issubclass(type(s_resources[resource_name]), ComposeXStack):
             handle_new_queues(
-                xresources,
-                services_families,
-                services_stack,
                 s_resources[resource_name],
-                l_queues,
-                nested=True,
-            )
-
-    for queue_name in xresources:
-        if queue_name in queues_r:
-            queue = xresources[queue_name]
-            queue.generate_resource_envvars(SQS_URL)
-            perms = generate_resource_permissions(
-                queue.logical_name, ACCESS_TYPES, SQS_ARN.title
-            )
-            apply_iam_based_resources(
-                queue,
-                services_families,
                 services_stack,
                 res_root_stack,
-                perms,
-                nested,
+                settings,
+                nested=True,
             )
-            del l_queues[queue_name]
+    assign_new_queue_to_service(xresource, services_stack, res_root_stack, settings)
 
 
 def handle_service_scaling(
@@ -100,7 +98,7 @@ def handle_service_scaling(
     :param bool nested: Whether this is nested stack to anohter.
     :raises KeyError: if the service name is not a listed service in docker-compose.
     """
-    service_family = get_service_family_name(services_families, service_def["name"])
+    service_family = get_service_family_name(service_def["name"])
     if (
         not service_family
         or service_family not in services_stack.stack_template.resources
@@ -161,21 +159,35 @@ def handle_service_scaling(
         services_stack.add_dependencies(res_root_stack.title)
 
 
-def sqs_to_ecs(queues, services_stack, res_root_stack, settings, **kwargs):
+def sqs_to_ecs(resources, services_stack, res_root_stack, settings, **kwargs):
     """
     Function to apply SQS settings to ECS Services
     :return:
     """
-    l_queues = queues.copy()
-    handle_new_queues(queues, services_stack, res_root_stack, l_queues)
+    new_resources = [
+        resources[res_name] for res_name in resources if not resources[res_name].lookup
+    ]
+    lookup_resources = [
+        resources[res_name]
+        for res_name in resources
+        if resources[res_name].lookup and not resources[res_name].properties
+    ]
+    print(new_resources)
+    if new_resources and res_root_stack.title not in services_stack.DependsOn:
+        services_stack.DependsOn.append(res_root_stack.title)
+    for new_res in new_resources:
+        handle_new_queues(new_res, services_stack, res_root_stack, settings)
 
-    for queue_name in queues:
-        queue = queues[queue_name]
-        for service_def in queue.services:
-            if keyisset("scaling", service_def):
-                handle_service_scaling(
-                    queue,
-                    services_stack,
-                    res_root_stack,
-                    service_def,
-                )
+    # l_queues = queues.copy()
+    # handle_new_queues(queues, services_stack, res_root_stack, l_queues)
+    #
+    # for queue_name in queues:
+    #     queue = queues[queue_name]
+    #     for service_def in queue.services:
+    #         if keyisset("scaling", service_def):
+    #             handle_service_scaling(
+    #                 queue,
+    #                 services_stack,
+    #                 res_root_stack,
+    #                 service_def,
+    #             )

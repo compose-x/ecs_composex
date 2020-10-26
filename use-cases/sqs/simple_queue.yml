@@ -27,9 +27,14 @@ x-sqs:
     Services:
       - name: rproxy
         access: RWMessages
-    Services:
       - name: youtoo
         access: RWMessages
     Settings:
       EnvNames:
         - FIFO_QUEUE
+
+  queueD:
+    Properties: {}
+    Services:
+      - name: app01
+        access: RWMessages
