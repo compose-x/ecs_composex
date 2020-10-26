@@ -21,9 +21,8 @@ Module to apply SQS settings onto ECS Services
 
 from troposphere import Ref
 from troposphere.cloudwatch import Alarm, MetricDimension
-from troposphere.sqs import Queue
 
-from ecs_composex.common import keyisset, LOG
+from ecs_composex.common import LOG
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.ecs.ecs_params import SERVICE_SCALING_TARGET
 from ecs_composex.ecs.ecs_scaling import (
@@ -31,7 +30,7 @@ from ecs_composex.ecs.ecs_scaling import (
     reset_to_zero_policy,
 )
 from ecs_composex.ecs.ecs_template import get_service_family_name
-from ecs_composex.resource_permissions import apply_iam_based_resources
+from ecs_composex.resource_permissions import add_iam_policy_to_service_task_role_v2
 from ecs_composex.resource_settings import (
     generate_resource_permissions,
     generate_export_strings,
@@ -40,43 +39,71 @@ from ecs_composex.sqs.sqs_params import SQS_URL, SQS_ARN, SQS_NAME
 from ecs_composex.sqs.sqs_perms import ACCESS_TYPES
 
 
-def assign_new_queue_to_service(resource, services_stack, res_root_stack, settings):
+def map_service_perms_to_resource(resource, family, services, access):
+    """
+    Function to
+    :param resource:
+    :param family:
+    :param services:
+    :param str access:
+    :return:
+    """
+    res_perms = generate_resource_permissions(
+        f"AccessTo{resource.logical_name}", ACCESS_TYPES, None, SQS_ARN
+    )
+    add_iam_policy_to_service_task_role_v2(
+        family.template,
+        resource,
+        res_perms,
+        access,
+        services,
+    )
+
+
+def assign_new_queue_to_service(resource, nested=False):
     """
     Function to assign the new resource to the service/family using it.
 
     :param ecs_composex.common.compose_resources.XResource resource:
-    :param services_stack:
-    :param res_root_stack:
-    :param settings:
+    :param bool nested: Whether this call if for a nested resource or not.
+
     :return:
     """
-    print(resource.name, "TARGETS", resource.families_targets)
+    select_services = []
+    resource.generate_resource_envvars(attribute=SQS_URL)
     for target in resource.families_targets:
         if not target[1] and target[2]:
-            print(f"Resource {resource.name} only applies to {target[2]}")
+            LOG.debug(
+                f"Resource {resource.name} only applies to {target[2]} in family {target[0].name}"
+            )
+            select_services = target[2]
         elif target[1]:
-            print(f"Resource {resource.name} applies to {target[0].name} - {target[2]}")
+            LOG.debug(f"Resource {resource.name} applies to family {target[0].name}")
+            select_services = target[0].services
+        if select_services:
+            map_service_perms_to_resource(
+                resource, target[0], select_services, target[3]
+            )
 
 
-def handle_new_queues(
+def handle_resource_to_services(
     xresource,
     services_stack,
     res_root_stack,
     settings,
     nested=False,
 ):
-    queues_r = []
     s_resources = res_root_stack.stack_template.resources
     for resource_name in s_resources:
         if issubclass(type(s_resources[resource_name]), ComposeXStack):
-            handle_new_queues(
+            handle_resource_to_services(
                 s_resources[resource_name],
                 services_stack,
                 res_root_stack,
                 settings,
                 nested=True,
             )
-    assign_new_queue_to_service(xresource, services_stack, res_root_stack, settings)
+    assign_new_queue_to_service(xresource, nested)
 
 
 def handle_service_scaling(
@@ -91,7 +118,6 @@ def handle_service_scaling(
 
     :param resource:
     :type resource: ecs_composex.common.compose_resources.XResource
-    :param dict services_families:
     :param ecs_composex.common.stacks.ComposeXStack services_stack:
     :param ecs_composex.common.stacks.ComposeXStack res_root_stack:
     :param dict service_def: The service scaling definition
@@ -172,15 +198,12 @@ def sqs_to_ecs(resources, services_stack, res_root_stack, settings, **kwargs):
         for res_name in resources
         if resources[res_name].lookup and not resources[res_name].properties
     ]
-    print(new_resources)
     if new_resources and res_root_stack.title not in services_stack.DependsOn:
         services_stack.DependsOn.append(res_root_stack.title)
+        LOG.info(f"Added dependency between services and {res_root_stack.title}")
     for new_res in new_resources:
-        handle_new_queues(new_res, services_stack, res_root_stack, settings)
+        handle_resource_to_services(new_res, services_stack, res_root_stack, settings)
 
-    # l_queues = queues.copy()
-    # handle_new_queues(queues, services_stack, res_root_stack, l_queues)
-    #
     # for queue_name in queues:
     #     queue = queues[queue_name]
     #     for service_def in queue.services:

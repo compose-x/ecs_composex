@@ -91,7 +91,9 @@ class XResource(object):
         )
         self.cfn_resource = None
         self.families_targets = []
+        self.families_scaling = []
         self.set_services_targets(settings)
+        self.set_services_scaling(settings)
 
     def __repr__(self):
         return self.logical_name
@@ -120,7 +122,7 @@ class XResource(object):
                 f[0].name for f in self.families_targets
             ]:
                 self.families_targets.append(
-                    (settings.families[service_name], True, [])
+                    (settings.families[service_name], True, [], service["access"])
                 )
             elif service_name in settings.families and service_name in [
                 f[0].name for f in self.families_targets
@@ -134,14 +136,57 @@ class XResource(object):
                     family_name = NONALPHANUM.sub("", family_name)
                     if family_name not in [f[0].name for f in self.families_targets]:
                         self.families_targets.append(
-                            (settings.families[family_name], False, [the_service])
+                            (
+                                settings.families[family_name],
+                                False,
+                                [the_service],
+                                service["access"],
+                            )
                         )
         for family in self.families_targets:
             LOG.info(f"Mapped {family[0].name} to {self.name}.")
             if not family[1] and family[2]:
-                LOG.info(f"Applies to service {family[-1]}")
+                LOG.info(f"Applies to service {family[2]}")
             else:
                 LOG.info(f"Applies to all services of {family[0].name}")
+
+    def set_services_scaling(self, settings):
+        """
+        Method to map services and families targets of the services defined.
+
+        :param ecs_composex.common.settings.ComposeXSettings settings:
+        :return:
+        """
+        if not self.services:
+            LOG.info(f"No services defined for {self.name}")
+            return
+        for service in self.services:
+            if not keyisset("scaling", service):
+                LOG.info(
+                    f"No scaling for {service['name']} defined based on {self.name}"
+                )
+                continue
+            service_name = service["name"]
+            if service_name in settings.families and service_name not in [
+                f[0].name for f in self.families_scaling
+            ]:
+                self.families_scaling.append(
+                    (settings.families[service_name], service["scaling"])
+                )
+            elif service_name in settings.families and service_name in [
+                f[0].name for f in self.families_scaling
+            ]:
+                LOG.warn(f"The family {service_name} has already been added. Skipping")
+            elif service_name in [s.name for s in settings.services]:
+                the_service = [
+                    s for s in settings.services if s.name == service["name"]
+                ][0]
+                for family_name in the_service.families:
+                    family_name = NONALPHANUM.sub("", family_name)
+                    if family_name not in [f[0].name for f in self.families_scaling]:
+                        self.families_scaling.append(
+                            (settings.families[family_name], service["scaling"])
+                        )
 
     def generate_resource_envvars(self, attribute, arn=None):
         """

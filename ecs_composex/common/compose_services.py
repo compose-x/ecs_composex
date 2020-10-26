@@ -782,6 +782,7 @@ class ComposeFamily(object):
     def __init__(self, services, family_name):
         self.services = services
         self.ordered_services = []
+        self.ignored_services = []
         self.name = family_name
         self.logical_name = re.sub(r"[^a-zA-Z0-9]+", "", family_name)
         self.iam = {"boundary": None, "managed_policies": [], "policies": []}
@@ -844,6 +845,8 @@ class ComposeFamily(object):
                 service.depends_on.append(xray_service.name)
                 LOG.debug(f"Adding xray-daemon as dependency to {service.name}")
             self.add_service(xray_service)
+            if not xray_service.name not in self.ignored_services:
+                self.ignored_services.append(xray_service)
 
     def handle_logging(self):
         x_logging = []

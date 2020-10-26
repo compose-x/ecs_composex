@@ -38,3 +38,9 @@ x-sqs:
     Services:
       - name: app01
         access: RWMessages
+
+  queueE:
+    Properties: {}
+    Services:
+      - name: app03
+        access: RWMessages
