@@ -19,69 +19,98 @@
 Module to manage IAM policies to grant access to ECS Services to KMS Keys
 """
 
-from troposphere.kms import Key
-
+from ecs_composex.common import LOG
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.kms.kms_params import KMS_KEY_ARN_T
 from ecs_composex.kms.kms_perms import ACCESS_TYPES
-from ecs_composex.resource_permissions import apply_iam_based_resources
+from ecs_composex.resource_permissions import add_iam_policy_to_service_task_role_v2
 from ecs_composex.resource_settings import (
     generate_resource_permissions,
 )
 
 
-def handle_new_keys(
-    xresources,
-    services_families,
-    services_stack,
-    res_root_stack,
-    l_keys,
-    nested=False,
-):
-    keys_r = []
-    s_resources = res_root_stack.stack_template.resources
-    for resource_name in s_resources:
-        if isinstance(s_resources[resource_name], Key):
-            keys_r.append(s_resources[resource_name].title)
-        elif issubclass(type(s_resources[resource_name]), ComposeXStack):
-            handle_new_keys(
-                xresources,
-                services_families,
-                services_stack,
-                s_resources[resource_name],
-                l_keys,
-                nested=True,
-            )
-
-    for key_name in xresources:
-        key = xresources[key_name]
-        if key.logical_name in keys_r:
-            perms = generate_resource_permissions(
-                key.logical_name, ACCESS_TYPES, KMS_KEY_ARN_T
-            )
-            apply_iam_based_resources(
-                key,
-                services_families,
-                services_stack,
-                res_root_stack,
-                perms,
-                nested,
-            )
-            del l_keys[key_name]
-
-
-def kms_to_ecs(xresources, services_stack, services_families, res_root_stack, settings):
+def map_service_perms_to_resource(resource, family, services, access):
     """
-    Function to link the resource and the ECS Services.
-
-    :param dict xresources:
-    :param ecs_composex.common.stacks.ComposeXStack services_stack:
-    :param dict services_families:
-    :param ecs_composex.common.stacks.ComposeXStack res_root_stack:
-    :param ecs_composex.common.settings.ComposeXSettings settings:
+    Function to
+    :param resource:
+    :param family:
+    :param services:
+    :param str access:
     :return:
     """
-    l_keys = xresources.copy()
-    handle_new_keys(
-        xresources, services_families, services_stack, res_root_stack, l_keys
+    res_perms = generate_resource_permissions(
+        f"AccessTo{resource.logical_name}", ACCESS_TYPES, None, KMS_KEY_ARN_T
     )
+    add_iam_policy_to_service_task_role_v2(
+        family.template,
+        resource,
+        res_perms,
+        access,
+        services,
+    )
+
+
+def assign_new_queue_to_service(resource, nested=False):
+    """
+    Function to assign the new resource to the service/family using it.
+
+    :param ecs_composex.common.compose_resources.XResource resource:
+    :param bool nested: Whether this call if for a nested resource or not.
+
+    :return:
+    """
+    select_services = []
+    resource.generate_resource_envvars(attribute=KMS_KEY_ARN_T)
+    for target in resource.families_targets:
+        if not target[1] and target[2]:
+            LOG.debug(
+                f"Resource {resource.name} only applies to {target[2]} in family {target[0].name}"
+            )
+            select_services = target[2]
+        elif target[1]:
+            LOG.debug(f"Resource {resource.name} applies to family {target[0].name}")
+            select_services = target[0].services
+        if select_services:
+            map_service_perms_to_resource(
+                resource, target[0], select_services, target[3]
+            )
+
+
+def handle_resource_to_services(
+    xresource,
+    services_stack,
+    res_root_stack,
+    settings,
+    nested=False,
+):
+    s_resources = res_root_stack.stack_template.resources
+    for resource_name in s_resources:
+        if issubclass(type(s_resources[resource_name]), ComposeXStack):
+            handle_resource_to_services(
+                s_resources[resource_name],
+                services_stack,
+                res_root_stack,
+                settings,
+                nested=True,
+            )
+    assign_new_queue_to_service(xresource, nested)
+
+
+def kms_to_ecs(resources, services_stack, res_root_stack, settings):
+    """
+    Function to apply SQS settings to ECS Services
+    :return:
+    """
+    new_resources = [
+        resources[res_name] for res_name in resources if not resources[res_name].lookup
+    ]
+    lookup_resources = [
+        resources[res_name]
+        for res_name in resources
+        if resources[res_name].lookup and not resources[res_name].properties
+    ]
+    if new_resources and res_root_stack.title not in services_stack.DependsOn:
+        services_stack.DependsOn.append(res_root_stack.title)
+        LOG.info(f"Added dependency between services and {res_root_stack.title}")
+    for new_res in new_resources:
+        handle_resource_to_services(new_res, services_stack, res_root_stack, settings)

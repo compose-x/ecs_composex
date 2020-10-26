@@ -61,8 +61,8 @@ class KmsKey(XResource):
     Class to represent a KMS Key
     """
 
-    def __init__(self, name, definition):
-        super().__init__(name, definition)
+    def __init__(self, name, definition, settings):
+        super().__init__(name, definition, settings)
 
     def define_kms_key(self):
         """

@@ -35,8 +35,8 @@ class Table(XResource):
     name_attr = TABLE_NAME.title
     arn_attr = TABLE_ARN.title
 
-    def __init__(self, name, definition):
-        super().__init__(name, definition)
+    def __init__(self, name, definition, settings):
+        super().__init__(name, definition, settings)
         self.name_export = None
         self.name_import = None
         self.arn_export = None

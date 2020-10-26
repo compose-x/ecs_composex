@@ -200,6 +200,47 @@ def add_service_default_sg(template):
     return sg
 
 
+def add_service_to_map(family):
+    """
+    Method to create a new Service into CloudMap to represent the current service and add entry into the registry
+    """
+    print("PORTS", family.service_config.network.ports)
+    registries = []
+    if not family.service_config.network.ports:
+        return registries
+    sd_service = SdService(
+        f"{family.logical_name}DiscoveryService",
+        template=family.template,
+        Description=Ref(SERVICE_NAME),
+        NamespaceId=Ref(PRIVATE_DNS_ZONE_ID),
+        HealthCheckCustomConfig=SdHealthCheckCustomConfig(FailureThreshold=1.0),
+        DnsConfig=SdDnsConfig(
+            RoutingPolicy="MULTIVALUE",
+            NamespaceId=Ref(AWS_NO_VALUE),
+            DnsRecords=[
+                SdDnsRecord(TTL="15", Type="A"),
+                SdDnsRecord(TTL="15", Type="SRV"),
+            ],
+        ),
+        Name=If(USE_HOSTNAME_CON_T, Ref(SERVICE_HOSTNAME), Ref(SERVICE_NAME)),
+    )
+    for port in family.service_config.network.ports:
+        used_port = port["published"]
+        if (
+            family.service_config.network.use_nlb()
+            or family.service_config.network.use_alb()
+        ):
+            used_port = port["target"]
+        registry = ServiceRegistry(
+            f"ServiceRegistry{used_port}",
+            RegistryArn=GetAtt(sd_service, "Arn"),
+            Port=used_port,
+        )
+        registries.append(registry)
+        break
+    return registries
+
+
 class Service(object):
     """
     Class representing the service from the Docker compose file and translate it into
@@ -217,8 +258,7 @@ class Service(object):
         """
         Function to initialize the Service object
 
-        :param template:
-        :param ecs_composex.ecs.ecs_service_config.ServiceConfig service_config:
+        :param ecs_composex.compose_services.ComposeFamily family:
         :param ecs_composex.common.settings.ComposeXSettings settings:
         """
         self.alb_sg = None
@@ -245,7 +285,7 @@ class Service(object):
         self.sgs = [ecs_params.SG_T]
         self.sg = add_service_default_sg(family.template)
         self.sgs.append(Ref(self.sg))
-        # self.define_service_ingress(settings)
+        self.define_service_ingress(settings, family)
         self.generate_service_definition(family)
         # self.create_scalable_target()
         # self.generate_service_template_outputs()
@@ -424,42 +464,6 @@ class Service(object):
                             f"From {source['id']} to ${{{SERVICE_NAME_T}}} on port {port['published']}"
                         ),
                     )
-
-    def add_service_to_map(self):
-        """
-        Method to create a new Service into CloudMap to represent the current service and add entry into the registry
-        """
-        registries = []
-        if not self.config.ports:
-            return registries
-        sd_service = SdService(
-            f"{self.resource_name}DiscoveryService",
-            template=self.template,
-            Description=Ref(SERVICE_NAME),
-            NamespaceId=Ref(PRIVATE_DNS_ZONE_ID),
-            HealthCheckCustomConfig=SdHealthCheckCustomConfig(FailureThreshold=1.0),
-            DnsConfig=SdDnsConfig(
-                RoutingPolicy="MULTIVALUE",
-                NamespaceId=Ref(AWS_NO_VALUE),
-                DnsRecords=[
-                    SdDnsRecord(TTL="15", Type="A"),
-                    SdDnsRecord(TTL="15", Type="SRV"),
-                ],
-            ),
-            Name=If(USE_HOSTNAME_CON_T, Ref(SERVICE_HOSTNAME), Ref(SERVICE_NAME)),
-        )
-        for port in self.config.ports:
-            used_port = port["published"]
-            if self.config.use_nlb() or self.config.use_alb():
-                used_port = port["target"]
-            registry = ServiceRegistry(
-                f"ServiceRegistry{used_port}",
-                RegistryArn=GetAtt(sd_service, "Arn"),
-                Port=used_port,
-            )
-            registries.append(registry)
-            break
-        return registries
 
     def create_lb_ingress_rule(self, allowed_source, security_group, **props):
         for port in self.config.ports:
@@ -782,46 +786,46 @@ class Service(object):
         Method to create the AppMesh
         """
 
-    def define_service_ingress(self, settings):
+    def define_service_ingress(self, settings, family):
         """
         Function to define microservice ingress.
 
         :param ecs_composex.common.settings.ComposeXSettings settings: Execution settings
+        :param family:
         """
-        sg = self.add_service_default_sg()
         service_lbs = Ref(AWS_NO_VALUE)
-        registries = self.add_service_to_map()
+        registries = add_service_to_map(family)
         if not registries:
             registries = Ref(AWS_NO_VALUE)
         self.service_attrs = {
             "LoadBalancers": service_lbs,
             "ServiceRegistries": registries,
         }
-        external_dependencies = []
-        if not self.config.ports:
-            LOG.debug(
-                f"{self.family.logical_name} does not have any ports. No ingress necessary"
-            )
-            return self.service_attrs, external_dependencies
-        if self.config.use_alb() or self.config.use_nlb():
-            service_lb = self.add_service_load_balancer(settings)
-            self.service_attrs["LoadBalancers"] = service_lb[0]
-            self.service_attrs["DependsOn"] = (
-                service_lb[-1] if isinstance(service_lb[-1], list) else []
-            )
-            self.service_attrs["HealthCheckGracePeriodSeconds"] = (
-                Ref(ecs_params.ELB_GRACE_PERIOD)
-                if self.service_attrs["LoadBalancers"]
-                else Ref(AWS_NO_VALUE)
-            )
-            if self.config.use_alb() and self.config.aws_sources:
-                self.add_aws_sources(self.alb_sg)
-        elif (
-            self.config.use_nlb() and self.config.aws_sources
-        ) or self.config.aws_sources:
-            self.add_aws_sources(sg)
-        if self.config.ingress_from_self:
-            self.add_self_ingress(sg)
+        # external_dependencies = []
+        # if not self.config.ports:
+        #     LOG.debug(
+        #         f"{self.family.logical_name} does not have any ports. No ingress necessary"
+        #     )
+        #     return self.service_attrs, external_dependencies
+        # if self.config.use_alb() or self.config.use_nlb():
+        #     service_lb = self.add_service_load_balancer(settings)
+        #     self.service_attrs["LoadBalancers"] = service_lb[0]
+        #     self.service_attrs["DependsOn"] = (
+        #         service_lb[-1] if isinstance(service_lb[-1], list) else []
+        #     )
+        #     self.service_attrs["HealthCheckGracePeriodSeconds"] = (
+        #         Ref(ecs_params.ELB_GRACE_PERIOD)
+        #         if self.service_attrs["LoadBalancers"]
+        #         else Ref(AWS_NO_VALUE)
+        #     )
+        #     if self.config.use_alb() and self.config.aws_sources:
+        #         self.add_aws_sources(self.alb_sg)
+        # elif (
+        #     self.config.use_nlb() and self.config.aws_sources
+        # ) or self.config.aws_sources:
+        #     self.add_aws_sources(self.sg)
+        # if self.config.ingress_from_self:
+        #     self.add_self_ingress(self.sg)
 
     def generate_service_definition(self, family):
         """

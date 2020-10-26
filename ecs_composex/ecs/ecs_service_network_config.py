@@ -103,6 +103,64 @@ def merge_services_network(family):
     return network_config
 
 
+def define_protocol(port_string):
+    """
+    Function to define the port protocol. Defaults to TCP if not specified otherwise
+
+    :param port_string: the port string to parse from the ports list in the compose file
+    :type port_string: str
+    :return: protocol, ie. udp or tcp
+    :rtype: str
+    """
+    protocols = ["tcp", "udp"]
+    protocol = "tcp"
+    if port_string.find("/"):
+        protocol_found = port_string.split("/")[-1].strip()
+        if protocol_found in protocols:
+            return protocol_found
+    return protocol
+
+
+def set_service_ports(ports):
+    """Function to define common structure to ports
+
+    :return: list of ports the ecs_service uses formatted according to dict
+    :rtype: list
+    """
+    service_ports = []
+    for port in ports:
+        if not isinstance(port, (str, dict, int)):
+            raise TypeError(
+                "ports must be of types", dict, "or", list, "got", type(port)
+            )
+        if isinstance(port, str):
+            service_ports.append(
+                {
+                    "protocol": define_protocol(port),
+                    "published": int(port.split(":")[0]),
+                    "target": int(port.split(":")[-1].split("/")[0].strip()),
+                    "mode": "awsvpc",
+                }
+            )
+        elif isinstance(port, dict):
+            valid_keys = ["published", "target", "protocol", "mode"]
+            if not set(port).issubset(valid_keys):
+                raise KeyError("Valid keys are", valid_keys, "got", port.keys())
+            port["mode"] = "awsvpc"
+            service_ports.append(port)
+        elif isinstance(port, int):
+            service_ports.append(
+                {
+                    "protocol": "tcp",
+                    "published": port,
+                    "target": port,
+                    "mode": "awsvpc",
+                }
+            )
+    LOG.debug(service_ports)
+    return service_ports
+
+
 class ServiceNetworking(object):
     """
     Class to group the configuration for Service network settings
@@ -122,6 +180,8 @@ class ServiceNetworking(object):
             self.ext_sources = self.configuration["ingress"]["ext_sources"]
             self.aws_sources = self.configuration["ingress"]["aws_sources"]
             self.ingress_from_self = self.configuration["ingress"]["myself"]
+        self.ports = []
+        self.merge_services_ports(family)
 
     def __repr__(self):
         return dumps(self.configuration, indent=2)
@@ -147,3 +207,24 @@ class ServiceNetworking(object):
         if self.lb_type == "application":
             return True
         return False
+
+    def merge_services_ports(self, family):
+        """
+        Function to merge two sections of ports
+
+        :param ecs_composex.common.compose_services.ComposeFamily family:
+        :return:
+        """
+        source_ports = [
+            service.ports for service in family.ordered_services if service.ports
+        ]
+        for port_set in source_ports:
+            f_source_ports = set_service_ports(self.ports)
+            f_override_ports = set_service_ports(port_set)
+            self.ports = []
+            f_overide_ports_targets = [port["target"] for port in f_override_ports]
+            for port in f_override_ports:
+                self.ports.append(port)
+                for s_port in f_source_ports:
+                    if s_port["target"] not in f_overide_ports_targets:
+                        self.ports.append(s_port)

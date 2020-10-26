@@ -60,6 +60,7 @@ from ecs_composex.ecs.ecs_iam import add_service_roles, expand_role_polices
 from ecs_composex.ecs.ecs_params import NETWORK_MODE, EXEC_ROLE_T, TASK_ROLE_T, TASK_T
 from ecs_composex.ecs.ecs_params import SERVICE_NAME, SERVICE_HOSTNAME
 from ecs_composex.ecs.ecs_params import LOG_GROUP_RETENTION
+from ecs_composex.ecs.ecs_service_network_config import set_service_ports
 
 NUMBERS_REG = r"[^0-9.]"
 MINIMUM_SUPPORTED = 4
@@ -241,64 +242,6 @@ def set_memory_to_mb(value):
         raise ValueError(f"Could not parse {value} to units")
     LOG.debug(f"Computed unit for {value}: {unit}. Results into {final_amount}MB")
     return final_amount
-
-
-def define_protocol(port_string):
-    """
-    Function to define the port protocol. Defaults to TCP if not specified otherwise
-
-    :param port_string: the port string to parse from the ports list in the compose file
-    :type port_string: str
-    :return: protocol, ie. udp or tcp
-    :rtype: str
-    """
-    protocols = ["tcp", "udp"]
-    protocol = "tcp"
-    if port_string.find("/"):
-        protocol_found = port_string.split("/")[-1].strip()
-        if protocol_found in protocols:
-            return protocol_found
-    return protocol
-
-
-def set_service_ports(ports):
-    """Function to define common structure to ports
-
-    :return: list of ports the ecs_service uses formatted according to dict
-    :rtype: list
-    """
-    valid_keys = ["published", "target", "protocol", "mode"]
-    service_ports = []
-    for port in ports:
-        if not isinstance(port, (str, dict, int)):
-            raise TypeError(
-                "ports must be of types", dict, "or", list, "got", type(port)
-            )
-        if isinstance(port, str):
-            service_ports.append(
-                {
-                    "protocol": define_protocol(port),
-                    "published": int(port.split(":")[0]),
-                    "target": int(port.split(":")[-1].split("/")[0].strip()),
-                    "mode": "awsvpc",
-                }
-            )
-        elif isinstance(port, dict):
-            if not set(port).issubset(valid_keys):
-                raise KeyError("Valid keys are", valid_keys, "got", port.keys())
-            port["mode"] = "awsvpc"
-            service_ports.append(port)
-        elif isinstance(port, int):
-            service_ports.append(
-                {
-                    "protocol": "tcp",
-                    "published": port,
-                    "target": port,
-                    "mode": "awsvpc",
-                }
-            )
-    LOG.debug(service_ports)
-    return service_ports
 
 
 def define_ingress_mappings(service_ports):

@@ -24,7 +24,7 @@ from importlib import import_module
 
 from troposphere import Ref, AWS_STACK_NAME, GetAtt
 
-# from ecs_composex.appmesh.appmesh_mesh import Mesh
+from ecs_composex.appmesh.appmesh_mesh import Mesh
 from ecs_composex.common import LOG, NONALPHANUM
 from ecs_composex.common import (
     build_template,
@@ -86,6 +86,7 @@ EXCLUDED_X_KEYS = [
     f"{X_KEY}vpc",
     f"{X_KEY}dns",
     f"{X_KEY}cluster",
+    f"{X_KEY}efs",
 ]
 
 
@@ -381,15 +382,10 @@ def generate_full_template(settings):
         root_stack.stack_template,
         services_stack,
     )
-    # apply_x_to_x_configs(root_stack.stack_template, settings)
+    apply_x_to_x_configs(root_stack.stack_template, settings)
 
-    # if keyisset("x-appmesh", settings.compose_content):
-    #     mesh = Mesh(
-    #         settings.compose_content["x-appmesh"],
-    #         services_families,
-    #         services_stack,
-    #         settings,
-    #     )
-    #     mesh.render_mesh_template(services_stack)
+    if keyisset("x-appmesh", settings.compose_content):
+        mesh = Mesh(settings.compose_content["x-appmesh"], services_stack, settings)
+        mesh.render_mesh_template(services_stack)
     add_all_tags(root_stack.stack_template, settings)
     return root_stack

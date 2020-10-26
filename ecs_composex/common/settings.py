@@ -64,8 +64,8 @@ def merge_ports(source_ports, new_ports):
     """
     Function to merge two sections of ports
 
-    :param source_ports:
-    :param new_ports:
+    :param list source_ports:
+    :param list new_ports:
     :return:
     """
     f_source_ports = set_service_ports(source_ports)
