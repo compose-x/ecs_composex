@@ -31,7 +31,7 @@ import boto3
 from botocore.exceptions import ClientError
 
 from ecs_composex import __version__
-from ecs_composex.common import keyisset, LOG, load_composex_file
+from ecs_composex.common import keyisset, LOG, load_composex_file, NONALPHANUM
 from ecs_composex.common.envsubst import expandvars
 from ecs_composex.common.aws import get_account_id, get_region_azs
 from ecs_composex.common.cfn_params import USE_FLEET_T
@@ -356,17 +356,16 @@ class ComposeXSettings(object):
         Method to define the list of families
         :return:
         """
-        valid_re = re.compile(r"[^a-zA-Z0-9]+")
         assigned_services = []
         for service in self.services:
             for family_name in service.families:
-                if family_name != valid_re.sub("", family_name):
-                    if not valid_re.sub("", family_name) in self.families.keys():
+                if family_name != NONALPHANUM.sub("", family_name):
+                    if not NONALPHANUM.sub("", family_name) in self.families.keys():
                         LOG.warn(
                             f"Family name {family_name} must be AlphaNumerical. "
-                            f"Set to {valid_re.sub('', family_name)}"
+                            f"Set to {NONALPHANUM.sub('', family_name)}"
                         )
-                    family_name = valid_re.sub("", family_name)
+                    family_name = NONALPHANUM.sub("", family_name)
 
                 if family_name not in self.families.keys():
                     if service.name in [service.name for service in assigned_services]:

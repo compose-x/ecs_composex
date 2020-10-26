@@ -83,7 +83,6 @@ def handle_new_queues(
 
 def handle_service_scaling(
     resource,
-    services_families,
     services_stack,
     res_root_stack,
     service_def,
@@ -162,17 +161,13 @@ def handle_service_scaling(
         services_stack.add_dependencies(res_root_stack.title)
 
 
-def sqs_to_ecs(
-    queues, services_stack, services_families, res_root_stack, settings, **kwargs
-):
+def sqs_to_ecs(queues, services_stack, res_root_stack, settings, **kwargs):
     """
     Function to apply SQS settings to ECS Services
     :return:
     """
     l_queues = queues.copy()
-    handle_new_queues(
-        queues, services_families, services_stack, res_root_stack, l_queues
-    )
+    handle_new_queues(queues, services_stack, res_root_stack, l_queues)
 
     for queue_name in queues:
         queue = queues[queue_name]
@@ -180,7 +175,6 @@ def sqs_to_ecs(
             if keyisset("scaling", service_def):
                 handle_service_scaling(
                     queue,
-                    services_families,
                     services_stack,
                     res_root_stack,
                     service_def,

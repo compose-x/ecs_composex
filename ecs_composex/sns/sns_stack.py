@@ -64,6 +64,7 @@ class XStack(ComposeXStack):
                 settings.compose_content[RES_KEY][Topic.keyword][resource_name] = Topic(
                     resource_name,
                     settings.compose_content[RES_KEY][Topic.keyword][resource_name],
+                    settings,
                 )
 
         if keyisset(Subscription.keyword, settings.compose_content[RES_KEY]):
@@ -77,6 +78,7 @@ class XStack(ComposeXStack):
                     settings.compose_content[RES_KEY][Subscription.keyword][
                         resource_name
                     ],
+                    settings,
                 )
 
         template = create_sns_template(settings)

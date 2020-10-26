@@ -51,8 +51,8 @@ class Queue(XResource):
     Class to represent a SQS Queue
     """
 
-    def __init__(self, name, definition):
-        super().__init__(name, definition)
+    def __init__(self, name, definition, settings):
+        super().__init__(name, definition, settings)
 
 
 class XStack(ComposeXStack):

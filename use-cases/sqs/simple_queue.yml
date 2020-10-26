@@ -18,14 +18,17 @@ x-sqs:
       EnvNames:
         - queueb
     Services:
-      - name: app01
+      - name: bignicefamily
         access: RWMessages
 
   queueC:
     Properties:
       FifoQueue: True
     Services:
-      - name: app01
+      - name: rproxy
+        access: RWMessages
+    Services:
+      - name: youtoo
         access: RWMessages
     Settings:
       EnvNames:

@@ -37,7 +37,7 @@ def set_resources(settings, resource_class, res_key):
         return
     for resource_name in settings.compose_content[res_key]:
         new_definition = resource_class(
-            resource_name, settings.compose_content[res_key][resource_name]
+            resource_name, settings.compose_content[res_key][resource_name], settings
         )
         LOG.debug(type(new_definition))
         LOG.debug(new_definition.__dict__)
@@ -53,7 +53,7 @@ class XResource(object):
     :cvar str logical_name: Name of the resource to use in CFN template as for export/import
     """
 
-    def __init__(self, name, definition):
+    def __init__(self, name, definition, settings):
         """
         Init the class
         :param str name: Name of the resource in the template
@@ -90,9 +90,52 @@ class XResource(object):
             None if not keyisset("Use", self.definition) else self.definition["Use"]
         )
         self.cfn_resource = None
+        self.families_targets = []
+        self.set_services_targets(settings)
 
     def __repr__(self):
         return self.logical_name
+
+    def set_services_targets(self, settings):
+        """
+        Method to map services and families targets of the services defined.
+
+        :param ecs_composex.common.settings.ComposeXSettings settings:
+        :return:
+        """
+        if not self.services:
+            LOG.info(f"No services defined for {self.name}")
+            return
+        for service in self.services:
+            required_keys = ["name", "access"]
+            if not all(key in required_keys for key in service.keys()):
+                raise KeyError(
+                    "Services definition must contain at least",
+                    required_keys,
+                    "Got",
+                    service.keys(),
+                )
+            service_name = service["name"]
+            if service_name in settings.families:
+                self.families_targets.append(
+                    (settings.families[service_name], True, [])
+                )
+            elif service_name in [s.name for s in settings.services]:
+                the_service = [
+                    s for s in settings.services if s.name == service["name"]
+                ][0]
+                for family_name in the_service.families:
+                    family_name = NONALPHANUM.sub("", family_name)
+                    if family_name not in [f[0].name for f in self.families_targets]:
+                        self.families_targets.append(
+                            (settings.families[family_name], False, [the_service])
+                        )
+        for family in self.families_targets:
+            LOG.info(f"Mapped {family[0].name} to {self.name}.")
+            if not family[1] and family[2]:
+                LOG.info(f"Applies to service {family[-1]}")
+            else:
+                LOG.info(f"Applies to all services of {family[0].name}")
 
     def generate_resource_envvars(self, attribute, arn=None):
         """

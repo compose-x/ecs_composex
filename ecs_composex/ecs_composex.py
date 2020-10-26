@@ -165,9 +165,7 @@ def invoke_x_to_ecs(module, settings, services_stack, resource):
         )
 
 
-def apply_x_configs_to_ecs(
-    settings, root_template, services_stack, services_families, **kwargs
-):
+def apply_x_configs_to_ecs(settings, root_template, services_stack):
     """
     Function that evaluates only the x- resources of the root template and iterates over the resources.
     If there is an implemented module in ECS ComposeX for that resource to map to the ECS Services, it will
@@ -187,9 +185,7 @@ def apply_x_configs_to_ecs(
             and not resource.is_void
         ):
             module = getattr(resource, "title")
-            invoke_x_to_ecs(
-                module, settings, services_stack, services_families, resource
-            )
+            invoke_x_to_ecs(module, settings, services_stack, resource)
 
 
 def apply_x_to_x_configs(root_template, settings):
