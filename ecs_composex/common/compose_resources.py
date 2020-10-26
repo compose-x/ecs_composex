@@ -101,6 +101,8 @@ class XResource(object):
     def set_services_targets(self, settings):
         """
         Method to map services and families targets of the services defined.
+        TargetStructure:
+        (family, family_wide, services[], access)
 
         :param ecs_composex.common.settings.ComposeXSettings settings:
         :return:
