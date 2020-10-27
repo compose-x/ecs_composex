@@ -194,10 +194,16 @@ def handle_range(config, key, new_range):
         config[key]["max"] = max(config[key]["max"], new_max)
 
 
-def handle_target_scaling(config, key, new_config):
-    """
-    Function to handle merge of target tracking config
-    """
+def handle_defined_target_scaling_props(prop, config, key, new_config):
+    if prop[1] is int:
+        config[key][prop[0]] = min(config[key][prop[0]], new_config[prop[0]])
+    elif prop[1] is bool:
+        if not keyisset(prop[0], config[key]) and keyisset(prop[0], new_config):
+            LOG.warn(f"At least one service enabled {prop[0]}. Enabling for all")
+            config[key][prop[0]] = True
+
+
+def define_new_config(config, key, new_config):
     valid_keys = [
         ("cpu_target", int, None),
         ("memory_target", int, None),
@@ -206,33 +212,29 @@ def handle_target_scaling(config, key, new_config):
         ("scale_in_cooldown", int, None),
         ("scale_out_cooldown", int, None),
     ]
+    for prop in valid_keys:
+        if (
+            keypresent(prop[0], config[key])
+            and keypresent(prop[0], new_config)
+            and isinstance(new_config[prop[0]], prop[1])
+        ):
+            handle_defined_target_scaling_props(prop, config, key, new_config)
+        elif (
+            not keypresent(prop[0], config[key])
+            and keypresent(prop[0], new_config)
+            and isinstance(new_config[prop[0]], prop[1])
+        ):
+            config[key][prop[0]] = new_config[prop[0]]
+
+
+def handle_target_scaling(config, key, new_config):
+    """
+    Function to handle merge of target tracking config
+    """
     if not config[key]:
         config[key] = new_config
     else:
-        for prop in valid_keys:
-            if (
-                keypresent(prop[0], config[key])
-                and keypresent(prop[0], new_config)
-                and isinstance(new_config[prop[0]], prop[1])
-            ):
-                if prop[1] is int:
-                    config[key][prop[0]] = min(
-                        config[key][prop[0]], new_config[prop[0]]
-                    )
-                elif prop[1] is bool:
-                    if not keyisset(prop[0], config[key]) and keyisset(
-                        prop[0], new_config
-                    ):
-                        LOG.warn(
-                            f"At least one service enabled {prop[0]}. Enabling for all"
-                        )
-                        config[key][prop[0]] = True
-            elif (
-                not keypresent(prop[0], config[key])
-                and keypresent(prop[0], new_config)
-                and isinstance(new_config[prop[0]], prop[1])
-            ):
-                config[key][prop[0]] = new_config[prop[0]]
+        define_new_config(config, key, new_config)
 
 
 def merge_family_services_scaling(services):
