@@ -26,6 +26,10 @@ from troposphere.iam import Policy as IamPolicy
 from ecs_composex.common import LOG
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.ecs_composex import CFN_EXPORT_DELIMITER as DELIM
+from ecs_composex.common.compose_services import extend_container_envvars
+from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.ecs.ecs_iam import define_service_containers
+from ecs_composex.ecs.ecs_params import TASK_ROLE_T
 
 
 def generate_export_strings(res_name, attribute):
@@ -77,3 +81,98 @@ def generate_resource_permissions(resource_name, policies, attribute, arn=None):
             PolicyDocument=clean_policy,
         )
     return resource_policies
+
+
+def add_iam_policy_to_service_task_role_v2(
+    service_template, resource, perms, access_type, services
+):
+    """
+    Function to expand the ECS Task Role policy with the permissions for the resource
+    :param troposphere.Template service_template:
+    :param resource:
+    :param perms:
+    :param access_type:
+    :param list services:
+    :return:
+    """
+    containers = define_service_containers(service_template)
+    policy = perms[access_type]
+    task_role = service_template.resources[TASK_ROLE_T]
+    task_role.Policies.append(policy)
+    for container in containers:
+        for service in services:
+            if container.Name == service.name:
+                LOG.debug(f"Extended env vars for {container.Name} -> {service.name}")
+                extend_container_envvars(container, resource.env_vars)
+
+
+def map_service_perms_to_resource(resource, family, services, access_type):
+    """
+    Function to
+    :param resource:
+    :param family:
+    :param services:
+    :param str access_type:
+    :return:
+    """
+    res_perms = generate_resource_permissions(
+        f"AccessTo{resource.logical_name}",
+        resource.policies_scaffolds,
+        None,
+        resource.arn_attr,
+    )
+    containers = define_service_containers(family.template)
+    policy = res_perms[access_type]
+    task_role = family.template.resources[TASK_ROLE_T]
+    task_role.Policies.append(policy)
+    for container in containers:
+        for service in services:
+            if container.Name == service.name:
+                LOG.debug(f"Extended env vars for {container.Name} -> {service.name}")
+                extend_container_envvars(container, resource.env_vars)
+
+
+def assign_new_resource_to_service(resource):
+    """
+    Function to assign the new resource to the service/family using it.
+
+    :param ecs_composex.common.compose_resources.XResource resource:
+    :param bool nested: Whether this call if for a nested resource or not.
+
+    :return:
+    """
+    select_services = []
+    resource.generate_resource_envvars(attribute=resource.main_attr)
+    for target in resource.families_targets:
+        if not target[1] and target[2]:
+            LOG.debug(
+                f"Resource {resource.name} only applies to {target[2]} in family {target[0].name}"
+            )
+            select_services = target[2]
+        elif target[1]:
+            LOG.debug(f"Resource {resource.name} applies to family {target[0].name}")
+            select_services = target[0].services
+        if select_services:
+            map_service_perms_to_resource(
+                resource, target[0], select_services, target[3]
+            )
+
+
+def handle_resource_to_services(
+    xresource,
+    services_stack,
+    res_root_stack,
+    settings,
+    nested=False,
+):
+    s_resources = res_root_stack.stack_template.resources
+    for resource_name in s_resources:
+        if issubclass(type(s_resources[resource_name]), ComposeXStack):
+            handle_resource_to_services(
+                s_resources[resource_name],
+                services_stack,
+                res_root_stack,
+                settings,
+                nested=True,
+            )
+    assign_new_resource_to_service(xresource)

@@ -159,6 +159,12 @@ class Mesh(object):
                     service_families,
                     node["name"],
                 )
+            elif not service_families:
+                raise LookupError(
+                    "No family could be matched for the given node",
+                    settings.families,
+                    node["name"],
+                )
             LOG.debug(node)
             family = service_families[0]
             self.nodes[family.logical_name] = MeshNode(

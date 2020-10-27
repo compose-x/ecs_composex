@@ -19,11 +19,10 @@
 Module to handle permissions from x-resource to ECS service
 """
 
-from ecs_composex.common import NONALPHANUM, LOG
+from ecs_composex.common import LOG
 from ecs_composex.common.compose_services import extend_container_envvars
 from ecs_composex.ecs.ecs_iam import define_service_containers
 from ecs_composex.ecs.ecs_params import TASK_ROLE_T
-from ecs_composex.ecs.ecs_template import get_service_family_name
 
 
 def add_iam_policy_to_service_task_role_v2(
@@ -45,6 +44,7 @@ def add_iam_policy_to_service_task_role_v2(
     for container in containers:
         for service in services:
             if container.Name == service.name:
+                LOG.debug(f"Extended env vars for {container.Name} -> {service.name}")
                 extend_container_envvars(container, resource.env_vars)
 
 
@@ -71,48 +71,3 @@ def add_iam_policy_to_service_task_role(
         elif not family_wide and container.Name == service_name:
             extend_container_envvars(container, resource.env_vars)
             break
-
-
-def apply_iam_based_resources(
-    resource,
-    services_families,
-    services_stack,
-    res_root_stack,
-    perms,
-    nested=False,
-):
-    """
-    Function to assign resource to services stack
-
-    :param resource:
-    :type resource: ecs_composex.common.compose_resources.XResource
-    :param dict services_families:
-    :param ecs_composex.common.stacks.ComposeXStack services_stack:
-    :param ecs_composex.common.stacks.ComposeXStack res_root_stack:
-    :raises KeyError: if the service name is not a listed service in docker-compose.
-    """
-    if not resource.services:
-        return
-    for service in resource.services:
-        service_family = get_service_family_name(services_families, service["name"])
-        if (
-            not service_family
-            or service_family not in services_stack.stack_template.resources
-        ):
-            raise ValueError(
-                f"Service {service_family} not in the services stack",
-                services_stack.stack_template.resources,
-            )
-        family_wide = True if service["name"] in services_families else False
-        service_stack = services_stack.stack_template.resources[service_family]
-        add_iam_policy_to_service_task_role(
-            service_stack.stack_template,
-            resource,
-            perms,
-            service["access"],
-            NONALPHANUM.sub("", service["name"]),
-            family_wide,
-        )
-    LOG.debug(f"{res_root_stack.title} - {nested}")
-    if res_root_stack.title not in services_stack.DependsOn and not nested:
-        services_stack.add_dependencies(res_root_stack.title)

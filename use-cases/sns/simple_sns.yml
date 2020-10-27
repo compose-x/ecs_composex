@@ -1,0 +1,10 @@
+
+x-sns:
+  Topics:
+    abcd:
+      Properties: {}
+      Services:
+        - name: app01
+          access: Publish
+        - name: you-too
+          access: Publish

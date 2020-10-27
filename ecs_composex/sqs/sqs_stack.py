@@ -52,8 +52,8 @@ class Queue(XResource):
     Class to represent a SQS Queue
     """
 
-    arn_attribute = SQS_ARN
-    main_attribute = SQS_URL
+    arn_attr = SQS_ARN
+    main_attr = SQS_URL
     policies_scaffolds = get_access_types()
 
     def __init__(self, name, definition, settings):

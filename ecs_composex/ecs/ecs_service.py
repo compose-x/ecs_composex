@@ -204,7 +204,6 @@ def add_service_to_map(family):
     """
     Method to create a new Service into CloudMap to represent the current service and add entry into the registry
     """
-    print("PORTS", family.service_config.network.ports)
     registries = []
     if not family.service_config.network.ports:
         return registries

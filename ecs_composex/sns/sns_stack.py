@@ -16,7 +16,7 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from ecs_composex.common import keyisset, LOG
-from ecs_composex.sns.sns_params import RES_KEY
+from ecs_composex.sns.sns_params import RES_KEY, TOPIC_ARN_T, TOPIC_NAME_T
 from ecs_composex.sns.sns_templates import generate_sns_templates
 from ecs_composex.sqs.sqs_params import RES_KEY as SQS_KEY
 from ecs_composex.common.stacks import ComposeXStack
@@ -43,6 +43,8 @@ class Topic(XResource):
     """
 
     keyword = "Topics"
+    arn_attr = TOPIC_ARN_T
+    main_attr = TOPIC_NAME_T
 
 
 class Subscription(XResource):
