@@ -197,10 +197,13 @@ def handle_range(config, key, new_range):
 def handle_defined_target_scaling_props(prop, config, key, new_config):
     if prop[1] is int:
         config[key][prop[0]] = min(config[key][prop[0]], new_config[prop[0]])
-    elif prop[1] is bool:
-        if not keyisset(prop[0], config[key]) and keyisset(prop[0], new_config):
-            LOG.warn(f"At least one service enabled {prop[0]}. Enabling for all")
-            config[key][prop[0]] = True
+    elif (
+        prop[1] is bool
+        and not keyisset(prop[0], config[key])
+        and keyisset(prop[0], new_config)
+    ):
+        LOG.warn(f"At least one service enabled {prop[0]}. Enabling for all")
+        config[key][prop[0]] = True
 
 
 def define_new_config(config, key, new_config):
@@ -256,9 +259,12 @@ def merge_family_services_scaling(services):
     ]
     for key in valid_keys:
         for config in x_scaling_configs:
-            if keyisset(key[0], config) and isinstance(config[key[0]], key[1]):
-                if key[2]:
-                    key[2](x_scaling, key[0], config[key[0]])
+            if (
+                keyisset(key[0], config)
+                and isinstance(config[key[0]], key[1])
+                and key[2]
+            ):
+                key[2](x_scaling, key[0], config[key[0]])
 
     return x_scaling
 

@@ -947,19 +947,21 @@ class ComposeFamily(object):
             return
         role = self.template.resources[role_name]
         props = [
-            ("managed_policies", "ManagedPolicyArns", list),
-            ("policies", "Policies", list),
-            ("boundary", "PermissionsBoundary", (str, Sub)),
+            (
+                "managed_policies",
+                "ManagedPolicyArns",
+                list,
+                self.assign_iam_managed_policies,
+            ),
+            ("policies", "Policies", list, self.assign_iam_policies),
+            ("boundary", "PermissionsBoundary", (str, Sub), None),
         ]
         for prop in props:
             if keyisset(prop[0], self.iam) and isinstance(self.iam[prop[0]], prop[2]):
                 if prop[0] == "boundary":
                     self.handle_permission_boundary(prop[0], prop[1])
-                elif prop[2] is list:
-                    if prop[0] == "policies":
-                        self.assign_iam_policies(role, prop)
-                    elif prop[0] == "managed_policies":
-                        self.assign_iam_managed_policies(role, prop)
+                elif prop[3]:
+                    prop[3](role, prop)
 
     def set_secrets_access(self):
         """

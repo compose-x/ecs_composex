@@ -71,6 +71,23 @@ def handle_ingress_rules(source_config, ingress_config):
                 key[2](source_config[key[0]], ingress_config[key[0]])
 
 
+def handle_merge_services_props(config, network, network_config):
+    """
+    Function to handle properties assignment for network settings
+
+    :param tuple config:
+    :param dict network:
+    :param dict network_config:
+    :return:
+    """
+    if config[1] is bool and keypresent(config[0], network):
+        network_config[config[0]] = network[config[0]]
+    elif config[1] is str and keyisset(config[0], network):
+        network_config[config[0]] = network[config[0]]
+    elif config[1] is dict and keypresent(config[0], network) and config[2]:
+        config[2](network_config[config[0]], network[config[0]])
+
+
 def merge_services_network(family):
     network_config = {
         "use_cloudmap": True,
@@ -92,12 +109,7 @@ def merge_services_network(family):
     for config in valid_keys:
         for network in x_network:
             if config[0] in network:
-                if config[1] is bool and keypresent(config[0], network):
-                    network_config[config[0]] = network[config[0]]
-                elif config[1] is str and keyisset(config[0], network):
-                    network_config[config[0]] = network[config[0]]
-                elif config[1] is dict and keypresent(config[0], network) and config[2]:
-                    config[2](network_config[config[0]], network[config[0]])
+                handle_merge_services_props(config, network, network_config)
     LOG.debug(family.name)
     LOG.debug(dumps(network_config, indent=2))
     return network_config
