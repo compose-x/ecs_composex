@@ -1,0 +1,12 @@
+---
+# Blog applications
+
+version: '3.8'
+
+x-vpc:
+  Create:
+    VpcCidr: 172.23.240.0/24
+
+x-tags:
+  owner: johnpreston
+  contact: john@lambda-my-aws.io

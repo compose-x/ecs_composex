@@ -20,6 +20,7 @@ from os import path
 import boto3
 import placebo
 import pytest
+from copy import deepcopy
 from troposphere import Template
 
 from ecs_composex.common import load_composex_file
@@ -39,7 +40,7 @@ def root_stack():
 @pytest.fixture
 def content():
     here = path.abspath(path.dirname(__file__))
-    return load_composex_file(f"{here}/../use-cases/blog.yml")
+    return load_composex_file(f"{here}/../use-cases/blog.features.yml")
 
 
 @pytest.fixture
@@ -152,7 +153,7 @@ def create_settings(updated_content, case_path):
             ComposeXSettings.name_arg: "test",
             ComposeXSettings.command_arg: ComposeXSettings.render_arg,
             ComposeXSettings.input_file_arg: path.abspath(
-                f"{here}/../features/use-cases/vpc/vpc_from_tags.yml"
+                f"{here}/../uses-cases/blog.features.yml"
             ),
             ComposeXSettings.format_arg: "yaml",
         },
@@ -196,18 +197,22 @@ def test_negative_testing_vpc(content, invalid_x_vpc_id, invalid_x_vpc_arn):
 def test_negative_testing_subnets(
     content, root_stack, invalid_x_subnets_ids, invalid_x_subnets_ids_list
 ):
-    content.update({"x-vpc": {"Lookup": invalid_x_subnets_ids}})
+    new_content = deepcopy(content)
+    new_content.update({"x-vpc": {"Lookup": invalid_x_subnets_ids}})
     with pytest.raises(ValueError):
-        settings = create_settings(content, "x_vpc")
+        settings = create_settings(new_content, "x_vpc")
         add_vpc_to_root(root_stack, settings)
-    content.update({"x-vpc": {"Lookup": invalid_x_subnets_ids_list}})
+
+    new_content = deepcopy(content)
+    new_content.update({"x-vpc": {"Lookup": invalid_x_subnets_ids_list}})
     with pytest.raises(ValueError):
-        settings = create_settings(content, "x_vpc")
+        settings = create_settings(new_content, "x_vpc")
         add_vpc_to_root(root_stack, settings)
 
     with pytest.raises(ValueError):
         """On 4th call, no subnets are returned"""
-        settings = create_settings(content, "x_vpc")
+        new_content = deepcopy(content)
+        settings = create_settings(new_content, "x_vpc")
         add_vpc_to_root(root_stack, settings)
         add_vpc_to_root(root_stack, settings)
         add_vpc_to_root(root_stack, settings)

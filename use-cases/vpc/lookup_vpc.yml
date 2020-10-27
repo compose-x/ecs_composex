@@ -1,0 +1,19 @@
+---
+# Blog applications
+
+version: '3.8'
+
+x-vpc:
+  Lookup:
+    VpcId:
+      tags:
+        - Name: vpcwork
+    AppSubnets:
+      tags:
+        - vpc::usage: application
+    StorageSubnets:
+      tags:
+        - vpc::usage: storage
+    PublicSubnets:
+      tags:
+        - vpc::usage: public

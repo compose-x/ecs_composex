@@ -305,6 +305,10 @@ class ComposeService(object):
     ]
 
     def __init__(self, name, definition, volumes=None, secrets=None):
+        if not isinstance(definition, dict):
+            raise TypeError(
+                "The definition of a service must be", dict, "got", type(definition)
+            )
         if not all(
             key in [title[0] for title in self.keys] for key in definition.keys()
         ):
@@ -384,9 +388,6 @@ class ComposeService(object):
         self.map_secrets(secrets)
         self.set_service_deploy()
         self.set_container_definition()
-
-    def __repr__(self):
-        return self.name
 
     def set_container_definition(self):
         self.container_definition = ContainerDefinition(
@@ -739,14 +740,6 @@ class ComposeFamily(object):
         self.handle_iam()
         self.handle_logging()
         self.apply_services_params()
-
-    def __repr__(self):
-        return dumps(
-            {
-                "name": self.logical_name,
-                "services": [s.name for s in self.services],
-            }
-        )
 
     def add_service(self, service):
         self.services.append(service)
