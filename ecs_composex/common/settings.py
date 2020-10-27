@@ -351,6 +351,38 @@ class ComposeXSettings(object):
             self.compose_content[ComposeService.main_key][service_name] = service
             self.services.append(service)
 
+    def get_family_name(self, family_name):
+        if family_name != NONALPHANUM.sub("", family_name):
+            if not NONALPHANUM.sub("", family_name) in self.families.keys():
+                LOG.warn(
+                    f"Family name {family_name} must be AlphaNumerical. "
+                    f"Set to {NONALPHANUM.sub('', family_name)}"
+                )
+            family_name = NONALPHANUM.sub("", family_name)
+        return family_name
+
+    def add_new_family(self, family_name, service, assigned_services):
+        if service.name in [service.name for service in assigned_services]:
+            LOG.info(
+                f"Detected {service.name} is-reused in different family. Making a deepcopy"
+            )
+            family = ComposeFamily([deepcopy(service)], family_name)
+        else:
+            family = ComposeFamily([service], family_name)
+        self.families[family_name] = family
+        if service.name not in [service.name for service in assigned_services]:
+            assigned_services.append(service)
+
+    def handle_assigned_existing_service(self, family_name, service, assigned_services):
+        if service.name in [service.name for service in assigned_services]:
+            LOG.info(
+                f"Detected {service.name} is-reused in different family. Making a deepcopy"
+            )
+            self.families[family_name].add_service(deepcopy(service))
+        else:
+            self.families[family_name].add_service(service)
+            assigned_services.append(service)
+
     def set_families(self):
         """
         Method to define the list of families
@@ -359,38 +391,16 @@ class ComposeXSettings(object):
         assigned_services = []
         for service in self.services:
             for family_name in service.families:
-                if family_name != NONALPHANUM.sub("", family_name):
-                    if not NONALPHANUM.sub("", family_name) in self.families.keys():
-                        LOG.warn(
-                            f"Family name {family_name} must be AlphaNumerical. "
-                            f"Set to {NONALPHANUM.sub('', family_name)}"
-                        )
-                    family_name = NONALPHANUM.sub("", family_name)
+                family_name = self.get_family_name(family_name)
 
                 if family_name not in self.families.keys():
-                    if service.name in [service.name for service in assigned_services]:
-                        LOG.info(
-                            f"Detected {service.name} is-reused in different family. Making a deepcopy"
-                        )
-                        family = ComposeFamily([deepcopy(service)], family_name)
-                    else:
-                        family = ComposeFamily([service], family_name)
-                    self.families[family_name] = family
-                    if service.name not in [
-                        service.name for service in assigned_services
-                    ]:
-                        assigned_services.append(service)
+                    self.add_new_family(family_name, service, assigned_services)
                 elif family_name in self.families.keys() and service.name not in [
                     service.name for service in self.families[family_name].services
                 ]:
-                    if service.name in [service.name for service in assigned_services]:
-                        LOG.info(
-                            f"Detected {service.name} is-reused in different family. Making a deepcopy"
-                        )
-                        self.families[family_name].add_service(deepcopy(service))
-                    else:
-                        self.families[family_name].add_service(service)
-                        assigned_services.append(service)
+                    self.handle_assigned_existing_service(
+                        family_name, service, assigned_services
+                    )
         LOG.debug([self.families[family] for family in self.families])
 
     def set_content(self, kwargs, content=None, fully_load=True):

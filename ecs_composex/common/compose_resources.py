@@ -44,6 +44,17 @@ def set_resources(settings, resource_class, res_key):
         settings.compose_content[res_key][resource_name] = new_definition
 
 
+def validate_service_definition(service):
+    required_keys = ["name", "access"]
+    if not set(required_keys).issubset(service):
+        raise KeyError(
+            "Services definition must contain at least",
+            required_keys,
+            "Got",
+            service.keys(),
+        )
+
+
 class XResource(object):
     """
     Class to represent each defined resource in the template
@@ -98,6 +109,28 @@ class XResource(object):
     def __repr__(self):
         return self.logical_name
 
+    def debug_families_targets(self):
+        for family in self.families_targets:
+            LOG.debug(f"Mapped {family[0].name} to {self.name}.")
+            if not family[1] and family[2]:
+                LOG.debug(f"Applies to service {family[2]}")
+            else:
+                LOG.debug(f"Applies to all services of {family[0].name}")
+
+    def handle_families_targets_expansion(self, service, settings):
+        the_service = [s for s in settings.services if s.name == service["name"]][0]
+        for family_name in the_service.families:
+            family_name = NONALPHANUM.sub("", family_name)
+            if family_name not in [f[0].name for f in self.families_targets]:
+                self.families_targets.append(
+                    (
+                        settings.families[family_name],
+                        False,
+                        [the_service],
+                        service["access"],
+                    )
+                )
+
     def set_services_targets(self, settings):
         """
         Method to map services and families targets of the services defined.
@@ -111,14 +144,7 @@ class XResource(object):
             LOG.info(f"No services defined for {self.name}")
             return
         for service in self.services:
-            required_keys = ["name", "access"]
-            if not set(required_keys).issubset(service):
-                raise KeyError(
-                    "Services definition must contain at least",
-                    required_keys,
-                    "Got",
-                    service.keys(),
-                )
+            validate_service_definition(service)
             service_name = service["name"]
             if service_name in settings.families and service_name not in [
                 f[0].name for f in self.families_targets
@@ -131,26 +157,24 @@ class XResource(object):
             ]:
                 LOG.warn(f"The family {service_name} has already been added. Skipping")
             elif service_name in [s.name for s in settings.services]:
-                the_service = [
-                    s for s in settings.services if s.name == service["name"]
-                ][0]
-                for family_name in the_service.families:
-                    family_name = NONALPHANUM.sub("", family_name)
-                    if family_name not in [f[0].name for f in self.families_targets]:
-                        self.families_targets.append(
-                            (
-                                settings.families[family_name],
-                                False,
-                                [the_service],
-                                service["access"],
-                            )
-                        )
-        for family in self.families_targets:
-            LOG.info(f"Mapped {family[0].name} to {self.name}.")
-            if not family[1] and family[2]:
-                LOG.info(f"Applies to service {family[2]}")
-            else:
-                LOG.info(f"Applies to all services of {family[0].name}")
+                self.handle_families_targets_expansion(service, settings)
+        self.debug_families_targets()
+
+    def handle_family_scaling_expansion(self, service, settings):
+        """
+        Method to search for the families of given service and add it if not already present
+
+        :param dict service:
+        :param ecs_composex.common.settings.ComposeXSettings settings:
+        :return:
+        """
+        the_service = [s for s in settings.services if s.name == service["name"]][0]
+        for family_name in the_service.families:
+            family_name = NONALPHANUM.sub("", family_name)
+            if family_name not in [f[0].name for f in self.families_scaling]:
+                self.families_scaling.append(
+                    (settings.families[family_name], service["scaling"])
+                )
 
     def set_services_scaling(self, settings):
         """
@@ -160,11 +184,10 @@ class XResource(object):
         :return:
         """
         if not self.services:
-            LOG.info(f"No services defined for {self.name}")
             return
         for service in self.services:
             if not keyisset("scaling", service):
-                LOG.info(
+                LOG.debug(
                     f"No scaling for {service['name']} defined based on {self.name}"
                 )
                 continue
@@ -178,17 +201,9 @@ class XResource(object):
             elif service_name in settings.families and service_name in [
                 f[0].name for f in self.families_scaling
             ]:
-                LOG.warn(f"The family {service_name} has already been added. Skipping")
+                LOG.debug(f"The family {service_name} has already been added. Skipping")
             elif service_name in [s.name for s in settings.services]:
-                the_service = [
-                    s for s in settings.services if s.name == service["name"]
-                ][0]
-                for family_name in the_service.families:
-                    family_name = NONALPHANUM.sub("", family_name)
-                    if family_name not in [f[0].name for f in self.families_scaling]:
-                        self.families_scaling.append(
-                            (settings.families[family_name], service["scaling"])
-                        )
+                self.handle_family_scaling_expansion(service, settings)
 
     def generate_resource_envvars(self, attribute, arn=None):
         """

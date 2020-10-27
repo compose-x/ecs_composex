@@ -542,9 +542,6 @@ class ComposeService(object):
         if not isinstance(self.ecs_healthcheck, Ref):
             LOG.warn(f"Healthcheck was defined on {self.name}. Overriding to HEALTHY")
             self.container_start_condition = "HEALTHY"
-            return
-        elif not keyisset(labels, deployment):
-            return
         elif keyisset(labels, deployment) and keyisset(depends_key, deployment[labels]):
             if deployment[labels][depends_key] not in allowed_values:
                 raise ValueError(
@@ -792,6 +789,24 @@ class ComposeFamily(object):
             if not xray_service.name not in self.ignored_services:
                 self.ignored_services.append(xray_service)
 
+    def reset_logging_retention_period(self, closest_valid):
+        """
+        Method to reset the logging retention period to the closest valid value.
+
+        :param int closest_valid:
+        :return:
+        """
+        for service in self.services:
+            if service.x_configs:
+                if keyisset("logging", service.x_configs):
+                    service.x_configs["logging"][
+                        "logs_retention_period"
+                    ] = closest_valid
+                else:
+                    service.x_configs["logging"] = {
+                        "logs_retention_period": closest_valid
+                    }
+
     def handle_logging(self):
         x_logging = []
         for service in self.services:
@@ -811,16 +826,7 @@ class ComposeFamily(object):
                 LOG.warn(
                     f"The days you set for logging was invalid ({max(periods)}). Adjusted to {closest_valid}"
                 )
-            for service in self.services:
-                if service.x_configs:
-                    if keyisset("logging", service.x_configs):
-                        service.x_configs["logging"][
-                            "logs_retention_period"
-                        ] = closest_valid
-                    else:
-                        service.x_configs["logging"] = {
-                            "logs_retention_period": closest_valid
-                        }
+            self.reset_logging_retention_period(closest_valid)
             self.stack_parameters.update({LOG_GROUP_RETENTION.title: closest_valid})
 
     def sort_container_configs(self):
@@ -850,6 +856,23 @@ class ComposeFamily(object):
         for service in self.services:
             self.stack_parameters.update(service.container_parameters)
 
+    def sort_iam_settings(self, key, setting):
+        """
+        Method to sort out iam configuration
+
+        :param tuple key:
+        :param dict setting:
+        :return:
+        """
+        if keyisset(key[0], setting) and isinstance(setting[key[0]], key[1]):
+            if key[2]:
+                key[2](self.iam, key[0], setting[key[0]])
+            else:
+                if key[1] is list and keypresent(key[0], self.iam):
+                    self.iam[key[0]] = list(set(self.iam[key[0]] + setting[key[0]]))
+                if key[1] is str and keypresent(key[0], self.iam):
+                    self.iam[key[0]] = setting[key[0]]
+
     def handle_iam(self):
         valid_keys = [
             ("managed_policies", list, None),
@@ -863,16 +886,7 @@ class ComposeFamily(object):
         ]
         for setting in iam_settings:
             for key in valid_keys:
-                if keyisset(key[0], setting) and isinstance(setting[key[0]], key[1]):
-                    if key[2]:
-                        key[2](self.iam, key[0], setting[key[0]])
-                    else:
-                        if key[1] is list and keypresent(key[0], self.iam):
-                            self.iam[key[0]] = list(
-                                set(self.iam[key[0]] + setting[key[0]])
-                            )
-                        if key[1] is str and keypresent(key[0], self.iam):
-                            self.iam[key[0]] = setting[key[0]]
+                self.sort_iam_settings(key, setting)
         self.set_secrets_access()
 
     def handle_permission_boundary(self, prop_key, cfn_key):
@@ -885,6 +899,40 @@ class ComposeFamily(object):
                 setattr(
                     self.template.resources[TASK_ROLE_T], cfn_key, self.iam[prop_key]
                 )
+
+    def assign_iam_policies(self, role, prop):
+        """
+        Method to handle assignment of IAM policies defined from compose file.
+
+        :param role:
+        :param prop:
+        :return:
+        """
+        if hasattr(role, prop[1]):
+            existing = getattr(role, prop[1])
+            existing_policy_names = [policy.PolicyName for policy in existing]
+            for new_policy in self.iam[prop[0]]:
+                if new_policy.PolicyName not in existing_policy_names:
+                    existing.append(new_policy)
+        else:
+            setattr(role, prop[1], self.iam[prop[0]])
+
+    def assign_iam_managed_policies(self, role, prop):
+        """
+        Method to assign managed policies to IAM role
+
+        :param role:
+        :param prop:
+        :return:
+        """
+        if hasattr(role, prop[1]):
+            setattr(
+                role,
+                prop[1],
+                list(set(self.iam[prop[0]] + getattr(role, prop[1]))),
+            )
+        else:
+            setattr(role, prop[1], self.iam[prop[0]])
 
     def assign_policies(self, role_name=None):
         """
@@ -909,25 +957,9 @@ class ComposeFamily(object):
                     self.handle_permission_boundary(prop[0], prop[1])
                 elif prop[2] is list:
                     if prop[0] == "policies":
-                        if hasattr(role, prop[1]):
-                            existing = getattr(role, prop[1])
-                            existing_policy_names = [
-                                policy.PolicyName for policy in existing
-                            ]
-                            for new_policy in self.iam[prop[0]]:
-                                if new_policy.PolicyName not in existing_policy_names:
-                                    existing.append(new_policy)
-                        else:
-                            setattr(role, prop[1], self.iam[prop[0]])
+                        self.assign_iam_policies(role, prop)
                     elif prop[0] == "managed_policies":
-                        if hasattr(role, prop[1]):
-                            setattr(
-                                role,
-                                prop[1],
-                                list(set(self.iam[prop[0]] + getattr(role, prop[1]))),
-                            )
-                        else:
-                            setattr(role, prop[1], self.iam[prop[0]])
+                        self.assign_iam_managed_policies(role, prop)
 
     def set_secrets_access(self):
         """
