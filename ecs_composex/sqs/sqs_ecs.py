@@ -19,21 +19,22 @@
 Module to apply SQS settings onto ECS Services
 """
 
-from troposphere import Ref
+from troposphere import Ref, FindInMap, Sub
 from troposphere.cloudwatch import Alarm, MetricDimension
 
-from ecs_composex.common import LOG
+from ecs_composex.common import LOG, keyisset
 from ecs_composex.ecs.ecs_params import SERVICE_SCALING_TARGET
 from ecs_composex.ecs.ecs_scaling import (
     generate_alarm_scaling_out_policy,
     reset_to_zero_policy,
 )
-from ecs_composex.ecs.ecs_template import get_service_family_name
 from ecs_composex.resource_settings import (
     generate_export_strings,
     handle_resource_to_services,
+    map_service_perms_to_resource,
 )
-from ecs_composex.sqs.sqs_params import SQS_NAME
+from ecs_composex.sqs.sqs_params import SQS_NAME, SQS_KMS_KEY_T
+from ecs_composex.sqs.sqs_aws import lookup_queue_config
 
 
 def handle_service_scaling(resource):
@@ -42,10 +43,6 @@ def handle_service_scaling(resource):
 
     :param resource:
     :type resource: ecs_composex.common.compose_resources.XResource
-    :param ecs_composex.common.stacks.ComposeXStack services_stack:
-    :param ecs_composex.common.stacks.ComposeXStack res_root_stack:
-    :param dict service_def: The service scaling definition
-    :param bool nested: Whether this is nested stack to anohter.
     :raises KeyError: if the service name is not a listed service in docker-compose.
     """
     for target in resource.families_scaling:
@@ -98,11 +95,56 @@ def handle_service_scaling(resource):
         )
 
 
+def create_sqs_mappings(mapping, resources, settings):
+    """
+    Function to create the resource mapping for SQS Queues.
+
+    :param dict mapping:
+    :param str mapping_family:
+    :param list resources:
+    :param ecs_composex.common.settings.ComposeXSettings settings:
+    :return:
+    """
+    for res in resources:
+        res_config = lookup_queue_config(res.lookup, settings.session)
+        mapping.update({res.logical_name: res_config})
+        if keyisset(SQS_KMS_KEY_T, res_config):
+            LOG.info(f"Identified CMK {res_config[SQS_KMS_KEY_T]} for {res.name}")
+
+
+def handle_lookup_resource(mapping, mapping_family, resource):
+    """
+    :param dict mapping:
+    :param str mapping_family:
+    :param resource: The lookup resource
+    :return:
+    """
+    selected_services = []
+    for target in resource.families_targets:
+        if not target[1] and target[2]:
+            selected_services = target[2]
+        elif target[1]:
+            selected_services = target[0].services
+        if selected_services:
+            target[0].template.add_mapping(mapping_family, mapping)
+            arn_attr_value = FindInMap(
+                mapping_family, resource.logical_name, resource.arn_attr.title
+            )
+            main_attr_value = FindInMap(
+                mapping_family, resource.logical_name, resource.main_attr.title
+            )
+            resource.generate_resource_envvars(None, arn=main_attr_value)
+            map_service_perms_to_resource(
+                resource, target[0], selected_services, target[3], arn=arn_attr_value
+            )
+
+
 def sqs_to_ecs(resources, services_stack, res_root_stack, settings):
     """
     Function to apply SQS settings to ECS Services
     :return:
     """
+    resource_mappings = {}
     new_resources = [
         resources[res_name] for res_name in resources if not resources[res_name].lookup
     ]
@@ -117,3 +159,6 @@ def sqs_to_ecs(resources, services_stack, res_root_stack, settings):
     for new_res in new_resources:
         handle_resource_to_services(new_res, services_stack, res_root_stack, settings)
         handle_service_scaling(new_res)
+    create_sqs_mappings(resource_mappings, lookup_resources, settings)
+    for lookup_res in lookup_resources:
+        handle_lookup_resource(resource_mappings, "sqs", lookup_res)

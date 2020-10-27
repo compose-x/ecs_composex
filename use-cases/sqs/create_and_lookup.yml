@@ -50,8 +50,8 @@ x-sqs:
     Properties: {}
     Lookup:
       Tags:
-        - costcentre: PD7564
-        - Name: dev
+        - useless: "yes"
+        - costcentre: lambda
     Services:
       - name: bignicefamily
         access: RWMessages

@@ -106,20 +106,21 @@ def add_iam_policy_to_service_task_role_v2(
                 extend_container_envvars(container, resource.env_vars)
 
 
-def map_service_perms_to_resource(resource, family, services, access_type):
+def map_service_perms_to_resource(resource, family, services, access_type, arn=None):
     """
     Function to
     :param resource:
     :param family:
     :param services:
     :param str access_type:
+    :param arn: The ARN to use for permissions, allows remote override
     :return:
     """
     res_perms = generate_resource_permissions(
         f"AccessTo{resource.logical_name}",
         resource.policies_scaffolds,
-        None,
         resource.arn_attr,
+        arn,
     )
     containers = define_service_containers(family.template)
     policy = res_perms[access_type]
@@ -137,7 +138,6 @@ def assign_new_resource_to_service(resource):
     Function to assign the new resource to the service/family using it.
 
     :param ecs_composex.common.compose_resources.XResource resource:
-    :param bool nested: Whether this call if for a nested resource or not.
 
     :return:
     """

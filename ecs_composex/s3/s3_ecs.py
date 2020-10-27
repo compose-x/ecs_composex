@@ -248,9 +248,6 @@ def assign_lookup_buckets(bucket, mappings):
 
     :param ecs_composex.s3.s3_stacks.Bucket bucket:
     :param dict mappings:
-    :param dict service:
-    :param ecs_composex.common.stacks.ComposeXStack services_stack:
-    :param dict services_families:
     """
     if not keyisset(bucket.logical_name, mappings):
         LOG.warn(f"Bucket {bucket.logical_name} was not found in mappings. Skipping")
