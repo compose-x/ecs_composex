@@ -17,10 +17,7 @@
 
 import re
 from json import dumps
-from copy import deepcopy
 
-from troposphere import Parameter, Tags
-from troposphere import Sub, Ref, GetAtt, ImportValue
 from troposphere import (
     AWS_ACCOUNT_ID,
     AWS_NO_VALUE,
@@ -28,6 +25,8 @@ from troposphere import (
     AWS_STACK_NAME,
     AWS_PARTITION,
 )
+from troposphere import Parameter, Tags
+from troposphere import Sub, Ref, GetAtt, ImportValue
 from troposphere.ecs import (
     HealthCheck,
     Environment,
@@ -38,8 +37,8 @@ from troposphere.ecs import (
 )
 from troposphere.iam import Policy
 
-from ecs_composex.common import keyisset, keypresent
 from ecs_composex.common import NONALPHANUM, LOG
+from ecs_composex.common import keyisset, keypresent
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME
 from ecs_composex.common.compose_secrets import (
     ComposeSecret,
@@ -50,16 +49,12 @@ from ecs_composex.common.compose_volumes import (
     handle_volume_dict_config,
     handle_volume_str_config,
 )
-
-from ecs_composex.ecs.ecs_params import LOG_GROUP, AWS_XRAY_IMAGE
-from ecs_composex.ecs.ecs_iam import add_service_roles
-from ecs_composex.ecs import ecs_params, ecs_conditions
+from ecs_composex.ecs import ecs_params
 from ecs_composex.ecs.docker_tools import find_closest_fargate_configuration
-from ecs_composex.ecs.ecs_conditions import USE_HOSTNAME_CON_T
-from ecs_composex.ecs.ecs_iam import add_service_roles, expand_role_polices
-from ecs_composex.ecs.ecs_params import NETWORK_MODE, EXEC_ROLE_T, TASK_ROLE_T, TASK_T
-from ecs_composex.ecs.ecs_params import SERVICE_NAME, SERVICE_HOSTNAME
+from ecs_composex.ecs.ecs_iam import add_service_roles
+from ecs_composex.ecs.ecs_params import LOG_GROUP, AWS_XRAY_IMAGE
 from ecs_composex.ecs.ecs_params import LOG_GROUP_RETENTION
+from ecs_composex.ecs.ecs_params import NETWORK_MODE, EXEC_ROLE_T, TASK_ROLE_T, TASK_T
 from ecs_composex.ecs.ecs_service_network_config import set_service_ports
 
 NUMBERS_REG = r"[^0-9.]"

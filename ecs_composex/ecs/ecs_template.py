@@ -19,16 +19,12 @@
 Core ECS Template building
 """
 
-from json import dumps
-
 from troposphere import Ref, Sub, Tags, GetAtt
 from troposphere.ec2 import SecurityGroup
 from troposphere.iam import PolicyType
 from troposphere.logs import LogGroup
 
-from ecs_composex.common import LOG, NONALPHANUM
 from ecs_composex.common import build_template
-from ecs_composex.common import keyisset, keypresent
 from ecs_composex.common.cfn_params import (
     ROOT_STACK_NAME_T,
     ROOT_STACK_NAME,
@@ -42,12 +38,11 @@ from ecs_composex.ecs import ecs_conditions, ecs_params
 from ecs_composex.ecs.ecs_params import (
     CLUSTER_NAME,
     CLUSTER_NAME_T,
-    ECS_TASK_FAMILY_LABEL,
 )
-from ecs_composex.ecs.ecs_service_config import ServiceConfig
 from ecs_composex.ecs.ecs_service import (
     Service,
 )
+from ecs_composex.ecs.ecs_service_config import ServiceConfig
 from ecs_composex.vpc import vpc_params
 
 
@@ -212,6 +207,3 @@ def generate_services(settings):
                 ),
             }
         )
-        # ecs_service.parameters.update(family_parameters)
-        # LOG.debug(f"Service {family_resource_name} added.")
-        # services[family_name] = ecs_service
