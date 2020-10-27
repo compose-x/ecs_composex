@@ -69,7 +69,7 @@ test-all: ## run tests on every Python version with tox
 
 coverage: ## check code coverage quickly with the default Python
 	coverage run --source ecs_composex -m behave --junit || exit 0
-	coverage run --source ecs_composex -a -m pytest pytests -vv -x
+	coverage run --source ecs_composex -a -m pytest pytests -vv -x || exit 0
 	coverage report -m
 	coverage html
 	$(BROWSER) htmlcov/index.html

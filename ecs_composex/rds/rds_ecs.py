@@ -23,68 +23,46 @@ from troposphere import Select, FindInMap
 
 from ecs_composex.common import LOG, keyisset
 from ecs_composex.ecs.ecs_template import get_service_family_name
+from ecs_composex.rds.rds_aws import validate_rds_lookup, lookup_rds_resource
 from ecs_composex.rds.rds_perms import (
     add_secret_to_containers,
     define_db_secret_import,
     add_rds_policy,
     add_security_group_ingress,
 )
-from ecs_composex.rds.rds_aws import validate_rds_lookup, lookup_rds_resource
 
 
-def handle_new_dbs_to_services(
-    db,
-    secret_import,
-    service,
-    services_families,
-    services_stack,
-    rds_root_stack,
-):
-    service_family = get_service_family_name(services_families, service["name"])
-    if service_family not in services_stack.stack_template.resources:
-        raise AttributeError(f"No service {service_family} present in services stack")
-    family_wide = True if service["name"] in services_families else False
-    service_stack = services_stack.stack_template.resources[service_family]
-    service_template = service_stack.stack_template
-    add_secret_to_containers(
-        service_template,
-        db,
-        secret_import,
-        service["name"],
-        family_wide,
-    )
-    add_rds_policy(service_template, secret_import, db.logical_name)
-    add_security_group_ingress(service_stack, db.logical_name)
-    if rds_root_stack.title not in services_stack.DependsOn:
-        services_stack.add_dependencies(rds_root_stack.title)
+def handle_new_dbs_to_services(db, secret_import, target):
+    for service in target[2]:
+        add_secret_to_containers(
+            target[0].template,
+            db,
+            secret_import,
+            service.name,
+            target[1],
+        )
+    add_rds_policy(target[0].template, secret_import, db.logical_name)
+    add_security_group_ingress(target[0].stack, db.logical_name)
 
 
 def handle_import_dbs_to_services(
     db,
     rds_mapping,
-    service,
-    services_families,
-    services_stack,
+    target,
 ):
-    service_family = get_service_family_name(services_families, service["name"])
-    if service_family not in services_stack.stack_template.resources:
-        raise AttributeError(f"No service {service_family} present in services stack")
-    family_wide = True if service["name"] in services_families else False
-    service_stack = services_stack.stack_template.resources[service_family]
-    service_stack.stack_template.add_mapping("Rds", rds_mapping)
-    service_template = service_stack.stack_template
     if keyisset(db.logical_name, rds_mapping) and keyisset(
         "SecretArn", rds_mapping[db.logical_name]
     ):
-        add_secret_to_containers(
-            service_template,
-            db,
-            FindInMap("Rds", db.logical_name, "SecretArn"),
-            service["name"],
-            family_wide,
-        )
+        for service in target[2]:
+            add_secret_to_containers(
+                target[0].template,
+                db,
+                FindInMap("Rds", db.logical_name, "SecretArn"),
+                service.name,
+                target[1],
+            )
         add_rds_policy(
-            service_template,
+            target[0].template,
             FindInMap("Rds", db.logical_name, "SecretArn"),
             db.logical_name,
         )
@@ -93,7 +71,7 @@ def handle_import_dbs_to_services(
             f"Don't forget, we did not assigned access to a secret from SecretsManager for {db.logical_name}"
         )
     add_security_group_ingress(
-        service_stack,
+        target[0].stack,
         db.logical_name,
         sg_id=Select(0, FindInMap("Rds", db.logical_name, "VpcSecurityGroupIds")),
         port=FindInMap("Rds", db.logical_name, "Port"),
@@ -122,39 +100,30 @@ def create_rds_db_config_mapping(db, db_config):
     return mapping
 
 
-def add_new_dbs(db, rds_root_stack, db_name, services_stack, services_families):
+def add_new_dbs(db, rds_root_stack):
     """
 
     :param rds_root_stack:
     :param ecs_composex.rds.rds_stack.Rds db:
-    :param str db_name: resource  name of DB in compose file
-    :param services_stack:
-    :param services_families: Families definition
     :return:
     """
     if db.logical_name not in rds_root_stack.stack_template.resources:
         raise KeyError(f"DB {db.logical_name} not defined in RDS Root template")
-    secret_import = define_db_secret_import(db_name)
-    for service in db.services:
+    secret_import = define_db_secret_import(db.name)
+    for target in db.families_targets:
         handle_new_dbs_to_services(
             db,
             secret_import,
-            service,
-            services_families,
-            services_stack,
-            rds_root_stack,
+            target,
         )
 
 
-def import_dbs(db, db_name, db_mappings, services_families, services_stack, settings):
+def import_dbs(db, db_mappings, settings):
     """
     Function to go over each service defined in the DB and assign found DB settings to service
 
     :param ecs_composex.rds.rds_stack.Rds db:
-    :param str db_name: Name of the DB as in compose file
     :param dict db_mappings:
-    :param dict services_families:
-    :param ecs_composex.common.stacks.ComposeXStack services_stack:
     :param ecs_composex.common.settings.ComposeXSettings settings: The settings for ComposeX Execution
     :return:
     """
@@ -162,40 +131,43 @@ def import_dbs(db, db_name, db_mappings, services_families, services_stack, sett
     db_config = lookup_rds_resource(db.lookup, settings.session)
     if not db_config:
         LOG.warn(
-            f"No RDS DB Configuration could be defined from provided lookup. Skipping {db_name}"
+            f"No RDS DB Configuration could be defined from provided lookup. Skipping {db.name}"
         )
         return
     db_mappings.update(create_rds_db_config_mapping(db, db_config))
-    for service_def in db.services:
+    for target in db.families_targets:
         handle_import_dbs_to_services(
             db,
             db_mappings,
-            service_def,
-            services_families,
-            services_stack,
+            target,
         )
 
 
-def rds_to_ecs(rds_dbs, services_stack, services_families, rds_root_stack, settings):
+def rds_to_ecs(rds_dbs, services_stack, res_root_stack, settings):
     """
     Function to apply onto existing ECS Templates the various settings
 
-    :param rds_root_stack:
+    :param res_root_stack:
     :param rds_dbs:
     :param services_stack:
-    :param services_families: Families definition
     :param ecs_composex.common.settings.ComposeXSettings settings: The settings for ComposeX Execution
     :return:
     """
     db_mappings = {}
-    for db_name in rds_dbs:
-        db = rds_dbs[db_name]
-        if not db.services:
-            LOG.warn(f"DB {db.logical_name} has no services defined.")
-            continue
-        if db.properties and not db.lookup and db.services:
-            add_new_dbs(db, rds_root_stack, db_name, services_stack, services_families)
-        elif not db.properties and db.lookup:
-            import_dbs(
-                db, db_name, db_mappings, services_families, services_stack, settings
-            )
+    new_resources = [
+        rds_dbs[db_name]
+        for db_name in rds_dbs
+        if not rds_dbs[db_name].lookup and rds_dbs[db_name].services
+    ]
+    lookup_resources = [
+        rds_dbs[db_name]
+        for db_name in rds_dbs
+        if rds_dbs[db_name].lookup and rds_dbs[db_name].services
+    ]
+    if new_resources and res_root_stack.title not in services_stack.DependsOn:
+        services_stack.DependsOn.append(res_root_stack.title)
+        LOG.info(f"Added dependency between services and {res_root_stack.title}")
+    for new_res in new_resources:
+        add_new_dbs(new_res, res_root_stack)
+    for lookup_res in lookup_resources:
+        import_dbs(lookup_res, db_mappings, settings)

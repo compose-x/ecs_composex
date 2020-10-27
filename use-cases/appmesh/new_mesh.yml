@@ -1,7 +1,5 @@
 ---
-# Blog applications
-
-version: '3.8'
+# Simple mesh definition for new mesh of services
 
 x-appmesh:
   Properties: {}

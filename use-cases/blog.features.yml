@@ -1,0 +1,145 @@
+secrets:
+  abcd: {}
+  john:
+    x-secrets:
+      LinksTo:
+        - EcsExecutionRole
+        - EcsTaskRole
+      Name: SFTP/asl-cscs-files-dev
+  zyx:
+    x-secrets:
+      Name: SFTP/smicuser
+services:
+  app01:
+    deploy:
+      labels:
+        ecs.task.family: bignicefamily
+      resources:
+        reservations:
+          cpus: '0.25'
+          memory: 64M
+    environment:
+      LOGLEVEL: DEBUG
+      SHELLY: /bin/bash
+      TERMY: screen
+    image: nginx
+    links:
+      - app03:dateteller
+    ports:
+      - mode: awsvpc
+        protocol: tcp
+        published: 5000
+        target: 5000
+    secrets:
+      - zyx
+    x-configs:
+      iam:
+        policies:
+          - document:
+              Statement:
+                - Action:
+                    - s3:DeleteBucket
+                  Effect: Deny
+                  Resource:
+                    - '*'
+                  Sid: SomethingStupid
+            name: toto
+      use_xray: false
+  app02:
+    deploy:
+      labels:
+        ecs.task.family: you-too
+      replicas: 2
+      resources:
+        reservations:
+          cpus: '0.25'
+          memory: 64M
+    environment:
+      LOGLEVEL: DEBUG
+    healthcheck:
+      interval: 30
+      retries: 3
+      test:
+        - CMD
+        - curl
+        - localhost:5000/ping
+    image: nginx
+    ports:
+      - mode: awsvpc
+        protocol: tcp
+        published: 5000
+        target: 5000
+    secrets:
+      - zyx
+    x-configs:
+      iam:
+        boundary: ccoe/js-developer
+        managed_policies:
+          - arn:aws:iam:aws::policy/AdministratorAccess
+      scaling:
+        range: 1-5
+        target_scaling:
+          cpu_target: 30
+          disable_scale_in: true
+          memory_target: 30
+      use_xray: false
+  app03:
+    deploy:
+      resources:
+        reservations:
+          cpus: '0.25'
+          memory: 64M
+    environment:
+      LOGLEVEL: DEBUG
+    image: nginx
+    ports:
+      - mode: awsvpc
+        protocol: tcp
+        published: 5000
+        target: 5000
+    secrets:
+      - abcd
+      - zyx
+      - john
+    volumes:
+      - shared-images
+    x-configs:
+      logging:
+        logs_retention_period: 42
+      scaling:
+        range: 1-10
+        target_scaling:
+          cpu_target: 50
+  rproxy:
+    depends_on:
+      - app01
+      - app02
+    deploy:
+      labels:
+        ecs.task.family: bignicefamily,you-too
+      replicas: 1
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 64M
+        reservations:
+          cpus: '0.1'
+          memory: 32M
+    image: nginx
+    ports:
+      - mode: awsvpc
+        protocol: tcp
+        published: 80
+        target: 80
+    x-configs:
+      iam:
+        managed_policies:
+          - arn:aws:iam:aws::policy/ReadOnlyAccess
+      scaling:
+        range: 0-2
+        target_scaling:
+          cpu_target: 50
+      use_xray: true
+version: '3.8'
+volumes:
+  shared-images: {}

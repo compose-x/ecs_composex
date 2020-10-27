@@ -2,52 +2,6 @@
 # RDS Use-case.
 
 version: '3.8'
-services:
-  rproxy:
-    image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-01-rproxy:latest
-    ports:
-      - 80:80
-    deploy:
-      replicas: 2
-      resources:
-        reservations:
-          cpus: "0.1"
-          memory: "32M"
-        limits:
-          cpus: "0.25"
-          memory: "64M"
-      labels:
-        - "ecs.task.family=app01"
-    x-configs:
-      network:
-        is_public: True
-        lb_type: application
-    depends_on:
-      - app
-  app:
-    image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-01:xray
-    ports:
-      - 5000
-    deploy:
-      resources:
-        reservations:
-          cpus: "0.25"
-          memory: "64M"
-        limits:
-          cpus: "0.5"
-          memory: "128M"
-      labels:
-        ecs.task.family: app01
-    environment:
-      LOGLEVEL: DEBUG
-    x-configs:
-      use_xray: True
-
-  backend:
-    image: nginx
-    ports:
-      - 80
-
 x-rds:
   dbA:
     Services:
