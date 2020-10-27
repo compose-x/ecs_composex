@@ -112,7 +112,7 @@ class XResource(object):
             return
         for service in self.services:
             required_keys = ["name", "access"]
-            if not all(key in required_keys for key in service.keys()):
+            if not set(required_keys).issubset(service):
                 raise KeyError(
                     "Services definition must contain at least",
                     required_keys,

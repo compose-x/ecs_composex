@@ -735,6 +735,7 @@ class ComposeFamily(object):
         self.task_definition = None
         self.service_definition = None
         self.service_config = None
+        self.scalable_target = None
         self.stack_parameters = {}
         self.set_xray()
         self.sort_container_configs()

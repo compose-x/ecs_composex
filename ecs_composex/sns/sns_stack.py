@@ -16,11 +16,12 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from ecs_composex.common import keyisset, LOG
-from ecs_composex.sns.sns_params import RES_KEY, TOPIC_ARN_T, TOPIC_NAME_T
-from ecs_composex.sns.sns_templates import generate_sns_templates
-from ecs_composex.sqs.sqs_params import RES_KEY as SQS_KEY
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common.compose_resources import XResource
+from ecs_composex.sqs.sqs_params import RES_KEY as SQS_KEY
+from ecs_composex.sns.sns_params import RES_KEY, TOPIC_ARN_T, TOPIC_NAME_T
+from ecs_composex.sns.sns_templates import generate_sns_templates
+from ecs_composex.sns.sns_perms import ACCESS_TYPES
 
 
 def create_sns_template(settings):
@@ -45,6 +46,7 @@ class Topic(XResource):
     keyword = "Topics"
     arn_attr = TOPIC_ARN_T
     main_attr = TOPIC_NAME_T
+    policies_scaffolds = ACCESS_TYPES
 
 
 class Subscription(XResource):

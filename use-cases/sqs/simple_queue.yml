@@ -44,3 +44,13 @@ x-sqs:
     Services:
       - name: app03
         access: RWMessages
+        scaling:
+          steps:
+            - lower_bound: 0
+              upper_bound: 10
+              count: 1
+            - lower_bound: 10
+              upper_bound: 20
+              count: 5
+            - lower_bound: 20
+              count: 7

@@ -101,6 +101,8 @@ def generate_alarm_scaling_out_policy(
     service_name, service_template, scaling_def, scaling_source=None
 ):
     """
+    Function to create the scaling out policy based on steps
+
     :param str service_name: The name of the service/family
     :param troposphere.Template service_template:
     :param dict scaling_def:
