@@ -17,7 +17,7 @@
 
 from pytest import raises
 
-from ecs_composex.ecs.ecs_service import generate_security_group_props
+from ecs_composex.ecs.ecs_service_network_config import generate_security_group_props
 
 
 def test_cidr_validation():
