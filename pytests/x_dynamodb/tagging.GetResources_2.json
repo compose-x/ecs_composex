@@ -1,0 +1,49 @@
+{
+    "status_code": 200,
+    "data": {
+        "PaginationToken": "",
+        "ResourceTagMappingList": [
+            {
+                "ResourceARN": "arn:aws:dynamodb:eu-west-1:000000000000:table/test",
+                "Tags": [
+                    {
+                        "Key": "createdbycomposex",
+                        "Value": "True"
+                    },
+                    {
+                        "Key": "name",
+                        "Value": "tableC"
+                    }
+                ]
+            },
+            {
+                "ResourceARN": "arn:aws:dynamodb:eu-west-1:000000000000:table/table2",
+                "Tags": [
+                    {
+                        "Key": "createdbycomposex",
+                        "Value": "False"
+                    },
+                    {
+                        "Key": "name",
+                        "Value": "tableC"
+                    },
+                    {
+                        "Key": "someothertab",
+                        "Value": "alfkef"
+                    }
+                ]
+            }
+        ],
+        "ResponseMetadata": {
+            "RequestId": "3b43eede-3c62-420f-93f8-a462330614d9",
+            "HTTPStatusCode": 200,
+            "HTTPHeaders": {
+                "x-amzn-requestid": "3b43eede-3c62-420f-93f8-a462330614d9",
+                "content-type": "application/x-amz-json-1.1",
+                "content-length": "398",
+                "date": "Wed, 28 Oct 2020 23:07:03 GMT"
+            },
+            "RetryAttempts": 0
+        }
+    }
+}

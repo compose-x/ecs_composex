@@ -1,0 +1,36 @@
+{
+    "status_code": 200,
+    "data": {
+        "PaginationToken": "",
+        "ResourceTagMappingList": [
+            {
+                "ResourceARN": "arn:aws:dynamodb:eu-west-1:000000000000:table/table2",
+                "Tags": [
+                    {
+                        "Key": "createdbycomposex",
+                        "Value": "False"
+                    },
+                    {
+                        "Key": "name",
+                        "Value": "tableC"
+                    },
+                    {
+                        "Key": "someothertab",
+                        "Value": "alfkef"
+                    }
+                ]
+            }
+        ],
+        "ResponseMetadata": {
+            "RequestId": "40009adf-b1b9-4040-ade7-35f2ebc85c31",
+            "HTTPStatusCode": 200,
+            "HTTPHeaders": {
+                "x-amzn-requestid": "40009adf-b1b9-4040-ade7-35f2ebc85c31",
+                "content-type": "application/x-amz-json-1.1",
+                "content-length": "245",
+                "date": "Wed, 28 Oct 2020 23:07:02 GMT"
+            },
+            "RetryAttempts": 0
+        }
+    }
+}

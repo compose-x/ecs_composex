@@ -77,15 +77,13 @@ x-dynamodb:
     Lookup:
       Tags:
         - name: tableC
-        - createdbycomposex: "False"
-        - someothertab: alfkef
+        - createdbycomposex: "True"
 
   tableD:
     Lookup:
       Tags:
         - name: tableC
         - createdbycomposex: "False"
-        - someothertab: alfkef
     Services:
       - name: app03
         access: RW
