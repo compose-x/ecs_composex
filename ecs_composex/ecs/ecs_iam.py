@@ -18,7 +18,7 @@
 """ IAM Building block for ECS """
 
 from troposphere import Sub, Ref
-from troposphere.iam import Role, PolicyType
+from troposphere.iam import Role, PolicyType, Policy
 
 from ecs_composex.ecs.ecs_params import (
     SERVICE_NAME_T,
@@ -46,57 +46,60 @@ def add_service_roles(template):
         Description=Sub(
             f"Execution role for ${{{SERVICE_NAME_T}}} in ${{{CLUSTER_NAME_T}}}"
         ),
-    )
-    PolicyType(
-        f"{EXEC_ROLE_T}Policy",
-        template=template,
-        PolicyName=Sub("EcsExecRole"),
-        PolicyDocument={
-            "Version": "2012-10-17",
-            "Statement": [
-                {
-                    "Sid": "AllowsForEcrPullFromEcsAgent",
-                    "Effect": "Allow",
-                    "Action": [
-                        "ecr:GetAuthorizationToken",
-                        "ecr:BatchCheckLayerAvailability",
-                        "ecr:GetDownloadUrlForLayer",
-                        "ecr:GetRepositoryPolicy",
-                        "ecr:DescribeRepositories",
-                        "ecr:ListImages",
-                        "ecr:DescribeImages",
-                        "ecr:BatchGetImage",
+        Policies=[
+            Policy(
+                PolicyName=Sub("EcsExecRole"),
+                PolicyDocument={
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Sid": "AllowsForEcrPullFromEcsAgent",
+                            "Effect": "Allow",
+                            "Action": [
+                                "ecr:GetAuthorizationToken",
+                                "ecr:BatchCheckLayerAvailability",
+                                "ecr:GetDownloadUrlForLayer",
+                                "ecr:GetRepositoryPolicy",
+                                "ecr:DescribeRepositories",
+                                "ecr:ListImages",
+                                "ecr:DescribeImages",
+                                "ecr:BatchGetImage",
+                            ],
+                            "Resource": ["*"],
+                        },
+                        {
+                            "Sid": "AllowEcsAgentOrientedTasks",
+                            "Effect": "Allow",
+                            "Action": [
+                                "ecs:DiscoverPollEndpoint",
+                                "ecs:Poll",
+                                "ecs:Submit*",
+                            ],
+                            "Resource": ["*"],
+                        },
+                        {
+                            "Sid": "AllowsEcsAgentToPerformActionsForMicroservice",
+                            "Effect": "Allow",
+                            "Action": [
+                                "ec2:AttachNetworkInterface",
+                                "ec2:CreateNetworkInterface",
+                                "ec2:CreateNetworkInterfacePermission",
+                                "ec2:DeleteNetworkInterface",
+                                "ec2:DeleteNetworkInterfacePermission",
+                                "ec2:Describe*",
+                                "ec2:DetachNetworkInterface",
+                                "elasticloadbalancing:DeregisterInstancesFromLoadBalancer",
+                                "elasticloadbalancing:DeregisterTargets",
+                                "elasticloadbalancing:Describe*",
+                                "elasticloadbalancing:RegisterInstancesWithLoadBalancer",
+                                "elasticloadbalancing:RegisterTargets",
+                            ],
+                            "Resource": ["*"],
+                        },
                     ],
-                    "Resource": ["*"],
                 },
-                {
-                    "Sid": "AllowEcsAgentOrientedTasks",
-                    "Effect": "Allow",
-                    "Action": ["ecs:DiscoverPollEndpoint", "ecs:Poll", "ecs:Submit*"],
-                    "Resource": ["*"],
-                },
-                {
-                    "Sid": "AllowsEcsAgentToPerformActionsForMicroservice",
-                    "Effect": "Allow",
-                    "Action": [
-                        "ec2:AttachNetworkInterface",
-                        "ec2:CreateNetworkInterface",
-                        "ec2:CreateNetworkInterfacePermission",
-                        "ec2:DeleteNetworkInterface",
-                        "ec2:DeleteNetworkInterfacePermission",
-                        "ec2:Describe*",
-                        "ec2:DetachNetworkInterface",
-                        "elasticloadbalancing:DeregisterInstancesFromLoadBalancer",
-                        "elasticloadbalancing:DeregisterTargets",
-                        "elasticloadbalancing:Describe*",
-                        "elasticloadbalancing:RegisterInstancesWithLoadBalancer",
-                        "elasticloadbalancing:RegisterTargets",
-                    ],
-                    "Resource": ["*"],
-                },
-            ],
-        },
-        Roles=[Ref(execution_role)],
+            )
+        ],
     )
     policies = []
     managed_policies = []
@@ -108,36 +111,6 @@ def add_service_roles(template):
         ManagedPolicyArns=managed_policies,
         Policies=policies,
     )
-
-
-def expand_role_polices(template, config):
-    """
-    Function to expand the role policies
-
-    :param config:
-    :param troposphere.Template template:
-    :return:
-    """
-    exec_role = template.resources[EXEC_ROLE_T]
-    task_role = template.resources[TASK_ROLE_T]
-    if config and config.use_xray:
-        if hasattr(task_role, "ManagedPolicyArns"):
-            task_role.ManagedPolicyArns.append(
-                "arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess"
-            )
-        else:
-            setattr(
-                task_role,
-                "ManagedPolicyArns",
-                ["arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess"],
-            )
-    if config and config.boundary:
-        add_role_boundaries(task_role, config.boundary)
-        add_role_boundaries(exec_role, config.boundary)
-    if config and config.policies:
-        task_role.Policies += config.policies
-    if config and config.managed_policies:
-        task_role.ManagedPolicyArns += config.managed_policies
 
 
 def define_service_containers(service_template):

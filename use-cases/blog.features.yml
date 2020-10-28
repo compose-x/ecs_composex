@@ -71,6 +71,9 @@ services:
         target: 5000
     secrets:
       - zyx
+    volumes:
+      - source: some-volume
+        target: /app/data
     x-configs:
       iam:
         boundary: ccoe/js-developer
@@ -102,7 +105,9 @@ services:
       - zyx
       - john
     volumes:
-      - shared-images
+      - normal-vol
+      - shared-images:/app/images
+      - some-volume:/app/data:ro
     x-configs:
       logging:
         logs_retention_period: 42
@@ -143,3 +148,5 @@ services:
 version: '3.8'
 volumes:
   shared-images: {}
+  some-volume: {}
+  normal-vol: {}

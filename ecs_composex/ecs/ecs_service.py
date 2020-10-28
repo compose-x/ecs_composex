@@ -19,7 +19,6 @@
 Functions to build the ECS Service Definition
 """
 
-from json import dumps
 from ipaddress import IPv4Interface
 
 from troposphere import (
@@ -44,7 +43,6 @@ from troposphere.ecs import (
     DeploymentController,
 )
 from troposphere.ecs import ServiceRegistry
-from troposphere.ecs import TaskDefinition
 from troposphere.elasticloadbalancingv2 import (
     LoadBalancer,
     LoadBalancerAttributes,
@@ -62,7 +60,6 @@ from troposphere.servicediscovery import (
     Instance as SdInstance,
 )
 
-from ecs_composex.common import add_parameters
 from ecs_composex.common import keyisset, LOG, NONALPHANUM
 from ecs_composex.common.cfn_conditions import USE_STACK_NAME_CON_T
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
@@ -75,10 +72,7 @@ from ecs_composex.dns.dns_params import (
     PUBLIC_DNS_ZONE_NAME,
 )
 from ecs_composex.ecs import ecs_params, ecs_conditions
-from ecs_composex.ecs.docker_tools import find_closest_fargate_configuration
 from ecs_composex.ecs.ecs_conditions import USE_HOSTNAME_CON_T
-from ecs_composex.ecs.ecs_iam import add_service_roles, expand_role_polices
-from ecs_composex.ecs.ecs_params import NETWORK_MODE, EXEC_ROLE_T, TASK_ROLE_T, TASK_T
 from ecs_composex.ecs.ecs_params import SERVICE_NAME, SERVICE_HOSTNAME
 from ecs_composex.ecs.ecs_params import (
     SERVICE_NAME_T,
