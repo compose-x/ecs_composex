@@ -126,6 +126,7 @@ def handle_service_scaling(
     scaling_in_policy = reset_to_zero_policy(
         service_family,
         service_stack.stack_template,
+        service_def["scaling"],
         scaling_source=resource.logical_name,
     )
     Alarm(

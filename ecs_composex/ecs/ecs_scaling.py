@@ -130,15 +130,17 @@ def generate_alarm_scaling_out_policy(
             AdjustmentType="ExactCapacity",
             StepAdjustments=step_adjustments,
             Cooldown=60
-            if not keyisset("cooldown", scaling_def)
-            or not (isinstance(scaling_def["cooldown"], int))
-            else scaling_def["cooldown"],
+            if not keyisset("scale_out_cooldown", scaling_def)
+            or not (isinstance(scaling_def["scale_out_cooldown"], int))
+            else scaling_def["scale_out_cooldown"],
         ),
     )
     return policy
 
 
-def reset_to_zero_policy(service_name, service_template, scaling_source=None):
+def reset_to_zero_policy(
+    service_name, service_template, scaling_def, scaling_source=None
+):
     """
 
     :return:
@@ -157,11 +159,15 @@ def reset_to_zero_policy(service_name, service_template, scaling_source=None):
         ServiceNamespace="ecs",
         StepScalingPolicyConfiguration=StepScalingPolicyConfiguration(
             AdjustmentType="ExactCapacity",
+            Cooldown=60
+            if not keyisset("scale_in_cooldown", scaling_def)
+            or not (isinstance(scaling_def["scale_in_cooldown"], int))
+            else scaling_def["scale_in_cooldown"],
             StepAdjustments=[
                 StepAdjustment(
                     MetricIntervalUpperBound=0,
                     ScalingAdjustment=0,
-                )
+                ),
             ],
         ),
     )
