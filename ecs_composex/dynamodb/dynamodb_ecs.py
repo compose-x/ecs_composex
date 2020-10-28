@@ -20,7 +20,25 @@ Module to manage IAM policies to grant access to ECS Services to DynamodbTables
 """
 
 from ecs_composex.common import LOG
-from ecs_composex.resource_settings import handle_resource_to_services
+from ecs_composex.resource_settings import (
+    handle_resource_to_services,
+    handle_lookup_resource,
+)
+from ecs_composex.dynamodb.dynamodb_aws import lookup_dynamodb_config
+
+
+def create_dyndb_mappings(mapping, resources, settings):
+    """
+    Function to create the resource mapping for SQS Queues.
+
+    :param dict mapping:
+    :param list resources:
+    :param ecs_composex.common.settings.ComposeXSettings settings:
+    :return:
+    """
+    for res in resources:
+        res_config = lookup_dynamodb_config(res.lookup, settings.session)
+        mapping.update({res.logical_name: res_config})
 
 
 def dynamodb_to_ecs(resources, services_stack, res_root_stack, settings):
@@ -28,6 +46,7 @@ def dynamodb_to_ecs(resources, services_stack, res_root_stack, settings):
     Function to apply SQS settings to ECS Services
     :return:
     """
+    resources_mappings = {}
     new_resources = [
         resources[res_name] for res_name in resources if not resources[res_name].lookup
     ]
@@ -36,8 +55,11 @@ def dynamodb_to_ecs(resources, services_stack, res_root_stack, settings):
         for res_name in resources
         if resources[res_name].lookup and not resources[res_name].properties
     ]
+    create_dyndb_mappings(resources_mappings, lookup_resources, settings)
     if new_resources and res_root_stack.title not in services_stack.DependsOn:
         services_stack.DependsOn.append(res_root_stack.title)
         LOG.info(f"Added dependency between services and {res_root_stack.title}")
     for new_res in new_resources:
         handle_resource_to_services(new_res, services_stack, res_root_stack, settings)
+    for resource in lookup_resources:
+        handle_lookup_resource(resources_mappings, "dynamodb", resource)

@@ -15,131 +15,68 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+"""
+Module to define the DynamoDB tables mappings config from Lookup
+"""
+
+import re
+from botocore.exceptions import ClientError
+
 from ecs_composex.common import keyisset, LOG
+from ecs_composex.common.aws import find_aws_resource_arn_from_tags_api
+from ecs_composex.dynamodb.dynamodb_params import TABLE_NAME, TABLE_ARN
 
 
-def define_dyn_filter_tags(tags):
+def get_table_config(table_arn, session):
     """
-    Function to create the filters out of tags list
 
-    :param list tags: list of Key/Value dict
-    :return: filters
-    :rtype: list
-    """
-    filters = []
-    for tag in tags:
-        key = list(tag.keys())[0]
-        filter_name = key
-        filter_value = tag[key]
-        filters.append({"Name": filter_name, "Value": filter_value})
-    return filters
-
-
-def get_table_tags(session, table_arn, tags=None, next_token=None):
-    """
-    Function to find all tags of the table via table ARN
-    :param boto3.session.Session session:
     :param str table_arn:
-    :param list tags:
-    :param str next_token:
+    :param boto3.session.Session session:
     :return:
     """
-    if tags is None:
-        tags = []
+    table_parts = re.compile(
+        r"(?:^arn:aws(?:-[a-z]+)?:dynamodb:[\S]+:[0-9]+:table\/)([\S]+)$"
+    )
+    table_name = table_parts.match(table_arn).groups()[0]
+    table_config = {TABLE_NAME.title: table_name, TABLE_ARN.title: table_arn}
     client = session.client("dynamodb")
-    if not next_token:
-        tags_r = client.list_tags_of_resource(ResourceArn=table_arn)
-        for tag in tags_r["Tags"]:
-            tags.append(tag)
-        if keyisset("NextToken", tags_r):
-            return get_table_tags(session, table_arn, tags, tags_r["NextToken"])
-    elif next_token:
-        tags_r = client.list_tags_of_resource(ResourceArn=table_arn)
-        for tag in tags_r["Tags"]:
-            tags.append(tag)
-    return tags
+    try:
+        table_r = client.describe_table(TableName=table_name)
+        table_config.update(
+            {
+                TABLE_NAME.title: table_r["Table"]["TableName"],
+                TABLE_ARN.title: table_r["Table"]["TableArn"],
+            }
+        )
+        return table_config
+    except client.exceptions.ResourceNotFoundException:
+        return None
+    except ClientError as error:
+        LOG.error(error)
+        raise
 
 
-def get_tables_tags(session, tables_list):
+def lookup_dynamodb_config(lookup, session):
     """
-    Function to go through all tables and retrieve their tags attributes.
+    Function to find the DB in AWS account
 
-    :param boto3.session.Session session:
-    :param list tables_list:
+    :param dict lookup: The Lookup definition for DB
+    :param boto3.session.Session session: Boto3 session for clients
     :return:
     """
-    tables = []
-    client = session.client("dynamodb")
-    for table_name in tables_list:
-        table_attributes = client.describe_table(TableName=table_name)
-        table_def = {"Name": table_name, "Arn": table_attributes["Table"]["TableArn"]}
-        LOG.debug(table_def)
-        table_def["Tags"] = get_table_tags(session, table_def["Arn"])
-        tables.append(table_def)
-    return tables
-
-
-def get_tables_list(session, tables=None, next_token=None):
-    """
-    Function to retrieve the list of all tables
-
-    :param boto3.session.Session session:
-    :param list tables: List of tables to add table names to.
-    :param str next_token:
-    :return:
-    """
-    if tables is None:
-        tables = []
-    client = session.client("dynamodb")
-    if next_token is None:
-        list_r = client.list_tables()
-        for table in list_r["TableNames"]:
-            tables.append(table)
-        if keyisset("LastEvaluatedTableName", list_r):
-            return get_tables_list(session, tables, list_r["LastEvaluatedTableName"])
-    elif next_token is not None:
-        list_r = client.list_tables(ExclusiveStartTableName=next_token)
-        for table in list_r["Tables"]:
-            tables.append(table)
-    LOG.debug(tables)
-    return tables
-
-
-def evaluate_table_tags(table, filters):
-    tags = table["Tags"]
-    filters_match = 0
-    for tag in tags:
-        tag_key = tag["Key"]
-        tag_value = tag["Value"]
-        for filter_r in filters:
-            if isinstance(filter_r["Value"], bool):
-                filter_r["Value"] = str(filter_r["Value"])
-            if filter_r["Name"] == tag_key and filter_r["Value"] == tag_value:
-                filters_match += 1
-    return filters_match
-
-
-def lookup_dyn_table(session, tags, is_global=False):
-    """
-    Function to look up for table based on its tags
-    :param boto3.session.Session session:
-    :param list tags:
-    :param bool is_global:
-    :return: the matching table
-    :rtype: list
-    """
-    matching_tables = []
-    filters = define_dyn_filter_tags(tags)
-    filters_count = len(filters)
-    tables_names = get_tables_list(session)
-    tables_defs = get_tables_tags(session, tables_names)
-
-    for table in tables_defs:
-        if not keyisset("Tags", table):
-            LOG.debug(f"Table {table['Name']} has no tags. Skipping")
-            continue
-        filters_match = evaluate_table_tags(table, filters)
-        LOG.debug(f"Filters count: {filters_count}. Match: {filters_match}")
-        if filters_match == filters_count:
-            matching_tables.append(table)
-    return matching_tables
+    dynamodb_types = {
+        "dynamodb:table": {
+            "regexp": r"(?:^arn:aws(?:-[a-z]+)?:dynamodb:[\S]+:[0-9]+:table\/)([\S]+)$"
+        },
+    }
+    table_arn = find_aws_resource_arn_from_tags_api(
+        lookup,
+        session,
+        "dynamodb",
+        types=dynamodb_types,
+    )
+    if not table_arn:
+        return None
+    config = get_table_config(table_arn, session)
+    LOG.debug(config)
+    return config
