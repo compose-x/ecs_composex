@@ -129,6 +129,10 @@ def generate_alarm_scaling_out_policy(
         StepScalingPolicyConfiguration=StepScalingPolicyConfiguration(
             AdjustmentType="ExactCapacity",
             StepAdjustments=step_adjustments,
+            Cooldown=60
+            if not keyisset("cooldown", scaling_def)
+            or not (isinstance(scaling_def["cooldown"], int))
+            else scaling_def["cooldown"],
         ),
     )
     return policy
