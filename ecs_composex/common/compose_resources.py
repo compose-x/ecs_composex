@@ -245,15 +245,3 @@ class XResource(object):
                     Value=export_string,
                 )
             )
-
-
-class Topic(XResource):
-    """
-    Class for SNS Topics
-    """
-
-
-class Subscrition(XResource):
-    """
-    Class for SNS Subscriptions
-    """
