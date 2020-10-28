@@ -26,14 +26,13 @@ from troposphere import FindInMap, Sub
 from ecs_composex.common import LOG, keyisset
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.kms.kms_perms import ACCESS_TYPES as KMS_ACCESS_TYPES
-from ecs_composex.resource_permissions import (
+from ecs_composex.resource_settings import (
     add_iam_policy_to_service_task_role,
     add_iam_policy_to_service_task_role_v2,
-)
-from ecs_composex.resource_settings import (
     generate_resource_permissions,
     generate_export_strings,
 )
+
 from ecs_composex.s3.s3_aws import lookup_bucket_config
 from ecs_composex.s3.s3_params import S3_BUCKET_ARN, S3_BUCKET_NAME
 from ecs_composex.s3.s3_perms import ACCESS_TYPES

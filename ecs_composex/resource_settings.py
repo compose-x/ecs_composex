@@ -25,8 +25,8 @@ from troposphere.iam import Policy as IamPolicy
 
 from ecs_composex.common import LOG, keyisset
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
-from ecs_composex.common.ecs_composex import CFN_EXPORT_DELIMITER as DELIM
 from ecs_composex.common.compose_services import extend_container_envvars
+from ecs_composex.common.ecs_composex import CFN_EXPORT_DELIMITER as DELIM
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.ecs.ecs_iam import define_service_containers
 from ecs_composex.ecs.ecs_params import TASK_ROLE_T
@@ -105,6 +105,31 @@ def add_iam_policy_to_service_task_role_v2(
             if container.Name == service.name:
                 LOG.debug(f"Extended env vars for {container.Name} -> {service.name}")
                 extend_container_envvars(container, resource.env_vars)
+
+
+def add_iam_policy_to_service_task_role(
+    service_template, resource, perms, access_type, service_name, family_wide
+):
+    """
+    Function to expand the ECS Task Role policy with the permissions for the resource
+    :param troposphere.Template service_template:
+    :param resource:
+    :param perms:
+    :param access_type:
+    :param service_name:
+    :param family_wide:
+    :return:
+    """
+    containers = define_service_containers(service_template)
+    policy = perms[access_type]
+    task_role = service_template.resources[TASK_ROLE_T]
+    task_role.Policies.append(policy)
+    for container in containers:
+        if family_wide:
+            extend_container_envvars(container, resource.env_vars)
+        elif not family_wide and container.Name == service_name:
+            extend_container_envvars(container, resource.env_vars)
+            break
 
 
 def get_selected_services(resource, target):
