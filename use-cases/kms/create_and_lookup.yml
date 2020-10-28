@@ -1,0 +1,35 @@
+---
+# Simple KMS definition
+
+x-kms:
+  keyA:
+    Properties: {}
+    Settings:
+      Alias: alias/keyA
+    Services:
+      - name: bignicefamily
+        access: EncryptDecrypt
+
+  keyB:
+    Properties:
+      PendingWindowInDays: 14
+    Settings:
+      Alias: keyB
+    Services:
+      - name: app02
+        access: SQS
+      - name: app03
+        access: EncryptOnly
+      - name: bignicefamily
+        access: DecryptOnly
+
+  keyC:
+    Lookup:
+      Tags:
+        - name: cicd
+        - costcentre: lambda
+    Services:
+      - name: app03
+        access: EncryptDecrypt
+      - name: bignicefamily
+        access: DecryptOnly

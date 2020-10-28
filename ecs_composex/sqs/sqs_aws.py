@@ -46,7 +46,7 @@ def get_queue_config(queue_arn, session):
         queue_config.update({SQS_URL.title: url_r["QueueUrl"]})
         try:
             encryption_config_r = client.get_queue_attributes(
-                QueueUrl=url_r["QueueUrl"]
+                QueueUrl=url_r["QueueUrl"], AttributeNames=["KmsMasterKeyId"]
             )
             if keyisset("Attributes", encryption_config_r) and keyisset(
                 "KmsMasterKeyId", encryption_config_r["Attributes"]

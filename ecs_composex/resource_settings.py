@@ -20,16 +20,17 @@ Module to handle resource settings definition to containers.
 """
 
 from troposphere import Parameter
-from troposphere import Sub, ImportValue
+from troposphere import Sub, ImportValue, FindInMap
 from troposphere.iam import Policy as IamPolicy
 
-from ecs_composex.common import LOG
+from ecs_composex.common import LOG, keyisset
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.ecs_composex import CFN_EXPORT_DELIMITER as DELIM
 from ecs_composex.common.compose_services import extend_container_envvars
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.ecs.ecs_iam import define_service_containers
 from ecs_composex.ecs.ecs_params import TASK_ROLE_T
+from ecs_composex.kms.kms_perms import ACCESS_TYPES as KMS_ACCESS_TYPES
 
 
 def generate_export_strings(res_name, attribute):
@@ -106,6 +107,25 @@ def add_iam_policy_to_service_task_role_v2(
                 extend_container_envvars(container, resource.env_vars)
 
 
+def get_selected_services(resource, target):
+    """
+    Function to get the selected services
+    :param target:
+    :return:
+    """
+    if not target[1] and target[2]:
+        selected_services = target[2]
+        LOG.debug(
+            f"Resource {resource.name} only applies to {target[2]} in family {target[0].name}"
+        )
+    elif target[1]:
+        selected_services = target[0].services
+        LOG.debug(f"Resource {resource.name} applies to family {target[0].name}")
+    else:
+        selected_services = []
+    return selected_services
+
+
 def map_service_perms_to_resource(resource, family, services, access_type, arn=None):
     """
     Function to
@@ -133,28 +153,67 @@ def map_service_perms_to_resource(resource, family, services, access_type, arn=N
                 extend_container_envvars(container, resource.env_vars)
 
 
+def handle_kms_access(mapping_family, resource, target, selected_services):
+    """
+    Function to map KMS permissions for the services which need access to a resource using a KMS Key
+    :param str mapping_family:
+    :param resource:
+    :param tuple target:
+    :param list selected_services:
+    """
+    key_arn = FindInMap(mapping_family, resource.logical_name, resource.kms_arn_attr)
+    kms_perms = generate_resource_permissions(
+        f"{resource.logical_name}KmsKey", KMS_ACCESS_TYPES, None, arn=key_arn
+    )
+    add_iam_policy_to_service_task_role_v2(
+        target[0].template, resource, kms_perms, "EncryptDecrypt", selected_services
+    )
+
+
+def handle_lookup_resource(mapping, mapping_family, resource):
+    """
+    :param dict mapping:
+    :param str mapping_family:
+    :param resource: The lookup resource
+    :return:
+    """
+    if not keyisset(resource.logical_name, mapping):
+        LOG.error(f"No mapping existing for {resource.name}. Skipping")
+        return
+
+    for target in resource.families_targets:
+        selected_services = get_selected_services(resource, target)
+        if selected_services:
+            target[0].template.add_mapping(mapping_family, mapping)
+            arn_attr_value = FindInMap(
+                mapping_family, resource.logical_name, resource.arn_attr.title
+            )
+            main_attr_value = FindInMap(
+                mapping_family, resource.logical_name, resource.main_attr.title
+            )
+            resource.generate_resource_envvars(None, arn=main_attr_value)
+            map_service_perms_to_resource(
+                resource, target[0], selected_services, target[3], arn=arn_attr_value
+            )
+            if (
+                hasattr(resource, "kms_arn_attr")
+                and resource.kms_arn_attr
+                and keyisset(resource.kms_arn_attr, mapping[resource.logical_name])
+            ):
+                handle_kms_access(mapping_family, resource, target, selected_services)
+
+
 def assign_new_resource_to_service(resource):
     """
     Function to assign the new resource to the service/family using it.
 
-    :param ecs_composex.common.compose_resources.XResource resource:
-
-    :return:
     """
-    select_services = []
     resource.generate_resource_envvars(attribute=resource.main_attr)
     for target in resource.families_targets:
-        if not target[1] and target[2]:
-            LOG.debug(
-                f"Resource {resource.name} only applies to {target[2]} in family {target[0].name}"
-            )
-            select_services = target[2]
-        elif target[1]:
-            LOG.debug(f"Resource {resource.name} applies to family {target[0].name}")
-            select_services = target[0].services
-        if select_services:
+        selected_services = get_selected_services(resource, target)
+        if selected_services:
             map_service_perms_to_resource(
-                resource, target[0], select_services, target[3]
+                resource, target[0], selected_services, target[3]
             )
 
 

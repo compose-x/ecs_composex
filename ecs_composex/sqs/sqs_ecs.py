@@ -19,7 +19,7 @@
 Module to apply SQS settings onto ECS Services
 """
 
-from troposphere import Ref, FindInMap, Sub
+from troposphere import Ref
 from troposphere.cloudwatch import Alarm, MetricDimension
 
 from ecs_composex.common import LOG, keyisset
@@ -31,10 +31,10 @@ from ecs_composex.ecs.ecs_scaling import (
 from ecs_composex.resource_settings import (
     generate_export_strings,
     handle_resource_to_services,
-    map_service_perms_to_resource,
+    handle_lookup_resource,
 )
-from ecs_composex.sqs.sqs_params import SQS_NAME, SQS_KMS_KEY_T
 from ecs_composex.sqs.sqs_aws import lookup_queue_config
+from ecs_composex.sqs.sqs_params import SQS_NAME, SQS_KMS_KEY_T
 
 
 def handle_service_scaling(resource):
@@ -100,7 +100,6 @@ def create_sqs_mappings(mapping, resources, settings):
     Function to create the resource mapping for SQS Queues.
 
     :param dict mapping:
-    :param str mapping_family:
     :param list resources:
     :param ecs_composex.common.settings.ComposeXSettings settings:
     :return:
@@ -110,33 +109,6 @@ def create_sqs_mappings(mapping, resources, settings):
         mapping.update({res.logical_name: res_config})
         if keyisset(SQS_KMS_KEY_T, res_config):
             LOG.info(f"Identified CMK {res_config[SQS_KMS_KEY_T]} for {res.name}")
-
-
-def handle_lookup_resource(mapping, mapping_family, resource):
-    """
-    :param dict mapping:
-    :param str mapping_family:
-    :param resource: The lookup resource
-    :return:
-    """
-    selected_services = []
-    for target in resource.families_targets:
-        if not target[1] and target[2]:
-            selected_services = target[2]
-        elif target[1]:
-            selected_services = target[0].services
-        if selected_services:
-            target[0].template.add_mapping(mapping_family, mapping)
-            arn_attr_value = FindInMap(
-                mapping_family, resource.logical_name, resource.arn_attr.title
-            )
-            main_attr_value = FindInMap(
-                mapping_family, resource.logical_name, resource.main_attr.title
-            )
-            resource.generate_resource_envvars(None, arn=main_attr_value)
-            map_service_perms_to_resource(
-                resource, target[0], selected_services, target[3], arn=arn_attr_value
-            )
 
 
 def sqs_to_ecs(resources, services_stack, res_root_stack, settings):

@@ -36,6 +36,7 @@ DLQ_ARN_T = "DeadLetterQueueArn"
 DLQ_ARN = Parameter(DLQ_ARN_T, Type="String")
 
 SQS_KMS_KEY_T = "QueueKmsKey"
+SQS_KMS_KEY = Parameter(SQS_KMS_KEY_T, Type="String")
 
 RES_KEY = f"x-{path.basename(path.dirname(path.abspath(__file__)))}"
 SQS_SSM_PREFIX = f"/{RES_KEY}/"

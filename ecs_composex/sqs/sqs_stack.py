@@ -21,7 +21,7 @@ Module for the XStack SQS
 
 import sys
 from ecs_composex.common import validate_input, keyisset, LOG, EXIT_CODES
-from ecs_composex.sqs.sqs_params import RES_KEY, SQS_ARN, SQS_URL
+from ecs_composex.sqs.sqs_params import RES_KEY, SQS_ARN, SQS_URL, SQS_KMS_KEY_T
 from ecs_composex.sqs.sqs_template import generate_sqs_root_template
 from ecs_composex.sqs.sqs_perms import get_access_types
 from ecs_composex.common.stacks import ComposeXStack
@@ -57,8 +57,12 @@ class Queue(XResource):
     def __init__(self, name, definition, settings):
         self.arn_attr = SQS_ARN
         self.main_attr = SQS_URL
+        self.kms_arn_attr = SQS_KMS_KEY_T
+
         self.arn_attr_value = self.arn_attr
         self.main_attr_value = self.main_attr
+        self.kms_arn_attr_value = self.kms_arn_attr
+
         super().__init__(name, definition, settings)
 
 
