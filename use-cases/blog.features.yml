@@ -33,17 +33,28 @@ services:
     secrets:
       - zyx
     x-configs:
+      network:
+        is_public: False
+        lb_type: application
+        use_cloudmap: True
+        ingress:
+          myself: True
+          aws_sources:
+            - type: SecurityGroup
+              id: sg-app01
+            - type: PrefixList
+              id: pl-abcd
       iam:
         policies:
           - document:
               Statement:
                 - Action:
-                    - s3:DeleteBucket
-                  Effect: Deny
+                    - cloudwatch:PutMetricData
+                  Effect: Allow
                   Resource:
                     - '*'
-                  Sid: SomethingStupid
-            name: toto
+                  Sid: AllowPublishMetricsToCw
+            name: AllowPublishToCw
       use_xray: false
   app02:
     deploy:
@@ -145,6 +156,18 @@ services:
         target_scaling:
           cpu_target: 50
       use_xray: true
+      network:
+        is_public: False
+        lb_type: application
+        use_cloudmap: True
+        ingress:
+          myself: False
+          ext_sources:
+            - ipv4: 0.0.0.0/0
+              description: ANY RPROXY
+          aws_sources:
+            - type: SecurityGroup
+              id: sg-rproxy
 version: '3.8'
 volumes:
   shared-images: {}
