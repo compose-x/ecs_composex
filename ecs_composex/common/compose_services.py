@@ -49,6 +49,7 @@ from ecs_composex.common.compose_volumes import (
     handle_volume_dict_config,
     handle_volume_str_config,
 )
+from ecs_composex.iam import define_iam_policy, add_role_boundaries
 from ecs_composex.ecs import ecs_params
 from ecs_composex.ecs.docker_tools import find_closest_fargate_configuration
 from ecs_composex.ecs.ecs_iam import add_service_roles
@@ -702,12 +703,7 @@ def handle_iam_boundary(config, key, new_value):
     :param new_value:
 
     """
-    if new_value.startswith("arn:aws"):
-        config[key] = new_value
-    else:
-        config[key] = Sub(
-            f"arn:${{{AWS_PARTITION}}}:iam::${{{AWS_ACCOUNT_ID}}}:policy/{new_value}"
-        )
+    config[key] = define_iam_policy(new_value)
 
 
 class ComposeFamily(object):
@@ -877,15 +873,16 @@ class ComposeFamily(object):
                 self.sort_iam_settings(key, setting)
         self.set_secrets_access()
 
-    def handle_permission_boundary(self, prop_key, cfn_key):
+    def handle_permission_boundary(self, prop_key):
+        print(self.iam)
         if keyisset("boundary", self.iam) and self.template:
             if EXEC_ROLE_T in self.template.resources:
-                setattr(
-                    self.template.resources[EXEC_ROLE_T], cfn_key, self.iam[prop_key]
+                add_role_boundaries(
+                    self.template.resources[EXEC_ROLE_T], self.iam[prop_key]
                 )
             if TASK_ROLE_T in self.template.resources:
-                setattr(
-                    self.template.resources[TASK_ROLE_T], cfn_key, self.iam[prop_key]
+                add_role_boundaries(
+                    self.template.resources[TASK_ROLE_T], self.iam[prop_key]
                 )
 
     def assign_iam_policies(self, role, prop):
@@ -947,7 +944,7 @@ class ComposeFamily(object):
         for prop in props:
             if keyisset(prop[0], self.iam) and isinstance(self.iam[prop[0]], prop[2]):
                 if prop[0] == "boundary":
-                    self.handle_permission_boundary(prop[0], prop[1])
+                    self.handle_permission_boundary(prop[0])
                 elif prop[3]:
                     prop[3](role, prop)
 
