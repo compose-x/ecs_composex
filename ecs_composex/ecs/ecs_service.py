@@ -215,15 +215,7 @@ def define_tracking_target_configuration(target_scaling_config, config_key):
     specification = applicationautoscaling.PredefinedMetricSpecification(
         PredefinedMetricType=settings[config_key]["property"]
     )
-    # if config_key == "targets" and self.tgt_groups:
-    #     specification = applicationautoscaling.PredefinedMetricSpecification(
-    #         PredefinedMetricType=settings[config_key]["property"],
-    #         ResourceLabel=GetAtt(self.tgt_groups[0], "TargetGroupFullName"),
-    #     )
-    # elif config_key == "targets" and not self.tgt_groups:
-    #     raise ValueError(
-    #         f"{self.family.logical_name} - Invalid target tracking for TGT Groups: No load-balancing defined"
-    #     )
+
     return applicationautoscaling.TargetTrackingScalingPolicyConfiguration(
         DisableScaleIn=target_scaling_config["disable_scale_in"],
         ScaleInCooldown=target_scaling_config["scale_in_cooldown"],
@@ -279,17 +271,6 @@ def create_scalable_target(family):
                 PolicyType="TargetTrackingScaling",
                 TargetTrackingScalingPolicyConfiguration=define_tracking_target_configuration(
                     family.service_config.scaling.target_scaling, "memory"
-                ),
-            )
-        if keyisset("tgt_targets_count", family.service_config.scaling.target_scaling):
-            applicationautoscaling.ScalingPolicy(
-                "ServiceAlbTargetTracking",
-                template=family.template,
-                ScalingTargetId=Ref(family.scalable_target),
-                PolicyName="ALBTargetTrackingPolicy",
-                PolicyType="TargetTrackingScaling",
-                TargetTrackingScalingPolicyConfiguration=define_tracking_target_configuration(
-                    family.service_config.scaling.target_scaling, "targets"
                 ),
             )
 
