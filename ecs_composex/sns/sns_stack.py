@@ -64,14 +64,6 @@ class Subscription(XResource):
 
     keyword = "Subscriptions"
 
-    def __init__(self, name, definition, settings):
-        self.arn_attr = TOPIC_ARN
-        self.main_attr = TOPIC_NAME
-
-        self.arn_attr_value = self.arn_attr
-        self.main_attr_value = self.main_attr
-        super().__init__(name, definition, settings)
-
 
 class XStack(ComposeXStack):
     """
