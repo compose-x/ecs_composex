@@ -72,7 +72,7 @@ def lookup_dynamodb_config(lookup, session):
     table_arn = find_aws_resource_arn_from_tags_api(
         lookup,
         session,
-        "dynamodb",
+        "dynamodb:table",
         types=dynamodb_types,
     )
     if not table_arn:

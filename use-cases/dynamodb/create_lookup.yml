@@ -3,58 +3,8 @@
 
 version: '3.8'
 
-x-configs:
-  app:
-    network:
-      use_cloudmap: True
-
-x-tags:
-  owner: johnpreston
-  contact: john@lambda-my-aws.io
-
 x-dynamodb:
   tableA:
-    Properties:
-      AttributeDefinitions:
-        - AttributeName: "ArtistId"
-          AttributeType: "S"
-        - AttributeName: "Concert"
-          AttributeType: "S"
-        - AttributeName: "TicketSales"
-          AttributeType: "S"
-      KeySchema:
-        - AttributeName: "ArtistId"
-          KeyType: "HASH"
-        - AttributeName: "Concert"
-          KeyType: "RANGE"
-      GlobalSecondaryIndexes:
-        - IndexName: "GSI"
-          KeySchema:
-            - AttributeName: "TicketSales"
-              KeyType: "HASH"
-          Projection:
-            ProjectionType: "KEYS_ONLY"
-          ProvisionedThroughput:
-            ReadCapacityUnits: 5
-            WriteCapacityUnits: 5
-      ProvisionedThroughput:
-        ReadCapacityUnits: 5
-        WriteCapacityUnits: 5
-    Services:
-      - name: app03
-        access: RW
-      - name: bignicefamily
-        access: RO
-    Settings:
-      EnvNames:
-        - TABLEA
-        - tablea
-        - tableA
-
-  tableB:
-    Settings:
-      EnvNames:
-        - TABLEB
     Properties:
       AttributeDefinitions:
         - AttributeName: "Album"
@@ -115,26 +65,27 @@ x-dynamodb:
               - "NumberOfSongs"
             ProjectionType: "INCLUDE"
 
+    Services:
+      - name: app03
+        access: RW
+      - name: app02
+        access: RW
+      - name: bignicefamily
+        access: RO
 
-x-vpc:
-  Create:
-    VpcCidr: 172.23.0.0/24
-    SingleNat: False
-    Endpoints:
-      AwsServices:
-        - service: s3
-        - service: ecr.dkr
-        - service: ecr.api
+  tableC:
+    Lookup:
+      Tags:
+        - name: tableC
+        - createdbycomposex: "False"
+        - someothertab: alfkef
 
-services:
-  rproxy:
-    deploy:
-      labels:
-        ecs.task.family: bignicefamily
-    depends_on:
-      - app01
-  app01:
-    deploy:
-      labels:
-        ecs.task.family: bignicefamily
-        ecs.depends.condition: COMPLETE
+  tableD:
+    Lookup:
+      Tags:
+        - name: tableC
+        - createdbycomposex: "False"
+        - someothertab: alfkef
+    Services:
+      - name: app03
+        access: RW

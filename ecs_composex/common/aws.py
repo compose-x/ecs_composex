@@ -111,7 +111,9 @@ def handle_search_results(arns, name, res_types, aws_resource_search):
     """
     if not arns:
         raise LookupError(
-            "No resources were found with the provided tags and information"
+            "No resources were found with the provided tags and information",
+            name,
+            aws_resource_search,
         )
     if arns and isinstance(name, str):
         return handle_multi_results(
