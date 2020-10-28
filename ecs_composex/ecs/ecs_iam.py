@@ -39,7 +39,7 @@ def add_service_roles(template):
     :param template: ecs_service template to add the resources to
     :type template: troposphere.Template
     """
-    execution_role = Role(
+    Role(
         EXEC_ROLE_T,
         template=template,
         AssumeRolePolicyDocument=service_role_trust_policy("ecs-tasks"),

@@ -288,18 +288,6 @@ class ComposeXSettings(object):
         self.set_output_settings(kwargs)
         self.name = kwargs[self.name_arg]
 
-    # def __repr__(self):
-    #     return dumps(
-    #         {
-    #             self.region_arg: self.aws_region,
-    #             self.zones_arg: self.aws_azs,
-    #             self.bucket_arg: self.bucket_name,
-    #             self.render_arg: self.no_upload,
-    #             self.deploy_arg: self.deploy,
-    #         },
-    #         indent=4,
-    #     )
-
     def set_secrets(self):
         """
         Function to parse the settings compose content and define the secrets.

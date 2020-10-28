@@ -84,7 +84,7 @@ def generate_resource_permissions(resource_name, policies, attribute, arn=None):
     return resource_policies
 
 
-def add_iam_policy_to_service_task_role_v2(
+def add_iam_policy_to_service_task_role(
     service_template, resource, perms, access_type, services
 ):
     """
@@ -105,31 +105,6 @@ def add_iam_policy_to_service_task_role_v2(
             if container.Name == service.name:
                 LOG.debug(f"Extended env vars for {container.Name} -> {service.name}")
                 extend_container_envvars(container, resource.env_vars)
-
-
-def add_iam_policy_to_service_task_role(
-    service_template, resource, perms, access_type, service_name, family_wide
-):
-    """
-    Function to expand the ECS Task Role policy with the permissions for the resource
-    :param troposphere.Template service_template:
-    :param resource:
-    :param perms:
-    :param access_type:
-    :param service_name:
-    :param family_wide:
-    :return:
-    """
-    containers = define_service_containers(service_template)
-    policy = perms[access_type]
-    task_role = service_template.resources[TASK_ROLE_T]
-    task_role.Policies.append(policy)
-    for container in containers:
-        if family_wide:
-            extend_container_envvars(container, resource.env_vars)
-        elif not family_wide and container.Name == service_name:
-            extend_container_envvars(container, resource.env_vars)
-            break
 
 
 def get_selected_services(resource, target):
@@ -190,7 +165,7 @@ def handle_kms_access(mapping_family, resource, target, selected_services):
     kms_perms = generate_resource_permissions(
         f"{resource.logical_name}KmsKey", KMS_ACCESS_TYPES, None, arn=key_arn
     )
-    add_iam_policy_to_service_task_role_v2(
+    add_iam_policy_to_service_task_role(
         target[0].template, resource, kms_perms, "EncryptDecrypt", selected_services
     )
 

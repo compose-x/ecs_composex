@@ -3,7 +3,9 @@
 x-s3:
   bucket-01:
     Properties: {}
-    Settings: {}
+    Settings:
+      EnvNames:
+        - BUCKET01
     Services:
       - name: app03
         access:

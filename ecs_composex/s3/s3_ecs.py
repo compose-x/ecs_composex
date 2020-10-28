@@ -28,24 +28,23 @@ from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.kms.kms_perms import ACCESS_TYPES as KMS_ACCESS_TYPES
 from ecs_composex.resource_settings import (
     add_iam_policy_to_service_task_role,
-    add_iam_policy_to_service_task_role_v2,
     generate_resource_permissions,
     generate_export_strings,
+    get_selected_services,
 )
-
 from ecs_composex.s3.s3_aws import lookup_bucket_config
 from ecs_composex.s3.s3_params import S3_BUCKET_ARN, S3_BUCKET_NAME
 from ecs_composex.s3.s3_perms import ACCESS_TYPES
 
 
-def assign_service_permissions_to_bucket(
-    bucket, access, service_template, service_family, family_wide
-):
+def assign_service_permissions_to_bucket(bucket, family, services, access):
     bucket_key = "bucket"
     objects_key = "objects"
+
     bucket_arn_import = generate_export_strings(bucket.logical_name, S3_BUCKET_ARN)
     bucket_name_import = generate_export_strings(bucket.logical_name, S3_BUCKET_NAME)
     bucket.generate_resource_envvars(None, bucket_name_import)
+
     if keyisset(bucket_key, access):
         bucket_perms = generate_resource_permissions(
             f"BucketAccess{bucket.logical_name}",
@@ -54,12 +53,7 @@ def assign_service_permissions_to_bucket(
             arn=bucket_arn_import,
         )
         add_iam_policy_to_service_task_role(
-            service_template,
-            bucket,
-            bucket_perms,
-            access[bucket_key],
-            service_family,
-            family_wide,
+            family.template, bucket, bucket_perms, access[bucket_key], services
         )
     if keyisset(objects_key, access):
         objects_perms = generate_resource_permissions(
@@ -69,12 +63,7 @@ def assign_service_permissions_to_bucket(
             arn=Sub("${BucketArn}/*", BucketArn=bucket_arn_import),
         )
         add_iam_policy_to_service_task_role(
-            service_template,
-            bucket,
-            objects_perms,
-            access[objects_key],
-            service_family,
-            family_wide,
+            family.template, bucket, objects_perms, access[objects_key], services
         )
 
 
@@ -87,17 +76,9 @@ def assign_new_bucket_to_services(bucket, nested=False):
     """
     bucket_key = "bucket"
     objects_key = "objects"
-    select_services = []
     access = {objects_key: "RW", bucket_key: "ListOnly"}
     for target in bucket.families_targets:
-        if not target[1] and target[2]:
-            LOG.debug(
-                f"Resource {bucket.name} only applies to {target[2]} in family {target[0].name}"
-            )
-            select_services = target[2]
-        elif target[1]:
-            LOG.debug(f"Resource {bucket.name} applies to family {target[0].name}")
-            select_services = target[0].services
+        select_services = get_selected_services(bucket, target)
         if select_services:
             if not isinstance(target[3], str):
                 LOG.warn(
@@ -106,7 +87,7 @@ def assign_new_bucket_to_services(bucket, nested=False):
             else:
                 access = target[3]
             assign_service_permissions_to_bucket(
-                bucket, target[0], select_services, access, S3_BUCKET_ARN
+                bucket, target[0], select_services, access
             )
 
 
@@ -224,7 +205,7 @@ def define_lookup_buckets_access(bucket, target, services):
             None,
             arn=FindInMap("s3", bucket.logical_name, "Arn"),
         )
-        add_iam_policy_to_service_task_role_v2(
+        add_iam_policy_to_service_task_role(
             target[0].template, bucket, bucket_perms, access[bucket_key], services
         )
     if keyisset(objects_key, access):
@@ -236,7 +217,7 @@ def define_lookup_buckets_access(bucket, target, services):
                 "${BucketArn}/*", BucketArn=FindInMap("s3", bucket.logical_name, "Arn")
             ),
         )
-        add_iam_policy_to_service_task_role_v2(
+        add_iam_policy_to_service_task_role(
             target[0].template, bucket, objects_perms, access[objects_key], services
         )
 
@@ -253,17 +234,9 @@ def assign_lookup_buckets(bucket, mappings):
         return
     bucket_key = "bucket"
     objects_key = "objects"
-    select_services = []
     access = {objects_key: "RW", bucket_key: "ListOnly"}
     for target in bucket.families_targets:
-        if not target[1] and target[2]:
-            LOG.debug(
-                f"Resource {bucket.name} only applies to {target[2]} in family {target[0].name}"
-            )
-            select_services = target[2]
-        elif target[1]:
-            LOG.debug(f"Resource {bucket.name} applies to family {target[0].name}")
-            select_services = target[0].services
+        select_services = get_selected_services(bucket, target)
         if select_services:
             target[0].template.add_mapping("s3", mappings)
             if not keyisset("access", target[3]) or isinstance(target[3], str):
@@ -273,7 +246,7 @@ def assign_lookup_buckets(bucket, mappings):
             else:
                 access = target[3]
             assign_service_permissions_to_bucket(
-                bucket, target[0], select_services, access, S3_BUCKET_ARN
+                bucket, target[0], select_services, access
             )
             if keyisset("KmsKey", mappings[bucket.logical_name]):
                 kms_perms = generate_resource_permissions(
@@ -282,7 +255,7 @@ def assign_lookup_buckets(bucket, mappings):
                     None,
                     arn=FindInMap("s3", bucket.logical_name, "KmsKey"),
                 )
-                add_iam_policy_to_service_task_role_v2(
+                add_iam_policy_to_service_task_role(
                     target[0].template,
                     bucket,
                     kms_perms,
@@ -315,12 +288,11 @@ def s3_to_ecs(xresources, services_stack, res_root_stack, settings):
         services_stack.DependsOn.append(res_root_stack.title)
         LOG.info(f"Added dependency between services and {res_root_stack.title}")
     for res in new_resources:
-        LOG.debug(f"Creating {res.name} as {res.logical_name}")
+        LOG.info(f"Creating {res.name} as {res.logical_name}")
         handle_new_resources(
             res,
             services_stack,
             res_root_stack,
         )
     for res in lookup_buckets:
-        for service_def in res.services:
-            assign_lookup_buckets(res, buckets_mappings)
+        assign_lookup_buckets(res, buckets_mappings)

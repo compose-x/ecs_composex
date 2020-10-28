@@ -874,7 +874,6 @@ class ComposeFamily(object):
         self.set_secrets_access()
 
     def handle_permission_boundary(self, prop_key):
-        print(self.iam)
         if keyisset("boundary", self.iam) and self.template:
             if EXEC_ROLE_T in self.template.resources:
                 add_role_boundaries(
