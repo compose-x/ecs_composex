@@ -189,7 +189,6 @@ def generate_services(settings):
         family.assign_policies()
         family.service_config = ServiceConfig(family, settings)
         family.ecs_service = Service(family, settings)
-
         family.stack_parameters.update(
             {
                 ecs_params.SERVICE_NAME_T: family.logical_name,

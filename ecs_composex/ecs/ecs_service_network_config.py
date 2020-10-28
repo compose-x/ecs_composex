@@ -20,9 +20,59 @@ Module to help with defining the network settings for the ECS Service based on t
 """
 
 from json import dumps
+from ipaddress import IPv4Interface
+
+from troposphere import Sub, Ref, GetAtt
+from troposphere import AWS_ACCOUNT_ID, AWS_NO_VALUE
+from troposphere.ec2 import SecurityGroupIngress
 
 from ecs_composex.common import keyisset, keypresent
-from ecs_composex.common import LOG
+from ecs_composex.common import LOG, NONALPHANUM
+
+from ecs_composex.ecs.ecs_params import SERVICE_NAME_T
+
+
+def flatten_ip(ip_str):
+    """
+    Function to remove all non alphanum characters from IP CIDR notation
+
+    :param ip_str:
+    :rtype: str
+    """
+    return ip_str.replace(".", "").split("/")[0].strip()
+
+
+def generate_security_group_props(allowed_source, service_name):
+    """
+    Function to parse the allowed source and create the SG Opening options accordingly.
+
+    :param dict allowed_source: The allowed source defined in configs
+    :param str service_name:
+    :return: security group ingress properties
+    :rtype: dict
+    """
+    props = {
+        "CidrIp": (
+            allowed_source["ipv4"]
+            if keyisset("ipv4", allowed_source)
+            else Ref(AWS_NO_VALUE)
+        ),
+        "CidrIpv6": (
+            allowed_source["ipv6"]
+            if keyisset("ipv6", allowed_source)
+            else Ref(AWS_NO_VALUE)
+        ),
+    }
+
+    if keyisset("CidrIp", props) and isinstance(props["CidrIp"], str):
+        try:
+            IPv4Interface(props["CidrIp"])
+        except Exception as error:
+            LOG.error(
+                f"Falty IP Address: {allowed_source} - ecs_service {service_name}"
+            )
+            raise ValueError("Not a valid IPv4 CIDR notation", props["CidrIp"], error)
+    return props
 
 
 def handle_ext_sources(existing_sources, new_sources):
@@ -182,6 +232,11 @@ class ServiceNetworking(object):
     network_settings = ["ingress", "use_cloudmap", "is_public", "lb_type"]
 
     def __init__(self, family):
+        """
+        Initialize network settings for the family ServiceConfig
+
+        :param ecs_composex.common.compose_services.ComposeFamily family:
+        """
         self.configuration = merge_services_network(family)
         self.lb_type = self.configuration["lb_type"]
         self.is_public = self.configuration["is_public"]
@@ -194,6 +249,7 @@ class ServiceNetworking(object):
             self.ingress_from_self = self.configuration["ingress"]["myself"]
         self.ports = []
         self.merge_services_ports(family)
+        self.tgt_groups = []
 
     def __repr__(self):
         return dumps(self.configuration, indent=2)
@@ -240,3 +296,142 @@ class ServiceNetworking(object):
                 for s_port in f_source_ports:
                     if s_port["target"] not in f_overide_ports_targets:
                         self.ports.append(s_port)
+
+    def add_self_ingress(self, sg, family):
+        """
+        Method to allow communications internally to the group on set ports
+        :param troposphere.ec2.SecurityGroup sg:
+        :param ecs_composex.common.compose_services.ComposeFamily family:
+        :return:
+        """
+        if not family.template or not sg:
+            return
+        for port in self.ports:
+            SecurityGroupIngress(
+                f"AllowingMyselfToMyselfOnPort{port['published']}",
+                template=family.template,
+                FromPort=port["published"],
+                ToPort=port["published"],
+                IpProtocol=port["protocol"],
+                GroupId=GetAtt(sg, "GroupId"),
+                SourceSecurityGroupId=GetAtt(sg, "GroupId"),
+                SourceSecurityGroupOwnerId=Ref(AWS_ACCOUNT_ID),
+                Description=Sub(
+                    f"Allowing traffic internally on port {port['published']}"
+                ),
+            )
+
+    def add_aws_sources(self, sg, family):
+        """
+        Method to add ingress rules from other AWS Sources
+
+        :param troposphere.ec2.SecurityGroup sg:
+        :param ecs_composex.common.compose_services.ComposeFamily family:
+        :return:
+        """
+        allowed_keys = ["type", "id"]
+        allowed_types = ["SecurityGroup", "PrefixList"]
+        if not family.template or not sg:
+            return
+        for source in self.aws_sources:
+            if not all(key in allowed_keys for key in source.keys()):
+                raise KeyError(
+                    "Missing ingress properties. Got",
+                    source.keys,
+                    "Expected",
+                    allowed_keys,
+                )
+            if not source["type"] in allowed_types:
+                raise ValueError(
+                    "Invalid type specified. Got",
+                    source["type"],
+                    "Allowed one of ",
+                    allowed_types,
+                )
+            if source["type"] == "SecurityGroup":
+                for port in self.ports:
+                    SecurityGroupIngress(
+                        f"From{NONALPHANUM.sub('', source['id'])}ToServiceOn{port['published']}",
+                        template=family.template,
+                        FromPort=port["published"],
+                        ToPort=port["published"],
+                        IpProtocol=port["protocol"],
+                        GroupId=GetAtt(sg, "GroupId"),
+                        SourceSecurityGroupOwnerId=Ref(AWS_ACCOUNT_ID),
+                        SourceSecurityGroupId=source["id"],
+                        Description=Sub(
+                            f"From {source['id']} to ${{{SERVICE_NAME_T}}} on port {port['published']}"
+                        ),
+                    )
+            elif source["type"] == "PrefixList":
+                for port in self.ports:
+                    SecurityGroupIngress(
+                        f"From{NONALPHANUM.sub('', source['id'])}ToServiceOn{port['published']}",
+                        template=family.template,
+                        FromPort=port["published"],
+                        ToPort=port["published"],
+                        IpProtocol=port["protocol"],
+                        GroupId=GetAtt(sg, "GroupId"),
+                        SourcePrefixListId=source["id"],
+                        Description=Sub(
+                            f"From {source['id']} to ${{{SERVICE_NAME_T}}} on port {port['published']}"
+                        ),
+                    )
+
+    def create_ext_sources_ingress_rule(
+        self, family, allowed_source, security_group, **props
+    ):
+        for port in self.ports:
+            if keyisset("source_name", allowed_source):
+                title = f"From{allowed_source['source_name'].title()}Onto{port['published']}{port['protocol']}"
+                description = Sub(
+                    f"From {allowed_source['source_name'].title()} "
+                    f"To {port['published']}{port['protocol']} for ${{{SERVICE_NAME_T}}}"
+                )
+            else:
+                title = (
+                    f"From{flatten_ip(allowed_source['ipv4'])}"
+                    f"To{port['published']}{port['protocol']}"
+                )
+                description = Sub(
+                    f"Public {port['published']}{port['protocol']}"
+                    f" for ${{{SERVICE_NAME_T}}}"
+                )
+            SecurityGroupIngress(
+                title,
+                template=family.template,
+                Description=description,
+                GroupId=GetAtt(security_group, "GroupId"),
+                IpProtocol=port["protocol"],
+                FromPort=port["published"],
+                ToPort=port["published"],
+                **props,
+            )
+
+    def add_ext_sources_ingress(self, security_group, family):
+        """
+        Method to add ingress rules from external sources to a given Security Group (ie. ALB Security Group).
+        If a list of IPs is found in the config['ext_sources'] part of the network section of configs for the service,
+        then it will use that. If no IPv4 source is indicated, it will by default allow traffic from 0.0.0.0/0
+
+        :param security_group: security group (object or title string) to add the rules to
+        :type security_group: str or troposphere.ec2.SecurityGroup
+        :param ecs_composex.common.compose_services.ComposeFamily family:
+        """
+        if not self.ext_sources and self.is_public:
+            self.ext_sources = [
+                {"ipv4": "0.0.0.0/0", "protocol": -1, "source_name": "ANY"}
+            ]
+
+        for allowed_source in self.ext_sources:
+            if not keyisset("ipv4", allowed_source) and not keyisset(
+                "ipv6", allowed_source
+            ):
+                LOG.warn("No IPv4 or IPv6 set. Skipping")
+                continue
+            props = generate_security_group_props(allowed_source, family.logical_name)
+            if props:
+                LOG.debug(f"Adding {allowed_source} for ingress")
+                self.create_ext_sources_ingress_rule(
+                    family, allowed_source, security_group, **props
+                )
