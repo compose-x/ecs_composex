@@ -79,7 +79,7 @@ SUPPORTED_X_MODULES = [
     f"{X_KEY}s3",
     "s3",
     f"{X_KEY}elbv2",
-    "elbv2"
+    "elbv2",
 ]
 EXCLUDED_X_KEYS = [
     f"{X_KEY}configs",
@@ -177,8 +177,6 @@ def apply_x_configs_to_ecs(settings, root_template, services_stack):
     :param ecs_composex.common.settings.ComposeXSettings settings: The compose file content
     :param troposphere.Template root_template: The root template for ECS ComposeX
     :param ecs_composex.ecs.ServicesStack services_stack: root stack for services.
-    :param dict kwargs: settings for building X related resources
-    :param dict services_families: Families and services mappings
     """
     for resource_name in root_template.resources:
         resource = root_template.resources[resource_name]
@@ -250,7 +248,7 @@ def handle_new_xstack(
     root_template,
     xstack,
 ):
-    tcp_services = ["x-rds", "x-appmesh"]
+    tcp_services = ["x-rds", "x-appmesh", "x-elbv2"]
     if vpc_stack and key in tcp_services:
         xstack.get_from_vpc_stack(vpc_stack)
     elif not vpc_stack and key in tcp_services:

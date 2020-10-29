@@ -42,7 +42,7 @@ from ecs_composex.sqs.sqs_params import (
     SQS_URL,
 )
 
-CFN_MAX_OUTPUTS = 50
+CFN_MAX_OUTPUTS = 190
 
 
 def define_redrive_policy(target_queue, retries=None, mono_template=True):
@@ -121,8 +121,9 @@ def define_queue(queue, queues, mono_template=True):
         else:
             retries = 5
         redrive_policy = define_redrive_policy(redrive_target, retries, mono_template)
-    queue = set_queue(queue, properties, redrive_policy)
-    LOG.debug(queue.title)
+    queue.cfn_resource = set_queue(queue, properties, redrive_policy)
+
+    LOG.debug(queue.cfn_resource.title, queue.logical_name)
     return queue
 
 
@@ -139,20 +140,26 @@ def generate_sqs_root_template(settings):
         return None
 
     queues = settings.compose_content[RES_KEY]
-    if (len(list(queues.keys())) * output_per_resource) <= CFN_MAX_OUTPUTS:
+    new_queues = [
+        queues[queue_name] for queue_name in queues if not queues[queue_name].lookup
+    ]
+    if (len(new_queues) * output_per_resource) <= CFN_MAX_OUTPUTS:
         mono_template = True
-    template = build_template("DynamoDB for ECS ComposeX")
-    for queue_name in queues:
-        queue = define_queue(queues[queue_name], queues, mono_template)
-        if queue:
+    template = build_template("SQS for ECS ComposeX")
+    for queue in new_queues:
+        define_queue(queue, queues, mono_template)
+        if queue.cfn_resource:
+            print(queue.cfn_resource, type(queue.cfn_resource))
             values = [
-                (SQS_URL, "Url", Ref(queue)),
-                (SQS_ARN_T, SQS_ARN_T, GetAtt(queue, SQS_ARN_T)),
-                (SQS_NAME_T, SQS_NAME_T, GetAtt(queue, SQS_NAME_T)),
+                (SQS_URL, "Url", Ref(queue.cfn_resource)),
+                (SQS_ARN_T, SQS_ARN_T, GetAtt(queue.cfn_resource, SQS_ARN_T)),
+                (SQS_NAME_T, SQS_NAME_T, GetAtt(queue.cfn_resource, SQS_NAME_T)),
             ]
-            outputs = ComposeXOutput(queue, values, duplicate_attr=(not mono_template))
+            outputs = ComposeXOutput(
+                queue.cfn_resource, values, duplicate_attr=(not mono_template)
+            )
             if mono_template:
-                template.add_resource(queue)
+                template.add_resource(queue.cfn_resource)
                 template.add_output(outputs.outputs)
             elif not mono_template:
                 parameters = {}
@@ -162,7 +169,7 @@ def generate_sqs_root_template(settings):
                             DLQ_ARN_T: GetAtt(
                                 NONALPHANUM.sub(
                                     "",
-                                    queues[queue_name].definition["Properties"][
+                                    queues[queue.name].definition["Properties"][
                                         "RedrivePolicy"
                                     ]["deadLetterTargetArn"],
                                 ),
@@ -171,12 +178,12 @@ def generate_sqs_root_template(settings):
                         }
                     )
                 queue_template = build_template(
-                    f"Template for SQS queue {queue.title}", [DLQ_ARN]
+                    f"Template for SQS queue {queue.cfn_resource.title}", [DLQ_ARN]
                 )
-                queue_template.add_resource(queue)
+                queue_template.add_resource(queue.cfn_resource)
                 queue_template.add_output(outputs.outputs)
                 queue_stack = ComposeXStack(
-                    queues[queue_name].logical_name,
+                    queue.logical_name,
                     stack_template=queue_template,
                     stack_parameters=parameters,
                 )
