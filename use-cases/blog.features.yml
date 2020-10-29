@@ -180,3 +180,6 @@ x-dns:
     Name: lambda.internal
   PublicZone:
     Name: dev.lambda-my-aws.io
+
+x-tags:
+  costcentre: lambda

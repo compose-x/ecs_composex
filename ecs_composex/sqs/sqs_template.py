@@ -149,7 +149,6 @@ def generate_sqs_root_template(settings):
     for queue in new_queues:
         define_queue(queue, queues, mono_template)
         if queue.cfn_resource:
-            print(queue.cfn_resource, type(queue.cfn_resource))
             values = [
                 (SQS_URL, "Url", Ref(queue.cfn_resource)),
                 (SQS_ARN_T, SQS_ARN_T, GetAtt(queue.cfn_resource, SQS_ARN_T)),

@@ -261,6 +261,9 @@ class ComposeXSettings(object):
             else self.session.region_name
         )
         self.aws_azs = self.default_azs
+        self.public_azs = self.default_azs
+        self.app_azs = self.default_azs
+        self.storage_azs = self.default_azs
 
         self.bucket_name = (
             None if not keyisset(self.bucket_arg, kwargs) else kwargs[self.bucket_arg]
@@ -519,6 +522,27 @@ class ComposeXSettings(object):
 
             else:
                 LOG.error(error)
+
+    def set_azs_from_vpc_import(self, public_subnets, app_subnets, storage_subnets):
+        """
+        Function to get the list of AZs for a given set of subnets
+
+        :param list public_subnets:
+        :param list app_subnets:
+        :param list storage_subnets:
+        :return:
+        """
+        client = self.session.client("ec2")
+        try:
+            public_r = client.describe_subnets(SubnetIds=public_subnets)["Subnets"]
+            app_r = client.describe_subnets(SubnetIds=app_subnets)["Subnets"]
+            storage_r = client.describe_subnets(SubnetIds=storage_subnets)["Subnets"]
+            self.public_azs = [sub["AvailabilityZone"] for sub in public_r]
+            self.storage_azs = [sub["AvailabilityZone"] for sub in storage_r]
+            self.app_azs = [sub["AvailabilityZone"] for sub in app_r]
+            LOG.info("Successfully updated self with AZs from looked up VPC subnets")
+        except ClientError:
+            LOG.warn("Could not define the AZs based on the imported subnets")
 
     def set_bucket_name_from_account_id(self):
         if self.bucket_name and isinstance(self.bucket_name, str):

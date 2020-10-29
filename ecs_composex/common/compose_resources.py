@@ -43,7 +43,6 @@ def set_resources(settings, resource_class, res_key):
         LOG.debug(type(new_definition))
         LOG.debug(new_definition.__dict__)
         settings.compose_content[res_key][resource_name] = new_definition
-        print(settings.compose_content[res_key][resource_name])
 
 
 def validate_service_definition(service):
