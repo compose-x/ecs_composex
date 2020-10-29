@@ -149,6 +149,7 @@ def reset_to_zero_policy(
 
     :param service_name:
     :param service_template:
+    :param dict scaling_def:
     :param scaling_source:
     :return:
     """
