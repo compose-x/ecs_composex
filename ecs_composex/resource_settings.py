@@ -110,7 +110,9 @@ def add_iam_policy_to_service_task_role(
 def get_selected_services(resource, target):
     """
     Function to get the selected services
-    :param target:
+
+    :param resource: The resource linking to services
+    :param target: the service/family target definition
     :return:
     """
     if not target[1] and target[2]:
@@ -137,7 +139,7 @@ def map_service_perms_to_resource(resource, family, services, access_type, arn=N
     :return:
     """
     res_perms = generate_resource_permissions(
-        f"AccessTo{resource.logical_name}",
+        resource.logical_name,
         resource.policies_scaffolds,
         resource.arn_attr,
         arn,
