@@ -173,3 +173,10 @@ volumes:
   shared-images: {}
   some-volume: {}
   normal-vol: {}
+
+
+x-dns:
+  PrivateNamespace:
+    Name: lambda.internal
+  PublicZone:
+    Name: dev.lambda-my-aws.io
