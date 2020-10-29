@@ -32,6 +32,7 @@ VPC_STACK_NAME = "vpc"
 MESH_TITLE = "RootMesh"
 PRIVATE_MAP_TITLE = "CloudMapVpcNamespace"
 PUBLIC_MAP_TITLE = "CloudMapPublicNamespace"
+PUBLIC_ZONE_TITLE = "Route53PublicZone"
 
 ROOT_STACK_NAME_T = "RootStackName"
 ROOT_STACK_NAME = Parameter(

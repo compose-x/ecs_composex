@@ -24,7 +24,8 @@ from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common.compose_resources import set_resources, XResource
 from ecs_composex.kms import metadata
 from ecs_composex.kms.kms_template import create_kms_template
-from ecs_composex.kms.kms_params import RES_KEY
+from ecs_composex.kms.kms_params import RES_KEY, KMS_KEY_ARN, KMS_KEY_ID
+from ecs_composex.kms.kms_perms import get_access_types
 
 
 def define_default_key_policy():
@@ -61,8 +62,17 @@ class KmsKey(XResource):
     Class to represent a KMS Key
     """
 
-    def __init__(self, name, definition):
-        super().__init__(name, definition)
+    policies_scaffolds = get_access_types()
+
+    def __init__(self, name, definition, settings):
+        self.arn_attr = KMS_KEY_ARN
+        self.main_attr = KMS_KEY_ID
+        self.kms_arn_attr = None
+
+        self.arn_attr_value = self.arn_attr
+        self.main_attr_value = self.main_attr
+
+        super().__init__(name, definition, settings)
 
     def define_kms_key(self):
         """

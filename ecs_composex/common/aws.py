@@ -51,6 +51,7 @@ def get_resources_from_tags(session, aws_resource_search, search_tags):
     :return:
     """
     try:
+
         client = session.client("resourcegroupstaggingapi")
         resources_r = client.get_resources(
             ResourceTypeFilters=[aws_resource_search], TagFilters=search_tags
@@ -111,7 +112,9 @@ def handle_search_results(arns, name, res_types, aws_resource_search):
     """
     if not arns:
         raise LookupError(
-            "No resources were found with the provided tags and information"
+            "No resources were found with the provided tags and information",
+            name,
+            aws_resource_search,
         )
     if arns and isinstance(name, str):
         return handle_multi_results(
@@ -169,6 +172,7 @@ def find_aws_resource_arn_from_tags_api(info, session, aws_resource_search, type
     name = info["Name"] if keyisset("Name", info) else None
 
     resources_r = get_resources_from_tags(session, aws_resource_search, search_tags)
+    LOG.debug(search_tags)
     arns = [i["ResourceARN"] for i in resources_r["ResourceTagMappingList"]]
     return handle_search_results(arns, name, res_types, aws_resource_search)
 

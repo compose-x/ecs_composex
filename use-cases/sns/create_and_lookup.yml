@@ -1,0 +1,19 @@
+
+x-sns:
+  Topics:
+    abcd:
+      Properties: {}
+      Services:
+        - name: app01
+          access: Publish
+        - name: you-too
+          access: Publish
+
+    hello:
+      Lookup:
+        Tags:
+          - costcentre: lambda
+          - composexdev: "yes"
+      Services:
+        - name: app03
+          access: Publish

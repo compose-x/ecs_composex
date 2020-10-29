@@ -19,6 +19,8 @@
 Module for the ComposeXSettings class
 """
 
+import re
+
 from copy import deepcopy
 from datetime import datetime as dt
 from json import dumps
@@ -29,16 +31,20 @@ import boto3
 from botocore.exceptions import ClientError
 
 from ecs_composex import __version__
-from ecs_composex.common import keyisset, LOG, load_composex_file
+from ecs_composex.common import keyisset, LOG, load_composex_file, NONALPHANUM
 from ecs_composex.common.envsubst import expandvars
 from ecs_composex.common.aws import get_account_id, get_region_azs
 from ecs_composex.common.cfn_params import USE_FLEET_T
 from ecs_composex.utils.init_ecs import set_ecs_settings
 from ecs_composex.utils.init_s3 import create_bucket
-from ecs_composex.ecs.ecs_service_config import set_service_ports
 from cfn_flip.yaml_dumper import LongCleanDumper
-from ecs_composex.secrets.secrets_config import parse_secrets
-from ecs_composex.common.compose_resources import Service
+from ecs_composex.common.compose_secrets import ComposeSecret
+from ecs_composex.common.compose_volumes import ComposeVolume
+from ecs_composex.common.compose_services import (
+    ComposeService,
+    ComposeFamily,
+    set_service_ports,
+)
 
 
 def render_services_ports(services):
@@ -58,8 +64,8 @@ def merge_ports(source_ports, new_ports):
     """
     Function to merge two sections of ports
 
-    :param source_ports:
-    :param new_ports:
+    :param list source_ports:
+    :param list new_ports:
     :return:
     """
     f_source_ports = set_service_ports(source_ports)
@@ -146,18 +152,18 @@ def merge_config_file(original_content, override_content):
     :return:
     """
 
-    if not keyisset("services", original_content):
+    if not keyisset(ComposeService.main_key, original_content):
         raise KeyError(
             "No services defined in the source file. Keys found",
             original_content.keys(),
         )
-    if not keyisset("services", override_content):
+    if not keyisset(ComposeService.main_key, override_content):
         return original_content.update(override_content)
 
-    original_services = deepcopy(original_content["services"])
-    override_services = override_content["services"]
+    original_services = deepcopy(original_content[ComposeService.main_key])
+    override_services = override_content[ComposeService.main_key]
 
-    for service_name in override_content["services"]:
+    for service_name in override_content[ComposeService.main_key]:
         if keyisset(service_name, original_services):
             original_services.update(
                 {
@@ -168,11 +174,11 @@ def merge_config_file(original_content, override_content):
                 }
             )
         else:
-            original_content["services"].update(
-                {service_name: override_content["services"][service_name]}
+            original_content[ComposeService.main_key].update(
+                {service_name: override_content[ComposeService.main_key][service_name]}
             )
     original_content.update(override_content)
-    original_content["services"] = original_services
+    original_content[ComposeService.main_key] = original_services
 
 
 class ComposeXSettings(object):
@@ -255,6 +261,10 @@ class ComposeXSettings(object):
         self.bucket_name = (
             None if not keyisset(self.bucket_arg, kwargs) else kwargs[self.bucket_arg]
         )
+        self.volumes = []
+        self.services = []
+        self.secrets = []
+        self.families = {}
         self.account_id = None
         self.output_dir = self.default_output_dir
         self.format = self.default_format
@@ -278,36 +288,116 @@ class ComposeXSettings(object):
         self.set_output_settings(kwargs)
         self.name = kwargs[self.name_arg]
 
-    def __repr__(self):
-        return dumps(
-            {
-                self.region_arg: self.aws_region,
-                self.zones_arg: self.aws_azs,
-                self.bucket_arg: self.bucket_name,
-                self.render_arg: self.no_upload,
-                self.deploy_arg: self.deploy,
-            },
-            indent=4,
-        )
+    def set_secrets(self):
+        """
+        Function to parse the settings compose content and define the secrets.
+
+        :param ecs_composex.common.settings.ComposeXSettings settings:
+        :return:
+        """
+        if not keyisset(ComposeSecret.main_key, self.compose_content):
+            return
+        for secret_name in self.compose_content[ComposeSecret.main_key]:
+            secret_def = self.compose_content[ComposeSecret.main_key][secret_name]
+            if keyisset("x-secrets", secret_def) and isinstance(
+                secret_def["x-secrets"], dict
+            ):
+                LOG.info(f"Adding secret {secret_name} to settings")
+                secret = ComposeSecret(secret_name, secret_def)
+                self.secrets.append(secret)
+                self.compose_content[ComposeSecret.main_key][secret_name] = secret
+
+    def set_volumes(self):
+        """
+        Method configuring the volumes at root level
+        :return:
+        """
+        if not keyisset(ComposeVolume.main_key, self.compose_content):
+            LOG.debug("No volumes detected at the root level of compose file")
+            return
+        for volume_name in self.compose_content[ComposeVolume.main_key]:
+            volume = ComposeVolume(
+                volume_name, self.compose_content[ComposeVolume.main_key][volume_name]
+            )
+            self.compose_content[ComposeVolume.main_key][volume_name] = volume
+            self.volumes.append(volume)
 
     def set_services(self):
         """
         Method to define the ComposeXResource for each service.
         :return:
         """
-        if not keyisset("services", self.compose_content):
+        if not keyisset(ComposeService.main_key, self.compose_content):
             return
-        for service_name in self.compose_content["services"]:
-            self.compose_content["services"][service_name] = Service(
-                service_name, self.compose_content["services"][service_name]
+        for service_name in self.compose_content[ComposeService.main_key]:
+            service = ComposeService(
+                service_name,
+                self.compose_content[ComposeService.main_key][service_name],
+                self.volumes,
+                self.secrets,
             )
+            self.compose_content[ComposeService.main_key][service_name] = service
+            self.services.append(service)
 
-    def set_content(self, kwargs, content=None):
+    def get_family_name(self, family_name):
+        if family_name != NONALPHANUM.sub("", family_name):
+            if not NONALPHANUM.sub("", family_name) in self.families.keys():
+                LOG.warn(
+                    f"Family name {family_name} must be AlphaNumerical. "
+                    f"Set to {NONALPHANUM.sub('', family_name)}"
+                )
+            family_name = NONALPHANUM.sub("", family_name)
+        return family_name
+
+    def add_new_family(self, family_name, service, assigned_services):
+        if service.name in [service.name for service in assigned_services]:
+            LOG.info(
+                f"Detected {service.name} is-reused in different family. Making a deepcopy"
+            )
+            family = ComposeFamily([deepcopy(service)], family_name)
+        else:
+            family = ComposeFamily([service], family_name)
+        self.families[family_name] = family
+        if service.name not in [service.name for service in assigned_services]:
+            assigned_services.append(service)
+
+    def handle_assigned_existing_service(self, family_name, service, assigned_services):
+        if service.name in [service.name for service in assigned_services]:
+            LOG.info(
+                f"Detected {service.name} is-reused in different family. Making a deepcopy"
+            )
+            self.families[family_name].add_service(deepcopy(service))
+        else:
+            self.families[family_name].add_service(service)
+            assigned_services.append(service)
+
+    def set_families(self):
+        """
+        Method to define the list of families
+        :return:
+        """
+        assigned_services = []
+        for service in self.services:
+            for family_name in service.families:
+                family_name = self.get_family_name(family_name)
+
+                if family_name not in self.families.keys():
+                    self.add_new_family(family_name, service, assigned_services)
+                elif family_name in self.families.keys() and service.name not in [
+                    service.name for service in self.families[family_name].services
+                ]:
+                    self.handle_assigned_existing_service(
+                        family_name, service, assigned_services
+                    )
+        LOG.debug([self.families[family] for family in self.families])
+
+    def set_content(self, kwargs, content=None, fully_load=True):
         """
         Method to initialize the compose content
 
         :param dict kwargs:
         :param dict content:
+        :param bool fully_load:
         :return:
         """
         if content is None and len(kwargs[self.input_file_arg]) == 1:
@@ -322,12 +412,15 @@ class ComposeXSettings(object):
 
         elif content and isinstance(content, dict):
             self.compose_content = content
-        if keyisset("services", self.compose_content):
-            render_services_ports(self.compose_content["services"])
+        if keyisset(ComposeService.main_key, self.compose_content):
+            render_services_ports(self.compose_content[ComposeService.main_key])
         LOG.debug(yaml.dump(self.compose_content))
         interpolate_env_vars(self.compose_content)
-        parse_secrets(self)
-        self.set_services()
+        if fully_load:
+            self.set_secrets()
+            self.set_volumes()
+            self.set_services()
+            self.set_families()
 
     def parse_command(self, kwargs, content=None):
         """
@@ -351,7 +444,7 @@ class ComposeXSettings(object):
             self.no_upload = False
             self.upload = not self.no_upload
         elif command == self.config_render_arg:
-            self.set_content(kwargs, content)
+            self.set_content(kwargs, content, fully_load=False)
             print(yaml.dump(self.compose_content, Dumper=LongCleanDumper))
             exit()
         elif command == "version":

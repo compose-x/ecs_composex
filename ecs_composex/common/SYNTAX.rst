@@ -33,8 +33,8 @@ To help make it as easy in AWS, simply set `external=True` and a few other setti
             - EcsExecutionRole
             - EcsTaskRole
 
-x-secret
---------
+x-secrets
+---------
 
 Name
 ^^^^

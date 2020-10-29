@@ -25,6 +25,7 @@ from ecs_composex.common.compose_resources import set_resources, XResource
 from ecs_composex.dynamodb.dynamodb_params import RES_KEY
 from ecs_composex.dynamodb.dynamodb_template import create_dynamodb_template
 from ecs_composex.dynamodb.dynamodb_params import TABLE_ARN, TABLE_NAME
+from ecs_composex.dynamodb.dynamodb_perms import get_access_types
 
 
 class Table(XResource):
@@ -32,11 +33,12 @@ class Table(XResource):
     Class to represent a DynamoDB Table
     """
 
-    name_attr = TABLE_NAME.title
-    arn_attr = TABLE_ARN.title
+    main_attr = TABLE_NAME
+    arn_attr = TABLE_ARN
+    policies_scaffolds = get_access_types()
 
-    def __init__(self, name, definition):
-        super().__init__(name, definition)
+    def __init__(self, name, definition, settings):
+        super().__init__(name, definition, settings)
         self.name_export = None
         self.name_import = None
         self.arn_export = None

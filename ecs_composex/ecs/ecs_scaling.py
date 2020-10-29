@@ -21,6 +21,7 @@ Module to help generate target scaling policies for given alarms.
 
 import random
 import string
+from json import dumps
 
 from troposphere import Ref, AWS_NO_VALUE
 from troposphere.applicationautoscaling import (
@@ -29,7 +30,7 @@ from troposphere.applicationautoscaling import (
     StepAdjustment,
 )
 
-from ecs_composex.common import LOG, keyisset
+from ecs_composex.common import LOG, keyisset, keypresent
 from ecs_composex.ecs.ecs_params import SERVICE_SCALING_TARGET
 
 
@@ -100,6 +101,8 @@ def generate_alarm_scaling_out_policy(
     service_name, service_template, scaling_def, scaling_source=None
 ):
     """
+    Function to create the scaling out policy based on steps
+
     :param str service_name: The name of the service/family
     :param troposphere.Template service_template:
     :param dict scaling_def:
@@ -142,7 +145,12 @@ def reset_to_zero_policy(
     service_name, service_template, scaling_def, scaling_source=None
 ):
     """
+    Defines a policy allowing to reset to 0 containers.
 
+    :param service_name:
+    :param service_template:
+    :param dict scaling_def:
+    :param scaling_source:
     :return:
     """
     length = 6
@@ -172,3 +180,119 @@ def reset_to_zero_policy(
         ),
     )
     return policy
+
+
+def handle_range(config, key, new_range):
+    """
+    Function to handle range.
+    """
+    new_min = int(new_range.split("-")[0])
+    new_max = int(new_range.split("-")[1])
+    if not config[key]:
+        config[key] = {"min": new_min, "max": new_max}
+    else:
+        config[key]["min"] = min(config[key]["min"], new_min)
+        config[key]["max"] = max(config[key]["max"], new_max)
+
+
+def handle_defined_target_scaling_props(prop, config, key, new_config):
+    if prop[1] is int:
+        config[key][prop[0]] = min(config[key][prop[0]], new_config[prop[0]])
+    elif (
+        prop[1] is bool
+        and not keyisset(prop[0], config[key])
+        and keyisset(prop[0], new_config)
+    ):
+        LOG.warn(f"At least one service enabled {prop[0]}. Enabling for all")
+        config[key][prop[0]] = True
+
+
+def define_new_config(config, key, new_config):
+    valid_keys = [
+        ("cpu_target", int, None),
+        ("memory_target", int, None),
+        ("disable_scale_in", bool, None),
+        ("tgt_targets_count", int, None),
+        ("scale_in_cooldown", int, None),
+        ("scale_out_cooldown", int, None),
+    ]
+    for prop in valid_keys:
+        if (
+            keypresent(prop[0], config[key])
+            and keypresent(prop[0], new_config)
+            and isinstance(new_config[prop[0]], prop[1])
+        ):
+            handle_defined_target_scaling_props(prop, config, key, new_config)
+        elif (
+            not keypresent(prop[0], config[key])
+            and keypresent(prop[0], new_config)
+            and isinstance(new_config[prop[0]], prop[1])
+        ):
+            config[key][prop[0]] = new_config[prop[0]]
+
+
+def handle_target_scaling(config, key, new_config):
+    """
+    Function to handle merge of target tracking config
+    """
+    if not config[key]:
+        config[key] = new_config
+    else:
+        define_new_config(config, key, new_config)
+
+
+def merge_family_services_scaling(services):
+    x_scaling = {
+        "range": None,
+        "target_scaling": {
+            "disable_scale_in": False,
+            "scale_in_cooldown": 300,
+            "scale_out_cooldown": 60,
+        },
+    }
+    x_scaling_configs = []
+    for service in services:
+        if service.x_configs and keyisset("scaling", service.x_configs):
+            x_scaling_configs.append(service.x_configs["scaling"])
+    valid_keys = [
+        ("range", str, handle_range),
+        ("target_scaling", dict, handle_target_scaling),
+    ]
+    for key in valid_keys:
+        for config in x_scaling_configs:
+            if (
+                keyisset(key[0], config)
+                and isinstance(config[key[0]], key[1])
+                and key[2]
+            ):
+                key[2](x_scaling, key[0], config[key[0]])
+
+    return x_scaling
+
+
+class ServiceScaling(object):
+    """
+    Class to group the configuration for Service scaling
+    """
+
+    defined = False
+    target_scaling_keys = ["cpu_target", "memory_target", "tgt_targets_count"]
+
+    def __init__(self, services):
+        configuration = merge_family_services_scaling(services)
+        self.range = None
+        self.target_scaling = None
+        if not keyisset("range", configuration):
+            self.defined = False
+            return
+        self.range = configuration["range"]
+        for key in self.target_scaling_keys:
+            if keyisset("target_scaling", configuration) and keyisset(
+                key, configuration["target_scaling"]
+            ):
+                self.target_scaling = configuration["target_scaling"]
+
+    def __repr__(self):
+        return dumps(
+            {"range": self.range, "target_scaling": self.target_scaling}, indent=4
+        )

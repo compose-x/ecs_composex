@@ -115,21 +115,6 @@ x-dynamodb:
               - "NumberOfSongs"
             ProjectionType: "INCLUDE"
 
-  tableC:
-    Lookup:
-      Tags:
-        - name: tableC
-    Services:
-      - name: app02
-        access: RW
-
-  tableD:
-    Lookup:
-      Tags:
-        - name: tableC
-    Services:
-      - name: app03
-        access: RO
 
 x-vpc:
   Create:

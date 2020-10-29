@@ -1,0 +1,16 @@
+
+x-cluster:
+  Properties:
+    CapacityProviders:
+      - FARGATE_SPOT
+      - FARGATE
+    ClusterName: ANewCluster
+    ClusterSettings:
+      - ClusterSettings
+    DefaultCapacityProviderStrategy:
+      - Base: 2
+        Weight: 2
+        CapacityProvider: FARGATE_SPOT
+      - Base: 1
+        Weight: 1
+        CapacityProvider: FARGATE

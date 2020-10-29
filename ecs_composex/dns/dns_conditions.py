@@ -25,6 +25,12 @@ CREATE_PUBLIC_NAMESPACE_CON = Not(
         Ref(dns_params.PUBLIC_DNS_ZONE_NAME), dns_params.PUBLIC_DNS_ZONE_NAME.Default
     )
 )
+CREATE_PUBLIC_ZONE_CON_T = "CreatePublicServicesZoneCondition"
+CREATE_PUBLIC_ZONE_CON = Not(
+    Equals(
+        Ref(dns_params.PUBLIC_DNS_ZONE_NAME), dns_params.PUBLIC_DNS_ZONE_NAME.Default
+    )
+)
 CREATE_PRIVATE_NAMESPACE_CON_T = "CreatePrivateServicesNamespaceCondition"
 CREATE_PRIVATE_NAMESPACE_CON = Equals(
     Ref(dns_params.PRIVATE_DNS_ZONE_ID), dns_params.PRIVATE_DNS_ZONE_ID.Default

@@ -21,167 +21,117 @@ Module to apply SQS settings onto ECS Services
 
 from troposphere import Ref
 from troposphere.cloudwatch import Alarm, MetricDimension
-from troposphere.sqs import Queue
 
-from ecs_composex.common import keyisset, LOG
-from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.common import LOG, keyisset
 from ecs_composex.ecs.ecs_params import SERVICE_SCALING_TARGET
 from ecs_composex.ecs.ecs_scaling import (
     generate_alarm_scaling_out_policy,
     reset_to_zero_policy,
 )
-from ecs_composex.ecs.ecs_template import get_service_family_name
-from ecs_composex.resource_permissions import apply_iam_based_resources
 from ecs_composex.resource_settings import (
-    generate_resource_permissions,
     generate_export_strings,
+    handle_resource_to_services,
+    handle_lookup_resource,
 )
-from ecs_composex.sqs.sqs_params import SQS_URL, SQS_ARN, SQS_NAME
-from ecs_composex.sqs.sqs_perms import ACCESS_TYPES
+from ecs_composex.sqs.sqs_aws import lookup_queue_config
+from ecs_composex.sqs.sqs_params import SQS_NAME, SQS_KMS_KEY_T
 
 
-def handle_new_queues(
-    xresources,
-    services_families,
-    services_stack,
-    res_root_stack,
-    l_queues,
-    nested=False,
-):
-    queues_r = []
-    s_resources = res_root_stack.stack_template.resources
-    for resource_name in s_resources:
-        if isinstance(s_resources[resource_name], Queue):
-            queues_r.append(s_resources[resource_name].title)
-        elif issubclass(type(s_resources[resource_name]), ComposeXStack):
-            handle_new_queues(
-                xresources,
-                services_families,
-                services_stack,
-                s_resources[resource_name],
-                l_queues,
-                nested=True,
-            )
-
-    for queue_name in xresources:
-        if queue_name in queues_r:
-            queue = xresources[queue_name]
-            queue.generate_resource_envvars(SQS_URL)
-            perms = generate_resource_permissions(
-                queue.logical_name, ACCESS_TYPES, SQS_ARN.title
-            )
-            apply_iam_based_resources(
-                queue,
-                services_families,
-                services_stack,
-                res_root_stack,
-                perms,
-                nested,
-            )
-            del l_queues[queue_name]
-
-
-def handle_service_scaling(
-    resource,
-    services_families,
-    services_stack,
-    res_root_stack,
-    service_def,
-    nested=False,
-):
+def handle_service_scaling(resource):
     """
     Function to assign resource to services stack
 
     :param resource:
     :type resource: ecs_composex.common.compose_resources.XResource
-    :param dict services_families:
-    :param ecs_composex.common.stacks.ComposeXStack services_stack:
-    :param ecs_composex.common.stacks.ComposeXStack res_root_stack:
-    :param dict service_def: The service scaling definition
-    :param bool nested: Whether this is nested stack to anohter.
     :raises KeyError: if the service name is not a listed service in docker-compose.
     """
-    service_family = get_service_family_name(services_families, service_def["name"])
-    if (
-        not service_family
-        or service_family not in services_stack.stack_template.resources
-    ):
-        raise ValueError(
-            f"Service {service_family} not in the services stack",
-            services_stack.stack_template.resources,
+    for target in resource.families_scaling:
+        if SERVICE_SCALING_TARGET not in target[0].template.resources:
+            LOG.warn(
+                f"No Scalable target defined for {target[0].name}."
+                " You need to define `scaling.range` in x-configs first. No scaling applied"
+            )
+            return
+        scaling_out_policy = generate_alarm_scaling_out_policy(
+            target[0].logical_name,
+            target[0].template,
+            target[1],
+            scaling_source=resource.logical_name,
         )
-    service_stack = services_stack.stack_template.resources[service_family]
-    if SERVICE_SCALING_TARGET not in service_stack.stack_template.resources:
-        LOG.warn(
-            f"No Scalable target defined for {service_family}."
-            " You need to define `scaling.range` in x-configs first. No scaling applied"
+        scaling_in_policy = reset_to_zero_policy(
+            target[0].logical_name,
+            target[0].template,
+            target[1],
+            scaling_source=resource.logical_name,
         )
-        return
-    scaling_out_policy = generate_alarm_scaling_out_policy(
-        service_family,
-        service_stack.stack_template,
-        service_def["scaling"],
-        scaling_source=resource.logical_name,
-    )
-    scaling_in_policy = reset_to_zero_policy(
-        service_family,
-        service_stack.stack_template,
-        service_def["scaling"],
-        scaling_source=resource.logical_name,
-    )
-    Alarm(
-        f"SqsScalingAlarm{resource.logical_name}To{service_family}",
-        template=service_stack.stack_template,
-        ActionsEnabled=True,
-        AlarmActions=[Ref(scaling_out_policy)],
-        AlarmDescription=f"MessagesProcessingWatchFor{resource.logical_name}To{service_family}",
-        ComparisonOperator="GreaterThanOrEqualToThreshold",
-        DatapointsToAlarm=1,
-        Dimensions=[
-            MetricDimension(
-                Name="QueueName",
-                Value=generate_export_strings(resource.logical_name, SQS_NAME.title),
+        Alarm(
+            f"SqsScalingAlarm{resource.logical_name}To{target[0].logical_name}",
+            template=target[0].template,
+            ActionsEnabled=True,
+            AlarmActions=[Ref(scaling_out_policy)],
+            AlarmDescription=f"MessagesProcessingWatchFor{resource.logical_name}To{target[0].logical_name}",
+            ComparisonOperator="GreaterThanOrEqualToThreshold",
+            DatapointsToAlarm=1,
+            Dimensions=[
+                MetricDimension(
+                    Name="QueueName",
+                    Value=generate_export_strings(
+                        resource.logical_name, SQS_NAME.title
+                    ),
+                ),
+            ],
+            EvaluationPeriods=1,
+            InsufficientDataActions=[Ref(scaling_in_policy)],
+            MetricName="ApproximateNumberOfMessagesVisible",
+            Namespace="AWS/SQS",
+            OKActions=[Ref(scaling_in_policy)],
+            Period="60",
+            Statistic="Sum",
+            TreatMissingData="notBreaching",
+            Threshold=float(
+                scaling_out_policy.StepScalingPolicyConfiguration.StepAdjustments[
+                    0
+                ].MetricIntervalLowerBound
             ),
-        ],
-        EvaluationPeriods=1,
-        InsufficientDataActions=[Ref(scaling_in_policy)],
-        MetricName="ApproximateNumberOfMessagesVisible",
-        Namespace="AWS/SQS",
-        OKActions=[Ref(scaling_in_policy)],
-        Period="60",
-        Statistic="Sum",
-        TreatMissingData="notBreaching",
-        Threshold=float(
-            scaling_out_policy.StepScalingPolicyConfiguration.StepAdjustments[
-                0
-            ].MetricIntervalLowerBound
-        ),
-    )
-    LOG.debug(f"{res_root_stack.title} - {nested}")
-    if res_root_stack.title not in services_stack.DependsOn and not nested:
-        services_stack.add_dependencies(res_root_stack.title)
+        )
 
 
-def sqs_to_ecs(
-    queues, services_stack, services_families, res_root_stack, settings, **kwargs
-):
+def create_sqs_mappings(mapping, resources, settings):
+    """
+    Function to create the resource mapping for SQS Queues.
+
+    :param dict mapping:
+    :param list resources:
+    :param ecs_composex.common.settings.ComposeXSettings settings:
+    :return:
+    """
+    for res in resources:
+        res_config = lookup_queue_config(res.lookup, settings.session)
+        mapping.update({res.logical_name: res_config})
+        if keyisset(SQS_KMS_KEY_T, res_config):
+            LOG.info(f"Identified CMK {res_config[SQS_KMS_KEY_T]} for {res.name}")
+
+
+def sqs_to_ecs(resources, services_stack, res_root_stack, settings):
     """
     Function to apply SQS settings to ECS Services
     :return:
     """
-    l_queues = queues.copy()
-    handle_new_queues(
-        queues, services_families, services_stack, res_root_stack, l_queues
-    )
-
-    for queue_name in queues:
-        queue = queues[queue_name]
-        for service_def in queue.services:
-            if keyisset("scaling", service_def):
-                handle_service_scaling(
-                    queue,
-                    services_families,
-                    services_stack,
-                    res_root_stack,
-                    service_def,
-                )
+    resource_mappings = {}
+    new_resources = [
+        resources[res_name] for res_name in resources if not resources[res_name].lookup
+    ]
+    lookup_resources = [
+        resources[res_name]
+        for res_name in resources
+        if resources[res_name].lookup and not resources[res_name].properties
+    ]
+    if new_resources and res_root_stack.title not in services_stack.DependsOn:
+        services_stack.DependsOn.append(res_root_stack.title)
+        LOG.info(f"Added dependency between services and {res_root_stack.title}")
+    for new_res in new_resources:
+        handle_resource_to_services(new_res, services_stack, res_root_stack, settings)
+        handle_service_scaling(new_res)
+    create_sqs_mappings(resource_mappings, lookup_resources, settings)
+    for lookup_res in lookup_resources:
+        handle_lookup_resource(resource_mappings, "sqs", lookup_res)

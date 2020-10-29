@@ -23,7 +23,9 @@ RES_KEY = f"x-{path.basename(path.dirname(path.abspath(__file__)))}"
 KMS_KEY_ARN_T = "KmsKeyArn"
 KMS_KEY_ID_T = "KmsKeyId"
 KMS_KEY_ALIAS_NAME_T = "KmsKeyAliasName"
+KMS_KEY_ALIAS_ARN_T = "KmsKeyAliasName"
 
 KMS_KEY_ARN = Parameter(KMS_KEY_ARN_T, Type="String")
 KMS_KEY_ID = Parameter(KMS_KEY_ID_T, Type="String")
 KMS_KEY_ALIAS_NAME = Parameter(KMS_KEY_ALIAS_NAME_T, Type="String")
+KMS_KEY_ALIAS_ARN = Parameter(KMS_KEY_ALIAS_ARN_T, Type="String")

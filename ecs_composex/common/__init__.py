@@ -42,7 +42,7 @@ from ecs_composex import __version__ as version
 
 DATE = dt.utcnow().isoformat()
 FILE_PREFIX = f'{dt.utcnow().strftime("%Y/%m/%d/%H%M")}/{str(uuid4().hex)[:6]}'
-NONALPHANUM = re.compile(r"([^a-zA-Z0-9])")
+NONALPHANUM = re.compile(r"([^a-zA-Z0-9]+)")
 
 EXIT_CODES = {"MODULE_NOT_FOUND": 8, "MISSING_RESOURCE_DEFINITION": 9}
 

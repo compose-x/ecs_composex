@@ -54,8 +54,8 @@ class Rds(XResource):
     Class to represent a RDS DB
     """
 
-    def __init__(self, name, definition):
-        super().__init__(name, definition)
+    def __init__(self, name, definition, settings):
+        super().__init__(name, definition, settings)
 
 
 class XStack(ComposeXStack):

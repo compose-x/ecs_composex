@@ -19,70 +19,45 @@
 Module to apply SNS settings onto ECS Services
 """
 
-from troposphere.sns import Topic
-
-from ecs_composex.common import keyisset
-from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.resource_permissions import apply_iam_based_resources
+from ecs_composex.common import LOG
 from ecs_composex.resource_settings import (
-    generate_resource_permissions,
+    handle_resource_to_services,
+    handle_lookup_resource,
 )
-from ecs_composex.sns.sns_params import TOPIC_ARN_T
-from ecs_composex.sns.sns_perms import ACCESS_TYPES
 from ecs_composex.sns.sns_stack import Topic as XTopic
+from ecs_composex.sns.sns_aws import lookup_topic_config
 
 
-def handle_new_topics(
-    xresources,
-    services_families,
-    services_stack,
-    res_root_stack,
-    l_topics,
-    nested=False,
-):
-    topics_r = []
-    s_resources = res_root_stack.stack_template.resources
-    for resource_name in s_resources:
-        if isinstance(s_resources[resource_name], Topic):
-            topics_r.append(s_resources[resource_name].title)
-        elif issubclass(type(s_resources[resource_name]), ComposeXStack):
-            handle_new_topics(
-                xresources,
-                services_families,
-                services_stack,
-                s_resources[resource_name],
-                l_topics,
-                nested=True,
-            )
-    for topic_name in xresources:
-        if topic_name in topics_r:
-            topic = xresources[topic_name]
-            topic.generate_resource_envvars(TOPIC_ARN_T)
-            perms = generate_resource_permissions(topic_name, ACCESS_TYPES, TOPIC_ARN_T)
-            apply_iam_based_resources(
-                topic,
-                services_families,
-                services_stack,
-                res_root_stack,
-                perms,
-                nested,
-            )
-            del l_topics[topic_name]
+def create_sns_mappings(mapping, resources, settings):
+    for resource in resources:
+        resource_config = lookup_topic_config(resource.lookup, settings.session)
+        if resource_config:
+            mapping.update({resource.logical_name: resource_config})
 
 
-def sns_to_ecs(
-    topics, services_stack, services_families, res_root_stack, settings, **kwargs
-):
+def sns_to_ecs(resources, services_stack, res_root_stack, settings):
     """
     Function to apply SQS settings to ECS Services
     :return:
     """
-    l_topics = topics[XTopic.keyword].copy()
-    if keyisset(XTopic.keyword, topics):
-        handle_new_topics(
-            topics[XTopic.keyword],
-            services_families,
-            services_stack,
-            res_root_stack,
-            l_topics,
+    mappings = {}
+    new_resources = [
+        resources[XTopic.keyword][resource_name]
+        for resource_name in resources[XTopic.keyword]
+        if not resources[XTopic.keyword][resource_name].lookup
+    ]
+    lookup_resources = [
+        resources[XTopic.keyword][resource_name]
+        for resource_name in resources[XTopic.keyword]
+        if resources[XTopic.keyword][resource_name].lookup
+    ]
+    if new_resources and res_root_stack.title not in services_stack.DependsOn:
+        services_stack.DependsOn.append(res_root_stack.title)
+        LOG.info(f"Added dependency between services and {res_root_stack.title}")
+    for new_res in new_resources:
+        handle_resource_to_services(
+            new_res, services_stack, res_root_stack, settings, False
         )
+    create_sns_mappings(mappings, lookup_resources, settings)
+    for lookup_resource in lookup_resources:
+        handle_lookup_resource(mappings, "sns", lookup_resource)

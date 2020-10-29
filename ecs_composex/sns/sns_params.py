@@ -16,8 +16,15 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from os import path
+from troposphere import Parameter
 
 RES_KEY = f"x-{path.basename(path.dirname(path.abspath(__file__)))}"
 SSM_PREFIX = f"/{RES_KEY}/"
 
 TOPIC_ARN_T = "TopicArn"
+TOPIC_NAME_T = "TopicName"
+TOPIC_KMS_KEY_T = "TopicKmsKey"
+
+TOPIC_ARN = Parameter(TOPIC_ARN_T, Type="String")
+TOPIC_NAME = Parameter(TOPIC_NAME_T, Type="String")
+TOPIC_KMS_KEY = Parameter(TOPIC_KMS_KEY_T, Type="String")

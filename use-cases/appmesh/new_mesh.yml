@@ -1,0 +1,43 @@
+---
+# Simple mesh definition for new mesh of services
+
+x-appmesh:
+  Properties: {}
+  Settings:
+    nodes:
+      - name: app03
+        protocol: tcp
+      - name: youtoo
+        protocol: http
+      - name: bignicefamily
+        protocol: http
+        backends:
+          - dateteller # Points to the dateteller service, not router!
+    routers:
+      - name: dateteller
+        listener:
+          port: 5000
+          protocol: http
+        routes:
+          http:
+            - match:
+                prefix: /date
+                method: GET
+                scheme: http
+              nodes:
+                - name: youtoo
+                  weight: 1
+      - name: datetellertcp
+        listener:
+          port: 5000
+          protocol: tcp
+        routes:
+          tcp:
+            - nodes:
+                - name: app03
+                  weight: 1
+    services:
+      - name: api
+        node: bignicefamily
+      - name: dateteller
+        router: dateteller

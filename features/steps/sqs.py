@@ -21,7 +21,6 @@ from pytest import raises
 
 
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.ecs import ServiceStack
 from ecs_composex.sqs.sqs_stack import XStack
 from ecs_composex.common.stacks import process_stacks
 
@@ -58,9 +57,3 @@ def step_impl(context):
     """
     Function to ensure that the services have secret defined.
     """
-    services = [
-        res.title
-        for res in context.svc_stack.stack_template.resources
-        if isinstance(type(res), ServiceStack)
-    ]
-    queues = [res for res in context.sqs_stack.stack_template.resources]

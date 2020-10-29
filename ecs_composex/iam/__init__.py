@@ -74,7 +74,8 @@ def add_role_boundaries(iam_role, policy):
     """
     if not isinstance(iam_role, Role):
         raise TypeError(f"{iam_role} is of type", type(iam_role), "expected", Role)
-    policy = define_iam_policy(policy)
+    if isinstance(policy, str):
+        policy = define_iam_policy(policy)
     if hasattr(iam_role, "PermissionsBoundary"):
         LOG.warn(
             f"IAM Role {iam_role.title} already has PermissionsBoundary set. Overriding"

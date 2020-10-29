@@ -27,7 +27,7 @@ from ecs_composex.kms.kms_params import (
     KMS_KEY_ARN_T,
 )
 
-CFN_MAX_OUTPUTS = 50
+CFN_MAX_OUTPUTS = 190
 
 
 def create_kms_template(settings):
@@ -40,12 +40,12 @@ def create_kms_template(settings):
     template = build_template("Root template for KMS")
     if not keyisset(RES_KEY, settings.compose_content):
         return
-    keys = settings.compose_content[RES_KEY]
-    if len(list(keys.keys())) <= CFN_MAX_OUTPUTS:
+    x_keys = settings.compose_content[RES_KEY]
+    new_keys = [x_keys[key_name] for key_name in x_keys if not x_keys[key_name].lookup]
+    if len(new_keys) <= CFN_MAX_OUTPUTS:
         mono_template = True
 
-    for key_name in keys:
-        key = keys[key_name]
+    for key in new_keys:
         key.define_kms_key()
         if key:
             values = [

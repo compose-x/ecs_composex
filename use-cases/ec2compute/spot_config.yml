@@ -1,0 +1,20 @@
+---
+# Blog applications
+
+version: '3.8'
+
+x-configs:
+  app:
+    network:
+      use_cloudmap: True
+  composex:
+    spot_config:
+      bid_price: 0.42
+      use_spot: true
+      spot_instance_types:
+        m5a.xlarge:
+          weight: 4
+        m5a.2xlarge:
+          weight: 8
+        m5a.4xlarge:
+          weight: 16

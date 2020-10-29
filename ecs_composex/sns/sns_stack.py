@@ -16,11 +16,12 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from ecs_composex.common import keyisset, LOG
-from ecs_composex.sns.sns_params import RES_KEY
-from ecs_composex.sns.sns_templates import generate_sns_templates
-from ecs_composex.sqs.sqs_params import RES_KEY as SQS_KEY
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common.compose_resources import XResource
+from ecs_composex.sqs.sqs_params import RES_KEY as SQS_KEY
+from ecs_composex.sns.sns_params import RES_KEY, TOPIC_NAME, TOPIC_ARN, TOPIC_KMS_KEY
+from ecs_composex.sns.sns_templates import generate_sns_templates
+from ecs_composex.sns.sns_perms import ACCESS_TYPES
 
 
 def create_sns_template(settings):
@@ -42,7 +43,18 @@ class Topic(XResource):
     Class for SNS Topics
     """
 
+    policies_scaffolds = ACCESS_TYPES
     keyword = "Topics"
+
+    def __init__(self, name, definition, settings):
+        self.arn_attr = TOPIC_ARN
+        self.main_attr = TOPIC_NAME
+        self.kms_attr = TOPIC_KMS_KEY
+
+        self.arn_attr_value = self.arn_attr
+        self.main_attr_value = self.main_attr
+        self.kms_attr_value = self.kms_attr
+        super().__init__(name, definition, settings)
 
 
 class Subscription(XResource):
@@ -64,6 +76,7 @@ class XStack(ComposeXStack):
                 settings.compose_content[RES_KEY][Topic.keyword][resource_name] = Topic(
                     resource_name,
                     settings.compose_content[RES_KEY][Topic.keyword][resource_name],
+                    settings,
                 )
 
         if keyisset(Subscription.keyword, settings.compose_content[RES_KEY]):
@@ -77,6 +90,7 @@ class XStack(ComposeXStack):
                     settings.compose_content[RES_KEY][Subscription.keyword][
                         resource_name
                     ],
+                    settings,
                 )
 
         template = create_sns_template(settings)

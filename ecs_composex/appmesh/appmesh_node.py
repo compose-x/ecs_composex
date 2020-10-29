@@ -35,7 +35,7 @@ from ecs_composex.common import LOG, add_parameters
 from ecs_composex.common.outputs import ComposeXOutput
 from ecs_composex.dns.dns_params import PRIVATE_DNS_ZONE_NAME
 from ecs_composex.ecs import ecs_params
-from ecs_composex.ecs.ecs_container_config import extend_container_envvars
+from ecs_composex.common.compose_services import extend_container_envvars
 
 
 class MeshNode(object):
@@ -45,24 +45,25 @@ class MeshNode(object):
 
     weight = 1
 
-    def __init__(self, service_stack, protocol, backends=None):
+    def __init__(self, family, protocol, backends=None):
         """
-
-        :param ecs_composex.ServiceStack service_stack: the service template
+        Creates the AppMesh VirtualNode pointing to the family service
         """
         self.node = None
-        self.param_name = service_stack.title
+        self.param_name = family.logical_name
         self.get_node_param = None
         self.get_sg_param = None
         self.backends = [] if backends is None else backends
-        self.stack = service_stack
+        self.stack = family.stack
+        self.template = family.template
+        self.service_config = family.service_config
         self.protocol = protocol
         self.mappings = {}
         self.port_mappings = []
         self.set_port_mappings()
         self.set_listeners_port_mappings()
         self.extend_service_stack()
-        self.add_envoy_container_definition()
+        self.add_envoy_container_definition(family)
         self.extend_task_policy()
 
     def set_port_mappings(self):
@@ -71,7 +72,7 @@ class MeshNode(object):
         """
         target = "target"
         published = "published"
-        for port in self.stack.config.ports:
+        for port in self.service_config.network.ports:
             if port[target] not in self.mappings.keys():
                 self.mappings[port[target]] = {port[published]: port}
             elif (
@@ -86,7 +87,7 @@ class MeshNode(object):
         """
         self.port_mappings = [
             appmesh.PortMapping(Port=port["published"], Protocol=self.protocol)
-            for port in self.stack.config.ports
+            for port in self.service_config.network.ports
         ]
 
     def extend_service_stack(self):
@@ -144,12 +145,12 @@ class MeshNode(object):
         """
         self.weight = weight
 
-    def add_envoy_container_definition(self):
+    def add_envoy_container_definition(self, family):
         """
         Method to expand the containers configuration and add the Envoy SideCar.
         """
         envoy_container_name = "envoy"
-        task = self.stack.service.task
+        task = family.task_definition
         envoy_port_mapping = [
             PortMapping(ContainerPort=15000, HostPort=15000),
             PortMapping(ContainerPort=15001, HostPort=15001),
@@ -163,7 +164,7 @@ class MeshNode(object):
             ),
             Environment(
                 Name="ENABLE_ENVOY_XRAY_TRACING",
-                Value="1" if task.family_config.use_xray else "0",
+                Value="1" if family.use_xray else "0",
             ),
             Environment(Name="ENABLE_ENVOY_STATS_TAGS", Value="1"),
         ]
@@ -175,7 +176,7 @@ class MeshNode(object):
                 "awslogs-stream-prefix": envoy_container_name,
             },
         )
-        self.stack.stack_template.add_parameter(appmesh_params.ENVOY_IMAGE_URL)
+        family.template.add_parameter(appmesh_params.ENVOY_IMAGE_URL)
         envoy_container = ContainerDefinition(
             Image=Ref(appmesh_params.ENVOY_IMAGE_URL),
             Name=envoy_container_name,
@@ -219,10 +220,9 @@ class MeshNode(object):
                 ),
             ],
         )
-        task.containers.append(envoy_container)
-        setattr(task.definition, "ProxyConfiguration", proxy_config)
-        task.set_task_compute_parameter()
-        self.stack.Parameters.update(task.stack_parameters)
+        task.ContainerDefinitions.append(envoy_container)
+        setattr(family.task_definition, "ProxyConfiguration", proxy_config)
+        family.refresh()
 
     def extend_task_policy(self):
         """

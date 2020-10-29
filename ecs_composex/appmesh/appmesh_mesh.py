@@ -54,9 +54,7 @@ class Mesh(object):
     services_key = "services"
     required_keys = [nodes_key, routers_key, services_key]
 
-    def __init__(
-        self, mesh_definition, services_families, services_root_stack, settings
-    ):
+    def __init__(self, mesh_definition, services_root_stack, settings):
         """
         Method to initialize the Mesh
 
@@ -132,11 +130,11 @@ class Mesh(object):
         for key in self.required_keys:
             if key not in self.mesh_settings.keys():
                 raise KeyError(f"Key {key} is missing. Required {self.required_keys}")
-        self.define_nodes(services_families, services_root_stack)
+        self.define_nodes(settings, services_root_stack)
         self.define_routes_and_routers()
         self.define_virtual_services()
 
-    def define_nodes(self, services_families, services_root_stack):
+    def define_nodes(self, settings, services_root_stack):
         """
         Method to compile the nodes for the Mesh.
 
@@ -150,24 +148,35 @@ class Mesh(object):
                 raise AttributeError(
                     f"Nodes must have set {nodes_keys}. Got", node.keys()
                 )
-            service_family = get_service_family_name(services_families, node["name"])
-            LOG.debug(service_family)
-            if service_family not in services_root_stack.stack_template.resources:
-                raise AttributeError(
-                    f"Node defined {service_family} is not defined in services stack",
-                    services_root_stack.stack_template.resources,
+            service_families = [
+                settings.families[name]
+                for name in settings.families
+                if settings.families[name].name == node["name"]
+            ]
+            if len(service_families) > 1:
+                raise LookupError(
+                    "More than one family matched for the node.",
+                    service_families,
+                    node["name"],
+                )
+            elif not service_families:
+                raise LookupError(
+                    "No family could be matched for the given node",
+                    settings.families,
+                    node["name"],
                 )
             LOG.debug(node)
-            self.nodes[service_family] = MeshNode(
-                services_root_stack.stack_template.resources[service_family],
+            family = service_families[0]
+            self.nodes[family.logical_name] = MeshNode(
+                family,
                 node["protocol"],
                 node["backends"] if keyisset("backends", node) else None,
             )
-            self.nodes[service_family].get_node_param = GetAtt(
-                self.nodes[service_family].param_name, "Outputs.VirtualNode"
+            self.nodes[family.logical_name].get_node_param = GetAtt(
+                self.nodes[family.logical_name].param_name, "Outputs.VirtualNode"
             )
-            self.nodes[service_family].get_sg_param = GetAtt(
-                self.nodes[service_family].param_name,
+            self.nodes[family.logical_name].get_sg_param = GetAtt(
+                self.nodes[family.logical_name].param_name,
                 f"Outputs.{ecs_params.SERVICE_GROUP_ID_T}",
             )
 

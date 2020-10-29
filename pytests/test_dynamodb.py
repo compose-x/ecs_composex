@@ -19,17 +19,17 @@ from os import path
 import pytest
 import boto3
 import placebo
-from ecs_composex.dynamodb.dynamodb_aws import lookup_dyn_table
+from ecs_composex.dynamodb.dynamodb_aws import lookup_dynamodb_config
 
 
 @pytest.fixture
 def existing_table_tags():
-    return [{"name": "tableC"}, {"createdbycomposex": True}]
+    return {"Tags": [{"createdbycomposex": "False"}, {"name": "tableC"}]}
 
 
 @pytest.fixture
 def overlaping_existing_table_tags():
-    return [{"name": "tableC"}]
+    return {"Tags": [{"name": "tableC"}]}
 
 
 def test_lookup(existing_table_tags):
@@ -43,8 +43,7 @@ def test_lookup(existing_table_tags):
     session = boto3.session.Session()
     pill = placebo.attach(session, data_path=f"{here}/x_dynamodb")
     pill.playback()
-    tables = lookup_dyn_table(session, existing_table_tags)
-    assert len(tables) == 1
+    lookup_dynamodb_config(existing_table_tags, session)
 
 
 def test_lookup_multiple(overlaping_existing_table_tags):
@@ -58,5 +57,6 @@ def test_lookup_multiple(overlaping_existing_table_tags):
     session = boto3.session.Session()
     pill = placebo.attach(session, data_path=f"{here}/x_dynamodb")
     pill.playback()
-    tables = lookup_dyn_table(session, overlaping_existing_table_tags)
-    assert len(tables) == 2
+    with pytest.raises(LookupError):
+        lookup_dynamodb_config(overlaping_existing_table_tags, session)
+        lookup_dynamodb_config(overlaping_existing_table_tags, session)
