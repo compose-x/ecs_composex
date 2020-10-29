@@ -78,6 +78,8 @@ SUPPORTED_X_MODULES = [
     "kms",
     f"{X_KEY}s3",
     "s3",
+    f"{X_KEY}elbv2",
+    "elbv2"
 ]
 EXCLUDED_X_KEYS = [
     f"{X_KEY}configs",

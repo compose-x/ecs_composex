@@ -1,0 +1,40 @@
+﻿
+services:
+  app01:
+    ports:
+      - 80
+
+  app02:
+    ports:
+      - 80
+      - 8080
+
+x-acm:
+  abcd:
+    Properties: {}
+    Settings: {}
+    Services: []
+
+x-elbv2:
+  lbA:
+    Properties: {}
+    Settings:
+      S3Logs: bucket:/prefix
+      timeout_seconds: 60
+      desync_mitigation_mode: defensive|strictest|monitor
+      drop_invalid_header_fields: True/False
+      http2: True/False
+      cross_zone: True/False
+    Listeners:
+      - Port: 80
+        SslCertificate: abcd
+    Services:
+      - name: app01
+        access: /
+        port: 80
+        default: True
+        healthcheck: 80:/:200,201:10:3
+      - name: app02
+        access: anotherdomain.public.net
+        port: 80
+        healthcheck: 8080:/healthcheck:5:200,201:10:3
