@@ -57,6 +57,7 @@ from ecs_composex.ecs.ecs_params import (
 )
 from ecs_composex.vpc import vpc_params
 from ecs_composex.vpc.vpc_stack import add_vpc_to_root
+from ecs_composex.elbv2.elbv2_ecs import elbv2_to_ecs
 
 RES_REGX = re.compile(r"(^([x-]+))")
 COMPUTE_STACK_NAME = "Ec2Compute"
@@ -78,13 +79,12 @@ SUPPORTED_X_MODULES = [
     "kms",
     f"{X_KEY}s3",
     "s3",
-    f"{X_KEY}elbv2",
-    "elbv2",
 ]
 EXCLUDED_X_KEYS = [
     f"{X_KEY}configs",
     f"{X_KEY}tags",
     f"{X_KEY}appmesh",
+    f"{X_KEY}elbv2",
     f"{X_KEY}vpc",
     f"{X_KEY}dns",
     f"{X_KEY}cluster",
@@ -383,6 +383,9 @@ def generate_full_template(settings):
         services_stack,
     )
     apply_x_to_x_configs(root_stack.stack_template, settings)
+
+    if keyisset(f"{X_KEY}elbv2", settings.compose_content):
+        elbv2_to_ecs(services_stack, settings)
 
     if keyisset("x-appmesh", settings.compose_content):
         mesh = Mesh(settings.compose_content["x-appmesh"], services_stack, settings)

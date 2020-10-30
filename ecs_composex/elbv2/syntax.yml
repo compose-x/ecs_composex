@@ -1,4 +1,6 @@
-﻿
+﻿---
+# ELBv2 creation for services
+
 services:
   app01:
     ports:
@@ -19,11 +21,11 @@ x-elbv2:
   lbA:
     Properties: {}
     Settings:
-      S3Logs: bucket:/prefix
+#      S3Logs: bucket:/prefix
       timeout_seconds: 60
-      desync_mitigation_mode: defensive|strictest|monitor
-      drop_invalid_header_fields: True/False
-      http2: True/False
+      desync_mitigation_mode: defensive
+      drop_invalid_header_fields: True
+      http2: False
       cross_zone: True/False
     Listeners:
       - Port: 80
@@ -32,9 +34,32 @@ x-elbv2:
       - name: app01
         access: /
         port: 80
-        default: True
         healthcheck: 80:/:200,201:10:3
       - name: app02
         access: anotherdomain.public.net
         port: 80
         healthcheck: 8080:/healthcheck:5:200,201:10:3
+
+  lbC:
+    Properties:
+      Scheme: public-facing
+      Type: network
+    Settings:
+#      S3Logs: bucket:/prefix
+      timeout_seconds: 60
+      desync_mitigation_mode: monitor
+      drop_invalid_header_fields: True/False
+      http2: False
+      cross_zone: True
+    Listeners:
+      - Port: 80
+        DefaultTarget:
+          Redirect: HTTP_TO_HTTPS
+      - Port: 443
+        SslCertificates:
+          - x-acm: abcd
+    Services:
+      - name: app03
+        access: /
+        port: 80
+        healthcheck: 80:/:200,201:10:3

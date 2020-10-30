@@ -29,16 +29,40 @@ from troposphere.elasticloadbalancingv2 import (
     SubnetMapping,
 )
 
-from ecs_composex.common import keyisset
-from ecs_composex.common import NONALPHANUM
+from ecs_composex.common import keyisset, keypresent
+from ecs_composex.common import NONALPHANUM, LOG
 
-from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.common.compose_resources import XResource, set_resources
-
+from ecs_composex.common.compose_resources import XResource
 from ecs_composex.vpc.vpc_params import VPC_ID, PUBLIC_SUBNETS, APP_SUBNETS
 
 from ecs_composex.elbv2.elbv2_params import RES_KEY
-from ecs_composex.elbv2.elbv2_template import generate_elbv2_template
+
+
+def handle_cross_zone(value):
+    return LoadBalancerAttributes(
+        Key="load_balancing.cross_zone.enabled", Value=str(value)
+    )
+
+
+def handle_http2(value):
+    return LoadBalancerAttributes(Key="routing.http2.enabled", Value=str(value))
+
+
+def handle_drop_invalid_headers(value):
+    return LoadBalancerAttributes(
+        Key="routing.http.drop_invalid_header_fields.enabled", Value=str(value)
+    )
+
+
+def handle_desync_mitigation_mode(value):
+    if value not in ["defensive", "strictest", "monitor"]:
+        raise ValueError(
+            "desync_mitigation_mode must be one of",
+            ["defensive", "strictest", "monitor"],
+        )
+    return LoadBalancerAttributes(
+        Key="routing.http.desync_mitigation_mode", Value=str(value)
+    )
 
 
 class elbv2(XResource):
@@ -55,6 +79,48 @@ class elbv2(XResource):
         super().__init__(name, definition, settings)
         self.validate_services()
         self.sort_props()
+
+    def handle_families_targets_expansion(self, service, settings):
+        the_service = [s for s in settings.services if s.name == service["name"]][0]
+        for family_name in the_service.families:
+            family_name = NONALPHANUM.sub("", family_name)
+            if family_name not in [f[0].name for f in self.families_targets]:
+                self.families_targets.append(
+                    (
+                        settings.families[family_name],
+                        False,
+                        [the_service],
+                        service,
+                    )
+                )
+
+    def set_services_targets(self, settings):
+        """
+        Method to map services and families targets of the services defined.
+        TargetStructure:
+        (family, family_wide, services[], access)
+
+        :param ecs_composex.common.settings.ComposeXSettings settings:
+        :return:
+        """
+        if not self.services:
+            LOG.info(f"No services defined for {self.name}")
+            return
+        for service in self.services:
+            service_name = service["name"]
+            if service_name in settings.families and service_name not in [
+                f[0].name for f in self.families_targets
+            ]:
+                self.families_targets.append(
+                    (settings.families[service_name], True, [], service)
+                )
+            elif service_name in settings.families and service_name in [
+                f[0].name for f in self.families_targets
+            ]:
+                LOG.warn(f"The family {service_name} has already been added. Skipping")
+            elif service_name in [s.name for s in settings.services]:
+                self.handle_families_targets_expansion(service, settings)
+        self.debug_families_targets()
 
     def validate_services(self):
         allowed_keys = [
@@ -146,8 +212,52 @@ class elbv2(XResource):
                     SubnetId=Select(count, Ref(PUBLIC_SUBNETS)),
                 )
             )
-        print(map)
         return mappings
+
+    def parse_attributes_settings(self):
+        """
+        Method to parse pre-defined settings for shortcuts
+        :return:
+        """
+        valid_settings = [
+            ("timeout_seconds", int, None),
+            ("desync_mitigation_mode", str, handle_desync_mitigation_mode),
+            ("drop_invalid_header_fields", bool, handle_drop_invalid_headers),
+            ("http2", bool, handle_http2),
+            ("cross_zone", bool, handle_cross_zone),
+        ]
+        mappings = []
+        for setting in valid_settings:
+            if keypresent(setting[0], self.settings) and isinstance(
+                self.settings[setting[0]], setting[1]
+            ):
+                if setting[2]:
+                    mappings.append(setting[2](self.settings[setting[0]]))
+                else:
+                    mappings.append(
+                        LoadBalancerAttributes(
+                            Key=setting[0], Value=str(self.settings[setting[0]])
+                        )
+                    )
+        return mappings
+
+    def set_lb_attributes(self):
+        """
+        Method to define the LB attributes
+        """
+        attributes = []
+        if keyisset("LoadBalancerAttributes", self.properties):
+            for prop in self.properties["LoadBalancerAttributes"]:
+                attributes.append(
+                    LoadBalancerAttributes(
+                        Key=prop, Value=self.properties["LoadBalancerAttributes"][prop]
+                    )
+                )
+        elif not keyisset("LoadBalancerAttributes", self.definition) and self.settings:
+            attributes = self.parse_attributes_settings()
+        if attributes:
+            return attributes
+        return Ref(AWS_NO_VALUE)
 
     def set_lb_definition(self, settings):
         """
@@ -157,6 +267,9 @@ class elbv2(XResource):
         :return:
         """
         attrs = {
+            "IpAddressType": "ipv4"
+            if not keyisset("IpAddressType", self.properties)
+            else self.properties["IpAddressType"],
             "Name": self.logical_name,
             "Type": self.lb_type,
             "Scheme": "public-facing" if self.lb_is_public else "internal",
@@ -165,8 +278,8 @@ class elbv2(XResource):
             else self.lb_sg,
             "Subnets": self.set_subnets(),
             "SubnetMappings": self.set_subnet_mappings(settings),
+            "LoadBalancerAttributes": self.set_lb_attributes(),
         }
-
         self.lb = LoadBalancer(self.logical_name, **attrs)
 
     def is_nlb(self):
@@ -184,33 +297,6 @@ class elbv2(XResource):
         """
         template.add_resource(self.lb)
         if self.lb_sg and isinstance(self.lb_sg, SecurityGroup):
-            print(self.name, self.lb_sg)
             template.add_resource(self.lb_sg)
         for eip in self.lb_eips:
             template.add_resource(eip)
-
-
-class XStack(ComposeXStack):
-    """
-    Class to present the ELBv2 root stack
-    """
-
-    def __init__(self, title, settings, **kwargs):
-        """
-        Init ELBv2 stack
-
-        :param str title: title for the new root stack
-        :param ecs_composex.common.settings.ComposeXSettings settings:
-        :param dict kwargs:
-        """
-        set_resources(settings, elbv2, RES_KEY)
-        resources = settings.compose_content[RES_KEY]
-        if [
-            resources[res_name]
-            for res_name in resources
-            if not resources[res_name].lookup
-        ]:
-            stack_template = generate_elbv2_template(settings)
-            super().__init__(title, stack_template, **kwargs)
-        else:
-            self.is_void = True
