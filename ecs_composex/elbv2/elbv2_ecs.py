@@ -16,6 +16,7 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import re
+import json
 
 from troposphere import Ref, GetAtt
 from troposphere import Parameter
@@ -29,14 +30,6 @@ from ecs_composex.common.outputs import ComposeXOutput
 from ecs_composex.elbv2.elbv2_params import RES_KEY, LB_ARN
 from ecs_composex.elbv2.elbv2_stack import elbv2
 from ecs_composex.resource_settings import get_selected_services
-
-
-def validate_ping_settings(props):
-    """
-    Validates that the ping settings are in range
-    :param props:
-    :return:
-    """
 
 
 def handle_ping_settings(props, groups):
@@ -54,7 +47,11 @@ def handle_ping_settings(props, groups):
         ("HealthCheckTimeoutSeconds", (2, 10)),
     )
     for count, value in enumerate(groups):
-        props[ping_mapping[count][0]] = value
+        if not min(ping_mapping[count][1]) <= int(value) <= max(ping_mapping[count][1]):
+            print(
+                f"Value for {ping_mapping[count][0]} is not valid. Must be in range of {ping_mapping[count][1]}"
+            )
+        props[ping_mapping[count][0]] = int(value)
 
 
 def handle_path_settings(props, groups):
@@ -67,11 +64,11 @@ def handle_path_settings(props, groups):
     """
     if props["HealthCheckProtocol"] not in ["HTTP", "HTTPS"]:
         raise ValueError(
-            "Protocol and return codes are only valid for HTTP and HTTPS healthcheck"
+            groups,
+            "Protocol and return codes are only valid for HTTP and HTTPS healthcheck",
         )
-    path_re = re.compile(r"^[\/a-z0-9.-_][^:]+$")
+    path_re = re.compile(r"^[/]{1}[\S]+$")
     codes_re = re.compile(r"^[\d,]+$")
-
     for value in groups:
         if path_re.match(value):
             props["HealthCheckPath"] = value
@@ -89,7 +86,7 @@ def handle_optional_settings(props, groups):
     """
     ping_rex = r"^([\d]{1}|10):([\d]{1}|10):([\d]{1,3}):([\d]{1,3})$"
     ping_re = re.compile(ping_rex)
-    path_rex = r"([\/a-z0-9.-_][^:]+:[\d,]+$)"
+    path_rex = r"(?:.*):?([\/]{1}[\S]+):([\d,]+$)"
     path_re = re.compile(path_rex)
     handlers = [(path_re, handle_path_settings), (ping_re, handle_ping_settings)]
     for value in groups:
@@ -124,7 +121,7 @@ def set_healthcheck_definition(props, target_definition):
         r"((?:[\d]{1}|10):(?:[\d]{1}|10):[\d]{1,3}:[\d]{1,3})?:?"
         r"([\/a-z0-9.-_][^:]+:[\d,]+$)?"
     )
-    LOG.info(healthcheck_regexp)
+    LOG.debug(healthcheck_regexp)
     healthcheck_reg = re.compile(healthcheck_regexp)
     if (
         keyisset("healthcheck", target_definition)
@@ -134,9 +131,13 @@ def set_healthcheck_definition(props, target_definition):
         groups = healthcheck_reg.match(target_definition["healthcheck"]).groups()
         required_re = re.compile(required_rex)
         for count, value in enumerate(required_re.match(groups[0]).groups()):
-            props[required_mapping[count]] = value
+            healthcheck_props[required_mapping[count]] = value
         if len(groups) >= 2:
-            handle_optional_settings(props, groups[1:])
+            try:
+                handle_optional_settings(healthcheck_props, groups[1:])
+            except ValueError:
+                LOG.error(target_definition["name"], target_definition["healthcheck"])
+                raise
     if (
         keyisset("healthcheck", target_definition)
         and isinstance(target_definition["healthcheck"], str)
