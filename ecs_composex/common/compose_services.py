@@ -370,6 +370,7 @@ class ComposeService(object):
         self.mem_resa = None
         self.cpu_amount = None
         self.families = []
+        self.my_family = None
         self.container_definition = None
 
         self.container_start_condition = "START"

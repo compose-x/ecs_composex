@@ -361,9 +361,13 @@ class ComposeXSettings(object):
             LOG.info(
                 f"Detected {service.name} is-reused in different family. Making a deepcopy"
             )
-            family = ComposeFamily([deepcopy(service)], family_name)
+            the_service = deepcopy(service)
+            family = ComposeFamily([the_service], family_name)
+            the_service.my_family = self.families[family_name]
+            self.services.append(the_service)
         else:
             family = ComposeFamily([service], family_name)
+            service.my_family = family
         self.families[family_name] = family
         if service.name not in [service.name for service in assigned_services]:
             assigned_services.append(service)
@@ -373,9 +377,13 @@ class ComposeXSettings(object):
             LOG.info(
                 f"Detected {service.name} is-reused in different family. Making a deepcopy"
             )
-            self.families[family_name].add_service(deepcopy(service))
+            the_service = deepcopy(service)
+            self.families[family_name].add_service(the_service)
+            the_service.my_family = self.families[family_name]
+            self.services.append(the_service)
         else:
             self.families[family_name].add_service(service)
+            service.my_family = self.families[family_name]
             assigned_services.append(service)
 
     def set_families(self):

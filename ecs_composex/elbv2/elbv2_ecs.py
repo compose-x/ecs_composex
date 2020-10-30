@@ -200,7 +200,7 @@ def define_service_target_group(resource, family, target_definition):
         TargetGroupAttribute(Key="deregistration_delay.timeout_seconds", Value="60")
     ]
     target_group = TargetGroup(
-        f"{family.logical_name}TargetGroup{resource.logical_name}",
+        f"{family.logical_name}TargetGroup{props['Port']}{resource.logical_name}",
         template=family.template,
         VpcId=Ref(VPC_ID),
         **props,
@@ -215,7 +215,7 @@ def define_service_target_group(resource, family, target_definition):
     return target_group
 
 
-def define_service_target_group_definition(resource, family, target_def, services):
+def define_service_target_group_definition(resource, family, target_def):
     """
     Function to create the new service TGT Group
 
@@ -225,16 +225,11 @@ def define_service_target_group_definition(resource, family, target_def, service
     :param list services:
     :return:
     """
-
-    lb_arn_param = family.template.add_parameter(
-        Parameter(f"{resource.logical_name}LbArn", Type="String")
-    )
     if resource.logical_name not in family.stack.DependsOn:
         family.stack.DependsOn.append(resource.logical_name)
         LOG.info(
             f"Added dependency between service family {family.logical_name} and {resource.logical_name}"
         )
-    lb_arn_value = Ref(resource.lb)
     service_tgt_group = define_service_target_group(resource, family, target_def)
     output_attr = f"Outputs.{service_tgt_group.title}{TGT_GROUP_ARN.title}"
     LOG.debug(f"TGT GetAtt value {output_attr}")
@@ -242,6 +237,7 @@ def define_service_target_group_definition(resource, family, target_def, service
         family.stack.title,
         output_attr,
     )
+    return target_group_arn
 
 
 def handle_services_association(resource, services_stack):
@@ -253,11 +249,9 @@ def handle_services_association(resource, services_stack):
     :return:
     """
     for target in resource.families_targets:
-        selected_services = get_selected_services(resource, target)
-        if selected_services:
-            define_service_target_group_definition(
-                resource, target[0], target[3], selected_services
-            )
+        tgt_arn = define_service_target_group_definition(resource, target[1], target[2])
+        for listener in resource.listeners:
+            listener.map_services(resource, target[0], tgt_arn)
 
 
 def map_elbv2_to_services(settings, services_stack):
@@ -284,6 +278,8 @@ def elbv2_to_ecs(services_stack, settings):
     Function to apply SQS settings to ECS Services
     :return:
     """
+    for service in settings.services:
+        print(service.name, service.my_family.template)
     map_elbv2_to_services(settings, services_stack)
     resources = settings.compose_content[RES_KEY]
     resource_mappings = {}

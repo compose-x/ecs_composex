@@ -118,6 +118,12 @@ class ComposeListener(Listener):
         listener_kwargs.update(
             dict((x, definition[x]) for x in self.attributes if x in definition)
         )
+        self.services = (
+            definition["Services"]
+            if keyisset("Services", definition)
+            and isinstance(definition["Services"], list)
+            else []
+        )
         listener_kwargs.update({"LoadBalancerArn": Ref(lb.lb)})
         self.name = f"{lb.logical_name}{listener_kwargs['Port']}"
         super().__init__(self.name, template=template, **listener_kwargs)
@@ -160,6 +166,14 @@ class ComposeListener(Listener):
                         cert_source,
                     )
 
+    def map_services(self, lb, service, tgt_arn):
+        for service_def in self.services:
+            print(service_def)
+            name = service_def["name"].split(":")[-1]
+            if name == service.name:
+                LOG.info(f"Mapped listener target {name} to service")
+                service_def["target_arn"] = tgt_arn
+
 
 class elbv2(XResource):
     """
@@ -176,20 +190,6 @@ class elbv2(XResource):
         super().__init__(name, definition, settings)
         self.validate_services()
         self.sort_props()
-
-    def handle_families_targets_expansion(self, service, settings):
-        the_service = [s for s in settings.services if s.name == service["name"]][0]
-        for family_name in the_service.families:
-            family_name = NONALPHANUM.sub("", family_name)
-            if family_name not in [f[0].name for f in self.families_targets]:
-                self.families_targets.append(
-                    (
-                        settings.families[family_name],
-                        False,
-                        [the_service],
-                        service,
-                    )
-                )
 
     def set_listeners(self, template):
         """
@@ -212,23 +212,42 @@ class elbv2(XResource):
         :param ecs_composex.common.settings.ComposeXSettings settings:
         :return:
         """
+        the_right_service = None
         if not self.services:
             LOG.info(f"No services defined for {self.name}")
             return
-        for service in self.services:
-            service_name = service["name"]
-            if service_name in settings.families and service_name not in [
+        for service_def in self.services:
+            family_combo_name = service_def["name"]
+            service_name = family_combo_name.split(":")[-1]
+            family_name = NONALPHANUM.sub("", family_combo_name.split(":")[0])
+            LOG.info(f"Family {family_name} - Service {service_name}")
+            if family_name not in settings.families:
+                raise ValueError(
+                    f"FamilyName {family_name} is invalid. Defined familes",
+                    settings.families.keys(),
+                )
+            for f_service in settings.families[family_name].services:
+                if f_service.name == service_name:
+                    the_right_service = f_service
+                    break
+            if not the_right_service:
+                raise ValueError(
+                    f"Could not find {service_name} in family {family_name}"
+                )
+            if the_right_service in settings.services and service_name not in [
                 f[0].name for f in self.families_targets
             ]:
                 self.families_targets.append(
-                    (settings.families[service_name], True, [], service)
+                    (the_right_service, the_right_service.my_family, service_def)
                 )
-            elif service_name in settings.families and service_name in [
-                f[0].name for f in self.families_targets
-            ]:
-                LOG.warn(f"The family {service_name} has already been added. Skipping")
-            elif service_name in [s.name for s in settings.services]:
-                self.handle_families_targets_expansion(service, settings)
+            elif the_right_service not in settings.services:
+                raise ValueError(
+                    "For elbv2, please, use only the services names."
+                    "You cannot use the family name defined by deploy labels"
+                    f"Found {the_right_service}",
+                    [s for s in settings.services],
+                    [f for f in settings.families],
+                )
         self.debug_families_targets()
 
     def validate_services(self):
