@@ -19,6 +19,8 @@
 Module to handle elbv2.
 """
 
+from copy import deepcopy
+
 from troposphere import Ref, Sub, GetAtt, Select
 from troposphere import AWS_STACK_NAME, AWS_NO_VALUE
 
@@ -30,6 +32,8 @@ from troposphere.elasticloadbalancingv2 import (
     Listener,
     ListenerCertificate,
     Certificate,
+    Action,
+    RedirectConfig,
 )
 
 from ecs_composex.common import keyisset, keypresent
@@ -91,8 +95,41 @@ def add_listener_certificate_via_arn(listener, certificates_arn):
     )
 
 
-class ComposeListener(Listener):
+def http_to_https_default():
+    return Action(
+        RedirectConfig=RedirectConfig(
+            Protocol="HTTPS",
+            Port="443",
+            Host="#{host}",
+            Path="/#{path}",
+            Query="#{query}",
+            StatusCode=r"HTTP_301",
+        ),
+        Type="redirect",
+    )
 
+
+def handle_predefined_redirects(listener, action_name):
+    """
+    Function to handle predefined redirects
+    :return:
+    """
+    predefined_redirects = [
+        ("HTTP_TO_HTTPS", http_to_https_default),
+    ]
+    if action_name not in [r[0] for r in predefined_redirects]:
+        raise ValueError(
+            f"Redirect {action_name} is not a valid pre-defined setting. Valid values",
+            [r[0] for r in predefined_redirects],
+        )
+    for redirect in predefined_redirects:
+        if action_name == redirect[0]:
+            action = redirect[1]()
+            print(action)
+            listener.DefaultActions.insert(0, action)
+
+
+class ComposeListener(Listener):
     attributes = [
         "Condition",
         "CreationPolicy",
@@ -103,43 +140,67 @@ class ComposeListener(Listener):
         "UpdateReplacePolicy",
     ]
 
-    def __init__(self, lb, template, definition):
+    def __init__(self, lb, definition):
         """
         Method to init listener.
 
         :param ecs_composex.elbv2.elbv2_stack.elbv2 lb:
         :param dict definition:
         """
-        self.definition = definition
+        self.definition = deepcopy(definition)
         straight_import_keys = ["Port", "Protocol", "SslPolicy", "AlpnPolicy"]
         listener_kwargs = dict(
-            (x, definition[x]) for x in straight_import_keys if x in definition
+            (x, self.definition[x])
+            for x in straight_import_keys
+            if x in self.definition
         )
         listener_kwargs.update(
-            dict((x, definition[x]) for x in self.attributes if x in definition)
+            dict(
+                (x, self.definition[x]) for x in self.attributes if x in self.definition
+            )
         )
         self.services = (
-            definition["Services"]
-            if keyisset("Services", definition)
-            and isinstance(definition["Services"], list)
+            self.definition["Services"]
+            if keyisset("Services", self.definition)
+            and isinstance(self.definition["Services"], list)
+            else []
+        )
+        self.default_actions = (
+            self.definition["DefaultActions"]
+            if keyisset("DefaultActions", self.definition)
             else []
         )
         listener_kwargs.update({"LoadBalancerArn": Ref(lb.lb)})
         self.name = f"{lb.logical_name}{listener_kwargs['Port']}"
-        super().__init__(self.name, template=template, **listener_kwargs)
+        super().__init__(self.name, **listener_kwargs)
+        self.DefaultActions = []
         self.handle_certificates()
-        self.define_default_actions(lb)
 
-    def define_default_actions(self, lb):
+    def define_default_actions(self):
         """
         If DefaultTarget is set it will set it if not a service, otherwise at the service level.
         If not defined, and there is more than one service, it will fail.
         If not defined and there is only one service defined, it will skip
         """
-        if not keyisset("DefaultTarget", self.definition) and not lb.services:
+        if not self.default_actions and not self.services:
             raise ValueError(
                 f"There are no actions defined or services for listener {self.title}."
             )
+        action_sources = [("Redirect", handle_predefined_redirects)]
+        if not self.default_actions:
+            LOG.warn(f"No default actions set for {self.title}")
+        else:
+            for action_def in self.default_actions:
+                action_source = list(action_def.keys())[0]
+                source_value = action_def[action_source]
+                if action_source not in [a[0] for a in action_sources]:
+                    raise KeyError(
+                        f"Action {action_source} is not supported. Supported actions",
+                        [a[0] for a in action_sources],
+                    )
+                for action in action_sources:
+                    if action_source == action[0]:
+                        action[1](self, source_value)
 
     def handle_certificates(self):
         """
@@ -166,9 +227,8 @@ class ComposeListener(Listener):
                         cert_source,
                     )
 
-    def map_services(self, lb, service, tgt_arn):
+    def map_services(self, service, tgt_arn):
         for service_def in self.services:
-            print(service_def)
             name = service_def["name"].split(":")[-1]
             if name == service.name:
                 LOG.info(f"Mapped listener target {name} to service")
@@ -201,7 +261,8 @@ class elbv2(XResource):
         ports = [listener["Port"] for listener in self.definition["Listeners"]]
         validate_listeners_duplicates(self.name, ports)
         for listener_def in self.definition["Listeners"]:
-            self.listeners.append(ComposeListener(self, template, listener_def))
+            new_listener = template.add_resource(ComposeListener(self, listener_def))
+            self.listeners.append(new_listener)
 
     def set_services_targets(self, settings):
         """
@@ -223,7 +284,7 @@ class elbv2(XResource):
             LOG.info(f"Family {family_name} - Service {service_name}")
             if family_name not in settings.families:
                 raise ValueError(
-                    f"FamilyName {family_name} is invalid. Defined familes",
+                    f"FamilyName {family_name} is invalid. Defined families",
                     settings.families.keys(),
                 )
             for f_service in settings.families[family_name].services:

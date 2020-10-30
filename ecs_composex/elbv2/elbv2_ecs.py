@@ -251,7 +251,13 @@ def handle_services_association(resource, services_stack):
     for target in resource.families_targets:
         tgt_arn = define_service_target_group_definition(resource, target[1], target[2])
         for listener in resource.listeners:
-            listener.map_services(resource, target[0], tgt_arn)
+            print("Looped over to ", listener.title)
+            listener.map_services(target[0], tgt_arn)
+    for listener in resource.listeners:
+        print(listener.__dict__)
+        listener.define_default_actions()
+        print(listener.__dict__)
+        # print(listener.to_dict())
 
 
 def map_elbv2_to_services(settings, services_stack):
