@@ -1,0 +1,69 @@
+---
+# ELBv2 creation for services
+
+
+
+x-elbv2:
+  lbA:
+    Properties: {}
+    Settings:
+#      S3Logs: bucket:/prefix
+      timeout_seconds: 60
+      desync_mitigation_mode: defensive
+      drop_invalid_header_fields: True
+      http2: False
+      cross_zone: True/False
+    Listeners:
+      - Port: 80
+        Protocol: HTTP
+        DefaultActions:
+          Redirect: HTTP_TO_HTTPS
+      - Port: 443
+        Protocol: HTTP
+        Certificates:
+          - x-acm: abcd
+        Services:
+          - name: app01
+            access: /somewhere
+      - Port: 8080
+        Protocol: HTTP
+        Certificates:
+          x-acm: abcd
+        Services:
+          - name: bignicefamily:app01
+            access: /
+          - name: you-too:app02
+            access: /stupid
+
+    Services:
+      - name: bignicefamily:app01
+        port: 80
+        healthcheck: 8080:HTTP:/healthcheck:200,201
+      - name: you-too:app02
+        port: 80
+        healthcheck: 8080:HTTP:5:2:15:3:/ping.This.Method:200,201
+
+  lbC:
+    Properties:
+      Scheme: public-facing
+      Type: network
+    Settings:
+#      S3Logs: bucket:/prefix
+      timeout_seconds: 60
+      desync_mitigation_mode: monitor
+      drop_invalid_header_fields: True/False
+      http2: False
+      cross_zone: True
+    Listeners:
+      - Port: 80
+        Protocol: HTTP
+        DefaultActions:
+          Redirect: HTTP_TO_HTTPS
+      - Port: 443
+        Protocol: HTTP
+        Certificates:
+          - x-acm: abcd
+    Services:
+      - name: app03
+        port: 80
+        healthcheck: 80:TCP:7:2:15:5
