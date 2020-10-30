@@ -301,7 +301,7 @@ def define_service_ingress(family):
     :param ecs_composex.common.settings.ComposeXSettings settings: Execution settings
     :param family:
     """
-    service_lbs = Ref(AWS_NO_VALUE)
+    service_lbs = []
     registries = add_service_to_map(family)
     if not registries:
         registries = Ref(AWS_NO_VALUE)
@@ -332,11 +332,7 @@ class Service(object):
         :param ecs_composex.compose_services.ComposeFamily family:
         :param ecs_composex.common.settings.ComposeXSettings settings:
         """
-        self.alb_sg = None
         self.links = []
-        self.eips = []
-        self.tgt_groups = []
-        self.lbs = []
         self.service_attrs = {}
         self.dependencies = []
         self.network_settings = None
@@ -357,7 +353,6 @@ class Service(object):
         self.sgs = []
         self.sg = add_service_default_sg(family.template)
         self.sgs.append(Ref(self.sg))
-        define_service_ingress(family)
         self.generate_service_definition(family)
         create_scalable_target(family)
         generate_service_template_outputs(family)
@@ -373,6 +368,7 @@ class Service(object):
             Ref(sg) for sg in self.sgs if not isinstance(sg, (Ref, Sub, If, GetAtt))
         ]
         service_sgs += [sg for sg in self.sgs if isinstance(sg, (Ref, Sub, If, GetAtt))]
+        attrs = define_service_ingress(family)
         self.ecs_service = EcsService(
             ecs_params.SERVICE_T,
             template=family.template,
@@ -426,6 +422,6 @@ class Service(object):
                 }
             ),
             PropagateTags="SERVICE",
-            **self.service_attrs,
+            **attrs,
         )
         family.service_definition = self.ecs_service

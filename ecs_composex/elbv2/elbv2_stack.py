@@ -34,6 +34,7 @@ from troposphere.elasticloadbalancingv2 import (
     Certificate,
     Action,
     RedirectConfig,
+    ForwardConfig,
 )
 
 from ecs_composex.common import keyisset, keypresent
@@ -125,8 +126,22 @@ def handle_predefined_redirects(listener, action_name):
     for redirect in predefined_redirects:
         if action_name == redirect[0]:
             action = redirect[1]()
-            print(action)
             listener.DefaultActions.insert(0, action)
+
+
+def handle_default_actions(listener):
+    action_sources = [("Redirect", handle_predefined_redirects)]
+    for action_def in listener.default_actions:
+        action_source = list(action_def.keys())[0]
+        source_value = action_def[action_source]
+        if action_source not in [a[0] for a in action_sources]:
+            raise KeyError(
+                f"Action {action_source} is not supported. Supported actions",
+                [a[0] for a in action_sources],
+            )
+        for action in action_sources:
+            if action_source == action[0]:
+                action[1](listener, source_value)
 
 
 class ComposeListener(Listener):
@@ -187,20 +202,23 @@ class ComposeListener(Listener):
                 f"There are no actions defined or services for listener {self.title}."
             )
         action_sources = [("Redirect", handle_predefined_redirects)]
-        if not self.default_actions:
-            LOG.warn(f"No default actions set for {self.title}")
+        if self.default_actions:
+            handle_default_actions(self)
+        elif not self.default_actions and self.services and len(self.services) == 1:
+            LOG.info(
+                f"{self.title} has no defined DefaultActions and only 1 service. Default all to service."
+            )
+            self.DefaultActions.insert(
+                0,
+                Action(
+                    Type="forward",
+                    ForwardConfig=ForwardConfig(
+                        TargetGroups=[self.services[0]["target_arn"]]
+                    ),
+                ),
+            )
         else:
-            for action_def in self.default_actions:
-                action_source = list(action_def.keys())[0]
-                source_value = action_def[action_source]
-                if action_source not in [a[0] for a in action_sources]:
-                    raise KeyError(
-                        f"Action {action_source} is not supported. Supported actions",
-                        [a[0] for a in action_sources],
-                    )
-                for action in action_sources:
-                    if action_source == action[0]:
-                        action[1](self, source_value)
+            raise ValueError(f"Failed to determine any default action for {self.title}")
 
     def handle_certificates(self):
         """

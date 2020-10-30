@@ -27,6 +27,8 @@ from troposphere.elasticloadbalancingv2 import (
     TargetGroupAttribute,
 )
 
+from troposphere.ecs import LoadBalancer as EcsLb
+
 from ecs_composex.common import keyisset
 from ecs_composex.common import LOG
 from ecs_composex.common.compose_resources import set_resources
@@ -177,7 +179,32 @@ def validate_attributes(target_definition):
         )
 
 
-def define_service_target_group(resource, family, target_definition):
+def validate_props_and_service_definition(props, service):
+    """
+    Function to validate that the defined settings are valid according to the service definition.
+    :param props:
+    :param ecs_composex.common.compose_services.ComposeService service:
+    :return:
+    """
+    valid_tcp = ["HTTP", "HTTPS", "TLS", "TCP_UDP", "TCP"]
+    valid_udp = ["UDP", "TCP_UDP"]
+    if not props["Port"] in [p["published"] for p in service.ports]:
+        raise ValueError(
+            f"Defined TargetGroup port {props['Port']} is not defined for {service.name}."
+            " Valid ports are",
+            [p["published"] for p in service.ports],
+        )
+    chosen_port = [p for p in service.ports if p["published"] == props["Port"]]
+    if (chosen_port[0]["protocol"] == "tcp" and props["Protocol"] not in valid_tcp) or (
+        chosen_port[0]["protocol"] == "udp" and props["Protocol"] not in valid_udp
+    ):
+        raise ValueError(
+            f"The protocol defined for TargetGroup {props['Protocol']} "
+            f"does not match the service protocol {chosen_port[0]['protocol']}"
+        )
+
+
+def define_service_target_group(resource, service, family, target_definition):
     """
     Function to create the elbv2 TargetGroup
 
@@ -199,6 +226,7 @@ def define_service_target_group(resource, family, target_definition):
     props["TargetGroupAttributes"] = [
         TargetGroupAttribute(Key="deregistration_delay.timeout_seconds", Value="60")
     ]
+    validate_props_and_service_definition(props, service)
     target_group = TargetGroup(
         f"{family.logical_name}TargetGroup{props['Port']}{resource.logical_name}",
         template=family.template,
@@ -212,10 +240,17 @@ def define_service_target_group(resource, family, target_definition):
             export=False,
         ).outputs
     )
+    service_lb = EcsLb(
+        ContainerPort=props["Port"],
+        ContainerName=service.name,
+        TargetGroupArn=Ref(target_group),
+    )
+    family.ecs_service.ecs_service.LoadBalancers.append(service_lb)
+
     return target_group
 
 
-def define_service_target_group_definition(resource, family, target_def):
+def define_service_target_group_definition(resource, service, family, target_def):
     """
     Function to create the new service TGT Group
 
@@ -230,7 +265,9 @@ def define_service_target_group_definition(resource, family, target_def):
         LOG.info(
             f"Added dependency between service family {family.logical_name} and {resource.logical_name}"
         )
-    service_tgt_group = define_service_target_group(resource, family, target_def)
+    service_tgt_group = define_service_target_group(
+        resource, service, family, target_def
+    )
     output_attr = f"Outputs.{service_tgt_group.title}{TGT_GROUP_ARN.title}"
     LOG.debug(f"TGT GetAtt value {output_attr}")
     target_group_arn = GetAtt(
@@ -249,15 +286,13 @@ def handle_services_association(resource, services_stack):
     :return:
     """
     for target in resource.families_targets:
-        tgt_arn = define_service_target_group_definition(resource, target[1], target[2])
+        tgt_arn = define_service_target_group_definition(
+            resource, target[0], target[1], target[2]
+        )
         for listener in resource.listeners:
-            print("Looped over to ", listener.title)
             listener.map_services(target[0], tgt_arn)
     for listener in resource.listeners:
-        print(listener.__dict__)
         listener.define_default_actions()
-        print(listener.__dict__)
-        # print(listener.to_dict())
 
 
 def map_elbv2_to_services(settings, services_stack):
