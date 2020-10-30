@@ -27,3 +27,6 @@ LB_SG_ID_T = "LBv2SgId"
 LB_ID = Parameter(LB_ID_T, Type="String")
 LB_ARN = Parameter(LB_ARN_T, Type="String")
 LB_SG_ID = Parameter(LB_SG_ID_T, Type="AWS::EC2::SecurityGroup::Id")
+
+TGT_GROUP_ARN_T = "TargetGroupArn"
+TGT_GROUP_ARN = Parameter(TGT_GROUP_ARN_T, Type="String")

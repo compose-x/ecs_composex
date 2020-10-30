@@ -27,6 +27,9 @@ from troposphere.elasticloadbalancingv2 import (
     LoadBalancer,
     LoadBalancerAttributes,
     SubnetMapping,
+    Listener,
+    ListenerCertificate,
+    Certificate,
 )
 
 from ecs_composex.common import keyisset, keypresent
@@ -65,6 +68,99 @@ def handle_desync_mitigation_mode(value):
     )
 
 
+def validate_listeners_duplicates(name, ports):
+    if len(ports) != len(set(ports)):
+        s = set()
+        raise ValueError(
+            f"{name} - More than one listener with port {set(x for x in ports if x in s or s.add(x))}"
+        )
+
+
+def add_listener_certificate_via_arn(listener, certificates_arn):
+    """
+
+    :param ecs_composex.elbv2.elbv2_stack.ComposeListener listener:
+    :param list certificates_arn: list of str or other defined ARN
+    :return:
+    """
+    ListenerCertificate(
+        f"AcmCert{listener.title}",
+        template=listener.template,
+        Certificates=[Certificate(CertificateArn=arn) for arn in certificates_arn],
+        ListenerArn=Ref(listener),
+    )
+
+
+class ComposeListener(Listener):
+
+    attributes = [
+        "Condition",
+        "CreationPolicy",
+        "DeletionPolicy",
+        "DependsOn",
+        "Metadata",
+        "UpdatePolicy",
+        "UpdateReplacePolicy",
+    ]
+
+    def __init__(self, lb, template, definition):
+        """
+        Method to init listener.
+
+        :param ecs_composex.elbv2.elbv2_stack.elbv2 lb:
+        :param dict definition:
+        """
+        self.definition = definition
+        straight_import_keys = ["Port", "Protocol", "SslPolicy", "AlpnPolicy"]
+        listener_kwargs = dict(
+            (x, definition[x]) for x in straight_import_keys if x in definition
+        )
+        listener_kwargs.update(
+            dict((x, definition[x]) for x in self.attributes if x in definition)
+        )
+        listener_kwargs.update({"LoadBalancerArn": Ref(lb.lb)})
+        self.name = f"{lb.logical_name}{listener_kwargs['Port']}"
+        super().__init__(self.name, template=template, **listener_kwargs)
+        self.handle_certificates()
+        self.define_default_actions(lb)
+
+    def define_default_actions(self, lb):
+        """
+        If DefaultTarget is set it will set it if not a service, otherwise at the service level.
+        If not defined, and there is more than one service, it will fail.
+        If not defined and there is only one service defined, it will skip
+        """
+        if not keyisset("DefaultTarget", self.definition) and not lb.services:
+            raise ValueError(
+                f"There are no actions defined or services for listener {self.title}."
+            )
+
+    def handle_certificates(self):
+        """
+        Method to handle certificates
+        :return:
+        """
+        valid_sources = [
+            ("x-acm", str, None),
+            ("Arn", str, None),
+            ("CertificateArn", str, None),
+        ]
+        if not keyisset("Certificates", self.definition):
+            LOG.warn(f"No certificates defined for Listener {self.name}")
+            return
+        for cert_def in self.definition["Certificates"]:
+            if isinstance(cert_def, dict):
+                cert_source = list(cert_def.keys())[0]
+                source_value = cert_def[cert_source]
+                if cert_source not in [source[0] for source in valid_sources]:
+                    raise KeyError(
+                        "The certificate source can only defined from",
+                        [source[0] for source in valid_sources],
+                        "Got",
+                        cert_source,
+                    )
+
+
 class elbv2(XResource):
     """
     Class to handle ELBv2 creation and mapping to ECS Services
@@ -76,6 +172,7 @@ class elbv2(XResource):
         self.lb_sg = None
         self.lb_eips = []
         self.lb = None
+        self.listeners = []
         super().__init__(name, definition, settings)
         self.validate_services()
         self.sort_props()
@@ -93,6 +190,18 @@ class elbv2(XResource):
                         service,
                     )
                 )
+
+    def set_listeners(self, template):
+        """
+        Method to define the listeners
+        :return:
+        """
+        if not keyisset("Listeners", self.definition):
+            raise KeyError(f"You must define at least one listener for LB {self.name}")
+        ports = [listener["Port"] for listener in self.definition["Listeners"]]
+        validate_listeners_duplicates(self.name, ports)
+        for listener_def in self.definition["Listeners"]:
+            self.listeners.append(ComposeListener(self, template, listener_def))
 
     def set_services_targets(self, settings):
         """
@@ -125,10 +234,9 @@ class elbv2(XResource):
     def validate_services(self):
         allowed_keys = [
             ("name", str),
-            ("access", str),
             ("port", int),
-            ("default", bool),
             ("healthcheck", str),
+            ("protocol", str),
         ]
         for service in self.services:
             if not all(

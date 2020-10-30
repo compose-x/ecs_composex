@@ -21,13 +21,18 @@ import json
 from troposphere import Ref, GetAtt
 from troposphere import Parameter
 from troposphere import AWS_NO_VALUE
-from troposphere.elasticloadbalancingv2 import TargetGroup, Matcher
+from troposphere.elasticloadbalancingv2 import (
+    TargetGroup,
+    Matcher,
+    TargetGroupAttribute,
+)
 
 from ecs_composex.common import keyisset
 from ecs_composex.common import LOG
 from ecs_composex.common.compose_resources import set_resources
 from ecs_composex.common.outputs import ComposeXOutput
-from ecs_composex.elbv2.elbv2_params import RES_KEY, LB_ARN
+from ecs_composex.vpc.vpc_params import VPC_ID
+from ecs_composex.elbv2.elbv2_params import RES_KEY, LB_ARN, TGT_GROUP_ARN
 from ecs_composex.elbv2.elbv2_stack import elbv2
 from ecs_composex.resource_settings import get_selected_services
 
@@ -151,46 +156,108 @@ def set_healthcheck_definition(props, target_definition):
     props.update(healthcheck_props)
 
 
-def define_service_target_group(target_definition):
+def validate_attributes(target_definition):
     """
-    Function to create the elbv2 TargetGroup
+    Function to validate services attributes
     :param dict target_definition:
     :return:
     """
+    required_props = [
+        ("port", int),
+        ("healthcheck", str),
+    ]
+    if not all(
+        prop in target_definition.keys() for prop in [key[0] for key in required_props]
+    ):
+        raise KeyError(
+            "services require at least",
+            [key[0] for key in required_props],
+            "got",
+            target_definition.keys(),
+        )
 
+
+def define_service_target_group(resource, family, target_definition):
+    """
+    Function to create the elbv2 TargetGroup
+
+    :param ecs_composex.common.compose_services.ComposeFamily family:
+    :param dict target_definition:
+    :return: target_group
+    :rtype: troposphere.elasticloadbalancingv2.TargetGroup
+    """
+    validate_attributes(target_definition)
     props = {}
     set_healthcheck_definition(props, target_definition)
-    print(props)
+    props["Port"] = target_definition["port"]
+    props["Protocol"] = (
+        props["HealthCheckProtocol"]
+        if not keyisset("protocol", target_definition)
+        else target_definition["protocol"]
+    )
+    props["TargetType"] = "ip"
+    props["TargetGroupAttributes"] = [
+        TargetGroupAttribute(Key="deregistration_delay.timeout_seconds", Value="60")
+    ]
+    target_group = TargetGroup(
+        f"{family.logical_name}TargetGroup{resource.logical_name}",
+        template=family.template,
+        VpcId=Ref(VPC_ID),
+        **props,
+    )
+    family.template.add_output(
+        ComposeXOutput(
+            target_group,
+            [("", TGT_GROUP_ARN.title, Ref(target_group))],
+            export=False,
+        ).outputs
+    )
+    return target_group
 
 
-def define_service_target_group_definition(resource, target, services):
+def define_service_target_group_definition(resource, family, target_def, services):
     """
-    Function to define the LB Target group.
-    :param target:
-    :param services:
+    Function to create the new service TGT Group
+
+    :param ecs_composex.elbv2.elbv2_stack.elbv2 resource:
+    :param ecs_composex.common.compose_services.ComposeFamily family:
+    :param dict target_def:
+    :param list services:
     :return:
     """
-    lb_arn_param = target[0].template.add_parameter(
+
+    lb_arn_param = family.template.add_parameter(
         Parameter(f"{resource.logical_name}LbArn", Type="String")
     )
+    if resource.logical_name not in family.stack.DependsOn:
+        family.stack.DependsOn.append(resource.logical_name)
+        LOG.info(
+            f"Added dependency between service family {family.logical_name} and {resource.logical_name}"
+        )
     lb_arn_value = Ref(resource.lb)
-    service_tgt_group = define_service_target_group(target[3])
+    service_tgt_group = define_service_target_group(resource, family, target_def)
+    output_attr = f"Outputs.{service_tgt_group.title}{TGT_GROUP_ARN.title}"
+    LOG.debug(f"TGT GetAtt value {output_attr}")
+    target_group_arn = GetAtt(
+        family.stack.title,
+        output_attr,
+    )
 
 
 def handle_services_association(resource, services_stack):
     """
     Function to handle association of listeners and targets to the LB
 
-    :param resource:
-    :param services_stack:
-    :param res_root_stack:
-    :param settings:
+    :param ecs_composex.elbv2.elbv2_stack.elbv2 resource:
+    :param ecs_composex.common.stacks.ComposeXStack services_stack:
     :return:
     """
     for target in resource.families_targets:
         selected_services = get_selected_services(resource, target)
         if selected_services:
-            define_service_target_group_definition(resource, target, selected_services)
+            define_service_target_group_definition(
+                resource, target[0], target[3], selected_services
+            )
 
 
 def map_elbv2_to_services(settings, services_stack):
@@ -208,6 +275,7 @@ def map_elbv2_to_services(settings, services_stack):
     ]
     for resource in new_resources:
         resource.set_lb_definition(settings)
+        resource.set_listeners(services_stack.stack_template)
         resource.associate_to_template(services_stack.stack_template)
 
 
