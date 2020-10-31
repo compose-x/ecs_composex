@@ -21,7 +21,7 @@ Module for DNS parameters
 
 from troposphere import Parameter, Sub
 
-ZONES_PATTERN = r"^none$|^ns-[a-z0-9]{6,24}$"
+ZONES_PATTERN = r"^none$|^ns-[a-z0-9]{6,24}$|^Z[A-Z]+$"
 
 PUBLIC_DNS_ZONE_NAME_T = "PublicDnsZoneName"
 PUBLIC_DNS_ZONE_NAME = Parameter(
@@ -33,7 +33,7 @@ PUBLIC_DNS_ZONE_ID = Parameter(
     PUBLIC_DNS_ZONE_ID_T,
     Type="String",
     Default="none",
-    AllowedPattern=ZONES_PATTERN,
+    # AllowedPattern=ZONES_PATTERN,
 )
 
 PRIVATE_DNS_ZONE_NAME_T = "PrivateDnsZoneName"
@@ -46,7 +46,7 @@ PRIVATE_DNS_ZONE_ID = Parameter(
     PRIVATE_DNS_ZONE_ID_T,
     Type="String",
     Default="none",
-    AllowedPattern=ZONES_PATTERN,
+    # AllowedPattern=ZONES_PATTERN,
 )
 
 DEFAULT_PRIVATE_DNS_ZONE = Sub(

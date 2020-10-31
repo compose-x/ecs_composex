@@ -8,11 +8,11 @@ x-elbv2:
     Properties: {}
     Settings:
 #      S3Logs: bucket:/prefix
-      timeout_seconds: 60
-      desync_mitigation_mode: defensive
-      drop_invalid_header_fields: True
-      http2: False
-      cross_zone: True/False
+#      timeout_seconds: 60
+#      desync_mitigation_mode: defensive
+#      drop_invalid_header_fields: True
+#      http2: False
+#      cross_zone: True/False
     Listeners:
       - Port: 80
         Protocol: HTTP
@@ -50,15 +50,9 @@ x-elbv2:
 
   lbC:
     Properties:
-      Scheme: public-facing
+      Scheme: internet-facing
       Type: network
-    Settings:
-#      S3Logs: bucket:/prefix
-      timeout_seconds: 60
-      desync_mitigation_mode: monitor
-      drop_invalid_header_fields: True/False
-      http2: False
-      cross_zone: True
+    Settings: {}
     Listeners:
       - Port: 80
         Protocol: HTTP

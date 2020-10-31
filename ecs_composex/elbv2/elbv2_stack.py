@@ -270,7 +270,7 @@ def handle_non_default_services(listener, services_def):
                 Action(
                     Type="forward",
                     ForwardConfig=ForwardConfig(
-                        TargetGroups=[default_target["target_arn"]]
+                        TargetGroups=[service_def["target_arn"]]
                     ),
                 ),
             ],
@@ -549,7 +549,7 @@ class elbv2(XResource):
             True
             if (
                 keyisset("Scheme", self.properties)
-                and self.properties["Scheme"] == "public-facing"
+                and self.properties["Scheme"] == "internet-facing"
             )
             else False
         )
@@ -671,7 +671,7 @@ class elbv2(XResource):
             else self.properties["IpAddressType"],
             "Name": self.logical_name,
             "Type": self.lb_type,
-            "Scheme": "public-facing" if self.lb_is_public else "internal",
+            "Scheme": "internet-facing" if self.lb_is_public else "internal",
             "SecurityGroups": [Ref(self.lb_sg)]
             if isinstance(self.lb_sg, SecurityGroup)
             else self.lb_sg,
