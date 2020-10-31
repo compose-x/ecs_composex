@@ -285,12 +285,18 @@ def handle_services_association(resource, services_stack):
     :param ecs_composex.common.stacks.ComposeXStack services_stack:
     :return:
     """
+    target_arns = {}
     for target in resource.families_targets:
         tgt_arn = define_service_target_group_definition(
             resource, target[0], target[1], target[2]
         )
-        for listener in resource.listeners:
-            listener.map_services(target[0], tgt_arn)
+        print(target[3])
+        target_arns[target[3]] = tgt_arn
+
+    for listener in resource.listeners:
+        for target in resource.families_targets:
+            if keyisset(target[3], target_arns):
+                listener.map_services(resource, target[0], target_arns[target[3]])
     for listener in resource.listeners:
         listener.define_default_actions()
 

@@ -19,6 +19,9 @@
 Module to handle elbv2.
 """
 
+import re
+
+from json import dumps
 from copy import deepcopy
 
 from troposphere import Ref, Sub, GetAtt, Select
@@ -30,11 +33,17 @@ from troposphere.elasticloadbalancingv2 import (
     LoadBalancerAttributes,
     SubnetMapping,
     Listener,
+    ListenerRule,
     ListenerCertificate,
     Certificate,
     Action,
+    Condition,
     RedirectConfig,
     ForwardConfig,
+    FixedResponseConfig,
+    HttpHeaderConfig,
+    HostHeaderConfig,
+    PathPatternConfig,
 )
 
 from ecs_composex.common import keyisset, keypresent
@@ -96,7 +105,7 @@ def add_listener_certificate_via_arn(listener, certificates_arn):
     )
 
 
-def http_to_https_default():
+def http_to_https_default(default_of_all=False):
     return Action(
         RedirectConfig=RedirectConfig(
             Protocol="HTTPS",
@@ -107,6 +116,19 @@ def http_to_https_default():
             StatusCode=r"HTTP_301",
         ),
         Type="redirect",
+        Order=Ref(AWS_NO_VALUE) if not default_of_all else 50000,
+    )
+
+
+def tea_pot(default_of_all=False):
+    return Action(
+        FixedResponseConfig=FixedResponseConfig(
+            ContentType="application/json",
+            MessageBody=dumps({"Info": "Be our guest"}),
+            StatusCode="HTTP_418",
+        ),
+        Type="fixed-response",
+        Order=Ref(AWS_NO_VALUE) if not default_of_all else 50000,
     )
 
 
@@ -142,6 +164,119 @@ def handle_default_actions(listener):
         for action in action_sources:
             if action_source == action[0]:
                 action[1](listener, source_value)
+
+
+def handle_string_condition_format(access_string):
+    """
+    Function to parse and understand what type of condition that is.
+    Supported :
+    * path based
+    * domain name
+
+    :param access_string:
+    :return:
+    """
+    domain_path_re = re.compile(
+        r"^((?=.{1,255}$)(?!-)[A-Za-z0-9\-]{1,63}(?:\.[A-Za-z0-9\-]{1,63})*\.?(?<!-))(?::[0-9]{1,5})?(/[\S]+$)"
+    )
+    domain_re = re.compile(
+        r"^(?=.{1,255}$)(?!-)[A-Za-z0-9\-]{1,63}(\.[A-Za-z0-9\-]{1,63})*\.?(?<!-)$"
+    )
+    path_re = re.compile(r"(?:.*)^[/][\S]+$")
+    if (
+        domain_path_re.match(access_string)
+        and len(domain_path_re.match(access_string).groups()) == 2
+    ):
+        return [
+            Condition(
+                Field="host-header",
+                HostHeaderConfig=HostHeaderConfig(
+                    HttpHeaderName="Host",
+                    Values=[domain_path_re.match(access_string).groups()[0]],
+                ),
+            ),
+            Condition(
+                Field="path-pattern",
+                PathPatternConfig=PathPatternConfig(
+                    Values=[domain_path_re.match(access_string).groups()[1]]
+                ),
+            ),
+        ]
+    elif domain_re.match(access_string):
+        return [
+            Condition(
+                Field="host-header",
+                HostHeaderConfig=HostHeaderConfig(
+                    HttpHeaderName="Host", Values=[access_string]
+                ),
+            )
+        ]
+    elif path_re.match(access_string):
+        return [
+            Condition(
+                Field="path-pattern",
+                PathPatternConfig=PathPatternConfig(Values=[access_string]),
+            )
+        ]
+    else:
+        raise ValueError(f"Could not understand what the access is for {access_string}")
+
+
+def define_target_conditions(definition):
+    """
+    Function to create the conditions for forward to target
+    :param definition:
+    :return: list of conditions
+    :rtype: list
+    """
+    conditions = []
+    if isinstance(definition["access"], str):
+        return handle_string_condition_format(definition["access"])
+    return conditions
+
+
+def handle_non_default_services(listener, services_def):
+    """
+    Function to handle define the listener rule and identify
+    :param listener:
+    :param services_def:
+    :return:
+    """
+    default_target = None
+    left_services = deepcopy(services_def)
+    for count, service_def in enumerate(services_def):
+        if isinstance(service_def["access"], str) and service_def["access"] == "/":
+            default_target = service_def
+            left_services.pop(count)
+            break
+    if not default_target:
+        LOG.warn("No service path matches /. Defaulting to return TeaPot")
+        listener.DefaultActions.append(tea_pot(True))
+    elif default_target:
+        listener.DefaultActions.append(
+            Action(
+                Type="forward",
+                ForwardConfig=ForwardConfig(
+                    TargetGroups=[default_target["target_arn"]]
+                ),
+            ),
+        )
+    for count, service_def in enumerate(left_services):
+        ListenerRule(
+            f"{listener.title}{NONALPHANUM.sub('', service_def['name'])}Rule",
+            template=listener.template,
+            ListenerArn=Ref(listener),
+            Actions=[
+                Action(
+                    Type="forward",
+                    ForwardConfig=ForwardConfig(
+                        TargetGroups=[default_target["target_arn"]]
+                    ),
+                ),
+            ],
+            Priority=(50000 - count),
+            Conditions=define_target_conditions(service_def),
+        )
 
 
 class ComposeListener(Listener):
@@ -201,13 +336,13 @@ class ComposeListener(Listener):
             raise ValueError(
                 f"There are no actions defined or services for listener {self.title}."
             )
-        action_sources = [("Redirect", handle_predefined_redirects)]
         if self.default_actions:
             handle_default_actions(self)
         elif not self.default_actions and self.services and len(self.services) == 1:
             LOG.info(
                 f"{self.title} has no defined DefaultActions and only 1 service. Default all to service."
             )
+            print(self.services)
             self.DefaultActions.insert(
                 0,
                 Action(
@@ -217,6 +352,12 @@ class ComposeListener(Listener):
                     ),
                 ),
             )
+        elif not self.default_actions and self.services and len(self.services) > 1:
+            LOG.warn(
+                "No default actions defined and more than one service defined."
+                "If one of the access path is / it will be used as default"
+            )
+            handle_non_default_services(self, self.services)
         else:
             raise ValueError(f"Failed to determine any default action for {self.title}")
 
@@ -245,12 +386,43 @@ class ComposeListener(Listener):
                         cert_source,
                     )
 
-    def map_services(self, service, tgt_arn):
-        for service_def in self.services:
-            name = service_def["name"].split(":")[-1]
-            if name == service.name:
-                LOG.info(f"Mapped listener target {name} to service")
-                service_def["target_arn"] = tgt_arn
+    def map_services(self, lb, target, tgt_arn):
+        try:
+            if not self.services:
+                return
+
+            for service_def in self.services:
+                family_name = service_def["name"].split(":")[0]
+                service_name = service_def["name"].split(":")[-1]
+                if not family_name == target.my_family.name:
+                    continue
+                if family_name == target.my_family.name and service_name == target.name:
+                    LOG.info(
+                        f"Mapped {tgt_arn} to {family_name}:{service_name} to service {self.title}"
+                    )
+                    service_def["target_arn"] = tgt_arn
+                    break
+        except Exception as e:
+            LOG.error(self.title)
+            raise
+        # raise ValueError(
+        #     f"Not matched a target for {service.my_family.name} {service.name} for Listener {self.title}",
+        #     "You need to at least once the target service in the LB list.",
+        #     "Got",
+        #     [s["name"] for s in self.services]
+        # )
+
+
+def validate_service_def(service_def):
+    required_settings = [
+        ("name", str),
+        ("port", int),
+        ("healthcheck", str),
+    ]
+    if not all(
+        prop in service_def.keys() for prop in [attr[0] for attr in required_settings]
+    ):
+        raise KeyError("For services you must at least define", required_settings)
 
 
 class elbv2(XResource):
@@ -296,6 +468,7 @@ class elbv2(XResource):
             LOG.info(f"No services defined for {self.name}")
             return
         for service_def in self.services:
+            validate_service_def(service_def)
             family_combo_name = service_def["name"]
             service_name = family_combo_name.split(":")[-1]
             family_name = NONALPHANUM.sub("", family_combo_name.split(":")[0])
@@ -317,7 +490,12 @@ class elbv2(XResource):
                 f[0].name for f in self.families_targets
             ]:
                 self.families_targets.append(
-                    (the_right_service, the_right_service.my_family, service_def)
+                    (
+                        the_right_service,
+                        the_right_service.my_family,
+                        service_def,
+                        f"{service_def['name']}{service_def['port']}",
+                    )
                 )
             elif the_right_service not in settings.services:
                 raise ValueError(
@@ -341,7 +519,10 @@ class elbv2(XResource):
                 key in [attr[0] for attr in allowed_keys] for key in service.keys()
             ):
                 raise KeyError(
-                    "Only allowed keys allowed are", [key[0] for key in allowed_keys]
+                    "Only allowed keys allowed are",
+                    [key[0] for key in allowed_keys],
+                    "Got",
+                    service.keys(),
                 )
             for key in allowed_keys:
                 if keyisset(key[0], service) and not isinstance(

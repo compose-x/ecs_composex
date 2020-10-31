@@ -23,7 +23,7 @@ x-elbv2:
         Certificates:
           - x-acm: abcd
         Services:
-          - name: app01
+          - name: bignicefamily:app01
             access: /somewhere
       - Port: 8080
         Protocol: HTTP
@@ -38,6 +38,9 @@ x-elbv2:
     Services:
       - name: bignicefamily:rproxy
         port: 80
+        healthcheck: 5000:HTTP:/healthcheck:200,201
+      - name: bignicefamily:app01
+        port: 5000
         healthcheck: 5000:HTTP:/healthcheck:200,201
       - name: you-too:rproxy
         port: 80
@@ -70,3 +73,4 @@ x-elbv2:
       - name: app03
         port: 5000
         healthcheck: 5000:HTTP:7:2:15:5
+        protocol: HTTP
