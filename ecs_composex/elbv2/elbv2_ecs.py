@@ -55,7 +55,7 @@ def handle_ping_settings(props, groups):
     )
     for count, value in enumerate(groups):
         if not min(ping_mapping[count][1]) <= int(value) <= max(ping_mapping[count][1]):
-            print(
+            LOG.error(
                 f"Value for {ping_mapping[count][0]} is not valid. Must be in range of {ping_mapping[count][1]}"
             )
         props[ping_mapping[count][0]] = int(value)
@@ -228,7 +228,7 @@ def define_service_target_group(resource, service, family, target_definition):
     ]
     validate_props_and_service_definition(props, service)
     target_group = TargetGroup(
-        f"{family.logical_name}TargetGroup{props['Port']}{resource.logical_name}",
+        f"Tgt{resource.logical_name}{family.logical_name}{service.logical_name}{props['Port']}",
         template=family.template,
         VpcId=Ref(VPC_ID),
         **props,
@@ -285,20 +285,19 @@ def handle_services_association(resource, services_stack):
     :param ecs_composex.common.stacks.ComposeXStack services_stack:
     :return:
     """
-    target_arns = {}
     for target in resource.families_targets:
         tgt_arn = define_service_target_group_definition(
             resource, target[0], target[1], target[2]
         )
-        print(target[3])
-        target_arns[target[3]] = tgt_arn
+        for service in resource.services:
+            target_name = f"{target[1].logical_name}:{target[0].name}"
+            if target_name == service["name"]:
+                service["target_arn"] = tgt_arn
 
     for listener in resource.listeners:
-        for target in resource.families_targets:
-            if keyisset(target[3], target_arns):
-                listener.map_services(resource, target[0], target_arns[target[3]])
+        listener.map_services(resource)
     for listener in resource.listeners:
-        listener.define_default_actions()
+        listener.define_default_actions(services_stack.stack_template)
 
 
 def map_elbv2_to_services(settings, services_stack):
@@ -325,8 +324,6 @@ def elbv2_to_ecs(services_stack, settings):
     Function to apply SQS settings to ECS Services
     :return:
     """
-    for service in settings.services:
-        print(service.name, service.my_family.template)
     map_elbv2_to_services(settings, services_stack)
     resources = settings.compose_content[RES_KEY]
     resource_mappings = {}

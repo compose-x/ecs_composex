@@ -191,7 +191,6 @@ def handle_string_condition_format(access_string):
             Condition(
                 Field="host-header",
                 HostHeaderConfig=HostHeaderConfig(
-                    HttpHeaderName="Host",
                     Values=[domain_path_re.match(access_string).groups()[0]],
                 ),
             ),
@@ -261,10 +260,11 @@ def handle_non_default_services(listener, services_def):
                 ),
             ),
         )
+    rules = []
+    print("LEFT", left_services)
     for count, service_def in enumerate(left_services):
-        ListenerRule(
+        rule = ListenerRule(
             f"{listener.title}{NONALPHANUM.sub('', service_def['name'])}Rule",
-            template=listener.template,
             ListenerArn=Ref(listener),
             Actions=[
                 Action(
@@ -274,9 +274,11 @@ def handle_non_default_services(listener, services_def):
                     ),
                 ),
             ],
-            Priority=(50000 - count),
+            Priority=(count + 1),
             Conditions=define_target_conditions(service_def),
         )
+        rules.append(rule)
+    return rules
 
 
 class ComposeListener(Listener):
@@ -326,7 +328,7 @@ class ComposeListener(Listener):
         self.DefaultActions = []
         self.handle_certificates()
 
-    def define_default_actions(self):
+    def define_default_actions(self, template):
         """
         If DefaultTarget is set it will set it if not a service, otherwise at the service level.
         If not defined, and there is more than one service, it will fail.
@@ -342,7 +344,6 @@ class ComposeListener(Listener):
             LOG.info(
                 f"{self.title} has no defined DefaultActions and only 1 service. Default all to service."
             )
-            print(self.services)
             self.DefaultActions.insert(
                 0,
                 Action(
@@ -357,7 +358,9 @@ class ComposeListener(Listener):
                 "No default actions defined and more than one service defined."
                 "If one of the access path is / it will be used as default"
             )
-            handle_non_default_services(self, self.services)
+            rules = handle_non_default_services(self, self.services)
+            for rule in rules:
+                template.add_resource(rule)
         else:
             raise ValueError(f"Failed to determine any default action for {self.title}")
 
@@ -386,31 +389,39 @@ class ComposeListener(Listener):
                         cert_source,
                     )
 
-    def map_services(self, lb, target, tgt_arn):
-        try:
-            if not self.services:
-                return
-
-            for service_def in self.services:
-                family_name = service_def["name"].split(":")[0]
-                service_name = service_def["name"].split(":")[-1]
-                if not family_name == target.my_family.name:
-                    continue
-                if family_name == target.my_family.name and service_name == target.name:
-                    LOG.info(
-                        f"Mapped {tgt_arn} to {family_name}:{service_name} to service {self.title}"
-                    )
-                    service_def["target_arn"] = tgt_arn
+    def map_services(self, lb):
+        if not self.services:
+            return
+        l_targets = [s["name"] for s in self.services]
+        t_targets = [s["name"] for s in lb.services]
+        if not all(target in t_targets for target in l_targets):
+            raise KeyError(
+                f"Missing one of ",
+                [
+                    i
+                    for i in l_targets + t_targets
+                    if i not in l_targets or i not in t_targets
+                ],
+                f" in {lb.logical_name} Services for listener {self.title}",
+            )
+        for l_service_def in self.services:
+            name = l_service_def["name"]
+            for target in lb.families_targets:
+                t_family = target[1].logical_name
+                t_service = target[0].name
+                target_name = f"{t_family}:{t_service}"
+                if target_name == name:
+                    for service in lb.services:
+                        if service["name"] == target_name:
+                            l_service_def["target_arn"] = service["target_arn"]
+                            print(
+                                "ASSIGNING",
+                                self.title,
+                                l_service_def["name"],
+                                service["target_arn"],
+                            )
+                            break
                     break
-        except Exception as e:
-            LOG.error(self.title)
-            raise
-        # raise ValueError(
-        #     f"Not matched a target for {service.my_family.name} {service.name} for Listener {self.title}",
-        #     "You need to at least once the target service in the LB list.",
-        #     "Got",
-        #     [s["name"] for s in self.services]
-        # )
 
 
 def validate_service_def(service_def):
@@ -486,9 +497,10 @@ class elbv2(XResource):
                 raise ValueError(
                     f"Could not find {service_name} in family {family_name}"
                 )
-            if the_right_service in settings.services and service_name not in [
-                f[0].name for f in self.families_targets
-            ]:
+            if (
+                the_right_service in settings.services
+                and the_right_service not in self.families_targets
+            ):
                 self.families_targets.append(
                     (
                         the_right_service,

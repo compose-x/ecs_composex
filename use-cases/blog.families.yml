@@ -9,7 +9,7 @@ services:
       - 80:80
     deploy:
       labels:
-        ecs.task.family: bignicefamily,you-too
+        ecs.task.family: bignicefamily,youtoo
       replicas: 1
       resources:
         reservations:
@@ -51,7 +51,7 @@ services:
     deploy:
       replicas: 2
       labels:
-        ecs.task.family: you-too
+        ecs.task.family: youtoo
       resources:
         reservations:
           cpus: "0.25"

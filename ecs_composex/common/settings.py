@@ -394,8 +394,10 @@ class ComposeXSettings(object):
         assigned_services = []
         for service in self.services:
             for family_name in service.families:
-                family_name = self.get_family_name(family_name)
-
+                if NONALPHANUM.findall(family_name):
+                    raise ValueError(
+                        "Family names must be ^[a-zA-Z0-9]+$ | alphanumerical"
+                    )
                 if family_name not in self.families.keys():
                     self.add_new_family(family_name, service, assigned_services)
                 elif family_name in self.families.keys() and service.name not in [
