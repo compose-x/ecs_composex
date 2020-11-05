@@ -363,7 +363,8 @@ class ComposeXSettings(object):
             )
             the_service = deepcopy(service)
             family = ComposeFamily([the_service], family_name)
-            the_service.my_family = self.families[family_name]
+            self.families[family_name] = family
+            the_service.my_family = family
             self.services.append(the_service)
         else:
             family = ComposeFamily([service], family_name)

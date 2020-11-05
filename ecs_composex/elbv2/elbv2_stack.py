@@ -1,4 +1,4 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 #   ECS ComposeX <https://github.com/lambda-my-aws/ecs_composex>
 #   Copyright (C) 2020  John Mille <john@lambda-my-aws.io>
 #  #
@@ -48,6 +48,7 @@ from troposphere.elasticloadbalancingv2 import (
 
 from ecs_composex.common import keyisset, keypresent
 from ecs_composex.common import NONALPHANUM, LOG
+from ecs_composex.common.cfn_params import ROOT_STACK_NAME
 
 from ecs_composex.common.compose_resources import XResource
 from ecs_composex.vpc.vpc_params import VPC_ID, PUBLIC_SUBNETS, APP_SUBNETS
@@ -261,7 +262,6 @@ def handle_non_default_services(listener, services_def):
             ),
         )
     rules = []
-    print("LEFT", left_services)
     for count, service_def in enumerate(left_services):
         rule = ListenerRule(
             f"{listener.title}{NONALPHANUM.sub('', service_def['name'])}Rule",
@@ -414,12 +414,6 @@ class ComposeListener(Listener):
                     for service in lb.services:
                         if service["name"] == target_name:
                             l_service_def["target_arn"] = service["target_arn"]
-                            print(
-                                "ASSIGNING",
-                                self.title,
-                                l_service_def["name"],
-                                service["target_arn"],
-                            )
                             break
                     break
 
@@ -669,7 +663,7 @@ class elbv2(XResource):
             "IpAddressType": "ipv4"
             if not keyisset("IpAddressType", self.properties)
             else self.properties["IpAddressType"],
-            "Name": self.logical_name,
+            "Name": Sub(f"${{{ROOT_STACK_NAME.title}}}{self.logical_name}"),
             "Type": self.lb_type,
             "Scheme": "internet-facing" if self.lb_is_public else "internal",
             "SecurityGroups": [Ref(self.lb_sg)]

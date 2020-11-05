@@ -39,6 +39,32 @@ from ecs_composex.elbv2.elbv2_stack import elbv2
 from ecs_composex.resource_settings import get_selected_services
 
 
+def fix_nlb_settings(props):
+    network_modes = ["TCP", "UDP", "TCP_UDP"]
+    if (
+        keyisset("HealthCheckTimeoutSeconds", props)
+        and props["HealthCheckProtocol"] in network_modes
+    ):
+        LOG.warn("With NLB you cannot set intervals. Resetting")
+        props["HealthCheckTimeoutSeconds"] = Ref(AWS_NO_VALUE)
+    if (
+        keyisset("HealthCheckIntervalSeconds", props)
+        and props["HealthCheckProtocol"] in network_modes
+    ):
+        if not (
+            props["HealthCheckIntervalSeconds"] == 10
+            or props["HealthCheckIntervalSeconds"] == 30
+        ) and not isinstance(props["HealthCheckIntervalSeconds"], Ref):
+
+            right_value = min(
+                [10, 30], key=lambda x: abs(x - props["HealthCheckIntervalSeconds"])
+            )
+            LOG.warn(
+                f"The only intervals value valid for NLB are 10 and 30. Closes value is {right_value}"
+            )
+            props["HealthCheckIntervalSeconds"] = right_value
+
+
 def handle_ping_settings(props, groups):
     """
     Function to setup the "ping" settings
@@ -59,6 +85,7 @@ def handle_ping_settings(props, groups):
                 f"Value for {ping_mapping[count][0]} is not valid. Must be in range of {ping_mapping[count][1]}"
             )
         props[ping_mapping[count][0]] = int(value)
+    fix_nlb_settings(props)
 
 
 def handle_path_settings(props, groups):
