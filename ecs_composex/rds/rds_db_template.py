@@ -128,6 +128,7 @@ def add_instance(template, db):
     instance = DBInstance(
         DATABASE_T,
         template=template,
+        DeletionPolicy="Snapshot",
         Engine=Ref(DB_ENGINE_NAME),
         EngineVersion=Ref(DB_ENGINE_VERSION),
         StorageType=If(
@@ -171,6 +172,7 @@ def add_instance(template, db):
             [GetAtt(db.db_sg, "GroupId")],
         ),
         Tags=Tags(SecretName=Ref(db.db_secret), Name=db.logical_name),
+        StorageEncrypted=True,
     )
     return instance
 
@@ -186,6 +188,7 @@ def add_cluster(template, db):
     cluster = DBCluster(
         CLUSTER_T,
         template=template,
+        DeletionPolicy="Snapshot",
         Condition=rds_conditions.USE_CLUSTER_CON_T,
         DBSubnetGroupName=If(
             rds_conditions.DBS_SUBNET_GROUP_CON_T,
@@ -217,6 +220,7 @@ def add_cluster(template, db):
         DBClusterParameterGroupName=Ref(CLUSTER_PARAMETER_GROUP_T),
         VpcSecurityGroupIds=[Ref(db.db_sg)],
         Tags=Tags(SecretName=Ref(db.db_secret), Name=db.logical_name),
+        StorageEncrypted=True,
     )
     return cluster
 
