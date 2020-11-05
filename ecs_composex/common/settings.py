@@ -195,6 +195,7 @@ class ComposeXSettings(object):
 
     region_arg = "RegionName"
     zones_arg = "Zones"
+    arn_arg = "RoleArn"
 
     deploy_arg = "up"
     render_arg = "render"
@@ -250,7 +251,7 @@ class ComposeXSettings(object):
         Class to init the configuration
         """
         self.session = boto3.session.Session()
-        self.override_session(session, profile_name)
+        self.override_session(session, profile_name, kwargs)
         self.aws_region = (
             kwargs[self.region_arg]
             if keyisset(self.region_arg, kwargs)
@@ -455,17 +456,46 @@ class ComposeXSettings(object):
             self.init_s3()
             exit(0)
 
-    def override_session(self, session, profile_name):
+    def override_session(self, session, profile_name, kwargs):
         """
         Method to set the session based on input params
 
         :param boto3.session.Session session: The session to override the API calls with
         :param str profile_name: Name of a profile configured in .aws/config
+        :param dict kwargs: CLI kwargs
         """
         if profile_name and not session:
             self.session = boto3.session.Session(profile_name=profile_name)
         elif session and not profile_name:
             self.session = session
+        elif keyisset(self.arn_arg, kwargs):
+            role_arn_regexp = r"^arn:aws(?:-[a-z]+)?:iam::[0-9]{12}:role\/[\S]+$"
+            arn_valid = re.compile(role_arn_regexp)
+            if not arn_valid.match(kwargs[self.arn_arg]):
+                raise ValueError(
+                    "The role ARN needs to be a valid ARN of format", role_arn_regexp
+                )
+            try:
+                creds = (
+                    boto3.session.Session()
+                    .client("sts")
+                    .assume_role(
+                        RoleArn=kwargs[self.arn_arg],
+                        RoleSessionName=f"ComposeX@{kwargs[self.command_arg]}",
+                        DurationSeconds=900,
+                    )
+                )
+                LOG.info(
+                    f"Successfully assumed role. Session ID: {creds['AssumedRoleUser']['AssumedRoleId']}"
+                )
+                self.session = boto3.session.Session(
+                    aws_access_key_id=creds["Credentials"]["AccessKeyId"],
+                    aws_session_token=creds["Credentials"]["SessionToken"],
+                    aws_secret_access_key=creds["Credentials"]["SecretAccessKey"],
+                )
+            except ClientError:
+                LOG.error("Failed to use the Role ARN")
+                raise
 
     def set_output_settings(self, kwargs):
         """
