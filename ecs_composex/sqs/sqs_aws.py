@@ -22,7 +22,10 @@ Module to find the SQS queues in lookup
 import re
 from botocore.exceptions import ClientError
 from ecs_composex.common import LOG, keyisset
-from ecs_composex.common.aws import find_aws_resource_arn_from_tags_api
+from ecs_composex.common.aws import (
+    find_aws_resource_arn_from_tags_api,
+    define_lookup_role_from_info,
+)
 
 from ecs_composex.sqs.sqs_params import SQS_ARN, SQS_URL, SQS_NAME, SQS_KMS_KEY_T
 
@@ -88,14 +91,15 @@ def lookup_queue_config(lookup, session):
     sqs_types = {
         "sqs": {"regexp": r"(?:^arn:aws(?:-[a-z]+)?:sqs:[\S]+:[0-9]+:)([\S]+)$"},
     }
+    lookup_session = define_lookup_role_from_info(lookup, session)
     queue_arn = find_aws_resource_arn_from_tags_api(
         lookup,
-        session,
+        lookup_session,
         "sqs",
         types=sqs_types,
     )
     if not queue_arn:
         return None
-    config = get_queue_config(queue_arn, session)
+    config = get_queue_config(queue_arn, lookup_session)
     LOG.debug(config)
     return config

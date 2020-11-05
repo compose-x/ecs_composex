@@ -24,7 +24,10 @@ import re
 from botocore.exceptions import ClientError
 
 from ecs_composex.common import LOG, keyisset
-from ecs_composex.common.aws import find_aws_resource_arn_from_tags_api
+from ecs_composex.common.aws import (
+    find_aws_resource_arn_from_tags_api,
+    define_lookup_role_from_info,
+)
 
 
 def return_bucket_config(bucket_arn, session):
@@ -76,14 +79,15 @@ def lookup_bucket_config(lookup, session):
     s3_types = {
         "s3": {"regexp": r"(?:^arn:aws(?:-[a-z]+)?:s3:::)([\S]+)$"},
     }
+    lookup_session = define_lookup_role_from_info(lookup, session)
     bucket_arn = find_aws_resource_arn_from_tags_api(
         lookup,
-        session,
+        lookup_session,
         "s3",
         types=s3_types,
     )
     if not bucket_arn:
         return None
-    config = return_bucket_config(bucket_arn, session)
+    config = return_bucket_config(bucket_arn, lookup_session)
     LOG.debug(config)
     return config

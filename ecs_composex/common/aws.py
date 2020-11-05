@@ -28,13 +28,14 @@ from ecs_composex.iam import ROLE_ARN_ARG
 from ecs_composex.iam import validate_iam_role_arn
 
 
-def define_role_arn_from_info(info, session):
+def define_lookup_role_from_info(info, session):
     """
     Function to override ComposeXSettings session to specific session for Lookup
 
     :param info:
     :param session:
-    :return:
+    :return: boto3 session from lookup settings
+    :rtype: boto3.session.Session
     """
     if not keyisset(ROLE_ARN_ARG, info):
         return session
@@ -205,11 +206,8 @@ def find_aws_resource_arn_from_tags_api(info, session, aws_resource_search, type
         define_tagsgroups_filter_tags(info["Tags"]) if keyisset("Tags", info) else ()
     )
     name = info["Name"] if keyisset("Name", info) else None
-    search_session = define_role_arn_from_info(info, session)
 
-    resources_r = get_resources_from_tags(
-        search_session, aws_resource_search, search_tags
-    )
+    resources_r = get_resources_from_tags(session, aws_resource_search, search_tags)
     LOG.debug(search_tags)
     arns = [i["ResourceARN"] for i in resources_r["ResourceTagMappingList"]]
     return handle_search_results(arns, name, res_types, aws_resource_search)

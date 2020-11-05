@@ -22,6 +22,7 @@ Module to scan and find the DB and Secret for Lookup of x-rds
 from ecs_composex.common import keyisset, LOG
 from ecs_composex.common.aws import (
     find_aws_resource_arn_from_tags_api,
+    define_lookup_role_from_info,
 )
 
 
@@ -171,13 +172,14 @@ def lookup_rds_resource(lookup, session):
         res_type = "cluster"
     elif keyisset("db", lookup):
         res_type = "db"
+    lookup_session = define_lookup_role_from_info(lookup, session)
     db_arn = find_aws_resource_arn_from_tags_api(
-        lookup[res_type], session, f"rds:{res_type}", types=rds_types
+        lookup[res_type], lookup_session, f"rds:{res_type}", types=rds_types
     )
     if not db_arn:
         return None
-    db_config = return_db_config(db_arn, session, res_type)
-    handle_secret(lookup, db_config, session)
+    db_config = return_db_config(db_arn, lookup_session, res_type)
+    handle_secret(lookup, db_config, lookup_session)
     patch_db_vs_cluster(db_config, res_type)
 
     LOG.debug(db_config)

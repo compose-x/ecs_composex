@@ -22,7 +22,10 @@ Module to find the SQS keys in lookup
 import re
 from botocore.exceptions import ClientError
 from ecs_composex.common import LOG, keyisset
-from ecs_composex.common.aws import find_aws_resource_arn_from_tags_api
+from ecs_composex.common.aws import (
+    find_aws_resource_arn_from_tags_api,
+    define_lookup_role_from_info,
+)
 
 from ecs_composex.kms.kms_params import (
     KMS_KEY_ARN,
@@ -83,14 +86,15 @@ def lookup_key_config(lookup, session):
             "regexp": r"(?:^arn:aws(?:-[a-z]+)?:kms:[\S]+:[0-9]+:)((alias/)([\S]+))$"
         },
     }
+    lookup_session = define_lookup_role_from_info(lookup, session)
     key_arn = find_aws_resource_arn_from_tags_api(
         lookup,
-        session,
+        lookup_session,
         "kms:key",
         types=kms_types,
     )
     if not key_arn:
         return None
-    config = get_key_config(key_arn, session)
+    config = get_key_config(key_arn, lookup_session)
     LOG.debug(config)
     return config

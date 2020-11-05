@@ -23,7 +23,10 @@ import re
 from botocore.exceptions import ClientError
 
 from ecs_composex.common import keyisset, LOG
-from ecs_composex.common.aws import find_aws_resource_arn_from_tags_api
+from ecs_composex.common.aws import (
+    find_aws_resource_arn_from_tags_api,
+    define_lookup_role_from_info,
+)
 from ecs_composex.dynamodb.dynamodb_params import TABLE_NAME, TABLE_ARN
 
 
@@ -69,14 +72,15 @@ def lookup_dynamodb_config(lookup, session):
             "regexp": r"(?:^arn:aws(?:-[a-z]+)?:dynamodb:[\S]+:[0-9]+:table\/)([\S]+)$"
         },
     }
+    lookup_session = define_lookup_role_from_info(lookup, session)
     table_arn = find_aws_resource_arn_from_tags_api(
         lookup,
-        session,
+        lookup_session,
         "dynamodb:table",
         types=dynamodb_types,
     )
     if not table_arn:
         return None
-    config = get_table_config(table_arn, session)
+    config = get_table_config(table_arn, lookup_session)
     LOG.debug(config)
     return config
