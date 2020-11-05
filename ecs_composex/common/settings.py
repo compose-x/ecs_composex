@@ -466,24 +466,22 @@ class ComposeXSettings(object):
         """
         if profile_name and not session:
             self.session = boto3.session.Session(profile_name=profile_name)
-        elif session and not profile_name:
+        elif session and not (profile_name or keyisset(self.arn_arg, kwargs)):
             self.session = session
-        elif keyisset(self.arn_arg, kwargs):
-            role_arn_regexp = r"^arn:aws(?:-[a-z]+)?:iam::[0-9]{12}:role\/[\S]+$"
-            arn_valid = re.compile(role_arn_regexp)
+        if keyisset(self.arn_arg, kwargs):
+            role_arn_regexp = r"^arn:aws(?:-[a-z]+)?:iam::[0-9]{12}:role/[\S]+$"
+            arn_valid = re.compile(r"^arn:aws(?:-[a-z]+)?:iam::[0-9]{12}:role/[\S]+$")
             if not arn_valid.match(kwargs[self.arn_arg]):
                 raise ValueError(
                     "The role ARN needs to be a valid ARN of format", role_arn_regexp
                 )
             try:
-                creds = (
-                    boto3.session.Session()
-                    .client("sts")
-                    .assume_role(
-                        RoleArn=kwargs[self.arn_arg],
-                        RoleSessionName=f"ComposeX@{kwargs[self.command_arg]}",
-                        DurationSeconds=900,
-                    )
+                if not session:
+                    session = boto3.session.Session()
+                creds = session.client("sts").assume_role(
+                    RoleArn=kwargs[self.arn_arg],
+                    RoleSessionName=f"ComposeX@{kwargs[self.command_arg]}",
+                    DurationSeconds=900,
                 )
                 LOG.info(
                     f"Successfully assumed role. Session ID: {creds['AssumedRoleUser']['AssumedRoleId']}"

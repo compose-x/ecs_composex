@@ -1,0 +1,35 @@
+{
+    "status_code": 200,
+    "data": {
+        "Credentials": {
+            "AccessKeyId": "ASIAVOAWVJQOEVY2AYGS",
+            "SecretAccessKey": "uqF5Ju6SiZONEREDACTED123p5akjxfOJtmbT/V0ncDrcGwJKEta",
+            "SessionToken": "FwoGZONEREDACTED123vYXdzEKn//////////wEaDOx+Sc+2WVjMjoMl6CKzAV+99cj7E5U7EGjZuLX+kebhSKEA+9cytjwyWAz593lUJWXoF3u7xA5gBUtksMxS/rxYfOU6uvB71vOz5CjfjUNxnpBk+V9yvPvQCRjhDy8+iWa97U123gyOFLXFD0Hs7IUBBAUpUwfXy3FxDhWLIjoHxfp7lVwu7uTV1AXGhR6A3+uHxGiBT/4OAqrw24DjAYlAqlZONEREDACTED123lZvB38g7d7ZgTfsA2lEGpxz2vBOiwkBfMVm6qizfKLK8kP0FMi072TPEoLu5bIj5AgHVQOnhaDhoucxIAP3linG2SrqlEcRQAwPkHQTp4uFIDgd=",
+            "Expiration": {
+                "__class__": "datetime",
+                "year": 2020,
+                "month": 11,
+                "day": 5,
+                "hour": 16,
+                "minute": 0,
+                "second": 54,
+                "microsecond": 0
+            }
+        },
+        "AssumedRoleUser": {
+            "AssumedRoleId": "AROAVOAWVJQOLB24ILL25:ComposeX@render",
+            "Arn": "arn:aws:sts::000000000000:assumed-role/testx/ComposeX@render"
+        },
+        "ResponseMetadata": {
+            "RequestId": "e6ed5816-c773-4e7c-a9f5-567fe35334ad",
+            "HTTPStatusCode": 200,
+            "HTTPHeaders": {
+                "x-amzn-requestid": "e6ed5816-c773-4e7c-a9f5-567fe35334ad",
+                "content-type": "text/xml",
+                "content-length": "1062",
+                "date": "Thu, 05 Nov 2020 15:45:54 GMT"
+            },
+            "RetryAttempts": 0
+        }
+    }
+}
