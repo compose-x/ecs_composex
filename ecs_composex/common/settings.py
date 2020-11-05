@@ -45,6 +45,8 @@ from ecs_composex.common.compose_services import (
     ComposeFamily,
     set_service_ports,
 )
+from ecs_composex.iam import ROLE_ARN_ARG
+from ecs_composex.iam import validate_iam_role_arn
 
 
 def render_services_ports(services):
@@ -195,7 +197,7 @@ class ComposeXSettings(object):
 
     region_arg = "RegionName"
     zones_arg = "Zones"
-    arn_arg = "RoleArn"
+    arn_arg = ROLE_ARN_ARG
 
     deploy_arg = "up"
     render_arg = "render"
@@ -469,12 +471,7 @@ class ComposeXSettings(object):
         elif session and not (profile_name or keyisset(self.arn_arg, kwargs)):
             self.session = session
         if keyisset(self.arn_arg, kwargs):
-            role_arn_regexp = r"^arn:aws(?:-[a-z]+)?:iam::[0-9]{12}:role/[\S]+$"
-            arn_valid = re.compile(r"^arn:aws(?:-[a-z]+)?:iam::[0-9]{12}:role/[\S]+$")
-            if not arn_valid.match(kwargs[self.arn_arg]):
-                raise ValueError(
-                    "The role ARN needs to be a valid ARN of format", role_arn_regexp
-                )
+            validate_iam_role_arn(kwargs[ROLE_ARN_ARG])
             try:
                 if not session:
                     session = boto3.session.Session()

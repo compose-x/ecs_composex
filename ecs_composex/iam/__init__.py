@@ -26,6 +26,24 @@ from ecs_composex.common import LOG
 POLICY_PATTERN = r"((^([a-zA-Z0-9-_.\/]+)$)|(^(arn:aws:iam::(aws|[0-9]{12}):policy\/)[a-zA-Z0-9-_.\/]+$))"
 POLICY_RE = re.compile(POLICY_PATTERN)
 
+ROLE_ARN_ARG = "RoleArn"
+
+
+def validate_iam_role_arn(arn):
+    """
+    Function to validate IAM ROLE ARN format
+    :param str arn:
+    :return: resource match
+    :rtype: re.match
+    """
+    arn_valid = re.compile(r"^arn:aws(?:-[a-z]+)?:iam::[0-9]{12}:role/[\S]+$")
+    if not arn_valid.match(arn):
+        raise ValueError(
+            "The role ARN needs to be a valid ARN of format",
+            r"^arn:aws(?:-[a-z]+)?:iam::[0-9]{12}:role/[\S]+$",
+        )
+    return arn_valid.match(arn)
+
 
 def service_role_trust_policy(service_name):
     """

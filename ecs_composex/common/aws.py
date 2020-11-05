@@ -20,9 +20,44 @@
 Common functions and variables fetched from AWS.
 """
 import re
+import boto3
 from botocore.exceptions import ClientError
 
 from ecs_composex.common import LOG, keyisset
+from ecs_composex.iam import ROLE_ARN_ARG
+from ecs_composex.iam import validate_iam_role_arn
+
+
+def define_role_arn_from_info(info, session):
+    """
+    Function to override ComposeXSettings session to specific session for Lookup
+
+    :param info:
+    :param session:
+    :return:
+    """
+    if not keyisset(ROLE_ARN_ARG, info):
+        return session
+    validate_iam_role_arn(info[ROLE_ARN_ARG])
+    try:
+        if not session:
+            session = boto3.session.Session()
+        creds = session.client("sts").assume_role(
+            RoleArn=info[ROLE_ARN_ARG],
+            RoleSessionName="ComposeX@Lookup",
+            DurationSeconds=900,
+        )
+        LOG.info(
+            f"Successfully assumed role. Session ID: {creds['AssumedRoleUser']['AssumedRoleId']}"
+        )
+        return boto3.session.Session(
+            aws_access_key_id=creds["Credentials"]["AccessKeyId"],
+            aws_session_token=creds["Credentials"]["SessionToken"],
+            aws_secret_access_key=creds["Credentials"]["SecretAccessKey"],
+        )
+    except ClientError:
+        LOG.error(f"Failed to use the Role ARN {info[ROLE_ARN_ARG]}")
+        raise
 
 
 def define_tagsgroups_filter_tags(tags):
@@ -170,8 +205,11 @@ def find_aws_resource_arn_from_tags_api(info, session, aws_resource_search, type
         define_tagsgroups_filter_tags(info["Tags"]) if keyisset("Tags", info) else ()
     )
     name = info["Name"] if keyisset("Name", info) else None
+    search_session = define_role_arn_from_info(info, session)
 
-    resources_r = get_resources_from_tags(session, aws_resource_search, search_tags)
+    resources_r = get_resources_from_tags(
+        search_session, aws_resource_search, search_tags
+    )
     LOG.debug(search_tags)
     arns = [i["ResourceARN"] for i in resources_r["ResourceTagMappingList"]]
     return handle_search_results(arns, name, res_types, aws_resource_search)
