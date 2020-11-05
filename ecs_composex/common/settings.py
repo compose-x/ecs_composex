@@ -47,6 +47,7 @@ from ecs_composex.common.compose_services import (
 )
 from ecs_composex.iam import ROLE_ARN_ARG
 from ecs_composex.iam import validate_iam_role_arn
+from ecs_composex.common.aws import get_cross_role_session
 
 
 def render_services_ports(services):
@@ -471,26 +472,19 @@ class ComposeXSettings(object):
         elif session and not (profile_name or keyisset(self.arn_arg, kwargs)):
             self.session = session
         if keyisset(self.arn_arg, kwargs):
-            validate_iam_role_arn(kwargs[ROLE_ARN_ARG])
-            try:
-                if not session:
-                    session = boto3.session.Session()
-                creds = session.client("sts").assume_role(
-                    RoleArn=kwargs[self.arn_arg],
-                    RoleSessionName=f"ComposeX@{kwargs[self.command_arg]}",
-                    DurationSeconds=900,
+            validate_iam_role_arn(arn=kwargs[self.arn_arg])
+            if session:
+                self.session = get_cross_role_session(
+                    session,
+                    kwargs[ROLE_ARN_ARG],
+                    session_name=f"ComposeXSettings@{kwargs[self.command_arg]}",
                 )
-                LOG.info(
-                    f"Successfully assumed role. Session ID: {creds['AssumedRoleUser']['AssumedRoleId']}"
+            else:
+                self.session = get_cross_role_session(
+                    self.session,
+                    kwargs[ROLE_ARN_ARG],
+                    session_name=f"ComposeXSettings@{kwargs[self.command_arg]}",
                 )
-                self.session = boto3.session.Session(
-                    aws_access_key_id=creds["Credentials"]["AccessKeyId"],
-                    aws_session_token=creds["Credentials"]["SessionToken"],
-                    aws_secret_access_key=creds["Credentials"]["SecretAccessKey"],
-                )
-            except ClientError:
-                LOG.error("Failed to use the Role ARN")
-                raise
 
     def set_output_settings(self, kwargs):
         """
