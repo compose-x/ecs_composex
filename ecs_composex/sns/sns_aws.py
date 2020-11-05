@@ -22,7 +22,10 @@ Module to find the SQS topics in lookup
 import re
 from botocore.exceptions import ClientError
 from ecs_composex.common import LOG, keyisset
-from ecs_composex.common.aws import find_aws_resource_arn_from_tags_api
+from ecs_composex.common.aws import (
+    find_aws_resource_arn_from_tags_api,
+    define_lookup_role_from_info,
+)
 
 from ecs_composex.sns.sns_params import TOPIC_NAME, TOPIC_ARN, TOPIC_KMS_KEY
 
@@ -72,14 +75,15 @@ def lookup_topic_config(lookup, session):
     sns_types = {
         "sns": {"regexp": r"(?:^arn:aws(?:-[a-z]+)?:sns:[\S]+:[0-9]+:)([\S]+)$"},
     }
+    lookup_session = define_lookup_role_from_info(lookup, session)
     topic_arn = find_aws_resource_arn_from_tags_api(
         lookup,
-        session,
+        lookup_session,
         "sns",
         types=sns_types,
     )
     if not topic_arn:
         return None
-    config = get_topic_config(topic_arn, session)
+    config = get_topic_config(topic_arn, lookup_session)
     LOG.debug(config)
     return config

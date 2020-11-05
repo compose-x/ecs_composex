@@ -45,6 +45,9 @@ from ecs_composex.common.compose_services import (
     ComposeFamily,
     set_service_ports,
 )
+from ecs_composex.iam import ROLE_ARN_ARG
+from ecs_composex.iam import validate_iam_role_arn
+from ecs_composex.common.aws import get_cross_role_session
 
 
 def render_services_ports(services):
@@ -195,6 +198,7 @@ class ComposeXSettings(object):
 
     region_arg = "RegionName"
     zones_arg = "Zones"
+    arn_arg = ROLE_ARN_ARG
 
     deploy_arg = "up"
     render_arg = "render"
@@ -250,7 +254,7 @@ class ComposeXSettings(object):
         Class to init the configuration
         """
         self.session = boto3.session.Session()
-        self.override_session(session, profile_name)
+        self.override_session(session, profile_name, kwargs)
         self.aws_region = (
             kwargs[self.region_arg]
             if keyisset(self.region_arg, kwargs)
@@ -455,17 +459,32 @@ class ComposeXSettings(object):
             self.init_s3()
             exit(0)
 
-    def override_session(self, session, profile_name):
+    def override_session(self, session, profile_name, kwargs):
         """
         Method to set the session based on input params
 
         :param boto3.session.Session session: The session to override the API calls with
         :param str profile_name: Name of a profile configured in .aws/config
+        :param dict kwargs: CLI kwargs
         """
         if profile_name and not session:
             self.session = boto3.session.Session(profile_name=profile_name)
-        elif session and not profile_name:
+        elif session and not (profile_name or keyisset(self.arn_arg, kwargs)):
             self.session = session
+        if keyisset(self.arn_arg, kwargs):
+            validate_iam_role_arn(arn=kwargs[self.arn_arg])
+            if session:
+                self.session = get_cross_role_session(
+                    session,
+                    kwargs[ROLE_ARN_ARG],
+                    session_name=f"ComposeXSettings@{kwargs[self.command_arg]}",
+                )
+            else:
+                self.session = get_cross_role_session(
+                    self.session,
+                    kwargs[ROLE_ARN_ARG],
+                    session_name=f"ComposeXSettings@{kwargs[self.command_arg]}",
+                )
 
     def set_output_settings(self, kwargs):
         """

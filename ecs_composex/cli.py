@@ -138,6 +138,12 @@ def main_parser():
         help="Runs spotfleet for EC2. If used in combination "
         "of --use-fargate, it will create an additional SpotFleet",
     )
+    base_command_parser.add_argument(
+        "--role-arn",
+        dest=ComposeXSettings.arn_arg,
+        help="Allow you to run API calls using a specific IAM role, within same or for cross-account",
+        required=False,
+    )
     for command in ComposeXSettings.active_commands:
         cmd_parsers.add_parser(
             name=command["name"],

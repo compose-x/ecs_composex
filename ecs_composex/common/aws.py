@@ -20,9 +20,61 @@
 Common functions and variables fetched from AWS.
 """
 import re
+import boto3
 from botocore.exceptions import ClientError
 
 from ecs_composex.common import LOG, keyisset
+from ecs_composex.iam import ROLE_ARN_ARG
+from ecs_composex.iam import validate_iam_role_arn
+
+
+def get_cross_role_session(session, arn, session_name=None):
+    """
+    Function to override ComposeXSettings session to specific session for Lookup
+
+    :param boto3.session.Session session: The original session fetching the credentials for X-Role
+    :param str arn:
+    :param str session_name: Override name of the session
+    :return: boto3 session from lookup settings
+    :rtype: boto3.session.Session
+    """
+    if not session_name:
+        session_name = "ComposeX@Lookup"
+    validate_iam_role_arn(arn)
+    try:
+        if not session:
+            session = boto3.session.Session()
+        creds = session.client("sts").assume_role(
+            RoleArn=arn,
+            RoleSessionName=session_name,
+            DurationSeconds=900,
+        )
+        LOG.info(
+            f"Successfully assumed role. Session ID: {creds['AssumedRoleUser']['AssumedRoleId']}"
+        )
+        return boto3.session.Session(
+            aws_access_key_id=creds["Credentials"]["AccessKeyId"],
+            aws_session_token=creds["Credentials"]["SessionToken"],
+            aws_secret_access_key=creds["Credentials"]["SecretAccessKey"],
+        )
+    except ClientError:
+        LOG.error(f"Failed to use the Role ARN {arn}")
+        raise
+
+
+def define_lookup_role_from_info(info, session):
+    """
+    Function to override ComposeXSettings session to specific session for Lookup
+
+    :param info:
+    :param session:
+    :return: boto3 session from lookup settings
+    :rtype: boto3.session.Session
+    """
+    if not keyisset(ROLE_ARN_ARG, info):
+        return session
+    validate_iam_role_arn(info[ROLE_ARN_ARG])
+    return get_cross_role_session(session, info[ROLE_ARN_ARG])
 
 
 def define_tagsgroups_filter_tags(tags):
