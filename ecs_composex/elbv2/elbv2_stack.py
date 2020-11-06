@@ -299,6 +299,8 @@ class ComposeListener(Listener):
         "UpdateReplacePolicy",
     ]
 
+    targets_keys = "Targets"
+
     def __init__(self, lb, definition):
         """
         Method to init listener.
@@ -319,9 +321,9 @@ class ComposeListener(Listener):
             )
         )
         self.services = (
-            self.definition["Services"]
-            if keyisset("Services", self.definition)
-            and isinstance(self.definition["Services"], list)
+            self.definition[self.targets_keys]
+            if keyisset(self.targets_keys, self.definition)
+            and isinstance(self.definition[self.targets_keys], list)
             else []
         )
         self.default_actions = (

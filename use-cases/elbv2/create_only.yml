@@ -22,14 +22,14 @@ x-elbv2:
         Protocol: HTTP
         Certificates:
           - x-acm: abcd
-        Services:
+        Targets:
           - name: bignicefamily:app01
             access: /somewhere
       - Port: 8080
         Protocol: HTTP
         Certificates:
           x-acm: abcd
-        Services:
+        Targets:
           - name: bignicefamily:rproxy
             access: /
           - name: youtoo:rproxy
@@ -62,7 +62,7 @@ x-elbv2:
         Protocol: TCP
         Certificates:
           - x-acm: abcd
-        Services:
+        Targets:
           - name: app03:app03
             access: /
     Services:
