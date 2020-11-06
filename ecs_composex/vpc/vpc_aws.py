@@ -16,200 +16,31 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import re
-from ecs_composex.common import keyisset, LOG
 from ecs_composex.vpc.vpc_params import (
     VPC_ID,
     APP_SUBNETS,
     PUBLIC_SUBNETS,
     STORAGE_SUBNETS,
 )
+from ecs_composex.common.aws import (
+    define_lookup_role_from_info,
+    find_aws_resource_arn_from_tags_api,
+)
 
 TAGS_KEY = "Tags"
 
 
-def lookup_vpc_id(session, vpc_id):
-    """
-
-    :param session: boto3 session
-    :param vpc_id: VPC ID
-    :return:
-    """
-    args = {"VpcIds": [vpc_id]}
-    arn_regexp = r"(^arn:(aws|aws-cn|aws-us-gov):ec2:([a-z]{2}-[\w]{2,6}-[0-9]{1}):([0-9]{12}):vpc\/(vpc-[a-z0-9]+)$)"
-    arn_re = re.compile(arn_regexp)
-    if vpc_id.startswith("arn:") and arn_re.match(vpc_id):
-        LOG.debug(arn_re.findall(vpc_id))
-        re_vpc_id = arn_re.findall(vpc_id)[-1][-1]
-        re_vpc_owner = arn_re.findall(vpc_id)[-1][-2]
-        args = {
-            "VpcIds": [re_vpc_id],
-            "Filters": [{"Name": "owner-id", "Values": [re_vpc_owner]}],
-        }
-        vpc_id = re_vpc_id
-    elif vpc_id.startswith("arn:") and not arn_re.match(vpc_id):
-        raise ValueError(
-            "Vpc ARN is not valid. Got", vpc_id, "Valid ARN Regexp", arn_regexp
-        )
-
-    client = session.client("ec2")
-    vpcs_r = client.describe_vpcs(**args)
-    LOG.debug(vpcs_r)
-    LOG.debug(vpcs_r["Vpcs"][0]["VpcId"])
-    if keyisset("Vpcs", vpcs_r) and vpcs_r["Vpcs"][0]["VpcId"] == vpc_id:
-        LOG.info(f"VPC Found and confirmed: {vpcs_r['Vpcs'][0]['VpcId']}")
-        return vpcs_r["Vpcs"][0]["VpcId"]
-    raise ValueError("No VPC found with ID", args["VpcIds"][0])
-
-
-def define_filter_tags(tags):
-    """
-    Function to create the filters out of tags list
-
-    :param list tags: list of Key/Value dict
-    :return: filters
-    :rtype: list
-    """
-    filters = []
-    for tag in tags:
-        key = list(tag.keys())[0]
-        filter_name = f"tag:{key}"
-        filter_values = [tag[key]]
-        filters.append({"Name": filter_name, "Values": filter_values})
-    return filters
-
-
-def lookup_vpc_from_tags(session, tags):
-    """
-    Function to find a VPC from defined Tags
-
-    :param boto3.session.Session session: boto3 session
-    :param list tags: list of tags
-    :return:
-    """
-    client = session.client("ec2")
-    filters = define_filter_tags(tags)
-    vpcs_r = client.describe_vpcs(Filters=filters)
-    if keyisset("Vpcs", vpcs_r):
-        if len(vpcs_r["Vpcs"]) > 1:
-            raise ValueError(
-                "There is more than one VPC with the provided tags.", filters
-            )
-        LOG.info(f"VPC found and confirmed: {vpcs_r['Vpcs'][0]['VpcId']}")
-        return vpcs_r["Vpcs"][0]["VpcId"]
-    raise ValueError("No VPC found with tags", filters)
-
-
-def lookup_subnets_ids(session, ids, vpc_id):
-    """
-    Function to find subnets based on a list of subnet IDs
-
-    :param session: boto3 session
-    :param ids: list of subneet IDs
-    :param str vpc_id: The VPC ID to use to search for the subnets
-    :return: list of subnets
-    :rtype: list
-    """
-    client = session.client("ec2")
-    filters = [{"Name": "vpc-id", "Values": [vpc_id]}]
-    subnets_r = client.describe_subnets(SubnetIds=ids, Filters=filters)
-    if keyisset("Subnets", subnets_r):
-        subnets = [subnet["SubnetId"] for subnet in subnets_r["Subnets"]]
-        if not all(subnet["SubnetId"] in ids for subnet in subnets_r["Subnets"]):
-            raise ValueError(
-                "Subnets returned are invalid. Expected", ids, "got", subnets
-            )
-        print(subnets, ids)
-        LOG.info(f"Subnets found and confirmed: {subnets}")
-        return subnets
-    raise ValueError("No Subnets found with provided IDs", ids)
-
-
-def lookup_subnets_from_tags(session, tags, vpc_id, subnet_key=None):
-    """
-    Function to find a VPC from defined Tags
-
-    :param boto3.session.Session session: boto3 session
-    :param list tags: list of tags
-    :param str vpc_id: The VPC ID to use to search for the subnets
-    :param str subnet_key: For troubleshooting, allows to figure which subnets this was for.
-    :return:
-    """
-    if subnet_key is None:
-        subnet_key = "Subnets "
-    client = session.client("ec2")
-    filters = define_filter_tags(tags)
-    filters.append({"Name": "vpc-id", "Values": [vpc_id]})
-    subnets_r = client.describe_subnets(Filters=filters)
-    if keyisset("Subnets", subnets_r):
-        subnets = [subnet["SubnetId"] for subnet in subnets_r["Subnets"]]
-        LOG.info(f"{subnet_key} found and confirmed: {subnets}")
-        return subnets
-    raise ValueError("No Subnets found with tags", filters)
-
-
-def define_vpc_id(session, vpc_id_settings):
-    """
-    Method to confirm or find VPC ID
-
-    :param boto3.session.Session session:
-    :param vpc_id_settings:
-    """
-    if isinstance(vpc_id_settings, str):
-        vpc_id = lookup_vpc_id(session, vpc_id_settings)
-    elif (
-        isinstance(vpc_id_settings, dict)
-        and keyisset(TAGS_KEY, vpc_id_settings)
-        and isinstance(vpc_id_settings[TAGS_KEY], list)
-    ):
-        vpc_id = lookup_vpc_from_tags(session, vpc_id_settings[TAGS_KEY])
-    else:
-        raise ValueError("VpcId is neither the VPC ID, the VPC Arn or a set of tags")
-    return vpc_id
-
-
-def define_subnet_ids(session, subnet_key, subnet_id_settings, vpc_settings):
-    """
-    Method to confirm or find VPC ID
-
-    :param str subnet_key: Attribute name
-    :param subnet_id_settings:
-    :param dict vpc_settings: the VPC Settings to update
-    """
-    if isinstance(subnet_id_settings, str):
-        vpc_settings[subnet_key] = lookup_subnets_ids(
-            session, subnet_id_settings.split(","), vpc_settings[VPC_ID.title]
-        )
-    elif isinstance(subnet_id_settings, list):
-        vpc_settings[subnet_key] = lookup_subnets_ids(
-            session, subnet_id_settings, vpc_settings[VPC_ID.title]
-        )
-    elif (
-        isinstance(subnet_id_settings, dict)
-        and keyisset(TAGS_KEY, subnet_id_settings)
-        and isinstance(subnet_id_settings[TAGS_KEY], list)
-    ):
-        vpc_settings[subnet_key] = lookup_subnets_from_tags(
-            session,
-            subnet_id_settings[TAGS_KEY],
-            vpc_settings[VPC_ID.title],
-            subnet_key,
-        )
-    else:
-        raise ValueError(
-            f"Subnets {subnet_key} is neither the CommaDelimitedList of IDs, a list of SubnetIDs, or tags"
-        )
-
-
-def lookup_x_vpc_settings(session, lookup_settings):
+def lookup_x_vpc_settings(lookup, session):
     """
     Method to set VPC settings from x-vpc
 
     :param boto3.session.Session session:
-    :param dict lookup_settings:
+    :param dict lookup:
     :return: vpc_settings
     :rtype: dict
     """
-
+    vpc_type = "ec2:vpc"
+    subnet_type = "ec2:subnet"
     required_keys = [
         VPC_ID.title,
         PUBLIC_SUBNETS.title,
@@ -217,22 +48,47 @@ def lookup_x_vpc_settings(session, lookup_settings):
         STORAGE_SUBNETS.title,
     ]
     subnets_keys = [PUBLIC_SUBNETS.title, APP_SUBNETS.title, STORAGE_SUBNETS.title]
-    if not all(key in lookup_settings.keys() for key in required_keys):
+    if not all(key in lookup.keys() for key in required_keys):
         raise KeyError(
             "Missing keys for x-vpc Lookup. Got",
-            lookup_settings.keys(),
+            lookup.keys(),
             "Expected",
             required_keys,
         )
+    lookup_session = define_lookup_role_from_info(lookup, session)
+    vpc_types = {
+        vpc_type: {
+            "regexp": r"(?:^arn:aws(?:-[a-z]+)?:ec2:[a-z0-9-]+:[0-9]{12}:vpc/)(vpc-[a-z0-9]+)$"
+        },
+        subnet_type: {
+            "regexp": r"(?:^arn:aws(?:-[a-z]+)?:ec2:[a-z0-9-]+:[0-9]{12}:subnet/)(subnet-[a-z0-9]+)$"
+        },
+    }
+    vpc_arn = find_aws_resource_arn_from_tags_api(
+        lookup[VPC_ID.title],
+        lookup_session,
+        vpc_type,
+        types=vpc_types,
+        allow_multi=False,
+    )
+    vpc_re = re.compile(vpc_types[vpc_type]["regexp"])
     vpc_settings = {
-        VPC_ID.title: define_vpc_id(session, lookup_settings[VPC_ID.title]),
+        VPC_ID.title: vpc_re.match(vpc_arn).groups()[0],
         APP_SUBNETS.title: [],
         STORAGE_SUBNETS.title: [],
         PUBLIC_SUBNETS.title: [],
     }
 
     for subnet_key in subnets_keys:
-        define_subnet_ids(
-            session, subnet_key, lookup_settings[subnet_key], vpc_settings
+        subnet_arns = find_aws_resource_arn_from_tags_api(
+            lookup[subnet_key],
+            lookup_session,
+            subnet_type,
+            types=vpc_types,
+            allow_multi=True,
         )
+        vpc_settings[subnet_key] = [
+            re.match(vpc_types[subnet_type]["regexp"], subnet_arn).groups()[0]
+            for subnet_arn in subnet_arns
+        ]
     return vpc_settings

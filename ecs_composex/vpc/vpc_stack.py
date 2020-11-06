@@ -167,7 +167,7 @@ def add_vpc_to_root(root_stack, settings):
     if keyisset(vpc_xkey, settings.compose_content):
         if keyisset("Lookup", settings.compose_content[vpc_xkey]):
             x_settings = lookup_x_vpc_settings(
-                settings.session, settings.compose_content[vpc_xkey]["Lookup"]
+                settings.compose_content[vpc_xkey]["Lookup"], settings.session
             )
             apply_vpc_settings(x_settings, root_stack)
         elif keyisset("Use", settings.compose_content[vpc_xkey]):
