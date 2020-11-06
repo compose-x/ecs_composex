@@ -31,26 +31,40 @@ from troposphere.ecs import LoadBalancer as EcsLb
 
 from ecs_composex.common import keyisset
 from ecs_composex.common import LOG
-from ecs_composex.common.compose_resources import set_resources
 from ecs_composex.common.outputs import ComposeXOutput
 from ecs_composex.vpc.vpc_params import VPC_ID
 from ecs_composex.elbv2.elbv2_params import RES_KEY, LB_ARN, TGT_GROUP_ARN
-from ecs_composex.elbv2.elbv2_stack import elbv2
-from ecs_composex.resource_settings import get_selected_services
+from ecs_composex.ecs.ecs_params import SERVICE_T
+
+
+def validate_tcp_health_counts(props):
+    healthy_prop = "HealthyThresholdCount"
+    unhealthy_prop = "UnhealthyThresholdCount"
+    if (
+        keyisset(healthy_prop, props)
+        and keyisset(unhealthy_prop, props)
+        and not props[unhealthy_prop] == props[healthy_prop]
+    ):
+        valid_value = max(props[unhealthy_prop], props[healthy_prop])
+        LOG.warn(
+            "With NLB your healthy and unhealthy count must be the same. Using the max of the two for cautious: "
+            f"{valid_value}"
+        )
+        props[healthy_prop] = valid_value
+        props[unhealthy_prop] = valid_value
 
 
 def fix_nlb_settings(props):
     network_modes = ["TCP", "UDP", "TCP_UDP"]
     if (
-        keyisset("HealthCheckTimeoutSeconds", props)
-        and props["HealthCheckProtocol"] in network_modes
+        keyisset("HealthCheckProtocol", props)
+        and not props["HealthCheckProtocol"] in network_modes
     ):
+        return
+    if keyisset("HealthCheckTimeoutSeconds", props):
         LOG.warn("With NLB you cannot set intervals. Resetting")
         props["HealthCheckTimeoutSeconds"] = Ref(AWS_NO_VALUE)
-    if (
-        keyisset("HealthCheckIntervalSeconds", props)
-        and props["HealthCheckProtocol"] in network_modes
-    ):
+    if keyisset("HealthCheckIntervalSeconds", props):
         if not (
             props["HealthCheckIntervalSeconds"] == 10
             or props["HealthCheckIntervalSeconds"] == 30
@@ -63,6 +77,7 @@ def fix_nlb_settings(props):
                 f"The only intervals value valid for NLB are 10 and 30. Closes value is {right_value}"
             )
             props["HealthCheckIntervalSeconds"] = right_value
+    validate_tcp_health_counts(props)
 
 
 def handle_ping_settings(props, groups):
@@ -231,7 +246,14 @@ def validate_props_and_service_definition(props, service):
         )
 
 
-def define_service_target_group(resource, service, family, target_definition):
+def define_service_target_group(
+    resource,
+    service,
+    family,
+    resources_root_stack,
+    target_definition,
+    assign_to_service_stack,
+):
     """
     Function to create the elbv2 TargetGroup
 
@@ -256,103 +278,137 @@ def define_service_target_group(resource, service, family, target_definition):
     validate_props_and_service_definition(props, service)
     target_group = TargetGroup(
         f"Tgt{resource.logical_name}{family.logical_name}{service.logical_name}{props['Port']}",
-        template=family.template,
         VpcId=Ref(VPC_ID),
         **props,
     )
-    family.template.add_output(
-        ComposeXOutput(
-            target_group,
-            [("", TGT_GROUP_ARN.title, Ref(target_group))],
-            export=False,
-        ).outputs
-    )
-    service_lb = EcsLb(
-        ContainerPort=props["Port"],
-        ContainerName=service.name,
-        TargetGroupArn=Ref(target_group),
-    )
-    family.ecs_service.ecs_service.LoadBalancers.append(service_lb)
+    if assign_to_service_stack:
+        service_lb = EcsLb(
+            ContainerPort=props["Port"],
+            ContainerName=service.name,
+            TargetGroupArn=Ref(target_group),
+        )
+        family.template.add_resource(target_group)
+        family.ecs_service.ecs_service.LoadBalancers.append(service_lb)
+    else:
+        resources_root_stack.stack_template.add_resource(target_group)
+        resources_root_stack.stack_template.add_output(
+            ComposeXOutput(
+                target_group,
+                [("", TGT_GROUP_ARN.title, Ref(target_group))],
+                export=False,
+            ).outputs
+        )
 
+        tgt_parameter = Parameter(
+            f"{target_group.title}Arn", Type="String", template=family.template
+        )
+        family.stack_parameters.update(
+            {
+                tgt_parameter.title: GetAtt(
+                    resources_root_stack.title,
+                    f"Outputs.{target_group.title}{TGT_GROUP_ARN.title}",
+                )
+            }
+        )
+        service_lb = EcsLb(
+            ContainerPort=props["Port"],
+            ContainerName=service.name,
+            TargetGroupArn=Ref(tgt_parameter),
+        )
+        family.ecs_service.ecs_service.LoadBalancers.append(service_lb)
     return target_group
 
 
-def define_service_target_group_definition(resource, service, family, target_def):
+def define_service_target_group_definition(
+    resource,
+    service,
+    family,
+    target_def,
+    resources_root_stack,
+    assign_to_service_stack=False,
+):
     """
     Function to create the new service TGT Group
 
     :param ecs_composex.elbv2.elbv2_stack.elbv2 resource:
+    :param service:
     :param ecs_composex.common.compose_services.ComposeFamily family:
     :param dict target_def:
-    :param list services:
+    :param bool assign_to_service_stack: Whether we want the GetAtt or Ref on the target group
     :return:
     """
-    if resource.logical_name not in family.stack.DependsOn:
-        family.stack.DependsOn.append(resource.logical_name)
+    if assign_to_service_stack:
+        svc = family.template.resources[SERVICE_T]
+        if not hasattr(svc, "DependsOn"):
+            setattr(svc, "DependsOn", [resource.logical_name])
+        else:
+            svc.DependsOn.append(resource.logical_name)
+    elif (
+        resource.logical_name not in family.stack.DependsOn
+        and not assign_to_service_stack
+    ):
+        family.stack.DependsOn.append(resources_root_stack.title)
         LOG.info(
-            f"Added dependency between service family {family.logical_name} and {resource.logical_name}"
+            f"Added dependency between service family {family.logical_name} and {resources_root_stack.title}"
         )
+
     service_tgt_group = define_service_target_group(
-        resource, service, family, target_def
+        resource,
+        service,
+        family,
+        resources_root_stack,
+        target_def,
+        assign_to_service_stack,
     )
-    output_attr = f"Outputs.{service_tgt_group.title}{TGT_GROUP_ARN.title}"
-    LOG.debug(f"TGT GetAtt value {output_attr}")
-    target_group_arn = GetAtt(
-        family.stack.title,
-        output_attr,
-    )
-    return target_group_arn
+    return Ref(service_tgt_group)
 
 
-def handle_services_association(resource, services_stack):
+def handle_services_association(resource, services_stack, res_root_stack):
     """
     Function to handle association of listeners and targets to the LB
 
     :param ecs_composex.elbv2.elbv2_stack.elbv2 resource:
     :param ecs_composex.common.stacks.ComposeXStack services_stack:
+    :param ecs_composex.common.stacks.ComposeXStack res_root_stack:
     :return:
     """
-    for target in resource.families_targets:
+    template = res_root_stack.stack_template
+    if len(resource.families_targets) == 1:
+        template = resource.families_targets[0][1].template
+        resource.set_listeners(template)
+        resource.associate_to_template(template)
         tgt_arn = define_service_target_group_definition(
-            resource, target[0], target[1], target[2]
+            resource,
+            resource.families_targets[0][0],
+            resource.families_targets[0][1],
+            resource.families_targets[0][2],
+            res_root_stack,
+            assign_to_service_stack=True,
         )
-        for service in resource.services:
-            target_name = f"{target[1].logical_name}:{target[0].name}"
-            if target_name == service["name"]:
-                service["target_arn"] = tgt_arn
+        resource.services[0]["target_arn"] = tgt_arn
+    else:
+        resource.set_listeners(template)
+        resource.associate_to_template(template)
+        for target in resource.families_targets:
+            tgt_arn = define_service_target_group_definition(
+                resource, target[0], target[1], target[2], res_root_stack
+            )
+            for service in resource.services:
+                target_name = f"{target[1].logical_name}:{target[0].name}"
+                if target_name == service["name"]:
+                    service["target_arn"] = tgt_arn
 
     for listener in resource.listeners:
         listener.map_services(resource)
     for listener in resource.listeners:
-        listener.define_default_actions(services_stack.stack_template)
+        listener.define_default_actions(template)
 
 
-def map_elbv2_to_services(settings, services_stack):
-    """
-    Function to generate the root template for ELBv2
-
-    :param ecs_composex.common.settings ComposeXSettings settings:
-    :param ecs_composex.common.stacks.ComposeXStack services_stack:
-    :return:
-    """
-    set_resources(settings, elbv2, RES_KEY)
-    resources = settings.compose_content[RES_KEY]
-    new_resources = [
-        resources[res_name] for res_name in resources if not resources[res_name].lookup
-    ]
-    for resource in new_resources:
-        resource.set_lb_definition(settings)
-        resource.set_listeners(services_stack.stack_template)
-        resource.associate_to_template(services_stack.stack_template)
-
-
-def elbv2_to_ecs(services_stack, settings):
+def elbv2_to_ecs(resources, services_stack, res_root_stack, settings):
     """
     Function to apply SQS settings to ECS Services
     :return:
     """
-    map_elbv2_to_services(settings, services_stack)
-    resources = settings.compose_content[RES_KEY]
     resource_mappings = {}
     new_resources = [
         resources[res_name] for res_name in resources if not resources[res_name].lookup
@@ -363,4 +419,4 @@ def elbv2_to_ecs(services_stack, settings):
         if resources[res_name].lookup and not resources[res_name].properties
     ]
     for resource in new_resources:
-        handle_services_association(resource, services_stack)
+        handle_services_association(resource, services_stack, res_root_stack)

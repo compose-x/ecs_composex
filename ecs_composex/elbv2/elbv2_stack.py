@@ -44,13 +44,15 @@ from troposphere.elasticloadbalancingv2 import (
     HttpHeaderConfig,
     HostHeaderConfig,
     PathPatternConfig,
+    TargetGroupTuple,
 )
 
-from ecs_composex.common import keyisset, keypresent
+from ecs_composex.common import keyisset, keypresent, build_template
 from ecs_composex.common import NONALPHANUM, LOG
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME
+from ecs_composex.common.stacks import ComposeXStack
 
-from ecs_composex.common.compose_resources import XResource
+from ecs_composex.common.compose_resources import XResource, set_resources
 from ecs_composex.vpc.vpc_params import VPC_ID, PUBLIC_SUBNETS, APP_SUBNETS
 
 from ecs_composex.elbv2.elbv2_params import RES_KEY
@@ -257,7 +259,9 @@ def handle_non_default_services(listener, services_def):
             Action(
                 Type="forward",
                 ForwardConfig=ForwardConfig(
-                    TargetGroups=[default_target["target_arn"]]
+                    TargetGroups=[
+                        TargetGroupTuple(TargetGroupArn=default_target["target_arn"])
+                    ]
                 ),
             ),
         )
@@ -270,7 +274,9 @@ def handle_non_default_services(listener, services_def):
                 Action(
                     Type="forward",
                     ForwardConfig=ForwardConfig(
-                        TargetGroups=[service_def["target_arn"]]
+                        TargetGroups=[
+                            TargetGroupTuple(TargetGroupArn=service_def["target_arn"])
+                        ]
                     ),
                 ),
             ],
@@ -349,7 +355,11 @@ class ComposeListener(Listener):
                 Action(
                     Type="forward",
                     ForwardConfig=ForwardConfig(
-                        TargetGroups=[self.services[0]["target_arn"]]
+                        TargetGroups=[
+                            TargetGroupTuple(
+                                TargetGroupArn=self.services[0]["target_arn"]
+                            )
+                        ]
                     ),
                 ),
             )
@@ -440,6 +450,7 @@ class elbv2(XResource):
         self.lb_type = "application"
         self.lb_sg = None
         self.lb_eips = []
+        self.unique_service_lb = False
         self.lb = None
         self.listeners = []
         super().__init__(name, definition, settings)
@@ -537,6 +548,12 @@ class elbv2(XResource):
                     raise TypeError(
                         f"{key} should be", key[1], "Got", type(service[key[0]])
                     )
+        services_names = list(set([service["name"] for service in self.services]))
+        if len(services_names) == 1:
+            LOG.info(
+                f"LB {self.name} only has a unique service. LB will be deployed with the service stack."
+            )
+            self.unique_service_lb = True
 
     def sort_props(self):
         self.lb_is_public = (
@@ -693,3 +710,40 @@ class elbv2(XResource):
             template.add_resource(self.lb_sg)
         for eip in self.lb_eips:
             template.add_resource(eip)
+
+
+def init_elbv2_template():
+    """
+    Function to create a new root ELBv2 stack
+    :return:
+    """
+    lb_params = [VPC_ID, APP_SUBNETS, PUBLIC_SUBNETS]
+    template = build_template("elbv2 root template for ComposeX", lb_params)
+    return template
+
+
+class XStack(ComposeXStack):
+    """
+    Class to handle ELBv2 resources
+    """
+
+    def __init__(self, title, settings, **kwargs):
+        set_resources(settings, elbv2, RES_KEY)
+        resources = settings.compose_content[RES_KEY]
+        new_resources = [
+            resources[res_name]
+            for res_name in resources
+            if not resources[res_name].lookup
+        ]
+        if not new_resources:
+            self.is_void = True
+            return
+        stack_template = init_elbv2_template()
+        lb_input = {
+            VPC_ID.title: Ref(VPC_ID),
+            APP_SUBNETS.title: Ref(APP_SUBNETS),
+            PUBLIC_SUBNETS.title: Ref(PUBLIC_SUBNETS),
+        }
+        for resource in new_resources:
+            resource.set_lb_definition(settings)
+        super().__init__(title, stack_template, stack_parameters=lb_input, **kwargs)

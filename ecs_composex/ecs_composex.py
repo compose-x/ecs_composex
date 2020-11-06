@@ -79,12 +79,14 @@ SUPPORTED_X_MODULES = [
     "kms",
     f"{X_KEY}s3",
     "s3",
+    f"{X_KEY}elbv2",
+    "elbv2",
 ]
 EXCLUDED_X_KEYS = [
     f"{X_KEY}configs",
     f"{X_KEY}tags",
     f"{X_KEY}appmesh",
-    f"{X_KEY}elbv2",
+    # f"{X_KEY}elbv2",
     f"{X_KEY}vpc",
     f"{X_KEY}dns",
     f"{X_KEY}cluster",
@@ -178,11 +180,21 @@ def apply_x_configs_to_ecs(settings, root_template, services_stack):
     :param troposphere.Template root_template: The root template for ECS ComposeX
     :param ecs_composex.ecs.ServicesStack services_stack: root stack for services.
     """
+    sub_services = ["elbv2"]
     for resource_name in root_template.resources:
         resource = root_template.resources[resource_name]
         if (
             issubclass(type(resource), ComposeXStack)
             and resource_name in SUPPORTED_X_MODULES
+            and not resource.is_void
+        ):
+            module = getattr(resource, "title")
+            invoke_x_to_ecs(module, settings, services_stack, resource)
+    for resource_name in services_stack.stack_template.resources:
+        resource = services_stack.stack_template.resources[resource_name]
+        if (
+            issubclass(type(resource), ComposeXStack)
+            and resource_name in sub_services
             and not resource.is_void
         ):
             module = getattr(resource, "title")
@@ -248,7 +260,19 @@ def handle_new_xstack(
     root_template,
     xstack,
 ):
+    """
+    Function to create the root stack of the x-resource and assign it to its root stack
+
+    :param str key:
+    :param str res_type:
+    :param ecs_composex.common.settings.ComposeXSettings settings:
+    :param ecs_composex.ecs.ServicesStack services_stack:
+    :param ecs_composex.common.stacks ComposeXStack vpc_stack:
+    :param troposphere.Template root_template:
+    :param ecs_composex.common.stacks ComposeXStack xstack:
+    """
     tcp_services = ["x-rds", "x-appmesh", "x-elbv2"]
+    sub_services = [f"{X_KEY}elbv2"]
     if vpc_stack and key in tcp_services:
         xstack.get_from_vpc_stack(vpc_stack)
     elif not vpc_stack and key in tcp_services:
@@ -261,7 +285,10 @@ def handle_new_xstack(
         and hasattr(xstack, "stack_template")
         and not xstack.is_void
     ):
-        root_template.add_resource(xstack)
+        if key not in sub_services:
+            root_template.add_resource(xstack)
+        else:
+            services_stack.stack_template.add_resource(xstack)
 
 
 def add_x_resources(root_template, settings, services_stack, vpc_stack=None):
@@ -384,8 +411,8 @@ def generate_full_template(settings):
     )
     apply_x_to_x_configs(root_stack.stack_template, settings)
 
-    if keyisset(f"{X_KEY}elbv2", settings.compose_content):
-        elbv2_to_ecs(services_stack, settings)
+    # if keyisset(f"{X_KEY}elbv2", settings.compose_content):
+    #     elbv2_to_ecs(services_stack, settings)
 
     if keyisset("x-appmesh", settings.compose_content):
         mesh = Mesh(settings.compose_content["x-appmesh"], services_stack, settings)
