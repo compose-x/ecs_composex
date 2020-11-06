@@ -39,7 +39,8 @@ def lookup_x_vpc_settings(lookup, session):
     :return: vpc_settings
     :rtype: dict
     """
-
+    vpc_type = "ec2:vpc"
+    subnet_type = "ec2:subnet"
     required_keys = [
         VPC_ID.title,
         PUBLIC_SUBNETS.title,
@@ -56,21 +57,21 @@ def lookup_x_vpc_settings(lookup, session):
         )
     lookup_session = define_lookup_role_from_info(lookup, session)
     vpc_types = {
-        "ec2:vpc": {
+        vpc_type: {
             "regexp": r"(?:^arn:aws(?:-[a-z]+)?:ec2:[a-z0-9-]+:[0-9]{12}:vpc/)(vpc-[a-z0-9]+)$"
         },
-        "ec2:subnet": {
+        subnet_type: {
             "regexp": r"(?:^arn:aws(?:-[a-z]+)?:ec2:[a-z0-9-]+:[0-9]{12}:subnet/)(subnet-[a-z0-9]+)$"
         },
     }
     vpc_arn = find_aws_resource_arn_from_tags_api(
         lookup[VPC_ID.title],
         lookup_session,
-        "ec2:vpc",
+        vpc_type,
         types=vpc_types,
         allow_multi=False,
     )
-    vpc_re = re.compile(vpc_types["ec2:vpc"]["regexp"])
+    vpc_re = re.compile(vpc_types[vpc_type]["regexp"])
     vpc_settings = {
         VPC_ID.title: vpc_re.match(vpc_arn).groups()[0],
         APP_SUBNETS.title: [],
@@ -82,12 +83,12 @@ def lookup_x_vpc_settings(lookup, session):
         subnet_arns = find_aws_resource_arn_from_tags_api(
             lookup[subnet_key],
             lookup_session,
-            "ec2:subnet",
+            subnet_type,
             types=vpc_types,
             allow_multi=True,
         )
         vpc_settings[subnet_key] = [
-            re.match(vpc_types["ec2:subnet"]["regexp"], subnet_arn).groups()[0]
+            re.match(vpc_types[subnet_type]["regexp"], subnet_arn).groups()[0]
             for subnet_arn in subnet_arns
         ]
     return vpc_settings
