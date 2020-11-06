@@ -291,11 +291,14 @@ def define_service_target_group(
     assign_to_service_stack,
 ):
     """
-    Function to create the elbv2 TargetGroup
-
+    Function to create the elbv2 target group
+    :param ecs_composex.elbv2.elbv2_stack.elbv2 resource:
+    :param ecs_composex.common.compose_services.ComposeService service:
     :param ecs_composex.common.compose_services.ComposeFamily family:
+    :param ecs_composex.common.stacks.ComposeXStack resources_root_stack:
     :param dict target_definition:
-    :return: target_group
+    :param bool assign_to_service_stack:
+    :return: the target group
     :rtype: troposphere.elasticloadbalancingv2.TargetGroup
     """
     validate_attributes(target_definition)
@@ -372,6 +375,7 @@ def define_service_target_group_definition(
     :param service:
     :param ecs_composex.common.compose_services.ComposeFamily family:
     :param dict target_def:
+    :param ecs_composex.common.stacks.ComposeXStack resources_root_stack:
     :param bool assign_to_service_stack: Whether we want the GetAtt or Ref on the target group
     :return:
     """
@@ -401,7 +405,7 @@ def define_service_target_group_definition(
     return Ref(service_tgt_group)
 
 
-def handle_services_association(resource, services_stack, res_root_stack):
+def handle_services_association(resource, res_root_stack):
     """
     Function to handle association of listeners and targets to the LB
 
@@ -457,4 +461,4 @@ def elbv2_to_ecs(resources, services_stack, res_root_stack, settings):
         if resources[res_name].lookup and not resources[res_name].properties
     ]
     for resource in new_resources:
-        handle_services_association(resource, services_stack, res_root_stack)
+        handle_services_association(resource, res_root_stack)
