@@ -33,8 +33,8 @@ def validate_rds_settings(lookup_properties):
     :param dict lookup_properties:
     :raises: KeyError, TypeError
     """
-    rds_allowed_keys = {"Name": str, "Tags": list, ROLE_ARN_ARG: str}
-    for key_name in ["cluster", "db", "secret", ROLE_ARN_ARG]:
+    rds_allowed_keys = {"Name": str, "Tags": list}
+    for key_name in ["cluster", "db", "secret"]:
         if keyisset(key_name, lookup_properties):
             for property_name in lookup_properties[key_name]:
                 if property_name not in rds_allowed_keys.keys():
@@ -69,15 +69,18 @@ def validate_rds_lookup(db_name, lookup):
             "The Lookup section for RDS must be an object/dictionary. Got", type(lookup)
         )
     allowed_keys = ["secret", "cluster", "db", ROLE_ARN_ARG]
+    rds_specific = ["secret", "cluster", "db"]
     if not all(key in allowed_keys for key in lookup.keys()):
         raise KeyError("Lookup section allows only", allowed_keys, "Got", lookup.keys())
     if not any(key in ["cluster", "db"] for key in lookup.keys()):
         raise KeyError("You must define at least one of", ["cluster", "db"])
     for key_name in lookup:
-        if not isinstance(lookup[key_name], dict):
+        if key_name in rds_specific and not isinstance(lookup[key_name], dict):
             raise TypeError(
                 f"{key_name} is of type", type(lookup[key_name]), "Expected", dict
             )
+        elif key_name == ROLE_ARN_ARG and not isinstance(lookup[ROLE_ARN_ARG], str):
+            raise TypeError(f"{ROLE_ARN_ARG} must be of type", str)
     if keyisset("cluster", lookup) and keyisset("db", lookup):
         raise KeyError(
             f"{db_name} - You can only search for RDS cluster or db but not both at the same time."
