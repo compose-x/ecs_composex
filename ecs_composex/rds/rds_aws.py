@@ -24,6 +24,7 @@ from ecs_composex.common.aws import (
     find_aws_resource_arn_from_tags_api,
     define_lookup_role_from_info,
 )
+from ecs_composex.iam import ROLE_ARN_ARG
 
 
 def validate_rds_settings(lookup_properties):
@@ -32,8 +33,8 @@ def validate_rds_settings(lookup_properties):
     :param dict lookup_properties:
     :raises: KeyError, TypeError
     """
-    rds_allowed_keys = {"Name": str, "Tags": list}
-    for key_name in ["cluster", "db", "secret"]:
+    rds_allowed_keys = {"Name": str, "Tags": list, ROLE_ARN_ARG: str}
+    for key_name in ["cluster", "db", "secret", ROLE_ARN_ARG]:
         if keyisset(key_name, lookup_properties):
             for property_name in lookup_properties[key_name]:
                 if property_name not in rds_allowed_keys.keys():
@@ -67,7 +68,7 @@ def validate_rds_lookup(db_name, lookup):
         raise TypeError(
             "The Lookup section for RDS must be an object/dictionary. Got", type(lookup)
         )
-    allowed_keys = ["secret", "cluster", "db"]
+    allowed_keys = ["secret", "cluster", "db", ROLE_ARN_ARG]
     if not all(key in allowed_keys for key in lookup.keys()):
         raise KeyError("Lookup section allows only", allowed_keys, "Got", lookup.keys())
     if not any(key in ["cluster", "db"] for key in lookup.keys()):
