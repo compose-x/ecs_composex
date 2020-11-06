@@ -115,7 +115,7 @@ def get_resources_from_tags(session, aws_resource_search, search_tags):
         return None
 
 
-def handle_multi_results(arns, name, res_type, regexp):
+def handle_multi_results(arns, name, res_type, regexp, allow_multi=False):
     """
     Function to evaluate more than one result to see if we can match an unique name.
 
@@ -137,7 +137,7 @@ def handle_multi_results(arns, name, res_type, regexp):
     if found == 1:
         LOG.info(f"Matched {res_type} {name}")
         return found_arn
-    elif found > 1:
+    elif not allow_multi and found > 1:
         raise LookupError(
             f"More than one result was found for {name} / {res_type} "
             "but could not match the name to a single resource."
@@ -150,9 +150,14 @@ def handle_multi_results(arns, name, res_type, regexp):
             " Found with provided tags",
             [re_finder.match(arn).groups()[0] for arn in arns],
         )
+    elif allow_multi and found > 1:
+        LOG.info(f"Found multiple resources for {res_type} and Name/Id {name}.")
+        return arns
 
 
-def handle_search_results(arns, name, res_types, aws_resource_search):
+def handle_search_results(
+    arns, name, res_types, aws_resource_search, allow_multi=False
+):
     """
     Function to parse tag resource search results
 
@@ -170,17 +175,23 @@ def handle_search_results(arns, name, res_types, aws_resource_search):
         )
     if arns and isinstance(name, str):
         return handle_multi_results(
-            arns, name, aws_resource_search, res_types[aws_resource_search]["regexp"]
+            arns,
+            name,
+            aws_resource_search,
+            res_types[aws_resource_search]["regexp"],
+            allow_multi=allow_multi,
         )
     elif not name and len(arns) == 1:
         LOG.info(f"Matched {aws_resource_search} to AWS Resource")
         return arns[0]
-    elif not name and len(arns) != 1:
+    elif not allow_multi and not name and len(arns) > 1:
         raise LookupError(
             f"More than one resource {name}:{aws_resource_search} was found with the current tags."
             "Found",
             arns,
         )
+    elif allow_multi and len(arns) > 1:
+        return arns
 
 
 def validate_search_input(res_types, res_type):
@@ -200,7 +211,9 @@ def validate_search_input(res_types, res_type):
         )
 
 
-def find_aws_resource_arn_from_tags_api(info, session, aws_resource_search, types=None):
+def find_aws_resource_arn_from_tags_api(
+    info, session, aws_resource_search, types=None, allow_multi=False
+):
     """
     Function to find the RDS DB based on info
 
@@ -224,9 +237,11 @@ def find_aws_resource_arn_from_tags_api(info, session, aws_resource_search, type
     name = info["Name"] if keyisset("Name", info) else None
 
     resources_r = get_resources_from_tags(session, aws_resource_search, search_tags)
-    LOG.debug(search_tags)
+    LOG.info(search_tags)
     arns = [i["ResourceARN"] for i in resources_r["ResourceTagMappingList"]]
-    return handle_search_results(arns, name, res_types, aws_resource_search)
+    return handle_search_results(
+        arns, name, res_types, aws_resource_search, allow_multi=allow_multi
+    )
 
 
 def get_region_azs(session):
