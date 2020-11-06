@@ -237,7 +237,7 @@ def find_aws_resource_arn_from_tags_api(
     name = info["Name"] if keyisset("Name", info) else None
 
     resources_r = get_resources_from_tags(session, aws_resource_search, search_tags)
-    LOG.info(search_tags)
+    LOG.debug(search_tags)
     arns = [i["ResourceARN"] for i in resources_r["ResourceTagMappingList"]]
     return handle_search_results(
         arns, name, res_types, aws_resource_search, allow_multi=allow_multi

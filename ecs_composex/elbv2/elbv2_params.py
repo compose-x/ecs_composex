@@ -20,9 +20,9 @@ from troposphere import Parameter
 
 RES_KEY = f"x-{path.basename(path.dirname(path.abspath(__file__)))}"
 
-LB_ID_T = "LBv2Id"
-LB_ARN_T = "LBv2Arn"
-LB_SG_ID_T = "LBv2SgId"
+LB_ID_T = "elbv2Id"
+LB_ARN_T = "elbv2Arn"
+LB_SG_ID_T = "elbv2SecurityGroupId"
 
 LB_ID = Parameter(LB_ID_T, Type="String")
 LB_ARN = Parameter(LB_ARN_T, Type="String")

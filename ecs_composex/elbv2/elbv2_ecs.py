@@ -28,12 +28,13 @@ from troposphere.elasticloadbalancingv2 import (
 )
 
 from troposphere.ecs import LoadBalancer as EcsLb
+from troposphere.ec2 import SecurityGroupIngress
 
-from ecs_composex.common import keyisset
+from ecs_composex.common import keyisset, add_parameters
 from ecs_composex.common import LOG
 from ecs_composex.common.outputs import ComposeXOutput
-from ecs_composex.vpc.vpc_params import VPC_ID
-from ecs_composex.elbv2.elbv2_params import RES_KEY, LB_ARN, TGT_GROUP_ARN
+from ecs_composex.vpc.vpc_params import VPC_ID, SG_ID_TYPE
+from ecs_composex.elbv2.elbv2_params import RES_KEY, LB_ARN, TGT_GROUP_ARN, LB_SG_ID
 from ecs_composex.ecs.ecs_params import SERVICE_T
 
 
@@ -246,6 +247,41 @@ def validate_props_and_service_definition(props, service):
         )
 
 
+def handle_sg_lb_ingress_to_service(
+    resource, family, resources_stack, assign_to_service_stack
+):
+    """
+    Function to add ingress from the LB to Target if using ALB
+    :param resource:
+    :param family:
+    :param resources_stack:
+    :param bool assign_to_service_stack:
+    :return:
+    """
+    if resource.is_nlb():
+        return
+    if assign_to_service_stack:
+        family.service_config.network.add_lb_ingress(
+            family,
+            lb_name=resource.logical_name,
+            lb_sg_ref=GetAtt(resource.lb_sg, "GroupId"),
+        )
+    elif not assign_to_service_stack:
+        lb_sg_param = Parameter(f"{resource.lb_sg.title}", Type=SG_ID_TYPE)
+        add_parameters(family.template, [lb_sg_param])
+        family.service_config.network.add_lb_ingress(
+            family, lb_name=resource.logical_name, lb_sg_ref=Ref(lb_sg_param)
+        )
+        family.stack_parameters.update(
+            {
+                f"{resource.lb_sg.title}": GetAtt(
+                    resources_stack.title,
+                    f"Outputs.{resource.lb_sg.title}",
+                )
+            }
+        )
+
+
 def define_service_target_group(
     resource,
     service,
@@ -298,7 +334,6 @@ def define_service_target_group(
                 export=False,
             ).outputs
         )
-
         tgt_parameter = Parameter(
             f"{target_group.title}Arn", Type="String", template=family.template
         )
@@ -316,6 +351,9 @@ def define_service_target_group(
             TargetGroupArn=Ref(tgt_parameter),
         )
         family.ecs_service.ecs_service.LoadBalancers.append(service_lb)
+        handle_sg_lb_ingress_to_service(
+            resource, family, resources_root_stack, assign_to_service_stack
+        )
     return target_group
 
 
