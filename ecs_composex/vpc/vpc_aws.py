@@ -16,18 +16,16 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import re
-from botocore.exceptions import ClientError
 
-from ecs_composex.common import keyisset, LOG
+from ecs_composex.common.aws import (
+    define_lookup_role_from_info,
+    find_aws_resource_arn_from_tags_api,
+)
 from ecs_composex.vpc.vpc_params import (
     VPC_ID,
     APP_SUBNETS,
     PUBLIC_SUBNETS,
     STORAGE_SUBNETS,
-)
-from ecs_composex.common.aws import (
-    define_lookup_role_from_info,
-    find_aws_resource_arn_from_tags_api,
 )
 
 TAGS_KEY = "Tags"
