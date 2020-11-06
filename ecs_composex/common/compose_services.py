@@ -771,7 +771,7 @@ class ComposeFamily(object):
                 service.depends_on.append(xray_service.name)
                 LOG.debug(f"Adding xray-daemon as dependency to {service.name}")
             self.add_service(xray_service)
-            if not xray_service.name not in self.ignored_services:
+            if xray_service.name not in self.ignored_services:
                 self.ignored_services.append(xray_service)
 
     def reset_logging_retention_period(self, closest_valid):
