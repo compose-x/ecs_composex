@@ -150,7 +150,12 @@ class XResource(object):
                 f[0].name for f in self.families_targets
             ]:
                 self.families_targets.append(
-                    (settings.families[service_name], True, [], service["access"])
+                    (
+                        settings.families[service_name],
+                        True,
+                        settings.families[service_name].services,
+                        service["access"],
+                    )
                 )
             elif service_name in settings.families and service_name in [
                 f[0].name for f in self.families_targets

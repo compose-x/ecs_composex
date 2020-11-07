@@ -24,6 +24,7 @@ from ecs_composex.common.aws import (
     find_aws_resource_arn_from_tags_api,
     define_lookup_role_from_info,
 )
+from ecs_composex.iam import ROLE_ARN_ARG
 
 
 def validate_rds_settings(lookup_properties):
@@ -67,16 +68,19 @@ def validate_rds_lookup(db_name, lookup):
         raise TypeError(
             "The Lookup section for RDS must be an object/dictionary. Got", type(lookup)
         )
-    allowed_keys = ["secret", "cluster", "db"]
+    allowed_keys = ["secret", "cluster", "db", ROLE_ARN_ARG]
+    rds_specific = ["secret", "cluster", "db"]
     if not all(key in allowed_keys for key in lookup.keys()):
         raise KeyError("Lookup section allows only", allowed_keys, "Got", lookup.keys())
     if not any(key in ["cluster", "db"] for key in lookup.keys()):
         raise KeyError("You must define at least one of", ["cluster", "db"])
     for key_name in lookup:
-        if not isinstance(lookup[key_name], dict):
+        if key_name in rds_specific and not isinstance(lookup[key_name], dict):
             raise TypeError(
                 f"{key_name} is of type", type(lookup[key_name]), "Expected", dict
             )
+        elif key_name == ROLE_ARN_ARG and not isinstance(lookup[ROLE_ARN_ARG], str):
+            raise TypeError(f"{ROLE_ARN_ARG} must be of type", str)
     if keyisset("cluster", lookup) and keyisset("db", lookup):
         raise KeyError(
             f"{db_name} - You can only search for RDS cluster or db but not both at the same time."
