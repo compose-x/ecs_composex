@@ -24,7 +24,7 @@ import re
 from json import dumps
 from copy import deepcopy
 
-from troposphere import Ref, Sub, GetAtt, Select
+from troposphere import Ref, Sub, GetAtt, Select, Parameter
 from troposphere import AWS_STACK_NAME, AWS_NO_VALUE
 
 from troposphere.ec2 import SecurityGroup, EIP
@@ -47,7 +47,7 @@ from troposphere.elasticloadbalancingv2 import (
     TargetGroupTuple,
 )
 
-from ecs_composex.common import keyisset, keypresent, build_template
+from ecs_composex.common import keyisset, keypresent, build_template, add_parameters
 from ecs_composex.common import NONALPHANUM, LOG
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME
 from ecs_composex.common.stacks import ComposeXStack
@@ -55,6 +55,8 @@ from ecs_composex.common.outputs import ComposeXOutput
 
 from ecs_composex.common.compose_resources import XResource, set_resources
 from ecs_composex.vpc.vpc_params import VPC_ID, PUBLIC_SUBNETS, APP_SUBNETS
+from ecs_composex.acm.acm_stack import init_acm_certs
+from ecs_composex.acm.acm_params import RES_KEY as ACM_KEY
 
 from ecs_composex.elbv2.elbv2_params import RES_KEY, LB_SG_ID
 
@@ -288,6 +290,57 @@ def handle_non_default_services(listener, services_def):
     return rules
 
 
+def validate_new_or_lookup_cert_matches(src_name, new_acm_certs, lookup_acm_certs):
+    if src_name not in [
+        new_cert.name for new_cert in new_acm_certs
+    ] and src_name not in [new_cert.name for new_cert in lookup_acm_certs]:
+        raise ValueError(
+            "No new or looked up ACM certificate found.",
+            src_name,
+            "Expected one of ",
+            [new_cert.name for new_cert in new_acm_certs],
+            [new_cert.name for new_cert in lookup_acm_certs],
+        )
+
+
+def import_new_acm_certs(listener, src_name, settings, listener_stack):
+    new_acm_certs = []
+    lookup_acm_certs = []
+    if not keyisset(ACM_KEY, settings.compose_content):
+        raise LookupError(f"There is no {ACM_KEY} defined in your docker-compose files")
+    new_acm_certs = [
+        settings.compose_content[ACM_KEY][name]
+        for name in settings.compose_content[ACM_KEY]
+        if settings.compose_content[ACM_KEY][name].cfn_resource
+    ]
+    lookup_acm_certs = [
+        settings.compose_content[ACM_KEY][name]
+        for name in settings.compose_content[ACM_KEY]
+        if settings.compose_content[ACM_KEY][name].lookup
+    ]
+    the_cert = None
+    for cert in new_acm_certs:
+        if cert.name == src_name:
+            the_cert = cert
+    if not the_cert:
+        for cert in lookup_acm_certs:
+            if cert.name == src_name:
+                the_cert = cert
+                break
+    cert_param = Parameter(f"{the_cert.logical_name}Arn", Type="String")
+    add_parameters(listener_stack.stack_template, [cert_param])
+    listener_stack.Parameters.update({cert_param.title: Ref(the_cert.cfn_resource)})
+    title = f"{listener.title}Certificates"
+    if title not in listener_stack.stack_template.resources:
+        listener_stack.stack_template.add_resource(
+            ListenerCertificate(
+                title,
+                Certificates=[Certificate(CertificateArn=Ref(cert_param))],
+                ListenerArn=Ref(listener),
+            )
+        )
+
+
 class ComposeListener(Listener):
     attributes = [
         "Condition",
@@ -335,7 +388,6 @@ class ComposeListener(Listener):
         self.name = f"{lb.logical_name}{listener_kwargs['Port']}"
         super().__init__(self.name, **listener_kwargs)
         self.DefaultActions = []
-        self.handle_certificates()
 
     def define_default_actions(self, template):
         """
@@ -377,13 +429,16 @@ class ComposeListener(Listener):
         else:
             raise ValueError(f"Failed to determine any default action for {self.title}")
 
-    def handle_certificates(self):
+    def handle_certificates(self, settings, listener_stack):
         """
         Method to handle certificates
+
+        :param settings:
         :return:
         """
+
         valid_sources = [
-            ("x-acm", str, None),
+            ("x-acm", str, import_new_acm_certs),
             ("Arn", str, None),
             ("CertificateArn", str, None),
         ]
@@ -401,6 +456,13 @@ class ComposeListener(Listener):
                         "Got",
                         cert_source,
                     )
+                for src_type in valid_sources:
+                    if (
+                        src_type[0] == cert_source
+                        and isinstance(cert_source, src_type[1])
+                        and src_type[2]
+                    ):
+                        src_type[2](self, source_value, settings, listener_stack)
 
     def map_services(self, lb):
         if not self.services:

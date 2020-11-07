@@ -1,7 +1,17 @@
 ---
 # ELBv2 creation for services
 
-
+x-acm:
+  abcd:
+    Properties:
+      DomainName: test.lambda-my-aws.io
+      DomainValidationOptions:
+        - HostedZoneId: Z1HDN31PQW6ZN3
+          DomainName: test.lambda-my-aws.io
+      SubjectAlternativeNames:
+        - anothertest.lambda-my-aws.io
+        - yet.another.test.lambda-my-aws.io
+      ValidationMethod: DNS
 
 x-elbv2:
   lbA:

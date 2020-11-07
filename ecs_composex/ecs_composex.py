@@ -46,6 +46,8 @@ from ecs_composex.compute.compute_params import (
     MIN_CAPACITY_T,
 )
 from ecs_composex.compute.compute_stack import ComputeStack
+from ecs_composex.acm.acm_stack import init_acm_certs
+from ecs_composex.acm.acm_params import RES_KEY as ACM_KEY
 from ecs_composex.dns import add_parameters_and_conditions as dns_inputs, DnsSettings
 from ecs_composex.ecs import ServicesStack
 from ecs_composex.ecs import ecs_params
@@ -86,7 +88,7 @@ EXCLUDED_X_KEYS = [
     f"{X_KEY}configs",
     f"{X_KEY}tags",
     f"{X_KEY}appmesh",
-    # f"{X_KEY}elbv2",
+    f"{X_KEY}acm",
     f"{X_KEY}vpc",
     f"{X_KEY}dns",
     f"{X_KEY}cluster",
@@ -398,6 +400,8 @@ def generate_full_template(settings):
     services_stack = create_services(
         root_stack, settings, vpc_stack, dns_settings.nested_params, create_cluster
     )
+    if keyisset(ACM_KEY, settings.compose_content):
+        init_acm_certs(settings, dns_settings, services_stack)
     add_x_resources(
         root_stack.stack_template,
         settings,
@@ -410,10 +414,6 @@ def generate_full_template(settings):
         services_stack,
     )
     apply_x_to_x_configs(root_stack.stack_template, settings)
-
-    # if keyisset(f"{X_KEY}elbv2", settings.compose_content):
-    #     elbv2_to_ecs(services_stack, settings)
-
     if keyisset("x-appmesh", settings.compose_content):
         mesh = Mesh(settings.compose_content["x-appmesh"], services_stack, settings)
         mesh.render_mesh_template(services_stack)

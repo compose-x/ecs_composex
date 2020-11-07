@@ -36,6 +36,7 @@ from ecs_composex.common.outputs import ComposeXOutput
 from ecs_composex.vpc.vpc_params import VPC_ID, SG_ID_TYPE
 from ecs_composex.elbv2.elbv2_params import RES_KEY, LB_ARN, TGT_GROUP_ARN, LB_SG_ID
 from ecs_composex.ecs.ecs_params import SERVICE_T
+from ecs_composex.acm.acm_params import RES_KEY as ACM_KEY
 
 
 def validate_tcp_health_counts(props):
@@ -405,7 +406,7 @@ def define_service_target_group_definition(
     return Ref(service_tgt_group)
 
 
-def handle_services_association(resource, res_root_stack):
+def handle_services_association(resource, res_root_stack, settings):
     """
     Function to handle association of listeners and targets to the LB
 
@@ -415,7 +416,9 @@ def handle_services_association(resource, res_root_stack):
     :return:
     """
     template = res_root_stack.stack_template
+    stack = res_root_stack
     if len(resource.families_targets) == 1:
+        stack = resource.families_targets[0][1].stack
         template = resource.families_targets[0][1].template
         resource.set_listeners(template)
         resource.associate_to_template(template)
@@ -428,6 +431,8 @@ def handle_services_association(resource, res_root_stack):
             assign_to_service_stack=True,
         )
         resource.services[0]["target_arn"] = tgt_arn
+        for listener in resource.listeners:
+            listener.handle_certificates(settings, stack)
     else:
         resource.set_listeners(template)
         resource.associate_to_template(template)
@@ -444,6 +449,7 @@ def handle_services_association(resource, res_root_stack):
         listener.map_services(resource)
     for listener in resource.listeners:
         listener.define_default_actions(template)
+        listener.handle_certificates(settings, stack)
 
 
 def elbv2_to_ecs(resources, services_stack, res_root_stack, settings):
@@ -461,4 +467,4 @@ def elbv2_to_ecs(resources, services_stack, res_root_stack, settings):
         if resources[res_name].lookup and not resources[res_name].properties
     ]
     for resource in new_resources:
-        handle_services_association(resource, res_root_stack)
+        handle_services_association(resource, res_root_stack, settings)
