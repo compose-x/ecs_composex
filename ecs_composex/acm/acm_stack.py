@@ -80,6 +80,19 @@ class Certificate(object):
         :param dns_settings:
         :return:
         """
+        validations = [
+            DomainValidationOption(
+                DomainName=self.properties["DomainName"],
+                HostedZoneId=Ref(PUBLIC_DNS_ZONE_ID),
+            )
+        ]
+        if keyisset("SubjectAlternativeNames", self.properties):
+            for alt_domain in self.properties["SubjectAlternativeNames"]:
+                validations.append(
+                    DomainValidationOption(
+                        DomainName=alt_domain, HostedZoneId=Ref(PUBLIC_DNS_ZONE_ID)
+                    )
+                )
         self.cfn_resource = AcmCert(
             self.logical_name,
             DomainName=self.properties["DomainName"],
@@ -87,12 +100,7 @@ class Certificate(object):
             if keyisset("SubjectAlternativeNames", self.properties)
             else Ref(AWS_NO_VALUE),
             ValidationMethod="DNS",
-            DomainValidationOptions=[
-                DomainValidationOption(
-                    DomainName=self.properties["DomainName"],
-                    HostedZoneId=Ref(PUBLIC_DNS_ZONE_ID),
-                )
-            ],
+            DomainValidationOptions=validations,
             Tags=Tags(
                 Name=self.properties["DomainName"], ZoneId=Ref(PUBLIC_DNS_ZONE_ID)
             ),

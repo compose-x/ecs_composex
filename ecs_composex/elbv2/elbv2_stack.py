@@ -303,6 +303,49 @@ def validate_new_or_lookup_cert_matches(src_name, new_acm_certs, lookup_acm_cert
         )
 
 
+def add_extra_certificate(listener, cert_arn):
+    """
+    Function to add Certificates to listener
+
+    :param troposphere.elasticloadbalancingv2.Listener listener:
+    :param cert_arn:
+    :return:
+    """
+    if hasattr(listener, "Certificates"):
+        certs = getattr(listener, "Certificates")
+        certs.append(Certificate(CertificateArn=cert_arn))
+    else:
+        setattr(listener, "Certificates", [Certificate(CertificateArn=cert_arn)])
+
+
+def rectify_listener_protocol(listener):
+    """
+    Function to rectify the listener type when adding cert
+
+    :param troposphere.elasticloadbalancingv2.Listener listener:
+    :raises: ValueError if trying to set TLS for UDP
+    """
+    alb_protocols = ["HTTP", "HTTPS"]
+    nlb_protocols = ["TCP", "UDP", "TCP_UDP", "TLS"]
+    print(
+        "PROTO",
+        listener.title,
+        listener.Protocol,
+        listener.Protocol in nlb_protocols,
+        listener.Protocol == "TCP",
+    )
+    if listener.Protocol in alb_protocols and listener.Protocol == "HTTP":
+        LOG.warn("Listener protocol is HTTP but certificate defined. Changing to HTTPS")
+        listener.Protocol = "HTTPS"
+    elif listener.Protocol in nlb_protocols and listener.Protocol == "TCP":
+        LOG.warn("Listener protocol is TCP but certificate defined. Changing to TLS")
+        listener.Protocol = "TLS"
+    elif listener.Protocol in nlb_protocols and (
+        listener.Protocol == "UDP" or listener.Protocol == "TCP_UDP"
+    ):
+        raise ValueError("NLB configured with certificates require TLS.")
+
+
 def import_new_acm_certs(listener, src_name, settings, listener_stack):
     new_acm_certs = []
     lookup_acm_certs = []
@@ -330,15 +373,8 @@ def import_new_acm_certs(listener, src_name, settings, listener_stack):
     cert_param = Parameter(f"{the_cert.logical_name}Arn", Type="String")
     add_parameters(listener_stack.stack_template, [cert_param])
     listener_stack.Parameters.update({cert_param.title: Ref(the_cert.cfn_resource)})
-    title = f"{listener.title}Certificates"
-    if title not in listener_stack.stack_template.resources:
-        listener_stack.stack_template.add_resource(
-            ListenerCertificate(
-                title,
-                Certificates=[Certificate(CertificateArn=Ref(cert_param))],
-                ListenerArn=Ref(listener),
-            )
-        )
+    add_extra_certificate(listener, Ref(cert_param))
+    rectify_listener_protocol(listener)
 
 
 class ComposeListener(Listener):

@@ -431,8 +431,6 @@ def handle_services_association(resource, res_root_stack, settings):
             assign_to_service_stack=True,
         )
         resource.services[0]["target_arn"] = tgt_arn
-        for listener in resource.listeners:
-            listener.handle_certificates(settings, stack)
     else:
         resource.set_listeners(template)
         resource.associate_to_template(template)
