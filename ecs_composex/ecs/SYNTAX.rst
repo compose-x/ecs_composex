@@ -60,11 +60,8 @@ Subkeys of the section:
 
 *   `is_public`_
 
-*   `lb_type`_
-
 *   `use_cloudmap`_
 
-*   `healthcheck`_
 
 .. code-block:: yaml
 
@@ -76,9 +73,7 @@ Subkeys of the section:
         - 80:80
         x-configs:
           network:
-	    lb_type: application
             ingress: {}
-            healthcheck: {}
 
 
 ingress
@@ -120,30 +115,12 @@ is_public
 boolean to indicate whether or not the service should be accessible publicly. If set to true, the *load balancer* associated
 to the service will be made public.
 
-lb_type
-"""""""
-
-When using a load-balancer to reach to the service, specify the Load Balancer type.
-Accepted values:
-
-* network
-* application
 
 use_cloudmap
 """""""""""""
 
 This indicates whether or not you want the service to be added to your VPC CloudMap instance. if set to true, it will
 automatically register the service to the discovery instance.
-
-healthcheck
-"""""""""""
-
-At this time, this does not replace the docker compose native functionality of healthcheck. It is a simplified expression of it
-which is used for cloudmap or the load-balancer to register the targets.
-
-.. note::
-
-    This is used for network healthchecks, not service healthcheck
 
 
 scaling
@@ -497,7 +474,10 @@ Allows you to enter the name of an existing ECS Cluster that you want to deploy 
     :caption: Lookup existing cluster example.
 
     x-cluster:
-      Lookup: mycluster
+      Lookup:
+        Tags:
+          - name: clusterabcd
+          - costcentre: lambda
 
 
 .. warning::

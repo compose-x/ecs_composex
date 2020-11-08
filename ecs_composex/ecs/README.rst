@@ -1,4 +1,9 @@
-﻿From docker-compose to AWS ECS
+﻿=========================
+ECS meets docker-compose
+=========================
+
+
+From docker-compose to AWS ECS
 ================================
 
 This module is responsible to understanding the docker compose file as a whole and then more specifically putting
@@ -22,7 +27,6 @@ you can define **x-configs** into the services definitions.
 
 Features that ECS ComposeX takes care of for you, if you needed to:
 
-* Create AWS LoadBalancers, NLB or ALB that route traffic to your applications
 * Register services into Service Discovery using AWS Cloud Map
 * Adds X-Ray side car when you need distributed tracing
 * Calculates the compute requirements based on the docker-compose v3 declaration
