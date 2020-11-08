@@ -94,19 +94,120 @@ CLI for `config`
 
 
 
-AWS Resources support
+AWS & Docker Resources support
 =====================
 
+AWS Services
+------------
+
 * `AWS ECS`_: from docker-compose to ECS transparently, using AWS Fargate primarily.
-* `AWS VPC`_: create or use existing VPC to deploy your services
+    * Supports CPU/RAM autoscaling
+    * Define ingress rules from existing IP sources, EC2 Security Groups and EC2 PrefixLists
+* `AWS ELBv2`_: Define your Load Balancers to pass traffic to your services.
+    * Map one or more services to a single ELBv2
+    * Define simple rules to send traffic to different services
+* `AWS ACM`_: Create or import existing ACM Certificates to map to your Load Balancers.
+    * Only supports public ACM certificates, for now!
 * `AWS AppMesh`_: Services mesh for your services.
+    * Your mesh made easy, backed up by AWS CloudMap for services discovery.
 * `AWS SQS`_: queues for distributed workloads
+    * With AutoScaling support based on number of messages
 * `AWS RDS`_: databases integration made easy
-* `AWS EC2`_: Deploy your services on EC2 for custom settings. Features SpotFleet by default.
+* `AWS DynamoDB`_: Create and use dynamodb tables with your services
+* `AWS S3`_: Buckets creation and access simplified
+    * On import via **Lookup**, automatically identifies KMS encryption key
+* `AWS IAM`_
+    * Add an IAM Permissions Boundary policy
+    * Add manually defined IAM policies for extra control
 * `AWS KMS`_: Manage CMK for your deployments
-* AWS SNS
+    * Upcoming integration to services supporting KMS encryption
+* `AWS VPC`_: create or use existing VPC to deploy your services
+    * Create new VPC
+    * Use existing VPC or Subnets
+* `AWS SNS`_: Create topics and subscriptions to publish to.
+* `AWS EC2`_: Deploy your services on EC2 for custom settings. Features SpotFleet by default.
 
 
+docker-compose
+--------------
+
+* healthcheck
+* environment
+* secrets
+* deploy/replicas: Define how many tasks you want running for your service.
+* deploy/resources: Automatically map your services resources to an AWS Fargate compatible CPU/RAM combination
+* image (that'd be a problem if that did not work!)
+
+Why use ECS ComposeX ?
+======================
+
+ECS ComposeX (or ComposeX for friends) first came out in early March, with some very basic features
+and has grown over the past few months to add more and more features.
+
+Since then, AWS released Copilot and has announced working with Docker to implement similar capabilities to allow
+developers to have a better experience at developing as they would normally do and deploying to ECS.
+
+However, I found that the feature set still remains somewhat limited, and as a Cloud Engineer working daily with developers,
+I constantly have to balance features for developers and best practice in using AWS.
+
+And at this point in time, neither of the previous tools are mentioned allow to do what ECS ComposeX do:
+
+* Retain full docker-compose format specification compatibility without introducing
+  a new format (Copilot has its own Environment file format)
+* Provide support for more AWS services, such as RDS, DynamoDB, SQS etc.,
+  which is not something supported in the Docker ecs-plugin or desktop app.
+
+
+Trying to implement DevOps starting with developers
+----------------------------------------------------
+
+Whilst this is something that can be used by AWS Cloud Engineers tomorrow to deploy applications on ECS on the behalf
+of their developers, the purpose of ECS ComposeX is to enable developers with a simplistic and familiar syntax that
+takes away the need to be an AWS Expert. If tomorrow developers using ComposeX feel comfortable to deploy services
+by themselves, I would be able to stop hand-holding them all the time and focus on other areas.
+
+
+Philosphy
+==========
+
+CloudFormation is awesome, the documentation is excellent and the format easy. So ECS ComposeX wants to keep the format
+of resources Properties as close to the orignal as possible as well as making it easier as well, just alike resources
+like **AWS::Serverless::Function** which will create all the resources around your Lambda Function as well as the function.
+
+Community focused
+------------------
+
+Any new Feature Request submitted by someone other than myself will get their request prioritized to try address their
+use-cases as quickly as possible.
+
+`Submit your Feature Request here <https://github.com/lambda-my-aws/ecs_composex/issues/new/choose>`_
+
+Ensure things work
+------------------
+
+It takes an insane amount of time to test everything as, generating CFN templates is easy, testing that everything
+works end-to-end is a completely different thing.
+
+I will always do my best to ensure that any new feature is tested end-to-end, but shall anything slip through the cracks,
+please feel free to report your errors `here <https://github.com/lambda-my-aws/ecs_composex/issues/new/choose>`_
+
+
+Modularity or "Plug & Play"
+---------------------------
+
+The majority of people who are going to use ECS ComposeX on a daily basis should be developers who need to have an
+environment of their own and want to quickly iterate over it. However, it is certainly something that Cloud Engineers
+in charge of the AWS accounts etc. would want to use to make their own lives easy too.
+
+In many areas, you as the end-user of ComposeX will already have infrastructure in place: VPC, DBs and what not.
+So as much as possible, you will be able in ComposeX to define `Lookup` sections which will find your existing resources,
+and map these to the services.
+
+Fargate First
+-------------
+
+However the original deployments and work on this project was done using EC2 instances (using SpotFleet), everything
+is now implemented to work on AWS Fargate First (2020-06-06).
 
 Documentation
 =============
@@ -132,15 +233,6 @@ Follow the news and technical articles on using ECS ComposeX on the `Blog`_
 
 * `CICD Pipeline for multiple services on AWS ECS with ECS ComposeX`_
 
-.. tip::
-
-    If you do not need extra AWS resources such as SQS queues to be created as part of these microservices deployments,
-    I would recommend to use `AWS ECS CLI`_ which does already a lot of the work for the services.
-    Alternatively, use the AWS CLI v2. It is absolutely smashing-ly awesome and might be just what you need
-    This tool aims to reproduce the original ECS CLI behaviour whilst adding logic for non ECS resources that you want
-    to create in your environment.
-
-
 
 Credits
 =======
@@ -162,11 +254,17 @@ This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypack
 .. _ECS ComposeX Project: https://github.com/orgs/lambda-my-aws/projects/3
 .. _CICD Pipeline for multiple services on AWS ECS with ECS ComposeX: https://blog.ecs-composex.lambda-my-aws.io/posts/cicd-pipeline-for-multiple-services-on-aws-ecs-with-ecs-composex/
 
-.. _AWS ECS: https://nightly.docs.ecs-composex.lambda-my-aws.io/features.html#services
-.. _AWS VPC: https://nightly.docs.ecs-composex.lambda-my-aws.io/features.html#aws-vpc-needs-no-introduction
-.. _AWS RDS: https://nightly.docs.ecs-composex.lambda-my-aws.io/features.html#aws-rds
-.. _AWS SQS: https://nightly.docs.ecs-composex.lambda-my-aws.io/features.html#aws-sqs
-.. _AWS KMS: https://nightly.docs.ecs-composex.lambda-my-aws.io/features.html#aws-kms
+.. _AWS ECS: https://nightly.docs.ecs-composex.lambda-my-aws.io/syntax/ecs.html
+.. _AWS VPC: https://nightly.docs.ecs-composex.lambda-my-aws.io/syntax/vpc.html
+.. _AWS RDS: https://nightly.docs.ecs-composex.lambda-my-aws.io/syntax/rds.html
+.. _AWS SQS: https://nightly.docs.ecs-composex.lambda-my-aws.io/syntax/sqs.html
+.. _AWS KMS: https://nightly.docs.ecs-composex.lambda-my-aws.io/syntax/kms.html
+.. _AWS DynamoDB: https://nightly.docs.ecs-composex.lambda-my-aws.io/syntax/dynamodb.html
+.. _AWS ACM: https://nightly.docs.ecs-composex.lambda-my-aws.io/syntax/acm.html
+.. _AWS ELBv2: https://nightly.docs.ecs-composex.lambda-my-aws.io/syntax/elbv2.html
+.. _AWS S3: https://nightly.docs.ecs-composex.lambda-my-aws.io/syntax/s3.html
+.. _AWS IAM:
+.. _AWS SNS:https://nightly.docs.ecs-composex.lambda-my-aws.io/syntax/sns.html
 
 .. _AWS EC2: https://nightly.docs.ecs-composex.lambda-my-aws.io/features.html#ec2-resources-for-ecs-cluster
 .. _AWS AppMesh: https://nightly.docs.ecs-composex.lambda-my-aws.io/features.html#aws-appmesh-aws-cloud-map-for-services-mesh-discovery

@@ -47,4 +47,3 @@ With the given AZs of your region, it will create automatically all the override
 
     This spotfleet comes with a set of predefined Scaling policies, in order to further reduce cost or allow for
     scaling out based on EC2 metrics.
-

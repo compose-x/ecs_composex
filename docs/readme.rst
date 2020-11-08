@@ -90,17 +90,75 @@ Usage
                             Output directory to write all the templates to.
 
 
+Why use ECS ComposeX ?
+======================
 
-.. note::
+ECS ComposeX (or ComposeX for friends) first came out in early March, with some very basic features
+and has grown over the past few months to add more and more features.
 
-    Each component can also use the docker-compose file but be deployed on its own, allowing, for production workloads,
-    to deploy each component separately to avoid dependencies on each other.
+Since then, AWS released Copilot and has announced working with Docker to implement similar capabilities to allow
+developers to have a better experience at developing as they would normally do and deploying to ECS.
 
+However, I found that the feature set still remains somewhat limited, and as a Cloud Engineer working daily with developers,
+I constantly have to balance features for developers and best practice in using AWS.
+
+And at this point in time, neither of the previous tools are mentioned allow to do what ECS ComposeX do:
+
+* Retain full docker-compose format specification compatibility without introducing
+  a new format (Copilot has its own Environment file format)
+* Provide support for more AWS services, such as RDS, DynamoDB, SQS etc.,
+  which is not something supported in the Docker ecs-plugin or desktop app.
+
+
+Trying to implement DevOps starting with developers
+----------------------------------------------------
+
+Whilst this is something that can be used by AWS Cloud Engineers tomorrow to deploy applications on ECS on the behalf
+of their developers, the purpose of ECS ComposeX is to enable developers with a simplistic and familiar syntax that
+takes away the need to be an AWS Expert. If tomorrow developers using ComposeX feel comfortable to deploy services
+by themselves, I would be able to stop hand-holding them all the time and focus on other areas.
+
+
+Philosphy
+==========
+
+CloudFormation is awesome, the documentation is excellent and the format easy. So ECS ComposeX wants to keep the format
+of resources Properties as close to the orignal as possible as well as making it easier as well, just alike resources
+like **AWS::Serverless::Function** which will create all the resources around your Lambda Function as well as the function.
+
+Community focused
+------------------
+
+Any new Feature Request submitted by someone other than myself will get their request prioritized to try address their
+use-cases as quickly as possible.
+
+`Submit your Feature Request here <https://github.com/lambda-my-aws/ecs_composex/issues/new/choose>`_
+
+Ensure things work
+------------------
+
+It takes an insane amount of time to test everything as, generating CFN templates is easy, testing that everything
+works end-to-end is a completely different thing.
+
+I will always do my best to ensure that any new feature is tested end-to-end, but shall anything slip through the cracks,
+please feel free to report your errors `here <https://github.com/lambda-my-aws/ecs_composex/issues/new/choose>`_
+
+
+Modularity or "Plug & Play"
+---------------------------
+
+The majority of people who are going to use ECS ComposeX on a daily basis should be developers who need to have an
+environment of their own and want to quickly iterate over it. However, it is certainly something that Cloud Engineers
+in charge of the AWS accounts etc. would want to use to make their own lives easy too.
+
+In many areas, you as the end-user of ComposeX will already have infrastructure in place: VPC, DBs and what not.
+So as much as possible, you will be able in ComposeX to define `Lookup` sections which will find your existing resources,
+and map these to the services.
 
 Fargate First
 -------------
 
-However the original deployments and work on this project was done using EC2 instances (using SpotFleet mostly), everything
+However the original deployments and work on this project was done using EC2 instances (using SpotFleet), everything
 is now implemented to work on AWS Fargate First (2020-06-06).
 
 .. note::
@@ -117,7 +175,7 @@ is now implemented to work on AWS Fargate First (2020-06-06).
     This tool aims to reproduce the original ECS CLI behaviour whilst adding logic for non ECS resources that you want to create in your environment.
 
 License
-==========================
+=======
 
 * Free software: GPLv3+
 
