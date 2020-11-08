@@ -273,7 +273,7 @@ def handle_new_xstack(
     :param troposphere.Template root_template:
     :param ecs_composex.common.stacks ComposeXStack xstack:
     """
-    tcp_services = ["x-rds", "x-appmesh", "x-elbv2"]
+    tcp_services = ["x-rds", "x-appmesh"]
     sub_services = [f"{X_KEY}elbv2"]
     if vpc_stack and key in tcp_services:
         xstack.get_from_vpc_stack(vpc_stack)
