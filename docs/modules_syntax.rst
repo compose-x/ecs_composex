@@ -1,8 +1,11 @@
+.. _syntax:
+
 .. toctree::
 
     syntax_links/common
     syntax_links/ecs
     syntax_links/appmesh
+    syntax_links/elbv2
     syntax_links/vpc
     syntax_links/sqs
     syntax_links/rds
