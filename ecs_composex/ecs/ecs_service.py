@@ -317,7 +317,7 @@ class Service(object):
     Class representing the service from the Docker compose file and translate it into
     AWS ECS Task Definition and Service.
 
-    :cvar list links: the links used for DependsOn of the service stack
+    :cvar list syntax_links: the syntax_links used for DependsOn of the service stack
     :cvar list dependencies: list of services used for the DependsOn of the service stack
     :cvar ServiceConfig config: The service configuration
     :cvar troposphere.ecs.TaskDefinition task_definition: The service task definition for ECS

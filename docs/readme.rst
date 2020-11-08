@@ -30,8 +30,6 @@ Usage
 
 .. code-block:: bash
 
-.. code-block:: bash
-
     usage: ecs-composex [-h] {up,render,create,config,init,version} ...
 
     positional arguments:

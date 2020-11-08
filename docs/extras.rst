@@ -1,4 +1,8 @@
-﻿ECS ComposeX aims to make life easy to take your application to AWS ECS, with using AWS Fargate as the primary
+﻿=======
+Extras
+=======
+
+ECS ComposeX aims to make life easy to take your application to AWS ECS, with using AWS Fargate as the primary
 focus (still, allows to run on EC2 should you need to).
 
 AWS AppMesh integration

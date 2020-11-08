@@ -1,24 +1,14 @@
+.. toctree::
 
-.. include:: ../ecs_composex/COMMON_SYNTAX.rst
-
-.. include:: ../ecs_composex/ecs/SYNTAX.rst
-
-.. include:: ../ecs_composex/appmesh/SYNTAX.rst
-
-.. include:: ../ecs_composex/vpc/SYNTAX.rst
-
-.. include:: ../ecs_composex/sqs/SYNTAX.rst
-
-.. include:: ../ecs_composex/rds/SYNTAX.rst
-
-.. include:: ../ecs_composex/dynamodb/SYNTAX.rst
-
-.. include:: ../ecs_composex/s3/SYNTAX.rst
-
-.. include:: ../ecs_composex/sns/SYNTAX.rst
-
-.. include:: ../ecs_composex/kms/SYNTAX.rst
-
-.. include:: ../ecs_composex/acm/SYNTAX.rst
-
-.. include:: ../ecs_composex/compute/SYNTAX.rst
+    syntax_links/common
+    syntax_links/ecs
+    syntax_links/appmesh
+    syntax_links/vpc
+    syntax_links/sqs
+    syntax_links/rds
+    syntax_links/dyndb
+    syntax_links/s3
+    syntax_links/sns
+    syntax_links/kms
+    syntax_links/acm
+    syntax_links/compute

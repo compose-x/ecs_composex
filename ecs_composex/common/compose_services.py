@@ -294,7 +294,7 @@ class ComposeService(object):
         ("deploy", dict),
         ("external_links", list),
         ("depends_on", list),
-        ("links", list),
+        ("syntax_links", list),
         ("secrets", list),
         ("healthcheck", dict),
         ("x-configs", dict),
