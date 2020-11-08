@@ -16,27 +16,23 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import re
-import json
 
-from troposphere import Ref, GetAtt
-from troposphere import Parameter
 from troposphere import AWS_NO_VALUE
+from troposphere import Parameter
+from troposphere import Ref, GetAtt
+from troposphere.ecs import LoadBalancer as EcsLb
 from troposphere.elasticloadbalancingv2 import (
     TargetGroup,
     Matcher,
     TargetGroupAttribute,
 )
 
-from troposphere.ecs import LoadBalancer as EcsLb
-from troposphere.ec2 import SecurityGroupIngress
-
-from ecs_composex.common import keyisset, add_parameters
 from ecs_composex.common import LOG
+from ecs_composex.common import keyisset, add_parameters
 from ecs_composex.common.outputs import ComposeXOutput
-from ecs_composex.vpc.vpc_params import VPC_ID, SG_ID_TYPE
-from ecs_composex.elbv2.elbv2_params import RES_KEY, LB_ARN, TGT_GROUP_ARN, LB_SG_ID
 from ecs_composex.ecs.ecs_params import SERVICE_T
-from ecs_composex.acm.acm_params import RES_KEY as ACM_KEY
+from ecs_composex.elbv2.elbv2_params import TGT_GROUP_ARN
+from ecs_composex.vpc.vpc_params import VPC_ID, SG_ID_TYPE
 
 
 def validate_tcp_health_counts(props):
@@ -66,19 +62,21 @@ def fix_nlb_settings(props):
     if keyisset("HealthCheckTimeoutSeconds", props):
         LOG.warn("With NLB you cannot set intervals. Resetting")
         props["HealthCheckTimeoutSeconds"] = Ref(AWS_NO_VALUE)
-    if keyisset("HealthCheckIntervalSeconds", props):
-        if not (
+    if (
+        keyisset("HealthCheckIntervalSeconds", props)
+        and not (
             props["HealthCheckIntervalSeconds"] == 10
             or props["HealthCheckIntervalSeconds"] == 30
-        ) and not isinstance(props["HealthCheckIntervalSeconds"], Ref):
-
-            right_value = min(
-                [10, 30], key=lambda x: abs(x - props["HealthCheckIntervalSeconds"])
-            )
-            LOG.warn(
-                f"The only intervals value valid for NLB are 10 and 30. Closes value is {right_value}"
-            )
-            props["HealthCheckIntervalSeconds"] = right_value
+        )
+        and not isinstance(props["HealthCheckIntervalSeconds"], Ref)
+    ):
+        right_value = min(
+            [10, 30], key=lambda x: abs(x - props["HealthCheckIntervalSeconds"])
+        )
+        LOG.warn(
+            f"The only intervals value valid for NLB are 10 and 30. Closes value is {right_value}"
+        )
+        props["HealthCheckIntervalSeconds"] = right_value
     validate_tcp_health_counts(props)
 
 
@@ -293,7 +291,7 @@ def define_service_target_group(
 ):
     """
     Function to create the elbv2 target group
-    :param ecs_composex.elbv2.elbv2_stack.elbv2 resource:
+    :param ecs_composex.elbv2.elbv2_stack.Elbv2 resource:
     :param ecs_composex.common.compose_services.ComposeService service:
     :param ecs_composex.common.compose_services.ComposeFamily family:
     :param ecs_composex.common.stacks.ComposeXStack resources_root_stack:
@@ -372,7 +370,7 @@ def define_service_target_group_definition(
     """
     Function to create the new service TGT Group
 
-    :param ecs_composex.elbv2.elbv2_stack.elbv2 resource:
+    :param ecs_composex.elbv2.elbv2_stack.Elbv2 resource:
     :param service:
     :param ecs_composex.common.compose_services.ComposeFamily family:
     :param dict target_def:
@@ -410,7 +408,7 @@ def handle_services_association(resource, res_root_stack, settings):
     """
     Function to handle association of listeners and targets to the LB
 
-    :param ecs_composex.elbv2.elbv2_stack.elbv2 resource:
+    :param ecs_composex.elbv2.elbv2_stack.Elbv2 resource:
     :param ecs_composex.common.stacks.ComposeXStack services_stack:
     :param ecs_composex.common.stacks.ComposeXStack res_root_stack:
     :return:

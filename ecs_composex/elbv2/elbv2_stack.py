@@ -327,13 +327,6 @@ def rectify_listener_protocol(listener):
     """
     alb_protocols = ["HTTP", "HTTPS"]
     nlb_protocols = ["TCP", "UDP", "TCP_UDP", "TLS"]
-    print(
-        "PROTO",
-        listener.title,
-        listener.Protocol,
-        listener.Protocol in nlb_protocols,
-        listener.Protocol == "TCP",
-    )
     if listener.Protocol in alb_protocols and listener.Protocol == "HTTP":
         LOG.warn("Listener protocol is HTTP but certificate defined. Changing to HTTPS")
         listener.Protocol = "HTTPS"
@@ -377,6 +370,47 @@ def import_new_acm_certs(listener, src_name, settings, listener_stack):
     rectify_listener_protocol(listener)
 
 
+def add_acm_certs_arn(listener, src_value, settings, listener_stack):
+    """
+    Function to add Certificate to Listener with input from manual ARN entry
+    :param listener:
+    :param str src_value:
+    :param settings:
+    :param listener_stack:
+    :return:
+    """
+    cert_arn_re = re.compile(
+        r"((?:^arn:aws(?:-[a-z]+)?:acm:[\S]+:[0-9]+:certificate/)"
+        r"([a-z0-9]{8}(?:-[a-z0-9]{4}){3}-[a-z0-9]{12})$)"
+    )
+    if not cert_arn_re.match(src_value):
+        raise ValueError(
+            "The CertificateArn/Arn is not valid. Got",
+            src_value,
+            "Expected",
+            (
+                r"((?:^arn:aws(?:-[a-z]+)?:acm:[\S]+:[0-9]+:certificate/)"
+                r"([a-z0-9]{8}(?:-[a-z0-9]{4}){3}-[a-z0-9]{12})$)"
+            ),
+        )
+    LOG.info(f"Adding new cert from defined ARN")
+    add_extra_certificate(listener, src_value)
+    rectify_listener_protocol(listener)
+
+
+def map_service_target(lb, name, l_service_def):
+    for target in lb.families_targets:
+        t_family = target[1].logical_name
+        t_service = target[0].name
+        target_name = f"{t_family}:{t_service}"
+        if target_name == name:
+            for service in lb.services:
+                if service["name"] == target_name:
+                    l_service_def["target_arn"] = service["target_arn"]
+                    break
+            break
+
+
 class ComposeListener(Listener):
     attributes = [
         "Condition",
@@ -394,7 +428,7 @@ class ComposeListener(Listener):
         """
         Method to init listener.
 
-        :param ecs_composex.elbv2.elbv2_stack.elbv2 lb:
+        :param ecs_composex.elbv2.elbv2_stack.Elbv2 lb:
         :param dict definition:
         """
         self.definition = deepcopy(definition)
@@ -469,14 +503,14 @@ class ComposeListener(Listener):
         """
         Method to handle certificates
 
-        :param settings:
+        :param ecs_composex.common.settings.ComposeXSettings settings:
+        :param ecs_composex.common.stacks.ComposeXStack listener_stack:
         :return:
         """
-
         valid_sources = [
             ("x-acm", str, import_new_acm_certs),
-            ("Arn", str, None),
-            ("CertificateArn", str, None),
+            ("Arn", str, add_acm_certs_arn),
+            ("CertificateArn", str, add_acm_certs_arn),
         ]
         if not keyisset("Certificates", self.definition):
             LOG.warn(f"No certificates defined for Listener {self.name}")
@@ -500,11 +534,15 @@ class ComposeListener(Listener):
                     ):
                         src_type[2](self, source_value, settings, listener_stack)
 
-    def map_services(self, lb):
-        if not self.services:
-            return
-        l_targets = [s["name"] for s in self.services]
-        t_targets = [s["name"] for s in lb.services]
+    def validate_mapping(self, lb, t_targets, l_targets):
+        """
+        Method to validate the services mapping
+
+        :param ecs_composex.elbv2.elbv2_stack.Elbv2 lb:
+        :param list t_targets:
+        :param list l_targets:
+        :return:
+        """
         if not all(target in t_targets for target in l_targets):
             raise KeyError(
                 f"Missing one of ",
@@ -515,18 +553,16 @@ class ComposeListener(Listener):
                 ],
                 f" in {lb.logical_name} Services for listener {self.title}",
             )
+
+    def map_services(self, lb):
+        if not self.services:
+            return
+        l_targets = [s["name"] for s in self.services]
+        t_targets = [s["name"] for s in lb.services]
+        self.validate_mapping(lb, t_targets, l_targets)
         for l_service_def in self.services:
             name = l_service_def["name"]
-            for target in lb.families_targets:
-                t_family = target[1].logical_name
-                t_service = target[0].name
-                target_name = f"{t_family}:{t_service}"
-                if target_name == name:
-                    for service in lb.services:
-                        if service["name"] == target_name:
-                            l_service_def["target_arn"] = service["target_arn"]
-                            break
-                    break
+            map_service_target(lb, name, l_service_def)
 
 
 def validate_service_def(service_def):
@@ -541,7 +577,7 @@ def validate_service_def(service_def):
         raise KeyError("For services you must at least define", required_settings)
 
 
-class elbv2(XResource):
+class Elbv2(XResource):
     """
     Class to handle ELBv2 creation and mapping to ECS Services
     """
@@ -774,7 +810,7 @@ class elbv2(XResource):
         """
         Function to parse the LB settings and properties and build the LB object
 
-        :param ecs_composex.elbv2.elbv2_stack.elbv2 self:
+        :param ecs_composex.elbv2.elbv2_stack.Elbv2 self:
         :return:
         """
         attrs = {
@@ -836,7 +872,7 @@ class XStack(ComposeXStack):
     """
 
     def __init__(self, title, settings, **kwargs):
-        set_resources(settings, elbv2, RES_KEY)
+        set_resources(settings, Elbv2, RES_KEY)
         resources = settings.compose_content[RES_KEY]
         new_resources = [
             resources[res_name]
