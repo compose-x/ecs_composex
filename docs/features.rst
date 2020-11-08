@@ -1,20 +1,17 @@
 ﻿.. _features:
 
 
-.. include:: ../ecs_composex/ecs/README.rst
+.. toctree::
 
-.. include:: ../ecs_composex/appmesh/README.rst
-
-.. include:: ../ecs_composex/sqs/README.rst
-
-.. include:: ../ecs_composex/rds/README.rst
-
-.. include:: ../ecs_composex/dynamodb/README.rst
-
-.. include:: ../ecs_composex/s3/README.rst
-
-.. include:: ../ecs_composex/vpc/README.rst
-
-.. include:: ../ecs_composex/kms/README.rst
-
-.. include:: ../ecs_composex/compute/README.rst
+    readme_links/common
+    readme_links/ecs
+    readme_links/appmesh
+    readme_links/vpc
+    readme_links/sqs
+    readme_links/rds
+    readme_links/dyndb
+    readme_links/s3
+    readme_links/sns
+    readme_links/kms
+    readme_links/acm
+    readme_links/compute

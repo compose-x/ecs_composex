@@ -19,6 +19,7 @@
 Module to define the ComposeX Resources into a simple object to make it easier to navigate through.
 """
 
+from copy import deepcopy
 from troposphere.ecs import Environment
 
 from ecs_composex.common import LOG, NONALPHANUM, keyisset, keypresent
@@ -71,7 +72,7 @@ class XResource(object):
         :param dict definition: The definition of the resource as-is
         """
         self.name = name
-        self.definition = definition
+        self.definition = deepcopy(definition)
         self.env_vars = []
         self.logical_name = NONALPHANUM.sub("", self.name)
         self.settings = (

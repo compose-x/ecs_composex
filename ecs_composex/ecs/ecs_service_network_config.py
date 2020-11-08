@@ -248,7 +248,7 @@ class ServiceNetworking(object):
             self.ingress_from_self = self.configuration["ingress"]["myself"]
         self.ports = []
         self.merge_services_ports(family)
-        self.tgt_groups = []
+        self.lb_groups = []
 
     def __repr__(self):
         return dumps(self.configuration, indent=2)
@@ -380,6 +380,38 @@ class ServiceNetworking(object):
                         SourcePrefixListId=source["id"],
                         **common_args,
                     )
+
+    def add_lb_ingress(self, family, lb_name, lb_sg_ref):
+        """
+        Method to add ingress rules from other AWS Sources
+
+        :param ecs_composex.common.compose_services.ComposeFamily family:
+        :param str lb_name:
+        :param lb_sg_ref:
+        :return:
+        """
+        if not family.template or not family.ecs_service:
+            return
+        for port in self.ports:
+            title = f"From{lb_name}ToServiceOn{port['published']}"
+            common_args = {
+                "FromPort": port["published"],
+                "ToPort": port["published"],
+                "IpProtocol": port["protocol"],
+                "GroupId": GetAtt(family.ecs_service.sg, "GroupId"),
+                "SourceSecurityGroupOwnerId": Ref(AWS_ACCOUNT_ID),
+                "Description": Sub(
+                    f"From {lb_name} to ${{{SERVICE_NAME_T}}} on port {port['published']}"
+                ),
+            }
+            if title in family.template.resources:
+                return
+            SecurityGroupIngress(
+                title,
+                template=family.template,
+                SourceSecurityGroupId=lb_sg_ref,
+                **common_args,
+            )
 
     def create_ext_sources_ingress_rule(
         self, family, allowed_source, security_group, **props

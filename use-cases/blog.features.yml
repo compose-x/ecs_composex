@@ -59,7 +59,7 @@ services:
   app02:
     deploy:
       labels:
-        ecs.task.family: you-too
+        ecs.task.family: youtoo
       replicas: 2
       resources:
         reservations:
@@ -132,7 +132,7 @@ services:
       - app02
     deploy:
       labels:
-        ecs.task.family: bignicefamily,you-too
+        ecs.task.family: bignicefamily,youtoo
       replicas: 1
       resources:
         limits:
@@ -180,3 +180,6 @@ x-dns:
     Name: lambda.internal
   PublicZone:
     Name: dev.lambda-my-aws.io
+
+x-tags:
+  costcentre: lambda

@@ -46,6 +46,8 @@ from ecs_composex.compute.compute_params import (
     MIN_CAPACITY_T,
 )
 from ecs_composex.compute.compute_stack import ComputeStack
+from ecs_composex.acm.acm_stack import init_acm_certs
+from ecs_composex.acm.acm_params import RES_KEY as ACM_KEY
 from ecs_composex.dns import add_parameters_and_conditions as dns_inputs, DnsSettings
 from ecs_composex.ecs import ServicesStack
 from ecs_composex.ecs import ecs_params
@@ -57,6 +59,7 @@ from ecs_composex.ecs.ecs_params import (
 )
 from ecs_composex.vpc import vpc_params
 from ecs_composex.vpc.vpc_stack import add_vpc_to_root
+from ecs_composex.elbv2.elbv2_ecs import elbv2_to_ecs
 
 RES_REGX = re.compile(r"(^([x-]+))")
 COMPUTE_STACK_NAME = "Ec2Compute"
@@ -78,11 +81,14 @@ SUPPORTED_X_MODULES = [
     "kms",
     f"{X_KEY}s3",
     "s3",
+    f"{X_KEY}elbv2",
+    "elbv2",
 ]
 EXCLUDED_X_KEYS = [
     f"{X_KEY}configs",
     f"{X_KEY}tags",
     f"{X_KEY}appmesh",
+    f"{X_KEY}acm",
     f"{X_KEY}vpc",
     f"{X_KEY}dns",
     f"{X_KEY}cluster",
@@ -175,14 +181,22 @@ def apply_x_configs_to_ecs(settings, root_template, services_stack):
     :param ecs_composex.common.settings.ComposeXSettings settings: The compose file content
     :param troposphere.Template root_template: The root template for ECS ComposeX
     :param ecs_composex.ecs.ServicesStack services_stack: root stack for services.
-    :param dict kwargs: settings for building X related resources
-    :param dict services_families: Families and services mappings
     """
+    sub_services = ["elbv2"]
     for resource_name in root_template.resources:
         resource = root_template.resources[resource_name]
         if (
             issubclass(type(resource), ComposeXStack)
             and resource_name in SUPPORTED_X_MODULES
+            and not resource.is_void
+        ):
+            module = getattr(resource, "title")
+            invoke_x_to_ecs(module, settings, services_stack, resource)
+    for resource_name in services_stack.stack_template.resources:
+        resource = services_stack.stack_template.resources[resource_name]
+        if (
+            issubclass(type(resource), ComposeXStack)
+            and resource_name in sub_services
             and not resource.is_void
         ):
             module = getattr(resource, "title")
@@ -248,7 +262,19 @@ def handle_new_xstack(
     root_template,
     xstack,
 ):
+    """
+    Function to create the root stack of the x-resource and assign it to its root stack
+
+    :param str key:
+    :param str res_type:
+    :param ecs_composex.common.settings.ComposeXSettings settings:
+    :param ecs_composex.ecs.ServicesStack services_stack:
+    :param ecs_composex.common.stacks ComposeXStack vpc_stack:
+    :param troposphere.Template root_template:
+    :param ecs_composex.common.stacks ComposeXStack xstack:
+    """
     tcp_services = ["x-rds", "x-appmesh"]
+    sub_services = [f"{X_KEY}elbv2"]
     if vpc_stack and key in tcp_services:
         xstack.get_from_vpc_stack(vpc_stack)
     elif not vpc_stack and key in tcp_services:
@@ -261,7 +287,10 @@ def handle_new_xstack(
         and hasattr(xstack, "stack_template")
         and not xstack.is_void
     ):
-        root_template.add_resource(xstack)
+        if key not in sub_services:
+            root_template.add_resource(xstack)
+        else:
+            services_stack.stack_template.add_resource(xstack)
 
 
 def add_x_resources(root_template, settings, services_stack, vpc_stack=None):
@@ -371,6 +400,8 @@ def generate_full_template(settings):
     services_stack = create_services(
         root_stack, settings, vpc_stack, dns_settings.nested_params, create_cluster
     )
+    if keyisset(ACM_KEY, settings.compose_content):
+        init_acm_certs(settings, dns_settings, services_stack)
     add_x_resources(
         root_stack.stack_template,
         settings,
@@ -383,7 +414,6 @@ def generate_full_template(settings):
         services_stack,
     )
     apply_x_to_x_configs(root_stack.stack_template, settings)
-
     if keyisset("x-appmesh", settings.compose_content):
         mesh = Mesh(settings.compose_content["x-appmesh"], services_stack, settings)
         mesh.render_mesh_template(services_stack)

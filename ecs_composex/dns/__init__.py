@@ -86,6 +86,7 @@ class DnsSettings(object):
         self.nested_params = {}
         self.public_map = None
         self.public_zone = None
+        self.create_public_zone = True
 
         self.private_map = VpcSpace(
             cfn_params.PRIVATE_MAP_TITLE,
@@ -250,11 +251,11 @@ class DnsSettings(object):
                 Comment=Sub("Public DNS Zone for ${AWS::StackName}")
             ),
         )
-
         if keyisset("Name", dns_settings[self.public_zone_key]):
             self.public_zone_name = dns_settings[self.public_zone_key]["Name"]
 
-        if keyisset("Lookup", dns_settings[self.public_zone_key]):
+        elif keyisset("Lookup", dns_settings[self.public_zone_key]):
+            self.create_public_zone = False
             namespace_info = lookup_namespace(
                 dns_settings[self.public_zone_key]["Lookup"],
                 settings.session,
@@ -282,6 +283,7 @@ class DnsSettings(object):
                 }
             )
         elif keyisset("Use", dns_settings[self.public_zone_key]):
+            self.create_public_zone = False
             self.root_params.update(
                 {
                     dns_params.PUBLIC_DNS_ZONE_ID.title: dns_settings[

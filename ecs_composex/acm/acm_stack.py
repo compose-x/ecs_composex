@@ -19,171 +19,118 @@
 Main module for ACM
 """
 
-from warnings import warn
+from copy import deepcopy
 
-from troposphere import Ref, If, AWS_NO_VALUE, Tags
+from troposphere import Ref, AWS_NO_VALUE, Tags
 from troposphere.certificatemanager import (
     Certificate as AcmCert,
     DomainValidationOption,
 )
 
-from ecs_composex.acm import acm_conditions
 from ecs_composex.acm.acm_params import (
     RES_KEY,
     CERT_CN,
-    CERT_CN_T,
-    CERT_ALT_NAMES,
-    CERT_ALT_NAMES_T,
-    VALIDATION_DOMAIN_ZONE_ID,
-    VALIDATION_DOMAIN_ZONE_ID_T,
-    VALIDATION_DOMAIN_NAME_T,
-    VALIDATION_DOMAIN_NAME,
-    CERT_VALIDATION_METHOD,
 )
 from ecs_composex.common import (
     NONALPHANUM,
     keyisset,
-    build_template,
 )
-from ecs_composex.common.cfn_conditions import pass_root_stack_name
-from ecs_composex.common.outputs import ComposeXOutput
-from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.common.compose_resources import set_resources
+from ecs_composex.dns.dns_params import PUBLIC_DNS_ZONE_ID
 
 
-def initialize_acm_stack_template(cert_name):
+class Certificate(object):
     """
-    Function to initialize a new certificate template
-    :return:
+    Class specifically for ACM Certificate
     """
-    tpl = build_template(
-        "ACM Certificate",
-        [
-            VALIDATION_DOMAIN_ZONE_ID,
-            VALIDATION_DOMAIN_NAME,
-            CERT_VALIDATION_METHOD,
-            CERT_CN,
-            CERT_ALT_NAMES,
-        ],
-    )
-    acm_conditions.add_all_conditions(tpl)
-    cert = AcmCert(
-        f"{cert_name}",
-        template=tpl,
-        DomainName=Ref(CERT_CN),
-        SubjectAlternativeNames=If(
-            acm_conditions.NO_ALT_NAMES_T, Ref(AWS_NO_VALUE), Ref(CERT_ALT_NAMES_T)
-        ),
-        ValidationMethod=Ref(CERT_VALIDATION_METHOD),
-        DomainValidationOptions=[
-            If(
-                acm_conditions.USE_ZONE_ID_T,
-                DomainValidationOption(
-                    DomainName=Ref(CERT_CN),
-                    HostedZoneId=Ref(VALIDATION_DOMAIN_ZONE_ID),
-                ),
-                If(
-                    acm_conditions.ACM_ZONE_NAME_IS_NONE_T,
-                    DomainValidationOption(
-                        DomainName=Ref(CERT_CN),
-                        HostedZoneId=Ref(VALIDATION_DOMAIN_ZONE_ID),
-                    ),
-                    DomainValidationOption(
-                        DomainName=Ref(CERT_CN),
-                        ValidationDomain=Ref(VALIDATION_DOMAIN_NAME),
-                    ),
-                ),
+
+    def __init__(self, name, definition, settings):
+        self.name = name
+        self.logical_name = NONALPHANUM.sub("", name)
+        self.definition = deepcopy(definition)
+        self.properties = (
+            {}
+            if not keyisset("Properties", self.definition)
+            else self.definition["Properties"]
+        )
+        self.settings = (
+            {}
+            if not keyisset("Settings", self.definition)
+            else self.definition["Settings"]
+        )
+        self.lookup = (
+            None
+            if not keyisset("Lookup", self.definition)
+            else self.definition["Lookup"]
+        )
+        self.use = (
+            None if not keyisset("Use", self.definition) else self.definition["Use"]
+        )
+        self.cfn_resource = None
+
+    def validate_properties(self):
+        """
+        Method to validate certificate properties
+        :return:
+        """
+
+    def create_acm_cert(self, dns_settings, root_stack):
+        """
+        Method to set the ACM Certificate definition
+        :param dns_settings:
+        :return:
+        """
+        validations = [
+            DomainValidationOption(
+                DomainName=self.properties["DomainName"],
+                HostedZoneId=Ref(PUBLIC_DNS_ZONE_ID),
             )
-        ],
-        Tags=Tags(Name=Ref(CERT_CN)),
-    )
-    tpl.add_output(ComposeXOutput(cert, [(CERT_CN, "", Ref(cert))]).outputs)
-    return tpl
-
-
-def build_cert_params(cert_def):
-    """
-    Function to build the certificate parameters
-
-    :param dict cert_def:
-    :return: cert_params
-    :rtype: dict
-    """
-    cert_params = {
-        CERT_ALT_NAMES_T: Ref(CERT_ALT_NAMES)
-        if keyisset("SubjectAlternativeNames", cert_def)
-        else Ref(AWS_NO_VALUE),
-        CERT_CN_T: cert_def["DomainName"],
-        CERT_VALIDATION_METHOD.title: cert_def["ValidationMethod"]
-        if keyisset("ValidationMethod", cert_def)
-        else CERT_VALIDATION_METHOD.Default,
-    }
-    if keyisset("DomainValidationOptions", cert_def):
-        options = cert_def["DomainValidationOptions"]
-        if len(options) > 1:
-            warn(
-                ValueError(
-                    "For now we are going to support only just the one validation methond."
+        ]
+        if keyisset("SubjectAlternativeNames", self.properties):
+            for alt_domain in self.properties["SubjectAlternativeNames"]:
+                validations.append(
+                    DomainValidationOption(
+                        DomainName=alt_domain, HostedZoneId=Ref(PUBLIC_DNS_ZONE_ID)
+                    )
                 )
-            )
-        option = options[0]
-        cert_params[VALIDATION_DOMAIN_ZONE_ID_T] = (
-            option["HostedZoneId"]
-            if keyisset("HostedZoneId", option)
-            else VALIDATION_DOMAIN_ZONE_ID.Default
+        self.cfn_resource = AcmCert(
+            self.logical_name,
+            DomainName=self.properties["DomainName"],
+            SubjectAlternativeNames=self.properties["SubjectAlternativeNames"]
+            if keyisset("SubjectAlternativeNames", self.properties)
+            else Ref(AWS_NO_VALUE),
+            ValidationMethod="DNS",
+            DomainValidationOptions=validations,
+            Tags=Tags(
+                Name=self.properties["DomainName"], ZoneId=Ref(PUBLIC_DNS_ZONE_ID)
+            ),
         )
-        cert_params[VALIDATION_DOMAIN_NAME_T] = (
-            cert_def["ValidationDomain"]
-            if keyisset("ValidationDomain", option)
-            else VALIDATION_DOMAIN_NAME.Default
-        )
-    return cert_params
+        root_stack.stack_template.add_resource(self.cfn_resource)
 
 
-def add_certificates(acm_tpl, certs):
+def define_acm_certs(new_resources, dns_settings, root_stack):
     """
-    Function to add all the ACM certs together
-    :param acm_tpl:
-    :param certs:
+    Function to create the certificates
 
+    :param new_resources:
+    :param dns_settings:
     :return:
     """
-    for cert_name in certs:
-        resource_name = NONALPHANUM.sub("", cert_name)
-        cert_def = certs[cert_name]
-        cert_props = cert_def["Properties"]
-        cert_params = build_cert_params(cert_props)
-        cert_params.update(pass_root_stack_name())
-        cert_template = initialize_acm_stack_template(resource_name)
-        acm_tpl.add_resource(
-            ComposeXStack(
-                resource_name,
-                stack_template=cert_template,
-                Parameters=cert_params,
-            )
+    for resource in new_resources:
+        resource.create_acm_cert(dns_settings, root_stack)
+
+
+def init_acm_certs(settings, dns_settings, root_stack):
+    set_resources(settings, Certificate, RES_KEY)
+    new_resources = [
+        settings.compose_content[RES_KEY][cert_name]
+        for cert_name in settings.compose_content[RES_KEY]
+        if not settings.compose_content[RES_KEY][cert_name].lookup
+    ]
+    if new_resources and not dns_settings.create_public_zone:
+        define_acm_certs(new_resources, dns_settings, root_stack)
+    elif new_resources and dns_settings.create_public_zone:
+        raise ValueError(
+            "By design, you cannot create new ACM Certificates if you do not already have a public DNS Zone."
+            "Validation via DNS can only work if the zone is functional and you cannot associate a pending cert."
         )
-
-
-def create_acm_template(settings):
-    """
-    Main entrypoint for ACM root template creation
-
-    :param ecs_composex.common.settings.ComposeXSettings settings: The execution settings
-    :return: root stack template for ACM.
-    :rtype: troposphere.Template
-    """
-    if not keyisset(RES_KEY, settings.compose_content):
-        return
-    certs = settings.compose_content[RES_KEY]
-    root_acm_tpl = build_template("Root template for ACM")
-    add_certificates(root_acm_tpl, certs)
-    return root_acm_tpl
-
-
-class XStack(ComposeXStack):
-    """
-    XStack for ComposeX
-    """
-
-    def __init__(self, title, settings, **kwargs):
-        template = create_acm_template(settings)
-        super().__init__(title, stack_template=template, **kwargs)

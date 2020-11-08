@@ -48,7 +48,7 @@ services:
   app02:
     deploy:
       labels:
-        ecs.task.family: you-too
+        ecs.task.family: youtoo
       replicas: 2
       resources:
         reservations:
@@ -116,7 +116,7 @@ services:
       - app02
     deploy:
       labels:
-        ecs.task.family: bignicefamily,you-too
+        ecs.task.family: bignicefamily,youtoo
       replicas: 1
       resources:
         limits:
@@ -311,7 +311,7 @@ x-sns:
         - access: Publish
           name: app01
         - access: Publish
-          name: you-too
+          name: youtoo
 x-sqs:
   queueA:
     Settings:

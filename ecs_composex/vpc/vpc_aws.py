@@ -1,4 +1,4 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 #   ECS ComposeX <https://github.com/lambda-my-aws/ecs_composex>
 #   Copyright (C) 2020  John Mille <john@lambda-my-aws.io>
 #  #
@@ -16,15 +16,16 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import re
+
+from ecs_composex.common.aws import (
+    define_lookup_role_from_info,
+    find_aws_resource_arn_from_tags_api,
+)
 from ecs_composex.vpc.vpc_params import (
     VPC_ID,
     APP_SUBNETS,
     PUBLIC_SUBNETS,
     STORAGE_SUBNETS,
-)
-from ecs_composex.common.aws import (
-    define_lookup_role_from_info,
-    find_aws_resource_arn_from_tags_api,
 )
 
 TAGS_KEY = "Tags"

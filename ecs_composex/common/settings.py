@@ -261,6 +261,9 @@ class ComposeXSettings(object):
             else self.session.region_name
         )
         self.aws_azs = self.default_azs
+        self.public_azs = self.default_azs
+        self.app_azs = self.default_azs
+        self.storage_azs = self.default_azs
 
         self.bucket_name = (
             None if not keyisset(self.bucket_arg, kwargs) else kwargs[self.bucket_arg]
@@ -358,9 +361,14 @@ class ComposeXSettings(object):
             LOG.info(
                 f"Detected {service.name} is-reused in different family. Making a deepcopy"
             )
-            family = ComposeFamily([deepcopy(service)], family_name)
+            the_service = deepcopy(service)
+            family = ComposeFamily([the_service], family_name)
+            self.families[family_name] = family
+            the_service.my_family = family
+            self.services.append(the_service)
         else:
             family = ComposeFamily([service], family_name)
+            service.my_family = family
         self.families[family_name] = family
         if service.name not in [service.name for service in assigned_services]:
             assigned_services.append(service)
@@ -370,9 +378,13 @@ class ComposeXSettings(object):
             LOG.info(
                 f"Detected {service.name} is-reused in different family. Making a deepcopy"
             )
-            self.families[family_name].add_service(deepcopy(service))
+            the_service = deepcopy(service)
+            self.families[family_name].add_service(the_service)
+            the_service.my_family = self.families[family_name]
+            self.services.append(the_service)
         else:
             self.families[family_name].add_service(service)
+            service.my_family = self.families[family_name]
             assigned_services.append(service)
 
     def set_families(self):
@@ -383,8 +395,10 @@ class ComposeXSettings(object):
         assigned_services = []
         for service in self.services:
             for family_name in service.families:
-                family_name = self.get_family_name(family_name)
-
+                if NONALPHANUM.findall(family_name):
+                    raise ValueError(
+                        "Family names must be ^[a-zA-Z0-9]+$ | alphanumerical"
+                    )
                 if family_name not in self.families.keys():
                     self.add_new_family(family_name, service, assigned_services)
                 elif family_name in self.families.keys() and service.name not in [
@@ -519,6 +533,27 @@ class ComposeXSettings(object):
 
             else:
                 LOG.error(error)
+
+    def set_azs_from_vpc_import(self, public_subnets, app_subnets, storage_subnets):
+        """
+        Function to get the list of AZs for a given set of subnets
+
+        :param list public_subnets:
+        :param list app_subnets:
+        :param list storage_subnets:
+        :return:
+        """
+        client = self.session.client("ec2")
+        try:
+            public_r = client.describe_subnets(SubnetIds=public_subnets)["Subnets"]
+            app_r = client.describe_subnets(SubnetIds=app_subnets)["Subnets"]
+            storage_r = client.describe_subnets(SubnetIds=storage_subnets)["Subnets"]
+            self.public_azs = [sub["AvailabilityZone"] for sub in public_r]
+            self.storage_azs = [sub["AvailabilityZone"] for sub in storage_r]
+            self.app_azs = [sub["AvailabilityZone"] for sub in app_r]
+            LOG.info("Successfully updated self with AZs from looked up VPC subnets")
+        except ClientError:
+            LOG.warn("Could not define the AZs based on the imported subnets")
 
     def set_bucket_name_from_account_id(self):
         if self.bucket_name and isinstance(self.bucket_name, str):
