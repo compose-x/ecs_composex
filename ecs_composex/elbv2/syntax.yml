@@ -1,65 +1,89 @@
 ﻿---
 # ELBv2 creation for services
 
-services:
-  app01:
-    ports:
-      - 80
 
-  app02:
-    ports:
-      - 80
-      - 8080
+x-dns:
+  PublicZone:
+    Use: ZABCDEFGHIS0123
 
 x-acm:
-  abcd:
-    Properties: {}
-    Settings: {}
-    Services: []
+  public-acm-01:
+    Properties:
+      DomainName: test.lambda-my-aws.io
+      DomainValidationOptions:
+        - HostedZoneId: ZABCDEFGHIS0123
+          DomainName: test.lambda-my-aws.io
+      SubjectAlternativeNames:
+        - anothertest.lambda-my-aws.io
+        - yet.another.test.lambda-my-aws.io
+      ValidationMethod: DNS
 
 x-elbv2:
   lbA:
     Properties: {}
     Settings:
-#      S3Logs: bucket:/prefix
-      timeout_seconds: 60
-      desync_mitigation_mode: defensive
-      drop_invalid_header_fields: True
-      http2: False
-      cross_zone: True/False
+     S3Logs: bucket:/prefix
+     timeout_seconds: 60
+     desync_mitigation_mode: defensive
+     drop_invalid_header_fields: True
+     http2: False
+     cross_zone: True
     Listeners:
       - Port: 80
-        SslCertificate: abcd
+        Protocol: HTTP
+        DefaultActions:
+          - Redirect: HTTP_TO_HTTPS
+      - Port: 443
+        Protocol: HTTP
+        Certificates:
+          - x-acm: public-acm-01
+        Targets:
+          - name: bignicefamily:app01
+            access: /somewhere
+      - Port: 8080
+        Protocol: HTTP
+        Certificates:
+          - x-acm: public-acm-01
+          - CertificateArn: arn:aws:acm:eu-west-1:012345678912:certificate/102402a1-d0d2-46ff-b26b-33008f072ee8
+        Targets:
+          - name: bignicefamily:rproxy
+            access: /
+          - name: youtoo:rproxy
+            access: /stupid
+          - name: bignicefamily:app01
+            access: yet.another.test.lambda-my-aws.io:8080/abcd
+
     Services:
-      - name: app01
-        access: /
+      - name: bignicefamily:rproxy
         port: 80
-        healthcheck: 80:/:200,201:10:3
-      - name: app02
-        access: anotherdomain.public.net
+        healthcheck: 5000:HTTP:/healthcheck:200,201
+      - name: bignicefamily:app01
+        port: 5000
+        healthcheck: 5000:HTTP:/healthcheck:200,201
+      - name: youtoo:rproxy
         port: 80
-        healthcheck: 8080:/healthcheck:5:200,201:10:3
+        healthcheck: 5000:HTTP:5:2:15:3:/ping.This.Method:200,201
 
   lbC:
     Properties:
-      Scheme: public-facing
+      Scheme: internet-facing
       Type: network
-    Settings:
-#      S3Logs: bucket:/prefix
-      timeout_seconds: 60
-      desync_mitigation_mode: monitor
-      drop_invalid_header_fields: True/False
-      http2: False
-      cross_zone: True
+    Settings: {}
     Listeners:
-      - Port: 80
-        DefaultTarget:
-          Redirect: HTTP_TO_HTTPS
-      - Port: 443
-        SslCertificates:
-          - x-acm: abcd
+      - Port: 8080
+        Protocol: TCP
+        Targets:
+          - name: app03:app03
+            access: /
+      - Port: 8081
+        Protocol: TCP
+        Certificates:
+          - x-acm: public-acm-01
+        Targets:
+          - name: app03:app03
+            access: /
     Services:
-      - name: app03
-        access: /
-        port: 80
-        healthcheck: 80:/:200,201:10:3
+      - name: app03:app03
+        port: 5000
+        healthcheck: 5000:TCP:7:2:15:5
+        protocol: TCP

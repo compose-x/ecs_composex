@@ -9,55 +9,48 @@ and front their applications with HTTPS.
 It recently got supported by CloudFormation to natively add the CNAME entry to your Route53 DNS record as the certificate
 is created, removing the manual validation process.
 
-.. warning::
-
-    At the time of working on that feature, Troposphere has not released the feature for it, but is available in
-    their master branch.
-
-.. code-block::
+.. code-block:: yaml
 
     x-acm:
-      blogdemo:
+      public-acm-01:
         Properties:
-          DomainName: blog-demo.lambda-my-aws.io
+          DomainName: test.lambda-my-aws.io
           DomainValidationOptions:
-            - DomainName: lambda-my-aws.io
-              HostedZoneId: Zredacted
-        Settings: {}
-        Services:
-          - name: app01
-            ports: [443]
+            - HostedZoneId: ZABCDEFGHIS0123
+              DomainName: test.lambda-my-aws.io
+          SubjectAlternativeNames:
+            - anothertest.lambda-my-aws.io
+            - yet.another.test.lambda-my-aws.io
+          ValidationMethod: DNS
+
+.. hint::
+
+    If you need to specify `x-dns` in the template and provide the **HostedZoneId** which will be used there.
+    DNS Reference: :ref:`dns_reference_syntax`
+
+.. warning::
+
+    You cannot be creating your public DNS Zone and validating it at the same time, simply because the NS servers
+    of you new Public Zone are not registered in your DNS registra. Therefore, DNS validation would never work.
+    To that effect, you **must** (at this time) be using an existing DNS Zone in Route53.
 
 Properties
 ----------
 
 The properties will be supported exactly like in the native AWS CloudFormation definition.
-At the time of writing the module though, only 1 DomainValidation option is supported.
 
 .. hint::
 
-    Remember as well, you can only auto-validate with providing the HostedZoneId, and you probably only would do that
-    once.
+    If you defined multiple **SubjectAlternativeNames** names, they will be auto-added to the validation list and use
+    the same ZoneId
 
 Settings
 --------
 
-No settings yet implemented. By default, the `Name` tag key will use the same value as the DomainName.
+No settings available at this time.
 
 Services
 --------
 
-List the services which will have a Listener using a port as listed in the ports for it.
-Just alike the other modules, we are going to list the services with a set of properties
-
-
-name
-^^^^
-
-The name of the service or ecs.task.family you want to add the listener to
-
-ports
-^^^^^
-
-The list of ports for which you would have a listener and want to use the ACM certificate for.
-If the protocol was set to HTTP, which is default for ALB, the protocol will automatically be set to **HTTPS**
+No need to indicate services to assign the ACM certificate to. Refer to :ref:`elbv2_syntax_reference` for mapping
+to ALB/NLB.
