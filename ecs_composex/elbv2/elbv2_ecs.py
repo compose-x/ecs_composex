@@ -450,17 +450,16 @@ def handle_services_association(resource, res_root_stack, settings):
 
 def elbv2_to_ecs(resources, services_stack, res_root_stack, settings):
     """
-    Function to apply SQS settings to ECS Services
+    Entrypoint function to map services, targets, listeners and ACM together
+
+    :param dict resources:
+    :param ecs_composex.common.stacks.ComposeXStack services_stack:
+    :param ecs_composex.common.stacks.ComposeXStack res_root_stack:
+    :param ecs_composex.common.settings.ComposeXSettings settings:
     :return:
     """
-    resource_mappings = {}
     new_resources = [
         resources[res_name] for res_name in resources if not resources[res_name].lookup
-    ]
-    lookup_resources = [
-        resources[res_name]
-        for res_name in resources
-        if resources[res_name].lookup and not resources[res_name].properties
     ]
     for resource in new_resources:
         handle_services_association(resource, res_root_stack, settings)
