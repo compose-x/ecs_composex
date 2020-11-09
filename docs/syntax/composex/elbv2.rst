@@ -1,5 +1,6 @@
 ﻿.. _elbv2_syntax_reference:
 
+=======
 x-elbv2
 =======
 
@@ -7,6 +8,8 @@ This module is a rework in-depth of the previous **lb_type** property in **x-con
 configuration, and in the future, to allow more detailed LB configuration, to allow pointing to Lambda or use Cognito
 to authenticate etc.
 
+Syntax
+======
 
 .. code-block:: yaml
 
@@ -29,7 +32,7 @@ to authenticate etc.
 
 
 Properties
-----------
+==========
 
 These as for every other x-resource is to re-use the similar properties as described in the CFN definition of a `Load
 Balancer v2 <https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-elasticloadbalancingv2-loadbalancer.html>`_.
@@ -47,7 +50,7 @@ The only two properties that are really necessary to set are
     If selected a public NLB, the IP addressed will automatically be provisioned too.
 
 Settings
---------
+========
 
 Once again in an effort of making configuration shorter and easier, here as the options you can simply indicate.
 
@@ -62,7 +65,7 @@ These settings are just a shorter notation for the `LB Attributes`_
 
 
 Services
---------
+========
 
 This follows the regular pattern of having the name of the service and access, only this time in a slightly different format.
 The services represent the `Target Group`_ definition of your service. Once again, in an attempt to keep things simple,
@@ -71,13 +74,11 @@ you do not have to indicate all of the settings exactly as CFN does.
 The Targets will automatically be pointing towards the ECS Service tasks.
 
 name
-^^^^
+----
 
 Given that you can now re-use one of the service in the docker-compose file multiple times for multiple ECS Services
 in multiple Task definitions, and ECS to ELBv2 supports to route traffic to a specific container in the task definition,
 you have to indicate the service name in the following format
-
-TLDR;
 
 .. code-block::
 
@@ -91,7 +92,7 @@ TLDR;
 
 
 protocol
-^^^^^^^^
+--------
 
 The Target Group protocol
 
@@ -107,7 +108,7 @@ The port of the target to send the traffic to
 
 
 healthcheck
-^^^^^^^^^^^
+-----------
 
 The healthcheck properties can be defined in the same fashion as defined in the `Target Group`_ definition.
 However, it is also possible to shorten the syntax into a simple string
@@ -153,10 +154,10 @@ The following properties are identical to the original CFN definition.
 
 
 ECS ComposeX custom properties
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+==============================
 
 Targets
-""""""""
+-------
 
 List of targets to send the requests to.
 
@@ -172,7 +173,7 @@ at once and implement these rules.
 
 Example
 --------
-.. literalinclude:: syntax.yml
+.. literalinclude:: ../../../use-cases/elbv2/create_only.yml
     :language: yaml
 
 
