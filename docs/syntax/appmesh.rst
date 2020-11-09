@@ -1,7 +1,36 @@
 ﻿.. _appmesh_syntax_reference:
 
+==========
 x-appmesh
-=========
+==========
+
+.. toctree::
+    :max-depth: 2
+
+.. warning::
+
+    This module is still under development and we would love to get any feedback on the syntax and how to make it easier.
+
+
+Syntax definition
+------------------
+
+.. code-block:: yaml
+
+    x-appmesh:
+      Properties:
+        MeshName: str
+        MeshOwner: str
+        EgressPolicy: str
+      Settings:
+        nodes:
+          - nodes
+        routers:
+          - router
+        services:
+          - service
+
+
 
 The properties for the mesh are very straight forward. Even though, the wish with ECS ComposeX is to keep the Properties
 the same as the ones defined in CFN as much as possible, for AWS AppMesh, given the simplicity of the properties,
@@ -65,6 +94,19 @@ to the mesh.
 nodes
 ^^^^^
 
+Syntax
+""""""
+
+.. code-block:: yaml
+
+    name: str # <family name>
+    protocol: str
+    backends:
+      - <service_name> # Only services can be defined as backend
+
+Example
+"""""""
+
 This section represents the nodes. The nodes listed here must be either a service as listed in docker-compose or a
 family name.
 
@@ -81,12 +123,53 @@ family name.
 routers
 ^^^^^^^
 
+Definition
+""""""""""
+
 Routers as mentioned in the module description, are here to allow developers to define how packets should be routed
 from one place to another.
 
 For TCP ones, one can only really set timeout settings, in addition to TLS etc. However for http, http2 and gRPC it
 allows you to define further more rules. The example below shows how a request to the router on path **/** it should
 send requests with the POST method to app02, but requests with the GET method to app01.
+
+Syntax
+"""""""
+
+.. code-block:: yaml
+
+    name: str
+    listener:
+      protocol: str
+      port: int
+    routes:
+      http:
+        - <match>
+
+matches
+""""""""
+
+This is simplistic version of the AWS Route Match specifications : `HTTP Route`_, `TCP Route`_
+
+Definition
+++++++++++
+
+The match allows to define how to route packets to backend nodes
+
+Syntax
+++++++
+
+.. code-block:: yaml
+
+    match:
+      prefix: str
+    method: str
+    scheme: str
+    nodes:
+      - <node_name>
+
+Example
+""""""""
 
 .. code-block:: yaml
 
@@ -109,12 +192,22 @@ send requests with the POST method to app02, but requests with the GET method to
               nodes:
                 - app02
 
-
 services
 ^^^^^^^^
 
 The VirtualServices are what acts as backends to nodes, and as receiver for nodes and routers.
 The Virtual Services can use either a Node or a Router as the location to route the traffic to.
+
+Syntax
+""""""
+
+.. code-block::
+
+    services:
+      - node: <node_name>
+        name: str
+      - router: <router_name>
+        name: str
 
 .. code-block:: yaml
 
@@ -129,3 +222,7 @@ Examples
 
 .. literalinclude:: ../use-cases/blog.with_mesh.yml
     :language: yaml
+
+.. _HTTP Route: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-appmesh-route-httproutematch.html
+.. _TCP Route: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-appmesh-route-httproutematch.html
+.. _gRPC route: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-appmesh-route-grpcroutematch.html
