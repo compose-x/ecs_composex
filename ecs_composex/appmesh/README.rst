@@ -17,7 +17,7 @@ There are a lot more features to know about, so I would recommend to head to the
 
 .. warning::
 
-    By default in ECS Compsoex, the EGRESS policy for nodes it to DROP_ALL so that only explicitly allowed traffic can
+    By default in ECS ComposeX, the EGRESS policy for nodes it to DROP_ALL so that only explicitly allowed traffic can
     go across the mesh, in/out the services.
 
 Nodes

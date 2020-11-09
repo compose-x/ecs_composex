@@ -1,13 +1,24 @@
 ﻿.. _vpc_syntax_reference:
 
+======
 x-vpc
-=====
+======
 
-The VPC module is here to allow you to define settings for the VPC from docker-compose file directly instead of the
-CLI, using the same arguments. Equally, for ease of use, you can also define lookup settings to use an existing VPC.
+The VPC module is here to allow you to define settings for the VPC from docker-compose file directly.
+Equally, for ease of use, you can also define lookup settings to use an existing VPC.
 
-Creating a new VPC
--------------------
+Syntax
+======
+
+.. code-block:: yaml
+
+    x-vpc:
+      Create: {}
+      Lookup: {}
+      Use: {}
+
+Create
+======
 
 .. code-block::
 
@@ -21,8 +32,9 @@ Creating a new VPC
             - service: ecr.api
             - service: ecr.dkr
 
-Use and existing VPC and subnets
----------------------------------
+
+Use
+===
 
 .. code-block:: yaml
 
@@ -39,13 +51,8 @@ Use and existing VPC and subnets
           - subnet-id
           - subnet-id
 
-.. hint::
-
-    The difference with Lookup is that, it won't try to find the VPC and Subnets, allow to "hardcode" static
-    values.
-
-Looking up for an existing VPC
--------------------------------
+Lookup
+======
 
 .. code-block:: yaml
 
@@ -54,82 +61,25 @@ Looking up for an existing VPC
         VpcId:
           Tags:
             - key: value
-        StorageSubnets:
-            - subnet-abcd
         PublicSubnets:
           Tags:
             - vpc::usage: public
-        AppSubnets: subnet-abcd,subnet-1234
-
-Supported filters
-^^^^^^^^^^^^^^^^^
-
-VpcId
-"""""
-
-.. code-block:: yaml
-    :caption: Lookup VPC ID
-    :name: Lookup VPC ID
-
-    x-vpc:
-      Lookup:
-        VpcId: vpc-123456
-
-.. code-block:: yaml
-    :caption: Lookup VPC ARN
-    :name: Lookup VPC ARN
-
-    x-vpc:
-      Lookup:
-        VpcId: arn:aws:ec2:eu-west-1:012345678912:vpc/vpc-123456
-
-.. code-block:: yaml
-    :caption: Lookup via Tags
-    :name: Lookup via Tags
-
-    x-vpc:
-      Lookup:
-        VpcId:
+        AppSubnets:
           Tags:
-            - Name: vpc-shared
-
-
-StorageSubnets, AppSubnets, PublicSubnets
-"""""""""""""""""""""""""""""""""""""""""
-
-If defined as a string, it will expected a *CommaDelimitedList* of valid SubnetIds.
-If defined as a list, it will be expecting a list of strings of valid subnet IDs.
-If defined as a object, it will expect tags list, in the same syntax as for VPC.
-
-.. code-block:: yaml
-    :caption: VPC ID
-    :name: Lookup VPC ID
-
-    x-vpc:
-      Lookup:
-        AppSubnets: subnet-abcd,subnet-123465,subnet-xyz
-
-.. code-block:: yaml
-    :caption: VPC ARN
-    :name: Lookup VPC ARN
-
-    x-vpc:
-      Lookup:
+            - vpc::usage: application
         StorageSubnets:
-          - subnet-abcd
-          - subnet-12345
-          - subnet-xyz
-
-.. code-block:: yaml
-    :caption: EC2 Tags
-    :name: Lookup via Tags
-
-    x-vpc:
-      Lookup:
-        PublicSubnets:
           Tags:
-            - Name: vpc-shared
+            - vpc::usage: storage0
 
+
+
+.. warning::
+
+    When using **Use** or **Lookup** you MUST define all 4 settings:
+    * VpcId
+    * StorageSubnets
+    * AppSubnets
+    * PublicSubnets
 
 .. note::
 
@@ -171,9 +121,4 @@ If defined as a object, it will expect tags list, in the same syntax as for VPC.
 
 .. warning::
 
-    If you are doing a lookup, you **must** configure the VpcId so that all subnets will be queried against that VPC
-    for higher accuracy.
-
-.. warning::
-
-    If you specify both **Create** and **Lookup** in x-vpc, then the default behaviour is applied.
+    If you specify both **Create** and **Lookup** in x-vpc, then the default behaviour is applied, and creates a new VPC

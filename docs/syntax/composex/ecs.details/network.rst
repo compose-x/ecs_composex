@@ -1,7 +1,7 @@
 ﻿.. _x_configs_network_syntax:
 
 ==================
-x-configs:network
+network
 ==================
 
 .. code-block:: yaml

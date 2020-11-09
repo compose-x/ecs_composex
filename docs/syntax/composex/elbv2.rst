@@ -171,8 +171,9 @@ at once and implement these rules.
 
 
 
-Example
---------
+Examples
+========
+
 .. literalinclude:: ../../../use-cases/elbv2/create_only.yml
     :language: yaml
 

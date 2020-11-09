@@ -2,16 +2,17 @@
 
 
 .. toctree::
+    :maxdepth: 1
 
-    readme_links/common
-    readme_links/ecs
-    readme_links/appmesh
-    readme_links/vpc
-    readme_links/sqs
-    readme_links/rds
-    readme_links/dyndb
-    readme_links/s3
-    readme_links/sns
-    readme_links/kms
-    readme_links/acm
-    readme_links/compute
+    readme/common
+    readme/ecs
+    readme/appmesh
+    readme/vpc
+    readme/sqs
+    readme/rds
+    readme/dyndb
+    readme/s3
+    readme/sns
+    readme/kms
+    readme/acm
+    readme/compute

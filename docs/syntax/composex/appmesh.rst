@@ -220,7 +220,7 @@ Syntax
 Examples
 --------
 
-.. literalinclude:: ../use-cases/blog.with_mesh.yml
+.. literalinclude:: ../../../use-cases/appmesh/new_mesh.yml
     :language: yaml
 
 .. _HTTP Route: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-appmesh-route-httproutematch.html

@@ -4,10 +4,6 @@
 x-acm
 =====
 
----------------------------
-Provision ACM certificates
----------------------------
-
 This module to allow people to create ACM certificates, auto-validate these with their DNS registration, and front their applications with HTTPS.
 
 .. hint::
@@ -16,8 +12,8 @@ This module to allow people to create ACM certificates, auto-validate these with
     is created, removing the manual validation process.
 
 
-Syntax definition
-------------------
+Syntax
+======
 
 .. code-block:: yaml
 
@@ -34,7 +30,7 @@ Syntax definition
 
 
 Properties
-----------
+==========
 
 The properties will be supported exactly like in the native `AWS ACM Properties`_
 
@@ -44,14 +40,15 @@ The properties will be supported exactly like in the native `AWS ACM Properties`
     the same ZoneId, so you do not need to list them all in `DomainValidationOptions`_
 
 Services
---------
+========
 
 No need to indicate services to assign the ACM certificate to. Refer to :ref:`elbv2_syntax_reference` for mapping
 to ALB/NLB.
 
 
 Example
--------
+=======
+
 .. code-block:: yaml
 
     x-acm:

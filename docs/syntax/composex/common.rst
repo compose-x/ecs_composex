@@ -9,9 +9,26 @@ properties to their equivalent settings on AWS ECS and otherwise for the other "
 
 In general for each x- section of the docker compose document, we will find three attributes to each resource:
 
-* Settings
-* Services
-* Properties
+* `Properties`_
+* `Settings`_
+* `Services`_
+* `Lookup`_
+
+Properties
+==========
+
+Unless indicated otherwise, these are the properties for the resource as you would define them using the AWS properties
+in the AWS CloudFormation resource definition.
+
+.. warning::
+
+    In order to update some resources, AWS Sometimes needs to create new ones to replace the once already in place,
+    depending on the type of property you are changing. To do so, AWS will need to have the name of the resource
+    generated, and not set specifically for it. It is a limitation, but in the case of most of the resources, it also
+    allows for continued availability of the service to the resources.
+
+    Therefore, some resources will not be using the `Name` value that you give to it, if you did so.
+
 
 Settings
 ========
@@ -53,17 +70,24 @@ file.
 Refer to each x- resource syntax to see which access types are available.
 
 
-Properties
-==========
+Lookup
+======
 
-Unless indicated otherwise, these are the properties for the resource as you would define them using the AWS properties
-in the AWS CloudFormation resource definition.
+Allows you to Lookup existing resources (tagged) that you would like to use with the new services you are deploying.
+Everything with regards to the access and other properties, depending on the type of resources, will remain the same.
+
+This is accomplished by using AWS Resources Group Tags API which means, at this point in time, you can only find resources
+that are tagged.
+
+.. note::
+
+    It will never modify the looked up object!
+
 
 .. warning::
 
-    In order to update some resources, AWS Sometimes needs to create new ones to replace the once already in place,
-    depending on the type of property you are changing. To do so, AWS will need to have the name of the resource
-    generated, and not set specifically for it. It is a limitation, but in the case of most of the resources, it also
-    allows for continued availability of the service to the resources.
+    You can only lookup tagged resource on AWS.
 
-    Therefore, some resources will not be using the `Name` value that you give to it, if you did so.
+.. tip::
+
+    Tags keys and values are case sensitive. At this stage, this does not support regexps.

@@ -44,14 +44,13 @@ The only setting available at this time is EnvNames, as for all other x-resource
 Lookup
 ======
 
-Allows to discover existing resources in your account.
-Everything works the same for Settings etc, only this time, you will be expected to provide a series of **Tags**.
+Lookup is currently implemented for DynamoDB tables!
 
-If tables are found in your account with the provided *Tags*, then its ARN will be used in the service policy
-and exposed as the value of environment variables to the microservice task role and definition.
+Examples
+========
 
 .. code-block:: yaml
-    :caption: Tags example
+    :caption: Lookup existing table
 
     x-dynamodb:
       tableC:
@@ -61,9 +60,9 @@ and exposed as the value of environment variables to the microservice task role 
             - key: value
 
 
-.. tip::
-
-    Tags keys and values are case sensitive. At this stage, this does not support regexps.
+.. literalinclude:: ../../../use-cases/dynamodb/table_with_gsi.yml
+    :language: yaml
+    :caption: Tables with GSI
 
 
 .. _AWS CFN Dynamodb Documentation: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-dynamodb-table.html

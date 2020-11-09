@@ -1,10 +1,44 @@
 .. _sqs_syntax_reference:
 
+======
 x-sqs
-=====
+======
+
+Syntax
+=======
+
+.. code-block:: yaml
+    :caption: SNS Syntax Reference
+
+    x-sns:
+      QueueA:
+        Properties: {}
+        Settings: {}
+        Services: []
+
+Properties
+==========
+
+Mandatory Properties
+^^^^^^^^^^^^^^^^^^^^^
+
+SQS does not require any properties to be set in order to create the queue. No settings are mandatory.
+
+Special properties
+^^^^^^^^^^^^^^^^^^
+
+It is possible to define Dead Letter Queues for SQS messages (DLQ). It is possible to easily define this in ECS ComposeX
+simply by referring to the name of the queue, deployed in this same deployment.
+
+.. warning:: It won't be possible to import a queue ARN at this time in ECS ComposeX that exists outside of the stack today.
+
+Settings
+========
+
+No specific settings for SQS at this point.
 
 Services
---------
+========
 
 Similar to all other modules, we have a list of dictionaries, with two keys of interest:
 
@@ -24,34 +58,17 @@ Access types
     IAM policies, are defined in sqs/sqs_perms.py
 
 
-Settings
---------
+Lookup
+======
 
-No specific settings for SQS at this point.
+Lookup is currently implemented for SQS!
 
-
-Properties
-----------
-
-Mandatory Properties
-^^^^^^^^^^^^^^^^^^^^^
-
-SQS does not require any properties to be set in order to create the queue. No settings are mandatory.
-
-Special properties
-^^^^^^^^^^^^^^^^^^
-
-It is possible to define Dead Letter Queues for SQS messages (DLQ). It is possible to easily define this in ECS ComposeX
-simply by referring to the name of the queue, deployed in this same deployment.
-
-.. warning:: It won't be possible to import a queue ARN at this time in ECS ComposeX that exists outside of the stack.
-
-To do so, simply use the following syntax:
 
 Examples
---------
+========
 
 .. code-block:: yaml
+    :caption: Simple SQS Queues with DLQ configured
 
     x-sqs:
       Queue02:
@@ -80,9 +97,8 @@ Examples
             - dlq
 
 
-Example with step scaling scaling:
-
-.. code-block::
+.. code-block:: yaml
+    :caption: SQS Queue with scaling definition
 
     x-sqs:
       QueueA:
