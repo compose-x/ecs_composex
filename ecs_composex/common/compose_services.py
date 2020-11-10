@@ -294,7 +294,7 @@ class ComposeService(object):
         ("deploy", dict),
         ("external_links", list),
         ("depends_on", list),
-        ("syntax_links", list),
+        ("links", list),
         ("secrets", list),
         ("healthcheck", dict),
         ("x-configs", dict),
@@ -306,13 +306,13 @@ class ComposeService(object):
                 "The definition of a service must be", dict, "got", type(definition)
             )
         if not all(
-            key in [title[0] for title in self.keys] for key in definition.keys()
+            key in [title[0] for title in self.keys] for key in list(definition.keys())
         ):
             raise KeyError(
                 "Only valid keys for a service definition are",
-                self.keys[0],
+                sorted([key[0] for key in self.keys]),
                 "Got",
-                definition.keys(),
+                sorted(list(definition.keys())),
             )
         for setting in self.keys:
             if keyisset(setting[0], definition) and not isinstance(
