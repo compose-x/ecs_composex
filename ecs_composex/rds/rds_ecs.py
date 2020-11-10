@@ -115,6 +115,8 @@ def add_new_dbs(db, rds_root_stack):
             secret_import,
             target,
         )
+        if rds_root_stack.title not in target[0].stack.DependsOn:
+            target[0].stack.DependsOn.append(rds_root_stack.title)
 
 
 def import_dbs(db, db_mappings):
@@ -175,9 +177,6 @@ def rds_to_ecs(rds_dbs, services_stack, res_root_stack, settings):
         for db_name in rds_dbs
         if rds_dbs[db_name].lookup and rds_dbs[db_name].services
     ]
-    if new_resources and res_root_stack.title not in services_stack.DependsOn:
-        services_stack.DependsOn.append(res_root_stack.title)
-        LOG.info(f"Added dependency between services and {res_root_stack.title}")
     for new_res in new_resources:
         add_new_dbs(new_res, res_root_stack)
     create_lookup_mappings(db_mappings, lookup_resources, settings)
