@@ -200,7 +200,7 @@ environment of their own and want to quickly iterate over it. However, it is cer
 in charge of the AWS accounts etc. would want to use to make their own lives easy too.
 
 In many areas, you as the end-user of ComposeX will already have infrastructure in place: VPC, DBs and what not.
-So as much as possible, you will be able in ComposeX to define :ref:`lookup_syntax_reference` sections which will find your existing resources,
+So as much as possible, you will be able in ComposeX to define `Lookup`_ sections which will find your existing resources,
 and map these to the services.
 
 Fargate First
@@ -264,10 +264,12 @@ This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypack
 .. _AWS ELBv2: https://nightly.docs.ecs-composex.lambda-my-aws.io/syntax/composex/elbv2.html
 .. _AWS S3: https://nightly.docs.ecs-composex.lambda-my-aws.io/syntax/composex/s3.html
 .. _AWS IAM: https://nightly.docs.ecs-composex.lambda-my-aws.io/syntax/composex/ecs.details/iam.html
-.. _AWS SNS:https://nightly.docs.ecs-composex.lambda-my-aws.io/syntax/composex/sns.html
+.. _AWS SNS: https://nightly.docs.ecs-composex.lambda-my-aws.io/syntax/composex/sns.html
 
 .. _AWS EC2: https://nightly.docs.ecs-composex.lambda-my-aws.io/features.html#ec2-resources-for-ecs-cluster
 .. _AWS AppMesh: https://nightly.docs.ecs-composex.lambda-my-aws.io/readme/appmesh.html
+
+.. _Lookup: https://nightly.docs.ecs-composex.lambda-my-aws.io/syntax/composex/common.html#lookup
 
 .. |BUILD| image:: https://codebuild.eu-west-1.amazonaws.com/badges?uuid=eyJlbmNyeXB0ZWREYXRhIjoidThwNXVIKzVvSnlXcUNVRzVlNE5wN0FiWE4rYzYvaHRNMEM0ZHMxeXRLMytSanhsckozVEN3L1Y5Szl5ZEdJVGxXVElyalZmaFVzR2tSbDBHeFI5cHBRPSIsIml2UGFyYW1ldGVyU3BlYyI6IlZkaml2d28wSGR1YU1xb2ciLCJtYXRlcmlhbFNldFNlcmlhbCI6MX0%3D&branch=master
 
