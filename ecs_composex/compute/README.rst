@@ -1,3 +1,6 @@
+.. _compute_readme:
+
+=============================
 EC2 resources for ECS Cluster
 =============================
 

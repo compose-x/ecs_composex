@@ -45,6 +45,8 @@ To make this work, I simply update the MicroserviceCount parameter default value
     update_config will be use very soon to support replacement of services using a LB to possibly use CodeDeploy
     Blue/Green deployment.
 
+.. _composex_families_labels_syntax_reference:
+
 labels
 ^^^^^^^
 

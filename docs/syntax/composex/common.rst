@@ -70,6 +70,8 @@ file.
 Refer to each x- resource syntax to see which access types are available.
 
 
+.. _lookup_syntax_reference:
+
 Lookup
 ======
 

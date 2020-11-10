@@ -55,14 +55,33 @@ Access types
 
 .. tip::
 
-    IAM policies, are defined in sqs/sqs_perms.py
-
+    IAM policies, are defined in sqs/sqs_perms.json
 
 Lookup
 ======
 
 Lookup is currently implemented for SQS!
 
+Scaling
+=======
+
+You can now defined StepScaling on the ECS Service based on the number of messages in the queue!
+
+.. code-block:: yaml
+    :caption: Scaling Syntax
+
+    scaling:
+      steps:
+        - lower_bound: int
+          upper_bound: int
+          count: int
+      scaling_in_cooldown: int
+      scaling_out_cooldown: int
+
+
+.. note::
+
+    If you already setup other Scaling policies for the service, beware of race conditions!
 
 Examples
 ========
@@ -106,6 +125,8 @@ Examples
           - name: abcd
             access: RWMessages
             scaling:
+              scale_in_cooldown: 120
+              scale_out_cooldown: 60
               steps:
                 - lower_bound: 0
                   upper_bound: 10

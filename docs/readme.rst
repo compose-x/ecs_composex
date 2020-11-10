@@ -152,7 +152,7 @@ environment of their own and want to quickly iterate over it. However, it is cer
 in charge of the AWS accounts etc. would want to use to make their own lives easy too.
 
 In many areas, you as the end-user of ComposeX will already have infrastructure in place: VPC, DBs and what not.
-So as much as possible, you will be able in ComposeX to define `Lookup` sections which will find your existing resources,
+So as much as possible, you will be able in ComposeX to define :ref:`lookup_syntax_reference` sections which will find your existing resources,
 and map these to the services.
 
 Fargate First

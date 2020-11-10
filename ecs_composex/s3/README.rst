@@ -1,10 +1,17 @@
+.. _aws_s3_readme:
+
+=======
 AWS S3
 =======
 
 This package is here to integrate AWS S3 buckets creation and association to ECS Services.
 
+.. tip::
+
+    For more details on the syntax, head to :ref:`s3_syntax_reference`.
+
 Constraints
------------
+===========
 
 S3 buckets are a delicate resource, mostly due to
 
@@ -14,7 +21,7 @@ S3 buckets are a delicate resource, mostly due to
 
 
 Settings
---------
+========
 
 AWS S3 bucket properties can be long and tedious to set correctly. To help with making your life easy, additional settings
 have been added to shorten the bucket definition.
@@ -23,15 +30,21 @@ have been added to shorten the bucket definition.
 * ExpandAccountIdToBucket
 * EnableEncryption
 
-Services
---------
+.. _s3_access_types_reference:
 
-The services work as usual, with a change syntax for the access, expecting a dictionary to distinguish Bucket and Objects
-access, in order to provide the most tuned access to your services.
+Access types
+============
+
+For S3 buckets, the access types is expecting a object with **objects** and **bucket** to distinguish permissions for each.
+If you indicate a string, the default permissions (bucket: ListOnly and objects: RW) will be applied.
+
+.. literalinclude:: ../../ecs_composex/s3/s3_perms.json
+    :caption: Full access types policies definitions
+    :language: json
 
 
 Features
---------
+========
 
 By default, if not specified, we have decided to encrypt files at rest with **AES256** SSEAlgorithm. The reason for that
 choice is that, files are encrypted, for compliance, but without the complexity that KMS can bring and developers can
@@ -40,16 +53,9 @@ easily forget about.
 Also, objects are not locked, but, all public access is denied by default. You can obviously override these properties.
 
 Lookup
-------
-
-As for most resources now, you can lookup and find existing S3 buckets that you wish to manage outside of ComposeX.
-So you can set tags to find your bucket (and its name, in which case it will cross-validate it).
+======
 
 .. hint::
 
     If your bucket is encrypted with a KMS key, the IAM task role for your service is also granted access to that Key
     to manipulate the data in the bucket.
-
-.. tip::
-
-    For more details on the Settings and properties to set in your YAML Compose file,  go to :ref:`s3_syntax_reference`

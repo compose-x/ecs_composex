@@ -95,7 +95,7 @@ CLI for `config`
 
 
 AWS & Docker Resources support
-=====================
+==============================
 
 AWS Services
 ------------
@@ -200,7 +200,7 @@ environment of their own and want to quickly iterate over it. However, it is cer
 in charge of the AWS accounts etc. would want to use to make their own lives easy too.
 
 In many areas, you as the end-user of ComposeX will already have infrastructure in place: VPC, DBs and what not.
-So as much as possible, you will be able in ComposeX to define `Lookup` sections which will find your existing resources,
+So as much as possible, you will be able in ComposeX to define :ref:`lookup_syntax_reference` sections which will find your existing resources,
 and map these to the services.
 
 Fargate First
@@ -254,20 +254,20 @@ This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypack
 .. _ECS ComposeX Project: https://github.com/orgs/lambda-my-aws/projects/3
 .. _CICD Pipeline for multiple services on AWS ECS with ECS ComposeX: https://blog.ecs-composex.lambda-my-aws.io/posts/cicd-pipeline-for-multiple-services-on-aws-ecs-with-ecs-composex/
 
-.. _AWS ECS: https://nightly.docs.ecs-composex.lambda-my-aws.io/syntax/ecs.html
-.. _AWS VPC: https://nightly.docs.ecs-composex.lambda-my-aws.io/syntax/vpc.html
-.. _AWS RDS: https://nightly.docs.ecs-composex.lambda-my-aws.io/syntax/rds.html
-.. _AWS SQS: https://nightly.docs.ecs-composex.lambda-my-aws.io/syntax/sqs.html
-.. _AWS KMS: https://nightly.docs.ecs-composex.lambda-my-aws.io/syntax/kms.html
-.. _AWS DynamoDB: https://nightly.docs.ecs-composex.lambda-my-aws.io/syntax/dynamodb.html
-.. _AWS ACM: https://nightly.docs.ecs-composex.lambda-my-aws.io/syntax/acm.html
-.. _AWS ELBv2: https://nightly.docs.ecs-composex.lambda-my-aws.io/syntax/elbv2.html
-.. _AWS S3: https://nightly.docs.ecs-composex.lambda-my-aws.io/syntax/s3.html
-.. _AWS IAM:
-.. _AWS SNS:https://nightly.docs.ecs-composex.lambda-my-aws.io/syntax/sns.html
+.. _AWS ECS: https://nightly.docs.ecs-composex.lambda-my-aws.io/syntax/composex/ecs.html
+.. _AWS VPC: https://nightly.docs.ecs-composex.lambda-my-aws.io/syntax/composex/vpc.html
+.. _AWS RDS: https://nightly.docs.ecs-composex.lambda-my-aws.io/syntax/composex/rds.html
+.. _AWS SQS: https://nightly.docs.ecs-composex.lambda-my-aws.io/syntax/composex/sqs.html
+.. _AWS KMS: https://nightly.docs.ecs-composex.lambda-my-aws.io/syntax/composex/kms.html
+.. _AWS DynamoDB: https://nightly.docs.ecs-composex.lambda-my-aws.io/syntax/composex/dynamodb.html
+.. _AWS ACM: https://nightly.docs.ecs-composex.lambda-my-aws.io/syntax/composex/acm.html
+.. _AWS ELBv2: https://nightly.docs.ecs-composex.lambda-my-aws.io/syntax/composex/elbv2.html
+.. _AWS S3: https://nightly.docs.ecs-composex.lambda-my-aws.io/syntax/composex/s3.html
+.. _AWS IAM: https://nightly.docs.ecs-composex.lambda-my-aws.io/syntax/composex/ecs.details/iam.html
+.. _AWS SNS:https://nightly.docs.ecs-composex.lambda-my-aws.io/syntax/composex/sns.html
 
 .. _AWS EC2: https://nightly.docs.ecs-composex.lambda-my-aws.io/features.html#ec2-resources-for-ecs-cluster
-.. _AWS AppMesh: https://nightly.docs.ecs-composex.lambda-my-aws.io/features.html#aws-appmesh-aws-cloud-map-for-services-mesh-discovery
+.. _AWS AppMesh: https://nightly.docs.ecs-composex.lambda-my-aws.io/readme/appmesh.html
 
 .. |BUILD| image:: https://codebuild.eu-west-1.amazonaws.com/badges?uuid=eyJlbmNyeXB0ZWREYXRhIjoidThwNXVIKzVvSnlXcUNVRzVlNE5wN0FiWE4rYzYvaHRNMEM0ZHMxeXRLMytSanhsckozVEN3L1Y5Szl5ZEdJVGxXVElyalZmaFVzR2tSbDBHeFI5cHBRPSIsIml2UGFyYW1ldGVyU3BlYyI6IlZkaml2d28wSGR1YU1xb2ciLCJtYXRlcmlhbFNldFNlcmlhbCI6MX0%3D&branch=master
 

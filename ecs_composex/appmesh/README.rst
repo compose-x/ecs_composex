@@ -1,8 +1,15 @@
-﻿AWS AppMesh & AWS Cloud Map for services mesh & discovery
+﻿.. _appmesh_readme:
+
+=========================================================
+AWS AppMesh & AWS Cloud Map for services mesh & discovery
 =========================================================
 
 AWS AppMesh is a service mesh which takes care of routing your services packets logically among the different nodes.
 What this allows you to do, it to explicitly declare which services have access to others, either on http, tcp or gRPC.
+
+.. seealso::
+
+    ComposeX :ref:`appmesh_syntax_reference` syntax reference
 
 .. note::
 
@@ -21,7 +28,7 @@ There are a lot more features to know about, so I would recommend to head to the
     go across the mesh, in/out the services.
 
 Nodes
------
+=====
 
 The nodes are a logical construct to indicate an endpoint. With ECS ComposeX, it will either be
 
@@ -37,7 +44,7 @@ to work correctly:
 * add IAM permissions for envoy to discover services and the mesh settings.
 
 Routers
--------
+=======
 
 Routers are logical endpoints that apply the logic you define into routes. For TCP routers, it mostly is about defining
 TCP settings, such as timeouts.

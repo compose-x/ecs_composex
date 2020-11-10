@@ -1,5 +1,13 @@
-AWS VPC, needs no introduction
+.. _aws_vpc_readme:
+
 ==============================
+AWS VPC
+==============================
+
+.. seealso::
+
+    Head to :ref:`vpc_syntax_reference` to see how to use that feature.
+
 
 I am not here to tell you what a VPC should look like. So in that spirit, this is really here to be one
 less thing developers who wish to use that tool are going to have to think about.
@@ -22,9 +30,6 @@ network configuration you have.
 To help with that, we have added the **x-vpc** key support in the docker-compose file, with allows you to find your VPC
 in and subnets with many options.
 
-.. seealso::
-
-    Head to :ref:`vpc_syntax_reference` to see how to use that feature.
 
 
 .. _vpc_network_design:
@@ -58,4 +63,3 @@ RoadMap
 -------
 
 * Add option to enable VPC Flow logs
-* Add option to enable VPC Endpoints

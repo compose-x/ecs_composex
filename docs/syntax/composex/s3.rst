@@ -93,12 +93,22 @@ Services
 As for all other resource types, you can define the type of access you want based to the S3 buckets.
 However, for buckets, this means distinguish the bucket and the objects resource.
 
-Access types
-^^^^^^^^^^^^
+.. code-block:: yaml
+    :caption: permissions example
 
-.. literalinclude:: ../../ecs_composex/s3/s3_perms.json
-    :language: json
+    x-s3:
+      bucketA:
+        Properties: {}
+        Settings: {}
+        Services:
+          - name: service-01
+            access:
+              objects: RW
+              bucket: ListOnly
 
+.. hint::
+
+    Refer to :ref:`s3_access_types_reference` to review available permissions
 
 Lookup
 =======
