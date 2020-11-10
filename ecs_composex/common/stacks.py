@@ -194,6 +194,7 @@ class ComposeXStack(Stack, object):
         Function to use when the template is finalized and can be uploaded to S3.
         """
         LOG.debug(f"Rendering {self.title}")
+        self.DependsOn = list(set(self.DependsOn))
         template_file = FileArtifact(
             file_name=self.file_name,
             template=self.stack_template,
