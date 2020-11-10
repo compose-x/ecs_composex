@@ -246,39 +246,29 @@ def validate_props_and_service_definition(props, service):
         )
 
 
-def handle_sg_lb_ingress_to_service(
-    resource, family, resources_stack, assign_to_service_stack
-):
+def handle_sg_lb_ingress_to_service(resource, family, resources_stack):
     """
     Function to add ingress from the LB to Target if using ALB
     :param resource:
     :param family:
     :param resources_stack:
-    :param bool assign_to_service_stack:
     :return:
     """
     if resource.is_nlb():
         return
-    if assign_to_service_stack:
-        family.service_config.network.add_lb_ingress(
-            family,
-            lb_name=resource.logical_name,
-            lb_sg_ref=GetAtt(resource.lb_sg, "GroupId"),
-        )
-    elif not assign_to_service_stack:
-        lb_sg_param = Parameter(f"{resource.lb_sg.title}", Type=SG_ID_TYPE)
-        add_parameters(family.template, [lb_sg_param])
-        family.service_config.network.add_lb_ingress(
-            family, lb_name=resource.logical_name, lb_sg_ref=Ref(lb_sg_param)
-        )
-        family.stack_parameters.update(
-            {
-                f"{resource.lb_sg.title}": GetAtt(
-                    resources_stack.title,
-                    f"Outputs.{resource.lb_sg.title}",
-                )
-            }
-        )
+    lb_sg_param = Parameter(f"{resource.lb_sg.title}", Type=SG_ID_TYPE)
+    add_parameters(family.template, [lb_sg_param])
+    family.service_config.network.add_lb_ingress(
+        family, lb_name=resource.logical_name, lb_sg_ref=Ref(lb_sg_param)
+    )
+    family.stack_parameters.update(
+        {
+            f"{resource.lb_sg.title}": GetAtt(
+                resources_stack.title,
+                f"Outputs.{resource.lb_sg.title}",
+            )
+        }
+    )
 
 
 def define_service_target_group(
@@ -287,7 +277,6 @@ def define_service_target_group(
     family,
     resources_root_stack,
     target_definition,
-    assign_to_service_stack,
 ):
     """
     Function to create the elbv2 target group
@@ -296,7 +285,6 @@ def define_service_target_group(
     :param ecs_composex.common.compose_services.ComposeFamily family:
     :param ecs_composex.common.stacks.ComposeXStack resources_root_stack:
     :param dict target_definition:
-    :param bool assign_to_service_stack:
     :return: the target group
     :rtype: troposphere.elasticloadbalancingv2.TargetGroup
     """
@@ -319,43 +307,32 @@ def define_service_target_group(
         VpcId=Ref(VPC_ID),
         **props,
     )
-    if assign_to_service_stack:
-        service_lb = EcsLb(
-            ContainerPort=props["Port"],
-            ContainerName=service.name,
-            TargetGroupArn=Ref(target_group),
-        )
-        family.template.add_resource(target_group)
-        family.ecs_service.ecs_service.LoadBalancers.append(service_lb)
-    else:
-        resources_root_stack.stack_template.add_resource(target_group)
-        resources_root_stack.stack_template.add_output(
-            ComposeXOutput(
-                target_group,
-                [("", TGT_GROUP_ARN.title, Ref(target_group))],
-                export=False,
-            ).outputs
-        )
-        tgt_parameter = Parameter(
-            f"{target_group.title}Arn", Type="String", template=family.template
-        )
-        family.stack_parameters.update(
-            {
-                tgt_parameter.title: GetAtt(
-                    resources_root_stack.title,
-                    f"Outputs.{target_group.title}{TGT_GROUP_ARN.title}",
-                )
-            }
-        )
-        service_lb = EcsLb(
-            ContainerPort=props["Port"],
-            ContainerName=service.name,
-            TargetGroupArn=Ref(tgt_parameter),
-        )
-        family.ecs_service.ecs_service.LoadBalancers.append(service_lb)
-        handle_sg_lb_ingress_to_service(
-            resource, family, resources_root_stack, assign_to_service_stack
-        )
+    resources_root_stack.stack_template.add_resource(target_group)
+    resources_root_stack.stack_template.add_output(
+        ComposeXOutput(
+            target_group,
+            [("", TGT_GROUP_ARN.title, Ref(target_group))],
+            export=False,
+        ).outputs
+    )
+    tgt_parameter = Parameter(
+        f"{target_group.title}Arn", Type="String", template=family.template
+    )
+    family.stack_parameters.update(
+        {
+            tgt_parameter.title: GetAtt(
+                resources_root_stack.title,
+                f"Outputs.{target_group.title}{TGT_GROUP_ARN.title}",
+            )
+        }
+    )
+    service_lb = EcsLb(
+        ContainerPort=props["Port"],
+        ContainerName=service.name,
+        TargetGroupArn=Ref(tgt_parameter),
+    )
+    family.ecs_service.ecs_service.LoadBalancers.append(service_lb)
+    handle_sg_lb_ingress_to_service(resource, family, resources_root_stack)
     return target_group
 
 
@@ -365,7 +342,6 @@ def define_service_target_group_definition(
     family,
     target_def,
     resources_root_stack,
-    assign_to_service_stack=False,
 ):
     """
     Function to create the new service TGT Group
@@ -375,19 +351,9 @@ def define_service_target_group_definition(
     :param ecs_composex.common.compose_services.ComposeFamily family:
     :param dict target_def:
     :param ecs_composex.common.stacks.ComposeXStack resources_root_stack:
-    :param bool assign_to_service_stack: Whether we want the GetAtt or Ref on the target group
     :return:
     """
-    if assign_to_service_stack:
-        svc = family.template.resources[SERVICE_T]
-        if not hasattr(svc, "DependsOn"):
-            setattr(svc, "DependsOn", [resource.logical_name])
-        else:
-            svc.DependsOn.append(resource.logical_name)
-    elif (
-        resource.logical_name not in family.stack.DependsOn
-        and not assign_to_service_stack
-    ):
+    if resource.logical_name not in family.stack.DependsOn:
         family.stack.DependsOn.append(resources_root_stack.title)
         LOG.info(
             f"Added dependency between service family {family.logical_name} and {resources_root_stack.title}"
@@ -399,7 +365,6 @@ def define_service_target_group_definition(
         family,
         resources_root_stack,
         target_def,
-        assign_to_service_stack,
     )
     return Ref(service_tgt_group)
 
@@ -415,31 +380,16 @@ def handle_services_association(resource, res_root_stack, settings):
     """
     template = res_root_stack.stack_template
     stack = res_root_stack
-    if len(resource.families_targets) == 1:
-        stack = resource.families_targets[0][1].stack
-        template = resource.families_targets[0][1].template
-        resource.set_listeners(template)
-        resource.associate_to_template(template)
+    resource.set_listeners(template)
+    resource.associate_to_template(template)
+    for target in resource.families_targets:
         tgt_arn = define_service_target_group_definition(
-            resource,
-            resource.families_targets[0][0],
-            resource.families_targets[0][1],
-            resource.families_targets[0][2],
-            res_root_stack,
-            assign_to_service_stack=True,
+            resource, target[0], target[1], target[2], res_root_stack
         )
-        resource.services[0]["target_arn"] = tgt_arn
-    else:
-        resource.set_listeners(template)
-        resource.associate_to_template(template)
-        for target in resource.families_targets:
-            tgt_arn = define_service_target_group_definition(
-                resource, target[0], target[1], target[2], res_root_stack
-            )
-            for service in resource.services:
-                target_name = f"{target[1].logical_name}:{target[0].name}"
-                if target_name == service["name"]:
-                    service["target_arn"] = tgt_arn
+        for service in resource.services:
+            target_name = f"{target[1].logical_name}:{target[0].name}"
+            if target_name == service["name"]:
+                service["target_arn"] = tgt_arn
 
     for listener in resource.listeners:
         listener.map_services(resource)
