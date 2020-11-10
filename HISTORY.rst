@@ -2,12 +2,30 @@
 History
 =======
 
+0.8.6 (2020-11-10)
+==================
+
+New features since 0.8.0
+-------------------------
+
+* `Support for AWS S3 Buckets <https://github.com/lambda-my-aws/ecs_composex/issues/12>`_
+* `Support for ELBv2 with more details and controls <https://github.com/lambda-my-aws/ecs_composex/pull/228>`_
+* `Support for RoleArn to do cross-accounts Lookup <https://github.com/lambda-my-aws/ecs_composex/issues/226>`_
+* `Cooldown for ECS Scaling from SQS <https://github.com/lambda-my-aws/ecs_composex/issues/220>`_
+* Lookup support for nearly all resources
+
+Fixes since 0.8.0
+-------------------
+
+* https://github.com/lambda-my-aws/ecs_composex/issues/220
+
+
 0.8.0 (2020-10-09)
 ==================
 
 New features:
 --------------
-* `Support for ECS Scaling based on SQS Messages in queue <https://github.com/lambda-my-aws/ecs_composex/pull/194>`.
+* `Support for ECS Scaling based on SQS Messages in queue <https://github.com/lambda-my-aws/ecs_composex/pull/194>`_
 * `Support for ECS Scaling based on Service CPU/RAM values (TargetTracking) <https://github.com/lambda-my-aws/ecs_composex/issues/188>`_
 * `Support for using existing Secrets in AWS Secrets Manager <https://github.com/lambda-my-aws/ecs_composex/pull/193>`_
 * `Support for Service logs expiry from compose definition <https://github.com/lambda-my-aws/ecs_composex/issues/165>`_
