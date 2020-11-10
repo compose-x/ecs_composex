@@ -374,7 +374,7 @@ def handle_services_association(resource, res_root_stack, settings):
     Function to handle association of listeners and targets to the LB
 
     :param ecs_composex.elbv2.elbv2_stack.Elbv2 resource:
-    :param ecs_composex.common.stacks.ComposeXStack services_stack:
+    :param ecs_composex.common.settings.ComposeXSettings settings:
     :param ecs_composex.common.stacks.ComposeXStack res_root_stack:
     :return:
     """

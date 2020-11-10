@@ -49,7 +49,7 @@ from ecs_composex.compute.compute_stack import ComputeStack
 from ecs_composex.acm.acm_stack import init_acm_certs
 from ecs_composex.acm.acm_params import RES_KEY as ACM_KEY
 from ecs_composex.dns import add_parameters_and_conditions as dns_inputs, DnsSettings
-from ecs_composex.ecs import ServicesStack
+from ecs_composex.ecs import associate_services_to_root_stack
 from ecs_composex.ecs import ecs_params
 from ecs_composex.ecs.ecs_cluster import add_ecs_cluster
 from ecs_composex.ecs.ecs_params import (
@@ -172,35 +172,24 @@ def invoke_x_to_ecs(module, settings, services_stack, resource):
         )
 
 
-def apply_x_configs_to_ecs(settings, root_template, services_stack):
+def apply_x_configs_to_ecs(settings, root_stack):
     """
     Function that evaluates only the x- resources of the root template and iterates over the resources.
     If there is an implemented module in ECS ComposeX for that resource to map to the ECS Services, it will
     execute the function available in the module to apply defined settings to the services stack.
 
     :param ecs_composex.common.settings.ComposeXSettings settings: The compose file content
-    :param troposphere.Template root_template: The root template for ECS ComposeX
-    :param ecs_composex.ecs.ServicesStack services_stack: root stack for services.
+    :param ecs_composex.ecs.ServicesStack root_stack: root stack for services.
     """
-    sub_services = ["elbv2"]
-    for resource_name in root_template.resources:
-        resource = root_template.resources[resource_name]
+    for resource_name in root_stack.stack_template.resources:
+        resource = root_stack.stack_template.resources[resource_name]
         if (
             issubclass(type(resource), ComposeXStack)
             and resource_name in SUPPORTED_X_MODULES
             and not resource.is_void
         ):
             module = getattr(resource, "title")
-            invoke_x_to_ecs(module, settings, services_stack, resource)
-    for resource_name in services_stack.stack_template.resources:
-        resource = services_stack.stack_template.resources[resource_name]
-        if (
-            issubclass(type(resource), ComposeXStack)
-            and resource_name in sub_services
-            and not resource.is_void
-        ):
-            module = getattr(resource, "title")
-            invoke_x_to_ecs(module, settings, services_stack, resource)
+            invoke_x_to_ecs(module, settings, root_stack, resource)
 
 
 def apply_x_to_x_configs(root_template, settings):
@@ -273,8 +262,7 @@ def handle_new_xstack(
     :param troposphere.Template root_template:
     :param ecs_composex.common.stacks ComposeXStack xstack:
     """
-    tcp_services = ["x-rds", "x-appmesh"]
-    sub_services = [f"{X_KEY}elbv2"]
+    tcp_services = ["x-rds", "x-appmesh", f"{X_KEY}elbv2"]
     if vpc_stack and key in tcp_services:
         xstack.get_from_vpc_stack(vpc_stack)
     elif not vpc_stack and key in tcp_services:
@@ -287,10 +275,7 @@ def handle_new_xstack(
         and hasattr(xstack, "stack_template")
         and not xstack.is_void
     ):
-        if key not in sub_services:
-            root_template.add_resource(xstack)
-        else:
-            services_stack.stack_template.add_resource(xstack)
+        root_template.add_resource(xstack)
 
 
 def add_x_resources(root_template, settings, services_stack, vpc_stack=None):
@@ -323,7 +308,7 @@ def add_x_resources(root_template, settings, services_stack, vpc_stack=None):
             )
 
 
-def create_services(root_stack, settings, vpc_stack, dns_params, create_cluster):
+def create_services(root_stack, settings, vpc_stack, dns_params):
     """
     Function to add the microservices root stack
 
@@ -331,22 +316,8 @@ def create_services(root_stack, settings, vpc_stack, dns_params, create_cluster)
     :param ComposeXSettings settings: The settings for execution
     :param ComposeXStack vpc_stack: The VPC Stack
     :param dict dns_params: DNS Parameters for the execution
-    :param bool create_cluster: Indicates whether the cluster is created from this stack
     """
-    stack = ServicesStack("services", settings)
-    stack.Parameters.update(
-        {
-            ecs_params.CLUSTER_NAME_T: Ref(CLUSTER_NAME)
-            if not create_cluster
-            else Ref(ROOT_CLUSTER_NAME)
-        }
-    )
-    stack.Parameters.update(dns_params)
-    if vpc_stack:
-        stack.get_from_vpc_stack(vpc_stack)
-    if create_cluster:
-        stack.DependsOn.append(ROOT_CLUSTER_NAME)
-    return root_stack.stack_template.add_resource(stack)
+    associate_services_to_root_stack(root_stack, settings, dns_params, vpc_stack)
 
 
 def get_vpc_id(vpc_stack):
@@ -393,29 +364,28 @@ def generate_full_template(settings):
     vpc_stack = add_vpc_to_root(root_stack, settings)
     dns_settings = DnsSettings(root_stack, settings, get_vpc_id(vpc_stack))
     root_stack.Parameters.update(dns_settings.root_params)
-    create_cluster = add_ecs_cluster(settings, root_stack)
+    add_ecs_cluster(settings, root_stack)
     compute_stack = add_compute(root_stack.stack_template, settings, vpc_stack)
-    if create_cluster and settings.create_compute and compute_stack:
+    if settings.create_compute and compute_stack:
         compute_stack.DependsOn.append(ROOT_CLUSTER_NAME)
-    services_stack = create_services(
-        root_stack, settings, vpc_stack, dns_settings.nested_params, create_cluster
+    create_services(
+        root_stack, settings, vpc_stack, dns_settings.nested_params
     )
     if keyisset(ACM_KEY, settings.compose_content):
-        init_acm_certs(settings, dns_settings, services_stack)
+        init_acm_certs(settings, dns_settings, root_stack)
     add_x_resources(
         root_stack.stack_template,
         settings,
-        services_stack,
+        root_stack,
         vpc_stack=vpc_stack,
     )
     apply_x_configs_to_ecs(
         settings,
-        root_stack.stack_template,
-        services_stack,
+        root_stack,
     )
     apply_x_to_x_configs(root_stack.stack_template, settings)
     if keyisset("x-appmesh", settings.compose_content):
-        mesh = Mesh(settings.compose_content["x-appmesh"], services_stack, settings)
-        mesh.render_mesh_template(services_stack)
+        mesh = Mesh(settings.compose_content["x-appmesh"], root_stack, settings)
+        mesh.render_mesh_template(root_stack)
     add_all_tags(root_stack.stack_template, settings)
     return root_stack

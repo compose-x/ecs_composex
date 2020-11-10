@@ -205,7 +205,7 @@ def handle_lookup_resource(mapping, mapping_family, resource):
                 handle_kms_access(mapping_family, resource, target, selected_services)
 
 
-def assign_new_resource_to_service(resource):
+def assign_new_resource_to_service(resource, res_root_stack):
     """
     Function to assign the new resource to the service/family using it.
 
@@ -217,6 +217,8 @@ def assign_new_resource_to_service(resource):
             map_service_perms_to_resource(
                 resource, target[0], selected_services, target[3]
             )
+            if res_root_stack.title not in target[0].stack.DependsOn:
+                target[0].stack.DependsOn.append(res_root_stack.title)
 
 
 def handle_resource_to_services(
@@ -236,4 +238,4 @@ def handle_resource_to_services(
                 settings,
                 nested=True,
             )
-    assign_new_resource_to_service(xresource)
+    assign_new_resource_to_service(xresource, res_root_stack)

@@ -67,7 +67,7 @@ def assign_service_permissions_to_bucket(bucket, family, services, access):
         )
 
 
-def assign_new_bucket_to_services(bucket, nested=False):
+def assign_new_bucket_to_services(bucket, res_root_stack, nested=False):
     """
     Function to assign the bucket services permissions to access the s3 bucket.
     :param bucket:
@@ -89,6 +89,8 @@ def assign_new_bucket_to_services(bucket, nested=False):
             assign_service_permissions_to_bucket(
                 bucket, target[0], select_services, access
             )
+            if res_root_stack.title not in target[0].stack.DependsOn:
+                target[0].stack.DependsOn.append(res_root_stack.title)
 
 
 def handle_new_resources(
@@ -115,7 +117,7 @@ def handle_new_resources(
                 s_resources[resource_name],
                 nested=True,
             )
-    assign_new_bucket_to_services(resource, nested)
+    assign_new_bucket_to_services(resource, res_root_stack, nested)
 
 
 def get_bucket_kms_key_from_config(bucket_config):
@@ -284,9 +286,6 @@ def s3_to_ecs(xresources, services_stack, res_root_stack, settings):
     ]
     define_bucket_mappings(buckets_mappings, lookup_buckets, settings)
     LOG.debug(dumps(buckets_mappings, indent=4))
-    if new_resources and res_root_stack.title not in services_stack.DependsOn:
-        services_stack.DependsOn.append(res_root_stack.title)
-        LOG.info(f"Added dependency between services and {res_root_stack.title}")
     for res in new_resources:
         LOG.info(f"Creating {res.name} as {res.logical_name}")
         handle_new_resources(

@@ -33,18 +33,17 @@ It is going to also, based on the labels set in the compose file
 
 """
 
-from troposphere import Sub, Ref, Join, Tags
-from troposphere.ec2 import SecurityGroup
+from troposphere import Ref, Join, If
 
+from ecs_composex import __version__ as version
 from ecs_composex.common import build_template
-from ecs_composex.common.cfn_params import ROOT_STACK_NAME
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.dns import dns_params
 from ecs_composex.ecs import ecs_params
-from ecs_composex.ecs.ecs_params import CLUSTER_NAME
+from ecs_composex.ecs.ecs_params import CLUSTER_NAME, CLUSTER_T
+from ecs_composex.ecs.ecs_conditions import GENERATED_CLUSTER_NAME_CON_T
 from ecs_composex.ecs.ecs_template import generate_services
 from ecs_composex.vpc import vpc_params
-from ecs_composex import __version__ as version
 
 metadata = {
     "Type": "ComposeX",
@@ -52,51 +51,90 @@ metadata = {
 }
 
 
-class ServicesStack(ComposeXStack):
+class ServiceStack(ComposeXStack):
     """
-    Class to handle ECS root stack specific settings
+    Class to identify specifically a service stack
     """
 
-    vpc_stack = None
-    dependencies = []
-    services = []
 
-    def __init__(self, title, settings, **cfn_params):
-        parameters = [
-            CLUSTER_NAME,
-            vpc_params.VPC_ID,
-            vpc_params.PUBLIC_SUBNETS,
-            vpc_params.APP_SUBNETS,
-            ecs_params.XRAY_IMAGE,
-            dns_params.PUBLIC_DNS_ZONE_NAME,
-            dns_params.PUBLIC_DNS_ZONE_ID,
-            dns_params.PRIVATE_DNS_ZONE_ID,
-            dns_params.PRIVATE_DNS_ZONE_NAME,
-        ]
-        template = build_template("Root template for ECS Services", parameters)
-        generate_services(settings)
-        super().__init__(
-            title,
-            stack_template=template,
-            **cfn_params,
+def associate_services_to_root_stack(root_stack, settings, dns_params, vpc_stack=None):
+    """
+    Function to generate all services and associate their stack to the root stack
+
+    :param ecs_composex.common.stacks.ComposeXStack root_stack:
+    :param ecs_composex.common.settings.ComposeXSettings settings:
+    :param ecs_composex.common.stacks.ComposeXStack vpc_stack:
+    :return:
+    """
+    generate_services(settings)
+    for family_name in settings.families:
+        family = settings.families[family_name]
+        family.stack = ServiceStack(
+            family.logical_name,
+            stack_template=family.template,
+            stack_parameters=family.stack_parameters
         )
-        for family_name in settings.families:
-            family = settings.families[family_name]
-            family.stack_parameters.update(
-                {
-                    vpc_params.VPC_ID_T: Ref(vpc_params.VPC_ID),
-                    vpc_params.PUBLIC_SUBNETS_T: Join(
-                        ",", Ref(vpc_params.PUBLIC_SUBNETS)
-                    ),
-                    vpc_params.APP_SUBNETS_T: Join(",", Ref(vpc_params.APP_SUBNETS)),
-                }
-            )
-            family.stack = ComposeXStack(
-                family.logical_name,
-                stack_template=family.template,
-                stack_parameters=family.stack_parameters,
-            )
-            self.stack_template.add_resource(family.stack)
-        if not settings.create_vpc:
-            self.no_vpc_parameters()
-        self.stack_template.set_metadata(metadata)
+        family.stack_parameters.update(
+            {
+                ecs_params.CLUSTER_NAME.title: If(
+                    GENERATED_CLUSTER_NAME_CON_T, Ref(CLUSTER_T), Ref(CLUSTER_NAME)
+                ),
+            }
+        )
+        family.stack_parameters.update(dns_params)
+        if not vpc_stack:
+            family.stack.no_vpc_parameters()
+        else:
+            family.stack.get_from_vpc_stack(vpc_stack)
+        family.template.set_metadata(metadata)
+        root_stack.stack_template.add_resource(family.stack)
+
+
+# class ServicesStack(ComposeXStack):
+#     """
+#     Class to handle ECS root stack specific settings
+#     """
+#
+#     vpc_stack = None
+#     dependencies = []
+#     services = []
+#
+#     def __init__(self, title, settings, **cfn_params):
+#         parameters = [
+#             CLUSTER_NAME,
+#             vpc_params.VPC_ID,
+#             vpc_params.PUBLIC_SUBNETS,
+#             vpc_params.APP_SUBNETS,
+#             ecs_params.XRAY_IMAGE,
+#             dns_params.PUBLIC_DNS_ZONE_NAME,
+#             dns_params.PUBLIC_DNS_ZONE_ID,
+#             dns_params.PRIVATE_DNS_ZONE_ID,
+#             dns_params.PRIVATE_DNS_ZONE_NAME,
+#         ]
+#         template = build_template("Root template for ECS Services", parameters)
+#         generate_services(settings)
+#         super().__init__(
+#             title,
+#             stack_template=template,
+#             **cfn_params,
+#         )
+#         for family_name in settings.families:
+#             family = settings.families[family_name]
+#             family.stack_parameters.update(
+#                 {
+#                     vpc_params.VPC_ID_T: Ref(vpc_params.VPC_ID),
+#                     vpc_params.PUBLIC_SUBNETS_T: Join(
+#                         ",", Ref(vpc_params.PUBLIC_SUBNETS)
+#                     ),
+#                     vpc_params.APP_SUBNETS_T: Join(",", Ref(vpc_params.APP_SUBNETS)),
+#                 }
+#             )
+#             family.stack = ComposeXStack(
+#                 family.logical_name,
+#                 stack_template=family.template,
+#                 stack_parameters=family.stack_parameters,
+#             )
+#             self.stack_template.add_resource(family.stack)
+#         if not settings.create_vpc:
+#             self.no_vpc_parameters()
+#         self.stack_template.set_metadata(metadata)
