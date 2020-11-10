@@ -153,22 +153,24 @@ def handle_cluster_settings(root_stack, settings):
     :param ecs_composex.common.settings.ComposeXSettings settings:
     :return:
     """
-    cluster_title = CLUSTER_NAME.title
+    root_stack.stack_parameters.update({CLUSTER_NAME.title: CLUSTER_NAME.Default})
     if not keyisset(RES_KEY, settings.compose_content):
         LOG.info("No cluster information provided. Creating a new one")
         root_stack.stack_template.add_resource(get_default_cluster_config())
     elif isinstance(settings.compose_content[RES_KEY], dict):
         if keyisset("Use", settings.compose_content[RES_KEY]):
-            cluster_title = settings.compose_content[RES_KEY]["Use"]
+            root_stack.Parameters.update({CLUSTER_NAME.title: settings.compose_content[RES_KEY]["Use"]})
             LOG.info(f"Using cluster {settings.compose_content[RES_KEY]['Use']}")
         elif keyisset("Lookup", settings.compose_content[RES_KEY]):
-            cluster_title = lookup_ecs_cluster(
+            cluster_name = lookup_ecs_cluster(
                 settings.session, settings.compose_content[RES_KEY]["Lookup"]
             )
+            root_stack.Parameters.update({CLUSTER_NAME.title: cluster_name})
         elif keyisset("Properties", settings.compose_content[RES_KEY]):
             cluster = define_cluster(root_stack, settings.compose_content[RES_KEY])
             root_stack.stack_template.add_resource(cluster)
-        root_stack.stack_parameters.update({CLUSTER_NAME.title: cluster_title})
+    if CLUSTER_T not in root_stack.stack_template.resources:
+        root_stack.stack_template.add_resource(get_default_cluster_config())
 
 
 def add_ecs_cluster(settings, root_stack):
