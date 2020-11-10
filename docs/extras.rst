@@ -1,4 +1,6 @@
-﻿=======
+﻿.. _extras:
+
+=======
 Extras
 =======
 
@@ -191,6 +193,10 @@ might need, this is a good way to keep for free space, just in case.
 Multiple services, one microservice
 ====================================
 
+.. hint::
+
+    Refer to :ref:`composex_families_labels_syntax_reference` for more details.
+
 Regularly developers will build locally multiple services which are aimed to work together as a group. And sometimes,
 these services have such low latency requirements and dependency on each other, that they are best executed together.
 
@@ -256,13 +262,3 @@ For example,
         Services:
           - name: app01
             access: RWMessages
-
-ACM Certificates auto-create for public services
-================================================
-
-AWS CloudFormation now supports to auto-validate the Certificate by adding on your behalf the CNAME validation entry
-into your Route53 hosted zone.
-
-.. seealso::
-
-    :ref:`acm_syntax_reference`

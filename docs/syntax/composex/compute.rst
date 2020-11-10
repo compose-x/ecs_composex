@@ -1,6 +1,7 @@
 ﻿.. _compute_syntax_reference:
 
-Compute Reference Syntax
+========================
+spot_config
 ========================
 
 This module is not strictly a module which the same settings as the other AWS resources. This is a module which allows
@@ -48,3 +49,8 @@ With the given AZs of your region, it will create automatically all the override
     This spotfleet comes with a set of predefined Scaling policies, in order to further reduce cost or allow for
     scaling out based on EC2 metrics.
 
+
+.. warning::
+
+    We cannot recommend any more to use AWS Fargate and configure your capacity providers instead of EC2 instances.
+    Use with caution

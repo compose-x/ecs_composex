@@ -1,8 +1,0 @@
-﻿
-x-dns:
-  PrivateNamespace:
-    Name: mycluster.lan
-    Lookup: ns-namespaceid|ZHOSTEDZONE
-  PublicNamespace:
-    Name: lambda-my-aws.io
-    Lookup: ns-namspeaceid|ZHOSTEDZONE

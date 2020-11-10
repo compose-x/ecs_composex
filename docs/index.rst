@@ -31,11 +31,7 @@ Welcome to ECS-ComposeX's documentation!
 
     extras
 
-.. toctree::
-    :maxdepth: 1
-    :caption: Modules Syntax Reference
-
-    modules_syntax
+.. include:: modules_syntax.rst
 
 .. toctree::
     :maxdepth: 2

@@ -1,17 +1,27 @@
 .. _syntax:
 
 .. toctree::
+    :caption: docker-compose syntax
+    :maxdepth: 1
 
-    syntax_links/common
-    syntax_links/ecs
-    syntax_links/appmesh
-    syntax_links/elbv2
-    syntax_links/vpc
-    syntax_links/sqs
-    syntax_links/rds
-    syntax_links/dyndb
-    syntax_links/s3
-    syntax_links/sns
-    syntax_links/kms
-    syntax_links/acm
-    syntax_links/compute
+    syntax/docker-compose/services
+    syntax/docker-compose/volumes
+    syntax/docker-compose/secrets
+
+.. toctree::
+    :caption: ComposeX syntax
+    :maxdepth: 1
+
+    syntax/composex/common
+    syntax/composex/ecs
+    syntax/composex/appmesh
+    syntax/composex/elbv2
+    syntax/composex/rds
+    syntax/composex/dynamodb
+    syntax/composex/s3
+    syntax/composex/sqs
+    syntax/composex/sns
+    syntax/composex/acm
+    syntax/composex/kms
+    syntax/composex/vpc
+    syntax/composex/compute

@@ -1,24 +1,16 @@
 .. _s3_syntax_reference:
 
+=====
 x-s3
 =====
 
+Properties
+===========
+
 For the properties, go to to `AWS CFN S3 Definition`_
 
-Services
---------
-
-As for all other resource types, you can define the type of access you want based to the S3 buckets.
-However, for buckets, this means distinguish the bucket and the objects resource.
-
-Access types
-^^^^^^^^^^^^
-
-.. literalinclude:: ../ecs_composex/s3/s3_perms.json
-    :language: json
-
 Settings
---------
+=========
 
 Some use-cases require special adjustments. This is what this section is for.
 
@@ -95,23 +87,48 @@ If set to True (default) it will automatically define bucket encryption using AE
 
     Soon will link x-kms keys definition to that to allow you to re-use existing keys.
 
+Services
+========
 
-Lookup
-------
-
-The lookup allows you to find your cluster or db instance and also the Secret associated with them to allow ECS Services
-to get access to these.
-
-It will also find the DB security group and add an ingress rule.
+As for all other resource types, you can define the type of access you want based to the S3 buckets.
+However, for buckets, this means distinguish the bucket and the objects resource.
 
 .. code-block:: yaml
+    :caption: permissions example
 
     x-s3:
-      bucket-01:
-        Lookup:
-          Name: my-long-complicated-bucket-name
-          Tags:
-            - sometag: value
+      bucketA:
+        Properties: {}
+        Settings: {}
+        Services:
+          - name: service-01
+            access:
+              objects: RW
+              bucket: ListOnly
 
+.. hint::
+
+    Refer to :ref:`s3_access_types_reference` to review available permissions
+
+Lookup
+=======
+
+Lookup is currently implemented for S3 buckets!
+
+.. hint::
+
+    For S3, if the S3 bucket has a default KMS key encryption, the services will automatically be granted KMS default
+    **EncryptDecrypt** permissions in order to allow using the KMS key for objects manipulation.
+
+Examples
+=========
+
+.. literalinclude:: ../../../use-cases/s3/simple_s3_bucket.yml
+    :language: yaml
+    :caption: Create new S3 buckets
+
+.. literalinclude:: ../../../use-cases/s3/lookup_only.yml
+    :language: yaml
+    :caption: Lookup and use only existing buckets
 
 .. _AWS CFN S3 Definition: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-s3-bucket.html

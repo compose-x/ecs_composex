@@ -1,3 +1,6 @@
+.. _aws_sqs_readme:
+
+=======
 AWS SQS
 =======
 
@@ -5,12 +8,12 @@ This module aims to create the SQS Queues and expose there properties via *AWS C
 referenced to/by services stacks to create IAM policies accordingly.
 
 Queue properties
-----------------
+=================
 
 In order to make things very simple, the definition of properties follows the exact pattern as for the `CFN SQS definition`_.
 
-Special properties
-------------------
+ComposeX Features
+=================
 
 Redrive policy
 ^^^^^^^^^^^^^^
@@ -44,6 +47,6 @@ Example with DLQ:
 .. _CFN SQS definition: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-sqs-queues.html
 
 
-.. note::
+.. seealso::
 
     See :ref:`sqs_syntax_reference`
