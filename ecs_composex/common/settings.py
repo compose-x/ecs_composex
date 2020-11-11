@@ -109,14 +109,23 @@ def merge_service_definition(original_def, override_def, nested=False):
             and key in original_def.keys()
             and key != "ports"
         ):
-            original_def[key] = list(
-                dict.fromkeys(original_def[key] + override_def[key])
-            )
+            if not isinstance(original_def[key], list):
+                raise TypeError(
+                    "Cannot merge",
+                    key,
+                    "from",
+                    type(original_def[key]),
+                    "with",
+                    type(override_def[key]),
+                )
+            handle_lists_merges(original_def[key], override_def[key])
         elif (
             isinstance(override_def[key], list)
             and key in original_def.keys()
             and key == "ports"
         ):
+            print("Got ports to merge")
+            print(original_def[key], override_def[key])
             original_def[key] = merge_ports(original_def[key], override_def[key])
 
         elif not isinstance(override_def[key], (list, dict)):
@@ -146,27 +155,12 @@ def interpolate_env_vars(content):
             content[key] = expandvars(content[key])
 
 
-def merge_config_file(original_content, override_content):
+def merge_services_from_files(original_services, override_services):
     """
     Function to merge two docker compose files content.
 
-    :param original_content:
-    :param override_content:
-    :return:
     """
-
-    if not keyisset(ComposeService.main_key, original_content):
-        raise KeyError(
-            "No services defined in the source file. Keys found",
-            original_content.keys(),
-        )
-    if not keyisset(ComposeService.main_key, override_content):
-        return original_content.update(override_content)
-
-    original_services = deepcopy(original_content[ComposeService.main_key])
-    override_services = override_content[ComposeService.main_key]
-
-    for service_name in override_content[ComposeService.main_key]:
+    for service_name in override_services:
         if keyisset(service_name, original_services):
             original_services.update(
                 {
@@ -177,11 +171,131 @@ def merge_config_file(original_content, override_content):
                 }
             )
         else:
-            original_content[ComposeService.main_key].update(
-                {service_name: override_content[ComposeService.main_key][service_name]}
+            original_services.update({service_name: override_services[service_name]})
+
+
+def handle_lists_merges(original_list, override_list):
+    """
+
+    :param list original_list:
+    :param list override_list:
+    :return:
+    """
+    final_list = []
+
+    original_dict_items = [item for item in original_list if isinstance(item, dict)]
+    override_dict_items = [item for item in override_list if isinstance(item, dict)]
+    unique_dicts = [
+        merge_definitions(original, override)
+        for original, override in zip(original_dict_items, override_dict_items)
+    ]
+    final_list += unique_dicts
+
+    original_str_items = [item for item in original_list if isinstance(item, list)]
+    final_list += list(
+        set(
+            original_str_items
+            + [item for item in override_list if isinstance(item, list)]
+        )
+    )
+
+    origin_list_items = [item for item in original_list if isinstance(item, list)]
+    override_list_items = [item for item in override_list if isinstance(item, list)]
+
+    if origin_list_items and override_list_items:
+        merged_lists = handle_lists_merges(original_list, override_list)
+        final_list += merged_lists
+    elif origin_list_items and not override_list_items:
+        final_list += origin_list_items
+    elif not origin_list_items and override_list_items:
+        final_list += override_list_items
+    return final_list
+
+
+def merge_definitions(original_def, override_def, nested=False):
+    """
+    Merges two services definitions if service exists in both compose files.
+
+    :param bool nested:
+    :param dict original_def:
+    :param dict override_def:
+    :return:
+    """
+
+    if not nested:
+        original_def = deepcopy(original_def)
+    elif not isinstance(override_def, dict):
+        raise TypeError("Expected", dict, "got", type(override_def))
+    for key in override_def.keys():
+        if (
+            isinstance(override_def[key], dict)
+            and keyisset(key, original_def)
+            and isinstance(original_def[key], dict)
+        ):
+            merge_definitions(original_def[key], override_def[key], nested=True)
+        elif key not in original_def:
+            original_def[key] = override_def[key]
+        elif isinstance(override_def[key], list) and key in original_def.keys():
+            if not isinstance(original_def[key], list):
+                raise TypeError(
+                    "Cannot merge",
+                    key,
+                    "from",
+                    type(original_def[key]),
+                    "with",
+                    type(override_def[key]),
+                )
+            original_def[key] = handle_lists_merges(
+                original_def[key], override_def[key]
             )
-    original_content.update(override_content)
-    original_content[ComposeService.main_key] = original_services
+        elif isinstance(override_def[key], list) and key not in original_def.keys():
+            original_def[key] = override_def[key]
+
+        elif not isinstance(override_def[key], (list, dict)):
+            original_def[key] = override_def[key]
+    return original_def
+
+
+def merge_config_files(original_content, override_content):
+    """
+    Function to merge everything that is not services
+
+    :param dict original_content:
+    :param dict override_content:
+    :return:
+    """
+
+    for compose_key in override_content:
+        if (
+            compose_key == ComposeService.main_key
+            and keyisset(compose_key, original_content)
+            and keyisset(compose_key, override_content)
+        ):
+            original_services = original_content[ComposeService.main_key]
+            override_services = override_content[ComposeService.main_key]
+            merge_services_from_files(original_services, override_services)
+
+        elif (
+            keyisset(compose_key, original_content)
+            and isinstance(original_content[compose_key], dict)
+            and not compose_key == ComposeService.main_key
+        ):
+            original_definition = deepcopy(original_content[compose_key])
+            override_definition = override_content[compose_key]
+            original_content.update(
+                {
+                    compose_key: merge_definitions(
+                        original_definition,
+                        override_definition,
+                    )
+                }
+            )
+        elif (
+            not keyisset(compose_key, original_content)
+            and keyisset(compose_key, override_content)
+            and isinstance(override_content[compose_key], dict)
+        ):
+            original_content[compose_key] = override_content[compose_key]
 
 
 class ComposeXSettings(object):
@@ -425,7 +539,7 @@ class ComposeXSettings(object):
             self.compose_content = load_composex_file(files_list[0])
             files_list.pop(0)
             for file in files_list:
-                merge_config_file(self.compose_content, load_composex_file(file))
+                merge_config_files(self.compose_content, load_composex_file(file))
                 LOG.debug(yaml.dump(self.compose_content))
 
         elif content and isinstance(content, dict):

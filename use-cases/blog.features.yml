@@ -68,7 +68,7 @@ services:
     environment:
       LOGLEVEL: DEBUG
     healthcheck:
-      interval: 30
+      interval: 30s
       retries: 3
       test:
         - CMD
@@ -85,6 +85,7 @@ services:
     volumes:
       - source: some-volume
         target: /app/data
+        type: volume
     x-configs:
       iam:
         boundary: ccoe/js-developer
