@@ -263,10 +263,6 @@ def handle_new_xstack(
     :param ecs_composex.common.stacks ComposeXStack xstack:
     """
     tcp_services = ["x-rds", "x-appmesh", f"{X_KEY}elbv2"]
-    if vpc_stack and key in tcp_services:
-        xstack.get_from_vpc_stack(vpc_stack)
-    elif not vpc_stack and key in tcp_services:
-        xstack.no_vpc_parameters()
     LOG.debug(xstack, xstack.is_void)
     if xstack.is_void:
         invoke_x_to_ecs(res_type, settings, services_stack, xstack)
@@ -276,6 +272,10 @@ def handle_new_xstack(
         and not xstack.is_void
     ):
         root_template.add_resource(xstack)
+        if vpc_stack and key in tcp_services:
+            xstack.get_from_vpc_stack(vpc_stack)
+        elif not vpc_stack and key in tcp_services:
+            xstack.no_vpc_parameters()
 
 
 def add_x_resources(root_template, settings, services_stack, vpc_stack=None):

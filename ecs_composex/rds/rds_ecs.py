@@ -50,7 +50,7 @@ def handle_import_dbs_to_services(
     target,
 ):
     if keyisset(db.logical_name, rds_mapping) and keyisset(
-        "SecretArn", rds_mapping[db.logical_name]
+        DB_SECRET_T, rds_mapping[db.logical_name]
     ):
         valid_ones = [
             service
@@ -60,12 +60,12 @@ def handle_import_dbs_to_services(
         for service in valid_ones:
             add_secret_to_container(
                 db,
-                FindInMap("Rds", db.logical_name, "SecretArn"),
+                FindInMap("Rds", db.logical_name, DB_SECRET_T),
                 service.container_definition,
             )
         add_rds_policy(
             target[0].template,
-            FindInMap("Rds", db.logical_name, "SecretArn"),
+            FindInMap("Rds", db.logical_name, DB_SECRET_T),
             db.logical_name,
         )
     else:
@@ -95,10 +95,13 @@ def create_rds_db_config_mapping(db, db_config):
                 if k["Status"] == "active"
             ],
             "Port": db_config["Port"],
+            db.logical_name: db_config["DBClusterIdentifier"]
+            if db_config["Engine"].startswith("aurora")
+            else db_config["DBInstanceIdentifier"],
         }
     }
-    if keyisset("SecretArn", db_config):
-        mapping[db.logical_name]["SecretArn"] = db_config["SecretArn"]
+    if keyisset(DB_SECRET_T, db_config):
+        mapping[db.logical_name][DB_SECRET_T] = db_config[DB_SECRET_T]
     return mapping
 
 

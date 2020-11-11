@@ -167,7 +167,7 @@ def define_bucket_mappings(buckets_mappings, buckets, settings):
         buckets_mappings.update(
             {
                 bucket.logical_name: {
-                    "Name": bucket_config["Name"],
+                    bucket.logical_name: bucket_config["Name"],
                     "Arn": bucket_config["Arn"],
                 }
             }
@@ -204,7 +204,9 @@ def define_lookup_buckets_access(bucket, target, services, access):
         not keyisset(objects_key, target[3]) or not keyisset(bucket_key, target[3])
     ):
         raise KeyError("You must define at least bucket or object access")
-    bucket.generate_resource_envvars(FindInMap("s3", bucket.logical_name, "Name"))
+    bucket.generate_resource_envvars(
+        FindInMap("s3", bucket.logical_name, bucket.logical_name)
+    )
     if keyisset(bucket_key, access):
         bucket_perms = generate_resource_permissions(
             f"BucketAccess{bucket.logical_name}",

@@ -24,6 +24,7 @@ from ecs_composex.common.aws import (
     find_aws_resource_arn_from_tags_api,
     define_lookup_role_from_info,
 )
+from ecs_composex.rds.rds_params import DB_SECRET_T
 from ecs_composex.iam import ROLE_ARN_ARG
 
 
@@ -136,7 +137,7 @@ def handle_secret(lookup, db_config, session):
             lookup["secret"], session, "secretsmanager:secret"
         )
         if secret_arn and db_config:
-            db_config.update({"SecretArn": secret_arn})
+            db_config.update({DB_SECRET_T: secret_arn})
 
 
 def patch_db_vs_cluster(db_config, res_type):

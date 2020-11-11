@@ -33,6 +33,7 @@ from ecs_composex.rds.rds_params import (
     DB_EXPORT_SECRET_ARN_T,
     DB_SECRET_T,
     DB_SG_T,
+    DB_ENGINE_NAME,
 )
 from ecs_composex.rds.rds_template import generate_rds_templates
 
@@ -79,6 +80,13 @@ class Rds(XResource):
             ),
             DB_SG_T: (f"{self.logical_name}{DB_SG_T}", Ref, self.sg_id),
         }
+
+    def uses_aurora(self):
+        if not self.lookup and self.properties[DB_ENGINE_NAME.title].startswith(
+            "aurora"
+        ):
+            return True
+        return False
 
 
 class XStack(ComposeXStack):

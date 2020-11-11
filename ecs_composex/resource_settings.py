@@ -185,6 +185,7 @@ def handle_lookup_resource(mapping, mapping_family, resource):
     :param dict mapping:
     :param str mapping_family:
     :param resource: The lookup resource
+    :type resource: ecs_composex.common.compose_resources.XResource
     :return:
     """
     if not keyisset(resource.logical_name, mapping):
@@ -199,11 +200,16 @@ def handle_lookup_resource(mapping, mapping_family, resource):
                 mapping_family, resource.logical_name, resource.arn_attr.title
             )
             main_attr_value = FindInMap(
-                mapping_family, resource.logical_name, resource.main_attr.title
+                mapping_family, resource.logical_name, resource.ref_parameter.title
             )
             resource.generate_resource_envvars(main_attr_value)
             map_service_perms_to_resource(
-                resource, target[0], selected_services, target[3], arn=arn_attr_value
+                resource,
+                target[0],
+                selected_services,
+                target[3],
+                arn=arn_attr_value,
+                value=main_attr_value,
             )
             if (
                 hasattr(resource, "kms_arn_attr")
