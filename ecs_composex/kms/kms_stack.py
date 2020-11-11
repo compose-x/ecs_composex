@@ -15,7 +15,8 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from troposphere import Ref, Sub, If, AWS_PARTITION, AWS_ACCOUNT_ID
+from troposphere import Ref, Sub, If, GetAtt
+from troposphere import AWS_PARTITION, AWS_ACCOUNT_ID
 from troposphere.kms import Key, Alias
 from ecs_composex.common import keyisset, LOG
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME
@@ -73,6 +74,14 @@ class KmsKey(XResource):
         self.main_attr_value = self.main_attr
 
         super().__init__(name, definition, settings)
+        self.output_properties = {
+            KMS_KEY_ID.title: (self.logical_name, Ref, None),
+            KMS_KEY_ARN.title: (
+                f"{self.logical_name}{KMS_KEY_ARN.title}",
+                GetAtt,
+                KMS_KEY_ARN.title,
+            ),
+        }
 
     def define_kms_key(self):
         """

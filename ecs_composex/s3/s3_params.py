@@ -23,7 +23,7 @@ RES_KEY = f"{X_KEY}{path.basename(path.dirname(path.abspath(__file__)))}"
 
 S3_ARN_REGEX = r"arn:(aws|aws-gov|aws-cn):s3:::([a-zA-Z0-9-.]+$)"
 
-S3_BUCKET_ARN_T = "BucketArn"
+S3_BUCKET_ARN_T = "Arn"
 S3_BUCKET_ARN = Parameter(S3_BUCKET_ARN_T, Type="String", AllowedPattern=S3_ARN_REGEX)
 S3_BUCKET_NAME_T = "BucketName"
 S3_BUCKET_NAME = Parameter(

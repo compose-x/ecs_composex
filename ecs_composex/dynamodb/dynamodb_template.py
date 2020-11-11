@@ -50,20 +50,16 @@ def create_dynamodb_template(settings):
         table = tables[table_name]
         generate_table(table)
         if table.cfn_resource:
-            values = [
-                (TABLE_ARN_T, TABLE_ARN_T, GetAtt(table.cfn_resource, "Arn")),
-                (TABLE_NAME_T, TABLE_NAME_T, Ref(table.cfn_resource)),
-            ]
-            outputs = ComposeXOutput(table.cfn_resource, values, export=False)
+            table.generate_outputs()
             if mono_template:
                 template.add_resource(table.cfn_resource)
-                template.add_output(outputs.outputs)
+                template.add_output(table.outputs)
             elif not mono_template:
                 table_template = build_template(
                     f"Template for DynamoDB table {table.title}"
                 )
                 table_template.add_resource(table)
-                table_template.add_output(outputs.outputs)
+                table_template.add_output(table.outputs)
                 table_stack = ComposeXStack(
                     table.logical_name, stack_template=table_template
                 )

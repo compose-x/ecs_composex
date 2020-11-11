@@ -20,8 +20,8 @@ from troposphere import Parameter
 
 RES_KEY = f"x-{path.basename(path.dirname(path.abspath(__file__)))}"
 
-KMS_KEY_ARN_T = "KmsKeyArn"
-KMS_KEY_ID_T = "KmsKeyId"
+KMS_KEY_ARN_T = "Arn"
+KMS_KEY_ID_T = "KeyId"
 KMS_KEY_ALIAS_NAME_T = "KmsKeyAliasName"
 KMS_KEY_ALIAS_ARN_T = "KmsKeyAliasName"
 

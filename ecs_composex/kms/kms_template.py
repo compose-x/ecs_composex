@@ -49,22 +49,18 @@ def create_kms_template(settings):
     for key in new_keys:
         key.define_kms_key()
         if key:
-            values = [
-                (KMS_KEY_ARN_T, KMS_KEY_ARN_T, GetAtt(key.cfn_resource, "Arn")),
-                (KMS_KEY_ID_T, KMS_KEY_ID_T, Ref(key.cfn_resource)),
-            ]
-            outputs = ComposeXOutput(key.cfn_resource, values, True)
+            key.generate_outputs()
             if mono_template:
                 template.add_resource(key.cfn_resource)
                 key.handle_key_settings(template)
-                template.add_output(outputs.outputs)
+                template.add_output(key.outputs)
             elif not mono_template:
                 key_template = build_template(
                     f"Template for KMS key {key.logical_name}"
                 )
                 key_template.add_resource(key.cfn_resource)
                 key.handle_key_settings(key_template)
-                key_template.add_output(outputs.outputs)
+                key_template.add_output(key.outputs)
                 key_stack = ComposeXStack(key.logical_name, stack_template=key_template)
                 template.add_resource(key_stack)
     return template
