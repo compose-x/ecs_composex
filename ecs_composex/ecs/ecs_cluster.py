@@ -81,7 +81,7 @@ def lookup_ecs_cluster(session, cluster_lookup):
             LOG.warning(
                 f"No cluster named {cluster_lookup} found. Creating one with default settings"
             )
-            return get_default_cluster_config()
+            return CLUSTER_NAME.Default
         elif (
             keyisset("clusters", cluster_r)
             and cluster_r["clusters"][0]["clusterName"] == cluster_lookup

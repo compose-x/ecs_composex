@@ -20,9 +20,11 @@ import pytest
 import boto3
 import placebo
 from troposphere import Template
+from ecs_composex.common import keyisset
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common.settings import ComposeXSettings
 from ecs_composex.ecs.ecs_cluster import add_ecs_cluster
+from ecs_composex.ecs.ecs_params import CLUSTER_NAME
 
 
 @pytest.fixture
@@ -37,7 +39,7 @@ def nonexisting_cluster():
 
 def test_lookup(existing_cluster, nonexisting_cluster):
     """
-    Function to test the dynamodb table lookup
+    Function to test the ECS Cluster Lookup
     """
     here = path.abspath(path.dirname(__file__))
     session = boto3.session.Session()
@@ -54,13 +56,16 @@ def test_lookup(existing_cluster, nonexisting_cluster):
             ComposeXSettings.format_arg: "yaml",
         },
     )
-    cluster = add_ecs_cluster(settings, stack)
-    assert cluster is False
+    add_ecs_cluster(settings, stack)
+    assert (
+        keyisset(CLUSTER_NAME.title, stack.Parameters)
+        and not stack.Parameters[CLUSTER_NAME.title] == CLUSTER_NAME.Default
+    )
 
     template = Template()
     stack = ComposeXStack("test", stack_template=template)
     settings = ComposeXSettings(
-        content=existing_cluster,
+        content=nonexisting_cluster,
         session=session,
         **{
             ComposeXSettings.name_arg: "test",
@@ -68,5 +73,8 @@ def test_lookup(existing_cluster, nonexisting_cluster):
             ComposeXSettings.format_arg: "yaml",
         },
     )
-    cluster = add_ecs_cluster(settings, stack)
-    assert cluster is True
+    add_ecs_cluster(settings, stack)
+    assert (
+        keyisset(CLUSTER_NAME.title, stack.Parameters)
+        and stack.Parameters[CLUSTER_NAME.title] == CLUSTER_NAME.Default
+    )
