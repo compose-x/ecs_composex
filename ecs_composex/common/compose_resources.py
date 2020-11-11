@@ -326,7 +326,9 @@ class XResource(object):
                 "with parameter named",
                 parameter.title if isinstance(parameter, Parameter) else parameter,
             )
-        return Parameter(f"{self.logical_name}{title}", Type="String")
+        return Parameter(
+            f"{self.logical_name}{NONALPHANUM.sub('', title)}", Type="String"
+        )
 
     def get_resource_attribute_value(self, parameter, stack_name):
         title = parameter.title if isinstance(parameter, Parameter) else parameter

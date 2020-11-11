@@ -23,7 +23,7 @@ from troposphere import Select, FindInMap, Ref
 
 from ecs_composex.common import LOG, keyisset, add_parameters
 from ecs_composex.rds.rds_aws import validate_rds_lookup, lookup_rds_resource
-from ecs_composex.rds.rds_params import DB_SECRET_T
+from ecs_composex.rds.rds_params import DB_SECRET_T, DB_SG_T, DB_ENDPOINT_PORT
 from ecs_composex.rds.rds_perms import (
     add_secret_to_container,
     define_db_secret_import,
@@ -32,14 +32,16 @@ from ecs_composex.rds.rds_perms import (
 )
 
 
-def handle_new_dbs_to_services(db, secret_import, target):
+def handle_new_dbs_to_services(db, secret_import, sg_import, target, port=None):
     valid_ones = [
         service for service in target[2] if service not in target[0].ignored_services
     ]
     for service in valid_ones:
         add_secret_to_container(db, secret_import, service.container_definition)
     add_rds_policy(target[0].template, secret_import, db.logical_name)
-    add_security_group_ingress(target[0].stack, db.logical_name)
+    add_security_group_ingress(
+        target[0].stack, db.logical_name, sg_id=sg_import, port=port
+    )
 
 
 def handle_import_dbs_to_services(
@@ -114,13 +116,23 @@ def add_new_dbs(db, rds_root_stack):
         raise KeyError(f"DB {db.logical_name} not defined in RDS Root template")
     secret_import = db.get_resource_attribute_value(DB_SECRET_T, rds_root_stack.title)
     secret_parameter = db.get_resource_attribute_parameter(DB_SECRET_T)
+    sg_import = db.get_resource_attribute_value(DB_SG_T, rds_root_stack.title)
+    sg_param = db.get_resource_attribute_parameter(DB_SG_T)
+    port_import = db.get_resource_attribute_value(
+        DB_ENDPOINT_PORT, rds_root_stack.title
+    )
+    port_param = db.get_resource_attribute_parameter(DB_ENDPOINT_PORT)
     for target in db.families_targets:
-        add_parameters(target[0].template, [secret_parameter])
-        target[0].stack.Parameters.update({secret_parameter.title: secret_import})
+        add_parameters(target[0].template, [secret_parameter, sg_param, port_param])
+        target[0].stack.Parameters.update(
+            {
+                secret_parameter.title: secret_import,
+                sg_param.title: sg_import,
+                port_param.title: port_import,
+            }
+        )
         handle_new_dbs_to_services(
-            db,
-            Ref(secret_parameter),
-            target,
+            db, Ref(secret_parameter), Ref(sg_param), target, port=Ref(port_param)
         )
         if rds_root_stack.title not in target[0].stack.DependsOn:
             target[0].stack.DependsOn.append(rds_root_stack.title)

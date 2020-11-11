@@ -32,6 +32,7 @@ from ecs_composex.rds.rds_params import (
     DB_ENDPOINT_PORT,
     DB_EXPORT_SECRET_ARN_T,
     DB_SECRET_T,
+    DB_SG_T,
 )
 from ecs_composex.rds.rds_template import generate_rds_templates
 
@@ -61,6 +62,7 @@ class Rds(XResource):
 
     def __init__(self, name, definition, settings):
         self.db_secret = DB_SECRET_T
+        self.sg_id = DB_SG_T
         super().__init__(name, definition, settings)
         self.arn_attr = Parameter(DB_SECRET_T, Type="String")
         self.output_properties = {
@@ -75,6 +77,7 @@ class Rds(XResource):
                 Ref,
                 self.db_secret,
             ),
+            DB_SG_T: (f"{self.logical_name}{DB_SG_T}", Ref, self.sg_id),
         }
 
 

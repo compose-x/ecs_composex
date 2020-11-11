@@ -121,7 +121,7 @@ def add_db_sg(template, db_name):
     :param str db_name: Name of the database as defined in compose file
     :param troposphere.Template template: template to add the sg to
     """
-    SecurityGroup(
+    return SecurityGroup(
         DB_SG_T,
         template=template,
         GroupName=Sub(f"${{{ROOT_STACK_NAME_T}}}-{db_name}"),
@@ -370,7 +370,7 @@ def init_database_template(db_name):
 def generate_database_template(db):
     """
     Function to generate the database template
-    :param ecs_composex.common.compose_resources.Rds db: The database object
+    :param ecs_composex.rds.rds_stack.Rds db: The database object
 
     :return: db_template
     :rtype: troposphere.Template
@@ -378,7 +378,7 @@ def generate_database_template(db):
     db_template = init_database_template(db.name)
     cluster = add_cluster(db_template)
     db.secret = add_db_secret(db_template)
-    add_db_sg(db_template, db.logical_name)
+    db.sg_id = add_db_sg(db_template, db.logical_name)
     instance = add_instance(db_template)
     add_parameter_group(db_template, db)
     if db.properties[DB_ENGINE_NAME.title].startswith("aurora"):
