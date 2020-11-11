@@ -17,6 +17,7 @@
 
 
 from troposphere import Ref, GetAtt
+from troposphere import MAX_OUTPUTS
 
 from ecs_composex.common import keyisset, build_template
 from ecs_composex.common.outputs import ComposeXOutput
@@ -27,7 +28,7 @@ from ecs_composex.kms.kms_params import (
     KMS_KEY_ARN_T,
 )
 
-CFN_MAX_OUTPUTS = 190
+CFN_MAX_OUTPUTS = MAX_OUTPUTS - 10
 
 
 def create_kms_template(settings):
@@ -49,8 +50,8 @@ def create_kms_template(settings):
         key.define_kms_key()
         if key:
             values = [
-                (KMS_KEY_ARN_T, "Arn", GetAtt(key.cfn_resource, "Arn")),
-                (KMS_KEY_ID_T, "Name", Ref(key.cfn_resource)),
+                (KMS_KEY_ARN_T, KMS_KEY_ARN_T, GetAtt(key.cfn_resource, "Arn")),
+                (KMS_KEY_ID_T, KMS_KEY_ID_T, Ref(key.cfn_resource)),
             ]
             outputs = ComposeXOutput(key.cfn_resource, values, True)
             if mono_template:

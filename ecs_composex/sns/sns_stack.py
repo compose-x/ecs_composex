@@ -15,6 +15,8 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from troposphere import Output, GetAtt, Ref
+
 from ecs_composex.common import keyisset, LOG
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common.compose_resources import XResource
@@ -55,6 +57,14 @@ class Topic(XResource):
         self.main_attr_value = self.main_attr
         self.kms_attr_value = self.kms_attr
         super().__init__(name, definition, settings)
+        self.output_properties = {
+            TOPIC_ARN.title: (self.logical_name, Ref, None),
+            TOPIC_NAME.title: (
+                f"{self.logical_name}{TOPIC_NAME.title}",
+                GetAtt,
+                TOPIC_NAME.title,
+            ),
+        }
 
 
 class Subscription(XResource):

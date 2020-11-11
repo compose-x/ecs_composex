@@ -51,10 +51,10 @@ def create_dynamodb_template(settings):
         generate_table(table)
         if table.cfn_resource:
             values = [
-                (TABLE_ARN_T, "Arn", GetAtt(table.cfn_resource, "Arn")),
-                (TABLE_NAME_T, "Name", Ref(table.cfn_resource)),
+                (TABLE_ARN_T, TABLE_ARN_T, GetAtt(table.cfn_resource, "Arn")),
+                (TABLE_NAME_T, TABLE_NAME_T, Ref(table.cfn_resource)),
             ]
-            outputs = ComposeXOutput(table.cfn_resource, values, True)
+            outputs = ComposeXOutput(table.cfn_resource, values, export=False)
             if mono_template:
                 template.add_resource(table.cfn_resource)
                 template.add_output(outputs.outputs)

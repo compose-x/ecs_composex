@@ -43,13 +43,12 @@ def assign_service_permissions_to_bucket(bucket, family, services, access):
 
     bucket_arn_import = generate_export_strings(bucket.logical_name, S3_BUCKET_ARN)
     bucket_name_import = generate_export_strings(bucket.logical_name, S3_BUCKET_NAME)
-    bucket.generate_resource_envvars(None, bucket_name_import)
+    bucket.generate_resource_envvars(bucket_name_import)
 
     if keyisset(bucket_key, access):
         bucket_perms = generate_resource_permissions(
             f"BucketAccess{bucket.logical_name}",
             ACCESS_TYPES[bucket_key],
-            None,
             arn=bucket_arn_import,
         )
         add_iam_policy_to_service_task_role(
@@ -59,7 +58,6 @@ def assign_service_permissions_to_bucket(bucket, family, services, access):
         objects_perms = generate_resource_permissions(
             f"ObjectsAccess{bucket.logical_name}",
             ACCESS_TYPES[objects_key],
-            None,
             arn=Sub("${BucketArn}/*", BucketArn=bucket_arn_import),
         )
         add_iam_policy_to_service_task_role(
@@ -197,14 +195,11 @@ def define_lookup_buckets_access(bucket, target, services):
         not keyisset(objects_key, target[3]) or not keyisset(bucket_key, target[3])
     ):
         raise KeyError("You must define at least bucket or object access")
-    bucket.generate_resource_envvars(
-        None, arn=FindInMap("s3", bucket.logical_name, "Name")
-    )
+    bucket.generate_resource_envvars(FindInMap("s3", bucket.logical_name, "Name"))
     if keyisset(bucket_key, access):
         bucket_perms = generate_resource_permissions(
             f"BucketAccess{bucket.logical_name}",
             ACCESS_TYPES[bucket_key],
-            None,
             arn=FindInMap("s3", bucket.logical_name, "Arn"),
         )
         add_iam_policy_to_service_task_role(
@@ -214,7 +209,6 @@ def define_lookup_buckets_access(bucket, target, services):
         objects_perms = generate_resource_permissions(
             f"ObjectsAccess{bucket.logical_name}",
             ACCESS_TYPES[objects_key],
-            None,
             arn=Sub(
                 "${BucketArn}/*", BucketArn=FindInMap("s3", bucket.logical_name, "Arn")
             ),
@@ -254,7 +248,6 @@ def assign_lookup_buckets(bucket, mappings):
                 kms_perms = generate_resource_permissions(
                     f"{bucket.logical_name}KmsKey",
                     KMS_ACCESS_TYPES,
-                    None,
                     arn=FindInMap("s3", bucket.logical_name, "KmsKey"),
                 )
                 add_iam_policy_to_service_task_role(

@@ -149,17 +149,10 @@ def generate_sqs_root_template(settings):
     for queue in new_queues:
         define_queue(queue, queues, mono_template)
         if queue.cfn_resource:
-            values = [
-                (SQS_URL, "Url", Ref(queue.cfn_resource)),
-                (SQS_ARN_T, SQS_ARN_T, GetAtt(queue.cfn_resource, SQS_ARN_T)),
-                (SQS_NAME_T, SQS_NAME_T, GetAtt(queue.cfn_resource, SQS_NAME_T)),
-            ]
-            outputs = ComposeXOutput(
-                queue.cfn_resource, values, duplicate_attr=(not mono_template)
-            )
+            queue.generate_outputs()
             if mono_template:
                 template.add_resource(queue.cfn_resource)
-                template.add_output(outputs.outputs)
+                template.add_output(queue.outputs)
             elif not mono_template:
                 parameters = {}
                 if hasattr(queue, "RedrivePolicy"):
@@ -180,7 +173,7 @@ def generate_sqs_root_template(settings):
                     f"Template for SQS queue {queue.cfn_resource.title}", [DLQ_ARN]
                 )
                 queue_template.add_resource(queue.cfn_resource)
-                queue_template.add_output(outputs.outputs)
+                queue_template.add_output(queue.outputs)
                 queue_stack = ComposeXStack(
                     queue.logical_name,
                     stack_template=queue_template,

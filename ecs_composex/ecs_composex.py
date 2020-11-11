@@ -368,9 +368,7 @@ def generate_full_template(settings):
     compute_stack = add_compute(root_stack.stack_template, settings, vpc_stack)
     if settings.create_compute and compute_stack:
         compute_stack.DependsOn.append(ROOT_CLUSTER_NAME)
-    create_services(
-        root_stack, settings, vpc_stack, dns_settings.nested_params
-    )
+    create_services(root_stack, settings, vpc_stack, dns_settings.nested_params)
     if keyisset(ACM_KEY, settings.compose_content):
         init_acm_certs(settings, dns_settings, root_stack)
     add_x_resources(

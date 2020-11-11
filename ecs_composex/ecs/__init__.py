@@ -72,7 +72,7 @@ def associate_services_to_root_stack(root_stack, settings, dns_params, vpc_stack
         family.stack = ServiceStack(
             family.logical_name,
             stack_template=family.template,
-            stack_parameters=family.stack_parameters
+            stack_parameters=family.stack_parameters,
         )
         family.stack_parameters.update(
             {

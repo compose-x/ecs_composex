@@ -20,10 +20,11 @@ Module to define the ComposeX Resources into a simple object to make it easier t
 """
 
 from copy import deepcopy
+from troposphere import Output, Ref, GetAtt
 from troposphere.ecs import Environment
 
 from ecs_composex.common import LOG, NONALPHANUM, keyisset, keypresent
-from ecs_composex.resource_settings import generate_export_strings
+from ecs_composex.resource_settings import generate_export_strings, define_attribute
 
 
 def set_resources(settings, resource_class, res_key):
@@ -102,6 +103,8 @@ class XResource(object):
             None if not keyisset("Use", self.definition) else self.definition["Use"]
         )
         self.cfn_resource = None
+        self.output_properties = {}
+        self.outputs = []
         self.families_targets = []
         self.families_scaling = []
         self.set_services_targets(settings)
@@ -211,20 +214,17 @@ class XResource(object):
             elif service_name in [s.name for s in settings.services]:
                 self.handle_family_scaling_expansion(service, settings)
 
-    def generate_resource_envvars(self, attribute, arn=None):
+    def generate_resource_envvars(self, value):
         """
         :return: environment key/pairs
         :rtype: list<troposphere.ecs.Environment>
         """
-        export_string = (
-            generate_export_strings(self.logical_name, attribute) if not arn else arn
-        )
         if self.settings and keyisset("EnvNames", self.settings):
             for env_name in self.settings["EnvNames"]:
                 self.env_vars.append(
                     Environment(
                         Name=env_name,
-                        Value=export_string,
+                        Value=value,
                     )
                 )
             if self.name not in self.settings["EnvNames"] and self.name not in [
@@ -233,12 +233,12 @@ class XResource(object):
                 self.env_vars.append(
                     Environment(
                         Name=self.name,
-                        Value=export_string,
+                        Value=value,
                     )
                 )
                 if self.name != self.logical_name:
                     self.env_vars.append(
-                        Environment(Name=self.logical_name, Value=export_string)
+                        Environment(Name=self.logical_name, Value=value)
                     )
         elif (
             not self.settings
@@ -248,6 +248,24 @@ class XResource(object):
             self.env_vars.append(
                 Environment(
                     Name=self.name,
-                    Value=export_string,
+                    Value=value,
                 )
             )
+        self.env_vars = list({v.Name: v for v in self.env_vars}.values())
+
+    def generate_outputs(self):
+        """
+        Method to create the outputs for XResources
+        :return:
+        """
+        for output_prop_name in self.output_properties:
+            definition = self.output_properties[output_prop_name]
+            if definition[1] is Ref:
+                value = Ref(self.cfn_resource)
+            elif definition[1] is GetAtt and isinstance(definition[2], str):
+                value = GetAtt(self.cfn_resource, definition[2])
+            else:
+                raise ValueError(
+                    f"Something was not defined properly for output properties of {self.logical_name}"
+                )
+            self.outputs.append(Output(definition[0], Value=value))

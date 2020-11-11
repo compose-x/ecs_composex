@@ -159,7 +159,9 @@ def handle_cluster_settings(root_stack, settings):
         root_stack.stack_template.add_resource(get_default_cluster_config())
     elif isinstance(settings.compose_content[RES_KEY], dict):
         if keyisset("Use", settings.compose_content[RES_KEY]):
-            root_stack.Parameters.update({CLUSTER_NAME.title: settings.compose_content[RES_KEY]["Use"]})
+            root_stack.Parameters.update(
+                {CLUSTER_NAME.title: settings.compose_content[RES_KEY]["Use"]}
+            )
             LOG.info(f"Using cluster {settings.compose_content[RES_KEY]['Use']}")
         elif keyisset("Lookup", settings.compose_content[RES_KEY]):
             cluster_name = lookup_ecs_cluster(
