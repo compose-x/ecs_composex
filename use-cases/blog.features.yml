@@ -89,7 +89,7 @@ services:
       iam:
         boundary: ccoe/js-developer
         managed_policies:
-          - arn:aws:iam:aws::policy/AdministratorAccess
+          - arn:aws:iam::aws:policy/AdministratorAccess
       scaling:
         range: 1-5
         target_scaling:
@@ -150,7 +150,7 @@ services:
     x-configs:
       iam:
         managed_policies:
-          - arn:aws:iam:aws::policy/ReadOnlyAccess
+          - arn:aws:iam::aws:policy/ReadOnlyAccess
       scaling:
         range: 0-2
         target_scaling:
