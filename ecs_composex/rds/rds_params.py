@@ -73,6 +73,18 @@ DB_STORAGE_TYPE = Parameter(
 )
 
 DB_EXPORT_PREFIX_T = "RdsDb"
-DB_EXPORT_PORT_T = "RdsPort"
+DB_EXPORT_PORT_T = "Endpoint.Port"
 DB_EXPORT_SECRET_ARN_T = "RdsSecretArn"
-DB_EXPORT_SG_ID_T = "RdsDbSecurityGroup"
+DB_EXPORT_SG_ID_T = "RdsSecurityGroup"
+
+DB_ENDPOINT_PORT = "Endpoint.Port"
+DB_ENDPOINT_ADDRESS = "Endpoint.Address"
+DB_RO_ENDPOINT_ADDRESS = "ReadEndpoint.Address"
+
+
+CLUSTER_SUBNET_GROUP = "ClusterSubnetGroup"
+DB_SECRET_T = "RdsDbSecret"
+CLUSTER_T = "AuroraCluster"
+DATABASE_T = "RdsDatabase"
+PARAMETER_GROUP_T = "RdsParametersGroup"
+CLUSTER_PARAMETER_GROUP_T = "RdsClusterParameterGroup"

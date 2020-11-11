@@ -19,10 +19,11 @@
 Module to provide services with access to the RDS databases.
 """
 
-from troposphere import Select, FindInMap
+from troposphere import Select, FindInMap, Ref
 
-from ecs_composex.common import LOG, keyisset
+from ecs_composex.common import LOG, keyisset, add_parameters
 from ecs_composex.rds.rds_aws import validate_rds_lookup, lookup_rds_resource
+from ecs_composex.rds.rds_params import DB_SECRET_T
 from ecs_composex.rds.rds_perms import (
     add_secret_to_container,
     define_db_secret_import,
@@ -106,13 +107,19 @@ def add_new_dbs(db, rds_root_stack):
     :param ecs_composex.rds.rds_stack.Rds db:
     :return:
     """
+    db.set_resource_arn(rds_root_stack.title)
+    db.set_ref_resource_value(rds_root_stack.title)
+    db.set_resource_arn_parameter()
     if db.logical_name not in rds_root_stack.stack_template.resources:
         raise KeyError(f"DB {db.logical_name} not defined in RDS Root template")
-    secret_import = define_db_secret_import(db.name)
+    secret_import = db.get_resource_attribute_value(DB_SECRET_T, rds_root_stack.title)
+    secret_parameter = db.get_resource_attribute_parameter(DB_SECRET_T)
     for target in db.families_targets:
+        add_parameters(target[0].template, [secret_parameter])
+        target[0].stack.Parameters.update({secret_parameter.title: secret_import})
         handle_new_dbs_to_services(
             db,
-            secret_import,
+            Ref(secret_parameter),
             target,
         )
         if rds_root_stack.title not in target[0].stack.DependsOn:

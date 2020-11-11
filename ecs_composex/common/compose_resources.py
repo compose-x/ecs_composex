@@ -268,15 +268,17 @@ class XResource(object):
         """
         for output_prop_name in self.output_properties:
             definition = self.output_properties[output_prop_name]
-            if definition[1] is Ref:
+            if definition[1] is Ref and definition[2] is None:
                 value = Ref(self.cfn_resource)
+            elif definition[1] is Ref and definition[2] is not None:
+                value = Ref(definition[2])
             elif definition[1] is GetAtt and isinstance(definition[2], str):
                 value = GetAtt(self.cfn_resource, definition[2])
             else:
                 raise ValueError(
                     f"Something was not defined properly for output properties of {self.logical_name}"
                 )
-            self.outputs.append(Output(definition[0], Value=value))
+            self.outputs.append(Output(NONALPHANUM.sub("", definition[0]), Value=value))
 
     def set_resource_arn(self, root_stack_name):
         """
@@ -312,3 +314,31 @@ class XResource(object):
         Method to set the value for the default attribute (Ref)
         """
         self.ref_value = GetAtt(root_stack_name, f"Outputs.{self.logical_name}")
+
+    def get_resource_attribute_parameter(self, parameter):
+        title = parameter.title if isinstance(parameter, Parameter) else parameter
+        if not isinstance(parameter, (str, Parameter)) or not keyisset(
+            title, self.output_properties
+        ):
+            raise KeyError(
+                "There is no Output attribute defined for",
+                self.logical_name,
+                "with parameter named",
+                parameter.title if isinstance(parameter, Parameter) else parameter,
+            )
+        return Parameter(f"{self.logical_name}{title}", Type="String")
+
+    def get_resource_attribute_value(self, parameter, stack_name):
+        title = parameter.title if isinstance(parameter, Parameter) else parameter
+        if not isinstance(parameter, (str, Parameter)) or not keyisset(
+            title, self.output_properties
+        ):
+            raise KeyError(
+                "There is no Output attribute value defined for",
+                self.logical_name,
+                "with parameter named",
+                title,
+                "Existing ones are",
+                self.output_properties.keys(),
+            )
+        return GetAtt(stack_name, f"Outputs.{self.logical_name}{title}")

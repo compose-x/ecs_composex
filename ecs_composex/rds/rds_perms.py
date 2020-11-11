@@ -171,11 +171,8 @@ def add_secret_to_container(db, secret_import, container_definition):
     """
     Function to add DB secret to container
 
-    :param troposphere.Template service_template: the ecs_service template
     :param ecs_composex.common.compose_resources.Rds db: the RDS DB object
     :param str,AWSHelper secret_import: secret arn
-    :param str service_name: Name of the service that was explicitely listed as consuming the DB
-    :param bool family_wide: Whether or not apply the secret to all services of the family.
     """
 
     db_secrets = [

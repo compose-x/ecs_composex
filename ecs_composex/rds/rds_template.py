@@ -19,7 +19,8 @@
 Main module template to generate the RDS Root template and all stacks according to x-rds settings
 """
 
-from troposphere import Ref, Join
+from troposphere import Ref, Join, GetAtt
+from troposphere import Output
 
 from ecs_composex.common import build_template, validate_kwargs, LOG
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T, ROOT_STACK_NAME
@@ -76,6 +77,12 @@ def add_db_stack(root_template, dbs_subnet_group, db):
         db.logical_name, stack_template=db_template, stack_parameters=parameters
     )
     root_template.add_resource(db_stack)
+    new_outputs = []
+    for output_name in db_stack.stack_template.outputs:
+        new_outputs.append(
+            Output(output_name, Value=GetAtt(db.logical_name, f"Outputs.{output_name}"))
+        )
+    root_template.add_output(new_outputs)
 
 
 def init_rds_root_template():
@@ -89,21 +96,20 @@ def init_rds_root_template():
     return template
 
 
-def generate_rds_templates(settings):
+def generate_rds_templates(settings, new_dbs):
     """
     Function to generate the RDS root template for all the DBs defined in the x-rds section of the compose file
 
     :param ecs_composex.common.settings.ComposeXSettings settings: Settings for execution
+    :param list new_dbs:
     :return: rds_root_template, the RDS Root template with nested stacks
     :rtype: troposphere.Template
     """
     root_tpl = init_rds_root_template()
     dbs_subnet_group = create_db_subnet_group(root_tpl)
-    section = settings.compose_content[RES_KEY]
-    for db_name in section:
-        db = section[db_name]
+    for db in new_dbs:
         if db.properties and not db.lookup:
-            add_db_stack(root_tpl, dbs_subnet_group, section[db_name])
+            add_db_stack(root_tpl, dbs_subnet_group, db)
         elif db.properties and db.lookup:
             LOG.warn("Both lookup and properties are defined. Looking up the DB.")
     return root_tpl
