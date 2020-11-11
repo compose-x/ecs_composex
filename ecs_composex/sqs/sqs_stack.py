@@ -64,7 +64,7 @@ class Queue(XResource):
     policies_scaffolds = get_access_types()
 
     def __init__(self, name, definition, settings):
-
+        super().__init__(name, definition, settings)
         self.arn_attr = SQS_ARN
         self.main_attr = SQS_URL
         self.kms_arn_attr = SQS_KMS_KEY_T
@@ -72,8 +72,6 @@ class Queue(XResource):
         self.arn_attr_value = self.arn_attr
         self.main_attr_value = self.main_attr
         self.kms_arn_attr_value = self.kms_arn_attr
-
-        super().__init__(name, definition, settings)
         self.output_properties = {
             SQS_URL.title: (self.logical_name, Ref, None),
             SQS_ARN.title: (

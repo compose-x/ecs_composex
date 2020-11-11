@@ -20,7 +20,8 @@ Module to define the ComposeX Resources into a simple object to make it easier t
 """
 
 from copy import deepcopy
-from troposphere import Output, Ref, GetAtt
+from troposphere import Ref, GetAtt
+from troposphere import Output, Parameter
 from troposphere.ecs import Environment
 
 from ecs_composex.common import LOG, NONALPHANUM, keyisset, keypresent
@@ -66,6 +67,8 @@ class XResource(object):
     :cvar str logical_name: Name of the resource to use in CFN template as for export/import
     """
 
+    policies_scaffolds = {}
+
     def __init__(self, name, definition, settings):
         """
         Init the class
@@ -107,6 +110,11 @@ class XResource(object):
         self.outputs = []
         self.families_targets = []
         self.families_scaling = []
+        self.arn_attr = None
+        self.arn_parameter = None
+        self.arn_value = None
+        self.ref_value = None
+        self.ref_parameter = Parameter(self.logical_name, Type="String")
         self.set_services_targets(settings)
         self.set_services_scaling(settings)
 
@@ -269,3 +277,38 @@ class XResource(object):
                     f"Something was not defined properly for output properties of {self.logical_name}"
                 )
             self.outputs.append(Output(definition[0], Value=value))
+
+    def set_resource_arn(self, root_stack_name):
+        """
+        Method to set the arn value the resource arn to use from root stack to another
+        """
+        if not isinstance(self.arn_attr, Parameter) or not keyisset(
+            self.arn_attr.title, self.output_properties
+        ):
+            raise KeyError(
+                "There is no ARN defined for this resource", self.logical_name
+            )
+        self.arn_value = GetAtt(
+            root_stack_name, f"Outputs.{self.logical_name}{self.arn_attr.title}"
+        )
+
+    def set_resource_arn_parameter(self):
+        """
+        Method to set the ARN parameter to add to consuming stacks
+        """
+        if not isinstance(self.arn_attr, Parameter) or not keyisset(
+            self.arn_attr.title, self.output_properties
+        ):
+            raise KeyError(
+                "Parameter - There is no ARN defined for this resource",
+                self.logical_name,
+            )
+        self.arn_parameter = Parameter(
+            f"{self.logical_name}{self.arn_attr.title}", Type="String"
+        )
+
+    def set_ref_resource_value(self, root_stack_name):
+        """
+        Method to set the value for the default attribute (Ref)
+        """
+        self.ref_value = GetAtt(root_stack_name, f"Outputs.{self.logical_name}")

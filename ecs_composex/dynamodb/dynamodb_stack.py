@@ -39,14 +39,12 @@ class Table(XResource):
     policies_scaffolds = get_access_types()
 
     def __init__(self, name, definition, settings):
-
-        self.arn_attr = TABLE_ARN
-
         super().__init__(name, definition, settings)
         self.name_export = None
         self.name_import = None
         self.arn_export = None
         self.arn_import = None
+        self.arn_attr = TABLE_ARN
         self.output_properties = {
             TABLE_NAME.title: (self.logical_name, Ref, None),
             TABLE_ARN.title: (

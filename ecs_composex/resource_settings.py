@@ -217,35 +217,33 @@ def assign_new_resource_to_service(resource, res_root_stack):
     """
     Function to assign the new resource to the service/family using it.
 
+    :param resource: The resource
+    :type resource: ecs_composex.common.compose_resources.XResource
+    :param res_root_stack: The root stack of the resource type
+    :type res_root_stack: ecs_composex.common.stacks.ComposeXStack
     """
-    main_attribute = define_attribute(resource.main_attr)
-    main_value = GetAtt(
-        res_root_stack.title, f"Outputs.{resource.logical_name}{main_attribute}"
-    )
-    main_parameter = Parameter(
-        f"{resource.logical_name}{main_attribute}", Type="String"
-    )
-
-    arn_attribute = define_attribute(resource.arn_attr)
-    arn_value = GetAtt(
-        res_root_stack.title, f"Outputs.{resource.logical_name}{arn_attribute}"
-    )
-    arn_parameter = Parameter(f"{resource.logical_name}{arn_attribute}", Type="String")
-
+    resource.set_ref_resource_value(res_root_stack.title)
+    resource.set_resource_arn_parameter()
+    resource.set_resource_arn(res_root_stack.title)
     for target in resource.families_targets:
         selected_services = get_selected_services(resource, target)
         if selected_services:
-            add_parameters(target[0].template, [main_parameter, arn_parameter])
+            add_parameters(
+                target[0].template, [resource.ref_parameter, resource.arn_parameter]
+            )
             target[0].stack.Parameters.update(
-                {main_parameter.title: main_value, arn_parameter.title: arn_value}
+                {
+                    resource.ref_parameter.title: resource.ref_value,
+                    resource.arn_parameter.title: resource.arn_value,
+                }
             )
             map_service_perms_to_resource(
                 resource,
                 target[0],
                 selected_services,
                 target[3],
-                value=Ref(main_parameter),
-                arn=Ref(arn_parameter),
+                value=Ref(resource.ref_parameter),
+                arn=Ref(resource.arn_parameter),
             )
             if res_root_stack.title not in target[0].stack.DependsOn:
                 target[0].stack.DependsOn.append(res_root_stack.title)

@@ -82,10 +82,9 @@ class Bucket(XResource):
     """
 
     def __init__(self, name, definition, settings):
+        super().__init__(name, definition, settings)
         self.arn_attr = S3_BUCKET_ARN
         self.main_attr = S3_BUCKET_NAME
-
-        super().__init__(name, definition, settings)
         self.output_properties = {
             S3_BUCKET_ARN.title: (
                 f"{self.logical_name}{S3_BUCKET_ARN.title}",

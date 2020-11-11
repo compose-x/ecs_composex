@@ -49,6 +49,7 @@ class Topic(XResource):
     keyword = "Topics"
 
     def __init__(self, name, definition, settings):
+        super().__init__(name, definition, settings)
         self.arn_attr = TOPIC_ARN
         self.main_attr = TOPIC_NAME
         self.kms_attr = TOPIC_KMS_KEY
@@ -56,7 +57,6 @@ class Topic(XResource):
         self.arn_attr_value = self.arn_attr
         self.main_attr_value = self.main_attr
         self.kms_attr_value = self.kms_attr
-        super().__init__(name, definition, settings)
         self.output_properties = {
             TOPIC_ARN.title: (self.logical_name, Ref, None),
             TOPIC_NAME.title: (
