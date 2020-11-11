@@ -68,7 +68,7 @@ services:
     environment:
       LOGLEVEL: DEBUG
     healthcheck:
-      interval: 30s
+      interval: 30
       retries: 3
       test:
         - CMD
@@ -179,8 +179,6 @@ volumes:
 x-dns:
   PrivateNamespace:
     Name: lambda.internal
-  PublicZone:
-    Name: dev.lambda-my-aws.io
 
 x-tags:
   costcentre: lambda

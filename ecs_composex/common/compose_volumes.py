@@ -79,7 +79,7 @@ def handle_volume_dict_config(service, config, volumes):
     """
     volume_config = {"read_only": False}
     required_keys = ["target", "source"]
-    if not all(key in required_keys for key in config.keys()):
+    if not all(key in config.keys() for key in required_keys):
         raise KeyError(
             "Volume configuration requires at least",
             required_keys,

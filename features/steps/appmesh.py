@@ -33,12 +33,9 @@ def step_impl(context):
 
     :param context:
     """
-    full_template = generate_full_template(context.settings).stack_template
-    assert isinstance(full_template, Template)
-    services_stack = full_template.resources["services"]
-    assert issubclass(type(services_stack), ComposeXStack)
-    services_resources = services_stack.stack_template.resources
-    mesh = services_resources[AppMesh.mesh_title]
+    full_stack = generate_full_template(context.settings)
+    assert isinstance(full_stack.stack_template, Template)
+    mesh = full_stack.stack_template.resources[AppMesh.mesh_title]
     LOG.info(type(mesh))
     assert isinstance(mesh, Mesh)
 
