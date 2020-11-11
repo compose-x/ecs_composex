@@ -37,7 +37,7 @@ def create_kms_mappings(mapping, resources, settings):
     :return:
     """
     for res in resources:
-        res_config = lookup_key_config(res.lookup, settings.session)
+        res_config = lookup_key_config(res.logical_name, res.lookup, settings.session)
         mapping.update({res.logical_name: res_config})
 
 
