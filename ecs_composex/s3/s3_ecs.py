@@ -21,9 +21,9 @@ Functions to pass permissions to Services to access S3 buckets.
 
 from json import dumps
 
-from troposphere import FindInMap, Sub
+from troposphere import FindInMap, Sub, Ref
 
-from ecs_composex.common import LOG, keyisset
+from ecs_composex.common import LOG, keyisset, add_parameters
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.kms.kms_perms import ACCESS_TYPES as KMS_ACCESS_TYPES
 from ecs_composex.resource_settings import (
@@ -37,19 +37,17 @@ from ecs_composex.s3.s3_params import S3_BUCKET_ARN, S3_BUCKET_NAME
 from ecs_composex.s3.s3_perms import ACCESS_TYPES
 
 
-def assign_service_permissions_to_bucket(bucket, family, services, access):
+def assign_service_permissions_to_bucket(bucket, family, services, access, value, arn):
     bucket_key = "bucket"
     objects_key = "objects"
 
-    bucket_arn_import = generate_export_strings(bucket.logical_name, S3_BUCKET_ARN)
-    bucket_name_import = generate_export_strings(bucket.logical_name, S3_BUCKET_NAME)
-    bucket.generate_resource_envvars(bucket_name_import)
+    bucket.generate_resource_envvars(value)
 
     if keyisset(bucket_key, access):
         bucket_perms = generate_resource_permissions(
             f"BucketAccess{bucket.logical_name}",
             ACCESS_TYPES[bucket_key],
-            arn=bucket_arn_import,
+            arn=arn,
         )
         add_iam_policy_to_service_task_role(
             family.template, bucket, bucket_perms, access[bucket_key], services
@@ -58,7 +56,7 @@ def assign_service_permissions_to_bucket(bucket, family, services, access):
         objects_perms = generate_resource_permissions(
             f"ObjectsAccess{bucket.logical_name}",
             ACCESS_TYPES[objects_key],
-            arn=Sub("${BucketArn}/*", BucketArn=bucket_arn_import),
+            arn=Sub("${BucketArn}/*", BucketArn=arn),
         )
         add_iam_policy_to_service_task_role(
             family.template, bucket, objects_perms, access[objects_key], services
@@ -68,13 +66,17 @@ def assign_service_permissions_to_bucket(bucket, family, services, access):
 def assign_new_bucket_to_services(bucket, res_root_stack, nested=False):
     """
     Function to assign the bucket services permissions to access the s3 bucket.
-    :param bucket:
+    :param ecs_composex.s3.s3_stack.Bucket bucket:
+    :param ecs_composex.common.stacks.ComposeXStack res_root_stack:
     :param bool nested:
     :return:
     """
     bucket_key = "bucket"
     objects_key = "objects"
     access = {objects_key: "RW", bucket_key: "ListOnly"}
+    bucket.set_ref_resource_value(res_root_stack.title)
+    bucket.set_resource_arn_parameter()
+    bucket.set_resource_arn(res_root_stack.title)
     for target in bucket.families_targets:
         select_services = get_selected_services(bucket, target)
         if select_services:
@@ -84,8 +86,16 @@ def assign_new_bucket_to_services(bucket, res_root_stack, nested=False):
                 )
             else:
                 access = target[3]
+            add_parameters(
+                target[0].template, [bucket.ref_parameter, bucket.arn_parameter]
+            )
             assign_service_permissions_to_bucket(
-                bucket, target[0], select_services, access
+                bucket,
+                target[0],
+                select_services,
+                access,
+                value=Ref(bucket.ref_parameter),
+                arn=Ref(bucket.arn_parameter),
             )
             if res_root_stack.title not in target[0].stack.DependsOn:
                 target[0].stack.DependsOn.append(res_root_stack.title)
@@ -172,7 +182,7 @@ def define_bucket_mappings(buckets_mappings, buckets, settings):
             )
 
 
-def define_lookup_buckets_access(bucket, target, services):
+def define_lookup_buckets_access(bucket, target, services, access):
     """
     Function to create the IAM policy for the service access to bucket
 
@@ -181,7 +191,6 @@ def define_lookup_buckets_access(bucket, target, services):
     """
     bucket_key = "bucket"
     objects_key = "objects"
-    access = {objects_key: "RW", bucket_key: "ListOnly"}
     if isinstance(target[3], str):
         LOG.warn(
             "For s3 buckets, you should define a dict for access, with bucket and/or object policies separate."
@@ -241,9 +250,6 @@ def assign_lookup_buckets(bucket, mappings):
                 )
             else:
                 access = target[3]
-            assign_service_permissions_to_bucket(
-                bucket, target[0], select_services, access
-            )
             if keyisset("KmsKey", mappings[bucket.logical_name]):
                 kms_perms = generate_resource_permissions(
                     f"{bucket.logical_name}KmsKey",
@@ -257,7 +263,7 @@ def assign_lookup_buckets(bucket, mappings):
                     "EncryptDecrypt",
                     select_services,
                 )
-            define_lookup_buckets_access(bucket, target, select_services)
+            define_lookup_buckets_access(bucket, target, select_services, access)
 
 
 def s3_to_ecs(xresources, services_stack, res_root_stack, settings):
