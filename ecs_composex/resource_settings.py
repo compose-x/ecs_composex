@@ -20,7 +20,7 @@ Module to handle resource settings definition to containers.
 """
 
 from troposphere import Parameter
-from troposphere import Sub, ImportValue, FindInMap, GetAtt, Ref
+from troposphere import Sub, ImportValue, FindInMap, Ref
 from troposphere.iam import Policy as IamPolicy
 
 from ecs_composex.common import LOG, keyisset, add_parameters

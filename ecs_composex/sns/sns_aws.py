@@ -20,14 +20,15 @@ Module to find the SQS topics in lookup
 """
 
 import re
+
 from botocore.exceptions import ClientError
+
 from ecs_composex.common import LOG, keyisset
 from ecs_composex.common.aws import (
     find_aws_resource_arn_from_tags_api,
     define_lookup_role_from_info,
 )
-
-from ecs_composex.sns.sns_params import TOPIC_NAME, TOPIC_ARN, TOPIC_KMS_KEY
+from ecs_composex.sns.sns_params import TOPIC_ARN, TOPIC_KMS_KEY
 
 
 def get_topic_config(logical_name, topic_arn, session):

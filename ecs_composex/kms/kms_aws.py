@@ -19,14 +19,13 @@
 Module to find the SQS keys in lookup
 """
 
-import re
 from botocore.exceptions import ClientError
-from ecs_composex.common import LOG, keyisset
+
+from ecs_composex.common import LOG
 from ecs_composex.common.aws import (
     find_aws_resource_arn_from_tags_api,
     define_lookup_role_from_info,
 )
-
 from ecs_composex.kms.kms_params import (
     KMS_KEY_ARN,
     KMS_KEY_ID,

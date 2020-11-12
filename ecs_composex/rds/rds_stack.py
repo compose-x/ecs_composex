@@ -21,8 +21,8 @@ Module to handle AWS RDS CFN Templates creation
 
 import os
 
-from troposphere import Ref, GetAtt
 from troposphere import Parameter
+from troposphere import Ref, GetAtt
 
 from ecs_composex.common import LOG
 from ecs_composex.common.compose_resources import XResource, set_resources
@@ -30,7 +30,6 @@ from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.rds.rds_params import (
     DB_NAME,
     DB_ENDPOINT_PORT,
-    DB_EXPORT_SECRET_ARN_T,
     DB_SECRET_T,
     DB_SG_T,
     DB_ENGINE_NAME,

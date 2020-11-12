@@ -19,35 +19,31 @@
 Module for the ComposeXSettings class
 """
 
-import re
-
 from copy import deepcopy
 from datetime import datetime as dt
-from json import dumps
-
-import yaml
 
 import boto3
+import yaml
 from botocore.exceptions import ClientError
+from cfn_flip.yaml_dumper import LongCleanDumper
 
 from ecs_composex import __version__
 from ecs_composex.common import keyisset, LOG, load_composex_file, NONALPHANUM
-from ecs_composex.common.envsubst import expandvars
 from ecs_composex.common.aws import get_account_id, get_region_azs
+from ecs_composex.common.aws import get_cross_role_session
 from ecs_composex.common.cfn_params import USE_FLEET_T
-from ecs_composex.utils.init_ecs import set_ecs_settings
-from ecs_composex.utils.init_s3 import create_bucket
-from cfn_flip.yaml_dumper import LongCleanDumper
 from ecs_composex.common.compose_secrets import ComposeSecret
-from ecs_composex.common.compose_volumes import ComposeVolume
 from ecs_composex.common.compose_services import (
     ComposeService,
     ComposeFamily,
     set_service_ports,
 )
+from ecs_composex.common.compose_volumes import ComposeVolume
+from ecs_composex.common.envsubst import expandvars
 from ecs_composex.iam import ROLE_ARN_ARG
 from ecs_composex.iam import validate_iam_role_arn
-from ecs_composex.common.aws import get_cross_role_session
+from ecs_composex.utils.init_ecs import set_ecs_settings
+from ecs_composex.utils.init_s3 import create_bucket
 
 
 def render_services_ports(services):

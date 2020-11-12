@@ -16,16 +16,12 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from troposphere import Ref, GetAtt
 from troposphere import MAX_OUTPUTS
 
 from ecs_composex.common import keyisset, build_template
-from ecs_composex.common.outputs import ComposeXOutput
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.kms.kms_params import (
     RES_KEY,
-    KMS_KEY_ID_T,
-    KMS_KEY_ARN_T,
 )
 
 CFN_MAX_OUTPUTS = MAX_OUTPUTS - 10

@@ -15,15 +15,15 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from troposphere import Output, GetAtt, Ref
+from troposphere import GetAtt, Ref
 
 from ecs_composex.common import keyisset, LOG
-from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common.compose_resources import XResource
-from ecs_composex.sqs.sqs_params import RES_KEY as SQS_KEY
+from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.sns.sns_params import RES_KEY, TOPIC_NAME, TOPIC_ARN, TOPIC_KMS_KEY
-from ecs_composex.sns.sns_templates import generate_sns_templates
 from ecs_composex.sns.sns_perms import ACCESS_TYPES
+from ecs_composex.sns.sns_templates import generate_sns_templates
+from ecs_composex.sqs.sqs_params import RES_KEY as SQS_KEY
 
 
 def create_sns_template(settings):

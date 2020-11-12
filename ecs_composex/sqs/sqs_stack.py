@@ -20,10 +20,12 @@ Module for the XStack SQS
 """
 
 import sys
+
 from troposphere import GetAtt, Ref
-from troposphere import Output
 
 from ecs_composex.common import validate_input, keyisset, LOG, EXIT_CODES
+from ecs_composex.common.compose_resources import set_resources, XResource
+from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.sqs.sqs_params import (
     RES_KEY,
     SQS_ARN,
@@ -31,10 +33,8 @@ from ecs_composex.sqs.sqs_params import (
     SQS_KMS_KEY_T,
     SQS_NAME,
 )
-from ecs_composex.sqs.sqs_template import generate_sqs_root_template
 from ecs_composex.sqs.sqs_perms import get_access_types
-from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.common.compose_resources import set_resources, XResource
+from ecs_composex.sqs.sqs_template import generate_sqs_root_template
 
 
 def create_sqs_template(settings):

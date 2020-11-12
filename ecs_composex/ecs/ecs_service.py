@@ -19,22 +19,17 @@
 Functions to build the ECS Service Definition
 """
 
-from ipaddress import IPv4Interface
-
 from troposphere import (
     Join,
     Select,
     If,
     Tags,
     AWS_NO_VALUE,
-    AWS_ACCOUNT_ID,
     AWS_STACK_NAME,
 )
 from troposphere import Ref, Sub, GetAtt
 from troposphere import applicationautoscaling
-from troposphere.ec2 import EIP, SecurityGroup
-from troposphere.ec2 import SecurityGroupIngress
-from troposphere.ecs import LoadBalancer as EcsLoadBalancer
+from troposphere.ec2 import SecurityGroup
 from troposphere.ecs import (
     Service as EcsService,
     PlacementStrategy,
@@ -44,12 +39,6 @@ from troposphere.ecs import (
 )
 from troposphere.ecs import ServiceRegistry
 from troposphere.elasticloadbalancingv2 import (
-    LoadBalancer,
-    LoadBalancerAttributes,
-    TargetGroup,
-    TargetGroupAttribute,
-    Listener,
-    Action as ListenerAction,
     SubnetMapping,
 )
 from troposphere.servicediscovery import (
@@ -57,14 +46,12 @@ from troposphere.servicediscovery import (
     Service as SdService,
     DnsRecord as SdDnsRecord,
     HealthCheckCustomConfig as SdHealthCheckCustomConfig,
-    Instance as SdInstance,
 )
 
-from ecs_composex.common import keyisset, LOG, NONALPHANUM
+from ecs_composex.common import keyisset, LOG
 from ecs_composex.common.cfn_conditions import USE_STACK_NAME_CON_T
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.outputs import ComposeXOutput
-from ecs_composex.dns.dns_conditions import CREATE_PUBLIC_NAMESPACE_CON_T
 from ecs_composex.dns.dns_params import (
     PRIVATE_DNS_ZONE_NAME,
     PRIVATE_DNS_ZONE_ID,

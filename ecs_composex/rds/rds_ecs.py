@@ -26,7 +26,6 @@ from ecs_composex.rds.rds_aws import validate_rds_lookup, lookup_rds_resource
 from ecs_composex.rds.rds_params import DB_SECRET_T, DB_SG_T, DB_ENDPOINT_PORT
 from ecs_composex.rds.rds_perms import (
     add_secret_to_container,
-    define_db_secret_import,
     add_rds_policy,
     add_security_group_ingress,
 )

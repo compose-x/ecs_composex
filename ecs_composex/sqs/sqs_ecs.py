@@ -19,8 +19,8 @@
 Module to apply SQS settings onto ECS Services
 """
 
-from troposphere import Ref, GetAtt
 from troposphere import Parameter
+from troposphere import Ref, GetAtt
 from troposphere.cloudwatch import Alarm, MetricDimension
 
 from ecs_composex.common import LOG, keyisset, add_parameters
@@ -30,7 +30,6 @@ from ecs_composex.ecs.ecs_scaling import (
     reset_to_zero_policy,
 )
 from ecs_composex.resource_settings import (
-    generate_export_strings,
     handle_resource_to_services,
     handle_lookup_resource,
 )

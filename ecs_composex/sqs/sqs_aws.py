@@ -20,14 +20,15 @@ Module to find the SQS queues in lookup
 """
 
 import re
+
 from botocore.exceptions import ClientError
+
 from ecs_composex.common import LOG, keyisset
 from ecs_composex.common.aws import (
     find_aws_resource_arn_from_tags_api,
     define_lookup_role_from_info,
 )
-
-from ecs_composex.sqs.sqs_params import SQS_ARN, SQS_URL, SQS_NAME, SQS_KMS_KEY_T
+from ecs_composex.sqs.sqs_params import SQS_ARN, SQS_KMS_KEY_T
 
 
 def get_queue_config(logical_name, queue_arn, session):

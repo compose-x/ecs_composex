@@ -20,12 +20,12 @@ Module to define the ComposeX Resources into a simple object to make it easier t
 """
 
 from copy import deepcopy
-from troposphere import Ref, GetAtt
+
 from troposphere import Output, Parameter
+from troposphere import Ref, GetAtt
 from troposphere.ecs import Environment
 
 from ecs_composex.common import LOG, NONALPHANUM, keyisset, keypresent
-from ecs_composex.resource_settings import generate_export_strings, define_attribute
 
 
 def set_resources(settings, resource_class, res_key):

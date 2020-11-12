@@ -20,7 +20,7 @@ Class and functions to interact with the volumes: defined in compose files.
 """
 
 import re
-from json import dumps
+
 from ecs_composex.common import keyisset, LOG
 
 

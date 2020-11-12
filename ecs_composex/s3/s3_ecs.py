@@ -29,11 +29,9 @@ from ecs_composex.kms.kms_perms import ACCESS_TYPES as KMS_ACCESS_TYPES
 from ecs_composex.resource_settings import (
     add_iam_policy_to_service_task_role,
     generate_resource_permissions,
-    generate_export_strings,
     get_selected_services,
 )
 from ecs_composex.s3.s3_aws import lookup_bucket_config
-from ecs_composex.s3.s3_params import S3_BUCKET_ARN, S3_BUCKET_NAME
 from ecs_composex.s3.s3_perms import ACCESS_TYPES
 
 

@@ -29,7 +29,6 @@ from troposphere.certificatemanager import (
 
 from ecs_composex.acm.acm_params import (
     RES_KEY,
-    CERT_CN,
 )
 from ecs_composex.common import (
     NONALPHANUM,

@@ -20,13 +20,11 @@ Module to handle elbv2.
 """
 
 import re
-
-from json import dumps
 from copy import deepcopy
+from json import dumps
 
-from troposphere import Ref, Sub, GetAtt, Select, Parameter, Tags
 from troposphere import AWS_STACK_NAME, AWS_NO_VALUE
-
+from troposphere import Ref, Sub, GetAtt, Select, Parameter, Tags
 from troposphere.ec2 import SecurityGroup, EIP
 from troposphere.elasticloadbalancingv2 import (
     LoadBalancer,
@@ -41,24 +39,20 @@ from troposphere.elasticloadbalancingv2 import (
     RedirectConfig,
     ForwardConfig,
     FixedResponseConfig,
-    HttpHeaderConfig,
     HostHeaderConfig,
     PathPatternConfig,
     TargetGroupTuple,
 )
 
-from ecs_composex.common import keyisset, keypresent, build_template, add_parameters
-from ecs_composex.common import NONALPHANUM, LOG
-from ecs_composex.common.cfn_params import ROOT_STACK_NAME
-from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.common.outputs import ComposeXOutput
-
-from ecs_composex.common.compose_resources import XResource, set_resources
-from ecs_composex.vpc.vpc_params import VPC_ID, PUBLIC_SUBNETS, APP_SUBNETS
-from ecs_composex.acm.acm_stack import init_acm_certs
 from ecs_composex.acm.acm_params import RES_KEY as ACM_KEY
-
+from ecs_composex.common import NONALPHANUM, LOG
+from ecs_composex.common import keyisset, keypresent, build_template, add_parameters
+from ecs_composex.common.cfn_params import ROOT_STACK_NAME
+from ecs_composex.common.compose_resources import XResource, set_resources
+from ecs_composex.common.outputs import ComposeXOutput
+from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.elbv2.elbv2_params import RES_KEY, LB_SG_ID
+from ecs_composex.vpc.vpc_params import VPC_ID, PUBLIC_SUBNETS, APP_SUBNETS
 
 
 def handle_cross_zone(value):
@@ -405,7 +399,7 @@ def add_acm_certs_arn(listener, src_value, settings, listener_stack):
                 r"([a-z0-9]{8}(?:-[a-z0-9]{4}){3}-[a-z0-9]{12})$)"
             ),
         )
-    LOG.info(f"Adding new cert from defined ARN")
+    LOG.info("Adding new cert from defined ARN")
     add_extra_certificate(listener, src_value)
     rectify_listener_protocol(listener)
 
@@ -557,7 +551,7 @@ class ComposeListener(Listener):
         """
         if not all(target in t_targets for target in l_targets):
             raise KeyError(
-                f"Missing one of ",
+                "Missing one of ",
                 [
                     i
                     for i in l_targets + t_targets

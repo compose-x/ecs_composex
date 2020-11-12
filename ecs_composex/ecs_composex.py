@@ -24,6 +24,8 @@ from importlib import import_module
 
 from troposphere import Ref, AWS_STACK_NAME, GetAtt
 
+from ecs_composex.acm.acm_params import RES_KEY as ACM_KEY
+from ecs_composex.acm.acm_stack import init_acm_certs
 from ecs_composex.appmesh.appmesh_mesh import Mesh
 from ecs_composex.common import LOG, NONALPHANUM
 from ecs_composex.common import (
@@ -46,20 +48,15 @@ from ecs_composex.compute.compute_params import (
     MIN_CAPACITY_T,
 )
 from ecs_composex.compute.compute_stack import ComputeStack
-from ecs_composex.acm.acm_stack import init_acm_certs
-from ecs_composex.acm.acm_params import RES_KEY as ACM_KEY
 from ecs_composex.dns import add_parameters_and_conditions as dns_inputs, DnsSettings
 from ecs_composex.ecs import associate_services_to_root_stack
-from ecs_composex.ecs import ecs_params
 from ecs_composex.ecs.ecs_cluster import add_ecs_cluster
 from ecs_composex.ecs.ecs_params import (
     CLUSTER_NAME,
     CLUSTER_T as ROOT_CLUSTER_NAME,
-    RES_KEY as SERVICES_KEY,
 )
 from ecs_composex.vpc import vpc_params
 from ecs_composex.vpc.vpc_stack import add_vpc_to_root
-from ecs_composex.elbv2.elbv2_ecs import elbv2_to_ecs
 
 RES_REGX = re.compile(r"(^([x-]+))")
 COMPUTE_STACK_NAME = "Ec2Compute"

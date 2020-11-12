@@ -30,7 +30,6 @@ from troposphere.elasticloadbalancingv2 import (
 from ecs_composex.common import LOG
 from ecs_composex.common import keyisset, add_parameters
 from ecs_composex.common.outputs import ComposeXOutput
-from ecs_composex.ecs.ecs_params import SERVICE_T
 from ecs_composex.elbv2.elbv2_params import TGT_GROUP_ARN
 from ecs_composex.vpc.vpc_params import VPC_ID, SG_ID_TYPE
 

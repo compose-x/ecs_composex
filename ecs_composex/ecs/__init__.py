@@ -33,17 +33,14 @@ It is going to also, based on the labels set in the compose file
 
 """
 
-from troposphere import Ref, Join, If
+from troposphere import Ref, If
 
 from ecs_composex import __version__ as version
-from ecs_composex.common import build_template
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.dns import dns_params
 from ecs_composex.ecs import ecs_params
-from ecs_composex.ecs.ecs_params import CLUSTER_NAME, CLUSTER_T
 from ecs_composex.ecs.ecs_conditions import GENERATED_CLUSTER_NAME_CON_T
+from ecs_composex.ecs.ecs_params import CLUSTER_NAME, CLUSTER_T
 from ecs_composex.ecs.ecs_template import generate_services
-from ecs_composex.vpc import vpc_params
 
 metadata = {
     "Type": "ComposeX",

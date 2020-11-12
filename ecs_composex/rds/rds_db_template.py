@@ -19,7 +19,7 @@
 RDS DB template generator
 """
 
-from troposphere import Sub, Ref, If, GetAtt, Tags, AWS_NO_VALUE
+from troposphere import Sub, Ref, If, Tags, AWS_NO_VALUE
 from troposphere.ec2 import SecurityGroup
 from troposphere.rds import (
     DBSubnetGroup,
@@ -36,7 +36,6 @@ from troposphere.secretsmanager import (
 
 from ecs_composex.common import build_template, cfn_conditions
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
-from ecs_composex.common.outputs import ComposeXOutput
 from ecs_composex.rds import rds_conditions
 from ecs_composex.rds.rds_parameter_groups_helper import (
     get_family_from_engine_version,
@@ -56,7 +55,6 @@ from ecs_composex.rds.rds_params import (
     DBS_SUBNET_GROUP,
     DB_SG_T,
     DB_NAME,
-    DB_NAME_T,
     DB_SNAPSHOT_ID,
     DB_INSTANCE_CLASS,
     DB_PASSWORD_LENGTH,
@@ -64,9 +62,6 @@ from ecs_composex.rds.rds_params import (
     DB_USERNAME,
     DB_STORAGE_CAPACITY,
     DB_STORAGE_TYPE,
-    DB_EXPORT_SECRET_ARN_T,
-    DB_EXPORT_PORT_T,
-    DB_EXPORT_SG_ID_T,
 )
 from ecs_composex.vpc.vpc_params import (
     VPC_ID,

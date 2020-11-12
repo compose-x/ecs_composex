@@ -30,16 +30,13 @@ from ecs_composex.common import (
     NONALPHANUM,
 )
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
-from ecs_composex.common.outputs import ComposeXOutput
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.sqs import metadata
 from ecs_composex.sqs.sqs_params import RES_KEY
 from ecs_composex.sqs.sqs_params import (
-    SQS_NAME_T,
     SQS_ARN_T,
     DLQ_ARN,
     DLQ_ARN_T,
-    SQS_URL,
 )
 
 CFN_MAX_OUTPUTS = 190

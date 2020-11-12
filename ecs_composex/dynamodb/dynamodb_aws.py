@@ -20,9 +20,10 @@ Module to define the DynamoDB tables mappings config from Lookup
 """
 
 import re
+
 from botocore.exceptions import ClientError
 
-from ecs_composex.common import keyisset, LOG
+from ecs_composex.common import LOG
 from ecs_composex.common.aws import (
     find_aws_resource_arn_from_tags_api,
     define_lookup_role_from_info,
@@ -38,7 +39,7 @@ def get_table_config(table_arn, session):
     :return:
     """
     table_parts = re.compile(
-        r"(?:^arn:aws(?:-[a-z]+)?:dynamodb:[\S]+:[0-9]+:table\/)([\S]+)$"
+        r"(?:^arn:aws(?:-[a-z]+)?:dynamodb:[\S]+:[0-9]+:table/)([\S]+)$"
     )
     table_name = table_parts.match(table_arn).groups()[0]
     table_config = {TABLE_NAME.title: table_name, TABLE_ARN.title: table_arn}

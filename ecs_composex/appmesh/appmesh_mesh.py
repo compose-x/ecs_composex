@@ -40,7 +40,6 @@ from ecs_composex.common import (
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.ecs import ecs_params
-from ecs_composex.ecs.ecs_template import get_service_family_name
 
 
 class Mesh(object):
