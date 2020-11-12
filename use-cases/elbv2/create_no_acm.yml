@@ -14,8 +14,6 @@ x-elbv2:
     Listeners:
       - Port: 80
         Protocol: HTTP
-        DefaultActions:
-          - Redirect: HTTP_TO_HTTPS
         Targets:
           - name: bignicefamily:rproxy
             access: /
