@@ -29,7 +29,7 @@ from troposphere import Condition, Ref, Equals, And, Not
 
 from ecs_composex.ecs import ecs_params
 
-GENERATED_CLUSTER_NAME_CON_T = "UsCfnGeneratedClusterName"
+GENERATED_CLUSTER_NAME_CON_T = "CreateEcsClusterCondition"
 GENERATED_CLUSTER_NAME_CON = Equals(
     Ref(ecs_params.CLUSTER_NAME), ecs_params.CLUSTER_NAME.Default
 )

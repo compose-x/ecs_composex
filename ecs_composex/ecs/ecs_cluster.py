@@ -121,8 +121,6 @@ def define_cluster(root_stack, cluster_def):
     """
     cluster_params = {}
     props = cluster_def["Properties"]
-    if keyisset("ClusterName", props):
-        root_stack.Parameters.update({CLUSTER_NAME.title: props["ClusterName"]})
     if not keyisset("CapacityProviders", props):
         LOG.warning("No capacity providers defined. Setting it to default.")
         cluster_params["CapacityProviders"] = DEFAULT_PROVIDERS
@@ -137,11 +135,13 @@ def define_cluster(root_stack, cluster_def):
         )
     cluster_params["Metadata"] = metadata
     cluster_params["ClusterName"] = (
-        cluster_params["ClusterName"]
-        if keyisset("ClusterName", cluster_params)
-        else Ref(AWS_STACK_NAME)
+        Ref(AWS_STACK_NAME)
+        if not keyisset("ClusterName", props)
+        else props["ClusterName"]
     )
-    cluster = Cluster(CLUSTER_T, **cluster_params)
+    cluster = Cluster(
+        CLUSTER_T, Condition=GENERATED_CLUSTER_NAME_CON_T, **cluster_params
+    )
     return cluster
 
 
