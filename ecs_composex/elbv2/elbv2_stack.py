@@ -24,7 +24,7 @@ import re
 from json import dumps
 from copy import deepcopy
 
-from troposphere import Ref, Sub, GetAtt, Select, Parameter
+from troposphere import Ref, Sub, GetAtt, Select, Parameter, Tags
 from troposphere import AWS_STACK_NAME, AWS_NO_VALUE
 
 from troposphere.ec2 import SecurityGroup, EIP
@@ -841,7 +841,6 @@ class Elbv2(XResource):
             "IpAddressType": "ipv4"
             if not keyisset("IpAddressType", self.properties)
             else self.properties["IpAddressType"],
-            "Name": Sub(f"${{{ROOT_STACK_NAME.title}}}{self.logical_name}"),
             "Type": self.lb_type,
             "Scheme": "internet-facing" if self.lb_is_public else "internal",
             "SecurityGroups": [Ref(self.lb_sg)]
@@ -850,6 +849,8 @@ class Elbv2(XResource):
             "Subnets": self.set_subnets(),
             "SubnetMappings": self.set_subnet_mappings(settings),
             "LoadBalancerAttributes": self.set_lb_attributes(),
+            "Tags": Tags(Name=Sub(f"${{{ROOT_STACK_NAME.title}}}{self.logical_name}")),
+            "Name": Ref(AWS_NO_VALUE),
         }
         self.lb = LoadBalancer(self.logical_name, **attrs)
 
