@@ -343,4 +343,6 @@ class XResource(object):
                 "Existing ones are",
                 self.output_properties.keys(),
             )
-        return GetAtt(stack_name, f"Outputs.{self.logical_name}{title}")
+        return GetAtt(
+            stack_name, f"Outputs.{self.logical_name}{NONALPHANUM.sub('', title)}"
+        )

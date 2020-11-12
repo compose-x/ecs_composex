@@ -129,11 +129,11 @@ class Mesh(object):
         for key in self.required_keys:
             if key not in self.mesh_settings.keys():
                 raise KeyError(f"Key {key} is missing. Required {self.required_keys}")
-        self.define_nodes(settings, services_root_stack)
+        self.define_nodes(settings, services_root_stack, self.appmesh)
         self.define_routes_and_routers()
         self.define_virtual_services()
 
-    def define_nodes(self, settings, services_root_stack):
+    def define_nodes(self, settings, services_root_stack, mesh):
         """
         Method to compile the nodes for the Mesh.
 
@@ -169,6 +169,7 @@ class Mesh(object):
             self.nodes[family.logical_name] = MeshNode(
                 family,
                 node["protocol"],
+                mesh,
                 node["backends"] if keyisset("backends", node) else None,
             )
             self.nodes[family.logical_name].get_node_param = GetAtt(
