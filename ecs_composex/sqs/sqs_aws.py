@@ -20,17 +20,18 @@ Module to find the SQS queues in lookup
 """
 
 import re
+
 from botocore.exceptions import ClientError
+
 from ecs_composex.common import LOG, keyisset
 from ecs_composex.common.aws import (
     find_aws_resource_arn_from_tags_api,
     define_lookup_role_from_info,
 )
+from ecs_composex.sqs.sqs_params import SQS_ARN, SQS_KMS_KEY_T
 
-from ecs_composex.sqs.sqs_params import SQS_ARN, SQS_URL, SQS_NAME, SQS_KMS_KEY_T
 
-
-def get_queue_config(queue_arn, session):
+def get_queue_config(logical_name, queue_arn, session):
     """
 
     :param str queue_arn:
@@ -40,13 +41,13 @@ def get_queue_config(queue_arn, session):
     queue_parts = re.compile(r"(?:^arn:aws(?:-[a-z]+)?:sqs:)([\S]+):([0-9]+):([\S]+)$")
     queue_name = queue_parts.match(queue_arn).groups()[2]
     queue_owner = queue_parts.match(queue_arn).groups()[1]
-    queue_config = {SQS_NAME.title: queue_name, SQS_ARN.title: queue_arn}
+    queue_config = {logical_name: queue_name, SQS_ARN.title: queue_arn}
     client = session.client("sqs")
     try:
         url_r = client.get_queue_url(
             QueueName=queue_name, QueueOwnerAWSAccountId=queue_owner
         )
-        queue_config.update({SQS_URL.title: url_r["QueueUrl"]})
+        queue_config.update({logical_name: url_r["QueueUrl"]})
         try:
             encryption_config_r = client.get_queue_attributes(
                 QueueUrl=url_r["QueueUrl"], AttributeNames=["KmsMasterKeyId"]
@@ -80,7 +81,7 @@ def get_queue_config(queue_arn, session):
         raise
 
 
-def lookup_queue_config(lookup, session):
+def lookup_queue_config(logical_name, lookup, session):
     """
     Function to find the DB in AWS account
 
@@ -100,6 +101,6 @@ def lookup_queue_config(lookup, session):
     )
     if not queue_arn:
         return None
-    config = get_queue_config(queue_arn, lookup_session)
+    config = get_queue_config(logical_name, queue_arn, lookup_session)
     LOG.debug(config)
     return config

@@ -1,7 +1,7 @@
 ﻿version: "3.8"
 
 x-s3:
-  bucket-02:
+  bucket-07:
     Lookup:
       Tags:
         - aws:cloudformation:logical-id: ArtifactsBucket
@@ -12,7 +12,7 @@ x-s3:
           bucket: PowerUser
           objects: RW
 
-  bucket-03:
+  bucket-08:
     Settings:
       EnvNames:
         - BUCKET03

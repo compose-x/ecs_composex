@@ -21,9 +21,8 @@ Represent a service from the docker-compose services
 
 from troposphere import Sub, AWS_PARTITION, AWS_REGION, AWS_ACCOUNT_ID
 from troposphere.ecs import Secret as EcsSecret
-from troposphere.iam import Policy
 
-from ecs_composex.common import LOG, keyisset, NONALPHANUM
+from ecs_composex.common import LOG, keyisset
 from ecs_composex.ecs.ecs_params import TASK_ROLE_T, EXEC_ROLE_T
 
 RES_KEY = "secrets"

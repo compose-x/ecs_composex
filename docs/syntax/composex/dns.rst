@@ -60,4 +60,4 @@ Example
       PrivateNamespace:
         Use: ns-abcd012344
       PublicZone:
-        use: Z0123456ABCD
+        Use: Z0123456ABCD

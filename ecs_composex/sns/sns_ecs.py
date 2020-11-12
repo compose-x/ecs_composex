@@ -30,7 +30,9 @@ from ecs_composex.sns.sns_aws import lookup_topic_config
 
 def create_sns_mappings(mapping, resources, settings):
     for resource in resources:
-        resource_config = lookup_topic_config(resource.lookup, settings.session)
+        resource_config = lookup_topic_config(
+            resource.logical_name, resource.lookup, settings.session
+        )
         if resource_config:
             mapping.update({resource.logical_name: resource_config})
 

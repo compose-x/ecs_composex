@@ -20,13 +20,11 @@ Module to handle elbv2.
 """
 
 import re
-
-from json import dumps
 from copy import deepcopy
+from json import dumps
 
-from troposphere import Ref, Sub, GetAtt, Select, Parameter
 from troposphere import AWS_STACK_NAME, AWS_NO_VALUE
-
+from troposphere import Ref, Sub, GetAtt, Select, Parameter, Tags
 from troposphere.ec2 import SecurityGroup, EIP
 from troposphere.elasticloadbalancingv2 import (
     LoadBalancer,
@@ -41,39 +39,35 @@ from troposphere.elasticloadbalancingv2 import (
     RedirectConfig,
     ForwardConfig,
     FixedResponseConfig,
-    HttpHeaderConfig,
     HostHeaderConfig,
     PathPatternConfig,
     TargetGroupTuple,
 )
 
-from ecs_composex.common import keyisset, keypresent, build_template, add_parameters
-from ecs_composex.common import NONALPHANUM, LOG
-from ecs_composex.common.cfn_params import ROOT_STACK_NAME
-from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.common.outputs import ComposeXOutput
-
-from ecs_composex.common.compose_resources import XResource, set_resources
-from ecs_composex.vpc.vpc_params import VPC_ID, PUBLIC_SUBNETS, APP_SUBNETS
-from ecs_composex.acm.acm_stack import init_acm_certs
 from ecs_composex.acm.acm_params import RES_KEY as ACM_KEY
-
+from ecs_composex.common import NONALPHANUM, LOG
+from ecs_composex.common import keyisset, keypresent, build_template, add_parameters
+from ecs_composex.common.cfn_params import ROOT_STACK_NAME
+from ecs_composex.common.compose_resources import XResource, set_resources
+from ecs_composex.common.outputs import ComposeXOutput
+from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.elbv2.elbv2_params import RES_KEY, LB_SG_ID
+from ecs_composex.vpc.vpc_params import VPC_ID, PUBLIC_SUBNETS, APP_SUBNETS
 
 
 def handle_cross_zone(value):
     return LoadBalancerAttributes(
-        Key="load_balancing.cross_zone.enabled", Value=str(value)
+        Key="load_balancing.cross_zone.enabled", Value=str(value).lower()
     )
 
 
 def handle_http2(value):
-    return LoadBalancerAttributes(Key="routing.http2.enabled", Value=str(value))
+    return LoadBalancerAttributes(Key="routing.http2.enabled", Value=str(value).lower())
 
 
 def handle_drop_invalid_headers(value):
     return LoadBalancerAttributes(
-        Key="routing.http.drop_invalid_header_fields.enabled", Value=str(value)
+        Key="routing.http.drop_invalid_header_fields.enabled", Value=str(value).lower()
     )
 
 
@@ -84,8 +78,20 @@ def handle_desync_mitigation_mode(value):
             ["defensive", "strictest", "monitor"],
         )
     return LoadBalancerAttributes(
-        Key="routing.http.desync_mitigation_mode", Value=str(value)
+        Key="routing.http.desync_mitigation_mode", Value=str(value).lower()
     )
+
+
+def handle_timeout_seconds(timeout_seconds):
+    if 1 < int(timeout_seconds) < 4000:
+        return LoadBalancerAttributes(
+            Key="idle_timeout.timeout_seconds", Value=str(timeout_seconds).lower()
+        )
+    else:
+        raise ValueError(
+            "idle_timeout.timeout_seconds must be set between 1 and 4000 seconds. Got",
+            timeout_seconds,
+        )
 
 
 def validate_listeners_duplicates(name, ports):
@@ -393,7 +399,7 @@ def add_acm_certs_arn(listener, src_value, settings, listener_stack):
                 r"([a-z0-9]{8}(?:-[a-z0-9]{4}){3}-[a-z0-9]{12})$)"
             ),
         )
-    LOG.info(f"Adding new cert from defined ARN")
+    LOG.info("Adding new cert from defined ARN")
     add_extra_certificate(listener, src_value)
     rectify_listener_protocol(listener)
 
@@ -545,7 +551,7 @@ class ComposeListener(Listener):
         """
         if not all(target in t_targets for target in l_targets):
             raise KeyError(
-                f"Missing one of ",
+                "Missing one of ",
                 [
                     i
                     for i in l_targets + t_targets
@@ -767,20 +773,32 @@ class Elbv2(XResource):
         :return:
         """
         valid_settings = [
-            ("timeout_seconds", int, None),
-            ("desync_mitigation_mode", str, handle_desync_mitigation_mode),
-            ("drop_invalid_header_fields", bool, handle_drop_invalid_headers),
-            ("http2", bool, handle_http2),
-            ("cross_zone", bool, handle_cross_zone),
+            ("timeout_seconds", int, handle_timeout_seconds, self.is_alb()),
+            (
+                "desync_mitigation_mode",
+                str,
+                handle_desync_mitigation_mode,
+                self.is_alb(),
+            ),
+            (
+                "drop_invalid_header_fields",
+                bool,
+                handle_drop_invalid_headers,
+                self.is_alb(),
+            ),
+            ("http2", bool, handle_http2, self.is_alb()),
+            ("cross_zone", bool, handle_cross_zone, self.is_nlb()),
         ]
         mappings = []
         for setting in valid_settings:
-            if keypresent(setting[0], self.settings) and isinstance(
-                self.settings[setting[0]], setting[1]
+            if (
+                keypresent(setting[0], self.settings)
+                and isinstance(self.settings[setting[0]], setting[1])
+                and setting[3]
             ):
-                if setting[2]:
+                if setting[2] and setting[3]:
                     mappings.append(setting[2](self.settings[setting[0]]))
-                else:
+                elif setting[3]:
                     mappings.append(
                         LoadBalancerAttributes(
                             Key=setting[0], Value=str(self.settings[setting[0]])
@@ -817,7 +835,6 @@ class Elbv2(XResource):
             "IpAddressType": "ipv4"
             if not keyisset("IpAddressType", self.properties)
             else self.properties["IpAddressType"],
-            "Name": Sub(f"${{{ROOT_STACK_NAME.title}}}{self.logical_name}"),
             "Type": self.lb_type,
             "Scheme": "internet-facing" if self.lb_is_public else "internal",
             "SecurityGroups": [Ref(self.lb_sg)]
@@ -826,6 +843,8 @@ class Elbv2(XResource):
             "Subnets": self.set_subnets(),
             "SubnetMappings": self.set_subnet_mappings(settings),
             "LoadBalancerAttributes": self.set_lb_attributes(),
+            "Tags": Tags(Name=Sub(f"${{{ROOT_STACK_NAME.title}}}{self.logical_name}")),
+            "Name": Ref(AWS_NO_VALUE),
         }
         self.lb = LoadBalancer(self.logical_name, **attrs)
 

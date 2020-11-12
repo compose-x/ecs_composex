@@ -19,14 +19,13 @@
 Module to find the SQS keys in lookup
 """
 
-import re
 from botocore.exceptions import ClientError
-from ecs_composex.common import LOG, keyisset
+
+from ecs_composex.common import LOG
 from ecs_composex.common.aws import (
     find_aws_resource_arn_from_tags_api,
     define_lookup_role_from_info,
 )
-
 from ecs_composex.kms.kms_params import (
     KMS_KEY_ARN,
     KMS_KEY_ID,
@@ -35,7 +34,7 @@ from ecs_composex.kms.kms_params import (
 )
 
 
-def get_key_config(key_arn, session):
+def get_key_config(logical_name, key_arn, session):
     """
 
     :param str key_arn:
@@ -49,7 +48,7 @@ def get_key_config(key_arn, session):
         key_config.update(
             {
                 KMS_KEY_ARN.title: key_desc["KeyMetadata"]["Arn"],
-                KMS_KEY_ID.title: key_desc["KeyMetadata"]["KeyId"],
+                logical_name: key_desc["KeyMetadata"]["KeyId"],
             }
         )
         try:
@@ -70,10 +69,11 @@ def get_key_config(key_arn, session):
         raise
 
 
-def lookup_key_config(lookup, session):
+def lookup_key_config(logical_name, lookup, session):
     """
     Function to find the DB in AWS account
 
+    :param str logical_name:
     :param dict lookup: The Lookup definition for DB
     :param boto3.session.Session session: Boto3 session for clients
     :return:
@@ -95,6 +95,6 @@ def lookup_key_config(lookup, session):
     )
     if not key_arn:
         return None
-    config = get_key_config(key_arn, lookup_session)
+    config = get_key_config(logical_name, key_arn, lookup_session)
     LOG.debug(config)
     return config

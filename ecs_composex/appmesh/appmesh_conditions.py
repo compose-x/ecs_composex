@@ -32,7 +32,7 @@ from troposphere.appmesh import Mesh
 from ecs_composex.appmesh.appmesh_params import MESH_NAME, MESH_OWNER_ID
 
 USER_IS_SELF_CON_T = "AppMeshOwnerIsSelf"
-USER_IS_SELF_CON = Equals(Ref(MESH_OWNER_ID), Ref(AWS_ACCOUNT_ID))
+USER_IS_SELF_CON = Equals(Ref(MESH_OWNER_ID), MESH_OWNER_ID.Default)
 
 USE_DEFAULT_MESH_NAME_CON_T = "UseDefaultMeshNameCondition"
 USE_DEFAULT_MESH_NAME_CON = Equals(Ref(MESH_NAME), MESH_NAME.Default)

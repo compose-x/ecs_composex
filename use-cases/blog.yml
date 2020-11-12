@@ -22,7 +22,7 @@ services:
   app01:
     image: ${IMAGE:-nginx}
     ports:
-      - 5000
+      - 5001
     deploy:
       resources:
         reservations:

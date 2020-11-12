@@ -9,5 +9,6 @@ Feature: ecs_composex.elbv2
 
 
     Examples:
-      | file_path                   | override_file                   |
-      | use-cases/blog.features.yml | use-cases/elbv2/create_only.yml |
+      | file_path                   | override_file                     |
+      | use-cases/blog.features.yml | use-cases/elbv2/create_only.yml   |
+      | use-cases/blog.features.yml | use-cases/elbv2/create_no_acm.yml |

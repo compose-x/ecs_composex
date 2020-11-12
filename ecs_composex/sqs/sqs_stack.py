@@ -20,12 +20,21 @@ Module for the XStack SQS
 """
 
 import sys
+
+from troposphere import GetAtt, Ref
+
 from ecs_composex.common import validate_input, keyisset, LOG, EXIT_CODES
-from ecs_composex.sqs.sqs_params import RES_KEY, SQS_ARN, SQS_URL, SQS_KMS_KEY_T
-from ecs_composex.sqs.sqs_template import generate_sqs_root_template
-from ecs_composex.sqs.sqs_perms import get_access_types
-from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common.compose_resources import set_resources, XResource
+from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.sqs.sqs_params import (
+    RES_KEY,
+    SQS_ARN,
+    SQS_URL,
+    SQS_KMS_KEY_T,
+    SQS_NAME,
+)
+from ecs_composex.sqs.sqs_perms import get_access_types
+from ecs_composex.sqs.sqs_template import generate_sqs_root_template
 
 
 def create_sqs_template(settings):
@@ -55,6 +64,7 @@ class Queue(XResource):
     policies_scaffolds = get_access_types()
 
     def __init__(self, name, definition, settings):
+        super().__init__(name, definition, settings)
         self.arn_attr = SQS_ARN
         self.main_attr = SQS_URL
         self.kms_arn_attr = SQS_KMS_KEY_T
@@ -62,8 +72,19 @@ class Queue(XResource):
         self.arn_attr_value = self.arn_attr
         self.main_attr_value = self.main_attr
         self.kms_arn_attr_value = self.kms_arn_attr
-
-        super().__init__(name, definition, settings)
+        self.output_properties = {
+            SQS_URL.title: (self.logical_name, Ref, None),
+            SQS_ARN.title: (
+                f"{self.logical_name}{SQS_ARN.title}",
+                GetAtt,
+                SQS_ARN.title,
+            ),
+            SQS_NAME.title: (
+                f"{self.logical_name}{SQS_NAME.title}",
+                GetAtt,
+                SQS_NAME.title,
+            ),
+        }
 
 
 class XStack(ComposeXStack):

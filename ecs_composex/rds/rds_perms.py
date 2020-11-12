@@ -19,22 +19,16 @@
 Module to provide services with access to the RDS databases.
 """
 
-from troposphere import Ref, GetAtt, Sub, ImportValue
+from troposphere import Ref, GetAtt, Sub
 from troposphere.ec2 import SecurityGroupIngress
-from troposphere.ecs import ContainerDefinition
 from troposphere.ecs import Secret as EcsSecret
 from troposphere.iam import PolicyType
 
-from ecs_composex.common import keyisset, LOG
-from ecs_composex.common.outputs import get_import_value
+from ecs_composex.common import keyisset
 from ecs_composex.common.compose_services import extend_container_secrets
-from ecs_composex.ecs.ecs_iam import define_service_containers
 from ecs_composex.ecs.ecs_params import TASK_ROLE_T, EXEC_ROLE_T, SG_T
 from ecs_composex.rds.rds_params import (
-    DB_EXPORT_SECRET_ARN_T,
     DB_SECRET_POLICY_NAME,
-    DB_EXPORT_SG_ID_T,
-    DB_EXPORT_PORT_T,
 )
 
 
@@ -81,17 +75,7 @@ def add_rds_policy(service_template, secret_import, db_name, use_task_role=False
             policy.Roles.append(Ref(task_role))
 
 
-def define_db_secret_import(db_name):
-    """
-    Function to define the ImportValue for ECS Service string based on the output of the RDS stack
-
-    :param str db_name: Name of the DB as defined in the compose file.
-    :return: the import function to the DB.
-    """
-    return get_import_value(db_name, DB_EXPORT_SECRET_ARN_T)
-
-
-def add_security_group_ingress(service_stack, db_name, sg_id=None, port=None):
+def add_security_group_ingress(service_stack, db_name, sg_id, port):
     """
     Function to add a SecurityGroupIngress rule into the ECS Service template
 
@@ -101,10 +85,6 @@ def add_security_group_ingress(service_stack, db_name, sg_id=None, port=None):
     :param port: The port for Ingress to the DB.
     """
     service_template = service_stack.stack_template
-    if sg_id is None:
-        sg_id = get_import_value(db_name, DB_EXPORT_SG_ID_T)
-    if port is None:
-        port = get_import_value(db_name, DB_EXPORT_PORT_T)
     SecurityGroupIngress(
         f"AllowRdsFrom{db_name}to{service_stack.title}",
         template=service_template,
@@ -133,49 +113,13 @@ def db_secrets_names(db):
     return names
 
 
-def add_secret_to_containers(
-    service_template, db, secret_import, service_name, family_wide=False
-):
-    """
-    Function to add DB secret to container
-
-    :param troposphere.Template service_template: the ecs_service template
-    :param ecs_composex.common.compose_resources.Rds db: the RDS DB object
-    :param str,AWSHelper secret_import: secret arn
-    :param str service_name: Name of the service that was explicitely listed as consuming the DB
-    :param bool family_wide: Whether or not apply the secret to all services of the family.
-    """
-
-    containers = define_service_containers(service_template)
-    db_secrets = [
-        EcsSecret(Name=name, ValueFrom=secret_import) for name in db_secrets_names(db)
-    ]
-    for container in containers:
-        if (
-            isinstance(container, ContainerDefinition)
-            and not isinstance(container.Name, (Ref, Sub, GetAtt, ImportValue))
-            and container.Name.startswith("AWS")
-            and family_wide
-        ):
-            LOG.debug(f"Ignoring AWS Container {container.Name}")
-        elif family_wide:
-            for db_secret in db_secrets:
-                extend_container_secrets(container, db_secret)
-        elif not family_wide and container.Name == service_name:
-            for db_secret in db_secrets:
-                extend_container_secrets(container, db_secret)
-            break
-
-
 def add_secret_to_container(db, secret_import, container_definition):
     """
     Function to add DB secret to container
 
-    :param troposphere.Template service_template: the ecs_service template
     :param ecs_composex.common.compose_resources.Rds db: the RDS DB object
+    :param container_definition: The container definition to add the secret to.
     :param str,AWSHelper secret_import: secret arn
-    :param str service_name: Name of the service that was explicitely listed as consuming the DB
-    :param bool family_wide: Whether or not apply the secret to all services of the family.
     """
 
     db_secrets = [

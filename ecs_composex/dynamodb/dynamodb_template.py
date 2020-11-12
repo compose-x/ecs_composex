@@ -19,16 +19,14 @@
 Module for DynamoDB to create the root template
 """
 
-from troposphere import GetAtt, Ref
+from troposphere import MAX_OUTPUTS
 
 from ecs_composex.common import keyisset, build_template
-from ecs_composex.common.outputs import ComposeXOutput
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.dynamodb.dynamodb_params import RES_KEY
-from ecs_composex.dynamodb.dynamodb_params import TABLE_NAME_T, TABLE_ARN_T
 from ecs_composex.dynamodb.dynamodb_table import generate_table
 
-CFN_MAX_OUTPUTS = 50
+CFN_MAX_OUTPUTS = MAX_OUTPUTS - 10
 
 
 def create_dynamodb_template(settings):
@@ -50,20 +48,16 @@ def create_dynamodb_template(settings):
         table = tables[table_name]
         generate_table(table)
         if table.cfn_resource:
-            values = [
-                (TABLE_ARN_T, "Arn", GetAtt(table.cfn_resource, "Arn")),
-                (TABLE_NAME_T, "Name", Ref(table.cfn_resource)),
-            ]
-            outputs = ComposeXOutput(table.cfn_resource, values, True)
+            table.generate_outputs()
             if mono_template:
                 template.add_resource(table.cfn_resource)
-                template.add_output(outputs.outputs)
+                template.add_output(table.outputs)
             elif not mono_template:
                 table_template = build_template(
                     f"Template for DynamoDB table {table.title}"
                 )
                 table_template.add_resource(table)
-                table_template.add_output(outputs.outputs)
+                table_template.add_output(table.outputs)
                 table_stack = ComposeXStack(
                     table.logical_name, stack_template=table_template
                 )

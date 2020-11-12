@@ -19,7 +19,7 @@
 RDS DB template generator
 """
 
-from troposphere import Sub, Ref, If, GetAtt, Tags, AWS_NO_VALUE
+from troposphere import Sub, Ref, If, Tags, AWS_NO_VALUE
 from troposphere.ec2 import SecurityGroup
 from troposphere.rds import (
     DBSubnetGroup,
@@ -36,11 +36,18 @@ from troposphere.secretsmanager import (
 
 from ecs_composex.common import build_template, cfn_conditions
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
-from ecs_composex.common.outputs import ComposeXOutput
 from ecs_composex.rds import rds_conditions
 from ecs_composex.rds.rds_parameter_groups_helper import (
     get_family_from_engine_version,
     get_family_settings,
+)
+from ecs_composex.rds.rds_params import (
+    CLUSTER_SUBNET_GROUP,
+    DB_SECRET_T,
+    CLUSTER_T,
+    DATABASE_T,
+    PARAMETER_GROUP_T,
+    CLUSTER_PARAMETER_GROUP_T,
 )
 from ecs_composex.rds.rds_params import (
     DB_ENGINE_VERSION,
@@ -48,7 +55,6 @@ from ecs_composex.rds.rds_params import (
     DBS_SUBNET_GROUP,
     DB_SG_T,
     DB_NAME,
-    DB_NAME_T,
     DB_SNAPSHOT_ID,
     DB_INSTANCE_CLASS,
     DB_PASSWORD_LENGTH,
@@ -56,42 +62,22 @@ from ecs_composex.rds.rds_params import (
     DB_USERNAME,
     DB_STORAGE_CAPACITY,
     DB_STORAGE_TYPE,
-    DB_EXPORT_SECRET_ARN_T,
-    DB_EXPORT_PORT_T,
-    DB_EXPORT_SG_ID_T,
 )
 from ecs_composex.vpc.vpc_params import (
     VPC_ID,
     STORAGE_SUBNETS,
 )
 
-CLUSTER_SUBNET_GROUP = "ClusterSubnetGroup"
-DB_SECRET_T = "RdsDbSecret"
-CLUSTER_T = "AuroraCluster"
-DATABASE_T = "RdsDatabase"
-PARAMETER_GROUP_T = "RdsParametersGroup"
-CLUSTER_PARAMETER_GROUP_T = "RdsClusterParameterGroup"
 
-
-def add_db_outputs(db_template, db_name):
+def add_db_outputs(db_template, db):
     """
     Function to add outputs to the DB template
 
     :param db_template: DB Template
     :type db_template: troposphere.Template
-    :param str db_name: Name of the database
     """
-    db_template.add_output(
-        ComposeXOutput(
-            db_name,
-            [
-                (DB_EXPORT_SECRET_ARN_T, "SecretArn", Ref(DB_SECRET_T)),
-                (DB_EXPORT_PORT_T, "Port", GetAtt(CLUSTER_T, "Endpoint.Port")),
-                (DB_NAME_T, "DbName", Ref(DATABASE_T)),
-                (DB_EXPORT_SG_ID_T, "GroupId", GetAtt(DB_SG_T, "GroupId")),
-            ],
-        ).outputs
-    )
+    db.generate_outputs()
+    db_template.add_output(db.outputs)
 
 
 def create_db_subnet_group(template, conditional=False):
@@ -130,7 +116,7 @@ def add_db_sg(template, db_name):
     :param str db_name: Name of the database as defined in compose file
     :param troposphere.Template template: template to add the sg to
     """
-    SecurityGroup(
+    return SecurityGroup(
         DB_SG_T,
         template=template,
         GroupName=Sub(f"${{{ROOT_STACK_NAME_T}}}-{db_name}"),
@@ -144,7 +130,7 @@ def add_db_secret(template):
     Function to add a Secrets Manager secret that will be associated with the DB
     :param template.Template template: The template to add the secret to.
     """
-    Secret(
+    secret = Secret(
         DB_SECRET_T,
         template=template,
         GenerateSecretString=GenerateSecretString(
@@ -177,6 +163,7 @@ def add_db_secret(template):
         SecretId=Ref(DB_SECRET_T),
         TargetId=Ref(DATABASE_T),
     )
+    return secret
 
 
 def add_instance(template):
@@ -185,7 +172,7 @@ def add_instance(template):
 
     :param troposphere.Template template: The template to add the DB Instance to.
     """
-    DBInstance(
+    instance = DBInstance(
         DATABASE_T,
         template=template,
         Engine=Ref(DB_ENGINE_NAME),
@@ -230,6 +217,7 @@ def add_instance(template):
         ),
         Tags=Tags(SecretName=Ref(DB_SECRET_T)),
     )
+    return instance
 
 
 def add_cluster(template):
@@ -377,16 +365,20 @@ def init_database_template(db_name):
 def generate_database_template(db):
     """
     Function to generate the database template
-    :param ecs_composex.common.compose_resources.Rds db: The database object
+    :param ecs_composex.rds.rds_stack.Rds db: The database object
 
     :return: db_template
     :rtype: troposphere.Template
     """
     db_template = init_database_template(db.name)
-    add_cluster(db_template)
-    add_db_secret(db_template)
-    add_db_sg(db_template, db.logical_name)
-    add_instance(db_template)
+    cluster = add_cluster(db_template)
+    db.secret = add_db_secret(db_template)
+    db.sg_id = add_db_sg(db_template, db.logical_name)
+    instance = add_instance(db_template)
     add_parameter_group(db_template, db)
-    add_db_outputs(db_template, db.logical_name)
+    if db.properties[DB_ENGINE_NAME.title].startswith("aurora"):
+        db.cfn_resource = cluster
+    else:
+        db.cfn_resource = instance
+    add_db_outputs(db_template, db)
     return db_template

@@ -30,7 +30,6 @@ from troposphere.elasticloadbalancingv2 import (
 from ecs_composex.common import LOG
 from ecs_composex.common import keyisset, add_parameters
 from ecs_composex.common.outputs import ComposeXOutput
-from ecs_composex.ecs.ecs_params import SERVICE_T
 from ecs_composex.elbv2.elbv2_params import TGT_GROUP_ARN
 from ecs_composex.vpc.vpc_params import VPC_ID, SG_ID_TYPE
 
@@ -374,7 +373,7 @@ def handle_services_association(resource, res_root_stack, settings):
     Function to handle association of listeners and targets to the LB
 
     :param ecs_composex.elbv2.elbv2_stack.Elbv2 resource:
-    :param ecs_composex.common.stacks.ComposeXStack services_stack:
+    :param ecs_composex.common.settings.ComposeXSettings settings:
     :param ecs_composex.common.stacks.ComposeXStack res_root_stack:
     :return:
     """

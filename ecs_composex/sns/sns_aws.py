@@ -20,30 +20,33 @@ Module to find the SQS topics in lookup
 """
 
 import re
+
 from botocore.exceptions import ClientError
+
 from ecs_composex.common import LOG, keyisset
 from ecs_composex.common.aws import (
     find_aws_resource_arn_from_tags_api,
     define_lookup_role_from_info,
 )
+from ecs_composex.sns.sns_params import TOPIC_ARN, TOPIC_KMS_KEY
 
-from ecs_composex.sns.sns_params import TOPIC_NAME, TOPIC_ARN, TOPIC_KMS_KEY
 
-
-def get_topic_config(topic_arn, session):
+def get_topic_config(logical_name, topic_arn, session):
     """
+    Function to create the mapping definition for SNS topics
 
+    :param str logical_name: The logical name of the resource
     :param str topic_arn:
     :param boto3.session.Session session:
     :return:
     """
     topic_parts = re.compile(r"(?:^arn:aws(?:-[a-z]+)?:sns:[\S]+:[0-9]+:)([\S]+)$")
     topic_name = topic_parts.match(topic_arn).groups()[0]
-    topic_config = {TOPIC_NAME.title: topic_name, TOPIC_ARN.title: topic_arn}
+    topic_config = {logical_name: topic_name, TOPIC_ARN.title: topic_arn}
     client = session.client("sns")
     try:
         topic_r = client.get_topic_attributes(TopicArn=topic_arn)
-        topic_config.update({TOPIC_ARN.title: topic_r["Attributes"]["TopicArn"]})
+        topic_config.update({logical_name: topic_r["Attributes"]["TopicArn"]})
         if keyisset("Attributes", topic_r) and keyisset(
             "KmsMasterKeyId", topic_r["Attributes"]
         ):
@@ -64,10 +67,11 @@ def get_topic_config(topic_arn, session):
         raise
 
 
-def lookup_topic_config(lookup, session):
+def lookup_topic_config(logical_name, lookup, session):
     """
     Function to find the DB in AWS account
 
+    :param str logical_name: The logical name of the resource
     :param dict lookup: The Lookup definition for DB
     :param boto3.session.Session session: Boto3 session for clients
     :return:
@@ -84,6 +88,6 @@ def lookup_topic_config(lookup, session):
     )
     if not topic_arn:
         return None
-    config = get_topic_config(topic_arn, lookup_session)
+    config = get_topic_config(logical_name, topic_arn, lookup_session)
     LOG.debug(config)
     return config

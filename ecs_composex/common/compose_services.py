@@ -19,11 +19,9 @@ import re
 from json import dumps
 
 from troposphere import (
-    AWS_ACCOUNT_ID,
     AWS_NO_VALUE,
     AWS_REGION,
     AWS_STACK_NAME,
-    AWS_PARTITION,
 )
 from troposphere import Parameter, Tags
 from troposphere import Sub, Ref, GetAtt, ImportValue
@@ -49,7 +47,6 @@ from ecs_composex.common.compose_volumes import (
     handle_volume_dict_config,
     handle_volume_str_config,
 )
-from ecs_composex.iam import define_iam_policy, add_role_boundaries
 from ecs_composex.ecs import ecs_params
 from ecs_composex.ecs.docker_tools import find_closest_fargate_configuration
 from ecs_composex.ecs.ecs_iam import add_service_roles
@@ -57,6 +54,7 @@ from ecs_composex.ecs.ecs_params import LOG_GROUP, AWS_XRAY_IMAGE
 from ecs_composex.ecs.ecs_params import LOG_GROUP_RETENTION
 from ecs_composex.ecs.ecs_params import NETWORK_MODE, EXEC_ROLE_T, TASK_ROLE_T, TASK_T
 from ecs_composex.ecs.ecs_service_network_config import set_service_ports
+from ecs_composex.iam import define_iam_policy, add_role_boundaries
 
 NUMBERS_REG = r"[^0-9.]"
 MINIMUM_SUPPORTED = 4

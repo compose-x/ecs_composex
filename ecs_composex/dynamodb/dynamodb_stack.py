@@ -19,6 +19,7 @@
 Module to create the root stack for DynamoDB tables
 """
 
+from troposphere import Ref, GetAtt
 
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common.compose_resources import set_resources, XResource
@@ -43,6 +44,15 @@ class Table(XResource):
         self.name_import = None
         self.arn_export = None
         self.arn_import = None
+        self.arn_attr = TABLE_ARN
+        self.output_properties = {
+            TABLE_NAME.title: (self.logical_name, Ref, None),
+            TABLE_ARN.title: (
+                f"{self.logical_name}{TABLE_ARN.title}",
+                GetAtt,
+                TABLE_ARN.title,
+            ),
+        }
 
     def set_outputs(self):
         """

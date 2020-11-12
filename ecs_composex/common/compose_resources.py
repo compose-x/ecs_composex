@@ -20,10 +20,12 @@ Module to define the ComposeX Resources into a simple object to make it easier t
 """
 
 from copy import deepcopy
+
+from troposphere import Output, Parameter
+from troposphere import Ref, GetAtt
 from troposphere.ecs import Environment
 
 from ecs_composex.common import LOG, NONALPHANUM, keyisset, keypresent
-from ecs_composex.resource_settings import generate_export_strings
 
 
 def set_resources(settings, resource_class, res_key):
@@ -65,6 +67,8 @@ class XResource(object):
     :cvar str logical_name: Name of the resource to use in CFN template as for export/import
     """
 
+    policies_scaffolds = {}
+
     def __init__(self, name, definition, settings):
         """
         Init the class
@@ -102,8 +106,15 @@ class XResource(object):
             None if not keyisset("Use", self.definition) else self.definition["Use"]
         )
         self.cfn_resource = None
+        self.output_properties = {}
+        self.outputs = []
         self.families_targets = []
         self.families_scaling = []
+        self.arn_attr = None
+        self.arn_parameter = None
+        self.arn_value = None
+        self.ref_value = None
+        self.ref_parameter = Parameter(self.logical_name, Type="String")
         self.set_services_targets(settings)
         self.set_services_scaling(settings)
 
@@ -211,20 +222,17 @@ class XResource(object):
             elif service_name in [s.name for s in settings.services]:
                 self.handle_family_scaling_expansion(service, settings)
 
-    def generate_resource_envvars(self, attribute, arn=None):
+    def generate_resource_envvars(self, value):
         """
         :return: environment key/pairs
         :rtype: list<troposphere.ecs.Environment>
         """
-        export_string = (
-            generate_export_strings(self.logical_name, attribute) if not arn else arn
-        )
         if self.settings and keyisset("EnvNames", self.settings):
             for env_name in self.settings["EnvNames"]:
                 self.env_vars.append(
                     Environment(
                         Name=env_name,
-                        Value=export_string,
+                        Value=value,
                     )
                 )
             if self.name not in self.settings["EnvNames"] and self.name not in [
@@ -233,12 +241,12 @@ class XResource(object):
                 self.env_vars.append(
                     Environment(
                         Name=self.name,
-                        Value=export_string,
+                        Value=value,
                     )
                 )
                 if self.name != self.logical_name:
                     self.env_vars.append(
-                        Environment(Name=self.logical_name, Value=export_string)
+                        Environment(Name=self.logical_name, Value=value)
                     )
         elif (
             not self.settings
@@ -248,6 +256,93 @@ class XResource(object):
             self.env_vars.append(
                 Environment(
                     Name=self.name,
-                    Value=export_string,
+                    Value=value,
                 )
             )
+        self.env_vars = list({v.Name: v for v in self.env_vars}.values())
+
+    def generate_outputs(self):
+        """
+        Method to create the outputs for XResources
+        :return:
+        """
+        for output_prop_name in self.output_properties:
+            definition = self.output_properties[output_prop_name]
+            if definition[1] is Ref and definition[2] is None:
+                value = Ref(self.cfn_resource)
+            elif definition[1] is Ref and definition[2] is not None:
+                value = Ref(definition[2])
+            elif definition[1] is GetAtt and isinstance(definition[2], str):
+                value = GetAtt(self.cfn_resource, definition[2])
+            else:
+                raise ValueError(
+                    f"Something was not defined properly for output properties of {self.logical_name}"
+                )
+            self.outputs.append(Output(NONALPHANUM.sub("", definition[0]), Value=value))
+
+    def set_resource_arn(self, root_stack_name):
+        """
+        Method to set the arn value the resource arn to use from root stack to another
+        """
+        if not isinstance(self.arn_attr, Parameter) or not keyisset(
+            self.arn_attr.title, self.output_properties
+        ):
+            raise KeyError(
+                "There is no ARN defined for this resource", self.logical_name
+            )
+        self.arn_value = GetAtt(
+            root_stack_name, f"Outputs.{self.logical_name}{self.arn_attr.title}"
+        )
+
+    def set_resource_arn_parameter(self):
+        """
+        Method to set the ARN parameter to add to consuming stacks
+        """
+        if not isinstance(self.arn_attr, Parameter) or not keyisset(
+            self.arn_attr.title, self.output_properties
+        ):
+            raise KeyError(
+                "Parameter - There is no ARN defined for this resource",
+                self.logical_name,
+            )
+        self.arn_parameter = Parameter(
+            f"{self.logical_name}{self.arn_attr.title}", Type="String"
+        )
+
+    def set_ref_resource_value(self, root_stack_name):
+        """
+        Method to set the value for the default attribute (Ref)
+        """
+        self.ref_value = GetAtt(root_stack_name, f"Outputs.{self.logical_name}")
+
+    def get_resource_attribute_parameter(self, parameter):
+        title = parameter.title if isinstance(parameter, Parameter) else parameter
+        if not isinstance(parameter, (str, Parameter)) or not keyisset(
+            title, self.output_properties
+        ):
+            raise KeyError(
+                "There is no Output attribute defined for",
+                self.logical_name,
+                "with parameter named",
+                parameter.title if isinstance(parameter, Parameter) else parameter,
+            )
+        return Parameter(
+            f"{self.logical_name}{NONALPHANUM.sub('', title)}", Type="String"
+        )
+
+    def get_resource_attribute_value(self, parameter, stack_name):
+        title = parameter.title if isinstance(parameter, Parameter) else parameter
+        if not isinstance(parameter, (str, Parameter)) or not keyisset(
+            title, self.output_properties
+        ):
+            raise KeyError(
+                "There is no Output attribute value defined for",
+                self.logical_name,
+                "with parameter named",
+                title,
+                "Existing ones are",
+                self.output_properties.keys(),
+            )
+        return GetAtt(
+            stack_name, f"Outputs.{self.logical_name}{NONALPHANUM.sub('', title)}"
+        )

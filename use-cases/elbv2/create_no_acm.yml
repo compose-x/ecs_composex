@@ -1,0 +1,56 @@
+---
+# ELBv2 creation for services
+
+x-elbv2:
+  lbA:
+    Properties: {}
+    Settings:
+     S3Logs: bucket:/prefix
+     timeout_seconds: 60
+     desync_mitigation_mode: defensive
+     drop_invalid_header_fields: True
+     http2: False
+     cross_zone: True
+    Listeners:
+      - Port: 80
+        Protocol: HTTP
+        Targets:
+          - name: bignicefamily:rproxy
+            access: /
+          - name: youtoo:rproxy
+            access: /stupid
+          - name: bignicefamily:app01
+            access: thereisnospoon.ews-network.net:8080/abcd
+
+    Services:
+      - name: bignicefamily:rproxy
+        port: 80
+        healthcheck: 5000:HTTP:/healthcheck:200,201
+      - name: bignicefamily:app01
+        port: 5000
+        healthcheck: 5000:HTTP:/healthcheck:200,201
+      - name: youtoo:rproxy
+        port: 80
+        healthcheck: 5000:HTTP:5:2:15:3:/ping.This.Method:200,201
+
+  lbC:
+    Properties:
+      Scheme: internet-facing
+      Type: network
+    Settings: {}
+    Listeners:
+      - Port: 8080
+        Protocol: TCP
+        Targets:
+          - name: app03:app03
+            access: /
+      - Port: 8081
+        Protocol: TCP
+        Targets:
+          - name: app03:app03
+            access: /
+    Services:
+      - name: app03:app03
+        port: 5000
+        healthcheck: 5000:TCP:7:2:15:5
+        protocol: TCP

@@ -242,7 +242,7 @@ def define_bucket_name(properties, settings):
     return Ref(AWS_NO_VALUE)
 
 
-def define_bucket(bucket):
+def generate_bucket(bucket):
     """
     Function to generate the S3 bucket object
 
@@ -275,17 +275,5 @@ def define_bucket(bucket):
         if not keyisset("DeletionPolicy", bucket.settings)
         else bucket.settings["DeletionPolicy"],
     }
-    bucket = s3.Bucket(bucket.logical_name, **props)
-    return bucket
-
-
-def generate_bucket(bucket):
-    """
-    Function to identify whether create new bucket or lookup for existing bucket
-
-    :param ecs_composex.s3.s3_stack.Bucket bucket:
-    :param settings:
-    :return:
-    """
-    bucket = define_bucket(bucket)
+    bucket.cfn_resource = s3.Bucket(bucket.logical_name, **props)
     return bucket

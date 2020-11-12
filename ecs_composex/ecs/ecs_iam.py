@@ -17,8 +17,8 @@
 
 """ IAM Building block for ECS """
 
-from troposphere import Sub, Ref
-from troposphere.iam import Role, PolicyType, Policy
+from troposphere import Sub
+from troposphere.iam import Role, Policy
 
 from ecs_composex.ecs.ecs_params import (
     SERVICE_NAME_T,
@@ -27,7 +27,7 @@ from ecs_composex.ecs.ecs_params import (
     TASK_ROLE_T,
     TASK_T,
 )
-from ecs_composex.iam import service_role_trust_policy, add_role_boundaries
+from ecs_composex.iam import service_role_trust_policy
 
 
 def add_service_roles(template):

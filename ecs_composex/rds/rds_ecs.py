@@ -19,26 +19,28 @@
 Module to provide services with access to the RDS databases.
 """
 
-from troposphere import Select, FindInMap
+from troposphere import Select, FindInMap, Ref
 
-from ecs_composex.common import LOG, keyisset
+from ecs_composex.common import LOG, keyisset, add_parameters
 from ecs_composex.rds.rds_aws import validate_rds_lookup, lookup_rds_resource
+from ecs_composex.rds.rds_params import DB_SECRET_T, DB_SG_T, DB_ENDPOINT_PORT
 from ecs_composex.rds.rds_perms import (
     add_secret_to_container,
-    define_db_secret_import,
     add_rds_policy,
     add_security_group_ingress,
 )
 
 
-def handle_new_dbs_to_services(db, secret_import, target):
+def handle_new_dbs_to_services(db, secret_import, sg_import, target, port=None):
     valid_ones = [
         service for service in target[2] if service not in target[0].ignored_services
     ]
     for service in valid_ones:
         add_secret_to_container(db, secret_import, service.container_definition)
     add_rds_policy(target[0].template, secret_import, db.logical_name)
-    add_security_group_ingress(target[0].stack, db.logical_name)
+    add_security_group_ingress(
+        target[0].stack, db.logical_name, sg_id=sg_import, port=port
+    )
 
 
 def handle_import_dbs_to_services(
@@ -47,7 +49,7 @@ def handle_import_dbs_to_services(
     target,
 ):
     if keyisset(db.logical_name, rds_mapping) and keyisset(
-        "SecretArn", rds_mapping[db.logical_name]
+        DB_SECRET_T, rds_mapping[db.logical_name]
     ):
         valid_ones = [
             service
@@ -57,12 +59,12 @@ def handle_import_dbs_to_services(
         for service in valid_ones:
             add_secret_to_container(
                 db,
-                FindInMap("Rds", db.logical_name, "SecretArn"),
+                FindInMap("Rds", db.logical_name, DB_SECRET_T),
                 service.container_definition,
             )
         add_rds_policy(
             target[0].template,
-            FindInMap("Rds", db.logical_name, "SecretArn"),
+            FindInMap("Rds", db.logical_name, DB_SECRET_T),
             db.logical_name,
         )
     else:
@@ -92,10 +94,13 @@ def create_rds_db_config_mapping(db, db_config):
                 if k["Status"] == "active"
             ],
             "Port": db_config["Port"],
+            db.logical_name: db_config["DBClusterIdentifier"]
+            if db_config["Engine"].startswith("aurora")
+            else db_config["DBInstanceIdentifier"],
         }
     }
-    if keyisset("SecretArn", db_config):
-        mapping[db.logical_name]["SecretArn"] = db_config["SecretArn"]
+    if keyisset(DB_SECRET_T, db_config):
+        mapping[db.logical_name][DB_SECRET_T] = db_config[DB_SECRET_T]
     return mapping
 
 
@@ -106,15 +111,33 @@ def add_new_dbs(db, rds_root_stack):
     :param ecs_composex.rds.rds_stack.Rds db:
     :return:
     """
+    db.set_resource_arn(rds_root_stack.title)
+    db.set_ref_resource_value(rds_root_stack.title)
+    db.set_resource_arn_parameter()
     if db.logical_name not in rds_root_stack.stack_template.resources:
         raise KeyError(f"DB {db.logical_name} not defined in RDS Root template")
-    secret_import = define_db_secret_import(db.name)
+    secret_import = db.get_resource_attribute_value(DB_SECRET_T, rds_root_stack.title)
+    secret_parameter = db.get_resource_attribute_parameter(DB_SECRET_T)
+    sg_import = db.get_resource_attribute_value(DB_SG_T, rds_root_stack.title)
+    sg_param = db.get_resource_attribute_parameter(DB_SG_T)
+    port_import = db.get_resource_attribute_value(
+        DB_ENDPOINT_PORT, rds_root_stack.title
+    )
+    port_param = db.get_resource_attribute_parameter(DB_ENDPOINT_PORT)
     for target in db.families_targets:
-        handle_new_dbs_to_services(
-            db,
-            secret_import,
-            target,
+        add_parameters(target[0].template, [secret_parameter, sg_param, port_param])
+        target[0].stack.Parameters.update(
+            {
+                secret_parameter.title: secret_import,
+                sg_param.title: sg_import,
+                port_param.title: port_import,
+            }
         )
+        handle_new_dbs_to_services(
+            db, Ref(secret_parameter), Ref(sg_param), target, port=Ref(port_param)
+        )
+        if rds_root_stack.title not in target[0].stack.DependsOn:
+            target[0].stack.DependsOn.append(rds_root_stack.title)
 
 
 def import_dbs(db, db_mappings):
@@ -175,9 +198,6 @@ def rds_to_ecs(rds_dbs, services_stack, res_root_stack, settings):
         for db_name in rds_dbs
         if rds_dbs[db_name].lookup and rds_dbs[db_name].services
     ]
-    if new_resources and res_root_stack.title not in services_stack.DependsOn:
-        services_stack.DependsOn.append(res_root_stack.title)
-        LOG.info(f"Added dependency between services and {res_root_stack.title}")
     for new_res in new_resources:
         add_new_dbs(new_res, res_root_stack)
     create_lookup_mappings(db_mappings, lookup_resources, settings)

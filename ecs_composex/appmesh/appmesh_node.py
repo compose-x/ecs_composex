@@ -45,7 +45,7 @@ class MeshNode(object):
 
     weight = 1
 
-    def __init__(self, family, protocol, backends=None):
+    def __init__(self, family, protocol, mesh, backends=None):
         """
         Creates the AppMesh VirtualNode pointing to the family service
         """
@@ -62,7 +62,7 @@ class MeshNode(object):
         self.port_mappings = []
         self.set_port_mappings()
         self.set_listeners_port_mappings()
-        self.extend_service_stack()
+        self.extend_service_stack(mesh)
         self.add_envoy_container_definition(family)
         self.extend_task_policy()
 
@@ -85,12 +85,13 @@ class MeshNode(object):
         """
         Method to set the listeners port_mappings
         """
-        self.port_mappings = [
-            appmesh.PortMapping(Port=port["published"], Protocol=self.protocol)
-            for port in self.service_config.network.ports
-        ]
+        for port in self.service_config.network.ports:
+            self.port_mappings.append(
+                appmesh.PortMapping(Port=port["published"], Protocol=self.protocol)
+            )
+            break
 
-    def extend_service_stack(self):
+    def extend_service_stack(self, mesh):
         """
         Method to expand the service template with the AppMesh virtual node
         """
@@ -109,8 +110,8 @@ class MeshNode(object):
                     )
                 ),
                 Listeners=[
-                    appmesh.Listener(PortMapping=port_mapping)
-                    for port_mapping in self.port_mappings
+                    appmesh.Listener(PortMapping=mapping)
+                    for mapping in self.port_mappings
                 ],
             ),
             Metadata=metadata,
@@ -122,8 +123,10 @@ class MeshNode(object):
         )
         self.stack.Parameters.update(
             {
-                appmesh_params.MESH_NAME.title: Ref(appmesh_params.MESH_NAME),
-                appmesh_params.MESH_OWNER_ID.title: Ref(appmesh_params.MESH_OWNER_ID),
+                appmesh_params.MESH_NAME.title: appmesh_conditions.get_mesh_name(mesh),
+                appmesh_params.MESH_OWNER_ID.title: appmesh_conditions.get_mesh_owner(
+                    mesh
+                ),
             }
         )
         appmesh_conditions.add_appmesh_conditions(self.stack.stack_template)
