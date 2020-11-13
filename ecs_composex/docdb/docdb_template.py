@@ -158,17 +158,24 @@ def create_docdb_template(new_resources, settings):
     """
     root_template = init_doc_db_template()
     for resource in new_resources:
-        security_group = SecurityGroup(
+        resource.sg_id = SecurityGroup(
             f"{resource.logical_name}Sg",
             GroupDescription=Sub(f"SG for docdb-{resource.logical_name}"),
             GroupName=Sub(f"${{{AWS_STACK_NAME}}}.docdb.{resource.logical_name}"),
             VpcId=Ref(VPC_ID),
         )
-        root_template.add_resource(security_group)
-        secret = add_db_secret(root_template, resource.logical_name)
-        set_db_cluster(resource, secret, [GetAtt(security_group, "GroupId")])
-        attach_to_secret_to_resource(root_template, resource.cfn_resource, secret)
-        add_db_dependency(resource.cfn_resource, secret)
+        root_template.add_resource(resource.sg_id)
+        resource.db_secret = add_db_secret(root_template, resource.logical_name)
+        set_db_cluster(
+            resource, resource.db_secret, [GetAtt(resource.sg_id, "GroupId")]
+        )
+        attach_to_secret_to_resource(
+            root_template, resource.cfn_resource, resource.db_secret
+        )
+        add_db_dependency(resource.cfn_resource, resource.db_secret)
         add_db_instances(root_template, resource)
+        resource.init_outputs()
+        resource.generate_outputs()
         root_template.add_resource(resource.cfn_resource)
+        root_template.add_output(resource.outputs)
     return root_template

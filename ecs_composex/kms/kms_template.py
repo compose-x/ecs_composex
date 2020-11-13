@@ -44,7 +44,8 @@ def create_kms_template(settings):
 
     for key in new_keys:
         key.define_kms_key()
-        if key:
+        if key and key.cfn_resource:
+            key.init_outputs()
             key.generate_outputs()
             if mono_template:
                 template.add_resource(key.cfn_resource)

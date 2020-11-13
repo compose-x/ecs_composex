@@ -70,11 +70,12 @@ class KmsKey(XResource):
         self.arn_attr = KMS_KEY_ARN
         self.main_attr = KMS_KEY_ID
         self.kms_arn_attr = None
-
         self.arn_attr_value = self.arn_attr
         self.main_attr_value = self.main_attr
+
+    def init_outputs(self):
         self.output_properties = {
-            KMS_KEY_ID.title: (self.logical_name, Ref, None),
+            KMS_KEY_ID.title: (self.logical_name, self.cfn_resource, Ref, None),
             KMS_KEY_ARN.title: (
                 f"{self.logical_name}{KMS_KEY_ARN.title}",
                 GetAtt,

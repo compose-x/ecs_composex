@@ -48,6 +48,7 @@ def create_dynamodb_template(settings):
         table = tables[table_name]
         generate_table(table)
         if table.cfn_resource:
+            table.init_outputs()
             table.generate_outputs()
             if mono_template:
                 template.add_resource(table.cfn_resource)

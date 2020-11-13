@@ -44,6 +44,8 @@ class Table(XResource):
         self.name_import = None
         self.arn_export = None
         self.arn_import = None
+
+    def init_outputs(self):
         self.arn_attr = TABLE_ARN
         self.output_properties = {
             TABLE_NAME.title: (self.logical_name, Ref, None),

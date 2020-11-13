@@ -63,24 +63,19 @@ COMPUTE_STACK_NAME = "Ec2Compute"
 VPC_STACK_NAME = "vpc"
 MESH_TITLE = "RootMesh"
 
-SUPPORTED_X_MODULES = [
-    f"{X_KEY}rds",
+SUPPORTED_MODULE_NAMES = [
     "rds",
-    f"{X_KEY}sqs",
     "sqs",
-    f"{X_KEY}sns",
     "sns",
-    f"{X_KEY}acm",
     "acm",
-    f"{X_KEY}dynamodb",
     "dynamodb",
-    f"{X_KEY}kms",
     "kms",
-    f"{X_KEY}s3",
     "s3",
-    f"{X_KEY}elbv2",
     "elbv2",
+    "docdb",
 ]
+
+SUPPORTED_X_MODULES = [f"{X_KEY}{mod_name}" for mod_name in SUPPORTED_MODULE_NAMES]
 EXCLUDED_X_KEYS = [
     f"{X_KEY}configs",
     f"{X_KEY}tags",

@@ -19,10 +19,13 @@
 AWS DocumentDB entrypoint for ECS ComposeX
 """
 
+from troposphere import Ref, GetAtt
+from troposphere import Parameter
+
 from ecs_composex.common.compose_resources import XResource, set_resources
 from ecs_composex.common.stacks import ComposeXStack
 
-from ecs_composex.docdb.docdb_params import RES_KEY
+from ecs_composex.docdb.docdb_params import RES_KEY, DOCDB_NAME, DOCDB_PORT, DOCDB_SG
 from ecs_composex.docdb.docdb_template import create_docdb_template
 
 
@@ -39,7 +42,34 @@ class DocDb(XResource):
         :param dict definition:
         :param ecs_composex.common.settings.ComposeXSettings settings:
         """
+        self.db_secret = None
+        self.sg_id = None
         super().__init__(name, definition, settings)
+
+    def init_outputs(self):
+
+        self.arn_attr = Parameter(self.db_secret.title, Type="String")
+        self.output_properties = {
+            DOCDB_NAME.title: (self.logical_name, self.cfn_resource, Ref, None),
+            DOCDB_PORT.title: (
+                f"{self.logical_name}{DOCDB_PORT.title}",
+                self.cfn_resource,
+                GetAtt,
+                DOCDB_PORT.title,
+            ),
+            self.arn_attr.title: (
+                self.arn_attr.title,
+                self.db_secret,
+                Ref,
+                None,
+            ),
+            DOCDB_SG.title: (
+                f"{self.logical_name}{DOCDB_SG.title}",
+                self.sg_id,
+                GetAtt,
+                "GroupId",
+            ),
+        }
 
 
 class XStack(ComposeXStack):

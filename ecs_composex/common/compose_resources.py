@@ -273,15 +273,13 @@ class XResource(object):
         """
         for output_prop_name in self.output_properties:
             definition = self.output_properties[output_prop_name]
-            if definition[1] is Ref and definition[2] is None:
-                value = Ref(self.cfn_resource)
-            elif definition[1] is Ref and definition[2] is not None:
-                value = Ref(definition[2])
-            elif definition[1] is GetAtt and isinstance(definition[2], str):
-                value = GetAtt(self.cfn_resource, definition[2])
+            if definition[2] is Ref:
+                value = Ref(definition[1])
+            elif definition[2] is GetAtt:
+                value = GetAtt(definition[1], definition[3])
             else:
-                raise ValueError(
-                    f"Something was not defined properly for output properties of {self.logical_name}"
+                raise TypeError(
+                    "3rd argument must be one of", (Ref, GetAtt), "Got", definition[2]
                 )
             self.outputs.append(Output(NONALPHANUM.sub("", definition[0]), Value=value))
 

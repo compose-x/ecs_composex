@@ -104,24 +104,24 @@ def create_rds_db_config_mapping(db, db_config):
     return mapping
 
 
-def add_new_dbs(db, rds_root_stack):
+def add_new_dbs(db, res_root_stack):
     """
 
-    :param rds_root_stack:
+    :param res_root_stack:
     :param ecs_composex.rds.rds_stack.Rds db:
     :return:
     """
-    db.set_resource_arn(rds_root_stack.title)
-    db.set_ref_resource_value(rds_root_stack.title)
+    db.set_resource_arn(res_root_stack.title)
+    db.set_ref_resource_value(res_root_stack.title)
     db.set_resource_arn_parameter()
-    if db.logical_name not in rds_root_stack.stack_template.resources:
+    if db.logical_name not in res_root_stack.stack_template.resources:
         raise KeyError(f"DB {db.logical_name} not defined in RDS Root template")
-    secret_import = db.get_resource_attribute_value(DB_SECRET_T, rds_root_stack.title)
+    secret_import = db.get_resource_attribute_value(DB_SECRET_T, res_root_stack.title)
     secret_parameter = db.get_resource_attribute_parameter(DB_SECRET_T)
-    sg_import = db.get_resource_attribute_value(DB_SG_T, rds_root_stack.title)
+    sg_import = db.get_resource_attribute_value(DB_SG_T, res_root_stack.title)
     sg_param = db.get_resource_attribute_parameter(DB_SG_T)
     port_import = db.get_resource_attribute_value(
-        DB_ENDPOINT_PORT, rds_root_stack.title
+        DB_ENDPOINT_PORT, res_root_stack.title
     )
     port_param = db.get_resource_attribute_parameter(DB_ENDPOINT_PORT)
     for target in db.families_targets:
@@ -136,8 +136,8 @@ def add_new_dbs(db, rds_root_stack):
         handle_new_dbs_to_services(
             db, Ref(secret_parameter), Ref(sg_param), target, port=Ref(port_param)
         )
-        if rds_root_stack.title not in target[0].stack.DependsOn:
-            target[0].stack.DependsOn.append(rds_root_stack.title)
+        if res_root_stack.title not in target[0].stack.DependsOn:
+            target[0].stack.DependsOn.append(res_root_stack.title)
 
 
 def import_dbs(db, db_mappings):

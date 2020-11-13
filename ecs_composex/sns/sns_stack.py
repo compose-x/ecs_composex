@@ -53,14 +53,16 @@ class Topic(XResource):
         self.arn_attr = TOPIC_ARN
         self.main_attr = TOPIC_NAME
         self.kms_attr = TOPIC_KMS_KEY
-
         self.arn_attr_value = self.arn_attr
         self.main_attr_value = self.main_attr
         self.kms_attr_value = self.kms_attr
+
+    def init_outputs(self):
         self.output_properties = {
             TOPIC_ARN.title: (self.logical_name, Ref, None),
             TOPIC_NAME.title: (
                 f"{self.logical_name}{TOPIC_NAME.title}",
+                self.cfn_resource,
                 GetAtt,
                 TOPIC_NAME.title,
             ),
