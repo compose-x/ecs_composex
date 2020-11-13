@@ -63,7 +63,7 @@ COMPUTE_STACK_NAME = "Ec2Compute"
 VPC_STACK_NAME = "vpc"
 MESH_TITLE = "RootMesh"
 
-SUPPORTED_MODULE_NAMES = [
+SUPPORTED_X_MODULE_NAMES = [
     "rds",
     "sqs",
     "sns",
@@ -75,7 +75,7 @@ SUPPORTED_MODULE_NAMES = [
     "docdb",
 ]
 
-SUPPORTED_X_MODULES = [f"{X_KEY}{mod_name}" for mod_name in SUPPORTED_MODULE_NAMES]
+SUPPORTED_X_MODULES = [f"{X_KEY}{mod_name}" for mod_name in SUPPORTED_X_MODULE_NAMES]
 EXCLUDED_X_KEYS = [
     f"{X_KEY}configs",
     f"{X_KEY}tags",
@@ -86,6 +86,7 @@ EXCLUDED_X_KEYS = [
     f"{X_KEY}cluster",
     f"{X_KEY}efs",
 ]
+TCP_SERVICES = [f"{X_KEY}rds", f"{X_KEY}appmesh", f"{X_KEY}elbv2"]
 
 
 def get_mod_function(module_name, function_name):
@@ -144,11 +145,11 @@ def get_mod_class(module_name):
 
 def invoke_x_to_ecs(module, settings, services_stack, resource):
     """
+    Function to associate X resources to Services
 
     :param str module:
     :param ecs_composex.common.settings.ComposeXSettings settings: The compose file content
     :param ecs_composex.ecs.ServicesStack services_stack: root stack for services.
-    :param dict services_families: Families and services mappings
     :param resource: The XStack resource
     :return:
     """
@@ -177,7 +178,7 @@ def apply_x_configs_to_ecs(settings, root_stack):
         resource = root_stack.stack_template.resources[resource_name]
         if (
             issubclass(type(resource), ComposeXStack)
-            and resource_name in SUPPORTED_X_MODULES
+            and resource_name in SUPPORTED_X_MODULE_NAMES
             and not resource.is_void
         ):
             module = getattr(resource, "title")
@@ -254,7 +255,7 @@ def handle_new_xstack(
     :param troposphere.Template root_template:
     :param ecs_composex.common.stacks ComposeXStack xstack:
     """
-    tcp_services = ["x-rds", "x-appmesh", f"{X_KEY}elbv2"]
+
     LOG.debug(xstack, xstack.is_void)
     if xstack.is_void:
         invoke_x_to_ecs(res_type, settings, services_stack, xstack)
@@ -264,9 +265,9 @@ def handle_new_xstack(
         and not xstack.is_void
     ):
         root_template.add_resource(xstack)
-        if vpc_stack and key in tcp_services:
+        if vpc_stack and key in TCP_SERVICES:
             xstack.get_from_vpc_stack(vpc_stack)
-        elif not vpc_stack and key in tcp_services:
+        elif not vpc_stack and key in TCP_SERVICES:
             xstack.no_vpc_parameters()
 
 

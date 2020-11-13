@@ -31,8 +31,7 @@ def handle_new_resources(db, res_root_stack):
     Function to implement the link between services and new DocDB clusters
 
     :param ecs_composex.docdb.docdb_stack.DocDb db:
-    :param ecs_composex.common.stacks.ComposeXStack res_root_sack:
-    :return:
+    :param ecs_composex.common.stacks.ComposeXStack res_root_stack:
     """
     db.set_resource_arn(res_root_stack.title)
     db.set_ref_resource_value(res_root_stack.title)
@@ -68,15 +67,17 @@ def handle_new_resources(db, res_root_stack):
             target[0].stack.DependsOn.append(res_root_stack.title)
 
 
-def docdb_to_ecs(resources, services_stack, res_root_sack, settings):
+def docdb_to_ecs(resources, services_stack, res_root_stack, settings):
     """
     Entrypoint function to map new and lookup resources to ECS Services
 
     :param list resources:
     :param ecs_composex.common.stacks.ComposeXStack services_stack:
-    :param ecs_composex.common.stacks.ComposeXStack res_root_sack:
+    :param ecs_composex.common.stacks.ComposeXStack res_root_stack:
     :param ecs_composex.common.settings.ComposeXSettings settings:
     """
-    new_resources = [res for res in resources if not res.lookup]
+    new_resources = [
+        resources[res_name] for res_name in resources if not resources[res_name].lookup
+    ]
     for new_res in new_resources:
-        handle_new_resources(new_res, res_root_sack)
+        handle_new_resources(new_res, res_root_stack)
