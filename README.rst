@@ -112,8 +112,9 @@ AWS Services
     * Your mesh made easy, backed up by AWS CloudMap for services discovery.
 * `AWS SQS`_: queues for distributed workloads
     * With AutoScaling support based on number of messages
-* `AWS RDS`_: databases integration made easy
-* `AWS DynamoDB`_: Create and use dynamodb tables with your services
+* `AWS RDS`_
+* `AWS DynamoDB`_
+* `AWS DocumentDB`_
 * `AWS S3`_: Buckets creation and access simplified
     * On import via **Lookup**, automatically identifies KMS encryption key
 * `AWS IAM`_
@@ -265,6 +266,7 @@ This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypack
 .. _AWS S3: https://nightly.docs.ecs-composex.lambda-my-aws.io/syntax/composex/s3.html
 .. _AWS IAM: https://nightly.docs.ecs-composex.lambda-my-aws.io/syntax/composex/ecs.details/iam.html
 .. _AWS SNS: https://nightly.docs.ecs-composex.lambda-my-aws.io/syntax/composex/sns.html
+.. _AWS DocumentDB: https://nightly.docs.ecs-composex.lambda-my-aws.io/syntax/composex/docdb.html
 
 .. _AWS EC2: https://nightly.docs.ecs-composex.lambda-my-aws.io/features.html#ec2-resources-for-ecs-cluster
 .. _AWS AppMesh: https://nightly.docs.ecs-composex.lambda-my-aws.io/readme/appmesh.html

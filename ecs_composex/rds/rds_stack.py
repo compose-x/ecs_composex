@@ -31,7 +31,6 @@ from ecs_composex.rds.rds_params import (
     DB_NAME,
     DB_ENDPOINT_PORT,
     DB_SECRET_T,
-    DB_SG_T,
     DB_ENGINE_NAME,
 )
 from ecs_composex.rds.rds_template import generate_rds_templates
@@ -50,7 +49,7 @@ def create_rds_template(settings, new_dbs):
     :return: rds_tpl
     :rtype: troposphere.Template
     """
-    rds_tpl = generate_rds_templates(settings, new_dbs)
+    rds_tpl = generate_rds_templates(new_dbs)
     LOG.debug(f"Template for {RES_KEY} validated by CFN.")
     return rds_tpl
 
@@ -61,23 +60,33 @@ class Rds(XResource):
     """
 
     def __init__(self, name, definition, settings):
-        self.db_secret = DB_SECRET_T
-        self.sg_id = DB_SG_T
+        self.db_secret = None
+        self.db_sg = None
         super().__init__(name, definition, settings)
         self.arn_attr = Parameter(DB_SECRET_T, Type="String")
+
+    def init_outputs(self):
+        print(self.db_secret)
         self.output_properties = {
-            DB_NAME.title: (self.logical_name, Ref, None),
+            DB_NAME.title: (self.logical_name, self.cfn_resource, Ref, None),
             DB_ENDPOINT_PORT: (
                 f"{self.logical_name}{DB_ENDPOINT_PORT}",
+                self.cfn_resource,
                 GetAtt,
                 DB_ENDPOINT_PORT,
             ),
-            self.arn_attr.title: (
-                f"{self.logical_name}{self.arn_attr.title}",
-                Ref,
+            self.db_secret.title: (
+                self.db_secret.title,
                 self.db_secret,
+                Ref,
+                None,
             ),
-            DB_SG_T: (f"{self.logical_name}{DB_SG_T}", Ref, self.sg_id),
+            self.db_sg.title: (
+                self.db_sg.title,
+                self.db_sg,
+                GetAtt,
+                "GroupId",
+            ),
         }
 
     def uses_aurora(self):

@@ -57,7 +57,8 @@ def create_s3_template(settings):
     template = build_template(f"S3 root by ECS ComposeX for {settings.name}")
     for bucket in new_buckets:
         bucket = generate_bucket(bucket)
-        if bucket:
+        if bucket and bucket.cfn_resource:
+            bucket.init_outputs()
             bucket.generate_outputs()
             if mono_template:
                 template.add_resource(bucket.cfn_resource)
@@ -84,13 +85,16 @@ class Bucket(XResource):
         super().__init__(name, definition, settings)
         self.arn_attr = S3_BUCKET_ARN
         self.main_attr = S3_BUCKET_NAME
+
+    def init_outputs(self):
         self.output_properties = {
             S3_BUCKET_ARN.title: (
                 f"{self.logical_name}{S3_BUCKET_ARN.title}",
+                self.cfn_resource,
                 GetAtt,
                 S3_BUCKET_ARN.title,
             ),
-            S3_BUCKET_NAME.title: (self.logical_name, Ref, None),
+            S3_BUCKET_NAME.title: (self.logical_name, self.cfn_resource, Ref, None),
         }
 
 

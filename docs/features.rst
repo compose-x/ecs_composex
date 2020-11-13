@@ -9,6 +9,7 @@
     features/appmesh
     features/rds
     features/dyndb
+    features/docdb
     features/s3
     features/sqs
     features/kms

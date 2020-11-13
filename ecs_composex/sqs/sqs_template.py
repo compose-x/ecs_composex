@@ -146,6 +146,7 @@ def generate_sqs_root_template(settings):
     for queue in new_queues:
         define_queue(queue, queues, mono_template)
         if queue.cfn_resource:
+            queue.init_outputs()
             queue.generate_outputs()
             if mono_template:
                 template.add_resource(queue.cfn_resource)

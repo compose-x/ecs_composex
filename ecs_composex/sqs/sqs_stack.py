@@ -65,22 +65,26 @@ class Queue(XResource):
 
     def __init__(self, name, definition, settings):
         super().__init__(name, definition, settings)
-        self.arn_attr = SQS_ARN
         self.main_attr = SQS_URL
         self.kms_arn_attr = SQS_KMS_KEY_T
 
+        self.arn_attr = SQS_ARN
         self.arn_attr_value = self.arn_attr
         self.main_attr_value = self.main_attr
         self.kms_arn_attr_value = self.kms_arn_attr
+
+    def init_outputs(self):
         self.output_properties = {
-            SQS_URL.title: (self.logical_name, Ref, None),
+            SQS_URL.title: (self.logical_name, self.cfn_resource, Ref, None),
             SQS_ARN.title: (
                 f"{self.logical_name}{SQS_ARN.title}",
+                self.cfn_resource,
                 GetAtt,
                 SQS_ARN.title,
             ),
             SQS_NAME.title: (
                 f"{self.logical_name}{SQS_NAME.title}",
+                self.cfn_resource,
                 GetAtt,
                 SQS_NAME.title,
             ),

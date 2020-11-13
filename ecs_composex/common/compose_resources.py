@@ -84,6 +84,9 @@ class XResource(object):
             if not keyisset("Settings", self.definition)
             else self.definition["Settings"]
         )
+        self.use = (
+            None if not keyisset("Use", self.definition) else self.definition["Use"]
+        )
         self.lookup = (
             None
             if not keyisset("Lookup", self.definition)
@@ -102,8 +105,10 @@ class XResource(object):
             if not keyisset("Services", self.definition)
             else self.definition["Services"]
         )
-        self.use = (
-            None if not keyisset("Use", self.definition) else self.definition["Use"]
+        self.parameters = (
+            {}
+            if not keyisset("MacroParameters", self.definition)
+            else self.definition["MacroParameters"]
         )
         self.cfn_resource = None
         self.output_properties = {}
@@ -268,15 +273,16 @@ class XResource(object):
         """
         for output_prop_name in self.output_properties:
             definition = self.output_properties[output_prop_name]
-            if definition[1] is Ref and definition[2] is None:
-                value = Ref(self.cfn_resource)
-            elif definition[1] is Ref and definition[2] is not None:
-                value = Ref(definition[2])
-            elif definition[1] is GetAtt and isinstance(definition[2], str):
-                value = GetAtt(self.cfn_resource, definition[2])
+            if definition[2] is Ref:
+                value = Ref(definition[1])
+            elif definition[2] is GetAtt:
+                value = GetAtt(definition[1], definition[3])
             else:
-                raise ValueError(
-                    f"Something was not defined properly for output properties of {self.logical_name}"
+                raise TypeError(
+                    f"3rd argument for {definition[0]} must be one of",
+                    (Ref, GetAtt),
+                    "Got",
+                    definition[2],
                 )
             self.outputs.append(Output(NONALPHANUM.sub("", definition[0]), Value=value))
 
