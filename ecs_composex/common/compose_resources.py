@@ -107,8 +107,8 @@ class XResource(object):
         )
         self.parameters = (
             {}
-            if not keyisset("Parameters", self.definition)
-            else self.definition["Parameters"]
+            if not keyisset("MacroParameters", self.definition)
+            else self.definition["MacroParameters"]
         )
         self.cfn_resource = None
         self.output_properties = {}

@@ -32,7 +32,11 @@ from ecs_composex.common import (
     add_parameters,
 )
 from ecs_composex.vpc.vpc_params import VPC_ID, STORAGE_SUBNETS
-from ecs_composex.secrets import add_db_secret, attach_to_secret_to_resource
+from ecs_composex.secrets import (
+    add_db_secret,
+    attach_to_secret_to_resource,
+    add_db_dependency,
+)
 from ecs_composex.docdb.docdb_params import DOCDB_SUBNET_GROUP_T
 
 
@@ -89,8 +93,12 @@ def set_db_cluster(db, secret, sgs):
         else db.properties["StorageEncrypted"],
         "Tags": Tags(Name=Sub(f"docdb.{db.logical_name}")),
         "VpcSecurityGroupIds": sgs,
-        "MasterUsername": f"{{{{resolve:secretsmanager:${{{secret.title}}}:SecretString:username}}}}",
-        "MasterUserPassword": f"{{{{resolve:secretsmanager:${{{secret.title}}}:SecretString:password}}}}",
+        "MasterUsername": Sub(
+            f"{{{{resolve:secretsmanager:${{{secret.title}}}:SecretString:username}}}}"
+        ),
+        "MasterUserPassword": Sub(
+            f"{{{{resolve:secretsmanager:${{{secret.title}}}:SecretString:password}}}}"
+        ),
     }
     db.cfn_resource = docdb.DBCluster(db.logical_name, **props)
 
@@ -160,6 +168,7 @@ def create_docdb_template(new_resources, settings):
         secret = add_db_secret(root_template, resource.logical_name)
         set_db_cluster(resource, secret, [GetAtt(security_group, "GroupId")])
         attach_to_secret_to_resource(root_template, resource.cfn_resource, secret)
+        add_db_dependency(resource.cfn_resource, secret)
         add_db_instances(root_template, resource)
         root_template.add_resource(resource.cfn_resource)
     return root_template

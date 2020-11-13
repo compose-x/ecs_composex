@@ -1,0 +1,27 @@
+---
+# DOCDB Simple use-case. Creating new DBs
+
+
+x-docdb:
+  docdbA:
+    Properties: {}
+    Settings:
+      EnvNames:
+        - DOCDB_A
+    Services:
+      - name: app03
+        access: RW
+
+  docdbB:
+    Properties: {}
+    Settings:
+      EnvNames:
+        - DOCDB_A
+    Services:
+      - name: app03
+        access: RW
+    MacroParameters:
+      Instances:
+        - DBInstanceClass: db.r5.large
+        - DBInstanceClass: db.r5.xlarge
+          AutoMinorVersionUpgrade: True

@@ -73,6 +73,13 @@ def add_db_secret(template, resource_title):
     return secret
 
 
+def add_db_dependency(resource, secret):
+    if hasattr(resource, "DependsOn") and secret.title not in resource.DependsOn:
+        resource.DependsOn.append(secret.title)
+    elif not hasattr(resource, "DependsOn"):
+        setattr(resource, "DependsOn", [secret.title])
+
+
 def attach_to_secret_to_resource(template, resource, secret):
     """
     Function to associate a secret to a resource
