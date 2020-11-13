@@ -64,9 +64,9 @@ class Rds(XResource):
         self.db_secret = DB_SECRET_T
         self.sg_id = DB_SG_T
         super().__init__(name, definition, settings)
+        self.arn_attr = Parameter(DB_SECRET_T, Type="String")
 
     def init_outputs(self):
-        self.arn_attr = Parameter(DB_SECRET_T, Type="String")
         self.output_properties = {
             DB_NAME.title: (self.logical_name, self.cfn_resource, Ref, None),
             DB_ENDPOINT_PORT: (

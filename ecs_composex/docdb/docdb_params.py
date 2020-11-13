@@ -29,6 +29,8 @@ DOCDB_ENDPOINT_T = "Endpoint"
 DOCDB_READ_ENDPOINT_T = "ReadEndpoint"
 DOCDB_PORT_T = "Port"
 DOCDB_SG_T = "DocDbSg"
+DOCDB_SECRET_T = "DocDbSecret"
+DOCDB_SUBNET_GROUP_T = "DocDbSubnetGroup"
 
 DOCDB_NAME = Parameter(DOCDB_NAME_T, Type="String")
 DOCDB_ID_T = Parameter(DOCDB_ID_T, Type="String")
@@ -36,5 +38,4 @@ DOCDBC_ENDPOINT = Parameter(DOCDB_ENDPOINT_T, Type="String")
 DOCDBC_READ_ENDPOINT = Parameter(DOCDB_READ_ENDPOINT_T, Type="String")
 DOCDB_PORT = Parameter(DOCDB_PORT_T, Type="Number", MinValue=1, MaxValue=((2 ^ 16) - 1))
 DOCDB_SG = Parameter(DOCDB_SG_T, Type=SG_ID_TYPE)
-
-DOCDB_SUBNET_GROUP_T = "DocDbSubnetGroup"
+DOCDB_SECRET = Parameter(DOCDB_SECRET_T, Type="String")

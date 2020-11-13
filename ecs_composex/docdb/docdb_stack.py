@@ -25,7 +25,13 @@ from troposphere import Parameter
 from ecs_composex.common.compose_resources import XResource, set_resources
 from ecs_composex.common.stacks import ComposeXStack
 
-from ecs_composex.docdb.docdb_params import RES_KEY, DOCDB_NAME, DOCDB_PORT, DOCDB_SG
+from ecs_composex.docdb.docdb_params import (
+    RES_KEY,
+    DOCDB_NAME,
+    DOCDB_PORT,
+    DOCDB_SG,
+    DOCDB_SECRET,
+)
 from ecs_composex.docdb.docdb_template import create_docdb_template
 
 
@@ -42,12 +48,12 @@ class DocDb(XResource):
         :param dict definition:
         :param ecs_composex.common.settings.ComposeXSettings settings:
         """
+        self.arn_attr = DOCDB_SECRET
         self.db_secret = None
         self.sg_id = None
         super().__init__(name, definition, settings)
 
     def init_outputs(self):
-
         self.arn_attr = Parameter(self.db_secret.title, Type="String")
         self.output_properties = {
             DOCDB_NAME.title: (self.logical_name, self.cfn_resource, Ref, None),

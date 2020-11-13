@@ -59,7 +59,7 @@ class Topic(XResource):
 
     def init_outputs(self):
         self.output_properties = {
-            TOPIC_ARN.title: (self.logical_name, Ref, None),
+            TOPIC_ARN.title: (self.logical_name, self.cfn_resource, Ref, None),
             TOPIC_NAME.title: (
                 f"{self.logical_name}{TOPIC_NAME.title}",
                 self.cfn_resource,
