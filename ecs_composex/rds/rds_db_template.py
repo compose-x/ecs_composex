@@ -19,7 +19,7 @@
 RDS DB template generator
 """
 
-from troposphere import Sub, Ref, If, Tags, AWS_NO_VALUE
+from troposphere import Sub, Ref, GetAtt, If, Tags, AWS_NO_VALUE
 from troposphere.ec2 import SecurityGroup
 from troposphere.rds import (
     DBSubnetGroup,
@@ -67,6 +67,7 @@ from ecs_composex.vpc.vpc_params import (
     VPC_ID,
     STORAGE_SUBNETS,
 )
+from ecs_composex.secrets import add_db_secret, add_db_dependency
 
 
 def add_db_outputs(db_template, db):
@@ -117,7 +118,7 @@ def add_db_sg(template, db_name):
     :param troposphere.Template template: template to add the sg to
     """
     return SecurityGroup(
-        DB_SG_T,
+        f"{db_name}Sg",
         template=template,
         GroupName=Sub(f"${{{ROOT_STACK_NAME_T}}}-{db_name}"),
         GroupDescription=Sub(f"${{{ROOT_STACK_NAME_T}}} ${db_name}"),
@@ -125,52 +126,12 @@ def add_db_sg(template, db_name):
     )
 
 
-def add_db_secret(template):
-    """
-    Function to add a Secrets Manager secret that will be associated with the DB
-    :param template.Template template: The template to add the secret to.
-    """
-    secret = Secret(
-        DB_SECRET_T,
-        template=template,
-        GenerateSecretString=GenerateSecretString(
-            SecretStringTemplate=Sub(f'{{"username":"${{{DB_USERNAME_T}}}"}}'),
-            GenerateStringKey="password",
-            ExcludeCharacters="<>%`|;,.",
-            ExcludePunctuation=True,
-            ExcludeLowercase=False,
-            ExcludeUppercase=False,
-            IncludeSpace=False,
-            RequireEachIncludedType=True,
-            PasswordLength=Ref(DB_PASSWORD_LENGTH),
-        ),
-    )
-    SecretTargetAttachment(
-        "ClusterRdsSecretAttachment",
-        template=template,
-        Condition=rds_conditions.USE_CLUSTER_CON_T,
-        DependsOn=[DB_SECRET_T, CLUSTER_T],
-        TargetType=DBCluster.resource_type,
-        SecretId=Ref(DB_SECRET_T),
-        TargetId=Ref(CLUSTER_T),
-    )
-    SecretTargetAttachment(
-        "DatabaseRdsSecretAttachment",
-        template=template,
-        Condition=rds_conditions.NOT_USE_CLUSTER_CON_T,
-        DependsOn=[DB_SECRET_T, DATABASE_T],
-        TargetType=DBInstance.resource_type,
-        SecretId=Ref(DB_SECRET_T),
-        TargetId=Ref(DATABASE_T),
-    )
-    return secret
-
-
-def add_instance(template):
+def add_instance(template, db):
     """
     Function to add DB Instance(s)
 
     :param troposphere.Template template: The template to add the DB Instance to.
+    :param db:
     """
     instance = DBInstance(
         DATABASE_T,
@@ -199,7 +160,7 @@ def add_instance(template):
             rds_conditions.USE_CLUSTER_OR_SNAPSHOT_CON_T,
             Ref(AWS_NO_VALUE),
             Sub(
-                f"{{{{resolve:secretsmanager:${{{DB_SECRET_T}}}:SecretString:username}}}}"
+                f"{{{{resolve:secretsmanager:${{{db.db_secret.title}}}:SecretString:username}}}}"
             ),
         ),
         DBClusterIdentifier=If(
@@ -209,18 +170,20 @@ def add_instance(template):
             rds_conditions.USE_CLUSTER_CON_T,
             Ref(AWS_NO_VALUE),
             Sub(
-                f"{{{{resolve:secretsmanager:${{{DB_SECRET_T}}}:SecretString:password}}}}"
+                f"{{{{resolve:secretsmanager:${{{db.db_secret.title}}}:SecretString:password}}}}"
             ),
         ),
         VPCSecurityGroups=If(
-            rds_conditions.USE_CLUSTER_CON_T, Ref(AWS_NO_VALUE), [Ref(DB_SG_T)]
+            rds_conditions.USE_CLUSTER_CON_T,
+            Ref(AWS_NO_VALUE),
+            [GetAtt(db.db_sg, "GroupId")],
         ),
-        Tags=Tags(SecretName=Ref(DB_SECRET_T)),
+        Tags=Tags(SecretName=Ref(db.db_secret), Name=db.logical_name),
     )
     return instance
 
 
-def add_cluster(template):
+def add_cluster(template, db):
     """
     Function to add the cluster to the template
 
@@ -242,11 +205,11 @@ def add_cluster(template):
             rds_conditions.USE_CLUSTER_AND_SNAPSHOT_CON_T,
             Ref(AWS_NO_VALUE),
             Sub(
-                f"{{{{resolve:secretsmanager:${{{DB_SECRET_T}}}:SecretString:username}}}}"
+                f"{{{{resolve:secretsmanager:${{{db.db_secret.title}}}:SecretString:username}}}}"
             ),
         ),
         MasterUserPassword=Sub(
-            f"{{{{resolve:secretsmanager:${{{DB_SECRET_T}}}:SecretString:password}}}}"
+            f"{{{{resolve:secretsmanager:${{{db.db_secret.title}}}:SecretString:password}}}}"
         ),
         SnapshotIdentifier=If(
             rds_conditions.USE_CLUSTER_CON_T,
@@ -260,8 +223,8 @@ def add_cluster(template):
         Engine=Ref(DB_ENGINE_NAME),
         EngineVersion=Ref(DB_ENGINE_VERSION),
         DBClusterParameterGroupName=Ref(CLUSTER_PARAMETER_GROUP_T),
-        VpcSecurityGroupIds=[Ref(DB_SG_T)],
-        Tags=Tags(SecretName=Ref(DB_SECRET_T)),
+        VpcSecurityGroupIds=[Ref(db.db_sg)],
+        Tags=Tags(SecretName=Ref(db.db_secret), Name=db.logical_name),
     )
     return cluster
 
@@ -371,14 +334,16 @@ def generate_database_template(db):
     :rtype: troposphere.Template
     """
     db_template = init_database_template(db.name)
-    cluster = add_cluster(db_template)
-    db.secret = add_db_secret(db_template)
-    db.sg_id = add_db_sg(db_template, db.logical_name)
-    instance = add_instance(db_template)
+    db.db_secret = add_db_secret(db_template, db.logical_name)
+    db.db_sg = add_db_sg(db_template, db.logical_name)
+    instance = add_instance(db_template, db)
+    cluster = add_cluster(db_template, db)
     add_parameter_group(db_template, db)
     if db.properties[DB_ENGINE_NAME.title].startswith("aurora"):
         db.cfn_resource = cluster
     else:
         db.cfn_resource = instance
+    add_db_dependency(db.cfn_resource, db.db_secret)
+    db.init_outputs()
     add_db_outputs(db_template, db)
     return db_template

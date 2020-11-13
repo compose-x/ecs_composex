@@ -61,12 +61,13 @@ class Rds(XResource):
     """
 
     def __init__(self, name, definition, settings):
-        self.db_secret = DB_SECRET_T
-        self.sg_id = DB_SG_T
+        self.db_secret = None
+        self.db_sg = None
         super().__init__(name, definition, settings)
         self.arn_attr = Parameter(DB_SECRET_T, Type="String")
 
     def init_outputs(self):
+        print(self.db_secret)
         self.output_properties = {
             DB_NAME.title: (self.logical_name, self.cfn_resource, Ref, None),
             DB_ENDPOINT_PORT: (
@@ -75,13 +76,18 @@ class Rds(XResource):
                 GetAtt,
                 DB_ENDPOINT_PORT,
             ),
-            self.arn_attr.title: (
-                f"{self.logical_name}{self.arn_attr.title}",
+            self.db_secret.title: (
+                self.db_secret.title,
                 self.db_secret,
                 Ref,
                 None,
             ),
-            DB_SG_T: (f"{self.logical_name}{DB_SG_T}", self.sg_id, Ref, None),
+            self.db_sg.title: (
+                self.db_sg.title,
+                self.db_sg,
+                GetAtt,
+                "GroupId",
+            ),
         }
 
     def uses_aurora(self):

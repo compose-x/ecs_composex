@@ -48,13 +48,13 @@ class DocDb(XResource):
         :param dict definition:
         :param ecs_composex.common.settings.ComposeXSettings settings:
         """
-        self.arn_attr = DOCDB_SECRET
         self.db_secret = None
-        self.sg_id = None
+        self.db_sg = None
         super().__init__(name, definition, settings)
+        self.arn_attr = DOCDB_SECRET
 
     def init_outputs(self):
-        self.arn_attr = Parameter(self.db_secret.title, Type="String")
+        print(self.arn_attr, type(self.arn_attr))
         self.output_properties = {
             DOCDB_NAME.title: (self.logical_name, self.cfn_resource, Ref, None),
             DOCDB_PORT.title: (
@@ -63,15 +63,15 @@ class DocDb(XResource):
                 GetAtt,
                 DOCDB_PORT.title,
             ),
-            self.arn_attr.title: (
-                self.arn_attr.title,
+            self.db_secret.title: (
+                self.db_secret.title,
                 self.db_secret,
                 Ref,
                 None,
             ),
-            DOCDB_SG.title: (
-                f"{self.logical_name}{DOCDB_SG.title}",
-                self.sg_id,
+            self.db_sg.title: (
+                self.db_sg.title,
+                self.db_sg,
                 GetAtt,
                 "GroupId",
             ),

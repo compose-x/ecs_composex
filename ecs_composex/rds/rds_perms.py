@@ -48,6 +48,7 @@ def generate_rds_secrets_permissions(resources, db_name):
 def add_rds_policy(service_template, secret_import, db_name, use_task_role=False):
     """
     Function to add or append policy to access DB Secret for the Execution Role
+
     :param service_template:
     :param secret_import:
     :return:

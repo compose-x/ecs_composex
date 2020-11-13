@@ -72,7 +72,6 @@ def add_db_stack(root_template, dbs_subnet_group, db):
     db_template = generate_database_template(db)
     if db_template is None:
         return
-    db.init_outputs()
     db_stack = ComposeXStack(
         db.logical_name, stack_template=db_template, stack_parameters=parameters
     )

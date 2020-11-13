@@ -19,52 +19,8 @@
 Module to link DocDB cluster to ECS Services.
 """
 
-from troposphere import Ref, GetAtt
-
-from ecs_composex.common import add_parameters
-from ecs_composex.rds.rds_ecs import handle_new_dbs_to_services
-from ecs_composex.docdb.docdb_params import DOCDB_PORT, DOCDB_SG
-
-
-def handle_new_resources(db, res_root_stack):
-    """
-    Function to implement the link between services and new DocDB clusters
-
-    :param ecs_composex.docdb.docdb_stack.DocDb db:
-    :param ecs_composex.common.stacks.ComposeXStack res_root_stack:
-    """
-    db.set_resource_arn(res_root_stack.title)
-    db.set_ref_resource_value(res_root_stack.title)
-    db.set_resource_arn_parameter()
-    if db.logical_name not in res_root_stack.stack_template.resources:
-        raise KeyError(f"DB {db.logical_name} not defined in DocDB Root template")
-
-    secret_import = db.get_resource_attribute_value(
-        db.db_secret.title, res_root_stack.title
-    )
-    secret_parameter = db.get_resource_attribute_parameter(db.db_secret.title)
-
-    sg_import = db.get_resource_attribute_value(DOCDB_PORT.title, res_root_stack.title)
-    sg_param = db.get_resource_attribute_parameter(DOCDB_SG.title)
-
-    port_import = db.get_resource_attribute_value(
-        DOCDB_PORT.title, res_root_stack.title
-    )
-    port_param = db.get_resource_attribute_parameter(DOCDB_PORT.title)
-    for target in db.families_targets:
-        add_parameters(target[0].template, [secret_parameter, sg_param, port_param])
-        target[0].stack.Parameters.update(
-            {
-                secret_parameter.title: secret_import,
-                sg_param.title: sg_import,
-                port_param.title: port_import,
-            }
-        )
-        handle_new_dbs_to_services(
-            db, Ref(secret_parameter), Ref(sg_param), target, port=Ref(port_param)
-        )
-        if res_root_stack.title not in target[0].stack.DependsOn:
-            target[0].stack.DependsOn.append(res_root_stack.title)
+from ecs_composex.docdb.docdb_params import DOCDB_PORT
+from ecs_composex.tcp_resources_settings import handle_new_tcp_resource
 
 
 def docdb_to_ecs(resources, services_stack, res_root_stack, settings):
@@ -80,4 +36,4 @@ def docdb_to_ecs(resources, services_stack, res_root_stack, settings):
         resources[res_name] for res_name in resources if not resources[res_name].lookup
     ]
     for new_res in new_resources:
-        handle_new_resources(new_res, res_root_stack)
+        handle_new_tcp_resource(new_res, res_root_stack, DOCDB_PORT)
