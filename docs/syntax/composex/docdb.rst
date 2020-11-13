@@ -121,6 +121,10 @@ Examples
     :language: yaml
     :caption: Sample to crate two DBs with different instances configuration
 
+.. literalinclude:: ../../../use-cases/docdb/create_lookup.yml
+    :language: yaml
+    :caption: Create a DocDB and import an existing one.
+
 
 .. _DocDB Cluster properties: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-docdb-dbcluster.html
 .. _DocDB Instance: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-docdb-dbinstance.html
