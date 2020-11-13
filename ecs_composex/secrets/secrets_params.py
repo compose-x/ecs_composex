@@ -21,12 +21,12 @@ Module for Secrets parameters
 
 from troposphere import Parameter
 
-PASSWORD_LENGTH_T = "DatabasePasswordLength"
+PASSWORD_LENGTH_T = "PasswordLength"
 PASSWORD_LENGTH = Parameter(
     PASSWORD_LENGTH_T, Type="Number", MinValue=8, MaxValue=32, Default=16
 )
 
-USERNAME_T = "DatabaseUsername"
+USERNAME_T = "Username"
 USERNAME = Parameter(
     USERNAME_T, Type="String", MinLength=3, MaxLength=16, Default="dbadmin"
 )

@@ -84,6 +84,9 @@ class XResource(object):
             if not keyisset("Settings", self.definition)
             else self.definition["Settings"]
         )
+        self.use = (
+            None if not keyisset("Use", self.definition) else self.definition["Use"]
+        )
         self.lookup = (
             None
             if not keyisset("Lookup", self.definition)
@@ -102,8 +105,10 @@ class XResource(object):
             if not keyisset("Services", self.definition)
             else self.definition["Services"]
         )
-        self.use = (
-            None if not keyisset("Use", self.definition) else self.definition["Use"]
+        self.parameters = (
+            {}
+            if not keyisset("Parameters", self.definition)
+            else self.definition["Parameters"]
         )
         self.cfn_resource = None
         self.output_properties = {}

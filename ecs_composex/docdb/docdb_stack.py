@@ -23,6 +23,7 @@ from ecs_composex.common.compose_resources import XResource, set_resources
 from ecs_composex.common.stacks import ComposeXStack
 
 from ecs_composex.docdb.docdb_params import RES_KEY
+from ecs_composex.docdb.docdb_template import create_docdb_template
 
 
 class DocDb(XResource):
@@ -49,7 +50,12 @@ class XStack(ComposeXStack):
     def __init__(self, title, settings, **kwargs):
         set_resources(settings, DocDb, RES_KEY)
         new_resources = [
-            res for res in settings.compose_content[RES_KEY] if not res.lookup
+            settings.compose_content[RES_KEY][res_name]
+            for res_name in settings.compose_content[RES_KEY]
+            if not settings.compose_content[RES_KEY][res_name].lookup
         ]
-        stack_template = create_docdb_template(new_resources, settings)
-        super().__init__(title, stack_template, **kwargs)
+        if new_resources:
+            stack_template = create_docdb_template(new_resources, settings)
+            super().__init__(title, stack_template, **kwargs)
+        else:
+            self.is_void = True

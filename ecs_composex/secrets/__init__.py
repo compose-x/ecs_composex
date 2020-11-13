@@ -19,14 +19,15 @@
 Package to handle recurring Secrets tasks
 """
 
+from troposphere import Parameter
 from troposphere import Ref, Sub
+from troposphere.docdb import DBCluster as DocdbCluster, DBInstance as DocdbInstance
+from troposphere.rds import DBCluster as RdsCluster, DBInstance as RdsInstance
 from troposphere.secretsmanager import (
     Secret,
     SecretTargetAttachment,
     GenerateSecretString,
 )
-from troposphere.rds import DBCluster as RdsCluster, DBInstance as RdsInstance
-from troposphere.docdb import DBCluster as DocdbCluster, DBInstance as DocdbInstance
 
 from ecs_composex.common import add_parameters
 from ecs_composex.secrets.secrets_params import USERNAME, PASSWORD_LENGTH
@@ -35,14 +36,30 @@ from ecs_composex.secrets.secrets_params import USERNAME, PASSWORD_LENGTH
 def add_db_secret(template, resource_title):
     """
     Function to add a Secrets Manager secret that will be associated with the DB
+
     :param template.Template template: The template to add the secret to.
+    :param str resource_title: The Logical name of the resource associated to that secret
     """
-    add_parameters(template, [USERNAME, PASSWORD_LENGTH])
+    username = Parameter(
+        f"{resource_title}Username",
+        Type="String",
+        MinLength=3,
+        MaxLength=16,
+        Default="dbadmin",
+    )
+    password_length = Parameter(
+        f"{resource_title}PasswordLength",
+        Type="Number",
+        MinValue=8,
+        MaxValue=32,
+        Default=16,
+    )
+    add_parameters(template, [username, password_length])
     secret = Secret(
         f"{resource_title}Secret",
         template=template,
         GenerateSecretString=GenerateSecretString(
-            SecretStringTemplate=Sub(f'{{"username":"${{{USERNAME.title}}}"}}'),
+            SecretStringTemplate=Sub(f'{{"username":"${{{username.title}}}"}}'),
             GenerateStringKey="password",
             ExcludeCharacters="<>%`|;,.",
             ExcludePunctuation=True,
@@ -50,7 +67,7 @@ def add_db_secret(template, resource_title):
             ExcludeUppercase=False,
             IncludeSpace=False,
             RequireEachIncludedType=True,
-            PasswordLength=Ref(PASSWORD_LENGTH),
+            PasswordLength=Ref(password_length),
         ),
     )
     return secret

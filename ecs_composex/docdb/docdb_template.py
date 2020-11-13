@@ -55,17 +55,20 @@ def init_doc_db_template():
     return template
 
 
-def no_value_if_not_set(props, key):
-    return Ref(AWS_NO_VALUE) if not keyisset(key, props) else props[key]
+def no_value_if_not_set(props, key, is_bool=False):
+    if not is_bool:
+        return Ref(AWS_NO_VALUE) if not keyisset(key, props) else props[key]
+    else:
+        return Ref(AWS_NO_VALUE) if not keypresent(key, props) else props[key]
 
 
-def set_db_cluster(db, secret, sg):
+def set_db_cluster(db, secret, sgs):
     """
     Function to parse and transform yaml definition to Troposphere
 
     :param ecs_composex.docdb.docdb_stack.DocDb db:
     :param troposphere.secretsmanager.Secret secret:
-    :param troposphere.ec2.SecurityGroup sg:
+    :param list<roposphere.ec2.SecurityGroup> sgs:
     """
 
     props = {
@@ -85,11 +88,55 @@ def set_db_cluster(db, secret, sg):
         if not keypresent("StorageEncrypted", db.properties)
         else db.properties["StorageEncrypted"],
         "Tags": Tags(Name=Sub(f"docdb.{db.logical_name}")),
-        "VpcSecurityGroupIds": [sg],
+        "VpcSecurityGroupIds": sgs,
         "MasterUsername": f"{{{{resolve:secretsmanager:${{{secret.title}}}:SecretString:username}}}}",
         "MasterUserPassword": f"{{{{resolve:secretsmanager:${{{secret.title}}}:SecretString:password}}}}",
     }
     db.cfn_resource = docdb.DBCluster(db.logical_name, **props)
+
+
+def add_db_instances(template, db):
+    """
+    Function to add DB Instances either based on properties or default.
+    Default is to add one DB Instance, the smallest size there is.
+
+    :param troposphere.Template template:
+    :param ecs_composex.docdb.docdb_stack.DocDb db:
+    :return:
+    """
+    if not db.parameters or not keyisset("Instances", db.parameters):
+        template.add_resource(
+            docdb.DBInstance(
+                f"{db.logical_name}DefaultInstance",
+                DBClusterIdentifier=Ref(db.cfn_resource),
+                DBInstanceClass="db.r5.large",
+                DBInstanceIdentifier=Ref(AWS_NO_VALUE),
+                Tags=Tags(DocDbCluster=Ref(db.cfn_resource)),
+            )
+        )
+    else:
+        for count, instance in enumerate(db.parameters["Instances"]):
+            if not isinstance(instance, dict):
+                raise TypeError("Instances definition should be all objects/dict")
+            if not keyisset("DBInstanceClass", instance):
+                raise KeyError(
+                    "You must specify at least the DBInstanceClass", instance.keys()
+                )
+            template.add_resource(
+                docdb.DBInstance(
+                    f"{db.logical_name}Instance{count}",
+                    DBClusterIdentifier=Ref(db.cfn_resource),
+                    DBInstanceClass=instance["DBInstanceClass"],
+                    DBInstanceIdentifier=Ref(AWS_NO_VALUE),
+                    PreferredMaintenanceWindow=no_value_if_not_set(
+                        instance, "PreferredMaintenanceWindow"
+                    ),
+                    AutoMinorVersionUpgrade=no_value_if_not_set(
+                        instance, "AutoMinorVersionUpgrade", True
+                    ),
+                    Tags=Tags(DocDbCluster=Ref(db.cfn_resource)),
+                )
+            )
 
 
 def create_docdb_template(new_resources, settings):
@@ -107,9 +154,12 @@ def create_docdb_template(new_resources, settings):
             f"{resource.logical_name}Sg",
             GroupDescription=Sub(f"SG for docdb-{resource.logical_name}"),
             GroupName=Sub(f"${{{AWS_STACK_NAME}}}.docdb.{resource.logical_name}"),
+            VpcId=Ref(VPC_ID),
         )
+        root_template.add_resource(security_group)
         secret = add_db_secret(root_template, resource.logical_name)
-        set_db_cluster(resource, secret, security_group)
+        set_db_cluster(resource, secret, [GetAtt(security_group, "GroupId")])
         attach_to_secret_to_resource(root_template, resource.cfn_resource, secret)
+        add_db_instances(root_template, resource)
         root_template.add_resource(resource.cfn_resource)
     return root_template
