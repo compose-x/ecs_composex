@@ -99,7 +99,7 @@ def create_rds_db_config_mapping(db, db_config):
     return mapping
 
 
-def import_dbs(db, db_mappings, mapping_name=None):
+def import_dbs(db, db_mappings, mapping_name):
     """
     Function to go over each service defined in the DB and assign found DB settings to service
 
@@ -108,8 +108,6 @@ def import_dbs(db, db_mappings, mapping_name=None):
     :param str mapping_name:
     :return:
     """
-    if mapping_name is None:
-        mapping_name = "Rds"
     for target in db.families_targets:
         target[0].template.add_mapping(mapping_name, db_mappings)
         handle_import_dbs_to_services(db, db_mappings, target, mapping_name)
