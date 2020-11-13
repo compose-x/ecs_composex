@@ -18,6 +18,7 @@
     syntax/composex/elbv2
     syntax/composex/rds
     syntax/composex/dynamodb
+    syntax/composex/docdb
     syntax/composex/s3
     syntax/composex/sqs
     syntax/composex/sns
