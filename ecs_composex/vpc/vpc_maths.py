@@ -122,15 +122,3 @@ def get_subnet_layers(cidr, azs):
         cidrs[layer] = sub_list
 
     return cidrs
-
-
-if __name__ == "__main__":
-    import json
-    from argparse import ArgumentParser
-
-    PARSER = ArgumentParser(description="Splits a CIDR to generate VPC subnets")
-    PARSER.add_argument("--cidr", help="CIDR", required=True)
-    PARSER.add_argument("--azs", help="AZs", required=True)
-    ARGS = PARSER.parse_args()
-    CIDRS = get_subnet_layers(ARGS.cidr, int(ARGS.azs))
-    print(json.dumps(CIDRS, indent=2))
