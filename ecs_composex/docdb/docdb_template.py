@@ -85,7 +85,7 @@ def set_db_cluster(db, secret, sgs):
         "PreferredBackupWindow": no_value_if_not_set(
             "PreferredBackupWindow", db.properties
         ),
-        "SnapshotIdentifier": no_value_if_not_set("SnapshotIdentifier", db.properties),
+        "SnapshotIdentifier": Ref(AWS_NO_VALUE),
         "StorageEncrypted": True
         if not keypresent("StorageEncrypted", db.properties)
         else db.properties["StorageEncrypted"],
@@ -96,6 +96,9 @@ def set_db_cluster(db, secret, sgs):
         ),
         "MasterUserPassword": Sub(
             f"{{{{resolve:secretsmanager:${{{secret.title}}}:SecretString:password}}}}"
+        ),
+        "EnableCloudwatchLogsExports": no_value_if_not_set(
+            db.properties, "EnableCloudwatchLogsExports"
         ),
     }
     db.cfn_resource = docdb.DBCluster(db.logical_name, **props)
@@ -115,7 +118,7 @@ def add_db_instances(template, db):
             docdb.DBInstance(
                 f"{db.logical_name}DefaultInstance",
                 DBClusterIdentifier=Ref(db.cfn_resource),
-                DBInstanceClass="db.r5.large",
+                DBInstanceClass="db.t3.medium",
                 DBInstanceIdentifier=Ref(AWS_NO_VALUE),
                 Tags=Tags(DocDbCluster=Ref(db.cfn_resource)),
             )
