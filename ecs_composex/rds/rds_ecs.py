@@ -32,11 +32,15 @@ from ecs_composex.tcp_resources_settings import (
 )
 
 
-def handle_import_dbs_to_services(
-    db,
-    rds_mapping,
-    target,
-):
+def handle_import_dbs_to_services(db, rds_mapping, target, mapping_name):
+    """
+    Function to map the Looked up DBs (DocDB and RDS) to the services.
+
+    :param db: The DB resource
+    :param dict rds_mapping:
+    :param tuple target:
+    :param str mapping_name:
+    """
     if keyisset(db.logical_name, rds_mapping) and keyisset(
         DB_SECRET_T, rds_mapping[db.logical_name]
     ):
@@ -48,12 +52,12 @@ def handle_import_dbs_to_services(
         for service in valid_ones:
             add_secret_to_container(
                 db,
-                FindInMap("Rds", db.logical_name, DB_SECRET_T),
+                FindInMap(mapping_name, db.logical_name, DB_SECRET_T),
                 service.container_definition,
             )
         add_secrets_access_policy(
             target[0].template,
-            FindInMap("Rds", db.logical_name, DB_SECRET_T),
+            FindInMap(mapping_name, db.logical_name, DB_SECRET_T),
             db.logical_name,
         )
     else:
@@ -63,8 +67,10 @@ def handle_import_dbs_to_services(
     add_security_group_ingress(
         target[0].stack,
         db.logical_name,
-        sg_id=Select(0, FindInMap("Rds", db.logical_name, "VpcSecurityGroupIds")),
-        port=FindInMap("Rds", db.logical_name, "Port"),
+        sg_id=Select(
+            0, FindInMap(mapping_name, db.logical_name, "VpcSecurityGroupIds")
+        ),
+        port=FindInMap(mapping_name, db.logical_name, "Port"),
     )
 
 
@@ -93,21 +99,20 @@ def create_rds_db_config_mapping(db, db_config):
     return mapping
 
 
-def import_dbs(db, db_mappings):
+def import_dbs(db, db_mappings, mapping_name=None):
     """
     Function to go over each service defined in the DB and assign found DB settings to service
 
     :param ecs_composex.rds.rds_stack.Rds db:
     :param dict db_mappings:
+    :param str mapping_name:
     :return:
     """
+    if mapping_name is None:
+        mapping_name = "Rds"
     for target in db.families_targets:
-        target[0].template.add_mapping("Rds", db_mappings)
-        handle_import_dbs_to_services(
-            db,
-            db_mappings,
-            target,
-        )
+        target[0].template.add_mapping(mapping_name, db_mappings)
+        handle_import_dbs_to_services(db, db_mappings, target, mapping_name)
 
 
 def create_lookup_mappings(mappings, lookup_dbs, settings):
@@ -156,4 +161,4 @@ def rds_to_ecs(rds_dbs, services_stack, res_root_stack, settings):
     create_lookup_mappings(db_mappings, lookup_resources, settings)
     for lookup_res in lookup_resources:
         if keyisset(lookup_res.logical_name, db_mappings):
-            import_dbs(lookup_res, db_mappings)
+            import_dbs(lookup_res, db_mappings, mapping_name="Rds")

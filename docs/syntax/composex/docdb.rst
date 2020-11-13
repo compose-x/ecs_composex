@@ -105,9 +105,13 @@ List of DocDB instances. The aspiration is to follow the same syntax as the `Doc
 Lookup
 ========
 
+Lookup for Document DB is available!
+
 .. warning::
 
-    Lookup is not supported just yet :/
+    For some reason the group resource tag API returns two different clusters even though they are the same one.
+    Make sure to specify the *Name* along with Tags until we figure an alternative solution.
+    Sorry for the inconvenience.
 
 
 Examples
