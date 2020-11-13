@@ -279,7 +279,10 @@ class XResource(object):
                 value = GetAtt(definition[1], definition[3])
             else:
                 raise TypeError(
-                    "3rd argument must be one of", (Ref, GetAtt), "Got", definition[2]
+                    f"3rd argument for {definition[0]} must be one of",
+                    (Ref, GetAtt),
+                    "Got",
+                    definition[2],
                 )
             self.outputs.append(Output(NONALPHANUM.sub("", definition[0]), Value=value))
 

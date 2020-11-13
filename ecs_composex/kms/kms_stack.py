@@ -78,6 +78,7 @@ class KmsKey(XResource):
             KMS_KEY_ID.title: (self.logical_name, self.cfn_resource, Ref, None),
             KMS_KEY_ARN.title: (
                 f"{self.logical_name}{KMS_KEY_ARN.title}",
+                self.cfn_resource,
                 GetAtt,
                 KMS_KEY_ARN.title,
             ),
