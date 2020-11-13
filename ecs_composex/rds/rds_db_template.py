@@ -28,11 +28,6 @@ from troposphere.rds import (
     DBInstance,
     DBParameterGroup,
 )
-from troposphere.secretsmanager import (
-    Secret,
-    SecretTargetAttachment,
-    GenerateSecretString,
-)
 
 from ecs_composex.common import build_template, cfn_conditions
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
@@ -43,7 +38,6 @@ from ecs_composex.rds.rds_parameter_groups_helper import (
 )
 from ecs_composex.rds.rds_params import (
     CLUSTER_SUBNET_GROUP,
-    DB_SECRET_T,
     CLUSTER_T,
     DATABASE_T,
     PARAMETER_GROUP_T,
@@ -53,21 +47,19 @@ from ecs_composex.rds.rds_params import (
     DB_ENGINE_VERSION,
     DB_ENGINE_NAME,
     DBS_SUBNET_GROUP,
-    DB_SG_T,
     DB_NAME,
     DB_SNAPSHOT_ID,
     DB_INSTANCE_CLASS,
     DB_PASSWORD_LENGTH,
-    DB_USERNAME_T,
     DB_USERNAME,
     DB_STORAGE_CAPACITY,
     DB_STORAGE_TYPE,
 )
+from ecs_composex.secrets import add_db_secret, add_db_dependency
 from ecs_composex.vpc.vpc_params import (
     VPC_ID,
     STORAGE_SUBNETS,
 )
-from ecs_composex.secrets import add_db_secret, add_db_dependency
 
 
 def add_db_outputs(db_template, db):

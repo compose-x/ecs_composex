@@ -19,25 +19,23 @@
 DocDB
 """
 
-from troposphere import docdb
+from troposphere import AWS_NO_VALUE, AWS_STACK_NAME
 from troposphere import Sub, Ref, GetAtt, Tags
-from troposphere import AWS_NO_VALUE, AWS_STACK_NAME, AWS_REGION
+from troposphere import docdb
 from troposphere.ec2 import SecurityGroup
 
 from ecs_composex.common import (
-    LOG,
     keyisset,
     keypresent,
     build_template,
-    add_parameters,
 )
-from ecs_composex.vpc.vpc_params import VPC_ID, STORAGE_SUBNETS
+from ecs_composex.docdb.docdb_params import DOCDB_SUBNET_GROUP_T
 from ecs_composex.secrets import (
     add_db_secret,
     attach_to_secret_to_resource,
     add_db_dependency,
 )
-from ecs_composex.docdb.docdb_params import DOCDB_SUBNET_GROUP_T
+from ecs_composex.vpc.vpc_params import VPC_ID, STORAGE_SUBNETS
 
 
 def init_doc_db_template():

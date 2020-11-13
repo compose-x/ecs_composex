@@ -19,11 +19,11 @@
 Module to provide services with access to the RDS databases.
 """
 
-from troposphere import Select, FindInMap, Ref
+from troposphere import Select, FindInMap
 
-from ecs_composex.common import LOG, keyisset, add_parameters
+from ecs_composex.common import LOG, keyisset
 from ecs_composex.rds.rds_aws import validate_rds_lookup, lookup_rds_resource
-from ecs_composex.rds.rds_params import DB_SECRET_T, DB_SG_T, DB_ENDPOINT_PORT
+from ecs_composex.rds.rds_params import DB_SECRET_T, DB_ENDPOINT_PORT
 from ecs_composex.tcp_resources_settings import (
     handle_new_tcp_resource,
     add_secret_to_container,

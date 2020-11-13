@@ -20,16 +20,13 @@ AWS DocumentDB entrypoint for ECS ComposeX
 """
 
 from troposphere import Ref, GetAtt
-from troposphere import Parameter
 
 from ecs_composex.common.compose_resources import XResource, set_resources
 from ecs_composex.common.stacks import ComposeXStack
-
 from ecs_composex.docdb.docdb_params import (
     RES_KEY,
     DOCDB_NAME,
     DOCDB_PORT,
-    DOCDB_SG,
     DOCDB_SECRET,
 )
 from ecs_composex.docdb.docdb_template import create_docdb_template

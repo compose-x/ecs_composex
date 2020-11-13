@@ -22,7 +22,7 @@ Main module template to generate the RDS Root template and all stacks according 
 from troposphere import Output
 from troposphere import Ref, Join, GetAtt
 
-from ecs_composex.common import build_template, validate_kwargs, LOG
+from ecs_composex.common import build_template, validate_kwargs
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T, ROOT_STACK_NAME
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.rds.rds_db_template import (

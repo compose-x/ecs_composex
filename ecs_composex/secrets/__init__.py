@@ -28,9 +28,7 @@ from troposphere.secretsmanager import (
     SecretTargetAttachment,
     GenerateSecretString,
 )
-
 from ecs_composex.common import add_parameters
-from ecs_composex.secrets.secrets_params import USERNAME, PASSWORD_LENGTH
 
 
 def add_db_secret(template, resource_title):
