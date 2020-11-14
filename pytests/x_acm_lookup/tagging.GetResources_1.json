@@ -1,0 +1,28 @@
+{
+    "status_code": 200,
+    "data": {
+        "PaginationToken": "",
+        "ResourceTagMappingList": [
+            {
+                "ResourceARN": "arn:aws:acm:eu-west-1:000000000000:certificate/20e4d2f9-e638-473f-bbdf-5409620f9634",
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "docs.ecs-composex.lambda-my-aws.io"
+                    }
+                ]
+            }
+        ],
+        "ResponseMetadata": {
+            "RequestId": "eeab6807-7a9f-45cd-83e4-f285f65a9ce7",
+            "HTTPStatusCode": 200,
+            "HTTPHeaders": {
+                "x-amzn-requestid": "eeab6807-7a9f-45cd-83e4-f285f65a9ce7",
+                "content-type": "application/x-amz-json-1.1",
+                "content-length": "220",
+                "date": "Sat, 14 Nov 2020 15:43:18 GMT"
+            },
+            "RetryAttempts": 0
+        }
+    }
+}
