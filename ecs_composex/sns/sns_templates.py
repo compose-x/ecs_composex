@@ -132,6 +132,8 @@ def add_topics_to_template(template, topics, content):
     """
     for topic_name in topics:
         topic = define_topic(topics[topic_name], content)
+        topic.init_outputs()
+        topic.generate_outputs()
         template.add_resource(topics[topic_name].cfn_resource)
         template.add_output(topic.outputs)
 

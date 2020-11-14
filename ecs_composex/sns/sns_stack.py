@@ -66,6 +66,7 @@ class Topic(XResource):
                 GetAtt,
                 TOPIC_NAME.title,
             ),
+            self.arn_attr.title: (self.logical_name, self.cfn_resource, Ref, None),
         }
 
 
