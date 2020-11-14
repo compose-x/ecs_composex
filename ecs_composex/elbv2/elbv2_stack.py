@@ -24,7 +24,7 @@ from copy import deepcopy
 from json import dumps
 
 from troposphere import AWS_STACK_NAME, AWS_NO_VALUE
-from troposphere import Ref, Sub, GetAtt, Select, Parameter, Tags
+from troposphere import Ref, Sub, GetAtt, Select, Parameter, Tags, FindInMap
 from troposphere.ec2 import SecurityGroup, EIP
 from troposphere.elasticloadbalancingv2 import (
     LoadBalancer,
@@ -44,7 +44,7 @@ from troposphere.elasticloadbalancingv2 import (
     TargetGroupTuple,
 )
 
-from ecs_composex.acm.acm_params import RES_KEY as ACM_KEY
+from ecs_composex.acm.acm_params import RES_KEY as ACM_KEY, MOD_KEY as ACM_MOD_KEY
 from ecs_composex.common import NONALPHANUM, LOG
 from ecs_composex.common import keyisset, keypresent, build_template, add_parameters
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME
@@ -371,7 +371,16 @@ def import_new_acm_certs(listener, src_name, settings, listener_stack):
                 break
     cert_param = Parameter(f"{the_cert.logical_name}Arn", Type="String")
     add_parameters(listener_stack.stack_template, [cert_param])
-    listener_stack.Parameters.update({cert_param.title: Ref(the_cert.cfn_resource)})
+    if the_cert.cfn_resource and not the_cert.lookup:
+        listener_stack.Parameters.update({cert_param.title: Ref(the_cert.cfn_resource)})
+    elif the_cert.lookup and not the_cert.cfn_resource:
+        listener_stack.Parameters.update(
+            {
+                cert_param.title: FindInMap(
+                    ACM_MOD_KEY, the_cert.logical_name, the_cert.logical_name
+                )
+            }
+        )
     add_extra_certificate(listener, Ref(cert_param))
     rectify_listener_protocol(listener)
 
