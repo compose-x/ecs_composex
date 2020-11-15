@@ -20,6 +20,7 @@ Main module for ACM
 """
 
 from copy import deepcopy
+from warnings import warn
 
 from troposphere import Ref, AWS_NO_VALUE, Tags
 from troposphere.certificatemanager import (
@@ -27,9 +28,9 @@ from troposphere.certificatemanager import (
     DomainValidationOption,
 )
 
-from ecs_composex.acm.acm_params import (
-    RES_KEY,
-)
+from ecs_composex.common import no_value_if_not_set
+from ecs_composex.acm.acm_params import RES_KEY, MOD_KEY
+from ecs_composex.acm.acm_aws import lookup_cert_config
 from ecs_composex.common import (
     NONALPHANUM,
     keyisset,
@@ -47,16 +48,6 @@ class Certificate(object):
         self.name = name
         self.logical_name = NONALPHANUM.sub("", name)
         self.definition = deepcopy(definition)
-        self.properties = (
-            {}
-            if not keyisset("Properties", self.definition)
-            else self.definition["Properties"]
-        )
-        self.settings = (
-            {}
-            if not keyisset("Settings", self.definition)
-            else self.definition["Settings"]
-        )
         self.lookup = (
             None
             if not keyisset("Lookup", self.definition)
@@ -65,58 +56,123 @@ class Certificate(object):
         self.use = (
             None if not keyisset("Use", self.definition) else self.definition["Use"]
         )
+        if not self.lookup and not self.use:
+            self.properties = (
+                {}
+                if not keyisset("Properties", self.definition)
+                else self.definition["Properties"]
+            )
+        else:
+            self.properties = {}
+        self.settings = (
+            {}
+            if not keyisset("Settings", self.definition)
+            else self.definition["Settings"]
+        )
+        self.parameters = (
+            {}
+            if not keyisset("MacroParameters", self.definition)
+            else self.definition["MacroParameters"]
+        )
+
         self.cfn_resource = None
 
-    def validate_properties(self):
+    def import_properties(self):
         """
-        Method to validate certificate properties
-        :return:
+        Method to define the properties from the Properties section
         """
+        validations = []
+        if keyisset("DomainValidationOptions", self.properties):
+            validations = [
+                DomainValidationOption(
+                    DomainName=opt["DomainName"], HostedZoneId=opt["HostedZoneId"]
+                )
+                for opt in self.properties["DomainValidationOptions"]
+            ]
+        props = {
+            "DomainName": no_value_if_not_set(self.properties, "DomainName"),
+            "SubjectAlternativeNames": no_value_if_not_set(
+                self.properties, "SubjectAlternativeNames"
+            ),
+            "ValidationMethod": self.properties["ValidationMethod"],
+            "DomainValidationOptions": Ref(AWS_NO_VALUE)
+            if not validations
+            else validations,
+            "Tags": Tags(
+                Name=self.properties["DomainName"],
+            ),
+        }
+        return props
 
-    def create_acm_cert(self, dns_settings, root_stack):
-        """
-        Method to set the ACM Certificate definition
-        :param dns_settings:
-        :return:
-        """
+    def define_parameters_props(self):
+        if not keyisset("DomainNames", self.parameters):
+            raise KeyError(
+                "For MacroParameters, you need to define at least DomainNames"
+            )
         validations = [
             DomainValidationOption(
-                DomainName=self.properties["DomainName"],
-                HostedZoneId=Ref(PUBLIC_DNS_ZONE_ID),
+                DomainName=domain_name,
+                HostedZoneId=Ref(PUBLIC_DNS_ZONE_ID)
+                if not keyisset("HostedZoneId", self.parameters)
+                else self.parameters["HostedZoneId"],
             )
+            for domain_name in self.parameters["DomainNames"]
         ]
-        if keyisset("SubjectAlternativeNames", self.properties):
-            for alt_domain in self.properties["SubjectAlternativeNames"]:
-                validations.append(
-                    DomainValidationOption(
-                        DomainName=alt_domain, HostedZoneId=Ref(PUBLIC_DNS_ZONE_ID)
-                    )
-                )
-        self.cfn_resource = AcmCert(
-            self.logical_name,
-            DomainName=self.properties["DomainName"],
-            SubjectAlternativeNames=self.properties["SubjectAlternativeNames"]
-            if keyisset("SubjectAlternativeNames", self.properties)
-            else Ref(AWS_NO_VALUE),
-            ValidationMethod="DNS",
-            DomainValidationOptions=validations,
-            Tags=Tags(
-                Name=self.properties["DomainName"], ZoneId=Ref(PUBLIC_DNS_ZONE_ID)
+        props = {
+            "DomainValidationOptions": validations,
+            "DomainName": self.parameters["DomainNames"][0],
+            "ValidationMethod": "DNS",
+            "Tags": Tags(
+                Name=self.parameters["DomainNames"][0], ZoneId=Ref(PUBLIC_DNS_ZONE_ID)
             ),
-        )
-        root_stack.stack_template.add_resource(self.cfn_resource)
+            "SubjectAlternativeNames": self.parameters["DomainNames"][1:],
+        }
+        return props
+
+    def create_acm_cert(self):
+        """
+        Method to set the ACM Certificate definition
+        """
+        if self.properties:
+            props = self.import_properties()
+
+        elif self.parameters:
+            props = self.define_parameters_props()
+        else:
+            raise ValueError(
+                "Failed to determine how to create the ACM certificate",
+                self.logical_name,
+            )
+
+        self.cfn_resource = AcmCert(self.logical_name, **props)
 
 
 def define_acm_certs(new_resources, dns_settings, root_stack):
     """
     Function to create the certificates
 
-    :param new_resources:
+    :param list<Certificate> new_resources:
     :param dns_settings:
-    :return:
+    :param ecs_composex.common.stacks.ComposeXStack root_stack:
     """
     for resource in new_resources:
-        resource.create_acm_cert(dns_settings, root_stack)
+        resource.create_acm_cert()
+        root_stack.stack_template.add_resource(resource.cfn_resource)
+
+
+def create_acm_mappings(resources, settings):
+    """
+    Function
+
+    :param list resources:
+    :return:
+    """
+    mappings = {}
+    for res in resources:
+        cert_config = lookup_cert_config(res.logical_name, res.lookup, settings.session)
+        if cert_config:
+            mappings.update(cert_config)
+    return mappings
 
 
 def init_acm_certs(settings, dns_settings, root_stack):
@@ -126,10 +182,20 @@ def init_acm_certs(settings, dns_settings, root_stack):
         for cert_name in settings.compose_content[RES_KEY]
         if not settings.compose_content[RES_KEY][cert_name].lookup
     ]
-    if new_resources and not dns_settings.create_public_zone:
+    lookup_resources = [
+        settings.compose_content[RES_KEY][cert_name]
+        for cert_name in settings.compose_content[RES_KEY]
+        if settings.compose_content[RES_KEY][cert_name].lookup
+    ]
+    if new_resources:
         define_acm_certs(new_resources, dns_settings, root_stack)
-    elif new_resources and dns_settings.create_public_zone:
-        raise ValueError(
-            "By design, you cannot create new ACM Certificates if you do not already have a public DNS Zone."
+    if new_resources and dns_settings.create_public_zone:
+        warn(
             "Validation via DNS can only work if the zone is functional and you cannot associate a pending cert."
+            "CFN Will fail if the ACM cert validation is not complete."
         )
+    if lookup_resources:
+        mappings = create_acm_mappings(lookup_resources, settings)
+        if mappings:
+            root_stack.stack_template.add_mapping(MOD_KEY, mappings)
+            print(mappings)

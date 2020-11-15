@@ -20,13 +20,14 @@ Syntax
     x-acm:
       certificate-01:
         Properties: {} # AWS CFN Properties
+        MacroParameters: {} # ComposeX Macro parameters for ACM
 
 
 .. warning::
 
     You cannot be creating your public DNS Zone and validating it at the same time, simply because the NS servers
     of you new Public Zone are not registered in your DNS registra. Therefore, DNS validation would never work.
-    To that effect, you **must** (at this time) be using an existing DNS Zone in Route53.
+    Make sure that if you are creating a new DNS PublicZone, you will be able to use it!
 
 
 Properties
@@ -45,6 +46,38 @@ Services
 No need to indicate services to assign the ACM certificate to. Refer to :ref:`elbv2_syntax_reference` for mapping
 to ALB/NLB.
 
+
+MacroParameters
+================
+
+In the aspiration of making things easy, you can now simply define very straight forward settings to define your certificate.
+This automatically creates the full ACM Certificate definition, and uses DNS validation.
+
+.. code-block:: yaml
+
+    DomainNames:
+      - domain.tld
+      - sub.domain.tld
+    HostedZoneId: ZoneID
+
+
+DomainNames
+-----------
+
+List of the domain names you want to create the ACM Certificate for.
+
+.. hint::
+
+    The first domain name will be used for the CN, and the following ones will be used for SubjectAlternative names
+
+HostedZoneId
+------------
+
+If you wish to override the x-dns/PublicZone settings you can set that here.
+
+.. note::
+
+    That HostedZone ID will be used for *all* of the Domain Validation.
 
 Example
 =======

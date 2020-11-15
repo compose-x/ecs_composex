@@ -35,6 +35,8 @@ try:
     from yaml import CLoader as Loader
 except ImportError:
     from yaml import Loader
+
+from troposphere import Ref, AWS_NO_VALUE
 from ecs_composex.common import cfn_params
 from ecs_composex.common import cfn_conditions
 
@@ -79,6 +81,21 @@ def keypresent(x, y):
     if isinstance(y, dict) and x in y.keys():
         return True
     return False
+
+
+def no_value_if_not_set(props, key, is_bool=False):
+    """
+    Function to simplify setting value if the key is in the dict and else Ref(AWS_NO_VALUE) for resource properties
+
+    :param dict props:
+    :param str key:
+    :param bool is_bool:
+    :return:
+    """
+    if not is_bool:
+        return Ref(AWS_NO_VALUE) if not keyisset(key, props) else props[key]
+    else:
+        return Ref(AWS_NO_VALUE) if not keypresent(key, props) else props[key]
 
 
 def init_template(description=None):

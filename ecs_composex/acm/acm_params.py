@@ -21,9 +21,13 @@ Parameters specific to AWS ACM
 
 """
 
+from os import path
 from troposphere import Parameter
 
-RES_KEY = "x-acm"
+from ecs_composex.common.ecs_composex import X_KEY
+
+MOD_KEY = f"{path.basename(path.dirname(path.abspath(__file__)))}"
+RES_KEY = f"{X_KEY}{MOD_KEY}"
 
 VALIDATION_DOMAIN_NAME_T = "ValidationDomainName"
 VALIDATION_DOMAIN_NAME = Parameter(

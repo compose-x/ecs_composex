@@ -1,0 +1,95 @@
+{
+    "status_code": 200,
+    "data": {
+        "Certificate": {
+            "CertificateArn": "arn:aws:acm:eu-west-1:000000000000:certificate/20e4d2f9-e638-473f-bbdf-5409620f9634",
+            "DomainName": "ecs-composex.docs.lambda-my-aws.io",
+            "SubjectAlternativeNames": [
+                "ecs-composex.docs.lambda-my-aws.io"
+            ],
+            "DomainValidationOptions": [
+                {
+                    "DomainName": "ecs-composex.docs.lambda-my-aws.io",
+                    "ValidationDomain": "ecs-composex.docs.lambda-my-aws.io",
+                    "ValidationStatus": "FAILED",
+                    "ResourceRecord": {
+                        "Name": "_78f2f58cf4735f1f5fc8e0d5629dd0f5.ecs-composex.docs.lambda-my-aws.io.",
+                        "Type": "CNAME",
+                        "Value": "_f283361f33796a908e0825851ca637a7.dhzmpjdqfx.acm-validations.aws."
+                    },
+                    "ValidationMethod": "DNS"
+                }
+            ],
+            "Serial": "0f:b3:47:a7:70:f5:5d:61:f2:bc:bd:4c:54:b9:ad:ba",
+            "Subject": "CN=ecs-composex.docs.lambda-my-aws.io",
+            "Issuer": "Amazon",
+            "CreatedAt": {
+                "__class__": "datetime",
+                "year": 2020,
+                "month": 3,
+                "day": 2,
+                "hour": 16,
+                "minute": 58,
+                "second": 21,
+                "microsecond": 0
+            },
+            "IssuedAt": {
+                "__class__": "datetime",
+                "year": 2020,
+                "month": 3,
+                "day": 2,
+                "hour": 16,
+                "minute": 59,
+                "second": 5,
+                "microsecond": 0
+            },
+            "Status": "ISSUED",
+            "NotBefore": {
+                "__class__": "datetime",
+                "year": 2020,
+                "month": 3,
+                "day": 2,
+                "hour": 0,
+                "minute": 0,
+                "second": 0,
+                "microsecond": 0
+            },
+            "NotAfter": {
+                "__class__": "datetime",
+                "year": 2021,
+                "month": 4,
+                "day": 2,
+                "hour": 13,
+                "minute": 0,
+                "second": 0,
+                "microsecond": 0
+            },
+            "KeyAlgorithm": "RSA-2048",
+            "SignatureAlgorithm": "SHA256WITHRSA",
+            "InUseBy": [],
+            "Type": "AMAZONEREDACTED123_ISSUED",
+            "KeyUsages": [
+                {
+                    "Name": "DIGITAL_SIGNATURE"
+                },
+                {
+                    "Name": "KEY_ENCIPHERMENT"
+                }
+            ],
+            "Options": {
+                "CertificateTransparencyLoggingPreference": "ENABLED"
+            }
+        },
+        "ResponseMetadata": {
+            "RequestId": "39046812-e9f5-46af-a151-ad0673ef8347",
+            "HTTPStatusCode": 200,
+            "HTTPHeaders": {
+                "x-amzn-requestid": "39046812-e9f5-46af-a151-ad0673ef8347",
+                "content-type": "application/x-amz-json-1.1",
+                "content-length": "1282",
+                "date": "Sat, 14 Nov 2020 15:43:19 GMT"
+            },
+            "RetryAttempts": 0
+        }
+    }
+}
