@@ -4,16 +4,16 @@
         "Error": {
             "Type": "Sender",
             "Code": "AccessDenied",
-            "Message": "User: arn:aws:sts::000000000000:assumed-role/AWSReservedSSO_PowerUserAccess_e9ddee7954f3b1a9/john@@ac.me is not authorized to perform: sts:AssumeRole on resource: arn:aws:iam::000000000000:role/test"
+            "Message": "User: arn:aws:sts::000000000000:assumed-role/AWSReservedSSO_PowerUserAccess_e9ddee7954f3b1a9/john@ews-network.net is not authorized to perform: sts:AssumeRole on resource: arn:aws:iam::000000000000:role/test"
         },
         "ResponseMetadata": {
-            "RequestId": "480278a1-8d35-4570-bc85-dfe8de814f1a",
+            "RequestId": "a550da17-7c01-4a34-be85-68230b2c8fc8",
             "HTTPStatusCode": 403,
             "HTTPHeaders": {
-                "x-amzn-requestid": "480278a1-8d35-4570-bc85-dfe8de814f1a",
+                "x-amzn-requestid": "a550da17-7c01-4a34-be85-68230b2c8fc8",
                 "content-type": "text/xml",
                 "content-length": "451",
-                "date": "Mon, 16 Nov 2020 14:17:27 GMT"
+                "date": "Mon, 16 Nov 2020 14:29:10 GMT"
             },
             "RetryAttempts": 0
         }

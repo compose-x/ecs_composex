@@ -72,7 +72,7 @@ def test_iam_role_arn():
                 f"{here}/../uses-cases/blog.features.yml"
             ),
             ComposeXSettings.format_arg: "yaml",
-            ComposeXSettings.arn_arg: "arn:aws:iam::012345678912:role/testx",
+            ComposeXSettings.arn_arg: "arn:aws:iam::373709687836:role/testx",
         },
     )
     with raises(ValueError):

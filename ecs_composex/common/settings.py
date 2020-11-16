@@ -120,8 +120,6 @@ def merge_service_definition(original_def, override_def, nested=False):
             and key in original_def.keys()
             and key == "ports"
         ):
-            print("Got ports to merge")
-            print(original_def[key], override_def[key])
             original_def[key] = merge_ports(original_def[key], override_def[key])
 
         elif not isinstance(override_def[key], (list, dict)):
@@ -424,7 +422,6 @@ class ComposeXSettings(object):
                 secret = ComposeSecret(secret_name, secret_def, self)
                 self.secrets.append(secret)
                 self.compose_content[ComposeSecret.main_key][secret_name] = secret
-        print(self.secrets_mappings)
 
     def set_volumes(self):
         """
