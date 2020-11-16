@@ -8,7 +8,7 @@ secrets:
       Name: SFTP/asl-cscs-files-dev
   zyx:
     x-secrets:
-      Name: secret/with/kmskey-3MmbWA
+      Name: secret/with/kmskey
       Lookup:
         Tags:
           - costcentre: lambda
