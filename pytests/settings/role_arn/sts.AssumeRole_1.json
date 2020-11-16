@@ -2,32 +2,32 @@
     "status_code": 200,
     "data": {
         "Credentials": {
-            "AccessKeyId": "ASIAVOAWVJQOPGAOXDV2",
-            "SecretAccessKey": "32+kLgFu2i3eTrUFO5hXIOseQrOtP4g2j83qPSdT",
-            "SessionToken": "FwoGZONEREDACTED123vYXdzELD//////////wEaDKjP0QDdINEcSXuhvCK7AWE28hAxxLop72UMQVUATS2gSHkYciIE2wmrj8hY5p6o/6zasgNjv+Ae9HHKmrGkFKFIjcvsuUUbXW+XqCMmdf/vHo5J2xQlZ+X50YYHij/Q8lg6tctHmD3bWNkivV434Ig6z2hgMznR69e91yQkzEKwJT2Yrmwzs7RqRpmvI22NqSsam4n8tFIAi37gOIN6F2o5IuPCmxZONEREDACTED123zfkcBtkSS65TsCTvA96ARJZzboc7b4LUH0mDYH2EF9oIYQ0oqp/K/QUyLSw5O63+SEn772mYYgy9AbWGRjJAVVonsFOviG0oknygTzVJjb7N4Mm2xZsLCQ==",
+            "AccessKeyId": "ASIAVOAWVJQOBJ3HALU5",
+            "SecretAccessKey": "wSw/LzBS+uwWsw05D+YgvAOOHTGiSA7RiYBHD0uy",
+            "SessionToken": "FwoGZONEREDACTED123vYXdzELD//////////wEaDJSA7P1F/NILe45GaCK7AahWlALruz5yk5z/Li6XuMyEOxedTEovagfpui0QUQwzyz1hHVx8emq6DN5ZONEREDACTED123iZyTv5ipiXEws3OxuXXbr7t/QBM0RESf/Rzq2aPUYll2E74QK9MrL/2QpD0KPmA5aEeK9viTn56oWQhHQivSkVnYJFBmfQjwKUsf6BX890QcLXyJU5nzH3UBj/UG+qtdXu74hrPcM3NPGSpQX8Ym03elRvEb1i5hc3DQeRHT1UmnsS5tEteU0Uac40ol6bK/QUyLTN3eNb9jprlGUTZONEREDACTED123lvyk5EkFuthmzhpMeFNVIMKKa8knGhv61jc16oWQgDA==",
             "Expiration": {
                 "__class__": "datetime",
                 "year": 2020,
                 "month": 11,
                 "day": 16,
-                "hour": 14,
-                "minute": 56,
-                "second": 46,
+                "hour": 15,
+                "minute": 11,
+                "second": 23,
                 "microsecond": 0
             }
         },
         "AssumedRoleUser": {
-            "AssumedRoleId": "AROAVOAWVJQOLB24ILL24:ComposeXSettings@render",
+            "AssumedRoleId": "AROAVOAWVJQOLB24ILL25:ComposeXSettings@render",
             "Arn": "arn:aws:sts::000000000000:assumed-role/testx/ComposeXSettings@render"
         },
         "ResponseMetadata": {
-            "RequestId": "6de25561-533f-4a1c-9633-4d9ed28cbd21",
+            "RequestId": "d056735d-c3ba-4046-871c-08a4e9d86c25",
             "HTTPStatusCode": 200,
             "HTTPHeaders": {
-                "x-amzn-requestid": "6de25561-533f-4a1c-9633-4d9ed28cbd21",
+                "x-amzn-requestid": "d056735d-c3ba-4046-871c-08a4e9d86c25",
                 "content-type": "text/xml",
                 "content-length": "1090",
-                "date": "Mon, 16 Nov 2020 14:41:45 GMT"
+                "date": "Mon, 16 Nov 2020 14:56:22 GMT"
             },
             "RetryAttempts": 0
         }
