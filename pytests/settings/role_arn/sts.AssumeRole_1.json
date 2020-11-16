@@ -2,17 +2,17 @@
     "status_code": 200,
     "data": {
         "Credentials": {
-            "AccessKeyId": "ASIAVOAWVJQODALVMKIN",
-            "SecretAccessKey": "Avflt65V89eNGTTV/QtX4vx0CBc7Px00ELHqiKxT",
-            "SessionToken": "FwoGZONEREDACTED123vYXdzELD//////////wEaDNTvDoWxKuuugyQhjyK7AXtInAEFS8wrbaWBzq9DVPDhbMy8oW4WlJ40J88bGsVbzkMhPJ/DlCNHiXf+wh+0opFFi/46sKWaEDbhoi0o25/5q2e1XF0jm72lJrBD4WHG0sHYkqpG5IQ7knDyr67nYt6coEfc0EljO/8YxFD3AOot1M1QhKX6XuL4TVcywD3VabnPIpQ+dm9ibpzMXSsn3OO0JgWsvXiIeIG9Ai3e7A9yRxLIG9xIuleRDYi10WAMhYh9V1SMCVb8qO8otZnK/QUyLbgZONEREDACTED123e5qaJICGP/BCY2zjrhPotjKRM5c5u4G9VJ1gwKIbO3XP/S7VnD0JjyJYg==",
+            "AccessKeyId": "ASIAVOAWVJQOPGAOXDV2",
+            "SecretAccessKey": "32+kLgFu2i3eTrUFO5hXIOseQrOtP4g2j83qPSdT",
+            "SessionToken": "FwoGZONEREDACTED123vYXdzELD//////////wEaDKjP0QDdINEcSXuhvCK7AWE28hAxxLop72UMQVUATS2gSHkYciIE2wmrj8hY5p6o/6zasgNjv+Ae9HHKmrGkFKFIjcvsuUUbXW+XqCMmdf/vHo5J2xQlZ+X50YYHij/Q8lg6tctHmD3bWNkivV434Ig6z2hgMznR69e91yQkzEKwJT2Yrmwzs7RqRpmvI22NqSsam4n8tFIAi37gOIN6F2o5IuPCmxZONEREDACTED123zfkcBtkSS65TsCTvA96ARJZzboc7b4LUH0mDYH2EF9oIYQ0oqp/K/QUyLSw5O63+SEn772mYYgy9AbWGRjJAVVonsFOviG0oknygTzVJjb7N4Mm2xZsLCQ==",
             "Expiration": {
                 "__class__": "datetime",
                 "year": 2020,
                 "month": 11,
                 "day": 16,
                 "hour": 14,
-                "minute": 44,
-                "second": 9,
+                "minute": 56,
+                "second": 46,
                 "microsecond": 0
             }
         },
@@ -21,13 +21,13 @@
             "Arn": "arn:aws:sts::000000000000:assumed-role/testx/ComposeXSettings@render"
         },
         "ResponseMetadata": {
-            "RequestId": "6e372334-0e9e-4ce3-8a59-c37524571300",
+            "RequestId": "6de25561-533f-4a1c-9633-4d9ed28cbd21",
             "HTTPStatusCode": 200,
             "HTTPHeaders": {
-                "x-amzn-requestid": "6e372334-0e9e-4ce3-8a59-c37524571300",
+                "x-amzn-requestid": "6de25561-533f-4a1c-9633-4d9ed28cbd21",
                 "content-type": "text/xml",
                 "content-length": "1090",
-                "date": "Mon, 16 Nov 2020 14:29:08 GMT"
+                "date": "Mon, 16 Nov 2020 14:41:45 GMT"
             },
             "RetryAttempts": 0
         }

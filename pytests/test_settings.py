@@ -62,19 +62,20 @@ def test_iam_role_arn():
     # pill.record()
     pill.playback()
 
-    ComposeXSettings(
+    settings = ComposeXSettings(
         content=get_content(),
         session=session,
         **{
             ComposeXSettings.name_arg: "test",
             ComposeXSettings.command_arg: ComposeXSettings.render_arg,
             ComposeXSettings.input_file_arg: path.abspath(
-                f"{here}/../uses-cases/blog.features.yml"
+                f"{here}/../uses-cases/blog.yml"
             ),
             ComposeXSettings.format_arg: "yaml",
-            ComposeXSettings.arn_arg: "arn:aws:iam::373709687836:role/testx",
+            ComposeXSettings.arn_arg: "arn:aws:iam::012345678912:role/testx",
         },
     )
+    print(settings.secrets_mappings)
     with raises(ValueError):
         ComposeXSettings(
             content=get_content(),
@@ -103,3 +104,28 @@ def test_iam_role_arn():
                 ComposeXSettings.arn_arg: "arn:aws:iam::012345678912:role/test",
             },
         )
+
+
+def test_secrets_import():
+    """
+    Function to test secrets import
+    """
+    case_path = "settings/secrets"
+    here = path.abspath(path.dirname(__file__))
+    session = boto3.session.Session()
+    pill = placebo.attach(session, data_path=f"{here}/{case_path}")
+    # pill.record()
+    pill.playback()
+
+    settings = ComposeXSettings(
+        content=get_content(),
+        session=session,
+        **{
+            ComposeXSettings.name_arg: "test",
+            ComposeXSettings.command_arg: ComposeXSettings.render_arg,
+            ComposeXSettings.input_file_arg: path.abspath(
+                f"{here}/../uses-cases/blog.features.yml"
+            ),
+            ComposeXSettings.format_arg: "yaml",
+        },
+    )
