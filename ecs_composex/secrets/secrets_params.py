@@ -21,6 +21,9 @@ Module for Secrets parameters
 
 from troposphere import Parameter
 
+RES_KEY = "secrets"
+XRES_KEY = "x-secrets"
+
 PASSWORD_LENGTH_T = "PasswordLength"
 PASSWORD_LENGTH = Parameter(
     PASSWORD_LENGTH_T, Type="Number", MinValue=8, MaxValue=32, Default=16

@@ -381,6 +381,7 @@ class ComposeXSettings(object):
         self.volumes = []
         self.services = []
         self.secrets = []
+        self.secrets_mappings = {}
         self.families = {}
         self.account_id = None
         self.output_dir = self.default_output_dir
@@ -420,9 +421,10 @@ class ComposeXSettings(object):
                 secret_def["x-secrets"], dict
             ):
                 LOG.info(f"Adding secret {secret_name} to settings")
-                secret = ComposeSecret(secret_name, secret_def)
+                secret = ComposeSecret(secret_name, secret_def, self)
                 self.secrets.append(secret)
                 self.compose_content[ComposeSecret.main_key][secret_name] = secret
+        print(self.secrets_mappings)
 
     def set_volumes(self):
         """

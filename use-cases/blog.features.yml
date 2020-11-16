@@ -8,7 +8,11 @@ secrets:
       Name: SFTP/asl-cscs-files-dev
   zyx:
     x-secrets:
-      Name: SFTP/smicuser
+      Name: secret/with/kmskey-3MmbWA
+      Lookup:
+        Tags:
+          - costcentre: lambda
+          - composexdev: "yes"
 services:
   app01:
     deploy:

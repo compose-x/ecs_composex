@@ -1,4 +1,5 @@
 ﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 #   ECS ComposeX <https://github.com/lambda-my-aws/ecs_composex>
 #   Copyright (C) 2020  John Mille <john@lambda-my-aws.io>
 #  #
@@ -19,14 +20,31 @@
 Represent a service from the docker-compose services
 """
 
-from troposphere import Sub, AWS_PARTITION, AWS_REGION, AWS_ACCOUNT_ID
+import re
+from copy import deepcopy
+
+from troposphere import Sub, FindInMap
+from troposphere import AWS_PARTITION, AWS_REGION, AWS_ACCOUNT_ID
 from troposphere.ecs import Secret as EcsSecret
 
-from ecs_composex.common import LOG, keyisset
+from ecs_composex.common import LOG, keyisset, NONALPHANUM
 from ecs_composex.ecs.ecs_params import TASK_ROLE_T, EXEC_ROLE_T
+from ecs_composex.secrets.secrets_aws import lookup_secret_config
+from ecs_composex.secrets.secrets_params import XRES_KEY, RES_KEY
 
-RES_KEY = "secrets"
-XRES_KEY = "x-secrets"
+
+def get_name_from_arn(secret_arn):
+    secret_re = re.compile(
+        r"(?:^arn:aws(?:-[a-z]+)?:secretsmanager:[\w-]+:[0-9]{12}:secret:)([\S]+)(?:-[A-Za-z0-9]+)$"
+    )
+    if not secret_re.match(secret_arn):
+        raise ValueError(
+            "The secret ARN is invalid",
+            secret_arn,
+            "No name cound be found from it via",
+            r"(?:^arn:aws(?:-[a-z]+)?:secretsmanager:[\w-]+:[0-9]{12}:secret:)([\S]+)(?:-[A-Za-z0-9]+)$",
+        )
+    return secret_re.match(secret_arn).groups()[0]
 
 
 def match_secrets_services_config(service, s_secret, secrets):
@@ -56,30 +74,102 @@ class ComposeSecret(object):
     """
 
     main_key = "secrets"
+    map_kms_name = "KmsKeyId"
+    map_arn_name = "Arn"
+    map_name_name = "Name"
+    map_name = RES_KEY
 
-    def __init__(self, name, definition):
+    def __init__(self, name, definition, settings):
         self.services = []
         if not keyisset("Name", definition[XRES_KEY]):
             raise KeyError(f"Missing Name in the {XRES_KEY} defintion")
         self.name = name
-        aws_name = definition[XRES_KEY]["Name"]
-        if aws_name.startswith("arn:"):
-            self.aws_name = definition[XRES_KEY]["Name"]
-            self.aws_iam_name = definition[XRES_KEY]["Name"]
+        self.logical_name = NONALPHANUM.sub("", self.name)
+        self.definition = deepcopy(definition)
+        self.links = [EXEC_ROLE_T]
+        self.arn = None
+        self.aws_name = None
+        self.kms_key = None
+        self.kms_key_arn = None
+        self.ecs_secret = None
+        self.mapping = {}
+        if not keyisset("Lookup", self.definition[XRES_KEY]):
+            self.define_names_from_import()
         else:
-            self.aws_name = Sub(
-                f"arn:${{{AWS_PARTITION}}}:secretsmanager:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:secret:{aws_name}"
-            )
-            self.aws_iam_name = Sub(
-                f"arn:${{{AWS_PARTITION}}}:secretsmanager:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:secret:{aws_name}*"
-            )
-        self.links = (
-            definition[XRES_KEY]["LinksTo"]
-            if keyisset("LinksTo", definition[XRES_KEY])
-            else [EXEC_ROLE_T]
-        )
-        self.ecs_secret = EcsSecret(Name=self.name, ValueFrom=self.aws_name)
+            self.define_names_from_lookup(settings.session)
+
+        self.define_links()
         self.validate_links()
+        if self.mapping:
+            settings.secrets_mappings.update({self.name: self.mapping})
+
+    def define_names_from_import(self):
+        if not keyisset(self.map_name_name, self.definition[XRES_KEY]):
+            raise KeyError(
+                f"Missing {self.map_name_name} when doing non-lookup import for {self.name}"
+            )
+        name_input = self.definition[XRES_KEY][self.map_name_name]
+        if name_input.startswith("arn:"):
+            self.aws_name = get_name_from_arn(
+                self.definition[XRES_KEY][self.map_name_name]
+            )
+            self.mapping = {
+                self.map_arn_name: name_input,
+                self.map_name_name: self.aws_name,
+            }
+        else:
+            self.aws_name = name_input
+            self.mapping = {self.map_name_name: self.aws_name}
+            self.arn = Sub(
+                f"arn:${{{AWS_PARTITION}}}:secretsmanager:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:"
+                "secret:${SecretName}",
+                SecretName=FindInMap(self.map_name, self.name, self.map_name_name),
+            )
+            self.ecs_secret = [EcsSecret(Name=self.name, ValueFrom=self.arn)]
+        if keyisset(self.map_kms_name, self.definition):
+            if not self.definition[self.map_kms_name].startswith("arn:"):
+                LOG.error(
+                    f"When specifying {self.map_kms_name} you must specify the full ARN"
+                )
+            else:
+                self.mapping[self.map_kms_name] = self.definition[self.map_kms_name]
+                self.kms_key_arn = FindInMap(
+                    self.map_name, self.name, self.map_kms_name
+                )
+
+    def define_names_from_lookup(self, session):
+        """
+        Method to Lookup the secret based on its tags.
+        :return:
+        """
+        secret_config = lookup_secret_config(
+            self.logical_name, self.definition[XRES_KEY]["Lookup"], session
+        )
+        self.aws_name = get_name_from_arn(secret_config[self.logical_name])
+        self.arn = secret_config[self.logical_name]
+        if keyisset("KmsKeyId", secret_config) and not secret_config[
+            "KmsKeyId"
+        ].startswith("alias"):
+            self.kms_key = secret_config["KmsKeyId"]
+        elif keyisset("KmsKeyId", secret_config) and secret_config[
+            "KmsKeyId"
+        ].startswith("alias"):
+            LOG.warn("The KMS Key retrieved is a KMS Key Alias, not importing.")
+
+        self.mapping = {
+            self.map_arn_name: secret_config[self.logical_name],
+            self.map_name_name: secret_config[self.map_name_name],
+        }
+        if self.kms_key:
+            self.mapping[self.map_kms_name] = self.kms_key
+
+        self.arn = FindInMap(self.map_name, self.name, self.map_arn_name)
+        self.kms_key_arn = FindInMap(self.map_name, self.name, self.map_kms_name)
+        self.ecs_secret = [EcsSecret(Name=self.name, ValueFrom=self.arn)]
+
+    def define_links(self):
+        if keyisset("LinksTo", self.definition[XRES_KEY]):
+            self.links = self.definition[XRES_KEY]["LinksTo"]
 
     def validate_links(self):
         if not isinstance(self.links, list):
