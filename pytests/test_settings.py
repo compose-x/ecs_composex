@@ -48,7 +48,13 @@ def test_export_attribute():
         generate_export_strings("toto", 123)
 
 
-def get_content():
+def get_basic_content():
+    here = path.abspath(path.dirname(__file__))
+    content = load_composex_file(f"{here}/../use-cases/blog.yml")
+    return deepcopy(content)
+
+
+def get_secrets_content():
     here = path.abspath(path.dirname(__file__))
     content = load_composex_file(f"{here}/../use-cases/blog.features.yml")
     return deepcopy(content)
@@ -63,7 +69,7 @@ def test_iam_role_arn():
     pill.playback()
 
     settings = ComposeXSettings(
-        content=get_content(),
+        content=get_basic_content(),
         session=session,
         **{
             ComposeXSettings.name_arg: "test",
@@ -78,7 +84,7 @@ def test_iam_role_arn():
     print(settings.secrets_mappings)
     with raises(ValueError):
         ComposeXSettings(
-            content=get_content(),
+            content=get_basic_content(),
             session=session,
             **{
                 ComposeXSettings.name_arg: "test",
@@ -92,7 +98,7 @@ def test_iam_role_arn():
         )
     with raises(ClientError):
         ComposeXSettings(
-            content=get_content(),
+            content=get_basic_content(),
             session=session,
             **{
                 ComposeXSettings.name_arg: "test",
@@ -118,7 +124,7 @@ def test_secrets_import():
     pill.playback()
 
     settings = ComposeXSettings(
-        content=get_content(),
+        content=get_secrets_content(),
         session=session,
         **{
             ComposeXSettings.name_arg: "test",
