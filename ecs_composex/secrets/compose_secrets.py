@@ -90,6 +90,7 @@ class ComposeSecret(object):
         self.definition = deepcopy(definition)
         self.links = [EXEC_ROLE_T]
         self.arn = None
+        self.iam_arn = None
         self.aws_name = None
         self.kms_key = None
         self.kms_key_arn = None
@@ -103,7 +104,7 @@ class ComposeSecret(object):
         self.define_links()
         self.validate_links()
         if self.mapping:
-            settings.secrets_mappings.update({self.name: self.mapping})
+            settings.secrets_mappings.update({self.logical_name: self.mapping})
             self.add_json_keys()
 
     def add_json_keys(self):
@@ -135,7 +136,7 @@ class ComposeSecret(object):
                             f"arn:${{{AWS_PARTITION}}}:secretsmanager:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:"
                             f"secret:${{SecretName}}:{json_key}",
                             SecretName=FindInMap(
-                                self.map_name, self.name, self.map_name_name
+                                self.map_name, self.logical_name, self.map_name_name
                             ),
                         ),
                     )
@@ -147,7 +148,7 @@ class ComposeSecret(object):
                         ValueFrom=Sub(
                             f"${{SecretArn}}:{json_key}",
                             SecretArn=FindInMap(
-                                self.map_name, self.name, self.map_kms_name
+                                self.map_name, self.logical_name, self.map_kms_name
                             ),
                         ),
                     )
@@ -176,7 +177,16 @@ class ComposeSecret(object):
             self.arn = Sub(
                 f"arn:${{{AWS_PARTITION}}}:secretsmanager:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:"
                 "secret:${SecretName}",
-                SecretName=FindInMap(self.map_name, self.name, self.map_name_name),
+                SecretName=FindInMap(
+                    self.map_name, self.logical_name, self.map_name_name
+                ),
+            )
+            self.iam_arn = Sub(
+                f"arn:${{{AWS_PARTITION}}}:secretsmanager:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:"
+                "secret:${SecretName}*",
+                SecretName=FindInMap(
+                    self.map_name, self.logical_name, self.map_name_name
+                ),
             )
             self.ecs_secret = [EcsSecret(Name=self.name, ValueFrom=self.arn)]
         if keyisset(self.map_kms_name, self.definition):
@@ -189,7 +199,7 @@ class ComposeSecret(object):
             else:
                 self.mapping[self.map_kms_name] = self.definition[self.map_kms_name]
                 self.kms_key_arn = FindInMap(
-                    self.map_name, self.name, self.map_kms_name
+                    self.map_name, self.logical_name, self.map_kms_name
                 )
 
     def define_names_from_lookup(self, session):
@@ -203,6 +213,7 @@ class ComposeSecret(object):
         secret_config = lookup_secret_config(self.logical_name, lookup_info, session)
         self.aws_name = get_name_from_arn(secret_config[self.logical_name])
         self.arn = secret_config[self.logical_name]
+        self.iam_arn = secret_config[self.logical_name]
         if keyisset("KmsKeyId", secret_config) and not secret_config[
             "KmsKeyId"
         ].startswith("alias"):
@@ -219,8 +230,10 @@ class ComposeSecret(object):
         if self.kms_key:
             self.mapping[self.map_kms_name] = self.kms_key
 
-        self.arn = FindInMap(self.map_name, self.name, self.map_arn_name)
-        self.kms_key_arn = FindInMap(self.map_name, self.name, self.map_kms_name)
+        self.arn = FindInMap(self.map_name, self.logical_name, self.map_arn_name)
+        self.kms_key_arn = FindInMap(
+            self.map_name, self.logical_name, self.map_kms_name
+        )
         self.ecs_secret = [EcsSecret(Name=self.name, ValueFrom=self.arn)]
 
     def define_links(self):

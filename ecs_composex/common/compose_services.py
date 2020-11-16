@@ -651,7 +651,7 @@ def assign_policy_to_role(role_secrets, role):
     :return:
     """
 
-    secrets_list = [secret.arn for secret in role_secrets]
+    secrets_list = [secret.iam_arn for secret in role_secrets]
     secrets_kms_keys = [secret.kms_key_arn for secret in role_secrets if secret.kms_key]
     secrets_statement = {
         "Effect": "Allow",

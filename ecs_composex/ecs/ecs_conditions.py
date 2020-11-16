@@ -30,8 +30,8 @@ from troposphere import Condition, Ref, Equals, And, Not
 from ecs_composex.ecs import ecs_params
 
 GENERATED_CLUSTER_NAME_CON_T = "CreateEcsClusterCondition"
-GENERATED_CLUSTER_NAME_CON = Equals(
-    Ref(ecs_params.CLUSTER_NAME), ecs_params.CLUSTER_NAME.Default
+GENERATED_CLUSTER_NAME_CON = Not(
+    Equals(Ref(ecs_params.CLUSTER_NAME), ecs_params.CLUSTER_NAME.Default)
 )
 
 NOT_USE_CLUSTER_SG_CON_T = "NotUseClusterSecurityGroupCondition"

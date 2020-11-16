@@ -361,7 +361,6 @@ class ServiceNetworking(object):
                     "ToPort": port["published"],
                     "IpProtocol": port["protocol"],
                     "GroupId": GetAtt(family.ecs_service.sg, "GroupId"),
-                    "SourceSecurityGroupOwnerId": Ref(AWS_ACCOUNT_ID),
                     "Description": Sub(
                         f"From {source['id']} to ${{{SERVICE_NAME_T}}} on port {port['published']}"
                     ),
@@ -371,6 +370,7 @@ class ServiceNetworking(object):
                         f"From{NONALPHANUM.sub('', source['id'])}ToServiceOn{port['published']}",
                         template=family.template,
                         SourceSecurityGroupId=source["id"],
+                        SourceSecurityGroupOwnerId=Ref(AWS_ACCOUNT_ID),
                         **common_args,
                     )
                 elif source["type"] == "PrefixList":

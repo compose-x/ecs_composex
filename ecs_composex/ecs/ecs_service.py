@@ -277,6 +277,7 @@ def generate_service_template_outputs(family):
                 )
             ],
             duplicate_attr=True,
+            export=False,
         ).outputs
     )
 
