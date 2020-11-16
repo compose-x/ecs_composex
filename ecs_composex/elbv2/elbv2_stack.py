@@ -44,14 +44,13 @@ from troposphere.elasticloadbalancingv2 import (
     TargetGroupTuple,
 )
 
-from ecs_composex.ingress_settings import Ingress
+from ecs_composex.ingress_settings import Ingress, set_service_ports
 from ecs_composex.acm.acm_params import RES_KEY as ACM_KEY, MOD_KEY as ACM_MOD_KEY
 from ecs_composex.common import NONALPHANUM, LOG
 from ecs_composex.common import keyisset, keypresent, build_template, add_parameters
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME
 from ecs_composex.common.compose_resources import XResource, set_resources
 from ecs_composex.common.outputs import ComposeXOutput
-from ecs_composex.common.compose_services import set_service_ports
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.elbv2.elbv2_params import RES_KEY, LB_SG_ID
 from ecs_composex.vpc.vpc_params import VPC_ID, PUBLIC_SUBNETS, APP_SUBNETS

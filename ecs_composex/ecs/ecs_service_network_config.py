@@ -19,105 +19,21 @@
 Module to help with defining the network settings for the ECS Service based on the family services definitions.
 """
 
-from ipaddress import IPv4Interface
 from json import dumps
 
-from troposphere import AWS_ACCOUNT_ID, AWS_NO_VALUE
+from troposphere import AWS_ACCOUNT_ID
 from troposphere import Sub, Ref, GetAtt
 from troposphere.ec2 import SecurityGroupIngress
 
+from ecs_composex.ingress_settings import (
+    flatten_ip,
+    generate_security_group_props,
+    handle_ingress_rules,
+    set_service_ports,
+)
 from ecs_composex.common import LOG, NONALPHANUM
 from ecs_composex.common import keyisset, keypresent
 from ecs_composex.ecs.ecs_params import SERVICE_NAME_T
-
-
-def flatten_ip(ip_str):
-    """
-    Function to remove all non alphanum characters from IP CIDR notation
-
-    :param ip_str:
-    :rtype: str
-    """
-    return ip_str.replace(".", "").split("/")[0].strip()
-
-
-def generate_security_group_props(allowed_source, service_name):
-    """
-    Function to parse the allowed source and create the SG Opening options accordingly.
-
-    :param dict allowed_source: The allowed source defined in configs
-    :param str service_name:
-    :return: security group ingress properties
-    :rtype: dict
-    """
-    props = {
-        "CidrIp": (
-            allowed_source["ipv4"]
-            if keyisset("ipv4", allowed_source)
-            else Ref(AWS_NO_VALUE)
-        ),
-        "CidrIpv6": (
-            allowed_source["ipv6"]
-            if keyisset("ipv6", allowed_source)
-            else Ref(AWS_NO_VALUE)
-        ),
-    }
-
-    if keyisset("CidrIp", props) and isinstance(props["CidrIp"], str):
-        try:
-            IPv4Interface(props["CidrIp"])
-        except Exception as error:
-            LOG.error(
-                f"Falty IP Address: {allowed_source} - ecs_service {service_name}"
-            )
-            raise ValueError("Not a valid IPv4 CIDR notation", props["CidrIp"], error)
-    return props
-
-
-def handle_ext_sources(existing_sources, new_sources):
-    LOG.debug("Source", dumps(existing_sources, indent=2))
-    set_ipv4_sources = [s["ipv4"] for s in existing_sources if keyisset("ipv4", s)]
-    for new_s in new_sources:
-        if new_s not in set_ipv4_sources:
-            existing_sources.append(new_s)
-
-
-def handle_aws_sources(existing_sources, new_sources):
-    LOG.debug("Source", dumps(existing_sources, indent=2))
-    set_ids = [s["id"] for s in existing_sources if keyisset("id", s)]
-    allowed_keys = ["PrefixList", "SecurityGroup"]
-    for new_s in new_sources:
-        if new_s not in set_ids and new_s["type"] in allowed_keys:
-            existing_sources.append(new_s)
-        elif new_s["id"] not in allowed_keys:
-            LOG.error(
-                f"AWS Source type incorrect: {new_s['type']}. Expected one of {allowed_keys}"
-            )
-
-
-def handle_ingress_rules(source_config, ingress_config):
-    LOG.debug("Source", dumps(source_config, indent=2))
-    valid_keys = [
-        ("myself", bool, None),
-        ("ext_sources", list, handle_ext_sources),
-        ("aws_sources", list, handle_aws_sources),
-    ]
-    for key in valid_keys:
-        if keypresent(key[0], ingress_config) and isinstance(
-            ingress_config[key[0]], key[1]
-        ):
-            if key[1] is bool and not keyisset(key[0], source_config):
-                source_config[key[0]] = ingress_config[key[0]]
-            if (
-                key[1] is bool
-                and keyisset(key[0], source_config)
-                and not keyisset(key[0], ingress_config)
-            ):
-                LOG.warn(
-                    "At least one service in the task requires access to itself. Skipping."
-                )
-            elif key[1] is list and keyisset(key[0], ingress_config) and key[2]:
-                key[2](source_config[key[0]], ingress_config[key[0]])
 
 
 def handle_merge_services_props(config, network, network_config):
@@ -162,64 +78,6 @@ def merge_services_network(family):
     LOG.debug(family.name)
     LOG.debug(dumps(network_config, indent=2))
     return network_config
-
-
-def define_protocol(port_string):
-    """
-    Function to define the port protocol. Defaults to TCP if not specified otherwise
-
-    :param port_string: the port string to parse from the ports list in the compose file
-    :type port_string: str
-    :return: protocol, ie. udp or tcp
-    :rtype: str
-    """
-    protocols = ["tcp", "udp"]
-    protocol = "tcp"
-    if port_string.find("/"):
-        protocol_found = port_string.split("/")[-1].strip()
-        if protocol_found in protocols:
-            return protocol_found
-    return protocol
-
-
-def set_service_ports(ports):
-    """Function to define common structure to ports
-
-    :return: list of ports the ecs_service uses formatted according to dict
-    :rtype: list
-    """
-    service_ports = []
-    for port in ports:
-        if not isinstance(port, (str, dict, int)):
-            raise TypeError(
-                "ports must be of types", dict, "or", list, "got", type(port)
-            )
-        if isinstance(port, str):
-            service_ports.append(
-                {
-                    "protocol": define_protocol(port),
-                    "published": int(port.split(":")[0]),
-                    "target": int(port.split(":")[-1].split("/")[0].strip()),
-                    "mode": "awsvpc",
-                }
-            )
-        elif isinstance(port, dict):
-            valid_keys = ["published", "target", "protocol", "mode"]
-            if not set(port).issubset(valid_keys):
-                raise KeyError("Valid keys are", valid_keys, "got", port.keys())
-            port["mode"] = "awsvpc"
-            service_ports.append(port)
-        elif isinstance(port, int):
-            service_ports.append(
-                {
-                    "protocol": "tcp",
-                    "published": port,
-                    "target": port,
-                    "mode": "awsvpc",
-                }
-            )
-    LOG.debug(service_ports)
-    return service_ports
 
 
 class ServiceNetworking(object):
@@ -466,7 +324,7 @@ class ServiceNetworking(object):
             ):
                 LOG.warn("No IPv4 or IPv6 set. Skipping")
                 continue
-            props = generate_security_group_props(allowed_source, family.logical_name)
+            props = generate_security_group_props(allowed_source)
             if props:
                 LOG.debug(f"Adding {allowed_source} for ingress")
                 self.create_ext_sources_ingress_rule(

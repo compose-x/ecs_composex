@@ -35,6 +35,7 @@ from troposphere.ecs import (
 )
 from troposphere.iam import Policy
 
+from ecs_composex.ingress_settings import set_service_ports
 from ecs_composex.common import NONALPHANUM, LOG
 from ecs_composex.common import keyisset, keypresent
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME
@@ -53,7 +54,6 @@ from ecs_composex.ecs.ecs_iam import add_service_roles
 from ecs_composex.ecs.ecs_params import LOG_GROUP, AWS_XRAY_IMAGE
 from ecs_composex.ecs.ecs_params import LOG_GROUP_RETENTION
 from ecs_composex.ecs.ecs_params import NETWORK_MODE, EXEC_ROLE_T, TASK_ROLE_T, TASK_T
-from ecs_composex.ecs.ecs_service_network_config import set_service_ports
 from ecs_composex.iam import define_iam_policy, add_role_boundaries
 
 NUMBERS_REG = r"[^0-9.]"

@@ -29,7 +29,6 @@ from troposphere.ec2 import SecurityGroupIngress
 
 from ecs_composex.common import LOG, NONALPHANUM
 from ecs_composex.common import keyisset, keypresent
-from ecs_composex.ecs.ecs_params import SERVICE_NAME_T
 
 
 def flatten_ip(ip_str):
@@ -115,50 +114,6 @@ def handle_ingress_rules(source_config, ingress_config):
                 )
             elif key[1] is list and keyisset(key[0], ingress_config) and key[2]:
                 key[2](source_config[key[0]], ingress_config[key[0]])
-
-
-def handle_merge_services_props(config, network, network_config):
-    """
-    Function to handle properties assignment for network settings
-
-    :param tuple config:
-    :param dict network:
-    :param dict network_config:
-    :return:
-    """
-    if config[1] is bool and keypresent(config[0], network):
-        network_config[config[0]] = network[config[0]]
-    elif config[1] is str and keyisset(config[0], network):
-        network_config[config[0]] = network[config[0]]
-    elif config[1] is dict and keypresent(config[0], network) and config[2]:
-        config[2](network_config[config[0]], network[config[0]])
-
-
-def merge_services_network(family):
-    network_config = {
-        "use_cloudmap": True,
-        "ingress": {"myself": False, "ext_sources": [], "aws_sources": []},
-        "is_public": False,
-        "lb_type": None,
-    }
-    valid_keys = [
-        ("ingress", dict, handle_ingress_rules),
-        ("use_cloudmap", bool, None),
-        ("is_public", bool, None),
-        ("lb_type", str, None),
-    ]
-    x_network = [
-        s.x_configs["network"]
-        for s in family.ordered_services
-        if s.x_configs and keyisset("network", s.x_configs)
-    ]
-    for config in valid_keys:
-        for network in x_network:
-            if config[0] in network:
-                handle_merge_services_props(config, network, network_config)
-    LOG.debug(family.name)
-    LOG.debug(dumps(network_config, indent=2))
-    return network_config
 
 
 def define_protocol(port_string):
