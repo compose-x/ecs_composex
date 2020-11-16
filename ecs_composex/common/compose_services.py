@@ -38,7 +38,7 @@ from troposphere.iam import Policy
 from ecs_composex.common import NONALPHANUM, LOG
 from ecs_composex.common import keyisset, keypresent
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME
-from ecs_composex.common.compose_secrets import (
+from ecs_composex.secrets.compose_secrets import (
     ComposeSecret,
     match_secrets_services_config,
 )
