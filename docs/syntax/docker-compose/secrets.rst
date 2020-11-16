@@ -9,31 +9,49 @@ As you might have already used these, docker-compose allows you to define secret
 To help continue with docker-compose syntax compatibility, you can now declare your secret in docker-compose,
 and add an extension field which will be a direct mapping to the secret name you have in AWS Secrets Manager.
 
-.. code-block:: yaml
-
-    secrets:
-      topsecret_info:
-        x-secrets:
-          Name: /path/to/my/secret
-
-    services:
-      serviceA:
-        secrets:
-          - topsecret_info
-
-This will automatically add IAM permissions to **the execution** role of your Task definition and will export the secret
+ECS ComposeX will automatically add IAM permissions to **the execution** role of your Task definition and will export the secret
 to your container, using the same name as in the compose file.
 
 .. note::
 
     Only Fargate 1.4.0+ Platform Version supports secrets JSON Key
 
+
+Syntax
+======
+
+.. code-block::
+
+    x-secrets:
+      Name: str
+      LinksTo: []
+      Lookup: {}
+
+Name
+----
+
+Type: String
+
+The name of the secret in secrets manager to use and import.
+
 .. hint::
 
-    If you believe that your service application should have access to the secret via **Task Role**, simply add to the
-    secret definition as follows:
+    If you want to put the full ARN, you can. There will be a validation for it.
 
-    .. code-block:: yaml
+LinksTo
+-------
+
+Type: List of Strings
+
+AllowedValues:
+
+* EcsExecutionRole
+* EcsTaskRole
+
+If you believe that your service application should have access to the secret via **Task Role**, simply add to the
+secret definition as follows:
+
+.. code-block:: yaml
 
         secret-name:
           x-secrets:
@@ -56,5 +74,59 @@ to your container, using the same name as in the compose file.
 
     `docker-compose secrets reference`_
 
+
+Examples
+========
+
+.. code-block:: yaml
+    :caption: Short example
+
+    secrets:
+      topsecret_info:
+        x-secrets:
+          Name: /path/to/my/secret
+
+    services:
+      serviceA:
+        secrets:
+          - topsecret_info
+
+.. code-block:: yaml
+    :caption: Secret with assignment to Task and Execution Role
+
+    secrets:
+      abcd: {}
+      john:
+        x-secrets:
+          LinksTo:
+            - EcsExecutionRole
+            - EcsTaskRole
+          Name: SFTP/asl-cscs-files-dev
+
+
+.. code-block:: yaml
+    :caption: Secret Looked up from Tags and Name.
+
+    secrets:
+      zyx:
+        x-secrets:
+          Name: secret/with/kmskey
+          Lookup:
+            Tags:
+              - costcentre: lambda
+              - composexdev: "yes"
+
+
+.. code-block:: yaml
+    :caption: Secret with assignment to Task and Execution Role
+
+    secrets:
+      abcd: {}
+      john:
+        x-secrets:
+          LinksTo:
+            - EcsExecutionRole
+            - EcsTaskRole
+          Name: arn:aws:secretsmanager:eu-west-1:123456789012:secret:/secret/abcd
 
 .. _docker-compose secrets reference: https://docs.docker.com/compose/compose-file/#secrets

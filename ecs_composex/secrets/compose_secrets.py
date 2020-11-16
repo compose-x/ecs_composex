@@ -36,14 +36,14 @@ from ecs_composex.secrets.secrets_params import XRES_KEY, RES_KEY
 
 def get_name_from_arn(secret_arn):
     secret_re = re.compile(
-        r"(?:^arn:aws(?:-[a-z]+)?:secretsmanager:[\w-]+:[0-9]{12}:secret:)([\S]+)(?:-[A-Za-z0-9]+)$"
+        r"(?:^arn:aws(?:-[a-z]+)?:secretsmanager:[\w-]+:[0-9]{12}:secret:)([\S]+)(?:-[A-Za-z0-9]{1,6})$"
     )
     if not secret_re.match(secret_arn):
         raise ValueError(
             "The secret ARN is invalid",
             secret_arn,
             "No name cound be found from it via",
-            r"(?:^arn:aws(?:-[a-z]+)?:secretsmanager:[\w-]+:[0-9]{12}:secret:)([\S]+)(?:-[A-Za-z0-9]+)$",
+            r"(?:^arn:aws(?:-[a-z]+)?:secretsmanager:[\w-]+:[0-9]{12}:secret:)([\S]+)(?:-[A-Za-z0-9]{1,6})$",
         )
     return secret_re.match(secret_arn).groups()[0]
 
