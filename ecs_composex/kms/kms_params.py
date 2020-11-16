@@ -15,10 +15,18 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import re
 from os import path
 from troposphere import Parameter
 
 RES_KEY = f"x-{path.basename(path.dirname(path.abspath(__file__)))}"
+
+KMS_KEY_ARN_RE = re.compile(
+    r"(?:^arn:aws(?:-[a-z]+)?:kms:[\S]+:[0-9]+:)((key/)([\S]+))$"
+)
+KMS_ALIAS_ARN_RE = re.compile(
+    r"(?:^arn:aws(?:-[a-z]+)?:kms:[\S]+:[0-9]+:)((alias/)([\S]+))$"
+)
 
 KMS_KEY_ARN_T = "Arn"
 KMS_KEY_ID_T = "KeyId"

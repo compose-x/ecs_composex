@@ -32,7 +32,7 @@ from ecs_composex.common import keyisset, LOG, load_composex_file, NONALPHANUM
 from ecs_composex.common.aws import get_account_id, get_region_azs
 from ecs_composex.common.aws import get_cross_role_session
 from ecs_composex.common.cfn_params import USE_FLEET_T
-from ecs_composex.common.compose_secrets import ComposeSecret
+from ecs_composex.secrets.compose_secrets import ComposeSecret
 from ecs_composex.common.compose_services import (
     ComposeService,
     ComposeFamily,
@@ -120,8 +120,6 @@ def merge_service_definition(original_def, override_def, nested=False):
             and key in original_def.keys()
             and key == "ports"
         ):
-            print("Got ports to merge")
-            print(original_def[key], override_def[key])
             original_def[key] = merge_ports(original_def[key], override_def[key])
 
         elif not isinstance(override_def[key], (list, dict)):
@@ -381,6 +379,7 @@ class ComposeXSettings(object):
         self.volumes = []
         self.services = []
         self.secrets = []
+        self.secrets_mappings = {}
         self.families = {}
         self.account_id = None
         self.output_dir = self.default_output_dir
@@ -420,7 +419,7 @@ class ComposeXSettings(object):
                 secret_def["x-secrets"], dict
             ):
                 LOG.info(f"Adding secret {secret_name} to settings")
-                secret = ComposeSecret(secret_name, secret_def)
+                secret = ComposeSecret(secret_name, secret_def, self)
                 self.secrets.append(secret)
                 self.compose_content[ComposeSecret.main_key][secret_name] = secret
 
@@ -455,16 +454,6 @@ class ComposeXSettings(object):
             )
             self.compose_content[ComposeService.main_key][service_name] = service
             self.services.append(service)
-
-    def get_family_name(self, family_name):
-        if family_name != NONALPHANUM.sub("", family_name):
-            if not NONALPHANUM.sub("", family_name) in self.families.keys():
-                LOG.warn(
-                    f"Family name {family_name} must be AlphaNumerical. "
-                    f"Set to {NONALPHANUM.sub('', family_name)}"
-                )
-            family_name = NONALPHANUM.sub("", family_name)
-        return family_name
 
     def add_new_family(self, family_name, service, assigned_services):
         if service.name in [service.name for service in assigned_services]:

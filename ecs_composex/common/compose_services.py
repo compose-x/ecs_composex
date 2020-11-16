@@ -38,7 +38,7 @@ from troposphere.iam import Policy
 from ecs_composex.common import NONALPHANUM, LOG
 from ecs_composex.common import keyisset, keypresent
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME
-from ecs_composex.common.compose_secrets import (
+from ecs_composex.secrets.compose_secrets import (
     ComposeSecret,
     match_secrets_services_config,
 )
@@ -410,6 +410,10 @@ class ComposeService(object):
         self.set_container_definition()
 
     def set_container_definition(self):
+        """
+        Function to define the container definition matching the service definition
+        """
+        secrets = [secret for secrets in self.secrets for secret in secrets.ecs_secret]
         self.container_definition = ContainerDefinition(
             Image=Ref(self.image_param),
             Name=self.name,
@@ -435,7 +439,7 @@ class ComposeService(object):
             HealthCheck=self.ecs_healthcheck,
             DependsOn=Ref(AWS_NO_VALUE),
             Essential=True,
-            Secrets=[secret.ecs_secret for secret in self.secrets],
+            Secrets=secrets,
         )
         self.container_parameters.update({self.image_param.title: self.image})
 
@@ -646,20 +650,33 @@ def assign_policy_to_role(role_secrets, role):
     :param troposphere.iam.Role role:
     :return:
     """
+
+    secrets_list = [secret.arn for secret in role_secrets]
+    secrets_kms_keys = [secret.kms_key_arn for secret in role_secrets if secret.kms_key]
+    secrets_statement = {
+        "Effect": "Allow",
+        "Action": ["secretsmanager:GetSecretValue"],
+        "Sid": "AllowSecretsAccess",
+        "Resource": [secret for secret in secrets_list],
+    }
+    secrets_keys_statement = {}
+    if secrets_kms_keys:
+        secrets_keys_statement = {
+            "Effect": "Allow",
+            "Action": ["kms:Decrypt"],
+            "Sid": "AllowSecretsKmsKeyDecrypt",
+            "Resource": [kms_key for kms_key in secrets_kms_keys],
+        }
     role_policy = Policy(
         PolicyName="AccessToPreDefinedSecrets",
         PolicyDocument={
             "Version": "2012-10-17",
-            "Statement": [
-                {
-                    "Effect": "Allow",
-                    "Action": ["secretsmanager:GetSecretValue"],
-                    "Sid": "AllowSecretsAccess",
-                    "Resource": [secret.aws_iam_name for secret in role_secrets],
-                }
-            ],
+            "Statement": [secrets_statement],
         },
     )
+    if secrets_keys_statement:
+        role_policy.PolicyDocument["Statement"].append(secrets_keys_statement)
+
     if hasattr(role, "Policies") and isinstance(role.Policies, list):
         existing_policy_names = [
             policy.PolicyName for policy in getattr(role, "Policies")
@@ -984,7 +1001,6 @@ class ComposeFamily(object):
             secrets = []
             for service in self.services:
                 for secret in service.secrets:
-
                     secrets.append(secret)
             if secrets:
                 assign_secrets_to_roles(

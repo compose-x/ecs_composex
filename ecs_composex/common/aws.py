@@ -225,7 +225,7 @@ def find_aws_resource_arn_from_tags_api(
     """
     res_types = {
         "secretsmanager:secret": {
-            "regexp": r"(?:^arn:aws(?:-[a-z]+)?:secretsmanager:[\w-]+:[0-9]{12}:secret:)([\S]+)(?:-[A-Za-z0-9]+)$"
+            "regexp": r"(?:^arn:aws(?:-[a-z]+)?:secretsmanager:[\w-]+:[0-9]{12}:secret:)([\S]+)(?:-[A-Za-z0-9]{1,6})$"
         },
     }
     if types is not None and isinstance(types, dict):
@@ -238,7 +238,10 @@ def find_aws_resource_arn_from_tags_api(
 
     resources_r = get_resources_from_tags(session, aws_resource_search, search_tags)
     LOG.debug(search_tags)
-    arns = [i["ResourceARN"] for i in resources_r["ResourceTagMappingList"]]
+    if not resources_r or not keyisset("ResourceTagMappingList", resources_r):
+        arns = []
+    else:
+        arns = [i["ResourceARN"] for i in resources_r["ResourceTagMappingList"]]
     return handle_search_results(
         arns, name, res_types, aws_resource_search, allow_multi=allow_multi
     )

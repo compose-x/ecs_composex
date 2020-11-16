@@ -44,6 +44,7 @@ from ecs_composex.ecs.ecs_service import (
 )
 from ecs_composex.ecs.ecs_service_config import ServiceConfig
 from ecs_composex.vpc import vpc_params
+from ecs_composex.secrets.secrets_params import RES_KEY as SECRETS_KEY
 
 
 def initialize_service_template(service_name):
@@ -178,11 +179,15 @@ def get_service_family_name(services_families, service_name):
 def generate_services(settings):
     """
     Function to handle creation of services within the same family.
+
+    :param ecs_composex.common.settings.ComposeXSettings settings:
     :return:
     """
     for family_name in settings.families:
         family = settings.families[family_name]
         family.template = initialize_service_template(family_name)
+        if settings.secrets_mappings:
+            family.template.add_mapping(SECRETS_KEY, settings.secrets_mappings)
         family.init_task_definition()
         family.set_secrets_access()
         family.refresh()
