@@ -410,10 +410,10 @@ class ComposeService(object):
         self.set_container_definition()
 
     def set_container_definition(self):
-        # secrets = []
-        # for secret_def in self.secrets:
-        #     for secret in secret_def.ecs_secret:
-        #         secrets.append(secret)
+        """
+        Function to define the container definition matching the service definition
+        """
+        secrets = [secret for secrets in self.secrets for secret in secrets.ecs_secret]
         self.container_definition = ContainerDefinition(
             Image=Ref(self.image_param),
             Name=self.name,
@@ -439,9 +439,7 @@ class ComposeService(object):
             HealthCheck=self.ecs_healthcheck,
             DependsOn=Ref(AWS_NO_VALUE),
             Essential=True,
-            Secrets=[
-                secret for secrets in self.secrets for secret in secrets.ecs_secret
-            ],
+            Secrets=secrets,
         )
         self.container_parameters.update({self.image_param.title: self.image})
 

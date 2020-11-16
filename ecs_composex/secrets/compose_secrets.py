@@ -78,6 +78,7 @@ class ComposeSecret(object):
     map_kms_name = "KmsKeyId"
     map_arn_name = "Arn"
     map_name_name = "Name"
+    json_keys_key = "JsonKeys"
     map_name = RES_KEY
 
     def __init__(self, name, definition, settings):
@@ -92,7 +93,7 @@ class ComposeSecret(object):
         self.aws_name = None
         self.kms_key = None
         self.kms_key_arn = None
-        self.ecs_secret = None
+        self.ecs_secret = []
         self.mapping = {}
         if not keyisset("Lookup", self.definition[XRES_KEY]):
             self.define_names_from_import()
@@ -103,8 +104,59 @@ class ComposeSecret(object):
         self.validate_links()
         if self.mapping:
             settings.secrets_mappings.update({self.name: self.mapping})
+            self.add_json_keys()
+
+    def add_json_keys(self):
+        """
+        Method to add secrets definitions based on JSON secret keys
+        """
+        if not keyisset(self.json_keys_key, self.definition[XRES_KEY]):
+            return
+        required_keys = ["Name", "Key"]
+        for secret_key in self.definition[XRES_KEY][self.json_keys_key]:
+            if not all(key in required_keys for key in secret_key):
+                raise KeyError(
+                    "For Secrets JSON Key support, you must specify",
+                    required_keys,
+                    "Got",
+                    secret_key.keys(),
+                )
+            json_key = secret_key["Key"]
+            secret_name = secret_key["Name"]
+            if isinstance(self.arn, str):
+                self.ecs_secret.append(
+                    EcsSecret(Name=secret_name, ValueFrom=f"{self.arn}:{json_key}")
+                )
+            elif isinstance(self.arn, Sub):
+                self.ecs_secret.append(
+                    EcsSecret(
+                        Name=secret_name,
+                        ValueFrom=Sub(
+                            f"arn:${{{AWS_PARTITION}}}:secretsmanager:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:"
+                            f"secret:${{SecretName}}:{json_key}",
+                            SecretName=FindInMap(
+                                self.map_name, self.name, self.map_name_name
+                            ),
+                        ),
+                    )
+                )
+            elif isinstance(self.arn, FindInMap):
+                self.ecs_secret.append(
+                    EcsSecret(
+                        Name=secret_name,
+                        ValueFrom=Sub(
+                            f"${{SecretArn}}:{json_key}",
+                            SecretArn=FindInMap(
+                                self.map_name, self.name, self.map_kms_name
+                            ),
+                        ),
+                    )
+                )
 
     def define_names_from_import(self):
+        """
+        Method to define the names from docker-compose file content
+        """
         if not keyisset(self.map_name_name, self.definition[XRES_KEY]):
             raise KeyError(
                 f"Missing {self.map_name_name} when doing non-lookup import for {self.name}"

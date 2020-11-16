@@ -12,9 +12,13 @@ and add an extension field which will be a direct mapping to the secret name you
 ECS ComposeX will automatically add IAM permissions to **the execution** role of your Task definition and will export the secret
 to your container, using the same name as in the compose file.
 
-.. note::
+.. seealso::
 
-    Only Fargate 1.4.0+ Platform Version supports secrets JSON Key
+    `docker-compose secrets reference`_
+
+.. hint::
+
+    For security purposes, the containers **envoy** and **xray-daemon** are not getting assigned the secrets.
 
 
 Syntax
@@ -25,6 +29,7 @@ Syntax
     x-secrets:
       Name: str
       LinksTo: []
+      JsonKeys: []
       Lookup: {}
 
 Name
@@ -65,14 +70,30 @@ secret definition as follows:
     If you do not specify **EcsExecutionRole** when specifying **LinksTo** then you will not get the secret exposed
     to your container via AWS ECS Secrets property of your Container Definition
 
-.. hint::
+JsonKeys
+--------
 
-    For security purposes, the containers **envoy** and **xray-daemon** are not getting assigned the secrets.
+Type: List of objects/dicts
 
+.. note::
 
-.. seealso::
+    Only Fargate 1.4.0+ Platform Version supports secrets JSON Key
 
-    `docker-compose secrets reference`_
+.. code-block:: yaml
+    :caption: JsonKeys objects structure
+
+    Key: str
+    Name: str
+
+Key
+"""
+
+Name of the JSON Key in your secret.
+
+Name
+""""
+
+The Name of the secret specifically for the secret JSON key
 
 
 Examples
@@ -105,7 +126,7 @@ Examples
 
 
 .. code-block:: yaml
-    :caption: Secret Looked up from Tags and Name.
+    :caption: Secret Looked up from Tags and Name, also using JsonKeys
 
     secrets:
       zyx:
@@ -115,6 +136,11 @@ Examples
             Tags:
               - costcentre: lambda
               - composexdev: "yes"
+          JsonKeys:
+            - Key: username
+              Name: PSQL_USERNAME
+            - Key: password
+              Name: PSQL_PASSWORD
 
 
 .. code-block:: yaml

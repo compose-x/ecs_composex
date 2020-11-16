@@ -13,6 +13,9 @@ secrets:
         Tags:
           - costcentre: lambda
           - composexdev: "yes"
+      JsonKeys:
+        - Name: ZYX_TEST
+          Key: test
 services:
   app01:
     deploy:
