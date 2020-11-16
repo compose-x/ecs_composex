@@ -82,7 +82,7 @@ def lookup_ecs_cluster(session, cluster_lookup):
             LOG.warning(
                 f"No cluster named {cluster_lookup} found. Creating one with default settings"
             )
-            return CLUSTER_NAME.Default
+            return None
         elif (
             keyisset("clusters", cluster_r)
             and cluster_r["clusters"][0]["clusterName"] == cluster_lookup
@@ -154,7 +154,6 @@ def handle_cluster_settings(root_stack, settings):
     :param ecs_composex.common.settings.ComposeXSettings settings:
     :return:
     """
-    root_stack.stack_parameters.update({CLUSTER_NAME.title: CLUSTER_NAME.Default})
     if not keyisset(RES_KEY, settings.compose_content):
         LOG.info("No cluster information provided. Creating a new one")
         root_stack.stack_template.add_resource(get_default_cluster_config())
@@ -169,8 +168,9 @@ def handle_cluster_settings(root_stack, settings):
             cluster_name = lookup_ecs_cluster(
                 settings.session, settings.compose_content[RES_KEY]["Lookup"]
             )
-            setattr(CLUSTER_NAME, "Default", cluster_name)
-            root_stack.Parameters.update({CLUSTER_NAME.title: cluster_name})
+            if cluster_name:
+                setattr(CLUSTER_NAME, "Default", cluster_name)
+                root_stack.Parameters.update({CLUSTER_NAME.title: cluster_name})
         elif keyisset("Properties", settings.compose_content[RES_KEY]):
             cluster = define_cluster(root_stack, settings.compose_content[RES_KEY])
             root_stack.stack_template.add_resource(cluster)

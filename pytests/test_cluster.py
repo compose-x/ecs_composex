@@ -16,13 +16,15 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from os import path
-import pytest
+
 import boto3
 import placebo
+import pytest
 from troposphere import Template
+
 from ecs_composex.common import keyisset
-from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common.settings import ComposeXSettings
+from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.ecs.ecs_cluster import add_ecs_cluster
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME
 
@@ -57,10 +59,7 @@ def test_lookup(existing_cluster, nonexisting_cluster):
         },
     )
     add_ecs_cluster(settings, stack)
-    assert (
-        keyisset(CLUSTER_NAME.title, stack.Parameters)
-        and not stack.Parameters[CLUSTER_NAME.title] == CLUSTER_NAME.Default
-    )
+    assert keyisset(CLUSTER_NAME.title, stack.Parameters)
 
     template = Template()
     stack = ComposeXStack("test", stack_template=template)
@@ -74,7 +73,4 @@ def test_lookup(existing_cluster, nonexisting_cluster):
         },
     )
     add_ecs_cluster(settings, stack)
-    assert (
-        keyisset(CLUSTER_NAME.title, stack.Parameters)
-        and stack.Parameters[CLUSTER_NAME.title] == CLUSTER_NAME.Default
-    )
+    assert not keyisset(CLUSTER_NAME.title, stack.Parameters)
