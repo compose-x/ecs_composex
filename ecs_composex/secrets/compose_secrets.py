@@ -29,6 +29,7 @@ from troposphere.ecs import Secret as EcsSecret
 
 from ecs_composex.common import LOG, keyisset, NONALPHANUM
 from ecs_composex.ecs.ecs_params import TASK_ROLE_T, EXEC_ROLE_T
+from ecs_composex.kms.kms_params import KMS_KEY_ARN_RE
 from ecs_composex.secrets.secrets_aws import lookup_secret_config
 from ecs_composex.secrets.secrets_params import XRES_KEY, RES_KEY
 
@@ -127,9 +128,11 @@ class ComposeSecret(object):
             )
             self.ecs_secret = [EcsSecret(Name=self.name, ValueFrom=self.arn)]
         if keyisset(self.map_kms_name, self.definition):
-            if not self.definition[self.map_kms_name].startswith("arn:"):
+            if not self.definition[self.map_kms_name].startswith(
+                "arn:"
+            ) or not KMS_KEY_ARN_RE.match(self.definition[self.map_kms_name]):
                 LOG.error(
-                    f"When specifying {self.map_kms_name} you must specify the full ARN"
+                    f"When specifying {self.map_kms_name} you must specify the full VALID ARN"
                 )
             else:
                 self.mapping[self.map_kms_name] = self.definition[self.map_kms_name]
@@ -142,9 +145,10 @@ class ComposeSecret(object):
         Method to Lookup the secret based on its tags.
         :return:
         """
-        secret_config = lookup_secret_config(
-            self.logical_name, self.definition[XRES_KEY]["Lookup"], session
-        )
+        lookup_info = self.definition[XRES_KEY]["Lookup"]
+        if keyisset("Name", self.definition[XRES_KEY]):
+            lookup_info["Name"] = self.definition[XRES_KEY]["Name"]
+        secret_config = lookup_secret_config(self.logical_name, lookup_info, session)
         self.aws_name = get_name_from_arn(secret_config[self.logical_name])
         self.arn = secret_config[self.logical_name]
         if keyisset("KmsKeyId", secret_config) and not secret_config[
