@@ -59,6 +59,7 @@ def test_iam_role_arn():
     here = path.abspath(path.dirname(__file__))
     session = boto3.session.Session()
     pill = placebo.attach(session, data_path=f"{here}/{case_path}")
+    # pill.record()
     pill.playback()
 
     ComposeXSettings(
