@@ -458,16 +458,6 @@ class ComposeXSettings(object):
             self.compose_content[ComposeService.main_key][service_name] = service
             self.services.append(service)
 
-    def get_family_name(self, family_name):
-        if family_name != NONALPHANUM.sub("", family_name):
-            if not NONALPHANUM.sub("", family_name) in self.families.keys():
-                LOG.warn(
-                    f"Family name {family_name} must be AlphaNumerical. "
-                    f"Set to {NONALPHANUM.sub('', family_name)}"
-                )
-            family_name = NONALPHANUM.sub("", family_name)
-        return family_name
-
     def add_new_family(self, family_name, service, assigned_services):
         if service.name in [service.name for service in assigned_services]:
             LOG.info(
