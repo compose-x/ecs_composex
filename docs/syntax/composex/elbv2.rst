@@ -63,6 +63,37 @@ Once again in an effort of making configuration shorter and easier, here as the 
 These settings are just a shorter notation for the `LB Attributes`_
 
 
+MacroParameters
+================
+
+.. _ingress_syntax_ref:
+
+Ingress
+-------
+
+Similar syntax as for ECS Services Ingress, allow you to define Ingress (only applies to ALB).
+
+.. code-block:: yaml
+    :caption: Ingress Syntax
+
+    Ingress:
+      ExtSources: []
+      AwsSources: []
+
+.. code-block:: yaml
+    :caption: ExtSources syntax
+
+    ExtSources:
+      - Name: str (if any non alphanumeric character set, will be deleted)
+        Description: str
+        Ipv4: str
+
+.. code-block:: yaml
+    :caption: AwsSources syntax
+
+    AwsSources:
+      - Type: SecurityGroup|PrefixList (str)
+        Id: sg-[a-z0-9]+|pl-[a-z0-9]+
 
 Services
 ========
@@ -124,7 +155,7 @@ However, it is also possible to shorten the syntax into a simple string
 
 
 Listeners
----------
+=========
 
 You can define in a very simple way your `Listener definition`_ and cross-reference other resources, here, the services
 and ACM certificates you might be creating.
