@@ -30,12 +30,20 @@ from troposphere.ecs import (
 )
 from troposphere.iam import Policy
 
-from ecs_composex.appmesh import appmesh_params, appmesh_conditions, metadata
 from ecs_composex.common import LOG, add_parameters
 from ecs_composex.common.outputs import ComposeXOutput
 from ecs_composex.dns.dns_params import PRIVATE_DNS_ZONE_NAME
 from ecs_composex.ecs import ecs_params
 from ecs_composex.common.compose_services import extend_container_envvars
+from ecs_composex.appmesh import appmesh_params, appmesh_conditions, metadata
+from ecs_composex.appmesh.appmesh_params import (
+    NODE_KEY,
+    NODES_KEY,
+    ROUTES_KEY,
+    MATCH_KEY,
+    NAME_KEY,
+    BACKENDS_KEY,
+)
 
 
 class MeshNode(object):
@@ -101,12 +109,12 @@ class MeshNode(object):
             f"{self.stack.title}VirtualNode",
             MeshName=Ref(appmesh_params.MESH_NAME),
             MeshOwner=Ref(appmesh_params.MESH_OWNER_ID),
-            VirtualNodeName=GetAtt(sd_service, "Name"),
+            VirtualNodeName=GetAtt(sd_service, NAME_KEY),
             Spec=appmesh.VirtualNodeSpec(
                 ServiceDiscovery=appmesh.ServiceDiscovery(
                     AWSCloudMap=appmesh.AwsCloudMapServiceDiscovery(
                         NamespaceName=Ref(PRIVATE_DNS_ZONE_NAME),
-                        ServiceName=GetAtt(sd_service, "Name"),
+                        ServiceName=GetAtt(sd_service, NAME_KEY),
                     )
                 ),
                 Listeners=[
@@ -311,7 +319,7 @@ class MeshNode(object):
         for container in task_def.ContainerDefinitions:
             extend_container_envvars(container, env_vars=container_envvars)
         node_spec = getattr(self.node, "Spec")
-        setattr(node_spec, "Backends", backends)
+        setattr(node_spec, BACKENDS_KEY, backends)
 
     def create_ingress_rule(self, root_stack, nodes):
         """

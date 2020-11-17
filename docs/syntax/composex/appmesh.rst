@@ -23,12 +23,12 @@ Syntax definition
         MeshOwner: str
         EgressPolicy: str
       Settings:
-        nodes:
-          - nodes
-        routers:
-          - router
-        services:
-          - service
+        Nodes:
+          - <node>
+        Routers:
+          - <router>
+        Services:
+          - <service>
 
 
 
@@ -99,9 +99,9 @@ Syntax
 
 .. code-block:: yaml
 
-    name: str # <family name>
-    protocol: str
-    backends:
+    Name: str # <family name>
+    Procotol str
+    Backends:
       - <service_name> # Only services can be defined as backend
 
 Example
@@ -112,12 +112,12 @@ family name.
 
 .. code-block::
 
-    nodes:
-      - name: app01
-        protocol: http
-      - name: app02
-        protocol: tcp
-        backends:
+    Nodes:
+      - Name: app01
+        Procotol Http
+      - Name: app02
+        Procotol Tcp
+        Backends:
           - service-abcd
 
 routers
@@ -129,7 +129,7 @@ Definition
 Routers as mentioned in the module description, are here to allow developers to define how packets should be routed
 from one place to another.
 
-For TCP ones, one can only really set timeout settings, in addition to TLS etc. However for http, http2 and gRPC it
+For TCP ones, one can only really set timeout settings, in addition to TLS etc. However for Http, Http2 and gRPC it
 allows you to define further more rules. The example below shows how a request to the router on path **/** it should
 send requests with the POST method to app02, but requests with the GET method to app01.
 
@@ -138,12 +138,12 @@ Syntax
 
 .. code-block:: yaml
 
-    name: str
-    listener:
-      protocol: str
+    Name: str
+    Listener
+      Procotol str
       port: int
-    routes:
-      http:
+    Routes:
+      Http:
         - <match>
 
 matches
@@ -161,11 +161,11 @@ Syntax
 
 .. code-block:: yaml
 
-    match:
-      prefix: str
-    method: str
-    scheme: str
-    nodes:
+    Match:
+      Prefix: str
+    Method: str
+    Scheme:: str
+    Nodes:
       - <node_name>
 
 Example
@@ -173,23 +173,23 @@ Example
 
 .. code-block:: yaml
 
-    routers:
-      - name: httprouter
-        listener:
-          protocol: http
+    Routers:
+      - Name: Httprouter
+        Listener
+          Procotol Http
           port: 8080
-        routes:
-          http:
-            - match:
-                prefix: /
-              method: GET
-              scheme: http
-              nodes:
+        Routes:
+          Http:
+            - Match:
+                Prefix: /
+              Method: GET
+              Scheme:: Http
+              Nodes:
                 - app01
-            - match:
-                prefix: /
-              method: POST
-              nodes:
+            - Match:
+                Prefix: /
+              Method: POST
+              Nodes:
                 - app02
 
 services
@@ -203,19 +203,19 @@ Syntax
 
 .. code-block::
 
-    services:
-      - node: <node_name>
-        name: str
-      - router: <router_name>
-        name: str
+    Services:
+      - Node: <node_name>
+        Name: str
+      - Router: <router_name>
+        Name: str
 
 .. code-block:: yaml
 
-    services:
-      - name: service-xyz
-        router: httprouter
-      - name: service-xyz
-        node: app03
+    Services:
+      - Name: service-xyz
+        Router: Httprouter
+      - Name: service-xyz
+        Node: app03
 
 Examples
 --------
@@ -223,6 +223,6 @@ Examples
 .. literalinclude:: ../../../use-cases/appmesh/new_mesh.yml
     :language: yaml
 
-.. _HTTP Route: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-appmesh-route-httproutematch.html
-.. _TCP Route: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-appmesh-route-httproutematch.html
-.. _gRPC route: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-appmesh-route-grpcroutematch.html
+.. _HTTP Route: Https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-appmesh-route-Httproutematch.html
+.. _TCP Route: Https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-appmesh-route-Httproutematch.html
+.. _gRPC route: Https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-appmesh-route-grpcroutematch.html

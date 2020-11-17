@@ -30,6 +30,7 @@ from troposphere.servicediscovery import (
 )
 
 from ecs_composex.appmesh import appmesh_conditions
+from ecs_composex.appmesh.appmesh_params import NODE_KEY, ROUTER_KEY, ROUTERS_KEY
 from ecs_composex.common import NONALPHANUM, keyisset
 from ecs_composex.dns.dns_params import (
     PRIVATE_DNS_ZONE_ID,
@@ -46,17 +47,17 @@ def validate_service_backend(service, routers, nodes):
     :param routers:
     :raises: KeyError
     """
-    if keyisset("router", service) and service["router"] not in routers.keys():
+    if keyisset(ROUTER_KEY, service) and service[ROUTER_KEY] not in routers.keys():
         raise KeyError(
             "Routers provided not found in the routers description. Got",
-            service["routers"],
+            service[ROUTERS_KEY],
             "Expected",
             routers.keys(),
         )
-    if keyisset("node", service) and service["node"] not in nodes.keys():
+    if keyisset(NODE_KEY, service) and service[NODE_KEY] not in nodes.keys():
         raise KeyError(
             "Nodes provided not found in nodes defined. Got",
-            service["node"],
+            service[NODE_KEY],
             "Expected one of",
             nodes.keys(),
         )
@@ -79,13 +80,13 @@ class MeshService(object):
         self.title = NONALPHANUM.sub("", name)
         self.definition = definition
         service_node = (
-            nodes[self.definition["node"]]
-            if keyisset("node", self.definition)
+            nodes[self.definition[NODE_KEY]]
+            if keyisset(NODE_KEY, self.definition)
             else None
         )
         service_router = (
-            routers[self.definition["router"]]
-            if keyisset("router", self.definition)
+            routers[self.definition[ROUTER_KEY]]
+            if keyisset(ROUTER_KEY, self.definition)
             else None
         )
         if not service_router and not service_node:

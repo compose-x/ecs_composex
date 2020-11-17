@@ -24,20 +24,33 @@ from troposphere import Sub, Ref, GetAtt
 from troposphere import appmesh
 
 from ecs_composex.appmesh import appmesh_conditions
+from ecs_composex.appmesh.appmesh_params import (
+    PREFIX_KEY,
+    METHOD_KEY,
+    SCHEME_KEY,
+    LISTENER_KEY,
+    PROTOCOL_KEY,
+    ROUTES_KEY,
+    MATCH_KEY,
+    NAME_KEY,
+    NODES_KEY,
+    NODE_KEY,
+    PORT_KEY,
+)
 from ecs_composex.common import NONALPHANUM, keyisset, LOG
 
 
 def define_http_route(route_match, route_nodes):
     route = appmesh.HttpRoute(
         Match=appmesh.HttpRouteMatch(
-            Prefix=route_match["prefix"]
-            if keyisset("prefix", route_match)
+            Prefix=route_match[PREFIX_KEY]
+            if keyisset(PREFIX_KEY, route_match)
             else Ref(AWS_NO_VALUE),
-            Scheme=route_match["scheme"]
-            if keyisset("scheme", route_match)
+            Scheme=route_match[SCHEME_KEY]
+            if keyisset(SCHEME_KEY, route_match)
             else Ref(AWS_NO_VALUE),
-            Method=route_match["method"]
-            if keyisset("method", route_match)
+            Method=route_match[METHOD_KEY]
+            if keyisset(METHOD_KEY, route_match)
             else Ref(AWS_NO_VALUE),
         ),
         Action=appmesh.HttpRouteAction(
@@ -60,9 +73,9 @@ def define_route_name(route_match):
     :param dict route_match: The route argument.
     :return:
     """
-    prefix = "prefix"
-    method = "method"
-    scheme = "scheme"
+    prefix = PREFIX_KEY
+    method = METHOD_KEY
+    scheme = SCHEME_KEY
 
     allowed_methods = [
         "GET",
@@ -75,7 +88,7 @@ def define_route_name(route_match):
         "PUT",
         "TRACE",
     ]
-    allowed_schemes = ["http", "https"]
+    allowed_schemes = ["Http", "Https"]
 
     prefix_suffix = ""
     method_suffix = ""
@@ -102,8 +115,8 @@ class MeshRouter(object):
     Defines a router.
     """
 
-    tcp_routes_keys = ["nodes"]
-    http_routes_keys = ["match", "nodes"]
+    tcp_routes_keys = [NODES_KEY]
+    http_routes_keys = [MATCH_KEY, NODES_KEY]
 
     def __init__(self, name, definition, mesh, nodes):
         """
@@ -119,9 +132,9 @@ class MeshRouter(object):
         self.definition = definition
         self.validate_definition()
         self.mesh = mesh
-        self.port = self.definition["listener"]["port"]
-        self.protocol = self.definition["listener"]["protocol"]
-        self.raw_routes = self.definition["routes"]
+        self.port = self.definition[LISTENER_KEY][PORT_KEY]
+        self.protocol = self.definition[LISTENER_KEY][PROTOCOL_KEY]
+        self.raw_routes = self.definition[ROUTES_KEY]
         self.routes = []
         self.nodes = []
         self.router = appmesh.VirtualRouter(
@@ -145,17 +158,17 @@ class MeshRouter(object):
         """
         Method to validate the router definition
         """
-        if not keyisset("routes", self.definition):
+        if not keyisset(ROUTES_KEY, self.definition):
             raise KeyError(f"No routes defined for the router {self.title}")
-        routes = self.definition["routes"]
-        if not keyisset("listener", self.definition):
+        routes = self.definition[ROUTES_KEY]
+        if not keyisset(LISTENER_KEY, self.definition):
             raise KeyError(f"No listener configured for router {self.title}")
-        listener = self.definition["listener"]
-        if not keyisset("port", listener) or not keyisset("protocol", listener):
-            raise KeyError("Listener for router requires port and protocol")
-        if not listener["protocol"] in routes.keys():
+        listener = self.definition[LISTENER_KEY]
+        if not keyisset(PORT_KEY, listener) or not keyisset(PROTOCOL_KEY, listener):
+            raise KeyError("Listener for router requires Port and Protocol")
+        if not listener[PROTOCOL_KEY] in routes.keys():
             raise ValueError(
-                f"The virtual router is configured for {listener['protocol']} but no such route configured"
+                f"The virtual router is configured for {listener[PROTOCOL_KEY]} but no such route configured"
             )
 
     def handle_http_route(self, routes, router, nodes, http2=False):
@@ -169,19 +182,19 @@ class MeshRouter(object):
         :return:
         """
         for route in routes:
-            if not all(key in ["match", "nodes"] for key in route.keys()):
+            if not all(key in [MATCH_KEY, NODES_KEY] for key in route.keys()):
                 raise AttributeError(
                     "Each route must have match and nodes. Got", route.keys()
                 )
             route_nodes = []
-            for node in route["nodes"]:
-                if node["name"] in nodes.keys():
-                    route_nodes.append(nodes[node["name"]])
+            for node in route[NODES_KEY]:
+                if node[NAME_KEY] in nodes.keys():
+                    route_nodes.append(nodes[node[NAME_KEY]])
                 else:
                     raise ValueError(
-                        f'node {node["name"]} is not defined as a virtual node.'
+                        f"node {node[NAME_KEY]} is not defined as a virtual node."
                     )
-            route_match = route["match"]
+            route_match = route[MATCH_KEY]
             route = define_http_route(route_match, route_nodes)
             self.nodes += [node for node in route_nodes]
             route_name = define_route_name(route_match)
@@ -208,19 +221,19 @@ class MeshRouter(object):
         :param dict nodes: Nodes in the mesh
         """
         for route in routes:
-            if not all(key in ["nodes"] for key in route.keys()):
+            if not all(key in [NODES_KEY] for key in route.keys()):
                 raise AttributeError("Each route must have nodes. Got", route.keys())
             route_nodes = []
-            for node in route["nodes"]:
-                if node["name"] in nodes.keys():
-                    route_nodes.append(nodes[node["name"]])
+            for node in route[NODES_KEY]:
+                if node[NAME_KEY] in nodes.keys():
+                    route_nodes.append(nodes[node[NAME_KEY]])
                 else:
                     raise ValueError(
-                        f'node {node["name"]} is not defined as a virtual node.'
+                        f"node {node[NAME_KEY]} is not defined as a virtual node."
                     )
             route = appmesh.TcpRoute(
                 Timeout=appmesh.TcpTimeout(Idle=appmesh.Duration(Unit="ms", Value=1))
-                if keyisset("timeout", route)
+                if keyisset("Timeout", route)
                 else Ref(AWS_NO_VALUE),
                 Action=appmesh.TcpRouteAction(
                     WeightedTargets=[
@@ -255,16 +268,16 @@ class MeshRouter(object):
                     f"but a route for protocol {route_protocol} has been found. This is not supported."
                 )
 
-            if route_protocol == "http" or route_protocol == "http2":
+            if route_protocol == "Http" or route_protocol == "Http2":
                 self.handle_http_route(
                     self.raw_routes[route_protocol],
                     self.router,
                     nodes,
-                    eval('route_protocol == "http2"'),
+                    eval('route_protocol == "Http2"'),
                 )
-            elif route_protocol == "tcp":
+            elif route_protocol == "Tcp":
                 self.handle_tcp_route(
                     self.raw_routes[route_protocol], self.router, nodes
                 )
-            elif route_protocol == "grcp":
+            elif route_protocol == "gRPC":
                 LOG.warn("gRPC is not yet supported. Sorry.")
