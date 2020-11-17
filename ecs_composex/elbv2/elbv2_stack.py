@@ -44,6 +44,7 @@ from troposphere.elasticloadbalancingv2 import (
     TargetGroupTuple,
 )
 
+from ecs_composex.ingress_settings import Ingress, set_service_ports
 from ecs_composex.acm.acm_params import RES_KEY as ACM_KEY, MOD_KEY as ACM_MOD_KEY
 from ecs_composex.common import NONALPHANUM, LOG
 from ecs_composex.common import keyisset, keypresent, build_template, add_parameters
@@ -598,8 +599,11 @@ class Elbv2(XResource):
     """
 
     def __init__(self, name, definition, settings):
+        if not keyisset("Listeners", definition):
+            raise KeyError("You must specify at least one Listener for a LB.", name)
         self.lb_is_public = False
         self.lb_type = "application"
+        self.ingress = None
         self.lb_sg = None
         self.lb_eips = []
         self.unique_service_lb = False
@@ -736,7 +740,34 @@ class Elbv2(XResource):
                     f"{self.logical_name}-{self.lb_type}-sg-${{{AWS_STACK_NAME}}}"
                 ),
                 VpcId=Ref(VPC_ID),
+                Tags=Tags(Name=Sub(f"elbv2-{self.logical_name}-${{{AWS_STACK_NAME}}}")),
             )
+
+    def sort_alb_ingress(self, stack_template):
+        """
+        Method to handle Ingress to ALB
+        """
+        if (
+            not self.parameters
+            or (self.parameters and not keyisset("Ingress", self.parameters))
+            or self.is_nlb()
+        ):
+            LOG.warn(
+                "You defined ingress rules for a NLB. This is invalid. Define ingress rules at the service level."
+            )
+            return
+        ports = [listener["Port"] for listener in self.definition["Listeners"]]
+        ports = set_service_ports(ports)
+        self.ingress = Ingress(self.parameters["Ingress"], ports)
+        if self.ingress and self.is_alb():
+            self.ingress.set_aws_sources(
+                self.logical_name, GetAtt(self.lb_sg, "GroupId")
+            )
+            self.ingress.set_ext_sources_ingress(
+                self.logical_name, GetAtt(self.lb_sg, "GroupId")
+            )
+            self.ingress.associate_aws_igress_rules(stack_template)
+            self.ingress.associate_ext_igress_rules(stack_template)
 
     def set_eips(self, settings):
         """
@@ -918,4 +949,5 @@ class XStack(ComposeXStack):
         }
         for resource in new_resources:
             resource.set_lb_definition(settings)
+            resource.sort_alb_ingress(stack_template)
         super().__init__(title, stack_template, stack_parameters=lb_input, **kwargs)

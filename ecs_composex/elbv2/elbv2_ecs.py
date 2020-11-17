@@ -32,6 +32,7 @@ from ecs_composex.common import keyisset, add_parameters
 from ecs_composex.common.outputs import ComposeXOutput
 from ecs_composex.elbv2.elbv2_params import TGT_GROUP_ARN
 from ecs_composex.vpc.vpc_params import VPC_ID, SG_ID_TYPE
+from ecs_composex.ecs.ecs_params import ELB_GRACE_PERIOD
 
 
 def validate_tcp_health_counts(props):
@@ -331,6 +332,8 @@ def define_service_target_group(
         TargetGroupArn=Ref(tgt_parameter),
     )
     family.ecs_service.ecs_service.LoadBalancers.append(service_lb)
+    add_parameters(family.template, [ELB_GRACE_PERIOD])
+    family.ecs_service.ecs_service.HealthCheckGracePeriodSeconds = Ref(ELB_GRACE_PERIOD)
     handle_sg_lb_ingress_to_service(resource, family, resources_root_stack)
     return target_group
 

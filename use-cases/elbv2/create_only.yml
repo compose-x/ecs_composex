@@ -28,6 +28,15 @@ x-elbv2:
      drop_invalid_header_fields: True
      http2: False
      cross_zone: True
+    MacroParameters:
+      Ingress:
+        ExtSources:
+          - Ipv4: "0.0.0.0/0"
+            Description: ANY
+        ExtSources:
+          - Ipv4: "1.1.1.1/32"
+            Description: CLOUDFLARE
+            Name: CLOUDFLARE
     Listeners:
       - Port: 80
         Protocol: HTTP

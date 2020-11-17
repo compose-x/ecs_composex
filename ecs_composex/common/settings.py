@@ -28,6 +28,7 @@ from botocore.exceptions import ClientError
 from cfn_flip.yaml_dumper import LongCleanDumper
 
 from ecs_composex import __version__
+from ecs_composex.ingress_settings import set_service_ports
 from ecs_composex.common import keyisset, LOG, load_composex_file, NONALPHANUM
 from ecs_composex.common.aws import get_account_id, get_region_azs
 from ecs_composex.common.aws import get_cross_role_session
@@ -36,7 +37,6 @@ from ecs_composex.secrets.compose_secrets import ComposeSecret
 from ecs_composex.common.compose_services import (
     ComposeService,
     ComposeFamily,
-    set_service_ports,
 )
 from ecs_composex.common.compose_volumes import ComposeVolume
 from ecs_composex.common.envsubst import expandvars
