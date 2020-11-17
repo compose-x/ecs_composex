@@ -33,6 +33,10 @@ x-elbv2:
         ExtSources:
           - Ipv4: "0.0.0.0/0"
             Description: ANY
+        ExtSources:
+          - Ipv4: "1.1.1.1/32"
+            Description: CLOUDFLARE
+            Name: CLOUDFLARE
     Listeners:
       - Port: 80
         Protocol: HTTP

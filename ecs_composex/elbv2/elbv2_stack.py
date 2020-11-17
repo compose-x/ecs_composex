@@ -748,22 +748,24 @@ class Elbv2(XResource):
         Method to handle Ingress to ALB
         """
         if (
-            (self.parameters and keyisset("Ingress", self.parameters))
-            or not self.parameters
-            or not keyisset("Ingress", self.parameters)
+            not self.parameters
+            or (self.parameters and not keyisset("Ingress", self.parameters))
             or self.is_nlb()
         ):
             LOG.warn(
                 "You defined ingress rules for a NLB. This is invalid. Define ingress rules at the service level."
             )
             return
-
         ports = [listener["Port"] for listener in self.definition["Listeners"]]
         ports = set_service_ports(ports)
         self.ingress = Ingress(self.parameters["Ingress"], ports)
         if self.ingress and self.is_alb():
-            self.ingress.set_aws_sources(self.logical_name, self.lb_sg)
-            self.ingress.set_ext_sources_ingress(self.logical_name, self.lb_sg)
+            self.ingress.set_aws_sources(
+                self.logical_name, GetAtt(self.lb_sg, "GroupId")
+            )
+            self.ingress.set_ext_sources_ingress(
+                self.logical_name, GetAtt(self.lb_sg, "GroupId")
+            )
             self.ingress.associate_aws_igress_rules(stack_template)
             self.ingress.associate_ext_igress_rules(stack_template)
 

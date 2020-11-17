@@ -194,7 +194,14 @@ def generate_services(settings):
         family.assign_policies()
         family.service_config = ServiceConfig(family, settings)
         family.ecs_service = Service(family, settings)
-        family.service_config.network.refresh(family)
+        family.service_config.network.set_aws_sources(
+            family.logical_name, GetAtt(family.ecs_service.sg, "GroupId")
+        )
+        family.service_config.network.set_ext_sources_ingress(
+            family.logical_name, GetAtt(family.ecs_service.sg, "GroupId")
+        )
+        family.service_config.network.associate_aws_igress_rules(family.template)
+        family.service_config.network.associate_ext_igress_rules(family.template)
         family.stack_parameters.update(
             {
                 ecs_params.SERVICE_NAME_T: family.logical_name,

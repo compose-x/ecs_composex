@@ -70,52 +70,6 @@ def generate_security_group_props(allowed_source):
     return props
 
 
-def handle_ext_sources(existing_sources, new_sources):
-    LOG.debug("Source", dumps(existing_sources, indent=2))
-    set_ipv4_sources = [s["ipv4"] for s in existing_sources if keyisset("ipv4", s)]
-    for new_s in new_sources:
-        if new_s not in set_ipv4_sources:
-            existing_sources.append(new_s)
-
-
-def handle_aws_sources(existing_sources, new_sources):
-    LOG.debug("Source", dumps(existing_sources, indent=2))
-    set_ids = [s["id"] for s in existing_sources if keyisset("id", s)]
-    allowed_keys = ["PrefixList", "SecurityGroup"]
-    for new_s in new_sources:
-        if new_s not in set_ids and new_s["type"] in allowed_keys:
-            existing_sources.append(new_s)
-        elif new_s["id"] not in allowed_keys:
-            LOG.error(
-                f"AWS Source type incorrect: {new_s['type']}. Expected one of {allowed_keys}"
-            )
-
-
-def handle_ingress_rules(source_config, ingress_config):
-    LOG.debug("Source", dumps(source_config, indent=2))
-    valid_keys = [
-        ("myself", bool, None),
-        ("ext_sources", list, handle_ext_sources),
-        ("aws_sources", list, handle_aws_sources),
-    ]
-    for key in valid_keys:
-        if keypresent(key[0], ingress_config) and isinstance(
-            ingress_config[key[0]], key[1]
-        ):
-            if key[1] is bool and not keyisset(key[0], source_config):
-                source_config[key[0]] = ingress_config[key[0]]
-            if (
-                key[1] is bool
-                and keyisset(key[0], source_config)
-                and not keyisset(key[0], ingress_config)
-            ):
-                LOG.warn(
-                    "At least one service in the task requires access to itself. Skipping."
-                )
-            elif key[1] is list and keyisset(key[0], ingress_config) and key[2]:
-                key[2](source_config[key[0]], ingress_config[key[0]])
-
-
 def define_protocol(port_string):
     """
     Function to define the port protocol. Defaults to TCP if not specified otherwise
@@ -180,11 +134,13 @@ class Ingress(object):
     """
 
     defined = True
-    network_settings = ["ingress", "use_cloudmap", "is_public", "lb_type"]
 
     master_key = "Ingress"
     aws_sources_key = "AwsSources"
     ext_sources_key = "ExtSources"
+    ipv4_key = "Ipv4"
+    ipv6_key = "Ipv6"
+    network_settings = [master_key, "use_cloudmap", "is_public"]
 
     def __init__(self, definition, ports):
         """
@@ -222,10 +178,10 @@ class Ingress(object):
                     "Expected",
                     allowed_keys,
                 )
-            if not source["type"] in allowed_types:
+            if not source["Type"] in allowed_types:
                 raise ValueError(
                     "Invalid type specified. Got",
-                    source["type"],
+                    source["Type"],
                     "Allowed one of ",
                     allowed_types,
                 )
@@ -250,7 +206,7 @@ class Ingress(object):
                         f"From {source['Id']} to {destination_title} on port {port['published']}"
                     ),
                 }
-                if source["type"] == "SecurityGroup":
+                if source["Type"] == "SecurityGroup":
                     self.aws_ingress_rules.append(
                         SecurityGroupIngress(
                             f"From{NONALPHANUM.sub('', source['Id'])}ToServiceOn{port['published']}",
@@ -259,7 +215,7 @@ class Ingress(object):
                             **common_args,
                         )
                     )
-                elif source["type"] == "PrefixList":
+                elif source["Type"] == "PrefixList":
                     self.aws_ingress_rules.append(
                         SecurityGroupIngress(
                             f"From{NONALPHANUM.sub('', source['Id'])}ToServiceOn{port['published']}",
@@ -294,7 +250,7 @@ class Ingress(object):
                     Description=description
                     if not keyisset("Description", allowed_source)
                     else allowed_source["Description"],
-                    GroupId=GetAtt(security_group, "GroupId"),
+                    GroupId=security_group,
                     IpProtocol=port["protocol"],
                     FromPort=port["published"],
                     ToPort=port["published"],
@@ -308,9 +264,9 @@ class Ingress(object):
         If a list of IPs is found in the config['ext_sources'] part of the network section of configs for the service,
         then it will use that. If no IPv4 source is indicated, it will by default allow traffic from 0.0.0.0/0
 
+        :param str destination_tile: The name of the destination for description
         :param security_group: security group (object or title string) to add the rules to
-        :type security_group: str or troposphere.ec2.SecurityGroup
-        :param ecs_composex.common.compose_services.ComposeFamily family:
+        :type security_group: str or troposphere.ec2.SecurityGroup or troposphere.Ref or Troposphere.GetAtt
         """
         if not self.ext_sources:
             LOG.info("No external rules defined. Skipping.")

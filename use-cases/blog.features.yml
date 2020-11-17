@@ -44,13 +44,13 @@ services:
         is_public: False
         lb_type: application
         use_cloudmap: True
-        ingress:
-          myself: True
-          aws_sources:
-            - type: SecurityGroup
-              id: sg-app01
-            - type: PrefixList
-              id: pl-abcd
+        Ingress:
+          Myself: False
+          AwsSources:
+            - Type: SecurityGroup
+              Id: sg-app01
+            - Type: PrefixList
+              Id: pl-abcd
       iam:
         policies:
           - document:
@@ -128,6 +128,13 @@ services:
       - shared-images:/app/images
       - some-volume:/app/data:ro
     x-configs:
+      network:
+        Ingress:
+          Myself: False
+          ExtSources:
+            - Ipv4: 0.0.0.0/0
+              Description: ANYWHERE
+
       logging:
         logs_retention_period: 42
       scaling:
@@ -168,14 +175,6 @@ services:
         is_public: False
         lb_type: application
         use_cloudmap: True
-        ingress:
-          myself: False
-          ext_sources:
-            - ipv4: 0.0.0.0/0
-              description: ANY RPROXY
-          aws_sources:
-            - type: SecurityGroup
-              id: sg-rproxy
 version: '3.8'
 volumes:
   shared-images: {}

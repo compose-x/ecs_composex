@@ -163,11 +163,6 @@ def add_service_to_map(family):
     )
     for port in family.service_config.network.ports:
         used_port = port["published"]
-        if (
-            family.service_config.network.use_nlb()
-            or family.service_config.network.use_alb()
-        ):
-            used_port = port["target"]
         registry = ServiceRegistry(
             f"ServiceRegistry{used_port}",
             RegistryArn=GetAtt(sd_service, "Arn"),
