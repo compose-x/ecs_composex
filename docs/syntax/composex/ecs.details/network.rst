@@ -22,26 +22,34 @@ to whitelist IP addresses that are to be allowed communication to the services, 
 name which will be shown in the EC2 security group description of the ingress rule.
 
 .. code-block:: yaml
+    :caption: Ingress Example
 
     x-configs:
       app01:
         network:
-	  ingress:
-	    ext_sources:
-	      - ipv4: 0.0.0.0/0
-		protocol: tcp
-		source_name: all
-	      - ipv4: 1.1.1.1/32
-		protocol: icmp
-                source_name: CloudFlareDNS
-	    aws_sources:
-	      - type: SecurityGroup
-	        id: sg-abcd
-	      - type: PrefixList
-		id: pl-abcd
-	    myself: True/False
+          Ingress:
+            ExtSources:
+              - Ipv4: 0.0.0.0/0
+                Name: all
+              - Ipv4: 1.1.1.1/32
+                Source_name: CloudFlareDNS
+            AwsSources:
+              - Type: SecurityGroup
+                Id: sg-abcd
+              - Type: PrefixList
+                Id: pl-abcd
+            Myself: True/False
 
 .. note::
 
     Future feature is to allow to input a security group ID and the remote account ID to allow ingress traffic from
     a security group owned by another of your account (or 3rd party).
+
+.. hint::
+
+    The protocol is automatically detected based on the port definition.
+    By default, it is TCP
+
+.. hint::
+
+    To see details about the Ingress default syntax, refer to :ref:`ingress_syntax_ref`
