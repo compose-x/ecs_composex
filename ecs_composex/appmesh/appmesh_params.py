@@ -23,6 +23,22 @@ from troposphere import Parameter
 
 RES_KEY = "appmesh"
 
+LISTENER_KEY = "Listener"
+PROTOCOL_KEY = "Protocol"
+ROUTES_KEY = "Routes"
+MATCH_KEY = "Match"
+PORT_KEY = "Port"
+NODE_KEY = "Node"
+NAME_KEY = "Name"
+PREFIX_KEY = "Prefix"
+METHOD_KEY = "Method"
+SCHEME_KEY = "Scheme"
+BACKENDS_KEY = "Backends"
+SERVICES_KEY = "Services"
+NODES_KEY = "Nodes"
+ROUTER_KEY = "Router"
+ROUTERS_KEY = "Routers"
+
 MESH_NAME_T = "AppMeshName"
 MESH_NAME = Parameter(MESH_NAME_T, Type="String", Default="AutoCreate")
 

@@ -24,14 +24,6 @@ Once all services have been deployed and their VirtualNodes are setup, we deploy
 from troposphere import Ref, GetAtt, AWS_ACCOUNT_ID, AWS_STACK_NAME
 from troposphere import appmesh
 
-from ecs_composex.appmesh import appmesh_params, appmesh_conditions
-from ecs_composex.appmesh import metadata
-from ecs_composex.appmesh.appmesh_aws import lookup_mesh_by_name
-from ecs_composex.appmesh.appmesh_conditions import add_appmesh_conditions
-from ecs_composex.appmesh.appmesh_node import MeshNode
-from ecs_composex.appmesh.appmesh_params import MESH_NAME, MESH_OWNER_ID
-from ecs_composex.appmesh.appmesh_router import MeshRouter
-from ecs_composex.appmesh.appmesh_service import MeshService
 from ecs_composex.common import (
     keyisset,
     add_parameters,
@@ -40,6 +32,14 @@ from ecs_composex.common import (
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.ecs import ecs_params
+from ecs_composex.appmesh import appmesh_params, appmesh_conditions
+from ecs_composex.appmesh import metadata
+from ecs_composex.appmesh.appmesh_aws import lookup_mesh_by_name
+from ecs_composex.appmesh.appmesh_conditions import add_appmesh_conditions
+from ecs_composex.appmesh.appmesh_node import MeshNode
+from ecs_composex.appmesh.appmesh_params import MESH_NAME, MESH_OWNER_ID
+from ecs_composex.appmesh.appmesh_router import MeshRouter
+from ecs_composex.appmesh.appmesh_service import MeshService
 
 
 class Mesh(object):
@@ -48,9 +48,9 @@ class Mesh(object):
     """
 
     mesh_title = "ServiceMesh"
-    nodes_key = "nodes"
-    routers_key = "routers"
-    services_key = "services"
+    nodes_key = appmesh_params.NODES_KEY
+    routers_key = appmesh_params.ROUTERS_KEY
+    services_key = appmesh_params.SERVICES_KEY
     required_keys = [nodes_key, routers_key, services_key]
 
     def __init__(self, mesh_definition, services_root_stack, settings):
@@ -141,8 +141,12 @@ class Mesh(object):
         :type services_root_stack: ecs_composex.ecs.ServicesStack
         :return:
         """
-        nodes_keys = ["name", "protocol", "backends"]
-        for node in self.mesh_settings["nodes"]:
+        nodes_keys = [
+            appmesh_params.NAME_KEY,
+            appmesh_params.PROTOCOL_KEY,
+            appmesh_params.BACKENDS_KEY,
+        ]
+        for node in self.mesh_settings[self.nodes_key]:
             if not set(node.keys()).issubset(nodes_keys):
                 raise AttributeError(
                     f"Nodes must have set {nodes_keys}. Got", node.keys()
@@ -150,27 +154,29 @@ class Mesh(object):
             service_families = [
                 settings.families[name]
                 for name in settings.families
-                if settings.families[name].name == node["name"]
+                if settings.families[name].name == node[appmesh_params.NAME_KEY]
             ]
             if len(service_families) > 1:
                 raise LookupError(
                     "More than one family matched for the node.",
                     service_families,
-                    node["name"],
+                    node[appmesh_params.NAME_KEY],
                 )
             elif not service_families:
                 raise LookupError(
                     "No family could be matched for the given node",
                     settings.families,
-                    node["name"],
+                    node[appmesh_params.NAME_KEY],
                 )
             LOG.debug(node)
             family = service_families[0]
             self.nodes[family.logical_name] = MeshNode(
                 family,
-                node["protocol"],
+                node[appmesh_params.PROTOCOL_KEY],
                 mesh,
-                node["backends"] if keyisset("backends", node) else None,
+                node[appmesh_params.BACKENDS_KEY]
+                if keyisset(appmesh_params.BACKENDS_KEY, node)
+                else None,
             )
             self.nodes[family.logical_name].get_node_param = GetAtt(
                 self.nodes[family.logical_name].param_name, "Outputs.VirtualNode"
@@ -184,18 +190,18 @@ class Mesh(object):
         """
         Method to register routers
         """
-        for router in self.mesh_settings["routers"]:
-            name = router["name"]
+        for router in self.mesh_settings[self.routers_key]:
+            name = router[appmesh_params.NAME_KEY]
             self.routers[name] = MeshRouter(
-                router["name"], router, self.appmesh, self.nodes
+                router[appmesh_params.NAME_KEY], router, self.appmesh, self.nodes
             )
 
     def define_virtual_services(self):
         """
         Method to parse the services and map them to nodes and routers.
         """
-        for service in self.mesh_settings["services"]:
-            name = service["name"]
+        for service in self.mesh_settings[self.services_key]:
+            name = service[appmesh_params.NAME_KEY]
             self.services[name] = MeshService(
                 name, service, self.routers, self.nodes, self.appmesh
             )
