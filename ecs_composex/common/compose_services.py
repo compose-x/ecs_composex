@@ -282,9 +282,9 @@ def set_else_none(key, props, alt_value=None, eval_bool=False):
     :param bool eval_bool: Allows to gets booleans properties
     :return:
     """
-    if not keyisset:
+    if not eval_bool:
         return alt_value if not keyisset(key, props) else props[key]
-    elif keyisset:
+    elif eval_bool:
         return alt_value if not keypresent(key, props) else props[key]
 
 
