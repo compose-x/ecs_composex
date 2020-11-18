@@ -1,0 +1,68 @@
+---
+# Extension file to add all the x-keys related to services.
+version: '3.8'
+services:
+  app01:
+    x-logging:
+      RetentionInDays: 42
+      CreateLogGroup: False
+    x-network:
+      is_public: False
+      lb_type: application
+      use_cloudmap: True
+      Ingress:
+        Myself: False
+        AwsSources:
+          - Type: PrefixList
+            Id: pl-6da54004
+    x-iam:
+      policies:
+        - document:
+            Statement:
+              - Action:
+                  - cloudwatch:PutMetricData
+                Effect: Allow
+                Resource:
+                  - '*'
+                Sid: AllowPublishMetricsToCw
+            name: AllowPublishToCw
+    x-xray: false
+  app02:
+    x-iam:
+      boundary: arn:aws:iam::aws:policy/AdministratorAccess
+      managed_policies:
+        - arn:aws:iam::aws:policy/AdministratorAccess
+    x-scaling:
+      range: 1-5
+      target_scaling:
+        cpu_target: 30
+        disable_scale_in: true
+        memory_target: 30
+    x-xray: false
+  app03:
+    x-network:
+      Ingress:
+        Myself: False
+        ExtSources:
+          - Ipv4: 0.0.0.0/0
+            Description: ANYWHERE
+
+    x-logging:
+        RetentionInDays: 42
+    x-scaling:
+      range: 1-10
+      target_scaling:
+        cpu_target: 50
+  rproxy:
+    x-iam:
+      managed_policies:
+        - arn:aws:iam::aws:policy/ReadOnlyAccess
+    x-scaling:
+      range: 0-2
+      target_scaling:
+        cpu_target: 50
+    x-xray: true
+    x-network:
+      is_public: False
+      lb_type: application
+      use_cloudmap: True

@@ -1,5 +1,5 @@
 ---
-# Blog applications
+# Blog applications base file for testing
 
 version: '3.8'
 services:
@@ -69,7 +69,5 @@ volumes:
   shared-images: {}
 
 secrets:
-  abcd: {}
   zyx:
-    x-secrets:
-      Name: /something/in/aws
+    external: True

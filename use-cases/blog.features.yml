@@ -1,3 +1,6 @@
+---
+# base file for services with the x-keys for BDD
+version: '3.8'
 secrets:
   abcd: {}
   john:
@@ -171,7 +174,6 @@ services:
       is_public: False
       lb_type: application
       use_cloudmap: True
-version: '3.8'
 volumes:
   shared-images: {}
   some-volume: {}
