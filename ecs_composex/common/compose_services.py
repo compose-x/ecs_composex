@@ -36,26 +36,28 @@ from troposphere.ecs import (
 )
 from troposphere.iam import Policy
 
-from ecs_composex.ingress_settings import set_service_ports
 from ecs_composex.common import NONALPHANUM, LOG
 from ecs_composex.common import keyisset, keypresent
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME
-from ecs_composex.secrets.compose_secrets import (
-    ComposeSecret,
-    match_secrets_services_config,
-)
 from ecs_composex.common.compose_volumes import (
     ComposeVolume,
     handle_volume_dict_config,
     handle_volume_str_config,
 )
 from ecs_composex.ecs import ecs_params
-from ecs_composex.ecs.docker_tools import find_closest_fargate_configuration
+from ecs_composex.ecs.docker_tools import (
+    find_closest_fargate_configuration,
+    set_memory_to_mb,
+)
 from ecs_composex.ecs.ecs_iam import add_service_roles
-from ecs_composex.ecs.ecs_params import LOG_GROUP_NAME, AWS_XRAY_IMAGE
+from ecs_composex.ecs.ecs_params import AWS_XRAY_IMAGE
 from ecs_composex.ecs.ecs_params import LOG_GROUP_RETENTION
 from ecs_composex.ecs.ecs_params import NETWORK_MODE, EXEC_ROLE_T, TASK_ROLE_T, TASK_T
 from ecs_composex.iam import define_iam_policy, add_role_boundaries
+from ecs_composex.secrets.compose_secrets import (
+    ComposeSecret,
+    match_secrets_services_config,
+)
 
 NUMBERS_REG = r"[^0-9.]"
 MINIMUM_SUPPORTED = 4
@@ -175,68 +177,6 @@ def extend_container_envvars(container, env_vars):
     else:
         setattr(container, "Environment", env_vars)
     LOG.debug(f"{container.Name}, {[env.Name for env in environment]}")
-
-
-def handle_bytes(value):
-    """
-    Function to handle the KB use-case
-
-    :param value: the string value
-    :rtype: int or Ref(AWS_NO_VALUE)
-    """
-    amount = float(re.sub(NUMBERS_REG, "", value))
-    unit = "Bytes"
-    if amount < (MINIMUM_SUPPORTED * 1024 * 1024):
-        LOG.warning(
-            f"You set unit to {unit} and value is lower than 4MB. Setting to minimum supported by Docker"
-        )
-        return MINIMUM_SUPPORTED
-    else:
-        final_amount = (amount / 1024) / 1024
-    return final_amount
-
-
-def handle_kbytes(value):
-    """
-    Function to handle KB use-case
-    """
-    amount = float(re.sub(NUMBERS_REG, "", value))
-    unit = "KBytes"
-    if amount < (MINIMUM_SUPPORTED * 1024):
-        LOG.warning(
-            f"You set unit to {unit} and value is lower than 512MB. Setting to minimum supported by Docker"
-        )
-        return MINIMUM_SUPPORTED
-    else:
-        final_amount = int(amount / 1024)
-    return final_amount
-
-
-def set_memory_to_mb(value):
-    """
-    Returns the value of MB. If no unit set, assuming MB
-    :param value: the string value
-    :rtype: int or Ref(AWS_NO_VALUE)
-    """
-    b_pat = re.compile(r"(^[0-9.]+(b|B)$)")
-    kb_pat = re.compile(r"(^[0-9.]+(k|kb|kB|Kb|K|KB)$)")
-    mb_pat = re.compile(r"(^[0-9.]+(m|mb|mB|Mb|M|MB)$)")
-    gb_pat = re.compile(r"(^[0-9.]+(g|gb|gB|Gb|G|GB)$)")
-    amount = float(re.sub(NUMBERS_REG, "", value))
-    unit = "MBytes"
-    if b_pat.findall(value):
-        final_amount = handle_bytes(value)
-    elif kb_pat.findall(value):
-        final_amount = handle_kbytes(value)
-    elif mb_pat.findall(value):
-        final_amount = int(amount)
-    elif gb_pat.findall(value):
-        unit = "GBytes"
-        final_amount = int(amount) * 1024
-    else:
-        raise ValueError(f"Could not parse {value} to units")
-    LOG.debug(f"Computed unit for {value}: {unit}. Results into {final_amount}MB")
-    return int(final_amount)
 
 
 def define_ingress_mappings(service_ports):
