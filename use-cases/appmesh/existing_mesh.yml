@@ -129,4 +129,4 @@ x-vpc:
 x-configs:
   composex:
     iam:
-      boundary: arn:aws:iam::aws:policy/PowerUser
+      PermissionsBoundary: arn:aws:iam::aws:policy/PowerUser

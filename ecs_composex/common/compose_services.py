@@ -285,17 +285,26 @@ class ComposeService(object):
         ("x-network", dict),
     ]
 
+    ecs_plugin_aws_keys = [
+        ("x-aws-role", dict),
+        ("x-aws-policies", list),
+        ("x-aws-autoscaling", dict),
+        ("x-aws-pull_credentials", str),
+    ]
+
     def __init__(self, name, definition, volumes=None, secrets=None):
         if not isinstance(definition, dict):
             raise TypeError(
                 "The definition of a service must be", dict, "got", type(definition)
             )
         if not all(
-            key in [title[0] for title in self.keys] for key in list(definition.keys())
+            key in [title[0] for title in self.ecs_plugin_aws_keys + self.keys]
+            for key in list(definition.keys())
         ):
             raise KeyError(
                 "Only valid keys for a service definition are",
                 sorted([key[0] for key in self.keys]),
+                sorted([key[0] for key in self.ecs_plugin_aws_keys]),
                 "Got",
                 sorted(list(definition.keys())),
             )
@@ -321,6 +330,8 @@ class ComposeService(object):
         self.x_network = set_else_none("x-network", self.definition, None, False)
         self.x_iam = set_else_none("x-iam", self.definition)
         self.x_logging = {"RetentionInDays": 14, "CreateLogGroup": True}
+
+        self.import_x_aws_settings()
 
         self.replicas = 1
         self.container = None
@@ -398,6 +409,57 @@ class ComposeService(object):
             Secrets=secrets,
         )
         self.container_parameters.update({self.image_param.title: self.image})
+
+    def merge_x_aws_role(self, key):
+        """
+        Method to update the service definition with the x-aws-role information if NOT defined in the composex
+        definition.
+
+        :param str key:
+        """
+        policy_def = {
+            "PolicyName": "ImportedFromXAWSRole",
+            "PolicyDocument": self.definition[key],
+        }
+        if not self.x_iam:
+            self.x_iam = {"Policies": [policy_def]}
+            LOG.info(f"Added {key} definition")
+        elif self.x_iam and keyisset("Policies", self.x_iam):
+            self.x_iam["Policies"].append(policy_def)
+            LOG.info(f"Merged {key} to existing definition")
+
+    def merge_x_policies(self, key):
+        """
+        Method to merge policies
+
+        :param str key:
+        """
+        if not self.x_iam:
+            self.x_iam = {"ManagedPolicyArns": self.definition[key]}
+            LOG.info(f"Added {key} definition")
+        elif self.x_iam and keyisset("ManagedPolicyArns", self.x_iam):
+            self.x_iam["ManagedPolicyArns"] += self.definition[key]
+            LOG.info(f"Merged {key} definition")
+
+    def import_x_aws_settings(self):
+        aws_keys = [
+            ("x-aws-role", dict, self.merge_x_aws_role),
+            ("x-aws-policies", list, self.merge_x_policies),
+            ("x-aws-autoscaling", dict, None),
+            ("x-aws-pull_credentials", str, None),
+        ]
+        for setting in aws_keys:
+            if keyisset(setting[0], self.definition) and not isinstance(
+                self.definition[setting[0]], setting[1]
+            ):
+                raise TypeError(
+                    f"{setting[0]} is of type",
+                    type(self.definition[setting[0]]),
+                    "Expected",
+                    setting[1],
+                )
+            elif keyisset(setting[0], self.definition) and setting[2]:
+                setting[2](setting[0])
 
     def define_logging(self):
         """
@@ -686,18 +748,22 @@ def add_policies(config, key, new_policies):
             if f"PolicyGenerated{count}" not in existing_policy_names
             else f"PolicyGenerated{count+len(existing_policy_names)}"
         )
-        name = generated_name if not keyisset("name", policy) else policy["name"]
+        name = (
+            generated_name
+            if not keyisset("PolicyName", policy)
+            else policy["PolicyName"]
+        )
         if name in existing_policy_names:
             return
-        if not keyisset("document", policy):
+        if not keyisset("PolicyDocument", policy):
             raise KeyError("You must set the policy document for the policy")
         if (
-            keyisset("Version", policy["document"])
-            and not isinstance(policy["document"]["Version"], str)
-            or not keyisset("Version", policy["document"])
+            keyisset("Version", policy["PolicyDocument"])
+            and not isinstance(policy["PolicyDocument"]["Version"], str)
+            or not keyisset("Version", policy["PolicyDocument"])
         ):
-            policy["document"]["Version"] = "2012-10-17"
-        policy_object = Policy(PolicyName=name, PolicyDocument=policy["document"])
+            policy["PolicyDocument"]["Version"] = "2012-10-17"
+        policy_object = Policy(PolicyName=name, PolicyDocument=policy["PolicyDocument"])
         existing_policies.append(policy_object)
 
 
@@ -723,7 +789,11 @@ class ComposeFamily(object):
         self.ignored_services = []
         self.name = family_name
         self.logical_name = re.sub(r"[^a-zA-Z0-9]+", "", family_name)
-        self.iam = {"boundary": None, "managed_policies": [], "policies": []}
+        self.iam = {
+            "PermissionsBoundary": None,
+            "ManagedPolicyArns": [],
+            "Policies": [],
+        }
         self.template = None
         self.use_xray = None
         self.stack = None
@@ -766,7 +836,7 @@ class ComposeFamily(object):
                         "resources": {"limits": {"cpus": 0.03125, "memory": "256M"}},
                     },
                     "x-iam": {
-                        "managed_policies": [
+                        "ManagedPolicyArns": [
                             "arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess"
                         ]
                     },
@@ -874,9 +944,9 @@ class ComposeFamily(object):
 
     def handle_iam(self):
         valid_keys = [
-            ("managed_policies", list, None),
-            ("policies", list, add_policies),
-            ("boundary", (str, Sub), handle_iam_boundary),
+            ("ManagedPolicyArns", list, None),
+            ("Policies", list, add_policies),
+            ("PermissionsBoundary", (str, Sub), handle_iam_boundary),
         ]
         iam_settings = [service.x_iam for service in self.services if service.x_iam]
         for setting in iam_settings:
@@ -885,7 +955,7 @@ class ComposeFamily(object):
         self.set_secrets_access()
 
     def handle_permission_boundary(self, prop_key):
-        if keyisset("boundary", self.iam) and self.template:
+        if keyisset("PermissionsBoundary", self.iam) and self.template:
             if EXEC_ROLE_T in self.template.resources:
                 add_role_boundaries(
                     self.template.resources[EXEC_ROLE_T], self.iam[prop_key]
@@ -943,17 +1013,17 @@ class ComposeFamily(object):
         role = self.template.resources[role_name]
         props = [
             (
-                "managed_policies",
+                "ManagedPolicyArns",
                 "ManagedPolicyArns",
                 list,
                 self.assign_iam_managed_policies,
             ),
-            ("policies", "Policies", list, self.assign_iam_policies),
-            ("boundary", "PermissionsBoundary", (str, Sub), None),
+            ("Policies", "Policies", list, self.assign_iam_policies),
+            ("PermissionsBoundary", "PermissionsBoundary", (str, Sub), None),
         ]
         for prop in props:
             if keyisset(prop[0], self.iam) and isinstance(self.iam[prop[0]], prop[2]):
-                if prop[0] == "boundary":
+                if prop[0] == "PermissionsBoundary":
                     self.handle_permission_boundary(prop[0])
                 elif prop[3]:
                     prop[3](role, prop)

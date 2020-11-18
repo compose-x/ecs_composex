@@ -55,7 +55,7 @@ services:
       - 80
     x-configs:
       iam:
-        boundary: arn:aws:iam::aws:policy/PowerUserAccess
+        PermissionsBoundary: arn:aws:iam::aws:policy/PowerUserAccess
 
 x-sqs:
   queueA:

@@ -46,7 +46,6 @@ services:
       CreateLogGroup: False
     x-network:
       is_public: False
-      lb_type: application
       use_cloudmap: True
       Ingress:
         Myself: False
@@ -54,8 +53,9 @@ services:
           - Type: PrefixList
             Id: pl-6da54004
     x-iam:
-      policies:
-        - document:
+      Policies:
+        - PolicyName: AllowPublishToCw
+          PolicyDocument:
             Statement:
               - Action:
                   - cloudwatch:PutMetricData
@@ -63,7 +63,6 @@ services:
                 Resource:
                   - '*'
                 Sid: AllowPublishMetricsToCw
-            name: AllowPublishToCw
     x-xray: false
   app02:
     deploy:
@@ -96,13 +95,13 @@ services:
         target: /app/data
         type: volume
     x-iam:
-      boundary: arn:aws:iam::aws:policy/AdministratorAccess
-      managed_policies:
+      PermissionsBoundary: arn:aws:iam::aws:policy/AdministratorAccess
+      ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AdministratorAccess
     x-scaling:
       range: 1-5
       target_scaling:
-        cpu_target: 30
+        cpu_target: 88
         disable_scale_in: true
         memory_target: 30
     x-xray: false
@@ -163,16 +162,11 @@ services:
         published: 80
         target: 80
     x-iam:
-      managed_policies:
+      ManagedPolicyArns:
         - arn:aws:iam::aws:policy/ReadOnlyAccess
-    x-scaling:
-      range: 0-2
-      target_scaling:
-        cpu_target: 50
     x-xray: true
     x-network:
       is_public: False
-      lb_type: application
       use_cloudmap: True
 volumes:
   shared-images: {}

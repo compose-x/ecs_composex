@@ -3,18 +3,22 @@
 version: '3.8'
 services:
   app01:
+    deploy:
+      x-aws-autoscaling:
+        min: 1
+        max: 2
+        cpu: 50
     x-logging:
       RetentionInDays: 42
       CreateLogGroup: False
-    x-network:
-      is_public: False
-      lb_type: application
-      use_cloudmap: True
-      Ingress:
-        Myself: False
-        AwsSources:
-          - Type: PrefixList
-            Id: pl-6da54004
+    x-aws-role:
+      Version: "2012-10-17"
+      Statement:
+        - Effect: "Allow"
+          Action:
+            - "cloudwatch:PutMetric*"
+          Resource":
+            - "*"
     x-iam:
       Policies:
         - PolicyDocument:
@@ -32,21 +36,27 @@ services:
       PermissionsBoundary: arn:aws:iam::aws:policy/AdministratorAccess
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AdministratorAccess
+    deploy:
+      x-aws-autoscaling:
+        min: 1
+        max: 10
+        cpu: 70
     x-scaling:
       range: 1-5
       target_scaling:
-        cpu_target: 30
+        cpu_target: 88
         disable_scale_in: true
         memory_target: 30
     x-xray: false
   app03:
-    x-network:
-      Ingress:
-        Myself: False
-        ExtSources:
-          - Ipv4: 0.0.0.0/0
-            Description: ANYWHERE
-
+    x-aws-role:
+      Version: "2012-10-17"
+      Statement:
+        - Effect: "Allow"
+          Action:
+            - "cloudwatch:PutMetric*"
+          Resource":
+            - "*"
     x-logging:
         RetentionInDays: 42
     x-scaling:
@@ -54,15 +64,14 @@ services:
       target_scaling:
         cpu_target: 50
   rproxy:
+    deploy:
+      x-aws-autoscaling:
+        min: 0
+        max: 2
+        cpu: 44
+    x-aws-policies:
+      - arn:aws:iam::aws:policy/AdministratorAccess
     x-iam:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/ReadOnlyAccess
-    x-scaling:
-      range: 0-2
-      target_scaling:
-        cpu_target: 50
     x-xray: true
-    x-network:
-      is_public: False
-      lb_type: application
-      use_cloudmap: True

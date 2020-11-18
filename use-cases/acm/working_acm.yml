@@ -50,7 +50,7 @@ services:
     x-configs:
       use_xray: True
       iam:
-        boundary: arn:aws:iam::aws:policy/PowerUser
+        PermissionsBoundary: arn:aws:iam::aws:policy/PowerUser
 
   backend:
     image: nginx

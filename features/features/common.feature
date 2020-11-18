@@ -42,7 +42,7 @@ Feature: common
     Then I render the docker-compose to composex to validate
     And I render all files to verify execution
     Examples:
-      | file_path                   | override_file            |
+      | file_path          | override_file            |
       | use-cases/blog.yml | use-cases/all-in-one.yml |
 
   @cluster
@@ -62,3 +62,11 @@ Feature: common
     Examples:
       | file_path                   | override_file                    |
       | use-cases/blog.features.yml | use-cases/logging/variations.yml |
+
+  @ecs-plugin-suport
+  Scenario Outline: ECS Plugin support
+    Given I use <file_path> as my docker-compose file and <override_file> as override file
+    Then I render the docker-compose to composex to validate
+    Examples:
+      | file_path                   | override_file                                    |
+      | use-cases/blog.features.yml | use-cases/ecs_plugin_support/blog.features.x.yml |
