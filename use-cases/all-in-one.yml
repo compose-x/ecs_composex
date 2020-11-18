@@ -32,9 +32,11 @@ services:
         target: 5000
     secrets:
       - zyx
+    x-xray: false
     x-iam:
-      policies:
-        - document:
+      Policies:
+        - PolicyName: toto
+          PolicyDocument:
             Statement:
               - Action:
                   - s3:DeleteBucket
@@ -42,8 +44,6 @@ services:
                 Resource:
                   - '*'
                 Sid: SomethingStupid
-          name: toto
-    x-xray: false
   app02:
     deploy:
       labels:
@@ -72,8 +72,8 @@ services:
       - zyx
     x-configs:
     x-iam:
-      boundary: ccoe/js-developer
-      managed_policies:
+      PermissionsBoundary: ccoe/js-developer
+      ManagedPolicyArns:
         - arn:aws:iam:aws::policy/AdministratorAccess
     x-scaling:
       range: 1-5
@@ -130,7 +130,7 @@ services:
         published: 80
         target: 80
     x-iam:
-      managed_policies:
+      ManagedPolicyArns:
         - arn:aws:iam:aws::policy/ReadOnlyAccess
     x-scaling:
       range: 0-2
