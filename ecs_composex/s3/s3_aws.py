@@ -59,7 +59,7 @@ def return_bucket_config(bucket_arn, session):
                 == "ServerSideEncryptionConfigurationNotFoundError"
             ):
                 raise
-            LOG.warn(error.response["Error"]["Message"])
+            LOG.warning(error.response["Error"]["Message"])
         return bucket_config
     except client.exceptions.NoSuchBucket:
         return None

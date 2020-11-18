@@ -95,7 +95,7 @@ def add_role_boundaries(iam_role, policy):
     if isinstance(policy, str):
         policy = define_iam_policy(policy)
     if hasattr(iam_role, "PermissionsBoundary"):
-        LOG.warn(
+        LOG.warning(
             f"IAM Role {iam_role.title} already has PermissionsBoundary set. Overriding"
         )
     setattr(iam_role, "PermissionsBoundary", policy)

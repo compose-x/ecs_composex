@@ -77,7 +77,7 @@ def handle_ingress_rules(source_config, ingress_config):
                 and keyisset(key[0], source_config)
                 and not keyisset(key[0], ingress_config)
             ):
-                LOG.warn(
+                LOG.warning(
                     "At least one service in the task requires access to itself. Skipping."
                 )
             elif key[1] is list and keyisset(key[0], ingress_config) and key[2]:

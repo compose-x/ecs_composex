@@ -187,7 +187,7 @@ def handle_bytes(value):
     amount = float(re.sub(NUMBERS_REG, "", value))
     unit = "Bytes"
     if amount < (MINIMUM_SUPPORTED * 1024 * 1024):
-        LOG.warn(
+        LOG.warning(
             f"You set unit to {unit} and value is lower than 4MB. Setting to minimum supported by Docker"
         )
         return MINIMUM_SUPPORTED
@@ -203,7 +203,7 @@ def handle_kbytes(value):
     amount = float(re.sub(NUMBERS_REG, "", value))
     unit = "KBytes"
     if amount < (MINIMUM_SUPPORTED * 1024):
-        LOG.warn(
+        LOG.warning(
             f"You set unit to {unit} and value is lower than 512MB. Setting to minimum supported by Docker"
         )
         return MINIMUM_SUPPORTED
@@ -540,7 +540,7 @@ class ComposeService(object):
             max(cpu_resa, cpu_alloc) if (cpu_resa or cpu_alloc) else Ref(AWS_NO_VALUE)
         )
         if self.cpu_amount > 4096:
-            LOG.warn("Fargate does not support more than 4 vCPU. Scaling down")
+            LOG.warning("Fargate does not support more than 4 vCPU. Scaling down")
             self.cpu_amount = 4096
 
     def set_ecs_healthcheck(self):
@@ -588,7 +588,9 @@ class ComposeService(object):
         labels = "labels"
         allowed_values = ["START", "COMPLETE", "SUCCESS", "HEALTHY"]
         if not isinstance(self.ecs_healthcheck, Ref):
-            LOG.warn(f"Healthcheck was defined on {self.name}. Overriding to HEALTHY")
+            LOG.warning(
+                f"Healthcheck was defined on {self.name}. Overriding to HEALTHY"
+            )
             self.container_start_condition = "HEALTHY"
         elif keyisset(labels, deployment) and keyisset(depends_key, deployment[labels]):
             if deployment[labels][depends_key] not in allowed_values:
@@ -725,7 +727,7 @@ def assign_secrets_to_roles(secrets, exec_role, task_role):
     LOG.debug(task_role_secrets)
     for secret in secrets:
         if EXEC_ROLE_T not in secret.links:
-            LOG.warn(
+            LOG.warning(
                 f"You did not specify {EXEC_ROLE_T} in your LinksTo for this secret. You will not have ECS"
                 "Expose the value of the secret to your container."
             )
@@ -867,7 +869,7 @@ class ComposeFamily(object):
                 key=lambda x: abs(x - max(periods)),
             )
             if closest_valid != max(periods):
-                LOG.warn(
+                LOG.warning(
                     f"The days you set for logging was invalid ({max(periods)}). Adjusted to {closest_valid}"
                 )
             self.reset_logging_retention_period(closest_valid)
@@ -881,7 +883,7 @@ class ComposeFamily(object):
                 == "False"
             )
         ):
-            LOG.warn(
+            LOG.warning(
                 "At least one of the services has CreateLogGroup set to False. Disabling new LogsGroups creation"
             )
             self.stack_parameters.update({ecs_params.CREATE_LOG_GROUP.title: "False"})
@@ -1059,7 +1061,7 @@ class ComposeFamily(object):
             ):
                 tasks_ram += container.Memory
             else:
-                LOG.warn(
+                LOG.warning(
                     f"{service.name} does not have RAM settings."
                     "Based on CPU, it will pick the smaller RAM Fargate supports"
                 )

@@ -262,7 +262,7 @@ def handle_non_default_services(listener, services_def):
             left_services.pop(count)
             break
     if not default_target:
-        LOG.warn("No service path matches /. Defaulting to return TeaPot")
+        LOG.warning("No service path matches /. Defaulting to return TeaPot")
         listener.DefaultActions.append(tea_pot(True))
     elif default_target:
         listener.DefaultActions.append(
@@ -335,10 +335,12 @@ def rectify_listener_protocol(listener):
     alb_protocols = ["HTTP", "HTTPS"]
     nlb_protocols = ["TCP", "UDP", "TCP_UDP", "TLS"]
     if listener.Protocol in alb_protocols and listener.Protocol == "HTTP":
-        LOG.warn("Listener protocol is HTTP but certificate defined. Changing to HTTPS")
+        LOG.warning(
+            "Listener protocol is HTTP but certificate defined. Changing to HTTPS"
+        )
         listener.Protocol = "HTTPS"
     elif listener.Protocol in nlb_protocols and listener.Protocol == "TCP":
-        LOG.warn("Listener protocol is TCP but certificate defined. Changing to TLS")
+        LOG.warning("Listener protocol is TCP but certificate defined. Changing to TLS")
         listener.Protocol = "TLS"
     elif listener.Protocol in nlb_protocols and (
         listener.Protocol == "UDP" or listener.Protocol == "TCP_UDP"
@@ -505,7 +507,7 @@ class ComposeListener(Listener):
                 ),
             )
         elif not self.default_actions and self.services and len(self.services) > 1:
-            LOG.warn(
+            LOG.warning(
                 "No default actions defined and more than one service defined."
                 "If one of the access path is / it will be used as default"
             )
@@ -529,7 +531,7 @@ class ComposeListener(Listener):
             ("CertificateArn", str, add_acm_certs_arn),
         ]
         if not keyisset("Certificates", self.definition):
-            LOG.warn(f"No certificates defined for Listener {self.name}")
+            LOG.warning(f"No certificates defined for Listener {self.name}")
             return
         for cert_def in self.definition["Certificates"]:
             if isinstance(cert_def, dict):
@@ -752,7 +754,7 @@ class Elbv2(XResource):
             or (self.parameters and not keyisset("Ingress", self.parameters))
             or self.is_nlb()
         ):
-            LOG.warn(
+            LOG.warning(
                 "You defined ingress rules for a NLB. This is invalid. Define ingress rules at the service level."
             )
             return

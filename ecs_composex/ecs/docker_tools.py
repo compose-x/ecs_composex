@@ -39,7 +39,7 @@ def handle_bytes(value):
     amount = float(re.sub(NUMBERS_REG, "", value))
     unit = "Bytes"
     if amount < (MINIMUM_SUPPORTED * 1024 * 1024):
-        LOG.warn(
+        LOG.warning(
             f"You set unit to {unit} and value is lower than 4MB. Setting to minimum supported by Docker"
         )
         return MINIMUM_SUPPORTED
@@ -55,7 +55,7 @@ def handle_kbytes(value):
     amount = float(re.sub(NUMBERS_REG, "", value))
     unit = "KBytes"
     if amount < (MINIMUM_SUPPORTED * 1024):
-        LOG.warn(
+        LOG.warning(
             f"You set unit to {unit} and value is lower than 512MB. Setting to minimum supported by Docker"
         )
         return MINIMUM_SUPPORTED
@@ -127,7 +127,9 @@ def find_closest_fargate_configuration(cpu, ram, as_param_string=False):
     if fargate_cpu < cpu:
         fargate_cpu = nxtpow2(cpu)
     if fargate_cpu not in fargate_cpus:
-        LOG.warn(f"Value {cpu} is not valid for Fargate. Valid modes: {fargate_cpus}")
+        LOG.warning(
+            f"Value {cpu} is not valid for Fargate. Valid modes: {fargate_cpus}"
+        )
         if fargate_cpu < fargate_cpus[0]:
             fargate_cpu = fargate_cpus[0]
         elif fargate_cpu > fargate_cpus[-1]:

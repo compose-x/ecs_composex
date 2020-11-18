@@ -44,7 +44,7 @@ def validate_tcp_health_counts(props):
         and not props[unhealthy_prop] == props[healthy_prop]
     ):
         valid_value = max(props[unhealthy_prop], props[healthy_prop])
-        LOG.warn(
+        LOG.warning(
             "With NLB your healthy and unhealthy count must be the same. Using the max of the two for cautious: "
             f"{valid_value}"
         )
@@ -60,7 +60,7 @@ def fix_nlb_settings(props):
     ):
         return
     if keyisset("HealthCheckTimeoutSeconds", props):
-        LOG.warn("With NLB you cannot set intervals. Resetting")
+        LOG.warning("With NLB you cannot set intervals. Resetting")
         props["HealthCheckTimeoutSeconds"] = Ref(AWS_NO_VALUE)
     if (
         keyisset("HealthCheckIntervalSeconds", props)
@@ -73,7 +73,7 @@ def fix_nlb_settings(props):
         right_value = min(
             [10, 30], key=lambda x: abs(x - props["HealthCheckIntervalSeconds"])
         )
-        LOG.warn(
+        LOG.warning(
             f"The only intervals value valid for NLB are 10 and 30. Closes value is {right_value}"
         )
         props["HealthCheckIntervalSeconds"] = right_value

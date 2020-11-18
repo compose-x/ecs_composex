@@ -79,7 +79,7 @@ def assign_new_bucket_to_services(bucket, res_root_stack, nested=False):
         select_services = get_selected_services(bucket, target)
         if select_services:
             if not isinstance(target[3], str):
-                LOG.warn(
+                LOG.warning(
                     f"No permissions associated for {bucket.name} to {target[0].name}. Setting default."
                 )
             else:
@@ -190,7 +190,7 @@ def define_lookup_buckets_access(bucket, target, services, access):
     bucket_key = "bucket"
     objects_key = "objects"
     if isinstance(target[3], str):
-        LOG.warn(
+        LOG.warning(
             "For s3 buckets, you should define a dict for access, with bucket and/or object policies separate."
             " Using default RW Objects and ListBucket"
         )
@@ -235,7 +235,7 @@ def assign_lookup_buckets(bucket, mappings):
     :param dict mappings:
     """
     if not keyisset(bucket.logical_name, mappings):
-        LOG.warn(f"Bucket {bucket.logical_name} was not found in mappings. Skipping")
+        LOG.warning(f"Bucket {bucket.logical_name} was not found in mappings. Skipping")
         return
     bucket_key = "bucket"
     objects_key = "objects"
@@ -245,7 +245,7 @@ def assign_lookup_buckets(bucket, mappings):
         if select_services:
             target[0].template.add_mapping("s3", mappings)
             if not keyisset("access", target[3]) or isinstance(target[3], str):
-                LOG.warn(
+                LOG.warning(
                     f"No permissions associated for {target[0].name}. Setting default."
                 )
             else:

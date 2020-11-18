@@ -54,7 +54,7 @@ def get_topic_config(logical_name, topic_arn, session):
             if kms_key_id.startswith("arn:aws"):
                 topic_config.update({TOPIC_KMS_KEY.title: kms_key_id})
             else:
-                LOG.warn(
+                LOG.warning(
                     "The KMS Key provided is not an ARN. Implementation requires full ARN today"
                 )
         else:

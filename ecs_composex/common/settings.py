@@ -649,7 +649,7 @@ class ComposeXSettings(object):
             self.app_azs = [sub["AvailabilityZone"] for sub in app_r]
             LOG.info("Successfully updated self with AZs from looked up VPC subnets")
         except ClientError:
-            LOG.warn("Could not define the AZs based on the imported subnets")
+            LOG.warning("Could not define the AZs based on the imported subnets")
 
     def set_bucket_name_from_account_id(self):
         if self.bucket_name and isinstance(self.bucket_name, str):

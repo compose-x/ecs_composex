@@ -280,4 +280,4 @@ class MeshRouter(object):
                     self.raw_routes[route_protocol], self.router, nodes
                 )
             elif route_protocol == "gRPC":
-                LOG.warn("gRPC is not yet supported. Sorry.")
+                LOG.warning("gRPC is not yet supported. Sorry.")
