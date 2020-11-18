@@ -285,7 +285,12 @@ class ComposeService(object):
         ("x-network", dict),
     ]
 
-    ecs_plugin_aws_keys = [("x-aws-role", dict), ("x-aws-policies", list)]
+    ecs_plugin_aws_keys = [
+        ("x-aws-role", dict),
+        ("x-aws-policies", list),
+        ("x-aws-autoscaling", dict),
+        ("x-aws-pull_credentials", str),
+    ]
 
     def __init__(self, name, definition, volumes=None, secrets=None):
         if not isinstance(definition, dict):
@@ -440,6 +445,8 @@ class ComposeService(object):
         aws_keys = [
             ("x-aws-role", dict, self.merge_x_aws_role),
             ("x-aws-policies", list, self.merge_x_policies),
+            ("x-aws-autoscaling", dict, None),
+            ("x-aws-pull_credentials", str, None),
         ]
         for setting in aws_keys:
             if keyisset(setting[0], self.definition) and not isinstance(

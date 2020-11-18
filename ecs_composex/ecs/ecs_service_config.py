@@ -46,7 +46,7 @@ class ServiceConfig(object):
         :param ecs_composex.common.settings.ComposeXSettings settings:
         """
         self.network = ServiceNetworking(family)
-        self.scaling = ServiceScaling(family.services)
+        self.scaling = ServiceScaling(family.ordered_services)
         self.use_appmesh = (
             False if not keyisset("x-appmesh", settings.compose_content) else True
         )

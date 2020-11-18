@@ -241,6 +241,36 @@ def handle_target_scaling(config, key, new_config):
         define_new_config(config, key, new_config)
 
 
+def handle_defined_x_aws_autoscaling(configs, service):
+    """
+    Function to sort out existing or not x-aws-autoscaling in the deploy section
+
+    :param list configs:
+    :param ecs_composex.common.compose_services.ComposeService service:
+    :return:
+    """
+    if keyisset("deploy", service.definition) and keyisset(
+        "x-aws-autoscaling", service.definition["deploy"]
+    ):
+        config = service.definition["deploy"]["x-aws-autoscaling"]
+        min_count = 1 if not keypresent("min", config) else int(config["min"])
+        max_count = 1 if not keypresent("max", config) else int(config["max"])
+        if not service.x_scaling:
+            service.x_scaling = {"range": f"{min_count}-{max_count}"}
+            if keyisset("cpu", config):
+                service.x_scaling.update(
+                    {"target_scaling": {"cpu_target": int(config["cpu"])}}
+                )
+        elif service.x_scaling:
+            LOG.warning(
+                f"Detected both x-aws-autoscaling and x-scaling for {service.name}. Priority goes to x-scaling"
+            )
+        configs.append(service.x_scaling)
+    elif not keyisset("deploy", service.definition) and service.x_scaling:
+        LOG.debug("No x-aws-autoscaling detected, proceeding as usual")
+        configs.append(service.x_scaling)
+
+
 def merge_family_services_scaling(services):
     x_scaling = {
         "range": None,
@@ -252,8 +282,10 @@ def merge_family_services_scaling(services):
     }
     x_scaling_configs = []
     for service in services:
-        if service.x_scaling:
-            x_scaling_configs.append(service.x_scaling)
+        handle_defined_x_aws_autoscaling(x_scaling_configs, service)
+
+    print(x_scaling_configs)
+
     valid_keys = [
         ("range", str, handle_range),
         ("target_scaling", dict, handle_target_scaling),
@@ -266,7 +298,6 @@ def merge_family_services_scaling(services):
                 and key[2]
             ):
                 key[2](x_scaling, key[0], config[key[0]])
-
     return x_scaling
 
 
