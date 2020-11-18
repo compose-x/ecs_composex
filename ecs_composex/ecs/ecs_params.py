@@ -46,12 +46,25 @@ LAUNCH_TYPE = Parameter(
     LAUNCH_TYPE_T, Type="String", AllowedValues=["EC2", "FARGATE"], Default="FARGATE"
 )
 
+FARGATE_VERSION_T = "FargatePlatformVersion"
+FARGATE_VERSION = Parameter(
+    FARGATE_VERSION_T,
+    Type="String",
+    AllowedValues=["DEFAULT", "1.4.0", "1.3.0"],
+    Default="1.4.0",
+)
+
 IS_PUBLIC_T = "ExposeServicePublicly"
 IS_PUBLIC = Parameter(IS_PUBLIC_T, AllowedValues=["True", "False"], Type="String")
 
 CLUSTER_NAME_T = "EcsClusterName"
 CLUSTER_NAME = Parameter(
     CLUSTER_NAME_T, Type="String", AllowedPattern=r"[a-zA-Z0-9-]+", Default="default"
+)
+
+CREATE_CLUSTER_PT = "CreateEcsCluster"
+CREATE_CLUSTER = Parameter(
+    CREATE_CLUSTER_PT, Type="String", AllowedValues=["True", "False"], Default="True"
 )
 
 SERVICE_NAME_T = "MicroServiceName"

@@ -114,7 +114,9 @@ def merge_service_definition(original_def, override_def, nested=False):
                     "with",
                     type(override_def[key]),
                 )
-            handle_lists_merges(original_def[key], override_def[key])
+            original_def[key] = handle_lists_merges(
+                original_def[key], override_def[key]
+            )
         elif (
             isinstance(override_def[key], list)
             and key in original_def.keys()
@@ -177,13 +179,8 @@ def handle_lists_merges(original_list, override_list):
     """
     final_list = []
 
-    original_dict_items = [item for item in original_list if isinstance(item, dict)]
-    override_dict_items = [item for item in override_list if isinstance(item, dict)]
-    unique_dicts = [
-        merge_definitions(original, override)
-        for original, override in zip(original_dict_items, override_dict_items)
-    ]
-    final_list += unique_dicts
+    final_list += [item for item in original_list if isinstance(item, dict)]
+    final_list += [item for item in override_list if isinstance(item, dict)]
 
     original_str_items = [item for item in original_list if isinstance(item, list)]
     final_list += list(
@@ -197,7 +194,7 @@ def handle_lists_merges(original_list, override_list):
     override_list_items = [item for item in override_list if isinstance(item, list)]
 
     if origin_list_items and override_list_items:
-        merged_lists = handle_lists_merges(original_list, override_list)
+        merged_lists = handle_lists_merges(origin_list_items, override_list_items)
         final_list += merged_lists
     elif origin_list_items and not override_list_items:
         final_list += origin_list_items

@@ -34,8 +34,6 @@ def add_service_roles(template):
     """
     Function to create the IAM roles for the ECS task
 
-    :param config: ecs_service configuration
-    :type config: ecs_composex.ecs.ServiceConfig
     :param template: ecs_service template to add the resources to
     :type template: troposphere.Template
     """

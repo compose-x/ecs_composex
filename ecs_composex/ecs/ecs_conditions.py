@@ -29,7 +29,7 @@ from troposphere import Condition, Ref, Equals, And, Not
 
 from ecs_composex.ecs import ecs_params
 
-GENERATED_CLUSTER_NAME_CON_T = "CreateEcsClusterCondition"
+GENERATED_CLUSTER_NAME_CON_T = "GenerateEcsClustername"
 GENERATED_CLUSTER_NAME_CON = Not(
     Equals(Ref(ecs_params.CLUSTER_NAME), ecs_params.CLUSTER_NAME.Default)
 )
@@ -65,3 +65,6 @@ USE_CLUSTER_CAPACITY_PROVIDERS_CON_T = "UseClusterDefaultCapacityProviders"
 USE_CLUSTER_CAPACITY_PROVIDERS_CON = Equals(
     Ref(ecs_params.LAUNCH_TYPE), ecs_params.LAUNCH_TYPE.Default
 )
+
+CREATE_CLUSTER_CON_T = "CreateClusterCondition"
+CREATE_CLUSTER_CON = Equals(Ref(ecs_params.CREATE_CLUSTER), "True")

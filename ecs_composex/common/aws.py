@@ -86,11 +86,14 @@ def define_tagsgroups_filter_tags(tags):
     :rtype: list
     """
     filters = []
+    print("INPUT TAGS IS", tags)
     for tag in tags:
+        print("TAG DEF IS", tag)
         key = list(tag.keys())[0]
         filter_name = key
         filter_value = tag[key]
         filters.append({"Key": filter_name, "Values": (filter_value,)})
+    print("FILTERS ARE", filters)
     return filters
 
 

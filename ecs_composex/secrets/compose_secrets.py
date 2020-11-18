@@ -126,7 +126,7 @@ class ComposeSecret(object):
             secret_name = secret_key["Name"]
             if isinstance(self.arn, str):
                 self.ecs_secret.append(
-                    EcsSecret(Name=secret_name, ValueFrom=f"{self.arn}:{json_key}")
+                    EcsSecret(Name=secret_name, ValueFrom=f"{self.arn}:{json_key}::")
                 )
             elif isinstance(self.arn, Sub):
                 self.ecs_secret.append(
@@ -134,7 +134,7 @@ class ComposeSecret(object):
                         Name=secret_name,
                         ValueFrom=Sub(
                             f"arn:${{{AWS_PARTITION}}}:secretsmanager:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:"
-                            f"secret:${{SecretName}}:{json_key}",
+                            f"secret:${{SecretName}}:{json_key}::",
                             SecretName=FindInMap(
                                 self.map_name, self.logical_name, self.map_name_name
                             ),
@@ -146,7 +146,7 @@ class ComposeSecret(object):
                     EcsSecret(
                         Name=secret_name,
                         ValueFrom=Sub(
-                            f"${{SecretArn}}:{json_key}",
+                            f"${{SecretArn}}:{json_key}::",
                             SecretArn=FindInMap(
                                 self.map_name, self.logical_name, self.map_kms_name
                             ),

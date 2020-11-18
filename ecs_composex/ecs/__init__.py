@@ -38,7 +38,7 @@ from troposphere import Ref, If
 from ecs_composex import __version__ as version
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.ecs import ecs_params
-from ecs_composex.ecs.ecs_conditions import GENERATED_CLUSTER_NAME_CON_T
+from ecs_composex.ecs.ecs_conditions import CREATE_CLUSTER_CON_T
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME, CLUSTER_T
 from ecs_composex.ecs.ecs_template import generate_services
 
@@ -74,7 +74,7 @@ def associate_services_to_root_stack(root_stack, settings, dns_params, vpc_stack
         family.stack_parameters.update(
             {
                 ecs_params.CLUSTER_NAME.title: If(
-                    GENERATED_CLUSTER_NAME_CON_T, Ref(CLUSTER_T), Ref(CLUSTER_NAME)
+                    CREATE_CLUSTER_CON_T, Ref(CLUSTER_T), Ref(CLUSTER_NAME)
                 ),
             }
         )
