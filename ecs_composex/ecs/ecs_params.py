@@ -97,7 +97,12 @@ ECS_CONTROLLER = Parameter(
     Default="ECS",
 )
 
-LOG_GROUP = Parameter(LOG_GROUP_T, Type="String")
+CREATE_LOG_GROUP_T = "CreateLogGroup"
+CREATE_LOG_GROUP = Parameter(
+    CREATE_LOG_GROUP_T, Type="String", AllowedValues=["True", "False"], Default="True"
+)
+LOG_GROUP_NAME_T = "ServicesLogGroupName"
+LOG_GROUP_NAME = Parameter(LOG_GROUP_NAME_T, Type="String", Default="ComposeXDefined")
 LOG_GROUP_RETENTION_T = "ServiceLogGroupRetentionPeriod"
 LOG_GROUP_RETENTION = Parameter(
     LOG_GROUP_RETENTION_T,

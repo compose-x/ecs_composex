@@ -22,7 +22,7 @@ Core ECS Template building
 from troposphere import Ref, Sub, Tags, GetAtt
 from troposphere import Equals, If, Not, And, Condition
 from troposphere import Parameter
-from troposphere import AWS_ACCOUNT_ID, AWS_PARTITION, AWS_REGION
+from troposphere import AWS_ACCOUNT_ID, AWS_PARTITION, AWS_REGION, AWS_NO_VALUE
 from troposphere.ec2 import SecurityGroup
 from troposphere.iam import PolicyType
 from troposphere.logs import LogGroup
@@ -78,6 +78,8 @@ def initialize_service_template(service_name):
             ecs_params.LOG_GROUP_RETENTION,
             ecs_params.ELB_GRACE_PERIOD,
             ecs_params.FARGATE_VERSION,
+            ecs_params.LOG_GROUP_NAME,
+            ecs_params.CREATE_LOG_GROUP,
             vpc_params.VPC_ID,
             vpc_params.APP_SUBNETS,
             vpc_params.PUBLIC_SUBNETS,
@@ -113,6 +115,13 @@ def initialize_service_template(service_name):
     service_tpl.add_condition(
         CREATE_PUBLIC_NAMESPACE_CON_T, CREATE_PUBLIC_NAMESPACE_CON
     )
+    service_tpl.add_condition(
+        ecs_conditions.CREATE_LOG_GROUP_CON_T, ecs_conditions.CREATE_LOG_GROUP_CON
+    )
+    service_tpl.add_condition(
+        ecs_conditions.GENERATED_LOG_GROUP_NAME_CON_T,
+        ecs_conditions.GENERATED_LOG_GROUP_NAME_CON,
+    )
     return service_tpl
 
 
@@ -121,29 +130,17 @@ def create_log_group(service_tpl, family):
     Function to create a new Log Group for the services
     :return:
     """
-    log_group_default_name = f"svc/{family.logical_name}"
-    log_group_parameter = Parameter(
-        "ServiceLogGroupName", Type="String", Default=log_group_default_name
-    )
-    log_group_create_condition = Not(Equals(Ref(log_group_parameter), "DoNotCreate"))
-    log_group_name_condition = And(
-        Condition("CreateNewLogGroup"),
-        Equals(Ref(log_group_parameter), log_group_parameter.Default),
-    )
-    service_tpl.add_condition("CreateNewLogGroup", log_group_create_condition)
-    service_tpl.add_condition("UseComposeXLogGroupname", log_group_name_condition)
-    add_parameters(service_tpl, [log_group_parameter])
     svc_log = service_tpl.add_resource(
         LogGroup(
             ecs_params.LOG_GROUP_T,
-            Condition="CreateNewLogGroup",
+            Condition=ecs_conditions.CREATE_LOG_GROUP_CON_T,
             RetentionInDays=Ref(ecs_params.LOG_GROUP_RETENTION),
             LogGroupName=If(
-                "UseComposeXLogGroupname",
+                ecs_conditions.GENERATED_LOG_GROUP_NAME_CON_T,
                 Sub(
-                    f"svc/${{{ecs_params.CLUSTER_NAME_T}}}/${{{ecs_params.SERVICE_NAME_T}}}",
+                    f"svc/ecs/${{{ecs_params.CLUSTER_NAME_T}}}/${{{ecs_params.SERVICE_NAME_T}}}",
                 ),
-                Ref(log_group_parameter),
+                Ref(ecs_params.LOG_GROUP_NAME),
             ),
         )
     )
@@ -158,17 +155,44 @@ def create_log_group(service_tpl, family):
                     {
                         "Sid": "AllowCloudWatchLoggingToSpecificLogGroup",
                         "Effect": "Allow",
-                        "Action": ["logs:CreateLogStream", "logs:PutLogEvents"],
-                        "Resource": [
+                        "Action": [
+                            "logs:CreateLogStream",
+                            "logs:PutLogEvents",
                             If(
-                                "CreateNewLogGroup",
-                                GetAtt(svc_log, "Arn"),
-                                Sub(
-                                    f"arn:${{{AWS_PARTITION}}}:logs:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:"
-                                    f"log-group/${{{log_group_parameter.title}}}:*"
-                                ),
-                            )
+                                ecs_conditions.GENERATED_LOG_GROUP_NAME_CON_T,
+                                "logs:CreateLogGroup",
+                                Ref(AWS_NO_VALUE),
+                            ),
                         ],
+                        "Resource": If(
+                            ecs_conditions.CREATE_LOG_GROUP_CON_T,
+                            [GetAtt(svc_log, "Arn")],
+                            If(
+                                ecs_conditions.GENERATED_LOG_GROUP_NAME_CON_T,
+                                [
+                                    Sub(
+                                        f"arn:${{{AWS_PARTITION}}}:logs:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:"
+                                        "log-group:svc/ecs/"
+                                        f"${{{ecs_params.CLUSTER_NAME_T}}}/${{{ecs_params.SERVICE_NAME_T}}}:*"
+                                    ),
+                                    Sub(
+                                        f"arn:${{{AWS_PARTITION}}}:logs:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:"
+                                        "log-group:svc/ecs/"
+                                        f"${{{ecs_params.CLUSTER_NAME_T}}}/${{{ecs_params.SERVICE_NAME_T}}}"
+                                    ),
+                                ],
+                                [
+                                    Sub(
+                                        f"arn:${{{AWS_PARTITION}}}:logs:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:"
+                                        f"log-group:${{{ecs_params.LOG_GROUP_NAME.title}}}:*"
+                                    ),
+                                    Sub(
+                                        f"arn:${{{AWS_PARTITION}}}:logs:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:"
+                                        f"log-group:${{{ecs_params.LOG_GROUP_NAME.title}}}"
+                                    ),
+                                ],
+                            ),
+                        ),
                     },
                 ],
             },
@@ -176,9 +200,18 @@ def create_log_group(service_tpl, family):
     )
     family.task_logging_options = {
         "awslogs-group": If(
-            "CreateNewLogGroup", Ref(svc_log), Ref(log_group_parameter)
+            ecs_conditions.CREATE_LOG_GROUP_CON_T,
+            Ref(svc_log),
+            If(
+                ecs_conditions.GENERATED_LOG_GROUP_NAME_CON_T,
+                Sub(
+                    f"svc/ecs/${{{ecs_params.CLUSTER_NAME_T}}}/${{{ecs_params.SERVICE_NAME_T}}}",
+                ),
+                Ref(ecs_params.LOG_GROUP_NAME),
+            ),
         ),
         "awslogs-region": Ref(AWS_REGION),
+        "awslogs-create-group": True,
     }
 
 

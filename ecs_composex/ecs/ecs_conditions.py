@@ -29,11 +29,6 @@ from troposphere import Condition, Ref, Equals, And, Not
 
 from ecs_composex.ecs import ecs_params
 
-GENERATED_CLUSTER_NAME_CON_T = "GenerateEcsClustername"
-GENERATED_CLUSTER_NAME_CON = Not(
-    Equals(Ref(ecs_params.CLUSTER_NAME), ecs_params.CLUSTER_NAME.Default)
-)
-
 NOT_USE_CLUSTER_SG_CON_T = "NotUseClusterSecurityGroupCondition"
 NOT_USE_CLUSTER_SG_CON = Equals(
     Ref(ecs_params.CLUSTER_SG_ID), ecs_params.CLUSTER_SG_ID.Default
@@ -68,3 +63,14 @@ USE_CLUSTER_CAPACITY_PROVIDERS_CON = Equals(
 
 CREATE_CLUSTER_CON_T = "CreateClusterCondition"
 CREATE_CLUSTER_CON = Equals(Ref(ecs_params.CREATE_CLUSTER), "True")
+GENERATED_CLUSTER_NAME_CON_T = "GenerateEcsClusterName"
+GENERATED_CLUSTER_NAME_CON = Not(
+    Equals(Ref(ecs_params.CLUSTER_NAME), ecs_params.CLUSTER_NAME.Default)
+)
+
+CREATE_LOG_GROUP_CON_T = "CreateNewLogGroupCondition"
+CREATE_LOG_GROUP_CON = Equals(Ref(ecs_params.CREATE_LOG_GROUP), "True")
+GENERATED_LOG_GROUP_NAME_CON_T = "GenerateLogGroupName"
+GENERATED_LOG_GROUP_NAME_CON = Equals(
+    Ref(ecs_params.LOG_GROUP_NAME), ecs_params.LOG_GROUP_NAME.Default
+)

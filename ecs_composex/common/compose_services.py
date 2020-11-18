@@ -51,7 +51,7 @@ from ecs_composex.common.compose_volumes import (
 from ecs_composex.ecs import ecs_params
 from ecs_composex.ecs.docker_tools import find_closest_fargate_configuration
 from ecs_composex.ecs.ecs_iam import add_service_roles
-from ecs_composex.ecs.ecs_params import LOG_GROUP, AWS_XRAY_IMAGE
+from ecs_composex.ecs.ecs_params import LOG_GROUP_NAME, AWS_XRAY_IMAGE
 from ecs_composex.ecs.ecs_params import LOG_GROUP_RETENTION
 from ecs_composex.ecs.ecs_params import NETWORK_MODE, EXEC_ROLE_T, TASK_ROLE_T, TASK_T
 from ecs_composex.iam import define_iam_policy, add_role_boundaries
@@ -434,7 +434,7 @@ class ComposeService(object):
             LogConfiguration=LogConfiguration(
                 LogDriver="awslogs",
                 Options={
-                    "awslogs-group": Ref(LOG_GROUP),
+                    "awslogs-group": self.logical_name,
                     "awslogs-region": Ref(AWS_REGION),
                     "awslogs-stream-prefix": self.name,
                 },
@@ -779,7 +779,6 @@ class ComposeFamily(object):
         self.scalable_target = None
         self.ecs_service = None
         self.task_logging_options = {}
-        self.task_logging_group_parameter = None
         self.stack_parameters = {}
         self.set_xray()
         self.sort_container_configs()
@@ -866,15 +865,16 @@ class ComposeFamily(object):
         if (
             enabled
             and not all(enabled)
-            and self.task_logging_group_parameter
-            and isinstance(self.task_logging_group_parameter, Parameter)
+            and (
+                not keypresent(ecs_params.CREATE_LOG_GROUP.title, self.stack_parameters)
+                or not self.stack_parameters[ecs_params.CREATE_LOG_GROUP.title]
+                == "False"
+            )
         ):
             LOG.warn(
                 "At least one of the services has CreateLogGroup set to False. Disabling new LogsGroups creation"
             )
-            self.stack_parameters.update(
-                {self.task_logging_group_parameter.title: "DoNotCreate"}
-            )
+            self.stack_parameters.update({ecs_params.CREATE_LOG_GROUP.title: "False"})
 
     def sort_container_configs(self):
         """
