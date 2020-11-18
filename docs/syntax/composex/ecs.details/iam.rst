@@ -1,8 +1,8 @@
 ﻿.. _x_configs_iam_syntax_reference:
 
-====
-iam
-====
+======
+x-iam
+======
 
 .. contents::
 

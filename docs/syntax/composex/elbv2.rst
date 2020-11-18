@@ -66,7 +66,7 @@ These settings are just a shorter notation for the `LB Attributes`_
 MacroParameters
 ================
 
-.. _ingress_syntax_ref:
+.. _load_balancers_ingress_syntax_ref:
 
 Ingress
 -------

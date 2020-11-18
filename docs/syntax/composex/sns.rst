@@ -26,7 +26,7 @@ Syntax
 
 .. warning::
 
-At this current version, **Subscriptions** are not supported.
+    At this current version, **Subscriptions** are not supported.
 
 
 Properties

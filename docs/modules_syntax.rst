@@ -12,8 +12,12 @@
     :caption: Services Extension Fields
     :maxdepth: 1
 
-    syntax/docker-compose/ecs
-    syntax/docker-compose/ecs.details/logging
+    syntax/composex/ecs
+    syntax/composex/ecs.details/scaling
+    syntax/composex/ecs.details/iam
+    syntax/composex/ecs.details/network
+    syntax/composex/ecs.details/logging
+    syntax/composex/ecs.details/xray
 
 .. toctree::
     :caption: ComposeX syntax
