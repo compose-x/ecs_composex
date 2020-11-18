@@ -7,6 +7,20 @@ Extras
 ECS ComposeX aims to make life easy to take your application to AWS ECS, with using AWS Fargate as the primary
 focus (still, allows to run on EC2 should you need to).
 
+
+Docker ECS-Plugin x-aws-keys support
+=====================================
+
+In order to keep make the integration and inter-operability of tools used by developers, we are going to add support
+for, mostly, services level x-aws keys such as **-xaws-iam-role** or **x-aws-autoscaling**.
+
+This will allow developers who might have started a journey to ECS using the docker ecs plugin to continue that journey
+with ECS ComposeX without making too many changes.
+
+In case for a similar setting, such as *x-aws-iam-policies* which in ECS Composex is under *x-iam/Policies*, these
+non conflicting settings will add up together. However, in case of conflicting information, the ECS ComposeX definition
+will prevail over the x-aws-keys.
+
 AWS AppMesh integration
 =======================
 
@@ -52,9 +66,8 @@ numbers.
         image: my-nginx
         deploy:
           replicas: 2 # by default I want 2 containers
-        x-configs:
-          scaling:
-            range: "1-10" # 1 to 10 containers to deploy for the service
+        x-scaling:
+          range: "1-10" # 1 to 10 containers to deploy for the service
             target_scaling:
               cpu_target: 80 # Means 80% average for all containers in the service.
       backend:
