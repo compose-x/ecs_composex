@@ -116,11 +116,7 @@ def merge_services_network(family):
         ("use_cloudmap", bool, None),
         ("is_public", bool, None),
     ]
-    x_network = [
-        s.x_configs["network"]
-        for s in family.ordered_services
-        if s.x_configs and keyisset("network", s.x_configs)
-    ]
+    x_network = [s.x_network for s in family.ordered_services if s.x_network]
     for config in valid_keys:
         for network in x_network:
             if config[0] in network:
