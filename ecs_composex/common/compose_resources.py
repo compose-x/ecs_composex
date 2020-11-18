@@ -177,7 +177,9 @@ class XResource(object):
             elif service_name in settings.families and service_name in [
                 f[0].name for f in self.families_targets
             ]:
-                LOG.warn(f"The family {service_name} has already been added. Skipping")
+                LOG.warning(
+                    f"The family {service_name} has already been added. Skipping"
+                )
             elif service_name in [s.name for s in settings.services]:
                 self.handle_families_targets_expansion(service, settings)
         self.debug_families_targets()

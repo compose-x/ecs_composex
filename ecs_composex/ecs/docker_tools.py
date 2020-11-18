@@ -29,38 +29,20 @@ NUMBERS_REG = r"[^0-9.]"
 MINIMUM_SUPPORTED = 4
 
 
-def handle_bytes(value):
-    """
-    Function to handle the KB use-case
-
-    :param value: the string value
-    :rtype: int or Ref(AWS_NO_VALUE)
-    """
-    amount = float(re.sub(NUMBERS_REG, "", value))
-    unit = "Bytes"
-    if amount < (MINIMUM_SUPPORTED * 1024 * 1024):
-        LOG.warn(
-            f"You set unit to {unit} and value is lower than 4MB. Setting to minimum supported by Docker"
-        )
-        return MINIMUM_SUPPORTED
-    else:
-        final_amount = (amount / 1024) / 1024
-    return final_amount
-
-
-def handle_kbytes(value):
+def handle_bytes_units(value, factor):
     """
     Function to handle KB use-case
     """
     amount = float(re.sub(NUMBERS_REG, "", value))
     unit = "KBytes"
-    if amount < (MINIMUM_SUPPORTED * 1024):
-        LOG.warn(
-            f"You set unit to {unit} and value is lower than 512MB. Setting to minimum supported by Docker"
+    if amount < (MINIMUM_SUPPORTED * factor):
+        LOG.warning(
+            f"You set unit to {unit} and value is lower than {MINIMUM_SUPPORTED}MB. "
+            "Setting to minimum supported by Docker"
         )
-        return MINIMUM_SUPPORTED
+        return MINIMUM_SUPPORTED * factor
     else:
-        final_amount = int(amount / 1024)
+        final_amount = int(amount / factor)
     return final_amount
 
 
@@ -77,9 +59,9 @@ def set_memory_to_mb(value):
     amount = float(re.sub(NUMBERS_REG, "", value))
     unit = "MBytes"
     if b_pat.findall(value):
-        final_amount = handle_bytes(value)
+        final_amount = handle_bytes_units(value, (1024 ^ 2))
     elif kb_pat.findall(value):
-        final_amount = handle_kbytes(value)
+        final_amount = handle_bytes_units(value, 1024)
     elif mb_pat.findall(value):
         final_amount = int(amount)
     elif gb_pat.findall(value):
@@ -88,7 +70,7 @@ def set_memory_to_mb(value):
     else:
         raise ValueError(f"Could not parse {value} to units")
     LOG.debug(f"Computed unit for {value}: {unit}. Results into {final_amount}MB")
-    return final_amount
+    return int(final_amount)
 
 
 def find_closest_ram_config(ram, ram_range):
@@ -127,7 +109,9 @@ def find_closest_fargate_configuration(cpu, ram, as_param_string=False):
     if fargate_cpu < cpu:
         fargate_cpu = nxtpow2(cpu)
     if fargate_cpu not in fargate_cpus:
-        LOG.warn(f"Value {cpu} is not valid for Fargate. Valid modes: {fargate_cpus}")
+        LOG.warning(
+            f"Value {cpu} is not valid for Fargate. Valid modes: {fargate_cpus}"
+        )
         if fargate_cpu < fargate_cpus[0]:
             fargate_cpu = fargate_cpus[0]
         elif fargate_cpu > fargate_cpus[-1]:

@@ -61,7 +61,7 @@ def handle_import_dbs_to_services(db, rds_mapping, target, mapping_name):
             db.logical_name,
         )
     else:
-        LOG.warn(
+        LOG.warning(
             f"Don't forget, we did not assigned access to a secret from SecretsManager for {db.logical_name}"
         )
     add_security_group_ingress(
@@ -125,7 +125,7 @@ def create_lookup_mappings(mappings, lookup_dbs, settings):
         validate_rds_lookup(db.name, db.lookup)
         db_config = lookup_rds_resource(db.lookup, settings.session)
         if not db_config:
-            LOG.warn(
+            LOG.warning(
                 f"No RDS DB Configuration could be defined from provided lookup. Skipping {db.name}"
             )
             return

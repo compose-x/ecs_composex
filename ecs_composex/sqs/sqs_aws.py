@@ -65,7 +65,7 @@ def get_queue_config(logical_name, queue_arn, session):
                         }
                     )
                 else:
-                    LOG.warn(
+                    LOG.warning(
                         "The KMS Key provided is not an ARN. Implementation requires full ARN today"
                     )
             else:

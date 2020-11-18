@@ -292,6 +292,6 @@ def process_stacks(root_stack, settings):
             process_stacks(resource, settings)
             resource.Parameters.update(cfn_conditions.pass_root_stack_name())
         elif isinstance(resource, Stack):
-            LOG.warn(resource_name)
-            LOG.warn(resource)
+            LOG.warning(resource_name)
+            LOG.warning(resource)
     root_stack.render(settings)

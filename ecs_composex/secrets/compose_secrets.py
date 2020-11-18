@@ -244,7 +244,7 @@ class ComposeSecret(object):
         elif keyisset("KmsKeyId", secret_config) and secret_config[
             "KmsKeyId"
         ].startswith("alias"):
-            LOG.warn("The KMS Key retrieved is a KMS Key Alias, not importing.")
+            LOG.warning("The KMS Key retrieved is a KMS Key Alias, not importing.")
 
         self.mapping = {
             self.map_arn_name: secret_config[self.logical_name],

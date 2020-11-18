@@ -59,7 +59,7 @@ def generate_scaling_out_steps(steps, target):
         unordered.append(step_def)
     ordered = sorted(unordered, key=lambda i: i["lower_bound"])
     if target and ordered[-1]["count"] > target.MaxCapacity:
-        LOG.warn(
+        LOG.warning(
             f"The current maximum in your range is {target.MaxCapacity} whereas you defined {ordered[-1]['count']}"
             " for step scaling. Adjusting to step scaling max."
         )
@@ -87,10 +87,10 @@ def generate_scaling_out_steps(steps, target):
     if hasattr(cfn_steps[-1], "MetricIntervalUpperBound") and not isinstance(
         getattr(cfn_steps[-1], "MetricIntervalUpperBound"), Ref
     ):
-        LOG.warn("The last upper bound shall not be set. Deleting value to comply}")
+        LOG.warning("The last upper bound shall not be set. Deleting value to comply}")
         setattr(cfn_steps[-1], "MetricIntervalUpperBound", Ref(AWS_NO_VALUE))
     if cfn_steps[0].MetricIntervalLowerBound == 0:
-        LOG.warn(
+        LOG.warning(
             "You defined the lower bound to 0. To enable alarm threshold we are setting it to 1"
         )
         setattr(cfn_steps[0], "MetricIntervalLowerBound", 1)
@@ -203,7 +203,7 @@ def handle_defined_target_scaling_props(prop, config, key, new_config):
         and not keyisset(prop[0], config[key])
         and keyisset(prop[0], new_config)
     ):
-        LOG.warn(f"At least one service enabled {prop[0]}. Enabling for all")
+        LOG.warning(f"At least one service enabled {prop[0]}. Enabling for all")
         config[key][prop[0]] = True
 
 

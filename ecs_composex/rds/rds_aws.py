@@ -87,7 +87,7 @@ def validate_rds_lookup(db_name, lookup):
             f"{db_name} - You can only search for RDS cluster or db but not both at the same time."
         )
     if not keyisset("secret", lookup):
-        LOG.warn(
+        LOG.warning(
             f"You did not define the secret to use for {db_name}, therefore we cannot assign that to the container."
             " You might encounter authentication issues."
         )

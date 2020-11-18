@@ -66,7 +66,7 @@ def create_lookup_mappings(mappings, lookup_dbs, settings):
         validate_rds_lookup(db.name, db.lookup)
         db_config = lookup_rds_resource(db.lookup, settings.session)
         if not db_config:
-            LOG.warn(
+            LOG.warning(
                 f"No RDS DB Configuration could be defined from provided lookup. Skipping {db.name}"
             )
             return

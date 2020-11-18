@@ -178,7 +178,7 @@ def define_accelerate_config(properties, settings, bucket_name):
         or keyisset("BucketName", properties)
         and properties["BucketName"].find(".") > 0
     ):
-        LOG.warn(
+        LOG.warning(
             "Your bucket name contains a `.` which is incompatible with Acceleration"
         )
         return Ref(AWS_NO_VALUE)
@@ -234,7 +234,7 @@ def define_bucket_name(properties, settings):
         elif not keyisset(expand_account_id, settings) and not keyisset(
             expand_region_key, settings
         ):
-            LOG.warn(
+            LOG.warning(
                 f"{base_name} - You defined the bucket without any extension. "
                 "Bucket names must be unique. Make sure it is not already in-use"
             )

@@ -276,7 +276,7 @@ class Ingress(object):
             if not keyisset("Ipv4", allowed_source) and not keyisset(
                 "Ipv6", allowed_source
             ):
-                LOG.warn("No IPv4 or IPv6 set. Skipping")
+                LOG.warning("No IPv4 or IPv6 set. Skipping")
                 continue
             props = generate_security_group_props(allowed_source)
             if props:
