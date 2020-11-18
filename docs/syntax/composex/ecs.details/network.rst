@@ -1,32 +1,48 @@
 ﻿.. _x_configs_network_syntax:
 
 ==================
-network
+x-network
 ==================
 
 .. code-block:: yaml
+    :caption: Overview
 
     use_cloudmap: bool
-    ingress: {ingress_definition}
+    Ingress: {ingress_definition}
 
+
+.. contents::
 
 use_cloudmap
 ============
 
+Boolean to turn on or off the integration to CloudMap for the services.
 
-ingress definition
+.. _services_ingress_syntax_reference:
+
+Ingress definition
 ==================
 
 This allows you to define specific ingress control from external sources to your environment. For example, if you have
 to whitelist IP addresses that are to be allowed communication to the services, you can list these, and indicate their
 name which will be shown in the EC2 security group description of the ingress rule.
 
+Syntax reference
+-----------------
+
+.. code-block:: yaml
+
+    Ingress:
+      ExtSources: []
+      AwsSources: []
+      Myself: True/False
+
 .. code-block:: yaml
     :caption: Ingress Example
 
-    x-configs:
+    services:
       app01:
-        network:
+        x-network:
           Ingress:
             ExtSources:
               - Ipv4: 0.0.0.0/0
@@ -52,4 +68,10 @@ name which will be shown in the EC2 security group description of the ingress ru
 
 .. hint::
 
-    To see details about the Ingress default syntax, refer to :ref:`ingress_syntax_ref`
+    To see details about the Ingress for Load Balancers, refer to :ref:`_load_balancers_ingress_syntax_ref`
+
+
+.. hint::
+
+    When using an ALB, you do not need to define that ALB security group etc., all inbound rules will be defined automatically
+    to allow the ALB to communicate with your service!

@@ -252,8 +252,8 @@ def merge_family_services_scaling(services):
     }
     x_scaling_configs = []
     for service in services:
-        if service.x_configs and keyisset("scaling", service.x_configs):
-            x_scaling_configs.append(service.x_configs["scaling"])
+        if service.x_scaling:
+            x_scaling_configs.append(service.x_scaling)
     valid_keys = [
         ("range", str, handle_range),
         ("target_scaling", dict, handle_target_scaling),

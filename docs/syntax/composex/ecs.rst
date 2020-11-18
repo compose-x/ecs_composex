@@ -21,24 +21,4 @@ you can use the native *configs* key of Docker compose.
 
     ecs.details/deploy
 
-.. toctree::
-    :caption: Services autoscaling
-
-    ecs.details/ecs_scaling
-
-.. toctree::
-    :caption: IAM
-
-    ecs.details/iam
-
-.. toctree::
-    :caption: Network
-
-    ecs.details/network
-
-.. toctree::
-    :caption: AWS X-Ray
-
-    ecs.details/xray
-
 :ref:`secrets_syntax_reference`

@@ -16,6 +16,7 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import re
+from copy import deepcopy
 from json import dumps
 
 from troposphere import (
@@ -271,6 +272,22 @@ def validate_healthcheck(healthcheck, valid_keys, required_keys):
         )
 
 
+def set_else_none(key, props, alt_value=None, eval_bool=False):
+    """
+    Function to serialize if not keyisset () set other value
+
+    :param str key:
+    :param dict props:
+    :param alt_value:
+    :param bool eval_bool: Allows to gets booleans properties
+    :return:
+    """
+    if not eval_bool:
+        return alt_value if not keyisset(key, props) else props[key]
+    elif eval_bool:
+        return alt_value if not keypresent(key, props) else props[key]
+
+
 class ComposeService(object):
     """
     Class to represent a service
@@ -322,6 +339,10 @@ class ComposeService(object):
         ("volumes", list),
         ("x-configs", dict),
         ("x-logging", dict),
+        ("x-iam", dict),
+        ("x-xray", bool),
+        ("x-scaling", dict),
+        ("x-network", dict),
     ]
 
     def __init__(self, name, definition, volumes=None, secrets=None):
@@ -349,60 +370,51 @@ class ComposeService(object):
                     "Expected",
                     setting[1],
                 )
+        self.definition = deepcopy(definition)
         self.name = name
-        self.x_configs = (
-            definition["x-configs"] if keyisset("x-configs", definition) else None
-        )
+        self.logical_name = NONALPHANUM.sub("", self.name)
+        self.container_name = name
+        self.service_name = Sub(f"${{{ROOT_STACK_NAME.title}}}-{self.name}")
+
+        self.x_configs = set_else_none("x-configs", self.definition)
+        self.x_scaling = set_else_none("x-scaling", self.definition, None, False)
+        self.x_network = set_else_none("x-network", self.definition, None, False)
+        self.x_iam = set_else_none("x-iam", self.definition)
+        self.x_logging = {"RetentionInDays": 14, "CreateLogGroup": True}
+
         self.replicas = 1
         self.container = None
         self.volumes = []
         self.secrets = []
-        self.environment = (
-            definition["environment"] if keyisset("environment", definition) else None
-        )
+        self.environment = set_else_none("environment", self.definition, None, False)
         self.cfn_environment = (
             import_env_variables(self.environment)
             if self.environment
             else Ref(AWS_NO_VALUE)
         )
-        self.ports = (
-            set_service_ports(definition["ports"])
-            if keyisset("ports", definition)
-            else []
-        )
-        self.depends_on = (
-            definition["depends_on"] if keyisset("depends_on", definition) else []
-        )
-        self.definition = definition
+        self.ports = set_else_none("ports", self.definition, [])
+        self.depends_on = set_else_none("depends_on", self.definition, [], False)
         self.command = (
             definition["command"].strip().split(";")
             if keyisset("command", definition)
             else Ref(AWS_NO_VALUE)
         )
-        self.logical_name = NONALPHANUM.sub("", self.name)
-        self.container_name = name
-        self.service_name = Sub(f"${{{ROOT_STACK_NAME.title}}}-{self.name}")
         self.image = self.definition["image"]
         self.image_param = Parameter(
             f"{self.logical_name}ImageUrl", Default=self.image, Type="String"
         )
-        self.deploy = (
-            self.definition["deploy"] if keyisset("deploy", self.definition) else None
-        )
+        self.deploy = set_else_none("deploy", self.definition, None)
         self.ingress_mappings = define_ingress_mappings(self.ports)
         self.mem_alloc = None
         self.mem_resa = None
         self.cpu_amount = None
         self.logging = None
-        self.x_logging = {"RetentionInDays": 14, "CreateLogGroup": True}
         self.families = []
         self.my_family = None
         self.container_definition = None
 
         self.container_start_condition = "START"
-        self.healthcheck = (
-            definition["healthcheck"] if keyisset("healthcheck", definition) else None
-        )
+        self.healthcheck = set_else_none("healthcheck", self.definition, None)
         self.ecs_healthcheck = Ref(AWS_NO_VALUE)
         self.set_ecs_healthcheck()
         self.define_logging()
@@ -811,12 +823,10 @@ class ComposeFamily(object):
                     "deploy": {
                         "resources": {"limits": {"cpus": 0.03125, "memory": "256M"}},
                     },
-                    "x-configs": {
-                        "iam": {
-                            "managed_policies": [
-                                "arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess"
-                            ]
-                        }
+                    "x-iam": {
+                        "managed_policies": [
+                            "arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess"
+                        ]
                     },
                 },
             )
@@ -926,11 +936,7 @@ class ComposeFamily(object):
             ("policies", list, add_policies),
             ("boundary", (str, Sub), handle_iam_boundary),
         ]
-        iam_settings = [
-            service.x_configs["iam"]
-            for service in self.services
-            if service.x_configs and keyisset("iam", service.x_configs)
-        ]
+        iam_settings = [service.x_iam for service in self.services if service.x_iam]
         for setting in iam_settings:
             for key in valid_keys:
                 self.sort_iam_settings(key, setting)

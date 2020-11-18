@@ -4,7 +4,6 @@
 .. toctree::
     :maxdepth: 1
 
-    features/common
     features/ecs
     features/appmesh
     features/rds

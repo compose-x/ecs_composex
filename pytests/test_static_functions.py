@@ -21,7 +21,7 @@ from ecs_composex.ecs.ecs_service_network_config import generate_security_group_
 
 
 def test_cidr_validation():
-    a = generate_security_group_props({"ipv4": "1.1.1.1/32"}, "abcd")
+    a = generate_security_group_props({"Ipv4": "1.1.1.1/32"})
     with raises(ValueError):
-        a = generate_security_group_props({"ipv4": "1.1.1.256/32"}, "abcd")
-        a = generate_security_group_props({"ipv4": "1.1.1.1/33"}, "abcd")
+        a = generate_security_group_props({"Ipv4": "1.1.1.256/32"})
+        a = generate_security_group_props({"Ipv4": "1.1.1.1/33"})

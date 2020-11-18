@@ -1,3 +1,6 @@
+---
+# base file for services with the x-keys for BDD
+version: '3.8'
 secrets:
   abcd: {}
   john:
@@ -41,28 +44,27 @@ services:
     x-logging:
       RetentionInDays: 42
       CreateLogGroup: False
-    x-configs:
-      network:
-        is_public: False
-        lb_type: application
-        use_cloudmap: True
-        Ingress:
-          Myself: False
-          AwsSources:
-            - Type: PrefixList
-              Id: pl-6da54004
-      iam:
-        policies:
-          - document:
-              Statement:
-                - Action:
-                    - cloudwatch:PutMetricData
-                  Effect: Allow
-                  Resource:
-                    - '*'
-                  Sid: AllowPublishMetricsToCw
+    x-network:
+      is_public: False
+      lb_type: application
+      use_cloudmap: True
+      Ingress:
+        Myself: False
+        AwsSources:
+          - Type: PrefixList
+            Id: pl-6da54004
+    x-iam:
+      policies:
+        - document:
+            Statement:
+              - Action:
+                  - cloudwatch:PutMetricData
+                Effect: Allow
+                Resource:
+                  - '*'
+                Sid: AllowPublishMetricsToCw
             name: AllowPublishToCw
-      use_xray: false
+    x-xray: false
   app02:
     deploy:
       labels:
@@ -93,18 +95,17 @@ services:
       - source: some-volume
         target: /app/data
         type: volume
-    x-configs:
-      iam:
-        boundary: arn:aws:iam::aws:policy/AdministratorAccess
-        managed_policies:
-          - arn:aws:iam::aws:policy/AdministratorAccess
-      scaling:
-        range: 1-5
-        target_scaling:
-          cpu_target: 30
-          disable_scale_in: true
-          memory_target: 30
-      use_xray: false
+    x-iam:
+      boundary: arn:aws:iam::aws:policy/AdministratorAccess
+      managed_policies:
+        - arn:aws:iam::aws:policy/AdministratorAccess
+    x-scaling:
+      range: 1-5
+      target_scaling:
+        cpu_target: 30
+        disable_scale_in: true
+        memory_target: 30
+    x-xray: false
   app03:
     deploy:
       resources:
@@ -127,20 +128,19 @@ services:
       - normal-vol
       - shared-images:/app/images
       - some-volume:/app/data:ro
-    x-configs:
-      network:
-        Ingress:
-          Myself: False
-          ExtSources:
-            - Ipv4: 0.0.0.0/0
-              Description: ANYWHERE
+    x-network:
+      Ingress:
+        Myself: False
+        ExtSources:
+          - Ipv4: 0.0.0.0/0
+            Description: ANYWHERE
 
-      logging:
-        logs_retention_period: 42
-      scaling:
-        range: 1-10
-        target_scaling:
-          cpu_target: 50
+    x-logging:
+        RetentionInDays: 42
+    x-scaling:
+      range: 1-10
+      target_scaling:
+        cpu_target: 50
   rproxy:
     depends_on:
       - app01
@@ -162,20 +162,18 @@ services:
         protocol: tcp
         published: 80
         target: 80
-    x-configs:
-      iam:
-        managed_policies:
-          - arn:aws:iam::aws:policy/ReadOnlyAccess
-      scaling:
-        range: 0-2
-        target_scaling:
-          cpu_target: 50
-      use_xray: true
-      network:
-        is_public: False
-        lb_type: application
-        use_cloudmap: True
-version: '3.8'
+    x-iam:
+      managed_policies:
+        - arn:aws:iam::aws:policy/ReadOnlyAccess
+    x-scaling:
+      range: 0-2
+      target_scaling:
+        cpu_target: 50
+    x-xray: true
+    x-network:
+      is_public: False
+      lb_type: application
+      use_cloudmap: True
 volumes:
   shared-images: {}
   some-volume: {}

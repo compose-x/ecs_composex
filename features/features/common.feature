@@ -43,7 +43,7 @@ Feature: common
     And I render all files to verify execution
     Examples:
       | file_path                   | override_file            |
-      | use-cases/blog.families.yml | use-cases/all-in-one.yml |
+      | use-cases/blog.yml | use-cases/all-in-one.yml |
 
   @cluster
   Scenario Outline: ECS Cluster override
@@ -51,9 +51,9 @@ Feature: common
     Then I render the docker-compose to composex to validate
     Examples:
       | file_path                   | override_file                    |
-      | use-cases/blog.families.yml | use-cases/ecs/cluster_create.yml |
-      | use-cases/blog.families.yml | use-cases/ecs/cluster_use.yml    |
-      | use-cases/blog.families.yml | use-cases/ecs/cluster_lookup.yml |
+      | use-cases/blog.features.yml | use-cases/ecs/cluster_create.yml |
+      | use-cases/blog.features.yml | use-cases/ecs/cluster_use.yml    |
+      | use-cases/blog.features.yml | use-cases/ecs/cluster_lookup.yml |
 
   @logging
   Scenario Outline: Logging override
@@ -61,4 +61,4 @@ Feature: common
     Then I render the docker-compose to composex to validate
     Examples:
       | file_path                   | override_file                    |
-      | use-cases/blog.families.yml | use-cases/logging/variations.yml |
+      | use-cases/blog.features.yml | use-cases/logging/variations.yml |
