@@ -4,6 +4,8 @@
 x-logging
 =========
 
+.. contents::
+
 Section to allow passing in arguments for logging.
 
 RetentionInDays

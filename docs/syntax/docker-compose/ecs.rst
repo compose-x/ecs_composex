@@ -37,9 +37,8 @@ you can use the native *configs* key of Docker compose.
     ecs.details/network
 
 .. toctree::
-    :caption: Logging
+    :caption: AWS X-Ray
 
-    ecs.details/logging
-
+    ecs.details/xray
 
 :ref:`secrets_syntax_reference`

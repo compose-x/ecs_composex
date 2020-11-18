@@ -9,11 +9,17 @@
     syntax/docker-compose/secrets
 
 .. toctree::
+    :caption: Services Extension Fields
+    :maxdepth: 1
+
+    syntax/docker-compose/ecs
+    syntax/docker-compose/ecs.details/logging
+
+.. toctree::
     :caption: ComposeX syntax
     :maxdepth: 1
 
     syntax/composex/common
-    syntax/composex/ecs
     syntax/composex/appmesh
     syntax/composex/elbv2
     syntax/composex/rds
