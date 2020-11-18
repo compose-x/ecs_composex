@@ -1,0 +1,19 @@
+---
+# Usecase file for logging settings variables
+
+services:
+  app01:
+    x-logging:
+      RetentionInDays: 42
+      CreateLogGroup: False
+  app03:
+    x-logging:
+      RetentionInDays: 42
+      CreateLogGroup: True
+  app02:
+    x-logging:
+      RetentionInDays: 42
+
+  rproxy:
+    x-logging:
+      CreateLogGroup: True
