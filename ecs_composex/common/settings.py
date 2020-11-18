@@ -412,8 +412,8 @@ class ComposeXSettings(object):
             return
         for secret_name in self.compose_content[ComposeSecret.main_key]:
             secret_def = self.compose_content[ComposeSecret.main_key][secret_name]
-            if keyisset("x-secrets", secret_def) and isinstance(
-                secret_def["x-secrets"], dict
+            if keyisset(ComposeSecret.x_key, secret_def) and isinstance(
+                secret_def[ComposeSecret.x_key], dict
             ):
                 LOG.info(f"Adding secret {secret_name} to settings")
                 secret = ComposeSecret(secret_name, secret_def, self)

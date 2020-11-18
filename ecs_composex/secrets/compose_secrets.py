@@ -74,17 +74,40 @@ class ComposeSecret(object):
     Class to represent a Compose secret.
     """
 
+    x_key = XRES_KEY
     main_key = "secrets"
     map_kms_name = "KmsKeyId"
     map_arn_name = "Arn"
     map_name_name = "Name"
     json_keys_key = "JsonKeys"
+    links_key = "LinksTo"
     map_name = RES_KEY
+    allowed_keys = ["Name", "Lookup"]
+    valid_keys = [json_keys_key, links_key] + allowed_keys
 
     def __init__(self, name, definition, settings):
+        """
+        Method to init Secret for ECS ComposeX
+
+        :param str name:
+        :param dict definition:
+        :param ecs_composex.common.settings.ComposeXSettings settings:
+        """
         self.services = []
-        if not keyisset("Name", definition[XRES_KEY]):
-            raise KeyError(f"Missing Name in the {XRES_KEY} defintion")
+        if not any(key in definition[self.x_key].keys() for key in self.allowed_keys):
+            raise KeyError(
+                f"You must define at least one of",
+                self.allowed_keys,
+                "Got",
+                definition.keys(),
+            )
+        elif not all(key in self.valid_keys for key in definition[self.x_key].keys()):
+            raise KeyError(
+                "Only valid keys are",
+                self.valid_keys,
+                "Got",
+                definition[self.x_key].keys(),
+            )
         self.name = name
         self.logical_name = NONALPHANUM.sub("", self.name)
         self.definition = deepcopy(definition)
@@ -96,7 +119,7 @@ class ComposeSecret(object):
         self.kms_key_arn = None
         self.ecs_secret = []
         self.mapping = {}
-        if not keyisset("Lookup", self.definition[XRES_KEY]):
+        if not keyisset("Lookup", self.definition[self.x_key]):
             self.define_names_from_import()
         else:
             self.define_names_from_lookup(settings.session)
@@ -111,10 +134,10 @@ class ComposeSecret(object):
         """
         Method to add secrets definitions based on JSON secret keys
         """
-        if not keyisset(self.json_keys_key, self.definition[XRES_KEY]):
+        if not keyisset(self.json_keys_key, self.definition[self.x_key]):
             return
         required_keys = ["Name", "Key"]
-        for secret_key in self.definition[XRES_KEY][self.json_keys_key]:
+        for secret_key in self.definition[self.x_key][self.json_keys_key]:
             if not all(key in required_keys for key in secret_key):
                 raise KeyError(
                     "For Secrets JSON Key support, you must specify",
@@ -158,14 +181,14 @@ class ComposeSecret(object):
         """
         Method to define the names from docker-compose file content
         """
-        if not keyisset(self.map_name_name, self.definition[XRES_KEY]):
+        if not keyisset(self.map_name_name, self.definition[self.x_key]):
             raise KeyError(
                 f"Missing {self.map_name_name} when doing non-lookup import for {self.name}"
             )
-        name_input = self.definition[XRES_KEY][self.map_name_name]
+        name_input = self.definition[self.x_key][self.map_name_name]
         if name_input.startswith("arn:"):
             self.aws_name = get_name_from_arn(
-                self.definition[XRES_KEY][self.map_name_name]
+                self.definition[self.x_key][self.map_name_name]
             )
             self.mapping = {
                 self.map_arn_name: name_input,
@@ -207,9 +230,9 @@ class ComposeSecret(object):
         Method to Lookup the secret based on its tags.
         :return:
         """
-        lookup_info = self.definition[XRES_KEY]["Lookup"]
-        if keyisset("Name", self.definition[XRES_KEY]):
-            lookup_info["Name"] = self.definition[XRES_KEY]["Name"]
+        lookup_info = self.definition[self.x_key]["Lookup"]
+        if keyisset("Name", self.definition[self.x_key]):
+            lookup_info["Name"] = self.definition[self.x_key]["Name"]
         secret_config = lookup_secret_config(self.logical_name, lookup_info, session)
         self.aws_name = get_name_from_arn(secret_config[self.logical_name])
         self.arn = secret_config[self.logical_name]
@@ -236,8 +259,8 @@ class ComposeSecret(object):
         self.ecs_secret = [EcsSecret(Name=self.name, ValueFrom=self.arn)]
 
     def define_links(self):
-        if keyisset("LinksTo", self.definition[XRES_KEY]):
-            self.links = self.definition[XRES_KEY]["LinksTo"]
+        if keyisset(self.links_key, self.definition[self.x_key]):
+            self.links = self.definition[self.x_key][self.links_key]
 
     def validate_links(self):
         if not isinstance(self.links, list):
