@@ -148,7 +148,7 @@ class ComposeSecret(object):
                         ValueFrom=Sub(
                             f"${{SecretArn}}:{json_key}::",
                             SecretArn=FindInMap(
-                                self.map_name, self.logical_name, self.map_kms_name
+                                self.map_name, self.logical_name, self.map_arn_name
                             ),
                         ),
                     )
@@ -229,11 +229,10 @@ class ComposeSecret(object):
         }
         if self.kms_key:
             self.mapping[self.map_kms_name] = self.kms_key
-
+            self.kms_key_arn = FindInMap(
+                self.map_name, self.logical_name, self.map_kms_name
+            )
         self.arn = FindInMap(self.map_name, self.logical_name, self.map_arn_name)
-        self.kms_key_arn = FindInMap(
-            self.map_name, self.logical_name, self.map_kms_name
-        )
         self.ecs_secret = [EcsSecret(Name=self.name, ValueFrom=self.arn)]
 
     def define_links(self):
