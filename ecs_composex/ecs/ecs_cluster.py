@@ -24,9 +24,11 @@ from troposphere.ecs import Cluster, CapacityProviderStrategyItem
 
 from ecs_composex.common import LOG, keyisset
 
-from ecs_composex.ecs.ecs_params import CLUSTER_NAME, CLUSTER_T
+from ecs_composex.ecs.ecs_params import CLUSTER_NAME, CLUSTER_T, CREATE_CLUSTER
 from ecs_composex.ecs.ecs_conditions import (
     GENERATED_CLUSTER_NAME_CON_T,
+    CREATE_CLUSTER_CON_T,
+    GENERATED_CLUSTER_NAME_CON,
 )
 from ecs_composex.ecs import metadata
 
@@ -53,7 +55,7 @@ def get_default_cluster_config():
 
     return Cluster(
         CLUSTER_T,
-        Condition=GENERATED_CLUSTER_NAME_CON_T,
+        Condition=CREATE_CLUSTER_CON_T,
         ClusterName=If(
             GENERATED_CLUSTER_NAME_CON_T, Ref(AWS_STACK_NAME), Ref(CLUSTER_NAME.title)
         ),
@@ -140,9 +142,7 @@ def define_cluster(root_stack, cluster_def):
         if not keyisset("ClusterName", props)
         else props["ClusterName"]
     )
-    cluster = Cluster(
-        CLUSTER_T, Condition=GENERATED_CLUSTER_NAME_CON_T, **cluster_params
-    )
+    cluster = Cluster(CLUSTER_T, Condition=CREATE_CLUSTER_CON_T, **cluster_params)
     return cluster
 
 
@@ -160,17 +160,20 @@ def handle_cluster_settings(root_stack, settings):
     elif isinstance(settings.compose_content[RES_KEY], dict):
         if keyisset("Use", settings.compose_content[RES_KEY]):
             root_stack.Parameters.update(
-                {CLUSTER_NAME.title: settings.compose_content[RES_KEY]["Use"]}
+                {
+                    CLUSTER_NAME.title: settings.compose_content[RES_KEY]["Use"],
+                    CREATE_CLUSTER.title: "False",
+                }
             )
-            setattr(CLUSTER_NAME, "Default", settings.compose_content[RES_KEY]["Use"])
             LOG.info(f"Using cluster {settings.compose_content[RES_KEY]['Use']}")
         elif keyisset("Lookup", settings.compose_content[RES_KEY]):
             cluster_name = lookup_ecs_cluster(
                 settings.session, settings.compose_content[RES_KEY]["Lookup"]
             )
             if cluster_name:
-                setattr(CLUSTER_NAME, "Default", cluster_name)
-                root_stack.Parameters.update({CLUSTER_NAME.title: cluster_name})
+                root_stack.Parameters.update(
+                    {CLUSTER_NAME.title: cluster_name, CREATE_CLUSTER.title: "False"}
+                )
         elif keyisset("Properties", settings.compose_content[RES_KEY]):
             cluster = define_cluster(root_stack, settings.compose_content[RES_KEY])
             root_stack.stack_template.add_resource(cluster)
@@ -187,6 +190,5 @@ def add_ecs_cluster(settings, root_stack):
     """
     handle_cluster_settings(root_stack, settings)
     root_stack.stack_template.add_condition(
-        GENERATED_CLUSTER_NAME_CON_T,
-        Not(Equals(Ref(CLUSTER_NAME), CLUSTER_NAME.Default)),
+        GENERATED_CLUSTER_NAME_CON_T, GENERATED_CLUSTER_NAME_CON
     )

@@ -405,6 +405,7 @@ class Service(object):
                 }
             ),
             PropagateTags="SERVICE",
+            PlatformVersion=Ref(ecs_params.FARGATE_VERSION),
             **attrs,
         )
         family.service_definition = self.ecs_service

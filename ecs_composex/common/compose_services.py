@@ -51,7 +51,7 @@ from ecs_composex.common.compose_volumes import (
 from ecs_composex.ecs import ecs_params
 from ecs_composex.ecs.docker_tools import find_closest_fargate_configuration
 from ecs_composex.ecs.ecs_iam import add_service_roles
-from ecs_composex.ecs.ecs_params import LOG_GROUP, AWS_XRAY_IMAGE
+from ecs_composex.ecs.ecs_params import LOG_GROUP_NAME, AWS_XRAY_IMAGE
 from ecs_composex.ecs.ecs_params import LOG_GROUP_RETENTION
 from ecs_composex.ecs.ecs_params import NETWORK_MODE, EXEC_ROLE_T, TASK_ROLE_T, TASK_T
 from ecs_composex.iam import define_iam_policy, add_role_boundaries
@@ -235,7 +235,7 @@ def set_memory_to_mb(value):
     else:
         raise ValueError(f"Could not parse {value} to units")
     LOG.debug(f"Computed unit for {value}: {unit}. Results into {final_amount}MB")
-    return final_amount
+    return int(final_amount)
 
 
 def define_ingress_mappings(service_ports):
@@ -321,6 +321,7 @@ class ComposeService(object):
         ("userns_mode", str),
         ("volumes", list),
         ("x-configs", dict),
+        ("x-logging", dict),
     ]
 
     def __init__(self, name, definition, volumes=None, secrets=None):
@@ -392,6 +393,8 @@ class ComposeService(object):
         self.mem_alloc = None
         self.mem_resa = None
         self.cpu_amount = None
+        self.logging = None
+        self.x_logging = {"RetentionInDays": 14, "CreateLogGroup": True}
         self.families = []
         self.my_family = None
         self.container_definition = None
@@ -402,6 +405,7 @@ class ComposeService(object):
         )
         self.ecs_healthcheck = Ref(AWS_NO_VALUE)
         self.set_ecs_healthcheck()
+        self.define_logging()
         self.container_parameters = {}
 
         self.map_volumes(volumes)
@@ -430,7 +434,7 @@ class ComposeService(object):
             LogConfiguration=LogConfiguration(
                 LogDriver="awslogs",
                 Options={
-                    "awslogs-group": Ref(LOG_GROUP),
+                    "awslogs-group": self.logical_name,
                     "awslogs-region": Ref(AWS_REGION),
                     "awslogs-stream-prefix": self.name,
                 },
@@ -442,6 +446,13 @@ class ComposeService(object):
             Secrets=secrets,
         )
         self.container_parameters.update({self.image_param.title: self.image})
+
+    def define_logging(self):
+        """
+        Method to define logging properties
+        """
+        if keyisset("x-logging", self.definition):
+            self.x_logging = self.definition["x-logging"]
 
     def map_volumes(self, volumes=None):
         """
@@ -767,6 +778,7 @@ class ComposeFamily(object):
         self.service_config = None
         self.scalable_target = None
         self.ecs_service = None
+        self.task_logging_options = {}
         self.stack_parameters = {}
         self.set_xray()
         self.sort_container_configs()
@@ -823,25 +835,21 @@ class ComposeFamily(object):
         :return:
         """
         for service in self.services:
-            if service.x_configs:
-                if keyisset("logging", service.x_configs):
-                    service.x_configs["logging"][
-                        "logs_retention_period"
-                    ] = closest_valid
-                else:
-                    service.x_configs["logging"] = {
-                        "logs_retention_period": closest_valid
-                    }
+            if service.x_logging and keyisset("RetentionInDays", service.x_logging):
+                service.x_logging["RetentionInDays"] = closest_valid
+            else:
+                service.x_logging = {"RetentionInDays": closest_valid}
 
     def handle_logging(self):
-        x_logging = []
-        for service in self.services:
-            if service.x_configs and keyisset("logging", service.x_configs):
-                x_logging.append(service.x_configs["logging"])
         periods = [
-            config["logs_retention_period"]
-            for config in x_logging
-            if keyisset("logs_retention_period", config)
+            service.x_logging["RetentionInDays"]
+            for service in self.services
+            if service.x_logging and keyisset("RetentionInDays", service.x_logging)
+        ]
+        enabled = [
+            service.x_logging["CreateLogGroup"]
+            for service in self.services
+            if service.x_logging and keypresent("CreateLogGroup", service.x_logging)
         ]
         if periods and max(periods) != LOG_GROUP_RETENTION.Default:
             closest_valid = min(
@@ -854,6 +862,19 @@ class ComposeFamily(object):
                 )
             self.reset_logging_retention_period(closest_valid)
             self.stack_parameters.update({LOG_GROUP_RETENTION.title: closest_valid})
+        if (
+            enabled
+            and not all(enabled)
+            and (
+                not keypresent(ecs_params.CREATE_LOG_GROUP.title, self.stack_parameters)
+                or not self.stack_parameters[ecs_params.CREATE_LOG_GROUP.title]
+                == "False"
+            )
+        ):
+            LOG.warn(
+                "At least one of the services has CreateLogGroup set to False. Disabling new LogsGroups creation"
+            )
+            self.stack_parameters.update({ecs_params.CREATE_LOG_GROUP.title: "False"})
 
     def sort_container_configs(self):
         """
@@ -1076,7 +1097,14 @@ class ComposeFamily(object):
             if service.image_param.title not in self.template.parameters:
                 self.template.add_parameter(service.image_param)
 
+    def refresh_container_logging_definition(self):
+        for service in self.services:
+            c_def = service.container_definition
+            logging_def = c_def.LogConfiguration
+            logging_def.Options.update(self.task_logging_options)
+
     def init_task_definition(self):
         add_service_roles(self.template)
         self.set_task_compute_parameter()
         self.set_task_definition()
+        self.refresh_container_logging_definition()

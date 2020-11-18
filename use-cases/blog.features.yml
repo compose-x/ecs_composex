@@ -12,7 +12,6 @@ secrets:
       Lookup:
         Tags:
           - costcentre: lambda
-          - composexdev: "yes"
       JsonKeys:
         - Name: ZYX_TEST
           Key: test
@@ -39,6 +38,9 @@ services:
         target: 5000
     secrets:
       - zyx
+    x-logging:
+      RetentionInDays: 42
+      CreateLogGroup: False
     x-configs:
       network:
         is_public: False
@@ -47,10 +49,8 @@ services:
         Ingress:
           Myself: False
           AwsSources:
-            - Type: SecurityGroup
-              Id: sg-app01
             - Type: PrefixList
-              Id: pl-abcd
+              Id: pl-6da54004
       iam:
         policies:
           - document:
@@ -95,7 +95,7 @@ services:
         type: volume
     x-configs:
       iam:
-        boundary: ccoe/js-developer
+        boundary: arn:aws:iam::aws:policy/AdministratorAccess
         managed_policies:
           - arn:aws:iam::aws:policy/AdministratorAccess
       scaling:

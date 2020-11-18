@@ -54,3 +54,11 @@ Feature: common
       | use-cases/blog.families.yml | use-cases/ecs/cluster_create.yml |
       | use-cases/blog.families.yml | use-cases/ecs/cluster_use.yml    |
       | use-cases/blog.families.yml | use-cases/ecs/cluster_lookup.yml |
+
+  @logging
+  Scenario Outline: Logging override
+    Given I use <file_path> as my docker-compose file and <override_file> as override file
+    Then I render the docker-compose to composex to validate
+    Examples:
+      | file_path                   | override_file                    |
+      | use-cases/blog.families.yml | use-cases/logging/variations.yml |

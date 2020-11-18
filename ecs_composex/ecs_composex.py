@@ -54,7 +54,9 @@ from ecs_composex.ecs.ecs_cluster import add_ecs_cluster
 from ecs_composex.ecs.ecs_params import (
     CLUSTER_NAME,
     CLUSTER_T as ROOT_CLUSTER_NAME,
+    CREATE_CLUSTER,
 )
+from ecs_composex.ecs.ecs_conditions import CREATE_CLUSTER_CON_T, CREATE_CLUSTER_CON
 from ecs_composex.vpc import vpc_params
 from ecs_composex.vpc.vpc_stack import add_vpc_to_root
 
@@ -335,8 +337,9 @@ def init_root_template():
 
     template = build_template(
         "Root template generated via ECS ComposeX",
-        [USE_FLEET, USE_ONDEMAND, CLUSTER_NAME],
+        [USE_FLEET, USE_ONDEMAND, CLUSTER_NAME, CREATE_CLUSTER],
     )
+    template.add_condition(CREATE_CLUSTER_CON_T, CREATE_CLUSTER_CON)
     return template
 
 
