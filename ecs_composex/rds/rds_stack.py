@@ -66,7 +66,9 @@ class Rds(XResource):
         self.arn_attr = Parameter(DB_SECRET_T, Type="String")
 
     def init_outputs(self):
-        print(self.db_secret)
+        """
+        Method to init the RDS Output attributes
+        """
         self.output_properties = {
             DB_NAME.title: (self.logical_name, self.cfn_resource, Ref, None),
             DB_ENDPOINT_PORT: (
@@ -88,13 +90,6 @@ class Rds(XResource):
                 "GroupId",
             ),
         }
-
-    def uses_aurora(self):
-        if not self.lookup and self.properties[DB_ENGINE_NAME.title].startswith(
-            "aurora"
-        ):
-            return True
-        return False
 
 
 class XStack(ComposeXStack):

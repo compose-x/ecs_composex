@@ -51,7 +51,9 @@ class DocDb(XResource):
         self.arn_attr = DOCDB_SECRET
 
     def init_outputs(self):
-        print(self.arn_attr, type(self.arn_attr))
+        """
+        Method to init the DocDB output attributes
+        """
         self.output_properties = {
             DOCDB_NAME.title: (self.logical_name, self.cfn_resource, Ref, None),
             DOCDB_PORT.title: (

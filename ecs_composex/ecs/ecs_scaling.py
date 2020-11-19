@@ -283,9 +283,6 @@ def merge_family_services_scaling(services):
     x_scaling_configs = []
     for service in services:
         handle_defined_x_aws_autoscaling(x_scaling_configs, service)
-
-    print(x_scaling_configs)
-
     valid_keys = [
         ("range", str, handle_range),
         ("target_scaling", dict, handle_target_scaling),
