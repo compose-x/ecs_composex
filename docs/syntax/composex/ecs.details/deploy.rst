@@ -67,9 +67,9 @@ ecs.task.family
 
 For example, you would have:
 
-.. literalinclude:: ../use-cases/blog.yml
+.. literalinclude:: ../../../../use-cases/blog.features.yml
     :language: yaml
-    :emphasize-lines: 25-26, 45-46
+    :emphasize-lines: 25-26, 68-70, 147-149
 
 .. warning::
 

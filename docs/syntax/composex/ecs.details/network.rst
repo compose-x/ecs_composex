@@ -68,7 +68,7 @@ Syntax reference
 
 .. hint::
 
-    To see details about the Ingress for Load Balancers, refer to :ref:`_load_balancers_ingress_syntax_ref`
+    To see details about the Ingress for Load Balancers, refer to :ref:`load_balancers_ingress_syntax_ref`
 
 
 .. hint::

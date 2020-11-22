@@ -28,7 +28,6 @@
                 "arn:aws:s3:::${BucketName}"
             ],
             "Action": [
-                // "CreateBucket is only necessary if you do not specify an S3 bucket when running ComposeX",
                 "s3:CreateBucket",
                 "s3:ListBucket"
             ]

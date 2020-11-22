@@ -7,7 +7,7 @@ Welcome to ECS-ComposeX's documentation!
     :titlesonly:
 
     readme
-    getstarted
+    walkthrough
     story
 
 .. toctree::

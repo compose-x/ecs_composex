@@ -87,20 +87,20 @@ have an HTTP based application. So we need to indicate to ECS ComposeX that it s
       serviceA:
         image: link_to_image_a
         ports:
-          - 8080:80
-          - 8443:443
+          - 8080
+          - 80
         environment:
-          description: reverse-proxy
+          description: front-app
         links:
           - serviceB
 
       serviceB:
         image: link_to_image_b
         ports:
-          - 8081:80
-          - 8444:443
+          - 80
+          - 8080
         environment:
-          description: BackendApp
+          description: auth-app
     x-rds:
       db:
         Properties:
@@ -111,12 +111,41 @@ have an HTTP based application. So we need to indicate to ECS ComposeX that it s
           - name: serviceB
             access: RW
 
-    x-configs:
-      serviceA:
-        network:
-          lb_type: application
-          is_public: True
-          ext_sources:
-            - ipv4: 0.0.0.0/0
-              protocol: tcp
-              source_name: all
+    x-elbv2:
+      public-lb:
+        Properties:
+          Scheme: public-facing
+          Type: application
+        Settings:
+         http2: True
+         cross_zone: True
+        MacroParameters:
+          Ingress:
+            ExtSources:
+              - Ipv4: "0.0.0.0/0"
+                Description: ANY
+              - Ipv4: "1.1.1.1/32"
+                Description: CLOUDFLARE
+                Name: CLOUDFLARE
+        Listeners:
+          - Port: 80
+            Protocol: HTTP
+            DefaultActions:
+              - Redirect: HTTP_TO_HTTPS
+          - Port: 443
+            Protocol: HTTP
+            Certificates:
+              - x-acm: public-acm-01
+              - CertificateArn: arn:aws:acm:eu-west-1:012345678912:certificate/102402a1-d0d2-46ff-b26b-33008f072ee8
+            Targets:
+              - name: serviceA:serviceA
+                access: /
+              - name: serviceB:serviceB
+                access: /login
+        Services:
+          - name: serviceA:serviceA
+            port: 80
+            healthcheck: 8080:HTTP:5:2:15:3:/ping.This.Method:200,201
+          - name: serviceB:serviceB
+            port: 80
+            healthcheck: 8080:HTTP:5:2:15:3:/health
