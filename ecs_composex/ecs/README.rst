@@ -1,8 +1,8 @@
 ﻿.. _ecs_readme:
 
-=========================
+=================================
 From docker-compose to AWS ECS
-=========================
+=================================
 
 
 This module is responsible to understanding the docker compose file as a whole and then more specifically putting

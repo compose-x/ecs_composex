@@ -231,13 +231,6 @@ The deploy labels are ignored on a container level, therefore, none of these tag
 
     The labels can be either a list of strings, or a "document" (dictionary).
 
-Here is an example where we use the label, both as a string (**requires the `=` to be present to define key/value) and
-a dictionary. The family for this case is **app01**
-
-.. literalinclude:: ../use-cases/blog-all-features.yml
-    :language: yaml
-    :emphasize-lines: 25-26, 45-46
-
 But then you might wonder, how come are the permissions going to work for the services?
 
 Remember, the permissions are set at the **Task definition** level. So any container within that service, will get the

@@ -9,8 +9,7 @@ It also allows you to define `Lookup` to use an existing ECS Cluster.
 
 
 Properties
-----------
-
+==========
 Refer to the `AWS CFN reference for ECS Cluster`_
 
 .. code-block:: yaml
@@ -30,8 +29,7 @@ Refer to the `AWS CFN reference for ECS Cluster`_
             Weight: 1
 
 Lookup
-------
-
+======
 Allows you to enter the name of an existing ECS Cluster that you want to deploy your services to.
 
 .. code-block:: yaml
@@ -49,7 +47,7 @@ Allows you to enter the name of an existing ECS Cluster that you want to deploy 
     If the cluster name is not found, by default, a new cluster will be created with the default settings.
 
 Use
-----
+===
 
 This key allows you to set a cluster to use, that you do not wish to lookup, you just know the name you want to use.
 (Useful for multi-account where you can't lookup cross-account).

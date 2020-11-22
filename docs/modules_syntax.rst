@@ -35,4 +35,6 @@
     syntax/composex/acm
     syntax/composex/kms
     syntax/composex/vpc
+    syntax/composex/ecs_cluster
+    syntax/composex/dns
     syntax/composex/compute

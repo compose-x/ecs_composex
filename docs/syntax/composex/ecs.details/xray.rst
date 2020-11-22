@@ -18,6 +18,9 @@ Syntax reference
 Example
 =======
 
+.. code-block:: yaml
+    :caption: Enable XRay for your service.
+
     services:
       serviceA:
         x-xray: True
@@ -25,3 +28,32 @@ Example
 .. seealso::
 
     ecs_composex.ecs.ecs_service#set_xray
+
+IAM permissions
+===============
+
+Enabling XRay will automatically add the following managed policy to your task definition:
+
+**arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess**
+
+.. code-block:: json
+    :caption: IAM policy definition
+
+    {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "xray:PutTraceSegments",
+                    "xray:PutTelemetryRecords",
+                    "xray:GetSamplingRules",
+                    "xray:GetSamplingTargets",
+                    "xray:GetSamplingStatisticSummaries"
+                ],
+                "Resource": [
+                    "*"
+                ]
+            }
+        ]
+    }

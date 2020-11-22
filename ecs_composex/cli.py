@@ -16,7 +16,9 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Console script for ecs_composex."""
+"""
+Console script for ecs_composex.
+"""
 
 import argparse
 import sys
@@ -32,11 +34,6 @@ class ArgparseHelper(argparse._HelpAction):
     """
     Used to help print top level '--help' arguments from argparse
     when used with subparsers
-
-    Usage:
-    parser = argparse.ArgumentParser(add_help=False)
-    parser.add_argument('-h', '--help', action=ArgparseHelper,
-                        help='show this help message and exit')
     """
 
     def __call__(self, parser, namespace, values, option_string=None):

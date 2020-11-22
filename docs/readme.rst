@@ -165,14 +165,13 @@ is now implemented to work on AWS Fargate First (2020-06-06).
 
     | :ref:`vpc_network_design`
     | :ref:`vpc_syntax_reference`
-    | :ref:`ec2_compute_design`
     | :ref:`syntax_reference`
 
 .. note::
 
-    If you do not need extra AWS resources such as SQS queues to be created as part of these microservices deployments, I would recommend to use `AWS ECS CLI`_ which does already a lot of the work for the services.
-    Alternatively, use the AWS CLI v2. It is absolutely smashing-ly awesome and might be just what you need
-    This tool aims to reproduce the original ECS CLI behaviour whilst adding logic for non ECS resources that you want to create in your environment.
+    If you do not need extra AWS resources such as SQS queues to be created as part of these microservices deployments,
+    I would recommend to use `AWS ECS CLI`_ which does already a lot of the work for the services.
+    Alternatively, use Copilot (the AWS CLI v2). It is very developer friendly to start new projects.
 
 License
 =======

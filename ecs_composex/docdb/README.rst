@@ -33,7 +33,7 @@ The credentials strucutre remains the same as for RDS SQL versions
       "dbClusterIdentifier": "<str>",
       "password": "<str>",
       "engine": "<str>",
-      "port": <int>,
+      "port": "<int>",
       "host": "<str>",
       "username": "<str>"
     }
