@@ -1,4 +1,4 @@
-.PHONY: clean clean-test clean-pyc clean-build docs help lint conform release-test release
+.PHONY: clean clean-test clean-pyc clean-build docs help lint conform release-test release codebuild coverage
 .DEFAULT_GOAL := help
 
 define BROWSER_PYSCRIPT
@@ -74,6 +74,12 @@ coverage: ## check code coverage quickly with the default Python
 	coverage xml -o coverage/coverage.xml
 	coverage html
 	$(BROWSER) htmlcov/index.html
+
+codebuild: ## check code coverage quickly with the default Python
+	coverage run --source ecs_composex -m behave --junit || exit 0
+	coverage run --source ecs_composex -a -m pytest pytests -vv -x || exit 0
+	coverage report -m
+	coverage xml -o coverage/coverage.xml
 
 docs: clean-c9 ## generate Sphinx HTML documentation, including API docs
 	rm -f docs/ecs_composex.rst

@@ -22,7 +22,7 @@ phases:
       - echo "Executing behave"
       - if ! [ -d reports ]; then mkdir reports ; else rm -rf reports/* ; fi
       - if ! [ -d coverage ]; then mkdir coverage ; else rm -rf coverage/* ; fi
-      - make coverage
+      - make codebuild
 
 reports:
   composex-tests:
