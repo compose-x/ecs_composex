@@ -19,10 +19,22 @@
 Module to define the entry point for AWS Event Rules
 """
 
+from ecs_composex.common import build_template, LOG, NONALPHANUM
 from ecs_composex.common.compose_resources import XResource, set_resources
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.events.events_params import RES_KEY
 from ecs_composex.events.events_template import create_events_template
+
+
+def validate_service_definition(service):
+    required_keys = ["name", "TaskCount"]
+    if not set(required_keys).issubset(service):
+        raise KeyError(
+            "Services definition must contain at least",
+            required_keys,
+            "Got",
+            service.keys(),
+        )
 
 
 class Rule(XResource):
@@ -32,6 +44,58 @@ class Rule(XResource):
 
     def __init__(self, name, definition, settings):
         super().__init__(name, definition, settings)
+
+    def handle_families_targets_expansion(self, service, settings):
+        the_service = [s for s in settings.services if s.name == service["name"]][0]
+        for family_name in the_service.families:
+            family_name = NONALPHANUM.sub("", family_name)
+            if family_name not in [f[0].name for f in self.families_targets]:
+                self.families_targets.append(
+                    (
+                        settings.families[family_name],
+                        False,
+                        [the_service],
+                        service["TaskCount"],
+                        service,
+                    )
+                )
+
+    def set_services_targets(self, settings):
+        """
+        Override method to map services and families targets of the services defined specifically for
+        events
+        TargetStructure:
+        (family, family_wide, services[], access)
+
+        :param ecs_composex.common.settings.ComposeXSettings settings:
+        :return:
+        """
+        if not self.services:
+            LOG.info(f"No services defined for {self.name}")
+            return
+        for service in self.services:
+            validate_service_definition(service)
+            service_name = service["name"]
+            if service_name in settings.families and service_name not in [
+                f[0].name for f in self.families_targets
+            ]:
+                self.families_targets.append(
+                    (
+                        settings.families[service_name],
+                        True,
+                        settings.families[service_name].services,
+                        service["TaskCount"],
+                        service,
+                    )
+                )
+            elif service_name in settings.families and service_name in [
+                f[0].name for f in self.families_targets
+            ]:
+                LOG.warning(
+                    f"The family {service_name} has already been added. Skipping"
+                )
+            elif service_name in [s.name for s in settings.services]:
+                self.handle_families_targets_expansion(service, settings)
 
 
 class XStack(ComposeXStack):
@@ -47,7 +111,8 @@ class XStack(ComposeXStack):
             if not settings.compose_content[RES_KEY][res_name].lookup
         ]
         if new_resources:
-            stack_template = create_events_template(settings, new_resources)
+            stack_template = build_template("Events rules for ComposeX")
             super().__init__(title, stack_template, **kwargs)
+            create_events_template(self, settings, new_resources)
         else:
             self.is_void = True

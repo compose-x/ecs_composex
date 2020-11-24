@@ -269,9 +269,10 @@ def generate_service_template_outputs(family):
                     ecs_params.SERVICE_GROUP_ID_T,
                     "GroupId",
                     GetAtt(ecs_params.SG_T, "GroupId"),
-                )
+                ),
+                (ecs_params.TASK_T, ecs_params.TASK_T, Ref(family.task_definition)),
             ],
-            duplicate_attr=True,
+            duplicate_attr=False,
             export=False,
         ).outputs
     )

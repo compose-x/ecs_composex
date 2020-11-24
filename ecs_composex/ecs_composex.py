@@ -75,7 +75,7 @@ SUPPORTED_X_MODULE_NAMES = [
     "s3",
     "elbv2",
     "docdb",
-    "events"
+    "events",
 ]
 
 SUPPORTED_X_MODULES = [f"{X_KEY}{mod_name}" for mod_name in SUPPORTED_X_MODULE_NAMES]
