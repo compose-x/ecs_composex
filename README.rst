@@ -6,7 +6,7 @@ ECS ComposeX
 
 |CODE_STYLE| |TDD| |BDD|
 
-|CODECOV| |QUALITY|
+|QUALITY|
 
 |BUILD|
 
@@ -281,11 +281,6 @@ This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypack
 
 .. |PYPI_VERSION| image:: https://img.shields.io/pypi/v/ecs_composex.svg
         :target: https://pypi.python.org/pypi/ecs_composex
-
-
-.. |CODECOV| image:: https://img.shields.io/codecov/c/github/lambda-my-aws/ecs_composex?color=black&style=flat-square
-    :alt: Codecov
-    :target: https://codecov.io/gh/lambda-my-aws/ecs_composex
 
 .. |PYPI_DL| image:: https://img.shields.io/pypi/dm/ecs_composex
     :alt: PyPI - Downloads
