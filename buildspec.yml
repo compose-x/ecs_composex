@@ -20,16 +20,9 @@ phases:
   build:
     commands:
       - echo "Executing behave"
-      - if ! [ -d reports ]; then mkdir reports ; fi
-      - if ! [ -d coverage ]; then mkdir coverage ; fi
+      - if ! [ -d reports ]; then mkdir reports ; else rm -rf reports/* ; fi
+      - if ! [ -d coverage ]; then mkdir coverage ; else rm -rf coverage/* ; fi
       - make coverage
-
-artifacts:
-  files:
-    - '*.yml'
-    - '*.json'
-  base-directory: outputs
-  name: outputs
 
 reports:
   composex-tests:
