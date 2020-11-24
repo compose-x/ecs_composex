@@ -21,8 +21,8 @@ phases:
     commands:
       - echo "Executing behave"
       - if ! [ -d reports ]; then mkdir reports ; fi
+      - if ! [ -d coverage ]; then mkdir coverage ; fi
       - make coverage
-      - curl -s https://codecov.io/bash | bash
 
 artifacts:
   files:
@@ -32,8 +32,13 @@ artifacts:
   name: outputs
 
 reports:
-  composexbehave:
+  composex-tests:
     files:
       - "*.xml"
     base-directory: reports
     file-format: JunitXml
+  composex-coverage:
+    files:
+      - "coverage.xml"
+    base-directory: coverage
+    file-format: COBERTURAXML
