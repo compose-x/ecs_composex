@@ -17,7 +17,13 @@
 
 
 from troposphere import Ref, Sub, GetAtt
-from troposphere import AWS_REGION, AWS_PARTITION, AWS_ACCOUNT_ID, AWS_NO_VALUE
+from troposphere import (
+    AWS_REGION,
+    AWS_PARTITION,
+    AWS_ACCOUNT_ID,
+    AWS_NO_VALUE,
+    AWS_URL_SUFFIX,
+)
 from troposphere import Parameter
 
 from troposphere.events import (
@@ -27,10 +33,17 @@ from troposphere.events import (
     AwsVpcConfiguration,
 )
 
-from troposphere.iam import Role, Policy
+from troposphere.iam import Role, Policy, PolicyType
 
 from ecs_composex.common import add_parameters, keyisset, LOG
-from ecs_composex.ecs.ecs_params import CLUSTER_NAME, FARGATE_VERSION, TASK_T, SERVICE_T
+from ecs_composex.ecs.ecs_params import (
+    CLUSTER_NAME,
+    FARGATE_VERSION,
+    TASK_T,
+    SERVICE_T,
+    TASK_ROLE_T,
+    EXEC_ROLE_T,
+)
 from ecs_composex.vpc.vpc_params import APP_SUBNETS, SG_ID_TYPE
 
 
@@ -44,6 +57,72 @@ def define_service_targets(stack, rule, cluster_arn):
     :return:
     """
     for service in rule.families_targets:
+        service_sg_param = Parameter(
+            f"{service[0].logical_name}GroupId", Type=SG_ID_TYPE
+        )
+        service_task_def_param = Parameter(
+            f"{service[0].logical_name}{TASK_T}", Type="String"
+        )
+        events_policy_doc = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Action": ["ecs:RunTask"],
+                    "Resource": [Ref(service_task_def_param)],
+                    "Condition": {"ArnLike": {"ecs:cluster": cluster_arn}},
+                },
+                {
+                    "Effect": "Allow",
+                    "Action": "iam:PassRole",
+                    "Resource": ["*"],
+                    "Condition": {
+                        "StringLike": {
+                            "iam:PassedToService": Sub(
+                                f"ecs-tasks.${{{AWS_URL_SUFFIX}}}"
+                            )
+                        }
+                    },
+                },
+            ],
+        }
+        task_events_policy_doc = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Action": ["ecs:RunTask"],
+                    "Resource": [Ref(service[0].template.resources[TASK_T])],
+                    "Condition": {"ArnLike": {"ecs:cluster": cluster_arn}},
+                },
+                {
+                    "Effect": "Allow",
+                    "Action": "iam:PassRole",
+                    "Resource": ["*"],
+                    "Condition": {
+                        "StringLike": {
+                            "iam:PassedToService": Sub(
+                                f"ecs-tasks.${{{AWS_URL_SUFFIX}}}"
+                            )
+                        }
+                    },
+                },
+            ],
+        }
+        events_policy = Policy(
+            PolicyName="EventsAccess", PolicyDocument=events_policy_doc
+        )
+        service[0].template.add_resource(
+            PolicyType(
+                "EventsAccessPolicy",
+                PolicyName="EventsAccess",
+                PolicyDocument=task_events_policy_doc,
+                Roles=[
+                    Ref(service[0].template.resources[TASK_ROLE_T]),
+                    Ref(service[0].template.resources[EXEC_ROLE_T]),
+                ],
+            )
+        )
         role = stack.stack_template.add_resource(
             Role(
                 f"{rule.logical_name}IamRoleToTrigger{service[0].logical_name}",
@@ -51,25 +130,22 @@ def define_service_targets(stack, rule, cluster_arn):
                     "Version": "2012-10-17",
                     "Statement": [
                         {
-                            "Sid": "",
+                            "Sid": "TrustPolicy",
                             "Effect": "Allow",
-                            "Principal": {"Service": "events.amazonaws.com"},
+                            "Principal": {
+                                "Service": Sub(f"events.${{{AWS_URL_SUFFIX}}}")
+                            },
                             "Action": "sts:AssumeRole",
                         }
                     ],
                 },
-                ManagedPolicyArns=[
-                    "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role"
-                ],
+                ManagedPolicyArns=[],
+                Policies=[events_policy],
                 PermissionsBoundary=Ref(AWS_NO_VALUE),
             )
         )
         if service[0].iam and keyisset("PermissionsBoundary", service[0].iam):
             role.PermissionsBoundary = service[0].iam["PermissionsBoundary"]
-        service_sg_param = Parameter(f"{service[0].logical_name}SgId", Type=SG_ID_TYPE)
-        service_task_def_param = Parameter(
-            f"{service[0].logical_name}TaskDefinition", Type="String"
-        )
         add_parameters(stack.stack_template, [service_sg_param, service_task_def_param])
         stack.Parameters.update(
             {
@@ -92,6 +168,7 @@ def define_service_targets(stack, rule, cluster_arn):
                 PlatformVersion=Ref(FARGATE_VERSION),
                 TaskCount=service[3],
                 TaskDefinitionArn=Ref(service_task_def_param),
+                LaunchType="FARGATE",
             ),
             Arn=cluster_arn,
             Id=service[0].logical_name,

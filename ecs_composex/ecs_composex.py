@@ -55,7 +55,7 @@ from ecs_composex.ecs.ecs_params import (
     CLUSTER_NAME,
     CLUSTER_T as ROOT_CLUSTER_NAME,
     CREATE_CLUSTER,
-    FARGATE_VERSION
+    FARGATE_VERSION,
 )
 from ecs_composex.ecs.ecs_conditions import CREATE_CLUSTER_CON_T, CREATE_CLUSTER_CON
 from ecs_composex.vpc import vpc_params
