@@ -94,7 +94,6 @@ def create_events_template(stack, settings, new_resources):
     :param ecs_composex.common.settings.ComposeXSettings settings:
     :param list new_resources:
     """
-    add_parameters(stack.stack_template, [APP_SUBNETS, FARGATE_VERSION, CLUSTER_NAME])
     for resource in new_resources:
         if not resource.families_targets:
             LOG.error(

@@ -952,6 +952,7 @@ class ComposeFamily(object):
         for setting in iam_settings:
             for key in valid_keys:
                 self.sort_iam_settings(key, setting)
+
         self.set_secrets_access()
 
     def handle_permission_boundary(self, prop_key):

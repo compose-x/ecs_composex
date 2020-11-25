@@ -6,8 +6,10 @@ x-events:
     Properties:
       Description: "demo event triggered ECS"
       Name: "demo"
-      ScheduleExpression: "rate(5 minutes)"
+      ScheduleExpression: "rate(12 hours)"
     Services:
       - name: app03
         TaskCount: 1
+      - name: youtoo
+        TaskCount: 3
         DeleteDefaultService: True

@@ -17,7 +17,7 @@
 
 
 from troposphere import Ref, Sub, GetAtt
-from troposphere import AWS_REGION, AWS_PARTITION, AWS_ACCOUNT_ID
+from troposphere import AWS_REGION, AWS_PARTITION, AWS_ACCOUNT_ID, AWS_NO_VALUE
 from troposphere import Parameter
 
 from troposphere.events import (
@@ -26,6 +26,8 @@ from troposphere.events import (
     NetworkConfiguration,
     AwsVpcConfiguration,
 )
+
+from troposphere.iam import Role, Policy
 
 from ecs_composex.common import add_parameters, keyisset, LOG
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME, FARGATE_VERSION, TASK_T, SERVICE_T
@@ -42,6 +44,28 @@ def define_service_targets(stack, rule, cluster_arn):
     :return:
     """
     for service in rule.families_targets:
+        role = stack.stack_template.add_resource(
+            Role(
+                f"{rule.logical_name}IamRoleToTrigger{service[0].logical_name}",
+                AssumeRolePolicyDocument={
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Sid": "",
+                            "Effect": "Allow",
+                            "Principal": {"Service": "events.amazonaws.com"},
+                            "Action": "sts:AssumeRole",
+                        }
+                    ],
+                },
+                ManagedPolicyArns=[
+                    "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role"
+                ],
+                PermissionsBoundary=Ref(AWS_NO_VALUE),
+            )
+        )
+        if service[0].iam and keyisset("PermissionsBoundary", service[0].iam):
+            role.PermissionsBoundary = service[0].iam["PermissionsBoundary"]
         service_sg_param = Parameter(f"{service[0].logical_name}SgId", Type=SG_ID_TYPE)
         service_task_def_param = Parameter(
             f"{service[0].logical_name}TaskDefinition", Type="String"
@@ -50,10 +74,11 @@ def define_service_targets(stack, rule, cluster_arn):
         stack.Parameters.update(
             {
                 service_sg_param.title: GetAtt(
-                    service[0].logical_name, f"Outputs.ServiceGroupId"
+                    service[0].logical_name, f"Outputs.{service[0].logical_name}GroupId"
                 ),
                 service_task_def_param.title: GetAtt(
-                    service[0].logical_name, f"Outputs.{TASK_T}"
+                    service[0].logical_name,
+                    f"Outputs.{service[0].logical_name}{TASK_T}",
                 ),
             }
         )
@@ -61,7 +86,7 @@ def define_service_targets(stack, rule, cluster_arn):
             EcsParameters=EcsParameters(
                 NetworkConfiguration=NetworkConfiguration(
                     AwsVpcConfiguration=AwsVpcConfiguration(
-                        Subnets=Ref(APP_SUBNETS), SecurityGroups=Ref(service_sg_param)
+                        Subnets=Ref(APP_SUBNETS), SecurityGroups=[Ref(service_sg_param)]
                     )
                 ),
                 PlatformVersion=Ref(FARGATE_VERSION),
@@ -70,6 +95,7 @@ def define_service_targets(stack, rule, cluster_arn):
             ),
             Arn=cluster_arn,
             Id=service[0].logical_name,
+            RoleArn=GetAtt(role, "Arn"),
         )
         rule.cfn_resource.Targets.append(target)
         if service[0].logical_name not in stack.DependsOn:

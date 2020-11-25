@@ -19,9 +19,14 @@
 Module to define the entry point for AWS Event Rules
 """
 
+from troposphere import Ref, Join, If
+
 from ecs_composex.common import build_template, LOG, NONALPHANUM
 from ecs_composex.common.compose_resources import XResource, set_resources
 from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.vpc.vpc_params import APP_SUBNETS
+from ecs_composex.ecs.ecs_params import CLUSTER_NAME, CLUSTER_T, FARGATE_VERSION
+from ecs_composex.ecs.ecs_conditions import CREATE_CLUSTER_CON_T
 from ecs_composex.events.events_params import RES_KEY
 from ecs_composex.events.events_template import create_events_template
 
@@ -111,8 +116,18 @@ class XStack(ComposeXStack):
             if not settings.compose_content[RES_KEY][res_name].lookup
         ]
         if new_resources:
-            stack_template = build_template("Events rules for ComposeX")
-            super().__init__(title, stack_template, **kwargs)
+            params = {
+                APP_SUBNETS.title: Join(",", Ref(APP_SUBNETS)),
+                CLUSTER_NAME.title: If(
+                    CREATE_CLUSTER_CON_T, Ref(CLUSTER_T), Ref(CLUSTER_NAME)
+                ),
+                FARGATE_VERSION.title: Ref(FARGATE_VERSION),
+            }
+            stack_template = build_template(
+                "Events rules for ComposeX",
+                [APP_SUBNETS, CLUSTER_NAME, FARGATE_VERSION],
+            )
+            super().__init__(title, stack_template, stack_parameters=params, **kwargs)
             create_events_template(self, settings, new_resources)
         else:
             self.is_void = True

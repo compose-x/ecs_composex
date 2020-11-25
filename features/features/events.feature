@@ -8,3 +8,4 @@ Feature: ecs_composex.events
     Examples:
       | file_path                   | override_file               |
       | use-cases/blog.features.yml | use-cases/events/simple.yml |
+      | use-cases/blog.features.yml | use-cases/events/mixed.yml  |
