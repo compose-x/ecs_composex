@@ -44,6 +44,7 @@ def add_service_roles(template):
         Description=Sub(
             f"Execution role for ${{{SERVICE_NAME_T}}} in ${{{CLUSTER_NAME_T}}}"
         ),
+        ManagedPolicyArns=[],
         Policies=[
             Policy(
                 PolicyName=Sub("EcsExecRole"),
@@ -99,15 +100,13 @@ def add_service_roles(template):
             )
         ],
     )
-    policies = []
-    managed_policies = []
     Role(
         TASK_ROLE_T,
         template=template,
         AssumeRolePolicyDocument=service_role_trust_policy("ecs-tasks"),
         Description=Sub(f"TaskRole - ${{{SERVICE_NAME_T}}} in ${{{CLUSTER_NAME_T}}}"),
-        ManagedPolicyArns=managed_policies,
-        Policies=policies,
+        ManagedPolicyArns=[],
+        Policies=[],
     )
 
 

@@ -145,6 +145,7 @@ class XResource(object):
                         False,
                         [the_service],
                         service["access"],
+                        service,
                     )
                 )
 
@@ -172,6 +173,7 @@ class XResource(object):
                         True,
                         settings.families[service_name].services,
                         service["access"],
+                        service,
                     )
                 )
             elif service_name in settings.families and service_name in [
