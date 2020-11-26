@@ -140,12 +140,22 @@ class ServiceNetworking(Ingress):
         :param ecs_composex.common.compose_services.ComposeFamily family:
         """
         self.ports = []
+        self.networks = {}
         self.merge_services_ports(family)
+        self.merge_networks(family)
         self.configuration = merge_services_network(family)
         self.is_public = self.configuration["is_public"]
         self.ingress_from_self = True
         super().__init__(self.configuration[self.master_key], self.ports)
         self.add_self_ingress(family)
+
+    def merge_networks(self, family):
+        """
+        Method to merge network
+        """
+        for svc in family.services:
+            if svc.networks:
+                self.networks.update(svc.networks)
 
     def merge_services_ports(self, family):
         """

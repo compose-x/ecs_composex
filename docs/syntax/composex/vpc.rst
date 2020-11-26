@@ -81,12 +81,38 @@ Lookup
     * AppSubnets
     * PublicSubnets
 
-.. note::
 
-    The AppSubnets are the subnets in which will the containers be deployed. Which means, that it requires access to
-    services such as ECR, Secrets Manager etc.
-    You can use any subnet in your existing VPC so long as network connectivity is achieved.
+.. warning::
 
+    When creating newly defined subnets groups, the name must be in the format **^[a-zA-Z0-9]+$**
+
+
+.. hint::
+
+    You can define extra subnet groups based on different tags and map them to your services for override when using
+    **Lookup** or **Use**
+
+    .. code-block:: yaml
+        :caption: Extra subnets definition
+
+        x-vpc:
+          Lookup:
+            VpcId: {}
+            AppSubnets: {}
+            StorageSubnets: {}
+            PublicSubnets: {}
+            Custom01:
+              Tags: {}
+
+        networks:
+          custom01:
+            x-vpc: Custom01
+
+
+        services:
+          serviceA:
+            networks:
+              - custom01
 
 .. tip::
 

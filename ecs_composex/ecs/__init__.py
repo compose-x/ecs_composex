@@ -85,3 +85,5 @@ def associate_services_to_root_stack(root_stack, settings, dns_params, vpc_stack
             family.stack.get_from_vpc_stack(vpc_stack)
         family.template.set_metadata(metadata)
         root_stack.stack_template.add_resource(family.stack)
+        if settings.networks and family.service_config.network.networks:
+            family.update_family_subnets(settings)

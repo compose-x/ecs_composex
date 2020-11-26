@@ -39,6 +39,7 @@ from ecs_composex.common.compose_services import (
     ComposeFamily,
 )
 from ecs_composex.common.compose_volumes import ComposeVolume
+from ecs_composex.common.compose_networks import ComposeNetwork
 from ecs_composex.common.envsubst import expandvars
 from ecs_composex.iam import ROLE_ARN_ARG
 from ecs_composex.iam import validate_iam_role_arn
@@ -376,6 +377,8 @@ class ComposeXSettings(object):
         self.volumes = []
         self.services = []
         self.secrets = []
+        self.networks = []
+        self.subnets_parameters = []
         self.secrets_mappings = {}
         self.families = {}
         self.account_id = None
@@ -434,6 +437,24 @@ class ComposeXSettings(object):
             )
             self.compose_content[ComposeVolume.main_key][volume_name] = volume
             self.volumes.append(volume)
+
+    def set_networks(self, vpc_stack, root_stack):
+        """
+        Method configuring the networks defined at root level
+        :return:
+        """
+        if not keyisset(ComposeNetwork.main_key, self.compose_content):
+            LOG.debug("No networks detected at the root level of compose file")
+            return
+        elif vpc_stack:
+            LOG.info("ComposeX will be creating the VPC, therefore networks are ignored!")
+            return
+        for network_name in self.compose_content[ComposeNetwork.main_key]:
+            network = ComposeNetwork(
+                network_name, self.compose_content[ComposeNetwork.main_key][network_name], self.subnets_parameters
+            )
+            self.compose_content[ComposeNetwork.main_key][network_name] = network
+            self.networks.append(network)
 
     def set_services(self):
         """
