@@ -2,22 +2,56 @@
 History
 =======
 
-0.8.7 (2020-11-10)
+0.9.0 (2020-11-26)
 ==================
 
-New features since 0.8.0
--------------------------
+New features
+------------
 
-* `Support for AWS S3 Buckets <https://github.com/lambda-my-aws/ecs_composex/issues/12>`_
-* `Support for ELBv2 with more details and controls <https://github.com/lambda-my-aws/ecs_composex/pull/228>`_
-* `Support for RoleArn to do cross-accounts Lookup <https://github.com/lambda-my-aws/ecs_composex/issues/226>`_
-* `Cooldown for ECS Scaling from SQS <https://github.com/lambda-my-aws/ecs_composex/issues/220>`_
-* Lookup support for nearly all resources
+* cabd793 - Support for networks: and mapping to additional subnets. (#282)
+* ba4ed5c - ECS Scheduled tasks support (#280)
+* 82e2086 - Defaulting to encrypted for RDS (#276)
+* a516a09 - Added support for service level x-aws keys from ecs-plugin (#273)
+* 5e1ab08 - Improved logging settings (#265)
+* 96ad398 - x-secrets::Lookup (#256)
+* dfb249c - Lookup for ACM working (#254)
+* ea6e05c - Feature x-docdb (#252)
+* 0a4d258 - Refactor services to root stack (#248)
+* 49a9d31 - ARN of TGT Group always passed to service stack (#245)
+* eafcd38 - Updated documentation (#236)
+* aa4c96b - Feature x-elbv2 with x-acm support and validation via x-dns (#228)
+* fb0bc4a - Allowing RoleArn in x-rds Lookup (#233)
+* 22feb56 - Lookup via resources tag api for VPC resources (#231)
+* be536c1 - Cross-Cccount assume role generally and locally for lookup (#229)
+* 32075f2 - Allow for custom cooldown for steps (#221)
+* ca89836 - Upgrading troposphere==2.6.3 (#216)
+* 3a1b0c8 - Linting DynDB features and use-case files (#213)
+* 67cc67e - Feature x-s3 (#196)
+* 230a9d3 - Lookup RDS DB/Clusters and secrets (#211)
 
-Fixes since 0.8.0
--------------------
+Fixes
+-----
+* fc55f4b - Patched version of 0.8.9 with previews for 0.9.0 (#275)
+* 1dc4113 - Replaced LOG.warn with LOG.warning (#271)
+* 42c7027 - Docs improvements (#278)
+* 78bef91 - Clarified Ingress syntax (#261)
+* af31f33 - Fixed a number of small issues (#259)
+* 02da4e1 - Hotfix services attributes (#243)
+* fb7265a - During PyCharm refactor, error change occured (#238)
+* c46c208 - Fixing import export string (#224)
+* 7669799 - Removing missed print (#217)
+* 4171044 - Fixing condition when QueueName property is set (#210)
+* 0ced643 - Patched SQS based scaling rule and alarm (#202)
 
-* https://github.com/lambda-my-aws/ecs_composex/issues/220
+Syntax changes from previous version
+------------------------------------
+
+* 86d2141 - Refactor/services xconfig keys (#269)
+* 1cfa6b7 - Refactor AppMesh properties keys (#262)
+* d753473 - Refactor to classes for XResources and Compose resources (#219)
+
+
+Documentation theme changed to Read The Docs and tuned some colors.
 
 
 0.8.0 (2020-10-09)
