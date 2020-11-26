@@ -106,6 +106,20 @@ def create_new_vpc(vpc_xkey, settings, default=False):
     return vpc_stack
 
 
+def set_subnets_from_use(subnets_list, vpc_settings, subnets_def):
+    for subnet_name in subnets_list:
+        if not isinstance(vpc_settings[subnet_name], (list, str)):
+            raise TypeError(
+                "The subnet_name must be of type", str, list, "Got", type(subnet_name)
+            )
+        subnets = (
+            vpc_settings[subnet_name].split(",")
+            if isinstance(vpc_settings[subnet_name], str)
+            else vpc_settings[subnet_name]
+        )
+        subnets_def[subnet_name] = subnets
+
+
 def import_vpc_settings(vpc_settings):
     """
     Function to import settings set "in-stone" from docker-compose definition
@@ -120,17 +134,10 @@ def import_vpc_settings(vpc_settings):
     required_subnets = [APP_SUBNETS.title, PUBLIC_SUBNETS.title, STORAGE_SUBNETS.title]
     if not all(subnet in vpc_settings.keys() for subnet in required_subnets):
         raise KeyError("All subnets must be indicated", required_subnets)
-    for subnet_name in required_subnets:
-        if not isinstance(vpc_settings[subnet_name], (list, str)):
-            raise TypeError(
-                "The subnet_name must be of type", str, list, "Got", type(subnet_name)
-            )
-        subnets = (
-            vpc_settings[subnet_name].split(",")
-            if isinstance(vpc_settings[subnet_name], str)
-            else vpc_settings[subnet_name]
-        )
-        settings[subnet_name] = subnets
+    extra_subnets = [key for key in vpc_settings.keys() if key not in required_subnets]
+    set_subnets_from_use(required_subnets, vpc_settings, settings)
+    set_subnets_from_use(extra_subnets, vpc_settings, settings)
+
     return settings
 
 
