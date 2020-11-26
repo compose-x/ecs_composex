@@ -7,6 +7,7 @@
     syntax/docker-compose/services
     syntax/docker-compose/volumes
     syntax/docker-compose/secrets
+    syntax/docker-compose/networks
 
 .. toctree::
     :caption: Services Extension Fields

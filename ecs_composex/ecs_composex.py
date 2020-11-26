@@ -360,6 +360,7 @@ def generate_full_template(settings):
     )
     dns_inputs(root_stack)
     vpc_stack = add_vpc_to_root(root_stack, settings)
+    settings.set_networks(vpc_stack, root_stack)
     dns_settings = DnsSettings(root_stack, settings, get_vpc_id(vpc_stack))
     root_stack.Parameters.update(dns_settings.root_params)
     add_ecs_cluster(settings, root_stack)

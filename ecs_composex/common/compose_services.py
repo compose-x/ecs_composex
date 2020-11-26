@@ -25,7 +25,7 @@ from troposphere import (
     AWS_STACK_NAME,
 )
 from troposphere import Parameter, Tags
-from troposphere import Sub, Ref, GetAtt, ImportValue
+from troposphere import Sub, Ref, GetAtt, ImportValue, Join
 from troposphere.ecs import (
     HealthCheck,
     Environment,
@@ -58,6 +58,7 @@ from ecs_composex.secrets.compose_secrets import (
     ComposeSecret,
     match_secrets_services_config,
 )
+from ecs_composex.vpc.vpc_params import APP_SUBNETS
 
 NUMBERS_REG = r"[^0-9.]"
 MINIMUM_SUPPORTED = 4
@@ -262,7 +263,7 @@ class ComposeService(object):
         ("logging", dict),
         ("links", list),
         ("network_mode", str),
-        ("networks", list),
+        ("networks", (list, dict)),
         ("image", str),
         ("init", bool),
         ("isolation", str),
@@ -332,7 +333,7 @@ class ComposeService(object):
         self.x_logging = {"RetentionInDays": 14, "CreateLogGroup": True}
 
         self.import_x_aws_settings()
-
+        self.networks = {}
         self.replicas = 1
         self.container = None
         self.volumes = []
@@ -375,6 +376,7 @@ class ComposeService(object):
         self.map_secrets(secrets)
         self.set_service_deploy()
         self.set_container_definition()
+        self.set_networks()
 
     def set_container_definition(self):
         """
@@ -409,6 +411,15 @@ class ComposeService(object):
             Secrets=secrets,
         )
         self.container_parameters.update({self.image_param.title: self.image})
+
+    def set_networks(self):
+        if not keyisset("networks", self.definition):
+            return
+        if isinstance(self.definition["networks"], list):
+            for name in self.definition["networks"]:
+                self.networks[name] = None
+        elif isinstance(self.definition["networks"], dict):
+            self.networks.update(self.definition["networks"])
 
     def merge_x_aws_role(self, key):
         """
@@ -1127,3 +1138,15 @@ class ComposeFamily(object):
         self.set_task_compute_parameter()
         self.set_task_definition()
         self.refresh_container_logging_definition()
+
+    def update_family_subnets(self, settings):
+        """
+        Method to update the stack parameters
+
+        :param ecs_composex.common.settings.ComposeXSettings settings:
+        """
+        network_names = list(self.service_config.network.networks.keys())
+        for network in settings.networks:
+            if network.name in network_names:
+                self.stack_parameters.update({APP_SUBNETS.title: Join(",", Ref(network.subnet_name))})
+                LOG.info(f"Set {network.subnet_name} as {APP_SUBNETS.title} for {self.name}")

@@ -92,4 +92,17 @@ def lookup_x_vpc_settings(lookup, session):
             re.match(vpc_types[subnet_type]["regexp"], subnet_arn).groups()[0]
             for subnet_arn in subnet_arns
         ]
+    extra_subnets = [key for key in lookup.keys() if key not in required_keys]
+    for subnet_name in extra_subnets:
+        subnet_arns = find_aws_resource_arn_from_tags_api(
+            lookup[subnet_name],
+            lookup_session,
+            subnet_type,
+            types=vpc_types,
+            allow_multi=True
+        )
+        vpc_settings[subnet_name] = [
+            re.match(vpc_types[subnet_type]["regexp"], subnet_arn).groups()[0]
+            for subnet_arn in subnet_arns
+        ]
     return vpc_settings

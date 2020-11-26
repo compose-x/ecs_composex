@@ -20,6 +20,7 @@ Module for VpcStack
 """
 
 from troposphere import Ref, If
+from troposphere import Parameter
 
 from ecs_composex.common.ecs_composex import X_KEY
 from ecs_composex.common import add_parameters, LOG
@@ -35,6 +36,7 @@ from ecs_composex.vpc.vpc_params import (
     DEFAULT_VPC_CIDR,
     VPC_CIDR,
     VPC_SINGLE_NAT,
+    SUBNETS_TYPE
 )
 from ecs_composex.dns import dns_params, dns_conditions
 from ecs_composex.vpc.vpc_aws import lookup_x_vpc_settings
@@ -104,6 +106,20 @@ def create_new_vpc(vpc_xkey, settings, default=False):
     return vpc_stack
 
 
+def set_subnets_from_use(subnets_list, vpc_settings, subnets_def):
+    for subnet_name in subnets_list:
+        if not isinstance(vpc_settings[subnet_name], (list, str)):
+            raise TypeError(
+                "The subnet_name must be of type", str, list, "Got", type(subnet_name)
+            )
+        subnets = (
+            vpc_settings[subnet_name].split(",")
+            if isinstance(vpc_settings[subnet_name], str)
+            else vpc_settings[subnet_name]
+        )
+        subnets_def[subnet_name] = subnets
+
+
 def import_vpc_settings(vpc_settings):
     """
     Function to import settings set "in-stone" from docker-compose definition
@@ -118,17 +134,10 @@ def import_vpc_settings(vpc_settings):
     required_subnets = [APP_SUBNETS.title, PUBLIC_SUBNETS.title, STORAGE_SUBNETS.title]
     if not all(subnet in vpc_settings.keys() for subnet in required_subnets):
         raise KeyError("All subnets must be indicated", required_subnets)
-    for subnet_name in required_subnets:
-        if not isinstance(vpc_settings[subnet_name], (list, str)):
-            raise TypeError(
-                "The subnet_name must be of type", str, list, "Got", type(subnet_name)
-            )
-        subnets = (
-            vpc_settings[subnet_name].split(",")
-            if isinstance(vpc_settings[subnet_name], str)
-            else vpc_settings[subnet_name]
-        )
-        settings[subnet_name] = subnets
+    extra_subnets = [key for key in vpc_settings.keys() if key not in required_subnets]
+    set_subnets_from_use(required_subnets, vpc_settings, settings)
+    set_subnets_from_use(extra_subnets, vpc_settings, settings)
+
     return settings
 
 
@@ -137,6 +146,7 @@ def apply_vpc_settings(x_settings, root_stack, settings):
 
     :param x_settings:
     :param root_stack:
+    :param ecs_composex.common.settings.ComposeXSettings settings:
     :return:
     """
     add_parameters(
@@ -149,6 +159,15 @@ def apply_vpc_settings(x_settings, root_stack, settings):
         STORAGE_SUBNETS.title: x_settings[STORAGE_SUBNETS.title],
         PUBLIC_SUBNETS.title: x_settings[PUBLIC_SUBNETS.title],
     }
+    settings.subnets_parameters.append(APP_SUBNETS)
+    settings.subnets_parameters.append(PUBLIC_SUBNETS)
+    settings.subnets_parameters.append(STORAGE_SUBNETS)
+    for setting_name in x_settings:
+        if setting_name not in settings_params.keys():
+            param = root_stack.stack_template.add_parameter(Parameter(setting_name, Type=SUBNETS_TYPE))
+            settings_params[param.title] = x_settings[param.title]
+            settings.subnets_parameters.append(param)
+
     root_stack.Parameters.update(settings_params)
     settings.set_azs_from_vpc_import(
         public_subnets=x_settings[PUBLIC_SUBNETS.title],
@@ -171,6 +190,7 @@ def add_vpc_to_root(root_stack, settings):
 
     if keyisset(vpc_xkey, settings.compose_content):
         if keyisset("Lookup", settings.compose_content[vpc_xkey]):
+            settings.create_vpc = False
             x_settings = lookup_x_vpc_settings(
                 settings.compose_content[vpc_xkey]["Lookup"], settings.session
             )
@@ -182,13 +202,16 @@ def add_vpc_to_root(root_stack, settings):
             if keyisset("Create", settings.compose_content[vpc_xkey]) and keyisset(
                 "Lookup", settings.compose_content[vpc_xkey]
             ):
+                settings.create_vpc = True
                 LOG.warning(
                     "We have both Create and Lookup set for x-vpc." "Creating a new VPC"
                 )
             vpc_stack = create_new_vpc(vpc_xkey, settings)
+            settings.create_vpc = True
     else:
         LOG.info(f"No {vpc_xkey} detected. Creating a new VPC.")
         vpc_stack = create_new_vpc(vpc_xkey, settings, default=True)
+        settings.create_vpc = True
     if isinstance(vpc_stack, VpcStack):
         root_stack.stack_template.add_resource(vpc_stack)
     return vpc_stack
