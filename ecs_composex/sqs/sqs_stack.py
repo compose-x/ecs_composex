@@ -30,7 +30,7 @@ from ecs_composex.sqs.sqs_params import (
     RES_KEY,
     SQS_ARN,
     SQS_URL,
-    SQS_KMS_KEY_T,
+    SQS_KMS_KEY,
     SQS_NAME,
 )
 from ecs_composex.sqs.sqs_perms import get_access_types
@@ -66,12 +66,8 @@ class Queue(XResource):
     def __init__(self, name, definition, settings):
         super().__init__(name, definition, settings)
         self.main_attr = SQS_URL
-        self.kms_arn_attr = SQS_KMS_KEY_T
-
+        self.kms_arn_attr = SQS_KMS_KEY
         self.arn_attr = SQS_ARN
-        self.arn_attr_value = self.arn_attr
-        self.main_attr_value = self.main_attr
-        self.kms_arn_attr_value = self.kms_arn_attr
 
     def init_outputs(self):
         self.output_properties = {
