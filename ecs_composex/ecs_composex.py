@@ -77,6 +77,7 @@ SUPPORTED_X_MODULE_NAMES = [
     "elbv2",
     "docdb",
     "events",
+    "kinesis",
 ]
 
 SUPPORTED_X_MODULES = [f"{X_KEY}{mod_name}" for mod_name in SUPPORTED_X_MODULE_NAMES]

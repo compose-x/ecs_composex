@@ -1,0 +1,44 @@
+---
+# Use cases for kinesis
+
+x-kinesis:
+  stream-01:
+    Properties: {}
+    Services:
+      - name: app03
+        access: Consumer
+  stream-02:
+    Properties:
+      Name: stream-02
+    Services:
+      - name: app03
+        access: Producer
+
+  stream-03:
+    Properties:
+      RetentionPeriodHours: 72
+      ShardCount: 4
+      StreamEncryption:
+        EncryptionType: KMS
+        KeyId: alias/aws/kinesis
+    Services:
+      - name: app03
+        access: Producer
+
+  stream-04:
+    Lookup:
+      Tags:
+        - Name: test-import-stream
+        - createdbycomposex: "False"
+    Services:
+      - name: youtoo
+        access: Producer
+
+  stream-05:
+    Lookup:
+      Tags:
+        - Name: encrypted-stream
+        - createdbycomposex: "False"
+    Services:
+      - name: bignicefamily
+        access: Consumer

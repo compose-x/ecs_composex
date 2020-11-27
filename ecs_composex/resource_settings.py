@@ -171,7 +171,9 @@ def handle_kms_access(mapping_family, resource, target, selected_services):
     :param tuple target:
     :param list selected_services:
     """
-    key_arn = FindInMap(mapping_family, resource.logical_name, resource.kms_arn_attr)
+    key_arn = FindInMap(
+        mapping_family, resource.logical_name, resource.kms_arn_attr.title
+    )
     kms_perms = generate_resource_permissions(
         f"{resource.logical_name}KmsKey", KMS_ACCESS_TYPES, arn=key_arn
     )
@@ -214,7 +216,9 @@ def handle_lookup_resource(mapping, mapping_family, resource):
             if (
                 hasattr(resource, "kms_arn_attr")
                 and resource.kms_arn_attr
-                and keyisset(resource.kms_arn_attr, mapping[resource.logical_name])
+                and keyisset(
+                    resource.kms_arn_attr.title, mapping[resource.logical_name]
+                )
             ):
                 handle_kms_access(mapping_family, resource, target, selected_services)
 
