@@ -19,8 +19,6 @@
 Module to find the Secrets from AWS Tags
 """
 
-import re
-
 from botocore.exceptions import ClientError
 
 from ecs_composex.common import LOG, keyisset
@@ -32,7 +30,9 @@ from ecs_composex.common.aws import (
 
 def get_secret_config(logical_name, secret_arn, session):
     """
+    Function to get the secret config used to define its mapping
 
+    :param str logical_name:
     :param str secret_arn:
     :param boto3.session.Session session:
     :return:
@@ -57,7 +57,8 @@ def lookup_secret_config(logical_name, lookup, session):
     """
     Function to find the DB in AWS account
 
-    :param dict lookup: The Lookup definition for DB
+    :param str logical_name: Logical name of the resource
+    :param dict lookup: The Lookup definition
     :param boto3.session.Session session: Boto3 session for clients
     :return:
     """

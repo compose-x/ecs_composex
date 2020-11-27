@@ -30,20 +30,16 @@ from troposphere.ecs import (
 )
 from troposphere.iam import Policy
 
-from ecs_composex.common import LOG, add_parameters
-from ecs_composex.common.outputs import ComposeXOutput
-from ecs_composex.dns.dns_params import PRIVATE_DNS_ZONE_NAME
-from ecs_composex.ecs import ecs_params
-from ecs_composex.common.compose_services import extend_container_envvars
 from ecs_composex.appmesh import appmesh_params, appmesh_conditions, metadata
 from ecs_composex.appmesh.appmesh_params import (
-    NODE_KEY,
-    NODES_KEY,
-    ROUTES_KEY,
-    MATCH_KEY,
     NAME_KEY,
     BACKENDS_KEY,
 )
+from ecs_composex.common import LOG, add_parameters
+from ecs_composex.common.compose_services import extend_container_envvars
+from ecs_composex.common.outputs import ComposeXOutput
+from ecs_composex.dns.dns_params import PRIVATE_DNS_ZONE_NAME
+from ecs_composex.ecs import ecs_params
 
 
 class MeshNode(object):

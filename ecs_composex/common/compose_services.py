@@ -1148,5 +1148,9 @@ class ComposeFamily(object):
         network_names = list(self.service_config.network.networks.keys())
         for network in settings.networks:
             if network.name in network_names:
-                self.stack_parameters.update({APP_SUBNETS.title: Join(",", Ref(network.subnet_name))})
-                LOG.info(f"Set {network.subnet_name} as {APP_SUBNETS.title} for {self.name}")
+                self.stack_parameters.update(
+                    {APP_SUBNETS.title: Join(",", Ref(network.subnet_name))}
+                )
+                LOG.info(
+                    f"Set {network.subnet_name} as {APP_SUBNETS.title} for {self.name}"
+                )

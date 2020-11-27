@@ -24,11 +24,11 @@ from ipaddress import IPv4Interface
 from json import dumps
 
 from troposphere import AWS_ACCOUNT_ID, AWS_NO_VALUE
-from troposphere import Sub, Ref, GetAtt
+from troposphere import Sub, Ref
 from troposphere.ec2 import SecurityGroupIngress
 
 from ecs_composex.common import LOG, NONALPHANUM
-from ecs_composex.common import keyisset, keypresent
+from ecs_composex.common import keyisset
 
 
 def flatten_ip(ip_str):

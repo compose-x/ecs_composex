@@ -34,7 +34,6 @@ from ecs_composex.appmesh.appmesh_params import (
     MATCH_KEY,
     NAME_KEY,
     NODES_KEY,
-    NODE_KEY,
     PORT_KEY,
 )
 from ecs_composex.common import NONALPHANUM, keyisset, LOG

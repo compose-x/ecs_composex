@@ -15,8 +15,6 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import re
 from os import path
-from troposphere import Parameter
 
 RES_KEY = f"x-{path.basename(path.dirname(path.abspath(__file__)))}"

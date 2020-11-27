@@ -99,7 +99,7 @@ def lookup_x_vpc_settings(lookup, session):
             lookup_session,
             subnet_type,
             types=vpc_types,
-            allow_multi=True
+            allow_multi=True,
         )
         vpc_settings[subnet_name] = [
             re.match(vpc_types[subnet_type]["regexp"], subnet_arn).groups()[0]

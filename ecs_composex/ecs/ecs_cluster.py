@@ -17,21 +17,18 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from botocore.exceptions import ClientError
-
-from troposphere import If, Ref, Not, Equals
 from troposphere import AWS_STACK_NAME
+from troposphere import If, Ref
 from troposphere.ecs import Cluster, CapacityProviderStrategyItem
 
 from ecs_composex.common import LOG, keyisset
-
-from ecs_composex.ecs.ecs_params import CLUSTER_NAME, CLUSTER_T, CREATE_CLUSTER
+from ecs_composex.ecs import metadata
 from ecs_composex.ecs.ecs_conditions import (
     GENERATED_CLUSTER_NAME_CON_T,
     CREATE_CLUSTER_CON_T,
     GENERATED_CLUSTER_NAME_CON,
 )
-from ecs_composex.ecs import metadata
-
+from ecs_composex.ecs.ecs_params import CLUSTER_NAME, CLUSTER_T, CREATE_CLUSTER
 
 RES_KEY = "x-cluster"
 FARGATE_PROVIDER = "FARGATE"
