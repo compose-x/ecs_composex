@@ -447,11 +447,15 @@ class ComposeXSettings(object):
             LOG.debug("No networks detected at the root level of compose file")
             return
         elif vpc_stack:
-            LOG.info("ComposeX will be creating the VPC, therefore networks are ignored!")
+            LOG.info(
+                "ComposeX will be creating the VPC, therefore networks are ignored!"
+            )
             return
         for network_name in self.compose_content[ComposeNetwork.main_key]:
             network = ComposeNetwork(
-                network_name, self.compose_content[ComposeNetwork.main_key][network_name], self.subnets_parameters
+                network_name,
+                self.compose_content[ComposeNetwork.main_key][network_name],
+                self.subnets_parameters,
             )
             self.compose_content[ComposeNetwork.main_key][network_name] = network
             self.networks.append(network)

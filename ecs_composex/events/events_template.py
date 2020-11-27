@@ -16,28 +16,15 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from troposphere import Ref, Sub, GetAtt
-from troposphere import AWS_REGION, AWS_NO_VALUE, AWS_PARTITION, AWS_ACCOUNT_ID
-from troposphere import Parameter
-
 from troposphere.events import (
     Rule,
-    Target,
-    EcsParameters,
-    NetworkConfiguration,
-    AwsVpcConfiguration,
 )
 
-from ecs_composex.common import (
-    keypresent,
-    keyisset,
-    build_template,
-    no_value_if_not_set,
-    add_parameters,
-)
 from ecs_composex.common import LOG
-from ecs_composex.ecs.ecs_params import CLUSTER_NAME, FARGATE_VERSION, TASK_T
-from ecs_composex.vpc.vpc_params import APP_SUBNETS, SG_ID_TYPE
+from ecs_composex.common import (
+    keyisset,
+    no_value_if_not_set,
+)
 
 
 def update_from_parameters(rule, props):

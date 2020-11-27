@@ -19,15 +19,14 @@
 Core ECS Template building
 """
 
-from troposphere import Ref, Sub, Tags, GetAtt
-from troposphere import Equals, If, Not, And, Condition
-from troposphere import Parameter
 from troposphere import AWS_ACCOUNT_ID, AWS_PARTITION, AWS_REGION, AWS_NO_VALUE
+from troposphere import If
+from troposphere import Ref, Sub, Tags, GetAtt
 from troposphere.ec2 import SecurityGroup
 from troposphere.iam import PolicyType
 from troposphere.logs import LogGroup
 
-from ecs_composex.common import build_template, add_parameters
+from ecs_composex.common import build_template
 from ecs_composex.common.cfn_params import (
     ROOT_STACK_NAME_T,
     ROOT_STACK_NAME,
@@ -46,8 +45,8 @@ from ecs_composex.ecs.ecs_service import (
     Service,
 )
 from ecs_composex.ecs.ecs_service_config import ServiceConfig
-from ecs_composex.vpc import vpc_params
 from ecs_composex.secrets.secrets_params import RES_KEY as SECRETS_KEY
+from ecs_composex.vpc import vpc_params
 
 
 def initialize_service_template(service_name):

@@ -96,7 +96,7 @@ class ComposeSecret(object):
         self.services = []
         if not any(key in definition[self.x_key].keys() for key in self.allowed_keys):
             raise KeyError(
-                f"You must define at least one of",
+                "You must define at least one of",
                 self.allowed_keys,
                 "Got",
                 definition.keys(),

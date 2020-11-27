@@ -19,16 +19,7 @@
 Class and functions to interact with the networks: defined in compose files.
 """
 
-import re
-
 from ecs_composex.common import keyisset, LOG
-from ecs_composex.vpc.vpc_params import (
-    APP_SUBNETS,
-    STORAGE_SUBNETS,
-    PUBLIC_SUBNETS,
-    SUBNETS_TYPE,
-    VPC_ID,
-)
 
 
 def match_networks_services_config(service, vol_config, networks):
@@ -73,4 +64,6 @@ class ComposeNetwork(object):
             self.subnet_name = definition["x-vpc"]
         subnet_names = [subnet.title for subnet in subnets_list]
         if self.subnet_name not in subnet_names:
-            raise KeyError(f"No subnet {self.name} defined. Valid options are", subnet_names)
+            raise KeyError(
+                f"No subnet {self.name} defined. Valid options are", subnet_names
+            )

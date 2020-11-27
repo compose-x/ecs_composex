@@ -19,8 +19,6 @@
 Module to import existing ACM Certificates just as for other resources.
 """
 
-import re
-
 from botocore.exceptions import ClientError
 
 from ecs_composex.common import LOG, keyisset

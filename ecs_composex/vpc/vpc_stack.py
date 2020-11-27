@@ -36,7 +36,7 @@ from ecs_composex.vpc.vpc_params import (
     DEFAULT_VPC_CIDR,
     VPC_CIDR,
     VPC_SINGLE_NAT,
-    SUBNETS_TYPE
+    SUBNETS_TYPE,
 )
 from ecs_composex.dns import dns_params, dns_conditions
 from ecs_composex.vpc.vpc_aws import lookup_x_vpc_settings
@@ -164,7 +164,9 @@ def apply_vpc_settings(x_settings, root_stack, settings):
     settings.subnets_parameters.append(STORAGE_SUBNETS)
     for setting_name in x_settings:
         if setting_name not in settings_params.keys():
-            param = root_stack.stack_template.add_parameter(Parameter(setting_name, Type=SUBNETS_TYPE))
+            param = root_stack.stack_template.add_parameter(
+                Parameter(setting_name, Type=SUBNETS_TYPE)
+            )
             settings_params[param.title] = x_settings[param.title]
             settings.subnets_parameters.append(param)
 

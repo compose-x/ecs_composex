@@ -25,15 +25,13 @@ from troposphere import AWS_ACCOUNT_ID
 from troposphere import Sub, Ref, GetAtt
 from troposphere.ec2 import SecurityGroupIngress
 
+from ecs_composex.common import LOG
+from ecs_composex.common import keyisset, keypresent
+from ecs_composex.ecs.ecs_params import SERVICE_NAME_T
 from ecs_composex.ingress_settings import (
-    flatten_ip,
-    generate_security_group_props,
     set_service_ports,
     Ingress,
 )
-from ecs_composex.common import LOG, NONALPHANUM
-from ecs_composex.common import keyisset, keypresent
-from ecs_composex.ecs.ecs_params import SERVICE_NAME_T
 
 
 def handle_ext_sources(existing_sources, new_sources):
