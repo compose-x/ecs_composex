@@ -387,6 +387,6 @@ def generate_full_template(settings):
         mesh = Mesh(settings.compose_content["x-appmesh"], root_stack, settings)
         mesh.render_mesh_template(root_stack)
     dns_records = DnsRecords(settings)
-    dns_records.associate_records_to_resources(settings, root_stack)
+    dns_records.associate_records_to_resources(settings, root_stack, dns_settings)
     add_all_tags(root_stack.stack_template, settings)
     return root_stack

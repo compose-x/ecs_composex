@@ -37,13 +37,13 @@ from troposphere.validators import integer, boolean
 from troposphere.route53 import RecordSetType, AliasTarget, GeoLocation, BaseRecordSet
 
 from ecs_composex.ecs_composex import X_KEY
-from ecs_composex.common import keyisset, keypresent, no_value_if_not_set
+from ecs_composex.common import keyisset, keypresent, no_value_if_not_set, add_outputs
 from ecs_composex.common import NONALPHANUM, LOG
 from ecs_composex.elbv2.elbv2_params import LB_DNS_ZONE_ID, LB_DNS_NAME
 
 from ecs_composex.common.stacks import ComposeXStack
 
-from ecs_composex.dns.dns_params import RES_KEY
+from ecs_composex.dns.dns_params import RES_KEY, PUBLIC_DNS_ZONE_ID
 
 
 def import_record_properties(properties, top_class=None):
@@ -59,7 +59,8 @@ def import_record_properties(properties, top_class=None):
     props = {}
     for prop_name in BaseRecordSet.props:
         if not keyisset(prop_name, properties) and not top_class.props[prop_name][1]:
-            props[prop_name] = Ref(AWS_NO_VALUE)
+            continue
+            # props[prop_name] = Ref(AWS_NO_VALUE)
         elif not keyisset(prop_name, properties) and top_class.props[prop_name][1]:
             raise KeyError(
                 f"Property {prop_name} is required for the definition of {top_class}"
@@ -92,7 +93,7 @@ def define_external_record_set(properties):
     return record
 
 
-def handle_elbv2_target(record, elbv2, settings, root_stack):
+def handle_elbv2_target(record, elbv2, settings, root_stack, dns_settings):
     """
     Function to define the TargetAlias properties for the record from an ELBv2
 
@@ -100,6 +101,7 @@ def handle_elbv2_target(record, elbv2, settings, root_stack):
     :param ecs_composex.elbv2.elbv2_stack Elbv2 elbv2:
     :param ecs_composex.common.settings.ComposeXSettings settings:
     :param ecs_composex.common.stacks.ComposeXStack root_stack:
+    :param ecs_composex.dns.DnsSettings dns_settings:
     :return:
     """
     if elbv2.lookup and not elbv2.cfn_resource:
@@ -108,20 +110,26 @@ def handle_elbv2_target(record, elbv2, settings, root_stack):
     elbv2_root_stack = root_stack.stack_template.resources[record.target_mod]
     elbv2.init_outputs()
     elbv2.generate_outputs()
-    elbv2_root_stack.stack_template.add_output(elbv2.outputs)
+    add_outputs(elbv2_root_stack.stack_template, elbv2.outputs)
     alias_tgt = AliasTarget(
         HostedZoneId=GetAtt(
             elbv2_root_stack.title,
-            f"Outputs.{elbv2_root_stack.title}{LB_DNS_ZONE_ID.title}",
+            f"Outputs.{elbv2.logical_name}{LB_DNS_ZONE_ID.title}",
         ),
         DNSName=GetAtt(
             elbv2_root_stack.title,
-            f"Outputs.{elbv2_root_stack.title}{LB_DNS_NAME.title}",
+            f"Outputs.{elbv2.logical_name}{LB_DNS_NAME.title}",
         ),
     )
     record_props = import_record_properties(record.properties, BaseRecordSet)
     record_props["AliasTarget"] = alias_tgt
     record_props["Region"] = Ref(AWS_REGION)
+    if dns_settings.create_public_zone:
+        record_props["HostedZoneId"] = Ref(dns_settings.public_zone)
+    elif dns_settings.root_params and not keyisset("HostedZoneId", record_props):
+        record_props["HostedZoneId"] = Ref(PUBLIC_DNS_ZONE_ID)
+    if not keyisset("SetIdentifier", record_props):
+        record_props["SetIdentifier"] = Ref(AWS_STACK_NAME)
     record.cfn_resource = RecordSetType(
         f"Elv2R53Record{record_props['Type']}{NONALPHANUM.sub('', record_props['Name'])}"[
             :254
@@ -202,12 +210,13 @@ class Record(object):
                         domain_name_re.pattern,
                     )
 
-    def map_record_to_target(self, settings, root_stack):
+    def map_record_to_target(self, settings, root_stack, dns_settings):
         """
         Method to go and identify the target resource
 
         :param ecs_composex.common.settings.ComposeXSettings settings:
         :param ecs_composex.common.stacks.ComposeXStack root_stack:
+        :param ecs_composex.dns.DnsSettings dns_settings:
         :return:
         """
         if keyisset(self.target_type, settings.compose_content) and keyisset(
@@ -216,7 +225,7 @@ class Record(object):
             target = settings.compose_content[self.target_type][self.target_name]
             for target_type in self.alias_targets:
                 if target_type[0] == self.target_mod and target_type[1]:
-                    target_type[1](self, target, settings, root_stack)
+                    target_type[1](self, target, settings, root_stack, dns_settings)
                     break
 
 
@@ -239,7 +248,7 @@ class DnsRecords(object):
                 dns_record = Record(record)
                 self.records.append(dns_record)
 
-    def associate_records_to_resources(self, settings, root_stack):
+    def associate_records_to_resources(self, settings, root_stack, dns_settings):
         for dns_record in self.records:
             if dns_record.target_name and dns_record.target_type:
-                dns_record.map_record_to_target(settings, root_stack)
+                dns_record.map_record_to_target(settings, root_stack, dns_settings)

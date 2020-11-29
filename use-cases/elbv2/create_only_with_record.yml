@@ -10,6 +10,11 @@ x-dns:
         Name: toto.lambda-my-aws.io
         Type: A
       Target: x-elbv2::lbA
+    - Properties:
+        Name: tata.lambda-my-aws.io
+        Type: A
+        HostedZoneId: ZSOMETHINGBOGUS
+      Target: x-elbv2::lbA
 
 x-acm:
   public-acm-01:

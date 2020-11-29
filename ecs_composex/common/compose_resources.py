@@ -25,7 +25,7 @@ from troposphere import Output, Parameter
 from troposphere import Ref, GetAtt
 from troposphere.ecs import Environment
 
-from ecs_composex.common import LOG, NONALPHANUM, keyisset, keypresent
+from ecs_composex.common import LOG, NONALPHANUM, keyisset, keypresent, add_outputs
 
 
 def set_resources(settings, resource_class, res_key):
