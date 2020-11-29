@@ -23,10 +23,16 @@ RES_KEY = f"x-{path.basename(path.dirname(path.abspath(__file__)))}"
 LB_ID_T = "elbv2Id"
 LB_ARN_T = "elbv2Arn"
 LB_SG_ID_T = "elbv2SecurityGroupId"
+LB_DNS_NAME_T = "DNSName"
+LB_DNS_ZONE_ID_T = "CanonicalHostedZoneID"
 
 LB_ID = Parameter(LB_ID_T, Type="String")
 LB_ARN = Parameter(LB_ARN_T, Type="String")
 LB_SG_ID = Parameter(LB_SG_ID_T, Type="AWS::EC2::SecurityGroup::Id")
+LB_DNS_NAME = Parameter(LB_DNS_NAME_T, Type="String")
+LB_DNS_ZONE_ID = Parameter(
+    LB_DNS_ZONE_ID_T, Type="String", AllowedPattern=r"^Z[0-9A-Z]+$"
+)
 
 TGT_GROUP_ARN_T = "TargetGroupArn"
 TGT_GROUP_ARN = Parameter(TGT_GROUP_ARN_T, Type="String")

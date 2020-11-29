@@ -26,6 +26,7 @@ from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common.settings import ComposeXSettings
 from ecs_composex.dns import DnsSettings
 from ecs_composex.common import load_composex_file, build_template
+from ecs_composex.dns.dns_records import Record
 
 
 @pytest.fixture
@@ -106,3 +107,35 @@ def test_zone_lookup(content, zone_lookup):
         DnsSettings(root_stack, settings, Ref("VpcId"))
     except Exception:
         pass
+
+
+def test_valid_records():
+    """
+    Function to test valid records
+    """
+    r = Record({"Properties": {}, "Names": ["google.com", "test.net", "amazonaws.com"]})
+
+
+def test_invalid_records():
+    """
+    Function to test valid records
+    """
+    with pytest.raises(TypeError):
+        Record(
+            {
+                "Properties": {},
+                "Names": ["google.com", "test.net", "amazonaws.com", ["something.net"]],
+            }
+        )
+    with pytest.raises(NameError):
+        Record(
+            {
+                "Properties": {},
+                "Names": [
+                    "google.com",
+                    "test.net",
+                    "amazonaws.com",
+                    "invalid_domain.net",
+                ],
+            }
+        )

@@ -52,7 +52,12 @@ from ecs_composex.common.cfn_params import ROOT_STACK_NAME
 from ecs_composex.common.compose_resources import XResource, set_resources
 from ecs_composex.common.outputs import ComposeXOutput
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.elbv2.elbv2_params import RES_KEY, LB_SG_ID
+from ecs_composex.elbv2.elbv2_params import (
+    RES_KEY,
+    LB_SG_ID,
+    LB_DNS_ZONE_ID,
+    LB_DNS_NAME,
+)
 from ecs_composex.vpc.vpc_params import VPC_ID, PUBLIC_SUBNETS, APP_SUBNETS
 
 
@@ -615,6 +620,22 @@ class Elbv2(XResource):
         self.validate_services()
         self.sort_props()
 
+    def init_outputs(self):
+        self.output_properties = {
+            LB_DNS_NAME.title: (
+                f"{self.logical_name}{LB_DNS_NAME.title}",
+                self.cfn_resource,
+                GetAtt,
+                LB_DNS_NAME.title,
+            ),
+            LB_DNS_ZONE_ID.title: (
+                f"{self.logical_name}{LB_DNS_ZONE_ID.title}",
+                self.cfn_resource,
+                GetAtt,
+                LB_DNS_ZONE_ID.title,
+            ),
+        }
+
     def set_listeners(self, template):
         """
         Method to define the listeners
@@ -889,6 +910,7 @@ class Elbv2(XResource):
             "Name": Ref(AWS_NO_VALUE),
         }
         self.lb = LoadBalancer(self.logical_name, **attrs)
+        self.cfn_resource = self.lb
 
     def is_nlb(self):
         return True if self.lb_type == "network" else False

@@ -49,6 +49,7 @@ from ecs_composex.compute.compute_params import (
 )
 from ecs_composex.compute.compute_stack import ComputeStack
 from ecs_composex.dns import add_parameters_and_conditions as dns_inputs, DnsSettings
+from ecs_composex.dns.dns_records import DnsRecords
 from ecs_composex.ecs import associate_services_to_root_stack
 from ecs_composex.ecs.ecs_cluster import add_ecs_cluster
 from ecs_composex.ecs.ecs_params import (
@@ -385,5 +386,7 @@ def generate_full_template(settings):
     if keyisset("x-appmesh", settings.compose_content):
         mesh = Mesh(settings.compose_content["x-appmesh"], root_stack, settings)
         mesh.render_mesh_template(root_stack)
+    dns_records = DnsRecords(settings)
+    dns_records.associate_records_to_resources(settings, root_stack)
     add_all_tags(root_stack.stack_template, settings)
     return root_stack
