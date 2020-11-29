@@ -19,48 +19,44 @@
 Module to handle creation of the DNS records for specific targets
 """
 
-from re import compile
 from copy import deepcopy
+from re import compile
 
 from troposphere import AWSProperty
-from troposphere import Ref, Sub, GetAtt
 from troposphere import (
     AWS_STACK_NAME,
-    AWS_NO_VALUE,
-    AWS_URL_SUFFIX,
-    AWS_PARTITION,
     AWS_REGION,
 )
-from troposphere import Parameter, Tags
+from troposphere import Ref, GetAtt
+from troposphere.route53 import RecordSetType, AliasTarget, BaseRecordSet
 
-from troposphere.validators import integer, boolean
-from troposphere.route53 import RecordSetType, AliasTarget, GeoLocation, BaseRecordSet
-
-from ecs_composex.ecs_composex import X_KEY
-from ecs_composex.common import keyisset, keypresent, no_value_if_not_set, add_outputs
 from ecs_composex.common import NONALPHANUM, LOG
+from ecs_composex.common import keyisset, add_outputs, no_value_if_not_set
+from ecs_composex.dns.dns_params import RES_KEY, PUBLIC_DNS_ZONE_ID
+from ecs_composex.ecs_composex import X_KEY
 from ecs_composex.elbv2.elbv2_params import LB_DNS_ZONE_ID, LB_DNS_NAME
 
-from ecs_composex.common.stacks import ComposeXStack
 
-from ecs_composex.dns.dns_params import RES_KEY, PUBLIC_DNS_ZONE_ID
-
-
-def import_record_properties(properties, top_class=None):
+def import_record_properties(properties, top_class=None, set_to_novalue=False):
     """
-    Generic function importing the RecordSet properties
+    Generic function importing the RecordSet properties.
+    If the property was not defined, it is either left empty or set to AWS::NoValue
 
     :param dict properties:
     :param top_class: The class we are going to import properties for
-    :return:
+    :param bool set_to_novalue: Instead of skipping the property, actively set to AWS::NoValue
+    :return:  The properties for the RecordSet
+    :rtype: dict
     """
     if not top_class:
         top_class = BaseRecordSet
     props = {}
     for prop_name in BaseRecordSet.props:
         if not keyisset(prop_name, properties) and not top_class.props[prop_name][1]:
-            continue
-            # props[prop_name] = Ref(AWS_NO_VALUE)
+            if set_to_novalue:
+                props[prop_name] = no_value_if_not_set(props, prop_name)
+            else:
+                continue
         elif not keyisset(prop_name, properties) and top_class.props[prop_name][1]:
             raise KeyError(
                 f"Property {prop_name} is required for the definition of {top_class}"
@@ -73,7 +69,7 @@ def import_record_properties(properties, top_class=None):
             top_class.props[prop_name][0], AWSProperty
         ):
             props[prop_name] = import_record_properties(
-                properties[prop_name], top_class.props[prop_name][0]
+                properties[prop_name], top_class.props[prop_name][0], set_to_novalue
             )
     return props
 
