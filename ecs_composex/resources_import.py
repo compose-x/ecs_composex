@@ -60,16 +60,18 @@ def import_non_functions(props, prop_name, top_class, properties, set_to_novalue
             props[prop_name] = top_class.props[prop_name][0](properties[prop_name])
         else:
             props[prop_name] = properties[prop_name]
-    elif not issubclass(top_class.props[prop_name][0], AWSProperty):
-        props[prop_name] = properties[prop_name]
-    elif issubclass(top_class.props[prop_name][0], AWSProperty):
-        sub_props = import_record_properties(
-            properties[prop_name],
-            top_class.props[prop_name][0],
-            set_to_novalue,
-            ignore_missing_required=False,
-        )
-        props[prop_name] = top_class.props[prop_name][0](**sub_props)
+    elif isinstance(properties[prop_name], dict):
+        try:
+            if issubclass(top_class.props[prop_name][0], AWSProperty):
+                sub_props = import_record_properties(
+                    properties[prop_name],
+                    top_class.props[prop_name][0],
+                    set_to_novalue,
+                    ignore_missing_required=False,
+                )
+                props[prop_name] = top_class.props[prop_name][0](**sub_props)
+        except TypeError:
+            props[prop_name] = properties[prop_name]
 
 
 def import_record_properties(
