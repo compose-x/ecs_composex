@@ -30,10 +30,10 @@ from troposphere import (
 from troposphere import Ref, GetAtt
 from troposphere.route53 import RecordSetType, AliasTarget, BaseRecordSet
 
+from ecs_composex.common.ecs_composex import X_KEY
 from ecs_composex.common import NONALPHANUM, LOG
 from ecs_composex.common import keyisset, add_outputs, no_value_if_not_set
 from ecs_composex.dns.dns_params import RES_KEY, PUBLIC_DNS_ZONE_ID
-from ecs_composex.ecs_composex import X_KEY
 from ecs_composex.elbv2.elbv2_params import LB_DNS_ZONE_ID, LB_DNS_NAME
 
 
