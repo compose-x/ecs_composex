@@ -44,7 +44,7 @@ from ecs_composex.ecs.ecs_params import (
     TASK_ROLE_T,
     EXEC_ROLE_T,
 )
-from ecs_composex.vpc.vpc_params import APP_SUBNETS, SG_ID_TYPE
+from ecs_composex.vpc.vpc_params import APP_SUBNETS, SG_ID_TYPE, SUBNETS_TYPE
 
 
 def define_service_targets(stack, rule, cluster_arn):
@@ -62,6 +62,9 @@ def define_service_targets(stack, rule, cluster_arn):
         )
         service_task_def_param = Parameter(
             f"{service[0].logical_name}{TASK_T}", Type="String"
+        )
+        service_subnets_param = Parameter(
+            f"{service[0].logical_name}{APP_SUBNETS.title}", Type=SUBNETS_TYPE
         )
         events_policy_doc = {
             "Version": "2012-10-17",
@@ -146,7 +149,10 @@ def define_service_targets(stack, rule, cluster_arn):
         )
         if service[0].iam and keyisset("PermissionsBoundary", service[0].iam):
             role.PermissionsBoundary = service[0].iam["PermissionsBoundary"]
-        add_parameters(stack.stack_template, [service_sg_param, service_task_def_param])
+        add_parameters(
+            stack.stack_template,
+            [service_sg_param, service_task_def_param, service_subnets_param],
+        )
         stack.Parameters.update(
             {
                 service_sg_param.title: GetAtt(
@@ -156,13 +162,18 @@ def define_service_targets(stack, rule, cluster_arn):
                     service[0].logical_name,
                     f"Outputs.{service[0].logical_name}{TASK_T}",
                 ),
+                service_subnets_param.title: GetAtt(
+                    service[0].logical_name,
+                    f"Outputs.{service[0].logical_name}{APP_SUBNETS.title}",
+                ),
             }
         )
         target = Target(
             EcsParameters=EcsParameters(
                 NetworkConfiguration=NetworkConfiguration(
                     AwsVpcConfiguration=AwsVpcConfiguration(
-                        Subnets=Ref(APP_SUBNETS), SecurityGroups=[Ref(service_sg_param)]
+                        Subnets=Ref(service_sg_param),
+                        SecurityGroups=[Ref(service_sg_param)],
                     )
                 ),
                 PlatformVersion=Ref(FARGATE_VERSION),

@@ -117,7 +117,6 @@ class XStack(ComposeXStack):
         ]
         if new_resources:
             params = {
-                APP_SUBNETS.title: Join(",", Ref(APP_SUBNETS)),
                 CLUSTER_NAME.title: If(
                     CREATE_CLUSTER_CON_T, Ref(CLUSTER_T), Ref(CLUSTER_NAME)
                 ),
@@ -125,7 +124,7 @@ class XStack(ComposeXStack):
             }
             stack_template = build_template(
                 "Events rules for ComposeX",
-                [APP_SUBNETS, CLUSTER_NAME, FARGATE_VERSION],
+                [CLUSTER_NAME, FARGATE_VERSION],
             )
             super().__init__(title, stack_template, stack_parameters=params, **kwargs)
             create_events_template(self, settings, new_resources)

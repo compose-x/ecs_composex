@@ -18,11 +18,14 @@
 from troposphere import Ref, Sub, If, GetAtt
 from troposphere import AWS_PARTITION, AWS_ACCOUNT_ID
 from troposphere.kms import Key, Alias
+
+from ecs_composex.resources_import import import_record_properties
 from ecs_composex.common import keyisset, LOG
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME
 from ecs_composex.common.cfn_conditions import USE_STACK_NAME_CON_T
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common.compose_resources import set_resources, XResource
+
 from ecs_composex.kms import metadata
 from ecs_composex.kms.kms_template import create_kms_template
 from ecs_composex.kms.kms_params import RES_KEY, KMS_KEY_ARN, KMS_KEY_ID
@@ -89,7 +92,7 @@ class KmsKey(XResource):
         Method to set the KMS Key
         """
         if not self.properties:
-            self.properties = {
+            props = {
                 "Description": Sub(
                     f"{self.name} created in ${{{ROOT_STACK_NAME.title}}}"
                 ),
@@ -98,11 +101,13 @@ class KmsKey(XResource):
                 "KeyUsage": "ENCRYPT_DECRYPT",
                 "PendingWindowInDays": 7,
             }
-        if not keyisset("KeyPolicy", self.properties):
-            self.properties.update({"KeyPolicy": define_default_key_policy()})
-        self.properties.update({"Metadata": metadata})
-        LOG.debug(self.properties)
-        self.cfn_resource = Key(self.logical_name, **self.properties)
+        else:
+            props = import_record_properties(self.properties, Key)
+        if not keyisset("KeyPolicy", props):
+            props.update({"KeyPolicy": define_default_key_policy()})
+        props.update({"Metadata": metadata})
+        LOG.debug(props)
+        self.cfn_resource = Key(self.logical_name, **props)
 
     def handle_key_settings(self, template):
         """

@@ -12,7 +12,7 @@ x-s3:
           IgnorePublicAcls: True
           RestrictPublicBuckets: False
       AccelerateConfiguration:
-        AccelerateStatus: Suspended
+        AccelerationStatus: Suspended
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
@@ -41,7 +41,7 @@ x-s3:
           IgnorePublicAcls: True
           RestrictPublicBuckets: False
       AccelerateConfiguration:
-        AccelerateStatus: Suspended
+        AccelerationStatus: Suspended
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:

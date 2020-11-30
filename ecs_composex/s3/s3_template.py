@@ -15,10 +15,14 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import json
+from inspect import isfunction
+from troposphere import AWSProperty
 from troposphere import Ref, Sub, s3, AWS_NO_VALUE, AWS_ACCOUNT_ID, AWS_REGION
 
 from ecs_composex.common import keyisset, keypresent, LOG
 from ecs_composex.s3 import metadata
+from ecs_composex.resources_import import import_record_properties
 
 
 def create_bucket_encryption_default(props=None):
@@ -258,22 +262,6 @@ def generate_bucket(bucket):
     )
     LOG.debug(bucket_name)
     LOG.debug(final_bucket_name)
-    props = {
-        "AccelerateConfiguration": define_accelerate_config(
-            bucket.properties, bucket.settings, bucket_name
-        ),
-        "BucketEncryption": handle_bucket_encryption(
-            bucket.properties, bucket.settings
-        ),
-        "AccessControl": define_access_control(bucket.properties),
-        "BucketName": final_bucket_name,
-        "ObjectLockEnabled": define_objects_locking(bucket.properties),
-        "PublicAccessBlockConfiguration": define_public_block_access(bucket.properties),
-        "VersioningConfiguration": define_bucket_versioning(bucket.properties),
-        "Metadata": metadata,
-        "DeletionPolicy": "Retain"
-        if not keyisset("DeletionPolicy", bucket.settings)
-        else bucket.settings["DeletionPolicy"],
-    }
+    props = import_record_properties(bucket.properties, s3.Bucket)
     bucket.cfn_resource = s3.Bucket(bucket.logical_name, **props)
     return bucket
