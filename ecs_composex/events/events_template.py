@@ -23,28 +23,8 @@ from troposphere.events import (
 from ecs_composex.common import LOG
 from ecs_composex.common import (
     keyisset,
-    no_value_if_not_set,
 )
-
-
-def update_from_parameters(rule, props):
-    """
-    Function to update the rule props if using MacroParameters
-
-    :param ecs_composex.events.events_stack.Rule rule:
-    :param dict props:
-    :return:
-    """
-
-
-def define_targets_from_properties(rule, props):
-    """
-    Function to update the rule props if using MacroParameters
-
-    :param ecs_composex.events.events_stack.Rule rule:
-    :param dict props:
-    :return:
-    """
+from ecs_composex.resources_import import import_record_properties
 
 
 def define_event_rule(stack, rule):
@@ -54,21 +34,9 @@ def define_event_rule(stack, rule):
     :param ecs_composex.events.events_stack.Rule rule:
     :param troposphere.Sub cluster_arn:
     """
-    rule_props = {
-        "Description": no_value_if_not_set(rule.properties, "Description"),
-        "EventBusName": no_value_if_not_set(rule.properties, "EventBusName"),
-        "Name": no_value_if_not_set(rule.properties, "Name"),
-        "State": no_value_if_not_set(rule.properties, "State"),
-        "EventPattern": no_value_if_not_set(rule.properties, "EventPattern"),
-        "ScheduleExpression": no_value_if_not_set(
-            rule.properties, "ScheduleExpression"
-        ),
-        "Targets": [],
-    }
-    if rule.parameters:
-        update_from_parameters(rule, rule_props)
-    if keyisset("Targets", rule.properties):
-        define_targets_from_properties(rule, rule_props)
+    rule_props = import_record_properties(rule.properties, Rule)
+    if not keyisset("Targets", rule_props):
+        rule_props["Targets"] = []
     rule.cfn_resource = Rule(rule.logical_name, **rule_props)
     stack.stack_template.add_resource(rule.cfn_resource)
 

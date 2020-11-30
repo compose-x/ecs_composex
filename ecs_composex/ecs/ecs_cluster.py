@@ -21,6 +21,7 @@ from troposphere import AWS_STACK_NAME
 from troposphere import If, Ref
 from troposphere.ecs import Cluster, CapacityProviderStrategyItem
 
+from ecs_composex.resources_import import import_record_properties
 from ecs_composex.common import LOG, keyisset
 from ecs_composex.ecs import metadata
 from ecs_composex.ecs.ecs_conditions import (
@@ -95,51 +96,23 @@ def lookup_ecs_cluster(session, cluster_lookup):
         raise
 
 
-def import_capacity_strategy(strategy_def):
-    """
-    Function to create the Capacity Provider strategies.
-
-    :param strategy_def:
-    :return:
-    """
-    strategies = []
-    if not isinstance(strategy_def, list):
-        raise ValueError("DefaultCapacityProviderStrategy must be a list")
-    for strategy in strategy_def:
-        strategies.append(CapacityProviderStrategyItem(**strategy))
-    return strategies
-
-
-def define_cluster(root_stack, cluster_def):
+def define_cluster(cluster_def):
     """
     Function to create the cluster from provided properties.
 
     :param dict cluster_def:
-    :param ecs_composex.common.stacks.ComposeXStack root_stack:
     :return: cluster
     :rtype: troposphere.ecs.Cluster
     """
-    cluster_params = {}
-    props = cluster_def["Properties"]
-    if not keyisset("CapacityProviders", props):
-        LOG.warning("No capacity providers defined. Setting it to default.")
-        cluster_params["CapacityProviders"] = DEFAULT_PROVIDERS
-    else:
-        cluster_params["CapacityProviders"] = props["CapacityProviders"]
-    if not keyisset("DefaultCapacityProviderStrategy", props):
-        LOG.warning("No Default Strategy set. Setting to default.")
-        cluster_params["DefaultCapacityProviderStrategy"] = DEFAULT_STRATEGY
-    else:
-        cluster_params["DefaultCapacityProviderStrategy"] = import_capacity_strategy(
-            props["DefaultCapacityProviderStrategy"]
-        )
-    cluster_params["Metadata"] = metadata
-    cluster_params["ClusterName"] = (
+    compose_props = cluster_def["Properties"]
+    props = import_record_properties(compose_props, Cluster)
+    props["Metadata"] = metadata
+    props["ClusterName"] = (
         Ref(AWS_STACK_NAME)
         if not keyisset("ClusterName", props)
         else props["ClusterName"]
     )
-    cluster = Cluster(CLUSTER_T, Condition=CREATE_CLUSTER_CON_T, **cluster_params)
+    cluster = Cluster(CLUSTER_T, Condition=CREATE_CLUSTER_CON_T, **props)
     return cluster
 
 
@@ -172,7 +145,7 @@ def handle_cluster_settings(root_stack, settings):
                     {CLUSTER_NAME.title: cluster_name, CREATE_CLUSTER.title: "False"}
                 )
         elif keyisset("Properties", settings.compose_content[RES_KEY]):
-            cluster = define_cluster(root_stack, settings.compose_content[RES_KEY])
+            cluster = define_cluster(settings.compose_content[RES_KEY])
             root_stack.stack_template.add_resource(cluster)
     if CLUSTER_T not in root_stack.stack_template.resources:
         root_stack.stack_template.add_resource(get_default_cluster_config())

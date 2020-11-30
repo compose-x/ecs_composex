@@ -271,6 +271,11 @@ def generate_service_template_outputs(family):
                     GetAtt(ecs_params.SG_T, "GroupId"),
                 ),
                 (ecs_params.TASK_T, ecs_params.TASK_T, Ref(family.task_definition)),
+                (
+                    vpc_params.APP_SUBNETS,
+                    vpc_params.APP_SUBNETS.title,
+                    Join(",", Ref(vpc_params.APP_SUBNETS)),
+                ),
             ],
             duplicate_attr=False,
             export=False,

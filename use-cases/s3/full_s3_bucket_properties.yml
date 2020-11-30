@@ -1,0 +1,82 @@
+﻿version: "3.8"
+
+x-s3:
+  bucket-01:
+    Properties:
+      BucketName: bucket-01
+      AccessControl: BucketOwnerFullControl
+      AccelerateConfiguration:
+        AccelerationStatus: Suspended
+      ObjectLockEnabled: True
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: True
+        BlockPublicPolicy: True
+        IgnorePublicAcls: True
+        RestrictPublicBuckets: False
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: "aws:kms"
+              KMSMasterKeyID: "aws/s3"
+      VersioningConfiguration:
+        Status: "Enabled"
+      MetricsConfigurations:
+        - Id: EntireBucket
+      LifecycleConfiguration:
+        Rules:
+          - Id: GlacierRule
+            Prefix: glacier
+            Status: Enabled
+            ExpirationInDays: '365'
+            Transitions:
+              - TransitionInDays: '1'
+                StorageClass: GLACIER
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders:
+              - '*'
+            AllowedMethods:
+              - GET
+            AllowedOrigins:
+              - '*'
+            ExposedHeaders:
+              - Date
+            Id: myCORSRuleId1
+            MaxAge: '3600'
+          - AllowedHeaders:
+              - x-amz-*
+            AllowedMethods:
+              - DELETE
+            AllowedOrigins:
+              - 'http://www.example.com'
+              - 'http://www.example.net'
+            ExposedHeaders:
+              - Connection
+              - Server
+              - Date
+            Id: myCORSRuleId2
+            MaxAge: '1800'
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: error.html
+        RoutingRules:
+          - RoutingRuleCondition:
+              HttpErrorCodeReturnedEquals: '404'
+              KeyPrefixEquals: out1/
+            RedirectRule:
+              HostName: ec2-11-22-333-44.compute-1.amazonaws.com
+              ReplaceKeyPrefixWith: report-404/
+      NotificationConfiguration:
+        TopicConfigurations:
+          - Topic: 'arn:aws:sns:us-east-1:123456789012:TestTopic'
+            Event: 's3:ReducedRedundancyLostObject'
+    MacroParameters:
+      ExpandRegionToBucket: True
+      ExpandAccountIdToBucket: True
+    Settings:
+      EnvNames:
+        - bucket01
+        - BUCKET_ABCD-01
+    Services:
+      - name: app03
+        access: RWObjects

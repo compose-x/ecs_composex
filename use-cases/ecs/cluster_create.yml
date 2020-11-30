@@ -6,7 +6,8 @@ x-cluster:
       - FARGATE
     ClusterName: ANewCluster
     ClusterSettings:
-      - ClusterSettings
+      - Name: containerInsights
+        Value: enabled
     DefaultCapacityProviderStrategy:
       - Base: 2
         Weight: 2

@@ -28,6 +28,7 @@ from troposphere.certificatemanager import (
     DomainValidationOption,
 )
 
+from ecs_composex.resources_import import import_record_properties
 from ecs_composex.common import no_value_if_not_set
 from ecs_composex.acm.acm_params import RES_KEY, MOD_KEY
 from ecs_composex.acm.acm_aws import lookup_cert_config
@@ -77,33 +78,6 @@ class Certificate(object):
 
         self.cfn_resource = None
 
-    def import_properties(self):
-        """
-        Method to define the properties from the Properties section
-        """
-        validations = []
-        if keyisset("DomainValidationOptions", self.properties):
-            validations = [
-                DomainValidationOption(
-                    DomainName=opt["DomainName"], HostedZoneId=opt["HostedZoneId"]
-                )
-                for opt in self.properties["DomainValidationOptions"]
-            ]
-        props = {
-            "DomainName": no_value_if_not_set(self.properties, "DomainName"),
-            "SubjectAlternativeNames": no_value_if_not_set(
-                self.properties, "SubjectAlternativeNames"
-            ),
-            "ValidationMethod": self.properties["ValidationMethod"],
-            "DomainValidationOptions": Ref(AWS_NO_VALUE)
-            if not validations
-            else validations,
-            "Tags": Tags(
-                Name=self.properties["DomainName"],
-            ),
-        }
-        return props
-
     def define_parameters_props(self):
         if not keyisset("DomainNames", self.parameters):
             raise KeyError(
@@ -134,8 +108,7 @@ class Certificate(object):
         Method to set the ACM Certificate definition
         """
         if self.properties:
-            props = self.import_properties()
-
+            props = import_record_properties(self.properties, AcmCert)
         elif self.parameters:
             props = self.define_parameters_props()
         else:

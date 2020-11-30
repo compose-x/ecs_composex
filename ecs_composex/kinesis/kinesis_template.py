@@ -15,20 +15,15 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from troposphere import Ref, Sub, GetAtt, Tags
-from troposphere import AWS_PARTITION, AWS_URL_SUFFIX, AWS_NO_VALUE, AWS_STACK_NAME
-
+from troposphere import Tags
 from troposphere.kinesis import Stream, StreamEncryption
 
+from ecs_composex.common import LOG
 from ecs_composex.common import (
     keyisset,
-    keypresent,
-    no_value_if_not_set,
     build_template,
-    add_parameters,
 )
-from ecs_composex.common import NONALPHANUM, LOG
-from ecs_composex.kinesis.kinesis_params import RES_KEY
+from ecs_composex.resources_import import import_record_properties
 
 
 def handle_encryption(stream):
@@ -50,19 +45,11 @@ def create_new_stream(stream):
     :param ecs_composex.common.settings.ComposeXSettings settings:
     :return:
     """
-    props = {
-        "Name": no_value_if_not_set(stream.properties, "Name"),
-        "RetentionPeriodHours": no_value_if_not_set(
-            stream.properties, "RetentionPeriodHours"
-        ),
-        "ShardCount": 1
-        if not keyisset("ShardCount", stream.properties)
-        else int(stream.properties["ShardCount"]),
-        "Tags": Tags(Name=stream.logical_name, ComposeName=stream.name),
-    }
-    if keyisset("StreamEncryption", stream.properties):
-        props["StreamEncryption"] = handle_encryption(stream)
-
+    props = import_record_properties(stream.properties, Stream)
+    if not keyisset("ShardCount", stream.properties):
+        LOG.warning("ShardCount must be set. Defaulting to 1")
+        props["ShardCount"] = 1
+    props["Tags"] = Tags(Name=stream.logical_name, ComposeName=stream.name)
     stream.cfn_resource = Stream(stream.logical_name, **props)
     stream.init_outputs()
     stream.generate_outputs()

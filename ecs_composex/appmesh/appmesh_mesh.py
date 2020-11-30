@@ -24,6 +24,7 @@ Once all services have been deployed and their VirtualNodes are setup, we deploy
 from troposphere import Ref, GetAtt, AWS_ACCOUNT_ID, AWS_STACK_NAME
 from troposphere import appmesh
 
+from ecs_composex.resources_import import import_record_properties
 from ecs_composex.common import (
     keyisset,
     add_parameters,
@@ -32,6 +33,7 @@ from ecs_composex.common import (
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.ecs import ecs_params
+
 from ecs_composex.appmesh import appmesh_params, appmesh_conditions
 from ecs_composex.appmesh import metadata
 from ecs_composex.appmesh.appmesh_aws import lookup_mesh_by_name
@@ -94,31 +96,19 @@ class Mesh(object):
                 }
             )
         else:
-            self.mesh_name = MESH_NAME.Default
-            allowed_values = ["ALLOW_ALL", "DROP_ALL"]
-            egress_type = "DROP_ALL"
-            if (
-                keyisset("EgressFilter", self.mesh_properties)
-                and self.mesh_properties["EgressFilter"] in allowed_values
-            ):
-                egress_type = self.mesh_properties["EgressFilter"]
-            elif (
-                keyisset("EgressFilter", self.mesh_properties)
-                and self.mesh_properties["EgressFilter"] not in allowed_values
-            ):
-                LOG.warning(
-                    f"Invalid EgressFilter value {self.mesh_properties['EgressFilter']}."
-                    f" Allowed values: {allowed_values} "
-                    "Setting to default: DROP_ALL"
-                )
+            if self.mesh_properties:
+                props = import_record_properties(self.mesh_properties, appmesh.Mesh)
+                props["Metadata"] = metadata
+                props["MeshName"] = appmesh_conditions.set_mesh_name()
+            else:
+                props = {
+                    "Spec": appmesh.MeshSpec(
+                        EgressFilter=appmesh.EgressFilter(Type="DENY_ALL")
+                    ),
+                    "MeshName": appmesh_conditions.set_mesh_name(),
+                }
             self.appmesh = appmesh.Mesh(
-                self.mesh_title,
-                template=services_root_stack.stack_template,
-                MeshName=appmesh_conditions.set_mesh_name(),
-                Spec=appmesh.MeshSpec(
-                    EgressFilter=appmesh.EgressFilter(Type=egress_type)
-                ),
-                Metadata=metadata,
+                self.mesh_title, template=services_root_stack.stack_template, **props
             )
             services_root_stack.Parameters.update(
                 {

@@ -24,6 +24,7 @@ from troposphere import Sub, Ref, GetAtt, Tags
 from troposphere import docdb
 from troposphere.ec2 import SecurityGroup
 
+from ecs_composex.resources_import import import_record_properties
 from ecs_composex.common import (
     keyisset,
     keypresent,
@@ -72,35 +73,20 @@ def set_db_cluster(db, secret, sgs):
     :param troposphere.secretsmanager.Secret secret:
     :param list<roposphere.ec2.SecurityGroup> sgs:
     """
-
-    props = {
-        "AvailabilityZones": Ref(AWS_NO_VALUE),
-        "DBClusterIdentifier": Ref(AWS_NO_VALUE),
-        "DBSubnetGroupName": Ref(DOCDB_SUBNET_GROUP_T),
-        "EngineVersion": no_value_if_not_set("EngineVersion", db.properties),
-        "Port": no_value_if_not_set("Port", db.properties),
-        "PreferredMaintenanceWindow": no_value_if_not_set(
-            "PreferredMaintenanceWindow", db.properties
-        ),
-        "PreferredBackupWindow": no_value_if_not_set(
-            "PreferredBackupWindow", db.properties
-        ),
-        "SnapshotIdentifier": Ref(AWS_NO_VALUE),
-        "StorageEncrypted": True
-        if not keypresent("StorageEncrypted", db.properties)
-        else db.properties["StorageEncrypted"],
-        "Tags": Tags(Name=Sub(f"docdb.{db.logical_name}")),
-        "VpcSecurityGroupIds": sgs,
-        "MasterUsername": Sub(
-            f"{{{{resolve:secretsmanager:${{{secret.title}}}:SecretString:username}}}}"
-        ),
-        "MasterUserPassword": Sub(
-            f"{{{{resolve:secretsmanager:${{{secret.title}}}:SecretString:password}}}}"
-        ),
-        "EnableCloudwatchLogsExports": no_value_if_not_set(
-            db.properties, "EnableCloudwatchLogsExports"
-        ),
-    }
+    props = import_record_properties(db.properties, docdb.DBCluster)
+    if not keypresent("StorageEncrypted", props):
+        props["StorageEncrypted"] = True
+    props.update(
+        {
+            "VpcSecurityGroupIds": sgs,
+            "MasterUsername": Sub(
+                f"{{{{resolve:secretsmanager:${{{secret.title}}}:SecretString:username}}}}"
+            ),
+            "MasterUserPassword": Sub(
+                f"{{{{resolve:secretsmanager:${{{secret.title}}}:SecretString:password}}}}"
+            ),
+        }
+    )
     db.cfn_resource = docdb.DBCluster(db.logical_name, **props)
 
 
@@ -131,20 +117,17 @@ def add_db_instances(template, db):
                 raise KeyError(
                     "You must specify at least the DBInstanceClass", instance.keys()
                 )
+            instance.update(
+                {
+                    "DBClusterIdentifier": Ref(db.cfn_resource),
+                    "Tags": Tags(DocDbCluster=Ref(db.cfn_resource)),
+                }
+            )
+            instance_props = import_record_properties(
+                instance, docdb.DBInstance, ignore_missing_required=True
+            )
             template.add_resource(
-                docdb.DBInstance(
-                    f"{db.logical_name}Instance{count}",
-                    DBClusterIdentifier=Ref(db.cfn_resource),
-                    DBInstanceClass=instance["DBInstanceClass"],
-                    DBInstanceIdentifier=Ref(AWS_NO_VALUE),
-                    PreferredMaintenanceWindow=no_value_if_not_set(
-                        instance, "PreferredMaintenanceWindow"
-                    ),
-                    AutoMinorVersionUpgrade=no_value_if_not_set(
-                        instance, "AutoMinorVersionUpgrade", True
-                    ),
-                    Tags=Tags(DocDbCluster=Ref(db.cfn_resource)),
-                )
+                docdb.DBInstance(f"{db.logical_name}Instance{count}", **instance_props)
             )
 
 
