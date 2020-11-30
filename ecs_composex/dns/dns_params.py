@@ -19,7 +19,12 @@
 Module for DNS parameters
 """
 
+from os import path
 from troposphere import Parameter, Sub
+
+MOD_KEY = path.basename(path.dirname(path.abspath(__file__)))
+RES_KEY = f"x-{path.basename(path.dirname(path.abspath(__file__)))}"
+
 
 ZONES_PATTERN = r"^none$|^ns-[a-z0-9]{6,24}$|^Z[0-9A-Z]+$"
 

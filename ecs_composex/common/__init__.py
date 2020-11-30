@@ -29,7 +29,6 @@ from datetime import datetime as dt
 from os import environ
 
 import yaml
-from troposphere import Template, Parameter
 
 try:
     from yaml import CLoader as Loader
@@ -37,6 +36,8 @@ except ImportError:
     from yaml import Loader
 
 from troposphere import Ref, AWS_NO_VALUE
+from troposphere import Template, Parameter, Output
+
 from ecs_composex.common import cfn_params
 from ecs_composex.common import cfn_conditions
 
@@ -131,6 +132,21 @@ def add_parameters(template, parameters):
             raise TypeError("Parameter must be of type", Parameter)
         if template and param.title not in template.parameters:
             template.add_parameter(param)
+
+
+def add_outputs(template, outputs):
+    """Function to add parameters to the template
+
+    :param template: the template to add the parameters to
+    :type template: troposphere.Template
+    :param outputs: list of parameters to add to the template
+    :type outputs: list<troposphere.Output>
+    """
+    for output in outputs:
+        if not isinstance(output, Output):
+            raise TypeError("Parameter must be of type", Output)
+        if template and output.title not in template.outputs:
+            template.add_output(output)
 
 
 def add_defaults(template):
