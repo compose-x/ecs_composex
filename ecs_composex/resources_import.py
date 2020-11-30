@@ -43,6 +43,33 @@ def handle_list(properties, property_class):
     return rendered_properties
 
 
+def import_non_functions(props, prop_name, top_class, properties, set_to_novalue):
+    """
+    Function to set property for flat object or recursive to sub properties
+
+    :param dict props:
+    :param str prop_name:
+    :param top_class:
+    :param dict properties:
+    :param bool set_to_novalue:
+    """
+    if isinstance(top_class.props[prop_name][0], (str, int, float, tuple, dict)):
+        if isinstance(top_class.props[prop_name][0], (str, int, float)):
+            props[prop_name] = top_class.props[prop_name][0](properties[prop_name])
+        else:
+            props[prop_name] = properties[prop_name]
+    elif not issubclass(top_class.props[prop_name][0], AWSProperty):
+        props[prop_name] = properties[prop_name]
+    elif issubclass(top_class.props[prop_name][0], AWSProperty):
+        sub_props = import_record_properties(
+            properties[prop_name],
+            top_class.props[prop_name][0],
+            set_to_novalue,
+            ignore_missing_required=False,
+        )
+        props[prop_name] = top_class.props[prop_name][0](**sub_props)
+
+
 def import_record_properties(
     properties, top_class, set_to_novalue=False, ignore_missing_required=True
 ):
@@ -83,25 +110,9 @@ def import_record_properties(
         elif keypresent(prop_name, properties) and not isfunction(
             properties[prop_name]
         ):
-            if isinstance(
-                top_class.props[prop_name][0], (str, int, float, tuple, dict)
-            ):
-                if isinstance(top_class.props[prop_name][0], (str, int, float)):
-                    props[prop_name] = top_class.props[prop_name][0](
-                        properties[prop_name]
-                    )
-                else:
-                    props[prop_name] = properties[prop_name]
-            elif not issubclass(top_class.props[prop_name][0], AWSProperty):
-                props[prop_name] = properties[prop_name]
-            elif issubclass(top_class.props[prop_name][0], AWSProperty):
-                sub_props = import_record_properties(
-                    properties[prop_name],
-                    top_class.props[prop_name][0],
-                    set_to_novalue,
-                    ignore_missing_required=False,
-                )
-                props[prop_name] = top_class.props[prop_name][0](**sub_props)
+            import_non_functions(
+                props, prop_name, top_class, properties, set_to_novalue
+            )
         elif keypresent(prop_name, properties):
             props[prop_name] = properties[prop_name]
     return props
