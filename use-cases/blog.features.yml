@@ -64,6 +64,8 @@ services:
                   - '*'
                 Sid: AllowPublishMetricsToCw
     x-xray: false
+    x-scaling:
+      range: "1-4"
   app02:
     deploy:
       labels:
@@ -138,8 +140,6 @@ services:
         RetentionInDays: 42
     x-scaling:
       range: 1-10
-      target_scaling:
-        cpu_target: 50
   rproxy:
     depends_on:
       - app01

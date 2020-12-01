@@ -28,7 +28,7 @@ from ecs_composex.common.aws import (
     find_aws_resource_arn_from_tags_api,
     define_lookup_role_from_info,
 )
-from ecs_composex.sqs.sqs_params import SQS_ARN, SQS_KMS_KEY_T
+from ecs_composex.sqs.sqs_params import SQS_ARN, SQS_KMS_KEY_T, SQS_NAME
 
 
 def get_queue_config(logical_name, queue_arn, session):
@@ -41,13 +41,15 @@ def get_queue_config(logical_name, queue_arn, session):
     queue_parts = re.compile(r"(?:^arn:aws(?:-[a-z]+)?:sqs:)([\S]+):([0-9]+):([\S]+)$")
     queue_name = queue_parts.match(queue_arn).groups()[2]
     queue_owner = queue_parts.match(queue_arn).groups()[1]
-    queue_config = {logical_name: queue_name, SQS_ARN.title: queue_arn}
+    queue_config = {SQS_ARN.title: queue_arn}
     client = session.client("sqs")
     try:
         url_r = client.get_queue_url(
             QueueName=queue_name, QueueOwnerAWSAccountId=queue_owner
         )
-        queue_config.update({logical_name: url_r["QueueUrl"]})
+        queue_config.update(
+            {logical_name: url_r["QueueUrl"], SQS_NAME.title: queue_name}
+        )
         try:
             encryption_config_r = client.get_queue_attributes(
                 QueueUrl=url_r["QueueUrl"], AttributeNames=["KmsMasterKeyId"]
