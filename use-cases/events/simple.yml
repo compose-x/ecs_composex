@@ -10,4 +10,4 @@ x-events:
     Services:
       - name: app03
         TaskCount: 1
-        DeleteDefaultService: True
+        DeleteDefaultService: False
