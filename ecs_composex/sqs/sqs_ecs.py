@@ -20,7 +20,7 @@ Module to apply SQS settings onto ECS Services
 """
 
 from troposphere import Parameter
-from troposphere import Ref, GetAtt
+from troposphere import Ref, GetAtt, FindInMap
 from troposphere.cloudwatch import Alarm, MetricDimension
 
 from ecs_composex.common import LOG, keyisset, add_parameters
@@ -34,26 +34,25 @@ from ecs_composex.resource_settings import (
     handle_lookup_resource,
 )
 from ecs_composex.sqs.sqs_aws import lookup_queue_config
-from ecs_composex.sqs.sqs_params import SQS_NAME, SQS_KMS_KEY_T
+from ecs_composex.sqs.sqs_params import SQS_NAME, SQS_KMS_KEY_T, MOD_KEY
 
 
 def handle_service_scaling(resource, res_root_stack):
     """
-    Function to assign resource to services stack
+    Function to define and prepare settings for scaling rules based for SQS Queues discovered through lookup
 
-    :param resource:
-    :type resource: ecs_composex.common.compose_resources.XResource
-    :param res_root_stack:
-    :type res_root_stack: ecs_composex.common.stacks.ComposeXStack
+    :param ecs_composex.common.compose_resources.XResource resource:
+    :param ecs_composex.common.stacks.ComposeXStack res_root_stack:
     :raises KeyError: if the service name is not a listed service in docker-compose.
+    :return:
     """
     resource_attribute = SQS_NAME.title
-    resource_parameter = Parameter(
-        f"{resource.logical_name}{resource_attribute}", Type="String"
-    )
-    resource_value = GetAtt(
-        res_root_stack.title, f"Outputs.{resource.logical_name}{SQS_NAME.title}"
-    )
+    if not resource.lookup:
+        resource_value = GetAtt(
+            res_root_stack.title, f"Outputs.{resource.logical_name}{SQS_NAME.title}"
+        )
+    else:
+        resource_value = FindInMap(MOD_KEY, resource.logical_name, resource_attribute)
     for target in resource.families_scaling:
         if SERVICE_SCALING_TARGET not in target[0].template.resources:
             LOG.warning(
@@ -61,8 +60,6 @@ def handle_service_scaling(resource, res_root_stack):
                 " You need to define `scaling.range` in x-configs first. No scaling applied"
             )
             return
-        add_parameters(target[0].template, [resource_parameter])
-        target[0].stack.Parameters.update({resource_parameter.title: resource_value})
         scaling_out_policy = generate_alarm_scaling_out_policy(
             target[0].logical_name,
             target[0].template,
@@ -75,31 +72,69 @@ def handle_service_scaling(resource, res_root_stack):
             target[1],
             scaling_source=resource.logical_name,
         )
-        Alarm(
-            f"SqsScalingAlarm{resource.logical_name}To{target[0].logical_name}",
-            template=target[0].template,
-            ActionsEnabled=True,
-            AlarmActions=[Ref(scaling_out_policy)],
-            AlarmDescription=f"MessagesProcessingWatchFor{resource.logical_name}To{target[0].logical_name}",
-            ComparisonOperator="GreaterThanOrEqualToThreshold",
-            DatapointsToAlarm=1,
-            Dimensions=[
-                MetricDimension(Name="QueueName", Value=Ref(resource_parameter)),
-            ],
-            EvaluationPeriods=1,
-            InsufficientDataActions=[Ref(scaling_in_policy)],
-            MetricName="ApproximateNumberOfMessagesVisible",
-            Namespace="AWS/SQS",
-            OKActions=[Ref(scaling_in_policy)],
-            Period="60",
-            Statistic="Sum",
-            TreatMissingData="notBreaching",
-            Threshold=float(
-                scaling_out_policy.StepScalingPolicyConfiguration.StepAdjustments[
-                    0
-                ].MetricIntervalLowerBound
-            ),
-        )
+        if not resource.lookup:
+            resource_parameter = Parameter(
+                f"{resource.logical_name}{resource_attribute}", Type="String"
+            )
+            add_parameters(target[0].template, [resource_parameter])
+            target[0].stack.Parameters.update(
+                {resource_parameter.title: resource_value}
+            )
+            add_alarm_for_resource(
+                resource,
+                target,
+                scaling_out_policy,
+                scaling_in_policy,
+                Ref(resource_parameter),
+            )
+        else:
+            add_alarm_for_resource(
+                resource,
+                target,
+                scaling_out_policy,
+                scaling_in_policy,
+                resource_value,
+            )
+
+
+def add_alarm_for_resource(
+    resource, target, scaling_out_policy, scaling_in_policy, resource_parameter
+):
+    """
+    Function to add the Alarm for SQS resource to the service template
+
+    :param ecs_composex.common.compose_resources.XResource resource:
+    :param tuple target:
+    :param scaling_out_policy:
+    :param scaling_in_policy:
+    :param resource_parameter:
+    :return:
+    """
+    Alarm(
+        f"SqsScalingAlarm{resource.logical_name}To{target[0].logical_name}",
+        template=target[0].template,
+        ActionsEnabled=True,
+        AlarmActions=[Ref(scaling_out_policy)],
+        AlarmDescription=f"MessagesProcessingWatchFor{resource.logical_name}To{target[0].logical_name}",
+        ComparisonOperator="GreaterThanOrEqualToThreshold",
+        DatapointsToAlarm=1,
+        Dimensions=[
+            MetricDimension(Name="QueueName", Value=resource_parameter),
+        ],
+        EvaluationPeriods=1,
+        InsufficientDataActions=[Ref(scaling_in_policy)],
+        MetricName="ApproximateNumberOfMessagesVisible",
+        Namespace="AWS/SQS",
+        OKActions=[Ref(scaling_in_policy)],
+        Period="60",
+        Statistic="Sum",
+        TreatMissingData="notBreaching",
+        Threshold=float(
+            scaling_out_policy.StepScalingPolicyConfiguration.StepAdjustments[
+                0
+            ].MetricIntervalLowerBound
+        ),
+    )
 
 
 def create_sqs_mappings(mapping, resources, settings):
@@ -140,4 +175,5 @@ def sqs_to_ecs(resources, services_stack, res_root_stack, settings):
         handle_service_scaling(new_res, res_root_stack)
     create_sqs_mappings(resource_mappings, lookup_resources, settings)
     for lookup_res in lookup_resources:
-        handle_lookup_resource(resource_mappings, "sqs", lookup_res)
+        handle_lookup_resource(resource_mappings, MOD_KEY, lookup_res)
+        handle_service_scaling(lookup_res, None)

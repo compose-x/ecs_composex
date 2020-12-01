@@ -21,4 +21,5 @@ Feature: ecs_composex.sqs
 
     Examples:
       | file_path                   | override_file                       |
+      | use-cases/blog.features.yml | use-cases/sqs/simple_queue.yml      |
       | use-cases/blog.features.yml | use-cases/sqs/create_and_lookup.yml |

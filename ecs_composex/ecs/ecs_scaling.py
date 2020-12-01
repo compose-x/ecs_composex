@@ -266,7 +266,7 @@ def handle_defined_x_aws_autoscaling(configs, service):
                 f"Detected both x-aws-autoscaling and x-scaling for {service.name}. Priority goes to x-scaling"
             )
         configs.append(service.x_scaling)
-    elif not keyisset("deploy", service.definition) and service.x_scaling:
+    elif service.x_scaling:
         LOG.debug("No x-aws-autoscaling detected, proceeding as usual")
         configs.append(service.x_scaling)
 

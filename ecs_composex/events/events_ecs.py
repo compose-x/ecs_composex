@@ -43,6 +43,7 @@ from ecs_composex.ecs.ecs_params import (
     SERVICE_T,
     TASK_ROLE_T,
     EXEC_ROLE_T,
+    SERVICE_SCALING_TARGET,
 )
 from ecs_composex.vpc.vpc_params import APP_SUBNETS, SG_ID_TYPE, SUBNETS_TYPE
 
@@ -191,11 +192,16 @@ def define_service_targets(stack, rule, cluster_arn):
         if (
             keyisset("DeleteDefaultService", service[4])
             and SERVICE_T in service[0].template.resources
+            and SERVICE_SCALING_TARGET not in service[0].template.resources
         ):
             LOG.info(
                 f"Deleting ECS Service definition from stack for {service[0].name}"
             )
             del service[0].template.resources[SERVICE_T]
+        elif SERVICE_SCALING_TARGET in service[0].template.resources:
+            LOG.warning(
+                f"Target for event {rule.logical_name} has others dependencies. Not altering"
+            )
 
 
 def events_to_ecs(resources, services_stack, res_root_stack, settings):

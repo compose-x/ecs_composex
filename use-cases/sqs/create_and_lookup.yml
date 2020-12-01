@@ -42,8 +42,21 @@ x-sqs:
   queueE:
     Properties: {}
     Services:
-      - name: app03
+      - name: bignicefamily
         access: RWMessages
+        scaling:
+          scale_in_cooldown: 120
+          scale_out_cooldown: 60
+          steps:
+            - lower_bound: 0
+              upper_bound: 10
+              count: 1
+            - lower_bound: 10
+              upper_bound: 20
+              count: 2
+            - lower_bound: 20
+              count: 5
+
 
 
   queueF:

@@ -64,6 +64,8 @@ services:
                   - '*'
                 Sid: AllowPublishMetricsToCw
     x-xray: false
+    x-scaling:
+      range: "1-4"
   app02:
     deploy:
       labels:
@@ -99,11 +101,10 @@ services:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AdministratorAccess
     x-scaling:
-      range: 1-5
+      range: "1-5"
       target_scaling:
         cpu_target: 88
         disable_scale_in: true
-        memory_target: 30
     x-xray: false
   app03:
     deploy:
@@ -138,8 +139,6 @@ services:
         RetentionInDays: 42
     x-scaling:
       range: 1-10
-      target_scaling:
-        cpu_target: 50
   rproxy:
     depends_on:
       - app01
