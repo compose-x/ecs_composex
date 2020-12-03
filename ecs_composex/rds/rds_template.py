@@ -22,7 +22,7 @@ Main module template to generate the RDS Root template and all stacks according 
 from troposphere import Output
 from troposphere import Ref, Join, GetAtt
 
-from ecs_composex.common import build_template, validate_kwargs
+from ecs_composex.common import build_template, validate_kwargs, keyisset
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T, ROOT_STACK_NAME
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.rds.rds_db_template import (
@@ -34,6 +34,7 @@ from ecs_composex.rds.rds_params import (
     DB_NAME_T,
     DB_ENGINE_VERSION_T,
     DB_ENGINE_NAME_T,
+    DB_SNAPSHOT_ID,
 )
 from ecs_composex.vpc.vpc_params import (
     VPC_ID,
@@ -54,12 +55,15 @@ def add_db_stack(root_template, dbs_subnet_group, db):
     :param db: the database definition from the compose file
     :type db: ecs_composex.common.compose_resources.Rds
     """
-    props = db.properties
+    if not db.properties and not db.parameters:
+        raise RuntimeError(
+            f"No Properties nor MacroParameters defined for {db.logical_name}"
+        )
     required_props = [DB_ENGINE_NAME_T, DB_ENGINE_VERSION_T]
-    validate_kwargs(required_props, props)
+    validate_kwargs(required_props, db.properties)
     non_stack_params = {
-        DB_ENGINE_NAME_T: props[DB_ENGINE_NAME_T],
-        DB_ENGINE_VERSION_T: props[DB_ENGINE_VERSION_T],
+        DB_ENGINE_NAME_T: db.properties[DB_ENGINE_NAME_T],
+        DB_ENGINE_VERSION_T: db.properties[DB_ENGINE_VERSION_T],
     }
     parameters = {
         VPC_ID_T: Ref(VPC_ID),
@@ -68,6 +72,10 @@ def add_db_stack(root_template, dbs_subnet_group, db):
         STORAGE_SUBNETS_T: Join(",", Ref(STORAGE_SUBNETS)),
         ROOT_STACK_NAME_T: Ref(ROOT_STACK_NAME),
     }
+    if keyisset("SnapshotIdentifier", db.properties):
+        parameters.update({DB_SNAPSHOT_ID.title: db.properties["SnapshotIdentifier"]})
+    elif keyisset("DBSnapshotIdentifier", db.properties):
+        parameters.update({DB_SNAPSHOT_ID.title: db.properties["DBSnapshotIdentifier"]})
     parameters.update(non_stack_params)
     db_template = generate_database_template(db)
     if db_template is None:
