@@ -20,24 +20,18 @@ Module for VpcStack
 """
 
 import re
-from troposphere import Ref, If
-from troposphere import Parameter
 
-from ecs_composex.common.ecs_composex import X_KEY
+from troposphere import Parameter
+from troposphere import Ref, If
+
 from ecs_composex.common import add_parameters, LOG, build_template
 from ecs_composex.common import keyisset
+from ecs_composex.common.ecs_composex import X_KEY
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.vpc.vpc_template import (
-    get_subnet_layers,
-    aws_mappings,
-    add_vpc_core,
-    add_apps_subnets,
-    add_public_subnets,
-    add_storage_subnets,
-    add_vpc_flow,
-    add_template_outputs,
-    add_vpc_cidrs_outputs,
-)
+from ecs_composex.dns import dns_params, dns_conditions
+from ecs_composex.vpc import aws_mappings
+from ecs_composex.vpc.vpc_aws import lookup_x_vpc_settings
+from ecs_composex.vpc.vpc_maths import get_subnet_layers
 from ecs_composex.vpc.vpc_params import (
     RES_KEY,
     VPC_ID,
@@ -49,8 +43,17 @@ from ecs_composex.vpc.vpc_params import (
     VPC_SINGLE_NAT,
     SUBNETS_TYPE,
 )
-from ecs_composex.dns import dns_params, dns_conditions
-from ecs_composex.vpc.vpc_aws import lookup_x_vpc_settings
+from ecs_composex.vpc.vpc_subnets import (
+    add_apps_subnets,
+    add_public_subnets,
+    add_storage_subnets,
+)
+from ecs_composex.vpc.vpc_template import (
+    add_vpc_core,
+    add_vpc_flow,
+    add_template_outputs,
+    add_vpc_cidrs_outputs,
+)
 
 AZ_INDEX_PATTERN = r"(([a-z0-9-]+)([a-z]{1}$))"
 AZ_INDEX_RE = re.compile(AZ_INDEX_PATTERN)
