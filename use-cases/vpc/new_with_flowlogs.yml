@@ -1,0 +1,19 @@
+---
+# Blog applications
+
+version: '3.8'
+
+x-vpc:
+  Create:
+    VpcCidr: 172.23.0.0/24
+    EnableFlowLogs: True
+    FlowLogsRoleBoundary: arn:aws:iam::aws:policy/AmazonVPCReadOnlyAccess
+
+services:
+  app03:
+    networks:
+      - custom01
+
+networks:
+  custom01:
+    x-vpc: Custom01
