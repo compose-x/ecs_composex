@@ -137,6 +137,7 @@ def create_log_group(service_tpl, family):
             LogGroupName=If(
                 ecs_conditions.GENERATED_LOG_GROUP_NAME_CON_T,
                 Sub(
+                    f"${{{ROOT_STACK_NAME.title}}}/"
                     f"svc/ecs/${{{ecs_params.CLUSTER_NAME_T}}}/${{{ecs_params.SERVICE_NAME_T}}}",
                 ),
                 Ref(ecs_params.LOG_GROUP_NAME),
@@ -171,12 +172,12 @@ def create_log_group(service_tpl, family):
                                 [
                                     Sub(
                                         f"arn:${{{AWS_PARTITION}}}:logs:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:"
-                                        "log-group:svc/ecs/"
+                                        f"log-group:{{{ROOT_STACK_NAME.title}}}/svc/ecs/"
                                         f"${{{ecs_params.CLUSTER_NAME_T}}}/${{{ecs_params.SERVICE_NAME_T}}}:*"
                                     ),
                                     Sub(
                                         f"arn:${{{AWS_PARTITION}}}:logs:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:"
-                                        "log-group:svc/ecs/"
+                                        f"{{{ROOT_STACK_NAME.title}}}log-group:svc/ecs/"
                                         f"${{{ecs_params.CLUSTER_NAME_T}}}/${{{ecs_params.SERVICE_NAME_T}}}"
                                     ),
                                 ],
