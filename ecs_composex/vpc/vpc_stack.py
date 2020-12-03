@@ -19,14 +19,25 @@
 Module for VpcStack
 """
 
+import re
 from troposphere import Ref, If
 from troposphere import Parameter
 
 from ecs_composex.common.ecs_composex import X_KEY
-from ecs_composex.common import add_parameters, LOG
+from ecs_composex.common import add_parameters, LOG, build_template
 from ecs_composex.common import keyisset
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.vpc.vpc_template import generate_vpc_template
+from ecs_composex.vpc.vpc_template import (
+    get_subnet_layers,
+    aws_mappings,
+    add_vpc_core,
+    add_apps_subnets,
+    add_public_subnets,
+    add_storage_subnets,
+    add_vpc_flow,
+    add_template_outputs,
+    add_vpc_cidrs_outputs,
+)
 from ecs_composex.vpc.vpc_params import (
     RES_KEY,
     VPC_ID,
@@ -41,6 +52,9 @@ from ecs_composex.vpc.vpc_params import (
 from ecs_composex.dns import dns_params, dns_conditions
 from ecs_composex.vpc.vpc_aws import lookup_x_vpc_settings
 
+AZ_INDEX_PATTERN = r"(([a-z0-9-]+)([a-z]{1}$))"
+AZ_INDEX_RE = re.compile(AZ_INDEX_PATTERN)
+
 
 class VpcStack(ComposeXStack):
     """
@@ -48,14 +62,59 @@ class VpcStack(ComposeXStack):
     """
 
     def __init__(self, title, settings, vpc_settings, **kwargs):
-        template = generate_vpc_template(
-            cidr_block=vpc_settings[VPC_CIDR.title],
-            azs=settings.aws_azs,
-            single_nat=vpc_settings[VPC_SINGLE_NAT.title],
-            endpoints=vpc_settings["Endpoints"]
-            if keyisset("Endpoints", vpc_settings)
-            else None,
+
+        if not keyisset("Endpoints", vpc_settings):
+            endpoints = []
+        else:
+            endpoints = vpc_settings["Endpoints"]
+
+        if endpoints is None:
+            endpoints = []
+        curated_azs = []
+        for az in settings.aws_azs:
+            if isinstance(az, dict):
+                curated_azs.append(az["ZoneName"])
+            elif isinstance(az, str):
+                curated_azs.append(az)
+        azs_index = [AZ_INDEX_RE.match(az).groups()[-1] for az in curated_azs]
+        layers = get_subnet_layers(vpc_settings[VPC_CIDR.title], len(curated_azs))
+        template = build_template(
+            "VpcTemplate generated via ECS ComposeX",
+            [dns_params.PRIVATE_DNS_ZONE_NAME],
         )
+        LOG.debug(azs_index)
+        template.add_mapping("AwsLbAccounts", aws_mappings.AWS_LB_ACCOUNTS)
+        vpc_core = add_vpc_core(template, vpc_settings[VPC_CIDR.title])
+        self.vpc = vpc_core[0]
+        storage_subnets = add_storage_subnets(template, self.vpc, azs_index, layers)
+        public_subnets = add_public_subnets(
+            template,
+            self.vpc,
+            azs_index,
+            layers,
+            vpc_core[-1],
+            vpc_settings[VPC_SINGLE_NAT.title],
+        )
+        app_subnets = add_apps_subnets(
+            template, self.vpc, azs_index, layers, public_subnets[-1], endpoints
+        )
+        add_template_outputs(
+            template,
+            self.vpc,
+            storage_subnets[1],
+            public_subnets[1],
+            app_subnets[1],
+        )
+        if keyisset("EnableFlowLogs", vpc_settings):
+            print("ADDING FLOW LOGS")
+            add_vpc_flow(
+                template,
+                self.vpc,
+                boundary=vpc_settings["FlowLogsRoleBoundary"]
+                if keyisset("FlowLogsRoleBoundary", vpc_settings)
+                else None,
+            )
+        add_vpc_cidrs_outputs(template, self.vpc, layers)
         super().__init__(title, stack_template=template, **kwargs)
 
 
@@ -77,7 +136,8 @@ def define_create_settings(create_def):
         if keyisset("Endpoints", create_def)
         else [],
     }
-    return create_settings
+    create_def.update(create_settings)
+    return create_def
 
 
 def create_new_vpc(vpc_xkey, settings, default=False):

@@ -32,6 +32,37 @@ Create
             - service: ecr.api
             - service: ecr.dkr
 
+SingleNat
+---------
+
+Whether you want to have 1 NAT per AZ for your application subnets.
+Reduces the costs for dev environments!
+
+
+VpcCidr
+--------
+
+The CIDR you want to use. Default is **100.127.254.0/24**.
+
+Endpoints
+----------
+
+List of VPC Endpoints from AWS Services you want to create.
+Default will create Endpoints for ECR (DKR and API).
+
+EnableFlowLogs
+--------------
+
+Whether you want to have a VPC Flow Log created for the VPC.
+It will create a new LogGroup and IAM Role to allow logging to CloudWatch.
+
+FlowLogsRoleBoundary
+--------------------
+
+For those of you who require IAM PermissionsBoundary for your IAM Roles, this allows to set the boundary.
+If it starts with **arn:aws** it will assume this is a valid ARN, otherwise, it will use the value as
+policy name.
+
 
 Use
 ===

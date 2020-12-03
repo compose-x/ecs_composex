@@ -17,34 +17,31 @@
 
 """
 Create the VPC template and its associated resources
-TODO : Implement VPC Endpoints, NetworkACLs, VPC Flow logging to S3.
 """
 
 import re
 
-from troposphere import Tags, Join, Ref, Sub, If
+from troposphere import AWS_ACCOUNT_ID, AWS_PARTITION, AWS_REGION, AWS_NO_VALUE
+from troposphere import Tags, Join, Ref, Sub, If, GetAtt
 from troposphere.ec2 import (
     VPC as VPCType,
     VPCGatewayAttachment,
     InternetGateway,
     DHCPOptions,
     VPCDHCPOptionsAssociation,
+    FlowLog,
 )
+from troposphere.iam import Role, Policy
+from troposphere.logs import LogGroup
 
-from ecs_composex.common import build_template, LOG
 from ecs_composex.common.cfn_conditions import USE_STACK_NAME_CON_T
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME, ROOT_STACK_NAME_T
 from ecs_composex.common.outputs import ComposeXOutput
 from ecs_composex.dns.dns_params import PRIVATE_DNS_ZONE_NAME
-from ecs_composex.vpc import vpc_params, aws_mappings
-from ecs_composex.vpc.vpc_params import VPC_T, IGW_T
-from ecs_composex.vpc.vpc_maths import get_subnet_layers
-from ecs_composex.vpc.vpc_subnets import (
-    add_public_subnets,
-    add_storage_subnets,
-    add_apps_subnets,
-)
+from ecs_composex.iam import service_role_trust_policy
 from ecs_composex.vpc import metadata
+from ecs_composex.vpc import vpc_params
+from ecs_composex.vpc.vpc_params import VPC_T, IGW_T
 
 AZ_INDEX_PATTERN = r"(([a-z0-9-]+)([a-z]{1}$))"
 AZ_INDEX_RE = re.compile(AZ_INDEX_PATTERN)
@@ -177,50 +174,67 @@ def add_vpc_core(template, vpc_cidr):
         VpcId=Ref(vpc),
         Metadata=metadata,
     )
-    return (vpc, igw)
+    return vpc, igw
 
 
-def generate_vpc_template(cidr_block, azs, endpoints=None, single_nat=False):
+def add_vpc_flow(template, vpc, boundary=None):
     """
-    Function to generate a new VPC template for CFN
+    Function to add VPC Flow Log to log VPC
 
-    :param cidr_block: str of the CIDR used for this VPC
-    :param azs: list of AWS Azs i.e. ['eu-west-1a', 'eu-west-1b']
-    :param single_nat: True/False if you want a single NAT for the Application Subnets
-    :type single_nat: bool
-
-    :return: Template() representing the VPC and associated resources
+    :param troposphere.Template template:
+    :param vpc: The VPC Object
+    :param str boundary:
     """
-    if endpoints is None:
-        endpoints = []
-    curated_azs = []
-    for az in azs:
-        if isinstance(az, dict):
-            curated_azs.append(az["ZoneName"])
-        elif isinstance(az, str):
-            curated_azs.append(az)
-    azs_index = [AZ_INDEX_RE.match(az).groups()[-1] for az in curated_azs]
-    layers = get_subnet_layers(cidr_block, len(curated_azs))
-    template = build_template(
-        "VpcTemplate generated via ECS Compose X",
-        [PRIVATE_DNS_ZONE_NAME],
+    if boundary and boundary.startswith("arn:aws"):
+        perm_boundary = boundary
+    elif boundary and not boundary.startswith("arn:aws"):
+        perm_boundary = Sub(
+            f"arn:${{{AWS_PARTITION}}}:iam:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:policy/{boundary}"
+        )
+    else:
+        perm_boundary = Ref(AWS_NO_VALUE)
+    log_group = template.add_resource(
+        LogGroup(
+            "FlowLogsGroup",
+            RetentionInDays=14,
+            LogGroupName=Sub(f"flowlogs/vpc/${{{vpc.title}}}"),
+        )
     )
-    LOG.debug(azs_index)
-    template.add_mapping("AwsLbAccounts", aws_mappings.AWS_LB_ACCOUNTS)
-    vpc = add_vpc_core(template, cidr_block)
-    storage_subnets = add_storage_subnets(template, vpc[0], azs_index, layers)
-    public_subnets = add_public_subnets(
-        template, vpc[0], azs_index, layers, vpc[-1], single_nat
+    role = template.add_resource(
+        Role(
+            "FlowLogsRole",
+            AssumeRolePolicyDocument=service_role_trust_policy("ec2"),
+            PermissionsBoundary=perm_boundary,
+            Policies=[
+                Policy(
+                    PolicyName="CloudWatchAccess",
+                    PolicyDocument={
+                        "Version": "2012-10-17",
+                        "Statement": [
+                            {
+                                "Sid": "AllowCloudWatchLoggingToSpecificLogGroup",
+                                "Effect": "Allow",
+                                "Action": [
+                                    "logs:CreateLogStream",
+                                    "logs:PutLogEvents",
+                                ],
+                                "Resource": GetAtt(log_group, "Arn"),
+                            }
+                        ],
+                    },
+                )
+            ],
+        )
     )
-    app_subnets = add_apps_subnets(
-        template, vpc[0], azs_index, layers, public_subnets[-1], endpoints
+    template.add_resource(
+        FlowLog(
+            "VpcFlowLogs",
+            DeliverLogsPermissionArn=GetAtt(role, "Arn"),
+            LogGroupName=Ref(log_group),
+            LogDestinationType="cloud-watch-logs",
+            MaxAggregationInterval=600,
+            ResourceId=Ref(vpc),
+            ResourceType="VPC",
+            TrafficType="ALL",
+        )
     )
-    add_template_outputs(
-        template,
-        vpc[0],
-        storage_subnets[1],
-        public_subnets[1],
-        app_subnets[1],
-    )
-    add_vpc_cidrs_outputs(template, vpc[0], layers)
-    return template
