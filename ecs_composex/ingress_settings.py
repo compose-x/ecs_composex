@@ -159,11 +159,17 @@ class Ingress(object):
             if keyisset(self.ext_sources_key, self.definition)
             else []
         )
+        self.ext_sources = [
+            dict(y) for y in set(tuple(x.items()) for x in self.ext_sources)
+        ]
         self.services = (
             self.definition[self.services_key]
             if keyisset(self.services_key, self.definition)
             else []
         )
+        self.aws_sources = [
+            dict(y) for y in set(tuple(x.items()) for x in self.aws_sources)
+        ]
         self.ports = ports
         self.aws_ingress_rules = []
         self.ext_ingress_rules = []
