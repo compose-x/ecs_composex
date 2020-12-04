@@ -337,8 +337,12 @@ def generate_database_template(db):
     add_parameter_group(db_template, db)
     if db.properties[DB_ENGINE_NAME.title].startswith("aurora"):
         db.cfn_resource = cluster
+        if hasattr(instance, "DeletionPolicy"):
+            delattr(instance, "DeletionPolicy")
     else:
         db.cfn_resource = instance
+        if hasattr(cluster, "DeletionPolicy"):
+            delattr(cluster, "DeletionPolicy")
     add_db_dependency(db.cfn_resource, db.db_secret)
     db.init_outputs()
     add_db_outputs(db_template, db)
