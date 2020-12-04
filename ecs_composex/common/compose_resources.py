@@ -325,7 +325,7 @@ class XResource(object):
         """
         self.ref_value = GetAtt(root_stack_name, f"Outputs.{self.logical_name}")
 
-    def get_resource_attribute_parameter(self, parameter):
+    def get_resource_attribute_parameter(self, parameter, is_nested=False):
         title = parameter.title if isinstance(parameter, Parameter) else parameter
         if not isinstance(parameter, (str, Parameter)) or not keyisset(
             title, self.output_properties
@@ -336,11 +336,13 @@ class XResource(object):
                 "with parameter named",
                 parameter.title if isinstance(parameter, Parameter) else parameter,
             )
+        if is_nested:
+            return Parameter(NONALPHANUM.sub("", title), Type="String")
         return Parameter(
             f"{self.logical_name}{NONALPHANUM.sub('', title)}", Type="String"
         )
 
-    def get_resource_attribute_value(self, parameter, stack_name):
+    def get_resource_attribute_value(self, parameter, stack_name, is_nested=False):
         title = parameter.title if isinstance(parameter, Parameter) else parameter
         if not isinstance(parameter, (str, Parameter)) or not keyisset(
             title, self.output_properties
@@ -353,6 +355,8 @@ class XResource(object):
                 "Existing ones are",
                 self.output_properties.keys(),
             )
+        if is_nested:
+            return GetAtt(stack_name, f"Outputs.{NONALPHANUM.sub('', title)}")
         return GetAtt(
             stack_name, f"Outputs.{self.logical_name}{NONALPHANUM.sub('', title)}"
         )

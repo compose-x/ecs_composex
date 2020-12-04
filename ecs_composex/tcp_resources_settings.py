@@ -34,13 +34,14 @@ from ecs_composex.rds.rds_params import (
 )
 
 
-def get_param_and_value(resource, attribute, root_stack_title):
+def get_param_and_value(resource, attribute, root_stack_title, is_nested=False):
     """
     Function to return the parameter and value for a given sub resource
 
     :param ecs_composex.common.compose_resources XResource resource:
     :param str root_stack_title:
     :param str attribute:
+    :param  is_nested:
     :return:
     """
     if isinstance(attribute, str):
@@ -51,10 +52,13 @@ def get_param_and_value(resource, attribute, root_stack_title):
         raise TypeError(
             "Attribute must be a of type", str, Parameter, "Got", type(attribute)
         )
-    imported = resource.get_resource_attribute_value(attr_name, root_stack_title)
-    parameter = resource.get_resource_attribute_parameter(attr_name)
-
-    return (imported, parameter)
+    imported = resource.get_resource_attribute_value(
+        attr_name, root_stack_title, is_nested=is_nested
+    )
+    parameter = resource.get_resource_attribute_parameter(
+        attr_name, is_nested=is_nested
+    )
+    return imported, parameter
 
 
 def db_secrets_names(db):
@@ -199,7 +203,7 @@ def handle_new_tcp_resource(resource, res_root_stack, port_parameter):
         )
         if resource.db_secret:
             secret_settings = get_param_and_value(
-                resource, resource.db_secret, res_root_stack.title
+                resource, resource.db_secret, res_root_stack.title, is_nested=True
             )
             add_parameters(target[0].template, [secret_settings[1]])
             target[0].stack.Parameters.update(
