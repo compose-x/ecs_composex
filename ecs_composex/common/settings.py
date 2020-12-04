@@ -125,7 +125,7 @@ def merge_service_definition(original_def, override_def, nested=False):
         ):
             original_def[key] = merge_ports(original_def[key], override_def[key])
         elif not isinstance(override_def[key], (list, dict)):
-            original_def[key] = override_def[key]
+            original_def[key] = expandvars(override_def[key], default="")
     return original_def
 
 
@@ -262,7 +262,7 @@ def merge_definitions(original_def, override_def, nested=False):
             original_def[key] = override_def[key]
 
         elif not isinstance(override_def[key], (list, dict)):
-            original_def[key] = override_def[key]
+            original_def[key] = expandvars(override_def[key])
     return original_def
 
 
