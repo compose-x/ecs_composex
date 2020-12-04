@@ -77,5 +77,6 @@ Feature: common
     Then I render the docker-compose to composex to validate
     And I render all files to verify execution
     Examples:
-      | file_path                   | override_file                        |
-      | use-cases/blog.features.yml | use-cases/ecs/service_to_service.yml |
+      | file_path                   | override_file                               |
+      | use-cases/blog.features.yml | use-cases/ecs/service_to_service.yml        |
+      | use-cases/blog.features.yml | use-cases/ecs/service_to_service_depend.yml |

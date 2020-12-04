@@ -23,10 +23,12 @@ from json import dumps
 
 from troposphere import AWS_ACCOUNT_ID
 from troposphere import Sub, Ref, GetAtt
+from troposphere import Parameter
 from troposphere.ec2 import SecurityGroupIngress
 
 from ecs_composex.common import LOG
-from ecs_composex.common import keyisset, keypresent
+from ecs_composex.common import keyisset, keypresent, add_parameters
+from ecs_composex.vpc.vpc_params import SG_ID_TYPE
 from ecs_composex.ecs.ecs_params import SERVICE_NAME_T
 from ecs_composex.ingress_settings import (
     set_service_ports,
@@ -146,13 +148,38 @@ def merge_services_network(family):
     return network_config
 
 
-def set_compose_services_ingress(root_stack, dst_family, families):
+def add_independant_rules(dst_family, service_name, root_stack):
+    src_service_stack = root_stack.stack_template.resources[service_name]
+    for port in dst_family.service_config.network.ports:
+        ingress_rule = SecurityGroupIngress(
+            f"From{src_service_stack.title}To{dst_family.logical_name}On{port['published']}",
+            FromPort=port["published"],
+            ToPort=port["published"],
+            IpProtocol=port["protocol"],
+            Description=Sub(
+                f"From {dst_family.logical_name} to {src_service_stack.title}"
+                f" on port {port['published']}/{port['protocol']}"
+            ),
+            GroupId=GetAtt(
+                src_service_stack.title, f"Outputs.{src_service_stack.title}GroupId"
+            ),
+            SourceSecurityGroupId=GetAtt(
+                dst_family.stack.title, f"Outputs.{dst_family.logical_name}GroupId"
+            ),
+            SourceSecurityGroupOwnerId=Ref(AWS_ACCOUNT_ID),
+        )
+        if ingress_rule.title not in root_stack.stack_template.resources:
+            root_stack.stack_template.add_resource(ingress_rule)
+
+
+def set_compose_services_ingress(root_stack, dst_family, families, settings):
     """
     Function to crate SG Ingress between two families / services.
     Presently, the ingress rules are set after all services have been created
 
     :param ecs_composex.common.stacks.ComposeXStack root_stack:
     :param ecs_composex.common.compose_services.ComposeFamily dst_family:
+    :param list families: The list of family names.
     :return:
     """
     for service in dst_family.service_config.network.services:
@@ -162,27 +189,40 @@ def set_compose_services_ingress(root_stack, dst_family, families):
                 f"The service {service_name} is not among the services created together. Valid services are",
                 families,
             )
-        src_service_stack = root_stack.stack_template.resources[service_name]
-        for port in dst_family.service_config.network.ports:
-            ingress_rule = SecurityGroupIngress(
-                f"From{src_service_stack.title}To{dst_family.logical_name}On{port['published']}",
-                FromPort=port["published"],
-                ToPort=port["published"],
-                IpProtocol=port["protocol"],
-                Description=Sub(
-                    f"From {src_service_stack.title} to {dst_family.logical_name}"
-                    f" on port {port['published']}/{port['protocol']}"
-                ),
-                GroupId=GetAtt(
-                    dst_family.stack.title, f"Outputs.{dst_family.logical_name}GroupId"
-                ),
-                SourceSecurityGroupId=GetAtt(
-                    src_service_stack.title, f"Outputs.{src_service_stack.title}GroupId"
-                ),
-                SourceSecurityGroupOwnerId=Ref(AWS_ACCOUNT_ID),
+        if not keypresent("DependsOn", service):
+            add_independant_rules(dst_family, service_name, root_stack)
+        else:
+            if service not in dst_family.stack.DependsOn:
+                dst_family.stack.DependsOn.append(service_name)
+            src_family_sg_param = Parameter(f"{service_name}GroupId", Type=SG_ID_TYPE)
+            add_parameters(dst_family.template, [src_family_sg_param])
+            dst_family.stack.Parameters.update(
+                {
+                    src_family_sg_param.title: GetAtt(
+                        service_name, f"Outputs.{service_name}GroupId"
+                    ),
+                }
             )
-            if ingress_rule.title not in root_stack.stack_template.resources:
-                root_stack.stack_template.add_resource(ingress_rule)
+            for port in dst_family.service_config.network.ports:
+                common_args = {
+                    "FromPort": port["published"],
+                    "ToPort": port["published"],
+                    "IpProtocol": port["protocol"],
+                    "SourceSecurityGroupOwnerId": Ref(AWS_ACCOUNT_ID),
+                    "Description": Sub(
+                        f"From ${{{SERVICE_NAME_T}}} to {service_name} on port {port['published']}"
+                    ),
+                }
+                dst_family.template.add_resource(
+                    SecurityGroupIngress(
+                        f"From{dst_family.logical_name}To{service_name}On{port['published']}",
+                        SourceSecurityGroupId=GetAtt(
+                            dst_family.ecs_service.sg, "GroupId"
+                        ),
+                        GroupId=Ref(src_family_sg_param),
+                        **common_args,
+                    )
+                )
 
 
 class ServiceNetworking(Ingress):

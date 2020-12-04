@@ -75,5 +75,5 @@ def associate_services_to_root_stack(root_stack, settings, dns_params, vpc_stack
     ]
     for family in families_post:
         set_compose_services_ingress(
-            root_stack, settings.families[family], families_post
+            root_stack, settings.families[family], families_post, settings
         )
