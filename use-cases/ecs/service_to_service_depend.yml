@@ -1,0 +1,39 @@
+---
+# base file for services with the x-keys for BDD
+version: '3.8'
+services:
+  app01:
+    x-logging:
+      RetentionInDays: 42
+      CreateLogGroup: True
+    x-network:
+      is_public: False
+      use_cloudmap: True
+      Ingress:
+        Myself: False
+        AwsSources:
+          - Type: PrefixList
+            Id: pl-6da54004
+        Services:
+          - Name: app03
+            DependsOn: True
+  app03:
+    x-network:
+      Ingress:
+        Myself: False
+        ExtSources:
+          - Ipv4: 0.0.0.0/0
+            Description: ANYWHERE
+
+    x-logging:
+        RetentionInDays: 42
+    x-scaling:
+      range: 1-10
+  rproxy:
+    x-iam:
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/ReadOnlyAccess
+    x-xray: true
+    x-network:
+      is_public: False
+      use_cloudmap: True

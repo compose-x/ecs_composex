@@ -138,6 +138,7 @@ class Ingress(object):
     master_key = "Ingress"
     aws_sources_key = "AwsSources"
     ext_sources_key = "ExtSources"
+    services_key = "Services"
     ipv4_key = "Ipv4"
     ipv6_key = "Ipv6"
     network_settings = [master_key, "use_cloudmap", "is_public"]
@@ -145,8 +146,6 @@ class Ingress(object):
     def __init__(self, definition, ports):
         """
         Initialize network settings for the family ServiceConfig
-
-        :param ecs_composex.common.compose_services.ComposeFamily family:
         """
         self.definition = deepcopy(definition)
 
@@ -158,6 +157,11 @@ class Ingress(object):
         self.ext_sources = (
             self.definition[self.ext_sources_key]
             if keyisset(self.ext_sources_key, self.definition)
+            else []
+        )
+        self.services = (
+            self.definition[self.services_key]
+            if keyisset(self.services_key, self.definition)
             else []
         )
         self.ports = ports
@@ -293,7 +297,8 @@ class Ingress(object):
         :return:
         """
         for ingress_rule in self.aws_ingress_rules:
-            template.add_resource(ingress_rule)
+            if ingress_rule.title not in template.resources:
+                template.add_resource(ingress_rule)
 
     def associate_ext_igress_rules(self, template):
         """
@@ -303,4 +308,5 @@ class Ingress(object):
         :return:
         """
         for ingress_rule in self.ext_ingress_rules:
-            template.add_resource(ingress_rule)
+            if ingress_rule.title not in template.resources:
+                template.add_resource(ingress_rule)

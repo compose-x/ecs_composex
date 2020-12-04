@@ -34,7 +34,17 @@ def handle_bytes_units(value, factor):
     Function to handle KB use-case
     """
     amount = float(re.sub(NUMBERS_REG, "", value))
-    unit = "KBytes"
+    if factor == pow(2, 10):
+        unit = "KBytes"
+    elif factor == pow(pow(2, 10), 2):
+        unit = "Bytes"
+    else:
+        raise ValueError(
+            "Factor is not valid.",
+            factor,
+            "Must be one of",
+            [pow(2, 10), pow(pow(2, 10), 2)],
+        )
     if amount < (MINIMUM_SUPPORTED * factor):
         LOG.warning(
             f"You set unit to {unit} and value is lower than {MINIMUM_SUPPORTED}MB. "
@@ -59,14 +69,14 @@ def set_memory_to_mb(value):
     amount = float(re.sub(NUMBERS_REG, "", value))
     unit = "MBytes"
     if b_pat.findall(value):
-        final_amount = handle_bytes_units(value, (1024 ^ 2))
+        final_amount = handle_bytes_units(value, pow(pow(2, 10), 2))
     elif kb_pat.findall(value):
-        final_amount = handle_bytes_units(value, 1024)
+        final_amount = handle_bytes_units(value, pow(2, 10))
     elif mb_pat.findall(value):
         final_amount = int(amount)
     elif gb_pat.findall(value):
         unit = "GBytes"
-        final_amount = int(amount) * 1024
+        final_amount = int(amount) * pow(2, 10)
     else:
         raise ValueError(f"Could not parse {value} to units")
     LOG.debug(f"Computed unit for {value}: {unit}. Results into {final_amount}MB")

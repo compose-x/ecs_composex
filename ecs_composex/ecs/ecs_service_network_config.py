@@ -23,10 +23,12 @@ from json import dumps
 
 from troposphere import AWS_ACCOUNT_ID
 from troposphere import Sub, Ref, GetAtt
+from troposphere import Parameter
 from troposphere.ec2 import SecurityGroupIngress
 
 from ecs_composex.common import LOG
-from ecs_composex.common import keyisset, keypresent
+from ecs_composex.common import keyisset, keypresent, add_parameters
+from ecs_composex.vpc.vpc_params import SG_ID_TYPE
 from ecs_composex.ecs.ecs_params import SERVICE_NAME_T
 from ecs_composex.ingress_settings import (
     set_service_ports,
@@ -45,8 +47,14 @@ def handle_ext_sources(existing_sources, new_sources):
 
 
 def handle_aws_sources(existing_sources, new_sources):
+    """
+    Function to handle merge of aws sources between two services for one family
+    :param existing_sources:
+    :param new_sources:
+    :return:
+    """
     LOG.debug("Source", dumps(existing_sources, indent=2))
-    set_ids = [s["Id"] for s in existing_sources if keyisset("id", s)]
+    set_ids = [s["Id"] for s in existing_sources if keyisset("Id", s)]
     allowed_keys = ["PrefixList", "SecurityGroup"]
     for new_s in new_sources:
         if new_s not in set_ids and new_s["Type"] in allowed_keys:
@@ -57,12 +65,27 @@ def handle_aws_sources(existing_sources, new_sources):
             )
 
 
+def handle_services(existing_sources, new_sources):
+    """
+    Function to merge source services definitions
+
+    :param list existing_sources:
+    :param list new_sources:
+    :return:
+    """
+    set_ids = [s["Name"] for s in existing_sources if keyisset("Name", s)]
+    for new_s in new_sources:
+        if new_s not in set_ids:
+            existing_sources.append(new_s)
+
+
 def handle_ingress_rules(source_config, ingress_config):
     LOG.debug("Source", dumps(source_config, indent=2))
     valid_keys = [
         (ServiceNetworking.self_key, bool, None),
         (Ingress.ext_sources_key, list, handle_ext_sources),
         (Ingress.aws_sources_key, list, handle_aws_sources),
+        (Ingress.services_key, list, handle_services),
     ]
     for key in valid_keys:
         if keypresent(key[0], ingress_config) and isinstance(
@@ -106,6 +129,7 @@ def merge_services_network(family):
             ServiceNetworking.self_key: False,
             Ingress.ext_sources_key: [],
             Ingress.aws_sources_key: [],
+            Ingress.services_key: [],
         },
         "is_public": False,
     }
@@ -122,6 +146,83 @@ def merge_services_network(family):
     LOG.debug(family.name)
     LOG.debug(dumps(network_config, indent=2))
     return network_config
+
+
+def add_independant_rules(dst_family, service_name, root_stack):
+    src_service_stack = root_stack.stack_template.resources[service_name]
+    for port in dst_family.service_config.network.ports:
+        ingress_rule = SecurityGroupIngress(
+            f"From{src_service_stack.title}To{dst_family.logical_name}On{port['published']}",
+            FromPort=port["published"],
+            ToPort=port["published"],
+            IpProtocol=port["protocol"],
+            Description=Sub(
+                f"From {dst_family.logical_name} to {src_service_stack.title}"
+                f" on port {port['published']}/{port['protocol']}"
+            ),
+            GroupId=GetAtt(
+                src_service_stack.title, f"Outputs.{src_service_stack.title}GroupId"
+            ),
+            SourceSecurityGroupId=GetAtt(
+                dst_family.stack.title, f"Outputs.{dst_family.logical_name}GroupId"
+            ),
+            SourceSecurityGroupOwnerId=Ref(AWS_ACCOUNT_ID),
+        )
+        if ingress_rule.title not in root_stack.stack_template.resources:
+            root_stack.stack_template.add_resource(ingress_rule)
+
+
+def set_compose_services_ingress(root_stack, dst_family, families, settings):
+    """
+    Function to crate SG Ingress between two families / services.
+    Presently, the ingress rules are set after all services have been created
+
+    :param ecs_composex.common.stacks.ComposeXStack root_stack:
+    :param ecs_composex.common.compose_services.ComposeFamily dst_family:
+    :param list families: The list of family names.
+    :return:
+    """
+    for service in dst_family.service_config.network.services:
+        service_name = service["Name"]
+        if service_name not in families:
+            raise KeyError(
+                f"The service {service_name} is not among the services created together. Valid services are",
+                families,
+            )
+        if not keypresent("DependsOn", service):
+            add_independant_rules(dst_family, service_name, root_stack)
+        else:
+            if service not in dst_family.stack.DependsOn:
+                dst_family.stack.DependsOn.append(service_name)
+            src_family_sg_param = Parameter(f"{service_name}GroupId", Type=SG_ID_TYPE)
+            add_parameters(dst_family.template, [src_family_sg_param])
+            dst_family.stack.Parameters.update(
+                {
+                    src_family_sg_param.title: GetAtt(
+                        service_name, f"Outputs.{service_name}GroupId"
+                    ),
+                }
+            )
+            for port in dst_family.service_config.network.ports:
+                common_args = {
+                    "FromPort": port["published"],
+                    "ToPort": port["published"],
+                    "IpProtocol": port["protocol"],
+                    "SourceSecurityGroupOwnerId": Ref(AWS_ACCOUNT_ID),
+                    "Description": Sub(
+                        f"From ${{{SERVICE_NAME_T}}} to {service_name} on port {port['published']}"
+                    ),
+                }
+                dst_family.template.add_resource(
+                    SecurityGroupIngress(
+                        f"From{dst_family.logical_name}To{service_name}On{port['published']}",
+                        SourceSecurityGroupId=GetAtt(
+                            dst_family.ecs_service.sg, "GroupId"
+                        ),
+                        GroupId=Ref(src_family_sg_param),
+                        **common_args,
+                    )
+                )
 
 
 class ServiceNetworking(Ingress):

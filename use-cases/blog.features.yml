@@ -136,7 +136,7 @@ services:
             Description: ANYWHERE
 
     x-logging:
-        RetentionInDays: 42
+        RetentionInDays: 30
     x-scaling:
       range: 1-10
   rproxy:
