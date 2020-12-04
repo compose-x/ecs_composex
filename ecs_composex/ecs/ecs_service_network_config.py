@@ -214,12 +214,12 @@ def set_compose_services_ingress(root_stack, dst_family, families, settings):
                     "IpProtocol": port["protocol"],
                     "SourceSecurityGroupOwnerId": Ref(AWS_ACCOUNT_ID),
                     "Description": Sub(
-                        f"From {dst_family.stack.title} to ${{{SERVICE_NAME_T}}} on port {port['published']}"
+                        f"From ${{{SERVICE_NAME_T}}} to {dst_family.stack.title} on port {port['published']}"
                     ),
                 }
                 src_family.template.add_resource(
                     SecurityGroupIngress(
-                        f"From{dst_family.stack.title}To{src_family.logical_name}On{port['published']}",
+                        f"From{src_family.logical_name}To{dst_family.stack.title}On{port['published']}",
                         SourceSecurityGroupId=GetAtt(
                             src_family.ecs_service.sg, "GroupId"
                         ),
@@ -317,7 +317,7 @@ class ServiceNetworking(Ingress):
         if not family.template or not family.ecs_service:
             return
         for port in self.ports:
-            title = f"From{lb_name}ToServiceOn{port['published']}"
+            title = f"FromLB{lb_name}To{family.stack.title}On{port['published']}"
             common_args = {
                 "FromPort": port["published"],
                 "ToPort": port["published"],
@@ -325,7 +325,7 @@ class ServiceNetworking(Ingress):
                 "GroupId": GetAtt(family.ecs_service.sg, "GroupId"),
                 "SourceSecurityGroupOwnerId": Ref(AWS_ACCOUNT_ID),
                 "Description": Sub(
-                    f"From {lb_name} to ${{{SERVICE_NAME_T}}} on port {port['published']}"
+                    f"From ELB {lb_name} to ${{{SERVICE_NAME_T}}} on port {port['published']}"
                 ),
             }
             if title in family.template.resources:
