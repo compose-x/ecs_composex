@@ -137,7 +137,13 @@ class ComposeSecret(object):
         if not keyisset(self.json_keys_key, self.definition[self.x_key]):
             return
         required_keys = ["Name", "Key"]
-        for secret_key in self.definition[self.x_key][self.json_keys_key]:
+        unfiltered_secrets = self.definition[self.x_key][self.json_keys_key]
+        LOG.debug(f"UN-FILTERED SECRETS {unfiltered_secrets}")
+        filtered_secrets = [
+            dict(y) for y in set(tuple(x.items()) for x in unfiltered_secrets)
+        ]
+        LOG.debug(f"FILTERED SECRETS {filtered_secrets}")
+        for secret_key in filtered_secrets:
             if not all(key in required_keys for key in secret_key):
                 raise KeyError(
                     "For Secrets JSON Key support, you must specify",
