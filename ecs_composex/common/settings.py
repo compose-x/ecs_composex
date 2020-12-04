@@ -206,6 +206,34 @@ def handle_lists_merges(original_list, override_list, uniqfy=False):
     return final_list
 
 
+def handle_lists_merge_conditions(original_def, override_def, key):
+    """
+    Function to handle lists merging and whether some additional handling is necessary for duplicates
+
+    :param dict original_def: The src definition
+    :param dict override_def: The override definition to merge to src.
+    :param str key: The key name of the list object
+    """
+    keys_to_uniqfy = ["Tags", "volumes", "secrets"]
+    if not isinstance(original_def[key], list):
+        raise TypeError(
+            "Cannot merge",
+            key,
+            "from",
+            type(original_def[key]),
+            "with",
+            type(override_def[key]),
+        )
+    if key in keys_to_uniqfy:
+        original_def[key] = handle_lists_merges(
+            original_def[key], override_def[key], uniqfy=True
+        )
+    else:
+        original_def[key] = handle_lists_merges(
+            original_def[key], override_def[key], uniqfy=False
+        )
+
+
 def merge_definitions(original_def, override_def, nested=False):
     """
     Merges two services definitions if service exists in both compose files.
@@ -215,7 +243,6 @@ def merge_definitions(original_def, override_def, nested=False):
     :param dict override_def:
     :return:
     """
-    keys_to_uniqfy = ["Tags", "volumes", "secrets"]
     if not nested:
         original_def = deepcopy(original_def)
     elif not isinstance(override_def, dict):
@@ -230,23 +257,7 @@ def merge_definitions(original_def, override_def, nested=False):
         elif key not in original_def:
             original_def[key] = override_def[key]
         elif isinstance(override_def[key], list) and key in original_def.keys():
-            if not isinstance(original_def[key], list):
-                raise TypeError(
-                    "Cannot merge",
-                    key,
-                    "from",
-                    type(original_def[key]),
-                    "with",
-                    type(override_def[key]),
-                )
-            if key in keys_to_uniqfy:
-                original_def[key] = handle_lists_merges(
-                    original_def[key], override_def[key], uniqfy=True
-                )
-            else:
-                original_def[key] = handle_lists_merges(
-                    original_def[key], override_def[key], uniqfy=False
-                )
+            handle_lists_merge_conditions(original_def, override_def, key)
         elif isinstance(override_def[key], list) and key not in original_def.keys():
             original_def[key] = override_def[key]
 
