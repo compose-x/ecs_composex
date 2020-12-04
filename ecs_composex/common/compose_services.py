@@ -920,7 +920,16 @@ class ComposeFamily(object):
         self.ordered_services = [s[1] for s in ordered_containers_config]
         for service in self.ordered_services:
             service.container_definition.Essential = False
-        ordered_containers_config[0][1].container_definition.Essential = True
+        ordered_containers_config[0][1].container_definition.Essential = (
+            True
+            if (
+                not ordered_containers_config[0][1].container_start_condition
+                == "SUCCESS"
+                or not ordered_containers_config[0][1].container_start_condition
+                == "COMPLETE"
+            )
+            else False
+        )
         LOG.debug(service_configs, ordered_containers_config)
         LOG.debug(
             "Essentially",
