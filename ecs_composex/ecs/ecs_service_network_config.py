@@ -157,14 +157,14 @@ def add_independant_rules(dst_family, service_name, root_stack):
             ToPort=port["published"],
             IpProtocol=port["protocol"],
             Description=Sub(
-                f"From {dst_family.logical_name} to {src_service_stack.title}"
+                f"From {src_service_stack.title} to {dst_family.logical_name}"
                 f" on port {port['published']}/{port['protocol']}"
             ),
             GroupId=GetAtt(
-                src_service_stack.title, f"Outputs.{src_service_stack.title}GroupId"
+                dst_family.stack.title, f"Outputs.{dst_family.logical_name}GroupId"
             ),
             SourceSecurityGroupId=GetAtt(
-                dst_family.stack.title, f"Outputs.{dst_family.logical_name}GroupId"
+                src_service_stack.title, f"Outputs.{src_service_stack.title}GroupId"
             ),
             SourceSecurityGroupOwnerId=Ref(AWS_ACCOUNT_ID),
         )
@@ -192,14 +192,18 @@ def set_compose_services_ingress(root_stack, dst_family, families, settings):
         if not keypresent("DependsOn", service):
             add_independant_rules(dst_family, service_name, root_stack)
         else:
-            if service not in dst_family.stack.DependsOn:
-                dst_family.stack.DependsOn.append(service_name)
-            src_family_sg_param = Parameter(f"{service_name}GroupId", Type=SG_ID_TYPE)
-            add_parameters(dst_family.template, [src_family_sg_param])
-            dst_family.stack.Parameters.update(
+            src_family = settings.families[service_name]
+            if dst_family.stack.title not in src_family.stack.DependsOn:
+                src_family.stack.DependsOn.append(dst_family.stack.title)
+            dst_family_sg_param = Parameter(
+                f"{dst_family.stack.title}GroupId", Type=SG_ID_TYPE
+            )
+            add_parameters(src_family.template, [dst_family_sg_param])
+            src_family.stack.Parameters.update(
                 {
-                    src_family_sg_param.title: GetAtt(
-                        service_name, f"Outputs.{service_name}GroupId"
+                    dst_family_sg_param.title: GetAtt(
+                        dst_family.stack.title,
+                        f"Outputs.{dst_family.logical_name}GroupId",
                     ),
                 }
             )
@@ -210,16 +214,16 @@ def set_compose_services_ingress(root_stack, dst_family, families, settings):
                     "IpProtocol": port["protocol"],
                     "SourceSecurityGroupOwnerId": Ref(AWS_ACCOUNT_ID),
                     "Description": Sub(
-                        f"From ${{{SERVICE_NAME_T}}} to {service_name} on port {port['published']}"
+                        f"From {dst_family.stack.title} to ${{{SERVICE_NAME_T}}} on port {port['published']}"
                     ),
                 }
-                dst_family.template.add_resource(
+                src_family.template.add_resource(
                     SecurityGroupIngress(
-                        f"From{dst_family.logical_name}To{service_name}On{port['published']}",
+                        f"From{dst_family.stack.title}To{src_family.logical_name}On{port['published']}",
                         SourceSecurityGroupId=GetAtt(
-                            dst_family.ecs_service.sg, "GroupId"
+                            src_family.ecs_service.sg, "GroupId"
                         ),
-                        GroupId=Ref(src_family_sg_param),
+                        GroupId=Ref(dst_family_sg_param),
                         **common_args,
                     )
                 )
