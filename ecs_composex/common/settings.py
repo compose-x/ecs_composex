@@ -124,7 +124,6 @@ def merge_service_definition(original_def, override_def, nested=False):
             and key == "ports"
         ):
             original_def[key] = merge_ports(original_def[key], override_def[key])
-
         elif not isinstance(override_def[key], (list, dict)):
             original_def[key] = override_def[key]
     return original_def
@@ -171,18 +170,21 @@ def merge_services_from_files(original_services, override_services):
             original_services.update({service_name: override_services[service_name]})
 
 
-def handle_lists_merges(original_list, override_list):
+def handle_lists_merges(original_list, override_list, uniqfy=False):
     """
 
-    :param list original_list:
-    :param list override_list:
-    :return:
+    :param list original_list: The original list to add the override ones to
+    :param list override_list: The lost of items to add up
+    :param bool uniqfy: Whether you are expecting identical dicts which should be filtered to be uniqu based on values.
+    :return: The merged list
+    :rtype: list
     """
     final_list = []
 
     final_list += [item for item in original_list if isinstance(item, dict)]
     final_list += [item for item in override_list if isinstance(item, dict)]
-
+    if uniqfy:
+        final_list = [dict(y) for y in set(tuple(x.items()) for x in final_list)]
     original_str_items = [item for item in original_list if isinstance(item, list)]
     final_list += list(
         set(
@@ -213,7 +215,7 @@ def merge_definitions(original_def, override_def, nested=False):
     :param dict override_def:
     :return:
     """
-
+    keys_to_uniqfy = ["Tags", "volumes", "secrets"]
     if not nested:
         original_def = deepcopy(original_def)
     elif not isinstance(override_def, dict):
@@ -237,9 +239,14 @@ def merge_definitions(original_def, override_def, nested=False):
                     "with",
                     type(override_def[key]),
                 )
-            original_def[key] = handle_lists_merges(
-                original_def[key], override_def[key]
-            )
+            if key in keys_to_uniqfy:
+                original_def[key] = handle_lists_merges(
+                    original_def[key], override_def[key], uniqfy=True
+                )
+            else:
+                original_def[key] = handle_lists_merges(
+                    original_def[key], override_def[key], uniqfy=False
+                )
         elif isinstance(override_def[key], list) and key not in original_def.keys():
             original_def[key] = override_def[key]
 
