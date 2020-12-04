@@ -363,6 +363,7 @@ class ComposeService(object):
         self.logging = None
         self.families = []
         self.my_family = None
+        self.is_aws_sidecar = False
         self.container_definition = None
 
         self.container_start_condition = "START"
@@ -853,6 +854,7 @@ class ComposeFamily(object):
                     },
                 },
             )
+            xray_service.is_aws_sidecar = True
             for service in self.services:
                 service.depends_on.append(xray_service.name)
                 LOG.debug(f"Adding xray-daemon as dependency to {service.name}")
@@ -921,14 +923,14 @@ class ComposeFamily(object):
         for service in self.ordered_services:
             service.container_definition.Essential = False
         ordered_containers_config[0][1].container_definition.Essential = (
-            True
+            False
             if (
-                not ordered_containers_config[0][1].container_start_condition
-                == "SUCCESS"
-                or not ordered_containers_config[0][1].container_start_condition
+                ordered_containers_config[0][1].container_start_condition == "SUCCESS"
+                or ordered_containers_config[0][1].container_start_condition
                 == "COMPLETE"
+                or ordered_containers_config[0][1].is_aws_sidecar
             )
-            else False
+            else True
         )
         LOG.debug(service_configs, ordered_containers_config)
         LOG.debug(
