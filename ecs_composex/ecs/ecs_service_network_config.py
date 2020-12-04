@@ -45,8 +45,14 @@ def handle_ext_sources(existing_sources, new_sources):
 
 
 def handle_aws_sources(existing_sources, new_sources):
+    """
+    Function to handle merge of aws sources between two services for one family
+    :param existing_sources:
+    :param new_sources:
+    :return:
+    """
     LOG.debug("Source", dumps(existing_sources, indent=2))
-    set_ids = [s["Id"] for s in existing_sources if keyisset("id", s)]
+    set_ids = [s["Id"] for s in existing_sources if keyisset("Id", s)]
     allowed_keys = ["PrefixList", "SecurityGroup"]
     for new_s in new_sources:
         if new_s not in set_ids and new_s["Type"] in allowed_keys:
@@ -57,12 +63,27 @@ def handle_aws_sources(existing_sources, new_sources):
             )
 
 
+def handle_services(existing_sources, new_sources):
+    """
+    Function to merge source services definitions
+
+    :param list existing_sources:
+    :param list new_sources:
+    :return:
+    """
+    set_ids = [s["Name"] for s in existing_sources if keyisset("Name", s)]
+    for new_s in new_sources:
+        if new_s not in set_ids:
+            existing_sources.append(new_s)
+
+
 def handle_ingress_rules(source_config, ingress_config):
     LOG.debug("Source", dumps(source_config, indent=2))
     valid_keys = [
         (ServiceNetworking.self_key, bool, None),
         (Ingress.ext_sources_key, list, handle_ext_sources),
         (Ingress.aws_sources_key, list, handle_aws_sources),
+        (Ingress.services_key, list, handle_services),
     ]
     for key in valid_keys:
         if keypresent(key[0], ingress_config) and isinstance(
@@ -106,6 +127,7 @@ def merge_services_network(family):
             ServiceNetworking.self_key: False,
             Ingress.ext_sources_key: [],
             Ingress.aws_sources_key: [],
+            Ingress.services_key: [],
         },
         "is_public": False,
     }
@@ -122,6 +144,45 @@ def merge_services_network(family):
     LOG.debug(family.name)
     LOG.debug(dumps(network_config, indent=2))
     return network_config
+
+
+def set_compose_services_ingress(root_stack, dst_family, families):
+    """
+    Function to crate SG Ingress between two families / services.
+    Presently, the ingress rules are set after all services have been created
+
+    :param ecs_composex.common.stacks.ComposeXStack root_stack:
+    :param ecs_composex.common.compose_services.ComposeFamily dst_family:
+    :return:
+    """
+    for service in dst_family.service_config.network.services:
+        service_name = service["Name"]
+        if service_name not in families:
+            raise KeyError(
+                f"The service {service_name} is not among the services created together. Valid services are",
+                families,
+            )
+        src_service_stack = root_stack.stack_template.resources[service_name]
+        for port in dst_family.service_config.network.ports:
+            ingress_rule = SecurityGroupIngress(
+                f"From{src_service_stack.title}To{dst_family.logical_name}On{port['published']}",
+                FromPort=port["published"],
+                ToPort=port["published"],
+                IpProtocol=port["protocol"],
+                Description=Sub(
+                    f"From {src_service_stack.title} to {dst_family.logical_name}"
+                    f" on port {port['published']}/{port['protocol']}"
+                ),
+                GroupId=GetAtt(
+                    dst_family.stack.title, f"Outputs.{dst_family.logical_name}GroupId"
+                ),
+                SourceSecurityGroupId=GetAtt(
+                    src_service_stack.title, f"Outputs.{src_service_stack.title}GroupId"
+                ),
+                SourceSecurityGroupOwnerId=Ref(AWS_ACCOUNT_ID),
+            )
+            if ingress_rule.title not in root_stack.stack_template.resources:
+                root_stack.stack_template.add_resource(ingress_rule)
 
 
 class ServiceNetworking(Ingress):

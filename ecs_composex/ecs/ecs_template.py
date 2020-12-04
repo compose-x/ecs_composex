@@ -172,12 +172,12 @@ def create_log_group(service_tpl, family):
                                 [
                                     Sub(
                                         f"arn:${{{AWS_PARTITION}}}:logs:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:"
-                                        f"log-group:{{{ROOT_STACK_NAME.title}}}/svc/ecs/"
+                                        f"log-group:${{{ROOT_STACK_NAME.title}}}/svc/ecs/"
                                         f"${{{ecs_params.CLUSTER_NAME_T}}}/${{{ecs_params.SERVICE_NAME_T}}}:*"
                                     ),
                                     Sub(
                                         f"arn:${{{AWS_PARTITION}}}:logs:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:"
-                                        f"{{{ROOT_STACK_NAME.title}}}log-group:svc/ecs/"
+                                        f"${{{ROOT_STACK_NAME.title}}}log-group:svc/ecs/"
                                         f"${{{ecs_params.CLUSTER_NAME_T}}}/${{{ecs_params.SERVICE_NAME_T}}}"
                                     ),
                                 ],

@@ -50,7 +50,7 @@ from ecs_composex.compute.compute_params import (
 from ecs_composex.compute.compute_stack import ComputeStack
 from ecs_composex.dns import add_parameters_and_conditions as dns_inputs, DnsSettings
 from ecs_composex.dns.dns_records import DnsRecords
-from ecs_composex.ecs import associate_services_to_root_stack
+from ecs_composex.ecs.ecs_stack import associate_services_to_root_stack
 from ecs_composex.ecs.ecs_cluster import add_ecs_cluster
 from ecs_composex.ecs.ecs_params import (
     CLUSTER_NAME,
@@ -307,18 +307,6 @@ def add_x_resources(root_template, settings, services_stack, vpc_stack=None):
             )
 
 
-def create_services(root_stack, settings, vpc_stack, dns_params):
-    """
-    Function to add the microservices root stack
-
-    :param ComposeXStack root_stack: ComposeX root stack
-    :param ComposeXSettings settings: The settings for execution
-    :param ComposeXStack vpc_stack: The VPC Stack
-    :param dict dns_params: DNS Parameters for the execution
-    """
-    associate_services_to_root_stack(root_stack, settings, dns_params, vpc_stack)
-
-
 def get_vpc_id(vpc_stack):
     """
     Function to add CloudMap to VPC
@@ -369,7 +357,9 @@ def generate_full_template(settings):
     compute_stack = add_compute(root_stack.stack_template, settings, vpc_stack)
     if settings.create_compute and compute_stack:
         compute_stack.DependsOn.append(ROOT_CLUSTER_NAME)
-    create_services(root_stack, settings, vpc_stack, dns_settings.nested_params)
+    associate_services_to_root_stack(
+        root_stack, settings, dns_settings.nested_params, vpc_stack
+    )
     if keyisset(ACM_KEY, settings.compose_content):
         init_acm_certs(settings, dns_settings, root_stack)
     add_x_resources(
