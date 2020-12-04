@@ -364,6 +364,7 @@ class ComposeService(object):
         self.families = []
         self.my_family = None
         self.is_aws_sidecar = False
+        self.is_essential = True
         self.container_definition = None
 
         self.container_start_condition = "START"
@@ -408,7 +409,7 @@ class ComposeService(object):
             Command=self.command,
             HealthCheck=self.ecs_healthcheck,
             DependsOn=Ref(AWS_NO_VALUE),
-            Essential=True,
+            Essential=self.is_essential,
             Secrets=secrets,
         )
         self.container_parameters.update({self.image_param.title: self.image})
@@ -591,6 +592,32 @@ class ComposeService(object):
         if keyisset("replicas", deployment):
             self.replicas = int(deployment["replicas"])
 
+    def define_essential(self, deployment):
+        """
+        Method to define whether the container is essential.
+        :param dict deployment:
+        """
+        essential_key = "ecs.essential"
+        labels = "labels"
+        positive_values = [True, "yes", "True"]
+        negative_values = [False, "no", "False"]
+        if keyisset(labels, deployment) and keyisset(essential_key, deployment[labels]):
+            if (
+                deployment[labels][essential_key] not in positive_values
+                or deployment[labels][essential_key] not in negative_values
+            ):
+                raise ValueError(
+                    "The values allowed for",
+                    essential_key,
+                    "are",
+                    positive_values,
+                    negative_values,
+                    "Got",
+                    deployment[labels][essential_key],
+                )
+            if deployment[labels][essential_key] in negative_values:
+                self.is_essential = False
+
     def define_start_condition(self, deployment):
         """
         Method to define the start condition success for the container
@@ -606,6 +633,8 @@ class ComposeService(object):
                 f"Healthcheck was defined on {self.name}. Overriding to HEALTHY"
             )
             self.container_start_condition = "HEALTHY"
+            if not self.is_essential:
+                self.is_essential = True
         elif keyisset(labels, deployment) and keyisset(depends_key, deployment[labels]):
             if deployment[labels][depends_key] not in allowed_values:
                 raise ValueError(
@@ -648,6 +677,7 @@ class ComposeService(object):
         self.set_compute_resources(self.definition[deploy])
         self.set_replicas(self.definition[deploy])
         self.define_start_condition(self.definition[deploy])
+        self.define_essential(self.definition[deploy])
 
 
 def handle_same_task_services_dependencies(services_config):
@@ -921,17 +951,16 @@ class ComposeFamily(object):
         ordered_containers_config = sorted(service_configs, key=lambda i: i[0])
         self.ordered_services = [s[1] for s in ordered_containers_config]
         for service in self.ordered_services:
-            service.container_definition.Essential = False
-        ordered_containers_config[0][1].container_definition.Essential = (
-            False
             if (
-                ordered_containers_config[0][1].container_start_condition == "SUCCESS"
-                or ordered_containers_config[0][1].container_start_condition
-                == "COMPLETE"
-                or ordered_containers_config[0][1].is_aws_sidecar
-            )
-            else True
-        )
+                service.container_start_condition == "SUCCESS"
+                or service.container_start_condition == "COMPLETE"
+                or service.is_aws_sidecar
+                or not service.is_essential
+            ):
+                service.container_definition.Essential = False
+            else:
+                service.container_definition.Essential = True
+
         LOG.debug(service_configs, ordered_containers_config)
         LOG.debug(
             "Essentially",
@@ -944,6 +973,10 @@ class ComposeFamily(object):
                 indent=4,
             )
         )
+        if len(ordered_containers_config) == 1:
+            LOG.debug("There is only one service, we need to ensure it is essential")
+            ordered_containers_config[0][1].container_definition.Essential = True
+
         for service in self.services:
             self.stack_parameters.update(service.container_parameters)
 

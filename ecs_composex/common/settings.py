@@ -500,6 +500,7 @@ class ComposeXSettings(object):
             LOG.info(
                 f"Detected {service.name} is-reused in different family. Making a deepcopy"
             )
+            servic
             the_service = deepcopy(service)
             family = ComposeFamily([the_service], family_name)
             self.families[family_name] = family
