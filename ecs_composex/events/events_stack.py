@@ -19,14 +19,13 @@
 Module to define the entry point for AWS Event Rules
 """
 
-from troposphere import Ref, Join, If
+from troposphere import Ref, If
 
 from ecs_composex.common import build_template, LOG, NONALPHANUM
 from ecs_composex.common.compose_resources import XResource, set_resources
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.vpc.vpc_params import APP_SUBNETS
-from ecs_composex.ecs.ecs_params import CLUSTER_NAME, CLUSTER_T, FARGATE_VERSION
 from ecs_composex.ecs.ecs_conditions import CREATE_CLUSTER_CON_T
+from ecs_composex.ecs.ecs_params import CLUSTER_NAME, CLUSTER_T, FARGATE_VERSION
 from ecs_composex.events.events_params import RES_KEY
 from ecs_composex.events.events_template import create_events_template
 

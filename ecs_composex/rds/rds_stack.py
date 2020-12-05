@@ -31,7 +31,6 @@ from ecs_composex.rds.rds_params import (
     DB_NAME,
     DB_ENDPOINT_PORT,
     DB_SECRET_T,
-    DB_ENDPOINT_PORT_P,
 )
 from ecs_composex.rds.rds_template import generate_rds_templates
 

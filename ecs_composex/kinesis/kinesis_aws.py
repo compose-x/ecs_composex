@@ -23,7 +23,7 @@ import re
 
 from botocore.exceptions import ClientError
 
-from ecs_composex.common import LOG, keyisset, keypresent
+from ecs_composex.common import LOG, keyisset
 from ecs_composex.common.aws import (
     find_aws_resource_arn_from_tags_api,
     define_lookup_role_from_info,

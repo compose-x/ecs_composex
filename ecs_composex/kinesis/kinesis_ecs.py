@@ -19,8 +19,6 @@
 Module to add permissions etc. for services to kinesis streams
 """
 
-from json import dumps
-
 from ecs_composex.common import LOG, keyisset
 from ecs_composex.kinesis.kinesis_aws import lookup_stream_config
 from ecs_composex.kinesis.kinesis_params import STREAM_KMS_KEY_ID
