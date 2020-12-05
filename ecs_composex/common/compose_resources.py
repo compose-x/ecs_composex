@@ -113,12 +113,14 @@ class XResource(object):
         self.cfn_resource = None
         self.output_properties = {}
         self.outputs = []
+        self.attributes_outputs = {}
         self.families_targets = []
         self.families_scaling = []
         self.arn_attr = None
         self.arn_parameter = None
         self.arn_value = None
         self.ref_value = None
+        self.is_nested = False
         self.ref_parameter = Parameter(self.logical_name, Type="String")
         self.set_services_targets(settings)
         self.set_services_scaling(settings)
@@ -288,7 +290,13 @@ class XResource(object):
                     "Got",
                     definition[2],
                 )
-            self.outputs.append(Output(NONALPHANUM.sub("", definition[0]), Value=value))
+            name = NONALPHANUM.sub("", definition[0])
+            self.attributes_outputs[output_prop_name] = {
+                "Name": name,
+                "Output": Output(name, Value=value),
+            }
+        for attr in self.attributes_outputs.values():
+            self.outputs.append(attr["Output"])
 
     def set_resource_arn(self, root_stack_name):
         """
@@ -328,7 +336,7 @@ class XResource(object):
     def get_resource_attribute_parameter(self, parameter):
         title = parameter.title if isinstance(parameter, Parameter) else parameter
         if not isinstance(parameter, (str, Parameter)) or not keyisset(
-            title, self.output_properties
+            title, self.attributes_outputs
         ):
             raise KeyError(
                 "There is no Output attribute defined for",
@@ -336,14 +344,12 @@ class XResource(object):
                 "with parameter named",
                 parameter.title if isinstance(parameter, Parameter) else parameter,
             )
-        return Parameter(
-            f"{self.logical_name}{NONALPHANUM.sub('', title)}", Type="String"
-        )
+        return Parameter(f"{self.attributes_outputs[title]['Name']}", Type="String")
 
     def get_resource_attribute_value(self, parameter, stack_name):
         title = parameter.title if isinstance(parameter, Parameter) else parameter
         if not isinstance(parameter, (str, Parameter)) or not keyisset(
-            title, self.output_properties
+            title, self.attributes_outputs
         ):
             raise KeyError(
                 "There is no Output attribute value defined for",
@@ -351,8 +357,6 @@ class XResource(object):
                 "with parameter named",
                 title,
                 "Existing ones are",
-                self.output_properties.keys(),
+                self.attributes_outputs.keys(),
             )
-        return GetAtt(
-            stack_name, f"Outputs.{self.logical_name}{NONALPHANUM.sub('', title)}"
-        )
+        return GetAtt(stack_name, f"Outputs.{self.attributes_outputs[title]['Name']}")

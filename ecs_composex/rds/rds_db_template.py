@@ -55,7 +55,11 @@ from ecs_composex.rds.rds_params import (
     DB_STORAGE_CAPACITY,
     DB_STORAGE_TYPE,
 )
-from ecs_composex.secrets import add_db_secret, add_db_dependency
+from ecs_composex.secrets import (
+    add_db_secret,
+    add_db_dependency,
+    attach_to_secret_to_resource,
+)
 from ecs_composex.vpc.vpc_params import (
     VPC_ID,
     STORAGE_SUBNETS,
@@ -128,7 +132,6 @@ def add_instance(template, db):
     instance = DBInstance(
         DATABASE_T,
         template=template,
-        DeletionPolicy="Snapshot",
         Engine=Ref(DB_ENGINE_NAME),
         EngineVersion=Ref(DB_ENGINE_VERSION),
         StorageType=If(
@@ -188,7 +191,6 @@ def add_cluster(template, db):
     cluster = DBCluster(
         CLUSTER_T,
         template=template,
-        DeletionPolicy="Snapshot",
         Condition=rds_conditions.USE_CLUSTER_CON_T,
         DBSubnetGroupName=If(
             rds_conditions.DBS_SUBNET_GROUP_CON_T,
@@ -340,6 +342,8 @@ def generate_database_template(db):
     else:
         db.cfn_resource = instance
     add_db_dependency(db.cfn_resource, db.db_secret)
+    attach_to_secret_to_resource(db_template, db.cfn_resource, db.db_secret)
     db.init_outputs()
     add_db_outputs(db_template, db)
+    db.is_nested = True
     return db_template

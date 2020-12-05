@@ -53,8 +53,7 @@ def get_param_and_value(resource, attribute, root_stack_title):
         )
     imported = resource.get_resource_attribute_value(attr_name, root_stack_title)
     parameter = resource.get_resource_attribute_parameter(attr_name)
-
-    return (imported, parameter)
+    return imported, parameter
 
 
 def db_secrets_names(db):
@@ -184,8 +183,16 @@ def handle_new_tcp_resource(resource, res_root_stack, port_parameter):
     if resource.logical_name not in res_root_stack.stack_template.resources:
         raise KeyError(f"DB {resource.logical_name} not defined in DocDB Root template")
 
-    port_settings = get_param_and_value(resource, port_parameter, res_root_stack.title)
-    sg_settings = get_param_and_value(resource, resource.db_sg, res_root_stack.title)
+    port_settings = get_param_and_value(
+        resource,
+        port_parameter,
+        res_root_stack.title,
+    )
+    sg_settings = get_param_and_value(
+        resource,
+        resource.db_sg,
+        res_root_stack.title,
+    )
     for target in resource.families_targets:
         add_parameters(target[0].template, [sg_settings[1], port_settings[1]])
         target[0].stack.Parameters.update(

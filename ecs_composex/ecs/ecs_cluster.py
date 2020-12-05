@@ -108,9 +108,7 @@ def define_cluster(cluster_def):
     props = import_record_properties(compose_props, Cluster)
     props["Metadata"] = metadata
     props["ClusterName"] = (
-        Ref(AWS_STACK_NAME)
-        if not keyisset("ClusterName", props)
-        else props["ClusterName"]
+        Ref(AWS_STACK_NAME) if not keyisset("ClusterName", props) else Ref(CLUSTER_NAME)
     )
     cluster = Cluster(CLUSTER_T, Condition=CREATE_CLUSTER_CON_T, **props)
     return cluster
@@ -147,6 +145,15 @@ def handle_cluster_settings(root_stack, settings):
         elif keyisset("Properties", settings.compose_content[RES_KEY]):
             cluster = define_cluster(settings.compose_content[RES_KEY])
             root_stack.stack_template.add_resource(cluster)
+            root_stack.Parameters.update({CREATE_CLUSTER.title: "True"})
+            if keyisset("ClusterName", settings.compose_content[RES_KEY]["Properties"]):
+                root_stack.Parameters.update(
+                    {
+                        CLUSTER_NAME.title: settings.compose_content[RES_KEY][
+                            "Properties"
+                        ]["ClusterName"]
+                    }
+                )
     if CLUSTER_T not in root_stack.stack_template.resources:
         root_stack.stack_template.add_resource(get_default_cluster_config())
 
