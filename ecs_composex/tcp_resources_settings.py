@@ -34,14 +34,13 @@ from ecs_composex.rds.rds_params import (
 )
 
 
-def get_param_and_value(resource, attribute, root_stack_title, is_nested=False):
+def get_param_and_value(resource, attribute, root_stack_title):
     """
     Function to return the parameter and value for a given sub resource
 
     :param ecs_composex.common.compose_resources XResource resource:
     :param str root_stack_title:
     :param str attribute:
-    :param  is_nested:
     :return:
     """
     if isinstance(attribute, str):
@@ -52,12 +51,8 @@ def get_param_and_value(resource, attribute, root_stack_title, is_nested=False):
         raise TypeError(
             "Attribute must be a of type", str, Parameter, "Got", type(attribute)
         )
-    imported = resource.get_resource_attribute_value(
-        attr_name, root_stack_title, is_nested=is_nested
-    )
-    parameter = resource.get_resource_attribute_parameter(
-        attr_name, is_nested=is_nested
-    )
+    imported = resource.get_resource_attribute_value(attr_name, root_stack_title)
+    parameter = resource.get_resource_attribute_parameter(attr_name)
     return imported, parameter
 
 
@@ -188,8 +183,16 @@ def handle_new_tcp_resource(resource, res_root_stack, port_parameter):
     if resource.logical_name not in res_root_stack.stack_template.resources:
         raise KeyError(f"DB {resource.logical_name} not defined in DocDB Root template")
 
-    port_settings = get_param_and_value(resource, port_parameter, res_root_stack.title)
-    sg_settings = get_param_and_value(resource, resource.db_sg, res_root_stack.title)
+    port_settings = get_param_and_value(
+        resource,
+        port_parameter,
+        res_root_stack.title,
+    )
+    sg_settings = get_param_and_value(
+        resource,
+        resource.db_sg,
+        res_root_stack.title,
+    )
     for target in resource.families_targets:
         add_parameters(target[0].template, [sg_settings[1], port_settings[1]])
         target[0].stack.Parameters.update(
@@ -203,7 +206,7 @@ def handle_new_tcp_resource(resource, res_root_stack, port_parameter):
         )
         if resource.db_secret:
             secret_settings = get_param_and_value(
-                resource, resource.db_secret, res_root_stack.title, is_nested=True
+                resource, resource.db_secret, res_root_stack.title
             )
             add_parameters(target[0].template, [secret_settings[1]])
             target[0].stack.Parameters.update(

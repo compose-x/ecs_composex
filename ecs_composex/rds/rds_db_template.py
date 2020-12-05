@@ -340,4 +340,5 @@ def generate_database_template(db):
     add_db_dependency(db.cfn_resource, db.db_secret)
     db.init_outputs()
     add_db_outputs(db_template, db)
+    db.is_nested = True
     return db_template
