@@ -15,13 +15,9 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import json
-from inspect import isfunction
-from troposphere import AWSProperty
 from troposphere import Ref, Sub, s3, AWS_NO_VALUE, AWS_ACCOUNT_ID, AWS_REGION
 
 from ecs_composex.common import keyisset, keypresent, LOG
-from ecs_composex.s3 import metadata
 from ecs_composex.resources_import import import_record_properties
 
 

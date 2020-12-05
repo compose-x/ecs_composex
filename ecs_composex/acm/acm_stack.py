@@ -22,22 +22,21 @@ Main module for ACM
 from copy import deepcopy
 from warnings import warn
 
-from troposphere import Ref, AWS_NO_VALUE, Tags
+from troposphere import Ref, Tags
 from troposphere.certificatemanager import (
     Certificate as AcmCert,
     DomainValidationOption,
 )
 
-from ecs_composex.resources_import import import_record_properties
-from ecs_composex.common import no_value_if_not_set
-from ecs_composex.acm.acm_params import RES_KEY, MOD_KEY
 from ecs_composex.acm.acm_aws import lookup_cert_config
+from ecs_composex.acm.acm_params import RES_KEY, MOD_KEY
 from ecs_composex.common import (
     NONALPHANUM,
     keyisset,
 )
 from ecs_composex.common.compose_resources import set_resources
 from ecs_composex.dns.dns_params import PUBLIC_DNS_ZONE_ID
+from ecs_composex.resources_import import import_record_properties
 
 
 class Certificate(object):
