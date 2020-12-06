@@ -39,7 +39,7 @@ def test_rds_resource_type(here):
     cluster_props = load_composex_file(cluster_file_path)["Properties"]
     instance_props = load_composex_file(instance_file_path)["Properties"]
 
-    c_type = determine_resource_type(cluster_props)
-    i_type = determine_resource_type(instance_props)
+    c_type = determine_resource_type("dummy", cluster_props)
+    i_type = determine_resource_type("dummy", instance_props)
     assert c_type is DBCluster
     assert i_type is DBInstance

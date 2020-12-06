@@ -22,7 +22,7 @@ Main module template to generate the RDS Root template and all stacks according 
 from troposphere import Output
 from troposphere import Ref, Join, GetAtt
 
-from ecs_composex.common import build_template, validate_kwargs, keyisset
+from ecs_composex.common import build_template, keyisset
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T, ROOT_STACK_NAME
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.rds.rds_db_template import (
@@ -55,20 +55,36 @@ def add_db_stack(root_template, dbs_subnet_group, db):
     :param db: the database definition from the compose file
     :type db: ecs_composex.common.compose_resources.Rds
     """
-    if not db.properties and not db.parameters:
-        raise RuntimeError(
-            f"No Properties nor MacroParameters defined for {db.logical_name}"
-        )
     if db.properties:
+        if not all(
+            x in db.properties.keys() for x in [DB_ENGINE_NAME_T, DB_ENGINE_VERSION_T]
+        ):
+            raise RuntimeError(
+                "When using Properties you must define at least",
+                [DB_ENGINE_NAME_T, DB_ENGINE_VERSION_T],
+                "Got",
+                db.properties.keys(),
+                f"For {db.name}",
+            )
         non_stack_params = {
             DB_ENGINE_NAME_T: db.properties[DB_ENGINE_NAME_T],
             DB_ENGINE_VERSION_T: db.properties[DB_ENGINE_VERSION_T],
         }
     elif db.parameters:
+        if not all(x in db.parameters for x in [DB_ENGINE_NAME_T, DB_ENGINE_VERSION_T]):
+            raise RuntimeError(
+                "When using MacroParameters you define at least",
+                [DB_ENGINE_VERSION_T, DB_ENGINE_NAME_T],
+            )
         non_stack_params = {
             DB_ENGINE_NAME_T: db.parameters[DB_ENGINE_NAME_T],
             DB_ENGINE_VERSION_T: db.parameters[DB_ENGINE_VERSION_T],
         }
+    else:
+        raise RuntimeError(
+            "You require either Properties or MacroParameters and at least"
+            f"{DB_ENGINE_NAME_T} and {DB_ENGINE_VERSION_T}."
+        )
     parameters = {
         VPC_ID_T: Ref(VPC_ID),
         DBS_SUBNET_GROUP_T: Ref(dbs_subnet_group),
@@ -82,8 +98,6 @@ def add_db_stack(root_template, dbs_subnet_group, db):
         parameters.update({DB_SNAPSHOT_ID.title: db.properties["DBSnapshotIdentifier"]})
     parameters.update(non_stack_params)
     db_template = generate_database_template(db)
-    if db_template is None:
-        return
     db_stack = ComposeXStack(
         db.logical_name, stack_template=db_template, stack_parameters=parameters
     )
@@ -96,17 +110,6 @@ def add_db_stack(root_template, dbs_subnet_group, db):
     root_template.add_output(new_outputs)
 
 
-def init_rds_root_template():
-    """
-    Function to generate the root template for RDS
-
-    :return: template
-    :rtype: troposphere.Template
-    """
-    template = build_template("RDS Root Template", [VPC_ID, STORAGE_SUBNETS])
-    return template
-
-
 def generate_rds_templates(new_dbs):
     """
     Function to generate the RDS root template for all the DBs defined in the x-rds section of the compose file
@@ -115,7 +118,7 @@ def generate_rds_templates(new_dbs):
     :return: rds_root_template, the RDS Root template with nested stacks
     :rtype: troposphere.Template
     """
-    root_tpl = init_rds_root_template()
+    root_tpl = build_template("RDS Root Template", [VPC_ID, STORAGE_SUBNETS])
     dbs_subnet_group = create_db_subnet_group(root_tpl)
     for db in new_dbs:
         add_db_stack(root_tpl, dbs_subnet_group, db)

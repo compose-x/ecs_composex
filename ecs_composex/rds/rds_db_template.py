@@ -29,8 +29,12 @@ from troposphere.rds import (
     DBParameterGroup,
 )
 
-from ecs_composex.resources_import import import_record_properties
-from ecs_composex.common import build_template, cfn_conditions, keyisset, LOG
+from ecs_composex.common import (
+    build_template,
+    cfn_conditions,
+    keyisset,
+    LOG,
+)
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.rds import rds_conditions
 from ecs_composex.rds.rds_parameter_groups_helper import (
@@ -39,8 +43,6 @@ from ecs_composex.rds.rds_parameter_groups_helper import (
 )
 from ecs_composex.rds.rds_params import (
     CLUSTER_SUBNET_GROUP,
-    CLUSTER_T,
-    DATABASE_T,
     PARAMETER_GROUP_T,
     CLUSTER_PARAMETER_GROUP_T,
 )
@@ -56,6 +58,7 @@ from ecs_composex.rds.rds_params import (
     DB_STORAGE_CAPACITY,
     DB_STORAGE_TYPE,
 )
+from ecs_composex.resources_import import import_record_properties
 from ecs_composex.secrets import (
     add_db_secret,
     add_db_dependency,
@@ -123,7 +126,7 @@ def add_db_sg(template, db_name):
     )
 
 
-def add_instance(template, db):
+def add_default_instance_definition(db):
     """
     Function to add DB Instance(s)
 
@@ -131,8 +134,7 @@ def add_instance(template, db):
     :param db:
     """
     instance = DBInstance(
-        DATABASE_T,
-        template=template,
+        f"Instance{db.logical_name}",
         Engine=Ref(DB_ENGINE_NAME),
         EngineVersion=Ref(DB_ENGINE_VERSION),
         StorageType=If(
@@ -161,7 +163,7 @@ def add_instance(template, db):
             ),
         ),
         DBClusterIdentifier=If(
-            rds_conditions.USE_CLUSTER_CON_T, Ref(db.logical_name), Ref(AWS_NO_VALUE)
+            rds_conditions.USE_CLUSTER_CON_T, Ref(db.cfn_resource), Ref(AWS_NO_VALUE)
         ),
         MasterUserPassword=If(
             rds_conditions.USE_CLUSTER_CON_T,
@@ -181,17 +183,16 @@ def add_instance(template, db):
     return instance
 
 
-def add_cluster(template, db):
+def add_default_cluster_definition(db):
     """
     Function to add the cluster to the template
 
-    :param troposphere.Template template: template to add the DB Cluster to.
+    :param ecs_composex.rds.rds_stack.Rds db: The Rds resource
     :return: cluster
     :rtype: troposphere.rds.DBCluster
     """
     cluster = DBCluster(
-        CLUSTER_T,
-        template=template,
+        f"Cluster{db.logical_name}",
         Condition=rds_conditions.USE_CLUSTER_CON_T,
         DBSubnetGroupName=If(
             rds_conditions.DBS_SUBNET_GROUP_CON_T,
@@ -259,24 +260,24 @@ def add_parameter_group(template, db):
             f"{db.parameters['DB_ENGINE_VERSION.title']}"
         )
     db_settings = get_family_settings(db_family)
-    DBParameterGroup(
-        PARAMETER_GROUP_T,
-        template=template,
-        Family=db_family,
-        Parameters=db_settings,
-        Condition=rds_conditions.NOT_USE_CLUSTER_CON_T,
-    )
-    DBClusterParameterGroup(
-        CLUSTER_PARAMETER_GROUP_T,
-        template=template,
-        Condition=rds_conditions.USE_CLUSTER_CON_T,
-        Family=db_family,
-        Parameters=db_settings,
-        Description=Sub(f"RDS Settings copy for {db_family}"),
-    )
+    if isinstance(db.cfn_resource, DBInstance):
+        DBParameterGroup(
+            PARAMETER_GROUP_T,
+            template=template,
+            Family=db_family,
+            Parameters=db_settings,
+        )
+    elif isinstance(db.cfn_resource, DBCluster):
+        DBClusterParameterGroup(
+            CLUSTER_PARAMETER_GROUP_T,
+            template=template,
+            Family=db_family,
+            Parameters=db_settings,
+            Description=Sub(f"RDS Settings copy for {db_family}"),
+        )
 
 
-def override_secrets_properties(props, db):
+def override_set_properties(props, db):
     """
     Function to override secrets parameters from the rds properties
     """
@@ -292,7 +293,8 @@ def override_secrets_properties(props, db):
             "MasterUserPassword": Sub(
                 f"{{{{resolve:secretsmanager:${{{db.db_secret.title}}}:SecretString:password}}}}"
             ),
-        }
+            "VpcSecurityGroupIds": [Ref(db.db_sg)],
+        },
     )
 
 
@@ -390,6 +392,78 @@ def determine_resource_type(db_name, properties):
     return DBCluster
 
 
+def add_instances_from_parameters(db_template, db):
+    """
+    Function to go over each Instance defined in parameters
+    :param db_template:
+    :param db:
+    :return:
+    :raises: TypeError
+    """
+    aurora_compatible = [
+        "Engine",
+        "UseDefaultProcessorFeatures",
+        "Tags",
+        "SourceRegion",
+        "SourceDBInstanceIdentifier",
+        "PubliclyAccessible",
+        "PromotionTier",
+        "ProcessorFeatures",
+        "PreferredMaintenanceWindow",
+        "EnablePerformanceInsights",
+        "AllowMajorVersionUpgrade",
+        "AssociatedRoles",
+        "CACertificateIdentifier",
+        "DBInstanceClass",
+        "DBParameterGroupName",
+    ]
+    if not isinstance(db.parameters["Instances"], list):
+        raise TypeError("The Instances in MacroParameters must be a list of dict")
+    for count, db_instance in enumerate(db.parameters["Instances"]):
+        if not isinstance(db_instance, dict):
+            raise TypeError(
+                "The instance defined must be the CFN properties for RDS Instance. Got",
+                type(db_instance),
+            )
+        instance_props = import_record_properties(db_instance, DBInstance)
+        instance_props["Engine"] = Ref(DB_ENGINE_NAME)
+        for prop_name in instance_props.keys():
+            if prop_name not in aurora_compatible:
+                instance_props[prop_name] = Ref(AWS_NO_VALUE)
+        db_instance = DBInstance(
+            f"{db.logical_name}Instance{count}",
+            DBClusterIdentifier=Ref(db.cfn_resource),
+            **instance_props,
+        )
+        db_template.add_resource(db_instance)
+
+
+def create_from_properties(db_template, db):
+    rds_class = determine_resource_type(db.name, db.properties)
+    rds_props = import_record_properties(db.properties, rds_class)
+    override_set_properties(rds_props, db)
+    db.cfn_resource = rds_class(db.logical_name, **rds_props)
+    db_template.add_resource(db.cfn_resource)
+
+
+def create_from_parameters(db_template, db):
+    if db.parameters[DB_ENGINE_NAME.title].startswith("aurora"):
+        db.cfn_resource = add_default_cluster_definition(db)
+    else:
+        db.cfn_resource = add_default_instance_definition(db)
+    db_template.add_resource(db.cfn_resource)
+
+
+def add_db_instances_for_cluster(db_template, db):
+    if not isinstance(db.cfn_resource, DBCluster):
+        return
+    if not db.parameters or (db.parameters and not keyisset("Instances", db.parameters)):
+        db_instance = add_default_instance_definition(db)
+        db_template.add_resource(db_instance)
+    elif db.parameters and keyisset("Instances", db.parameters):
+        add_instances_from_parameters(db_template, db)
+
+
 def generate_database_template(db):
     """
     Function to generate the database template
@@ -402,21 +476,10 @@ def generate_database_template(db):
     db.db_secret = add_db_secret(db_template, db.logical_name)
     db.db_sg = add_db_sg(db_template, db.logical_name)
     if db.properties:
-        rds_class = determine_resource_type(db.name, db.properties)
-        rds_props = import_record_properties(db.properties, rds_class)
-        override_secrets_properties(rds_props, db)
-        db.cfn_resource = rds_class(db.logical_name, **rds_props)
-        db_template.add_resource(db.cfn_resource)
+        create_from_properties(db_template, db)
     elif not db.properties and db.parameters:
-        if db.parameters[DB_ENGINE_NAME.title].startswith("aurora"):
-            db.cfn_resource = add_cluster(db_template, db)
-        else:
-            db.cfn_resource = add_instance(db_template, db)
-    else:
-        raise KeyError("Neither Properties nor MacroParameters were set for", db.name)
-
-    if isinstance(db.cfn_resource, DBCluster) and not db.parameters:
-        add_instance(db_template, db)
+        create_from_parameters(db_template, db)
+    add_db_instances_for_cluster(db_template, db)
     add_parameter_group(db_template, db)
     add_db_dependency(db.cfn_resource, db.db_secret)
     attach_to_secret_to_resource(db_template, db.cfn_resource, db.db_secret)

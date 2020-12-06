@@ -19,29 +19,67 @@ Syntax
 Properties
 ===========
 
-RDS cluster or instances need a lot of parameters. At this stage, you would not copy the settings as defined on AWS CFN
-documentation, simply because a lot of it is done automatically for you. The plan is to use the settings in the future
-to drive changes and some more properties (ie. snapshots) will be added to allow for far more use-cases.
+RDS clusters or instances need a lot of properties. In order to keep compatibility you can still provide all the properties
+that the RDS Cluster or RDS Instance would need with the same definition as in AWS CloudFormation.
 
-.. hint::
+However, some settings will be replaced automatically (at least for the foreseeable future), such as the master username
+and password. The reason for it is to allow to keep integration to your ECS Services as seamless as possible.
 
-    Technically, the use of snapshots is already implemented, but not fully tested. Stay tuned for next update!
-
-Mandatory properties
+Using properties
 ---------------------
 
-The properties follow the `Aurora Cluster properties <https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-rds-dbcluster.html>`_
-as I have more use-cases for using Aurora than using traditional RDS. Cluster and DB Instance share a lot of common properties
-so therefore the difference will be very minor in the syntax.
-
-* `Engine`_
-* `EngineVersion`_
+When using Properties, you can use either the `RDS Aurora Cluster`_ properties or `RDS Instances`_ properties.
+ECS ComposeX will attempt to automatically identify whether this is a DB Cluster or DB Instance properties set.
+If successful, it will ingest all your properties, and explained earlier, interpolate a few with new ones created for you.
 
 
-Special Properties
--------------------
+* `MasterUsername <https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-rds-database-instance.html#cfn-rds-dbinstance-masterusername>`__
+* `MasterUserPassword <https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-rds-database-instance.html#cfn-rds-dbinstance-masteruserpassword>`__
+* `Security Groups <https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-rds-database-instance.html#cfn-rds-dbinstance-vpcsecuritygroups>`__
 
-No special properties available for RDS yet.
+
+MacroParameters
+=================
+
+MacroParameters for RDS allow you to set only very little settings / properties and let ECS ComposeX do the rest for you.
+
+.. code-block:: yaml
+    :caption: MacroParameters syntax
+
+    Engine: str
+    EngineVersion: str
+    UseServerless: bool
+    UseMultiAz: bool
+    ParametersGroup: {} # Properties for parameters group as per AWS CFN definition
+    Instances: [] # Only valid when creating a DBCluster, allows to define multiple DB Instances
+
+.. code-block:: yaml
+    :caption: MacroParameters definitions example
+
+    Engine: aurora-postgresql # Same as AWS CFN Engine property
+    EngineVersion: 11.7 # Same as AWS CFN EngineVersion property
+    UseServerless: False
+    UseMultiAz: True
+    ParametersGroups:
+      Description: Some description
+      Family: aurora-postgresql-11.7
+      Parameters: {}
+    Instances: []
+
+
+CopyDefaultParameters
+----------------------
+
+Type: boolean
+Default: True when using aurora
+
+Creates a DBClusterParameterGroup automatically so you can customize later on your CFN template for the DB Settings.
+This avoids the bug where only default.aurora-mysql5.6 settings are found if the property is not set.
+
+.. tip::
+
+    The function performing the import of settings in ecs_composex.rds.rds_parameter_groups_helper.py
+
 
 Services
 ========
@@ -56,25 +94,15 @@ Access types
 
 .. warning::
 
-    The access key value won't be respected at this stage.
+    The access key value won't be respected at this stage. This is required to keep compatibility with other modules.
 
 Settings
 ========
 
-Some use-cases require special adjustments. This is what this section is for.
+.. code-block:: yaml
+    :caption: Supported Settings
 
-copy_default_parameters
------------------------
-
-Type: boolean
-Default: True  when using aurora
-
-Creates a DBClusterParameterGroup automatically so you can customize later on your CFN template for the DB Settings.
-This avoids the bug where only default.aurora-mysql5.6 settings are found if the property is not set.
-
-.. tip::
-
-    The function performing the import of settings in ecs_composex.rds.rds_parameter_groups_helper.py
+    EnvNames: [<str>] # List of Environment Variable names to use for exposure to container
 
 Lookup
 ======
@@ -143,3 +171,5 @@ Examples
 
 .. _Engine: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-rds-dbcluster.html#cfn-rds-dbcluster-engine
 .. _EngineVersion: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-rds-dbcluster.html#cfn-rds-dbcluster-engineversion
+.. _RDS Aurora Cluster: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-rds-dbcluster.html
+.. _RDS Instances: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-rds-database-instance.html
