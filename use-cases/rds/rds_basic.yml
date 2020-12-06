@@ -4,9 +4,41 @@
 version: '3.8'
 x-rds:
   dbA:
+    MacroParameters:
+      Engine: "aurora-postgresql"
+      EngineVersion: "11.7"
+    Settings:
+      EnvNames:
+        - DBA
+    Services:
+      - name: app01
+        access: RW
+      - name: app03
+        access: RW
+      - name: you-too
+        access: RW
+
+
+  dbB:
     Properties:
       Engine: "aurora-postgresql"
       EngineVersion: "11.7"
+      BackupRetentionPeriod: 1
+      DatabaseName: dbname
+      DeletionProtection: False
+      EnableCloudwatchLogsExports:
+        - audit
+        - general
+      EnableHttpEndpoint: True
+      EnableIAMDatabaseAuthentication: True
+      MasterUsername: dummy
+      MasterUserPassword: dummy
+      Port: 5432
+      StorageEncrypted: True
+      Tags:
+        - Key: Name
+          Value: "dummy-db"
+
     Settings:
       EnvNames:
         - DBA

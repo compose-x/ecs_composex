@@ -59,12 +59,16 @@ def add_db_stack(root_template, dbs_subnet_group, db):
         raise RuntimeError(
             f"No Properties nor MacroParameters defined for {db.logical_name}"
         )
-    required_props = [DB_ENGINE_NAME_T, DB_ENGINE_VERSION_T]
-    validate_kwargs(required_props, db.properties)
-    non_stack_params = {
-        DB_ENGINE_NAME_T: db.properties[DB_ENGINE_NAME_T],
-        DB_ENGINE_VERSION_T: db.properties[DB_ENGINE_VERSION_T],
-    }
+    if db.properties:
+        non_stack_params = {
+            DB_ENGINE_NAME_T: db.properties[DB_ENGINE_NAME_T],
+            DB_ENGINE_VERSION_T: db.properties[DB_ENGINE_VERSION_T],
+        }
+    elif db.parameters:
+        non_stack_params = {
+            DB_ENGINE_NAME_T: db.parameters[DB_ENGINE_NAME_T],
+            DB_ENGINE_VERSION_T: db.parameters[DB_ENGINE_VERSION_T],
+        }
     parameters = {
         VPC_ID_T: Ref(VPC_ID),
         DBS_SUBNET_GROUP_T: Ref(dbs_subnet_group),

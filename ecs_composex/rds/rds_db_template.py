@@ -29,7 +29,8 @@ from troposphere.rds import (
     DBParameterGroup,
 )
 
-from ecs_composex.common import build_template, cfn_conditions
+from ecs_composex.resources_import import import_record_properties
+from ecs_composex.common import build_template, cfn_conditions, keyisset, LOG
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.rds import rds_conditions
 from ecs_composex.rds.rds_parameter_groups_helper import (
@@ -160,7 +161,7 @@ def add_instance(template, db):
             ),
         ),
         DBClusterIdentifier=If(
-            rds_conditions.USE_CLUSTER_CON_T, Ref(CLUSTER_T), Ref(AWS_NO_VALUE)
+            rds_conditions.USE_CLUSTER_CON_T, Ref(db.logical_name), Ref(AWS_NO_VALUE)
         ),
         MasterUserPassword=If(
             rds_conditions.USE_CLUSTER_CON_T,
@@ -235,15 +236,27 @@ def add_parameter_group(template, db):
     :param db: the db object as imported from Docker composeX file
     :type db: ecs_composex.common.compose_resources.Rds
     """
-    db_family = get_family_from_engine_version(
-        db.properties[DB_ENGINE_NAME.title],
-        db.properties[DB_ENGINE_VERSION.title],
-    )
+    if db.properties:
+        db_family = get_family_from_engine_version(
+            db.properties[DB_ENGINE_NAME.title],
+            db.properties[DB_ENGINE_VERSION.title],
+        )
+    elif not db.properties and db.parameters:
+        db_family = get_family_from_engine_version(
+            db.parameters[DB_ENGINE_NAME.title],
+            db.parameters[DB_ENGINE_VERSION.title],
+        )
+    else:
+        raise KeyError(
+            DB_ENGINE_NAME.title,
+            DB_ENGINE_VERSION.title,
+            "are required both for new RDS Instances/Clusters",
+        )
     if not db_family:
         raise ValueError(
             "Failed to retrieve the DB Family for "
-            f"{db.properties['DB_ENGINE_NAME.title']}"
-            f"{db.properties['DB_ENGINE_VERSION.title']}"
+            f"{db.proparametersperties['DB_ENGINE_NAME.title']}"
+            f"{db.parameters['DB_ENGINE_VERSION.title']}"
         )
     db_settings = get_family_settings(db_family)
     DBParameterGroup(
@@ -260,6 +273,26 @@ def add_parameter_group(template, db):
         Family=db_family,
         Parameters=db_settings,
         Description=Sub(f"RDS Settings copy for {db_family}"),
+    )
+
+
+def override_secrets_properties(props, db):
+    """
+    Function to override secrets parameters from the rds properties
+    """
+    props.update(
+        {
+            "MasterUsername": If(
+                rds_conditions.USE_CLUSTER_AND_SNAPSHOT_CON_T,
+                Ref(AWS_NO_VALUE),
+                Sub(
+                    f"{{{{resolve:secretsmanager:${{{db.db_secret.title}}}:SecretString:username}}}}"
+                ),
+            ),
+            "MasterUserPassword": Sub(
+                f"{{{{resolve:secretsmanager:${{{db.db_secret.title}}}:SecretString:password}}}}"
+            ),
+        }
     )
 
 
@@ -323,6 +356,40 @@ def init_database_template(db_name):
     return template
 
 
+def determine_resource_type(db_name, properties):
+    """
+    Function to determine if the properties are the ones of a DB Cluster or DB Instance.
+    By default it will assume Cluster if cannot conclude that it is a DB Instance
+
+    :param str db_name:
+    :param dict properties:
+    :return:
+    """
+    if keyisset(DB_ENGINE_NAME.title, properties) and properties[
+        DB_ENGINE_NAME.title
+    ].startswith("aurora"):
+        LOG.info(f"Identified {db_name} to be a RDS Aurora Cluster")
+        return DBCluster
+    else:
+        if all(
+            property_name in DBCluster.props.keys()
+            for property_name in properties.keys()
+        ):
+            LOG.info(f"Identified {db_name} to be a RDS Aurora Cluster")
+            return DBCluster
+        elif all(
+            property_name in DBInstance.props.keys()
+            for property_name in properties.keys()
+        ):
+            LOG.info(f"Identified {db_name} to be a RDS Instance")
+            return DBInstance
+    LOG.error(
+        "From the properties defined, we cannot determine whether this is a RDS Cluster or RDS Instance."
+        " Setting to Cluster"
+    )
+    return DBCluster
+
+
 def generate_database_template(db):
     """
     Function to generate the database template
@@ -334,13 +401,23 @@ def generate_database_template(db):
     db_template = init_database_template(db.name)
     db.db_secret = add_db_secret(db_template, db.logical_name)
     db.db_sg = add_db_sg(db_template, db.logical_name)
-    instance = add_instance(db_template, db)
-    cluster = add_cluster(db_template, db)
-    add_parameter_group(db_template, db)
-    if db.properties[DB_ENGINE_NAME.title].startswith("aurora"):
-        db.cfn_resource = cluster
+    if db.properties:
+        rds_class = determine_resource_type(db.name, db.properties)
+        rds_props = import_record_properties(db.properties, rds_class)
+        override_secrets_properties(rds_props, db)
+        db.cfn_resource = rds_class(db.logical_name, **rds_props)
+        db_template.add_resource(db.cfn_resource)
+    elif not db.properties and db.parameters:
+        if db.parameters[DB_ENGINE_NAME.title].startswith("aurora"):
+            db.cfn_resource = add_cluster(db_template, db)
+        else:
+            db.cfn_resource = add_instance(db_template, db)
     else:
-        db.cfn_resource = instance
+        raise KeyError("Neither Properties nor MacroParameters were set for", db.name)
+
+    if isinstance(db.cfn_resource, DBCluster) and not db.parameters:
+        add_instance(db_template, db)
+    add_parameter_group(db_template, db)
     add_db_dependency(db.cfn_resource, db.db_secret)
     attach_to_secret_to_resource(db_template, db.cfn_resource, db.db_secret)
     db.init_outputs()

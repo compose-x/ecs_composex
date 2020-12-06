@@ -1,0 +1,26 @@
+﻿Type: AWS::RDS::DBInstance
+Properties:
+  AllocatedStorage: 1024
+  AllowMajorVersionUpgrade: True
+  CharacterSetName: UTF-8
+  DBInstanceClass: db.t3.large
+  DBName: db
+  DeletionProtection: False
+  EnableCloudwatchLogsExports:
+    - audit
+  EnableIAMDatabaseAuthentication: False
+  EnablePerformanceInsights: False
+  MasterUsername: dummy
+  MasterUserPassword: password
+  MaxAllocatedStorage: 2048
+  MultiAZ: True
+  Port: 5432
+
+  PubliclyAccessible: False
+  StorageEncrypted: True
+  StorageType: "gp2"
+  Tags:
+    - Key: Name
+      Value: dummy-db
+  Timezone: UTC
+  UseDefaultProcessorFeatures: True
