@@ -367,29 +367,26 @@ def determine_resource_type(db_name, properties):
     :param dict properties:
     :return:
     """
-    if keyisset(DB_ENGINE_NAME.title, properties) and properties[
-        DB_ENGINE_NAME.title
-    ].startswith("aurora"):
-        LOG.info(f"Identified {db_name} to be a RDS Aurora Cluster")
-        return DBCluster
-    else:
-        if all(
+    if (
+        keyisset(DB_ENGINE_NAME.title, properties)
+        and properties[DB_ENGINE_NAME.title].startswith("aurora")
+        or all(
             property_name in DBCluster.props.keys()
             for property_name in properties.keys()
-        ):
-            LOG.info(f"Identified {db_name} to be a RDS Aurora Cluster")
-            return DBCluster
-        elif all(
-            property_name in DBInstance.props.keys()
-            for property_name in properties.keys()
-        ):
-            LOG.info(f"Identified {db_name} to be a RDS Instance")
-            return DBInstance
+        )
+    ):
+        LOG.info(f"Identified {db_name} to be a RDS Aurora Cluster")
+        return DBCluster
+    elif all(
+        property_name in DBInstance.props.keys() for property_name in properties.keys()
+    ):
+        LOG.info(f"Identified {db_name} to be a RDS Instance")
+        return DBInstance
     LOG.error(
         "From the properties defined, we cannot determine whether this is a RDS Cluster or RDS Instance."
         " Setting to Cluster"
     )
-    return DBCluster
+    return None
 
 
 def add_instances_from_parameters(db_template, db):
@@ -440,10 +437,18 @@ def add_instances_from_parameters(db_template, db):
 
 def create_from_properties(db_template, db):
     rds_class = determine_resource_type(db.name, db.properties)
-    rds_props = import_record_properties(db.properties, rds_class)
-    override_set_properties(rds_props, db)
-    db.cfn_resource = rds_class(db.logical_name, **rds_props)
-    db_template.add_resource(db.cfn_resource)
+    if rds_class:
+        rds_props = import_record_properties(db.properties, rds_class)
+        override_set_properties(rds_props, db)
+        db.cfn_resource = rds_class(db.logical_name, **rds_props)
+        db_template.add_resource(db.cfn_resource)
+    elif db.parameters:
+        create_from_parameters(db_template, db)
+    else:
+        raise RuntimeError(
+            f"Failed to identify if {db.logical_name}"
+            " is a Cluster or an Instance and MacroParameters are not set."
+        )
 
 
 def create_from_parameters(db_template, db):
@@ -457,7 +462,9 @@ def create_from_parameters(db_template, db):
 def add_db_instances_for_cluster(db_template, db):
     if not isinstance(db.cfn_resource, DBCluster):
         return
-    if not db.parameters or (db.parameters and not keyisset("Instances", db.parameters)):
+    if not db.parameters or (
+        db.parameters and not keyisset("Instances", db.parameters)
+    ):
         db_instance = add_default_instance_definition(db)
         db_template.add_resource(db_instance)
     elif db.parameters and keyisset("Instances", db.parameters):
