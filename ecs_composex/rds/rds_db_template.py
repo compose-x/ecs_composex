@@ -130,8 +130,7 @@ def add_default_instance_definition(db):
     """
     Function to add DB Instance(s)
 
-    :param troposphere.Template template: The template to add the DB Instance to.
-    :param db:
+    :param ecs_composex.rds.rds_stack.Rds db:
     """
     instance = DBInstance(
         f"Instance{db.logical_name}",
@@ -180,6 +179,8 @@ def add_default_instance_definition(db):
         Tags=Tags(SecretName=Ref(db.db_secret), Name=db.logical_name),
         StorageEncrypted=True,
     )
+    if db.parameters and keyisset("MultiAZ", db.parameters):
+        setattr(instance, "MultiAZ", True)
     return instance
 
 
@@ -237,22 +238,47 @@ def add_parameter_group(template, db):
     :param db: the db object as imported from Docker composeX file
     :type db: ecs_composex.common.compose_resources.Rds
     """
-    if db.properties:
+
+    if db.parameters and keyisset("ParametersGroups", db.parameters):
+        if isinstance(db.cfn_resource, DBCluster):
+            props = import_record_properties(
+                db.parameters["ParametersGroups"], DBClusterParameterGroup
+            )
+            print(props, db.parameters["ParametersGroups"])
+            template.add_resource(
+                DBClusterParameterGroup(
+                    CLUSTER_PARAMETER_GROUP_T,
+                    **props,
+                )
+            )
+            return
+        elif isinstance(db.cfn_resource, DBInstance):
+            props = import_record_properties(
+                db.parameters["ParametersGroups"], DBParameterGroup
+            )
+            template.add_resource(
+                DBParameterGroup(
+                    CLUSTER_PARAMETER_GROUP_T,
+                    **props,
+                )
+            )
+
+    if db.properties and not db.parameters:
         db_family = get_family_from_engine_version(
             db.properties[DB_ENGINE_NAME.title],
             db.properties[DB_ENGINE_VERSION.title],
         )
-    elif not db.properties and db.parameters:
+    elif (
+        not db.properties
+        and db.parameters
+        and not keyisset("ParametersGroups", db.parameters)
+    ):
         db_family = get_family_from_engine_version(
             db.parameters[DB_ENGINE_NAME.title],
             db.parameters[DB_ENGINE_VERSION.title],
         )
     else:
-        raise KeyError(
-            DB_ENGINE_NAME.title,
-            DB_ENGINE_VERSION.title,
-            "are required both for new RDS Instances/Clusters",
-        )
+        raise RuntimeError("Failed to determine the DB Parameters family.", db.name)
     if not db_family:
         raise ValueError(
             "Failed to retrieve the DB Family for "
