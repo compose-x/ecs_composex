@@ -69,24 +69,27 @@ class Rds(XResource):
         Method to init the RDS Output attributes
         """
         self.output_properties = {
-            DB_NAME.title: (self.logical_name, self.cfn_resource, Ref, None),
+            DB_NAME.title: (self.logical_name, self.cfn_resource, Ref, None, "DbName"),
             DB_ENDPOINT_PORT: (
                 f"{self.logical_name}{DB_ENDPOINT_PORT}",
                 self.cfn_resource,
                 GetAtt,
                 DB_ENDPOINT_PORT,
+                "Port"
             ),
             self.db_secret.title: (
                 self.db_secret.title,
                 self.db_secret,
                 Ref,
                 None,
+                "SecretArn"
             ),
             self.db_sg.title: (
                 self.db_sg.title,
                 self.db_sg,
                 GetAtt,
                 "GroupId",
+                "GroupId"
             ),
         }
 
