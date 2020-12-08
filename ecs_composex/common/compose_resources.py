@@ -1,4 +1,4 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 #   ECS ComposeX <https://github.com/lambda-my-aws/ecs_composex>
 #   Copyright (C) 2020  John Mille <john@lambda-my-aws.io>
 #  #
@@ -296,20 +296,28 @@ class XResource(object):
                     definition[2],
                 )
             name = NONALPHANUM.sub("", definition[0])
+            if len(definition) == 5 and definition[4]:
+                LOG.debug(f"Adding portback output for {self.name}")
+                export = Export(If(
+                        USE_STACK_NAME_CON_T,
+                        Sub(f"${{{AWS_STACK_NAME}}}{DELIM}{self.name}{DELIM}{definition[4]}"),
+                        Sub(f"${{{ROOT_STACK_NAME.title}}}{DELIM}{self.name}{DELIM}{definition[4]}"),
+                    ))
+            else:
+                export = Export(If(
+                        USE_STACK_NAME_CON_T,
+                        Sub(f"${{{AWS_STACK_NAME}}}{DELIM}{name}"),
+                        Sub(f"${{{ROOT_STACK_NAME.title}}}{DELIM}{name}"),
+                    ))
             self.attributes_outputs[output_prop_name] = {
                 "Name": name,
                 "Output": Output(
                     name,
                     Value=value,
-                    Export=Export(
-                        If(
-                            USE_STACK_NAME_CON_T,
-                            Sub(f"${{{AWS_STACK_NAME}}}{DELIM}{name}"),
-                            Sub(f"${{{ROOT_STACK_NAME.title}}}{DELIM}{name}"),
-                        )
-                    ),
+                    Export=export
                 ),
             }
+
         for attr in self.attributes_outputs.values():
             self.outputs.append(attr["Output"])
 

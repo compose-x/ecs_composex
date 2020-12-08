@@ -71,18 +71,20 @@ class Queue(XResource):
 
     def init_outputs(self):
         self.output_properties = {
-            SQS_URL.title: (self.logical_name, self.cfn_resource, Ref, None),
+            SQS_URL.title: (self.logical_name, self.cfn_resource, Ref, None, "Url"),
             SQS_ARN.title: (
                 f"{self.logical_name}{SQS_ARN.title}",
                 self.cfn_resource,
                 GetAtt,
                 SQS_ARN.title,
+                "Arn"
             ),
             SQS_NAME.title: (
                 f"{self.logical_name}{SQS_NAME.title}",
                 self.cfn_resource,
                 GetAtt,
                 SQS_NAME.title,
+                "QueueName"
             ),
         }
 
