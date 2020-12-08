@@ -1,6 +1,5 @@
 ﻿.. _features:
 
-
 .. toctree::
     :maxdepth: 1
 
@@ -10,6 +9,7 @@
     features/dyndb
     features/docdb
     features/s3
+    features/kinesis
     features/sqs
     features/kms
     features/vpc

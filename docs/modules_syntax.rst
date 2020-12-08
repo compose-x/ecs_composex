@@ -31,6 +31,7 @@
     syntax/composex/dynamodb
     syntax/composex/docdb
     syntax/composex/s3
+    syntax/composex/kinesis
     syntax/composex/sqs
     syntax/composex/sns
     syntax/composex/acm
