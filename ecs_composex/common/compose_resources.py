@@ -21,11 +21,16 @@ Module to define the ComposeX Resources into a simple object to make it easier t
 
 from copy import deepcopy
 
-from troposphere import Output, Parameter
-from troposphere import Ref, GetAtt
+from troposphere import Output, Parameter, Export
+from troposphere import Ref, GetAtt, Sub, If
+from troposphere import AWS_STACK_NAME
 from troposphere.ecs import Environment
 
+
 from ecs_composex.common import LOG, NONALPHANUM, keyisset, keypresent
+from ecs_composex.common.ecs_composex import CFN_EXPORT_DELIMITER as DELIM
+from ecs_composex.common.cfn_conditions import USE_STACK_NAME_CON_T
+from ecs_composex.common.cfn_params import ROOT_STACK_NAME
 
 
 def set_resources(settings, resource_class, res_key):
@@ -293,7 +298,15 @@ class XResource(object):
             name = NONALPHANUM.sub("", definition[0])
             self.attributes_outputs[output_prop_name] = {
                 "Name": name,
-                "Output": Output(name, Value=value),
+                "Output": Output(
+                    name,
+                    Value=value,
+                    Export=Export(If(
+                        USE_STACK_NAME_CON_T,
+                        Sub(f"${{{AWS_STACK_NAME}}}{DELIM}{name}"),
+                        Sub(f"${{{ROOT_STACK_NAME.title}}}{DELIM}{name}"),
+                    )),
+                ),
             }
         for attr in self.attributes_outputs.values():
             self.outputs.append(attr["Output"])
