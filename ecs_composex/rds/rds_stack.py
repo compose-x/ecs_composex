@@ -89,7 +89,7 @@ class Rds(XResource):
                 self.db_sg,
                 GetAtt,
                 "GroupId",
-                "GroupId"
+                "RdsDbSecurityGroup"
             ),
         }
 
