@@ -1,0 +1,18 @@
+﻿Properties:
+  AssociatedRoles: []
+  AvailabilityZones: []
+  BackupRetentionPeriod: 1
+  DatabaseName: dbname
+  DeletionProtection: False
+  EnableCloudwatchLogsExports:
+    - audit
+    - general
+  EnableHttpEndpoint: True
+  EnableIAMDatabaseAuthentication: True
+  MasterUsername: dummy
+  MasterUserPassword: dummy
+  Port: 5432
+  StorageEncrypted: True
+  Tags:
+    - Key: Name
+      Value: "dummy-db"

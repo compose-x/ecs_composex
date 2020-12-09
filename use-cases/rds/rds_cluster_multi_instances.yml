@@ -7,6 +7,9 @@ x-rds:
     MacroParameters:
       Engine: "aurora-postgresql"
       EngineVersion: "11.7"
+      Instances:
+        - DBInstanceClass: db.m5a.large
+          DBAllocatedStorage: 50
     Settings:
       EnvNames:
         - DBA
@@ -18,6 +21,27 @@ x-rds:
       - name: you-too
         access: RW
 
+  dbC:
+    MacroParameters:
+      Engine: "aurora-postgresql"
+      EngineVersion: "11.7"
+      ParametersGroups:
+        Description: CloudFormation Sample Aurora Parameter Group
+        Family: aurora5.6
+        Parameters:
+          sql_mode: IGNORE_SPACE
+          max_allowed_packet: 1024
+          innodb_buffer_pool_size: '{DBInstanceClassMemory*3/4}'
+    Settings:
+      EnvNames:
+        - DBC
+    Services:
+      - name: app01
+        access: RW
+      - name: app03
+        access: RW
+      - name: you-too
+        access: RW
 
   dbB:
     Properties:
@@ -41,7 +65,7 @@ x-rds:
 
     Settings:
       EnvNames:
-        - DBA
+        - DBB
     Services:
       - name: app01
         access: RW

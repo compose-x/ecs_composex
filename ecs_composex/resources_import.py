@@ -70,6 +70,8 @@ def import_non_functions(props, prop_name, top_class, properties, set_to_novalue
                     ignore_missing_required=False,
                 )
                 props[prop_name] = top_class.props[prop_name][0](**sub_props)
+            else:
+                props[prop_name] = properties[prop_name]
         except TypeError:
             props[prop_name] = properties[prop_name]
 
