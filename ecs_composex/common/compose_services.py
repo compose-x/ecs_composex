@@ -16,14 +16,11 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import re
+from os import path
 from copy import deepcopy
 from json import dumps
 
-from troposphere import (
-    AWS_NO_VALUE,
-    AWS_REGION,
-    AWS_STACK_NAME,
-)
+from troposphere import AWS_NO_VALUE, AWS_REGION, AWS_STACK_NAME, AWS_PARTITION
 from troposphere import Parameter, Tags
 from troposphere import Sub, Ref, GetAtt, ImportValue, Join
 from troposphere.ecs import (
@@ -33,11 +30,13 @@ from troposphere.ecs import (
     LogConfiguration,
     ContainerDefinition,
     TaskDefinition,
+    EnvironmentFile,
 )
 from troposphere.iam import Policy
 
-from ecs_composex.common import NONALPHANUM, LOG
+from ecs_composex.common import NONALPHANUM, LOG, FILE_PREFIX
 from ecs_composex.common import keyisset, keypresent
+from ecs_composex.common.files import upload_file
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME
 from ecs_composex.common.compose_volumes import (
     ComposeVolume,
@@ -338,6 +337,8 @@ class ComposeService(object):
         self.container = None
         self.volumes = []
         self.secrets = []
+        self.env_files = []
+        self.set_env_files()
         self.environment = set_else_none("environment", self.definition, None, False)
         self.cfn_environment = (
             import_env_variables(self.environment)
@@ -413,6 +414,30 @@ class ComposeService(object):
             Secrets=secrets,
         )
         self.container_parameters.update({self.image_param.title: self.image})
+
+    def set_env_files(self):
+        """
+        Method to list all the env files and check the files are found and available.
+        """
+        env_file_key = "env_file"
+        if not keyisset(env_file_key, self.definition):
+            return
+        if isinstance(self.definition[env_file_key], str):
+            file_path = self.definition[env_file_key]
+            if not path.exists(path.abspath(file_path)):
+                raise FileNotFoundError("No file found at", path.abspath(file_path))
+            self.env_files.append(path.abspath(file_path))
+        elif isinstance(self.definition[env_file_key], list):
+            for file_path in self.definition[env_file_key]:
+                if not isinstance(file_path, str):
+                    raise TypeError(
+                        "Files in the env_file is supposed to be a list of paths to files (str). Got",
+                        type(file_path),
+                    )
+                if not path.exists(path.abspath(file_path)):
+                    raise FileNotFoundError("No file found at", path.abspath(file_path))
+                self.env_files.append(path.abspath(file_path))
+        LOG.debug(self.env_files)
 
     def set_networks(self):
         if not keyisset("networks", self.definition):
@@ -842,6 +867,8 @@ class ComposeFamily(object):
         self.task_definition = None
         self.service_definition = None
         self.service_config = None
+        self.exec_role = None
+        self.task_role = None
         self.scalable_target = None
         self.ecs_service = None
         self.task_logging_options = {}
@@ -1178,7 +1205,7 @@ class ComposeFamily(object):
             logging_def.Options.update(self.task_logging_options)
 
     def init_task_definition(self):
-        add_service_roles(self.template)
+        add_service_roles(self)
         self.set_task_compute_parameter()
         self.set_task_definition()
         self.refresh_container_logging_definition()
@@ -1197,4 +1224,64 @@ class ComposeFamily(object):
                 )
                 LOG.info(
                     f"Set {network.subnet_name} as {APP_SUBNETS.title} for {self.name}"
+                )
+
+    def upload_services_env_files(self, settings):
+        """
+        Method to go over each service and if settings are to upload files to S3, will create objects and update the
+        container definition for env_files accordingly.
+
+        :param ecs_composex.common.settings.ComposeXSettings settings:
+        :return:
+        """
+        if settings.no_upload:
+            return
+        for service in self.services:
+            env_files = []
+            for env_file in service.env_files:
+                with open(env_file, "r") as file_fd:
+                    file_body = file_fd.read()
+                object_name = path.basename(env_file)
+                try:
+                    upload_file(
+                        body=file_body,
+                        bucket_name=settings.bucket_name,
+                        mime="text/plain",
+                        prefix=f"{FILE_PREFIX}/env_files",
+                        file_name=object_name,
+                        settings=settings,
+                    )
+                    LOG.info(f"Successfully uploaded {env_file} to S3")
+                except Exception:
+                    LOG.error(f"Failed to upload env file {object_name}")
+                    raise
+                file_path = Sub(
+                    f"arn:${{{AWS_PARTITION}}}:s3:::{settings.bucket_name}/{FILE_PREFIX}/env_files/{object_name}"
+                )
+                env_files.append(EnvironmentFile(Type="s3", Value=file_path))
+            if not hasattr(service.container_definition, "EnvironmentFiles"):
+                setattr(service.container_definition, "EnvironmentFiles", env_files)
+            else:
+                service.container_definition.EnvironmentFiles += env_files
+            if "S3EnvFilesAccess" not in [
+                policy.PolicyName
+                for policy in self.exec_role.Policies
+                if isinstance(policy.PolicyName, str)
+            ]:
+                self.exec_role.Policies.append(
+                    Policy(
+                        PolicyName="S3EnvFilesAccess",
+                        PolicyDocument={
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Action": "s3:GetObject",
+                                    "Effect": "Allow",
+                                    "Resource": Sub(
+                                        f"arn:${{{AWS_PARTITION}}}:s3:::{settings.bucket_name}/*"
+                                    ),
+                                }
+                            ],
+                        },
+                    )
                 )

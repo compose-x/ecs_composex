@@ -20,6 +20,7 @@ secrets:
           Key: test
 services:
   app01:
+    env_file: ./use-cases/env-files/dummy.env
     deploy:
       labels:
         ecs.task.family: bignicefamily
@@ -67,6 +68,8 @@ services:
     x-scaling:
       range: "1-4"
   app02:
+    env_file:
+      - ./use-cases/env-files/dummy.env
     deploy:
       labels:
         ecs.task.family: youtoo

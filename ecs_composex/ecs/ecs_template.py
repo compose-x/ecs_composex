@@ -296,3 +296,4 @@ def generate_services(settings):
                 ),
             }
         )
+        family.upload_services_env_files(settings)
