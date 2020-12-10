@@ -30,16 +30,16 @@ from ecs_composex.ecs.ecs_params import (
 from ecs_composex.iam import service_role_trust_policy
 
 
-def add_service_roles(template):
+def add_service_roles(task_family):
     """
     Function to create the IAM roles for the ECS task
 
-    :param template: ecs_service template to add the resources to
-    :type template: troposphere.Template
+    :param task_family: The task family to add the roles to
+    :type task_family: ecs_composex.common.compose_services.ComposeFamily
     """
-    Role(
+    task_family.exec_role = Role(
         EXEC_ROLE_T,
-        template=template,
+        template=task_family.template,
         AssumeRolePolicyDocument=service_role_trust_policy("ecs-tasks"),
         Description=Sub(
             f"Execution role for ${{{SERVICE_NAME_T}}} in ${{{CLUSTER_NAME_T}}}"
@@ -100,9 +100,9 @@ def add_service_roles(template):
             )
         ],
     )
-    Role(
+    task_family.task_role = Role(
         TASK_ROLE_T,
-        template=template,
+        template=task_family.template,
         AssumeRolePolicyDocument=service_role_trust_policy("ecs-tasks"),
         Description=Sub(f"TaskRole - ${{{SERVICE_NAME_T}}} in ${{{CLUSTER_NAME_T}}}"),
         ManagedPolicyArns=[],
