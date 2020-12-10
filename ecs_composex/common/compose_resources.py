@@ -301,11 +301,13 @@ class XResource(object):
                 "Output": Output(
                     name,
                     Value=value,
-                    Export=Export(If(
-                        USE_STACK_NAME_CON_T,
-                        Sub(f"${{{AWS_STACK_NAME}}}{DELIM}{name}"),
-                        Sub(f"${{{ROOT_STACK_NAME.title}}}{DELIM}{name}"),
-                    )),
+                    Export=Export(
+                        If(
+                            USE_STACK_NAME_CON_T,
+                            Sub(f"${{{AWS_STACK_NAME}}}{DELIM}{name}"),
+                            Sub(f"${{{ROOT_STACK_NAME.title}}}{DELIM}{name}"),
+                        )
+                    ),
                 ),
             }
         for attr in self.attributes_outputs.values():

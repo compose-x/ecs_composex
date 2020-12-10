@@ -15,21 +15,29 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from os import path
-from json import loads
-from ecs_composex.iam.import_sam_policies import import_and_cleanse_policies
+"""
+Module to import Policies templates from AWS SAM policies templates.
+"""
+
+import json
+from samtranslator.policy_templates_data import POLICY_TEMPLATES_FILE
 
 
-def get_access_types():
-    sam_policies = import_and_cleanse_policies()
-    with open(
-        f"{path.abspath(path.dirname(__file__))}/kinesis_perms.json",
-        "r",
-        encoding="utf-8-sig",
-    ) as perms_fd:
-        kinesis_policies = loads(perms_fd.read())
-    sam_policies.update(kinesis_policies)
-    return sam_policies
+def import_and_cleanse_policies():
+    """
+    Function to go over each policy defined in AWS SAM policies and align it to ECS ComposeX expected format.
 
+    :return: The policies
+    :rtype: dict
+    """
 
-ACCESS_TYPES = get_access_types()
+    with open(POLICY_TEMPLATES_FILE, "r") as policies_fd:
+        policies_orig = json.loads(policies_fd.read())["Templates"]
+    import_policies = {}
+
+    for name, value in policies_orig.items():
+        import_policies[name] = {
+            "Action": value["Definition"]["Statement"][0]["Action"],
+            "Effect": "Allow",
+        }
+    return import_policies

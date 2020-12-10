@@ -43,7 +43,7 @@ x-sqs:
     Properties: {}
     Services:
       - name: app03
-        access: RWMessages
+        access: SQSPollerPolicy
         scaling:
           scale_in_cooldown: 180
           scale_out_cooldown: 60
