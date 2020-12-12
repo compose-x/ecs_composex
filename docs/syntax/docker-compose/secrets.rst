@@ -82,18 +82,39 @@ Type: List of objects/dicts
 .. code-block:: yaml
     :caption: JsonKeys objects structure
 
-    Key: str
-    Name: str
+    SecretKey: str
+    VarName: str
+    Transform: str
 
-Key
-"""
+SecretKey
+""""""""""""
 
 Name of the JSON Key in your secret.
 
-Name
-""""
+VarName
+""""""""
 
 The Name of the secret specifically for the secret JSON key
+
+Transform
+""""""""""
+
+When you want to transform the original secret key into something else, here are simple transforms.
+
+java_properties
+++++++++++++++++
+
+Take a string and replaces all letters to their uppercase version and replaces **.** with **_**
+
+title
+++++++
+
+Set to uppercase the first letter of every word. **some.properties** becomes **Some.Properties**
+
+capitalize
++++++++++++
+
+Changes all letters from lower case to uppercase but does not change anything else.
 
 
 Examples
