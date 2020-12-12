@@ -1335,6 +1335,12 @@ class ComposeFamily(object):
                     Environment(
                         Name="AWS_CODEGURU_PROFILER_GROUP_ARN",
                         Value=GetAtt(service.code_profiler, "Arn"),
+                    ),
+                )
+                service.container_definition.Environment.append(
+                    Environment(
+                        Name="AWS_CODEGURU_PROFILER_GROUP_NAME",
+                        Value=Ref(service.code_profiler),
                     )
                 )
                 if service.code_profiler not in self.template.resources:
