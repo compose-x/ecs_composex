@@ -18,6 +18,7 @@
 from pytest import fixture
 from ecs_composex.common.envsubst import expandvars
 
+
 @fixture
 def mock_env_vars(monkeypatch):
     monkeypatch.setenv("TOTO", "toto")
@@ -37,7 +38,14 @@ def test_envsubst(mock_env_vars):
         ("$TOTO -- $TATA", "toto -- tata"),
         ("${ABCD:-Cake}", "Cake"),
         ("${TOTO:-Cake}", "toto"),
-        ("$TOTO -- ${TATA:+SUCCESS} -- ${AWS::AccountId}", "toto -- SUCCESS -- ${AWS::AccountId}")
+        (
+            "$TOTO -- ${TATA:+SUCCESS} -- ${AWS::AccountId}",
+            "toto -- SUCCESS -- ${AWS::AccountId}",
+        ),
+        (
+            "https://s3.${AWS::Region}.${AWS::URLSuffix}",
+            "https://s3.${AWS::Region}.${AWS::URLSuffix}",
+        ),
     ]
     for test in tests:
         assert expandvars(test[0]) == test[1]
