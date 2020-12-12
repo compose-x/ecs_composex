@@ -22,8 +22,8 @@ Module to do a better env variables handling.
 import os
 import re
 
-ENV_VAR_REGEXP = r"(?<!\\)\$(\w+|\{([^}]*)\})"
-SPECIAL_INTERPOLATION = r"(?<!\\)(\$(\{(([^}]+)(\:[+-=]{1}))([^}]+)\}))"
+ENV_VAR_REGEXP = r"(?<!\\)\$(\w+|\{(?!AWS::)([^}]*)\})"
+SPECIAL_INTERPOLATION = r"(?<!\\)(\$(\{(((?!AWS::)[^}]+)(\:[+-=]{1}))([^}]+)\}))"
 IF_UNDEFINED = r":-"
 IF_DEFINED = r":+"
 
@@ -51,5 +51,5 @@ def expandvars(path, default=None, skip_escaped=True):
             match.group(0) if default is None else default,
         )
 
-    re_string = (r"(?<!\\)" if skip_escaped else "") + r"\$(\w+|\{([^}]*)\})"
+    re_string = (r"(?<!\\)" if skip_escaped else "") + r"\$(\w+|\{(?!AWS::)([^}]*)\})"
     return re.sub(re_string, replace_var, path)
