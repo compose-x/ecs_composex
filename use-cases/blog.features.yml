@@ -16,8 +16,8 @@ secrets:
         Tags:
           - costcentre: lambda
       JsonKeys:
-        - Name: ZYX_TEST
-          Key: test
+        - VarName: ZYX_TEST
+          SecretKey: test
 services:
   app01:
     env_file: ./use-cases/env-files/dummy.env

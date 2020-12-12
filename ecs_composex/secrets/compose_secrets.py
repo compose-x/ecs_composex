@@ -69,6 +69,63 @@ def match_secrets_services_config(service, s_secret, secrets):
             gl_secret.services.append(service)
 
 
+def to_java_properties(name):
+    """
+    Replaces `.` with `_` and set all cases to upper
+
+    :param str name:
+    :return: transformed test
+    :rtype: str
+    """
+    return name.upper().replace(".", "_")
+
+
+def to_title(name):
+    """
+    Function to title the name
+
+    :param str name:
+    :return:
+    """
+
+    return name.title()
+
+
+def to_capitalize(name):
+    """
+    Function to capitalize/upper all letters and leave the rest empty
+
+    :param name:
+    :return:
+    """
+    return name.upper()
+
+
+def define_env_var_name(secret_key):
+    """
+    Function to determine what the VarName key for secret will be
+
+    :param dict secret_key: Key definition as defined in compose file
+    :return: VarName value
+    :rtype: str
+    """
+    transforms = [
+        ("java_properties", to_java_properties),
+        ("title", to_title),
+        ("capitalize", to_capitalize),
+    ]
+    if keyisset("VarName", secret_key):
+        return secret_key["VarName"]
+    elif keyisset("Transform", secret_key) and secret_key["Transform"] in [
+        t[0] for t in transforms
+    ]:
+        for trans in transforms:
+            if trans[0] == secret_key["Transform"] and trans[1]:
+                return trans[1](secret_key["SecretKey"])
+    else:
+        return secret_key["SecretKey"]
+
+
 class ComposeSecret(object):
     """
     Class to represent a Compose secret.
@@ -136,7 +193,8 @@ class ComposeSecret(object):
         """
         if not keyisset(self.json_keys_key, self.definition[self.x_key]):
             return
-        required_keys = ["Name", "Key"]
+        required_keys = ["SecretKey"]
+        allowed_keys = ["SecretKey", "VarName", "Transform"]
         unfiltered_secrets = self.definition[self.x_key][self.json_keys_key]
         LOG.debug(f"UN-FILTERED SECRETS {unfiltered_secrets}")
         filtered_secrets = [
@@ -144,15 +202,15 @@ class ComposeSecret(object):
         ]
         LOG.debug(f"FILTERED SECRETS {filtered_secrets}")
         for secret_key in filtered_secrets:
-            if not all(key in required_keys for key in secret_key):
+            if not all(key in allowed_keys for key in secret_key):
                 raise KeyError(
                     "For Secrets JSON Key support, you must specify",
                     required_keys,
                     "Got",
                     secret_key.keys(),
                 )
-            json_key = secret_key["Key"]
-            secret_name = secret_key["Name"]
+            json_key = secret_key["SecretKey"]
+            secret_name = define_env_var_name(secret_key)
             if isinstance(self.arn, str):
                 self.ecs_secret.append(
                     EcsSecret(Name=secret_name, ValueFrom=f"{self.arn}:{json_key}::")
