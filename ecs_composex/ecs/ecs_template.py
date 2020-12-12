@@ -298,3 +298,4 @@ def generate_services(settings):
         )
         family.upload_services_env_files(settings)
         family.set_repository_credentials(settings)
+        family.set_codeguru_profiles_arns()

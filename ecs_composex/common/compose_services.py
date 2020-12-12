@@ -34,7 +34,9 @@ from troposphere.ecs import (
     RepositoryCredentials,
 )
 from troposphere.iam import Policy
+from troposphere.codeguruprofiler import ProfilingGroup
 
+from ecs_composex.resources_import import import_record_properties
 from ecs_composex.common import NONALPHANUM, LOG, FILE_PREFIX
 from ecs_composex.common import keyisset, keypresent
 from ecs_composex.common.files import upload_file
@@ -284,6 +286,7 @@ class ComposeService(object):
         ("x-xray", bool),
         ("x-scaling", dict),
         ("x-network", dict),
+        ("x-codeguru-profiler", (str, bool, dict)),
     ]
 
     ecs_plugin_aws_keys = [
@@ -340,7 +343,9 @@ class ComposeService(object):
         self.volumes = []
         self.secrets = []
         self.env_files = []
+        self.code_profiler = None
         self.set_env_files()
+        self.set_code_profiler()
         self.environment = set_else_none("environment", self.definition, None, False)
         self.cfn_environment = (
             import_env_variables(self.environment)
@@ -416,6 +421,37 @@ class ComposeService(object):
             Secrets=secrets,
         )
         self.container_parameters.update({self.image_param.title: self.image})
+
+    def set_code_profiler(self):
+        """
+        Method to define the code guru profiler for the service
+        :return:
+        """
+        profiler_key = "x-codeguru-profiler"
+        if not keypresent(profiler_key, self.definition):
+            return
+        if isinstance(self.definition[profiler_key], str):
+            self.cfn_environment.append(
+                Environment(
+                    Name="AWS_CODEGURU_PROFILER_GROUP_ARN",
+                    Value=self.definition[profiler_key],
+                )
+            )
+        elif (
+            isinstance(self.definition[profiler_key], bool)
+            and self.definition[profiler_key]
+        ):
+            self.code_profiler = ProfilingGroup(
+                f"ProfilingGroup{self.logical_name}",
+                ProfilingGroupName=Sub(f"${{{AWS_STACK_NAME}}}-{self.name}"),
+            )
+        elif isinstance(self.definition[profiler_key], dict):
+            props = import_record_properties(
+                self.definition[profiler_key], ProfilingGroup
+            )
+            self.code_profiler = ProfilingGroup(
+                f"ProfilingGroup{self.logical_name}", **props
+            )
 
     def set_env_files(self):
         """
@@ -1286,6 +1322,40 @@ class ComposeFamily(object):
                 LOG.info(
                     f"Set {network.subnet_name} as {APP_SUBNETS.title} for {self.name}"
                 )
+
+    def set_codeguru_profiles_arns(self):
+        if not self.template:
+            LOG.warning(f"No template yet defined for {self.name}")
+            return
+        for service in self.services:
+            if service.code_profiler and isinstance(
+                service.code_profiler, ProfilingGroup
+            ):
+                service.container_definition.Environment.append(
+                    Environment(
+                        Name="AWS_CODEGURU_PROFILER_GROUP_ARN",
+                        Value=GetAtt(service.code_profiler, "Arn"),
+                    )
+                )
+                if service.code_profiler not in self.template.resources:
+                    self.template.add_resource(service.code_profiler)
+                if hasattr(service.code_profiler, "AgentPermissions"):
+                    principals = getattr(service.code_profiler, "AgentPermissions")[
+                        "Principals"
+                    ]
+                    potential_principals = [
+                        p.data["Fn::GetAtt"][0]
+                        for p in principals
+                        if isinstance(p, GetAtt)
+                    ]
+                    if self.task_role.title not in potential_principals:
+                        principals.append(GetAtt(self.task_role, "Arn"))
+                else:
+                    setattr(
+                        service.code_profiler,
+                        "AgentPermissions",
+                        {"Principals": [GetAtt(self.task_role, "Arn")]},
+                    )
 
     def upload_services_env_files(self, settings):
         """
