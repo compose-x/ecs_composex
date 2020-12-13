@@ -21,30 +21,6 @@ Properties
 
 See `AWS CFN KMS Key Documentation`_
 
-Services
-========
-
-List of key/pair values, as for other ECS ComposeX x-resources.
-
-Three access types have been created for the table:
-
-* EncryptDecrypt
-* EncryptOnly
-* DecryptOnly
-* SQS
-
-.. code-block:: yaml
-    :caption: KMS and Services
-
-    x-kms:
-      keyA:
-        Properties: {}
-        Services:
-          - name: serviceA
-            access: EncryptDecrypt
-          - name: serviceB
-            access: DecryptOnly
-
 Settings
 ========
 
@@ -74,6 +50,45 @@ Examples
             access: EncryptDecrypt
         Settings:
           Alias: keyA
+
+Services
+========
+
+List of key/pair values, as for other ECS ComposeX x-resources.
+
+Three access types have been created for the table:
+
+* EncryptDecrypt
+* EncryptOnly
+* DecryptOnly
+* SQS
+
+.. code-block:: yaml
+    :caption: KMS and Services
+
+    x-kms:
+      keyA:
+        Properties: {}
+        Services:
+          - name: serviceA
+            access: EncryptDecrypt
+          - name: serviceB
+            access: DecryptOnly
+
+IAM Permissions
+================
+
+Three access types have been created for the table:
+
+* EncryptDecrypt
+* EncryptOnly
+* DecryptOnly
+* SQS
+
+
+.. literalinclude:: ../../ecs_composex/kms/kms_perms.json
+    :language: json
+    :caption: KMS Permissions scaffold
 
 
 .. _AWS CFN KMS Key Documentation: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-kms-key.html

@@ -48,10 +48,8 @@ target_scaling
 
 Allows you to define target scaling for the service based on CPU/RAM.
 
-target scaling syntax reference
---------------------------------
-
 .. code-block:: yaml
+    :caption: target scaling syntax reference
 
 
     x-scaling:

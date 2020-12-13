@@ -17,6 +17,11 @@ Syntax
         Lookup: {}
         MacroParameters: {}
 
+.. tip::
+
+    For production workloads, to avoid any CFN deadlock situations, I recommend you generate the CFN templates for docdb,
+    and deploy the stacks separately. Using Lookup you can use existing DocDB clusters with your new services.
+
 Properties
 ===========
 
@@ -63,16 +68,6 @@ Access types
 
     The access key value do not have an effect at this stage.
 
-Settings
-========
-
-The only setting for DocumentDB is **EnvNames** as for every other resources.
-
-.. hint::
-
-    Given that the DB Secret attachment populates host, port etc., we expose as env vars the **Secret** associated to the DB,
-    not the DB itself.
-
 MacroParameters
 ================
 
@@ -101,6 +96,15 @@ List of DocDB instances. The aspiration is to follow the same syntax as the `Doc
 
     If you do not define an instance, ECS ComposeX automatically creates a new one with a single node of type **db.t3.medium**
 
+Settings
+========
+
+The only setting for DocumentDB is **EnvNames** as for every other resources.
+
+.. hint::
+
+    Given that the DB Secret attachment populates host, port etc., we expose as env vars the **Secret** associated to the DB,
+    not the DB itself.
 
 Lookup
 ========
@@ -112,6 +116,36 @@ Lookup for Document DB is available!
     For some reason the group resource tag API returns two different clusters even though they are the same one.
     Make sure to specify the *Name* along with Tags until we figure an alternative solution.
     Sorry for the inconvenience.
+
+IAM Permissions
+================
+
+Three access types have been created for the table:
+
+* RW
+* RO
+* PowerUser
+
+.. literalinclude:: ../../ecs_composex/dynamodb/dynamodb_perms.json
+    :caption: DynamoDB permissions scaffold
+    :language: json
+
+Credentials
+===========
+
+The credentials strucutre remains the same as for RDS SQL versions
+
+.. code-block:: json
+    :caption: DocumentDB secret structure after attachment
+
+    {
+      "dbClusterIdentifier": "<str>",
+      "password": "<str>",
+      "engine": "<str>",
+      "port": "<int>",
+      "host": "<str>",
+      "username": "<str>"
+    }
 
 
 Examples

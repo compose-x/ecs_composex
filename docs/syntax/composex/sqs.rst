@@ -46,8 +46,8 @@ Similar to all other modules, we have a list of dictionaries, with two keys of i
 * access: the type of access to the resource.
 * scaling: Allow to define the scaling behaviour of the service based on SQS Approximate Messages Visible.
 
-Access types
-^^^^^^^^^^^^^
+IAM Permissions
+==================
 
 * RO - read only
 * RWMessages - read/write messages on the queue
@@ -82,6 +82,37 @@ You can now defined StepScaling on the ECS Service based on the number of messag
 .. note::
 
     If you already setup other Scaling policies for the service, beware of race conditions!
+
+ComposeX Features
+=================
+
+Redrive policy
+^^^^^^^^^^^^^^
+
+The redrive policy works exactly as you would expect it and is defined in the exact same way as for within
+the SQS proprties. Only, here, you only need to put the queue name of the DLQ. The generated ARN etc. will be
+fetched via exports (which also implicitly adds a lock on it).
+
+Example with DLQ:
+
+.. code-block:: yaml
+
+    x-sqs:
+      DLQ:
+        Properties: {}
+        Settings: {}
+        Services: []
+
+    AppQueue:
+      Properties:
+        RedrivePolicy:
+          deadLetterTargetArn: DLQ
+          maxReceiveCount: 10
+      Settings:
+        EnvNames:
+          - APPQUEUE01
+
+
 
 Examples
 ========

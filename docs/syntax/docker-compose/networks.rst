@@ -1,8 +1,8 @@
 ﻿.. _compose_networks_syntax_reference:
 
-=========================
+=========
 networks
-=========================
+=========
 
 In docker-compose one can define diffent subnets which would use different properties, as documented
 `here <https://docs.docker.com/compose/compose-file/#network-configuration-reference>`__

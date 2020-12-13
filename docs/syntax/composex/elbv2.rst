@@ -49,20 +49,6 @@ The only two properties that are really necessary to set are
     Subnets are selected automatically based on the scheme you indicated.
     If selected a public NLB, the IP addressed will automatically be provisioned too.
 
-Settings
-========
-
-Once again in an effort of making configuration shorter and easier, here as the options you can simply indicate.
-
-* timeout_seconds: 60
-* desync_mitigation_mode: defensive
-* drop_invalid_header_fields: True
-* http2: False
-* cross_zone: True
-
-These settings are just a shorter notation for the `LB Attributes`_
-
-
 MacroParameters
 ================
 
@@ -94,6 +80,19 @@ Similar syntax as for ECS Services Ingress, allow you to define Ingress (only ap
     AwsSources:
       - Type: SecurityGroup|PrefixList (str)
         Id: sg-[a-z0-9]+|pl-[a-z0-9]+
+
+Settings
+========
+
+Once again in an effort of making configuration shorter and easier, here as the options you can simply indicate.
+
+* timeout_seconds: 60
+* desync_mitigation_mode: defensive
+* drop_invalid_header_fields: True
+* http2: False
+* cross_zone: True
+
+These settings are just a shorter notation for the `LB Attributes`_
 
 Services
 ========
