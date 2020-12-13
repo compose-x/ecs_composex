@@ -120,6 +120,17 @@ Lookup is currently implemented for S3 buckets!
     For S3, if the S3 bucket has a default KMS key encryption, the services will automatically be granted KMS default
     **EncryptDecrypt** permissions in order to allow using the KMS key for objects manipulation.
 
+IAM Permissions
+================
+
+For S3 buckets, the access types is expecting a object with **objects** and **bucket** to distinguish permissions for each.
+If you indicate a string, the default permissions (bucket: ListOnly and objects: RW) will be applied.
+
+.. literalinclude:: ../../../../ecs_composex/s3/s3_perms.json
+    :caption: Full access types policies definitions
+    :language: json
+
+
 Examples
 =========
 

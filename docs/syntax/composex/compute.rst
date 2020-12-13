@@ -20,7 +20,7 @@ users to create the EC2 compute resources necessary to run the ECS Containers on
 .. _compute syntax reference:
 
 Define settings in the configs section
----------------------------------------
+=======================================
 
 At the moment, the settings you can change for the compute definition of your EC2 resources are defined in
 

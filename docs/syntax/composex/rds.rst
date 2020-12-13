@@ -67,20 +67,6 @@ MacroParameters for RDS allow you to set only very little settings / properties 
     Instances: []
 
 
-CopyDefaultParameters
-----------------------
-
-Type: boolean
-Default: True when using aurora
-
-Creates a DBClusterParameterGroup automatically so you can customize later on your CFN template for the DB Settings.
-This avoids the bug where only default.aurora-mysql5.6 settings are found if the property is not set.
-
-.. tip::
-
-    The function performing the import of settings in ecs_composex.rds.rds_parameter_groups_helper.py
-
-
 Services
 ========
 
@@ -132,6 +118,30 @@ It will also find the DB security group and add an ingress rule.
 
 When using AWS RDS Aurora, you should be specifying the cluster, otherwise the instance for "traditional" RDS instances.
 
+Defaults
+===========
+
+Credentials
+-----------
+
+Aurora and traditional RDS Databases support both Username/Password generic authentication. Due to the wide adoption of
+that authentication mechanism, all RDS Dbs will come with a username/password, auto generated and stored in AWS Secrets Manager.
+
+
+.. hint::
+
+    We do plan to allow a tick button to enable Aurora authentication with IAM, however have not received a Feature Request
+    for it.
+
+AWS Secrets Manager integrates very nicely to AWS RDS. This has no intention to implement the rotation system at this
+point in time, however, it will generate the password for the database and expose it securely to the microservices which
+can via environment variables fetch
+
+* DB Endpoint
+* DB username
+* DB Password
+* DB Port
+
 
 Examples
 ========
@@ -165,7 +175,7 @@ Examples
 
 .. hint::
 
-    The DB Family group will be found automatically and the setting `copy_default_parameters`_ will allow creation of a
+    The DB Family group will be found automatically and the setting will allow creation of a
     new RDS Parameter group for the Cluster / DB Instance.
 
 

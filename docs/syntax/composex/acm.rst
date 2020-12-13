@@ -40,12 +40,6 @@ The properties will be supported exactly like in the native `AWS ACM Properties`
     If you defined multiple **SubjectAlternativeNames** names, they will be auto-added to the validation list and use
     the same ZoneId, so you do not need to list them all in `DomainValidationOptions`_
 
-Services
-========
-
-No need to indicate services to assign the ACM certificate to. Refer to :ref:`elbv2_syntax_reference` for mapping
-to ALB/NLB.
-
 
 MacroParameters
 ================
@@ -78,6 +72,14 @@ If you wish to override the x-dns/PublicZone settings you can set that here.
 .. note::
 
     That HostedZone ID will be used for *all* of the Domain Validation.
+
+
+Services
+========
+
+No need to indicate services to assign the ACM certificate to. Refer to :ref:`elbv2_syntax_reference` for mapping
+to ALB/NLB.
+
 
 Example
 =======

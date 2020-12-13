@@ -179,3 +179,44 @@ Lookup
 .. warning::
 
     If you specify both **Create** and **Lookup** in x-vpc, then the default behaviour is applied, and creates a new VPC
+
+Usage tips
+===========
+
+Using an existing VPC
+---------------------
+
+You might already have network configuration and VPC setup all done, and want to simply plug-and-play to that existing
+network configuration you have.
+
+To help with that, we have added the **x-vpc** key support in the docker-compose file, with allows you to find your VPC
+in and subnets with many options.
+
+
+
+.. _vpc_network_design:
+
+Default VPC Network design
+--------------------------
+
+The design of the VPC generated is very simple 3-tiers:
+
+* Public subnets, 1/4 of the available IPs of the VPC CIDR Range
+* Storage subnets, 1/4 of the available IPs of the VPC CIDR Range
+* Application subnets, 1/2 of the available IPs of the VPC CIDR Range
+
+I used to have a calculator for CIDR Range that would do things in percentage so it would be far more
+granular but I found that it wasn't worth going so in depth into it.
+
+Network architects out there will have created the VPCs by other means already or already know exactly what
+and how they want these configured.
+
+If that is not the case and you just want a VPC which will work with ingress and egress done in a
+sensible way, use the *--create-vpc* argument of the CLI.
+
+Default range
+-------------
+
+The default CIDR range for the VPC is **100.127.254.0/24**. It can be overridden with *--vpc-cidr*
+
+This leaves a little less than 120 IP address for the EC2 hosts and/or Docker containers.

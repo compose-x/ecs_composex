@@ -8,8 +8,8 @@ x-iam
 
 This section is the entrypoint to further extension of IAM definition for the IAM roles created throughout.
 
-boundary
-========
+PermissionsBoundary
+====================
 
 This key represents an IAM policy (name or ARN) that needs to be added to the IAM roles in order to represent the IAM
 Permissions Boundary.
@@ -43,7 +43,7 @@ Examples:
 
     if you specify ony the name, ie. containers, this will resolve into arn:${partition}:iam::${accountId}:policy/containers
 
-policies
+Policies
 ========
 
 Allows you to define additional IAM policies.
@@ -51,11 +51,11 @@ Follows the same pattern as CFN IAM Policies
 
 .. code-block:: yaml
 
-    x-configs:
-      iam:
-        policies:
-          - name: somenewpolicy
-            document:
+
+    x-iam:
+      Policies:
+          - PolicyName: somenewpolicy
+            PolicyDocument:
               Version: "2012-10-17"
               Statement:
                 - Effect: Allow
@@ -65,8 +65,13 @@ Follows the same pattern as CFN IAM Policies
                     - "*"
                   Sid: "AllowDescribeAll"
 
-managed_policies
+ManagedPolicies
 ================
 
 Allows you to add additional managed policies. You can specify the full ARN or just a string for the name / path of the
-policy. If will resolve into the same regexp as for `boundary`_
+policy. If will resolve into the same regexp as for `PermissionsBoundary`_
+
+
+.. hint::
+
+    You can also use the Docker ECS-Plugin **x-aws-iam** extension fields with ECS ComposeX

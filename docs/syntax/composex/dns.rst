@@ -43,8 +43,8 @@ Syntax
       Use: str # Expects the CloudMap Z[A-Z0-9]+- Hosted Zone Id
 
 
-Example
-=======
+Examples
+=========
 
 .. code-block:: yaml
     :caption: Private definition only

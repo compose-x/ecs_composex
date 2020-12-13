@@ -2,6 +2,49 @@
 History
 =======
 
+0.10.0 (2020-12-13)
+====================
+
+New features
+------------
+
+* 976e5bb Support for env_file (#318)
+* a432763 Import simple SAM IAM policies templates. (#316)
+* db2c8fe Support for service-to-service explicit ingress (#300)
+* fe1e0af Added to support DB Snapshot for new DB creation (#297)
+* 73cdf9a x-vpc - Support for VPC FlowLogs (#296)
+* b9f1ec8 Scaling rules for Lookup queues (#293)
+* 54faa50 Feature x-dns::Records to add Public DNS Records pointing to elbv2 (#289)
+* d5a97a1 Adding support for kinesis streams (#287)
+
+Improvements
+-------------------
+
+* 1be3b99 Improved secrets JsonKeys based on suggestions (#322)
+* 6302bc6 x-rds:: Refactor Properties/MacroParameters/Settings (#309)
+
+
+Fixes
+------
+
+* 191d420 No interpolate ${AWS::PseudoParameters} (#324)
+* de87457 Bug fixes for RDS/DocDB and ECS containers (#305)
+* 4220d7d TMP solution pending AWS official XRay publish (#304)
+* 2c1fcfc Fix/duplicate secrets keys (#303)
+* 4befc25 Fixed backward logic (#301)
+
+
+Other updates and corrections
+------------------------------
+
+* 31d7bcc Added kinesis docs (#313)
+* 997f0d9 Added back exports but not using in ComposeX. For cross-stacks usage (#310)
+* cb0be55 Linted up code (#307)
+* 5e559f0 Prefixing the log group with the root stack name for uniqueness (#295)
+* c81f443 Refactored to single function recursively evaluating properties (#291)
+* 16a5d39 Code linting (#285)
+
+
 0.9.0 (2020-11-26)
 ==================
 

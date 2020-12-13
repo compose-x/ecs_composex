@@ -22,13 +22,19 @@ Syntax reference
 
 
 Properties
-----------
+===========
 
 The Properties are the `AWS CFN definition for AWS Kinesis streams`_.
 
 
+MacroParameters
+================
+
+No specific MacroParameters for Kinesis data streams. Given the AWS definition is very straightforward, just define the properties.
+The only truly required property is the `ShardCount`_
+
 Settings
----------
+=========
 
 The settings are as usual, allow you to define `EnvNames`_
 
@@ -38,14 +44,9 @@ EnvNames
 List of String that allow you to define multiple environment names for the stream to be exposed to your service.
 Value for these is the **AWS Kinesis Stream name** (Default value returned by Fn::Ref
 
-MacroParameters
-----------------
-
-No specific MacroParameters for Kinesis data streams. Given the AWS definition is very straightforward, just define the properties.
-The only truly required property is the `ShardCount`_
 
 Services
----------
+=========
 
 As per the generic Services definition, we have a list of object, name and access, which define how the service can access the stream.
 
@@ -75,6 +76,14 @@ Examples
             access: Consumer
 
 
+IAM permissions
+================
 
+.. literalinclude:: ../../ecs_composex/kinesis/kinesis_perms.json
+    :language: JSON
+    :caption: IAM permissions pre-defined for your services.
+
+
+.. _AWS Kinesis page: https://aws.amazon.com/kinesis/
 .. _AWS CFN definition for AWS Kinesis streams: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-kinesis-stream.html
 .. _ShardCount: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-kinesis-stream.html#cfn-kinesis-stream-shardcount

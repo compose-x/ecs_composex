@@ -75,3 +75,35 @@ Syntax reference
 
     When using an ALB, you do not need to define that ALB security group etc., all inbound rules will be defined automatically
     to allow the ALB to communicate with your service!
+
+Map VPC subnets to docker-compose networks
+===========================================
+
+.. code-block:: yaml
+    :caption: AWS VPC to network mapping
+
+    networks:
+      internal:
+        x-vpc: InteralCustomSubnets
+
+    x-vpc:
+      VpcId:
+        Tags: []
+      AppSubnets:
+        Tags: []
+      PublicSubnets:
+        Tags: []
+      StorageSubnets:
+        Tags: []
+      InteralCustomSubnets:
+        Tags: []
+
+    services:
+      serviceA:
+        networks: [internal]
+
+
+In some cases, you might have complex VPC topology and created new specific Subnets in **x-vpc**, and map that subnet
+name to a docker-network defined network. Then later, you can set your service in the services definition to be put into
+that network.
+
