@@ -1,5 +1,8 @@
 ---
 # Extension file to add all the x-keys related to services.
+
+x-aws-cluster: arn:aws:ecs:eu-west-1:373709687836:cluster/devtest
+
 version: '3.8'
 services:
   app01:

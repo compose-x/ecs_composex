@@ -16,6 +16,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import re
 from botocore.exceptions import ClientError
 from troposphere import AWS_STACK_NAME
 from troposphere import If, Ref
@@ -114,6 +115,27 @@ def define_cluster(cluster_def):
     return cluster
 
 
+def import_from_x_aws_cluster(compose_content):
+    """
+    Function to handle and override settings if x-aws-cluster is defined.
+
+    :param compose_content:
+    :return:
+    """
+    x_aws_key = "x-aws-cluster"
+    if not keyisset(x_aws_key, compose_content):
+        return
+    if compose_content[x_aws_key].startswith("arn:aws"):
+        cluster_name = re.sub(
+            pattern=r"(arn:aws:ecs:[\S]+:[0-9]{12}:cluster/)",
+            repl="",
+            string=compose_content[x_aws_key],
+        )
+    else:
+        cluster_name = compose_content[x_aws_key]
+    compose_content[RES_KEY] = {"Use": cluster_name}
+
+
 def handle_cluster_settings(root_stack, settings):
     """
     Function to create the ECS Cluster.
@@ -122,6 +144,10 @@ def handle_cluster_settings(root_stack, settings):
     :param ecs_composex.common.settings.ComposeXSettings settings:
     :return:
     """
+    print(settings.compose_content.keys())
+    if keyisset("x-aws-cluster", settings.compose_content):
+        import_from_x_aws_cluster(settings.compose_content)
+        LOG.info("x-aws-cluster was set. Overriding any defined x-cluster settings")
     if not keyisset(RES_KEY, settings.compose_content):
         LOG.info("No cluster information provided. Creating a new one")
         root_stack.stack_template.add_resource(get_default_cluster_config())

@@ -75,21 +75,21 @@ class Rds(XResource):
                 self.cfn_resource,
                 GetAtt,
                 DB_ENDPOINT_PORT,
-                "Port"
+                "Port",
             ),
             self.db_secret.title: (
                 self.db_secret.title,
                 self.db_secret,
                 Ref,
                 None,
-                "SecretArn"
+                "SecretArn",
             ),
             self.db_sg.title: (
                 self.db_sg.title,
                 self.db_sg,
                 GetAtt,
                 "GroupId",
-                "RdsDbSecurityGroup"
+                "RdsDbSecurityGroup",
             ),
         }
 

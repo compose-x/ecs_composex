@@ -304,11 +304,7 @@ def merge_config_files(original_content, override_content):
                     )
                 }
             )
-        elif (
-            not keyisset(compose_key, original_content)
-            and keyisset(compose_key, override_content)
-            and isinstance(override_content[compose_key], dict)
-        ):
+        elif not keyisset(compose_key, original_content):
             original_content[compose_key] = override_content[compose_key]
 
 
