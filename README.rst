@@ -100,33 +100,21 @@ AWS & Docker Resources support
 AWS Services
 ------------
 
-* `AWS ECS`_: from docker-compose to ECS transparently, using AWS Fargate primarily.
-    * Supports CPU/RAM autoscaling
-    * Define ingress rules from existing IP sources, EC2 Security Groups and EC2 PrefixLists
-* `AWS ELBv2`_: Define your Load Balancers to pass traffic to your services.
-    * Map one or more services to a single ELBv2
-    * Define simple rules to send traffic to different services
-* `AWS ACM`_: Create or import existing ACM Certificates to map to your Load Balancers.
-    * Only supports public ACM certificates, for now!
-* `AWS AppMesh`_: Services mesh for your services.
-    * Your mesh made easy, backed up by AWS CloudMap for services discovery.
-* `AWS SQS`_: queues for distributed workloads
-    * With AutoScaling support based on number of messages
+* `AWS ECS`_
 * `AWS RDS`_
 * `AWS DynamoDB`_
 * `AWS DocumentDB`_
-* `AWS S3`_: Buckets creation and access simplified
-    * On import via **Lookup**, automatically identifies KMS encryption key
+* `AWS S3`_
+* `AWS SQS`_
+* `AWS Kinesis`_
+* `AWS SNS`_
+* `AWS ELBv2`_
+* `AWS ACM`_
+* `AWS AppMesh`_
 * `AWS IAM`_
-    * Add an IAM Permissions Boundary policy
-    * Add manually defined IAM policies for extra control
-* `AWS KMS`_: Manage CMK for your deployments
-    * Upcoming integration to services supporting KMS encryption
-* `AWS VPC`_: create or use existing VPC to deploy your services
-    * Create new VPC
-    * Use existing VPC or Subnets
-* `AWS SNS`_: Create topics and subscriptions to publish to.
-* `AWS EC2`_: Deploy your services on EC2 for custom settings. Features SpotFleet by default.
+* `AWS KMS`_
+* `AWS VPC`_
+* `AWS EC2`_
 
 
 docker-compose
@@ -255,18 +243,19 @@ This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypack
 .. _ECS ComposeX Project: https://github.com/orgs/lambda-my-aws/projects/3
 .. _CICD Pipeline for multiple services on AWS ECS with ECS ComposeX: https://blog.ecs-composex.lambda-my-aws.io/posts/cicd-pipeline-for-multiple-services-on-aws-ecs-with-ecs-composex/
 
-.. _AWS ECS: https://nightly.docs.ecs-composex.lambda-my-aws.io/syntax/composex/ecs.html
-.. _AWS VPC: https://nightly.docs.ecs-composex.lambda-my-aws.io/syntax/composex/vpc.html
-.. _AWS RDS: https://nightly.docs.ecs-composex.lambda-my-aws.io/syntax/composex/rds.html
-.. _AWS SQS: https://nightly.docs.ecs-composex.lambda-my-aws.io/syntax/composex/sqs.html
-.. _AWS KMS: https://nightly.docs.ecs-composex.lambda-my-aws.io/syntax/composex/kms.html
-.. _AWS DynamoDB: https://nightly.docs.ecs-composex.lambda-my-aws.io/syntax/composex/dynamodb.html
-.. _AWS ACM: https://nightly.docs.ecs-composex.lambda-my-aws.io/syntax/composex/acm.html
-.. _AWS ELBv2: https://nightly.docs.ecs-composex.lambda-my-aws.io/syntax/composex/elbv2.html
-.. _AWS S3: https://nightly.docs.ecs-composex.lambda-my-aws.io/syntax/composex/s3.html
-.. _AWS IAM: https://nightly.docs.ecs-composex.lambda-my-aws.io/syntax/composex/ecs.details/iam.html
-.. _AWS SNS: https://nightly.docs.ecs-composex.lambda-my-aws.io/syntax/composex/sns.html
-.. _AWS DocumentDB: https://nightly.docs.ecs-composex.lambda-my-aws.io/syntax/composex/docdb.html
+.. _AWS ECS: https://docs.ecs-composex.lambda-my-aws.io/syntax/composex/ecs.html
+.. _AWS VPC: https://docs.ecs-composex.lambda-my-aws.io/syntax/composex/vpc.html
+.. _AWS RDS: https://docs.ecs-composex.lambda-my-aws.io/syntax/composex/rds.html
+.. _AWS DynamoDB: https://docs.ecs-composex.lambda-my-aws.io/syntax/composex/dynamodb.html
+.. _AWS DocumentDB: https://docs.ecs-composex.lambda-my-aws.io/syntax/composex/docdb.html
+.. _AWS ACM: https://docs.ecs-composex.lambda-my-aws.io/syntax/composex/acm.html
+.. _AWS ELBv2: https://docs.ecs-composex.lambda-my-aws.io/syntax/composex/elbv2.html
+.. _AWS S3: https://docs.ecs-composex.lambda-my-aws.io/syntax/composex/s3.html
+.. _AWS IAM: https://docs.ecs-composex.lambda-my-aws.io/syntax/composex/ecs.details/iam.html
+.. _AWS Kinesis: https://docs.ecs-composex.lambda-my-aws.io/syntax/composex/kinesis.html
+.. _AWS SQS: https://docs.ecs-composex.lambda-my-aws.io/syntax/composex/sqs.html
+.. _AWS SNS: https://docs.ecs-composex.lambda-my-aws.io/syntax/composex/sns.html
+.. _AWS KMS: https://docs.ecs-composex.lambda-my-aws.io/syntax/composex/kms.html
 
 .. _AWS EC2: https://nightly.docs.ecs-composex.lambda-my-aws.io/features.html#ec2-resources-for-ecs-cluster
 .. _AWS AppMesh: https://nightly.docs.ecs-composex.lambda-my-aws.io/readme/appmesh.html
