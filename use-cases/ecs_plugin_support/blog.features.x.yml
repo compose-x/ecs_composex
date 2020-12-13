@@ -3,9 +3,15 @@
 
 x-aws-cluster: arn:aws:ecs:eu-west-1:373709687836:cluster/devtest
 
+secrets:
+  private_repository:
+    x-secrets:
+      Name: /path/to/creds
+
 version: '3.8'
 services:
   app01:
+    x-aws-pull_credentials: "arn:aws:secretsmanager:eu-west-1:012345678912:secret:/path/to-creds"
     deploy:
       x-aws-autoscaling:
         min: 1
@@ -35,6 +41,7 @@ services:
             PolicyName: AllowPublishToCw
     x-xray: false
   app02:
+    x-aws-pull_credentials: secrets::private_repository
     x-iam:
       PermissionsBoundary: arn:aws:iam::aws:policy/AdministratorAccess
       ManagedPolicyArns:
