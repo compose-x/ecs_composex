@@ -1,3 +1,3 @@
 troposphere==2.6.3
-boto3==1.16.33
+boto3==1.16.35
 aws-sam-translator==1.32.0
