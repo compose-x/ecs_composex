@@ -1,6 +1,23 @@
 ---
 # ELBv2 creation for services
 
+
+x-dns:
+  PublicZone:
+    Use: ZABCDEFGHIS0123
+
+x-acm:
+  public-acm-01:
+    Properties:
+      DomainName: test.lambda-my-aws.io
+      DomainValidationOptions:
+        - HostedZoneId: ZABCDEFGHIS0123
+          DomainName: test.lambda-my-aws.io
+      SubjectAlternativeNames:
+        - anothertest.lambda-my-aws.io
+        - yet.another.test.lambda-my-aws.io
+      ValidationMethod: DNS
+
 x-elbv2:
   lbA:
     Properties: {}
@@ -11,16 +28,26 @@ x-elbv2:
      drop_invalid_header_fields: True
      http2: False
      cross_zone: True
+    MacroParameters:
+      Ingress:
+        ExtSources:
+          - Ipv4: "0.0.0.0/0"
+            Description: ANY
+          - Ipv4: "1.1.1.1/32"
+            Description: CLOUDFLARE
+            Name: CLOUDFLARE
     Listeners:
       - Port: 80
         Protocol: HTTP
+        DefaultActions:
+          - Redirect: HTTP_TO_HTTPS
+      - Port: 443
+        Protocol: HTTP
+        Certificates:
+          - x-acm: public-acm-01
         Targets:
-          - name: bignicefamily:rproxy
-            access: /
-          - name: youtoo:rproxy
-            access: /stupid
           - name: bignicefamily:app01
-            access: thereisnospoon.ews-network.net:8080/abcd
+            access: /somewhere
             AuthenticateOidcConfig:
               Issuer: "https://idp-issuer.com"
               AuthorizationEndpoint: "https://authorization-endpoint.com"
@@ -32,6 +59,29 @@ x-elbv2:
               SessionTimeout: 3600
               Scope: "email"
               AuthenticationRequestExtraParams":
+                display": "page"
+                prompt": "login"
+              OnUnauthenticatedRequest: "deny"
+      - Port: 8080
+        Protocol: HTTP
+        Certificates:
+          - x-acm: public-acm-01
+          - CertificateArn: arn:aws:acm:eu-west-1:012345678912:certificate/102402a1-d0d2-46ff-b26b-33008f072ee8
+        Targets:
+          - name: bignicefamily:rproxy
+            access: /
+          - name: youtoo:rproxy
+            access: /stupid
+          - name: bignicefamily:app01
+            access: thereisnospoon.ews-network.net:8080/abcd
+            AuthenticateCognitoConfig:
+              UserPoolArn: "arn:aws:cognito-idp:region-code:account-id:userpool/user-pool-id"
+              UserPoolClientId: "abcdefghijklmnopqrstuvwxyz123456789"
+              UserPoolDomain: "userPoolDomain1"
+              SessionCookieName: "my-cookie"
+              SessionTimeout: 3600
+              Scope: "email"
+              AuthenticationRequestExtraParams:
                 display": "page"
                 prompt": "login"
               OnUnauthenticatedRequest: "deny"
@@ -60,20 +110,11 @@ x-elbv2:
             access: /
       - Port: 8081
         Protocol: TCP
+        Certificates:
+          - x-acm: public-acm-01
         Targets:
           - name: app03:app03
             access: /
-            AuthenticateCognitoConfig:
-              UserPoolArn: "arn:aws:cognito-idp:region-code:account-id:userpool/user-pool-id"
-              UserPoolClientId: "abcdefghijklmnopqrstuvwxyz123456789"
-              UserPoolDomain: "userPoolDomain1"
-              SessionCookieName: "my-cookie"
-              SessionTimeout: 3600
-              Scope: "email"
-              AuthenticationRequestExtraParams:
-                display": "page"
-                prompt": "login"
-              OnUnauthenticatedRequest: "deny"
     Services:
       - name: app03:app03
         port: 5000

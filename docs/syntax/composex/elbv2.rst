@@ -247,6 +247,47 @@ Examples
     :language: yaml
 
 
+.. code-block:: yaml
+    :caption: ELBv2 with
+
+    x-elbv2:
+      authLb:
+        Properties:
+          Scheme: internet-facing
+          Type: application
+        Settings: {}
+        Listeners:
+          - Port: 8080
+            Protocol: HTTP
+            Targets:
+              - name: app03:app03
+                access: /
+          - Port: 8081
+            Protocol: HTTP
+            Targets:
+              - name: app03:app03
+                access: /
+                AuthenticateOidcConfig:
+                  Issuer: "{{resolve:secretsmanager:/oidc/azuread/app001:SecretString:Issuer}}"
+                  AuthorizationEndpoint: "{{resolve:secretsmanager:/oidc/azuread/app001:SecretString:AuthorizationEndpoint}}"
+                  TokenEndpoint: "{{resolve:secretsmanager:/oidc/azuread/app001:SecretString:TokenEndpoint}}"
+                  UserInfoEndpoint: "{{resolve:secretsmanager:/oidc/azuread/app001:SecretString:UserInfoEndpoint}}"
+                  ClientId: "{{resolve:secretsmanager:/oidc/azuread/app001:SecretString:ClientId}}"
+                  ClientSecret: "{{resolve:secretsmanager:/oidc/azuread/app001:SecretString:ClientSecret}}"
+                  SessionCookieName: "my-cookie"
+                  SessionTimeout: 3600
+                  Scope: "email"
+                  AuthenticationRequestExtraParams":
+                    display": "page"
+                    prompt": "login"
+                  OnUnauthenticatedRequest: "deny"
+        Services:
+          - name: app03:app03
+            port: 5000
+            healthcheck: 5000:HTTP:7:2:15:5
+            protocol: HTTP
+
+
 .. _LB Attributes: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-elasticloadbalancingv2-loadbalancer.html#cfn-elasticloadbalancingv2-loadbalancer-loadbalancerattributes
 .. _Scheme: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-elasticloadbalancingv2-loadbalancer.html#cfn-elasticloadbalancingv2-loadbalancer-scheme
 .. _Type: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-elasticloadbalancingv2-loadbalancer.html#cfn-elasticloadbalancingv2-loadbalancer-type

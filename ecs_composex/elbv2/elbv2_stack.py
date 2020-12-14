@@ -255,11 +255,12 @@ def define_target_conditions(definition):
     return conditions
 
 
-def define_actions(target_def):
+def define_actions(listener, target_def):
     """
     Function to identify the Target definition and create the resulting rule appropriately.
 
     :param dict target_def:
+    :param ecs_composex.elbv2.elbv2_stack.ComposeListener listener:
     :return: The action to add or action list for default target
     """
     auth_action = None
@@ -282,7 +283,19 @@ def define_actions(target_def):
         auth_action = Action(
             Type=auth_action_type, AuthenticateOidcConfig=auth_rule, Order=1
         )
+    print(listener)
     if auth_action:
+        if hasattr(listener, "Certificates") and not listener.Certificates:
+            raise Exception(
+                "In order to use authenticate via OIDC or AWS Cognito,"
+                " your listener must be using HTTPs and have SSL Certificates defined."
+            )
+        if not listener.Protocol == "HTTPS":
+            raise Exception(
+                "In order to use authenticate via OIDC or AWS Cognito,",
+                "Your listener protocol MUST be HTTPS. Got",
+                listener.Protocol,
+            )
         actions.append(auth_action)
         actions.append(
             Action(
@@ -324,7 +337,7 @@ def define_listener_rules_actions(listener, left_services):
         rule = ListenerRule(
             f"{listener.title}{NONALPHANUM.sub('', service_def['name'])}Rule",
             ListenerArn=Ref(listener),
-            Actions=define_actions(service_def),
+            Actions=define_actions(listener, service_def),
             Priority=(count + 1),
             Conditions=define_target_conditions(service_def),
         )
@@ -350,7 +363,7 @@ def handle_non_default_services(listener, services_def):
         LOG.warning("No service path matches /. Defaulting to return TeaPot")
         listener.DefaultActions.append(tea_pot(True))
     elif default_target:
-        listener.DefaultActions += define_actions(default_target)
+        listener.DefaultActions += define_actions(listener, default_target)
     rules = define_listener_rules_actions(listener, left_services)
     return rules
 
@@ -407,8 +420,15 @@ def rectify_listener_protocol(listener):
 
 
 def import_new_acm_certs(listener, src_name, settings, listener_stack):
-    new_acm_certs = []
-    lookup_acm_certs = []
+    """
+    Function to Import an ACM Certificate defined in x-acm
+
+    :param listener:
+    :param src_name:
+    :param settings:
+    :param listener_stack:
+    :return:
+    """
     if not keyisset(ACM_KEY, settings.compose_content):
         raise LookupError(f"There is no {ACM_KEY} defined in your docker-compose files")
     new_acm_certs = [
@@ -551,7 +571,7 @@ class ComposeListener(Listener):
             LOG.info(
                 f"{self.title} has no defined DefaultActions and only 1 service. Default all to service."
             )
-            self.DefaultActions = define_actions(self.services[0])
+            self.DefaultActions = define_actions(self, self.services[0])
         elif not self.default_actions and self.services and len(self.services) > 1:
             LOG.warning(
                 "No default actions defined and more than one service defined."
