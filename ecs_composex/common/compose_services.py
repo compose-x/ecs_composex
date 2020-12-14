@@ -291,6 +291,7 @@ class ComposeService(object):
         ("x-aws-policies", list),
         ("x-aws-autoscaling", dict),
         ("x-aws-pull_credentials", str),
+        ("x-aws-logs_retention", int),
     ]
 
     def __init__(self, name, definition, volumes=None, secrets=None):
@@ -515,6 +516,19 @@ class ComposeService(object):
         """
         if keyisset("x-logging", self.definition):
             self.x_logging = self.definition["x-logging"]
+        if keyisset("x-aws-logs_retention", self.definition) and keyisset(
+            "RetentionInDays", self.x_logging
+        ):
+            self.x_logging["RetentionInDays"] = max(
+                int(self.definition["x-aws-logs_retention"]),
+                int(self.x_logging["RetentionInDays"]),
+            )
+        elif keyisset("x-aws-logs_retention", self.definition) and not keyisset(
+            "RetentionInDays", self.x_logging
+        ):
+            self.x_logging["RetentionInDays"] = int(
+                self.definition["x-aws-logs_retention"]
+            )
 
     def map_volumes(self, volumes=None):
         """

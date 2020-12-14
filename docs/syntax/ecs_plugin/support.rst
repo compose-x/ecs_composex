@@ -169,4 +169,17 @@ your own policy and you can have multiple ones.
     :ref:`x_iam_syntax_reference`
 
 
+x-aws-logs_retention
+---------------------
+
+Allows you to define the CloudWatch Log Group RetentionInDays period.
+When used in combination with ComposeX **x-logging**, the highest(max) value will be used as we consider you might want
+the longest period for tracking purposes.
+
+If either is set and the other is not, the value is set accordingly.
+
+.. seealso::
+
+    :ref:`x_configs_logging_syntax_reference`
+
 .. _Docker and ECS official documentation: https://docs.docker.com/engine/context/ecs-integration/

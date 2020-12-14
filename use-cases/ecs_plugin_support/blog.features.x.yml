@@ -17,6 +17,7 @@ services:
         min: 1
         max: 2
         cpu: 50
+    x-aws-logs_retention: 64
     x-logging:
       RetentionInDays: 42
       CreateLogGroup: False
@@ -67,8 +68,7 @@ services:
             - "cloudwatch:PutMetric*"
           Resource":
             - "*"
-    x-logging:
-        RetentionInDays: 42
+    x-aws-logs_retention: 42
     x-scaling:
       range: 1-10
       target_scaling:
