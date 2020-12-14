@@ -144,7 +144,6 @@ def handle_cluster_settings(root_stack, settings):
     :param ecs_composex.common.settings.ComposeXSettings settings:
     :return:
     """
-    print(settings.compose_content.keys())
     if keyisset("x-aws-cluster", settings.compose_content):
         import_from_x_aws_cluster(settings.compose_content)
         LOG.info("x-aws-cluster was set. Overriding any defined x-cluster settings")

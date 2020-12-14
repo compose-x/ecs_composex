@@ -855,6 +855,43 @@ def handle_iam_boundary(config, key, new_value):
     config[key] = define_iam_policy(new_value)
 
 
+def identify_repo_credentials_secret(settings, task, secret_name):
+    """
+    Function to identify the secret_arn
+    :param settings:
+    :param ComposeFamily task:
+    :param secret_name:
+    :return:
+    """
+    secret_arn = None
+    for secret in settings.secrets:
+        if secret.name == secret_name:
+            secret_arn = secret.arn
+            if secret_name not in [s.name for s in settings.secrets]:
+                raise KeyError(
+                    f"secret {secret_name} was not found in the defined secrets",
+                    [s.name for s in settings.secrets],
+                )
+            if secret.kms_key_arn:
+                task.exec_role.Policies.append(
+                    Policy(
+                        PolicyName="RepositoryCredsKmsKeyAccess",
+                        PolicyDocument={
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": ["kms:Decrypt"],
+                                    "Resource": [secret.kms_key_arn],
+                                }
+                            ],
+                        },
+                    )
+                )
+            return secret_arn
+    return None
+
+
 class ComposeFamily(object):
     """
     Class to group services logically to create the final ECS Service
@@ -1308,34 +1345,12 @@ class ComposeFamily(object):
             if not service.x_repo_credentials:
                 continue
             if service.x_repo_credentials.startswith("arn:aws"):
-                secret_arn = service.x_repo_credentials = service.x_repo_credentials
+                secret_arn = service.x_repo_credentials
             elif service.x_repo_credentials.startswith("secrets::"):
                 secret_name = service.x_repo_credentials.split("::")[-1]
-                for secret in settings.secrets:
-                    if secret.name == secret_name:
-                        secret_arn = secret.arn
-                        if secret.kms_key_arn:
-                            self.exec_role.Policies.append(
-                                Policy(
-                                    PolicyName="RepositoryCredsKmsKeyAccess",
-                                    PolicyDocument={
-                                        "Version": "2012-10-17",
-                                        "Statement": [
-                                            {
-                                                "Effect": "Allow",
-                                                "Action": ["kms:Decrypt"],
-                                                "Resource": [secret.kms_key_arn],
-                                            }
-                                        ],
-                                    },
-                                )
-                            )
-                        break
-                if secret_name not in [s.name for s in settings.secrets]:
-                    raise KeyError(
-                        f"secret {secret_name} was not found in the defined secrets",
-                        [s.name for s in settings.secrets],
-                    )
+                secret_arn = identify_repo_credentials_secret(
+                    settings, self, secret_name
+                )
             else:
                 raise ValueError(
                     "The secret for private repository must be either an ARN or the name of a secret defined in secrets"
