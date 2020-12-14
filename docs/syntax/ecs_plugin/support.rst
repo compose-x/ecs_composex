@@ -178,8 +178,30 @@ the longest period for tracking purposes.
 
 If either is set and the other is not, the value is set accordingly.
 
+.. code-block:: yaml
+    :caption: Example with just x-aws-logs_retention
+
+    services:
+      serviceA:
+        x-aws-logs_retention: 42
+
+.. code-block:: yaml
+    :caption: Both x-logging and x-aws-logs_retentions defined. Here, 64 will be set.
+
+services:
+  serviceA:
+    x-logging:
+      RetentionInDays: 42
+    x-aws-logs_retention: 64
+
+
 .. seealso::
 
     :ref:`x_configs_logging_syntax_reference`
+
+.. hint::
+
+    If you set an arbitrary value that would not be a valid value for AWS logs retention, ComposeX will automatically
+    match to the closest valid value. For example, for 42, this will be 30. For 64, it will be 60.
 
 .. _Docker and ECS official documentation: https://docs.docker.com/engine/context/ecs-integration/
