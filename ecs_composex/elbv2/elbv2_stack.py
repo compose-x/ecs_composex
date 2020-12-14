@@ -352,24 +352,6 @@ def handle_non_default_services(listener, services_def):
     elif default_target:
         listener.DefaultActions += define_actions(default_target)
     rules = define_listener_rules_actions(listener, left_services)
-    # for count, service_def in enumerate(left_services):
-    #     rule = ListenerRule(
-    #         f"{listener.title}{NONALPHANUM.sub('', service_def['name'])}Rule",
-    #         ListenerArn=Ref(listener),
-    #         Actions=[
-    #             Action(
-    #                 Type="forward",
-    #                 ForwardConfig=ForwardConfig(
-    #                     TargetGroups=[
-    #                         TargetGroupTuple(TargetGroupArn=service_def["target_arn"])
-    #                     ]
-    #                 ),
-    #             ),
-    #         ],
-    #         Priority=(count + 1),
-    #         Conditions=define_target_conditions(service_def),
-    #     )
-    #     rules.append(rule)
     return rules
 
 
@@ -569,19 +551,7 @@ class ComposeListener(Listener):
             LOG.info(
                 f"{self.title} has no defined DefaultActions and only 1 service. Default all to service."
             )
-            self.DefaultActions.insert(
-                0,
-                Action(
-                    Type="forward",
-                    ForwardConfig=ForwardConfig(
-                        TargetGroups=[
-                            TargetGroupTuple(
-                                TargetGroupArn=self.services[0]["target_arn"]
-                            )
-                        ]
-                    ),
-                ),
-            )
+            self.DefaultActions = define_actions(self.services[0])
         elif not self.default_actions and self.services and len(self.services) > 1:
             LOG.warning(
                 "No default actions defined and more than one service defined."

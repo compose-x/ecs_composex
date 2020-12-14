@@ -63,6 +63,17 @@ x-elbv2:
         Targets:
           - name: app03:app03
             access: /
+            AuthenticateCognitoConfig:
+              UserPoolArn: "arn:aws:cognito-idp:region-code:account-id:userpool/user-pool-id"
+              UserPoolClientId: "abcdefghijklmnopqrstuvwxyz123456789"
+              UserPoolDomain: "userPoolDomain1"
+              SessionCookieName: "my-cookie"
+              SessionTimeout: 3600
+              Scope: "email"
+              AuthenticationRequestExtraParams:
+                display": "page"
+                prompt": "login"
+              OnUnauthenticatedRequest: "deny"
     Services:
       - name: app03:app03
         port: 5000
