@@ -19,18 +19,18 @@ Welcome to ECS-ComposeX's documentation!
 
 .. toctree::
     :maxdepth: 2
-    :caption: Thanks & Credits
-
-    authors
-    credits
-
-.. toctree::
-    :maxdepth: 2
     :caption: Additional content
 
     changelog
     extras
     story
+
+.. toctree::
+    :maxdepth: 2
+    :caption: Thanks & Credits
+
+    authors
+    credits
 
 .. toctree::
     :maxdepth: 2

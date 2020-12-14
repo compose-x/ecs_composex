@@ -39,7 +39,7 @@ from ecs_composex.common.cfn_params import (
     USE_ONDEMAND,
     USE_ONDEMAND_T,
 )
-from ecs_composex.common.ecs_composex import X_KEY
+from ecs_composex.common.ecs_composex import X_KEY, X_AWS_KEY
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common.tagging import add_all_tags
 from ecs_composex.compute.compute_params import (
@@ -282,7 +282,11 @@ def add_x_resources(root_template, settings, services_stack, vpc_stack=None):
     Function to add each X resource from the compose file
     """
     for key in settings.compose_content:
-        if key.startswith(X_KEY) and key not in EXCLUDED_X_KEYS:
+        if (
+            key.startswith(X_KEY)
+            and key not in EXCLUDED_X_KEYS
+            and not re.match(X_AWS_KEY, key)
+        ):
             res_type = RES_REGX.sub("", key)
             xclass = get_mod_class(res_type)
             parameters = {ROOT_STACK_NAME_T: Ref(AWS_STACK_NAME)}

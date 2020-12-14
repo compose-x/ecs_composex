@@ -77,14 +77,14 @@ class Queue(XResource):
                 self.cfn_resource,
                 GetAtt,
                 SQS_ARN.title,
-                "Arn"
+                "Arn",
             ),
             SQS_NAME.title: (
                 f"{self.logical_name}{SQS_NAME.title}",
                 self.cfn_resource,
                 GetAtt,
                 SQS_NAME.title,
-                "QueueName"
+                "QueueName",
             ),
         }
 

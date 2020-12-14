@@ -31,6 +31,7 @@ from troposphere.ecs import (
     ContainerDefinition,
     TaskDefinition,
     EnvironmentFile,
+    RepositoryCredentials,
 )
 from troposphere.iam import Policy
 
@@ -290,6 +291,7 @@ class ComposeService(object):
         ("x-aws-policies", list),
         ("x-aws-autoscaling", dict),
         ("x-aws-pull_credentials", str),
+        ("x-aws-logs_retention", int),
     ]
 
     def __init__(self, name, definition, volumes=None, secrets=None):
@@ -330,7 +332,7 @@ class ComposeService(object):
         self.x_network = set_else_none("x-network", self.definition, None, False)
         self.x_iam = set_else_none("x-iam", self.definition)
         self.x_logging = {"RetentionInDays": 14, "CreateLogGroup": True}
-
+        self.x_repo_credentials = None
         self.import_x_aws_settings()
         self.networks = {}
         self.replicas = 1
@@ -479,12 +481,21 @@ class ComposeService(object):
             self.x_iam["ManagedPolicyArns"] += self.definition[key]
             LOG.info(f"Merged {key} definition")
 
+    def set_x_credentials_secret(self, key):
+        """
+        Method that will set the secret associated to the service to retrieve the docker image if defined through
+        x-aws-pull_credentials
+        """
+        if not keyisset(key, self.definition):
+            return
+        self.x_repo_credentials = self.definition[key]
+
     def import_x_aws_settings(self):
         aws_keys = [
             ("x-aws-role", dict, self.merge_x_aws_role),
             ("x-aws-policies", list, self.merge_x_policies),
             ("x-aws-autoscaling", dict, None),
-            ("x-aws-pull_credentials", str, None),
+            ("x-aws-pull_credentials", str, self.set_x_credentials_secret),
         ]
         for setting in aws_keys:
             if keyisset(setting[0], self.definition) and not isinstance(
@@ -505,6 +516,19 @@ class ComposeService(object):
         """
         if keyisset("x-logging", self.definition):
             self.x_logging = self.definition["x-logging"]
+        if keyisset("x-aws-logs_retention", self.definition) and keyisset(
+            "RetentionInDays", self.x_logging
+        ):
+            self.x_logging["RetentionInDays"] = max(
+                int(self.definition["x-aws-logs_retention"]),
+                int(self.x_logging["RetentionInDays"]),
+            )
+        elif keyisset("x-aws-logs_retention", self.definition) and not keyisset(
+            "RetentionInDays", self.x_logging
+        ):
+            self.x_logging["RetentionInDays"] = int(
+                self.definition["x-aws-logs_retention"]
+            )
 
     def map_volumes(self, volumes=None):
         """
@@ -843,6 +867,43 @@ def handle_iam_boundary(config, key, new_value):
 
     """
     config[key] = define_iam_policy(new_value)
+
+
+def identify_repo_credentials_secret(settings, task, secret_name):
+    """
+    Function to identify the secret_arn
+    :param settings:
+    :param ComposeFamily task:
+    :param secret_name:
+    :return:
+    """
+    secret_arn = None
+    for secret in settings.secrets:
+        if secret.name == secret_name:
+            secret_arn = secret.arn
+            if secret_name not in [s.name for s in settings.secrets]:
+                raise KeyError(
+                    f"secret {secret_name} was not found in the defined secrets",
+                    [s.name for s in settings.secrets],
+                )
+            if secret.kms_key_arn:
+                task.exec_role.Policies.append(
+                    Policy(
+                        PolicyName="RepositoryCredsKmsKeyAccess",
+                        PolicyDocument={
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": ["kms:Decrypt"],
+                                    "Resource": [secret.kms_key_arn],
+                                }
+                            ],
+                        },
+                    )
+                )
+            return secret_arn
+    return None
 
 
 class ComposeFamily(object):
@@ -1285,3 +1346,47 @@ class ComposeFamily(object):
                         },
                     )
                 )
+
+    def set_repository_credentials(self, settings):
+        """
+        Method to go over each service and identify which ones have credentials to pull the Docker image from a private
+        repository
+
+        :param ecs_composex.common.settings.ComposeXSettings settings:
+        :return:
+        """
+        for service in self.services:
+            if not service.x_repo_credentials:
+                continue
+            if service.x_repo_credentials.startswith("arn:aws"):
+                secret_arn = service.x_repo_credentials
+            elif service.x_repo_credentials.startswith("secrets::"):
+                secret_name = service.x_repo_credentials.split("::")[-1]
+                secret_arn = identify_repo_credentials_secret(
+                    settings, self, secret_name
+                )
+            else:
+                raise ValueError(
+                    "The secret for private repository must be either an ARN or the name of a secret defined in secrets"
+                )
+            setattr(
+                service.container_definition,
+                "RepositoryCredentials",
+                RepositoryCredentials(CredentialsParameter=secret_arn),
+            )
+            self.exec_role.Policies.append(
+                Policy(
+                    PolicyName="AccessToRepoCredentialsSecret",
+                    PolicyDocument={
+                        "Version": "2012-10-17",
+                        "Statement": [
+                            {
+                                "Effect": "Allow",
+                                "Action": ["secretsmanager:GetSecretValue"],
+                                "Sid": "AccessToRepoCredentialsSecret",
+                                "Resource": [secret_arn],
+                            }
+                        ],
+                    },
+                )
+            )

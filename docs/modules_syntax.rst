@@ -41,3 +41,8 @@
     syntax/composex/vpc
     syntax/composex/ecs_cluster
     syntax/composex/compute
+
+
+.. toctree::
+    :caption: Docker ECS Plugin support
+    :maxpdepth: 1
