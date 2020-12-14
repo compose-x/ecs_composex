@@ -1,0 +1,172 @@
+﻿.. _docker_ecs_plugin_support_reference:
+
+
+===========================
+Docker ECS Plugin support
+===========================
+
+Soon after the Open source release of the Compose definition, AWS and Docker worked on a new
+docker plugin, the *ecs-plugin* which allows to perform some similar tasks as with ECS ComposeX.
+
+However, these fields usually will require full ARN of your resources, whereas ECS ComposeX will
+allow you to do discovery of your resources and I hope give you a lot more flexibility.
+
+With that said, the objective of ECS ComposeX is to help developers and so I added the support for
+the ECS Plugin extensions fields.
+
+.. seealso::
+
+    `Docker and ECS official documentation`_
+
+
+x-aws-cluster
+--------------
+
+As per the official documentation, this allows you to define the ARN of an ECS Cluster you have
+that you want to use to deploy the services into.
+
+If left empty, a new cluster gets created.
+
+With ComposeX you can use the expected ARN to indicate which cluster to deploy to. Equally, you can
+provide just the name of the Cluster, ComposeX will filter it out of the ARN and behave in a similar fashion
+as **x-cluster/Use**
+
+.. seealso::
+
+    :ref:`ecs_cluster_syntax_reference`
+
+
+x-aws-pull_credentials
+-----------------------
+
+This allows you to define the secret in secrets manager that contains the username/password for
+authentication with a private docker image registry.
+
+With ComposeX you can either use it as is defined in the official documentation or combine it with
+the docker-compose secrets.
+
+.. code-block:: yaml
+    :caption: Example of ARN use
+
+    services:
+      app01:
+        image: private.registry.mydomain.net/repository-app01
+        x-aws-pull_credentials: "arn:aws:secretsmanager:eu-west-1:012345678912:secret:/path/to-creds"
+
+.. code-block:: yaml
+    :caption: Example with docker-compose secret definition
+
+    secrets:
+      private_repository:
+        x-secrets:
+          Name: /path/to/creds
+
+    services:
+      app02:
+        image: private.registry.mydomain.net/repository-app02
+        x-aws-pull_credentials: secrets::private_repository
+
+
+.. hint::
+
+    For either methods, this will add the RepositoryCredentials property to the Task definition
+    and add an IAM policy to the Execution Role to *secretsmanager:GetSecretValue*
+
+.. hint::
+
+    When using the ECS ComposeX way, you can use all the existing features of secrets (Lookup etc).
+
+.. warning::
+
+    You cannot use JsonKeys for this secret.
+
+x-aws-autoscaling
+-----------------
+
+This setting allows you to define autoscaling configuration for your service. With the ECS Plugin
+you can define CPU and RAM autoscaling which are assigned to the ECS Service.
+
+If in your docker-compose files you have not defined **x-scaling** this will be used to define the
+scaling policies.
+
+However, in case you set both **x-aws-autoscaling** and **x-scaling**, the latter will be used and the
+x-aws-autoscaling settings are ignored.
+
+This is by design as **x-scaling** allows for a lot more settings to be defined than **x-aws-autoscaling**
+
+x-aws-policies
+---------------
+
+This allows to define additional IAM policies that are assigned to the ECS Task Role.
+It behaves exactly in the same way as **x-iam/ManagedPolicies** does.
+
+.. code-block:: yaml
+    :caption: ECS Plugin syntax
+
+    services:
+      foo:
+        x-aws-policies:
+          - "arn:aws:iam::aws:policy/AmazonS3FullAccess"
+
+
+.. code-block:: yaml
+    :caption: ECS Composex syntax
+
+    services:
+      foo:
+        x-iam:
+          ManagedPolicies:
+            - "arn:aws:iam::aws:policy/AmazonS3FullAccess"
+
+x-aws-role
+-----------
+
+Allows to defined extra IAM policies. However, not that the ECS Plugin is going to automatically
+generate the name of the policy assigned to the ECS Task Role.
+
+ECS ComposeX syntax is a little lengthier to get to the IAM policies. However, allows you to define
+your own policy and you can have multiple ones.
+
+.. code-block:: yaml
+    :caption: ECS Plugin syntax
+
+    services:
+      foo:
+        x-aws-role:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: "Allow"
+              Action:
+                - "some_aws_service"
+              Resource:
+                - "*"
+
+.. code-block:: yaml
+    :caption: ECS ComposeX Syntax
+
+    services:
+      foo:
+        x-iam:
+          Policies:
+            - PolicyName: SomeName
+              PolicyDocument:
+                Version: "2012-10-17"
+                Statement:
+                  - Effect: "Allow"
+                    Action:
+                      - "some_aws_service"
+                    Resource:
+                      - "*"
+
+.. hint::
+
+    For x-aws-role and x-aws-policies, ECS ComposeX will not override what you had defined and instead
+    simply merge the two definitions.
+
+.. hint::
+
+    If you need to defined IAM permissions boundary, you can with ECS Composex.
+    :ref:`x_iam_syntax_reference`
+
+
+.. _Docker and ECS official documentation: https://docs.docker.com/engine/context/ecs-integration/

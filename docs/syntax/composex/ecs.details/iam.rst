@@ -1,4 +1,4 @@
-﻿.. _x_configs_iam_syntax_reference:
+﻿.. _x_iam_syntax_reference:
 
 ======
 x-iam
