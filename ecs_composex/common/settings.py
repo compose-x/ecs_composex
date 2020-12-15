@@ -674,7 +674,7 @@ class ComposeXSettings(object):
                 LOG.error(error)
 
     def set_azs_from_vpc_import(
-        self, public_subnets, app_subnets, storage_subnets, session
+        self, public_subnets, app_subnets, storage_subnets, session=None
     ):
         """
         Function to get the list of AZs for a given set of subnets
@@ -685,7 +685,10 @@ class ComposeXSettings(object):
         :param session: The Session used to find the EC2 subnets (useful for lookup).
         :return:
         """
-        client = session.client("ec2")
+        if session is None:
+            client = self.session.client("ec2")
+        else:
+            client = session.client("ec2")
         try:
             public_r = client.describe_subnets(SubnetIds=public_subnets)["Subnets"]
             app_r = client.describe_subnets(SubnetIds=app_subnets)["Subnets"]
