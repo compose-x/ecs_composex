@@ -222,11 +222,15 @@ def apply_vpc_settings(x_settings, root_stack, settings):
         STORAGE_SUBNETS.title: x_settings[STORAGE_SUBNETS.title],
         PUBLIC_SUBNETS.title: x_settings[PUBLIC_SUBNETS.title],
     }
+    ignored_keys = ["RoleArn", "session"]
     settings.subnets_parameters.append(APP_SUBNETS)
     settings.subnets_parameters.append(PUBLIC_SUBNETS)
     settings.subnets_parameters.append(STORAGE_SUBNETS)
     for setting_name in x_settings:
-        if setting_name not in settings_params.keys():
+        if (
+            setting_name not in settings_params.keys()
+            and setting_name not in ignored_keys
+        ):
             param = root_stack.stack_template.add_parameter(
                 Parameter(setting_name, Type=SUBNETS_TYPE)
             )
@@ -238,6 +242,7 @@ def apply_vpc_settings(x_settings, root_stack, settings):
         public_subnets=x_settings[PUBLIC_SUBNETS.title],
         app_subnets=x_settings[APP_SUBNETS.title],
         storage_subnets=x_settings[STORAGE_SUBNETS.title],
+        session=x_settings["session"],
     )
 
 

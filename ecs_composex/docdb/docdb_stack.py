@@ -47,6 +47,7 @@ class DocDb(XResource):
         """
         self.db_secret = None
         self.db_sg = None
+        self.db_subnets_group = None
         super().__init__(name, definition, settings)
         self.arn_attr = DOCDB_SECRET
 

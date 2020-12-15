@@ -57,6 +57,7 @@ from ecs_composex.rds.rds_params import (
     DB_USERNAME,
     DB_STORAGE_CAPACITY,
     DB_STORAGE_TYPE,
+    DBS_SUBNET_GROUP_T,
 )
 from ecs_composex.resources_import import import_record_properties
 from ecs_composex.secrets import (
@@ -126,11 +127,12 @@ def add_db_sg(template, db_name):
     )
 
 
-def add_default_instance_definition(db):
+def add_default_instance_definition(db, for_cluster=False):
     """
     Function to add DB Instance(s)
 
     :param ecs_composex.rds.rds_stack.Rds db:
+    :param bool for_cluster: Whether this instance is added with default values for a DB Cluster
     """
     instance = DBInstance(
         f"Instance{db.logical_name}",
@@ -181,6 +183,8 @@ def add_default_instance_definition(db):
     )
     if db.parameters and keyisset("MultiAZ", db.parameters):
         setattr(instance, "MultiAZ", True)
+    if for_cluster and hasattr(instance, "StorageEncrypted"):
+        del instance.properties["StorageEncrypted"]
     return instance
 
 
@@ -244,7 +248,6 @@ def add_parameter_group(template, db):
             props = import_record_properties(
                 db.parameters["ParametersGroups"], DBClusterParameterGroup
             )
-            print(props, db.parameters["ParametersGroups"])
             template.add_resource(
                 DBClusterParameterGroup(
                     CLUSTER_PARAMETER_GROUP_T,
@@ -320,6 +323,7 @@ def override_set_properties(props, db):
                 f"{{{{resolve:secretsmanager:${{{db.db_secret.title}}}:SecretString:password}}}}"
             ),
             "VpcSecurityGroupIds": [Ref(db.db_sg)],
+            "DBSubnetGroupName": Ref(DBS_SUBNET_GROUP_T),
         },
     )
 
@@ -450,9 +454,14 @@ def add_instances_from_parameters(db_template, db):
             )
         instance_props = import_record_properties(db_instance, DBInstance)
         instance_props["Engine"] = Ref(DB_ENGINE_NAME)
-        for prop_name in instance_props.keys():
-            if prop_name not in aurora_compatible:
-                instance_props[prop_name] = Ref(AWS_NO_VALUE)
+
+        to_del = [
+            prop_name
+            for prop_name in instance_props.keys()
+            if prop_name not in aurora_compatible
+        ]
+        for key in to_del:
+            del instance_props[key]
         db_instance = DBInstance(
             f"{db.logical_name}Instance{count}",
             DBClusterIdentifier=Ref(db.cfn_resource),
@@ -491,7 +500,7 @@ def add_db_instances_for_cluster(db_template, db):
     if not db.parameters or (
         db.parameters and not keyisset("Instances", db.parameters)
     ):
-        db_instance = add_default_instance_definition(db)
+        db_instance = add_default_instance_definition(db, for_cluster=True)
         db_template.add_resource(db_instance)
     elif db.parameters and keyisset("Instances", db.parameters):
         add_instances_from_parameters(db_template, db)
