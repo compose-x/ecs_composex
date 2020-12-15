@@ -92,7 +92,7 @@ EXCLUDED_X_KEYS = [
     f"{X_KEY}cluster",
     f"{X_KEY}efs",
 ]
-TCP_SERVICES = [f"{X_KEY}rds", f"{X_KEY}appmesh", f"{X_KEY}elbv2"]
+TCP_SERVICES = [f"{X_KEY}rds", f"{X_KEY}appmesh", f"{X_KEY}elbv2", f"{X_KEY}docdb"]
 
 
 def get_mod_function(module_name, function_name):
