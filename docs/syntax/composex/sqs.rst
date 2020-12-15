@@ -174,7 +174,7 @@ Examples
 
 .. note::
 
-    You need to have defined x-configs/scaling/range to enable step scaling on the ECS Service.
+    You need to have defined x-configs/scaling/Range to enable step scaling on the ECS Service.
 
 .. _Engine: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-rds-dbcluster.html#cfn-rds-dbcluster-engine
 .. _EngineVersion: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-rds-dbcluster.html#cfn-rds-dbcluster-engineversion

@@ -76,7 +76,7 @@ services:
       ManagedPolicyArns:
         - arn:aws:iam:aws::policy/AdministratorAccess
     x-scaling:
-      range: 1-5
+      Range: 1-5
       TargetScaling:
         CpuTarget: 30
         DisableScaleIn: true
@@ -105,7 +105,7 @@ services:
     x-logging:
       RetentionInDays: 42
     x-scaling:
-      range: 1-10
+      Range: 1-10
       TargetScaling:
         CpuTarget: 50
   rproxy:
@@ -133,7 +133,7 @@ services:
       ManagedPolicyArns:
         - arn:aws:iam:aws::policy/ReadOnlyAccess
     x-scaling:
-      range: 0-2
+      Range: 0-2
       TargetScaling:
         CpuTarget: 50
     x-xray: true

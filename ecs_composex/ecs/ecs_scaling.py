@@ -60,7 +60,7 @@ def generate_scaling_out_steps(steps, target):
     ordered = sorted(unordered, key=lambda i: i["lower_bound"])
     if target and ordered[-1]["count"] > target.MaxCapacity:
         LOG.warning(
-            f"The current maximum in your range is {target.MaxCapacity} whereas you defined {ordered[-1]['count']}"
+            f"The current maximum in your Range is {target.MaxCapacity} whereas you defined {ordered[-1]['count']}"
             " for step scaling. Adjusting to step scaling max."
         )
         setattr(target, "MaxCapacity", ordered[-1]["count"])
@@ -184,7 +184,7 @@ def reset_to_zero_policy(
 
 def handle_range(config, key, new_range):
     """
-    Function to handle range.
+    Function to handle Range.
     """
     new_min = int(new_range.split("-")[0])
     new_max = int(new_range.split("-")[1])
@@ -256,7 +256,7 @@ def handle_defined_x_aws_autoscaling(configs, service):
         min_count = 1 if not keypresent("min", config) else int(config["min"])
         max_count = 1 if not keypresent("max", config) else int(config["max"])
         if not service.x_scaling:
-            service.x_scaling = {"range": f"{min_count}-{max_count}"}
+            service.x_scaling = {"Range": f"{min_count}-{max_count}"}
             if keyisset("cpu", config):
                 service.x_scaling.update(
                     {"TargetScaling": {"CpuTarget": int(config["cpu"])}}
@@ -273,7 +273,7 @@ def handle_defined_x_aws_autoscaling(configs, service):
 
 def merge_family_services_scaling(services):
     x_scaling = {
-        "range": None,
+        "Range": None,
         "TargetScaling": {
             "DisableScaleIn": False,
             "ScaleInCooldown": 300,
@@ -284,7 +284,7 @@ def merge_family_services_scaling(services):
     for service in services:
         handle_defined_x_aws_autoscaling(x_scaling_configs, service)
     valid_keys = [
-        ("range", str, handle_range),
+        ("Range", str, handle_range),
         ("TargetScaling", dict, handle_target_scaling),
     ]
     for key in valid_keys:
@@ -310,10 +310,10 @@ class ServiceScaling(object):
         configuration = merge_family_services_scaling(services)
         self.scaling_range = None
         self.target_scaling = None
-        if not keyisset("range", configuration):
+        if not keyisset("Range", configuration):
             self.defined = False
             return
-        self.scaling_range = configuration["range"]
+        self.scaling_range = configuration["Range"]
         for key in self.target_scaling_keys:
             if keyisset("TargetScaling", configuration) and keyisset(
                 key, configuration["TargetScaling"]
@@ -322,6 +322,6 @@ class ServiceScaling(object):
 
     def __repr__(self):
         return dumps(
-            {"range": self.scaling_range, "TargetScaling": self.target_scaling},
+            {"Range": self.scaling_range, "TargetScaling": self.target_scaling},
             indent=4,
         )
