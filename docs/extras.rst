@@ -67,16 +67,16 @@ numbers.
         deploy:
           replicas: 2 # by default I want 2 containers
         x-scaling:
-          range: "1-10" # 1 to 10 containers to deploy for the service
-            target_scaling:
-              cpu_target: 80 # Means 80% average for all containers in the service.
+          Range: "1-10" # 1 to 10 containers to deploy for the service
+            TargetScaling:
+              CpuTarget: 80 # Means 80% average for all containers in the service.
       backend:
         image: my-worker
         deploy:
           replicas: 1  # Initially I want 1 container running to make sure everything is working
         x-configs:
           scaling:
-            range: "0-10" # I can have between 0 to 10 containers. 0 because I am happy not paying when nothing to do
+            Range: "0-10" # I can have between 0 to 10 containers. 0 because I am happy not paying when nothing to do
 
     x-sqs:
       jobs-queue:
@@ -99,13 +99,13 @@ numbers.
                   count: 21
 
 As you can see we defined scaling for SQS only on the backend, as we don't need to scale the frontend based on that.
-Also we set the count for final step to 21, which is higher than the range indicated.
+Also we set the count for final step to 21, which is higher than the Range indicated.
 
 Our frontend will be managed by ECS itself which will be ensuring that the average CPU usage across the service remains under 80%.
 
 .. hint::
 
-    In composex, you must define a generic range first, and if you override it in the scaling, it will take the highest count of all scaling policies.
+    In composex, you must define a generic Range first, and if you override it in the scaling, it will take the highest count of all scaling policies.
 
 .. note::
 

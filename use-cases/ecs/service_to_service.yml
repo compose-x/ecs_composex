@@ -27,7 +27,7 @@ services:
     x-logging:
         RetentionInDays: 42
     x-scaling:
-      range: 1-10
+      Range: 1-10
   rproxy:
     x-iam:
       ManagedPolicyArns:

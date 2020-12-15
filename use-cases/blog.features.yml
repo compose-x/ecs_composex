@@ -66,7 +66,7 @@ services:
                 Sid: AllowPublishMetricsToCw
     x-xray: false
     x-scaling:
-      range: "1-4"
+      Range: "1-4"
   app02:
     env_file:
       - ./use-cases/env-files/dummy.env
@@ -104,10 +104,10 @@ services:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AdministratorAccess
     x-scaling:
-      range: "1-5"
-      target_scaling:
-        cpu_target: 88
-        disable_scale_in: true
+      Range: "1-5"
+      TargetScaling:
+        CpuTarget: 88
+        DisableScaleIn: true
     x-xray: false
   app03:
     deploy:
@@ -141,7 +141,7 @@ services:
     x-logging:
         RetentionInDays: 30
     x-scaling:
-      range: 1-10
+      Range: 1-10
   rproxy:
     depends_on:
       - app01

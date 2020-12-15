@@ -156,8 +156,8 @@ Examples
           - name: abcd
             access: RWMessages
             scaling:
-              scale_in_cooldown: 120
-              scale_out_cooldown: 60
+              ScaleInCooldown: 120
+              ScaleOutCooldown: 60
               steps:
                 - lower_bound: 0
                   upper_bound: 10
@@ -174,7 +174,7 @@ Examples
 
 .. note::
 
-    You need to have defined x-configs/scaling/range to enable step scaling on the ECS Service.
+    You need to have defined x-configs/scaling/Range to enable step scaling on the ECS Service.
 
 .. _Engine: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-rds-dbcluster.html#cfn-rds-dbcluster-engine
 .. _EngineVersion: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-rds-dbcluster.html#cfn-rds-dbcluster-engineversion

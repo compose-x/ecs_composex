@@ -53,11 +53,11 @@ services:
         max: 10
         cpu: 70
     x-scaling:
-      range: 1-5
-      target_scaling:
-        cpu_target: 88
-        disable_scale_in: true
-        memory_target: 30
+      Range: 1-5
+      TargetScaling:
+        CpuTarget: 88
+        DisableScaleIn: true
+        MemoryTarget: 30
     x-xray: false
   app03:
     x-aws-role:
@@ -70,9 +70,9 @@ services:
             - "*"
     x-aws-logs_retention: 42
     x-scaling:
-      range: 1-10
-      target_scaling:
-        cpu_target: 50
+      Range: 1-10
+      TargetScaling:
+        CpuTarget: 50
   rproxy:
     deploy:
       x-aws-autoscaling:

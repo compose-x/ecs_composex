@@ -76,11 +76,11 @@ services:
       ManagedPolicyArns:
         - arn:aws:iam:aws::policy/AdministratorAccess
     x-scaling:
-      range: 1-5
-      target_scaling:
-        cpu_target: 30
-        disable_scale_in: true
-        memory_target: 30
+      Range: 1-5
+      TargetScaling:
+        CpuTarget: 30
+        DisableScaleIn: true
+        MemoryTarget: 30
     x-xray: false
   app03:
     deploy:
@@ -105,9 +105,9 @@ services:
     x-logging:
       RetentionInDays: 42
     x-scaling:
-      range: 1-10
-      target_scaling:
-        cpu_target: 50
+      Range: 1-10
+      TargetScaling:
+        CpuTarget: 50
   rproxy:
     depends_on:
       - app01
@@ -133,9 +133,9 @@ services:
       ManagedPolicyArns:
         - arn:aws:iam:aws::policy/ReadOnlyAccess
     x-scaling:
-      range: 0-2
-      target_scaling:
-        cpu_target: 50
+      Range: 0-2
+      TargetScaling:
+        CpuTarget: 50
     x-xray: true
 version: '3.8'
 volumes:

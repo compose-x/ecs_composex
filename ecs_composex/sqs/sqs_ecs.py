@@ -57,7 +57,7 @@ def handle_service_scaling(resource, res_root_stack):
         if SERVICE_SCALING_TARGET not in target[0].template.resources:
             LOG.warning(
                 f"No Scalable target defined for {target[0].name}."
-                " You need to define `scaling.range` in x-configs first. No scaling applied"
+                " You need to define `scaling.scaling_range` in x-configs first. No scaling applied"
             )
             return
         scaling_out_policy = generate_alarm_scaling_out_policy(

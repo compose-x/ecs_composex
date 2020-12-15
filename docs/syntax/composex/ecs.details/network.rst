@@ -7,16 +7,23 @@ x-network
 .. code-block:: yaml
     :caption: Overview
 
-    use_cloudmap: bool
+    UseCloudmap: bool
     Ingress: {ingress_definition}
 
 
 .. contents::
 
-use_cloudmap
+UseCloudmap
 ============
 
 Boolean to turn on or off the integration to CloudMap for the services.
+
+Default: False
+
+.. note::
+
+    If you want to use appmesh and define **x-appmesh** in the template, automatically, all services will be registered
+    in AWS CloudMap.
 
 .. _services_ingress_syntax_reference:
 
@@ -106,4 +113,3 @@ Map VPC subnets to docker-compose networks
 In some cases, you might have complex VPC topology and created new specific Subnets in **x-vpc**, and map that subnet
 name to a docker-network defined network. Then later, you can set your service in the services definition to be put into
 that network.
-

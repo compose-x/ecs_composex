@@ -60,7 +60,7 @@ def generate_scaling_out_steps(steps, target):
     ordered = sorted(unordered, key=lambda i: i["lower_bound"])
     if target and ordered[-1]["count"] > target.MaxCapacity:
         LOG.warning(
-            f"The current maximum in your range is {target.MaxCapacity} whereas you defined {ordered[-1]['count']}"
+            f"The current maximum in your Range is {target.MaxCapacity} whereas you defined {ordered[-1]['count']}"
             " for step scaling. Adjusting to step scaling max."
         )
         setattr(target, "MaxCapacity", ordered[-1]["count"])
@@ -133,9 +133,9 @@ def generate_alarm_scaling_out_policy(
             AdjustmentType="ExactCapacity",
             StepAdjustments=step_adjustments,
             Cooldown=60
-            if not keyisset("scale_out_cooldown", scaling_def)
-            or not (isinstance(scaling_def["scale_out_cooldown"], int))
-            else scaling_def["scale_out_cooldown"],
+            if not keyisset("ScaleOutCooldown", scaling_def)
+            or not (isinstance(scaling_def["ScaleOutCooldown"], int))
+            else scaling_def["ScaleOutCooldown"],
         ),
     )
     return policy
@@ -168,9 +168,9 @@ def reset_to_zero_policy(
         StepScalingPolicyConfiguration=StepScalingPolicyConfiguration(
             AdjustmentType="ExactCapacity",
             Cooldown=60
-            if not keyisset("scale_in_cooldown", scaling_def)
-            or not (isinstance(scaling_def["scale_in_cooldown"], int))
-            else scaling_def["scale_in_cooldown"],
+            if not keyisset("ScaleInCooldown", scaling_def)
+            or not (isinstance(scaling_def["ScaleInCooldown"], int))
+            else scaling_def["ScaleInCooldown"],
             StepAdjustments=[
                 StepAdjustment(
                     MetricIntervalUpperBound=0,
@@ -184,7 +184,7 @@ def reset_to_zero_policy(
 
 def handle_range(config, key, new_range):
     """
-    Function to handle range.
+    Function to handle Range.
     """
     new_min = int(new_range.split("-")[0])
     new_max = int(new_range.split("-")[1])
@@ -209,12 +209,12 @@ def handle_defined_target_scaling_props(prop, config, key, new_config):
 
 def define_new_config(config, key, new_config):
     valid_keys = [
-        ("cpu_target", int, None),
-        ("memory_target", int, None),
-        ("disable_scale_in", bool, None),
-        ("tgt_targets_count", int, None),
-        ("scale_in_cooldown", int, None),
-        ("scale_out_cooldown", int, None),
+        ("CpuTarget", int, None),
+        ("MemoryTarget", int, None),
+        ("DisableScaleIn", bool, None),
+        ("TgtTargetsCount", int, None),
+        ("ScaleInCooldown", int, None),
+        ("ScaleOutCooldown", int, None),
     ]
     for prop in valid_keys:
         if (
@@ -256,10 +256,10 @@ def handle_defined_x_aws_autoscaling(configs, service):
         min_count = 1 if not keypresent("min", config) else int(config["min"])
         max_count = 1 if not keypresent("max", config) else int(config["max"])
         if not service.x_scaling:
-            service.x_scaling = {"range": f"{min_count}-{max_count}"}
+            service.x_scaling = {"Range": f"{min_count}-{max_count}"}
             if keyisset("cpu", config):
                 service.x_scaling.update(
-                    {"target_scaling": {"cpu_target": int(config["cpu"])}}
+                    {"TargetScaling": {"CpuTarget": int(config["cpu"])}}
                 )
         elif service.x_scaling:
             LOG.warning(
@@ -273,19 +273,19 @@ def handle_defined_x_aws_autoscaling(configs, service):
 
 def merge_family_services_scaling(services):
     x_scaling = {
-        "range": None,
-        "target_scaling": {
-            "disable_scale_in": False,
-            "scale_in_cooldown": 300,
-            "scale_out_cooldown": 60,
+        "Range": None,
+        "TargetScaling": {
+            "DisableScaleIn": False,
+            "ScaleInCooldown": 300,
+            "ScaleOutCooldown": 60,
         },
     }
     x_scaling_configs = []
     for service in services:
         handle_defined_x_aws_autoscaling(x_scaling_configs, service)
     valid_keys = [
-        ("range", str, handle_range),
-        ("target_scaling", dict, handle_target_scaling),
+        ("Range", str, handle_range),
+        ("TargetScaling", dict, handle_target_scaling),
     ]
     for key in valid_keys:
         for config in x_scaling_configs:
@@ -304,23 +304,24 @@ class ServiceScaling(object):
     """
 
     defined = False
-    target_scaling_keys = ["cpu_target", "memory_target", "tgt_targets_count"]
+    target_scaling_keys = ["CpuTarget", "MemoryTarget", "TgtTargetsCount"]
 
     def __init__(self, services):
         configuration = merge_family_services_scaling(services)
-        self.range = None
+        self.scaling_range = None
         self.target_scaling = None
-        if not keyisset("range", configuration):
+        if not keyisset("Range", configuration):
             self.defined = False
             return
-        self.range = configuration["range"]
+        self.scaling_range = configuration["Range"]
         for key in self.target_scaling_keys:
-            if keyisset("target_scaling", configuration) and keyisset(
-                key, configuration["target_scaling"]
+            if keyisset("TargetScaling", configuration) and keyisset(
+                key, configuration["TargetScaling"]
             ):
-                self.target_scaling = configuration["target_scaling"]
+                self.target_scaling = configuration["TargetScaling"]
 
     def __repr__(self):
         return dumps(
-            {"range": self.range, "target_scaling": self.target_scaling}, indent=4
+            {"Range": self.scaling_range, "TargetScaling": self.target_scaling},
+            indent=4,
         )
