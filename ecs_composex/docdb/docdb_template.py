@@ -78,7 +78,7 @@ def set_db_cluster(db, secret, sgs):
             "MasterUserPassword": Sub(
                 f"{{{{resolve:secretsmanager:${{{secret.title}}}:SecretString:password}}}}"
             ),
-            "DBClusterParameterGroupName": Ref(db.db_subnets_group),
+            "DBSubnetGroupName": Ref(db.db_subnets_group),
         }
     )
     db.cfn_resource = docdb.DBCluster(db.logical_name, **props)
