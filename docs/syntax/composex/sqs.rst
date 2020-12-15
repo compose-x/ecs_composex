@@ -156,8 +156,8 @@ Examples
           - name: abcd
             access: RWMessages
             scaling:
-              scale_in_cooldown: 120
-              scale_out_cooldown: 60
+              ScaleInCooldown: 120
+              ScaleOutCooldown: 60
               steps:
                 - lower_bound: 0
                   upper_bound: 10

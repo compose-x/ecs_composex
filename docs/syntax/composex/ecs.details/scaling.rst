@@ -16,7 +16,7 @@ For SQS Based scaling using step scaling, refer to SQS Documentation.
         x-scaling:
           range: "1-10"
           target_tracking:
-            cpu_target: 80
+            CpuTarget: 80
 
 range
 =====
@@ -55,8 +55,8 @@ Allows you to define target scaling for the service based on CPU/RAM.
     x-scaling:
       range: "1-10"
       target_scaling:
-        cpu_target: int (will be casted to float)
-        memory_target: int (will be casted to float)
-        scale_in_cooldown: int (ie. 60)
-        scale_out_cooldown: int (ie. 60)
-        disable_scale_in: boolean (True/False)
+        CpuTarget: int (will be casted to float)
+        MemoryTarget: int (will be casted to float)
+        ScaleInCooldown: int (ie. 60)
+        ScaleOutCooldown: int (ie. 60)
+        DisableScaleIn: boolean (True/False)

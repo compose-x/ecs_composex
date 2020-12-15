@@ -69,7 +69,7 @@ numbers.
         x-scaling:
           range: "1-10" # 1 to 10 containers to deploy for the service
             target_scaling:
-              cpu_target: 80 # Means 80% average for all containers in the service.
+              CpuTarget: 80 # Means 80% average for all containers in the service.
       backend:
         image: my-worker
         deploy:
