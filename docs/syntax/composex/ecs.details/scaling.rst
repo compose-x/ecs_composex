@@ -43,7 +43,7 @@ event driven architecture.
 
 .. _xscaling_target_scaling_syntax_refernece:
 
-target_scaling
+TargetScaling
 ==============
 
 Allows you to define target scaling for the service based on CPU/RAM.
@@ -54,7 +54,7 @@ Allows you to define target scaling for the service based on CPU/RAM.
 
     x-scaling:
       range: "1-10"
-      target_scaling:
+      TargetScaling:
         CpuTarget: int (will be casted to float)
         MemoryTarget: int (will be casted to float)
         ScaleInCooldown: int (ie. 60)

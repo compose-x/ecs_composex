@@ -68,7 +68,7 @@ numbers.
           replicas: 2 # by default I want 2 containers
         x-scaling:
           range: "1-10" # 1 to 10 containers to deploy for the service
-            target_scaling:
+            TargetScaling:
               CpuTarget: 80 # Means 80% average for all containers in the service.
       backend:
         image: my-worker

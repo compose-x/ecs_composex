@@ -54,7 +54,7 @@ services:
         cpu: 70
     x-scaling:
       range: 1-5
-      target_scaling:
+      TargetScaling:
         CpuTarget: 88
         DisableScaleIn: true
         MemoryTarget: 30
@@ -71,7 +71,7 @@ services:
     x-aws-logs_retention: 42
     x-scaling:
       range: 1-10
-      target_scaling:
+      TargetScaling:
         CpuTarget: 50
   rproxy:
     deploy:

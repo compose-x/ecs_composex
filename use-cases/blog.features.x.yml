@@ -34,7 +34,7 @@ services:
         - arn:aws:iam::aws:policy/AdministratorAccess
     x-scaling:
       range: 1-5
-      target_scaling:
+      TargetScaling:
         CpuTarget: 30
         DisableScaleIn: true
         MemoryTarget: 30
@@ -51,7 +51,7 @@ services:
         RetentionInDays: 42
     x-scaling:
       range: 1-10
-      target_scaling:
+      TargetScaling:
         CpuTarget: 50
   rproxy:
     x-iam:
@@ -59,7 +59,7 @@ services:
         - arn:aws:iam::aws:policy/ReadOnlyAccess
     x-scaling:
       range: 0-2
-      target_scaling:
+      TargetScaling:
         CpuTarget: 50
     x-xray: true
     x-network:

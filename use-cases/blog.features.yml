@@ -105,7 +105,7 @@ services:
         - arn:aws:iam::aws:policy/AdministratorAccess
     x-scaling:
       range: "1-5"
-      target_scaling:
+      TargetScaling:
         CpuTarget: 88
         DisableScaleIn: true
     x-xray: false

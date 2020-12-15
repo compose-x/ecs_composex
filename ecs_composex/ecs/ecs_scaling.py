@@ -259,7 +259,7 @@ def handle_defined_x_aws_autoscaling(configs, service):
             service.x_scaling = {"range": f"{min_count}-{max_count}"}
             if keyisset("cpu", config):
                 service.x_scaling.update(
-                    {"target_scaling": {"CpuTarget": int(config["cpu"])}}
+                    {"TargetScaling": {"CpuTarget": int(config["cpu"])}}
                 )
         elif service.x_scaling:
             LOG.warning(
@@ -274,7 +274,7 @@ def handle_defined_x_aws_autoscaling(configs, service):
 def merge_family_services_scaling(services):
     x_scaling = {
         "range": None,
-        "target_scaling": {
+        "TargetScaling": {
             "DisableScaleIn": False,
             "ScaleInCooldown": 300,
             "ScaleOutCooldown": 60,
@@ -285,7 +285,7 @@ def merge_family_services_scaling(services):
         handle_defined_x_aws_autoscaling(x_scaling_configs, service)
     valid_keys = [
         ("range", str, handle_range),
-        ("target_scaling", dict, handle_target_scaling),
+        ("TargetScaling", dict, handle_target_scaling),
     ]
     for key in valid_keys:
         for config in x_scaling_configs:
@@ -315,13 +315,13 @@ class ServiceScaling(object):
             return
         self.scaling_range = configuration["range"]
         for key in self.target_scaling_keys:
-            if keyisset("target_scaling", configuration) and keyisset(
-                key, configuration["target_scaling"]
+            if keyisset("TargetScaling", configuration) and keyisset(
+                key, configuration["TargetScaling"]
             ):
-                self.target_scaling = configuration["target_scaling"]
+                self.TargetScaling = configuration["TargetScaling"]
 
     def __repr__(self):
         return dumps(
-            {"range": self.scaling_range, "target_scaling": self.target_scaling},
+            {"range": self.scaling_range, "TargetScaling": self.target_scaling},
             indent=4,
         )
