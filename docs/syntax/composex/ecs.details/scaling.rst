@@ -15,7 +15,7 @@ For SQS Based scaling using step scaling, refer to SQS Documentation.
       serviceA:
         x-scaling:
           Range: "1-10"
-          target_tracking:
+          TargetScaling:
             CpuTarget: 80
 
 Range
@@ -49,3 +49,35 @@ Allows you to define target scaling for the service based on CPU/RAM.
         ScaleInCooldown: int (ie. 60)
         ScaleOutCooldown: int (ie. 60)
         DisableScaleIn: boolean (True/False)
+
+
+CpuTarget / RamTarget
+-----------------------
+
+Defines the CPU percentage that we want the service to be under. ECS will automatically create and adapt alarms to
+scale the service in/out so long as the average CPU usage remains beneath that value.
+
+Note that setting both should not be set at the same time, as you might end up into a racing condition.
+
+ScaleInCooldown / ScaleOutCooldown
+-----------------------------------
+
+This allows you to define the Cooldown between scaling activities in order to limit drastic changes.
+
+.. hint::
+
+    These are set only for the CPU and RAM targets, no impact on other scaling such as SQS.
+
+DisableScaleIn
+--------------
+
+Default: False
+
+Same as the original Property in the CFN definition, this will deny a service to scale in after it has scaled-out for
+applications that do not support to scale-in.
+
+
+.. hint::
+
+    If you define multiple services within the same **family**, the lowest value for CPU/RAM and highest for scale in/out
+    are used in order to minimize the impact and focus on the weakest point.
