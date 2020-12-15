@@ -242,7 +242,7 @@ def apply_vpc_settings(x_settings, root_stack, settings):
         public_subnets=x_settings[PUBLIC_SUBNETS.title],
         app_subnets=x_settings[APP_SUBNETS.title],
         storage_subnets=x_settings[STORAGE_SUBNETS.title],
-        session=x_settings["session"],
+        session=x_settings["session"] if keyisset("session", x_settings) else None,
     )
 
 
