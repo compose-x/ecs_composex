@@ -124,19 +124,19 @@ def handle_merge_services_props(config, network, network_config):
 
 def merge_services_network(family):
     network_config = {
-        "use_cloudmap": False,
+        "UseCloudmap": False,
         Ingress.master_key: {
             ServiceNetworking.self_key: False,
             Ingress.ext_sources_key: [],
             Ingress.aws_sources_key: [],
             Ingress.services_key: [],
         },
-        "is_public": False,
+        "IsPublic": False,
     }
     valid_keys = [
         (Ingress.master_key, dict, handle_ingress_rules),
-        ("use_cloudmap", bool, None),
-        ("is_public", bool, None),
+        ("UseCloudmap", bool, None),
+        ("IsPublic", bool, None),
     ]
     x_network = [s.x_network for s in family.ordered_services if s.x_network]
     for config in valid_keys:
@@ -256,8 +256,8 @@ class ServiceNetworking(Ingress):
         self.merge_services_ports(family)
         self.merge_networks(family)
         self.configuration = merge_services_network(family)
-        self.use_cloudmap = self.configuration["use_cloudmap"]
-        self.is_public = self.configuration["is_public"]
+        self.use_cloudmap = self.configuration["UseCloudmap"]
+        self.is_public = self.configuration["IsPublic"]
         self.ingress_from_self = True
         super().__init__(self.configuration[self.master_key], self.ports)
         self.add_self_ingress(family)

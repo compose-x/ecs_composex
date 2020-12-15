@@ -141,7 +141,7 @@ class Ingress(object):
     services_key = "Services"
     ipv4_key = "Ipv4"
     ipv6_key = "Ipv6"
-    network_settings = [master_key, "use_cloudmap", "is_public"]
+    network_settings = [master_key, "UseCloudmap", "IsPublic"]
 
     def __init__(self, definition, ports):
         """

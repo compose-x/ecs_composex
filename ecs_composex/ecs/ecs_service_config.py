@@ -32,7 +32,7 @@ class ServiceConfig(object):
 
     :cvar list keys: List of valid settings for a service in Docker compose syntax reference
     :cvar list service_config_keys: list of extra configuration that apply to services.
-    :cvar bool use_cloudmap: Indicates whether or not the service will be added to the VPC CloudMap
+    :cvar bool UseCloudmap: Indicates whether or not the service will be added to the VPC CloudMap
     :cvar bool use_alb: Indicates to use an AWS Application LoadBalancer (ELBv2, type application)
     :cvar bool use_nlb: Indicates to use an AWS Application LoadBalancer (ELBv2, type network)
     :cvar bool is_public: Indicates whether the service should be accessible publicly
