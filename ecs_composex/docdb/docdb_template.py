@@ -48,13 +48,6 @@ def init_doc_db_template():
     template = build_template(
         "Root template for DocumentDB for ComposeX", [VPC_ID, STORAGE_SUBNETS]
     )
-    subnet_group = docdb.DBSubnetGroup(
-        DOCDB_SUBNET_GROUP_T,
-        DBSubnetGroupDescription=Sub(f"docdb-subnets-${{{AWS_STACK_NAME}}}"),
-        SubnetIds=Ref(STORAGE_SUBNETS),
-        Tags=Tags(Name=Sub(f"docdb-subnets-${{{AWS_STACK_NAME}}}")),
-    )
-    template.add_resource(subnet_group)
     return template
 
 
@@ -85,6 +78,7 @@ def set_db_cluster(db, secret, sgs):
             "MasterUserPassword": Sub(
                 f"{{{{resolve:secretsmanager:${{{secret.title}}}:SecretString:password}}}}"
             ),
+            "DBClusterParameterGroupName": Ref(db.db_subnets_group),
         }
     )
     db.cfn_resource = docdb.DBCluster(db.logical_name, **props)
@@ -141,13 +135,22 @@ def create_docdb_template(new_resources, settings):
     :rtype: troposphere.Template
     """
     root_template = init_doc_db_template()
+    subnet_group = docdb.DBSubnetGroup(
+        DOCDB_SUBNET_GROUP_T,
+        DBSubnetGroupDescription=Sub(f"docdb-subnets-${{{AWS_STACK_NAME}}}"),
+        SubnetIds=Ref(STORAGE_SUBNETS),
+        Tags=Tags(Name=Sub(f"docdb-subnets-${{{AWS_STACK_NAME}}}")),
+    )
+    root_template.add_resource(subnet_group)
     for resource in new_resources:
+        resource.db_subnets_group = subnet_group
         resource.db_sg = SecurityGroup(
             f"{resource.logical_name}Sg",
             GroupDescription=Sub(f"SG for docdb-{resource.logical_name}"),
             GroupName=Sub(f"${{{AWS_STACK_NAME}}}.docdb.{resource.logical_name}"),
             VpcId=Ref(VPC_ID),
         )
+
         root_template.add_resource(resource.db_sg)
         resource.db_secret = add_db_secret(root_template, resource.logical_name)
         set_db_cluster(

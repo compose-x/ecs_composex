@@ -57,6 +57,7 @@ from ecs_composex.rds.rds_params import (
     DB_USERNAME,
     DB_STORAGE_CAPACITY,
     DB_STORAGE_TYPE,
+    DBS_SUBNET_GROUP_T,
 )
 from ecs_composex.resources_import import import_record_properties
 from ecs_composex.secrets import (
@@ -320,6 +321,7 @@ def override_set_properties(props, db):
                 f"{{{{resolve:secretsmanager:${{{db.db_secret.title}}}:SecretString:password}}}}"
             ),
             "VpcSecurityGroupIds": [Ref(db.db_sg)],
+            "DBSubnetGroupName": Ref(DBS_SUBNET_GROUP_T),
         },
     )
 
