@@ -413,13 +413,13 @@ class ComposeXSettings(object):
         self.upload = False if self.no_upload else True
         self.create_compute = False if not keyisset(USE_FLEET_T, kwargs) else True
         self.parse_command(kwargs, content)
-        self.compose_content = None
+        self.compose_content = {}
         self.input_file = (
             kwargs[self.input_file_arg] if keyisset(self.input_file_arg, kwargs) else {}
         )
         self.set_content(kwargs, content)
-
         self.set_output_settings(kwargs)
+        self.use_appmesh = keyisset("x-appmesh", self.compose_content)
         self.name = kwargs[self.name_arg]
 
     def set_secrets(self):
@@ -555,7 +555,6 @@ class ComposeXSettings(object):
         :param dict kwargs:
         :param dict content:
         :param bool fully_load:
-        :return:
         """
         if content is None and len(kwargs[self.input_file_arg]) == 1:
             self.compose_content = load_composex_file(kwargs[self.input_file_arg][0])
