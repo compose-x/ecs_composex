@@ -111,14 +111,14 @@ def add_db_instances(template, db):
                 raise KeyError(
                     "You must specify at least the DBInstanceClass", instance.keys()
                 )
-            instance.update(
+            instance_props = import_record_properties(
+                instance, docdb.DBInstance, ignore_missing_required=True
+            )
+            instance_props.update(
                 {
                     "DBClusterIdentifier": Ref(db.cfn_resource),
                     "Tags": Tags(DocDbCluster=Ref(db.cfn_resource)),
                 }
-            )
-            instance_props = import_record_properties(
-                instance, docdb.DBInstance, ignore_missing_required=True
             )
             template.add_resource(
                 docdb.DBInstance(f"{db.logical_name}Instance{count}", **instance_props)
