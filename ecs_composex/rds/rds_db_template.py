@@ -183,8 +183,8 @@ def add_default_instance_definition(db, for_cluster=False):
     )
     if db.parameters and keyisset("MultiAZ", db.parameters):
         setattr(instance, "MultiAZ", True)
-    if for_cluster:
-        delattr(instance, "StorageEncrypted")
+    if for_cluster and hasattr(instance, "StorageEncrypted"):
+        del instance.properties["StorageEncrypted"]
     return instance
 
 
