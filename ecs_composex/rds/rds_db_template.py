@@ -245,7 +245,6 @@ def add_parameter_group(template, db):
             props = import_record_properties(
                 db.parameters["ParametersGroups"], DBClusterParameterGroup
             )
-            print(props, db.parameters["ParametersGroups"])
             template.add_resource(
                 DBClusterParameterGroup(
                     CLUSTER_PARAMETER_GROUP_T,
@@ -452,9 +451,14 @@ def add_instances_from_parameters(db_template, db):
             )
         instance_props = import_record_properties(db_instance, DBInstance)
         instance_props["Engine"] = Ref(DB_ENGINE_NAME)
-        for prop_name in instance_props.keys():
-            if prop_name not in aurora_compatible:
-                instance_props[prop_name] = Ref(AWS_NO_VALUE)
+
+        to_del = [
+            prop_name
+            for prop_name in instance_props.keys()
+            if prop_name not in aurora_compatible
+        ]
+        for key in to_del:
+            del instance_props[key]
         db_instance = DBInstance(
             f"{db.logical_name}Instance{count}",
             DBClusterIdentifier=Ref(db.cfn_resource),
