@@ -214,13 +214,13 @@ def create_scalable_target(family):
     """
     Method to automatically create a scalable target
     """
-    LOG.debug(family.service_config.scaling.range)
-    if family.service_config.scaling.range:
+    LOG.debug(family.service_config.scaling.scaling_range)
+    if family.service_config.scaling.scaling_range:
         family.scalable_target = applicationautoscaling.ScalableTarget(
             ecs_params.SERVICE_SCALING_TARGET,
             template=family.template,
-            MaxCapacity=family.service_config.scaling.range["max"],
-            MinCapacity=family.service_config.scaling.range["min"],
+            MaxCapacity=family.service_config.scaling.scaling_range["max"],
+            MinCapacity=family.service_config.scaling.scaling_range["min"],
             ScalableDimension="ecs:service:DesiredCount",
             ServiceNamespace="ecs",
             RoleARN=Sub(

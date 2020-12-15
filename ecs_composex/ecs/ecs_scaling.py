@@ -308,12 +308,12 @@ class ServiceScaling(object):
 
     def __init__(self, services):
         configuration = merge_family_services_scaling(services)
-        self.range = None
+        self.scaling_range = None
         self.target_scaling = None
         if not keyisset("range", configuration):
             self.defined = False
             return
-        self.range = configuration["range"]
+        self.scaling_range = configuration["range"]
         for key in self.target_scaling_keys:
             if keyisset("target_scaling", configuration) and keyisset(
                 key, configuration["target_scaling"]
@@ -322,5 +322,6 @@ class ServiceScaling(object):
 
     def __repr__(self):
         return dumps(
-            {"range": self.range, "target_scaling": self.target_scaling}, indent=4
+            {"range": self.scaling_range, "target_scaling": self.target_scaling},
+            indent=4,
         )
