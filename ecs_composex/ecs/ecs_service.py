@@ -138,12 +138,15 @@ def add_service_default_sg(template):
     return sg
 
 
-def add_service_to_map(family):
+def add_service_to_map(family, settings):
     """
     Method to create a new Service into CloudMap to represent the current service and add entry into the registry
     """
     registries = []
-    if not family.service_config.network.ports:
+    if (
+        not family.service_config.network.ports
+        or not family.service_config.network.use_cloudmap
+    ) and not settings.use_appmesh:
         return registries
     sd_service = SdService(
         f"{family.logical_name}DiscoveryService",
@@ -283,7 +286,7 @@ def generate_service_template_outputs(family):
     )
 
 
-def define_service_ingress(family):
+def define_service_ingress(family, settings):
     """
     Function to define microservice ingress.
 
@@ -291,7 +294,7 @@ def define_service_ingress(family):
     :param family:
     """
     service_lbs = []
-    registries = add_service_to_map(family)
+    registries = add_service_to_map(family, settings)
     if not registries:
         registries = Ref(AWS_NO_VALUE)
     service_attrs = {
@@ -342,11 +345,11 @@ class Service(object):
         self.sgs = []
         self.sg = add_service_default_sg(family.template)
         self.sgs.append(Ref(self.sg))
-        self.generate_service_definition(family)
+        self.generate_service_definition(family, settings)
         create_scalable_target(family)
         generate_service_template_outputs(family)
 
-    def generate_service_definition(self, family):
+    def generate_service_definition(self, family, settings):
         """
         Function to generate the Service definition.
         This is the last step in defining the service, after all other settings have been prepared.
@@ -357,7 +360,7 @@ class Service(object):
             Ref(sg) for sg in self.sgs if not isinstance(sg, (Ref, Sub, If, GetAtt))
         ]
         service_sgs += [sg for sg in self.sgs if isinstance(sg, (Ref, Sub, If, GetAtt))]
-        attrs = define_service_ingress(family)
+        attrs = define_service_ingress(family, settings)
         self.ecs_service = EcsService(
             ecs_params.SERVICE_T,
             template=family.template,
