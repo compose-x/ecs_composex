@@ -127,11 +127,12 @@ def add_db_sg(template, db_name):
     )
 
 
-def add_default_instance_definition(db):
+def add_default_instance_definition(db, for_cluster=False):
     """
     Function to add DB Instance(s)
 
     :param ecs_composex.rds.rds_stack.Rds db:
+    :param bool for_cluster: Whether this instance is added with default values for a DB Cluster
     """
     instance = DBInstance(
         f"Instance{db.logical_name}",
@@ -182,6 +183,8 @@ def add_default_instance_definition(db):
     )
     if db.parameters and keyisset("MultiAZ", db.parameters):
         setattr(instance, "MultiAZ", True)
+    if for_cluster:
+        delattr(instance, "StorageEncrypted")
     return instance
 
 
@@ -497,7 +500,7 @@ def add_db_instances_for_cluster(db_template, db):
     if not db.parameters or (
         db.parameters and not keyisset("Instances", db.parameters)
     ):
-        db_instance = add_default_instance_definition(db)
+        db_instance = add_default_instance_definition(db, for_cluster=True)
         db_template.add_resource(db_instance)
     elif db.parameters and keyisset("Instances", db.parameters):
         add_instances_from_parameters(db_template, db)
