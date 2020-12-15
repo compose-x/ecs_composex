@@ -58,7 +58,21 @@ def no_value_if_not_set(props, key, is_bool=False):
         return Ref(AWS_NO_VALUE) if not keypresent(key, props) else props[key]
 
 
-def set_db_cluster(db, secret, sgs):
+def add_parameters_group(db):
+    """
+    Function to create the DBClusterParameterGroup to associate with the cluster
+
+    :param ecs_composex.docdb.docdb_stack.DocDb db:
+    :return: parameter group
+    :rtype: docdb.DBClusterParameterGroup
+    """
+    props = import_record_properties(
+        db.parameters["DBClusterParameterGroup"], docdb.DBClusterParameterGroup
+    )
+    return docdb.DBClusterParameterGroup(f"{db.logical_name}ParametersGroup", **props)
+
+
+def set_db_cluster(template, db, secret, sgs):
     """
     Function to parse and transform yaml definition to Troposphere
 
@@ -66,6 +80,7 @@ def set_db_cluster(db, secret, sgs):
     :param troposphere.secretsmanager.Secret secret:
     :param list<roposphere.ec2.SecurityGroup> sgs:
     """
+    parameter_group = None
     props = import_record_properties(db.properties, docdb.DBCluster)
     if not keypresent("StorageEncrypted", props):
         props["StorageEncrypted"] = True
@@ -81,7 +96,11 @@ def set_db_cluster(db, secret, sgs):
             "DBSubnetGroupName": Ref(db.db_subnets_group),
         }
     )
+    if db.parameters and keyisset("DBClusterParameterGroup", db.parameters):
+        parameter_group = template.add_resource(add_parameters_group(db))
+        props["DBClusterParameterGroupName"] = Ref(parameter_group)
     db.cfn_resource = docdb.DBCluster(db.logical_name, **props)
+    template.add_resource(db.cfn_resource)
 
 
 def add_db_instances(template, db):
@@ -154,7 +173,10 @@ def create_docdb_template(new_resources, settings):
         root_template.add_resource(resource.db_sg)
         resource.db_secret = add_db_secret(root_template, resource.logical_name)
         set_db_cluster(
-            resource, resource.db_secret, [GetAtt(resource.db_sg, "GroupId")]
+            root_template,
+            resource,
+            resource.db_secret,
+            [GetAtt(resource.db_sg, "GroupId")],
         )
         attach_to_secret_to_resource(
             root_template, resource.cfn_resource, resource.db_secret
@@ -163,6 +185,5 @@ def create_docdb_template(new_resources, settings):
         add_db_instances(root_template, resource)
         resource.init_outputs()
         resource.generate_outputs()
-        root_template.add_resource(resource.cfn_resource)
         root_template.add_output(resource.outputs)
     return root_template
