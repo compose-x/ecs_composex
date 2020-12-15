@@ -318,7 +318,7 @@ class ServiceScaling(object):
             if keyisset("TargetScaling", configuration) and keyisset(
                 key, configuration["TargetScaling"]
             ):
-                self.TargetScaling = configuration["TargetScaling"]
+                self.target_scaling = configuration["TargetScaling"]
 
     def __repr__(self):
         return dumps(
