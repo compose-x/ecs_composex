@@ -124,7 +124,7 @@ def handle_merge_services_props(config, network, network_config):
 
 def merge_services_network(family):
     network_config = {
-        "use_cloudmap": True,
+        "use_cloudmap": False,
         Ingress.master_key: {
             ServiceNetworking.self_key: False,
             Ingress.ext_sources_key: [],
@@ -140,9 +140,18 @@ def merge_services_network(family):
     ]
     x_network = [s.x_network for s in family.ordered_services if s.x_network]
     for config in valid_keys:
-        for network in x_network:
-            if config[0] in network:
-                handle_merge_services_props(config, network, network_config)
+        if config[1] is bool and any(
+            [cfg[config[0]] for cfg in x_network if keypresent(config[0], cfg)]
+        ):
+            LOG.info(
+                f"At least one service of {family.name} is set to use {config[0]}. Enabling."
+            )
+            network_config[config[0]] = True
+        else:
+            for network in x_network:
+                if config[0] in network:
+                    handle_merge_services_props(config, network, network_config)
+
     LOG.debug(family.name)
     LOG.debug(dumps(network_config, indent=2))
     return network_config
@@ -247,6 +256,7 @@ class ServiceNetworking(Ingress):
         self.merge_services_ports(family)
         self.merge_networks(family)
         self.configuration = merge_services_network(family)
+        self.use_cloudmap = self.configuration["use_cloudmap"]
         self.is_public = self.configuration["is_public"]
         self.ingress_from_self = True
         super().__init__(self.configuration[self.master_key], self.ports)
