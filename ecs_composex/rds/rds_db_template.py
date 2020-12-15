@@ -71,12 +71,72 @@ from ecs_composex.vpc.vpc_params import (
 )
 
 
+def init_database_template(db_name):
+    """
+    Function to initialize the DB Template
+
+    :param str db_name: Name of the DB as defined in compose file
+    :return: template
+    :rtype: troposphere.Template
+    """
+    template = build_template(
+        f"Template for RDS DB {db_name}",
+        [
+            VPC_ID,
+            DB_ENGINE_NAME,
+            DB_ENGINE_VERSION,
+            STORAGE_SUBNETS,
+            DBS_SUBNET_GROUP,
+            DB_NAME,
+            DB_USERNAME,
+            DB_SNAPSHOT_ID,
+            DB_PASSWORD_LENGTH,
+            DB_INSTANCE_CLASS,
+            DB_STORAGE_CAPACITY,
+            DB_STORAGE_TYPE,
+        ],
+    )
+    template.add_condition(
+        rds_conditions.DBS_SUBNET_GROUP_CON_T, rds_conditions.DBS_SUBNET_GROUP_CON
+    )
+    template.add_condition(
+        rds_conditions.USE_DB_SNAPSHOT_CON_T, rds_conditions.USE_DB_SNAPSHOT_CON
+    )
+    template.add_condition(
+        rds_conditions.NOT_USE_DB_SNAPSHOT_CON_T, rds_conditions.NOT_USE_DB_SNAPSHOT_CON
+    )
+    template.add_condition(
+        rds_conditions.USE_CLUSTER_CON_T, rds_conditions.USE_CLUSTER_CON
+    )
+    template.add_condition(
+        rds_conditions.NOT_USE_CLUSTER_CON_T, rds_conditions.NOT_USE_CLUSTER_CON
+    )
+    template.add_condition(
+        rds_conditions.USE_CLUSTER_AND_SNAPSHOT_CON_T,
+        rds_conditions.USE_CLUSTER_AND_SNAPSHOT_CON,
+    )
+    template.add_condition(
+        rds_conditions.USE_CLUSTER_NOT_SNAPSHOT_CON_T,
+        rds_conditions.USE_CLUSTER_NOT_SNAPSHOT_CON,
+    )
+    template.add_condition(
+        rds_conditions.NOT_USE_CLUSTER_USE_SNAPSHOT_CON_T,
+        rds_conditions.NOT_USE_CLUSTER_USE_SNAPSHOT_CON,
+    )
+    template.add_condition(
+        rds_conditions.USE_CLUSTER_OR_SNAPSHOT_CON_T,
+        rds_conditions.USE_CLUSTER_OR_SNAPSHOT_CON,
+    )
+    create_db_subnet_group(template, True)
+    return template
+
+
 def add_db_outputs(db_template, db):
     """
     Function to add outputs to the DB template
 
-    :param db_template: DB Template
-    :type db_template: troposphere.Template
+    :param troposphere.Template db_template: DB Template
+    :param ecs_composex.rds.rds_stack.Rds db:
     """
     db.generate_outputs()
     db_template.add_output(db.outputs)
@@ -134,14 +194,13 @@ def add_default_instance_definition(db, for_cluster=False):
     :param ecs_composex.rds.rds_stack.Rds db:
     :param bool for_cluster: Whether this instance is added with default values for a DB Cluster
     """
-    instance = DBInstance(
-        f"Instance{db.logical_name}",
-        Engine=Ref(DB_ENGINE_NAME),
-        EngineVersion=Ref(DB_ENGINE_VERSION),
-        StorageType=If(
+    props = {
+        "Engine": Ref(DB_ENGINE_NAME),
+        "EngineVersion": Ref(DB_ENGINE_VERSION),
+        "StorageType": If(
             rds_conditions.USE_CLUSTER_CON_T, Ref(AWS_NO_VALUE), Ref(DB_STORAGE_TYPE)
         ),
-        DBSubnetGroupName=If(
+        "DBSubnetGroupName": If(
             rds_conditions.NOT_USE_CLUSTER_CON_T,
             If(
                 rds_conditions.DBS_SUBNET_GROUP_CON_T,
@@ -150,41 +209,43 @@ def add_default_instance_definition(db, for_cluster=False):
             ),
             Ref(AWS_NO_VALUE),
         ),
-        AllocatedStorage=If(
+        "AllocatedStorage": If(
             rds_conditions.USE_CLUSTER_CON_T,
             Ref(AWS_NO_VALUE),
             Ref(DB_STORAGE_CAPACITY),
         ),
-        DBInstanceClass=Ref(DB_INSTANCE_CLASS),
-        MasterUsername=If(
+        "DBInstanceClass": Ref(DB_INSTANCE_CLASS),
+        "MasterUsername": If(
             rds_conditions.USE_CLUSTER_OR_SNAPSHOT_CON_T,
             Ref(AWS_NO_VALUE),
             Sub(
                 f"{{{{resolve:secretsmanager:${{{db.db_secret.title}}}:SecretString:username}}}}"
             ),
         ),
-        DBClusterIdentifier=If(
+        "DBClusterIdentifier": If(
             rds_conditions.USE_CLUSTER_CON_T, Ref(db.cfn_resource), Ref(AWS_NO_VALUE)
         ),
-        MasterUserPassword=If(
+        "MasterUserPassword": If(
             rds_conditions.USE_CLUSTER_CON_T,
             Ref(AWS_NO_VALUE),
             Sub(
                 f"{{{{resolve:secretsmanager:${{{db.db_secret.title}}}:SecretString:password}}}}"
             ),
         ),
-        VPCSecurityGroups=If(
+        "VPCSecurityGroups": If(
             rds_conditions.USE_CLUSTER_CON_T,
             Ref(AWS_NO_VALUE),
             [GetAtt(db.db_sg, "GroupId")],
         ),
-        Tags=Tags(SecretName=Ref(db.db_secret), Name=db.logical_name),
-        StorageEncrypted=True,
-    )
+        "Tags": Tags(SecretName=Ref(db.db_secret), Name=db.logical_name),
+        "StorageEncrypted": True,
+    }
     if db.parameters and keyisset("MultiAZ", db.parameters):
-        setattr(instance, "MultiAZ", True)
-    if for_cluster and hasattr(instance, "StorageEncrypted"):
-        del instance.properties["StorageEncrypted"]
+        props["MultiAZ"] = True
+    if for_cluster and keyisset("StorageEncrypted", props):
+        del props["StorageEncrypted"]
+
+    instance = DBInstance(f"Instance{db.logical_name}", **props)
     return instance
 
 
@@ -196,26 +257,25 @@ def add_default_cluster_definition(db):
     :return: cluster
     :rtype: troposphere.rds.DBCluster
     """
-    cluster = DBCluster(
-        f"Cluster{db.logical_name}",
-        Condition=rds_conditions.USE_CLUSTER_CON_T,
-        DBSubnetGroupName=If(
+    props = {
+        "Condition": rds_conditions.USE_CLUSTER_CON_T,
+        "DBSubnetGroupName": If(
             rds_conditions.DBS_SUBNET_GROUP_CON_T,
             Ref(CLUSTER_SUBNET_GROUP),
             Ref(DBS_SUBNET_GROUP),
         ),
-        DatabaseName=Ref(DB_NAME),
-        MasterUsername=If(
+        "DatabaseName": Ref(DB_NAME),
+        "MasterUsername": If(
             rds_conditions.USE_CLUSTER_AND_SNAPSHOT_CON_T,
             Ref(AWS_NO_VALUE),
             Sub(
                 f"{{{{resolve:secretsmanager:${{{db.db_secret.title}}}:SecretString:username}}}}"
             ),
         ),
-        MasterUserPassword=Sub(
+        "MasterUserPassword": Sub(
             f"{{{{resolve:secretsmanager:${{{db.db_secret.title}}}:SecretString:password}}}}"
         ),
-        SnapshotIdentifier=If(
+        "SnapshotIdentifier": If(
             rds_conditions.USE_CLUSTER_CON_T,
             If(
                 rds_conditions.USE_DB_SNAPSHOT_CON_T,
@@ -224,13 +284,14 @@ def add_default_cluster_definition(db):
             ),
             Ref(AWS_NO_VALUE),
         ),
-        Engine=Ref(DB_ENGINE_NAME),
-        EngineVersion=Ref(DB_ENGINE_VERSION),
-        DBClusterParameterGroupName=Ref(CLUSTER_PARAMETER_GROUP_T),
-        VpcSecurityGroupIds=[Ref(db.db_sg)],
-        Tags=Tags(SecretName=Ref(db.db_secret), Name=db.logical_name),
-        StorageEncrypted=True,
-    )
+        "Engine": Ref(DB_ENGINE_NAME),
+        "EngineVersion": Ref(DB_ENGINE_VERSION),
+        "DBClusterParameterGroupName": Ref(CLUSTER_PARAMETER_GROUP_T),
+        "VpcSecurityGroupIds": [Ref(db.db_sg)],
+        "Tags": Tags(SecretName=Ref(db.db_secret), Name=db.logical_name),
+        "StorageEncrypted": True,
+    }
+    cluster = DBCluster(f"Cluster{db.logical_name}", **props)
     return cluster
 
 
@@ -328,66 +389,6 @@ def override_set_properties(props, db):
     )
 
 
-def init_database_template(db_name):
-    """
-    Function to initialize the DB Template
-
-    :param str db_name: Name of the DB as defined in compose file
-    :return: template
-    :rtype: troposphere.Template
-    """
-    template = build_template(
-        f"Template for RDS DB {db_name}",
-        [
-            VPC_ID,
-            DB_ENGINE_NAME,
-            DB_ENGINE_VERSION,
-            STORAGE_SUBNETS,
-            DBS_SUBNET_GROUP,
-            DB_NAME,
-            DB_USERNAME,
-            DB_SNAPSHOT_ID,
-            DB_PASSWORD_LENGTH,
-            DB_INSTANCE_CLASS,
-            DB_STORAGE_CAPACITY,
-            DB_STORAGE_TYPE,
-        ],
-    )
-    template.add_condition(
-        rds_conditions.DBS_SUBNET_GROUP_CON_T, rds_conditions.DBS_SUBNET_GROUP_CON
-    )
-    template.add_condition(
-        rds_conditions.USE_DB_SNAPSHOT_CON_T, rds_conditions.USE_DB_SNAPSHOT_CON
-    )
-    template.add_condition(
-        rds_conditions.NOT_USE_DB_SNAPSHOT_CON_T, rds_conditions.NOT_USE_DB_SNAPSHOT_CON
-    )
-    template.add_condition(
-        rds_conditions.USE_CLUSTER_CON_T, rds_conditions.USE_CLUSTER_CON
-    )
-    template.add_condition(
-        rds_conditions.NOT_USE_CLUSTER_CON_T, rds_conditions.NOT_USE_CLUSTER_CON
-    )
-    template.add_condition(
-        rds_conditions.USE_CLUSTER_AND_SNAPSHOT_CON_T,
-        rds_conditions.USE_CLUSTER_AND_SNAPSHOT_CON,
-    )
-    template.add_condition(
-        rds_conditions.USE_CLUSTER_NOT_SNAPSHOT_CON_T,
-        rds_conditions.USE_CLUSTER_NOT_SNAPSHOT_CON,
-    )
-    template.add_condition(
-        rds_conditions.NOT_USE_CLUSTER_USE_SNAPSHOT_CON_T,
-        rds_conditions.NOT_USE_CLUSTER_USE_SNAPSHOT_CON,
-    )
-    template.add_condition(
-        rds_conditions.USE_CLUSTER_OR_SNAPSHOT_CON_T,
-        rds_conditions.USE_CLUSTER_OR_SNAPSHOT_CON,
-    )
-    create_db_subnet_group(template, True)
-    return template
-
-
 def determine_resource_type(db_name, properties):
     """
     Function to determine if the properties are the ones of a DB Cluster or DB Instance.
@@ -422,9 +423,9 @@ def determine_resource_type(db_name, properties):
 def add_instances_from_parameters(db_template, db):
     """
     Function to go over each Instance defined in parameters
-    :param db_template:
-    :param db:
-    :return:
+
+    :param troposphere.Template db_template: The template to add the resources to.
+    :param ecs_composex.rds.rds_stack.Rds db: The Db object defined in compose.
     :raises: TypeError
     """
     aurora_compatible = [
@@ -471,6 +472,15 @@ def add_instances_from_parameters(db_template, db):
 
 
 def create_from_properties(db_template, db):
+    """
+    Function to create RDS resources based on the Properties defined in Compose files.
+    It will try to identify what type of resource (Cluster or Instance) is defined based on the properties
+    that were given. If not capable, falls back to using MacroParameters, and if not, raises exception
+
+    :param troposphere.Template db_template: The template to add the resources to.
+    :param ecs_composex.rds.rds_stack.Rds db: The Db object defined in compose.
+    :raises: RuntimeError
+    """
     rds_class = determine_resource_type(db.name, db.properties)
     if rds_class:
         rds_props = import_record_properties(db.properties, rds_class)
@@ -487,6 +497,13 @@ def create_from_properties(db_template, db):
 
 
 def create_from_parameters(db_template, db):
+    """
+    Function to create the RDS resources from MacroParameters when Properties are not set.
+
+    :param troposphere.Template db_template:
+    :param ecs_composex.rds.rds_stack.Rds db:
+    :return:
+    """
     if db.parameters[DB_ENGINE_NAME.title].startswith("aurora"):
         db.cfn_resource = add_default_cluster_definition(db)
     else:
@@ -495,8 +512,12 @@ def create_from_parameters(db_template, db):
 
 
 def add_db_instances_for_cluster(db_template, db):
-    if not isinstance(db.cfn_resource, DBCluster):
-        return
+    """
+    Function to add DB instances for a RDS Cluster
+
+    :param troposphere.Template db_template:
+    :param ecs_composex.rds.rds_stack.Rds db:
+    """
     if not db.parameters or (
         db.parameters and not keyisset("Instances", db.parameters)
     ):
@@ -521,7 +542,8 @@ def generate_database_template(db):
         create_from_properties(db_template, db)
     elif not db.properties and db.parameters:
         create_from_parameters(db_template, db)
-    add_db_instances_for_cluster(db_template, db)
+    if isinstance(db.cfn_resource, DBCluster):
+        add_db_instances_for_cluster(db_template, db)
     add_parameter_group(db_template, db)
     add_db_dependency(db.cfn_resource, db.db_secret)
     attach_to_secret_to_resource(db_template, db.cfn_resource, db.db_secret)
