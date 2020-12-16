@@ -151,7 +151,7 @@ def get_mod_class(module_name):
     return the_class
 
 
-def invoke_x_to_ecs(settings, services_stack, resource):
+def invoke_x_to_ecs(module_name, settings, services_stack, resource):
     """
     Function to associate X resources to Services
 
@@ -160,8 +160,10 @@ def invoke_x_to_ecs(settings, services_stack, resource):
     :param resource: The XStack resource
     :return:
     """
-    composex_key = f"{X_KEY}{resource.name}"
-    ecs_function = get_mod_function(f"{resource.name}.{resource.name}_ecs", f"{resource.name}_to_ecs")
+    if module_name is None:
+        module_name = resource.name
+    composex_key = f"{X_KEY}{module_name}"
+    ecs_function = get_mod_function(f"{module_name}.{module_name}_ecs", f"{module_name}_to_ecs")
     if ecs_function:
         LOG.debug(ecs_function)
         ecs_function(
@@ -188,7 +190,7 @@ def apply_x_configs_to_ecs(settings, root_stack):
             and resource.name in SUPPORTED_X_MODULE_NAMES
             and not resource.is_void
         ):
-            invoke_x_to_ecs(settings, root_stack, resource)
+            invoke_x_to_ecs(None, settings, root_stack, resource)
 
 
 def apply_x_to_x_configs(root_template, settings):
