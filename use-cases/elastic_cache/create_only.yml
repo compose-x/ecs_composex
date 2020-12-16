@@ -1,0 +1,22 @@
+---
+# ComposeX env file with ElasticCache definitions
+
+
+x-elastic_cache:
+  cache01:
+    Properties:
+      AutoMinorVersionUpgrade: 'true'
+      Engine: memcached
+      CacheNodeType: cache.t3.small
+      NumCacheNodes: 1
+    Services:
+      - name: app03
+        access: RW
+
+  cache02:
+    MacroParameters:
+      Engine: redis
+      EngineVersion: redis6.x
+    Services:
+      - name: app03
+        access: RW

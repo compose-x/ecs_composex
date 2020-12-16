@@ -79,6 +79,7 @@ SUPPORTED_X_MODULE_NAMES = [
     "docdb",
     "events",
     "kinesis",
+    "elastic_cache"
 ]
 
 SUPPORTED_X_MODULES = [f"{X_KEY}{mod_name}" for mod_name in SUPPORTED_X_MODULE_NAMES]
@@ -92,7 +93,8 @@ EXCLUDED_X_KEYS = [
     f"{X_KEY}cluster",
     f"{X_KEY}efs",
 ]
-TCP_SERVICES = [f"{X_KEY}rds", f"{X_KEY}appmesh", f"{X_KEY}elbv2", f"{X_KEY}docdb"]
+TCP_MODES = ["rds", "appmesh", "elbv2", "docdb", "elastic_cache"]
+TCP_SERVICES = [f"{X_KEY}{mode}" for mode in TCP_MODES]
 
 
 def get_mod_function(module_name, function_name):
@@ -149,18 +151,17 @@ def get_mod_class(module_name):
     return the_class
 
 
-def invoke_x_to_ecs(module, settings, services_stack, resource):
+def invoke_x_to_ecs(settings, services_stack, resource):
     """
     Function to associate X resources to Services
 
-    :param str module:
     :param ecs_composex.common.settings.ComposeXSettings settings: The compose file content
     :param ecs_composex.ecs.ServicesStack services_stack: root stack for services.
     :param resource: The XStack resource
     :return:
     """
-    composex_key = f"{X_KEY}{module}"
-    ecs_function = get_mod_function(f"{module}.{module}_ecs", f"{module}_to_ecs")
+    composex_key = f"{X_KEY}{resource.name}"
+    ecs_function = get_mod_function(f"{resource.name}.{resource.name}_ecs", f"{resource.name}_to_ecs")
     if ecs_function:
         LOG.debug(ecs_function)
         ecs_function(
@@ -184,11 +185,10 @@ def apply_x_configs_to_ecs(settings, root_stack):
         resource = root_stack.stack_template.resources[resource_name]
         if (
             issubclass(type(resource), ComposeXStack)
-            and resource_name in SUPPORTED_X_MODULE_NAMES
+            and resource.name in SUPPORTED_X_MODULE_NAMES
             and not resource.is_void
         ):
-            module = getattr(resource, "title")
-            invoke_x_to_ecs(module, settings, root_stack, resource)
+            invoke_x_to_ecs(settings, root_stack, resource)
 
 
 def apply_x_to_x_configs(root_template, settings):
@@ -203,7 +203,7 @@ def apply_x_to_x_configs(root_template, settings):
         resource = root_template.resources[resource_name]
         if (
             issubclass(type(resource), ComposeXStack)
-            and resource_name in SUPPORTED_X_MODULES
+            and resource.name in SUPPORTED_X_MODULES
             and hasattr(resource, "add_xdependencies")
             and not resource.is_void
         ):

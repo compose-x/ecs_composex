@@ -23,7 +23,7 @@ files into S3 and on disk.
 from troposphere import Template, GetAtt, Ref, If, Join, ImportValue
 from troposphere.cloudformation import Stack
 
-from ecs_composex.common import LOG, keyisset, add_parameters
+from ecs_composex.common import LOG, keyisset, add_parameters, NONALPHANUM
 from ecs_composex.common import cfn_conditions
 from ecs_composex.common.files import FileArtifact
 from ecs_composex.vpc.vpc_params import (
@@ -72,7 +72,7 @@ class ComposeXStack(Stack, object):
     is_void = False
 
     def __init__(
-        self, title, stack_template, stack_parameters=None, file_name=None, **kwargs
+        self, name, stack_template, stack_parameters=None, file_name=None, **kwargs
     ):
         """
         Class to keep track of the template object along with the stack object it represents.
@@ -82,6 +82,8 @@ class ComposeXStack(Stack, object):
         :param dict stack_parameters: Stack parameters to set
         :param kwargs: kwargs from composex along with the kwargs for the stack
         """
+        self.name = name
+        title = NONALPHANUM.sub("", self.name)
         self.file_name = file_name if file_name else title
         self.lookup_resources = []
         if not isinstance(stack_template, Template):

@@ -66,7 +66,7 @@ def create_replication_group(cluster):
         or keyisset("ReplicasPerNodeGroup", props)
     ):
         props["PrimaryClusterId"] = Ref(cluster.cfn_resource)
-    props["SecurityGroupIds"] = [GetAtt(cluster.cluster_sg, "GroupId")]
+    props["SecurityGroupIds"] = [GetAtt(cluster.db_sg, "GroupId")]
     if cluster.parameter_group:
         props["CacheParameterGroupName"] = Ref(cluster.parameter_group)
     group = ReplicationGroup(f"{cluster.logical_name}ReplicationGroup", **props)
@@ -98,7 +98,7 @@ def create_cluster_from_properties(cluster, template, subnet_group):
     :return:
     """
     props = import_record_properties(cluster.properties, CacheCluster)
-    props["VpcSecurityGroupIds"] = [GetAtt(cluster.cluster_sg, "GroupId")]
+    props["VpcSecurityGroupIds"] = [GetAtt(cluster.db_sg, "GroupId")]
     props["CacheSubnetGroupName"] = Ref(subnet_group)
     if keyisset("Tags", props):
         props["Tags"] += Tags(Name=cluster.logical_name, ComposeName=cluster.name)
@@ -139,10 +139,12 @@ def create_cluster_from_parameters(cluster, template, subnet_group):
     }
     if keyisset("ParameterGroup", cluster.parameters):
         create_parameter_group(cluster, cluster.parameters["ParameterGroup"])
+        template.add_resource(cluster.parameter_group)
     cluster.cfn_resource = CacheCluster(cluster.logical_name, **props)
+    template.add_resource(cluster.cfn_resource)
 
 
-def create_root_template(new_resources, settings):
+def create_root_template(new_resources):
     """
     Function to create the root template and add the new resources to it.
 
@@ -161,7 +163,7 @@ def create_root_template(new_resources, settings):
         )
     )
     for resource in new_resources:
-        resource.cluster_sg = SecurityGroup(
+        resource.db_sg = SecurityGroup(
             f"{resource.logical_name}Sg",
             GroupDescription=Sub(f"SG for docdb-{resource.logical_name}"),
             GroupName=Sub(
@@ -169,6 +171,7 @@ def create_root_template(new_resources, settings):
             ),
             VpcId=Ref(VPC_ID),
         )
+        root_template.add_resource(resource.db_sg)
         if resource.properties:
             create_cluster_from_properties(resource, root_template, subnet_group)
         elif resource.parameters and not resource.properties:

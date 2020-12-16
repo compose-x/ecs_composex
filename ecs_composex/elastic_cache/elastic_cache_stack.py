@@ -42,8 +42,9 @@ class CacheCluster(XResource):
     """
 
     def __init__(self, name, definition, settings):
-        self.cluster_sg = None
+        self.db_sg = None
         self.parameter_group = None
+        self.db_secret = None
         super().__init__(name, definition, settings)
 
     def init_outputs(self):
@@ -64,9 +65,9 @@ class CacheCluster(XResource):
                 GetAtt,
                 CLUSTER_PORT.Description,
             ),
-            self.cluster_sg.title: (
-                self.cluster_sg.title,
-                self.cluster_sg,
+            self.db_sg.title: (
+                self.db_sg.title,
+                self.db_sg,
                 GetAtt,
                 "GroupId",
             ),
@@ -86,7 +87,7 @@ class XStack(ComposeXStack):
             if not settings.compose_content[RES_KEY][res_name].lookup
         ]
         if new_resources:
-            stack_template = create_root_template(new_resources, settings)
+            stack_template = create_root_template(new_resources)
             super().__init__(title, stack_template, **kwargs)
         else:
             self.is_void = True
