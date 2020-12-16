@@ -49,30 +49,15 @@ ignored in order to keep the automation going:
 * SnapshotIdentifier
     Untested - 2020-11-13 - will support it later.
 
-
-Services
-========
-
-The syntax for listing the services remains the same as the other x- resources.
-
-.. code-block:: yaml
-
-    Services:
-      - name: <service/family name>
-        access: <str>
-
-Access types
-------------
-
-.. warning::
-
-    The access key value do not have an effect at this stage.
-
 MacroParameters
 ================
 
 These parameters will allow you to define extra parameters to define your cluster successfully.
-In the future you should be able to define your `DocDB Cluster Parameters`_ there.
+
+.. code-block:: yaml
+
+    Instances: []
+    DBClusterParameterGroup: {} # AWS DocDB::DBClusterParameterGroup properties
 
 Instances
 ---------
@@ -91,10 +76,44 @@ List of DocDB instances. The aspiration is to follow the same syntax as the `Doc
         PreferredMaintenanceWindow: <window definition>
         AutoMinorVersionUpgrade: bool
 
-
 .. hint::
 
     If you do not define an instance, ECS ComposeX automatically creates a new one with a single node of type **db.t3.medium**
+
+DBClusterParameterGroup
+------------------------
+
+Allows you to create on-the-fly parameter groups to tune your DocDB cluster. Refer to `DocDB DBClusterParameterGroup`_
+for more details.
+
+.. code-block:: yaml
+    :caption: parameter groups example
+
+    Description: "description"
+    Family: "docdb3.6"
+    Name: "sampleParameterGroup"
+    Parameters:
+      audit_logs: "disabled"
+      tls: "enabled"
+      ttl_monitor: "enabled"
+
+Services
+========
+
+The syntax for listing the services remains the same as the other x- resources.
+
+.. code-block:: yaml
+
+    Services:
+      - name: <service/family name>
+        access: <str>
+
+Access types
+------------
+
+.. warning::
+
+    The access key value do not have an effect at this stage.
 
 Settings
 ========
@@ -162,4 +181,4 @@ Examples
 
 .. _DocDB Cluster properties: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-docdb-dbcluster.html
 .. _DocDB Instance: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-docdb-dbinstance.html
-.. _DocDB Cluster Parameters: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-docdb-dbclusterparametergroup.html
+.. _DocDB DBClusterParameterGroup: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-docdb-dbclusterparametergroup.html

@@ -16,7 +16,7 @@ x-docdb:
     Properties: {}
     Settings:
       EnvNames:
-        - DOCDB_A
+        - DOCDB_B
     Services:
       - name: app03
         access: RW
@@ -25,3 +25,30 @@ x-docdb:
         - DBInstanceClass: db.r5.large
         - DBInstanceClass: db.r5.xlarge
           AutoMinorVersionUpgrade: True
+
+  docdbC:
+    Properties:
+      BackupRetentionPeriod: 7
+      DBSubnetGroupName: String
+      DeletionProtection: False
+      EngineVersion: 4.0.0
+      StorageEncrypted: True
+      Tags:
+        - Key: Name
+          Value: docdb_C
+    Services:
+      - name: app03
+        access: RW
+    MacroParameters:
+      Instances:
+        - DBInstanceClass: db.r5.large
+        - DBInstanceClass: db.t3.medium
+          AutoMinorVersionUpgrade: True
+      DBClusterParameterGroup:
+        Description: "Some description"
+        Family: "docdb4.0"
+        Name: "sampleParameterGroup"
+        Parameters:
+          audit_logs: "disabled"
+          tls: "disabled"
+          ttl_monitor: "enabled"
