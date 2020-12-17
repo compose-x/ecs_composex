@@ -119,18 +119,6 @@ class CacheCluster(XResource):
     def init_redis_outputs(self):
         self.output_properties = {
             CLUSTER_NAME.title: (self.logical_name, self.cfn_resource, Ref, None),
-            CLUSTER_CONFIG_PORT.title: (
-                f"{self.logical_name}{CLUSTER_CONFIG_PORT.title}",
-                self.cfn_resource,
-                GetAtt,
-                CLUSTER_CONFIG_PORT.Description,
-            ),
-            CLUSTER_CONFIG_ADDRESS.title: (
-                f"{self.logical_name}{CLUSTER_CONFIG_ADDRESS.title}",
-                self.cfn_resource,
-                GetAtt,
-                CLUSTER_CONFIG_ADDRESS.Description,
-            ),
             CLUSTER_REDIS_PORT.title: (
                 f"{self.logical_name}{CLUSTER_REDIS_PORT.title}",
                 self.cfn_resource,

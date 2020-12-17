@@ -188,6 +188,8 @@ def create_cluster_from_parameters(cluster, template, subnet_group):
         "Engine": cluster.parameters["Engine"],
         "EngineVersion": cluster.parameters["EngineVersion"],
         "NumCacheNodes": 1,
+        "VpcSecurityGroupIds": [GetAtt(cluster.db_sg, "GroupId")],
+        "CacheSubnetGroupName": Ref(subnet_group)
     }
     if keyisset("ParameterGroup", cluster.parameters):
         create_parameter_group(cluster, cluster.parameters["ParameterGroup"])
