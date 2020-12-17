@@ -24,7 +24,7 @@ from troposphere import Ref, GetAtt
 from ecs_composex.common.compose_resources import XResource, set_resources
 from ecs_composex.common.stacks import ComposeXStack
 
-from ecs_composex.elastic_cache.elastic_cache_params import (
+from ecs_composex.elasticache.elasticache_params import (
     RES_KEY,
     CLUSTER_NAME,
     CLUSTER_SG,
@@ -37,7 +37,7 @@ from ecs_composex.elastic_cache.elastic_cache_params import (
     REPLICA_PRIMARY_ADDRESS,
     REPLICA_PRIMARY_PORT,
 )
-from ecs_composex.elastic_cache.elastic_cache_template import create_root_template
+from ecs_composex.elasticache.elasticache_template import create_root_template
 
 
 class CacheCluster(XResource):

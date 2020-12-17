@@ -2,7 +2,7 @@
 # ComposeX env file with ElasticCache definitions
 
 
-x-elastic_cache:
+x-elasticache:
   cache01:
     Properties:
       AutoMinorVersionUpgrade: 'true'

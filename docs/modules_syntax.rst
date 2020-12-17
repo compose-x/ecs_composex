@@ -29,7 +29,7 @@
     syntax/composex/dynamodb
     syntax/composex/rds
     syntax/composex/docdb
-    syntax/composex/elastic_cache
+    syntax/composex/elasticache
     syntax/composex/s3
     syntax/composex/appmesh
     syntax/composex/dns

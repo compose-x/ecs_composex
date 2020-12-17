@@ -79,7 +79,7 @@ SUPPORTED_X_MODULE_NAMES = [
     "docdb",
     "events",
     "kinesis",
-    "elastic_cache",
+    "elasticache",
 ]
 
 SUPPORTED_X_MODULES = [f"{X_KEY}{mod_name}" for mod_name in SUPPORTED_X_MODULE_NAMES]
@@ -93,7 +93,7 @@ EXCLUDED_X_KEYS = [
     f"{X_KEY}cluster",
     f"{X_KEY}efs",
 ]
-TCP_MODES = ["rds", "appmesh", "elbv2", "docdb", "elastic_cache"]
+TCP_MODES = ["rds", "appmesh", "elbv2", "docdb", "elasticache"]
 TCP_SERVICES = [f"{X_KEY}{mode}" for mode in TCP_MODES]
 
 

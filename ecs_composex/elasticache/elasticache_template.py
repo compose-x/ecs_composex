@@ -19,10 +19,9 @@
 Module to create the ElasticCache Cluster and nodes
 """
 
+from troposphere import AWS_STACK_NAME
 from troposphere import Ref, Sub, GetAtt, Tags
-from troposphere import AWS_NO_VALUE, AWS_REGION, AWS_STACK_NAME
 from troposphere.ec2 import SecurityGroup
-
 from troposphere.elasticache import (
     CacheCluster,
     ReplicationGroup,
@@ -30,8 +29,8 @@ from troposphere.elasticache import (
     ParameterGroup,
 )
 
+from ecs_composex.common import build_template, keyisset, LOG
 from ecs_composex.resources_import import import_record_properties
-from ecs_composex.common import build_template, add_parameters, keyisset, LOG
 from ecs_composex.vpc.vpc_params import VPC_ID, STORAGE_SUBNETS
 
 
@@ -43,13 +42,13 @@ def create_replication_group(cluster):
     """
     Function to add the replication group from properties
 
-    :param ecs_composex.elastic_cache.elastic_cache_stack.CacheCluster cluster:
+    :param ecs_composex.elasticache.elasticache_stack.CacheCluster cluster:
     :return:
     """
     if (
-        not cluster.cfn_resource
-        and isinstance(cluster.cfn_resource, CacheCluster)
-        and cluster.cfn_resource.Engine == "redis"
+            not cluster.cfn_resource
+            and isinstance(cluster.cfn_resource, CacheCluster)
+            and cluster.cfn_resource.Engine == "redis"
     ):
         raise ValueError("Replication group can only be set for a Redis cache cluster.")
 
@@ -61,9 +60,9 @@ def create_replication_group(cluster):
         if keyisset(prop_to_del, props):
             del props[prop_to_del]
     if not (
-        keyisset("NumCacheClusters", props)
-        or keyisset("NumNodeGroups", props)
-        or keyisset("ReplicasPerNodeGroup", props)
+            keyisset("NumCacheClusters", props)
+            or keyisset("NumNodeGroups", props)
+            or keyisset("ReplicasPerNodeGroup", props)
     ):
         props["PrimaryClusterId"] = Ref(cluster.cfn_resource)
     props["SecurityGroupIds"] = [GetAtt(cluster.db_sg, "GroupId")]
@@ -77,7 +76,7 @@ def create_parameter_group(cluster, definition):
     """
     Function to add the parameter group
 
-    :param ecs_composex.elastic_cache.elastic_cache_stack.CacheCluster cluster:
+    :param ecs_composex.elasticache.elasticache_stack.CacheCluster cluster:
     :param dict definition:
     :return: The parameter group
     :rtype: troposphere.elasticache.ParameterGroup
@@ -98,14 +97,14 @@ def determine_resource_type(name, properties):
     :return:
     """
     if all(
-        property_name in CacheCluster.props.keys()
-        for property_name in properties.keys()
+            property_name in CacheCluster.props.keys()
+            for property_name in properties.keys()
     ):
         LOG.info(f"Identified {name} to be {CacheCluster.resource_type}")
         return CacheCluster
     elif all(
-        property_name in ReplicationGroup.props.keys()
-        for property_name in properties.keys()
+            property_name in ReplicationGroup.props.keys()
+            for property_name in properties.keys()
     ):
         LOG.info(f"Identified {name} to be {ReplicationGroup.resource_type}")
         return ReplicationGroup
@@ -116,22 +115,46 @@ def determine_resource_type(name, properties):
     return None
 
 
+def handle_security_groups(cluster, props, resource_class):
+    """
+    Function to handle security groups properties and assignment.
+
+    :param ecs_composex.elasticache.elasticache_stack.CacheCluster cluster:
+    :param dict props:
+    :param resource_class:
+    :raises: TypeError
+    """
+    if resource_class is CacheCluster:
+        if not keyisset("VpcSecurityGroupIds", props):
+            props["VpcSecurityGroupIds"] = [GetAtt(cluster.db_sg, "GroupId")]
+        else:
+            if isinstance(props["VpcSecurityGroupIds"], list):
+                props["VpcSecurityGroupIds"].append(GetAtt(cluster.db_sg, "GroupId"))
+            else:
+                raise TypeError("VpcSecurityGroupIds must be a list")
+    else:
+        if not keyisset("SecurityGroupIds", props):
+            props["SecurityGroupIds"] = [GetAtt(cluster.db_sg, "GroupId")]
+        else:
+            if isinstance(props["SecurityGroupIds"], list):
+                props["SecurityGroupIds"].append(GetAtt(cluster.db_sg, "GroupId"))
+            else:
+                raise TypeError("VpcSecurityGroupIds must be a list")
+
+
 def create_cluster_from_properties(cluster, template, subnet_group):
     """
     Function to create the Elastic Cache Cluster from properties
 
-    :param ecs_composex.elastic_cache.elastic_cache_stack.CacheCluster cluster:
+    :param ecs_composex.elasticache.elasticache_stack.CacheCluster cluster:
     :param troposphere.Template template:
-    :param troposphere.elastic_cache.SubnetGroup subnet_group:
+    :param troposphere.elasticache.SubnetGroup subnet_group:
     :return:
     """
     resource_class = determine_resource_type(cluster.name, cluster.properties)
     props = import_record_properties(cluster.properties, resource_class)
-    if resource_class is CacheCluster:
-        props["VpcSecurityGroupIds"] = [GetAtt(cluster.db_sg, "GroupId")]
-    else:
-        props["SecurityGroupIds"] = [GetAtt(cluster.db_sg, "GroupId")]
     props["CacheSubnetGroupName"] = Ref(subnet_group)
+    handle_security_groups(cluster, props, resource_class)
     if keyisset("Tags", props):
         props["Tags"] += Tags(Name=cluster.logical_name, ComposeName=cluster.name)
     if cluster.parameters and keyisset("ParameterGroup", cluster.parameters):
@@ -146,14 +169,14 @@ def create_cluster_from_parameters(cluster, template, subnet_group):
     """
     Function to create the Cluster from the MacroParameters
 
-    :param ecs_composex.elastic_cache.elastic_cache_stack.CacheCluster cluster:
+    :param ecs_composex.elasticache.elasticache_stack.CacheCluster cluster:
     :param template:
     :param subnet_group:
     :return:
     """
     required_keys = ["Engine", "EngineVersion"]
     if not cluster.properties and not all(
-        key in required_keys for key in cluster.parameters
+            key in required_keys for key in cluster.parameters
     ):
         raise KeyError(
             "When using MacroParameters only, you must specify at least", required_keys
@@ -177,7 +200,7 @@ def create_root_template(new_resources):
     """
     Function to create the root template and add the new resources to it.
 
-    :param list<ecs_composex.elastic_cache.elastic_cache_stack.CacheCluster> new_resources:
+    :param list<ecs_composex.elasticache.elasticache_stack.CacheCluster> new_resources:
     :return: the root template for ElasticCache
     :rtype: troposphere.Template
     """
@@ -195,7 +218,7 @@ def create_root_template(new_resources):
             f"{resource.logical_name}Sg",
             GroupDescription=Sub(f"SG for docdb-{resource.logical_name}"),
             GroupName=Sub(
-                f"${{{AWS_STACK_NAME}}}.elasticcache.{resource.logical_name}"
+                f"${{{AWS_STACK_NAME}}}.elasticache.{resource.logical_name}"
             ),
             VpcId=Ref(VPC_ID),
         )
