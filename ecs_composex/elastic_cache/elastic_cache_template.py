@@ -31,7 +31,7 @@ from troposphere.elasticache import (
 )
 
 from ecs_composex.resources_import import import_record_properties
-from ecs_composex.common import build_template, add_parameters, keyisset, keypresent
+from ecs_composex.common import build_template, add_parameters, keyisset, LOG
 from ecs_composex.vpc.vpc_params import VPC_ID, STORAGE_SUBNETS
 
 
@@ -88,6 +88,34 @@ def create_parameter_group(cluster, definition):
     )
 
 
+def determine_resource_type(name, properties):
+    """
+    Function to determine if the properties are the ones of a DB Cluster or DB Instance.
+    By default it will assume Cluster if cannot conclude that it is a DB Instance
+
+    :param str name:
+    :param dict properties:
+    :return:
+    """
+    if all(
+        property_name in CacheCluster.props.keys()
+        for property_name in properties.keys()
+    ):
+        LOG.info(f"Identified {name} to be {CacheCluster.resource_type}")
+        return CacheCluster
+    elif all(
+        property_name in ReplicationGroup.props.keys()
+        for property_name in properties.keys()
+    ):
+        LOG.info(f"Identified {name} to be {ReplicationGroup.resource_type}")
+        return ReplicationGroup
+    LOG.error(
+        "From the properties defined, we cannot determine whether this is a RDS Cluster or RDS Instance."
+        " Setting to Cluster"
+    )
+    return None
+
+
 def create_cluster_from_properties(cluster, template, subnet_group):
     """
     Function to create the Elastic Cache Cluster from properties
@@ -97,8 +125,12 @@ def create_cluster_from_properties(cluster, template, subnet_group):
     :param troposphere.elastic_cache.SubnetGroup subnet_group:
     :return:
     """
-    props = import_record_properties(cluster.properties, CacheCluster)
-    props["VpcSecurityGroupIds"] = [GetAtt(cluster.db_sg, "GroupId")]
+    resource_class = determine_resource_type(cluster.name, cluster.properties)
+    props = import_record_properties(cluster.properties, resource_class)
+    if resource_class is CacheCluster:
+        props["VpcSecurityGroupIds"] = [GetAtt(cluster.db_sg, "GroupId")]
+    else:
+        props["SecurityGroupIds"] = [GetAtt(cluster.db_sg, "GroupId")]
     props["CacheSubnetGroupName"] = Ref(subnet_group)
     if keyisset("Tags", props):
         props["Tags"] += Tags(Name=cluster.logical_name, ComposeName=cluster.name)
@@ -106,12 +138,8 @@ def create_cluster_from_properties(cluster, template, subnet_group):
         create_parameter_group(cluster, cluster.parameters["ParameterGroup"])
         template.add_resource(cluster.parameter_group)
         props["CacheParameterGroupName"] = Ref(cluster.parameter_group)
-    cluster.cfn_resource = CacheCluster(cluster.logical_name, **props)
+    cluster.cfn_resource = resource_class(cluster.logical_name, **props)
     template.add_resource(cluster.cfn_resource)
-    if cluster.parameters and keyisset("ReplicationGroup", cluster.parameters):
-        replica_group = create_replication_group(cluster)
-        template.add_resource(replica_group)
-        cluster.replica_group = replica_group
 
 
 def create_cluster_from_parameters(cluster, template, subnet_group):
@@ -177,14 +205,13 @@ def create_root_template(new_resources):
         elif resource.parameters and not resource.properties:
             create_cluster_from_parameters(resource, root_template, subnet_group)
 
-        if resource.cfn_resource.Engine == "memcached":
-            resource.init_memcached_outputs()
-        elif resource.cfn_resource.Engine == "redis" and resource.replica_group:
+        if isinstance(resource.cfn_resource, CacheCluster):
+            if resource.cfn_resource.Engine == "memcached":
+                resource.init_memcached_outputs()
+            elif resource.cfn_resource.Engine == "redis":
+                resource.init_redis_outputs()
+        elif isinstance(resource.cfn_resource, ReplicationGroup):
             resource.init_redis_replica_outputs()
-        elif resource.cfn_resource.Engine == "redis" and not resource.replica_group:
-            resource.init_redis_outputs()
-        print("Resource - ", resource.logical_name, resource.cfn_resource.Engine, resource.replica_group, resource.output_properties)
         resource.generate_outputs()
-        print(resource.outputs)
         root_template.add_output(resource.outputs)
     return root_template

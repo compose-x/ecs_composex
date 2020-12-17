@@ -21,7 +21,10 @@ Module to handle Linking ECS tasks and the elastic cache clusters
 
 
 from ecs_composex.tcp_resources_settings import handle_new_tcp_resource
-from ecs_composex.elastic_cache.elastic_cache_params import CLUSTER_REDIS_PORT, CLUSTER_CONFIG_PORT
+from ecs_composex.elastic_cache.elastic_cache_params import (
+    CLUSTER_REDIS_PORT,
+    CLUSTER_CONFIG_PORT,
+)
 
 
 def elastic_cache_to_ecs(resources, services_stack, res_root_stack, settings):

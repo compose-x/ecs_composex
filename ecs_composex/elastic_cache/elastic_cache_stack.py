@@ -35,7 +35,7 @@ from ecs_composex.elastic_cache.elastic_cache_params import (
     REPLICA_READ_ENDPOINT_ADDRESSES,
     REPLICA_READ_ENDPOINT_PORTS,
     REPLICA_PRIMARY_ADDRESS,
-    REPLICA_PRIMARY_PORT
+    REPLICA_PRIMARY_PORT,
 )
 from ecs_composex.elastic_cache.elastic_cache_template import create_root_template
 
@@ -49,7 +49,6 @@ class CacheCluster(XResource):
         self.db_sg = None
         self.parameter_group = None
         self.db_secret = None
-        self.replica_group = None
         self.engine = None
         self.port_attr = None
         super().__init__(name, definition, settings)
@@ -86,25 +85,25 @@ class CacheCluster(XResource):
             CLUSTER_NAME.title: (self.logical_name, self.cfn_resource, Ref, None),
             REPLICA_PRIMARY_PORT.title: (
                 f"{self.logical_name}{REPLICA_PRIMARY_PORT.title}",
-                self.replica_group,
+                self.cfn_resource,
                 GetAtt,
                 REPLICA_PRIMARY_PORT.Description,
             ),
             REPLICA_PRIMARY_ADDRESS.title: (
                 f"{self.logical_name}{REPLICA_PRIMARY_ADDRESS.title}",
-                self.replica_group,
+                self.cfn_resource,
                 GetAtt,
                 REPLICA_PRIMARY_ADDRESS.Description,
             ),
             REPLICA_READ_ENDPOINT_ADDRESSES.title: (
                 f"{self.logical_name}{REPLICA_READ_ENDPOINT_ADDRESSES.title}",
-                self.replica_group,
+                self.cfn_resource,
                 GetAtt,
                 REPLICA_READ_ENDPOINT_ADDRESSES.Description,
             ),
             REPLICA_READ_ENDPOINT_PORTS.title: (
                 f"{self.logical_name}{REPLICA_READ_ENDPOINT_PORTS.title}",
-                self.replica_group,
+                self.cfn_resource,
                 GetAtt,
                 REPLICA_READ_ENDPOINT_PORTS.Description,
             ),

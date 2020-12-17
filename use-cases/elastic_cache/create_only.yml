@@ -23,13 +23,6 @@ x-elastic_cache:
 
   cache03:
     Properties:
-      AutoMinorVersionUpgrade: 'true'
-      Engine: redis
-      EngineVersion: 6.x
-      CacheNodeType: cache.t3.small
-      NumCacheNodes: 1
-    MacroParameters:
-      ReplicationGroup:
         ReplicationGroupDescription: my description
         NumCacheClusters: '2'
         Engine: redis
@@ -41,3 +34,6 @@ x-elastic_cache:
         PreferredMaintenanceWindow: 'wed:09:25-wed:22:30'
         SnapshotRetentionLimit: '4'
         SnapshotWindow: '03:30-05:30'
+    Services:
+      - name: app02
+        access: RW
