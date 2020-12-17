@@ -1323,6 +1323,29 @@ class ComposeFamily(object):
                     f"Set {network.subnet_name} as {APP_SUBNETS.title} for {self.name}"
                 )
 
+    def set_codeguru_principals(self, service):
+        """
+        Method to set codeguru principal for profiling group
+        :return:
+        """
+        if hasattr(service.code_profiler, "AgentPermissions"):
+            principals = getattr(service.code_profiler, "AgentPermissions")[
+                "Principals"
+            ]
+            potential_principals = [
+                p.data["Fn::GetAtt"][0]
+                for p in principals
+                if isinstance(p, GetAtt)
+            ]
+            if self.task_role.title not in potential_principals:
+                principals.append(GetAtt(self.task_role, "Arn"))
+        else:
+            setattr(
+                service.code_profiler,
+                "AgentPermissions",
+                {"Principals": [GetAtt(self.task_role, "Arn")]},
+            )
+
     def set_codeguru_profiles_arns(self):
         if not self.template:
             LOG.warning(f"No template yet defined for {self.name}")
@@ -1345,23 +1368,7 @@ class ComposeFamily(object):
                 )
                 if service.code_profiler not in self.template.resources:
                     self.template.add_resource(service.code_profiler)
-                if hasattr(service.code_profiler, "AgentPermissions"):
-                    principals = getattr(service.code_profiler, "AgentPermissions")[
-                        "Principals"
-                    ]
-                    potential_principals = [
-                        p.data["Fn::GetAtt"][0]
-                        for p in principals
-                        if isinstance(p, GetAtt)
-                    ]
-                    if self.task_role.title not in potential_principals:
-                        principals.append(GetAtt(self.task_role, "Arn"))
-                else:
-                    setattr(
-                        service.code_profiler,
-                        "AgentPermissions",
-                        {"Principals": [GetAtt(self.task_role, "Arn")]},
-                    )
+                self.set_codeguru_principals(service)
 
     def upload_services_env_files(self, settings):
         """
