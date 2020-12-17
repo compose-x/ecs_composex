@@ -29,6 +29,7 @@
     syntax/composex/dynamodb
     syntax/composex/rds
     syntax/composex/docdb
+    syntax/composex/elastic_cache
     syntax/composex/s3
     syntax/composex/appmesh
     syntax/composex/dns
@@ -46,4 +47,4 @@
 
 .. toctree::
     :caption: Docker ECS Plugin support
-    :maxpdepth: 1
+    :maxdepth: 1
