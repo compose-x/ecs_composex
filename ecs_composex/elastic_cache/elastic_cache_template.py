@@ -111,6 +111,7 @@ def create_cluster_from_properties(cluster, template, subnet_group):
     if cluster.parameters and keyisset("ReplicationGroup", cluster.parameters):
         replica_group = create_replication_group(cluster)
         template.add_resource(replica_group)
+        cluster.replica_group = replica_group
 
 
 def create_cluster_from_parameters(cluster, template, subnet_group):
@@ -149,7 +150,6 @@ def create_root_template(new_resources):
     Function to create the root template and add the new resources to it.
 
     :param list<ecs_composex.elastic_cache.elastic_cache_stack.CacheCluster> new_resources:
-    :param settings:
     :return: the root template for ElasticCache
     :rtype: troposphere.Template
     """
@@ -176,7 +176,15 @@ def create_root_template(new_resources):
             create_cluster_from_properties(resource, root_template, subnet_group)
         elif resource.parameters and not resource.properties:
             create_cluster_from_parameters(resource, root_template, subnet_group)
-        resource.init_outputs()
+
+        if resource.cfn_resource.Engine == "memcached":
+            resource.init_memcached_outputs()
+        elif resource.cfn_resource.Engine == "redis" and resource.replica_group:
+            resource.init_redis_replica_outputs()
+        elif resource.cfn_resource.Engine == "redis" and not resource.replica_group:
+            resource.init_redis_outputs()
+        print("Resource - ", resource.logical_name, resource.cfn_resource.Engine, resource.replica_group, resource.output_properties)
         resource.generate_outputs()
+        print(resource.outputs)
         root_template.add_output(resource.outputs)
     return root_template

@@ -28,10 +28,14 @@ from ecs_composex.elastic_cache.elastic_cache_params import (
     RES_KEY,
     CLUSTER_NAME,
     CLUSTER_SG,
-    CLUSTER_PORT,
-    CLUSTER_ADDRESS,
+    CLUSTER_REDIS_PORT,
+    CLUSTER_REDIS_ADDRESS,
     CLUSTER_CONFIG_ADDRESS,
     CLUSTER_CONFIG_PORT,
+    REPLICA_READ_ENDPOINT_ADDRESSES,
+    REPLICA_READ_ENDPOINT_PORTS,
+    REPLICA_PRIMARY_ADDRESS,
+    REPLICA_PRIMARY_PORT
 )
 from ecs_composex.elastic_cache.elastic_cache_template import create_root_template
 
@@ -45,25 +49,28 @@ class CacheCluster(XResource):
         self.db_sg = None
         self.parameter_group = None
         self.db_secret = None
+        self.replica_group = None
+        self.engine = None
+        self.port_attr = None
         super().__init__(name, definition, settings)
 
-    def init_outputs(self):
+    def init_memcached_outputs(self):
         """
         Method to init the DocDB output attributes
         """
         self.output_properties = {
             CLUSTER_NAME.title: (self.logical_name, self.cfn_resource, Ref, None),
-            CLUSTER_PORT.title: (
-                f"{self.logical_name}{CLUSTER_PORT.title}",
+            CLUSTER_CONFIG_PORT.title: (
+                f"{self.logical_name}{CLUSTER_CONFIG_PORT.title}",
                 self.cfn_resource,
                 GetAtt,
-                CLUSTER_PORT.Description,
+                CLUSTER_CONFIG_PORT.Description,
             ),
-            CLUSTER_ADDRESS.title: (
-                f"{self.logical_name}{CLUSTER_ADDRESS.title}",
+            CLUSTER_CONFIG_ADDRESS.title: (
+                f"{self.logical_name}{CLUSTER_CONFIG_ADDRESS.title}",
                 self.cfn_resource,
                 GetAtt,
-                CLUSTER_PORT.Description,
+                CLUSTER_CONFIG_ADDRESS.Description,
             ),
             self.db_sg.title: (
                 self.db_sg.title,
@@ -72,6 +79,79 @@ class CacheCluster(XResource):
                 "GroupId",
             ),
         }
+        self.port_attr = CLUSTER_CONFIG_PORT
+
+    def init_redis_replica_outputs(self):
+        self.output_properties = {
+            CLUSTER_NAME.title: (self.logical_name, self.cfn_resource, Ref, None),
+            REPLICA_PRIMARY_PORT.title: (
+                f"{self.logical_name}{REPLICA_PRIMARY_PORT.title}",
+                self.replica_group,
+                GetAtt,
+                REPLICA_PRIMARY_PORT.Description,
+            ),
+            REPLICA_PRIMARY_ADDRESS.title: (
+                f"{self.logical_name}{REPLICA_PRIMARY_ADDRESS.title}",
+                self.replica_group,
+                GetAtt,
+                REPLICA_PRIMARY_ADDRESS.Description,
+            ),
+            REPLICA_READ_ENDPOINT_ADDRESSES.title: (
+                f"{self.logical_name}{REPLICA_READ_ENDPOINT_ADDRESSES.title}",
+                self.replica_group,
+                GetAtt,
+                REPLICA_READ_ENDPOINT_ADDRESSES.Description,
+            ),
+            REPLICA_READ_ENDPOINT_PORTS.title: (
+                f"{self.logical_name}{REPLICA_READ_ENDPOINT_PORTS.title}",
+                self.replica_group,
+                GetAtt,
+                REPLICA_READ_ENDPOINT_PORTS.Description,
+            ),
+            self.db_sg.title: (
+                self.db_sg.title,
+                self.db_sg,
+                GetAtt,
+                "GroupId",
+            ),
+        }
+        self.port_attr = REPLICA_PRIMARY_PORT
+
+    def init_redis_outputs(self):
+        self.output_properties = {
+            CLUSTER_NAME.title: (self.logical_name, self.cfn_resource, Ref, None),
+            CLUSTER_CONFIG_PORT.title: (
+                f"{self.logical_name}{CLUSTER_CONFIG_PORT.title}",
+                self.cfn_resource,
+                GetAtt,
+                CLUSTER_CONFIG_PORT.Description,
+            ),
+            CLUSTER_CONFIG_ADDRESS.title: (
+                f"{self.logical_name}{CLUSTER_CONFIG_ADDRESS.title}",
+                self.cfn_resource,
+                GetAtt,
+                CLUSTER_CONFIG_ADDRESS.Description,
+            ),
+            CLUSTER_REDIS_PORT.title: (
+                f"{self.logical_name}{CLUSTER_REDIS_PORT.title}",
+                self.cfn_resource,
+                GetAtt,
+                CLUSTER_REDIS_PORT.Description,
+            ),
+            CLUSTER_REDIS_ADDRESS.title: (
+                f"{self.logical_name}{CLUSTER_REDIS_ADDRESS.title}",
+                self.cfn_resource,
+                GetAtt,
+                CLUSTER_REDIS_ADDRESS.Description,
+            ),
+            self.db_sg.title: (
+                self.db_sg.title,
+                self.db_sg,
+                GetAtt,
+                "GroupId",
+            ),
+        }
+        self.port_attr = CLUSTER_REDIS_PORT
 
 
 class XStack(ComposeXStack):

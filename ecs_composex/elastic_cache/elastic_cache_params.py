@@ -33,14 +33,14 @@ CLUSTER_NAME = Parameter(CLUSTER_NAME_T, Type="String")
 CLUSTER_SG_T = "GroupId"
 CLUSTER_SG = Parameter(CLUSTER_SG_T, Type=SG_ID_TYPE)
 
-CLUSTER_ADDRESS_T = "ClusterAddress"
-CLUSTER_ADDRESS = Parameter(
-    CLUSTER_ADDRESS_T, Type="String", Description="RedisEndpoint.Address"
+CLUSTER_REDIS_ADDRESS_T = "ClusterAddress"
+CLUSTER_REDIS_ADDRESS = Parameter(
+    CLUSTER_REDIS_ADDRESS_T, Type="String", Description="RedisEndpoint.Address"
 )
 
-CLUSTER_PORT_T = "ClusterPort"
-CLUSTER_PORT = Parameter(
-    CLUSTER_PORT_T,
+CLUSTER_REDIS_PORT_T = "RedisEndpointPort"
+CLUSTER_REDIS_PORT = Parameter(
+    CLUSTER_REDIS_PORT_T,
     Type="Number",
     MinValue=1,
     MaxValue=(pow(2, 16) - 1),
@@ -59,4 +59,40 @@ CLUSTER_CONFIG_PORT = Parameter(
     MinValue=1,
     MaxValue=(pow(2, 16) - 1),
     Description="ConfigurationEndpoint.Port",
+)
+
+REPLICA_PRIMARY_ADDRESS_T = "PrimaryEndPointAddress"
+REPLICA_PRIMARY_ADDRESS = Parameter(
+    REPLICA_PRIMARY_ADDRESS_T, Type="String", Description="PrimaryEndPoint.Address"
+)
+
+REPLICA_PRIMARY_PORT_T = "PrimaryEndPointPort"
+REPLICA_PRIMARY_PORT = Parameter(
+    REPLICA_PRIMARY_PORT_T, Type="String", Description="PrimaryEndPoint.Port"
+)
+
+REPLICA_READ_ENDPOINT_ADDRESSES_T = "ReadEndPointAddresses"
+REPLICA_READ_ENDPOINT_ADDRESSES = Parameter(
+    REPLICA_READ_ENDPOINT_ADDRESSES_T,
+    Type="String",
+    Description="ReadEndPoint.Addresses",
+)
+
+REPLICA_READ_ENDPOINT_PORTS_T = "ReadEndPointPorts"
+REPLICA_READ_ENDPOINT_PORTS = Parameter(
+    REPLICA_READ_ENDPOINT_PORTS_T, Type="String", Description="ReadEndPoint.Ports"
+)
+
+REPLICA_READ_ENDPOINT_ADDRESSES_LIST_T = "PrimaryEndPointAddress"
+REPLICA_READ_ENDPOINT_ADDRESSES_LIST = Parameter(
+    REPLICA_READ_ENDPOINT_ADDRESSES_LIST_T,
+    Type="String",
+    Description="ReadEndPoint.Addresses.List",
+)
+
+REPLICA_READ_ENDPOINT_PORTS_LIST_T = "PrimaryEndPointAddress"
+REPLICA_READ_ENDPOINT_PORTS_LIST = Parameter(
+    REPLICA_READ_ENDPOINT_PORTS_LIST_T,
+    Type="String",
+    Description="ReadEndPoint.Ports.List",
 )

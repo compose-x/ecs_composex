@@ -79,7 +79,7 @@ SUPPORTED_X_MODULE_NAMES = [
     "docdb",
     "events",
     "kinesis",
-    "elastic_cache"
+    "elastic_cache",
 ]
 
 SUPPORTED_X_MODULES = [f"{X_KEY}{mod_name}" for mod_name in SUPPORTED_X_MODULE_NAMES]
@@ -163,7 +163,9 @@ def invoke_x_to_ecs(module_name, settings, services_stack, resource):
     if module_name is None:
         module_name = resource.name
     composex_key = f"{X_KEY}{module_name}"
-    ecs_function = get_mod_function(f"{module_name}.{module_name}_ecs", f"{module_name}_to_ecs")
+    ecs_function = get_mod_function(
+        f"{module_name}.{module_name}_ecs", f"{module_name}_to_ecs"
+    )
     if ecs_function:
         LOG.debug(ecs_function)
         ecs_function(
