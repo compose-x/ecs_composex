@@ -125,21 +125,23 @@ def handle_security_groups(cluster, props, resource_class):
     :raises: TypeError
     """
     if resource_class is CacheCluster:
-        if not keyisset("VpcSecurityGroupIds", props):
-            props["VpcSecurityGroupIds"] = [GetAtt(cluster.db_sg, "GroupId")]
-        else:
-            if isinstance(props["VpcSecurityGroupIds"], list):
-                props["VpcSecurityGroupIds"].append(GetAtt(cluster.db_sg, "GroupId"))
-            else:
-                raise TypeError("VpcSecurityGroupIds must be a list")
+        key = "VpcSecurityGroupIds"
+    elif resource_class is ReplicationGroup:
+        key = "SecurityGroupIds"
     else:
-        if not keyisset("SecurityGroupIds", props):
-            props["SecurityGroupIds"] = [GetAtt(cluster.db_sg, "GroupId")]
-        else:
-            if isinstance(props["SecurityGroupIds"], list):
-                props["SecurityGroupIds"].append(GetAtt(cluster.db_sg, "GroupId"))
-            else:
-                raise TypeError("VpcSecurityGroupIds must be a list")
+        raise TypeError(
+            "resource_class must be one of",
+            [CacheCluster, ReplicationGroup],
+            "Got",
+            type(resource_class),
+        )
+
+    if keyisset(key, props) and not isinstance(props[key], list):
+        raise TypeError(f"{key} must be a list. Got", type(props[key]))
+    elif keyisset(key, props):
+        props[key].append(GetAtt(cluster.db_sg, "GroupId"))
+    else:
+        props[key] = [GetAtt(cluster.db_sg, "GroupId")]
 
 
 def create_cluster_from_properties(cluster, template, subnet_group):
