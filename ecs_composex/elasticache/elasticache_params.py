@@ -33,7 +33,14 @@ CLUSTER_NAME = Parameter(CLUSTER_NAME_T, Type="String")
 CLUSTER_SG_T = "GroupId"
 CLUSTER_SG = Parameter(CLUSTER_SG_T, Type=SG_ID_TYPE)
 
-CLUSTER_REDIS_ADDRESS_T = "ClusterAddress"
+CLUSTER_MEMCACHED_ADDRESS_T = "ClusterConfigAddress"
+CLUSTER_MEMCACHED_ADDRESS = Parameter(
+    CLUSTER_MEMCACHED_ADDRESS_T,
+    Type="String",
+    Description="ConfigurationEndpoint.Address",
+)
+
+CLUSTER_REDIS_ADDRESS_T = "RedisEndpointAddress"
 CLUSTER_REDIS_ADDRESS = Parameter(
     CLUSTER_REDIS_ADDRESS_T, Type="String", Description="RedisEndpoint.Address"
 )
@@ -47,14 +54,9 @@ CLUSTER_REDIS_PORT = Parameter(
     Description="RedisEndpoint.Port",
 )
 
-CLUSTER_CONFIG_ADDRESS_T = "ClusterConfigAddress"
-CLUSTER_CONFIG_ADDRESS = Parameter(
-    CLUSTER_CONFIG_ADDRESS_T, Type="String", Description="ConfigurationEndpoint.Address"
-)
-
-CLUSTER_CONFIG_PORT_T = "ClusterConfigPort"
-CLUSTER_CONFIG_PORT = Parameter(
-    CLUSTER_CONFIG_PORT_T,
+CLUSTER_MEMCACHED_PORT_T = "ClusterConfigPort"
+CLUSTER_MEMCACHED_PORT = Parameter(
+    CLUSTER_MEMCACHED_PORT_T,
     Type="Number",
     MinValue=1,
     MaxValue=(pow(2, 16) - 1),
@@ -83,14 +85,14 @@ REPLICA_READ_ENDPOINT_PORTS = Parameter(
     REPLICA_READ_ENDPOINT_PORTS_T, Type="String", Description="ReadEndPoint.Ports"
 )
 
-REPLICA_READ_ENDPOINT_ADDRESSES_LIST_T = "PrimaryEndPointAddress"
+REPLICA_READ_ENDPOINT_ADDRESSES_LIST_T = "ReadEndPointAddressesList"
 REPLICA_READ_ENDPOINT_ADDRESSES_LIST = Parameter(
     REPLICA_READ_ENDPOINT_ADDRESSES_LIST_T,
     Type="String",
     Description="ReadEndPoint.Addresses.List",
 )
 
-REPLICA_READ_ENDPOINT_PORTS_LIST_T = "PrimaryEndPointAddress"
+REPLICA_READ_ENDPOINT_PORTS_LIST_T = "ReadEndPointPortsList"
 REPLICA_READ_ENDPOINT_PORTS_LIST = Parameter(
     REPLICA_READ_ENDPOINT_PORTS_LIST_T,
     Type="String",

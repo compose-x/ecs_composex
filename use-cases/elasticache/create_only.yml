@@ -14,7 +14,7 @@ x-elasticache:
       - name: app03
         access: RW
 
-  cache02:
+  cache-02:
     MacroParameters:
       Engine: redis
       EngineVersion: 6.x

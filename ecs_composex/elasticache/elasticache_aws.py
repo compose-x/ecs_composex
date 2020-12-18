@@ -19,173 +19,146 @@
 Module to scan and find the DB and Secret for Lookup of x-rds
 """
 
+import re
+
 from ecs_composex.common import keyisset, LOG
 from ecs_composex.common.aws import (
     find_aws_resource_arn_from_tags_api,
     define_lookup_role_from_info,
 )
-from ecs_composex.rds.rds_params import DB_SECRET_T
-from ecs_composex.iam import ROLE_ARN_ARG
+
+from ecs_composex.elasticache import elasticache_params
 
 
-def validate_rds_settings(lookup_properties):
-    """
-    Function to validate RDS properties for lookup
-    :param dict lookup_properties:
-    :raises: KeyError, TypeError
-    """
-    rds_allowed_keys = {"Name": str, "Tags": list}
-    for key_name in ["cluster", "db", "secret"]:
-        if keyisset(key_name, lookup_properties):
-            for property_name in lookup_properties[key_name]:
-                if property_name not in rds_allowed_keys.keys():
-                    raise KeyError(
-                        f"{property_name} not allowed for cluster. Expected",
-                        rds_allowed_keys.keys(),
-                    )
-                elif property_name in rds_allowed_keys.keys() and not isinstance(
-                    lookup_properties[key_name][property_name],
-                    rds_allowed_keys[property_name],
-                ):
-                    raise TypeError(
-                        f"{property_name} is of type",
-                        type(lookup_properties[key_name][property_name]),
-                        "Expected",
-                        rds_allowed_keys[property_name],
-                    )
-
-
-def validate_rds_lookup(db_name, lookup):
-    """
-    Function to validate the lookup settings are correct
-    :param db_name: The composex resource
-    :type db_name: str
-    :param lookup: The DB Lookup property
-    :type lookup: dict
-    :return:
-    :raises: KeyError
-    """
-    if not lookup or not isinstance(lookup, dict):
-        raise TypeError(
-            "The Lookup section for RDS must be an object/dictionary. Got", type(lookup)
-        )
-    allowed_keys = ["secret", "cluster", "db", ROLE_ARN_ARG]
-    rds_specific = ["secret", "cluster", "db"]
-    if not all(key in allowed_keys for key in lookup.keys()):
-        raise KeyError("Lookup section allows only", allowed_keys, "Got", lookup.keys())
-    if not any(key in ["cluster", "db"] for key in lookup.keys()):
-        raise KeyError("You must define at least one of", ["cluster", "db"])
-    for key_name in lookup:
-        if key_name in rds_specific and not isinstance(lookup[key_name], dict):
-            raise TypeError(
-                f"{key_name} is of type", type(lookup[key_name]), "Expected", dict
-            )
-        elif key_name == ROLE_ARN_ARG and not isinstance(lookup[ROLE_ARN_ARG], str):
-            raise TypeError(f"{ROLE_ARN_ARG} must be of type", str)
-    if keyisset("cluster", lookup) and keyisset("db", lookup):
-        raise KeyError(
-            f"{db_name} - You can only search for RDS cluster or db but not both at the same time."
-        )
-    if not keyisset("secret", lookup):
-        LOG.warning(
-            f"You did not define the secret to use for {db_name}, therefore we cannot assign that to the container."
-            " You might encounter authentication issues."
-        )
-    validate_rds_settings(lookup)
-
-
-def return_db_config(db_arn, session, res_type):
-    """
-    Function to retrieve the DB information we need for services integration
-    :param db_arn:
-    :param session:
-    :param res_type:
-    :type db_arn: str
-    :type session: boto3.session.Session
-    :type res_type: str
-    :return: the DB details
-    """
-    client = session.client("rds")
+def get_cluster_config(resource, cluster_name, session):
+    client = session.client("elasticache")
     try:
-        if res_type == "db":
-            db_r = client.describe_db_instances(DBInstanceIdentifier=db_arn)
-            return db_r["DBInstances"][0]
-        elif res_type == "cluster":
-            db_r = client.describe_db_clusters(DBClusterIdentifier=db_arn)
-            return db_r["DBClusters"][0]
-    except (
-        client.exceptions.DBClusterNotFoundFault,
-        client.exceptions.DBInstanceNotFoundFault,
-    ) as error:
-        LOG.error(f"Could not fetch information about {db_arn}")
+        cluster_r = client.describe_cache_clusters(
+            CacheClusterId=cluster_name,
+            ShowCacheClustersNotInReplicationGroups=True,
+            ShowCacheNodeInfo=True,
+        )
+        cluster = cluster_r["CacheClusters"][0]
+        if cluster["Engine"] == "memcached":
+            resource.port_attr = elasticache_params.CLUSTER_MEMCACHED_PORT
+            return {
+                elasticache_params.CLUSTER_MEMCACHED_ADDRESS.title: cluster[
+                    "ConfigurationEndpoint"
+                ]["Address"],
+                elasticache_params.CLUSTER_MEMCACHED_PORT.title: cluster[
+                    "ConfigurationEndpoint"
+                ]["Port"],
+                elasticache_params.CLUSTER_SG.title: [
+                    cluster["SecurityGroups"][0]["SecurityGroupId"]
+                ],
+            }
+        elif cluster["Engine"] == "redis":
+            if keyisset("ReplicationGroupId", cluster):
+                raise LookupError(
+                    "The Cluster identified is part of a replication group."
+                )
+            resource.port_attr = elasticache_params.CLUSTER_REDIS_PORT
+            return {
+                elasticache_params.CLUSTER_REDIS_PORT.title: cluster["CacheNodes"][0][
+                    "Endpoint"
+                ]["Port"],
+                elasticache_params.CLUSTER_REDIS_ADDRESS.title: cluster["CacheNodes"][
+                    0
+                ]["Endpoint"]["Address"],
+                elasticache_params.CLUSTER_SG.title: [
+                    cluster["SecurityGroups"][0]["SecurityGroupId"]
+                ],
+            }
+    except client.exceptions.CacheClusterNotFoundFault:
+        LOG.error(f"Could not find the configurations for cluster {cluster_name}")
+
+
+def get_replica_group_config(resource, cluster_name, session):
+    client = session.client("elasticache")
+    try:
+        cluster_r = client.describe_replication_groups(ReplicationGroupId=cluster_name)
+        cluster = cluster_r["ReplicationGroups"][0]
+        node_r = client.describe_cache_clusters(
+            CacheClusterId=cluster["MemberClusters"][0]
+        )
+        sg_id = node_r["CacheClusters"][0]["SecurityGroups"][0]["SecurityGroupId"]
+        resource.port_attr = elasticache_params.REPLICA_PRIMARY_PORT
+        return {
+            elasticache_params.REPLICA_PRIMARY_ADDRESS.title: cluster["NodeGroups"][0][
+                "PrimaryEndpoint"
+            ]["Address"],
+            elasticache_params.REPLICA_PRIMARY_PORT.title: cluster["NodeGroups"][0][
+                "PrimaryEndpoint"
+            ]["Port"],
+            elasticache_params.REPLICA_READ_ENDPOINT_ADDRESSES.title: [
+                cluster["NodeGroups"][0]["ReaderEndpoint"]["Address"]
+            ],
+            elasticache_params.REPLICA_READ_ENDPOINT_PORTS.title: [
+                cluster["NodeGroups"][0]["ReaderEndpoint"]["Port"]
+            ],
+            elasticache_params.CLUSTER_SG.title: [sg_id],
+        }
+    except client.exceptions.ReplicationGroupNotFoundFault as error:
+        LOG.error(f"Could not fetch information about {cluster_name}")
         LOG.error(error)
         return None
 
 
-def handle_secret(lookup, db_config, session):
+def return_cluster_config(resource, cluster_arn, session):
     """
-    Function to identify and update definition with secret if defined and found
+    Function to retrieve the DB information we need for services integration
 
-    :param dict lookup: The Lookup definition for DB
-    :param session: Boto3 session for clients
+    :param ecs_composex.elasticache.elasticache_stack.CacheCluster resource:
+    :param cluster_arn:
+    :param session:
+    :type cluster_arn: str
     :type session: boto3.session.Session
-    :param dict db_config:
-    :return:
+    :return: the DB details
     """
-    if keyisset("secret", lookup):
-        secret_arn = find_aws_resource_arn_from_tags_api(
-            lookup["secret"], session, "secretsmanager:secret"
+
+    if isinstance(cluster_arn, str):
+        cluster_name = re.sub(
+            r"(?:^arn:aws(?:-[a-z]+)?:elasticache:[\w-]+:[0-9]{12}:cluster:)",
+            "",
+            cluster_arn,
         )
-        if secret_arn and db_config:
-            db_config.update({DB_SECRET_T: secret_arn})
+        return get_cluster_config(resource, cluster_name, session)
+    elif isinstance(cluster_arn, list):
+        if not re.match(
+            r"(?:^arn:aws(?:-[a-z]+)?:elasticache:[\w-]+:[0-9]{12}:cluster:)([\S]+)(?:-[0-9]+)$",
+            cluster_arn[0],
+        ).groups():
+            raise ValueError("Could not match the ARN to a specific Replica Group")
+        cluster_name = re.match(
+            r"(?:^arn:aws(?:-[a-z]+)?:elasticache:[\w-]+:[0-9]{12}:cluster:)([\S]+)(?:-[0-9]+)$",
+            cluster_arn[0],
+        ).groups()[0]
+        return get_replica_group_config(resource, cluster_name, session)
 
 
-def patch_db_vs_cluster(db_config, res_type):
-    """
-    Function to match the difference in structure for rds:db and rds:cluster
-
-    :param dict db_config: The DB config retrieved
-    :param str res_type: The RDS resource type, db|cluster
-    :return:
-    """
-    if (
-        res_type == "db"
-        and keyisset("Endpoint", db_config)
-        and keyisset("Port", db_config["Endpoint"])
-    ):
-        db_config["Port"] = db_config["Endpoint"]["Port"]
-
-
-def lookup_rds_resource(lookup, session):
+def lookup_cluster_resource(resource, session):
     """
     Function to find the DB in AWS account
 
-    :param dict lookup: The Lookup definition for DB
     :param boto3.session.Session session: Boto3 session for clients
     :return:
     """
-    rds_types = {
-        "rds:db": {
-            "regexp": r"(?:^arn:aws(?:-[a-z]+)?:rds:[\w-]+:[0-9]{12}:db:)([\S]+)$"
-        },
-        "rds:cluster": {
-            "regexp": r"(?:^arn:aws(?:-[a-z]+)?:rds:[\w-]+:[0-9]{12}:cluster:)([\S]+)$"
-        },
+    elasticache_types = {
+        "elasticache:cluster": {
+            "regexp": r"(?:^arn:aws(?:-[a-z]+)?:elasticache:[\w-]+:[0-9]{12}:cluster:)([\S]+)$"
+        }
     }
-    res_type = None
-    if keyisset("cluster", lookup):
-        res_type = "cluster"
-    elif keyisset("db", lookup):
-        res_type = "db"
-    lookup_session = define_lookup_role_from_info(lookup, session)
-    db_arn = find_aws_resource_arn_from_tags_api(
-        lookup[res_type], lookup_session, f"rds:{res_type}", types=rds_types
+    res_type = "elasticache:cluster"
+    lookup_session = define_lookup_role_from_info(resource.lookup, session)
+    cluster_arn = find_aws_resource_arn_from_tags_api(
+        resource.lookup,
+        lookup_session,
+        res_type,
+        types=elasticache_types,
+        allow_multi=True,
     )
-    if not db_arn:
+    if not cluster_arn:
         return None
-    db_config = return_db_config(db_arn, lookup_session, res_type)
-    handle_secret(lookup, db_config, lookup_session)
-    patch_db_vs_cluster(db_config, res_type)
-
-    LOG.debug(db_config)
-    return db_config
+    cluster_config = return_cluster_config(resource, cluster_arn, lookup_session)
+    LOG.debug(cluster_config)
+    return cluster_config

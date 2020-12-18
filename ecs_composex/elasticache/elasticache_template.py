@@ -46,9 +46,9 @@ def create_replication_group(cluster):
     :return:
     """
     if (
-            not cluster.cfn_resource
-            and isinstance(cluster.cfn_resource, CacheCluster)
-            and cluster.cfn_resource.Engine == "redis"
+        not cluster.cfn_resource
+        and isinstance(cluster.cfn_resource, CacheCluster)
+        and cluster.cfn_resource.Engine == "redis"
     ):
         raise ValueError("Replication group can only be set for a Redis cache cluster.")
 
@@ -60,9 +60,9 @@ def create_replication_group(cluster):
         if keyisset(prop_to_del, props):
             del props[prop_to_del]
     if not (
-            keyisset("NumCacheClusters", props)
-            or keyisset("NumNodeGroups", props)
-            or keyisset("ReplicasPerNodeGroup", props)
+        keyisset("NumCacheClusters", props)
+        or keyisset("NumNodeGroups", props)
+        or keyisset("ReplicasPerNodeGroup", props)
     ):
         props["PrimaryClusterId"] = Ref(cluster.cfn_resource)
     props["SecurityGroupIds"] = [GetAtt(cluster.db_sg, "GroupId")]
@@ -97,14 +97,14 @@ def determine_resource_type(name, properties):
     :return:
     """
     if all(
-            property_name in CacheCluster.props.keys()
-            for property_name in properties.keys()
+        property_name in CacheCluster.props.keys()
+        for property_name in properties.keys()
     ):
         LOG.info(f"Identified {name} to be {CacheCluster.resource_type}")
         return CacheCluster
     elif all(
-            property_name in ReplicationGroup.props.keys()
-            for property_name in properties.keys()
+        property_name in ReplicationGroup.props.keys()
+        for property_name in properties.keys()
     ):
         LOG.info(f"Identified {name} to be {ReplicationGroup.resource_type}")
         return ReplicationGroup
@@ -155,8 +155,11 @@ def create_cluster_from_properties(cluster, template, subnet_group):
     props = import_record_properties(cluster.properties, resource_class)
     props["CacheSubnetGroupName"] = Ref(subnet_group)
     handle_security_groups(cluster, props, resource_class)
+    default_tags = Tags(Name=cluster.logical_name, ComposeName=cluster.name)
     if keyisset("Tags", props):
-        props["Tags"] += Tags(Name=cluster.logical_name, ComposeName=cluster.name)
+        props["Tags"] += default_tags
+    else:
+        props["Tags"] = default_tags
     if cluster.parameters and keyisset("ParameterGroup", cluster.parameters):
         create_parameter_group(cluster, cluster.parameters["ParameterGroup"])
         template.add_resource(cluster.parameter_group)
@@ -176,7 +179,7 @@ def create_cluster_from_parameters(cluster, template, subnet_group):
     """
     required_keys = ["Engine", "EngineVersion"]
     if not cluster.properties and not all(
-            key in required_keys for key in cluster.parameters
+        key in required_keys for key in cluster.parameters
     ):
         raise KeyError(
             "When using MacroParameters only, you must specify at least", required_keys
@@ -189,7 +192,8 @@ def create_cluster_from_parameters(cluster, template, subnet_group):
         "EngineVersion": cluster.parameters["EngineVersion"],
         "NumCacheNodes": 1,
         "VpcSecurityGroupIds": [GetAtt(cluster.db_sg, "GroupId")],
-        "CacheSubnetGroupName": Ref(subnet_group)
+        "CacheSubnetGroupName": Ref(subnet_group),
+        "Tags": Tags(Name=cluster.logical_name, ComposeName=cluster.name),
     }
     if keyisset("ParameterGroup", cluster.parameters):
         create_parameter_group(cluster, cluster.parameters["ParameterGroup"])
@@ -219,9 +223,7 @@ def create_root_template(new_resources):
         resource.db_sg = SecurityGroup(
             f"{resource.logical_name}Sg",
             GroupDescription=Sub(f"SG for docdb-{resource.logical_name}"),
-            GroupName=Sub(
-                f"${{{AWS_STACK_NAME}}}.elasticache.{resource.logical_name}"
-            ),
+            GroupName=Sub(f"${{{AWS_STACK_NAME}}}.elasticache.{resource.logical_name}"),
             VpcId=Ref(VPC_ID),
         )
         root_template.add_resource(resource.db_sg)
@@ -233,10 +235,13 @@ def create_root_template(new_resources):
         if isinstance(resource.cfn_resource, CacheCluster):
             if resource.cfn_resource.Engine == "memcached":
                 resource.init_memcached_outputs()
+                resource.add_memcahed_config(root_template)
             elif resource.cfn_resource.Engine == "redis":
                 resource.init_redis_outputs()
+                resource.add_redis_config(root_template)
         elif isinstance(resource.cfn_resource, ReplicationGroup):
             resource.init_redis_replica_outputs()
+            resource.add_redis_replica_config(root_template)
         resource.generate_outputs()
         root_template.add_output(resource.outputs)
     return root_template

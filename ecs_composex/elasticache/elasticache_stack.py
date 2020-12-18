@@ -19,19 +19,19 @@
 Module to handle the AWS ES Stack and resources creation
 """
 
-from troposphere import Ref, GetAtt
+import json
+from troposphere import Ref, GetAtt, Sub
+from troposphere.ssm import Parameter
 
 from ecs_composex.common.compose_resources import XResource, set_resources
 from ecs_composex.common.stacks import ComposeXStack
-
 from ecs_composex.elasticache.elasticache_params import (
     RES_KEY,
     CLUSTER_NAME,
-    CLUSTER_SG,
+    CLUSTER_MEMCACHED_ADDRESS,
+    CLUSTER_MEMCACHED_PORT,
     CLUSTER_REDIS_PORT,
     CLUSTER_REDIS_ADDRESS,
-    CLUSTER_CONFIG_ADDRESS,
-    CLUSTER_CONFIG_PORT,
     REPLICA_READ_ENDPOINT_ADDRESSES,
     REPLICA_READ_ENDPOINT_PORTS,
     REPLICA_PRIMARY_ADDRESS,
@@ -51,6 +51,7 @@ class CacheCluster(XResource):
         self.db_secret = None
         self.engine = None
         self.port_attr = None
+        self.config_parameter = None
         super().__init__(name, definition, settings)
 
     def init_memcached_outputs(self):
@@ -59,17 +60,17 @@ class CacheCluster(XResource):
         """
         self.output_properties = {
             CLUSTER_NAME.title: (self.logical_name, self.cfn_resource, Ref, None),
-            CLUSTER_CONFIG_PORT.title: (
-                f"{self.logical_name}{CLUSTER_CONFIG_PORT.title}",
+            CLUSTER_MEMCACHED_PORT.title: (
+                f"{self.logical_name}{CLUSTER_MEMCACHED_PORT.title}",
                 self.cfn_resource,
                 GetAtt,
-                CLUSTER_CONFIG_PORT.Description,
+                CLUSTER_MEMCACHED_PORT.Description,
             ),
-            CLUSTER_CONFIG_ADDRESS.title: (
-                f"{self.logical_name}{CLUSTER_CONFIG_ADDRESS.title}",
+            CLUSTER_MEMCACHED_ADDRESS.title: (
+                f"{self.logical_name}{CLUSTER_MEMCACHED_ADDRESS.title}",
                 self.cfn_resource,
                 GetAtt,
-                CLUSTER_CONFIG_ADDRESS.Description,
+                CLUSTER_MEMCACHED_ADDRESS.Description,
             ),
             self.db_sg.title: (
                 self.db_sg.title,
@@ -78,7 +79,29 @@ class CacheCluster(XResource):
                 "GroupId",
             ),
         }
-        self.port_attr = CLUSTER_CONFIG_PORT
+
+    def add_memcahed_config(self, template):
+        self.port_attr = CLUSTER_MEMCACHED_PORT
+        if not self.lookup:
+            self.config_parameter = Parameter(
+                f"{self.logical_name}Config",
+                template=template,
+                Type="String",
+                Value=Sub(
+                    json.dumps(
+                        {
+                            "endpoint": f"${{{self.logical_name}.{CLUSTER_MEMCACHED_ADDRESS.Description}}}",
+                            "port": f"${{{self.logical_name}.{CLUSTER_MEMCACHED_PORT.Description}}}",
+                        }
+                    ),
+                ),
+            )
+            self.output_properties["Config"] = (
+                self.config_parameter.title,
+                self.config_parameter,
+                Ref,
+                None,
+            )
 
     def init_redis_replica_outputs(self):
         self.output_properties = {
@@ -116,6 +139,30 @@ class CacheCluster(XResource):
         }
         self.port_attr = REPLICA_PRIMARY_PORT
 
+    def add_redis_replica_config(self, template):
+        if not self.lookup:
+            self.config_parameter = Parameter(
+                f"{self.logical_name}Config",
+                template=template,
+                Type="String",
+                Value=Sub(
+                    json.dumps(
+                        {
+                            "endpoint": f"${{{self.logical_name}.{REPLICA_PRIMARY_ADDRESS.Description}}}",
+                            "port": f"${{{self.logical_name}.{REPLICA_PRIMARY_PORT.Description}}}",
+                            "readendpoints": f"{{{self.logical_name}{REPLICA_READ_ENDPOINT_ADDRESSES.Description}}}",
+                            "readports": f"{{{self.logical_name}{REPLICA_READ_ENDPOINT_PORTS.Description}}}",
+                        }
+                    ),
+                ),
+            )
+            self.output_properties["Config"] = (
+                self.config_parameter.title,
+                self.config_parameter,
+                Ref,
+                None,
+            )
+
     def init_redis_outputs(self):
         self.output_properties = {
             CLUSTER_NAME.title: (self.logical_name, self.cfn_resource, Ref, None),
@@ -139,6 +186,28 @@ class CacheCluster(XResource):
             ),
         }
         self.port_attr = CLUSTER_REDIS_PORT
+
+    def add_redis_config(self, template):
+        if not self.lookup:
+            self.config_parameter = Parameter(
+                f"{self.logical_name}Config",
+                template=template,
+                Type="String",
+                Value=Sub(
+                    json.dumps(
+                        {
+                            "endpoint": f"${{{self.logical_name}.{CLUSTER_REDIS_ADDRESS.Description}}}",
+                            "port": f"${{{self.logical_name}.{CLUSTER_REDIS_PORT.Description}}}",
+                        }
+                    ),
+                ),
+            )
+            self.output_properties["Config"] = (
+                self.config_parameter.title,
+                self.config_parameter,
+                Ref,
+                None,
+            )
 
 
 class XStack(ComposeXStack):
