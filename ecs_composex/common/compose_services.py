@@ -33,7 +33,7 @@ from troposphere.ecs import (
     EnvironmentFile,
     RepositoryCredentials,
 )
-from troposphere.iam import Policy
+from troposphere.iam import Policy, PolicyType
 from troposphere.codeguruprofiler import ProfilingGroup
 
 from ecs_composex.resources_import import import_record_properties
@@ -1333,9 +1333,7 @@ class ComposeFamily(object):
                 "Principals"
             ]
             potential_principals = [
-                p.data["Fn::GetAtt"][0]
-                for p in principals
-                if isinstance(p, GetAtt)
+                p.data["Fn::GetAtt"][0] for p in principals if isinstance(p, GetAtt)
             ]
             if self.task_role.title not in potential_principals:
                 principals.append(GetAtt(self.task_role, "Arn"))
@@ -1343,8 +1341,35 @@ class ComposeFamily(object):
             setattr(
                 service.code_profiler,
                 "AgentPermissions",
-                {"Principals": [GetAtt(self.task_role, "Arn")]},
+                {
+                    "Principals": [GetAtt(self.task_role, "Arn")],
+                },
             )
+
+    def set_codeguru_iam_access(self, service):
+        """
+        Method to add IAM permissions via an IAM policy to publish to CodeGuru
+        """
+        self.template.add_resource(
+            PolicyType(
+                "CodeGuruAccess",
+                PolicyName="CodeGuruAccess",
+                PolicyDocument={
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Action": [
+                                "codeguru-profiler:ConfigureAgent",
+                                "codeguru-profiler:PostAgentProfile",
+                            ],
+                            "Resource": GetAtt(service.code_profiler, "Arn"),
+                        }
+                    ],
+                },
+                Roles=[Ref(self.task_role)],
+            )
+        )
 
     def set_codeguru_profiles_arns(self):
         if not self.template:
@@ -1354,6 +1379,12 @@ class ComposeFamily(object):
             if service.code_profiler and isinstance(
                 service.code_profiler, ProfilingGroup
             ):
+                if (
+                    isinstance(service.container_definition.Environment, Ref)
+                    and service.container_definition.Environment.data["Ref"]
+                    == AWS_NO_VALUE
+                ):
+                    service.container_definition.Environment = []
                 service.container_definition.Environment.append(
                     Environment(
                         Name="AWS_CODEGURU_PROFILER_GROUP_ARN",
@@ -1369,6 +1400,7 @@ class ComposeFamily(object):
                 if service.code_profiler not in self.template.resources:
                     self.template.add_resource(service.code_profiler)
                 self.set_codeguru_principals(service)
+                self.set_codeguru_iam_access(service)
 
     def upload_services_env_files(self, settings):
         """
