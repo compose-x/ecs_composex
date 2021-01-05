@@ -1,0 +1,17 @@
+---
+# Override file to enable variances for code guru profiler
+
+services:
+  app03:
+    x-codeguru-profiler: True
+
+  app02:
+    x-codeguru-profiler:
+      ProfilingGroupName: "MyProfilingGroup"
+      AgentPermissions:
+        Principals:
+          - "arn:aws:iam::1233456789012:role/agent-permissions-role-1"
+          - "arn:aws:iam::1233456789012:role/agent-permissions-role-2"
+      AnomalyDetectionNotificationConfiguration:
+        - channelUri: SOME_SNS_TOPIC_ARN
+          channelId: aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee

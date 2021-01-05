@@ -19,6 +19,7 @@
     syntax/composex/ecs.details/network
     syntax/composex/ecs.details/logging
     syntax/composex/ecs.details/xray
+    syntax/composex/ecs.details/codeguru_profiler
 
 .. toctree::
     :caption: ComposeX syntax
