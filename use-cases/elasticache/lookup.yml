@@ -1,0 +1,22 @@
+---
+# ComposeX env file with ElasticCache definitions
+
+
+x-elasticache:
+  cache-02:
+    Lookup:
+      Tags:
+        - Name: cache02
+        - ComposeName: cache-02
+    Services:
+      - name: app03
+        access: RW
+
+  cache03:
+    Lookup:
+      Tags:
+        - Name: cache03
+        - ComposeName: cache03
+    Services:
+      - name: app02
+        access: RW

@@ -29,6 +29,7 @@ in the AWS CloudFormation resource definition.
 
     Therefore, some resources will not be using the `Name` value that you give to it, if you did so.
 
+.. _settings_syntax_reference:
 
 Settings
 ========
