@@ -110,7 +110,7 @@ def add_storage_subnets(template, vpc, az_index, layers):
         "StorageSubnetsPrefixList",
         AddressFamily="IPv4",
         Entries=entries,
-        MaxEntries=int(pow(2, ceil(log(len(entries), 2)))),
+        MaxEntries=int((pow(2, ceil(log(len(entries), 2)))) * 2),
         PrefixListName=Sub(f"${{{vpc.title}}}-storage-subnets"),
     ))
     return [rtb], subnets
@@ -192,7 +192,7 @@ def add_public_subnets(template, vpc, az_index, layers, igw, single_nat):
         "PublicSubnetsPrefixList",
         AddressFamily="IPv4",
         Entries=entries,
-        MaxEntries=int(pow(2, ceil(log(len(entries), 2)))),
+        MaxEntries=int((pow(2, ceil(log(len(entries), 2)))) * 2),
         PrefixListName=Sub(f"${{{vpc.title}}}-public-subnets"),
     ))
     return [rtb], subnets, nats
@@ -316,7 +316,7 @@ def add_apps_subnets(template, vpc, az_index, layers, nats, endpoints=None):
         "AppsSubnetsPrefixList",
         AddressFamily="IPv4",
         Entries=entries,
-        MaxEntries=int(pow(2, ceil(log(len(entries), 2)))),
+        MaxEntries=int((pow(2, ceil(log(len(entries), 2)))) * 2),
         PrefixListName=Sub(f"${{{vpc.title}}}-apps-subnets"),
     ))
     return rtbs, subnets
