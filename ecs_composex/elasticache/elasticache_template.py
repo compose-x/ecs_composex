@@ -144,18 +144,17 @@ def handle_security_groups(cluster, props, resource_class):
         props[key] = [GetAtt(cluster.db_sg, "GroupId")]
 
 
-def create_cluster_from_properties(cluster, template, subnet_group):
+def create_cluster_from_properties(cluster, template):
     """
     Function to create the Elastic Cache Cluster from properties
 
     :param ecs_composex.elasticache.elasticache_stack.CacheCluster cluster:
     :param troposphere.Template template:
-    :param troposphere.elasticache.SubnetGroup subnet_group:
     :return:
     """
     resource_class = determine_resource_type(cluster.name, cluster.properties)
     props = import_record_properties(cluster.properties, resource_class)
-    props["CacheSubnetGroupName"] = Ref(subnet_group)
+    props["CacheSubnetGroupName"] = Ref(cluster.db_subnet_group)
     handle_security_groups(cluster, props, resource_class)
     default_tags = Tags(Name=cluster.logical_name, ComposeName=cluster.name)
     if keyisset("Tags", props):
@@ -170,13 +169,12 @@ def create_cluster_from_properties(cluster, template, subnet_group):
     template.add_resource(cluster.cfn_resource)
 
 
-def create_cluster_from_parameters(cluster, template, subnet_group):
+def create_cluster_from_parameters(cluster, template):
     """
     Function to create the Cluster from the MacroParameters
 
     :param ecs_composex.elasticache.elasticache_stack.CacheCluster cluster:
     :param template:
-    :param subnet_group:
     :return:
     """
     required_keys = ["Engine", "EngineVersion"]
@@ -194,7 +192,7 @@ def create_cluster_from_parameters(cluster, template, subnet_group):
         "EngineVersion": cluster.parameters["EngineVersion"],
         "NumCacheNodes": 1,
         "VpcSecurityGroupIds": [GetAtt(cluster.db_sg, "GroupId")],
-        "CacheSubnetGroupName": Ref(subnet_group),
+        "CacheSubnetGroupName": Ref(cluster.db_subnet_group),
         "Tags": Tags(Name=cluster.logical_name, ComposeName=cluster.name),
     }
     if keyisset("ParameterGroup", cluster.parameters):
@@ -214,14 +212,16 @@ def create_root_template(new_resources):
     """
 
     root_template = init_root_template()
-    subnet_group = root_template.add_resource(
-        SubnetGroup(
-            f"ElasticCacheSubnetGroup",
-            Description="ElasticCacheSubnetGroup",
-            SubnetIds=Ref(STORAGE_SUBNETS),
-        )
-    )
     for resource in new_resources:
+        print(resource.name, resource.subnets_override)
+        resource.db_subnet_group = SubnetGroup(
+            f"{resource.logical_name}SubnetGroup",
+            Description="ElasticCacheSubnetGroup",
+            SubnetIds=Ref(STORAGE_SUBNETS)
+            if not resource.subnets_override
+            else Ref(resource.subnets_override),
+        )
+
         resource.db_sg = SecurityGroup(
             f"{resource.logical_name}Sg",
             GroupDescription=Sub(f"SG for docdb-{resource.logical_name}"),
@@ -229,10 +229,11 @@ def create_root_template(new_resources):
             VpcId=Ref(VPC_ID),
         )
         root_template.add_resource(resource.db_sg)
+        root_template.add_resource(resource.db_subnet_group)
         if resource.properties:
-            create_cluster_from_properties(resource, root_template, subnet_group)
+            create_cluster_from_properties(resource, root_template)
         elif resource.parameters and not resource.properties:
-            create_cluster_from_parameters(resource, root_template, subnet_group)
+            create_cluster_from_parameters(resource, root_template)
 
         if isinstance(resource.cfn_resource, CacheCluster):
             if resource.cfn_resource.Engine == "memcached":

@@ -44,7 +44,8 @@ from troposphere.ec2 import (
     VPCEndpoint,
     SecurityGroup,
     SecurityGroupRule,
-    PrefixList, Entry
+    PrefixList,
+    Entry,
 )
 
 from ecs_composex.common import keyisset, NONALPHANUM
@@ -105,14 +106,21 @@ def add_storage_subnets(template, vpc, az_index, layers):
             Metadata=metadata,
         )
         subnets.append(subnet)
-        entries.append(Entry(Cidr=subnet_cidr, Description=Sub(f"storage-{index} -- ${{{vpc.title}}}")))
-    template.add_resource(PrefixList(
-        "StorageSubnetsPrefixList",
-        AddressFamily="IPv4",
-        Entries=entries,
-        MaxEntries=int((pow(2, ceil(log(len(entries), 2)))) * 2),
-        PrefixListName=Sub(f"${{{vpc.title}}}-storage-subnets"),
-    ))
+        entries.append(
+            Entry(
+                Cidr=subnet_cidr,
+                Description=Sub(f"storage-{index} -- ${{{vpc.title}}}"),
+            )
+        )
+    template.add_resource(
+        PrefixList(
+            "StorageSubnetsPrefixList",
+            AddressFamily="IPv4",
+            Entries=entries,
+            MaxEntries=int((pow(2, ceil(log(len(entries), 2)))) * 2),
+            PrefixListName=Sub(f"${{{vpc.title}}}-storage-subnets"),
+        )
+    )
     return [rtb], subnets
 
 
@@ -187,14 +195,20 @@ def add_public_subnets(template, vpc, az_index, layers, igw, single_nat):
             SubnetId=Ref(subnet),
         )
         subnets.append(subnet)
-        entries.append(Entry(Cidr=subnet_cidr, Description=Sub(f"public-{index} -- ${{{vpc.title}}}")))
-    template.add_resource(PrefixList(
-        "PublicSubnetsPrefixList",
-        AddressFamily="IPv4",
-        Entries=entries,
-        MaxEntries=int((pow(2, ceil(log(len(entries), 2)))) * 2),
-        PrefixListName=Sub(f"${{{vpc.title}}}-public-subnets"),
-    ))
+        entries.append(
+            Entry(
+                Cidr=subnet_cidr, Description=Sub(f"public-{index} -- ${{{vpc.title}}}")
+            )
+        )
+    template.add_resource(
+        PrefixList(
+            "PublicSubnetsPrefixList",
+            AddressFamily="IPv4",
+            Entries=entries,
+            MaxEntries=int((pow(2, ceil(log(len(entries), 2)))) * 2),
+            PrefixListName=Sub(f"${{{vpc.title}}}-public-subnets"),
+        )
+    )
     return [rtb], subnets, nats
 
 
@@ -288,7 +302,11 @@ def add_apps_subnets(template, vpc, az_index, layers, nats, endpoints=None):
         )
         rtbs.append(rtb)
         subnets.append(subnet)
-        entries.append(Entry(Cidr=subnet_cidr, Description=Sub(f"apps-{index} -- ${{{vpc.title}}}")))
+        entries.append(
+            Entry(
+                Cidr=subnet_cidr, Description=Sub(f"apps-{index} -- ${{{vpc.title}}}")
+            )
+        )
     if endpoints is not None and keyisset("AwsServices", endpoints):
         sg_endpoints = SecurityGroup(
             "VpcEndpointsSg",
@@ -312,11 +330,13 @@ def add_apps_subnets(template, vpc, az_index, layers, nats, endpoints=None):
             else:
                 add_interface_endpoint(sg_endpoints, service, subnets, template)
 
-    template.add_resource(PrefixList(
-        "AppsSubnetsPrefixList",
-        AddressFamily="IPv4",
-        Entries=entries,
-        MaxEntries=int((pow(2, ceil(log(len(entries), 2)))) * 2),
-        PrefixListName=Sub(f"${{{vpc.title}}}-apps-subnets"),
-    ))
+    template.add_resource(
+        PrefixList(
+            "AppsSubnetsPrefixList",
+            AddressFamily="IPv4",
+            Entries=entries,
+            MaxEntries=int((pow(2, ceil(log(len(entries), 2)))) * 2),
+            PrefixListName=Sub(f"${{{vpc.title}}}-apps-subnets"),
+        )
+    )
     return rtbs, subnets

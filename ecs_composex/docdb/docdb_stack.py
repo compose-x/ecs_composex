@@ -29,6 +29,7 @@ from ecs_composex.docdb.docdb_params import (
     DOCDB_PORT,
     DOCDB_SECRET,
 )
+from ecs_composex.vpc.vpc_params import STORAGE_SUBNETS
 from ecs_composex.docdb.docdb_template import create_docdb_template
 
 
@@ -36,6 +37,8 @@ class DocDb(XResource):
     """
     Class to manage DocDB
     """
+
+    subnets_param = STORAGE_SUBNETS
 
     def __init__(self, name, definition, settings):
         """
@@ -50,6 +53,7 @@ class DocDb(XResource):
         self.db_subnets_group = None
         super().__init__(name, definition, settings)
         self.arn_attr = DOCDB_SECRET
+        self.set_override_subnets()
 
     def init_outputs(self):
         """

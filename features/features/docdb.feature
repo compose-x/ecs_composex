@@ -7,5 +7,6 @@ Feature: ecs_composex.docdb
     And I render all files to verify execution
 
     Examples:
-      | file_path                   | override_file                   |
-      | use-cases/blog.features.yml | use-cases/docdb/create_only.yml |
+      | file_path                   | override_file                        |
+      | use-cases/blog.features.yml | use-cases/docdb/create_only.yml      |
+      | use-cases/blog.features.yml | use-cases/docdb/subnets_override.yml |

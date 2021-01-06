@@ -121,6 +121,7 @@ class XResource(object):
         self.attributes_outputs = {}
         self.families_targets = []
         self.families_scaling = []
+        self.subnets_override = None
         self.arn_attr = None
         self.arn_parameter = None
         self.arn_value = None
@@ -387,3 +388,11 @@ class XResource(object):
                 self.attributes_outputs.keys(),
             )
         return GetAtt(stack_name, f"Outputs.{self.attributes_outputs[title]['Name']}")
+
+    def set_override_subnets(self):
+        if (
+            self.settings
+            and keyisset("Subnets", self.settings)
+            and hasattr(self, "subnets_param")
+        ):
+            self.subnets_override = self.settings["Subnets"]

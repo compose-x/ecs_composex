@@ -32,6 +32,7 @@ from ecs_composex.rds.rds_params import (
     DB_ENDPOINT_PORT,
     DB_SECRET_T,
 )
+from ecs_composex.vpc.vpc_params import STORAGE_SUBNETS
 from ecs_composex.rds.rds_template import generate_rds_templates
 
 RES_KEY = f"x-{os.path.basename(os.path.dirname(os.path.abspath(__file__)))}"
@@ -58,11 +59,14 @@ class Rds(XResource):
     Class to represent a RDS DB
     """
 
+    subnets_param = STORAGE_SUBNETS
+
     def __init__(self, name, definition, settings):
         self.db_secret = None
         self.db_sg = None
         super().__init__(name, definition, settings)
         self.arn_attr = Parameter(DB_SECRET_T, Type="String")
+        self.set_override_subnets()
 
     def init_outputs(self):
         """

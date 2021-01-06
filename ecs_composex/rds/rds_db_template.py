@@ -49,7 +49,6 @@ from ecs_composex.rds.rds_params import (
 from ecs_composex.rds.rds_params import (
     DB_ENGINE_VERSION,
     DB_ENGINE_NAME,
-    DBS_SUBNET_GROUP,
     DB_NAME,
     DB_SNAPSHOT_ID,
     DB_INSTANCE_CLASS,
@@ -57,7 +56,6 @@ from ecs_composex.rds.rds_params import (
     DB_USERNAME,
     DB_STORAGE_CAPACITY,
     DB_STORAGE_TYPE,
-    DBS_SUBNET_GROUP_T,
 )
 from ecs_composex.resources_import import import_record_properties
 from ecs_composex.secrets import (
@@ -71,22 +69,20 @@ from ecs_composex.vpc.vpc_params import (
 )
 
 
-def init_database_template(db_name):
+def init_database_template(db):
     """
     Function to initialize the DB Template
 
-    :param str db_name: Name of the DB as defined in compose file
+    :param db: The DB definition
     :return: template
     :rtype: troposphere.Template
     """
     template = build_template(
-        f"Template for RDS DB {db_name}",
+        f"Template for RDS DB {db.name}",
         [
             VPC_ID,
             DB_ENGINE_NAME,
             DB_ENGINE_VERSION,
-            STORAGE_SUBNETS,
-            DBS_SUBNET_GROUP,
             DB_NAME,
             DB_USERNAME,
             DB_SNAPSHOT_ID,
@@ -94,10 +90,8 @@ def init_database_template(db_name):
             DB_INSTANCE_CLASS,
             DB_STORAGE_CAPACITY,
             DB_STORAGE_TYPE,
+            STORAGE_SUBNETS,
         ],
-    )
-    template.add_condition(
-        rds_conditions.DBS_SUBNET_GROUP_CON_T, rds_conditions.DBS_SUBNET_GROUP_CON
     )
     template.add_condition(
         rds_conditions.USE_DB_SNAPSHOT_CON_T, rds_conditions.USE_DB_SNAPSHOT_CON
@@ -127,7 +121,7 @@ def init_database_template(db_name):
         rds_conditions.USE_CLUSTER_OR_SNAPSHOT_CON_T,
         rds_conditions.USE_CLUSTER_OR_SNAPSHOT_CON,
     )
-    create_db_subnet_group(template, True)
+    create_db_subnet_group(template)
     return template
 
 
@@ -142,15 +136,18 @@ def add_db_outputs(db_template, db):
     db_template.add_output(db.outputs)
 
 
-def create_db_subnet_group(template, conditional=False):
+def create_db_subnet_group(template, subnets=None):
     """
     Function to create a subnet group
 
     :param troposphere.Template template: the template to add the subnet group to.
     :param bool conditional: Whether or not the object should have a Condition for creation in CFN
+    :param subnets: The subnets to use.
     :return: group, the DB Subnets Group
     :rtype: troposphere.rds.DBSubnetGroup
     """
+    if not subnets:
+        subnets = STORAGE_SUBNETS
     group = DBSubnetGroup(
         CLUSTER_SUBNET_GROUP,
         template=template,
@@ -164,10 +161,8 @@ def create_db_subnet_group(template, conditional=False):
             Sub("DB Subnet group for ${AWS::StackName}"),
             Sub(f"DB Subnet group for ${{{ROOT_STACK_NAME_T}}}"),
         ),
-        SubnetIds=Ref(STORAGE_SUBNETS),
+        SubnetIds=Ref(subnets),
     )
-    if conditional:
-        setattr(group, "Condition", rds_conditions.DBS_SUBNET_GROUP_CON_T)
     return group
 
 
@@ -202,11 +197,7 @@ def add_default_instance_definition(db, for_cluster=False):
         ),
         "DBSubnetGroupName": If(
             rds_conditions.NOT_USE_CLUSTER_CON_T,
-            If(
-                rds_conditions.DBS_SUBNET_GROUP_CON_T,
-                Ref(CLUSTER_SUBNET_GROUP),
-                Ref(DBS_SUBNET_GROUP),
-            ),
+            Ref(CLUSTER_SUBNET_GROUP),
             Ref(AWS_NO_VALUE),
         ),
         "AllocatedStorage": If(
@@ -259,11 +250,7 @@ def add_default_cluster_definition(db):
     """
     props = {
         "Condition": rds_conditions.USE_CLUSTER_CON_T,
-        "DBSubnetGroupName": If(
-            rds_conditions.DBS_SUBNET_GROUP_CON_T,
-            Ref(CLUSTER_SUBNET_GROUP),
-            Ref(DBS_SUBNET_GROUP),
-        ),
+        "DBSubnetGroupName": Ref(CLUSTER_SUBNET_GROUP),
         "DatabaseName": Ref(DB_NAME),
         "MasterUsername": If(
             rds_conditions.USE_CLUSTER_AND_SNAPSHOT_CON_T,
@@ -384,7 +371,7 @@ def override_set_properties(props, db):
                 f"{{{{resolve:secretsmanager:${{{db.db_secret.title}}}:SecretString:password}}}}"
             ),
             "VpcSecurityGroupIds": [Ref(db.db_sg)],
-            "DBSubnetGroupName": Ref(DBS_SUBNET_GROUP_T),
+            "DBSubnetGroupName": Ref(CLUSTER_SUBNET_GROUP),
         },
     )
 
@@ -535,7 +522,7 @@ def generate_database_template(db):
     :return: db_template
     :rtype: troposphere.Template
     """
-    db_template = init_database_template(db.name)
+    db_template = init_database_template(db)
     db.db_secret = add_db_secret(db_template, db.logical_name)
     db.db_sg = add_db_sg(db_template, db.logical_name)
     if db.properties:

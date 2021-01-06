@@ -605,6 +605,8 @@ class Elbv2(XResource):
     Class to handle ELBv2 creation and mapping to ECS Services
     """
 
+    subnets_param = APP_SUBNETS
+
     def __init__(self, name, definition, settings):
         if not keyisset("Listeners", definition):
             raise KeyError("You must specify at least one Listener for a LB.", name)
