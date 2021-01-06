@@ -286,12 +286,12 @@ def define_actions(listener, target_def):
     print(listener)
     if auth_action:
         if hasattr(listener, "Certificates") and not listener.Certificates:
-            raise Exception(
+            raise AttributeError(
                 "In order to use authenticate via OIDC or AWS Cognito,"
                 " your listener must be using HTTPs and have SSL Certificates defined."
             )
         if not listener.Protocol == "HTTPS":
-            raise Exception(
+            raise AttributeError(
                 "In order to use authenticate via OIDC or AWS Cognito,",
                 "Your listener protocol MUST be HTTPS. Got",
                 listener.Protocol,
