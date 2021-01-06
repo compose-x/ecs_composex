@@ -31,6 +31,8 @@ respective AZ
 
 """
 
+from math import log, ceil
+
 from troposphere import GetAtt, Tags, Ref, Sub, If
 from troposphere.ec2 import (
     Subnet,
@@ -42,6 +44,7 @@ from troposphere.ec2 import (
     VPCEndpoint,
     SecurityGroup,
     SecurityGroupRule,
+    PrefixList, Entry
 )
 
 from ecs_composex.common import keyisset, NONALPHANUM
@@ -76,6 +79,7 @@ def add_storage_subnets(template, vpc, az_index, layers):
     )
 
     subnets = []
+    entries = []
     for index, subnet_cidr in zip(az_index, layers["stor"]):
         subnet = Subnet(
             f"StorageSubnet{index.upper()}",
@@ -101,6 +105,14 @@ def add_storage_subnets(template, vpc, az_index, layers):
             Metadata=metadata,
         )
         subnets.append(subnet)
+        entries.append(Entry(Cidr=subnet_cidr, Description=Sub(f"storage-{index} -- ${{{vpc.title}}}")))
+    template.add_resource(PrefixList(
+        "StorageSubnetsPrefixList",
+        AddressFamily="IPv4",
+        Entries=entries,
+        MaxEntries=int(pow(2, ceil(log(len(entries), 2)))),
+        PrefixListName=Sub(f"${{{vpc.title}}}-storage-subnets"),
+    ))
     return [rtb], subnets
 
 
@@ -139,6 +151,7 @@ def add_public_subnets(template, vpc, az_index, layers, igw, single_nat):
     )
     subnets = []
     nats = []
+    entries = []
     for index, subnet_cidr in zip(az_index, layers["pub"]):
         subnet = Subnet(
             f"PublicSubnet{index.upper()}",
@@ -174,6 +187,14 @@ def add_public_subnets(template, vpc, az_index, layers, igw, single_nat):
             SubnetId=Ref(subnet),
         )
         subnets.append(subnet)
+        entries.append(Entry(Cidr=subnet_cidr, Description=Sub(f"public-{index} -- ${{{vpc.title}}}")))
+    template.add_resource(PrefixList(
+        "PublicSubnetsPrefixList",
+        AddressFamily="IPv4",
+        Entries=entries,
+        MaxEntries=int(pow(2, ceil(log(len(entries), 2)))),
+        PrefixListName=Sub(f"${{{vpc.title}}}-public-subnets"),
+    ))
     return [rtb], subnets, nats
 
 
@@ -220,6 +241,7 @@ def add_apps_subnets(template, vpc, az_index, layers, nats, endpoints=None):
     """
     subnets = []
     rtbs = []
+    entries = []
     if len(nats) < len(az_index):
         primary_nat = nats[0]
         nats = []
@@ -266,27 +288,35 @@ def add_apps_subnets(template, vpc, az_index, layers, nats, endpoints=None):
         )
         rtbs.append(rtb)
         subnets.append(subnet)
-    if endpoints is not None:
-        if keyisset("AwsServices", endpoints):
-            sg_endpoints = SecurityGroup(
-                "VpcEndpointsSg",
-                template=template,
-                GroupName=Sub(f"vpc-endpoints-${{{VPC_T}}}"),
-                GroupDescription=Sub(f"VPC Endpoints for VPC ${{{VPC_T}}}"),
-                VpcId=Ref(template.resources[VPC_T]),
-                SecurityGroupIngress=[
-                    SecurityGroupRule(
-                        CidrIp=GetAtt(template.resources[VPC_T], "CidrBlock"),
-                        FromPort=443,
-                        ToPort=443,
-                        IpProtocol="TCP",
-                        Description="HTTPs to VPC Endpoint",
-                    )
-                ],
-            )
-            for service in endpoints["AwsServices"]:
-                if service["service"] == "s3":
-                    add_gateway_endpoint(service, rtbs, template)
-                else:
-                    add_interface_endpoint(sg_endpoints, service, subnets, template)
+        entries.append(Entry(Cidr=subnet_cidr, Description=Sub(f"apps-{index} -- ${{{vpc.title}}}")))
+    if endpoints is not None and keyisset("AwsServices", endpoints):
+        sg_endpoints = SecurityGroup(
+            "VpcEndpointsSg",
+            template=template,
+            GroupName=Sub(f"vpc-endpoints-${{{VPC_T}}}"),
+            GroupDescription=Sub(f"VPC Endpoints for VPC ${{{VPC_T}}}"),
+            VpcId=Ref(template.resources[VPC_T]),
+            SecurityGroupIngress=[
+                SecurityGroupRule(
+                    CidrIp=GetAtt(template.resources[VPC_T], "CidrBlock"),
+                    FromPort=443,
+                    ToPort=443,
+                    IpProtocol="TCP",
+                    Description="HTTPs to VPC Endpoint",
+                )
+            ],
+        )
+        for service in endpoints["AwsServices"]:
+            if service["service"] == "s3":
+                add_gateway_endpoint(service, rtbs, template)
+            else:
+                add_interface_endpoint(sg_endpoints, service, subnets, template)
+
+    template.add_resource(PrefixList(
+        "AppsSubnetsPrefixList",
+        AddressFamily="IPv4",
+        Entries=entries,
+        MaxEntries=int(pow(2, ceil(log(len(entries), 2)))),
+        PrefixListName=Sub(f"${{{vpc.title}}}-apps-subnets"),
+    ))
     return rtbs, subnets
