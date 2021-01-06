@@ -39,6 +39,7 @@ import copy
 
 from troposphere import Tags, Parameter, Ref
 from troposphere.ec2 import LaunchTemplate, TagSpecifications
+from troposphere.ssm import Parameter as SSMParameter
 
 from ecs_composex.common import keyisset, NONALPHANUM, LOG, add_parameters
 from ecs_composex.common.stacks import ComposeXStack
@@ -153,11 +154,14 @@ def add_object_tags(obj, tags):
     :param obj: Troposphere object to add the tags to
     :param troposphere.Tags tags: list of tags as defined in Docker composeX file
     """
+    excluded_types = (SSMParameter)
     if tags is None:
         return
     clean_tags = copy.deepcopy(tags)
     if isinstance(obj, LaunchTemplate):
         expand_launch_template_tags_specs(obj, clean_tags)
+        return
+    elif isinstance(obj, excluded_types):
         return
     if hasattr(obj, "props") and "Tags" not in obj.props:
         LOG.debug(f"Item {obj.title} - {obj.resource_type} does not support tags")
