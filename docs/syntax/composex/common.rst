@@ -53,6 +53,33 @@ name.
 
     No need to add the name of the resource as defined in the docker compose file, this will always be added by default.
 
+Subnets
+-------
+
+.. code-block:: yaml
+    :caption: Example of override for RDS
+
+    x-rds:
+      dbA:
+        Settings:
+          Subnets: AppSubnets
+
+This parameter allows you to override which subnets should be used for the resource to be deployed to.
+It applies to that resource only so if you had for example, multiple RDS instances, default behaviour is observed for all
+resources that do not have this override.
+
+.. note::
+
+    This only applies to services using TCP, so
+    * x-rds
+    * x-docdb
+    * x-elasticache
+
+
+.. note::
+
+    For ECS services to be deployed into different subnets, refer to :ref:`compose_networks_syntax_reference`
+
 Services
 ========
 

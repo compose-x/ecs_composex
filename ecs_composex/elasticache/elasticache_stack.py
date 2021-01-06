@@ -25,6 +25,7 @@ from troposphere.ssm import Parameter
 
 from ecs_composex.common.compose_resources import XResource, set_resources
 from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.vpc.vpc_params import STORAGE_SUBNETS
 from ecs_composex.elasticache.elasticache_params import (
     RES_KEY,
     CLUSTER_NAME,
@@ -45,14 +46,18 @@ class CacheCluster(XResource):
     Class to represent an AWS Elastic CacheCluster
     """
 
+    subnets_param = STORAGE_SUBNETS
+
     def __init__(self, name, definition, settings):
         self.db_sg = None
         self.parameter_group = None
         self.db_secret = None
+        self.db_subnet_group = None
         self.engine = None
         self.port_attr = None
         self.config_parameter = None
         super().__init__(name, definition, settings)
+        self.set_override_subnets()
 
     def init_memcached_outputs(self):
         """

@@ -9,6 +9,7 @@ Feature: ecs_composex.rds
     Examples:
       | file_path                   | override_file                                 |
       | use-cases/blog.features.yml | use-cases/rds/rds_basic.yml                   |
+      | use-cases/blog.features.yml | use-cases/rds/subnets_override.yml            |
       | use-cases/blog.features.yml | use-cases/rds/rds_cluster_multi_instances.yml |
 
   @rds @lookup

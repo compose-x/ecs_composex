@@ -27,10 +27,8 @@ from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T, ROOT_STACK_NAME
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.rds.rds_db_template import (
     generate_database_template,
-    create_db_subnet_group,
 )
 from ecs_composex.rds.rds_params import (
-    DBS_SUBNET_GROUP_T,
     DB_NAME_T,
     DB_ENGINE_VERSION_T,
     DB_ENGINE_NAME_T,
@@ -44,12 +42,10 @@ from ecs_composex.vpc.vpc_params import (
 )
 
 
-def add_db_stack(root_template, dbs_subnet_group, db):
+def add_db_stack(root_template, db):
     """
     Function to add the DB stack to the root stack
 
-    :param dbs_subnet_group: Subnet group for DBs
-    :type dbs_subnet_group: troposphere.rds.DBSubnetGroup
     :param root_template: root template to add the nested stack to
     :type root_template: troposphere.Template
     :param db: the database definition from the compose file
@@ -87,11 +83,13 @@ def add_db_stack(root_template, dbs_subnet_group, db):
         )
     parameters = {
         VPC_ID_T: Ref(VPC_ID),
-        DBS_SUBNET_GROUP_T: Ref(dbs_subnet_group),
         DB_NAME_T: db.logical_name,
-        STORAGE_SUBNETS_T: Join(",", Ref(STORAGE_SUBNETS)),
         ROOT_STACK_NAME_T: Ref(ROOT_STACK_NAME),
     }
+    if db.subnets_override:
+        parameters.update({STORAGE_SUBNETS_T: Join(",", Ref(db.subnets_override))})
+    else:
+        parameters.update({STORAGE_SUBNETS_T: Join(",", Ref(STORAGE_SUBNETS))})
     if keyisset("SnapshotIdentifier", db.properties):
         parameters.update({DB_SNAPSHOT_ID.title: db.properties["SnapshotIdentifier"]})
     elif keyisset("DBSnapshotIdentifier", db.properties):
@@ -119,7 +117,6 @@ def generate_rds_templates(new_dbs):
     :rtype: troposphere.Template
     """
     root_tpl = build_template("RDS Root Template", [VPC_ID, STORAGE_SUBNETS])
-    dbs_subnet_group = create_db_subnet_group(root_tpl)
     for db in new_dbs:
-        add_db_stack(root_tpl, dbs_subnet_group, db)
+        add_db_stack(root_tpl, db)
     return root_tpl

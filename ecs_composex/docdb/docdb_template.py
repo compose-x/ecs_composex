@@ -154,22 +154,26 @@ def create_docdb_template(new_resources, settings):
     :rtype: troposphere.Template
     """
     root_template = init_doc_db_template()
-    subnet_group = docdb.DBSubnetGroup(
-        DOCDB_SUBNET_GROUP_T,
-        DBSubnetGroupDescription=Sub(f"docdb-subnets-${{{AWS_STACK_NAME}}}"),
-        SubnetIds=Ref(STORAGE_SUBNETS),
-        Tags=Tags(Name=Sub(f"docdb-subnets-${{{AWS_STACK_NAME}}}")),
-    )
-    root_template.add_resource(subnet_group)
+
     for resource in new_resources:
-        resource.db_subnets_group = subnet_group
+
+        resource.db_subnets_group = docdb.DBSubnetGroup(
+            f"{resource.logical_name}SubnetGroup",
+            DBSubnetGroupDescription=Sub(
+                f"docdb-{resource.logical_name}-subnets-${{{AWS_STACK_NAME}}}"
+            ),
+            SubnetIds=Ref(STORAGE_SUBNETS)
+            if not resource.subnets_override
+            else Ref(resource.subnets_override),
+            Tags=Tags(Name=Sub(f"docdb-subnets-${{{AWS_STACK_NAME}}}")),
+        )
         resource.db_sg = SecurityGroup(
             f"{resource.logical_name}Sg",
             GroupDescription=Sub(f"SG for docdb-{resource.logical_name}"),
             GroupName=Sub(f"${{{AWS_STACK_NAME}}}.docdb.{resource.logical_name}"),
             VpcId=Ref(VPC_ID),
         )
-
+        root_template.add_resource(resource.db_subnets_group)
         root_template.add_resource(resource.db_sg)
         resource.db_secret = add_db_secret(root_template, resource.logical_name)
         set_db_cluster(

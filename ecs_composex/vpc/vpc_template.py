@@ -147,7 +147,11 @@ def add_vpc_core(template, vpc_cidr):
         PrefixList(
             "VpcPrefixList",
             AddressFamily="IPv4",
-            Entries=[Entry(Cidr=vpc_cidr, Description=Sub(f"Primary CIDR for ${{{vpc.title}}}"))],
+            Entries=[
+                Entry(
+                    Cidr=vpc_cidr, Description=Sub(f"Primary CIDR for ${{{vpc.title}}}")
+                )
+            ],
             MaxEntries=5,
             PrefixListName=Ref(vpc),
         )

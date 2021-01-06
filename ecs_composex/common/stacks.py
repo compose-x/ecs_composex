@@ -227,7 +227,6 @@ class ComposeXStack(Stack, object):
             PUBLIC_SUBNETS,
             STORAGE_SUBNETS,
             APP_SUBNETS,
-            APP_SUBNETS,
         ]
         if not parameters:
             add_parameters(self.stack_template, default_parameters)
@@ -259,7 +258,6 @@ class ComposeXStack(Stack, object):
             VPC_ID,
             PUBLIC_SUBNETS,
             STORAGE_SUBNETS,
-            APP_SUBNETS,
             APP_SUBNETS,
         ]
         add_parameters(self.stack_template, default_parameters)

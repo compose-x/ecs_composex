@@ -84,7 +84,7 @@ DB_RO_ENDPOINT_ADDRESS = "ReadEndpoint.Address"
 DB_ENDPOINT_PORT_T = "EndpointPort"
 DB_ENDPOINT_PORT_P = Parameter(DB_ENDPOINT_PORT_T, Type="Number")
 
-CLUSTER_SUBNET_GROUP = "ClusterSubnetGroup"
+CLUSTER_SUBNET_GROUP = "RdsSubnetGroup"
 DB_SECRET_T = "RdsDbSecret"
 CLUSTER_T = "AuroraCluster"
 DATABASE_T = "RdsDatabase"
