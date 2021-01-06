@@ -152,6 +152,8 @@ class CacheCluster(XResource):
                             "port": f"${{{self.logical_name}.{REPLICA_PRIMARY_PORT.Description}}}",
                             "readendpoints": f"{{{self.logical_name}{REPLICA_READ_ENDPOINT_ADDRESSES.Description}}}",
                             "readports": f"{{{self.logical_name}{REPLICA_READ_ENDPOINT_PORTS.Description}}}",
+                            "url": f"redis://${{{self.logical_name}.{REPLICA_PRIMARY_ADDRESS.Description}}}:"
+                            f"${{{self.logical_name}.{REPLICA_PRIMARY_PORT.Description}}}",
                         }
                     ),
                 ),
@@ -198,6 +200,8 @@ class CacheCluster(XResource):
                         {
                             "endpoint": f"${{{self.logical_name}.{CLUSTER_REDIS_ADDRESS.Description}}}",
                             "port": f"${{{self.logical_name}.{CLUSTER_REDIS_PORT.Description}}}",
+                            "url": f"redis://${{{self.logical_name}.{CLUSTER_REDIS_ADDRESS.Description}}}:"
+                            f"${{{self.logical_name}.{CLUSTER_REDIS_PORT.Description}}}",
                         }
                     ),
                 ),

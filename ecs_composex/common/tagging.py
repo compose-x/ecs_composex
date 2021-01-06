@@ -154,7 +154,7 @@ def add_object_tags(obj, tags):
     :param obj: Troposphere object to add the tags to
     :param troposphere.Tags tags: list of tags as defined in Docker composeX file
     """
-    excluded_types = (SSMParameter)
+    excluded_types = SSMParameter
     if tags is None:
         return
     clean_tags = copy.deepcopy(tags)
