@@ -59,7 +59,8 @@
         "ListOnly": {
             "Effect": "Allow",
             "Action": [
-                "s3:ListBucket"
+                "s3:ListBucket",
+		"s3:GetBucketLocation"
             ]
         },
         "PowerUser": {
