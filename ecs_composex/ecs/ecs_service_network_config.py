@@ -327,15 +327,15 @@ class ServiceNetworking(Ingress):
         if not family.template or not family.ecs_service:
             return
         for port in self.ports:
-            title = f"FromLB{lb_name}To{family.stack.title}On{port['published']}"
+            title = f"FromLB{lb_name}To{family.stack.title}On{port['target']}"
             common_args = {
-                "FromPort": port["published"],
-                "ToPort": port["published"],
+                "FromPort": port["target"],
+                "ToPort": port["target"],
                 "IpProtocol": port["protocol"],
                 "GroupId": GetAtt(family.ecs_service.sg, "GroupId"),
                 "SourceSecurityGroupOwnerId": Ref(AWS_ACCOUNT_ID),
                 "Description": Sub(
-                    f"From ELB {lb_name} to ${{{SERVICE_NAME_T}}} on port {port['published']}"
+                    f"From ELB {lb_name} to ${{{SERVICE_NAME_T}}} on port {port['target']}"
                 ),
             }
             if title in family.template.resources:

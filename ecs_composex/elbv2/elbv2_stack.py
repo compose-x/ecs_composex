@@ -781,13 +781,10 @@ class Elbv2(XResource):
                 "You defined ingress rules for a NLB. This is invalid. Define ingress rules at the service level."
             )
             return
-        elif (
-            not self.parameters
-            or (self.parameters and not keyisset("Ingress", self.parameters))
+        elif not self.parameters or (
+            self.parameters and not keyisset("Ingress", self.parameters)
         ):
-            LOG.warning(
-                f"You did not define any Ingress rules for ALB {self.name}."
-            )
+            LOG.warning(f"You did not define any Ingress rules for ALB {self.name}.")
             return
         ports = [listener["Port"] for listener in self.definition["Listeners"]]
         ports = set_service_ports(ports)

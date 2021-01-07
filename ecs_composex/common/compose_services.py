@@ -22,7 +22,7 @@ from json import dumps
 
 from troposphere import AWS_NO_VALUE, AWS_REGION, AWS_STACK_NAME, AWS_PARTITION
 from troposphere import Parameter, Tags
-from troposphere import Sub, Ref, GetAtt, ImportValue, Join
+from troposphere import Sub, Ref, GetAtt, ImportValue, Join, If
 from troposphere.ecs import (
     HealthCheck,
     Environment,
@@ -52,9 +52,15 @@ from ecs_composex.ecs.docker_tools import (
     set_memory_to_mb,
 )
 from ecs_composex.ecs.ecs_iam import add_service_roles
-from ecs_composex.ecs.ecs_params import AWS_XRAY_IMAGE
-from ecs_composex.ecs.ecs_params import LOG_GROUP_RETENTION
-from ecs_composex.ecs.ecs_params import NETWORK_MODE, EXEC_ROLE_T, TASK_ROLE_T, TASK_T
+from ecs_composex.ecs.ecs_params import (
+    AWS_XRAY_IMAGE,
+    LOG_GROUP_RETENTION,
+    NETWORK_MODE,
+    EXEC_ROLE_T,
+    TASK_ROLE_T,
+    TASK_T,
+)
+from ecs_composex.ecs.ecs_conditions import USE_FARGATE_CON_T
 from ecs_composex.iam import define_iam_policy, add_role_boundaries
 from ecs_composex.secrets.compose_secrets import (
     ComposeSecret,
@@ -188,7 +194,11 @@ def define_ingress_mappings(service_ports):
     """
     ingress_mappings = {}
     for port in service_ports:
-        if port["target"] not in ingress_mappings.keys():
+        if not keyisset("target", port):
+            raise KeyError("The ports must always at least define the target.")
+        if not keyisset("published", port):
+            port["published"] = port["target"]
+        if not port["target"] in ingress_mappings.keys():
             ingress_mappings[port["target"]] = [port["published"]]
         elif (
             port["target"] in ingress_mappings.keys()
@@ -389,23 +399,36 @@ class ComposeService(object):
         self.set_container_definition()
         self.set_networks()
 
+    def define_port_mappings(self):
+        """
+        Method to determine the list of port mappings to use for either AWS VPC deployments or else (bridge etc).
+        Not in use atm as AWS VPC is made mandatory
+        """
+        ec2_mappings = []
+        aws_vpc_mappings = []
+        for c_port, h_ports in self.ingress_mappings.items():
+            for port in h_ports:
+                ec2_mappings.append(PortMapping(ContainerPort=c_port, HostPort=port))
+        for port in self.ingress_mappings.keys():
+            aws_vpc_mappings = [
+                PortMapping(ContainerPort=port, HostPort=port)
+                for port in self.ingress_mappings.keys()
+            ]
+        return aws_vpc_mappings, ec2_mappings
+
     def set_container_definition(self):
         """
         Function to define the container definition matching the service definition
         """
         secrets = [secret for secrets in self.secrets for secret in secrets.ecs_secret]
+        ports_mappings = self.define_port_mappings()
         self.container_definition = ContainerDefinition(
             Image=Ref(self.image_param),
             Name=self.name,
             Cpu=self.cpu_amount if self.cpu_amount else Ref(AWS_NO_VALUE),
             Memory=self.mem_alloc if self.mem_alloc else Ref(AWS_NO_VALUE),
             MemoryReservation=self.mem_resa if self.mem_resa else Ref(AWS_NO_VALUE),
-            PortMappings=[
-                PortMapping(ContainerPort=port, HostPort=port)
-                for port in self.ingress_mappings.keys()
-            ]
-            if self.ports
-            else Ref(AWS_NO_VALUE),
+            PortMappings=ports_mappings[0] if self.ports else Ref(AWS_NO_VALUE),
             Environment=self.cfn_environment,
             LogConfiguration=LogConfiguration(
                 LogDriver="awslogs",
@@ -741,8 +764,10 @@ class ComposeService(object):
         deployment = {}
         if keyisset(deploy, self.definition):
             deployment = self.definition[deploy]
-        if deployment and keyisset(labels, deployment) and keyisset(
-            ecs_task_family, deployment[labels]
+        if (
+            deployment
+            and keyisset(labels, deployment)
+            and keyisset(ecs_task_family, deployment[labels])
         ):
             if isinstance(deployment[labels][ecs_task_family], str):
                 self.families = deployment[labels][ecs_task_family].split(",")
