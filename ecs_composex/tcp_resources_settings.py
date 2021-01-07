@@ -165,9 +165,8 @@ def define_db_secrets(db, secret_import, target_definition):
     elif keyisset("EnvNames", db.settings):
         for name in db.settings["EnvNames"]:
             secrets.append(EcsSecret(Name=name, ValueFrom=secret_import))
-    else:
-        if db.name not in [s.Name for s in secrets]:
-            secrets.append(EcsSecret(Name=db.name, ValueFrom=secret_import))
+    if db.name not in [s.Name for s in secrets]:
+        secrets.append(EcsSecret(Name=db.name, ValueFrom=secret_import))
     return secrets
 
 
