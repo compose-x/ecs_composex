@@ -116,7 +116,7 @@ class Certificate(object):
                 self.logical_name,
             )
 
-        self.cfn_resource = AcmCert(self.logical_name, **props)
+        self.cfn_resource = AcmCert(f"{self.logical_name}AcmCert", **props)
 
 
 def define_acm_certs(new_resources, dns_settings, root_stack):

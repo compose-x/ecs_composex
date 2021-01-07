@@ -313,7 +313,6 @@ class Ingress(object):
         :param troposphere.Template template:
         :return:
         """
-        print("RULES", self.ext_ingress_rules)
         for ingress_rule in self.ext_ingress_rules:
             if ingress_rule.title not in template.resources:
                 template.add_resource(ingress_rule)
