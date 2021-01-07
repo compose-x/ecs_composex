@@ -21,12 +21,13 @@ Module of functions factorizing common patterns for TCP based access such as RDS
 
 from troposphere import Parameter, AWSObject
 
-from troposphere import Ref, GetAtt, Sub
+from troposphere import Ref, GetAtt, Sub, FindInMap
 from troposphere.ec2 import SecurityGroupIngress
 from troposphere.ecs import Secret as EcsSecret
 from troposphere.iam import PolicyType
 
-from ecs_composex.common import keyisset, add_parameters
+from ecs_composex.common import keyisset, add_parameters, keypresent
+from ecs_composex.common import LOG
 from ecs_composex.common.compose_services import extend_container_secrets
 from ecs_composex.ecs.ecs_params import TASK_ROLE_T, EXEC_ROLE_T, SG_T
 from ecs_composex.rds.rds_params import (
@@ -56,35 +57,132 @@ def get_param_and_value(resource, attribute, root_stack_title):
     return imported, parameter
 
 
-def db_secrets_names(db):
+def define_db_prefix(db, mappings_definition):
+    prefix = ""
+    if keypresent("PrefixWithDbName", mappings_definition):
+        if isinstance(mappings_definition["PrefixWithDbName"], bool):
+            prefix = (
+                f"{db.name}_"
+                if keyisset("PrefixWithDbName", mappings_definition)
+                else ""
+            )
+        elif isinstance(mappings_definition["PrefixWithDbName"], str):
+            prefix = f"{mappings_definition['PrefixWithDbName']}_"
+        else:
+            raise TypeError(
+                "PrefixWithDbName can only be one of",
+                str,
+                bool,
+                "Got",
+                type(mappings_definition["PrefixWithDbName"]),
+            )
+    return prefix
+
+
+def define_secrets_keys_mappings(mappings_definition):
+    """
+    Function to analyze the secrets mapping provided
+
+    :param mappings_definition:
+    :return:
+    """
+    rendered_mappings = []
+    mappings = mappings_definition["Mappings"]
+    if isinstance(mappings, list):
+        for mapping in mappings:
+            if not keyisset("SecretKey", mapping):
+                raise KeyError(
+                    "When using a list of mappings, you must specify at least SecretKey. Got",
+                    mapping.keys(),
+                )
+            if not keyisset("VarName", mapping):
+                mapping["VarName"] = mapping["SecretKey"]
+            rendered_mappings.append(mapping)
+    elif isinstance(mappings, dict):
+        for key, value in mappings.items():
+            mapping = {"SecretKey": key, "VarName": value}
+            rendered_mappings.append(mapping)
+    return rendered_mappings
+
+
+def generate_secrets_from_secrets_mappings(
+    db, secrets_list, secret_definition, mappings_definition
+):
+    """
+    Function to generate a list of EcsSecrets
+
+    :param ecs_composex.common.compose_resources.Rds db: the RDS DB object
+    :param list secrets_list:
+    :param secret_definition:
+    :param mappings_definition:
+    :return:
+    """
+    if not keyisset("Mappings", mappings_definition):
+        raise KeyError("You must specify a Mappings list for secrets")
+    elif not isinstance(mappings_definition["Mappings"], (dict, list)):
+        raise TypeError("Secrets Mappings must be a list of key/value dictionary")
+    prefix = define_db_prefix(db, mappings_definition)
+    mappings_list = define_secrets_keys_mappings(mappings_definition)
+    for secret in mappings_list:
+        if isinstance(secret_definition, Ref):
+            param_name = secret_definition.data["Ref"]
+            secret_from = Sub(f"${{{param_name}}}:{secret['SecretKey']}::")
+        elif isinstance(secret_definition, FindInMap):
+            secret_from = Sub(
+                f"${{SecretArn}}:{secret['SecretKey']}::", SecretArn=secret_definition
+            )
+        else:
+            raise TypeError(
+                "secret_definition must be one of",
+                FindInMap,
+                Ref,
+                "Got",
+                type(secret_definition),
+            )
+        secrets_list.append(
+            EcsSecret(Name=f"{prefix}{secret['VarName']}", ValueFrom=secret_from)
+        )
+
+
+def define_db_secrets(db, secret_import, target_definition):
     """
     Function to return the list of env vars set for the DB to use as env vars for the Secret.
 
     :return: list of names to use.
     :rtype: list
     """
-    names = []
-    if keyisset("EnvNames", db.settings):
-        names = db.settings["EnvNames"]
-    if db.name not in names:
-        names.append(db.name)
-    return names
+    secrets = []
+    if keyisset("SecretsMappings", target_definition[-1]):
+        LOG.info(f"{target_definition[-1]['name']} expects specific name for {db.name}")
+        generate_secrets_from_secrets_mappings(
+            db, secrets, secret_import, target_definition[-1]["SecretsMappings"]
+        )
+    elif keyisset("SecretsMappings", db.settings):
+        LOG.info(f"{db.name} has specific secrets mappings settings")
+        generate_secrets_from_secrets_mappings(
+            db, secrets, secret_import, db.settings["SecretsMappings"]
+        )
+    elif keyisset("EnvNames", db.settings):
+        for name in db.settings["EnvNames"]:
+            secrets.append(EcsSecret(Name=name, ValueFrom=secret_import))
+    else:
+        if db.name not in [s.Name for s in secrets]:
+            secrets.append(EcsSecret(Name=db.name, ValueFrom=secret_import))
+    return secrets
 
 
-def add_secret_to_container(db, secret_import, container_definition):
+def add_secret_to_container(db, secret_import, service, target_definition):
     """
     Function to add DB secret to container
 
     :param ecs_composex.common.compose_resources.Rds db: the RDS DB object
-    :param container_definition: The container definition to add the secret to.
+    :param service: The target service definition
     :param str,AWSHelper secret_import: secret arn
+    :param target_definition:
     """
-
-    db_secrets = [
-        EcsSecret(Name=name, ValueFrom=secret_import) for name in db_secrets_names(db)
-    ]
+    db_secrets = define_db_secrets(db, secret_import, target_definition)
     for db_secret in db_secrets:
-        extend_container_secrets(container_definition, db_secret)
+        extend_container_secrets(service.container_definition, db_secret)
 
 
 def add_security_group_ingress(service_stack, db_name, sg_id, port):
@@ -161,7 +259,7 @@ def handle_db_secret_to_services(db, secret_import, target):
         service for service in target[2] if service not in target[0].ignored_services
     ]
     for service in valid_ones:
-        add_secret_to_container(db, secret_import, service.container_definition)
+        add_secret_to_container(db, secret_import, service, target)
     add_secrets_access_policy(target[0].template, secret_import, db.logical_name)
 
 

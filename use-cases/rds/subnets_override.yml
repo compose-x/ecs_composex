@@ -15,6 +15,13 @@ x-rds:
         access: RW
       - name: app03
         access: RW
+        SecretsMappings:
+          PrefixWithDbName: False
+          Mappings:
+            - SecretKey: host
+              VarName: DB_HOST
+            - SecretKey: username
+              VarName: DB_USERNAME
       - name: you-too
         access: RW
 
@@ -41,7 +48,13 @@ x-rds:
 
     Settings:
       EnvNames:
-        - DBA
+        - DB_B
+      SecretsMappings:
+        PrefixWithDbName: dbb
+        Mappings:
+          host: DB_HOST
+          username: DB_USERNAME
+          password: DB_PASSWORD
       Subnets: AppSubnets
     Services:
       - name: app01

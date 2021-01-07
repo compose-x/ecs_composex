@@ -384,6 +384,7 @@ class ComposeService(object):
 
         self.map_volumes(volumes)
         self.map_secrets(secrets)
+        self.define_families()
         self.set_service_deploy()
         self.set_container_definition()
         self.set_networks()
@@ -728,15 +729,19 @@ class ComposeService(object):
                 )
             self.container_start_condition = deployment[labels][depends_key]
 
-    def define_families(self, deployment):
+    def define_families(self):
         """
         Function to assign the service to a family / families
         :param deployment:
         :return:
         """
+        deploy = "deploy"
         labels = "labels"
         ecs_task_family = "ecs.task.family"
-        if keyisset(labels, deployment) and keyisset(
+        deployment = {}
+        if keyisset(deploy, self.definition):
+            deployment = self.definition[deploy]
+        if deployment and keyisset(labels, deployment) and keyisset(
             ecs_task_family, deployment[labels]
         ):
             if isinstance(deployment[labels][ecs_task_family], str):
@@ -758,7 +763,6 @@ class ComposeService(object):
         deploy = "deploy"
         if not keyisset("deploy", self.definition):
             return
-        self.define_families(self.definition[deploy])
         self.set_compute_resources(self.definition[deploy])
         self.set_replicas(self.definition[deploy])
         self.define_start_condition(self.definition[deploy])
