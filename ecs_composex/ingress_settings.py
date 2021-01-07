@@ -51,13 +51,13 @@ def generate_security_group_props(allowed_source):
     """
     props = {
         "CidrIp": (
-            allowed_source["Ipv4"]
-            if keyisset("Ipv4", allowed_source)
+            allowed_source["IPv4"]
+            if keyisset("IPv4", allowed_source)
             else Ref(AWS_NO_VALUE)
         ),
         "CidrIpv6": (
-            allowed_source["ipv6"]
-            if keyisset("ipv6", allowed_source)
+            allowed_source["IPv6"]
+            if keyisset("IPv6", allowed_source)
             else Ref(AWS_NO_VALUE)
         ),
     }
@@ -139,8 +139,8 @@ class Ingress(object):
     aws_sources_key = "AwsSources"
     ext_sources_key = "ExtSources"
     services_key = "Services"
-    ipv4_key = "Ipv4"
-    ipv6_key = "Ipv6"
+    ipv4_key = "IPv4"
+    ipv6_key = "IPv6"
     network_settings = [master_key, "UseCloudmap", "IsPublic"]
 
     def __init__(self, definition, ports):
@@ -283,10 +283,10 @@ class Ingress(object):
             return
 
         for allowed_source in self.ext_sources:
-            if not keyisset("Ipv4", allowed_source) and not keyisset(
-                "Ipv6", allowed_source
+            if not keyisset(self.ipv4_key, allowed_source) and not keyisset(
+                self.ipv6_key, allowed_source
             ):
-                LOG.warning("No IPv4 or IPv6 set. Skipping")
+                LOG.warning(f"No {self.ipv4_key} or {self.ipv6_key} set. Skipping")
                 continue
             props = generate_security_group_props(allowed_source)
             if props:
@@ -313,6 +313,7 @@ class Ingress(object):
         :param troposphere.Template template:
         :return:
         """
+        print("RULES", self.ext_ingress_rules)
         for ingress_rule in self.ext_ingress_rules:
             if ingress_rule.title not in template.resources:
                 template.add_resource(ingress_rule)
