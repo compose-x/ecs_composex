@@ -64,6 +64,7 @@ class Rds(XResource):
     def __init__(self, name, definition, settings):
         self.db_secret = None
         self.db_sg = None
+        self.db_subnet_group = None
         super().__init__(name, definition, settings)
         self.arn_attr = Parameter(DB_SECRET_T, Type="String")
         self.set_override_subnets()
