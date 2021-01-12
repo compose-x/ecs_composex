@@ -41,7 +41,7 @@ x-rds:
 
     Settings:
       EnvNames:
-        - DBA
+        - DB_B
     Services:
       - name: app01
         access: RW

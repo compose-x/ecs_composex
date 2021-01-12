@@ -121,7 +121,6 @@ def init_database_template(db):
         rds_conditions.USE_CLUSTER_OR_SNAPSHOT_CON_T,
         rds_conditions.USE_CLUSTER_OR_SNAPSHOT_CON,
     )
-    create_db_subnet_group(template)
     return template
 
 
@@ -136,7 +135,7 @@ def add_db_outputs(db_template, db):
     db_template.add_output(db.outputs)
 
 
-def create_db_subnet_group(template, subnets=None):
+def create_db_subnet_group(template, db, subnets=None):
     """
     Function to create a subnet group
 
@@ -149,18 +148,9 @@ def create_db_subnet_group(template, subnets=None):
     if not subnets:
         subnets = STORAGE_SUBNETS
     group = DBSubnetGroup(
-        CLUSTER_SUBNET_GROUP,
+        f"{db.logical_name}SubnetGroup",
         template=template,
-        DBSubnetGroupName=If(
-            cfn_conditions.USE_STACK_NAME_CON_T,
-            Sub("db-subnet-group-${AWS::StackName}"),
-            Sub(f"db-subnet-group-${{{ROOT_STACK_NAME_T}}}"),
-        ),
-        DBSubnetGroupDescription=If(
-            cfn_conditions.USE_STACK_NAME_CON_T,
-            Sub("DB Subnet group for ${AWS::StackName}"),
-            Sub(f"DB Subnet group for ${{{ROOT_STACK_NAME_T}}}"),
-        ),
+        DBSubnetGroupDescription=Sub(f"DB Subnet group for {db.logical_name} in ${{AWS::StackName}}"),
         SubnetIds=Ref(subnets),
     )
     return group
@@ -197,7 +187,7 @@ def add_default_instance_definition(db, for_cluster=False):
         ),
         "DBSubnetGroupName": If(
             rds_conditions.NOT_USE_CLUSTER_CON_T,
-            Ref(CLUSTER_SUBNET_GROUP),
+            Ref(db.db_subnet_group),
             Ref(AWS_NO_VALUE),
         ),
         "AllocatedStorage": If(
@@ -250,7 +240,7 @@ def add_default_cluster_definition(db):
     """
     props = {
         "Condition": rds_conditions.USE_CLUSTER_CON_T,
-        "DBSubnetGroupName": Ref(CLUSTER_SUBNET_GROUP),
+        "DBSubnetGroupName": Ref(db.db_subnet_group),
         "DatabaseName": Ref(DB_NAME),
         "MasterUsername": If(
             rds_conditions.USE_CLUSTER_AND_SNAPSHOT_CON_T,
@@ -371,7 +361,7 @@ def override_set_properties(props, db):
                 f"{{{{resolve:secretsmanager:${{{db.db_secret.title}}}:SecretString:password}}}}"
             ),
             "VpcSecurityGroupIds": [Ref(db.db_sg)],
-            "DBSubnetGroupName": Ref(CLUSTER_SUBNET_GROUP),
+            "DBSubnetGroupName": Ref(db.db_subnet_group),
         },
     )
 
@@ -525,6 +515,7 @@ def generate_database_template(db):
     db_template = init_database_template(db)
     db.db_secret = add_db_secret(db_template, db.logical_name)
     db.db_sg = add_db_sg(db_template, db.logical_name)
+    db.db_subnet_group = create_db_subnet_group(db_template, db)
     if db.properties:
         create_from_properties(db_template, db)
     elif not db.properties and db.parameters:

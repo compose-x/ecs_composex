@@ -5,7 +5,7 @@ version: '3.8'
 x-rds:
   dbA:
     Services:
-      - name: app
+      - name: app03
         access: RW
     Lookup:
       cluster:
@@ -16,9 +16,15 @@ x-rds:
         Name: GHToken
         Tags:
           - useless: "yes"
+    Settings:
+      SecretsMappings:
+        PrefixWithDbName: DBA
+        Mappings:
+          - SecretKey: host
+            VarName: DB_HOST
   dbB:
     Services:
-      - name: app
+      - name: app03
         access: RW
     Lookup:
       cluster:

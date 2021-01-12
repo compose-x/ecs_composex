@@ -53,7 +53,8 @@ def handle_import_dbs_to_services(db, rds_mapping, target, mapping_name):
             add_secret_to_container(
                 db,
                 FindInMap(mapping_name, db.logical_name, DB_SECRET_T),
-                service.container_definition,
+                service,
+                target,
             )
         add_secrets_access_policy(
             target[0].template,

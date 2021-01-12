@@ -87,6 +87,12 @@ def assign_new_bucket_to_services(bucket, res_root_stack, nested=False):
             add_parameters(
                 target[0].template, [bucket.ref_parameter, bucket.arn_parameter]
             )
+            target[0].stack.Parameters.update(
+                {
+                    bucket.ref_parameter.title: bucket.ref_value,
+                    bucket.arn_parameter.title: bucket.arn_value,
+                }
+            )
             assign_service_permissions_to_bucket(
                 bucket,
                 target[0],

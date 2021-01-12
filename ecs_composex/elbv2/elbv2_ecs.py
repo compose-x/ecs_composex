@@ -230,13 +230,13 @@ def validate_props_and_service_definition(props, service):
     """
     valid_tcp = ["HTTP", "HTTPS", "TLS", "TCP_UDP", "TCP"]
     valid_udp = ["UDP", "TCP_UDP"]
-    if not props["Port"] in [p["published"] for p in service.ports]:
+    if not props["Port"] in [p["target"] for p in service.ports]:
         raise ValueError(
             f"Defined TargetGroup port {props['Port']} is not defined for {service.name}."
             " Valid ports are",
             [p["published"] for p in service.ports],
         )
-    chosen_port = [p for p in service.ports if p["published"] == props["Port"]]
+    chosen_port = [p for p in service.ports if p["target"] == props["Port"]]
     if (chosen_port[0]["protocol"] == "tcp" and props["Protocol"] not in valid_tcp) or (
         chosen_port[0]["protocol"] == "udp" and props["Protocol"] not in valid_udp
     ):
