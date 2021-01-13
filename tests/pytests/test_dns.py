@@ -32,7 +32,7 @@ from ecs_composex.dns.dns_records import Record
 @pytest.fixture
 def content():
     here = path.abspath(path.dirname(__file__))
-    return load_composex_file(f"{here}/../use-cases/blog.yml")
+    return load_composex_file(f"{here}/../../use-cases/blog.yml")
 
 
 @pytest.fixture
@@ -73,7 +73,7 @@ def create_settings(updated_content, case_path):
             ComposeXSettings.name_arg: "test",
             ComposeXSettings.command_arg: ComposeXSettings.render_arg,
             ComposeXSettings.input_file_arg: path.abspath(
-                f"{here}/../use-cases/blog.yml"
+                f"{here}/../../use-cases/blog.yml"
             ),
             ComposeXSettings.format_arg: "yaml",
         },

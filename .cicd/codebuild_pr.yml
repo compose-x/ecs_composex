@@ -21,12 +21,19 @@ Parameters:
     Type: Number
     AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
     Default: 14
-
-  NightlyDocsBucket:
-    Type: String
-  NightlyDocsDistribution:
+  TemplatesBucket:
     Type: String
 
+  ReportsBucket:
+    Type: String
+
+  ReferenceBranchName:
+    Type: String
+    Default: main
+
+  BuildspecFile:
+    Type: String
+    Default: buildspec_pr.yml
 
 Mappings:
   RepoUrlPrefixes:
@@ -41,13 +48,15 @@ Resources:
   BuildLogsGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub 'codebuild/docs/${RepositoryName}'
+      LogGroupName: !Sub 'codebuild/blog/${RepositoryName}'
       RetentionInDays: !Ref BuildLogsRetentionDays
   CodeBuildRole:
     Type: AWS::IAM::Role
     Properties:
       ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/ReadOnlyAccess
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/ResourceGroupsandTagEditorReadOnlyAccess
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -68,13 +77,17 @@ Resources:
                   - s3:GetObject*
                 Effect: Allow
                 Resource:
-                  - !Sub 'arn:${AWS::Partition}:s3:::${NightlyDocsBucket}/*'
+                  - !Sub 'arn:${AWS::Partition}:s3:::${TemplatesBucket}/*'
+                  - !Sub 'arn:${AWS::Partition}:s3:::${ReportsBucket}/*'
+                  - !Sub 'arn:${AWS::Partition}:s3:::ecs-composex-${AWS::AccountId}-${AWS::Region}/*'
               - Sid: S3BucketAccess
                 Action:
                   - s3:ListBucket
                 Effect: Allow
                 Resource:
-                  - !Sub 'arn:${AWS::Partition}:s3:::${NightlyDocsBucket}'
+                  - !Sub 'arn:${AWS::Partition}:s3:::${TemplatesBucket}'
+                  - !Sub 'arn:${AWS::Partition}:s3:::${ReportsBucket}'
+                  - !Sub 'arn:${AWS::Partition}:s3:::ecs-composex-${AWS::AccountId}-${AWS::Region}'
               - Sid: CloudWatchLogs
                 Effect: Allow
                 Action:
@@ -82,24 +95,34 @@ Resources:
                   - logs:PutLogEvents
                 Resource:
                   - !Sub '${BuildLogsGroup.Arn}'
-              - Sid: CloudFrontAccess
+              - Sid: CloudFormationAccess
+                Resource:
+                  - '*'
                 Effect: Allow
                 Action:
-                  - cloudfront:CreateInvalidation
+                  - 'cloudformation:ValidateTemplate'
+              - Sid: CodeBuildAccess
+                Effect: Allow
                 Resource:
-                  - !Sub 'arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:distribution/${NightlyDocsDistribution}'
+                  - !Sub 'arn:${AWS::Partition}:codebuild:${AWS::Region}:${AWS::AccountId}:report-group/*'
+                Action:
+                  - codebuild:UpdateReportGroup
+                  - codebuild:CreateReportGroup
+                  - codebuild:CreateReport
+                  - codebuild:BatchPutTestCases
+                  - codebuild:UpdateReport
 
-  DocsBuild:
+  BuildUnittest:
     Type: AWS::CodeBuild::Project
     Properties:
-      Name: !Sub 'docs-nightly-${RepositoryName}'
+      Name: !Sub 'BUILD-${RepositoryName}'
       ServiceRole: !GetAtt 'CodeBuildRole.Arn'
       Description: !Sub 'Publishes blog on updates'
       LogsConfig:
         CloudWatchLogs:
           GroupName: !Ref BuildLogsGroup
           Status: ENABLED
-          StreamName: nightlydocs
+          StreamName: prerelease
       BadgeEnabled: True
       Artifacts:
         Type: NO_ARTIFACTS
@@ -111,10 +134,9 @@ Resources:
           - Name: PY_VERSION
             Type: PLAINTEXT
             Value: 3.8
-          - Name: DISTRIBUTION_ID
+          - Name: KNOWN_BUCKET
             Type: PLAINTEXT
-            Value: !Ref NightlyDocsDistribution
-
+            Value: !Ref TemplatesBucket
       Source:
         Type: GITHUB
         ReportBuildStatus: True
@@ -123,16 +145,25 @@ Resources:
           - !Sub 'https://github.com/${RepositoryOrganization}/${RepositoryName}'
           - !Sub 'https://codecommit.${AWS::Region}.${AWS::URLSuffix}'
         InsecureSsl: False
-        BuildSpec: buildspec_docs.yml
+        BuildSpec: !Ref BuildspecFile
       Triggers:
         Webhook: True
         FilterGroups:
           - - Type: EVENT
-              Pattern: "PUSH"
+              Pattern: "PULL_REQUEST_CREATED, PULL_REQUEST_UPDATED, PULL_REQUEST_REOPENED"
               ExcludeMatchedPattern: False
             - Type: HEAD_REF
-              Pattern: '^refs/heads/master$'
+              Pattern: '^refs/heads/.*$'
+              ExcludeMatchedPattern: False
+            - Type: BASE_REF
+              Pattern: !Sub '^refs/heads/${ReferenceBranchName}$'
               ExcludeMatchedPattern: False
             - Type: FILE_PATH
               Pattern: "(\\S.rst$)"
+              ExcludeMatchedPattern: True
+          - - Type: EVENT
+              Pattern: "PUSH"
+              ExcludeMatchedPattern: False
+            - Type: HEAD_REF
+              Pattern: !Sub '^refs/heads/${ReferenceBranchName}$'
               ExcludeMatchedPattern: False

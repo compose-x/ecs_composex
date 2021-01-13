@@ -1,4 +1,4 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 #   ECS ComposeX <https://github.com/lambda-my-aws/ecs_composex>
 #   Copyright (C) 2020-2021  John Mille <john@lambda-my-aws.io>
 #  #
@@ -40,7 +40,7 @@ def step_impl(context, file_path):
     :param str file_path:
     :return:
     """
-    cases_path = path.abspath(f"{here()}/../../{file_path}")
+    cases_path = path.abspath(f"{here()}/../../../{file_path}")
     context.settings = ComposeXSettings(
         profile_name=getattr(context, "profile_name")
         if hasattr(context, "profile_name")
@@ -68,8 +68,8 @@ def step_impl(context, file_path, override_file):
     :param str override_file:
     :return:
     """
-    cases_path = path.abspath(f"{here()}/../../{file_path}")
-    override_path = path.abspath(f"{here()}/../../{override_file}")
+    cases_path = path.abspath(f"{here()}/../../../{file_path}")
+    override_path = path.abspath(f"{here()}/../../../{override_file}")
     context.settings = ComposeXSettings(
         profile_name=getattr(context, "profile_name")
         if hasattr(context, "profile_name")
