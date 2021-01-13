@@ -26,12 +26,18 @@ DIR_HERE = os.path.abspath(os.path.dirname(__file__))
 # REMOVE UNSUPPORTED RST syntax
 REF_REGX = re.compile(r"(\:ref\:)")
 
-with open(f"{DIR_HERE}/README.rst", encoding="utf-8") as readme_file:
-    readme = readme_file.read()
-    readme = REF_REGX.sub("", readme)
+try:
+    with open(f"{DIR_HERE}/README.rst", encoding="utf-8") as readme_file:
+        readme = readme_file.read()
+        readme = REF_REGX.sub("", readme)
+except FileNotFoundError:
+    readme = "ECS ComposeX"
 
-with open(f"{DIR_HERE}/HISTORY.rst", encoding="utf-8") as history_file:
-    history = history_file.read()
+try:
+    with open(f"{DIR_HERE}/HISTORY.rst", encoding="utf-8") as history_file:
+        history = history_file.read()
+except FileNotFoundError:
+    history = "Latest packaged version."
 
 requirements = []
 with open(f"{DIR_HERE}/requirements.txt", "r") as req_fd:
@@ -39,9 +45,12 @@ with open(f"{DIR_HERE}/requirements.txt", "r") as req_fd:
         requirements.append(line.strip())
 
 test_requirements = []
-with open(f"{DIR_HERE}/requirements_dev.txt", "r") as req_fd:
-    for line in req_fd:
-        test_requirements.append(line.strip())
+try:
+    with open(f"{DIR_HERE}/requirements_dev.txt", "r") as req_fd:
+        for line in req_fd:
+            test_requirements.append(line.strip())
+except FileNotFoundError:
+    print("Failed to load dev requirements. Skipping")
 
 setup_requirements = []
 
