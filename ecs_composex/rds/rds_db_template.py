@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #  ECS ComposeX <https://github.com/lambda-my-aws/ecs_composex>
-#  Copyright (C) 2020  John Mille <john@lambda-my-aws.io>
+#  Copyright (C) 2020-2021  John Mille <john@lambda-my-aws.io>
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -150,7 +150,9 @@ def create_db_subnet_group(template, db, subnets=None):
     group = DBSubnetGroup(
         f"{db.logical_name}SubnetGroup",
         template=template,
-        DBSubnetGroupDescription=Sub(f"DB Subnet group for {db.logical_name} in ${{AWS::StackName}}"),
+        DBSubnetGroupDescription=Sub(
+            f"DB Subnet group for {db.logical_name} in ${{AWS::StackName}}"
+        ),
         SubnetIds=Ref(subnets),
     )
     return group
