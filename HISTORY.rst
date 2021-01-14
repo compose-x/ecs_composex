@@ -2,6 +2,40 @@
 History
 =======
 
+0.11.0 (2021-01-14)
+====================
+
+First release of 2021 focusing on some new features / extension of existing features,
+as well on improving stability.
+
+
+New features
+------------
+
+885e89e - DB Secrets exposable to services (#356) (John Preston)
+b723cc7 - Allow to override subnets to use for resources deployed inside VPC (#353) (John Preston)
+0c6c86c - Create PrefixList for VPC and suibnets when creating a new VPC (#352) (John Preston)
+4405fef - Support for ElasticCache Cluster via x-elasticache (#350) (John Preston)
+59ceae0 - Added support for CodeGuru Profiling Group (#323) (John Preston)
+97529fa - x-docdb support for DBClusterParameterGroup (#349) (John Preston)
+a8888b6 - Extending ecs-plugin x-fields support (#336) (John Preston)
+
+Improvements
+-------------
+
+faed0d3 - Align to CamelCase for x-scaling and x-network settings (#347) (John Preston)
+249ba18 - Moved defauls into properties dicts. Added more docstrings for clarity (#345) (John Preston)
+97345c7 - Pyup/updates (#329) (John Preston)
+774640b - Create pyup.io config file (#327) (pyup.io bot)
+
+
+Fixes
+------
+8d14ac0 - Fix for use_cloudmap (#346) (John Preston)
+aa1ba40 - Fixed properties update (#344) (John Preston)
+d2cd544 - Fixing VPC related settings (#341) (John Preston)
+
+
 0.10.0 (2020-12-13)
 ====================
 
