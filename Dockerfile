@@ -1,5 +1,5 @@
 ﻿ARG ARCH=
-ARG BASE_IMAGE=public.ecr.aws/i9v7p2w3/python:3.7.20210113-amd64
+ARG BASE_IMAGE=public.ecr.aws/i9v7p2w3/python:3.7.20210113${ARCH}
 FROM $BASE_IMAGE as builder
 
 COPY ecs_composex       /opt/ecs_composex
@@ -13,4 +13,6 @@ FROM $BASE_IMAGE
 COPY --from=builder /opt/dist/ecs_composex-*.whl /opt/
 WORKDIR /opt
 RUN pip install *.whl --no-cache-dir
-ENTRYPOINT ["composex"]
+WORKDIR /tmp
+#ENTRYPOINT ["ecs-composex"]
+CMD ["ecs-composex"]
