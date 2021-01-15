@@ -165,7 +165,7 @@ Resources:
         TimeoutInMins: 60
       Environment:
         ComputeType: BUILD_GENERAL1_SMALL
-        Image: aws/codebuild/standard:3.0
+        Image: aws/codebuild/standard:5.0
         Type: LINUX_CONTAINER
 
       Source:
