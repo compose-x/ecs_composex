@@ -42,8 +42,11 @@ from troposphere.elasticloadbalancingv2 import (
     HostHeaderConfig,
     PathPatternConfig,
     TargetGroupTuple,
+    AuthenticateCognitoConfig,
+    AuthenticateOidcConfig,
 )
 
+from ecs_composex.resources_import import import_record_properties
 from ecs_composex.ingress_settings import Ingress, set_service_ports
 from ecs_composex.acm.acm_params import RES_KEY as ACM_KEY, MOD_KEY as ACM_MOD_KEY
 from ecs_composex.common import NONALPHANUM, LOG
@@ -252,6 +255,96 @@ def define_target_conditions(definition):
     return conditions
 
 
+def define_actions(listener, target_def):
+    """
+    Function to identify the Target definition and create the resulting rule appropriately.
+
+    :param dict target_def:
+    :param ecs_composex.elbv2.elbv2_stack.ComposeListener listener:
+    :return: The action to add or action list for default target
+    """
+    auth_action = None
+    actions = []
+    if keyisset("AuthenticateCognitoConfig", target_def):
+        auth_action_type = "authenticate-cognito"
+        props = import_record_properties(
+            target_def["AuthenticateCognitoConfig"], AuthenticateCognitoConfig
+        )
+        auth_rule = AuthenticateCognitoConfig(**props)
+        auth_action = Action(
+            Type=auth_action_type, AuthenticateCognitoConfig=auth_rule, Order=1
+        )
+    elif keyisset("AuthenticateOidcConfig", target_def):
+        auth_action_type = "authenticate-oidc"
+        props = import_record_properties(
+            target_def["AuthenticateOidcConfig"], AuthenticateOidcConfig
+        )
+        auth_rule = AuthenticateOidcConfig(**props)
+        auth_action = Action(
+            Type=auth_action_type, AuthenticateOidcConfig=auth_rule, Order=1
+        )
+    print(listener)
+    if auth_action:
+        if hasattr(listener, "Certificates") and not listener.Certificates:
+            raise AttributeError(
+                "In order to use authenticate via OIDC or AWS Cognito,"
+                " your listener must be using HTTPs and have SSL Certificates defined."
+            )
+        if not listener.Protocol == "HTTPS":
+            raise AttributeError(
+                "In order to use authenticate via OIDC or AWS Cognito,",
+                "Your listener protocol MUST be HTTPS. Got",
+                listener.Protocol,
+            )
+        actions.append(auth_action)
+        actions.append(
+            Action(
+                Type="forward",
+                ForwardConfig=ForwardConfig(
+                    TargetGroups=[
+                        TargetGroupTuple(TargetGroupArn=target_def["target_arn"])
+                    ]
+                ),
+                Order=2,
+            )
+        )
+    else:
+        actions.append(
+            Action(
+                Type="forward",
+                ForwardConfig=ForwardConfig(
+                    TargetGroups=[
+                        TargetGroupTuple(TargetGroupArn=target_def["target_arn"])
+                    ]
+                ),
+                Order=1,
+            )
+        )
+    return actions
+
+
+def define_listener_rules_actions(listener, left_services):
+    """
+    Function to identify the Target definition and create the resulting rule appropriately.
+
+    :param dict service_def:
+    :param listener:
+    :param list left_services:
+    :return: The action to add or action list for default target
+    """
+    rules = []
+    for count, service_def in enumerate(left_services):
+        rule = ListenerRule(
+            f"{listener.title}{NONALPHANUM.sub('', service_def['name'])}Rule",
+            ListenerArn=Ref(listener),
+            Actions=define_actions(listener, service_def),
+            Priority=(count + 1),
+            Conditions=define_target_conditions(service_def),
+        )
+        rules.append(rule)
+    return rules
+
+
 def handle_non_default_services(listener, services_def):
     """
     Function to handle define the listener rule and identify
@@ -270,35 +363,8 @@ def handle_non_default_services(listener, services_def):
         LOG.warning("No service path matches /. Defaulting to return TeaPot")
         listener.DefaultActions.append(tea_pot(True))
     elif default_target:
-        listener.DefaultActions.append(
-            Action(
-                Type="forward",
-                ForwardConfig=ForwardConfig(
-                    TargetGroups=[
-                        TargetGroupTuple(TargetGroupArn=default_target["target_arn"])
-                    ]
-                ),
-            ),
-        )
-    rules = []
-    for count, service_def in enumerate(left_services):
-        rule = ListenerRule(
-            f"{listener.title}{NONALPHANUM.sub('', service_def['name'])}Rule",
-            ListenerArn=Ref(listener),
-            Actions=[
-                Action(
-                    Type="forward",
-                    ForwardConfig=ForwardConfig(
-                        TargetGroups=[
-                            TargetGroupTuple(TargetGroupArn=service_def["target_arn"])
-                        ]
-                    ),
-                ),
-            ],
-            Priority=(count + 1),
-            Conditions=define_target_conditions(service_def),
-        )
-        rules.append(rule)
+        listener.DefaultActions += define_actions(listener, default_target)
+    rules = define_listener_rules_actions(listener, left_services)
     return rules
 
 
@@ -354,8 +420,15 @@ def rectify_listener_protocol(listener):
 
 
 def import_new_acm_certs(listener, src_name, settings, listener_stack):
-    new_acm_certs = []
-    lookup_acm_certs = []
+    """
+    Function to Import an ACM Certificate defined in x-acm
+
+    :param listener:
+    :param src_name:
+    :param settings:
+    :param listener_stack:
+    :return:
+    """
     if not keyisset(ACM_KEY, settings.compose_content):
         raise LookupError(f"There is no {ACM_KEY} defined in your docker-compose files")
     new_acm_certs = [
@@ -498,19 +571,7 @@ class ComposeListener(Listener):
             LOG.info(
                 f"{self.title} has no defined DefaultActions and only 1 service. Default all to service."
             )
-            self.DefaultActions.insert(
-                0,
-                Action(
-                    Type="forward",
-                    ForwardConfig=ForwardConfig(
-                        TargetGroups=[
-                            TargetGroupTuple(
-                                TargetGroupArn=self.services[0]["target_arn"]
-                            )
-                        ]
-                    ),
-                ),
-            )
+            self.DefaultActions = define_actions(self, self.services[0])
         elif not self.default_actions and self.services and len(self.services) > 1:
             LOG.warning(
                 "No default actions defined and more than one service defined."

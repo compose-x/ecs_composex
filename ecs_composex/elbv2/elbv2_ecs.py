@@ -396,8 +396,8 @@ def handle_services_association(resource, res_root_stack, settings):
     for listener in resource.listeners:
         listener.map_services(resource)
     for listener in resource.listeners:
-        listener.define_default_actions(template)
         listener.handle_certificates(settings, stack)
+        listener.define_default_actions(template)
 
 
 def elbv2_to_ecs(resources, services_stack, res_root_stack, settings):

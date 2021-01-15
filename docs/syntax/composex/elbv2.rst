@@ -198,12 +198,47 @@ List of targets to send the requests to.
 .. code-block:: yaml
 
     name: <service_name> ie. app03:app03
+    access: <domain name and or path> ie. domain.net/path
+    cognito_auth: AuthenticateCognitoConfig
 
 
 This represents the targets and simultaneously the Listener Rules to apply so that you can point to multiple services
 at once and implement these rules.
 
+name
+^^^^
 
+The name of the family and service in that family to send the requests to.
+
+access
+""""""
+
+Allows you to define the conditions based on the path or domain name (or combination of both) that should be in place
+to forward requests.
+
+If you only define the domain name, any path in that domain will be what's matched.
+
+AuthenticateCognitoConfig
+"""""""""""""""""""""""""
+
+Defines the `AuthenticateCognitoConfig`_ requirement condition / action
+
+
+AuthenticateOidcConfig
+"""""""""""""""""""""""
+
+Similar to `AuthenticateCognitoConfig`_ but for OIDC providers. This allows to respect all the `AuthenticateOidcConfig`_
+Properties as per CFN definition.
+
+.. tip::
+
+    We highly recommend that you store the OIDC details into a secret in secrets manager!
+
+
+.. hint::
+
+    For both AuthenticateCognitoConfig and AuthenticateOidcConfig, the rules defined in `access` will be set to come **after**
+    the authenticate action.
 
 Examples
 ========
@@ -212,8 +247,51 @@ Examples
     :language: yaml
 
 
+.. code-block:: yaml
+    :caption: ELBv2 with
+
+    x-elbv2:
+      authLb:
+        Properties:
+          Scheme: internet-facing
+          Type: application
+        Settings: {}
+        Listeners:
+          - Port: 8080
+            Protocol: HTTP
+            Targets:
+              - name: app03:app03
+                access: /
+          - Port: 8081
+            Protocol: HTTP
+            Targets:
+              - name: app03:app03
+                access: /
+                AuthenticateOidcConfig:
+                  Issuer: "{{resolve:secretsmanager:/oidc/azuread/app001:SecretString:Issuer}}"
+                  AuthorizationEndpoint: "{{resolve:secretsmanager:/oidc/azuread/app001:SecretString:AuthorizationEndpoint}}"
+                  TokenEndpoint: "{{resolve:secretsmanager:/oidc/azuread/app001:SecretString:TokenEndpoint}}"
+                  UserInfoEndpoint: "{{resolve:secretsmanager:/oidc/azuread/app001:SecretString:UserInfoEndpoint}}"
+                  ClientId: "{{resolve:secretsmanager:/oidc/azuread/app001:SecretString:ClientId}}"
+                  ClientSecret: "{{resolve:secretsmanager:/oidc/azuread/app001:SecretString:ClientSecret}}"
+                  SessionCookieName: "my-cookie"
+                  SessionTimeout: 3600
+                  Scope: "email"
+                  AuthenticationRequestExtraParams":
+                    display": "page"
+                    prompt": "login"
+                  OnUnauthenticatedRequest: "deny"
+        Services:
+          - name: app03:app03
+            port: 5000
+            healthcheck: 5000:HTTP:7:2:15:5
+            protocol: HTTP
+
+
 .. _LB Attributes: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-elasticloadbalancingv2-loadbalancer.html#cfn-elasticloadbalancingv2-loadbalancer-loadbalancerattributes
 .. _Scheme: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-elasticloadbalancingv2-loadbalancer.html#cfn-elasticloadbalancingv2-loadbalancer-scheme
 .. _Type: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-elasticloadbalancingv2-loadbalancer.html#cfn-elasticloadbalancingv2-loadbalancer-type
 .. _Target Group: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-elasticloadbalancingv2-targetgroup.html
 .. _Listener definition: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-elasticloadbalancingv2-listener.html
+.. _AuthenticateCognitoConfig : https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-elasticloadbalancingv2-listenerrule-authenticatecognitoconfig.html#cfn-elasticloadbalancingv2-listenerrule-authenticatecognitoconfig-userpoolarn
+.. _AuthenticateOidcConfig: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-elasticloadbalancingv2-listenerrule-authenticateoidcconfig.html
