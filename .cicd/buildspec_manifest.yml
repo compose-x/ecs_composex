@@ -69,12 +69,13 @@ phases:
             done
           done
 
-      - docker manifest create ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}             \
-          --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${VERSION}.${SUFFIX}-py37-amd64     \
-          --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${VERSION}.${SUFFIX}-py37-arm64v8   \
-          --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${VERSION}.${SUFFIX}-py38-amd64     \
-          --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${VERSION}.${SUFFIX}-py38-arm64v8
-      - docker manifest push ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${VERSION}
+      - docker manifest create ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}
+          --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py37-amd64
+          --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py37-arm64v8
+          --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py38-amd64
+          --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py38-arm64v8
+
+      - docker manifest push ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}
 
     finally:
       - rm -rfv ~/.docker
