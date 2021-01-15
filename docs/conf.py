@@ -94,7 +94,10 @@ extensions += [
     "sphinx.ext.viewcode",
     "sphinx.ext.autodoc",
     "sphinx_rtd_theme",
+    "sphinx_sitemap",
 ]
+sitemap_locales = ["en"]
+html_baseurl = 'https://docs.composex.io'
 
 html_theme = "sphinx_rtd_theme"
 

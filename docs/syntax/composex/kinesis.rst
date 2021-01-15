@@ -1,4 +1,8 @@
-﻿.. _kinesis_syntax_reference:
+﻿.. meta::
+    :description: ECS Composex AWS Kinesis syntax reference
+    :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS Kinesis, kinesis, datastream
+
+.. _kinesis_syntax_reference:
 
 ===========
 x-kinesis
@@ -39,7 +43,7 @@ Settings
 The settings are as usual, allow you to define `EnvNames`_
 
 EnvNames
-+++++++++
+---------
 
 List of String that allow you to define multiple environment names for the stream to be exposed to your service.
 Value for these is the **AWS Kinesis Stream name** (Default value returned by Fn::Ref
@@ -58,7 +62,7 @@ For AWS Kinesis streams, we have the following permissions.
 
 
 Examples
----------
+==========
 
 .. code-block:: yaml
     :caption: Services definition example
@@ -79,7 +83,7 @@ Examples
 IAM permissions
 ================
 
-.. literalinclude:: ../../ecs_composex/kinesis/kinesis_perms.json
+.. literalinclude:: ../../../ecs_composex/kinesis/kinesis_perms.json
     :language: JSON
     :caption: IAM permissions pre-defined for your services.
 

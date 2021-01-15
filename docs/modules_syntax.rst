@@ -1,3 +1,8 @@
+.. meta::
+    :description: ECS Composex
+    :keywords: AWS, AWS ECS, Docker, Containers, Compose, docker-compose
+
+
 .. _syntax:
 
 .. toctree::
@@ -48,3 +53,6 @@
 .. toctree::
     :caption: Docker ECS Plugin support
     :maxdepth: 1
+
+    syntax/ecs_plugin/support
+

@@ -1,4 +1,8 @@
-﻿.. _vpc_syntax_reference:
+﻿.. meta::
+    :description: ECS Composex AWS VPC syntax reference
+    :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS VPC, networking, private network
+
+.. _vpc_syntax_reference:
 
 ======
 x-vpc

@@ -1,4 +1,8 @@
-﻿.. _kms_syntax_reference:
+﻿.. meta::
+    :description: ECS Composex AWS KMS syntax reference
+    :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS KMS, encryption
+
+.. _kms_syntax_reference:
 
 ======
 x-kms
@@ -86,7 +90,7 @@ Three access types have been created for the table:
 * SQS
 
 
-.. literalinclude:: ../../ecs_composex/kms/kms_perms.json
+.. literalinclude:: ../../../ecs_composex/kms/kms_perms.json
     :language: json
     :caption: KMS Permissions scaffold
 

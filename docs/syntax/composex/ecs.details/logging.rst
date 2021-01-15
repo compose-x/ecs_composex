@@ -1,4 +1,8 @@
-﻿.. _x_configs_logging_syntax_reference:
+﻿.. meta::
+    :description: ECS Composex logging syntax reference
+    :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS CloudWatch, AWS Logs, logging
+
+.. _x_configs_logging_syntax_reference:
 
 =========
 x-logging

@@ -1,4 +1,8 @@
-﻿.. _ecs_composex_scaling_syntax_reference:
+﻿.. meta::
+    :description: ECS Composex AWS ECS AutoScaling syntax reference
+    :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS ECS, autoscaling, cpu scaling, memory scaling, ecs scaling
+
+.. _ecs_composex_scaling_syntax_reference:
 
 =========
 x-scaling

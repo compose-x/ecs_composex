@@ -1,4 +1,8 @@
-﻿.. _docker_ecs_plugin_support_reference:
+﻿.. meta::
+    :description: ECS Composex Docker ecs-plugin support syntax reference
+    :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, ecs-plugin, x-aws
+
+.. _docker_ecs_plugin_support_reference:
 
 
 ===========================
@@ -188,11 +192,11 @@ If either is set and the other is not, the value is set accordingly.
 .. code-block:: yaml
     :caption: Both x-logging and x-aws-logs_retentions defined. Here, 64 will be set.
 
-services:
-  serviceA:
-    x-logging:
-      RetentionInDays: 42
-    x-aws-logs_retention: 64
+    services:
+      serviceA:
+        x-logging:
+          RetentionInDays: 42
+        x-aws-logs_retention: 64
 
 
 .. seealso::

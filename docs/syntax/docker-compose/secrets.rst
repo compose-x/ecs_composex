@@ -1,4 +1,9 @@
-﻿.. _secrets_syntax_reference:
+﻿.. meta::
+    :description: ECS Composex docker-compose secrets syntax support
+    :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, ecs-composex, secrets
+
+
+.. _secrets_syntax_reference:
 
 ========
 secrets
