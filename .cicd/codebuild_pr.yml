@@ -33,7 +33,7 @@ Parameters:
 
   BuildspecFile:
     Type: String
-    Default: buildspec_pr.yml
+    Default: .cicd/buildspec_pr.yml
 
 Mappings:
   RepoUrlPrefixes:
@@ -48,7 +48,7 @@ Resources:
   BuildLogsGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub 'codebuild/blog/${RepositoryName}'
+      LogGroupName: !Sub 'codebuild/pr-builds/${RepositoryName}'
       RetentionInDays: !Ref BuildLogsRetentionDays
   CodeBuildRole:
     Type: AWS::IAM::Role
@@ -109,13 +109,13 @@ Resources:
                   - codebuild:UpdateReportGroup
                   - codebuild:CreateReportGroup
                   - codebuild:CreateReport
-                  - codebuild:BatchPutTestCases
                   - codebuild:UpdateReport
+                  - codebuild:BatchPut*
 
   BuildUnittest:
     Type: AWS::CodeBuild::Project
     Properties:
-      Name: !Sub 'BUILD-${RepositoryName}'
+      Name: !Sub 'PR-TESTING-${RepositoryName}'
       ServiceRole: !GetAtt 'CodeBuildRole.Arn'
       Description: !Sub 'Publishes blog on updates'
       LogsConfig:

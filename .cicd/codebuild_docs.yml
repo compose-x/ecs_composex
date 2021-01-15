@@ -36,7 +36,7 @@ Parameters:
 
   BuildspecFile:
     Type: String
-    Default: buildspec.yml
+    Default: .cicd/buildspec_docs.yml
 
 Conditions:
   UseGitHub: !Equals [ !Ref RepositoryProvider, 'GitHub']
