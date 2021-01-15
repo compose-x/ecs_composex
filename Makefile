@@ -61,23 +61,23 @@ lint-tests:
 	flake8 tests --exclude .git,_invoke*
 
 test: ## run tests quickly with the default Python
-	behave features
-	pytest pytests -vv -s -x
+	behave tests/features
+	pytest tests/pytests -vv -s -x
 
 test-all: ## run tests on every Python version with tox
 	tox --skip-missing-interpreters
 
 coverage: ## check code coverage quickly with the default Python
-	coverage run --source ecs_composex -m behave --junit || exit 0
-	coverage run --source ecs_composex -a -m pytest pytests -vv -x || exit 0
+	coverage run --source ecs_composex -m behave tests/features --junit
+	coverage run --source ecs_composex -a -m pytest tests/pytests -vv -x
 	coverage report -m
 	coverage xml -o coverage/coverage.xml
 	coverage html
 	$(BROWSER) htmlcov/index.html
 
 codebuild: ## check code coverage quickly with the default Python
-	coverage run --source ecs_composex -m behave --junit || exit 0
-	coverage run --source ecs_composex -a -m pytest pytests -vv -x || exit 0
+	coverage run --source ecs_composex -m behave tests/features --junit
+	coverage run --source ecs_composex -a -m pytest pytests -vv -x
 	coverage report -m
 	coverage xml -o coverage/coverage.xml
 
@@ -92,12 +92,12 @@ docs: clean-c9 ## generate Sphinx HTML documentation, including API docs
 
 nightly-docs: docs
 	cd docs/_build/html && \
-	$(AWS) s3 sync . s3://nightly.docs.ecs-composex.lambda-my-aws.io/ \
+	$(AWS) s3 sync . s3://${NIGHTLY_DOCS_BUCKET}/ \
 	--acl public-read --sse AES256 --storage-class ONEZONE_IA
 
 publish-docs: docs
 	cd docs/_build/html && \
-	$(AWS) s3 sync . s3://docs.ecs-composex.lambda-my-aws.io/ \
+	$(AWS) s3 sync . s3://${DOCS_BUCKET}/ \
 	--acl public-read --sse AES256 --storage-class ONEZONE_IA
 
 servedocs: docs ## compile the docs watching for changes

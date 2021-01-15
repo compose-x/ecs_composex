@@ -2,7 +2,6 @@ version: 0.2
 
 env:
   variables:
-    KNOWN_BUCKET: lambda-dev-eu-west-1
     PY_VERSION: 3.8
   git-credential-helper: yes
 
@@ -11,9 +10,7 @@ phases:
     runtime-versions:
       python: "$(echo $PY_VERSION)"
     commands:
-      - export PY_FULL_VERSION=`python --version| awk '{print $NF}'`
-      - export PATH=/root/.pyenv/versions/${PY_FULL_VERSION}/bin:${PATH}
-      - pip --version || curl -s https://bootstrap.pypa.io/get-pip.py | python
+      - (pip --version && pip install pip -U)|| curl -s https://bootstrap.pypa.io/get-pip.py | python
       - pip install -r requirements.txt
       - pip install -r requirements_dev.txt
       - python setup.py install
@@ -22,7 +19,7 @@ phases:
       - echo "Executing behave"
       - if ! [ -d reports ]; then mkdir reports ; else rm -rf reports/* ; fi
       - if ! [ -d coverage ]; then mkdir coverage ; else rm -rf coverage/* ; fi
-      - make codebuild
+      - make -i codebuild
 
 reports:
   composex-tests:

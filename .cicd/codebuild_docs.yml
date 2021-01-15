@@ -15,8 +15,10 @@ Parameters:
       - GitHub
       - CodeCommit
     Default: GitHub
+
   RepositoryName:
     Type: String
+
   BuildLogsRetentionDays:
     Type: Number
     AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
@@ -27,11 +29,14 @@ Parameters:
   NightlyDocsDistribution:
     Type: String
 
+  DocsBucket:
+    Type: String
+  DocsDistribution:
+    Type: String
 
-Mappings:
-  RepoUrlPrefixes:
-    GitHub:
-      Prefix: https://github.com/
+  BuildspecFile:
+    Type: String
+    Default: .cicd/buildspec_docs.yml
 
 Conditions:
   UseGitHub: !Equals [ !Ref RepositoryProvider, 'GitHub']
@@ -68,12 +73,14 @@ Resources:
                   - s3:GetObject*
                 Effect: Allow
                 Resource:
+                  - !Sub 'arn:${AWS::Partition}:s3:::${DocsBucket}/*'
                   - !Sub 'arn:${AWS::Partition}:s3:::${NightlyDocsBucket}/*'
               - Sid: S3BucketAccess
                 Action:
                   - s3:ListBucket
                 Effect: Allow
                 Resource:
+                  - !Sub 'arn:${AWS::Partition}:s3:::${DocsBucket}'
                   - !Sub 'arn:${AWS::Partition}:s3:::${NightlyDocsBucket}'
               - Sid: CloudWatchLogs
                 Effect: Allow
@@ -87,9 +94,10 @@ Resources:
                 Action:
                   - cloudfront:CreateInvalidation
                 Resource:
+                  - !Sub 'arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:distribution/${DocsDistribution}'
                   - !Sub 'arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:distribution/${NightlyDocsDistribution}'
 
-  DocsBuild:
+  NightlyDocsBuild:
     Type: AWS::CodeBuild::Project
     Properties:
       Name: !Sub 'docs-nightly-${RepositoryName}'
@@ -123,7 +131,7 @@ Resources:
           - !Sub 'https://github.com/${RepositoryOrganization}/${RepositoryName}'
           - !Sub 'https://codecommit.${AWS::Region}.${AWS::URLSuffix}'
         InsecureSsl: False
-        BuildSpec: buildspec_docs.yml
+        BuildSpec: !Ref BuildspecFile
       Triggers:
         Webhook: True
         FilterGroups:
@@ -131,8 +139,54 @@ Resources:
               Pattern: "PUSH"
               ExcludeMatchedPattern: False
             - Type: HEAD_REF
-              Pattern: '^refs/heads/master$'
+              Pattern: '^refs/heads/main$'
               ExcludeMatchedPattern: False
             - Type: FILE_PATH
               Pattern: "(\\S.rst$)"
+              ExcludeMatchedPattern: False
+
+
+  ReleaseDocsBuild:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub 'docs-${RepositoryName}'
+      ServiceRole: !GetAtt 'CodeBuildRole.Arn'
+      Description: !Sub 'Publishes blog on updates'
+      LogsConfig:
+        CloudWatchLogs:
+          GroupName: !Ref BuildLogsGroup
+          Status: ENABLED
+          StreamName: docs
+      BadgeEnabled: True
+      Artifacts:
+        Type: NO_ARTIFACTS
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:3.0
+        Type: LINUX_CONTAINER
+        EnvironmentVariables:
+          - Name: PY_VERSION
+            Type: PLAINTEXT
+            Value: 3.8
+          - Name: DISTRIBUTION_ID
+            Type: PLAINTEXT
+            Value: !Ref DocsDistribution
+
+      Source:
+        Type: GITHUB
+        ReportBuildStatus: True
+        Location: !If
+          - UseGitHub
+          - !Sub 'https://github.com/${RepositoryOrganization}/${RepositoryName}'
+          - !Sub 'https://codecommit.${AWS::Region}.${AWS::URLSuffix}'
+        InsecureSsl: False
+        BuildSpec: !Ref BuildspecFile
+      Triggers:
+        Webhook: True
+        FilterGroups:
+          - - Type: EVENT
+              Pattern: "PUSH"
+              ExcludeMatchedPattern: False
+            - Type: HEAD_REF
+              Pattern: '^refs/tags/v.*$'
               ExcludeMatchedPattern: False

@@ -27,6 +27,14 @@ Parameters:
   ReportsBucket:
     Type: String
 
+  ReferenceBranchName:
+    Type: String
+    Default: main
+
+  BuildspecFile:
+    Type: String
+    Default: .cicd/buildspec_pr.yml
+
 Mappings:
   RepoUrlPrefixes:
     GitHub:
@@ -40,14 +48,14 @@ Resources:
   BuildLogsGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub 'codebuild/blog/${RepositoryName}'
+      LogGroupName: !Sub 'codebuild/pr-builds/${RepositoryName}'
       RetentionInDays: !Ref BuildLogsRetentionDays
   CodeBuildRole:
     Type: AWS::IAM::Role
     Properties:
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
         - arn:aws:iam::aws:policy/ReadOnlyAccess
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
         - arn:aws:iam::aws:policy/ResourceGroupsandTagEditorReadOnlyAccess
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
@@ -93,26 +101,6 @@ Resources:
                 Effect: Allow
                 Action:
                   - 'cloudformation:ValidateTemplate'
-              - Sid: AppMeshAccess
-                Action:
-                  - appmesh:ListMeshes
-                  - appmesh:DescribeMesh
-                Resource:
-                  - "*"
-                Effect: Allow
-              - Sid: Ec2Access
-                Effect: Allow
-                Action:
-                  - ec2:Describe*
-                Resource:
-                  - "*"
-              - Sid: RDSHelpersAccess
-                Effect: Allow
-                Resource:
-                  - "*"
-                Action:
-                  - rds:DescribeDBEngine*
-                  - rds:DescribeEngineDefaultClusterParameters
               - Sid: CodeBuildAccess
                 Effect: Allow
                 Resource:
@@ -121,13 +109,13 @@ Resources:
                   - codebuild:UpdateReportGroup
                   - codebuild:CreateReportGroup
                   - codebuild:CreateReport
-                  - codebuild:BatchPutTestCases
                   - codebuild:UpdateReport
+                  - codebuild:BatchPut*
 
   BuildUnittest:
     Type: AWS::CodeBuild::Project
     Properties:
-      Name: !Sub 'BUILD-${RepositoryName}'
+      Name: !Sub 'PR-TESTING-${RepositoryName}'
       ServiceRole: !GetAtt 'CodeBuildRole.Arn'
       Description: !Sub 'Publishes blog on updates'
       LogsConfig:
@@ -157,7 +145,7 @@ Resources:
           - !Sub 'https://github.com/${RepositoryOrganization}/${RepositoryName}'
           - !Sub 'https://codecommit.${AWS::Region}.${AWS::URLSuffix}'
         InsecureSsl: False
-        BuildSpec: buildspec.yml
+        BuildSpec: !Ref BuildspecFile
       Triggers:
         Webhook: True
         FilterGroups:
@@ -168,7 +156,7 @@ Resources:
               Pattern: '^refs/heads/.*$'
               ExcludeMatchedPattern: False
             - Type: BASE_REF
-              Pattern: '^refs/heads/master$'
+              Pattern: !Sub '^refs/heads/${ReferenceBranchName}$'
               ExcludeMatchedPattern: False
             - Type: FILE_PATH
               Pattern: "(\\S.rst$)"
@@ -177,17 +165,5 @@ Resources:
               Pattern: "PUSH"
               ExcludeMatchedPattern: False
             - Type: HEAD_REF
-              Pattern: '^refs/heads/master$'
+              Pattern: !Sub '^refs/heads/${ReferenceBranchName}$'
               ExcludeMatchedPattern: False
-
-  ReportGroup:
-    Type: AWS::CodeBuild::ReportGroup
-    Properties:
-      ExportConfig:
-        S3Destination:
-          Bucket: !Ref ReportsBucket
-          EncryptionDisabled: True
-          Path: !Sub '/builds/reports/${RepositoryName}'
-        ExportConfigType: S3
-      Type: TEST
-      Name: !Sub "${BuildUnittest}-composexbehave"

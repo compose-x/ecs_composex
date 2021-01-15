@@ -50,13 +50,13 @@ def test_export_attribute():
 
 def get_basic_content():
     here = path.abspath(path.dirname(__file__))
-    content = load_composex_file(f"{here}/../use-cases/blog.yml")
+    content = load_composex_file(f"{here}/../../use-cases/blog.yml")
     return deepcopy(content)
 
 
 def get_secrets_content():
     here = path.abspath(path.dirname(__file__))
-    content = load_composex_file(f"{here}/../use-cases/blog.features.yml")
+    content = load_composex_file(f"{here}/../../use-cases/blog.features.yml")
     return deepcopy(content)
 
 
@@ -75,7 +75,7 @@ def test_iam_role_arn():
             ComposeXSettings.name_arg: "test",
             ComposeXSettings.command_arg: ComposeXSettings.render_arg,
             ComposeXSettings.input_file_arg: path.abspath(
-                f"{here}/../uses-cases/blog.yml"
+                f"{here}/../../uses-cases/blog.yml"
             ),
             ComposeXSettings.format_arg: "yaml",
             ComposeXSettings.arn_arg: "arn:aws:iam::012345678912:role/testx",
@@ -90,7 +90,7 @@ def test_iam_role_arn():
                 ComposeXSettings.name_arg: "test",
                 ComposeXSettings.command_arg: ComposeXSettings.render_arg,
                 ComposeXSettings.input_file_arg: path.abspath(
-                    f"{here}/../uses-cases/blog.yml"
+                    f"{here}/../../uses-cases/blog.yml"
                 ),
                 ComposeXSettings.format_arg: "yaml",
                 ComposeXSettings.arn_arg: "arn:aws:iam::012345678912:roleX/testx",
@@ -104,7 +104,7 @@ def test_iam_role_arn():
                 ComposeXSettings.name_arg: "test",
                 ComposeXSettings.command_arg: ComposeXSettings.render_arg,
                 ComposeXSettings.input_file_arg: path.abspath(
-                    f"{here}/../uses-cases/blog.yml"
+                    f"{here}/../../uses-cases/blog.yml"
                 ),
                 ComposeXSettings.format_arg: "yaml",
                 ComposeXSettings.arn_arg: "arn:aws:iam::012345678912:role/test",
@@ -130,7 +130,7 @@ def test_secrets_import():
             ComposeXSettings.name_arg: "test",
             ComposeXSettings.command_arg: ComposeXSettings.render_arg,
             ComposeXSettings.input_file_arg: path.abspath(
-                f"{here}/../uses-cases/blog.features.yml"
+                f"{here}/../../uses-cases/blog.features.yml"
             ),
             ComposeXSettings.format_arg: "yaml",
         },

@@ -1,4 +1,4 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 #   ECS ComposeX <https://github.com/lambda-my-aws/ecs_composex>
 #   Copyright (C) 2020-2021  John Mille <john@lambda-my-aws.io>
 #  #
@@ -15,13 +15,18 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from behave import then
 from pytest import raises
 
-from ecs_composex.ingress_settings import generate_security_group_props
+from tests.features.steps.common import *
+from ecs_composex.common.stacks import ComposeXStack
 
 
-def test_cidr_validation():
-    a = generate_security_group_props({"Ipv4": "1.1.1.1/32"})
-    with raises(ValueError):
-        a = generate_security_group_props({"Ipv4": "1.1.1.256/32"})
-        a = generate_security_group_props({"Ipv4": "1.1.1.1/33"})
+@then("I should have an ACM root stack")
+def step_impl(context):
+    """
+    Function to ensure we have an ACM stack and a DB stack within
+    """
+    template = context.root_stack.stack_template
+    acm_root_stack = template.resources["acm"]
+    assert issubclass(type(acm_root_stack), ComposeXStack)

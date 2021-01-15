@@ -33,8 +33,8 @@ def test_rds_resource_type(here):
     """
     Function to test resource type
     """
-    cluster_file_path = f"{here}/../use-cases/rds/resource_sorting/cluster.yml"
-    instance_file_path = f"{here}/../use-cases/rds/resource_sorting/instance.yml"
+    cluster_file_path = f"{here}/../../use-cases/rds/resource_sorting/cluster.yml"
+    instance_file_path = f"{here}/../../use-cases/rds/resource_sorting/instance.yml"
 
     cluster_props = load_composex_file(cluster_file_path)["Properties"]
     instance_props = load_composex_file(instance_file_path)["Properties"]

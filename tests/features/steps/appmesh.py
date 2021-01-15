@@ -1,4 +1,4 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 #   ECS ComposeX <https://github.com/lambda-my-aws/ecs_composex>
 #   Copyright (C) 2020-2021  John Mille <john@lambda-my-aws.io>
 #  #
@@ -23,7 +23,7 @@ from troposphere.appmesh import Mesh
 from ecs_composex.appmesh.appmesh_mesh import Mesh as AppMesh
 from ecs_composex.common import LOG
 from ecs_composex.common.stacks import ComposeXStack
-from features.steps.common import *
+from tests.features.steps.common import *
 
 
 @then("I should have a mesh created")
