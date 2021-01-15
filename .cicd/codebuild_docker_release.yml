@@ -21,11 +21,6 @@ Parameters:
     Type: Number
     AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
     Default: 14
-  TemplatesBucket:
-    Type: String
-
-  ReportsBucket:
-    Type: String
 
   ReferenceBranchName:
     Type: String
@@ -34,6 +29,9 @@ Parameters:
   BuildspecFile:
     Type: String
     Default: .cicd/buildspec_pr.yml
+
+  PublicRepositoryName:
+    Type: String
 
 Mappings:
   RepoUrlPrefixes:
@@ -71,23 +69,6 @@ Resources:
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
-              - Sid: S3ObjectsAccess
-                Action:
-                  - s3:PutObject*
-                  - s3:GetObject*
-                Effect: Allow
-                Resource:
-                  - !Sub 'arn:${AWS::Partition}:s3:::${TemplatesBucket}/*'
-                  - !Sub 'arn:${AWS::Partition}:s3:::${ReportsBucket}/*'
-                  - !Sub 'arn:${AWS::Partition}:s3:::ecs-composex-${AWS::AccountId}-${AWS::Region}/*'
-              - Sid: S3BucketAccess
-                Action:
-                  - s3:ListBucket
-                Effect: Allow
-                Resource:
-                  - !Sub 'arn:${AWS::Partition}:s3:::${TemplatesBucket}'
-                  - !Sub 'arn:${AWS::Partition}:s3:::${ReportsBucket}'
-                  - !Sub 'arn:${AWS::Partition}:s3:::ecs-composex-${AWS::AccountId}-${AWS::Region}'
               - Sid: CloudWatchLogs
                 Effect: Allow
                 Action:
@@ -95,13 +76,7 @@ Resources:
                   - logs:PutLogEvents
                 Resource:
                   - !Sub '${BuildLogsGroup.Arn}'
-              - Sid: CloudFormationAccess
-                Resource:
-                  - '*'
-                Effect: Allow
-                Action:
-                  - 'cloudformation:ValidateTemplate'
-              - Sid: CodeBuildAccess
+              - Sid: CodeBuildReportsAccess
                 Effect: Allow
                 Resource:
                   - !Sub 'arn:${AWS::Partition}:codebuild:${AWS::Region}:${AWS::AccountId}:report-group/*'
@@ -111,11 +86,63 @@ Resources:
                   - codebuild:CreateReport
                   - codebuild:UpdateReport
                   - codebuild:BatchPut*
+              - Sid: CodeBuildBatch
+                Effect: Allow
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:codebuild:${AWS::Region}:${AWS::AccountId}:*'
+                Action:
+                  - codebuild:StartBuild
+              - Sid: ECRAuthAndGetFromAny
+                Effect: Allow
+                Resource:
+                  - "*"
+                Action:
+                  - "ecr:GetAuthorizationToken"
+                  - "ecr:BatchGetImage"
+                  - "ecr:BatchCheckLayerAvailability"
+                  - "ecr:GetDownloadUrlForLayer"
+              - Sid: ECRPublishToAnyPrivateRepo
+                Effect: Allow
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:ecr:${AWS::Region}:${AWS::AccountId}:repository/*"
+                Action:
+                  - "ecr:InitiateLayerUpload"
+                  - "ecr:UploadLayerPart"
+                  - "ecr:CompleteLayerUpload"
+                  - "ecr:PutImage"
+
+              - Sid: PublicEcrAuth
+                Effect: Allow
+                Resource:
+                  - "*"
+                Action: [
+                    "ecr-public:GetAuthorizationToken",
+                    "sts:GetServiceBearerToken",
+                    "ecr-public:BatchCheckLayerAvailability",
+                    "ecr-public:GetRepositoryPolicy",
+                    "ecr-public:DescribeRepositories",
+                    "ecr-public:DescribeRegistries",
+                    "ecr-public:DescribeImages",
+                    "ecr-public:DescribeImageTags",
+                    "ecr-public:GetRepositoryCatalogData",
+                    "ecr-public:GetRegistryCatalogData",
+                ]
+
+              - Sid: PublicEcrPublish
+                Effect: Allow
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:ecr-public::${AWS::AccountId}:repository/${PublicRepositoryName}"
+                Action: [
+                    "ecr-public:InitiateLayerUpload",
+                    "ecr-public:UploadLayerPart",
+                    "ecr-public:CompleteLayerUpload",
+                    "ecr-public:PutImage"
+                ]
 
   BuildUnittest:
     Type: AWS::CodeBuild::Project
     Properties:
-      Name: !Sub 'PR-TESTING-${RepositoryName}'
+      Name: !Sub 'DOCKER-BUILD-${RepositoryName}'
       ServiceRole: !GetAtt 'CodeBuildRole.Arn'
       Description: !Sub 'Publishes blog on updates'
       LogsConfig:
@@ -126,17 +153,21 @@ Resources:
       BadgeEnabled: True
       Artifacts:
         Type: NO_ARTIFACTS
+      BuildBatchConfig:
+        CombineArtifacts: False
+        Restrictions:
+          ComputeTypesAllowed:
+            - BUILD_GENERAL1_SMALL
+            - BUILD_GENERAL1_MEDIUM
+            - BUILD_GENERAL1_LARGE
+          MaximumBuildsAllowed: 10
+        ServiceRole: !GetAtt 'CodeBuildRole.Arn'
+        TimeoutInMins: 60
       Environment:
         ComputeType: BUILD_GENERAL1_SMALL
-        Image: aws/codebuild/standard:3.0
+        Image: aws/codebuild/standard:5.0
         Type: LINUX_CONTAINER
-        EnvironmentVariables:
-          - Name: PY_VERSION
-            Type: PLAINTEXT
-            Value: 3.8
-          - Name: KNOWN_BUCKET
-            Type: PLAINTEXT
-            Value: !Ref TemplatesBucket
+
       Source:
         Type: GITHUB
         ReportBuildStatus: True
@@ -146,11 +177,13 @@ Resources:
           - !Sub 'https://codecommit.${AWS::Region}.${AWS::URLSuffix}'
         InsecureSsl: False
         BuildSpec: !Ref BuildspecFile
+
       Triggers:
         Webhook: True
+        BuildType: BUILD_BATCH
         FilterGroups:
           - - Type: EVENT
-              Pattern: "PULL_REQUEST_CREATED, PULL_REQUEST_UPDATED, PULL_REQUEST_REOPENED"
+              Pattern: "PULL_REQUEST_MERGED"
               ExcludeMatchedPattern: False
             - Type: HEAD_REF
               Pattern: '^refs/heads/.*$'
@@ -158,9 +191,9 @@ Resources:
             - Type: BASE_REF
               Pattern: !Sub '^refs/heads/${ReferenceBranchName}$'
               ExcludeMatchedPattern: False
-            - Type: FILE_PATH
-              Pattern: "(ecs_composex/\\S+\\.py$|\\.cicd/\\buildspec.*pr\\.yml)"
+          - - Type: EVENT
+              Pattern: "PUSH"
               ExcludeMatchedPattern: False
-            - Type: FILE_PATH
-              Pattern: "(docs/.*|\\S+\\.rst$)"
-              ExcludeMatchedPattern: True
+            - Type: HEAD_REF
+              Pattern: !Sub '^refs/tags/v.*$'
+              ExcludeMatchedPattern: False
