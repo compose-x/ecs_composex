@@ -259,5 +259,6 @@ def generate_bucket(bucket):
     LOG.debug(bucket_name)
     LOG.debug(final_bucket_name)
     props = import_record_properties(bucket.properties, s3.Bucket)
+    props['BucketName'] = final_bucket_name
     bucket.cfn_resource = s3.Bucket(bucket.logical_name, **props)
     return bucket

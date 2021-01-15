@@ -173,7 +173,7 @@ def define_service_targets(stack, rule, cluster_arn):
             EcsParameters=EcsParameters(
                 NetworkConfiguration=NetworkConfiguration(
                     AwsVpcConfiguration=AwsVpcConfiguration(
-                        Subnets=Ref(service_sg_param),
+                        Subnets=Ref(service_subnets_param),
                         SecurityGroups=[Ref(service_sg_param)],
                     )
                 ),
