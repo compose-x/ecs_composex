@@ -191,12 +191,6 @@ Resources:
             - Type: BASE_REF
               Pattern: !Sub '^refs/heads/${ReferenceBranchName}$'
               ExcludeMatchedPattern: False
-            - Type: FILE_PATH
-              Pattern: "(\\S.py$)"
-              ExcludeMatchedPattern: False
-            - Type: FILE_PATH
-              Pattern: "(docs/.*)"
-              ExcludeMatchedPattern: True
           - - Type: EVENT
               Pattern: "PUSH"
               ExcludeMatchedPattern: False
