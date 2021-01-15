@@ -77,7 +77,7 @@ coverage: ## check code coverage quickly with the default Python
 
 codebuild: ## check code coverage quickly with the default Python
 	coverage run --source ecs_composex -m behave tests/features --junit
-	coverage run --source ecs_composex -a -m pytest pytests -vv -x
+	coverage run --source ecs_composex -a -m pytest tests/pytests -vv -x
 	coverage report -m
 	coverage xml -o coverage/coverage.xml
 
