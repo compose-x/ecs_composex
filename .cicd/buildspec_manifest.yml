@@ -7,6 +7,7 @@ env:
     PUBLIC_REGISTRY: public.ecr.aws/i9v7p2w3
     DOCKER_CLI_EXPERIMENTAL: enabled
     REPOSITORY_NAME: compose-x
+    TAG_RELEASE: 0
 
 batch:
   fast-fail: false
@@ -53,7 +54,7 @@ phases:
       - |
           if ! [ -z "${CODEBUILD_WEBHOOK_TRIGGER+x}" ]; then
             PRE=`echo $CODEBUILD_WEBHOOK_TRIGGER|cut -d '/' -f 1`;
-            if [ $PRE == "tag" ]; then SUFFIX=`cut -d '/' -f 2`; fi
+            if [ $PRE == "tag" ]; then SUFFIX=`cut -d '/' -f 2`; TAG_RELEASE=1 ; fi
           fi
   build:
     commands:
@@ -74,8 +75,24 @@ phases:
           --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py37-arm64v8
           --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py38-amd64
           --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py38-arm64v8
-
       - docker manifest push ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}
+
+      - |
+          if ! [ $TAG_RELEASE -eq 1 ]; then
+            docker manifest create ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:nightly        \
+                  --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py37-amd64    \
+                  --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py37-arm64v8  \
+                  --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py38-amd64    \
+                  --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py38-arm64v8 ;
+            docker manifest push ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:nightly
+          else
+            docker manifest create ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:latest         \
+                  --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py37-amd64    \
+                  --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py37-arm64v8  \
+                  --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py38-amd64    \
+                  --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py38-arm64v8 ;
+            docker manifest push ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:latest
+          fi
 
     finally:
       - rm -rfv ~/.docker
