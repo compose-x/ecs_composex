@@ -91,6 +91,7 @@ docs: clean-c9 ## generate Sphinx HTML documentation, including API docs
 	$(BROWSER) docs/_build/html/index.html
 
 nightly-docs: docs
+	echo Uploading to s3://${NIGHTLY_DOCS_BUCKET} && \
 	cd docs/_build/html && \
 	$(AWS) s3 sync . s3://${NIGHTLY_DOCS_BUCKET}/ \
 	--acl public-read --sse AES256 --storage-class ONEZONE_IA

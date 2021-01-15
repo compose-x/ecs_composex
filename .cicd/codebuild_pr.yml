@@ -159,11 +159,14 @@ Resources:
               Pattern: !Sub '^refs/heads/${ReferenceBranchName}$'
               ExcludeMatchedPattern: False
             - Type: FILE_PATH
-              Pattern: "(\\S.rst$)"
+              Pattern: "(\\S.py$)"
+              ExcludeMatchedPattern: False
+            - Type: FILE_PATH
+              Pattern: "(docs/.*)"
               ExcludeMatchedPattern: True
-          - - Type: EVENT
-              Pattern: "PUSH"
-              ExcludeMatchedPattern: False
-            - Type: HEAD_REF
-              Pattern: !Sub '^refs/heads/${ReferenceBranchName}$'
-              ExcludeMatchedPattern: False
+#          - - Type: EVENT
+#              Pattern: "PUSH"
+#              ExcludeMatchedPattern: False
+#            - Type: HEAD_REF
+#              Pattern: !Sub '^refs/heads/${ReferenceBranchName}$'
+#              ExcludeMatchedPattern: False
