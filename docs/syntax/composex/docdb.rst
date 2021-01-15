@@ -1,3 +1,7 @@
+.. meta::
+    :description: ECS Composex AWS DocumentDB syntax reference
+    :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS DocumentDB, MongoDB
+
 .. _docdb_syntax_reference:
 
 =========
@@ -136,18 +140,6 @@ Lookup for Document DB is available!
     Make sure to specify the *Name* along with Tags until we figure an alternative solution.
     Sorry for the inconvenience.
 
-IAM Permissions
-================
-
-Three access types have been created for the table:
-
-* RW
-* RO
-* PowerUser
-
-.. literalinclude:: ../../ecs_composex/dynamodb/dynamodb_perms.json
-    :caption: DynamoDB permissions scaffold
-    :language: json
 
 Credentials
 ===========

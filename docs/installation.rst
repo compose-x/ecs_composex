@@ -1,3 +1,7 @@
+.. meta::
+    :description: ECS Composex install
+    :keywords: AWS, AWS ECS, Docker, Containers, Compose, docker-compose, install, setup
+
 .. highlight:: shell
 
 ============

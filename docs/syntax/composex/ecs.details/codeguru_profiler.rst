@@ -1,4 +1,8 @@
-﻿.. _codeguru_profiler_syntax_reference:
+﻿.. meta::
+    :description: ECS Composex AWS CodeGuru syntax reference
+    :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS CodeGuru, APM, profiling
+
+.. _codeguru_profiler_syntax_reference:
 
 ======================
 x-codeguru-profiler

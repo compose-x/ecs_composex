@@ -1,4 +1,8 @@
-﻿.. _services_syntax_reference:
+﻿.. meta::
+    :description: ECS Composex docker-compose services syntax support
+    :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, ecs-composex, services
+
+.. _services_syntax_reference:
 
 ========
 services

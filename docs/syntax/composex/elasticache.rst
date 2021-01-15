@@ -1,4 +1,8 @@
-﻿.. _elastic_cache_syntax_reference:
+﻿.. meta::
+    :description: ECS Composex AWS Elasticache syntax reference
+    :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS Elasticache, redis, memcached
+
+.. _elastic_cache_syntax_reference:
 
 ===================
 x-elastic_cache
@@ -98,7 +102,7 @@ CloudFormation mapping to pass it onto the services.
 Examples
 =========
 
-.. literalinclude:: ../../../use-cases/elastic_cache/create_only.yml
+.. literalinclude:: ../../../use-cases/elasticache/create_only.yml
     :language: YAML
 
 

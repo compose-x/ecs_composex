@@ -1,3 +1,7 @@
+.. meta::
+    :description: ECS Composex
+    :keywords: AWS, AWS ECS, Docker, Containers, Compose, docker-compose
+
 Welcome to ECS-ComposeX's documentation!
 ========================================
 

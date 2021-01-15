@@ -1,4 +1,8 @@
-﻿.. _ecs_cluster_syntax_reference:
+﻿.. meta::
+    :description: ECS Composex AWS ECS Cluster syntax reference
+    :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS ECS, AWS Fargate, ECS Spot
+
+.. _ecs_cluster_syntax_reference:
 
 ==========
 x-cluster

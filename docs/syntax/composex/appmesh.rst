@@ -1,4 +1,8 @@
-﻿.. _appmesh_syntax_reference:
+﻿.. meta::
+    :description: ECS Composex AWS AppMesh syntax reference
+    :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS AppMesh, service mesh, mesh
+
+.. _appmesh_syntax_reference:
 
 ==========
 x-appmesh

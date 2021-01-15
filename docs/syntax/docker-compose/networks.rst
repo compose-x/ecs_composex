@@ -1,4 +1,8 @@
-﻿.. _compose_networks_syntax_reference:
+﻿.. meta::
+    :description: ECS Composex docker-compose network syntax support
+    :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, ecs-composex, networks
+
+.. _compose_networks_syntax_reference:
 
 =========
 networks

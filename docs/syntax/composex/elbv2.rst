@@ -1,4 +1,8 @@
-﻿.. _elbv2_syntax_reference:
+﻿.. meta::
+    :description: ECS Composex AWS Load Balancing syntax reference
+    :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS ELB, ELBv2, ALB, NLB
+
+.. _elbv2_syntax_reference:
 
 =======
 x-elbv2

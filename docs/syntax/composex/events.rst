@@ -1,4 +1,8 @@
-﻿.. _events_syntax_reference:
+﻿.. meta::
+    :description: ECS Composex AWS EventsBridge syntax reference
+    :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS EventsBridge, events, ecs cron job
+
+.. _events_syntax_reference:
 
 ==========
 x-events

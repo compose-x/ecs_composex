@@ -1,3 +1,7 @@
+.. meta::
+    :description: ECS Composex AWS S3 syntax reference
+    :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS S3, S3 Buckets
+
 .. _s3_syntax_reference:
 
 =====
@@ -126,7 +130,7 @@ IAM Permissions
 For S3 buckets, the access types is expecting a object with **objects** and **bucket** to distinguish permissions for each.
 If you indicate a string, the default permissions (bucket: ListOnly and objects: RW) will be applied.
 
-.. literalinclude:: ../../../../ecs_composex/s3/s3_perms.json
+.. literalinclude:: ../../../ecs_composex/s3/s3_perms.json
     :caption: Full access types policies definitions
     :language: json
 

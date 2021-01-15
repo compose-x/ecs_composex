@@ -1,4 +1,8 @@
-﻿.. highlight:: shell
+﻿.. meta::
+    :description: ECS Composex background
+    :keywords: AWS, AWS ECS, Docker, Containers, Compose, docker-compose, story, background
+
+.. highlight:: shell
 
 =================
 The Why & The How

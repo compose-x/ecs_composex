@@ -1,4 +1,8 @@
-﻿.. _x_configs_network_syntax:
+﻿.. meta::
+    :description: ECS Composex advanced network syntax reference
+    :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, networking, subnets, vpc, cloudmap
+
+.. _x_configs_network_syntax:
 
 ==================
 x-network
