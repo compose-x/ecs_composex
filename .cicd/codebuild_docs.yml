@@ -19,6 +19,10 @@ Parameters:
   RepositoryName:
     Type: String
 
+  ReferenceBranchName:
+    Type: String
+    Default: main
+
   BuildLogsRetentionDays:
     Type: Number
     AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
@@ -122,6 +126,9 @@ Resources:
           - Name: DISTRIBUTION_ID
             Type: PLAINTEXT
             Value: !Ref NightlyDocsDistribution
+          - Name: NIGHTLY_DOCS_BUCKET
+            Type: PLAINTEXT
+            Value: !Ref NightlyDocsBucket
 
       Source:
         Type: GITHUB
@@ -136,20 +143,19 @@ Resources:
         Webhook: True
         FilterGroups:
           - - Type: EVENT
-              Pattern: "PUSH"
+              Pattern: "PULL_REQUEST_MERGED"
               ExcludeMatchedPattern: False
             - Type: HEAD_REF
-              Pattern: '^refs/heads/main$'
+              Pattern: '^refs/heads/.*$'
               ExcludeMatchedPattern: False
-            - Type: FILE_PATH
-              Pattern: "(\\S.rst$)"
+            - Type: HEAD_REF
+              Pattern: !Sub '^refs/heads/${ReferenceBranchName}$'
               ExcludeMatchedPattern: False
-
 
   ReleaseDocsBuild:
     Type: AWS::CodeBuild::Project
     Properties:
-      Name: !Sub 'docs-${RepositoryName}'
+      Name: !Sub 'docs-release-${RepositoryName}'
       ServiceRole: !GetAtt 'CodeBuildRole.Arn'
       Description: !Sub 'Publishes blog on updates'
       LogsConfig:
@@ -171,6 +177,9 @@ Resources:
           - Name: DISTRIBUTION_ID
             Type: PLAINTEXT
             Value: !Ref DocsDistribution
+          - Name: DOCS_BUCKET
+            Type: PLAINTEXT
+            Value: !Ref DocsBucket
 
       Source:
         Type: GITHUB
@@ -188,5 +197,11 @@ Resources:
               Pattern: "PUSH"
               ExcludeMatchedPattern: False
             - Type: HEAD_REF
+              Pattern: '^refs/heads/.*$'
+              ExcludeMatchedPattern: False
+            - Type: HEAD_REF
               Pattern: '^refs/tags/v.*$'
+              ExcludeMatchedPattern: False
+            - Type: HEAD_REF
+              Pattern: !Sub '^refs/heads/${ReferenceBranchName}$'
               ExcludeMatchedPattern: False
