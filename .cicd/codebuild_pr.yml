@@ -159,14 +159,8 @@ Resources:
               Pattern: !Sub '^refs/heads/${ReferenceBranchName}$'
               ExcludeMatchedPattern: False
             - Type: FILE_PATH
-              Pattern: "(\\S.py$)"
+              Pattern: "(ecs_composex/\\S+\\.py$|\\.cicd/\\buildspec.*pr\\.yml)"
               ExcludeMatchedPattern: False
             - Type: FILE_PATH
-              Pattern: "(docs/.*)"
+              Pattern: "(docs/.*|\\S+\\.rst$)"
               ExcludeMatchedPattern: True
-#          - - Type: EVENT
-#              Pattern: "PUSH"
-#              ExcludeMatchedPattern: False
-#            - Type: HEAD_REF
-#              Pattern: !Sub '^refs/heads/${ReferenceBranchName}$'
-#              ExcludeMatchedPattern: False
