@@ -17,12 +17,12 @@ phases:
       - EPOCH=`date +'%Y%m%d'`
       - SUFFIX=${COMMIT_HASH:=$EPOCH}
       - if [ $USE_EPOCH -eq 1 ]; then SUFFIX=$EPOCH; fi
+      - pip install docker-compose -U
 
   build:
     commands:
-      - docker build -t compose-x:${SUFFIX}${ARCH:+-$ARCH} ${ARCH:+--build-arg ARCH="-${ARCH}"} -f Dockerfile .
-      - docker tag compose-x:${SUFFIX}${ARCH:+-$ARCH} ${REGISTRY_URI}compose-x:${SUFFIX}${ARCH:+-$ARCH}
-      - docker push ${REGISTRY_URI}compose-x:${SUFFIX}${ARCH:+-$ARCH}
+      - docker-compose -f .cicd/docker-compose.builds.yml build
+      - docker-compose -f .cicd/docker-compose.builds.yml push
 
     finally:
       - rm -rfv ~/.docker

@@ -1,0 +1,19 @@
+﻿version: "3.8"
+services:
+  py37:
+    build:
+      dockerfile: Dockerfile
+      context: ../
+      args:
+        SRC_TAG: "3.7"
+        ARCH: ${ARCH}
+    image: ${REGISTRY_URI}compose-x:${SUFFIX:-main}-py37${ARCH}
+
+  py38:
+    build:
+      dockerfile: Dockerfile
+      context: ../
+      args:
+        SRC_TAG: "3.8"
+        ARCH: ${ARCH}
+    image: ${REGISTRY_URI}compose-x:${SUFFIX:-main}-py38${ARCH}

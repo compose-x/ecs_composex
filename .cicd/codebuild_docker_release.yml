@@ -76,7 +76,7 @@ Resources:
                   - logs:PutLogEvents
                 Resource:
                   - !Sub '${BuildLogsGroup.Arn}'
-              - Sid: CodeBuildAccess
+              - Sid: CodeBuildReportsAccess
                 Effect: Allow
                 Resource:
                   - !Sub 'arn:${AWS::Partition}:codebuild:${AWS::Region}:${AWS::AccountId}:report-group/*'
@@ -86,6 +86,12 @@ Resources:
                   - codebuild:CreateReport
                   - codebuild:UpdateReport
                   - codebuild:BatchPut*
+              - Sid: CodeBuildBatch
+                Effect: Allow
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:codebuild:${AWS::Region}:${AWS::AccountId}:*'
+                Action:
+                  - codebuild:StartBuild
               - Sid: ECRAuthAndGetFromAny
                 Effect: Allow
                 Resource:
