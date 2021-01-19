@@ -57,7 +57,7 @@ def get_cert_config(logical_name, cert_arn, session):
     client = session.client("acm")
     try:
         cert_r = client.describe_certificate(CertificateArn=cert_arn)
-        cert_config.update({logical_name: cert_r["Certificate"]["CertificateArn"]})
+        cert_config.update({logical_name: {logical_name: cert_r["Certificate"]["CertificateArn"]}})
         validate_certificate_status(cert_r["Certificate"])
         return cert_config
     except client.exceptions.ResourceNotFoundException:
@@ -78,7 +78,7 @@ def lookup_cert_config(logical_name, lookup, session):
     :param boto3.session.Session session: Boto3 session for clients
     :return:
     """
-    sqs_types = {
+    acm_types = {
         "acm:certificate": {
             "regexp": r"(?:^arn:aws(?:-[a-z]+)?:acm:[\S]+:[0-9]+:)certificate/([\S]+)$"
         },
@@ -88,7 +88,7 @@ def lookup_cert_config(logical_name, lookup, session):
         lookup,
         lookup_session,
         "acm:certificate",
-        types=sqs_types,
+        types=acm_types,
     )
     if not cert_arn:
         return None

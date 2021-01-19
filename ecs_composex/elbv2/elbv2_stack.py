@@ -283,7 +283,6 @@ def define_actions(listener, target_def):
         auth_action = Action(
             Type=auth_action_type, AuthenticateOidcConfig=auth_rule, Order=1
         )
-    print(listener)
     if auth_action:
         if hasattr(listener, "Certificates") and not listener.Certificates:
             raise AttributeError(
