@@ -333,10 +333,10 @@ class Service(object):
         family.stack_parameters.update(
             {
                 vpc_params.VPC_ID_T: Ref(vpc_params.VPC_ID),
-                PRIVATE_DNS_ZONE_ID.title: Ref(PRIVATE_DNS_ZONE_ID),
-                PRIVATE_DNS_ZONE_NAME.title: Ref(PRIVATE_DNS_ZONE_NAME),
-                PUBLIC_DNS_ZONE_ID.title: Ref(PUBLIC_DNS_ZONE_ID),
-                PUBLIC_DNS_ZONE_NAME.title: Ref(PUBLIC_DNS_ZONE_ID),
+                # PRIVATE_DNS_ZONE_ID.title: Ref(PRIVATE_DNS_ZONE_ID),
+                # PRIVATE_DNS_ZONE_NAME.title: Ref(PRIVATE_DNS_ZONE_NAME),
+                # PUBLIC_DNS_ZONE_ID.title: Ref(PUBLIC_DNS_ZONE_ID),
+                # PUBLIC_DNS_ZONE_NAME.title: Ref(PUBLIC_DNS_ZONE_ID),
                 vpc_params.APP_SUBNETS_T: Join(",", Ref(vpc_params.APP_SUBNETS)),
                 vpc_params.PUBLIC_SUBNETS_T: Join(",", Ref(vpc_params.PUBLIC_SUBNETS)),
                 ecs_params.SERVICE_NAME_T: family.name,

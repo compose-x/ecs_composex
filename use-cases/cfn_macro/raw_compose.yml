@@ -1,0 +1,186 @@
+---
+# Extension file to add all the x-keys related to services.
+
+Transform:
+  - compose-x
+
+# base file for services with the x-keys for BDD
+version: '3.8'
+secrets:
+  abcd: {}
+  john:
+    x-secrets:
+      LinksTo:
+        - EcsExecutionRole
+        - EcsTaskRole
+      Name: SFTP/asl-cscs-files-dev
+  zyx:
+    x-secrets:
+      Name: secret/with/kmskey
+      Lookup:
+        Tags:
+          - costcentre: lambda
+      JsonKeys:
+        - VarName: ZYX_TEST
+          SecretKey: test
+services:
+  app01:
+    deploy:
+      labels:
+        ecs.task.family: bignicefamily
+      resources:
+        reservations:
+          cpus: '0.25'
+          memory: 1GB
+    environment:
+      LOGLEVEL: DEBUG
+      SHELLY: /bin/bash
+      TERMY: screen
+    image: nginx
+    links:
+      - app03:dateteller
+    ports:
+      - mode: awsvpc
+        protocol: tcp
+        published: 5000
+        target: 5000
+    secrets:
+      - zyx
+    x-logging:
+      RetentionInDays: 42
+      CreateLogGroup: False
+    x-network:
+      is_public: False
+      use_cloudmap: True
+      Ingress:
+        Myself: False
+        AwsSources:
+          - Type: PrefixList
+            Id: pl-6da54004
+    x-iam:
+      Policies:
+        - PolicyName: AllowPublishToCw
+          PolicyDocument:
+            Statement:
+              - Action:
+                  - cloudwatch:PutMetricData
+                Effect: Allow
+                Resource:
+                  - '*'
+                Sid: AllowPublishMetricsToCw
+    x-xray: false
+    x-scaling:
+      Range: "1-4"
+  app02:
+    deploy:
+      labels:
+        ecs.task.family: youtoo
+      replicas: 2
+      resources:
+        reservations:
+          cpus: '0.1'
+          memory: 64000kB
+    environment:
+      LOGLEVEL: DEBUG
+    healthcheck:
+      interval: 30
+      retries: 3
+      test:
+        - CMD
+        - curl
+        - localhost:5000/ping
+    image: nginx
+    ports:
+      - mode: awsvpc
+        protocol: tcp
+        published: 5000
+        target: 5000
+    secrets:
+      - zyx
+    volumes:
+      - source: some-volume
+        target: /app/data
+        type: volume
+    x-iam:
+      PermissionsBoundary: arn:aws:iam::aws:policy/AdministratorAccess
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AdministratorAccess
+    x-scaling:
+      Range: "1-5"
+      TargetScaling:
+        CpuTarget: 88
+        DisableScaleIn: true
+    x-xray: false
+  app03:
+    deploy:
+      resources:
+        reservations:
+          cpus: '0.25'
+          memory: 134217728b
+    environment:
+      LOGLEVEL: DEBUG
+    image: nginx
+    ports:
+      - mode: awsvpc
+        protocol: tcp
+        published: 5000
+        target: 5000
+    secrets:
+      - abcd
+      - zyx
+      - john
+    volumes:
+      - normal-vol
+      - shared-images:/app/images
+      - some-volume:/app/data:ro
+    x-network:
+      Ingress:
+        Myself: False
+        ExtSources:
+          - Ipv4: 0.0.0.0/0
+            Description: ANYWHERE
+
+    x-logging:
+        RetentionInDays: 30
+    x-scaling:
+      Range: 1-10
+  rproxy:
+    depends_on:
+      - app01
+      - app02
+    deploy:
+      labels:
+        ecs.task.family: bignicefamily,youtoo
+      replicas: 1
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 64M
+        reservations:
+          cpus: '0.1'
+          memory: 32M
+    image: nginx
+    ports:
+      - mode: awsvpc
+        protocol: tcp
+        published: 80
+        target: 80
+    x-iam:
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/ReadOnlyAccess
+    x-xray: true
+    x-network:
+      is_public: False
+      use_cloudmap: True
+volumes:
+  shared-images: {}
+  some-volume: {}
+  normal-vol: {}
+
+
+x-dns:
+  PrivateNamespace:
+    Name: lambda.internal
+
+x-tags:
+  costcentre: lambda

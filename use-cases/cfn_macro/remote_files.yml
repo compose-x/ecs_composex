@@ -1,0 +1,9 @@
+---
+# CFN Template generated from ECS Compose-X
+
+Fn::Transform:
+  Name: compose-x
+  Parameters:
+    ComposeFiles:
+      - s3://sacrificial-lamb/raw_compose.yml
+      - s3://sacrificial-lamb/simple_queue.yml

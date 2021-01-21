@@ -17,20 +17,16 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import re
+
 from botocore.exceptions import ClientError
 from troposphere import AWS_STACK_NAME
-from troposphere import If, Ref
+from troposphere import Ref, FindInMap
 from troposphere.ecs import Cluster, CapacityProviderStrategyItem
 
-from ecs_composex.resources_import import import_record_properties
 from ecs_composex.common import LOG, keyisset
 from ecs_composex.ecs import metadata
-from ecs_composex.ecs.ecs_conditions import (
-    GENERATED_CLUSTER_NAME_CON_T,
-    CREATE_CLUSTER_CON_T,
-    GENERATED_CLUSTER_NAME_CON,
-)
-from ecs_composex.ecs.ecs_params import CLUSTER_NAME, CLUSTER_T, CREATE_CLUSTER
+from ecs_composex.ecs.ecs_params import CLUSTER_NAME, CLUSTER_T
+from ecs_composex.resources_import import import_record_properties
 
 RES_KEY = "x-cluster"
 FARGATE_PROVIDER = "FARGATE"
@@ -54,10 +50,7 @@ def get_default_cluster_config():
 
     return Cluster(
         CLUSTER_T,
-        Condition=CREATE_CLUSTER_CON_T,
-        ClusterName=If(
-            GENERATED_CLUSTER_NAME_CON_T, Ref(AWS_STACK_NAME), Ref(CLUSTER_NAME.title)
-        ),
+        ClusterName=Ref(AWS_STACK_NAME),
         CapacityProviders=DEFAULT_PROVIDERS,
         DefaultCapacityProviderStrategy=DEFAULT_STRATEGY,
         Metadata=metadata,
@@ -109,9 +102,11 @@ def define_cluster(cluster_def):
     props = import_record_properties(compose_props, Cluster)
     props["Metadata"] = metadata
     props["ClusterName"] = (
-        Ref(AWS_STACK_NAME) if not keyisset("ClusterName", props) else Ref(CLUSTER_NAME)
+        Ref(AWS_STACK_NAME)
+        if not keyisset("ClusterName", props)
+        else Ref(AWS_STACK_NAME)
     )
-    cluster = Cluster(CLUSTER_T, Condition=CREATE_CLUSTER_CON_T, **props)
+    cluster = Cluster(CLUSTER_T, **props)
     return cluster
 
 
@@ -136,7 +131,7 @@ def import_from_x_aws_cluster(compose_content):
     compose_content[RES_KEY] = {"Use": cluster_name}
 
 
-def handle_cluster_settings(root_stack, settings):
+def add_ecs_cluster(root_stack, settings):
     """
     Function to create the ECS Cluster.
 
@@ -144,53 +139,32 @@ def handle_cluster_settings(root_stack, settings):
     :param ecs_composex.common.settings.ComposeXSettings settings:
     :return:
     """
+    cluster_identifier = Ref(AWS_STACK_NAME)
+    cluster_mapping = {}
     if keyisset("x-aws-cluster", settings.compose_content):
         import_from_x_aws_cluster(settings.compose_content)
         LOG.info("x-aws-cluster was set. Overriding any defined x-cluster settings")
     if not keyisset(RES_KEY, settings.compose_content):
         LOG.info("No cluster information provided. Creating a new one")
         root_stack.stack_template.add_resource(get_default_cluster_config())
+        cluster_identifier = Ref(CLUSTER_T)
     elif isinstance(settings.compose_content[RES_KEY], dict):
         if keyisset("Use", settings.compose_content[RES_KEY]):
-            root_stack.Parameters.update(
-                {
-                    CLUSTER_NAME.title: settings.compose_content[RES_KEY]["Use"],
-                    CREATE_CLUSTER.title: "False",
-                }
-            )
             LOG.info(f"Using cluster {settings.compose_content[RES_KEY]['Use']}")
+            cluster_mapping = {
+                "Cluster": {"Name": settings.compose_content[RES_KEY]["Use"]}
+            }
         elif keyisset("Lookup", settings.compose_content[RES_KEY]):
             cluster_name = lookup_ecs_cluster(
                 settings.session, settings.compose_content[RES_KEY]["Lookup"]
             )
             if cluster_name:
-                root_stack.Parameters.update(
-                    {CLUSTER_NAME.title: cluster_name, CREATE_CLUSTER.title: "False"}
-                )
+                cluster_mapping = {"Cluster": {"Name": cluster_name}}
         elif keyisset("Properties", settings.compose_content[RES_KEY]):
             cluster = define_cluster(settings.compose_content[RES_KEY])
             root_stack.stack_template.add_resource(cluster)
-            root_stack.Parameters.update({CREATE_CLUSTER.title: "True"})
-            if keyisset("ClusterName", settings.compose_content[RES_KEY]["Properties"]):
-                root_stack.Parameters.update(
-                    {
-                        CLUSTER_NAME.title: settings.compose_content[RES_KEY][
-                            "Properties"
-                        ]["ClusterName"]
-                    }
-                )
-    if CLUSTER_T not in root_stack.stack_template.resources:
-        root_stack.stack_template.add_resource(get_default_cluster_config())
-
-
-def add_ecs_cluster(settings, root_stack):
-    """
-    Function to add the cluster to the root template.
-
-    :param ecs_composex.common.settings.ComposeXSettings settings:
-    :param ecs_composex.common.stacks.ComposeXStack root_stack:
-    """
-    handle_cluster_settings(root_stack, settings)
-    root_stack.stack_template.add_condition(
-        GENERATED_CLUSTER_NAME_CON_T, GENERATED_CLUSTER_NAME_CON
-    )
+            return Ref(cluster)
+    if cluster_mapping:
+        root_stack.stack_template.add_mapping("Ecs", cluster_mapping)
+        cluster_identifier = FindInMap("Ecs", "Cluster", "Name")
+    return cluster_identifier

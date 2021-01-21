@@ -373,10 +373,13 @@ class ComposeXSettings(object):
     ]
     all_commands = active_commands + validation_commands + neutral_commands
 
-    def __init__(self, content=None, profile_name=None, session=None, **kwargs):
+    def __init__(
+        self, content=None, profile_name=None, session=None, for_macro=False, **kwargs
+    ):
         """
         Class to init the configuration
         """
+        self.for_cfn_macro = for_macro
         self.session = boto3.session.Session()
         self.override_session(session, profile_name, kwargs)
         self.aws_region = (

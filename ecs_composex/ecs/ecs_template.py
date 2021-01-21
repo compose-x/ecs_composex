@@ -26,7 +26,7 @@ from troposphere.ec2 import SecurityGroup
 from troposphere.iam import PolicyType
 from troposphere.logs import LogGroup
 
-from ecs_composex.common import build_template
+from ecs_composex.common import build_template, LOG
 from ecs_composex.common.cfn_params import (
     ROOT_STACK_NAME_T,
     ROOT_STACK_NAME,
@@ -284,18 +284,23 @@ def generate_services(settings):
                 ecs_params.SERVICE_NAME_T: family.logical_name,
                 CLUSTER_NAME_T: Ref(CLUSTER_NAME),
                 ROOT_STACK_NAME_T: Ref(ROOT_STACK_NAME),
-                dns_params.PRIVATE_DNS_ZONE_ID.title: Ref(
-                    dns_params.PRIVATE_DNS_ZONE_ID
-                ),
-                dns_params.PRIVATE_DNS_ZONE_NAME.title: Ref(
-                    dns_params.PRIVATE_DNS_ZONE_NAME
-                ),
-                dns_params.PUBLIC_DNS_ZONE_ID.title: Ref(dns_params.PUBLIC_DNS_ZONE_ID),
-                dns_params.PUBLIC_DNS_ZONE_NAME.title: Ref(
-                    dns_params.PUBLIC_DNS_ZONE_NAME
-                ),
+                # dns_params.PRIVATE_DNS_ZONE_ID.title: Ref(
+                #     dns_params.PRIVATE_DNS_ZONE_ID
+                # ),
+                # dns_params.PRIVATE_DNS_ZONE_NAME.title: Ref(
+                #     dns_params.PRIVATE_DNS_ZONE_NAME
+                # ),
+                # dns_params.PUBLIC_DNS_ZONE_ID.title: Ref(dns_params.PUBLIC_DNS_ZONE_ID),
+                # dns_params.PUBLIC_DNS_ZONE_NAME.title: Ref(
+                #     dns_params.PUBLIC_DNS_ZONE_NAME
+                # ),
             }
         )
-        family.upload_services_env_files(settings)
+        if settings.for_cfn_macro:
+            LOG.error(
+                "Cannot upload env files when using Compose-X as a CFN macro. Ignoring"
+            )
+        else:
+            family.upload_services_env_files(settings)
         family.set_repository_credentials(settings)
         family.set_codeguru_profiles_arns()
