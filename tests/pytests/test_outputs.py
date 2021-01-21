@@ -49,9 +49,13 @@ def test_composex_output():
     with raises(TypeError):
         ComposeXOutput(ROOT_STACK_NAME, values=[[1, 2, 3], [4, 5, 6]])
     ComposeXOutput(ROOT_STACK_NAME, [(ROOT_STACK_NAME, "stack", Ref(ROOT_STACK_NAME))])
-    ComposeXOutput(None, [(ROOT_STACK_NAME, "stack", Ref(ROOT_STACK_NAME))], duplicate_attr=True)
+    ComposeXOutput(
+        None, [(ROOT_STACK_NAME, "stack", Ref(ROOT_STACK_NAME))], duplicate_attr=True
+    )
     with raises(TypeError):
-        ComposeXOutput(123, [(ROOT_STACK_NAME, "stack", Ref(ROOT_STACK_NAME))], duplicate_attr=True)
+        ComposeXOutput(
+            123, [(ROOT_STACK_NAME, "stack", Ref(ROOT_STACK_NAME))], duplicate_attr=True
+        )
 
 
 def test_import_value():

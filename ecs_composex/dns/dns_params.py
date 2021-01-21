@@ -43,7 +43,7 @@ PUBLIC_DNS_ZONE_ID = Parameter(
 
 PRIVATE_DNS_ZONE_NAME_T = "PrivateDnsZoneName"
 PRIVATE_DNS_ZONE_NAME = Parameter(
-    PRIVATE_DNS_ZONE_NAME_T, Type="String", Default="cluster.lan"
+    PRIVATE_DNS_ZONE_NAME_T, Type="String", Default="cluster.internal"
 )
 
 PRIVATE_DNS_ZONE_ID_T = "PrivateDnsZoneId"
@@ -54,8 +54,8 @@ PRIVATE_DNS_ZONE_ID = Parameter(
     AllowedPattern=ZONES_PATTERN,
 )
 
-DEFAULT_PRIVATE_DNS_ZONE = Sub(
-    f"${{AWS::StackName}}.${{{PRIVATE_DNS_ZONE_NAME.title}}}"
-)
-
-DEFAULT_PUBLIC_DNS_ZONE = Sub(f"${{AWS::StackName}}.${{{PUBLIC_DNS_ZONE_NAME.title}}}")
+# DEFAULT_PRIVATE_DNS_ZONE = Sub(
+#     f"${{AWS::StackName}}.${{{PRIVATE_DNS_ZONE_NAME.title}}}"
+# )
+#
+# DEFAULT_PUBLIC_DNS_ZONE = Sub(f"${{AWS::StackName}}.${{{PUBLIC_DNS_ZONE_NAME.title}}}")

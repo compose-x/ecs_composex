@@ -22,7 +22,7 @@ Module for VpcStack
 import re
 
 from troposphere import Parameter
-from troposphere import Ref, If
+from troposphere import Ref, If, FindInMap
 
 from ecs_composex.common import add_parameters, LOG, build_template
 from ecs_composex.common import keyisset
@@ -159,11 +159,9 @@ def create_new_vpc(vpc_xkey, settings, default=False):
     vpc_stack = VpcStack(RES_KEY, settings, create_settings)
     vpc_stack.add_parameter(
         {
-            dns_params.PRIVATE_DNS_ZONE_NAME.title: If(
-                dns_conditions.USE_DEFAULT_ZONE_NAME_CON_T,
-                dns_params.DEFAULT_PRIVATE_DNS_ZONE,
-                Ref(dns_params.PRIVATE_DNS_ZONE_NAME),
-            ),
+            dns_params.PRIVATE_DNS_ZONE_NAME.title: FindInMap(
+                "Dns", "PrivateNamespace", dns_params.PRIVATE_DNS_ZONE_NAME.title
+            )
         }
     )
     return vpc_stack
@@ -204,6 +202,15 @@ def import_vpc_settings(vpc_settings):
     return settings
 
 
+def create_vpc_mapping(settings_params):
+    """
+    Function to create a CFN Mapping to use and assign subnets to substacks
+
+    :param settings_params:
+    :return:
+    """
+
+
 def apply_vpc_settings(x_settings, root_stack, settings):
     """
 
@@ -212,6 +219,8 @@ def apply_vpc_settings(x_settings, root_stack, settings):
     :param ecs_composex.common.settings.ComposeXSettings settings:
     :return:
     """
+    if settings.for_cfn_macro:
+        return
     add_parameters(
         root_stack.stack_template,
         [VPC_ID, APP_SUBNETS, STORAGE_SUBNETS, PUBLIC_SUBNETS],

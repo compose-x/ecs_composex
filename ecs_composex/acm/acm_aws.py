@@ -57,7 +57,9 @@ def get_cert_config(logical_name, cert_arn, session):
     client = session.client("acm")
     try:
         cert_r = client.describe_certificate(CertificateArn=cert_arn)
-        cert_config.update({logical_name: {logical_name: cert_r["Certificate"]["CertificateArn"]}})
+        cert_config.update(
+            {logical_name: {logical_name: cert_r["Certificate"]["CertificateArn"]}}
+        )
         validate_certificate_status(cert_r["Certificate"])
         return cert_config
     except client.exceptions.ResourceNotFoundException:

@@ -5,9 +5,10 @@ include LICENSE
 include README.rst
 include USAGE.rst
 include requirements*.txt
-recursive-include tests *
+
 recursive-exclude * __pycache__
 recursive-exclude * *.py[co]
 
+recursive-include tests *
 recursive-include docs *.rst conf.py Makefile make.bat *.jpg *.png *.gif
-recursive-include ecs_composex *.json
+recursive-include ecs_composex *perms.json

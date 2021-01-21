@@ -21,10 +21,12 @@ files into S3 and on disk.
 """
 
 from troposphere import Template, GetAtt, Ref, If, Join, ImportValue
+from troposphere import AWS_STACK_NAME
 from troposphere.cloudformation import Stack
 
 from ecs_composex.common import LOG, keyisset, add_parameters, NONALPHANUM
 from ecs_composex.common import cfn_conditions
+from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.files import FileArtifact
 from ecs_composex.vpc.vpc_params import (
     VPC_ID,
@@ -271,7 +273,7 @@ class ComposeXStack(Stack, object):
         )
 
 
-def process_stacks(root_stack, settings):
+def process_stacks(root_stack, settings, is_root=True):
     """
     Function to go through all stacks of a given template and update the template
     It will recursively render sub stacks defined.
@@ -289,8 +291,11 @@ def process_stacks(root_stack, settings):
         ):
             LOG.debug(resource)
             LOG.debug(resource.title)
-            process_stacks(resource, settings)
-            resource.Parameters.update(cfn_conditions.pass_root_stack_name())
+            process_stacks(resource, settings, is_root=False)
+            if is_root:
+                resource.Parameters.update({ROOT_STACK_NAME_T: Ref(AWS_STACK_NAME)})
+            else:
+                resource.Parameters.update(cfn_conditions.pass_root_stack_name())
         elif isinstance(resource, Stack):
             LOG.warning(resource_name)
             LOG.warning(resource)

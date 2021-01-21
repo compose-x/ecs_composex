@@ -122,4 +122,4 @@ install: clean ## install the package to the active Python's site-packages
 	python setup.py install
 
 conform	: ## Conform to a standard of coding syntax
-	black ecs_composex features
+	black ecs_composex tests

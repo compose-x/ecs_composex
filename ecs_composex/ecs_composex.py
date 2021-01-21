@@ -30,6 +30,8 @@ from ecs_composex.appmesh.appmesh_mesh import Mesh
 from ecs_composex.common import LOG, NONALPHANUM
 from ecs_composex.common import (
     build_template,
+    init_template,
+    add_parameters,
     keyisset,
 )
 from ecs_composex.common.cfn_params import (
@@ -327,19 +329,17 @@ def get_vpc_id(vpc_stack):
         return Ref(vpc_params.VPC_ID)
 
 
-def init_root_template():
+def init_root_template(settings):
     """
     Function to initialize the root template
 
     :return: template
     :rtype: troposphere.Template
     """
-
-    template = build_template(
-        "Root template generated via ECS ComposeX",
-        [USE_FLEET, USE_ONDEMAND, CLUSTER_NAME, CREATE_CLUSTER, FARGATE_VERSION],
-    )
-    template.add_condition(CREATE_CLUSTER_CON_T, CREATE_CLUSTER_CON)
+    default_params = [FARGATE_VERSION]
+    template = init_template("Root template generated via ECS ComposeX")
+    if not settings.for_cfn_macro:
+        add_parameters(template, default_params)
     return template
 
 
@@ -354,19 +354,21 @@ def generate_full_template(settings):
     LOG.debug(settings)
     root_stack_title = NONALPHANUM.sub("", settings.name.title())
     root_stack = ComposeXStack(
-        root_stack_title, stack_template=init_root_template(), file_name=settings.name
+        root_stack_title,
+        stack_template=init_root_template(settings),
+        file_name=settings.name,
     )
-    dns_inputs(root_stack)
+    dns_inputs(root_stack, settings)
     vpc_stack = add_vpc_to_root(root_stack, settings)
     settings.set_networks(vpc_stack, root_stack)
     dns_settings = DnsSettings(root_stack, settings, get_vpc_id(vpc_stack))
     root_stack.Parameters.update(dns_settings.root_params)
-    add_ecs_cluster(settings, root_stack)
-    compute_stack = add_compute(root_stack.stack_template, settings, vpc_stack)
-    if settings.create_compute and compute_stack:
-        compute_stack.DependsOn.append(ROOT_CLUSTER_NAME)
+    ecs_cluster = add_ecs_cluster(root_stack, settings)
+    # compute_stack = add_compute(root_stack.stack_template, settings, vpc_stack)
+    # if settings.create_compute and compute_stack:
+    #     compute_stack.DependsOn.append(ROOT_CLUSTER_NAME)
     associate_services_to_root_stack(
-        root_stack, settings, dns_settings.nested_params, vpc_stack
+        root_stack, ecs_cluster, settings, dns_settings.nested_params, vpc_stack
     )
     if keyisset(ACM_KEY, settings.compose_content):
         init_acm_certs(settings, dns_settings, root_stack)

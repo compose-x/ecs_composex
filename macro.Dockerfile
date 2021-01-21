@@ -9,9 +9,8 @@ COPY ecs_composex       /opt/ecs_composex
 COPY setup.py requirements.txt MANIFEST.in README.rst LICENSE /opt/
 RUN python -m venv venv ; source venv/bin/activate ; pip install wheel;  python setup.py sdist bdist_wheel; ls -l dist/
 
-FROM $BASE_IMAGE
-COPY --from=builder /opt/dist/ecs_composex-*.whl /opt/
-WORKDIR /opt
+FROM ${LAMBDA_IMAGE:-$BASE_IMAGE}
+WORKDIR ${LAMBDA_TASK_ROOT:-/opt/}
+COPY --from=builder /opt/dist/ecs_composex-*.whl ${LAMBDA_TASK_ROOT:-/opt/}/
 RUN pip install pip -U --no-cache-dir && pip install wheel --no-cache-dir && pip install *.whl --no-cache-dir
-WORKDIR /tmp
-ENTRYPOINT ["ecs-composex"]
+CMD ["ecs_composex.macro.lambda_handler"]

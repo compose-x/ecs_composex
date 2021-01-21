@@ -31,7 +31,9 @@ class ServiceStack(ComposeXStack):
     """
 
 
-def associate_services_to_root_stack(root_stack, settings, dns_params, vpc_stack=None):
+def associate_services_to_root_stack(
+    root_stack, ecs_cluster, settings, dns_params, vpc_stack=None
+):
     """
     Function to generate all services and associate their stack to the root stack
 
@@ -48,14 +50,8 @@ def associate_services_to_root_stack(root_stack, settings, dns_params, vpc_stack
             stack_template=family.template,
             stack_parameters=family.stack_parameters,
         )
-        family.stack_parameters.update(
-            {
-                ecs_params.CLUSTER_NAME.title: If(
-                    CREATE_CLUSTER_CON_T, Ref(CLUSTER_T), Ref(CLUSTER_NAME)
-                ),
-            }
-        )
-        family.stack_parameters.update(dns_params)
+        family.stack.Parameters.update({ecs_params.CLUSTER_NAME.title: ecs_cluster})
+        family.stack.Parameters.update(dns_params)
         if not vpc_stack:
             family.stack.no_vpc_parameters()
         else:
