@@ -29,7 +29,6 @@ from ecs_composex.acm.acm_stack import init_acm_certs
 from ecs_composex.appmesh.appmesh_mesh import Mesh
 from ecs_composex.common import LOG, NONALPHANUM
 from ecs_composex.common import (
-    build_template,
     init_template,
     add_parameters,
     keyisset,
@@ -50,17 +49,13 @@ from ecs_composex.compute.compute_params import (
     MIN_CAPACITY_T,
 )
 from ecs_composex.compute.compute_stack import ComputeStack
-from ecs_composex.dns import add_parameters_and_conditions as dns_inputs, DnsSettings
+from ecs_composex.dns import DnsSettings
 from ecs_composex.dns.dns_records import DnsRecords
-from ecs_composex.ecs.ecs_stack import associate_services_to_root_stack
 from ecs_composex.ecs.ecs_cluster import add_ecs_cluster
 from ecs_composex.ecs.ecs_params import (
-    CLUSTER_NAME,
-    CLUSTER_T as ROOT_CLUSTER_NAME,
-    CREATE_CLUSTER,
     FARGATE_VERSION,
 )
-from ecs_composex.ecs.ecs_conditions import CREATE_CLUSTER_CON_T, CREATE_CLUSTER_CON
+from ecs_composex.ecs.ecs_stack import associate_services_to_root_stack
 from ecs_composex.vpc import vpc_params
 from ecs_composex.vpc.vpc_stack import add_vpc_to_root
 
@@ -336,10 +331,8 @@ def init_root_template(settings):
     :return: template
     :rtype: troposphere.Template
     """
-    default_params = [FARGATE_VERSION]
     template = init_template("Root template generated via ECS ComposeX")
-    if not settings.for_cfn_macro:
-        add_parameters(template, default_params)
+    template.add_mapping("ComposeXDefaults", {"ECS": {"PlatformVersion": "1.4.0"}})
     return template
 
 
@@ -358,18 +351,15 @@ def generate_full_template(settings):
         stack_template=init_root_template(settings),
         file_name=settings.name,
     )
-    dns_inputs(root_stack, settings)
     vpc_stack = add_vpc_to_root(root_stack, settings)
     settings.set_networks(vpc_stack, root_stack)
     dns_settings = DnsSettings(root_stack, settings, get_vpc_id(vpc_stack))
-    root_stack.Parameters.update(dns_settings.root_params)
+    # root_stack.Parameters.update(dns_settings.root_params)
     ecs_cluster = add_ecs_cluster(root_stack, settings)
     # compute_stack = add_compute(root_stack.stack_template, settings, vpc_stack)
     # if settings.create_compute and compute_stack:
     #     compute_stack.DependsOn.append(ROOT_CLUSTER_NAME)
-    associate_services_to_root_stack(
-        root_stack, ecs_cluster, settings, dns_settings.nested_params, vpc_stack
-    )
+    associate_services_to_root_stack(root_stack, ecs_cluster, settings, vpc_stack)
     if keyisset(ACM_KEY, settings.compose_content):
         init_acm_certs(settings, dns_settings, root_stack)
     add_x_resources(
@@ -388,5 +378,6 @@ def generate_full_template(settings):
         mesh.render_mesh_template(root_stack)
     dns_records = DnsRecords(settings)
     dns_records.associate_records_to_resources(settings, root_stack, dns_settings)
+    dns_settings.associate_settings_to_nested_stacks(root_stack)
     add_all_tags(root_stack.stack_template, settings)
     return root_stack

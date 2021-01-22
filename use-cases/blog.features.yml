@@ -47,7 +47,7 @@ services:
       CreateLogGroup: False
     x-network:
       is_public: False
-      use_cloudmap: True
+      UseCloudmap: True
       Ingress:
         Myself: False
         AwsSources:
@@ -169,7 +169,7 @@ services:
     x-xray: true
     x-network:
       is_public: False
-      use_cloudmap: True
+      UseCloudmap: True
 volumes:
   shared-images: {}
   some-volume: {}

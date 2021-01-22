@@ -1441,6 +1441,9 @@ class ComposeFamily(object):
         """
         if settings.no_upload:
             return
+        elif settings.for_cfn_macro:
+            LOG.warning("When running as a Macro, you cannot upload environment files.")
+            return
         for service in self.services:
             env_files = []
             for env_file in service.env_files:

@@ -83,10 +83,16 @@ def handle_elbv2_target(record, elbv2, settings, root_stack, dns_settings):
     record_props = import_record_properties(record.properties, BaseRecordSet)
     record_props["AliasTarget"] = alias_tgt
     record_props["Region"] = Ref(AWS_REGION)
-    if dns_settings.create_public_zone:
-        record_props["HostedZoneId"] = Ref(dns_settings.public_zone)
-    elif dns_settings.root_params and not keyisset("HostedZoneId", record_props):
-        record_props["HostedZoneId"] = Ref(PUBLIC_DNS_ZONE_ID)
+    if dns_settings.public_zone.create_zone and not keyisset(
+        "HostedZoneId", record_props
+    ):
+        record_props["HostedZoneId"] = dns_settings.public_zone.id_value
+    elif (
+        dns_settings.public_zone
+        and not dns_settings.public_zone.cfn_resource
+        and not keyisset("HostedZoneId", record_props)
+    ):
+        record_props["HostedZoneId"] = dns_settings.public_zone.id_value
     if not keyisset("SetIdentifier", record_props):
         record_props["SetIdentifier"] = Ref(AWS_STACK_NAME)
     record.cfn_resource = RecordSetType(
