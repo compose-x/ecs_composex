@@ -39,7 +39,7 @@ def nonexisting_cluster():
     return {"x-cluster": {"Lookup": "test2"}}
 
 
-def test_lookup(existing_cluster, nonexisting_cluster):
+def test_ecs_cluster_lookup(existing_cluster, nonexisting_cluster):
     """
     Function to test the ECS Cluster Lookup
     """
@@ -58,8 +58,9 @@ def test_lookup(existing_cluster, nonexisting_cluster):
             ComposeXSettings.format_arg: "yaml",
         },
     )
-    add_ecs_cluster(settings, stack)
-    assert keyisset(CLUSTER_NAME.title, stack.Parameters)
+    add_ecs_cluster(stack, settings)
+    print(stack.stack_template.mappings)
+    assert keyisset(CLUSTER_NAME.title, stack.stack_template.mappings["Ecs"])
 
     template = Template()
     stack = ComposeXStack("test", stack_template=template)
@@ -72,5 +73,5 @@ def test_lookup(existing_cluster, nonexisting_cluster):
             ComposeXSettings.format_arg: "yaml",
         },
     )
-    add_ecs_cluster(settings, stack)
+    add_ecs_cluster(stack, settings)
     assert not keyisset(CLUSTER_NAME.title, stack.Parameters)

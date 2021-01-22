@@ -101,11 +101,8 @@ def define_cluster(cluster_def):
     compose_props = cluster_def["Properties"]
     props = import_record_properties(compose_props, Cluster)
     props["Metadata"] = metadata
-    props["ClusterName"] = (
-        Ref(AWS_STACK_NAME)
-        if not keyisset("ClusterName", props)
-        else Ref(AWS_STACK_NAME)
-    )
+    if not keyisset("ClusterName", props):
+        props["ClusterName"] = Ref(AWS_STACK_NAME)
     cluster = Cluster(CLUSTER_T, **props)
     return cluster
 
