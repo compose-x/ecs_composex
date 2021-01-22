@@ -4,6 +4,7 @@
 
 x-dns:
   PublicZone:
+    Name: lambda-my-aws.io
     Use: ZABCDEFGHIS0123
   Records:
     - Properties:

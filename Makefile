@@ -75,11 +75,18 @@ coverage: ## check code coverage quickly with the default Python
 	coverage html
 	$(BROWSER) htmlcov/index.html
 
+.ONESHELL:
+
 codebuild: ## check code coverage quickly with the default Python
-	coverage run --source ecs_composex -m behave tests/features --junit
+	coverage run --source ecs_composex -m behave tests/features --junit -i rds
+	BEHAVE=$$?
 	coverage run --source ecs_composex -a -m pytest tests/pytests -vv -x
+	PYTEST=$$?
+	echo $$BEHAVE
+	echo $$PYTEST
 	coverage report -m
 	coverage xml -o coverage/coverage.xml
+	if [ $$BEHAVE -eq 0 ] && [ $$PYTEST -eq 0 ]; then exit 0; else exit 1; fi
 
 docs: clean-c9 ## generate Sphinx HTML documentation, including API docs
 	rm -f docs/ecs_composex.rst

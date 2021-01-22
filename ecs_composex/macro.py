@@ -23,7 +23,7 @@ Passes all the arguments to ECS ComposeX to render the CFN templates for the doc
 import re
 import requests
 import boto3
-import json
+import tempfile
 from os import path, mkdir
 from copy import deepcopy
 from urllib.parse import urlparse
@@ -41,7 +41,7 @@ from ecs_composex.common.stacks import process_stacks
 from ecs_composex.ecs_composex import generate_full_template
 
 
-def set_settings_from_remote_files(files, request_id, settings_params, session=None):
+def set_settings_from_remote_files(files, settings_params, folder, session=None):
     if not keyisset(ComposeXSettings.input_file_arg, settings_params):
         local_files = []
         settings_params[ComposeXSettings.input_file_arg] = local_files
@@ -57,7 +57,7 @@ def set_settings_from_remote_files(files, request_id, settings_params, session=N
                 bucket_name = bucket_re.match(file).groups()[0]
                 file_path = bucket_re.match(file).groups()[1]
                 file_name = path.basename(file_path)
-                new_file_path = path.abspath(f"/tmp/{request_id}/{file_name}")
+                new_file_path = path.abspath(f"{folder.name}/{file_name}")
                 with open(new_file_path, "wb") as fd:
                     file_r = client.get_object(Bucket=bucket_name, Key=file_path)
                     fd.write(file_r["Body"].read())
@@ -65,9 +65,9 @@ def set_settings_from_remote_files(files, request_id, settings_params, session=N
             except client.exceptions.NoSuchKey:
                 LOG.error(f"Failed to download the file {file} from S3")
                 raise
-        elif file.startswith("http://") or file.startswith("https://"):
+        elif file.startswith("https://"):
             file_name = path.basename(urlparse(file).path)
-            new_file_path = path.abspath(f"/tmp/{request_id}/{file_name}")
+            new_file_path = path.abspath(f"{folder.name}/{file_name}")
             file_r = requests.get(file)
             if not file_r.status_code == "200":
                 raise FileNotFoundError(f"Unable to retrieve {file}")
@@ -76,35 +76,36 @@ def set_settings_from_remote_files(files, request_id, settings_params, session=N
             local_files.append(new_file_path)
 
 
-def settings_from_raw_content(settings, request_id, content):
+def settings_from_raw_content(settings, content, folder):
     """
     Function to define the ComposeX Settings from RAW Content
     """
-    file_path = f"/tmp/{request_id}/src.yml"
+    file_path = f"{folder.name}/src.yml"
     with open(file_path, "w") as fd:
         fd.write(yaml.dump(content))
     if not keyisset(ComposeXSettings.input_file_arg, settings):
         settings.update({ComposeXSettings.input_file_arg: [file_path]})
 
 
-def init_settings_params(settings_params, fragment, request_id):
+def init_settings_params(settings_params, fragment, request_id, folder):
     """
     Function to define the parameters to send to ECS ComposeX Settings
 
     :param dict settings_params:
     :param fragment:
     :param str request_id:
+    :param folder: Temporary folder to store all the files into.
     :return:
     """
     new_fragment = {}
     settings_params.update({"command": "create"})
     if keyisset("version", fragment) or keyisset("services", fragment):
-        settings_from_raw_content(settings_params, request_id, fragment)
+        settings_from_raw_content(settings_params, fragment, folder)
     elif keyisset("Raw", settings_params):
-        settings_from_raw_content(settings_params, request_id, settings_params["Raw"])
+        settings_from_raw_content(settings_params, settings_params["Raw"], folder)
     if keyisset("ComposeFiles", settings_params):
         set_settings_from_remote_files(
-            settings_params["ComposeFiles"], request_id, settings_params
+            settings_params["ComposeFiles"], settings_params, folder
         )
     if not keyisset("Name", settings_params):
         settings_params.update({"Name": request_id})
@@ -125,12 +126,11 @@ def lambda_handler(event, context):
     fragment = event["fragment"]
     request_id = event["requestId"]
 
-    if not path.exists(f"/tmp/{request_id}"):
-        mkdir(f"/tmp/{request_id}")
+    folder = tempfile.TemporaryDirectory(prefix=request_id)
 
     settings_params = deepcopy(params)
 
-    new_fragment = init_settings_params(settings_params, fragment, request_id)
+    new_fragment = init_settings_params(settings_params, fragment, request_id, folder)
     settings = ComposeXSettings(for_macro=True, **settings_params)
     settings.set_bucket_name_from_account_id()
     settings.set_azs_from_api()
@@ -153,4 +153,5 @@ def lambda_handler(event, context):
     if "Parameters" in new_fragment.keys():
         del new_fragment["Parameters"]
     response["fragment"] = new_fragment
+    folder.cleanup()
     return response
