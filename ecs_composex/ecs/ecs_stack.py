@@ -15,14 +15,12 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from troposphere import Ref, If
+from troposphere import FindInMap
 
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.ecs import ecs_params, metadata
-from ecs_composex.ecs.ecs_conditions import CREATE_CLUSTER_CON_T
-from ecs_composex.ecs.ecs_params import CLUSTER_NAME, CLUSTER_T
-from ecs_composex.ecs.ecs_template import generate_services
 from ecs_composex.ecs.ecs_service_network_config import set_compose_services_ingress
+from ecs_composex.ecs.ecs_template import generate_services
 
 
 class ServiceStack(ComposeXStack):
@@ -31,9 +29,7 @@ class ServiceStack(ComposeXStack):
     """
 
 
-def associate_services_to_root_stack(
-    root_stack, ecs_cluster, settings, dns_params, vpc_stack=None
-):
+def associate_services_to_root_stack(root_stack, ecs_cluster, settings, vpc_stack=None):
     """
     Function to generate all services and associate their stack to the root stack
 
@@ -50,8 +46,14 @@ def associate_services_to_root_stack(
             stack_template=family.template,
             stack_parameters=family.stack_parameters,
         )
-        family.stack.Parameters.update({ecs_params.CLUSTER_NAME.title: ecs_cluster})
-        family.stack.Parameters.update(dns_params)
+        family.stack.Parameters.update(
+            {
+                ecs_params.CLUSTER_NAME.title: ecs_cluster,
+                ecs_params.FARGATE_VERSION.title: FindInMap(
+                    "ComposeXDefaults", "ECS", "PlatformVersion"
+                ),
+            }
+        )
         if not vpc_stack:
             family.stack.no_vpc_parameters()
         else:

@@ -58,6 +58,7 @@ from ecs_composex.dns.dns_params import (
     PUBLIC_DNS_ZONE_ID,
     PUBLIC_DNS_ZONE_NAME,
 )
+from ecs_composex.dns.dns_conditions import PRIVATE_ZONE_ID_CON_T
 from ecs_composex.ecs import ecs_params, ecs_conditions
 from ecs_composex.ecs.ecs_conditions import USE_HOSTNAME_CON_T
 from ecs_composex.ecs.ecs_params import SERVICE_NAME, SERVICE_HOSTNAME
@@ -151,6 +152,7 @@ def add_service_to_map(family, settings):
     sd_service = SdService(
         f"{family.logical_name}DiscoveryService",
         template=family.template,
+        Condition=PRIVATE_ZONE_ID_CON_T,
         Description=Ref(SERVICE_NAME),
         NamespaceId=Ref(PRIVATE_DNS_ZONE_ID),
         HealthCheckCustomConfig=SdHealthCheckCustomConfig(FailureThreshold=1.0),
@@ -299,7 +301,7 @@ def define_service_ingress(family, settings):
         registries = Ref(AWS_NO_VALUE)
     service_attrs = {
         "LoadBalancers": service_lbs,
-        "ServiceRegistries": registries,
+        "ServiceRegistries": If(PRIVATE_ZONE_ID_CON_T, registries, Ref(AWS_NO_VALUE)),
     }
     return service_attrs
 
@@ -333,10 +335,6 @@ class Service(object):
         family.stack_parameters.update(
             {
                 vpc_params.VPC_ID_T: Ref(vpc_params.VPC_ID),
-                # PRIVATE_DNS_ZONE_ID.title: Ref(PRIVATE_DNS_ZONE_ID),
-                # PRIVATE_DNS_ZONE_NAME.title: Ref(PRIVATE_DNS_ZONE_NAME),
-                # PUBLIC_DNS_ZONE_ID.title: Ref(PUBLIC_DNS_ZONE_ID),
-                # PUBLIC_DNS_ZONE_NAME.title: Ref(PUBLIC_DNS_ZONE_ID),
                 vpc_params.APP_SUBNETS_T: Join(",", Ref(vpc_params.APP_SUBNETS)),
                 vpc_params.PUBLIC_SUBNETS_T: Join(",", Ref(vpc_params.PUBLIC_SUBNETS)),
                 ecs_params.SERVICE_NAME_T: family.name,
@@ -355,6 +353,7 @@ class Service(object):
         This is the last step in defining the service, after all other settings have been prepared.
 
         :param ecs_composex.common.compose_services.ComposeFamily family:
+        :param ecs_composex.common.settings.ComposeXSettings settings:
         """
         service_sgs = [
             Ref(sg) for sg in self.sgs if not isinstance(sg, (Ref, Sub, If, GetAtt))

@@ -31,7 +31,7 @@ from ecs_composex.common.cfn_params import (
     ROOT_STACK_NAME_T,
     ROOT_STACK_NAME,
 )
-from ecs_composex.dns import dns_params
+from ecs_composex.dns import dns_params, dns_conditions
 from ecs_composex.dns.dns_conditions import (
     CREATE_PUBLIC_NAMESPACE_CON_T,
     CREATE_PUBLIC_NAMESPACE_CON,
@@ -120,6 +120,9 @@ def initialize_service_template(service_name):
     service_tpl.add_condition(
         ecs_conditions.GENERATED_LOG_GROUP_NAME_CON_T,
         ecs_conditions.GENERATED_LOG_GROUP_NAME_CON,
+    )
+    service_tpl.add_condition(
+        dns_conditions.PRIVATE_ZONE_ID_CON_T, dns_conditions.PRIVATE_ZONE_ID_CON
     )
     return service_tpl
 
@@ -284,23 +287,8 @@ def generate_services(settings):
                 ecs_params.SERVICE_NAME_T: family.logical_name,
                 CLUSTER_NAME_T: Ref(CLUSTER_NAME),
                 ROOT_STACK_NAME_T: Ref(ROOT_STACK_NAME),
-                # dns_params.PRIVATE_DNS_ZONE_ID.title: Ref(
-                #     dns_params.PRIVATE_DNS_ZONE_ID
-                # ),
-                # dns_params.PRIVATE_DNS_ZONE_NAME.title: Ref(
-                #     dns_params.PRIVATE_DNS_ZONE_NAME
-                # ),
-                # dns_params.PUBLIC_DNS_ZONE_ID.title: Ref(dns_params.PUBLIC_DNS_ZONE_ID),
-                # dns_params.PUBLIC_DNS_ZONE_NAME.title: Ref(
-                #     dns_params.PUBLIC_DNS_ZONE_NAME
-                # ),
             }
         )
-        if settings.for_cfn_macro:
-            LOG.error(
-                "Cannot upload env files when using Compose-X as a CFN macro. Ignoring"
-            )
-        else:
-            family.upload_services_env_files(settings)
+        family.upload_services_env_files(settings)
         family.set_repository_credentials(settings)
         family.set_codeguru_profiles_arns()

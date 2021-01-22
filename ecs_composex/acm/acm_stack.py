@@ -161,7 +161,7 @@ def init_acm_certs(settings, dns_settings, root_stack):
     ]
     if new_resources:
         define_acm_certs(new_resources, dns_settings, root_stack)
-    if new_resources and dns_settings.create_public_zone:
+    if new_resources and dns_settings.public_zone.create_zone:
         warn(
             "Validation via DNS can only work if the zone is functional and you cannot associate a pending cert."
             "CFN Will fail if the ACM cert validation is not complete."
