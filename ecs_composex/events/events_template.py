@@ -31,8 +31,8 @@ def define_event_rule(stack, rule):
     """
     Function to define the EventRule properties
 
+    :param ecs_composex.common.stacks.ComposeXStack stack:
     :param ecs_composex.events.events_stack.Rule rule:
-    :param troposphere.Sub cluster_arn:
     """
     rule_props = import_record_properties(rule.properties, Rule)
     if not keyisset("Targets", rule_props):
