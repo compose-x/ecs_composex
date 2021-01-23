@@ -43,5 +43,5 @@ USE_DEFAULT_ZONE_NAME_CON = Equals(
 
 PRIVATE_ZONE_ID_CON_T = "PrivateNamespaceCondition"
 PRIVATE_ZONE_ID_CON = Not(
-    Equals(Ref(dns_params.PUBLIC_DNS_ZONE_ID), dns_params.PRIVATE_DNS_ZONE_ID.Default)
+    Equals(Ref(dns_params.PRIVATE_DNS_ZONE_ID), dns_params.PRIVATE_DNS_ZONE_ID.Default)
 )

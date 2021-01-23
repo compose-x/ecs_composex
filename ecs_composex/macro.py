@@ -120,7 +120,9 @@ def lambda_handler(event, context):
     region = event["region"]
     account_id = event["accountId"]
     transform_id = event["transformId"]
-    param_values = event["templateParameterValues"]
+    LOG.info(
+        f"Processing in {region} for transform {transform_id} in account {account_id}"
+    )
 
     params = event["params"]
     fragment = event["fragment"]

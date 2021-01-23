@@ -149,19 +149,19 @@ def add_ecs_cluster(root_stack, settings):
         if keyisset("Use", settings.compose_content[RES_KEY]):
             LOG.info(f"Using cluster {settings.compose_content[RES_KEY]['Use']}")
             cluster_mapping = {
-                "Cluster": {"Name": settings.compose_content[RES_KEY]["Use"]}
+                CLUSTER_NAME.title: {"Name": settings.compose_content[RES_KEY]["Use"]}
             }
         elif keyisset("Lookup", settings.compose_content[RES_KEY]):
             cluster_name = lookup_ecs_cluster(
                 settings.session, settings.compose_content[RES_KEY]["Lookup"]
             )
             if cluster_name:
-                cluster_mapping = {"Cluster": {"Name": cluster_name}}
+                cluster_mapping = {CLUSTER_NAME.title: {"Name": cluster_name}}
         elif keyisset("Properties", settings.compose_content[RES_KEY]):
             cluster = define_cluster(settings.compose_content[RES_KEY])
             root_stack.stack_template.add_resource(cluster)
             return Ref(cluster)
     if cluster_mapping:
         root_stack.stack_template.add_mapping("Ecs", cluster_mapping)
-        cluster_identifier = FindInMap("Ecs", "Cluster", "Name")
+        cluster_identifier = FindInMap("Ecs", CLUSTER_NAME.title, "Name")
     return cluster_identifier

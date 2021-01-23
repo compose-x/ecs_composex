@@ -424,6 +424,7 @@ class ComposeXSettings(object):
         self.set_output_settings(kwargs)
         self.use_appmesh = keyisset("x-appmesh", self.compose_content)
         self.name = kwargs[self.name_arg]
+        self.ecs_cluster = None
 
     def set_secrets(self):
         """
