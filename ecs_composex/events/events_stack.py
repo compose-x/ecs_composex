@@ -108,6 +108,13 @@ class XStack(ComposeXStack):
     """
 
     def __init__(self, title, settings, **kwargs):
+        """
+        Method to initialize the XStack for Events
+
+        :param str title: title for the stack
+        :param ecs_composex.common.settings.ComposeXSettings settings: Execution settings
+        :param dict kwargs:
+        """
         set_resources(settings, Rule, RES_KEY)
         new_resources = [
             settings.compose_content[RES_KEY][res_name]
@@ -116,10 +123,7 @@ class XStack(ComposeXStack):
         ]
         if new_resources:
             params = {
-                CLUSTER_NAME.title: If(
-                    CREATE_CLUSTER_CON_T, Ref(CLUSTER_T), Ref(CLUSTER_NAME)
-                ),
-                FARGATE_VERSION.title: Ref(FARGATE_VERSION),
+                CLUSTER_NAME.title: settings.ecs_cluster,
             }
             stack_template = build_template(
                 "Events rules for ComposeX",
