@@ -55,7 +55,7 @@ class Mesh(object):
     services_key = appmesh_params.SERVICES_KEY
     required_keys = [nodes_key, routers_key, services_key]
 
-    def __init__(self, mesh_definition, services_root_stack, settings):
+    def __init__(self, mesh_definition, services_root_stack, settings, dns_settings):
         """
         Method to initialize the Mesh
 
@@ -121,7 +121,7 @@ class Mesh(object):
                 raise KeyError(f"Key {key} is missing. Required {self.required_keys}")
         self.define_nodes(settings, services_root_stack, self.appmesh)
         self.define_routes_and_routers()
-        self.define_virtual_services()
+        self.define_virtual_services(dns_settings)
 
     def define_nodes(self, settings, services_root_stack, mesh):
         """
@@ -186,17 +186,17 @@ class Mesh(object):
                 router[appmesh_params.NAME_KEY], router, self.appmesh, self.nodes
             )
 
-    def define_virtual_services(self):
+    def define_virtual_services(self, dns_settings):
         """
         Method to parse the services and map them to nodes and routers.
         """
         for service in self.mesh_settings[self.services_key]:
             name = service[appmesh_params.NAME_KEY]
             self.services[name] = MeshService(
-                name, service, self.routers, self.nodes, self.appmesh
+                name, service, self.routers, self.nodes, self.appmesh, dns_settings
             )
 
-    def render_mesh_template(self, services_stack):
+    def render_mesh_template(self, services_stack, settings, dns_settings):
         """
         Method to create the AppMesh template stack.
 
@@ -208,9 +208,9 @@ class Mesh(object):
         ):
             services_stack.stack_template.add_resource(self.appmesh)
             add_appmesh_conditions(services_stack.stack_template)
-        self.process_mesh_components(services_stack)
+        self.process_mesh_components(services_stack, dns_settings)
 
-    def process_mesh_components(self, services_stack):
+    def process_mesh_components(self, services_stack, dns_settings):
 
         for router_name in self.routers:
             router = self.routers[router_name]
@@ -220,7 +220,7 @@ class Mesh(object):
         for service_name in self.services:
             service = self.services[service_name]
             services_stack.stack_template.add_resource(service.service)
-            service.add_dns_entries(services_stack.stack_template)
+            service.add_dns_entries(services_stack.stack_template, dns_settings)
         for res_name in services_stack.stack_template.resources:
             res = services_stack.stack_template.resources[res_name]
             if issubclass(type(res), ComposeXStack) and isinstance(self.appmesh, Mesh):

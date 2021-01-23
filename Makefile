@@ -78,10 +78,10 @@ coverage: ## check code coverage quickly with the default Python
 .ONESHELL:
 
 codebuild: ## check code coverage quickly with the default Python
-	coverage run --source ecs_composex -m behave tests/features --junit
-	BEHAVE=$$?
-	coverage run --source ecs_composex -a -m pytest tests/pytests -vv -x
-	PYTEST=$$?
+	coverage run --source ecs_composex -m behave tests/features --junit;\
+	BEHAVE=$$? ;\
+	coverage run --source ecs_composex -a -m pytest tests/pytests -vv -x ;\
+	PYTEST=$$? ;\
 	echo $$BEHAVE
 	echo $$PYTEST
 	coverage report -m
