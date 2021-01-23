@@ -373,9 +373,11 @@ def generate_full_template(settings):
         root_stack,
     )
     apply_x_to_x_configs(root_stack.stack_template, settings)
-    if keyisset("x-appmesh", settings.compose_content):
-        mesh = Mesh(settings.compose_content["x-appmesh"], root_stack, settings)
-        mesh.render_mesh_template(root_stack)
+    if settings.use_appmesh:
+        mesh = Mesh(
+            settings.compose_content["x-appmesh"], root_stack, settings, dns_settings
+        )
+        mesh.render_mesh_template(root_stack, settings, dns_settings)
     dns_records = DnsRecords(settings)
     dns_records.associate_records_to_resources(settings, root_stack, dns_settings)
     dns_settings.associate_settings_to_nested_stacks(root_stack)

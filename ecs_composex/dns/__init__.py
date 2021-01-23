@@ -20,7 +20,7 @@ Package for x-dns
 """
 
 from troposphere import AWS_NO_VALUE
-from troposphere import Sub, Ref, Tags, FindInMap
+from troposphere import Sub, Ref, Tags, FindInMap, GetAtt
 from troposphere.route53 import HostedZone, HostedZoneConfiguration
 from troposphere.servicediscovery import (
     PrivateDnsNamespace as VpcSpace,
@@ -99,7 +99,7 @@ class DnsZone(object):
         if self.nested_name_parameter.title in nested_stack.stack_template.parameters:
             add_parameters(nested_stack.stack_template, [self.nested_name_parameter])
             nested_stack.Parameters.update(
-                {self.nested_name_parameter.title: self.id_value}
+                {self.nested_name_parameter.title: self.name_value}
             )
 
     def set_zone_from_lookup(self, settings):
@@ -168,14 +168,17 @@ class PrivateNamespace(DnsZone):
         """
         super().__init__(definition)
 
-    def add_zone(self, vpc, name=None):
+    def add_zone(self, template, vpc):
         self.cfn_resource = VpcSpace(
             cfn_params.PRIVATE_MAP_TITLE,
+            template=template,
             Description=Sub(r"CloudMap VpcNamespace for ${AWS::StackName}"),
-            Name=Sub("${AWS::StackName}.internal") if not name else name,
+            Name=self.name,
             Vpc=vpc,
             DependsOn=[] if isinstance(vpc, Ref) else [cfn_params.VPC_STACK_NAME],
         )
+        self.id_value = GetAtt(self.cfn_resource, "Id")
+        self.name_value = self.name
 
 
 class PublicZone(DnsZone):
@@ -191,17 +194,18 @@ class PublicZone(DnsZone):
         """"""
         super().__init__(definition)
 
-    def add_zone(self, name=None, vpc=None):
+    def add_zone(self, template):
         self.cfn_resource = HostedZone(
             cfn_params.PUBLIC_ZONE_TITLE,
-            Name=Sub("${AWS::StackName}.net") if not name else name,
+            Name=self.name,
+            template=template,
             HostedZoneTags=Tags(CreatedByComposeX="True", PublicZone="True"),
             HostedZoneConfig=HostedZoneConfiguration(
                 Comment=Sub("Public DNS Zone for ${AWS::StackName}")
             ),
-            Vpc=vpc if vpc else Ref(AWS_NO_VALUE),
         )
         self.id_value = Ref(self.cfn_resource)
+        self.name_value = self.name
 
 
 class DnsSettings(object):
@@ -243,11 +247,15 @@ class DnsSettings(object):
         if keyisset(PrivateNamespace.key, dns_settings):
             self.private_zone = PrivateNamespace(dns_settings[PrivateNamespace.key])
             self.private_zone.setup(settings)
+            if self.private_zone.create_zone:
+                self.private_zone.add_zone(root_stack.stack_template, vpc)
             self.dns_mapping.update(self.private_zone.dns_mapping)
 
         if keyisset(PublicZone.key, dns_settings):
             self.public_zone = PublicZone(dns_settings[PublicZone.key])
             self.public_zone.setup(settings)
+            if self.public_zone.create_zone:
+                self.public_zone.add_zone(root_stack.stack_template)
             self.dns_mapping.update(self.public_zone.dns_mapping)
 
         if dns_settings:
