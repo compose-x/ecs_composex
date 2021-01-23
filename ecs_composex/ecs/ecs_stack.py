@@ -29,7 +29,7 @@ class ServiceStack(ComposeXStack):
     """
 
 
-def associate_services_to_root_stack(root_stack, ecs_cluster, settings, vpc_stack=None):
+def associate_services_to_root_stack(root_stack, settings, vpc_stack=None):
     """
     Function to generate all services and associate their stack to the root stack
 
@@ -48,7 +48,7 @@ def associate_services_to_root_stack(root_stack, ecs_cluster, settings, vpc_stac
         )
         family.stack.Parameters.update(
             {
-                ecs_params.CLUSTER_NAME.title: ecs_cluster,
+                ecs_params.CLUSTER_NAME.title: settings.ecs_cluster,
                 ecs_params.FARGATE_VERSION.title: FindInMap(
                     "ComposeXDefaults", "ECS", "PlatformVersion"
                 ),

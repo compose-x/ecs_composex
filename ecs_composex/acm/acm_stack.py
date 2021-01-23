@@ -48,6 +48,13 @@ class Certificate(object):
         self.name = name
         self.logical_name = NONALPHANUM.sub("", name)
         self.definition = deepcopy(definition)
+        self.cfn_resource = None
+        self.settings = (
+            {}
+            if not keyisset("Settings", self.definition)
+            else self.definition["Settings"]
+        )
+        self.properties = {}
         self.lookup = (
             None
             if not keyisset("Lookup", self.definition)
@@ -56,38 +63,22 @@ class Certificate(object):
         self.use = (
             None if not keyisset("Use", self.definition) else self.definition["Use"]
         )
-        if not self.lookup and not self.use:
-            self.properties = (
-                {}
-                if not keyisset("Properties", self.definition)
-                else self.definition["Properties"]
-            )
-        else:
-            self.properties = {}
-        self.settings = (
-            {}
-            if not keyisset("Settings", self.definition)
-            else self.definition["Settings"]
-        )
+        if not self.lookup and not self.use and keyisset("Properties", self.definition):
+            self.properties = self.definition["Properties"]
         self.parameters = (
             {}
             if not keyisset("MacroParameters", self.definition)
             else self.definition["MacroParameters"]
         )
 
-        self.cfn_resource = None
-
-    def define_parameters_props(self):
+    def define_parameters_props(self, dns_settings):
         if not keyisset("DomainNames", self.parameters):
             raise KeyError(
                 "For MacroParameters, you need to define at least DomainNames"
             )
         validations = [
             DomainValidationOption(
-                DomainName=domain_name,
-                HostedZoneId=Ref(PUBLIC_DNS_ZONE_ID)
-                if not keyisset("HostedZoneId", self.parameters)
-                else self.parameters["HostedZoneId"],
+                DomainName=domain_name, HostedZoneId=dns_settings.public_zone.id_value
             )
             for domain_name in self.parameters["DomainNames"]
         ]
@@ -96,20 +87,22 @@ class Certificate(object):
             "DomainName": self.parameters["DomainNames"][0],
             "ValidationMethod": "DNS",
             "Tags": Tags(
-                Name=self.parameters["DomainNames"][0], ZoneId=Ref(PUBLIC_DNS_ZONE_ID)
+                Name=self.parameters["DomainNames"][0],
+                ZoneId=dns_settings.public_zone.id_value,
             ),
             "SubjectAlternativeNames": self.parameters["DomainNames"][1:],
         }
         return props
 
-    def create_acm_cert(self):
+    def create_acm_cert(self, dns_settings):
         """
         Method to set the ACM Certificate definition
         """
+        print(self.name, self.properties, self.parameters)
         if self.properties:
             props = import_record_properties(self.properties, AcmCert)
         elif self.parameters:
-            props = self.define_parameters_props()
+            props = self.define_parameters_props(dns_settings)
         else:
             raise ValueError(
                 "Failed to determine how to create the ACM certificate",
@@ -128,7 +121,7 @@ def define_acm_certs(new_resources, dns_settings, root_stack):
     :param ecs_composex.common.stacks.ComposeXStack root_stack:
     """
     for resource in new_resources:
-        resource.create_acm_cert()
+        resource.create_acm_cert(dns_settings)
         root_stack.stack_template.add_resource(resource.cfn_resource)
 
 
@@ -137,6 +130,7 @@ def create_acm_mappings(resources, settings):
     Function
 
     :param list resources:
+    :param ecs_composex.common.settings.ComposeXSettings settings:
     :return:
     """
     mappings = {}

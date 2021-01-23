@@ -90,13 +90,13 @@ class DnsZone(object):
         :param ecs_composex.common.stacks.ComposeXStack nested_stack:
         :return:
         """
-        if self.nested_id_parameter.title in nested_stack.Parameters:
+        if self.nested_id_parameter.title in nested_stack.stack_template.parameters:
             add_parameters(nested_stack.stack_template, [self.nested_id_parameter])
             nested_stack.Parameters.update(
                 {self.nested_id_parameter.title: self.id_value}
             )
 
-        if self.nested_name_parameter.title in nested_stack.Parameters:
+        if self.nested_name_parameter.title in nested_stack.stack_template.parameters:
             add_parameters(nested_stack.stack_template, [self.nested_name_parameter])
             nested_stack.Parameters.update(
                 {self.nested_name_parameter.title: self.id_value}
@@ -132,13 +132,13 @@ class DnsZone(object):
         self.dns_mapping.update(
             {
                 self.key: {
-                    {
-                        self.nested_id_parameter.title: self.use,
-                        self.nested_name_parameter.title: self.name,
-                    }
+                    self.nested_id_parameter.title: self.use,
+                    self.nested_name_parameter.title: self.name,
                 }
             }
         )
+        self.id_value = FindInMap("Dns", self.key, self.nested_id_parameter.title)
+        self.name_value = FindInMap("Dns", self.key, self.nested_name_parameter.title)
 
     def set_zone_default(self):
         self.dns_mapping.update(
@@ -223,11 +223,7 @@ class DnsSettings(object):
         self.private_zone_name = dns_params.PRIVATE_DNS_ZONE_NAME.Default
         self.public_zone_name = dns_params.PUBLIC_DNS_ZONE_NAME.Default
         self.public_zone = None
-        self.dns_mapping = {
-            PrivateNamespace.key: {
-                PrivateNamespace.nested_name_parameter.title: self.private_zone_name
-            }
-        }
+        self.dns_mapping = {}
         dns_settings = {PrivateNamespace.key: {"Name": self.default_private_name}}
 
         if keyisset("x-dns", settings.compose_content):
@@ -237,6 +233,9 @@ class DnsSettings(object):
             and not keyisset(PrivateNamespace.key, settings.compose_content["x-dns"])
             and settings.use_appmesh
         ):
+            LOG.warning(
+                "You defined to use AppMesh without setting up a PrivateNamespace. Adding a default one."
+            )
             dns_settings.update(
                 {PrivateNamespace.key: {"Name": self.default_private_name}}
             )
@@ -251,7 +250,8 @@ class DnsSettings(object):
             self.public_zone.setup(settings)
             self.dns_mapping.update(self.public_zone.dns_mapping)
 
-        root_stack.stack_template.add_mapping("Dns", self.dns_mapping)
+        if dns_settings:
+            root_stack.stack_template.add_mapping("Dns", self.dns_mapping)
 
     def associate_settings_to_nested_stacks(self, root_stack):
         """
