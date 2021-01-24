@@ -17,7 +17,7 @@
 
 import re
 from ecs_composex.dns.dns_params import ZONES_PATTERN
-from ecs_composex.common import LOG
+from ecs_composex.common import LOG, keyisset
 
 
 LAST_DOT_RE = re.compile(r"(\.{1}$)")
@@ -38,10 +38,40 @@ def validate_zone_id_input(zone_id):
     return zones_groups[0]
 
 
-def lookup_service_discovery_namespace(zone_id, session, private):
+def get_all_dns_namespaces(session, namespaces=None, next_token=None):
+    """
+    Function to recursively fetch all namespaces in account
+
+    :param list namespaces:
+    :param boto3.session.Session session:
+    :param str next_token:
+    :return:
+    """
+    if namespaces is None:
+        namespaces = []
+    filters = [{"Name": "TYPE", "Values": ["DNS_PRIVATE"], "Condition": "EQ"}]
+    client = session.client("servicediscovery")
+    if not next_token:
+        namespaces_r = client.list_namespaces(Filters=filters)
+    else:
+        namespaces_r = client.list_namespaces(Filters=filters, NextToken=next_token)
+    namespaces += namespaces_r["Namespaces"]
+    if "NextToken" in namespaces_r:
+        return get_all_dns_namespaces(session, namespaces, namespaces_r["NextToken"])
+    return namespaces
+
+
+def lookup_service_discovery_namespace(zone, session, private):
     client = session.client("servicediscovery")
     try:
-        zone_r = client.get_namespace(Id=zone_id)
+        namespaces = get_all_dns_namespaces(session)
+        if zone.name not in [z["Name"] for z in namespaces]:
+            raise LookupError("No private namespace found for zone", zone.name)
+        the_zone = None
+        for l_zone in namespaces:
+            if zone.name == l_zone["Name"]:
+                the_zone = l_zone
+        zone_r = client.get_namespace(Id=the_zone["Id"])
         properties = zone_r["Namespace"]["Properties"]
         if zone_r["Namespace"]["Type"] == "HTTP":
             raise TypeError(
@@ -54,39 +84,69 @@ def lookup_service_discovery_namespace(zone_id, session, private):
             "NamespaceId": zone_r["Namespace"]["Id"],
         }
     except client.exceptions.NamespaceNotFound:
-        LOG.error(f"Namespace ID {zone_id} not found")
+        LOG.error(f"Namespace not found for {zone.name}")
+        raise
+    except client.exceptions.InvalidInput:
+        LOG.error("Failed to retrieve the zone info")
         raise
 
 
-def lookup_route53_namespace(zone_id, session, private):
+def filter_out_cloudmap_zones(zones):
+    """
+    Function to filter out the Hosted Zones linked to CloudMap
+
+    :param list zones:
+    :return: Zones only linked to Route53
+    :rtype: list
+    """
+    new_zones = []
+    for zone in zones:
+        if (
+            keyisset("LinkedService", zone)
+            and keyisset("ServicePrincipal", zone["LinkedService"])
+            and zone["LinkedService"]["ServicePrincipal"]
+            == "servicediscovery.amazonaws.com"
+        ):
+            continue
+        else:
+            new_zones.append(zone)
+    return new_zones
+
+
+def lookup_route53_namespace(zone, session, private):
     client = session.client("route53")
     try:
-        zone_r = client.get_hosted_zone(Id=zone_id)["HostedZone"]
+        zones_req = client.list_hosted_zones_by_name(DNSName=zone.name)["HostedZones"]
+        zones_r = filter_out_cloudmap_zones(zones_req)
+        if zones_r and len(zones_r) > 1:
+            raise LookupError(
+                "There is more than one DNS Hosted Zone with domain name", zone.name
+            )
+        elif not zones_r:
+            raise LookupError("No DNS Zone found for domain name", zone.name)
+        zone_r = client.get_hosted_zone(Id=zones_r[0]["Id"])["HostedZone"]
         if zone_r["Config"]["PrivateZone"] != private:
-            raise ValueError(f"The zone {zone_id} is not a private zone.")
+            raise ValueError(f"The zone {zone.name} is not a private zone.")
         return {
             "ZoneId": zone_r["Id"].split(r"/")[-1],
             "ZoneTld": LAST_DOT_RE.sub("", zone_r["Name"]),
         }
-    except client.exceptions.NoSuchHostedZone:
-        LOG.warning(f"Zone {zone_id} not found in your account.")
+    except client.exceptions.InvalidDomainName:
+        LOG.warning(f"Zone {zone.name} is invalid or malformed.")
 
 
-def lookup_namespace(zone_id, session, private=False):
+def lookup_namespace(zone, session):
     """
     Function to find the namespace infos
 
-    :param str zone_id:
+    :param ecs_composex.dns.DnsZone zone:
     :param boto3.session.Session session: boto3 session to make API call
     :param bool private: Whether this zone is private or not
     :return:
     """
-    zone_id = validate_zone_id_input(zone_id)
     zone_info = None
-    if zone_id == "none":
-        raise ValueError("Value is none. This can't work.")
-    if zone_id.startswith("ns-"):
-        zone_info = lookup_service_discovery_namespace(zone_id, session, private)
-    elif zone_id.startswith("Z"):
-        zone_info = lookup_route53_namespace(zone_id, session, private)
+    if zone.key == "PrivateNamespace":
+        zone_info = lookup_service_discovery_namespace(zone, session, private=True)
+    elif zone.key == "PublicZone":
+        zone_info = lookup_route53_namespace(zone, session, private=False)
     return zone_info

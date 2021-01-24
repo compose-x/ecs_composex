@@ -134,7 +134,7 @@ def add_ecs_cluster(root_stack, settings):
 
     :param ecs_composex.common.stacks.ComposeXStack root_stack:
     :param ecs_composex.common.settings.ComposeXSettings settings:
-    :return:
+    :return: cluster identifier
     """
     cluster_identifier = Ref(AWS_STACK_NAME)
     cluster_mapping = {}
