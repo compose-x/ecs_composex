@@ -332,14 +332,7 @@ class Service(object):
         self.network_settings = None
         self.ecs_service = None
         self.scalable_target = None
-        family.stack_parameters.update(
-            {
-                vpc_params.VPC_ID_T: Ref(vpc_params.VPC_ID),
-                vpc_params.APP_SUBNETS_T: Join(",", Ref(vpc_params.APP_SUBNETS)),
-                vpc_params.PUBLIC_SUBNETS_T: Join(",", Ref(vpc_params.PUBLIC_SUBNETS)),
-                ecs_params.SERVICE_NAME_T: family.name,
-            }
-        )
+        family.stack_parameters.update({ecs_params.SERVICE_NAME_T: family.name})
         self.sgs = []
         self.sg = add_service_default_sg(family.template)
         self.sgs.append(Ref(self.sg))

@@ -22,7 +22,7 @@ Main module to generate a full stack with VPC, Cluster, Compute, Services and al
 import re
 from importlib import import_module
 
-from troposphere import Ref, AWS_STACK_NAME, GetAtt
+from troposphere import Ref, AWS_STACK_NAME, GetAtt, FindInMap
 
 from ecs_composex.acm.acm_params import RES_KEY as ACM_KEY
 from ecs_composex.acm.acm_stack import init_acm_certs
@@ -30,7 +30,6 @@ from ecs_composex.appmesh.appmesh_mesh import Mesh
 from ecs_composex.common import LOG, NONALPHANUM
 from ecs_composex.common import (
     init_template,
-    add_parameters,
     keyisset,
 )
 from ecs_composex.common.cfn_params import (
@@ -52,9 +51,6 @@ from ecs_composex.compute.compute_stack import ComputeStack
 from ecs_composex.dns import DnsSettings
 from ecs_composex.dns.dns_records import DnsRecords
 from ecs_composex.ecs.ecs_cluster import add_ecs_cluster
-from ecs_composex.ecs.ecs_params import (
-    FARGATE_VERSION,
-)
 from ecs_composex.ecs.ecs_stack import associate_services_to_root_stack
 from ecs_composex.vpc import vpc_params
 from ecs_composex.vpc.vpc_stack import add_vpc_to_root
@@ -275,7 +271,7 @@ def handle_new_xstack(
         if vpc_stack and key in TCP_SERVICES:
             xstack.get_from_vpc_stack(vpc_stack)
         elif not vpc_stack and key in TCP_SERVICES:
-            xstack.no_vpc_parameters()
+            xstack.no_vpc_parameters(settings)
 
 
 def add_x_resources(root_template, settings, services_stack, vpc_stack=None):
@@ -321,7 +317,7 @@ def get_vpc_id(vpc_stack):
     if vpc_stack:
         return GetAtt(VPC_STACK_NAME, f"Outputs.{vpc_params.VPC_ID_T}")
     else:
-        return Ref(vpc_params.VPC_ID)
+        return FindInMap("Network", vpc_params.VPC_ID.title, vpc_params.VPC_ID.title)
 
 
 def init_root_template(settings):

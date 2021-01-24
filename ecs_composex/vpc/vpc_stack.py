@@ -194,7 +194,7 @@ def import_vpc_settings(vpc_settings):
     settings = {VPC_ID.title: vpc_settings[VPC_ID.title]}
     required_subnets = [APP_SUBNETS.title, PUBLIC_SUBNETS.title, STORAGE_SUBNETS.title]
     if not all(subnet in vpc_settings.keys() for subnet in required_subnets):
-        raise KeyError("All subnets must be indicated", required_subnets)
+        raise KeyError("All required subnets must be indicated", required_subnets)
     extra_subnets = [key for key in vpc_settings.keys() if key not in required_subnets]
     set_subnets_from_use(required_subnets, vpc_settings, settings)
     set_subnets_from_use(extra_subnets, vpc_settings, settings)
@@ -219,17 +219,11 @@ def apply_vpc_settings(x_settings, root_stack, settings):
     :param ecs_composex.common.settings.ComposeXSettings settings:
     :return:
     """
-    if settings.for_cfn_macro:
-        return
-    add_parameters(
-        root_stack.stack_template,
-        [VPC_ID, APP_SUBNETS, STORAGE_SUBNETS, PUBLIC_SUBNETS],
-    )
-    settings_params = {
-        VPC_ID.title: x_settings[VPC_ID.title],
-        APP_SUBNETS.title: x_settings[APP_SUBNETS.title],
-        STORAGE_SUBNETS.title: x_settings[STORAGE_SUBNETS.title],
-        PUBLIC_SUBNETS.title: x_settings[PUBLIC_SUBNETS.title],
+    settings.subnets_mappings = {
+        VPC_ID.title: {VPC_ID.title: x_settings[VPC_ID.title]},
+        APP_SUBNETS.title: {"Ids": x_settings[APP_SUBNETS.title]},
+        STORAGE_SUBNETS.title: {"Ids": x_settings[STORAGE_SUBNETS.title]},
+        PUBLIC_SUBNETS.title: {"Ids": x_settings[PUBLIC_SUBNETS.title]},
     }
     ignored_keys = ["RoleArn", "session"]
     settings.subnets_parameters.append(APP_SUBNETS)
@@ -237,16 +231,14 @@ def apply_vpc_settings(x_settings, root_stack, settings):
     settings.subnets_parameters.append(STORAGE_SUBNETS)
     for setting_name in x_settings:
         if (
-            setting_name not in settings_params.keys()
+            setting_name not in settings.subnets_mappings.keys()
             and setting_name not in ignored_keys
         ):
-            param = root_stack.stack_template.add_parameter(
-                Parameter(setting_name, Type=SUBNETS_TYPE)
-            )
-            settings_params[param.title] = x_settings[param.title]
+            settings.subnets_mappings[setting_name] = {"Ids": x_settings[setting_name]}
+            param = Parameter(setting_name, Type=SUBNETS_TYPE)
             settings.subnets_parameters.append(param)
 
-    root_stack.Parameters.update(settings_params)
+    root_stack.stack_template.add_mapping("Network", settings.subnets_mappings)
     settings.set_azs_from_vpc_import(
         public_subnets=x_settings[PUBLIC_SUBNETS.title],
         app_subnets=x_settings[APP_SUBNETS.title],

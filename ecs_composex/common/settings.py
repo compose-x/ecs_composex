@@ -45,6 +45,12 @@ from ecs_composex.iam import ROLE_ARN_ARG
 from ecs_composex.iam import validate_iam_role_arn
 from ecs_composex.utils.init_ecs import set_ecs_settings
 from ecs_composex.utils.init_s3 import create_bucket
+from ecs_composex.vpc.vpc_params import (
+    VPC_ID,
+    APP_SUBNETS,
+    PUBLIC_SUBNETS,
+    STORAGE_SUBNETS,
+)
 
 
 def render_services_ports(services):
@@ -400,6 +406,7 @@ class ComposeXSettings(object):
         self.secrets = []
         self.networks = []
         self.subnets_parameters = []
+        self.subnets_mappings = {}
         self.secrets_mappings = {}
         self.families = {}
         self.account_id = None
@@ -697,8 +704,11 @@ class ComposeXSettings(object):
             app_r = client.describe_subnets(SubnetIds=app_subnets)["Subnets"]
             storage_r = client.describe_subnets(SubnetIds=storage_subnets)["Subnets"]
             self.public_azs = [sub["AvailabilityZone"] for sub in public_r]
+            self.subnets_mappings[PUBLIC_SUBNETS.title]["Azs"] = self.public_azs
             self.storage_azs = [sub["AvailabilityZone"] for sub in storage_r]
+            self.subnets_mappings[STORAGE_SUBNETS.title]["Azs"] = self.storage_azs
             self.app_azs = [sub["AvailabilityZone"] for sub in app_r]
+            self.subnets_mappings[APP_SUBNETS.title]["Azs"] = self.app_azs
             LOG.info("Successfully updated self with AZs from looked up VPC subnets")
         except ClientError:
             LOG.warning("Could not define the AZs based on the imported subnets")

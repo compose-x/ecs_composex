@@ -22,24 +22,24 @@ Class and functions to interact with the networks: defined in compose files.
 from ecs_composex.common import keyisset, LOG
 
 
-def match_networks_services_config(service, vol_config, networks):
+def match_networks_services_config(service, net_config, networks):
     """
     Function to map network config in services and top-level networks
 
     :param service:
-    :param vol_config:
-    :param networks:
+    :param dict net_config:
+    :param list networks:
     :raises LookupError:
     """
     for network in networks:
-        if network.name == vol_config["source"]:
+        if network.name == net_config["source"]:
             network.services.append(service)
-            vol_config["network"] = network
-            service.networks.append(vol_config)
+            net_config["network"] = network
+            service.networks.append(net_config)
             LOG.info(f"Mapped {network.name} to {service.name}")
             return
     raise LookupError(
-        f"Volume {vol_config['source']} was not found in {[vol.name for vol in networks]}"
+        f"Volume {net_config['source']} was not found in {[vol.name for vol in networks]}"
     )
 
 
