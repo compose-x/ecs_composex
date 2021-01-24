@@ -104,9 +104,8 @@ class DnsZone(object):
 
     def set_zone_from_lookup(self, settings):
         namespace_info = lookup_namespace(
-            self.lookup,
+            self,
             settings.session,
-            private=False,
         )
         if not namespace_info["ZoneTld"].find(self.name) == 0:
             raise ValueError(
@@ -118,11 +117,13 @@ class DnsZone(object):
         self.dns_mapping.update(
             {
                 self.key: {
-                    dns_params.PUBLIC_DNS_ZONE_NAME.title: namespace_info["ZoneTld"],
-                    dns_params.PUBLIC_DNS_ZONE_ID.title: namespace_info["ZoneId"],
+                    self.nested_name_parameter.title: namespace_info["ZoneTld"],
+                    self.nested_id_parameter.title: namespace_info["ZoneId"],
                 }
             },
         )
+        self.id_value = FindInMap("Dns", self.key, self.nested_id_parameter.title)
+        self.name_value = FindInMap("Dns", self.key, self.nested_name_parameter.title)
 
     def set_zone_from_use(self):
         """
@@ -229,7 +230,12 @@ class DnsSettings(object):
         self.private_zone_name = dns_params.PRIVATE_DNS_ZONE_NAME.Default
         self.public_zone_name = dns_params.PUBLIC_DNS_ZONE_NAME.Default
         self.public_zone = None
-        self.dns_mapping = {}
+        self.private_zone = None
+        self.dns_mapping = {
+            PrivateNamespace.key: {
+                PrivateNamespace.nested_name_parameter.title: self.default_private_name
+            }
+        }
         dns_settings = {PrivateNamespace.key: {"Name": self.default_private_name}}
 
         if keyisset("x-dns", settings.compose_content):
@@ -277,4 +283,7 @@ class DnsSettings(object):
             if isinstance(nested_stack, ComposeXStack) or issubclass(
                 type(nested_stack), ComposeXStack
             ):
-                self.private_zone.update_nested_stack_parameters(nested_stack)
+                if self.private_zone:
+                    self.private_zone.update_nested_stack_parameters(nested_stack)
+                if self.public_zone:
+                    self.public_zone.update_nested_stack_parameters(nested_stack)

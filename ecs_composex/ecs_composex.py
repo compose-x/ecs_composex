@@ -220,21 +220,16 @@ def add_compute(root_template, settings, vpc_stack):
     """
     if not settings.create_compute:
         return None
-    root_template.add_parameter(TARGET_CAPACITY)
-    parameters = {
-        ROOT_STACK_NAME_T: Ref(AWS_STACK_NAME),
-        TARGET_CAPACITY_T: Ref(TARGET_CAPACITY),
-        MIN_CAPACITY_T: Ref(TARGET_CAPACITY),
-        USE_FLEET_T: Ref(USE_FLEET),
-        USE_ONDEMAND_T: Ref(USE_ONDEMAND),
-    }
+    parameters = {ROOT_STACK_NAME_T: Ref(AWS_STACK_NAME)}
     compute_stack = ComputeStack(
         COMPUTE_STACK_NAME, settings=settings, parameters=parameters
     )
+    if isinstance(settings.ecs_cluster, Ref):
+        compute_stack.DependsOn.append(settings.ecs_cluster.data["Ref"])
     if vpc_stack is not None:
         compute_stack.get_from_vpc_stack(vpc_stack)
     else:
-        compute_stack.no_vpc_parameters()
+        compute_stack.no_vpc_parameters(settings)
     return root_template.add_resource(compute_stack)
 
 
@@ -350,11 +345,7 @@ def generate_full_template(settings):
     vpc_stack = add_vpc_to_root(root_stack, settings)
     settings.set_networks(vpc_stack, root_stack)
     dns_settings = DnsSettings(root_stack, settings, get_vpc_id(vpc_stack))
-    # root_stack.Parameters.update(dns_settings.root_params)
     settings.ecs_cluster = add_ecs_cluster(root_stack, settings)
-    # compute_stack = add_compute(root_stack.stack_template, settings, vpc_stack)
-    # if settings.create_compute and compute_stack:
-    #     compute_stack.DependsOn.append(ROOT_CLUSTER_NAME)
     associate_services_to_root_stack(root_stack, settings, vpc_stack)
     if keyisset(ACM_KEY, settings.compose_content):
         init_acm_certs(settings, dns_settings, root_stack)
