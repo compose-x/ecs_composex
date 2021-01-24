@@ -55,7 +55,7 @@ def associate_services_to_root_stack(root_stack, settings, vpc_stack=None):
             }
         )
         if not vpc_stack:
-            family.stack.no_vpc_parameters()
+            family.stack.no_vpc_parameters(settings)
         else:
             family.stack.get_from_vpc_stack(vpc_stack)
         family.template.set_metadata(metadata)

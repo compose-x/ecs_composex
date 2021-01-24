@@ -22,7 +22,7 @@ from json import dumps
 
 from troposphere import AWS_NO_VALUE, AWS_REGION, AWS_STACK_NAME, AWS_PARTITION
 from troposphere import Parameter, Tags
-from troposphere import Sub, Ref, GetAtt, ImportValue, Join, If
+from troposphere import Sub, Ref, GetAtt, ImportValue, Join, If, FindInMap
 from troposphere.ecs import (
     HealthCheck,
     Environment,
@@ -1346,7 +1346,11 @@ class ComposeFamily(object):
         for network in settings.networks:
             if network.name in network_names:
                 self.stack_parameters.update(
-                    {APP_SUBNETS.title: Join(",", Ref(network.subnet_name))}
+                    {
+                        APP_SUBNETS.title: FindInMap(
+                            "Network", network.subnet_name, "Ids"
+                        )
+                    }
                 )
                 LOG.info(
                     f"Set {network.subnet_name} as {APP_SUBNETS.title} for {self.name}"

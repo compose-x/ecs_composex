@@ -20,7 +20,7 @@ Module to handle Root stacks and substacks in ECS composeX. Allows to treat ever
 files into S3 and on disk.
 """
 
-from troposphere import Template, GetAtt, Ref, If, Join, ImportValue
+from troposphere import Template, GetAtt, Ref, If, Join, ImportValue, FindInMap
 from troposphere import AWS_STACK_NAME
 from troposphere.cloudformation import Stack
 
@@ -252,7 +252,7 @@ class ComposeXStack(Stack, object):
         elif hasattr(self, "DependsOn") and vpc not in getattr(self, "DependsOn"):
             self.DependsOn.append(vpc)
 
-    def no_vpc_parameters(self):
+    def no_vpc_parameters(self, settings):
         """
         Method to set the stack parameters when we are not creating a VPC.
         """
@@ -262,15 +262,14 @@ class ComposeXStack(Stack, object):
             STORAGE_SUBNETS,
             APP_SUBNETS,
         ]
-        add_parameters(self.stack_template, default_parameters)
+        add_parameters(self.stack_template, settings.subnets_parameters)
         self.Parameters.update(
-            {
-                VPC_ID_T: Ref(VPC_ID),
-                APP_SUBNETS_T: Join(",", Ref(APP_SUBNETS)),
-                STORAGE_SUBNETS_T: Join(",", Ref(STORAGE_SUBNETS)),
-                PUBLIC_SUBNETS_T: Join(",", Ref(PUBLIC_SUBNETS)),
-            }
+            {VPC_ID_T: FindInMap("Network", VPC_ID.title, VPC_ID.title)}
         )
+        for subnet_param in settings.subnets_parameters:
+            self.Parameters.update(
+                {subnet_param.title: FindInMap("Network", subnet_param.title, "Ids")}
+            )
 
 
 def process_stacks(root_stack, settings, is_root=True):

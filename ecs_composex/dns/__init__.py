@@ -175,7 +175,9 @@ class PrivateNamespace(DnsZone):
             Description=Sub(r"CloudMap VpcNamespace for ${AWS::StackName}"),
             Name=self.name,
             Vpc=vpc,
-            DependsOn=[] if isinstance(vpc, Ref) else [cfn_params.VPC_STACK_NAME],
+            DependsOn=[]
+            if isinstance(vpc, (FindInMap, Sub, Ref))
+            else [cfn_params.VPC_STACK_NAME],
         )
         self.id_value = GetAtt(self.cfn_resource, "Id")
         self.name_value = self.name
