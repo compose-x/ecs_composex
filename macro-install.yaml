@@ -9,28 +9,28 @@ Transform:
 Metadata:
   Maintainer: john@compose-x.io
   Version: 2021-01-25
-    AWS::CloudFormation::Interface:
-      ParmeterLabels:
-        ECSComposeXMacroUri:
-          default: ECS Compose-X Macro docker image URL
-        TemplatesBucket:
-          default: Bucket to store all rendered CloudFormation templates and config files.
-      ParameterGroups:
-        - Parameters:
-            - ECSComposeXMacroUri
-            - MemorySize
-          Label:
-            default: Lambda Settings
-        - Parameters:
-            - TemplatesBucket
-          Label:
-            default: ECS ComposeX Settings
+  AWS::CloudFormation::Interface:
+    ParmeterLabels:
+      ECSComposeXMacroUri:
+        default: ECS Compose-X Macro docker image URL
+      TemplatesBucket:
+        default: Bucket to store all rendered CloudFormation templates and config files.
+    ParameterGroups:
+      - Parameters:
+          - ECSComposeXMacroUri
+          - MemorySize
+        Label:
+          default: Lambda Settings
+      - Parameters:
+          - TemplatesBucket
+        Label:
+          default: ECS ComposeX Settings
 
 
 Parameters:
   ECSComposeXMacroUri:
     Type: String
-    Default: gallery.ecr.aws/i9v7p2w3/compose-x-macro:main
+    Default: 518078317392.dkr.ecr.eu-west-1.amazonaws.com/compose-x-macro:nightly
   MemorySize:
     Type: Number
     Default: 128
@@ -103,14 +103,10 @@ Resources:
       Role: !GetAtt 'MacroFunctionRole.Arn'
       Timeout: 30
       FunctionName: !Sub "ecs-compose-x-macro-${AWS::Region}"
+      PackageType: Image
       Tags:
-        - Key: Name
-          Value: !Sub "ecs-compose-x-macro-${AWS::Region}"
-        - Key: Usage
-          Value: ECS Compose-X CFN macro
-        - Key: AWS_REGION
-          Value: !Ref AWS::Region
-
+        Name: !Sub "ecs-compose-x-macro-${AWS::Region}"
+        Usage: ECS Compose-X CFN macro
   CloudFormationLogRole:
     Type: AWS::IAM::Role
     Properties:
