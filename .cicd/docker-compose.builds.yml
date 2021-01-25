@@ -2,7 +2,7 @@
 services:
   py37:
     build:
-      dockerfile: Dockerfile
+      dockerfile: cli.Dockerfile
       context: ../
       args:
         SRC_TAG: "3.7.20210113"
@@ -11,7 +11,7 @@ services:
 
   py38:
     build:
-      dockerfile: Dockerfile
+      dockerfile: cli.Dockerfile
       context: ../
       args:
         SRC_TAG: "3.8.20210113"

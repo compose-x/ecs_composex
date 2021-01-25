@@ -1,0 +1,28 @@
+﻿
+version: 0.2
+env:
+  shell: /bin/bash
+  variables:
+    USE_EPOCH: 0
+    DIND_VOL_PATH: /var/lib/docker/volumes/agent-resources_user_volume/_data/srcDownload/src
+
+phases:
+  install:
+    commands:
+      - if [ -z ${AWS_ACCOUNT_ID+x} ]; then AWS_ACCOUNT_ID=$(aws sts get-caller-identity | jq -r .Account); fi
+      - if ! [ -z ${VERSION+} ]; then echo "Missing required parameter VERSION" && exit 1; fi
+      - REGISTRY_URI=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION:-$AWS_DEFAULT_REGION}.amazonaws.com
+      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin ${REGISTRY_URI}
+      - COMMIT_HASH=${CODEBUILD_RESOLVED_SOURCE_VERSION::7}
+      - EPOCH=`date +'%Y%m%d'`
+      - SUFFIX=${COMMIT_HASH:=$EPOCH}
+      - if [ $USE_EPOCH -eq 1 ]; then SUFFIX=$EPOCH; fi
+
+  build:
+    commands:
+      - docker build -t compose-x-macro:${SUFFIX} -f macro.Dockerfile .
+      - docker tag compose-x-macro:latest ${REGISTRY_URI}/compose-x-macro:${SUFFIX}
+      - docker push ${REGISTRY_URI}/compose-x-macro:${SUFFIX}
+
+    finally:
+      - rm -rfv ~/.docker

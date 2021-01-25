@@ -14,7 +14,7 @@ batch:
   build-graph:
     - identifier: amd64
       env:
-        compute-type: BUILD_GENERAL1_LARGE
+        compute-type: BUILD_GENERAL1_SMALL
         privileged-mode: true
         variables:
           VERSION: 3.7
@@ -32,13 +32,23 @@ batch:
           VERSION: 3.7
       buildspec: .cicd/buildspec_image.yml
 
+    - identifier: macro
+      env:
+        compute-type: BUILD_GENERAL1_SMALL
+        privileged-mode: true
+        variables:
+          VERSION: 3.7
+          ARCH: amd64
+      buildspec: .cicd/buildspec_macro_image.yml
+
     - identifier: manifest
       env:
-        compute-type: BUILD_GENERAL1_LARGE
+        compute-type: BUILD_GENERAL1_SMALL
         privileged-mode: true
       depend-on:
         - amd64
         - arm64v8
+        - macro
 
 phases:
   install:
@@ -92,6 +102,18 @@ phases:
                   --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py38-amd64    \
                   --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py38-arm64v8 ;
             docker manifest push ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:latest
+          fi
+      - docker pull ${REGISTRY_URI}/compose-x-macro:${SUFFIX}
+      - docker push ${PUBLIC_REGISTRY}/compose-x-macro:${SUFFIX}
+      - |
+          if ! [ $TAG_RELEASE -eq 1 ]; then
+            docker manifest create ${PUBLIC_REGISTRY}/compose-x-macro:nightly   \
+                  --amend ${PUBLIC_REGISTRY}/compose-x-macro:${SUFFIX}
+            docker manifest push ${PUBLIC_REGISTRY}/compose-x-macro:nightly
+          else
+            docker manifest create ${PUBLIC_REGISTRY}/compose-x-macro:latest   \
+                  --amend ${PUBLIC_REGISTRY}/compose-x-macro:${SUFFIX}
+            docker manifest push ${PUBLIC_REGISTRY}/compose-x-macro:latest
           fi
 
     finally:
