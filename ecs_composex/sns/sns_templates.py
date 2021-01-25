@@ -103,7 +103,7 @@ def define_topic_subscriptions(subscriptions, content):
 
 def define_topic(topic, content):
     """
-    Function that builds the SNS topic template from Dockerfile Properties
+    Function that builds the SNS topic template from cli.Dockerfile Properties
 
     :param topic: The topic and its definition
     :type topic: ecs_composex.sns.sns_stack.Topic
