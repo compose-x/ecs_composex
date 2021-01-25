@@ -7,6 +7,7 @@ env:
     PUBLIC_REGISTRY: public.ecr.aws/i9v7p2w3
     DOCKER_CLI_EXPERIMENTAL: enabled
     REPOSITORY_NAME: compose-x
+    MACRO_REPO_NAME: compose-x-macro
     TAG_RELEASE: 0
 
 batch:
@@ -54,7 +55,7 @@ phases:
   install:
     commands:
       - if [ -z ${AWS_ACCOUNT_ID+x} ]; then AWS_ACCOUNT_ID=$(aws sts get-caller-identity | jq -r .Account); fi
-      - REGISTRY_URI=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION:-$AWS_DEFAULT_REGION}.amazonaws.com/
+      - REGISTRY_URI=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION:-$AWS_DEFAULT_REGION}.amazonaws.com
       - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin ${REGISTRY_URI}
       - aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${PUBLIC_REGISTRY}
       - if ! [ -z ${CODEBUILD_RESOLVED_SOURCE_VERSION+x} ]; then COMMIT_HASH=${CODEBUILD_RESOLVED_SOURCE_VERSION::7}; fi
@@ -73,9 +74,9 @@ phases:
             for ARCH in "amd64" "arm64v8"; do
               TAG=${SUFFIX}-${VERSION}-${ARCH}
 
-              echo Publish from ${REGISTRY_URI}${REPOSITORY_NAME}:${TAG} to ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${TAG}
-              docker pull ${REGISTRY_URI}${REPOSITORY_NAME}:${TAG}
-              docker tag  ${REGISTRY_URI}${REPOSITORY_NAME}:${TAG} ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${TAG}
+              echo Publish from ${REGISTRY_URI}$/{REPOSITORY_NAME}:${TAG} to ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${TAG}
+              docker pull ${REGISTRY_URI}/${REPOSITORY_NAME}:${TAG}
+              docker tag  ${REGISTRY_URI}/${REPOSITORY_NAME}:${TAG} ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${TAG}
               docker push ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${TAG}
             done
           done
@@ -103,17 +104,18 @@ phases:
                   --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py38-arm64v8 ;
             docker manifest push ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:latest
           fi
-      - docker pull ${REGISTRY_URI}/compose-x-macro:${SUFFIX}
-      - docker push ${PUBLIC_REGISTRY}/compose-x-macro:${SUFFIX}
+      - docker pull ${REGISTRY_URI}/${MACRO_REPO_NAME}:${SUFFIX}
+      - docker tag ${REGISTRY_URI}/${MACRO_REPO_NAME}:${SUFFIX} ${PUBLIC_REGISTRY}/${MACRO_REPO_NAME}:${SUFFIX}
+      - docker push ${PUBLIC_REGISTRY}/${MACRO_REPO_NAME}:${SUFFIX}
       - |
           if ! [ $TAG_RELEASE -eq 1 ]; then
-            docker manifest create ${PUBLIC_REGISTRY}/compose-x-macro:nightly   \
-                  --amend ${PUBLIC_REGISTRY}/compose-x-macro:${SUFFIX}
-            docker manifest push ${PUBLIC_REGISTRY}/compose-x-macro:nightly
+            docker manifest create ${PUBLIC_REGISTRY}/${MACRO_REPO_NAME}:nightly   \
+                  --amend ${PUBLIC_REGISTRY}/${MACRO_REPO_NAME}:${SUFFIX}
+            docker manifest push ${PUBLIC_REGISTRY}/${MACRO_REPO_NAME}:nightly
           else
-            docker manifest create ${PUBLIC_REGISTRY}/compose-x-macro:latest   \
-                  --amend ${PUBLIC_REGISTRY}/compose-x-macro:${SUFFIX}
-            docker manifest push ${PUBLIC_REGISTRY}/compose-x-macro:latest
+            docker manifest create ${PUBLIC_REGISTRY}compose-x-macro:latest   \
+                  --amend ${PUBLIC_REGISTRY}/${MACRO_REPO_NAME}:${SUFFIX}
+            docker manifest push ${PUBLIC_REGISTRY}/${MACRO_REPO_NAME}:latest
           fi
 
     finally:

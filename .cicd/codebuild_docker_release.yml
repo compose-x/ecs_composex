@@ -30,9 +30,6 @@ Parameters:
     Type: String
     Default: .cicd/buildspec_pr.yml
 
-  PublicRepositoryName:
-    Type: String
-
 Mappings:
   RepoUrlPrefixes:
     GitHub:
@@ -131,7 +128,7 @@ Resources:
               - Sid: PublicEcrPublish
                 Effect: Allow
                 Resource:
-                  - !Sub "arn:${AWS::Partition}:ecr-public::${AWS::AccountId}:repository/${PublicRepositoryName}"
+                  - !Sub "arn:${AWS::Partition}:ecr-public::${AWS::AccountId}:repository/*"
                 Action: [
                     "ecr-public:InitiateLayerUpload",
                     "ecr-public:UploadLayerPart",
