@@ -21,7 +21,7 @@ phases:
   build:
     commands:
       - docker build -t compose-x-macro:${SUFFIX} -f macro.Dockerfile .
-      - docker tag compose-x-macro:latest ${REGISTRY_URI}/compose-x-macro:${SUFFIX}
+      - docker tag compose-x-macro:${SUFFIX} ${REGISTRY_URI}/compose-x-macro:${SUFFIX}
       - docker push ${REGISTRY_URI}/compose-x-macro:${SUFFIX}
 
     finally:
