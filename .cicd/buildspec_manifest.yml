@@ -105,6 +105,7 @@ phases:
             docker manifest push ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:latest
           fi
       - docker pull ${REGISTRY_URI}/${MACRO_REPO_NAME}:${SUFFIX}
+      - docker tag ${REGISTRY_URI}/${MACRO_REPO_NAME}:${SUFFIX} ${PUBLIC_REGISTRY}/${MACRO_REPO_NAME}:${SUFFIX}
       - docker push ${PUBLIC_REGISTRY}/${MACRO_REPO_NAME}:${SUFFIX}
       - |
           if ! [ $TAG_RELEASE -eq 1 ]; then
