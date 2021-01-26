@@ -1,5 +1,4 @@
-﻿
-version: 0.2
+﻿version: 0.2
 env:
   shell: /bin/bash
   variables:
@@ -53,8 +52,6 @@ batch:
 
 phases:
   install:
-    runtime-versions:
-      python: "$(echo $PY_VERSION)"
     commands:
       - if [ -z ${AWS_ACCOUNT_ID+x} ]; then AWS_ACCOUNT_ID=$(aws sts get-caller-identity | jq -r .Account); fi
       - REGISTRY_URI=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION:-$AWS_DEFAULT_REGION}.amazonaws.com
