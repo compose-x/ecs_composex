@@ -220,6 +220,16 @@ Resources:
       BadgeEnabled: True
       Artifacts:
         Type: NO_ARTIFACTS
+      BuildBatchConfig:
+        CombineArtifacts: False
+        Restrictions:
+          ComputeTypesAllowed:
+            - BUILD_GENERAL1_SMALL
+            - BUILD_GENERAL1_MEDIUM
+            - BUILD_GENERAL1_LARGE
+          MaximumBuildsAllowed: 10
+        ServiceRole: !GetAtt 'CodeBuildRole.Arn'
+        TimeoutInMins: 60
       Environment:
         ComputeType: BUILD_GENERAL1_SMALL
         Image: aws/codebuild/standard:5.0
@@ -239,6 +249,7 @@ Resources:
         BuildSpec: !Ref LayersBuildSpecFile
 
       Triggers:
+        BuildType: BUILD_BATCH
         Webhook: True
         FilterGroups:
           - - Type: EVENT

@@ -54,7 +54,10 @@ phases:
       - |
           for PY_VERSION in py37 py38; do
             dir_env_name="CODEBUILD_SRC_DIR_${PY_VERSION}_AppDefinition"
-            find ${!dir_env_name} -type f -name layer.zip | ( read path; cp ${path} ${PY_VERSION.zip} ) ;
+            echo Searching in ${!dir_env_name}
+            ls -lh ${!dir_env_name}
+            find ${!dir_env_name} -type f -name layer.zip | ( read path; cp ${path} ${PY_VERSION}.zip ) ;
+            file ${PY_VERSION}.zip && ls -lh ${PY_VERSION}.zip
             unzip -q -o ${PY_VERSION}.zip -d merged
           done
       - cd merged; zip -r9 ../layer.zip python; cd -
