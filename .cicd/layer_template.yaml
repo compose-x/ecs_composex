@@ -21,7 +21,7 @@ Resources:
     Properties:
       Action: lambda:GetLayerVersion
       LayerVersionArn: !Ref LambdaLayer
-      OrganizationId: "*"
+      OrganizationId: !Ref AWS::NoValue
       Principal: "*"
 
 
