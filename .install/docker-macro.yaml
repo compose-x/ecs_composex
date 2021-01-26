@@ -1,4 +1,4 @@
-﻿AWSTemplateFormatVersion: "2010-09-09"
+AWSTemplateFormatVersion: "2010-09-09"
 Description: >-
   This CFN Template allows you to install the AWS CFN Macro as a Lambda Function to execute ECS Compose-X directly
   from within your AWS CloudFormation templates.
@@ -103,7 +103,7 @@ Resources:
       Role: !GetAtt 'MacroFunctionRole.Arn'
       Timeout: 30
       FunctionName: !Sub "ecs-compose-x-macro-${AWS::Region}"
-      PackageType: Image
+      PackageType: Image"
       Tags:
         Name: !Sub "ecs-compose-x-macro-${AWS::Region}"
         Usage: ECS Compose-X CFN macro
