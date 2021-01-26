@@ -83,9 +83,6 @@ Resources:
                   - iam:PassRole
                 Resource:
                   - !GetAtt CloudFormationRole.Arn
-                Condition:
-                  StringEquals:
-                    iam:PassedToService: !Sub 'cloudformation.${AWS::URLSuffix}'
         - PolicyName: ContentAccess
           PolicyDocument:
             Version: '2012-10-17'
@@ -127,6 +124,7 @@ Resources:
                   - !Sub 'arn:${AWS::Partition}:codebuild:${AWS::Region}:${AWS::AccountId}:*'
                 Action:
                   - codebuild:StartBuild
+                  - codebuild:RetryBuild
               - Sid: ECRAuthAndGetFromAny
                 Effect: Allow
                 Resource:
