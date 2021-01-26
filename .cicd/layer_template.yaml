@@ -16,6 +16,15 @@ Resources:
       LicenseInfo: GPLv3
       RetentionPolicy: Retain
 
+  LayerPermissions:
+    Type: AWS::Lambda::LayerVersionPermission
+    Properties:
+      Action: lambda:GetLayerVersion
+      LayerVersionArn: !Ref LambdaLayer
+      OrganizationId: "*"
+      Principal: "*"
+
+
 Outputs:
   LayerVersion:
     Value: !Ref LambdaLayer
