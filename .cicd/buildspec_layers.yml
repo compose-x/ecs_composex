@@ -55,11 +55,11 @@ phases:
           for PY_VERSION in 3.7 3.8; do
             echo "Going over ${PY_VERSION}"
             ID_NAME=$( echo py${PY_VERSION} | sed 's/\.//g')
-            DIR_ENV_NAME="CODEBUILD_SRC_DIR_${ID_NAME}_AppDefinition"
-            echo $DIR_ENV_NAME
-            echo Searching in ${!DIR_ENV_NAME}
-            ls -lh ${!DIR_ENV_NAME}
-            find ${!DIR_ENV_NAME} -type f -name layer.zip | ( read path; cp ${path} ${PY_VERSION}.zip ) ;
+            dir_env_name="CODEBUILD_SRC_DIR_${ID_NAME}_${ID_NAME}"
+            echo $dir_env_name
+            echo Searching in ${!dir_env_name}
+            ls -lh ${!dir_env_name}
+            find ${!dir_env_name} -type f -name layer.zip | ( read path; cp ${path} ${PY_VERSION}.zip ) ;
             file ${PY_VERSION}.zip && ls -lh ${PY_VERSION}.zip
             unzip -q -o ${PY_VERSION}.zip -d merged
           done

@@ -37,6 +37,10 @@ Parameters:
   PublicFilesBucket:
     Type: String
 
+  ArtifactsBucket:
+    Type: String
+
+
 Mappings:
   RepoUrlPrefixes:
     GitHub:
@@ -73,12 +77,20 @@ Resources:
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
-              - Sid: S3PublicFilesAccess
+              - Sid: S3ObjectsAccess
                 Effect: Allow
                 Action:
                   - s3:PutObject*
                 Resource:
-                  - !Sub "aws:${AWS::Partition}:s3:::${PublicFilesBucket}/*"
+                  - !Sub "arn:${AWS::Partition}:s3:::${PublicFilesBucket}/*"
+                  - !Sub "arn:${AWS::Partition}:s3:::${ArtifactsBucket}/*"
+              - Sid: S3BucketsAccess
+                Effect: Allow
+                Action:
+                  - s3:ListBucket
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:s3:::${PublicFilesBucket}"
+                  - !Sub "arn:${AWS::Partition}:s3:::${ArtifactsBucket}"
               - Sid: CloudWatchLogs
                 Effect: Allow
                 Action:
@@ -158,7 +170,7 @@ Resources:
         CloudWatchLogs:
           GroupName: !Ref BuildLogsGroup
           Status: ENABLED
-          StreamName: prerelease
+          StreamName: docker-builds
       BadgeEnabled: True
       Artifacts:
         Type: NO_ARTIFACTS
@@ -216,10 +228,12 @@ Resources:
         CloudWatchLogs:
           GroupName: !Ref BuildLogsGroup
           Status: ENABLED
-          StreamName: prerelease
+          StreamName: lambda-layers
       BadgeEnabled: True
       Artifacts:
-        Type: NO_ARTIFACTS
+        Type: S3
+        Packaging: NONE
+        Location: !Ref ArtifactsBucket
       BuildBatchConfig:
         CombineArtifacts: False
         Restrictions:
