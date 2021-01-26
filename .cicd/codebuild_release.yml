@@ -241,7 +241,7 @@ Resources:
                   - iam:ListRolePolicies
                   - iam:GetRolePolicy
 
-  BuildUnittest:
+  DockerImagesBuild:
     Type: AWS::CodeBuild::Project
     Properties:
       ServiceRole: !GetAtt 'CodeBuildRole.Arn'
