@@ -120,5 +120,9 @@ phases:
             docker manifest push ${PUBLIC_REGISTRY}/${MACRO_REPO_NAME}:latest
           fi
 
+  post_build:
+    commands:
+      - aws s3 cp .install/docker-macro.yaml s3://${PUBLIC_FILES_BUCKET}/ --sse AES256 --acl public-read --storage-class STANDARD_IA
+
     finally:
       - rm -rfv ~/.docker

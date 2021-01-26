@@ -67,7 +67,10 @@ phases:
       - aws cloudformation package --template-file .cicd/layer_template.yaml --s3-bucket ${PUBLIC_FILES_BUCKET}  --output-template-file layer.yml
       - aws cloudformation deploy --template-file layer.yml --stack-name ${DEPLOYMENT_NAME:-ecs-compose-x-layer} --capabilities CAPABILITY_AUTO_EXPAND --role-arn ${CFN_IAM_ROLE}
 
+  post_build:
+    commands:
+      - aws s3 cp .install/python-macro.yaml s3://${PUBLIC_FILES_BUCKET}/ --sse AES256 --acl public-read --storage-class STANDARD_IA
+
 artifacts:
   files:
-    - layer.zip
-    - newlayer.yml
+    - layer.yml

@@ -122,6 +122,10 @@ Resources:
   CloudFormationLogRole:
     Type: AWS::IAM::Role
     Properties:
+      PermissionsBoundary: !If
+        - UseBoundary
+        - !Ref PermissionsBoundary
+        - !Ref AWS::NoValue
       Tags:
         - Key: Name
           Value: CFN Macro Logging role
