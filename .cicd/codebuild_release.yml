@@ -73,6 +73,19 @@ Resources:
               Service:
                 - !Sub 'codebuild.${AWS::URLSuffix}'
       Policies:
+        - PolicyName: IamForCloudFormation
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: AllowPassIamRole
+                Effect: Allow
+                Action:
+                  - iam:PassRole
+                Resource:
+                  - !GetAtt CloudFormationRole.Arn
+                Condition:
+                  StringEquals:
+                    iam:PassedToService: !Sub 'cloudformation.${AWS::URLSuffix}'
         - PolicyName: ContentAccess
           PolicyDocument:
             Version: '2012-10-17'
@@ -160,6 +173,76 @@ Resources:
                     "ecr-public:CompleteLayerUpload",
                     "ecr-public:PutImage"
                 ]
+
+  CloudFormationRole:
+    Type: AWS::IAM::Role
+    Properties:
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/ReadOnlyAccess
+        - arn:aws:iam::aws:policy/ResourceGroupsandTagEditorReadOnlyAccess
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - !Sub 'cloudformation.${AWS::URLSuffix}'
+      Policies:
+        - PolicyName: ContentAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: CloudFormationActions
+                Effect: Allow
+                Resource: '*'
+                Action:
+                  - cloudformation:*
+              - Sid: LambdaPublishAccess
+                Effect: Allow
+                Action:
+                  - lambda:PublishLayerVersion
+                  - lambda:AddLayerVersionPermission
+                  - lambda:RemoveLayerVersionPermission
+                  - lambda:DeleteLayerVersion
+                  - lambda:GetLayer*
+                  - lambda:ListLayer*
+                  - lambda:Tag*
+                Resource:
+                  - "*"
+        - PolicyName: IAMAccess
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: AllowIamRoleCreation
+                Effect: Allow
+                Resource:
+                  - '*'
+                Action:
+                  - iam:GetRole
+                  - iam:UpdateAssumeRolePolicy
+                  - iam:ListRoleTags
+                  - iam:UntagRole
+                  - iam:TagRole
+                  - iam:PutRolePermissionsBoundary
+                  - iam:RemoveRoleFromInstanceProfile
+                  - iam:UpdateRoleDescription
+                  - iam:CreateRole
+                  - iam:DeleteRole
+                  - iam:AttachRolePolicy
+                  - iam:PutRolePolicy
+                  - iam:DeleteRolePermissionsBoundary
+                  - iam:AddRoleToInstanceProfile
+                  - iam:ListInstanceProfilesForRole
+                  - iam:PassRole
+                  - iam:CreateServiceLinkedRole
+                  - iam:DetachRolePolicy
+                  - iam:ListAttachedRolePolicies
+                  - iam:DeleteRolePolicy
+                  - iam:UpdateRole
+                  - iam:ListRolePolicies
+                  - iam:GetRolePolicy
 
   BuildUnittest:
     Type: AWS::CodeBuild::Project
@@ -252,6 +335,9 @@ Resources:
           - Name: PUBLIC_FILES_BUCKET
             Type: PLAINTEXT
             Value: !Ref PublicFilesBucket
+          - Name: CFN_IAM_ROLE
+            Type: PLAINTEXT
+            Value: !GetAtt CloudFormationRole.Arn
       Source:
         Type: GITHUB
         ReportBuildStatus: True
