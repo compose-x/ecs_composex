@@ -10,7 +10,7 @@ Resources:
       CompatibleRuntimes:
         - python3.7
         - python3.8
-      ContentUri: layer.zip
+      ContentUri: ../layer.zip
       Description: ECS Compose-X Lambda Layer
       LayerName: ecs_composex
       LicenseInfo: GPLv3
