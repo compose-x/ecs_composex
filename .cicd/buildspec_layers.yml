@@ -1,0 +1,67 @@
+﻿
+version: 0.2
+env:
+  shell: /bin/bash
+  variables:
+    USE_EPOCH: 0
+    DIND_VOL_PATH: /var/lib/docker/volumes/agent-resources_user_volume/_data/srcDownload/src
+    PY_VERSION: 3.8
+
+batch:
+  fast-fail: true
+  build-graph:
+    - identifier: py37
+      env:
+        compute-type: BUILD_GENERAL1_SMALL
+        privileged-mode: false
+        variables:
+          PY_VERSION: 3.7
+      buildspec: .cicd/buildspec_layer.yml
+      ignore-failure: false
+
+    - identifier: py38
+      env:
+        compute-type: BUILD_GENERAL1_SMALL
+        privileged-mode: false
+        variables:
+          PY_VERSION: 3.8
+      buildspec: .cicd/buildspec_layer.yml
+      ignore-failure: false
+
+    - identifier: merge
+      depend-on:
+        - py37
+        - py38
+      env:
+        compute-type: BUILD_GENERAL1_SMALL
+        privileged-mode: false
+      ignore-failure: false
+
+phases:
+  install:
+    runtime-versions:
+      python: "$(echo $PY_VERSION)"
+    commands:
+      - COMMIT_HASH=${CODEBUILD_RESOLVED_SOURCE_VERSION::7}
+      - EPOCH=`date +'%Y%m%d'`
+      - SUFFIX=${COMMIT_HASH:=$EPOCH}
+      - if [ $USE_EPOCH -eq 1 ]; then SUFFIX=$EPOCH; fi
+      - (pip --version && pip install pip -U --no-cache-dir) && pip install wheel --no-cache-dir
+
+  build:
+    commands:
+      - mkdir merged
+      - |
+          for PY_VERSION in py37 py38; do
+            dir_env_name="CODEBUILD_SRC_DIR_${PY_VERSION}_AppDefinition"
+            find ${!dir_env_name} -type f -name layer.zip | ( read path; cp ${path} ${PY_VERSION.zip} ) ;
+            unzip -q -o ${PY_VERSION}.zip -d merged
+          done
+      - cd merged; zip -r9 ../layer.zip python; cd -
+      - aws cloudformation package --template-file .cicd/layer_template.yml --s3-bucket ${PUBLIC_FILES_BUCKET} --output-template-file layer.yml
+      - aws cloudformation deploy --template-file layer.yml --stack-name ${DEPLOYMENT_NAME:-ecs-compose-x-layer} --capabilities CAPABILITY_AUTO_EXPAND
+
+artifacts:
+  files:
+    - layer.zip
+    - newlayer.yml

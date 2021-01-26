@@ -30,6 +30,13 @@ Parameters:
     Type: String
     Default: .cicd/buildspec_pr.yml
 
+  LayersBuildSpecFile:
+    Type: String
+    Default: .cicd/buildspec_layer.yml
+
+  PublicFilesBucket:
+    Type: String
+
 Mappings:
   RepoUrlPrefixes:
     GitHub:
@@ -66,6 +73,12 @@ Resources:
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
+              - Sid: S3PublicFilesAccess
+                Effect: Allow
+                Action:
+                  - s3:PutObject*
+                Resource:
+                  - !Sub "aws:${AWS::Partition}:s3:::${PublicFilesBucket}/*"
               - Sid: CloudWatchLogs
                 Effect: Allow
                 Action:
@@ -139,7 +152,6 @@ Resources:
   BuildUnittest:
     Type: AWS::CodeBuild::Project
     Properties:
-      Name: !Sub 'DOCKER-BUILD-${RepositoryName}'
       ServiceRole: !GetAtt 'CodeBuildRole.Arn'
       Description: !Sub 'Publishes blog on updates'
       LogsConfig:
@@ -178,6 +190,56 @@ Resources:
       Triggers:
         Webhook: True
         BuildType: BUILD_BATCH
+        FilterGroups:
+          - - Type: EVENT
+              Pattern: "PULL_REQUEST_MERGED"
+              ExcludeMatchedPattern: False
+            - Type: HEAD_REF
+              Pattern: '^refs/heads/.*$'
+              ExcludeMatchedPattern: False
+            - Type: BASE_REF
+              Pattern: !Sub '^refs/heads/${ReferenceBranchName}$'
+              ExcludeMatchedPattern: False
+          - - Type: EVENT
+              Pattern: "PUSH"
+              ExcludeMatchedPattern: False
+            - Type: HEAD_REF
+              Pattern: !Sub '^refs/tags/v.*$'
+              ExcludeMatchedPattern: False
+
+  BuildLambdaLayer:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      ServiceRole: !GetAtt 'CodeBuildRole.Arn'
+      Description: !Sub 'Publishes blog on updates'
+      LogsConfig:
+        CloudWatchLogs:
+          GroupName: !Ref BuildLogsGroup
+          Status: ENABLED
+          StreamName: prerelease
+      BadgeEnabled: True
+      Artifacts:
+        Type: NO_ARTIFACTS
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:5.0
+        Type: LINUX_CONTAINER
+        EnvironmentVariables:
+          - Name: PUBLIC_FILES_BUCKET
+            Type: PLAINTEXT
+            Value: !Ref PublicFilesBucket
+      Source:
+        Type: GITHUB
+        ReportBuildStatus: True
+        Location: !If
+          - UseGitHub
+          - !Sub 'https://github.com/${RepositoryOrganization}/${RepositoryName}'
+          - !Sub 'https://codecommit.${AWS::Region}.${AWS::URLSuffix}'
+        InsecureSsl: False
+        BuildSpec: !Ref LayersBuildSpecFile
+
+      Triggers:
+        Webhook: True
         FilterGroups:
           - - Type: EVENT
               Pattern: "PULL_REQUEST_MERGED"

@@ -1,0 +1,19 @@
+﻿AWSTemplateFormatVersion: "2010-09-09"
+Description: >-
+  Template to deploy Lambda Layer version
+Resources:
+  LambdaLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      CompatibleRuntimes:
+        - python3.7
+        - python3.8
+      ContentUri: layer.zip
+      Description: ECS Compose-X Lambda Layer
+      LayerName: ecs_composex
+      LicenseInfo: GPLv3
+      RetentionPolicy: Retain
+
+Outputs:
+  LayerVersion:
+    Value: !Ref LambdaLayer
