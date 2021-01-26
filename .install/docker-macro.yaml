@@ -10,7 +10,7 @@ Metadata:
   Maintainer: john@compose-x.io
   Version: 2021-01-25
   AWS::CloudFormation::Interface:
-    ParmeterLabels:
+    ParameterLabels:
       ECSComposeXMacroUri:
         default: ECS Compose-X Macro docker image URL
       TemplatesBucket:

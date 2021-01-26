@@ -10,7 +10,7 @@ Metadata:
   Maintainer: john@compose-x.io
   Version: 2021-01-25
   AWS::CloudFormation::Interface:
-    ParmeterLabels:
+    ParameterLabels:
       ComposeXLambdaLayerVersion:
         default: ECS Compose-X Macro Lambda Layer version
       TemplatesBucket:
@@ -34,6 +34,8 @@ Parameters:
   MemorySize:
     Type: Number
     Default: 128
+    MaxValue: 10240
+    MinValue: 128
 
   TemplatesBucket:
     Type: String
