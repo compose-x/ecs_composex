@@ -82,6 +82,14 @@ Resources:
                   - iam:PassRole
                 Resource:
                   - !GetAtt CloudFormationRole.Arn
+              - Sid: CloudFormationActions
+                Effect: Allow
+                Resource: '*'
+                Action:
+                  - cloudformation:Create*
+                  - cloudformation:Update*
+                  - cloudformation:Get*
+                  - cloudformation:ValidateTemplate
         - PolicyName: ContentAccess
           PolicyDocument:
             Version: '2012-10-17'
