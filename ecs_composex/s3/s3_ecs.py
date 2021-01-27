@@ -31,6 +31,7 @@ from ecs_composex.resource_settings import (
     generate_resource_permissions,
     get_selected_services,
 )
+from ecs_composex.s3.s3_params import MOD_KEY
 from ecs_composex.s3.s3_aws import lookup_bucket_config
 from ecs_composex.s3.s3_perms import ACCESS_TYPES
 
@@ -283,6 +284,11 @@ def s3_to_ecs(xresources, services_stack, res_root_stack, settings):
     :return:
     """
     buckets_mappings = {}
+    if res_root_stack.is_void:
+        key = MOD_KEY
+    else:
+        key = res_root_stack.title
+    settings.mappings[key] = buckets_mappings
     new_resources = [
         xresources[name] for name in xresources if not xresources[name].lookup
     ]

@@ -19,7 +19,7 @@ import re
 
 from troposphere import AWS_PARTITION, AWS_STACK_NAME, AWS_NO_VALUE
 from troposphere import Parameter
-from troposphere import Ref, Sub, GetAtt
+from troposphere import Ref, Sub, GetAtt, FindInMap
 from troposphere.iam import Role as IamRole, Policy as IamPolicy
 from troposphere.rds import DBClusterRole
 
@@ -71,6 +71,10 @@ def set_from_x_s3(settings, stack, db, db_template, bucket_name):
         return
     if resource.cfn_resource:
         return get_s3_bucket_arn_from_resource(db_template, stack, resource)
+    elif resource.lookup and keyisset("s3", settings.mappings):
+        if "s3" not in db_template.mappings:
+            db_template.add_mapping("s3", settings.mappings["s3"])
+            return FindInMap("s3", resource.logical_name, "Arn")
 
 
 def import_bucket_from_arn(bucket):
