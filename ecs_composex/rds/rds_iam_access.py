@@ -17,10 +17,7 @@
 
 import re
 
-from troposphere import (
-    AWS_PARTITION,
-    AWS_STACK_NAME,
-)
+from troposphere import AWS_PARTITION, AWS_STACK_NAME, AWS_NO_VALUE
 from troposphere import Parameter
 from troposphere import Ref, Sub, GetAtt
 from troposphere.iam import Role as IamRole, Policy as IamPolicy
@@ -72,6 +69,57 @@ def set_from_x_s3(settings, stack, db, db_template, bucket_name):
         return Sub(f"${{{param.title}}}/*")
 
 
+def import_bucket_from_arn(bucket):
+    """
+    Function to import a bucket defined by its ARN, supports to detect the path in bucket for objects
+
+    :param str bucket:
+    :return: the bucket ARN to use
+    :rtype: str
+    """
+    bucket_arn_path_re = re.compile(
+        r"(arn:aws:s3:::(?:[a-zA-Z0-9-.]+))(/path/to/files)?"
+    )
+    if not bucket_arn_path_re.match(bucket):
+        raise ValueError(
+            "The Bucket ARN provided is not valid. Expecting format",
+            bucket_arn_path_re.pattern,
+        )
+    elif bucket_arn_path_re.match(bucket):
+        bucket_arn = bucket
+    else:
+        bucket_arn = f"{bucket}/*"
+
+    return bucket_arn
+
+
+def import_raw_bucket_name(bucket):
+    """
+    Function to import and define a bucket ARN from bucket name alone and support for path to be defined
+    :param str bucket:
+    :return: the bucket ARN
+    :rtype: Sub
+    """
+    bucket_name_path_re = re.compile(r"(?:[a-zA-Z0-9-.]+)(/path/to/files)?")
+    bucket_arn = Ref(AWS_NO_VALUE)
+    if not bucket_name_path_re.match(bucket):
+        raise ValueError(
+            "Bucket name and path are not valid. Expecting format",
+            bucket_name_path_re.pattern,
+        )
+    if (
+        bucket_name_path_re.match(bucket)
+        and len(bucket_name_path_re.match(bucket).groups()) == 1
+    ):
+        bucket_arn = Sub(f"arn:${{{AWS_PARTITION}}}:s3:::{bucket}/*")
+    elif (
+        bucket_name_path_re.match(bucket)
+        and len(bucket_name_path_re.match(bucket).groups()) == 2
+    ):
+        bucket_arn = Sub(f"arn:${{{AWS_PARTITION}}}:s3:::{bucket}")
+    return bucket_arn
+
+
 def add_s3_access(settings, stack, db, config, db_template, subconfig):
     """
     Function to define the IAM Policy for S3Import access
@@ -83,10 +131,6 @@ def add_s3_access(settings, stack, db, config, db_template, subconfig):
     :param subconfig:
     :return:
     """
-    bucket_arn_path_re = re.compile(
-        r"(arn:aws:s3:::(?:[a-zA-Z0-9-.]+))(/path/to/files)?"
-    )
-    bucket_name_path_re = re.compile(r"(?:[a-zA-Z0-9-.]+)(/path/to/files)?")
     bucket_arns = []
     for bucket in config:
         bucket_arn = None
@@ -100,33 +144,9 @@ def add_s3_access(settings, stack, db, config, db_template, subconfig):
         if bucket.startswith("x-s3"):
             bucket_arn = set_from_x_s3(settings, stack, db, db_template, bucket)
         elif bucket.startswith("arn:aws"):
-            if not bucket_arn_path_re.match(bucket):
-                raise ValueError(
-                    "The Bucket ARN provided is not valid. Expecting format",
-                    bucket_arn_path_re.pattern,
-                )
-            elif bucket_arn_path_re.match(bucket):
-                bucket_arn = bucket
-            else:
-                bucket_arn = f"{bucket}/*"
-
+            bucket_arn = import_bucket_from_arn(bucket)
         elif not bucket.startswith("arn:aws"):
-            if not bucket_name_path_re.match(bucket):
-                raise ValueError(
-                    "Bucket name and path are not valid. Expecting format",
-                    bucket_name_path_re.pattern,
-                )
-            elif (
-                bucket_name_path_re.match(bucket)
-                and len(bucket_name_path_re.match(bucket).groups()) == 1
-            ):
-                bucket_arn = Sub(f"arn:${{{AWS_PARTITION}}}:s3:::{bucket}/*")
-            elif (
-                bucket_name_path_re.match(bucket)
-                and len(bucket_name_path_re.match(bucket).groups()) == 2
-            ):
-                bucket_arn = Sub(f"arn:${{{AWS_PARTITION}}}:s3:::{bucket}")
-
+            bucket_arn = import_raw_bucket_name(bucket)
         if bucket_arn:
             bucket_arns.append(bucket_arn)
 
@@ -220,4 +240,5 @@ def add_iam_access(settings, stack, db, data, db_template, boundary):
                 roles.append(
                     DBClusterRole(FeatureName=subconfig[2], RoleArn=GetAtt(role, "Arn"))
                 )
-        setattr(db.cfn_resource, "AssociatedRoles", roles)
+        if not getattr("AssociatedRoles", db.cfn_resource):
+            setattr(db.cfn_resource, "AssociatedRoles", roles)

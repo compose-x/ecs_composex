@@ -567,7 +567,6 @@ def apply_extra_parameters(settings, stack, db, db_template):
             LOG.error(
                 f"The property {name} is of type {type(db.parameters[name])}. Expected {config[0]}. Skipping"
             )
-            continue
 
 
 def generate_database_template(db, settings):
