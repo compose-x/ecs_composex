@@ -188,23 +188,22 @@ def apply_x_configs_to_ecs(settings, root_stack):
             invoke_x_to_ecs(None, settings, root_stack, resource)
 
 
-def apply_x_to_x_configs(root_template, settings):
+def apply_x_to_x_configs(root_stack, settings):
     """
     Function to iterate over each XStack and trigger cross-x resources configurations functions
 
-    :param troposphere.Template root_template: the ECS ComposeX root template
+    :param ComposeXStack root_stack: the ECS ComposeX root template
     :param ComposeXSettings settings: The execution settings
     :return:
     """
-    for resource_name in root_template.resources:
-        resource = root_template.resources[resource_name]
+    for resource_name, resource in root_stack.stack_template.resources.items():
         if (
             issubclass(type(resource), ComposeXStack)
-            and resource.name in SUPPORTED_X_MODULES
+            and resource.name in SUPPORTED_X_MODULE_NAMES
             and hasattr(resource, "add_xdependencies")
             and not resource.is_void
         ):
-            resource.add_xdependencies(root_template, settings.compose_content)
+            resource.add_xdependencies(root_stack, settings)
 
 
 def add_compute(root_template, settings, vpc_stack):
@@ -359,7 +358,7 @@ def generate_full_template(settings):
         settings,
         root_stack,
     )
-    apply_x_to_x_configs(root_stack.stack_template, settings)
+    apply_x_to_x_configs(root_stack, settings)
     if settings.use_appmesh:
         mesh = Mesh(
             settings.compose_content["x-appmesh"], root_stack, settings, dns_settings

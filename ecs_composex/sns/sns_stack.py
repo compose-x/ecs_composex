@@ -114,14 +114,14 @@ class XStack(ComposeXStack):
         Function to handle the SQS configuration to allow SNS to send messages to queues.
         """
 
-    def add_xdependencies(self, root_template, content):
+    def add_xdependencies(self, root_stack, settings):
         """
         Method to add a dependencies from other X-Resources
-        :param troposphere.Template root_template: The ComposeX Root template
-        :param dict content: the compose file content
+        :param ComposeXStack root_stack: The ComposeX Root template
+        :param ecs_composex.common.ComposeXSettings settings:
         """
-        resources = root_template.resources
+        resources = root_stack.stack_template.resources
         sqs_res = SQS_KEY.strip("x-") if SQS_KEY.startswith("x-") else SQS_KEY
-        if SQS_KEY in content and sqs_res in resources:
+        if SQS_KEY in settings.compose_content and sqs_res in resources:
             self.DependsOn.append(sqs_res)
-            self.handle_sqs(root_template, resources[sqs_res])
+            self.handle_sqs(root_stack.stack_template, resources[sqs_res])

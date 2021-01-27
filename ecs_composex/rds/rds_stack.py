@@ -34,6 +34,7 @@ from ecs_composex.rds.rds_params import (
 )
 from ecs_composex.vpc.vpc_params import STORAGE_SUBNETS
 from ecs_composex.rds.rds_template import generate_rds_templates
+from ecs_composex.rds.rds_db_template import apply_extra_parameters
 
 RES_KEY = f"x-{os.path.basename(os.path.dirname(os.path.abspath(__file__)))}"
 RDS_SSM_PREFIX = f"/{RES_KEY}/"
@@ -49,7 +50,7 @@ def create_rds_template(settings, new_dbs):
     :return: rds_tpl
     :rtype: troposphere.Template
     """
-    rds_tpl = generate_rds_templates(new_dbs)
+    rds_tpl = generate_rds_templates(new_dbs, settings)
     LOG.debug(f"Template for {RES_KEY} validated by CFN.")
     return rds_tpl
 
@@ -104,6 +105,19 @@ class XStack(ComposeXStack):
     Class to handle ECS root stack specific settings
     """
 
+    def add_xdependencies(self, root_stack, settings):
+        """
+        Method to handle RDS to other x- resources links.
+
+        :param ComposeXStack root_stack:
+        :param ecs_composex.common.settings.ComposeXSettings settings:
+        :return:
+        """
+        for name, stack in self.stack_template.resources.items():
+            db = stack.db
+            if db.parameters:
+                apply_extra_parameters(settings, stack, db, stack.stack_template)
+
     def __init__(self, title, settings, **kwargs):
         set_resources(settings, Rds, RES_KEY)
         new_dbs = [
@@ -114,5 +128,6 @@ class XStack(ComposeXStack):
         if new_dbs:
             template = create_rds_template(settings, new_dbs)
             super().__init__(title, stack_template=template, **kwargs)
+            self.mark_nested_stacks()
         else:
             self.is_void = True

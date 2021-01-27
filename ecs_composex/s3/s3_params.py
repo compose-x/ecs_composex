@@ -19,7 +19,8 @@ from os import path
 from ecs_composex.common.ecs_composex import X_KEY
 from troposphere import Parameter
 
-RES_KEY = f"{X_KEY}{path.basename(path.dirname(path.abspath(__file__)))}"
+MOD_KEY = path.basename(path.dirname(path.abspath(__file__)))
+RES_KEY = f"{X_KEY}{MOD_KEY}"
 
 S3_ARN_REGEX = r"arn:(aws|aws-gov|aws-cn):s3:::([a-zA-Z0-9-.]+$)"
 

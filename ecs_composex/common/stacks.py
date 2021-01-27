@@ -85,6 +85,7 @@ class ComposeXStack(Stack, object):
         :param kwargs: kwargs from composex along with the kwargs for the stack
         """
         self.name = name
+        self.parent_stack = None
         title = NONALPHANUM.sub("", self.name)
         self.file_name = file_name if file_name else title
         self.lookup_resources = []
@@ -108,6 +109,25 @@ class ComposeXStack(Stack, object):
         super().__init__(title, **stack_kwargs)
         if not hasattr(self, "DependsOn") or not keyisset("DependsOn", kwargs):
             self.DependsOn = []
+
+    def mark_nested_stacks(self):
+        """
+        Method to go over the stack resources, identify the nested stacks, and set a marker of the parent to them
+        """
+        if not self.stack_template:
+            return
+        for resource in self.stack_template.resources.values():
+            if issubclass(type(resource), ComposeXStack) or isinstance(
+                resource, ComposeXStack
+            ):
+                resource.parent_stack = self
+                resource.mark_nested_stacks()
+
+    def get_top_root_stack(self):
+        if self.parent_stack:
+            return self.parent_stack.get_top_root_stack()
+        else:
+            return self
 
     def add_dependencies(self, dependencies):
         """

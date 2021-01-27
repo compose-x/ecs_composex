@@ -42,7 +42,18 @@ from ecs_composex.vpc.vpc_params import (
 )
 
 
-def add_db_stack(root_template, db):
+class RdsDbStack(ComposeXStack):
+    """
+    Class to represent a RDS Stack
+    """
+
+    def __init__(self, name, stack_template, db, **kwargs):
+        self.db = db
+        self.parent_template = None
+        super().__init__(name, stack_template, **kwargs)
+
+
+def add_db_stack(root_template, db, settings):
     """
     Function to add the DB stack to the root stack
 
@@ -95,9 +106,9 @@ def add_db_stack(root_template, db):
     elif keyisset("DBSnapshotIdentifier", db.properties):
         parameters.update({DB_SNAPSHOT_ID.title: db.properties["DBSnapshotIdentifier"]})
     parameters.update(non_stack_params)
-    db_template = generate_database_template(db)
-    db_stack = ComposeXStack(
-        db.logical_name, stack_template=db_template, stack_parameters=parameters
+    db_template = generate_database_template(db, settings)
+    db_stack = RdsDbStack(
+        db.logical_name, db=db, stack_template=db_template, stack_parameters=parameters
     )
     root_template.add_resource(db_stack)
     new_outputs = []
@@ -108,7 +119,7 @@ def add_db_stack(root_template, db):
     root_template.add_output(new_outputs)
 
 
-def generate_rds_templates(new_dbs):
+def generate_rds_templates(new_dbs, settings):
     """
     Function to generate the RDS root template for all the DBs defined in the x-rds section of the compose file
 
@@ -118,5 +129,5 @@ def generate_rds_templates(new_dbs):
     """
     root_tpl = build_template("RDS Root Template", [VPC_ID, STORAGE_SUBNETS])
     for db in new_dbs:
-        add_db_stack(root_tpl, db)
+        add_db_stack(root_tpl, db, settings)
     return root_tpl

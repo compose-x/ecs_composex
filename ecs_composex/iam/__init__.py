@@ -23,8 +23,6 @@ from troposphere.iam import Role
 
 from ecs_composex.common import LOG
 
-POLICY_PATTERN = r"((^([a-zA-Z0-9-_.\/]+)$)|(^(arn:aws:iam::(aws|[0-9]{12}):policy\/)[a-zA-Z0-9-_.\/]+$))"
-POLICY_RE = re.compile(POLICY_PATTERN)
 
 ROLE_ARN_ARG = "RoleArn"
 
@@ -40,7 +38,7 @@ def validate_iam_role_arn(arn):
     if not arn_valid.match(arn):
         raise ValueError(
             "The role ARN needs to be a valid ARN of format",
-            r"^arn:aws(?:-[a-z]+)?:iam::[0-9]{12}:role/[\S]+$",
+            arn_valid.pattern,
         )
     return arn_valid.match(arn)
 
@@ -68,9 +66,13 @@ def service_role_trust_policy(service_name):
 
 def define_iam_policy(policy):
     policy_def = policy
-    if not POLICY_RE.match(policy):
+    policy_re = re.compile(
+        r"((^([a-zA-Z0-9-_./]+)$)|(^(arn:aws:iam::(aws|\d{12}):policy/)[a-zA-Z0-9-_./]+$))"
+    )
+
+    if not policy_re.match(policy):
         raise ValueError(
-            f"policy name {policy} does not match expected regexp", POLICY_PATTERN
+            f"policy name {policy} does not match expected regexp", policy_re.pattern
         )
     if isinstance(policy, str) and not policy.startswith("arn:aws:iam::"):
         policy_def = Sub(

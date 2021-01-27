@@ -36,6 +36,7 @@ from ecs_composex.common import (
     LOG,
 )
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
+from ecs_composex.iam import define_iam_policy
 from ecs_composex.rds import rds_conditions
 from ecs_composex.rds.rds_parameter_groups_helper import (
     get_family_from_engine_version,
@@ -67,6 +68,7 @@ from ecs_composex.vpc.vpc_params import (
     VPC_ID,
     STORAGE_SUBNETS,
 )
+from ecs_composex.rds.rds_iam_access import add_iam_access
 
 
 def init_database_template(db):
@@ -274,6 +276,34 @@ def add_default_cluster_definition(db):
     return cluster
 
 
+def set_parameters_groups_from_macro_parameters(db, template):
+    """
+    Function to set the DB parameters group if ParametersGroups is set on MacroParameters
+    """
+    if isinstance(db.cfn_resource, DBCluster):
+        props = import_record_properties(
+            db.parameters["ParametersGroups"], DBClusterParameterGroup
+        )
+        params = template.add_resource(
+            DBClusterParameterGroup(
+                CLUSTER_PARAMETER_GROUP_T,
+                **props,
+            )
+        )
+        setattr(db.cfn_resource, "DBClusterParameterGroupName", Ref(params))
+    elif isinstance(db.cfn_resource, DBInstance):
+        props = import_record_properties(
+            db.parameters["ParametersGroups"], DBParameterGroup
+        )
+        params = template.add_resource(
+            DBParameterGroup(
+                CLUSTER_PARAMETER_GROUP_T,
+                **props,
+            )
+        )
+        setattr(db.cfn_resource, "DBParameterGroupName", Ref(params))
+
+
 def add_parameter_group(template, db):
     """
     Function to create a parameter group which uses the same values as default which can later be altered
@@ -283,34 +313,35 @@ def add_parameter_group(template, db):
     :type db: ecs_composex.common.compose_resources.Rds
     """
 
-    if db.parameters and keyisset("ParametersGroups", db.parameters):
-        if isinstance(db.cfn_resource, DBCluster):
-            props = import_record_properties(
-                db.parameters["ParametersGroups"], DBClusterParameterGroup
-            )
-            template.add_resource(
-                DBClusterParameterGroup(
-                    CLUSTER_PARAMETER_GROUP_T,
-                    **props,
-                )
-            )
-            return
-        elif isinstance(db.cfn_resource, DBInstance):
-            props = import_record_properties(
-                db.parameters["ParametersGroups"], DBParameterGroup
-            )
-            template.add_resource(
-                DBParameterGroup(
-                    CLUSTER_PARAMETER_GROUP_T,
-                    **props,
-                )
-            )
+    parameters_properties = ["DBClusterParameterGroupName", "DBParameterGroupName"]
+    if db.properties and not any(
+        key in parameters_properties for key in db.properties.keys()
+    ):
+        LOG.info(f"Parameter group was already set for {db.name}")
+        return
+    elif (
+        not db.properties
+        and db.parameters
+        and keyisset("ParametersGroups", db.parameters)
+    ) or (
+        db.properties
+        and not any(key in parameters_properties for key in db.properties.keys())
+        and db.parameters
+        and keyisset("ParametersGroups", db.parameters)
+    ):
+        set_parameters_groups_from_macro_parameters(db, template)
+        return
 
-    if db.properties and not db.parameters:
+    if (
+        db.properties
+        and keyisset(DB_ENGINE_NAME.title, db.properties)
+        and keyisset(DB_ENGINE_VERSION.title, db.properties)
+    ):
         db_family = get_family_from_engine_version(
             db.properties[DB_ENGINE_NAME.title],
             db.properties[DB_ENGINE_VERSION.title],
         )
+
     elif (
         not db.properties
         and db.parameters
@@ -322,28 +353,24 @@ def add_parameter_group(template, db):
         )
     else:
         raise RuntimeError("Failed to determine the DB Parameters family.", db.name)
-    if not db_family:
-        raise ValueError(
-            "Failed to retrieve the DB Family for "
-            f"{db.proparametersperties['DB_ENGINE_NAME.title']}"
-            f"{db.parameters['DB_ENGINE_VERSION.title']}"
-        )
     db_settings = get_family_settings(db_family)
     if isinstance(db.cfn_resource, DBInstance):
-        DBParameterGroup(
+        params = DBParameterGroup(
             PARAMETER_GROUP_T,
             template=template,
             Family=db_family,
             Parameters=db_settings,
         )
+        setattr(db.cfn_resource, "DBParameterGroupName", Ref(params))
     elif isinstance(db.cfn_resource, DBCluster):
-        DBClusterParameterGroup(
+        params = DBClusterParameterGroup(
             CLUSTER_PARAMETER_GROUP_T,
             template=template,
             Family=db_family,
             Parameters=db_settings,
             Description=Sub(f"RDS Settings copy for {db_family}"),
         )
+        setattr(db.cfn_resource, "DBClusterParameterGroupName", Ref(params))
 
 
 def override_set_properties(props, db):
@@ -506,7 +533,44 @@ def add_db_instances_for_cluster(db_template, db):
         add_instances_from_parameters(db_template, db)
 
 
-def generate_database_template(db):
+def apply_extra_parameters(settings, stack, db, db_template):
+    """
+    Function to add extra parameters set in MacroParameters post creation of the DB resource from properties
+
+    :param ecs_composex.rds.rds_stack.Rds db db:
+    :param troposphere.Template db_template:
+    :return:
+    """
+    if not db.parameters:
+        return
+    permissions_boundary = Ref(AWS_NO_VALUE)
+    if keyisset("PermissionsBoundary", db.parameters):
+        permissions_boundary = define_iam_policy(db.parameters["PermissionsBoundary"])
+    extra_parameters = {"IamAccess": (dict, add_iam_access)}
+    for name, config in extra_parameters.items():
+        if (
+            keyisset(name, db.parameters)
+            and isinstance(db.parameters[name], config[0])
+            and config[1]
+        ):
+            config[1](
+                settings,
+                stack,
+                db,
+                db.parameters[name],
+                db_template,
+                permissions_boundary,
+            )
+        elif keyisset(name, db.parameters) and not isinstance(
+            db.parameters[name], config[0]
+        ):
+            LOG.error(
+                f"The property {name} is of type {type(db.parameters[name])}. Expected {config[0]}. Skipping"
+            )
+            continue
+
+
+def generate_database_template(db, settings):
     """
     Function to generate the database template
     :param ecs_composex.rds.rds_stack.Rds db: The database object
