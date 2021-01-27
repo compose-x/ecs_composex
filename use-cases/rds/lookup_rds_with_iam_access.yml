@@ -1,0 +1,67 @@
+---
+# RDS Use-case.
+
+version: '3.8'
+x-rds:
+  dbA:
+    MacroParameters:
+      Engine: "aurora-postgresql"
+      EngineVersion: "11.7"
+    Settings:
+      EnvNames:
+        - DBA
+    Services:
+      - name: app01
+        access: RW
+      - name: app03
+        access: RW
+      - name: you-too
+        access: RW
+
+
+  dbB:
+    Properties:
+      Engine: "aurora-postgresql"
+      EngineVersion: "11.7"
+      BackupRetentionPeriod: 1
+      DatabaseName: dbname
+      DeletionProtection: False
+      EnableCloudwatchLogsExports:
+        - audit
+        - general
+      EnableHttpEndpoint: True
+      EnableIAMDatabaseAuthentication: True
+      MasterUsername: dummy
+      MasterUserPassword: dummy
+      Port: 5432
+      StorageEncrypted: True
+      Tags:
+        - Key: Name
+          Value: "dummy-db"
+
+    MacroParameters:
+      IamAccess:
+        Buckets:
+          - x-s3::bucket-01
+          - arn:aws:s3:::sacrificial-lamb/folder/*
+          - bucket-name
+    Settings:
+      EnvNames:
+        - DB_B
+    Services:
+      - name: app01
+        access: RW
+      - name: app03
+        access: RW
+      - name: you-too
+        access: RW
+
+x-s3:
+  bucket-01:
+    Lookup:
+      Tags:
+        - Name: lambda-dev-eu-west-1
+        - costcentre: lambda
+    Services:
+      - name: app03
+        access: RWObjects

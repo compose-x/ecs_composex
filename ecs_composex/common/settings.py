@@ -408,6 +408,7 @@ class ComposeXSettings(object):
         self.subnets_parameters = []
         self.subnets_mappings = {}
         self.secrets_mappings = {}
+        self.mappings = {}
         self.families = {}
         self.account_id = None
         self.output_dir = self.default_output_dir
