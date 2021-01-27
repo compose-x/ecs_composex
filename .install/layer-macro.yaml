@@ -1,4 +1,4 @@
-﻿AWSTemplateFormatVersion: "2010-09-09"
+AWSTemplateFormatVersion: "2010-09-09"
 Description: >-
   This CFN Template allows you to install the AWS CFN Macro as a Lambda Function to execute ECS Compose-X directly
   from within your AWS CloudFormation templates.
@@ -10,14 +10,13 @@ Metadata:
   Maintainer: john@compose-x.io
   Version: 2021-01-25
   AWS::CloudFormation::Interface:
-    ParmeterLabels:
-      ECSComposeXMacroUri:
-        default: ECS Compose-X Macro docker image URL
+    ParameterLabels:
+      ComposeXLambdaLayerVersion:
+        default: ECS Compose-X Macro Lambda Layer version
       TemplatesBucket:
         default: Bucket to store all rendered CloudFormation templates and config files.
     ParameterGroups:
       - Parameters:
-          - ECSComposeXMacroUri
           - MemorySize
         Label:
           default: Lambda Settings
@@ -28,12 +27,15 @@ Metadata:
 
 
 Parameters:
-  ECSComposeXMacroUri:
+  ComposeXLambdaLayerVersion:
     Type: String
-    Default: 518078317392.dkr.ecr.eu-west-1.amazonaws.com/compose-x-macro:nightly
+    AllowedPattern: (arn:aws([a-z]+)?:lambda:[a-z0-9-]+:\d{12}:layer:[a-zA-Z0-9-_]+:\d{1,3}$)
+    Default: arn:aws:lambda:eu-west-1:518078317392:layer:ecs_composex:3
   MemorySize:
     Type: Number
     Default: 128
+    MaxValue: 10240
+    MinValue: 128
 
   TemplatesBucket:
     Type: String
@@ -98,18 +100,34 @@ Resources:
     Properties:
       AutoPublishAlias: live
       Description: Lambda function to execute ECS Compose-X CFN Macro
-      ImageUri: !Ref ECSComposeXMacroUri
       MemorySize: !Ref MemorySize
       Role: !GetAtt 'MacroFunctionRole.Arn'
       Timeout: 30
+      Runtime: python3.8
       FunctionName: !Sub "ecs-compose-x-macro-${AWS::Region}"
-      PackageType: Image
+      Handler: index.lambda_handler
+      Layers:
+        - !Ref ComposeXLambdaLayerVersion
+      InlineCode: |
+        #!/usr/bin/env python
+        from ecs_composex.macro import lambda_handler as macro_function
+
+
+        def lambda_handler(event, context):
+            """ Entry point function """
+            return macro_function(event, context)
+
       Tags:
         Name: !Sub "ecs-compose-x-macro-${AWS::Region}"
         Usage: ECS Compose-X CFN macro
+
   CloudFormationLogRole:
     Type: AWS::IAM::Role
     Properties:
+      PermissionsBoundary: !If
+        - UseBoundary
+        - !Ref PermissionsBoundary
+        - !Ref AWS::NoValue
       Tags:
         - Key: Name
           Value: CFN Macro Logging role

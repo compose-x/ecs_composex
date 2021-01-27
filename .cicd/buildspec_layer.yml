@@ -1,0 +1,34 @@
+﻿
+version: 0.2
+env:
+  shell: /bin/bash
+  variables:
+    USE_EPOCH: 0
+    PY_VERSION: 3.7
+
+phases:
+  install:
+    runtime-versions:
+      python: "$(echo $PY_VERSION)"
+    commands:
+      - COMMIT_HASH=${CODEBUILD_RESOLVED_SOURCE_VERSION::7}
+      - EPOCH=`date +'%Y%m%d'`
+      - SUFFIX=${COMMIT_HASH:=$EPOCH}
+      - if [ $USE_EPOCH -eq 1 ]; then SUFFIX=$EPOCH; fi
+      - (pip --version && pip install pip -U --no-cache-dir) && pip install wheel --no-cache-dir
+
+  build:
+    commands:
+      - python --version
+      - python setup.py sdist bdist_wheel
+      - BUILD_WHL=`find . -name "ecs_compose*.whl" -type f`
+      - echo $BUILD_WHL
+      - PY_BUILD=python/lib/python${PY_VERSION}/site-packages/
+      - mkdir -p ${PY_BUILD}
+      - pip install $BUILD_WHL --no-cache-dir -t ${PY_BUILD}
+      - find ${PY_BUILD} -type d -name "__pycache__" -exec rm -rf {} +
+      - zip -r9 layer.zip python
+
+artifacts:
+  files:
+    - layer.zip

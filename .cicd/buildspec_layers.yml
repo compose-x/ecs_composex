@@ -1,0 +1,76 @@
+﻿
+version: 0.2
+env:
+  shell: /bin/bash
+  variables:
+    USE_EPOCH: 0
+    DIND_VOL_PATH: /var/lib/docker/volumes/agent-resources_user_volume/_data/srcDownload/src
+    PY_VERSION: 3.8
+
+batch:
+  fast-fail: true
+  build-graph:
+    - identifier: py37
+      env:
+        compute-type: BUILD_GENERAL1_SMALL
+        privileged-mode: false
+        variables:
+          PY_VERSION: 3.7
+      buildspec: .cicd/buildspec_layer.yml
+      ignore-failure: false
+
+    - identifier: py38
+      env:
+        compute-type: BUILD_GENERAL1_SMALL
+        privileged-mode: false
+        variables:
+          PY_VERSION: 3.8
+      buildspec: .cicd/buildspec_layer.yml
+      ignore-failure: false
+
+    - identifier: merge
+      depend-on:
+        - py37
+        - py38
+      env:
+        compute-type: BUILD_GENERAL1_SMALL
+        privileged-mode: false
+      ignore-failure: false
+
+phases:
+  install:
+    runtime-versions:
+      python: "$(echo $PY_VERSION)"
+    commands:
+      - COMMIT_HASH=${CODEBUILD_RESOLVED_SOURCE_VERSION::7}
+      - EPOCH=`date +'%Y%m%d'`
+      - SUFFIX=${COMMIT_HASH:=$EPOCH}
+      - if [ $USE_EPOCH -eq 1 ]; then SUFFIX=$EPOCH; fi
+      - (pip --version && pip install pip -U --no-cache-dir) && pip install wheel --no-cache-dir
+
+  build:
+    commands:
+      - mkdir merged
+      - |
+          for PY_VERSION in 3.7 3.8; do
+            echo "Going over ${PY_VERSION}"
+            ID_NAME=$( echo py${PY_VERSION} | sed 's/\.//g')
+            dir_env_name="CODEBUILD_SRC_DIR_${ID_NAME}_${ID_NAME}"
+            echo $dir_env_name
+            echo Searching in ${!dir_env_name}
+            ls -lh ${!dir_env_name}
+            find ${!dir_env_name} -type f -name layer.zip | ( read path; cp ${path} ${PY_VERSION}.zip ) ;
+            file ${PY_VERSION}.zip && ls -lh ${PY_VERSION}.zip
+            unzip -q -o ${PY_VERSION}.zip -d merged
+          done
+      - cd merged; zip -r9 ../layer.zip python; cd -
+      - aws cloudformation package --template-file .cicd/layer_template.yaml --s3-bucket ${PUBLIC_FILES_BUCKET}  --output-template-file layer.yml
+      - aws cloudformation deploy --template-file layer.yml --stack-name ${DEPLOYMENT_NAME:-ecs-compose-x-layer} --capabilities CAPABILITY_AUTO_EXPAND --role-arn ${CFN_IAM_ROLE}
+
+  post_build:
+    commands:
+      - aws s3 cp .install/layer-macro.yaml s3://${PUBLIC_FILES_BUCKET}/ --sse AES256 --acl public-read --storage-class STANDARD_IA
+
+artifacts:
+  files:
+    - layer.yml

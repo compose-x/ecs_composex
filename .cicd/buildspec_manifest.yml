@@ -1,5 +1,4 @@
-﻿
-version: 0.2
+﻿version: 0.2
 env:
   shell: /bin/bash
   variables:
@@ -117,6 +116,10 @@ phases:
                   --amend ${PUBLIC_REGISTRY}/${MACRO_REPO_NAME}:${SUFFIX}
             docker manifest push ${PUBLIC_REGISTRY}/${MACRO_REPO_NAME}:latest
           fi
+
+  post_build:
+    commands:
+      - aws s3 cp .install/docker-macro.yaml s3://${PUBLIC_FILES_BUCKET}/ --sse AES256 --acl public-read --storage-class STANDARD_IA
 
     finally:
       - rm -rfv ~/.docker
