@@ -29,6 +29,18 @@ from ecs_composex.iam import service_role_trust_policy
 S3_KEY = "x-s3"
 
 
+def get_s3_bucket_arn_from_resource(db_template, stack, resource):
+    param = Parameter(f"{resource.logical_name}Arn", Type="String")
+    db_template.add_parameter(param)
+    if stack.parent_stack:
+        stack.parent_stack.stack_template.add_parameter(param)
+        stack.parent_stack.Parameters.update(
+            {param.title: GetAtt("s3", f"Outputs.{resource.logical_name}Arn")}
+        )
+    stack.Parameters.update({param.title: Ref(param.title)})
+    return Sub(f"${{{param.title}}}/*")
+
+
 def set_from_x_s3(settings, stack, db, db_template, bucket_name):
     """
     Function to link the RDS DB to a Bucket defined in x-s3
@@ -58,15 +70,7 @@ def set_from_x_s3(settings, stack, db, db_template, bucket_name):
     if not resource:
         return
     if resource.cfn_resource:
-        param = Parameter(f"{resource.logical_name}Arn", Type="String")
-        db_template.add_parameter(param)
-        if stack.parent_stack:
-            stack.parent_stack.stack_template.add_parameter(param)
-            stack.parent_stack.Parameters.update(
-                {param.title: GetAtt("s3", f"Outputs.{resource.logical_name}Arn")}
-            )
-        stack.Parameters.update({param.title: Ref(param.title)})
-        return Sub(f"${{{param.title}}}/*")
+        return get_s3_bucket_arn_from_resource(db_template, stack, resource)
 
 
 def import_bucket_from_arn(bucket):
@@ -167,6 +171,41 @@ def add_s3_access(settings, stack, db, config, db_template, subconfig):
     return policy
 
 
+def validate_parameters(allowed_keys, data):
+    """
+    Function to ensure the data given in compose file is valid for S3/MacroParameters/IamAccess
+
+    :param dict allowed_keys:
+    :param dict data:
+    :return:
+    """
+    if not all(key in allowed_keys.keys() for key in data.keys()):
+        raise KeyError(
+            "The only valid parameters for IamAccess are",
+            allowed_keys.keys(),
+            "Got",
+            data.keys(),
+        )
+
+
+def define_associated_roles(db):
+    """
+    Function to define the AssociatedRoles, either present or empty
+    :param ecs_composex.rds.rds_stack.RdsDb db:
+    :return: the list of Associated Roles
+    :rtype: list
+    """
+    if db.cfn_resource and hasattr(db.cfn_resource, "AssociatedRoles"):
+        LOG.warning(
+            "The db properties already had AssociatedRoles defined."
+            " Only will add ones without the feature already defined"
+        )
+        roles = getattr(db.cfn_resource, "AssociatedRoles")
+    else:
+        roles = []
+    return roles
+
+
 def add_iam_access(settings, stack, db, data, db_template, boundary):
     """
     Function to add IAM role and permissions to the DB to get access to external resources
@@ -179,34 +218,17 @@ def add_iam_access(settings, stack, db, data, db_template, boundary):
     :param boundary:
     :return:
     """
-    print("CONFIG", data)
-    if db.cfn_resource and hasattr(db.cfn_resource, "AssociatedRoles"):
-        LOG.warning(
-            "The db properties already had AssociatedRoles defined."
-            " Only will add ones without the feature already defined"
-        )
-        roles = getattr(db.cfn_resource, "AssociatedRoles")
-    else:
-        roles = []
     allowed_keys = {
         "Buckets": (list, add_s3_access, "s3Import"),
         "CloudWatch": (bool, None, None),
     }
-    if not all(key in allowed_keys.keys() for key in data.keys()):
-        raise KeyError(
-            "The only valid parameters for IamAccess are",
-            allowed_keys.keys(),
-            "Got",
-            data.keys(),
-        )
+    validate_parameters(allowed_keys, data)
+    roles = define_associated_roles(db)
     for name, subconfig in allowed_keys.items():
-        print("ITEM", name, subconfig)
         if keyisset(name, data) and not isinstance(data[name], subconfig[0]):
             LOG.error(
                 f"{name} is of type {type(data[name])}. Expected {subconfig[0]}. Skipping"
             )
-            continue
-
         elif (
             keyisset(name, data)
             and isinstance(data[name], subconfig[0])
@@ -225,7 +247,6 @@ def add_iam_access(settings, stack, db, data, db_template, boundary):
                 policy = subconfig[1](
                     settings, stack, db, data[name], db_template, subconfig
                 )
-                print("POLICY", policy)
                 role = IamRole(
                     f"{db.logical_name}{subconfig[2]}IamRole",
                     AssumeRolePolicyDocument=service_role_trust_policy("rds"),
@@ -240,5 +261,5 @@ def add_iam_access(settings, stack, db, data, db_template, boundary):
                 roles.append(
                     DBClusterRole(FeatureName=subconfig[2], RoleArn=GetAtt(role, "Arn"))
                 )
-        if not getattr("AssociatedRoles", db.cfn_resource):
-            setattr(db.cfn_resource, "AssociatedRoles", roles)
+    if roles and not hasattr(db.cfn_resource, "AssociatedRoles"):
+        setattr(db.cfn_resource, "AssociatedRoles", roles)
