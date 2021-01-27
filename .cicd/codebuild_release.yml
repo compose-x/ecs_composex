@@ -17,6 +17,7 @@ Parameters:
     Default: GitHub
   RepositoryName:
     Type: String
+
   BuildLogsRetentionDays:
     Type: Number
     AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
@@ -26,13 +27,13 @@ Parameters:
     Type: String
     Default: main
 
-  BuildspecFile:
+  DockerBuildspecFile:
     Type: String
-    Default: .cicd/buildspec_pr.yml
+    Default: .cicd/buildspec_manifest.yml
 
   LayersBuildSpecFile:
     Type: String
-    Default: .cicd/buildspec_layer.yml
+    Default: .cicd/buildspec_layers.yml
 
   PublicFilesBucket:
     Type: String
@@ -82,14 +83,16 @@ Resources:
                   - iam:PassRole
                 Resource:
                   - !GetAtt CloudFormationRole.Arn
-              - Sid: CloudFormationActions
+              - Sid: CloudFormationDenyDelete
+                Effect: Deny
+                Resource: '*'
+                Action:
+                  - cloudformation:DeleteStack
+              - Sid: CloudFormationAllowAllActions
                 Effect: Allow
                 Resource: '*'
                 Action:
-                  - cloudformation:Create*
-                  - cloudformation:Update*
-                  - cloudformation:Get*
-                  - cloudformation:ValidateTemplate
+                  - cloudformation:*
         - PolicyName: ContentAccess
           PolicyDocument:
             Version: '2012-10-17'
@@ -288,8 +291,7 @@ Resources:
           - !Sub 'https://github.com/${RepositoryOrganization}/${RepositoryName}'
           - !Sub 'https://codecommit.${AWS::Region}.${AWS::URLSuffix}'
         InsecureSsl: False
-        BuildSpec: !Ref BuildspecFile
-
+        BuildSpec: !Ref DockerBuildspecFile
       Triggers:
         Webhook: True
         BuildType: BUILD_BATCH
