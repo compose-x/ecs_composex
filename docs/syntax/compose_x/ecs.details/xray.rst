@@ -1,5 +1,5 @@
 ﻿.. meta::
-    :description: ECS Composex AWS X-Ray syntax reference
+    :description: ECS Compose-X AWS X-Ray syntax reference
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS X-Ray, tracing, distributed tracing
 
 .. _xray_syntax_reference:

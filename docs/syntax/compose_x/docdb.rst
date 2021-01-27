@@ -1,5 +1,5 @@
 .. meta::
-    :description: ECS Composex AWS DocumentDB syntax reference
+    :description: ECS Compose-X AWS DocumentDB syntax reference
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS DocumentDB, MongoDB
 
 .. _docdb_syntax_reference:

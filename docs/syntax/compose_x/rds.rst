@@ -1,5 +1,5 @@
 .. meta::
-    :description: ECS Composex AWS RDS syntax reference
+    :description: ECS Compose-X AWS RDS syntax reference
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS RDS, mysql, postresql, rds
 
 .. _rds_syntax_reference:

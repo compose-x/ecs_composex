@@ -1,5 +1,5 @@
 ﻿.. meta::
-    :description: ECS Composex deploy syntax reference
+    :description: ECS Compose-X deploy syntax reference
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, deploy, resources, replicas, scaling
 
 .. _composex_deploy_extension:

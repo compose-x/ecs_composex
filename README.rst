@@ -16,14 +16,47 @@ Be for AWS ECS and docker-compose what AWS SAM is to Lambda
 
 .. contents::
     :local:
-    :depth: 1
+    :depth: 2
 
 Installation
 ============
 
+On AWS using AWS CloudFormation Macro
+--------------------------------------
+
+.. list-table::
+    :widths: 50 50 50
+    :header-rows: 1
+
+    * - Region
+      - Lambda Layer based Macro
+      - Docker based Macro
+    * - us-east-1
+      - |LAYER_US_EAST_1|
+      - |DOCKER_US_EAST_1|
+    * - eu-west-1
+      - |LAYER_EU_WEST_1|
+      - |DOCKER_EU_WEST_1|
+
+.. |DOCKER_US_EAST_1| image:: https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png
+    :target: https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/new?stackName=compose-x-macro&templateURL=https://s3.eu-west-1.amazonaws.com/files.compose-x.io/macro/docker-macro.yaml
+
+.. |DOCKER_EU_WEST_1| image:: https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png
+    :target: https://console.aws.amazon.com/cloudformation/home?region=eu-west-1#/stacks/new?stackName=compose-x-macro&templateURL=https://s3.eu-west-1.amazonaws.com/files.compose-x.io/macro/docker-macro.yaml
+
+.. |LAYER_US_EAST_1| image:: https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png
+    :target: https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/new?stackName=compose-x-macro&templateURL=https://s3.eu-west-1.amazonaws.com/files.compose-x.io/macro/layer-macro.yaml
+
+.. |LAYER_EU_WEST_1| image:: https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png
+    :target: https://console.aws.amazon.com/cloudformation/home?region=eu-west-1#/stacks/new?stackName=compose-x-macro&templateURL=https://s3.eu-west-1.amazonaws.com/files.compose-x.io/macro/layer-macro.yaml
+
+Via pip
+--------
+
 .. code-block:: bash
 
     pip install ecs_composex
+
 
 Usage
 =====
@@ -79,31 +112,23 @@ CLI for `up` and `render`
                             --use-fargate, it will create an additional SpotFleet
 
 
-CLI for `config`
+.. hint::
 
-.. code-block:: bash
-
-    usage: ecs-composex config [-h] -f DOCKERCOMPOSEXFILE [-d OUTPUTDIRECTORY]
-
-    optional arguments:
-      -h, --help            show this help message and exit
-      -f DOCKERCOMPOSEXFILE, --docker-compose-file DOCKERCOMPOSEXFILE
-                            Path to the Docker compose file
-      -d OUTPUTDIRECTORY, --output-dir OUTPUTDIRECTORY
-                            Output directory to write all the templates to.
+    Each sub menu has its own manual, alike the aws cli
 
 
 
 AWS & Docker Resources support
 ==============================
 
-AWS Services
-------------
+AWS Services support
+---------------------
 
 * `AWS ECS`_
 * `AWS RDS`_
 * `AWS DynamoDB`_
 * `AWS DocumentDB`_
+* `AWS ElastiCache`_
 * `AWS S3`_
 * `AWS SQS`_
 * `AWS Kinesis`_
@@ -156,7 +181,7 @@ takes away the need to be an AWS Expert. If tomorrow developers using ComposeX f
 by themselves, I would be able to stop hand-holding them all the time and focus on other areas.
 
 
-Philosphy
+Philosophy
 ==========
 
 CloudFormation is awesome, the documentation is excellent and the format easy. So ECS ComposeX wants to keep the format
@@ -256,7 +281,7 @@ This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypack
 .. _AWS SQS: https://docs.ecs-composex.lambda-my-aws.io/syntax/composex/sqs.html
 .. _AWS SNS: https://docs.ecs-composex.lambda-my-aws.io/syntax/composex/sns.html
 .. _AWS KMS: https://docs.ecs-composex.lambda-my-aws.io/syntax/composex/kms.html
-
+.. _AWS ElastiCache: https://docs.compose-x.io/syntax/composex/elasticache.html
 .. _AWS EC2: https://nightly.docs.ecs-composex.lambda-my-aws.io/features.html#ec2-resources-for-ecs-cluster
 .. _AWS AppMesh: https://nightly.docs.ecs-composex.lambda-my-aws.io/readme/appmesh.html
 

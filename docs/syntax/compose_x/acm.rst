@@ -1,5 +1,5 @@
 ﻿.. meta::
-    :description: ECS Composex ACM syntax reference
+    :description: ECS Compose-X ACM syntax reference
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS ACM, SSL Certificates
 
 .. _acm_syntax_reference:

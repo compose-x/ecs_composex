@@ -1,5 +1,5 @@
 ﻿.. meta::
-    :description: ECS Composex Docker ecs-plugin support syntax reference
+    :description: ECS Compose-X Docker ecs-plugin support syntax reference
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, ecs-plugin, x-aws
 
 .. _docker_ecs_plugin_support_reference:
@@ -114,7 +114,7 @@ It behaves exactly in the same way as **x-iam/ManagedPolicies** does.
 
 
 .. code-block:: yaml
-    :caption: ECS Composex syntax
+    :caption: ECS Compose-X syntax
 
     services:
       foo:
@@ -169,7 +169,7 @@ your own policy and you can have multiple ones.
 
 .. hint::
 
-    If you need to defined IAM permissions boundary, you can with ECS Composex.
+    If you need to defined IAM permissions boundary, you can with ECS Compose-X.
     :ref:`x_iam_syntax_reference`
 
 

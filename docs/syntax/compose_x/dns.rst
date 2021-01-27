@@ -1,5 +1,5 @@
 ﻿.. meta::
-    :description: ECS Composex DNS configuration
+    :description: ECS Compose-X DNS configuration
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS Route53, AWS CloudMap, dns
 
 .. _dns_reference_syntax:

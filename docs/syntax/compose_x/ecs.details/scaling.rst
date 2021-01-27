@@ -1,5 +1,5 @@
 ﻿.. meta::
-    :description: ECS Composex AWS ECS AutoScaling syntax reference
+    :description: ECS Compose-X AWS ECS AutoScaling syntax reference
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS ECS, autoscaling, cpu scaling, memory scaling, ecs scaling
 
 .. _ecs_composex_scaling_syntax_reference:
@@ -58,10 +58,12 @@ Allows you to define target scaling for the service based on CPU/RAM.
 CpuTarget / RamTarget
 -----------------------
 
-Defines the CPU percentage that we want the service to be under. ECS will automatically create and adapt alarms to
+Defines the CPU **percentage** that we want the service to be under. ECS will automatically create and adapt alarms to
 scale the service in/out so long as the average CPU usage remains beneath that value.
 
-Note that setting both should not be set at the same time, as you might end up into a racing condition.
+.. attention::
+
+    Note that setting both should not be set at the same time, as you might end up into a racing condition.
 
 ScaleInCooldown / ScaleOutCooldown
 -----------------------------------

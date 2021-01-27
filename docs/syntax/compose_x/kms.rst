@@ -1,5 +1,5 @@
 ﻿.. meta::
-    :description: ECS Composex AWS KMS syntax reference
+    :description: ECS Compose-X AWS KMS syntax reference
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS KMS, encryption
 
 .. _kms_syntax_reference:
