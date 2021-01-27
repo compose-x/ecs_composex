@@ -1,5 +1,5 @@
 ﻿.. meta::
-    :description: ECS Composex AWS Elasticache syntax reference
+    :description: ECS Compose-X AWS Elasticache syntax reference
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS Elasticache, redis, memcached
 
 .. _elastic_cache_syntax_reference:

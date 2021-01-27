@@ -1,5 +1,5 @@
 .. meta::
-    :description: ECS Composex AWS S3 syntax reference
+    :description: ECS Compose-X AWS S3 syntax reference
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS S3, S3 Buckets
 
 .. _s3_syntax_reference:

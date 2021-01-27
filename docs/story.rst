@@ -1,5 +1,5 @@
 ﻿.. meta::
-    :description: ECS Composex background
+    :description: ECS Compose-X background
     :keywords: AWS, AWS ECS, Docker, Containers, Compose, docker-compose, story, background
 
 .. highlight:: shell

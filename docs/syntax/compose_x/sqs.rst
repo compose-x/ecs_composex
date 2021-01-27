@@ -1,5 +1,5 @@
 .. meta::
-    :description: ECS Composex AWS SQS syntax reference
+    :description: ECS Compose-X AWS SQS syntax reference
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS SQS, queuing, messages
 
 .. _sqs_syntax_reference:

@@ -1,5 +1,5 @@
 ﻿.. meta::
-    :description: ECS Composex AWS AppMesh syntax reference
+    :description: ECS Compose-X AWS AppMesh syntax reference
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS AppMesh, service mesh, mesh
 
 .. _appmesh_syntax_reference:
@@ -8,8 +8,8 @@
 x-appmesh
 ==========
 
-.. toctree::
-    :maxdepth: 2
+.. contents::
+    :local:
 
 .. warning::
 
@@ -54,7 +54,7 @@ Properties
 ==========
 
 MeshName
-^^^^^^^^
+----------
 
 This is the name of the mesh. However, if you do not specify the *MeshOwner*, then the name is ignored and the root
 stack name is used.
@@ -66,7 +66,7 @@ The MeshName is going to be used if you specify the MeshOwner, in case you are d
     AllowedPattern: ^[a-zA-Z0-9+]+$
 
 MeshOwner
-^^^^^^^^^
+----------
 
 The MeshOwner as described above, doesn't need to be specified, if you are creating your Nodes, Routers and Services
 (virtual ones) into a Mesh shared with you from another account.
@@ -76,7 +76,7 @@ The MeshOwner as described above, doesn't need to be specified, if you are creat
     AllowedPattern: [0-9]{12}
 
 EgressPolicy
-^^^^^^^^^^^^
+-------------
 
 The mesh aims to allow services, nodes to communicate to each other only through the mesh. So by default, ECS ComposeX
 sets the policy to `DROP_ALL`. Meaning, no traffic out of the nodes will be allowed if not to a defined VirtualService
@@ -96,7 +96,7 @@ The settings section is where we are going to define how our services defined in
 to the mesh.
 
 nodes
-^^^^^
+------
 
 Syntax
 """"""
@@ -108,8 +108,8 @@ Syntax
     Backends:
       - <service_name> # Only services can be defined as backend
 
-Example
-"""""""
+Examples
+""""""""
 
 This section represents the nodes. The nodes listed here must be either a service as listed in docker-compose or a
 family name.
@@ -125,7 +125,7 @@ family name.
           - service-abcd
 
 routers
-^^^^^^^
+-------
 
 Definition
 """"""""""
@@ -138,7 +138,7 @@ allows you to define further more rules. The example below shows how a request t
 send requests with the POST method to app02, but requests with the GET method to app01.
 
 Syntax
-"""""""
+""""""
 
 .. code-block:: yaml
 
@@ -150,8 +150,8 @@ Syntax
       Http:
         - <match>
 
-matches
-""""""""
+match
+""""""
 
 This is simplistic version of the AWS Route Match specifications : `HTTP Route`_, `TCP Route`_
 
@@ -173,7 +173,7 @@ Syntax
       - <node_name>
 
 Example
-""""""""
++++++++
 
 .. code-block:: yaml
 
@@ -197,7 +197,7 @@ Example
                 - app02
 
 services
-^^^^^^^^
+--------
 
 The VirtualServices are what acts as backends to nodes, and as receiver for nodes and routers.
 The Virtual Services can use either a Node or a Router as the location to route the traffic to.
@@ -330,4 +330,3 @@ between the nodes.
 .. _HTTP Route: Https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-appmesh-route-Httproutematch.html
 .. _TCP Route: Https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-appmesh-route-Httproutematch.html
 .. _gRPC route: Https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-appmesh-route-grpcroutematch.html
-

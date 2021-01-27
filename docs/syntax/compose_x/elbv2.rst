@@ -1,5 +1,5 @@
 ﻿.. meta::
-    :description: ECS Composex AWS Load Balancing syntax reference
+    :description: ECS Compose-X AWS Load Balancing syntax reference
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS ELB, ELBv2, ALB, NLB
 
 .. _elbv2_syntax_reference:
@@ -187,13 +187,10 @@ The following properties are identical to the original CFN definition.
     The certificate ARN must be valid when set, however, we are not checking that it actually exists.(yet)
 
 
-ECS ComposeX custom properties
-==============================
+Target Groups
+================================
 
-Targets
--------
-
-List of targets to send the requests to.
+List of targets to send the requests to. These are equivalent to ELBv2::TargetGroup
 
 .. code-block:: yaml
 
@@ -206,12 +203,12 @@ This represents the targets and simultaneously the Listener Rules to apply so th
 at once and implement these rules.
 
 name
-^^^^
+-----
 
 The name of the family and service in that family to send the requests to.
 
 access
-""""""
+------
 
 Allows you to define the conditions based on the path or domain name (or combination of both) that should be in place
 to forward requests.
@@ -219,13 +216,13 @@ to forward requests.
 If you only define the domain name, any path in that domain will be what's matched.
 
 AuthenticateCognitoConfig
-"""""""""""""""""""""""""
+---------------------------
 
 Defines the `AuthenticateCognitoConfig`_ requirement condition / action
 
 
 AuthenticateOidcConfig
-"""""""""""""""""""""""
+-----------------------
 
 Similar to `AuthenticateCognitoConfig`_ but for OIDC providers. This allows to respect all the `AuthenticateOidcConfig`_
 Properties as per CFN definition.
@@ -239,6 +236,7 @@ Properties as per CFN definition.
 
     For both AuthenticateCognitoConfig and AuthenticateOidcConfig, the rules defined in `access` will be set to come **after**
     the authenticate action.
+
 
 Examples
 ========

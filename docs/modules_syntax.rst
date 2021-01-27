@@ -1,5 +1,5 @@
 .. meta::
-    :description: ECS Composex
+    :description: ECS Compose-X
     :keywords: AWS, AWS ECS, Docker, Containers, Compose, docker-compose
 
 
@@ -18,36 +18,36 @@
     :caption: Services-level Extension Fields
     :maxdepth: 1
 
-    syntax/composex/ecs.details/deploy
-    syntax/composex/ecs.details/scaling
-    syntax/composex/ecs.details/iam
-    syntax/composex/ecs.details/network
-    syntax/composex/ecs.details/logging
-    syntax/composex/ecs.details/xray
-    syntax/composex/ecs.details/codeguru_profiler
+    syntax/compose_x/ecs.details/deploy
+    syntax/compose_x/ecs.details/scaling
+    syntax/compose_x/ecs.details/iam
+    syntax/compose_x/ecs.details/network
+    syntax/compose_x/ecs.details/logging
+    syntax/compose_x/ecs.details/xray
+    syntax/compose_x/ecs.details/codeguru_profiler
 
 .. toctree::
     :caption: ComposeX syntax
     :maxdepth: 1
 
-    syntax/composex/common
-    syntax/composex/dynamodb
-    syntax/composex/rds
-    syntax/composex/docdb
-    syntax/composex/elasticache
-    syntax/composex/s3
-    syntax/composex/appmesh
-    syntax/composex/dns
-    syntax/composex/elbv2
-    syntax/composex/acm
-    syntax/composex/kinesis
-    syntax/composex/sqs
-    syntax/composex/sns
-    syntax/composex/events
-    syntax/composex/kms
-    syntax/composex/vpc
-    syntax/composex/ecs_cluster
-    syntax/composex/compute
+    syntax/compose_x/common
+    syntax/compose_x/dynamodb
+    syntax/compose_x/rds
+    syntax/compose_x/docdb
+    syntax/compose_x/elasticache
+    syntax/compose_x/s3
+    syntax/compose_x/appmesh
+    syntax/compose_x/dns
+    syntax/compose_x/elbv2
+    syntax/compose_x/acm
+    syntax/compose_x/kinesis
+    syntax/compose_x/sqs
+    syntax/compose_x/sns
+    syntax/compose_x/events
+    syntax/compose_x/kms
+    syntax/compose_x/vpc
+    syntax/compose_x/ecs_cluster
+    syntax/compose_x/compute
 
 
 .. toctree::
@@ -55,4 +55,3 @@
     :maxdepth: 1
 
     syntax/ecs_plugin/support
-
