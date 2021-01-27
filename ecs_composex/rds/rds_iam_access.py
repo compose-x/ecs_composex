@@ -246,7 +246,6 @@ def add_iam_access(settings, stack, db, data, db_template, boundary):
                 LOG.warning(
                     f"Feature {data[2]} is already defined in from the properties. Skipping"
                 )
-                continue
             else:
                 policy = subconfig[1](
                     settings, stack, db, data[name], db_template, subconfig
