@@ -120,7 +120,7 @@ def add_rds_features(settings, stack, db, features, db_template, boundary):
         ),
         Policies=policies,
         PermissionsBoundary=boundary,
-        MaxSessionDuration=900,
+        MaxSessionDuration=3600,
     )
     features_definition = []
     for feature in to_add:
