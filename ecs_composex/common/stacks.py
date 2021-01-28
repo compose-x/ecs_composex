@@ -288,7 +288,11 @@ class ComposeXStack(Stack, object):
         )
         for subnet_param in settings.subnets_parameters:
             self.Parameters.update(
-                {subnet_param.title: FindInMap("Network", subnet_param.title, "Ids")}
+                {
+                    subnet_param.title: Join(
+                        ",", FindInMap("Network", subnet_param.title, "Ids")
+                    )
+                }
             )
 
 
