@@ -91,13 +91,13 @@ def lookup_service_discovery_namespace(zone, session, private):
         raise
 
 
-def filter_out_cloudmap_zones(zones):
+def filter_out_cloudmap_zones(zones, zone_name):
     """
     Function to filter out the Hosted Zones linked to CloudMap
 
     :param list zones:
-    :return: Zones only linked to Route53
-    :rtype: list
+    :return: The only valid zone
+    :rtype: dict
     """
     new_zones = []
     for zone in zones:
@@ -110,21 +110,23 @@ def filter_out_cloudmap_zones(zones):
             continue
         else:
             new_zones.append(zone)
-    return new_zones
+    if not zone_name.endswith("."):
+        zone_name = f"{zone_name}."
+    if not new_zones or not new_zones[0]["Name"] == zone_name:
+        raise LookupError(
+            "The first zone found does not match the DNS zone we are looking for."
+            "As per API definition, this means the zone was not found",
+            new_zones,
+        )
+    return new_zones[0]
 
 
 def lookup_route53_namespace(zone, session, private):
     client = session.client("route53")
     try:
         zones_req = client.list_hosted_zones_by_name(DNSName=zone.name)["HostedZones"]
-        zones_r = filter_out_cloudmap_zones(zones_req)
-        if zones_r and len(zones_r) > 1:
-            raise LookupError(
-                "There is more than one DNS Hosted Zone with domain name", zone.name
-            )
-        elif not zones_r:
-            raise LookupError("No DNS Zone found for domain name", zone.name)
-        zone_r = client.get_hosted_zone(Id=zones_r[0]["Id"])["HostedZone"]
+        zones_r = filter_out_cloudmap_zones(zones_req, zone.name)
+        zone_r = client.get_hosted_zone(Id=zones_r["Id"])["HostedZone"]
         if zone_r["Config"]["PrivateZone"] != private:
             raise ValueError(f"The zone {zone.name} is not a private zone.")
         return {
