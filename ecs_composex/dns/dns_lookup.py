@@ -141,7 +141,6 @@ def lookup_namespace(zone, session):
 
     :param ecs_composex.dns.DnsZone zone:
     :param boto3.session.Session session: boto3 session to make API call
-    :param bool private: Whether this zone is private or not
     :return:
     """
     zone_info = None

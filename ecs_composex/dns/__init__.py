@@ -27,6 +27,7 @@ from troposphere.servicediscovery import (
 )
 
 from ecs_composex.common import cfn_params, keyisset, add_parameters, LOG
+from ecs_composex.common.aws import get_cross_role_session
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.dns import dns_params, dns_conditions
 from ecs_composex.dns.dns_lookup import lookup_namespace
@@ -103,10 +104,13 @@ class DnsZone(object):
             )
 
     def set_zone_from_lookup(self, settings):
-        namespace_info = lookup_namespace(
-            self,
-            settings.session,
-        )
+        if keyisset("RoleArn", self.lookup):
+            session = get_cross_role_session(
+                settings.session, arn=self.lookup["RoleArn"]
+            )
+        else:
+            session = settings.session
+        namespace_info = lookup_namespace(self, session)
         if not namespace_info["ZoneTld"].find(self.name) == 0:
             raise ValueError(
                 "Zone name provided does not match the value looked up. Got",
