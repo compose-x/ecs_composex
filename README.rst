@@ -1,3 +1,5 @@
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Flambda-my-aws%2Fecs_composex.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Flambda-my-aws%2Fecs_composex?ref=badge_shield)
+
 ============
 ECS ComposeX
 ============
@@ -329,3 +331,6 @@ This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypack
 .. |QUALITY| image:: https://sonarcloud.io/api/project_badges/measure?project=lambda-my-aws_ecs_composex&metric=alert_status
     :alt: Code scan with SonarCloud
     :target: https://sonarcloud.io/dashboard?id=lambda-my-aws_ecs_composex
+
+
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Flambda-my-aws%2Fecs_composex.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Flambda-my-aws%2Fecs_composex?ref=badge_large)
