@@ -1347,8 +1347,8 @@ class ComposeFamily(object):
             if network.name in network_names:
                 self.stack_parameters.update(
                     {
-                        APP_SUBNETS.title: FindInMap(
-                            "Network", network.subnet_name, "Ids"
+                        APP_SUBNETS.title: Join(
+                            ",", FindInMap("Network", network.subnet_name, "Ids")
                         )
                     }
                 )
