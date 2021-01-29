@@ -247,7 +247,7 @@ class Ingress(object):
                 )
             else:
                 title = (
-                    f"From{flatten_ip(allowed_source['Ipv4'])}"
+                    f"From{flatten_ip(allowed_source[self.ipv4_key])}"
                     f"To{port['published']}{port['protocol']}"
                 )
                 description = Sub(
