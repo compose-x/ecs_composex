@@ -68,7 +68,6 @@ from ecs_composex.vpc.vpc_params import (
     VPC_ID,
     STORAGE_SUBNETS,
 )
-from ecs_composex.rds.rds_iam_access import add_iam_access
 
 
 def init_database_template(db):
@@ -531,42 +530,6 @@ def add_db_instances_for_cluster(db_template, db):
         db_template.add_resource(db_instance)
     elif db.parameters and keyisset("Instances", db.parameters):
         add_instances_from_parameters(db_template, db)
-
-
-def apply_extra_parameters(settings, stack, db, db_template):
-    """
-    Function to add extra parameters set in MacroParameters post creation of the DB resource from properties
-
-    :param ecs_composex.rds.rds_stack.Rds db db:
-    :param troposphere.Template db_template:
-    :return:
-    """
-    if not db.parameters:
-        return
-    permissions_boundary = Ref(AWS_NO_VALUE)
-    if keyisset("PermissionsBoundary", db.parameters):
-        permissions_boundary = define_iam_policy(db.parameters["PermissionsBoundary"])
-    extra_parameters = {"IamAccess": (dict, add_iam_access)}
-    for name, config in extra_parameters.items():
-        if (
-            keyisset(name, db.parameters)
-            and isinstance(db.parameters[name], config[0])
-            and config[1]
-        ):
-            config[1](
-                settings,
-                stack,
-                db,
-                db.parameters[name],
-                db_template,
-                permissions_boundary,
-            )
-        elif keyisset(name, db.parameters) and not isinstance(
-            db.parameters[name], config[0]
-        ):
-            LOG.error(
-                f"The property {name} is of type {type(db.parameters[name])}. Expected {config[0]}. Skipping"
-            )
 
 
 def generate_database_template(db, settings):

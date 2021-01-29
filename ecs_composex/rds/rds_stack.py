@@ -34,7 +34,7 @@ from ecs_composex.rds.rds_params import (
 )
 from ecs_composex.vpc.vpc_params import STORAGE_SUBNETS
 from ecs_composex.rds.rds_template import generate_rds_templates
-from ecs_composex.rds.rds_db_template import apply_extra_parameters
+from ecs_composex.rds.rds_features import apply_extra_parameters
 
 RES_KEY = f"x-{os.path.basename(os.path.dirname(os.path.abspath(__file__)))}"
 RDS_SSM_PREFIX = f"/{RES_KEY}/"

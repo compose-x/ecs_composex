@@ -16,6 +16,7 @@ Syntax
     x-rds:
       psql-dbA:
         Properties: {}
+        MacroParameters: {}
         Settings: {}
         Services: []
         Lookup: {}
@@ -54,8 +55,10 @@ MacroParameters for RDS allow you to set only very little settings / properties 
     EngineVersion: str
     UseServerless: bool
     UseMultiAz: bool
-    ParametersGroup: {} # Properties for parameters group as per AWS CFN definition
-    Instances: [] # Only valid when creating a DBCluster, allows to define multiple DB Instances
+    ParametersGroup: {}         # Properties for parameters group as per AWS CFN definition
+    Instances: []               # Only valid when creating a DBCluster, allows to define multiple DB Instances
+    RdsFeatures: {}             # Custom settings to define AWS RDS AssociatedRoles
+    PermissionsBoundary: str    # Allow you to define an IAM boundary policy that will be used for the RDS IAM role(s)
 
 .. code-block:: yaml
     :caption: MacroParameters definitions example
@@ -69,6 +72,72 @@ MacroParameters for RDS allow you to set only very little settings / properties 
       Family: aurora-postgresql-11.7
       Parameters: {}
     Instances: []
+    RdsFeatures:
+      - Name: s3Import
+        Resources:
+          - x-s3::bucket-01
+          - arn:aws:s3:::bucket/path/allowed/*
+          - bucket-name
+
+
+PermissionsBoundary
+-------------------
+
+Allows to define whether an IAM Policy boundary is required for the IAM roles that will be created around the RDS Cluster/Instance.
+
+.. hint::
+
+    This value can be either a policy name or policy ARN. When a policy Name, the ARN is built based on your Account ID.
+
+RdsFeatures
+------------
+
+.. code-block:: yaml
+    :caption: Syntax definition
+
+    RdsFeatures:
+      - Name: <DB Engine feature name>
+      - Resources: [<str>]
+
+
+The RDS Features is a wrapper to automatically define which RDS Features, supported by the Engine family, you might
+want to enable. For these features, which require an IAM role, it will create a new IAM role specifically linked to
+RDS and grant permissions based on the what the feature requires.
+
+If you had set **AssociatedRoles** already in the permissions, then each *FeatureName* you have already defined that you
+might re-define in **RdsFeatures** will be skipped. If you wish to use **RdsFeatures** then remove that feature from the
+**AssociateRoles** definition.
+
+
+.. attention::
+
+    This was primarily developed to allow feature request #375 so at the moment it only supports s3Import and s3Export.
+
+
+.. code-block:: yaml
+    :caption: Example with different bucket names syntax
+
+    x-rds:
+      dbB:
+        Properties: {}
+        MacroParameters:
+          PermissionsBoundary: policy-name
+          RdsFeatures:
+            - Name: s3Import
+              Resources:
+                - x-s3::bucket-01
+                - arn:aws:s3:::sacrificial-lamb/folder/*
+                - bucket-name
+            - Name: s3Export
+              Resources:
+                - x-s3::bucket-01
+                - arn:aws:s3:::sacrificial-lamb/folder/*
+                - bucket-name
+
+.. hint::
+
+    You can reference a S3 bucket defined in **x-s3**. This supports S3 buckets created and referenced via Lookup
+
 
 
 Services

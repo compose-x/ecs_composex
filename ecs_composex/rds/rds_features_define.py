@@ -17,23 +17,21 @@
 
 import re
 
-from troposphere import AWS_PARTITION, AWS_STACK_NAME, AWS_NO_VALUE
+from troposphere import AWS_PARTITION, AWS_NO_VALUE
 from troposphere import Parameter
 from troposphere import Ref, Sub, GetAtt, FindInMap
-from troposphere.iam import Role as IamRole, Policy as IamPolicy
-from troposphere.rds import DBClusterRole
+from troposphere.iam import Policy as IamPolicy
 
-from ecs_composex.common import LOG, keyisset
-from ecs_composex.iam import service_role_trust_policy
+from ecs_composex.common import LOG, keyisset, add_parameters
 
 S3_KEY = "x-s3"
 
 
 def get_s3_bucket_arn_from_resource(db_template, stack, resource):
     param = Parameter(f"{resource.logical_name}Arn", Type="String")
-    db_template.add_parameter(param)
+    add_parameters(db_template, [param])
     if stack.parent_stack:
-        stack.parent_stack.stack_template.add_parameter(param)
+        add_parameters(stack.parent_stack.stack_template, [param])
         stack.parent_stack.Parameters.update(
             {param.title: GetAtt("s3", f"Outputs.{resource.logical_name}Arn")}
         )
@@ -128,7 +126,7 @@ def import_raw_bucket_name(bucket):
     return bucket_arn
 
 
-def add_s3_access(settings, stack, db, config, db_template, subconfig):
+def define_s3_bucket_arns(settings, stack, db, config, db_template):
     """
     Function to define the IAM Policy for S3Import access
 
@@ -158,15 +156,30 @@ def add_s3_access(settings, stack, db, config, db_template, subconfig):
         if bucket_arn:
             bucket_arns.append(bucket_arn)
 
+    return bucket_arns
+
+
+def define_s3_export_feature_policy(settings, stack, db, config, db_template):
+    """
+    Function to define the IAM Policy for S3Import access
+
+    :param settings:
+    :param db:
+    :param config:
+    :param db_template:
+    :param subconfig:
+    :return:
+    """
+    bucket_arns = define_s3_bucket_arns(settings, stack, db, config, db_template)
     policy = IamPolicy(
         PolicyName=f"S3AccessFor{db.logical_name}",
         PolicyDocument={
             "Version": "2012-10-17",
             "Statement": [
                 {
-                    "Sid": "S3ObjectsAccess",
+                    "Sid": "S3WriteObjectsAccess",
                     "Effect": "Allow",
-                    "Action": ["s3:GetObject*", "s3:PutObject*"],
+                    "Action": ["s3:PutObject*"],
                     "Resource": bucket_arns,
                 }
             ],
@@ -175,94 +188,30 @@ def add_s3_access(settings, stack, db, config, db_template, subconfig):
     return policy
 
 
-def validate_parameters(allowed_keys, data):
+def define_s3_import_feature_policy(settings, stack, db, config, db_template):
     """
-    Function to ensure the data given in compose file is valid for S3/MacroParameters/IamAccess
+    Function to define the IAM Policy for S3Import access
 
-    :param dict allowed_keys:
-    :param dict data:
+    :param settings:
+    :param db:
+    :param config:
+    :param db_template:
+    :param subconfig:
     :return:
     """
-    if not all(key in allowed_keys.keys() for key in data.keys()):
-        raise KeyError(
-            "The only valid parameters for IamAccess are",
-            allowed_keys.keys(),
-            "Got",
-            data.keys(),
-        )
-
-
-def define_associated_roles(db):
-    """
-    Function to define the AssociatedRoles, either present or empty
-    :param ecs_composex.rds.rds_stack.RdsDb db:
-    :return: the list of Associated Roles
-    :rtype: list
-    """
-    if db.cfn_resource and hasattr(db.cfn_resource, "AssociatedRoles"):
-        LOG.warning(
-            "The db properties already had AssociatedRoles defined."
-            " Only will add ones without the feature already defined"
-        )
-        roles = getattr(db.cfn_resource, "AssociatedRoles")
-    else:
-        roles = []
-    return roles
-
-
-def add_iam_access(settings, stack, db, data, db_template, boundary):
-    """
-    Function to add IAM role and permissions to the DB to get access to external resources
-
-    :param ecs_composex.common.settings.ComposeXSettings settings:
-    :param ecs_composex.common.stacks.ComposeXStack stack:
-    :param dict data: The configuration for IamAccess
-    :param ecs_composex.rds.rds_stack.Rds db db:
-    :param troposphere.Template db_template:
-    :param boundary:
-    :return:
-    """
-    allowed_keys = {
-        "Buckets": (list, add_s3_access, "s3Import"),
-        "CloudWatch": (bool, None, None),
-    }
-    validate_parameters(allowed_keys, data)
-    roles = define_associated_roles(db)
-    for name, subconfig in allowed_keys.items():
-        if keyisset(name, data) and not isinstance(data[name], subconfig[0]):
-            LOG.error(
-                f"{name} is of type {type(data[name])}. Expected {subconfig[0]}. Skipping"
-            )
-        elif (
-            keyisset(name, data)
-            and isinstance(data[name], subconfig[0])
-            and subconfig[1]
-        ):
-            if (
-                roles
-                and subconfig[2]
-                and subconfig[2] in [role["FeatureName"] for role in roles]
-            ):
-                LOG.warning(
-                    f"Feature {data[2]} is already defined in from the properties. Skipping"
-                )
-            else:
-                policy = subconfig[1](
-                    settings, stack, db, data[name], db_template, subconfig
-                )
-                role = IamRole(
-                    f"{db.logical_name}{subconfig[2]}IamRole",
-                    AssumeRolePolicyDocument=service_role_trust_policy("rds"),
-                    Description=Sub(
-                        f"{db.logical_name}{subconfig[2]}IamRole in ${{{AWS_STACK_NAME}}}"
-                    ),
-                    Policies=[policy],
-                    PermissionsBoundary=boundary,
-                    MaxSessionDuration=900,
-                )
-                db_template.add_resource(role)
-                roles.append(
-                    DBClusterRole(FeatureName=subconfig[2], RoleArn=GetAtt(role, "Arn"))
-                )
-    if roles and not hasattr(db.cfn_resource, "AssociatedRoles"):
-        setattr(db.cfn_resource, "AssociatedRoles", roles)
+    bucket_arns = define_s3_bucket_arns(settings, stack, db, config, db_template)
+    policy = IamPolicy(
+        PolicyName=f"S3AccessFor{db.logical_name}",
+        PolicyDocument={
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Sid": "S3ReadObjectsAccess",
+                    "Effect": "Allow",
+                    "Action": ["s3:GetObject*"],
+                    "Resource": bucket_arns,
+                }
+            ],
+        },
+    )
+    return policy

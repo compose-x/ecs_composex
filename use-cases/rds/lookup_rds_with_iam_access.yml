@@ -40,11 +40,17 @@ x-rds:
           Value: "dummy-db"
 
     MacroParameters:
-      IamAccess:
-        Buckets:
-          - x-s3::bucket-01
-          - arn:aws:s3:::sacrificial-lamb/folder/*
-          - bucket-name
+      RdsFeatures:
+        - Name: s3Import
+          Resources:
+            - x-s3::bucket-01
+            - arn:aws:s3:::sacrificial-lamb/folder/*
+            - bucket-name
+        - Name: s3Export
+          Resources:
+            - x-s3::bucket-01
+            - arn:aws:s3:::sacrificial-lamb/folder/*
+            - bucket-name
     Settings:
       EnvNames:
         - DB_B
