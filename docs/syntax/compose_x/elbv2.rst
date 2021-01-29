@@ -76,7 +76,7 @@ Similar syntax as for ECS Services Ingress, allow you to define Ingress (only ap
     ExtSources:
       - Name: str (if any non alphanumeric character set, will be deleted)
         Description: str
-        Ipv4: str
+        IPv4: str
 
 .. code-block:: yaml
     :caption: AwsSources syntax

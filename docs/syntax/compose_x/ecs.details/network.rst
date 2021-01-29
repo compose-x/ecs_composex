@@ -56,9 +56,9 @@ Syntax reference
         x-network:
           Ingress:
             ExtSources:
-              - Ipv4: 0.0.0.0/0
+              - IPv4: 0.0.0.0/0
                 Name: all
-              - Ipv4: 1.1.1.1/32
+              - IPv4: 1.1.1.1/32
                 Source_name: CloudFlareDNS
             AwsSources:
               - Type: SecurityGroup
