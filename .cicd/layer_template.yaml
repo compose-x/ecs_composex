@@ -18,6 +18,7 @@ Resources:
 
   LayerPermissions:
     DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Type: AWS::Lambda::LayerVersionPermission
     Properties:
       Action: lambda:GetLayerVersion
