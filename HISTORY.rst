@@ -2,6 +2,57 @@
 History
 =======
 
+0.12.0 (2021-01-31)
+===================
+
+New features
+------------
+
+* dd9246c Allowing to define features by names and related resources (#376) John Preston
+* 2d0ef6d Allow to define RoleArn for DNS Lookup (#377) John Preston
+* d85fd90 Add an IAM Role to RDS for S3import feature (#373) John Preston
+
+Fixes
+-----
+
+* b690d60 Fixing ingress parsing for Ingress (#382) John Preston
+* 01c0582 Fix import value for subnets to Join for custom subnets (#381) John Preston
+* 8f2b777 Passing the subnets as a string with !Join from mappings (#380) John Preston
+* d72e9c1 Fixed events. Dumbed down the Fargate version John Preston
+* 913d451 Fixing AppMesh
+* 397c4cf Fixed ACM certificate mapping (#366) John Preston
+* f09ad64 Fix S3 name generation, events subnet param (#357) (jacku7) Jack Saunders
+
+Improvements
+------------
+
+* 95f76ab Updated lookup based to be more accurate (#378) John Preston
+* 62b27f7 Documentation updates/fixes and macro install/usage guide (#372) John Preston
+* 1e77c87 Working lookup of DNS zones. Relies on DNS Name only. John Preston
+* 5a8b659 VPC and subnets now in mappings John Preston
+* 913d451 Zones require name John Preston
+* 54593eb ECS Cluster "pointer" as a variable of settings John Preston
+* d801463 * Files pulled for remote files are stored with tempfile * Fixing x-dns John Preston
+* 0267cbc Refactor of DNS into more gracious handling John Preston
+* e56b667 * Refactored ECS Cluster creation for simplicity John Preston
+* ba511dd Create a nightly manifest list pointing always to the latest (#364) John Preston
+* 3596286 Docker image release-work (#363) John Preston
+* 02591ce Support for OIDC and Cognito AUTH action in x-elbv2 (#339) John Preston
+* fb36420 Updating build conditions and methods (#362) John Preston
+* 06d5776 Adding sitemap and meta keywords (#360) John Preston
+* 29e75ef Re-arranging test files and patching up CI files (#361) John Preston
+
+Special changes
+---------------
+
+The following changes all relate to the release a CFN Macro of ECS Compose-X
+
+* 1aea413 Allow to set override Function IAM Role John Preston
+* b804360 Maintain policy on previous layer versions (#383) John Preston
+* 5fe8169 Adding retain policy on layer version permissions (#374) John Preston
+* ae3d42a AWS Lambda Layer build and release (#371) John Preston
+* 2b1c21b Adding macro image build phase and deploy template (#370) John Preston
+
 0.11.0 (2021-01-14)
 ====================
 
