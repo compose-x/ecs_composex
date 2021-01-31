@@ -15,6 +15,10 @@ Metadata:
         default: ECS Compose-X Macro Lambda Layer version
       TemplatesBucket:
         default: Bucket to store all rendered CloudFormation templates and config files.
+      FunctionRoleArn:
+        default: Existing IAM Role to use for the CFN Macro Lambda function
+      PermissionsBoundary:
+        default: When creating a new role, assigns permissions boundary IAM policy via ARN
     ParameterGroups:
       - Parameters:
           - MemorySize
@@ -22,15 +26,20 @@ Metadata:
           default: Lambda Settings
       - Parameters:
           - TemplatesBucket
+          - ComposeXLambdaLayerVersion
         Label:
           default: ECS ComposeX Settings
-
+      - Parameters:
+          - FunctionRoleArn
+          - PermissionsBoundary
+        Label:
+          default: IAM Settings
 
 Parameters:
   ComposeXLambdaLayerVersion:
     Type: String
     AllowedPattern: (arn:aws([a-z]+)?:lambda:[a-z0-9-]+:\d{12}:layer:[a-zA-Z0-9-_]+:\d{1,3}$)
-    Default: arn:aws:lambda:eu-west-1:518078317392:layer:ecs_composex:3
+    Default: arn:aws:lambda:eu-west-1:518078317392:layer:ecs_composex:19
   MemorySize:
     Type: Number
     Default: 128
@@ -44,14 +53,23 @@ Parameters:
   PermissionsBoundary:
     Type: String
     Default: none
+    AllowedPattern: none|(arn:aws([a-z]+)?:iam::\d{12}:policy/\S+$)
+
+  FunctionRoleArn:
+    Type: String
+    AllowedPattern: none|(arn:aws([a-z]+)?:iam::\d{12}:role/\S+$)
+    Default: none
 
 Conditions:
   AnyBucket: !Equals [ !Ref TemplatesBucket, "none" ]
   UseBoundary: !Not [ !Equals [ !Ref PermissionsBoundary, "none" ] ]
+  NotUseOverrideRole: !Equals [ FunctionRoleArn , "none" ]
+  UseOverrideRole: !Not [ !Condition NotUseOverrideRole ]
 
 Resources:
   MacroFunctionRole:
     Type: AWS::IAM::Role
+    Condition: UseOverrideRole
     Properties:
       Tags:
         - Key: Name
@@ -90,6 +108,7 @@ Resources:
                 Effect: Allow
                 Action:
                   - s3:PutObject*
+                  - s3:GetObject*
                 Resource: !If
                   - AnyBucket
                   - - "*"
@@ -101,7 +120,10 @@ Resources:
       AutoPublishAlias: live
       Description: Lambda function to execute ECS Compose-X CFN Macro
       MemorySize: !Ref MemorySize
-      Role: !GetAtt 'MacroFunctionRole.Arn'
+      Role: !If
+        - UseOverrideRole
+        - !GetAtt 'MacroFunctionRole.Arn'
+        - !Ref FunctionRoleArn
       Timeout: 30
       Runtime: python3.8
       FunctionName: !Sub "ecs-compose-x-macro-${AWS::Region}"
