@@ -19,6 +19,7 @@
 Module for the ComposeXSettings class
 """
 
+from re import sub
 from copy import deepcopy
 from datetime import datetime as dt
 
@@ -514,27 +515,29 @@ class ComposeXSettings(object):
             )
             the_service = deepcopy(service)
             family = ComposeFamily([the_service], family_name)
-            self.families[family_name] = family
+            self.families[family.logical_name] = family
             the_service.my_family = family
             self.services.append(the_service)
         else:
             family = ComposeFamily([service], family_name)
             service.my_family = family
-        self.families[family_name] = family
+        self.families[family.logical_name] = family
         if service.name not in [service.name for service in assigned_services]:
             assigned_services.append(service)
 
     def handle_assigned_existing_service(self, family_name, service, assigned_services):
+        the_family = self.families[family_name]
         if service.name in [service.name for service in assigned_services]:
             LOG.info(
                 f"Detected {service.name} is-reused in different family. Making a deepcopy"
             )
+
             the_service = deepcopy(service)
-            self.families[family_name].add_service(the_service)
+            the_family.add_service(the_service)
             the_service.my_family = self.families[family_name]
             self.services.append(the_service)
         else:
-            self.families[family_name].add_service(service)
+            the_family.add_service(service)
             service.my_family = self.families[family_name]
             assigned_services.append(service)
 
@@ -546,17 +549,18 @@ class ComposeXSettings(object):
         assigned_services = []
         for service in self.services:
             for family_name in service.families:
-                if NONALPHANUM.findall(family_name):
+                formatted_name = sub(r"[^a-zA-Z0-9]+", "", family_name)
+                if NONALPHANUM.findall(formatted_name):
                     raise ValueError(
                         "Family names must be ^[a-zA-Z0-9]+$ | alphanumerical"
                     )
-                if family_name not in self.families.keys():
+                if formatted_name not in self.families.keys():
                     self.add_new_family(family_name, service, assigned_services)
-                elif family_name in self.families.keys() and service.name not in [
-                    service.name for service in self.families[family_name].services
+                elif formatted_name in self.families.keys() and service.name not in [
+                    service.name for service in self.families[formatted_name].services
                 ]:
                     self.handle_assigned_existing_service(
-                        family_name, service, assigned_services
+                        formatted_name, service, assigned_services
                     )
         LOG.debug([self.families[family] for family in self.families])
 

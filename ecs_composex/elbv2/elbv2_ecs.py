@@ -384,14 +384,23 @@ def handle_services_association(resource, res_root_stack, settings):
     stack = res_root_stack
     resource.set_listeners(template)
     resource.associate_to_template(template)
+    identified = []
     for target in resource.families_targets:
         tgt_arn = define_service_target_group_definition(
             resource, target[0], target[1], target[2], res_root_stack
         )
         for service in resource.services:
-            target_name = f"{target[1].logical_name}:{target[0].name}"
+            target_name = f"{target[1].name}:{target[0].name}"
             if target_name == service["name"]:
                 service["target_arn"] = tgt_arn
+                identified.append(True)
+    if not identified or not (identified and all(identified)):
+        raise LookupError(
+            "Failed to define a TGT Group for any of",
+            [target[0].name for target in resource.families_targets],
+            "and map it for LB",
+            resource.name,
+        )
 
     for listener in resource.listeners:
         listener.map_services(resource)

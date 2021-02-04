@@ -263,6 +263,8 @@ def define_actions(listener, target_def):
     :param ecs_composex.elbv2.elbv2_stack.ComposeListener listener:
     :return: The action to add or action list for default target
     """
+    if not keyisset("target_arn", target_def):
+        raise KeyError("No target ARN defined in the target definition")
     auth_action = None
     actions = []
     if keyisset("AuthenticateCognitoConfig", target_def):
@@ -494,8 +496,16 @@ def add_acm_certs_arn(listener, src_value, settings, listener_stack):
 
 
 def map_service_target(lb, name, l_service_def):
+    """
+    Function to iterate over targets to map the service and its defined TargetGroup ARN
+
+    :param ecs_composex.elbv2.elbv2_stack.Elbv2 lb:
+    :param str name:
+    :param dict l_service_def:
+    :return:
+    """
     for target in lb.families_targets:
-        t_family = target[1].logical_name
+        t_family = target[1].name
         t_service = target[0].name
         target_name = f"{t_family}:{t_service}"
         if target_name == name:
@@ -638,6 +648,11 @@ class ComposeListener(Listener):
             )
 
     def map_services(self, lb):
+        """
+        Map Services defined in LB definition to Targets
+
+        :param ecs_composex.elbv2.elbv2_stack.Elbv2 lb:
+        """
         if not self.services:
             return
         l_targets = [s["name"] for s in self.services]
