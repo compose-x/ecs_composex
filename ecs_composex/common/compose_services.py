@@ -779,7 +779,7 @@ class ComposeService(object):
                     type(deployment[labels][ecs_task_family]),
                 )
         else:
-            self.families.append(self.logical_name)
+            self.families.append(self.name)
 
     def set_service_deploy(self):
         """
