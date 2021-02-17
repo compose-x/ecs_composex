@@ -144,10 +144,13 @@ def add_service_to_map(family, settings):
     Method to create a new Service into CloudMap to represent the current service and add entry into the registry
     """
     registries = []
-    if (
-        not family.service_config.network.ports
-        or not family.service_config.network.use_cloudmap
-    ) and not settings.use_appmesh:
+    if not family.service_config.network.ports:
+        LOG.warning(
+            f"No ports were defined for the services in {family.logical_name}."
+            " Not creating a service in CloudMap"
+        )
+        return registries
+    elif not family.service_config.network.use_cloudmap and not settings.use_appmesh:
         return registries
     sd_service = SdService(
         f"{family.logical_name}DiscoveryService",
