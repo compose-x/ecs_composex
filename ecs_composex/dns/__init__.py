@@ -165,7 +165,7 @@ class PrivateNamespace(DnsZone):
 
     key = "PrivateNamespace"
     nested_name_parameter = dns_params.PRIVATE_DNS_ZONE_NAME
-    nested_id_parameter = dns_params.PRIVATE_DNS_ZONE_ID
+    nested_id_parameter = dns_params.PRIVATE_NAMESPACE_ID
 
     def __init__(self, definition):
         """
