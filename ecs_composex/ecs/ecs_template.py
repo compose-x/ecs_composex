@@ -66,6 +66,7 @@ def initialize_service_template(service_name):
             dns_params.PRIVATE_DNS_ZONE_NAME,
             dns_params.PUBLIC_DNS_ZONE_ID,
             dns_params.PRIVATE_DNS_ZONE_ID,
+            dns_params.PRIVATE_NAMESPACE_ID,
             ecs_params.CLUSTER_NAME,
             ecs_params.LAUNCH_TYPE,
             ecs_params.ECS_CONTROLLER,
