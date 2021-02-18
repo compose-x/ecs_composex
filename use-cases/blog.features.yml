@@ -33,6 +33,9 @@ services:
       SHELLY: /bin/bash
       TERMY: screen
     image: nginx
+    volumes:
+      - normal-vol:/var/tmp/shared
+      - some-volume:/var/anotherpath:ro
     links:
       - app03:dateteller
     ports:
@@ -158,6 +161,8 @@ services:
           cpus: '0.1'
           memory: 32M
     image: nginx
+    volumes:
+      - normal-vol:/tmp/shared
     ports:
       - mode: awsvpc
         protocol: tcp
@@ -170,6 +175,7 @@ services:
     x-network:
       is_public: False
       UseCloudmap: True
+
 volumes:
   shared-images: {}
   some-volume: {}
