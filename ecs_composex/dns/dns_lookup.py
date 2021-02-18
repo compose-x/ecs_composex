@@ -79,9 +79,9 @@ def lookup_service_discovery_namespace(zone, session, private):
                 "Only DNS namespaces, private or public, are supported"
             )
         return {
-            "ZoneId": properties["DnsProperties"]["HostedZoneId"],
+            "Route53ID": properties["DnsProperties"]["HostedZoneId"],
             "ZoneTld": LAST_DOT_RE.sub("", properties["HttpProperties"]["HttpName"]),
-            "NamespaceId": zone_r["Namespace"]["Id"],
+            "ZoneId": zone_r["Namespace"]["Id"],
         }
     except client.exceptions.NamespaceNotFound:
         LOG.error(f"Namespace not found for {zone.name}")

@@ -57,8 +57,9 @@ from ecs_composex.dns.dns_params import (
     PRIVATE_DNS_ZONE_ID,
     PUBLIC_DNS_ZONE_ID,
     PUBLIC_DNS_ZONE_NAME,
+    PRIVATE_NAMESPACE_ID
 )
-from ecs_composex.dns.dns_conditions import PRIVATE_ZONE_ID_CON_T
+from ecs_composex.dns.dns_conditions import PRIVATE_ZONE_ID_CON_T, PRIVATE_NAMESPACE_CON_T
 from ecs_composex.ecs import ecs_params, ecs_conditions
 from ecs_composex.ecs.ecs_conditions import USE_HOSTNAME_CON_T
 from ecs_composex.ecs.ecs_params import SERVICE_NAME, SERVICE_HOSTNAME
@@ -155,9 +156,9 @@ def add_service_to_map(family, settings):
     sd_service = SdService(
         f"{family.logical_name}DiscoveryService",
         template=family.template,
-        Condition=PRIVATE_ZONE_ID_CON_T,
+        Condition=PRIVATE_NAMESPACE_CON_T,
         Description=Ref(SERVICE_NAME),
-        NamespaceId=Ref(PRIVATE_DNS_ZONE_ID),
+        NamespaceId=Ref(PRIVATE_NAMESPACE_ID),
         HealthCheckCustomConfig=SdHealthCheckCustomConfig(FailureThreshold=1.0),
         DnsConfig=SdDnsConfig(
             RoutingPolicy="MULTIVALUE",

@@ -126,6 +126,10 @@ class DnsZone(object):
                 }
             },
         )
+        if hasattr(self, "zone_id_parameter") and keyisset("Route53ID", namespace_info):
+            self.dns_mapping[self.key].update(
+                {self.zone_id_parameter.title: namespace_info["Route53ID"]}
+            )
         self.id_value = FindInMap("Dns", self.key, self.nested_id_parameter.title)
         self.name_value = FindInMap("Dns", self.key, self.nested_name_parameter.title)
 
@@ -165,7 +169,8 @@ class PrivateNamespace(DnsZone):
 
     key = "PrivateNamespace"
     nested_name_parameter = dns_params.PRIVATE_DNS_ZONE_NAME
-    nested_id_parameter = dns_params.PRIVATE_DNS_ZONE_ID
+    nested_id_parameter = dns_params.PRIVATE_NAMESPACE_ID
+    zone_id_parameter = dns_params.PRIVATE_DNS_ZONE_ID
 
     def __init__(self, definition):
         """
