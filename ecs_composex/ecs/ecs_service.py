@@ -308,7 +308,7 @@ def define_service_ingress(family, settings):
         registries = Ref(AWS_NO_VALUE)
     service_attrs = {
         "LoadBalancers": service_lbs,
-        "ServiceRegistries": If(PRIVATE_ZONE_ID_CON_T, registries, Ref(AWS_NO_VALUE)),
+        "ServiceRegistries": If(PRIVATE_NAMESPACE_CON_T, registries, Ref(AWS_NO_VALUE)),
     }
     return service_attrs
 
