@@ -47,4 +47,8 @@ PRIVATE_ZONE_ID_CON = Not(
 )
 
 PRIVATE_NAMESPACE_CON_T = "PrivateNamespaceConditionSet"
-PRIVATE_NAMESPACE_CON = Not(Equals(Ref(dns_params.PRIVATE_NAMESPACE_ID), dns_params.PRIVATE_NAMESPACE_ID.Default))
+PRIVATE_NAMESPACE_CON = Not(
+    Equals(
+        Ref(dns_params.PRIVATE_NAMESPACE_ID), dns_params.PRIVATE_NAMESPACE_ID.Default
+    )
+)

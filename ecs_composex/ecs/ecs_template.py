@@ -125,7 +125,9 @@ def initialize_service_template(service_name):
     service_tpl.add_condition(
         dns_conditions.PRIVATE_ZONE_ID_CON_T, dns_conditions.PRIVATE_ZONE_ID_CON
     )
-    service_tpl.add_condition(dns_conditions.PRIVATE_NAMESPACE_CON_T, dns_conditions.PRIVATE_NAMESPACE_CON)
+    service_tpl.add_condition(
+        dns_conditions.PRIVATE_NAMESPACE_CON_T, dns_conditions.PRIVATE_NAMESPACE_CON
+    )
     return service_tpl
 
 

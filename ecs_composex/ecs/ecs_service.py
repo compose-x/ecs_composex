@@ -57,9 +57,12 @@ from ecs_composex.dns.dns_params import (
     PRIVATE_DNS_ZONE_ID,
     PUBLIC_DNS_ZONE_ID,
     PUBLIC_DNS_ZONE_NAME,
-    PRIVATE_NAMESPACE_ID
+    PRIVATE_NAMESPACE_ID,
 )
-from ecs_composex.dns.dns_conditions import PRIVATE_ZONE_ID_CON_T, PRIVATE_NAMESPACE_CON_T
+from ecs_composex.dns.dns_conditions import (
+    PRIVATE_ZONE_ID_CON_T,
+    PRIVATE_NAMESPACE_CON_T,
+)
 from ecs_composex.ecs import ecs_params, ecs_conditions
 from ecs_composex.ecs.ecs_conditions import USE_HOSTNAME_CON_T
 from ecs_composex.ecs.ecs_params import SERVICE_NAME, SERVICE_HOSTNAME
