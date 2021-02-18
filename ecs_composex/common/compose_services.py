@@ -32,6 +32,12 @@ from troposphere.ecs import (
     TaskDefinition,
     EnvironmentFile,
     RepositoryCredentials,
+    Volume,
+    Host,
+    MountPoint,
+    VolumesFrom,
+    EFSVolumeConfiguration,
+    DockerVolumeConfiguration,
 )
 from troposphere.iam import Policy, PolicyType
 from troposphere.codeguruprofiler import ProfilingGroup
@@ -604,7 +610,8 @@ class ComposeService(object):
                     handle_volume_str_config(self, s_volume, volumes)
                 elif isinstance(s_volume, dict):
                     handle_volume_dict_config(self, s_volume, volumes)
-                self.volumes.append(volume_config)
+                if volume_config:
+                    self.volumes.append(volume_config)
 
     def map_secrets(self, secrets):
         if keyisset(ComposeSecret.main_key, self.definition) and secrets:
@@ -1541,3 +1548,54 @@ class ComposeFamily(object):
                     },
                 )
             )
+
+    def set_volumes(self):
+        """
+        Method to create the volumes definition to the Task Definition
+
+        :return:
+        """
+        family_task_volumes = []
+        for service in self.services:
+            for volume in service.volumes:
+                if volume["volume"] not in family_task_volumes:
+                    family_task_volumes.append(volume["volume"])
+                else:
+                    volume["volume"].is_shared = True
+        shared_volumes = [vol for vol in family_task_volumes if vol.is_shared]
+
+        family_definition_volumes = []
+        if not hasattr(self.task_definition, "Volumes"):
+            setattr(self.task_definition, "Volumes", family_definition_volumes)
+        else:
+            family_definition_volumes = getattr(self.task_definition, "Volumes")
+        for volume in family_task_volumes:
+            if volume.type == "volume" and volume.driver == "local":
+                volume.cfn_volume = Volume(
+                    Host=Ref(AWS_NO_VALUE),
+                    Name=volume.volume_name,
+                    DockerVolumeConfiguration=If(
+                        USE_FARGATE_CON_T,
+                        DockerVolumeConfiguration(
+                            Scope="task" if not volume.is_shared else "shared",
+                            Autoprovision=Ref(AWS_NO_VALUE)
+                            if not volume.is_shared
+                            else True,
+                        ),
+                        Ref(AWS_NO_VALUE),
+                    ),
+                )
+            family_definition_volumes.append(volume.cfn_volume)
+        for service in self.services:
+            mount_points = []
+            if not hasattr(service.container_definition, "MountPoints"):
+                setattr(service.container_definition, "MountPoints", mount_points)
+            else:
+                mount_points = getattr(service.container_definition, "MountPoints")
+            for volume in service.volumes:
+                mnt_point = MountPoint(
+                    ContainerPath=volume["target"],
+                    ReadOnly=volume["read_only"],
+                    SourceVolume=volume["volume"].volume_name,
+                )
+                mount_points.append(mnt_point)
