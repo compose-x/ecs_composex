@@ -1564,11 +1564,12 @@ class ComposeFamily(object):
                 )
                 mount_points.append(mnt_point)
 
-    def set_volumes(self):
+    def define_shared_volumes(self):
         """
-        Method to create the volumes definition to the Task Definition
+        Method to create a list of shared volumes within the task family and set the volume to shared = True if not.
 
-        :return:
+        :return: list of shared volumes within the task definition
+        :rtype: list
         """
         family_task_volumes = []
         for service in self.services:
@@ -1577,6 +1578,15 @@ class ComposeFamily(object):
                     family_task_volumes.append(volume["volume"])
                 else:
                     volume["volume"].is_shared = True
+        return family_task_volumes
+
+    def set_volumes(self):
+        """
+        Method to create the volumes definition to the Task Definition
+
+        :return:
+        """
+        family_task_volumes = self.define_shared_volumes()
         family_definition_volumes = []
         if not hasattr(self.task_definition, "Volumes"):
             setattr(self.task_definition, "Volumes", family_definition_volumes)
