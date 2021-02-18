@@ -1549,6 +1549,24 @@ class ComposeFamily(object):
                 )
             )
 
+    def set_services_mount_points(self):
+        """
+        Method to set the mount points to the Container Definition of the defined service
+        """
+        for service in self.services:
+            mount_points = []
+            if not hasattr(service.container_definition, "MountPoints"):
+                setattr(service.container_definition, "MountPoints", mount_points)
+            else:
+                mount_points = getattr(service.container_definition, "MountPoints")
+            for volume in service.volumes:
+                mnt_point = MountPoint(
+                    ContainerPath=volume["target"],
+                    ReadOnly=volume["read_only"],
+                    SourceVolume=volume["volume"].volume_name,
+                )
+                mount_points.append(mnt_point)
+
     def set_volumes(self):
         """
         Method to create the volumes definition to the Task Definition
@@ -1563,7 +1581,6 @@ class ComposeFamily(object):
                 else:
                     volume["volume"].is_shared = True
         shared_volumes = [vol for vol in family_task_volumes if vol.is_shared]
-
         family_definition_volumes = []
         if not hasattr(self.task_definition, "Volumes"):
             setattr(self.task_definition, "Volumes", family_definition_volumes)
@@ -1576,26 +1593,14 @@ class ComposeFamily(object):
                     Name=volume.volume_name,
                     DockerVolumeConfiguration=If(
                         USE_FARGATE_CON_T,
+                        Ref(AWS_NO_VALUE),
                         DockerVolumeConfiguration(
                             Scope="task" if not volume.is_shared else "shared",
                             Autoprovision=Ref(AWS_NO_VALUE)
                             if not volume.is_shared
                             else True,
                         ),
-                        Ref(AWS_NO_VALUE),
                     ),
                 )
             family_definition_volumes.append(volume.cfn_volume)
-        for service in self.services:
-            mount_points = []
-            if not hasattr(service.container_definition, "MountPoints"):
-                setattr(service.container_definition, "MountPoints", mount_points)
-            else:
-                mount_points = getattr(service.container_definition, "MountPoints")
-            for volume in service.volumes:
-                mnt_point = MountPoint(
-                    ContainerPath=volume["target"],
-                    ReadOnly=volume["read_only"],
-                    SourceVolume=volume["volume"].volume_name,
-                )
-                mount_points.append(mnt_point)
+        self.set_services_mount_points()
