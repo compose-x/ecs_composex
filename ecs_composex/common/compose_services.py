@@ -605,13 +605,10 @@ class ComposeService(object):
         """
         if keyisset(ComposeVolume.main_key, self.definition) and volumes:
             for s_volume in self.definition[ComposeVolume.main_key]:
-                volume_config = None
                 if isinstance(s_volume, str):
                     handle_volume_str_config(self, s_volume, volumes)
                 elif isinstance(s_volume, dict):
                     handle_volume_dict_config(self, s_volume, volumes)
-                if volume_config:
-                    self.volumes.append(volume_config)
 
     def map_secrets(self, secrets):
         if keyisset(ComposeSecret.main_key, self.definition) and secrets:
@@ -1580,7 +1577,6 @@ class ComposeFamily(object):
                     family_task_volumes.append(volume["volume"])
                 else:
                     volume["volume"].is_shared = True
-        shared_volumes = [vol for vol in family_task_volumes if vol.is_shared]
         family_definition_volumes = []
         if not hasattr(self.task_definition, "Volumes"):
             setattr(self.task_definition, "Volumes", family_definition_volumes)

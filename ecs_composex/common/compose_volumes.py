@@ -100,40 +100,31 @@ def evaluate_efs_properties(definition):
 
     :return:
     """
-    efs_keys = [
-        "backup_policy",
-        "lifecycle_policy",
-        "performance_mode",
-        "throughput_mode",
-        "provisioned_throughput",
-    ]
+    efs_keys = {
+        "backup_policy": ("BackupPolicy", str),
+        "lifecycle_policy": ("ThroughputMode", str),
+        "performance_mode": ("PerformanceMode", str),
+        "throughput_mode": ("PerformanceMode", str),
+        "provisioned_throughput": ("ProvisionedThroughputInMibps", (int, float)),
+    }
+    props = {}
     if keyisset(ComposeVolume.driver_opts_key, definition) and isinstance(
         definition[ComposeVolume.driver_opts_key], dict
     ):
         opts = definition[ComposeVolume.driver_opts_key]
-        if all(key in efs_keys for key in opts):
-            return {
-                "LifecyclePolicy": LifecyclePolicy(
-                    TransitionToIA=opts["lifecycle_policy"]
-                    if keyisset("lifecycle_policy", opts)
-                    else Ref(AWS_NO_VALUE)
-                ),
-                "BackupPolicy": BackupPolicy(
-                    Status=opts["backup_policy"]
-                    if keyisset("backup_policy", opts)
-                    else "DISABLED"
-                ),
-                "ThroughputMode": opts["throughput_mode"]
-                if keyisset("throughput_mode", opts)
-                else Ref(AWS_NO_VALUE),
-                "PerformanceMode": opts["performance_mode"]
-                if keyisset("performance_mode", opts)
-                else Ref(AWS_NO_VALUE),
-                "ProvisionedThroughputInMibps": float(opts["provisioned_throughput"])
-                if keyisset("provisioned_throughput", opts)
-                else Ref(AWS_NO_VALUE),
-            }
-    return {}
+        for name, config in efs_keys.items():
+            if not keyisset(name, opts):
+                props[config[0]] = Ref(AWS_NO_VALUE)
+            elif not isinstance(opts[name], config[1]):
+                raise TypeError(
+                    f"Property {name} is of type",
+                    type(opts[name]),
+                    "Expected",
+                    config[1],
+                )
+            else:
+                props[config[0]] = opts[name]
+    return props
 
 
 class ComposeVolume(object):
