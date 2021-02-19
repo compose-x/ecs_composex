@@ -453,6 +453,40 @@ class ComposeXSettings(object):
                 self.secrets.append(secret)
                 self.compose_content[ComposeSecret.main_key][secret_name] = secret
 
+    def set_efs(self):
+        """
+        Method to add a x-efs definition to the compose-x definition when a volume is flagged as using NFS/EFS
+        """
+
+        if not keyisset("x-efs", self.compose_content):
+            efs = {}
+            self.compose_content["x-efs"] = efs
+        else:
+            efs = self.compose_content["x-efs"]
+        for volume in self.compose_content[ComposeVolume.main_key].values():
+            if volume.efs_props or volume.driver == "nfs":
+                print("VOLUME", volume.name, volume.services)
+                if not volume.efs_props:
+                    volume.efs_props = {
+                        "Encrypted": True,
+                        "LifecyclePolicies": {"TransitionToIA": "AFTER_14_DAYS"},
+                        "PerformanceMode": "generalPurpose",
+                    }
+                if not keyisset(volume.name, efs):
+                    efs[volume.name] = {
+                        "Properties": volume.efs_props,
+                        "Services": [
+                            {"name": service.name, "access": "RW"}
+                            for service in volume.services
+                        ],
+                        "Settings": {"Subnets": "StorageSubnets"},
+                        "Volume": volume,
+                    }
+                else:
+                    LOG.warning(
+                        f"x-efs {volume.name} was already defined in top-level x-efs. Not overriding from volumes"
+                    )
+
     def set_volumes(self):
         """
         Method configuring the volumes at root level
@@ -592,6 +626,7 @@ class ComposeXSettings(object):
             self.set_volumes()
             self.set_services()
             self.set_families()
+            self.set_efs()
 
     def parse_command(self, kwargs, content=None):
         """

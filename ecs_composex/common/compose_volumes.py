@@ -1,4 +1,4 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 #   ECS ComposeX <https://github.com/lambda-my-aws/ecs_composex>
 #   Copyright (C) 2020-2021  John Mille <john@lambda-my-aws.io>
 #  #
@@ -24,7 +24,6 @@ from copy import deepcopy
 
 from troposphere import AWS_NO_VALUE
 from troposphere import Ref
-
 from ecs_composex.common import keyisset, LOG
 
 
@@ -57,7 +56,7 @@ def handle_volume_str_config(service, config, volumes):
     :param list volumes:
     """
     volume_config = {"read_only": False}
-    path_finder = re.compile(r"(^[^:]+$)|(^[^:]+)(?::(\/[\d\w\/]+))(?::(ro$|rw$))?")
+    path_finder = re.compile(r"(^/[^:]+$)|(^[^:]+)(?::(/[\d\w/]+))(?::(ro$|rw$))?")
     path_match = path_finder.match(config)
     if not path_match:
         raise ValueError(
@@ -65,8 +64,13 @@ def handle_volume_str_config(service, config, volumes):
             path_finder.pattern,
         )
     if path_match.groups()[0]:
-        volume_config["source"] = path_match.groups()[0]
-        volume_config["target"] = f"/{path_match.groups()[0]}"
+        volume_config["source"] = path_match.groups()[0].strip("/")
+        volume_config["target"] = path_match.groups()[0]
+        volume = ComposeVolume(
+            volume_config["source"], {"type": "volume", "driver": "local"}
+        )
+        volumes.append(volume)
+        LOG.info(f"Added self generated volume from path {volume_config['target']}")
     elif path_match.groups()[1] and path_match.groups()[2]:
         volume_config["source"] = path_match.groups()[1]
         volume_config["target"] = path_match.groups()[2]
@@ -117,10 +121,8 @@ def evaluate_efs_properties(definition):
     :return:
     """
     efs_keys = {
-        "backup_policy": ("BackupPolicy", str),
-        "lifecycle_policy": ("ThroughputMode", str),
         "performance_mode": ("PerformanceMode", str),
-        "throughput_mode": ("PerformanceMode", str),
+        "throughput_mode": ("ThroughputMode", str),
         "provisioned_throughput": ("ProvisionedThroughputInMibps", (int, float)),
     }
     props = {}
@@ -128,6 +130,12 @@ def evaluate_efs_properties(definition):
         definition[ComposeVolume.driver_opts_key], dict
     ):
         opts = definition[ComposeVolume.driver_opts_key]
+        if keyisset("lifecycle_policy", opts) and isinstance(
+            opts["lifecycle_policy"], str
+        ):
+            props["LifecyclePolicies"] = [{"TransitionToIA": opts["lifecycle_policy"]}]
+        if keyisset("backup_policy", opts) and isinstance(opts["backup_policy"], str):
+            props["BackupPolicy"] = {"Status": opts["backup_policy"]}
         for name, config in efs_keys.items():
             if not keyisset(name, opts):
                 props[config[0]] = Ref(AWS_NO_VALUE)
@@ -203,3 +211,6 @@ class ComposeVolume(object):
                 self.type = "volume"
                 self.driver = "local"
                 self.is_shared = False
+
+    def __repr__(self):
+        return self.name

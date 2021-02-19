@@ -157,7 +157,7 @@ services:
       - zyx
       - john
     volumes:
-      - normal-vol
+      - /generated/volume/from/path
       - shared-images:/app/images
       - some-volume:/app/data:ro
     x-network:

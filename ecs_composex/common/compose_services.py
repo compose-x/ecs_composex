@@ -1653,7 +1653,7 @@ class ComposeFamily(object):
         family_task_volumes = []
         for service in self.services:
             for volume in service.volumes:
-                if volume["volume"] not in family_task_volumes:
+                if volume["volume"] and volume["volume"] not in family_task_volumes:
                     family_task_volumes.append(volume["volume"])
                 else:
                     volume["volume"].is_shared = True
@@ -1687,5 +1687,6 @@ class ComposeFamily(object):
                         ),
                     ),
                 )
-            family_definition_volumes.append(volume.cfn_volume)
+            if volume.cfn_volume:
+                family_definition_volumes.append(volume.cfn_volume)
         self.set_services_mount_points()
