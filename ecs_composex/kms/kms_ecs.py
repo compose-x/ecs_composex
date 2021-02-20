@@ -24,6 +24,7 @@ from ecs_composex.resource_settings import (
     handle_resource_to_services,
     handle_lookup_resource,
 )
+from ecs_composex.kms.kms_params import KMS_KEY_ID, KMS_KEY_ARN
 from ecs_composex.kms.kms_aws import lookup_key_config
 
 
@@ -57,7 +58,11 @@ def kms_to_ecs(resources, services_stack, res_root_stack, settings):
         services_stack.DependsOn.append(res_root_stack.title)
         LOG.info(f"Added dependency between services and {res_root_stack.title}")
     for new_res in new_resources:
-        handle_resource_to_services(new_res, services_stack, res_root_stack, settings)
+        handle_resource_to_services(
+            new_res, services_stack, res_root_stack, settings, KMS_KEY_ARN, [KMS_KEY_ID]
+        )
     create_kms_mappings(resources_mappings, lookup_resources, settings)
     for lookup_res in lookup_resources:
-        handle_lookup_resource(resources_mappings, "kms", lookup_res)
+        handle_lookup_resource(
+            resources_mappings, "kms", lookup_res, KMS_KEY_ARN, [KMS_KEY_ID]
+        )

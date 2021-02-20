@@ -21,38 +21,17 @@ Module to handle AWS RDS CFN Templates creation
 
 import os
 
-from troposphere import Parameter
 from troposphere import Ref, GetAtt
 
-from ecs_composex.common import LOG
+from ecs_composex.common import LOG, build_template
+from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.common.compose_resources import XResource, set_resources
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.rds.rds_params import (
-    DB_NAME,
-    DB_ENDPOINT_PORT,
-    DB_SECRET_T,
-)
-from ecs_composex.vpc.vpc_params import STORAGE_SUBNETS
+from ecs_composex.rds.rds_params import DB_NAME, DB_ENDPOINT_PORT, DB_SECRET_ARN, DB_SG
+from ecs_composex.vpc.vpc_params import STORAGE_SUBNETS, VPC_ID
 from ecs_composex.rds.rds_template import generate_rds_templates
 from ecs_composex.rds.rds_features import apply_extra_parameters
-
-RES_KEY = f"x-{os.path.basename(os.path.dirname(os.path.abspath(__file__)))}"
-RDS_SSM_PREFIX = f"/{RES_KEY}/"
-
-
-def create_rds_template(settings, new_dbs):
-    """
-    Creates the CFN Troposphere template
-
-    :param settings: Execution settings
-    :type settings: ecs_composex.common.settings.ComposeXSettings
-
-    :return: rds_tpl
-    :rtype: troposphere.Template
-    """
-    rds_tpl = generate_rds_templates(new_dbs, settings)
-    LOG.debug(f"Template for {RES_KEY} validated by CFN.")
-    return rds_tpl
+from ecs_composex.rds.rds_params import MOD_KEY, RES_KEY
 
 
 class Rds(XResource):
@@ -62,12 +41,11 @@ class Rds(XResource):
 
     subnets_param = STORAGE_SUBNETS
 
-    def __init__(self, name, definition, settings):
+    def __init__(self, name, definition, module_name, settings):
         self.db_secret = None
         self.db_sg = None
         self.db_subnet_group = None
-        super().__init__(name, definition, settings)
-        self.arn_attr = Parameter(DB_SECRET_T, Type="String")
+        super().__init__(name, definition, module_name, settings)
         self.set_override_subnets()
 
     def init_outputs(self):
@@ -75,26 +53,26 @@ class Rds(XResource):
         Method to init the RDS Output attributes
         """
         self.output_properties = {
-            DB_NAME.title: (self.logical_name, self.cfn_resource, Ref, None, "DbName"),
+            DB_NAME: (self.logical_name, self.cfn_resource, Ref, None, "DbName"),
             DB_ENDPOINT_PORT: (
                 f"{self.logical_name}{DB_ENDPOINT_PORT}",
                 self.cfn_resource,
                 GetAtt,
-                DB_ENDPOINT_PORT,
-                "Port",
+                DB_ENDPOINT_PORT.return_value,
+                DB_ENDPOINT_PORT.return_value,
             ),
-            self.db_secret.title: (
+            DB_SECRET_ARN: (
                 self.db_secret.title,
                 self.db_secret,
                 Ref,
                 None,
                 "SecretArn",
             ),
-            self.db_sg.title: (
+            DB_SG: (
                 self.db_sg.title,
                 self.db_sg,
                 GetAtt,
-                "GroupId",
+                DB_SG.return_value,
                 "RdsDbSecurityGroup",
             ),
         }
@@ -119,15 +97,21 @@ class XStack(ComposeXStack):
                 apply_extra_parameters(settings, stack, db, stack.stack_template)
 
     def __init__(self, title, settings, **kwargs):
-        set_resources(settings, Rds, RES_KEY)
+        set_resources(settings, Rds, RES_KEY, MOD_KEY)
         new_dbs = [
-            settings.compose_content[RES_KEY][db_name]
-            for db_name in settings.compose_content[RES_KEY]
-            if not settings.compose_content[RES_KEY][db_name].lookup
+            db
+            for db in settings.compose_content[RES_KEY].values()
+            if not db.lookup and not db.use
         ]
         if new_dbs:
-            template = create_rds_template(settings, new_dbs)
-            super().__init__(title, stack_template=template, **kwargs)
+            stack_template = build_template(
+                "Root stack for RDS DBs", [VPC_ID, STORAGE_SUBNETS]
+            )
+            super().__init__(title, stack_template, **kwargs)
+            generate_rds_templates(stack_template, new_dbs, settings)
             self.mark_nested_stacks()
         else:
             self.is_void = True
+
+        for resource in settings.compose_content[RES_KEY].values():
+            resource.stack = self

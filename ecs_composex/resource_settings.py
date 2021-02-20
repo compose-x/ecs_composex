@@ -19,13 +19,13 @@
 Module to handle resource settings definition to containers.
 """
 
-from troposphere import Parameter
 from troposphere import Sub, ImportValue, FindInMap, Ref
 from troposphere.iam import Policy as IamPolicy
 
 from ecs_composex.common import LOG, keyisset, add_parameters
-from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
-from ecs_composex.common.compose_services import extend_container_envvars
+from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T, Parameter
+from ecs_composex.common.services_helpers import extend_container_envvars
+from ecs_composex.common.compose_resources import get_parameter_settings
 from ecs_composex.common.ecs_composex import CFN_EXPORT_DELIMITER as DELIM
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.ecs.ecs_iam import define_service_containers
@@ -135,7 +135,9 @@ def get_selected_services(resource, target):
     return selected_services
 
 
-def map_service_perms_to_resource(resource, family, services, access_type, value, arn):
+def map_service_perms_to_resource(
+    resource, family, services, access_type, arn_value, attributes=None
+):
     """
     Function to
     :param resource:
@@ -146,12 +148,14 @@ def map_service_perms_to_resource(resource, family, services, access_type, value
     :param arn: The ARN to use for permissions, allows remote override
     :return:
     """
+    if attributes is None:
+        attributes = []
     res_perms = generate_resource_permissions(
         resource.logical_name,
         resource.policies_scaffolds,
-        arn=arn,
+        arn=arn_value,
     )
-    resource.generate_resource_envvars(value)
+    resource.generate_resource_envvars()
     containers = define_service_containers(family.template)
     policy = res_perms[access_type]
     task_role = family.template.resources[TASK_ROLE_T]
@@ -182,7 +186,9 @@ def handle_kms_access(mapping_family, resource, target, selected_services):
     )
 
 
-def handle_lookup_resource(mapping, mapping_family, resource):
+def handle_lookup_resource(
+    mapping, mapping_family, resource, arn_parameter, parameters=None
+):
     """
     :param dict mapping:
     :param str mapping_family:
@@ -193,25 +199,26 @@ def handle_lookup_resource(mapping, mapping_family, resource):
     if not keyisset(resource.logical_name, mapping):
         LOG.error(f"No mapping existing for {resource.name}. Skipping")
         return
+    if parameters is None:
+        parameters = []
+
+    if not hasattr(resource, "init_outputs"):
+        raise AttributeError(f"Not init_outputs defined for {resource.module_name}")
+    resource.init_outputs()
+    resource.generate_outputs()
 
     for target in resource.families_targets:
         selected_services = get_selected_services(resource, target)
         if selected_services:
             target[0].template.add_mapping(mapping_family, mapping)
-            arn_attr_value = FindInMap(
-                mapping_family, resource.logical_name, resource.arn_attr.title
-            )
-            main_attr_value = FindInMap(
-                mapping_family, resource.logical_name, resource.ref_parameter.title
-            )
-            resource.generate_resource_envvars(main_attr_value)
+            arn_attr_value = resource.attributes_outputs[arn_parameter]["ImportValue"]
+            resource.generate_resource_envvars()
             map_service_perms_to_resource(
                 resource,
                 target[0],
                 selected_services,
                 target[3],
-                arn=arn_attr_value,
-                value=main_attr_value,
+                arn_value=arn_attr_value,
             )
             if (
                 hasattr(resource, "kms_arn_attr")
@@ -223,7 +230,9 @@ def handle_lookup_resource(mapping, mapping_family, resource):
                 handle_kms_access(mapping_family, resource, target, selected_services)
 
 
-def assign_new_resource_to_service(resource, res_root_stack):
+def assign_new_resource_to_service(
+    resource, res_root_stack, arn_parameter, parameters=None
+):
     """
     Function to assign the new resource to the service/family using it.
 
@@ -231,29 +240,30 @@ def assign_new_resource_to_service(resource, res_root_stack):
     :type resource: ecs_composex.common.compose_resources.XResource
     :param res_root_stack: The root stack of the resource type
     :type res_root_stack: ecs_composex.common.stacks.ComposeXStack
+    :param: The parameter mapping to the ARN attribute of the resource
+    :type arn_parameter: ecs_composex.common.cfn_parameter.Parameter arn_parameter
     """
-    resource.set_ref_resource_value(res_root_stack.title)
-    resource.set_resource_arn_parameter()
-    resource.set_resource_arn(res_root_stack.title)
+    if parameters is None:
+        parameters = []
+    arn_settings = get_parameter_settings(resource, arn_parameter)
+    extra_settings = [get_parameter_settings(resource, param) for param in parameters]
+    params_to_add = [arn_settings[1]]
+    params_values = {arn_settings[0]: arn_settings[2]}
+    for setting in extra_settings:
+        params_to_add.append(setting[1])
+        params_values[setting[0]] = setting[2]
     for target in resource.families_targets:
         selected_services = get_selected_services(resource, target)
         if selected_services:
-            add_parameters(
-                target[0].template, [resource.ref_parameter, resource.arn_parameter]
-            )
-            target[0].stack.Parameters.update(
-                {
-                    resource.ref_parameter.title: resource.ref_value,
-                    resource.arn_parameter.title: resource.arn_value,
-                }
-            )
+            add_parameters(target[0].template, params_to_add)
+            target[0].stack.Parameters.update(params_values)
             map_service_perms_to_resource(
                 resource,
                 target[0],
                 selected_services,
                 target[3],
-                value=Ref(resource.ref_parameter),
-                arn=Ref(resource.arn_parameter),
+                arn_value=Ref(arn_settings[1]),
+                attributes=parameters,
             )
             if res_root_stack.title not in target[0].stack.DependsOn:
                 target[0].stack.DependsOn.append(res_root_stack.title)
@@ -264,8 +274,25 @@ def handle_resource_to_services(
     services_stack,
     res_root_stack,
     settings,
+    arn_parameter,
+    parameters=None,
     nested=False,
 ):
+    """
+    Function to evaluate the type of resource coming in and pass on the settings and parameters for
+    IAM and otherwise assignment
+
+    :param ecs_composex.common.compose_resource.XResource xresource:
+    :param ecs_composex.common.stacks.ComposeXStack services_stack:
+    :param ecs_composex.common.stacks.ComposeXStack res_root_stack:
+    :param ecs_composex.common.settings.ComposeXSettings settings:
+    :param arn_parameter:
+    :param bool nested:
+    :param list parameters:
+    :return:
+    """
+    if not parameters:
+        parameters = []
     s_resources = res_root_stack.stack_template.resources
     for resource_name in s_resources:
         if issubclass(type(s_resources[resource_name]), ComposeXStack):
@@ -274,6 +301,8 @@ def handle_resource_to_services(
                 services_stack,
                 res_root_stack,
                 settings,
+                arn_parameter,
+                parameters,
                 nested=True,
             )
-    assign_new_resource_to_service(xresource, res_root_stack)
+    assign_new_resource_to_service(xresource, res_root_stack, arn_parameter, parameters)

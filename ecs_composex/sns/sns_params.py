@@ -16,9 +16,12 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from os import path
-from troposphere import Parameter
+from ecs_composex.ecs_composex import X_KEY
+from ecs_composex.common.cfn_params import Parameter
 
-RES_KEY = f"x-{path.basename(path.dirname(path.abspath(__file__)))}"
+
+MOD_KEY = path.basename(path.dirname(path.abspath(__file__)))
+RES_KEY = f"{X_KEY}{MOD_KEY}"
 SSM_PREFIX = f"/{RES_KEY}/"
 
 TOPIC_ARN_T = "TopicArn"
@@ -26,5 +29,5 @@ TOPIC_NAME_T = "TopicName"
 TOPIC_KMS_KEY_T = "TopicKmsKey"
 
 TOPIC_ARN = Parameter(TOPIC_ARN_T, Type="String")
-TOPIC_NAME = Parameter(TOPIC_NAME_T, Type="String")
+TOPIC_NAME = Parameter(TOPIC_NAME_T, return_value="TopicName", Type="String")
 TOPIC_KMS_KEY = Parameter(TOPIC_KMS_KEY_T, Type="String")

@@ -24,6 +24,7 @@ from ecs_composex.resource_settings import (
     handle_resource_to_services,
     handle_lookup_resource,
 )
+from ecs_composex.sns.sns_params import TOPIC_NAME, TOPIC_ARN, TOPIC_KMS_KEY
 from ecs_composex.sns.sns_stack import Topic as XTopic
 from ecs_composex.sns.sns_aws import lookup_topic_config
 
@@ -58,8 +59,10 @@ def sns_to_ecs(resources, services_stack, res_root_stack, settings):
         LOG.info(f"Added dependency between services and {res_root_stack.title}")
     for new_res in new_resources:
         handle_resource_to_services(
-            new_res, services_stack, res_root_stack, settings, False
+            new_res, services_stack, res_root_stack, settings, TOPIC_ARN, [TOPIC_NAME]
         )
     create_sns_mappings(mappings, lookup_resources, settings)
     for lookup_resource in lookup_resources:
-        handle_lookup_resource(mappings, "sns", lookup_resource)
+        handle_lookup_resource(
+            mappings, "sns", lookup_resource, TOPIC_ARN, [TOPIC_NAME]
+        )

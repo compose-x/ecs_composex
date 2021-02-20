@@ -19,42 +19,19 @@
 Module of functions factorizing common patterns for TCP based access such as RDS, DocumentDB
 """
 
-from troposphere import Parameter, AWSObject
-
 from troposphere import Ref, GetAtt, Sub, FindInMap
 from troposphere.ec2 import SecurityGroupIngress
 from troposphere.ecs import Secret as EcsSecret
 from troposphere.iam import PolicyType
 
-from ecs_composex.common import keyisset, add_parameters, keypresent
 from ecs_composex.common import LOG
-from ecs_composex.common.compose_services import extend_container_secrets
+from ecs_composex.common import keyisset, add_parameters, keypresent
+from ecs_composex.common.services_helpers import extend_container_secrets
+from ecs_composex.common.compose_resources import get_parameter_settings
 from ecs_composex.ecs.ecs_params import TASK_ROLE_T, EXEC_ROLE_T, SG_T
 from ecs_composex.rds.rds_params import (
     DB_SECRET_POLICY_NAME,
 )
-
-
-def get_param_and_value(resource, attribute, root_stack_title):
-    """
-    Function to return the parameter and value for a given sub resource
-
-    :param ecs_composex.common.compose_resources XResource resource:
-    :param str root_stack_title:
-    :param str attribute:
-    :return:
-    """
-    if isinstance(attribute, str):
-        attr_name = attribute
-    elif isinstance(attribute, Parameter) or issubclass(type(attribute), AWSObject):
-        attr_name = attribute.title
-    else:
-        raise TypeError(
-            "Attribute must be a of type", str, Parameter, "Got", type(attribute)
-        )
-    imported = resource.get_resource_attribute_value(attr_name, root_stack_title)
-    parameter = resource.get_resource_attribute_parameter(attr_name)
-    return imported, parameter
 
 
 def define_db_prefix(db, mappings_definition):
@@ -268,49 +245,43 @@ def handle_new_dbs_to_services(db, sg_import, target, port=None):
     )
 
 
-def handle_new_tcp_resource(resource, res_root_stack, port_parameter):
+def handle_new_tcp_resource(
+    resource, res_root_stack, port_parameter, sg_parameter, secret_parameter=None
+):
     """
     Funnction to standardize TCP services access from services.
 
     :param resource:
     :param res_root_stack:
     :param port_parameter:
+    :param sg_parameter:
+    :param secret_parameter:
     :return:
     """
     if resource.logical_name not in res_root_stack.stack_template.resources:
         raise KeyError(f"DB {resource.logical_name} not defined in DocDB Root template")
 
-    port_settings = get_param_and_value(
-        resource,
-        port_parameter,
-        res_root_stack.title,
-    )
-    sg_settings = get_param_and_value(
-        resource,
-        resource.db_sg,
-        res_root_stack.title,
-    )
+    parameters_to_add = []
+    parameters_values = {}
+
+    port_settings = get_parameter_settings(resource, port_parameter)
+    parameters_to_add.append(port_settings[1])
+    parameters_values[port_settings[0]] = port_settings[2]
+
+    sg_settings = get_parameter_settings(resource, sg_parameter)
+    parameters_to_add.append(sg_settings[1])
+    parameters_values[sg_settings[0]] = sg_settings[2]
+
     for target in resource.families_targets:
-        add_parameters(target[0].template, [sg_settings[1], port_settings[1]])
-        target[0].stack.Parameters.update(
-            {
-                sg_settings[1].title: sg_settings[0],
-                port_settings[1].title: port_settings[0],
-            }
-        )
+        add_parameters(target[0].template, parameters_to_add)
+        target[0].stack.Parameters.update(parameters_values)
         handle_new_dbs_to_services(
             resource, Ref(sg_settings[1]), target, port=Ref(port_settings[1])
         )
-        if resource.db_secret:
-            secret_settings = get_param_and_value(
-                resource, resource.db_secret, res_root_stack.title
-            )
+        if secret_parameter:
+            secret_settings = get_parameter_settings(resource, secret_parameter)
             add_parameters(target[0].template, [secret_settings[1]])
-            target[0].stack.Parameters.update(
-                {
-                    secret_settings[1].title: secret_settings[0],
-                }
-            )
+            target[0].stack.Parameters.update({secret_settings[0]: secret_settings[2]})
             handle_db_secret_to_services(resource, Ref(secret_settings[1]), target)
         if res_root_stack.title not in target[0].stack.DependsOn:
             target[0].stack.DependsOn.append(res_root_stack.title)

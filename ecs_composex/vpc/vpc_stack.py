@@ -21,14 +21,14 @@ Module for VpcStack
 
 import re
 
-from troposphere import Parameter
-from troposphere import Ref, If, FindInMap
+from troposphere import FindInMap
 
-from ecs_composex.common import add_parameters, LOG, build_template
-from ecs_composex.common import keyisset
+from ecs_composex.common import LOG
+from ecs_composex.common import build_template, keyisset
+from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.common.ecs_composex import X_KEY
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.dns import dns_params, dns_conditions
+from ecs_composex.dns import dns_params
 from ecs_composex.vpc import aws_mappings
 from ecs_composex.vpc.vpc_aws import lookup_x_vpc_settings
 from ecs_composex.vpc.vpc_maths import get_subnet_layers

@@ -25,7 +25,7 @@ which it heavily relies onto.
 You can change the names *values* so you like so long as you keep it Alphanumerical [a-zA-Z0-9]
 """
 
-from troposphere import Parameter
+from troposphere import Parameter as CfnParameter
 
 COMPUTE_STACK_NAME = "Ec2Compute"
 VPC_STACK_NAME = "vpc"
@@ -34,44 +34,23 @@ PRIVATE_MAP_TITLE = "CloudMapVpcNamespace"
 PUBLIC_MAP_TITLE = "CloudMapPublicNamespace"
 PUBLIC_ZONE_TITLE = "Route53PublicZone"
 
+
+class Parameter(CfnParameter):
+    """
+    Class to extend the default Parameter behaviour
+    """
+
+    def __init__(self, title, return_value=None, **kwargs):
+        self.return_value = return_value
+        super().__init__(title, **kwargs)
+
+
 ROOT_STACK_NAME_T = "RootStackName"
 ROOT_STACK_NAME = Parameter(
     ROOT_STACK_NAME_T,
     Type="String",
     Default="self",
     Description="When part of a combined deployment, represents to the top stack name",
-)
-
-VPC_MAP_ID_T = "AwsVpcCloudMapId"
-VPC_MAP_ID = Parameter(VPC_MAP_ID_T, Type="String", Default="none")
-
-
-VPC_MAP_ARN_T = "AwsVpcCloudMapArn"
-VPC_MAP_ARN = Parameter(VPC_MAP_ARN_T, Type="String", Default="none")
-
-USE_CLOUDMAP_T = "UseAwsCloudMap"
-USE_CLOUDMAP = Parameter(
-    USE_CLOUDMAP_T, Type="String", AllowedValues=["True", "False"], Default="True"
-)
-
-USE_APP_MESH_T = "UseAwsAppMesh"
-USE_APP_MESH = Parameter(
-    USE_APP_MESH_T, Type="String", AllowedValues=["True", "False"], Default="True"
-)
-
-USE_CFN_PARAMS_T = "UseCfnParametersValue"
-USE_CFN_PARAMS = Parameter(
-    USE_CFN_PARAMS_T, Type="String", AllowedValues=["True", "False"], Default=True
-)
-
-USE_CFN_EXPORTS_T = "UseCfnExports"
-USE_CFN_EXPORTS = Parameter(
-    USE_CFN_EXPORTS_T, Type="String", AllowedValues=["True", "False"], Default="True"
-)
-
-USE_SSM_EXPORTS_T = "UseSsmExports"
-USE_SSM_EXPORTS = Parameter(
-    USE_SSM_EXPORTS_T, Type="String", AllowedValues=["True", "False"], Default="False"
 )
 
 USE_FLEET_T = "UseSpotFleetHosts"

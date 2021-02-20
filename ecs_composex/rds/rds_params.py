@@ -25,12 +25,25 @@ which it heavily relies onto.
 You can change the names *values* so you like so long as you keep it Alphanumerical [a-zA-Z0-9]
 """
 
-from troposphere import Parameter
+from os import path
+from ecs_composex.ecs_composex import X_KEY
+from ecs_composex.common.cfn_params import Parameter
+from ecs_composex.vpc.vpc_params import SG_ID_TYPE
 
-RES_KEY = "x-rds"
+MOD_KEY = path.basename(path.dirname(path.abspath(__file__)))
+RES_KEY = f"{X_KEY}{MOD_KEY}"
+
 DB_SECRET_POLICY_NAME = "RdsDbPolicy"
+CLUSTER_SUBNET_GROUP = "RdsSubnetGroup"
+DB_SECRET_T = "RdsDbSecret"
+CLUSTER_T = "AuroraCluster"
+DATABASE_T = "RdsDatabase"
+PARAMETER_GROUP_T = "RdsParametersGroup"
+CLUSTER_PARAMETER_GROUP_T = "RdsClusterParameterGroup"
 
-DB_SG_T = "DatabaseSecurityGroup"
+
+DB_SG_T = "RdsSg"
+DB_SG = Parameter(DB_SG_T, return_value="GroupId", Type=SG_ID_TYPE)
 
 DB_ENGINE_NAME_T = "Engine"
 DB_ENGINE_NAME = Parameter(DB_ENGINE_NAME_T, Type="String")
@@ -74,19 +87,21 @@ DB_STORAGE_TYPE = Parameter(
 
 DB_EXPORT_PREFIX_T = "RdsDb"
 DB_EXPORT_PORT_T = "Endpoint.Port"
-DB_EXPORT_SECRET_ARN_T = "RdsSecretArn"
+
 DB_EXPORT_SG_ID_T = "RdsSecurityGroup"
 
-DB_ENDPOINT_PORT = "Endpoint.Port"
-DB_ENDPOINT_ADDRESS = "Endpoint.Address"
-DB_RO_ENDPOINT_ADDRESS = "ReadEndpoint.Address"
+DB_ENDPOINT_PORT_T = "RDSClusterEndpointPort"
+DB_ENDPOINT_ADDRESS_T = "RDSClusterEndpointAddress"
+DB_RO_ENDPOINT_ADDRESS_T = "RDSClusterReadEndpointAddress"
 
-DB_ENDPOINT_PORT_T = "EndpointPort"
-DB_ENDPOINT_PORT_P = Parameter(DB_ENDPOINT_PORT_T, Type="Number")
+DB_ENDPOINT_ADDRESS = Parameter(
+    DB_ENDPOINT_ADDRESS_T, return_value="Endpoint.Address", Type="String"
+)
+DB_RO_ENDPOINT_ADDRESS = Parameter(
+    DB_RO_ENDPOINT_ADDRESS_T, return_value="ReadEndpoint.Address", Type="String"
+)
+DB_ENDPOINT_PORT = Parameter(
+    DB_ENDPOINT_PORT_T, return_value="Endpoint.Port", Type="Number"
+)
 
-CLUSTER_SUBNET_GROUP = "RdsSubnetGroup"
-DB_SECRET_T = "RdsDbSecret"
-CLUSTER_T = "AuroraCluster"
-DATABASE_T = "RdsDatabase"
-PARAMETER_GROUP_T = "RdsParametersGroup"
-CLUSTER_PARAMETER_GROUP_T = "RdsClusterParameterGroup"
+DB_SECRET_ARN = Parameter(DB_SECRET_T, Type="String")

@@ -19,7 +19,8 @@
 Module for Secrets parameters
 """
 
-from troposphere import Parameter
+from ecs_composex.common.cfn_params import Parameter
+
 
 RES_KEY = "secrets"
 XRES_KEY = "x-secrets"

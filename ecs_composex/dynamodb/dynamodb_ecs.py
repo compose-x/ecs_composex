@@ -19,11 +19,12 @@
 Module to manage IAM policies to grant access to ECS Services to DynamodbTables
 """
 
-from ecs_composex.dynamodb.dynamodb_aws import lookup_dynamodb_config
 from ecs_composex.resource_settings import (
     handle_resource_to_services,
     handle_lookup_resource,
 )
+from ecs_composex.dynamodb.dynamodb_aws import lookup_dynamodb_config
+from ecs_composex.dynamodb.dynamodb_params import TABLE_ARN, TABLE_NAME
 
 
 def create_dyndb_mappings(mapping, resources, settings):
@@ -56,6 +57,16 @@ def dynamodb_to_ecs(resources, services_stack, res_root_stack, settings):
     ]
     create_dyndb_mappings(resources_mappings, lookup_resources, settings)
     for new_res in new_resources:
-        handle_resource_to_services(new_res, services_stack, res_root_stack, settings)
+        handle_resource_to_services(
+            new_res,
+            services_stack,
+            res_root_stack,
+            settings,
+            TABLE_ARN,
+            [TABLE_NAME],
+            nested=False,
+        )
     for resource in lookup_resources:
-        handle_lookup_resource(resources_mappings, "dynamodb", resource)
+        handle_lookup_resource(
+            resources_mappings, "dynamodb", resource, TABLE_ARN, [TABLE_NAME]
+        )

@@ -21,7 +21,7 @@ Module to add permissions etc. for services to kinesis streams
 
 from ecs_composex.common import LOG, keyisset
 from ecs_composex.kinesis.kinesis_aws import lookup_stream_config
-from ecs_composex.kinesis.kinesis_params import STREAM_KMS_KEY_ID
+from ecs_composex.kinesis.kinesis_params import STREAM_KMS_KEY_ID, STREAM_ARN, STREAM_ID
 from ecs_composex.resource_settings import (
     handle_resource_to_services,
     handle_lookup_resource,
@@ -64,7 +64,11 @@ def kinesis_to_ecs(resources, services_stack, res_root_stack, settings):
         services_stack.DependsOn.append(res_root_stack.title)
         LOG.info(f"Added dependency between services and {res_root_stack.title}")
     for new_res in new_resources:
-        handle_resource_to_services(new_res, services_stack, res_root_stack, settings)
+        handle_resource_to_services(
+            new_res, services_stack, res_root_stack, settings, STREAM_ARN, [STREAM_ID]
+        )
     create_kinesis_mappings(resource_mappings, lookup_resources, settings)
     for lookup_res in lookup_resources:
-        handle_lookup_resource(resource_mappings, "kinesis", lookup_res)
+        handle_lookup_resource(
+            resource_mappings, "kinesis", lookup_res, STREAM_ARN, [STREAM_ID]
+        )

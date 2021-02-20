@@ -28,7 +28,7 @@ from ecs_composex.common.aws import (
     find_aws_resource_arn_from_tags_api,
     define_lookup_role_from_info,
 )
-from ecs_composex.sns.sns_params import TOPIC_ARN, TOPIC_KMS_KEY
+from ecs_composex.sns.sns_params import TOPIC_ARN, TOPIC_KMS_KEY, TOPIC_NAME
 
 
 def get_topic_config(logical_name, topic_arn, session):
@@ -42,7 +42,7 @@ def get_topic_config(logical_name, topic_arn, session):
     """
     topic_parts = re.compile(r"(?:^arn:aws(?:-[a-z]+)?:sns:[\S]+:[0-9]+:)([\S]+)$")
     topic_name = topic_parts.match(topic_arn).groups()[0]
-    topic_config = {logical_name: topic_name, TOPIC_ARN.title: topic_arn}
+    topic_config = {TOPIC_NAME.title: topic_name, TOPIC_ARN.title: topic_arn}
     client = session.client("sns")
     try:
         topic_r = client.get_topic_attributes(TopicArn=topic_arn)

@@ -19,11 +19,11 @@
 Module to apply SQS settings onto ECS Services
 """
 
-from troposphere import Parameter
 from troposphere import Ref, GetAtt, FindInMap
 from troposphere.cloudwatch import Alarm, MetricDimension
 
 from ecs_composex.common import LOG, keyisset, add_parameters
+from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.ecs.ecs_params import SERVICE_SCALING_TARGET
 from ecs_composex.ecs.ecs_scaling import (
     generate_alarm_scaling_out_policy,
@@ -34,7 +34,13 @@ from ecs_composex.resource_settings import (
     handle_lookup_resource,
 )
 from ecs_composex.sqs.sqs_aws import lookup_queue_config
-from ecs_composex.sqs.sqs_params import SQS_NAME, SQS_KMS_KEY_T, MOD_KEY
+from ecs_composex.sqs.sqs_params import (
+    SQS_NAME,
+    SQS_KMS_KEY_T,
+    MOD_KEY,
+    SQS_ARN,
+    SQS_URL,
+)
 
 
 def handle_service_scaling(resource, res_root_stack):
@@ -171,9 +177,18 @@ def sqs_to_ecs(resources, services_stack, res_root_stack, settings):
         services_stack.DependsOn.append(res_root_stack.title)
         LOG.info(f"Added dependency between services and {res_root_stack.title}")
     for new_res in new_resources:
-        handle_resource_to_services(new_res, services_stack, res_root_stack, settings)
+        handle_resource_to_services(
+            new_res,
+            services_stack,
+            res_root_stack,
+            settings,
+            SQS_ARN,
+            [SQS_URL, SQS_NAME],
+        )
         handle_service_scaling(new_res, res_root_stack)
     create_sqs_mappings(resource_mappings, lookup_resources, settings)
     for lookup_res in lookup_resources:
-        handle_lookup_resource(resource_mappings, MOD_KEY, lookup_res)
+        handle_lookup_resource(
+            resource_mappings, MOD_KEY, lookup_res, SQS_ARN, [SQS_URL, SQS_NAME]
+        )
         handle_service_scaling(lookup_res, None)

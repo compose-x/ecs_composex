@@ -19,14 +19,11 @@
 Module to define the entry point for AWS Event Rules
 """
 
-from troposphere import Ref, If
-
 from ecs_composex.common import build_template, LOG, NONALPHANUM
 from ecs_composex.common.compose_resources import XResource, set_resources
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.ecs.ecs_conditions import CREATE_CLUSTER_CON_T
-from ecs_composex.ecs.ecs_params import CLUSTER_NAME, CLUSTER_T, FARGATE_VERSION
-from ecs_composex.events.events_params import RES_KEY
+from ecs_composex.ecs.ecs_params import CLUSTER_NAME, FARGATE_VERSION
+from ecs_composex.events.events_params import MOD_KEY, RES_KEY
 from ecs_composex.events.events_template import create_events_template
 
 
@@ -45,9 +42,6 @@ class Rule(XResource):
     """
     Class to define an Event Rule
     """
-
-    def __init__(self, name, definition, settings):
-        super().__init__(name, definition, settings)
 
     def handle_families_targets_expansion(self, service, settings):
         the_service = [s for s in settings.services if s.name == service["name"]][0]
@@ -115,11 +109,11 @@ class XStack(ComposeXStack):
         :param ecs_composex.common.settings.ComposeXSettings settings: Execution settings
         :param dict kwargs:
         """
-        set_resources(settings, Rule, RES_KEY)
+        set_resources(settings, Rule, RES_KEY, MOD_KEY)
         new_resources = [
-            settings.compose_content[RES_KEY][res_name]
-            for res_name in settings.compose_content[RES_KEY]
-            if not settings.compose_content[RES_KEY][res_name].lookup
+            event
+            for event in settings.compose_content[RES_KEY].values()
+            if not event.lookup and not event.use
         ]
         if new_resources:
             params = {

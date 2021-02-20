@@ -24,7 +24,7 @@ from copy import deepcopy
 from json import dumps
 
 from troposphere import AWS_STACK_NAME, AWS_NO_VALUE
-from troposphere import Ref, Sub, GetAtt, Select, Parameter, Tags, FindInMap
+from troposphere import Ref, Sub, GetAtt, Select, Tags, FindInMap
 from troposphere.ec2 import SecurityGroup, EIP
 from troposphere.elasticloadbalancingv2 import (
     LoadBalancer,
@@ -51,11 +51,12 @@ from ecs_composex.ingress_settings import Ingress, set_service_ports
 from ecs_composex.acm.acm_params import RES_KEY as ACM_KEY, MOD_KEY as ACM_MOD_KEY
 from ecs_composex.common import NONALPHANUM, LOG
 from ecs_composex.common import keyisset, keypresent, build_template, add_parameters
-from ecs_composex.common.cfn_params import ROOT_STACK_NAME
+from ecs_composex.common.cfn_params import ROOT_STACK_NAME, Parameter
 from ecs_composex.common.compose_resources import XResource, set_resources
 from ecs_composex.common.outputs import ComposeXOutput
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.elbv2.elbv2_params import (
+    MOD_KEY,
     RES_KEY,
     LB_SG_ID,
     LB_DNS_ZONE_ID,
@@ -682,7 +683,7 @@ class Elbv2(XResource):
 
     subnets_param = APP_SUBNETS
 
-    def __init__(self, name, definition, settings):
+    def __init__(self, name, definition, module_name, settings):
         if not keyisset("Listeners", definition):
             raise KeyError("You must specify at least one Listener for a LB.", name)
         self.lb_is_public = False
@@ -693,23 +694,23 @@ class Elbv2(XResource):
         self.unique_service_lb = False
         self.lb = None
         self.listeners = []
-        super().__init__(name, definition, settings)
+        super().__init__(name, definition, module_name, settings)
         self.validate_services()
         self.sort_props()
 
     def init_outputs(self):
         self.output_properties = {
-            LB_DNS_NAME.title: (
-                f"{self.logical_name}{LB_DNS_NAME.title}",
+            LB_DNS_NAME: (
+                f"{self.logical_name}{LB_DNS_NAME.return_value}",
                 self.cfn_resource,
                 GetAtt,
-                LB_DNS_NAME.title,
+                LB_DNS_NAME.return_value,
             ),
-            LB_DNS_ZONE_ID.title: (
-                f"{self.logical_name}{LB_DNS_ZONE_ID.title}",
+            LB_DNS_ZONE_ID: (
+                f"{self.logical_name}{LB_DNS_ZONE_ID.return_value}",
                 self.cfn_resource,
                 GetAtt,
-                LB_DNS_ZONE_ID.title,
+                LB_DNS_ZONE_ID.return_value,
             ),
         }
 
@@ -1037,12 +1038,12 @@ class XStack(ComposeXStack):
     """
 
     def __init__(self, title, settings, **kwargs):
-        set_resources(settings, Elbv2, RES_KEY)
+        set_resources(settings, Elbv2, RES_KEY, MOD_KEY)
         resources = settings.compose_content[RES_KEY]
         new_resources = [
-            resources[res_name]
-            for res_name in resources
-            if not resources[res_name].lookup
+            lb
+            for lb in settings.compose_content[RES_KEY].values()
+            if not lb.lookup and not lb.use
         ]
         if not new_resources:
             self.is_void = True

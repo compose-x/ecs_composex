@@ -34,19 +34,10 @@ from ecs_composex.common import (
 )
 from ecs_composex.common.cfn_params import (
     ROOT_STACK_NAME_T,
-    USE_FLEET,
-    USE_FLEET_T,
-    USE_ONDEMAND,
-    USE_ONDEMAND_T,
 )
 from ecs_composex.common.ecs_composex import X_KEY, X_AWS_KEY
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common.tagging import add_all_tags
-from ecs_composex.compute.compute_params import (
-    TARGET_CAPACITY_T,
-    TARGET_CAPACITY,
-    MIN_CAPACITY_T,
-)
 from ecs_composex.compute.compute_stack import ComputeStack
 from ecs_composex.dns import DnsSettings
 from ecs_composex.dns.dns_records import DnsRecords

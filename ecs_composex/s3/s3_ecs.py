@@ -25,13 +25,20 @@ from troposphere import FindInMap, Sub, Ref
 
 from ecs_composex.common import LOG, keyisset, add_parameters
 from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.common.compose_resources import get_parameter_settings
 from ecs_composex.kms.kms_perms import ACCESS_TYPES as KMS_ACCESS_TYPES
 from ecs_composex.resource_settings import (
     add_iam_policy_to_service_task_role,
     generate_resource_permissions,
     get_selected_services,
 )
-from ecs_composex.s3.s3_params import MOD_KEY
+from ecs_composex.s3.s3_params import (
+    MOD_KEY,
+    S3_BUCKET_NAME,
+    S3_BUCKET_ARN,
+    S3_BUCKET_DOMAIN_NAME,
+    S3_BUCKET_REGION_DOMAIN_NAME,
+)
 from ecs_composex.s3.s3_aws import lookup_bucket_config
 from ecs_composex.s3.s3_perms import ACCESS_TYPES
 
@@ -40,7 +47,7 @@ def assign_service_permissions_to_bucket(bucket, family, services, access, value
     bucket_key = "bucket"
     objects_key = "objects"
 
-    bucket.generate_resource_envvars(value)
+    bucket.generate_resource_envvars()
 
     if keyisset(bucket_key, access):
         bucket_perms = generate_resource_permissions(
@@ -72,35 +79,42 @@ def assign_new_bucket_to_services(bucket, res_root_stack, nested=False):
     """
     bucket_key = "bucket"
     objects_key = "objects"
-    access = {objects_key: "RW", bucket_key: "ListOnly"}
-    bucket.set_ref_resource_value(res_root_stack.title)
-    bucket.set_resource_arn_parameter()
-    bucket.set_resource_arn(res_root_stack.title)
+    attributes_settings = [
+        get_parameter_settings(bucket, attribute)
+        for attribute in bucket.output_properties
+    ]
+    params_to_add = []
+    params_values = {}
+    for setting in attributes_settings:
+        params_to_add.append(setting[1])
+        params_values[setting[1].title] = {setting[0]: setting[2]}
     for target in bucket.families_targets:
         select_services = get_selected_services(bucket, target)
+        access = {objects_key: "RW", bucket_key: "ListOnly"}
         if select_services:
-            if not isinstance(target[3], str):
+            if not keyisset("access", target[3]):
                 LOG.warning(
-                    f"No permissions associated for {bucket.name} to {target[0].name}. Setting default."
+                    f"No permissions associated for {target[0].name}. Setting default."
+                )
+            elif isinstance(target[3], str):
+                LOG.warning(
+                    f"Permissions for bucket must be a map with {bucket_key} and {objects_key}"
+                    " defined. Setting to default"
                 )
             else:
                 access = target[3]
             add_parameters(
-                target[0].template, [bucket.ref_parameter, bucket.arn_parameter]
+                target[0].template,
+                params_to_add,
             )
-            target[0].stack.Parameters.update(
-                {
-                    bucket.ref_parameter.title: bucket.ref_value,
-                    bucket.arn_parameter.title: bucket.arn_value,
-                }
-            )
+            target[0].stack.Parameters.update(params_values)
             assign_service_permissions_to_bucket(
                 bucket,
                 target[0],
                 select_services,
                 access,
-                value=Ref(bucket.ref_parameter),
-                arn=Ref(bucket.arn_parameter),
+                value=Ref(bucket.attributes_outputs[S3_BUCKET_NAME]["ImportParameter"]),
+                arn=Ref(bucket.attributes_outputs[S3_BUCKET_ARN]["ImportParameter"]),
             )
             if res_root_stack.title not in target[0].stack.DependsOn:
                 target[0].stack.DependsOn.append(res_root_stack.title)
@@ -196,6 +210,7 @@ def define_lookup_buckets_access(bucket, target, services, access):
     """
     bucket_key = "bucket"
     objects_key = "objects"
+    access = {objects_key: "RW", bucket_key: "ListOnly"}
     if isinstance(target[3], str):
         LOG.warning(
             "For s3 buckets, you should define a dict for access, with bucket and/or object policies separate."
@@ -209,9 +224,7 @@ def define_lookup_buckets_access(bucket, target, services, access):
         not keyisset(objects_key, target[3]) or not keyisset(bucket_key, target[3])
     ):
         raise KeyError("You must define at least bucket or object access")
-    bucket.generate_resource_envvars(
-        FindInMap("s3", bucket.logical_name, bucket.logical_name)
-    )
+    bucket.generate_resource_envvars()
     if keyisset(bucket_key, access):
         bucket_perms = generate_resource_permissions(
             f"BucketAccess{bucket.logical_name}",
@@ -246,8 +259,8 @@ def assign_lookup_buckets(bucket, mappings):
         return
     bucket_key = "bucket"
     objects_key = "objects"
-    access = {objects_key: "RW", bucket_key: "ListOnly"}
     for target in bucket.families_targets:
+        access = {objects_key: "RW", bucket_key: "ListOnly"}
         select_services = get_selected_services(bucket, target)
         if select_services:
             target[0].template.add_mapping("s3", mappings)

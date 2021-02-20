@@ -21,9 +21,10 @@ Module to create the root stack for DynamoDB tables
 
 from troposphere import Ref, GetAtt
 
+from ecs_composex.common import build_template
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common.compose_resources import set_resources, XResource
-from ecs_composex.dynamodb.dynamodb_params import RES_KEY
+from ecs_composex.dynamodb.dynamodb_params import RES_KEY, MOD_KEY
 from ecs_composex.dynamodb.dynamodb_template import create_dynamodb_template
 from ecs_composex.dynamodb.dynamodb_params import TABLE_ARN, TABLE_NAME
 from ecs_composex.dynamodb.dynamodb_perms import get_access_types
@@ -34,26 +35,19 @@ class Table(XResource):
     Class to represent a DynamoDB Table
     """
 
-    main_attr = TABLE_NAME
-    arn_attr = TABLE_ARN
     policies_scaffolds = get_access_types()
 
-    def __init__(self, name, definition, settings):
-        super().__init__(name, definition, settings)
-        self.name_export = None
-        self.name_import = None
-        self.arn_export = None
-        self.arn_import = None
-        self.arn_attr = TABLE_ARN
+    # def __init__(self, name, definition, module_name, settings):
+    #     super().__init__(name, definition, module_name, settings)
 
     def init_outputs(self):
         self.output_properties = {
-            TABLE_NAME.title: (self.logical_name, self.cfn_resource, Ref, None),
-            TABLE_ARN.title: (
+            TABLE_NAME: (self.logical_name, self.cfn_resource, Ref, None),
+            TABLE_ARN: (
                 f"{self.logical_name}{TABLE_ARN.title}",
                 self.cfn_resource,
                 GetAtt,
-                TABLE_ARN.title,
+                TABLE_ARN.return_value,
             ),
         }
 
@@ -72,6 +66,19 @@ class XStack(ComposeXStack):
     """
 
     def __init__(self, title, settings, **kwargs):
-        set_resources(settings, Table, RES_KEY)
-        stack_template = create_dynamodb_template(settings)
-        super().__init__(title, stack_template, **kwargs)
+        set_resources(settings, Table, RES_KEY, MOD_KEY)
+        x_resources = settings.compose_content[RES_KEY].values()
+        new_resources = [
+            resource
+            for resource in x_resources
+            if (resource.properties or resource.parameters) and not resource.lookup
+        ]
+        if new_resources:
+            stack_template = build_template("Root template for DynamoDB tables")
+            super().__init__(title, stack_template, **kwargs)
+            create_dynamodb_template(settings, new_resources, stack_template, self)
+        else:
+            self.is_void = True
+        for resource in x_resources:
+            if resource.lookup:
+                resource.stack = self

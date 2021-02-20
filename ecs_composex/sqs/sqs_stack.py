@@ -23,10 +23,17 @@ import sys
 
 from troposphere import GetAtt, Ref
 
-from ecs_composex.common import validate_input, keyisset, LOG, EXIT_CODES
+from ecs_composex.common import (
+    validate_input,
+    keyisset,
+    LOG,
+    EXIT_CODES,
+    build_template,
+)
 from ecs_composex.common.compose_resources import set_resources, XResource
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.sqs.sqs_params import (
+    MOD_KEY,
     RES_KEY,
     SQS_ARN,
     SQS_URL,
@@ -34,26 +41,7 @@ from ecs_composex.sqs.sqs_params import (
     SQS_NAME,
 )
 from ecs_composex.sqs.sqs_perms import get_access_types
-from ecs_composex.sqs.sqs_template import generate_sqs_root_template
-
-
-def create_sqs_template(settings):
-    """
-    Creates the CFN Troposphere template
-
-    :param settings: The settings for execution
-    :type settings: ecs_composex.common.settings.ComposeXSettings
-    :return: sqs_tpl
-    :rtype: troposphere.Template
-    """
-    if not keyisset(RES_KEY, settings.compose_content):
-        LOG.error(
-            f"{RES_KEY} is not defined at all in the docker-compose file {settings.input_file}. Aborting"
-        )
-        sys.exit(EXIT_CODES["MISSING_RESOURCE_DEFINITION"])
-    validate_input(settings.compose_content, RES_KEY)
-    sqs_tpl = generate_sqs_root_template(settings)
-    return sqs_tpl
+from ecs_composex.sqs.sqs_template import render_new_queues
 
 
 class Queue(XResource):
@@ -63,27 +51,21 @@ class Queue(XResource):
 
     policies_scaffolds = get_access_types()
 
-    def __init__(self, name, definition, settings):
-        super().__init__(name, definition, settings)
-        self.main_attr = SQS_URL
-        self.kms_arn_attr = SQS_KMS_KEY
-        self.arn_attr = SQS_ARN
-
     def init_outputs(self):
         self.output_properties = {
-            SQS_URL.title: (self.logical_name, self.cfn_resource, Ref, None, "Url"),
-            SQS_ARN.title: (
+            SQS_URL: (self.logical_name, self.cfn_resource, Ref, None, "Url"),
+            SQS_ARN: (
                 f"{self.logical_name}{SQS_ARN.title}",
                 self.cfn_resource,
                 GetAtt,
-                SQS_ARN.title,
+                SQS_ARN.return_value,
                 "Arn",
             ),
-            SQS_NAME.title: (
+            SQS_NAME: (
                 f"{self.logical_name}{SQS_NAME.title}",
                 self.cfn_resource,
                 GetAtt,
-                SQS_NAME.title,
+                SQS_NAME.return_value,
                 "QueueName",
             ),
         }
@@ -95,6 +77,18 @@ class XStack(ComposeXStack):
     """
 
     def __init__(self, title, settings, **kwargs):
-        set_resources(settings, Queue, RES_KEY)
-        template = create_sqs_template(settings)
-        super().__init__(title, stack_template=template, **kwargs)
+        set_resources(settings, Queue, RES_KEY, MOD_KEY)
+        new_queues = [
+            queue
+            for queue in settings.compose_content[RES_KEY].values()
+            if not queue.lookup and not queue.use
+        ]
+        if new_queues:
+            template = build_template("Parent template for SQS in ECS Compose-X")
+            super().__init__(title, stack_template=template, **kwargs)
+            render_new_queues(settings, new_queues, self, template)
+        else:
+            self.is_void = True
+
+        for resource in settings.compose_content[RES_KEY].values():
+            resource.stack = self

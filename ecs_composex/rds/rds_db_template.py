@@ -131,6 +131,7 @@ def add_db_outputs(db_template, db):
 
     :param troposphere.Template db_template: DB Template
     :param ecs_composex.rds.rds_stack.Rds db:
+    :param ecs_composex.rds.rds_stack.XStack parent_stack:
     """
     db.generate_outputs()
     db_template.add_output(db.outputs)
@@ -141,7 +142,6 @@ def create_db_subnet_group(template, db, subnets=None):
     Function to create a subnet group
 
     :param troposphere.Template template: the template to add the subnet group to.
-    :param bool conditional: Whether or not the object should have a Condition for creation in CFN
     :param subnets: The subnets to use.
     :return: group, the DB Subnets Group
     :rtype: troposphere.rds.DBSubnetGroup

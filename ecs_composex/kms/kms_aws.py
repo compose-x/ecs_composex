@@ -30,7 +30,6 @@ from ecs_composex.kms.kms_params import (
     KMS_KEY_ARN,
     KMS_KEY_ID,
     KMS_KEY_ALIAS_NAME,
-    KMS_KEY_ALIAS_ARN,
 )
 
 
@@ -47,8 +46,8 @@ def get_key_config(logical_name, key_arn, session):
         key_desc = client.describe_key(KeyId=key_arn)
         key_config.update(
             {
-                KMS_KEY_ARN.title: key_desc["KeyMetadata"]["Arn"],
-                logical_name: key_desc["KeyMetadata"]["KeyId"],
+                KMS_KEY_ARN.return_value: key_desc["KeyMetadata"]["Arn"],
+                KMS_KEY_ID.title: key_desc["KeyMetadata"]["KeyId"],
             }
         )
         try:
@@ -56,7 +55,6 @@ def get_key_config(logical_name, key_arn, session):
             key_config.update(
                 {
                     KMS_KEY_ALIAS_NAME.title: aliases_r["Aliases"][0]["AliasName"],
-                    KMS_KEY_ALIAS_ARN.title: aliases_r["Aliases"][0]["AliasArn"],
                 }
             )
         except client.exceptions.NotFoundException:

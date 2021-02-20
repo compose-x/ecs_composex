@@ -18,31 +18,24 @@
 
 from troposphere import MAX_OUTPUTS
 
-from ecs_composex.common import keyisset, build_template
+from ecs_composex.common import build_template
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.kms.kms_params import (
-    RES_KEY,
-)
 
 CFN_MAX_OUTPUTS = MAX_OUTPUTS - 10
 
 
-def create_kms_template(settings):
+def create_kms_template(template, new_keys, xstack):
     """
+    Function to create all the KMS Keys based on their definition
 
     :param ecs_composex.common.settings.ComposeXSettings settings:
-    :return:
     """
     mono_template = False
-    template = build_template("Root template for KMS")
-    if not keyisset(RES_KEY, settings.compose_content):
-        return
-    x_keys = settings.compose_content[RES_KEY]
-    new_keys = [x_keys[key_name] for key_name in x_keys if not x_keys[key_name].lookup]
     if len(new_keys) <= CFN_MAX_OUTPUTS:
         mono_template = True
 
     for key in new_keys:
+        key.stack = xstack
         key.define_kms_key()
         if key and key.cfn_resource:
             key.init_outputs()
@@ -60,4 +53,3 @@ def create_kms_template(settings):
                 key_template.add_output(key.outputs)
                 key_stack = ComposeXStack(key.logical_name, stack_template=key_template)
                 template.add_resource(key_stack)
-    return template

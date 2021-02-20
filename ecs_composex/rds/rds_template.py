@@ -57,10 +57,9 @@ def add_db_stack(root_template, db, settings):
     """
     Function to add the DB stack to the root stack
 
-    :param root_template: root template to add the nested stack to
-    :type root_template: troposphere.Template
-    :param db: the database definition from the compose file
-    :type db: ecs_composex.common.compose_resources.Rds
+    :param troposphere.Template root_template: root template to add the nested stack to
+    :param ecs_composex.rds.rds_stack.Rds db: the database definition from the compose file
+    :param ecs_composex.common.settings.ComposeXSettings settings:
     """
     if db.properties:
         if not all(
@@ -119,15 +118,15 @@ def add_db_stack(root_template, db, settings):
     root_template.add_output(new_outputs)
 
 
-def generate_rds_templates(new_dbs, settings):
+def generate_rds_templates(root_tpl, new_dbs, settings):
     """
     Function to generate the RDS root template for all the DBs defined in the x-rds section of the compose file
 
+    :param troposphere.Template root_tpl:
     :param list new_dbs:
-    :return: rds_root_template, the RDS Root template with nested stacks
-    :rtype: troposphere.Template
+    :param ecs_composex.common.settings.ComposeXSettings settings:
+    :param ecs_composex.rds.rds_stack.XStack self_stack:
     """
-    root_tpl = build_template("RDS Root Template", [VPC_ID, STORAGE_SUBNETS])
     for db in new_dbs:
         add_db_stack(root_tpl, db, settings)
     return root_tpl

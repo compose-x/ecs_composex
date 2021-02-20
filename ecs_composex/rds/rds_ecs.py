@@ -23,7 +23,12 @@ from troposphere import Select, FindInMap
 
 from ecs_composex.common import LOG, keyisset
 from ecs_composex.rds.rds_aws import validate_rds_lookup, lookup_rds_resource
-from ecs_composex.rds.rds_params import DB_SECRET_T, DB_ENDPOINT_PORT
+from ecs_composex.rds.rds_params import (
+    DB_ENDPOINT_PORT,
+    DB_SG,
+    DB_SECRET_ARN,
+    DB_SECRET_T,
+)
 from ecs_composex.tcp_resources_settings import (
     handle_new_tcp_resource,
     add_secret_to_container,
@@ -156,7 +161,13 @@ def rds_to_ecs(rds_dbs, services_stack, res_root_stack, settings):
         if rds_dbs[db_name].lookup and rds_dbs[db_name].services
     ]
     for new_res in new_resources:
-        handle_new_tcp_resource(new_res, res_root_stack, DB_ENDPOINT_PORT)
+        handle_new_tcp_resource(
+            new_res,
+            res_root_stack,
+            port_parameter=DB_ENDPOINT_PORT,
+            secret_parameter=DB_SECRET_ARN,
+            sg_parameter=DB_SG,
+        )
     create_lookup_mappings(db_mappings, lookup_resources, settings)
     for lookup_res in lookup_resources:
         if keyisset(lookup_res.logical_name, db_mappings):
