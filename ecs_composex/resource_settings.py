@@ -23,9 +23,8 @@ from troposphere import Sub, ImportValue, FindInMap, Ref
 from troposphere.iam import Policy as IamPolicy
 
 from ecs_composex.common import LOG, keyisset, add_parameters
-from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T, Parameter
+from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.services_helpers import extend_container_envvars
-from ecs_composex.common.compose_resources import get_parameter_settings
 from ecs_composex.common.ecs_composex import CFN_EXPORT_DELIMITER as DELIM
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.ecs.ecs_iam import define_service_containers

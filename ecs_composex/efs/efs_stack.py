@@ -21,22 +21,14 @@ Module to handle the creation of the root EFS stack
 
 from troposphere import Ref, GetAtt, Sub
 from troposphere.ec2 import SecurityGroup
-from troposphere.efs import FileSystem, MountTarget
+from troposphere.efs import FileSystem, AccessPoint
 
 from ecs_composex.common import build_template
-from ecs_composex.resources_import import import_record_properties
-from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common.compose_resources import XResource, set_resources
-
-from ecs_composex.vpc.vpc_params import STORAGE_SUBNETS
-
-from ecs_composex.efs.efs_params import (
-    MOD_KEY,
-    RES_KEY,
-    FS_ID,
-    FS_AS_ID,
-    FS_MNT_PT_SG_ID,
-)
+from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.efs.efs_params import RES_KEY, FS_ID, FS_PORT
+from ecs_composex.resources_import import import_record_properties
+from ecs_composex.vpc.vpc_params import STORAGE_SUBNETS, VPC_ID
 
 
 def create_efs_stack(settings, new_resources):
@@ -48,18 +40,18 @@ def create_efs_stack(settings, new_resources):
     :return: Root template for EFS
     :rtype: troposphere.Template
     """
-    template = build_template("Root for EFS built by ECS Compose-X")
+    template = build_template("Root for EFS built by ECS Compose-X", [FS_PORT])
     for res in new_resources:
         res_cfn_props = import_record_properties(res.properties, FileSystem)
-        print(res_cfn_props)
         res.cfn_resource = FileSystem(res.logical_name, **res_cfn_props)
-        res.sg = SecurityGroup(
+        res.db_sg = SecurityGroup(
             f"{res.logical_name}SecurityGroup",
             GroupName=Sub(f"{res.logical_name}EfsSg"),
             GroupDescription=Sub(f"SG for EFS {res.cfn_resource.title}"),
+            VpcId=Ref(VPC_ID),
         )
         template.add_resource(res.cfn_resource)
-        template.add_resource(res.sg)
+        template.add_resource(res.db_sg)
         res.init_outputs()
         res.generate_outputs()
         template.add_output(res.outputs)
@@ -74,9 +66,10 @@ class Efs(XResource):
     subnets_param = STORAGE_SUBNETS
 
     def __init__(self, name, definition, settings):
-        print("EFS", name, definition)
-        self.sg = None
+        self.db_sg = None
+        self.db_secret = None
         self.mnt_targets = []
+        self.access_points = []
         self.volume = definition["Volume"]
         super().__init__(name, definition, settings)
         self.set_override_subnets()
@@ -87,12 +80,13 @@ class Efs(XResource):
         """
         self.output_properties = {
             FS_ID.title: (self.logical_name, self.cfn_resource, Ref, None),
-            self.sg.title: (
-                self.sg.title,
-                self.sg,
+            self.db_sg.title: (
+                self.db_sg.title,
+                self.db_sg,
                 GetAtt,
                 "GroupId",
             ),
+            FS_PORT.title: (f"{self.logical_name}{FS_PORT.title}", FS_PORT, Ref, None),
         }
 
 
@@ -103,7 +97,6 @@ class XStack(ComposeXStack):
 
     def __init__(self, name, settings, **kwargs):
         set_resources(settings, Efs, RES_KEY)
-        print(settings.compose_content[RES_KEY])
         new_resources = [
             settings.compose_content[RES_KEY][resource]
             for resource in settings.compose_content[RES_KEY].keys()

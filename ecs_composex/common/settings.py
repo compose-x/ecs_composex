@@ -1,4 +1,4 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 #   ECS ComposeX <https://github.com/lambda-my-aws/ecs_composex>
 #   Copyright (C) 2020-2021  John Mille <john@lambda-my-aws.io>
 #  #
@@ -30,6 +30,7 @@ from cfn_flip.yaml_dumper import LongCleanDumper
 
 from ecs_composex import __version__
 from ecs_composex.common import keyisset, LOG, load_composex_file, NONALPHANUM
+from ecs_composex.common.envsubst import expandvars
 from ecs_composex.common.aws import get_account_id, get_region_azs
 from ecs_composex.common.aws import get_cross_role_session
 from ecs_composex.common.cfn_params import USE_FLEET_T
@@ -39,7 +40,7 @@ from ecs_composex.common.compose_services import (
     ComposeFamily,
 )
 from ecs_composex.common.compose_volumes import ComposeVolume
-from ecs_composex.common.envsubst import expandvars
+from ecs_composex.common.compose_networks import ComposeNetwork
 from ecs_composex.iam import ROLE_ARN_ARG
 from ecs_composex.iam import validate_iam_role_arn
 from ecs_composex.ingress_settings import set_service_ports
@@ -464,17 +465,16 @@ class ComposeXSettings(object):
         else:
             efs = self.compose_content["x-efs"]
         for volume in self.compose_content[ComposeVolume.main_key].values():
-            if volume.efs_props or volume.driver == "nfs":
-                print("VOLUME", volume.name, volume.services)
-                if not volume.efs_props:
-                    volume.efs_props = {
-                        "Encrypted": True,
-                        "LifecyclePolicies": {"TransitionToIA": "AFTER_14_DAYS"},
-                        "PerformanceMode": "generalPurpose",
-                    }
+            if (
+                volume.efs_definition
+                or volume.driver == "nfs"
+                or volume.driver == "efs"
+            ):
+                if not volume.efs_definition and not (volume.lookup or volume.use):
+                    volume.efs_definition = {"Properties": ComposeVolume.efs_defaults}
                 if not keyisset(volume.name, efs):
                     efs[volume.name] = {
-                        "Properties": volume.efs_props,
+                        "Properties": volume.efs_definition,
                         "Services": [
                             {"name": service.name, "access": "RW"}
                             for service in volume.services

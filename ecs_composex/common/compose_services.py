@@ -1,4 +1,4 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 #   ECS ComposeX <https://github.com/lambda-my-aws/ecs_composex>
 #   Copyright (C) 2020-2021  John Mille <john@lambda-my-aws.io>
 #  #
