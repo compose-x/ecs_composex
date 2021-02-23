@@ -19,33 +19,42 @@
 Module to define the ComposeX Resources into a simple object to make it easier to navigate through.
 """
 
+from re import sub
 from copy import deepcopy
 
-from troposphere import Output, Parameter, Export
-from troposphere import Ref, GetAtt, Sub, If
+from troposphere import Output, Export
+from troposphere import Ref, GetAtt, Sub, If, FindInMap
 from troposphere import AWS_STACK_NAME
 from troposphere.ecs import Environment
 
 
 from ecs_composex.common import LOG, NONALPHANUM, keyisset, keypresent
-from ecs_composex.common.ecs_composex import CFN_EXPORT_DELIMITER as DELIM
+from ecs_composex.common.cfn_params import Parameter
+from ecs_composex.common.ecs_composex import CFN_EXPORT_DELIMITER as DELIM, X_KEY
 from ecs_composex.common.cfn_conditions import USE_STACK_NAME_CON_T
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME
 
 
-def set_resources(settings, resource_class, res_key):
+def set_resources(settings, resource_class, res_key, mod_key=None):
     """
     Method to define the ComposeXResource for each service.
 
     :param ecs_composex.common.settings.ComposeXSettings settings:
-    :param resource_class:
-    :param str res_key:
+    :param ecs_composex.common.compose_resources.ComposeResource resource_class:
+    :param str res_key: The compose key identifier for resource
+    :param str mod_key: The module name in ecs_composex mapping the resource type
+    :param ecs_composex.common.stacks.ComposeXStack stack:
     """
+    if not mod_key:
+        mod_key = sub(X_KEY, "", res_key)
     if not keyisset(res_key, settings.compose_content):
         return
     for resource_name in settings.compose_content[res_key]:
         new_definition = resource_class(
-            resource_name, settings.compose_content[res_key][resource_name], settings
+            name=resource_name,
+            definition=settings.compose_content[res_key][resource_name],
+            module_name=mod_key,
+            settings=settings,
         )
         LOG.debug(type(new_definition))
         LOG.debug(new_definition.__dict__)
@@ -63,6 +72,23 @@ def validate_service_definition(service):
         )
 
 
+def get_parameter_settings(resource, parameter):
+    """
+    Function to define a set of values for the purpose of exposing resources settings from their stack to another.
+
+    :param resource: The XResource we want to extract the outputs from
+    :param parameter: The parameter we want to extract the outputs for
+    :return: Ordered combination of settings
+    :rtype: tuple
+    """
+    return (
+        resource.attributes_outputs[parameter]["Name"],
+        resource.attributes_outputs[parameter]["ImportParameter"],
+        resource.attributes_outputs[parameter]["ImportValue"],
+        parameter,
+    )
+
+
 class XResource(object):
     """
     Class to represent each defined resource in the template
@@ -74,13 +100,14 @@ class XResource(object):
 
     policies_scaffolds = {}
 
-    def __init__(self, name, definition, settings):
+    def __init__(self, name, definition, module_name, settings):
         """
         Init the class
         :param str name: Name of the resource in the template
         :param dict definition: The definition of the resource as-is
         """
         self.name = name
+        self.module_name = module_name
         self.definition = deepcopy(definition)
         self.env_vars = []
         self.logical_name = NONALPHANUM.sub("", self.name)
@@ -122,11 +149,8 @@ class XResource(object):
         self.families_targets = []
         self.families_scaling = []
         self.subnets_override = None
-        self.arn_attr = None
-        self.arn_parameter = None
-        self.arn_value = None
-        self.ref_value = None
         self.is_nested = False
+        self.stack = None
         self.ref_parameter = Parameter(self.logical_name, Type="String")
         self.set_services_targets(settings)
         self.set_services_scaling(settings)
@@ -239,155 +263,185 @@ class XResource(object):
             elif service_name in [s.name for s in settings.services]:
                 self.handle_family_scaling_expansion(service, settings)
 
-    def generate_resource_envvars(self, value):
+    def init_env_names(self):
         """
-        :return: environment key/pairs
-        :rtype: list<troposphere.ecs.Environment>
+        Method to define the environment variables for the resource
+
+        :return: list of environment variable names
+        :rtype: list
         """
-        if self.settings and keyisset("EnvNames", self.settings):
-            for env_name in self.settings["EnvNames"]:
-                self.env_vars.append(
-                    Environment(
-                        Name=env_name,
-                        Value=value,
-                    )
-                )
-            if self.name not in self.settings["EnvNames"] and self.name not in [
-                var.Name for var in self.env_vars
-            ]:
-                self.env_vars.append(
-                    Environment(
-                        Name=self.name,
-                        Value=value,
-                    )
-                )
-                if self.name != self.logical_name:
-                    self.env_vars.append(
-                        Environment(Name=self.logical_name, Value=value)
-                    )
-        elif (
-            not self.settings
-            and not keyisset("EnvNames", self.settings)
-            and self.name not in [var.Name for var in self.env_vars]
+        env_names = [self.name]
+        if (
+            self.settings
+            and keyisset("EnvNames", self.settings)
+            and isinstance(self.settings["EnvNames"], list)
         ):
-            self.env_vars.append(
-                Environment(
-                    Name=self.name,
-                    Value=value,
+            for env_name in self.settings["EnvNames"]:
+                if isinstance(env_name, str) and env_name not in env_names:
+                    env_names.append(env_name)
+        return env_names
+
+    def define_ref_env_vars(self, env_name, parameter):
+        """
+        Method to define construct parameters for Environment Variable for default Ref value of resource
+
+        :param str env_name:
+        :param ecs_composex.common.cfn_params.Parameter parameter:
+        :return: dict with the Name and Value for environment variable
+        :rtype: dict
+        """
+        container_env_name = env_name
+        if self.lookup:
+            container_env_value = self.attributes_outputs[parameter]["ImportValue"]
+        else:
+            container_env_value = Ref(
+                self.attributes_outputs[parameter]["ImportParameter"]
+            )
+        return {"Name": container_env_name, "Value": container_env_value}
+
+    def define_return_value_env_vars(self, env_name, parameter):
+        """
+        Method to define construct parameters for Environment Variable for parameters with specific return_value
+
+        :param str env_name:
+        :param ecs_composex.common.cfn_params.Parameter parameter:
+        :return: dict with the Name and Value for environment variable
+        :rtype: dict
+        """
+        container_env_name = f"{env_name}_{parameter.return_value}"
+        if self.lookup:
+            container_env_value = Sub(
+                f"${{ResourceName}}_{parameter.return_value}",
+                ResourceName=self.attributes_outputs[parameter]["ImportValue"],
+            )
+        else:
+            container_env_value = Ref(
+                self.attributes_outputs[parameter]["ImportParameter"]
+            )
+        return {"Name": container_env_name, "Value": container_env_value}
+
+    def generate_resource_envvars(self):
+        """
+        Method to define all the env var of a resource based on its own defined output attributes
+        """
+        env_names = self.init_env_names()
+        for env_name in env_names:
+            for parameter in self.output_properties.keys():
+                if parameter.return_value:
+                    env_var = Environment(**self.define_return_value_env_vars(env_name, parameter))
+                else:
+                    env_var = Environment(
+                        **self.define_ref_env_vars(env_name, parameter)
+                    )
+                self.env_vars.append(env_var)
+        self.env_vars = list({v.Name: v for v in self.env_vars}.values())
+
+    def set_attributes_from_mapping(self, attribute_parameter):
+        """
+        Method to define the attribute outputs for lookup resources, which use FindInMap or Ref
+
+        :param attribute_parameter: The parameter mapped to the resource attribute
+        :type attribute_parameter: ecs_composex.common.cfn_params.Parameter
+        :return: The FindInMap setting for mapped resource
+        """
+        if attribute_parameter.return_value:
+            return FindInMap(
+                self.module_name, self.logical_name, attribute_parameter.return_value
+            )
+        else:
+            return FindInMap(
+                self.module_name, self.logical_name, attribute_parameter.title
+            )
+
+    def define_export_name(self, output_definition, attribute_parameter):
+        """
+        Method to define the export name for the resource
+        :return:
+        """
+        if len(output_definition) == 5 and output_definition[4]:
+            LOG.debug(f"Adding portback output for {self.name}")
+            export = Export(
+                If(
+                    USE_STACK_NAME_CON_T,
+                    Sub(
+                        f"${{{AWS_STACK_NAME}}}{DELIM}{self.name}{DELIM}{output_definition[4]}"
+                    ),
+                    Sub(
+                        f"${{{ROOT_STACK_NAME.title}}}{DELIM}{self.name}{DELIM}{output_definition[4]}"
+                    ),
                 )
             )
-        self.env_vars = list({v.Name: v for v in self.env_vars}.values())
+        else:
+            export = Export(
+                If(
+                    USE_STACK_NAME_CON_T,
+                    Sub(f"${{{AWS_STACK_NAME}}}{DELIM}{attribute_parameter.title}"),
+                    Sub(
+                        f"${{{ROOT_STACK_NAME.title}}}{DELIM}{attribute_parameter.title}"
+                    ),
+                )
+            )
+        return export
+
+    def set_new_resource_outputs(self, output_definition, attribute_parameter):
+        """
+        Method to define the outputs for the resource when new
+        """
+        if output_definition[2] is Ref:
+            value = Ref(output_definition[1])
+        elif output_definition[2] is GetAtt:
+            value = GetAtt(output_definition[1], output_definition[3])
+        else:
+            raise TypeError(
+                f"3rd argument for {output_definition[0]} must be one of",
+                (Ref, GetAtt),
+                "Got",
+                output_definition[2],
+            )
+        export = self.define_export_name(output_definition, attribute_parameter)
+        return value, export
 
     def generate_outputs(self):
         """
         Method to create the outputs for XResources
-        :return:
         """
-        for output_prop_name in self.output_properties:
-            definition = self.output_properties[output_prop_name]
-            if definition[2] is Ref:
-                value = Ref(definition[1])
-            elif definition[2] is GetAtt:
-                value = GetAtt(definition[1], definition[3])
+        if self.stack:
+            root_stack = self.stack.title
+        else:
+            root_stack = self.module_name
+        for attribute_parameter, output_definition in self.output_properties.items():
+            output_name = f"{self.logical_name}{attribute_parameter.title}"
+            if self.lookup:
+                self.attributes_outputs[attribute_parameter] = {
+                    "Name": output_name,
+                    "ImportValue": self.set_attributes_from_mapping(
+                        attribute_parameter
+                    ),
+                    "ImportParameter": None,
+                }
             else:
-                raise TypeError(
-                    f"3rd argument for {definition[0]} must be one of",
-                    (Ref, GetAtt),
-                    "Got",
-                    definition[2],
+                settings = self.set_new_resource_outputs(
+                    output_definition, attribute_parameter
                 )
-            name = NONALPHANUM.sub("", definition[0])
-            if len(definition) == 5 and definition[4]:
-                LOG.debug(f"Adding portback output for {self.name}")
-                export = Export(
-                    If(
-                        USE_STACK_NAME_CON_T,
-                        Sub(
-                            f"${{{AWS_STACK_NAME}}}{DELIM}{self.name}{DELIM}{definition[4]}"
-                        ),
-                        Sub(
-                            f"${{{ROOT_STACK_NAME.title}}}{DELIM}{self.name}{DELIM}{definition[4]}"
-                        ),
-                    )
-                )
-            else:
-                export = Export(
-                    If(
-                        USE_STACK_NAME_CON_T,
-                        Sub(f"${{{AWS_STACK_NAME}}}{DELIM}{name}"),
-                        Sub(f"${{{ROOT_STACK_NAME.title}}}{DELIM}{name}"),
-                    )
-                )
-            self.attributes_outputs[output_prop_name] = {
-                "Name": name,
-                "Output": Output(name, Value=value, Export=export),
-            }
-
+                value = settings[0]
+                export = settings[1]
+                self.attributes_outputs[attribute_parameter] = {
+                    "Name": output_name,
+                    "Output": Output(output_name, Value=value, Export=export),
+                    "ImportParameter": Parameter(
+                        output_name,
+                        return_value=attribute_parameter.return_value,
+                        Type=attribute_parameter.Type,
+                    ),
+                    "ImportValue": GetAtt(
+                        root_stack,
+                        f"Outputs.{output_name}",
+                    ),
+                    "Original": attribute_parameter
+                }
         for attr in self.attributes_outputs.values():
-            self.outputs.append(attr["Output"])
-
-    def set_resource_arn(self, root_stack_name):
-        """
-        Method to set the arn value the resource arn to use from root stack to another
-        """
-        if not isinstance(self.arn_attr, Parameter) or not keyisset(
-            self.arn_attr.title, self.output_properties
-        ):
-            raise KeyError(
-                "There is no ARN defined for this resource", self.logical_name
-            )
-        self.arn_value = GetAtt(
-            root_stack_name, f"Outputs.{self.logical_name}{self.arn_attr.title}"
-        )
-
-    def set_resource_arn_parameter(self):
-        """
-        Method to set the ARN parameter to add to consuming stacks
-        """
-        if not isinstance(self.arn_attr, Parameter) or not keyisset(
-            self.arn_attr.title, self.output_properties
-        ):
-            raise KeyError(
-                "Parameter - There is no ARN defined for this resource",
-                self.logical_name,
-            )
-        self.arn_parameter = Parameter(
-            f"{self.logical_name}{self.arn_attr.title}", Type="String"
-        )
-
-    def set_ref_resource_value(self, root_stack_name):
-        """
-        Method to set the value for the default attribute (Ref)
-        """
-        self.ref_value = GetAtt(root_stack_name, f"Outputs.{self.logical_name}")
-
-    def get_resource_attribute_parameter(self, parameter):
-        title = parameter.title if isinstance(parameter, Parameter) else parameter
-        if not isinstance(parameter, (str, Parameter)) or not keyisset(
-            title, self.attributes_outputs
-        ):
-            raise KeyError(
-                "There is no Output attribute defined for",
-                self.logical_name,
-                "with parameter named",
-                parameter.title if isinstance(parameter, Parameter) else parameter,
-            )
-        return Parameter(f"{self.attributes_outputs[title]['Name']}", Type="String")
-
-    def get_resource_attribute_value(self, parameter, stack_name):
-        title = parameter.title if isinstance(parameter, Parameter) else parameter
-        if not isinstance(parameter, (str, Parameter)) or not keyisset(
-            title, self.attributes_outputs
-        ):
-            raise KeyError(
-                "There is no Output attribute value defined for",
-                self.logical_name,
-                "with parameter named",
-                title,
-                "Existing ones are",
-                self.attributes_outputs.keys(),
-            )
-        return GetAtt(stack_name, f"Outputs.{self.attributes_outputs[title]['Name']}")
+            if keyisset("Output", attr):
+                self.outputs.append(attr["Output"])
 
     def set_override_subnets(self):
         if (

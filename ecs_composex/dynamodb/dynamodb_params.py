@@ -17,13 +17,15 @@
 
 from os import path
 from ecs_composex.ecs_composex import X_KEY
-from troposphere import Parameter
+from ecs_composex.common.cfn_params import Parameter
 
-TABLE_NAME_T = "DynamoDbTableName"
+TABLE_NAME_T = "TableName"
 TABLE_NAME = Parameter(TABLE_NAME_T, Type="String", AllowedPattern=r"[a-zA-Z0-9_.-]+")
 
 TABLE_ARN_T = "Arn"
-TABLE_ARN = Parameter(TABLE_ARN_T, Type="String")
+TABLE_ARN = Parameter(TABLE_ARN_T, return_value="Arn", Type="String")
 
-RES_KEY = f"{X_KEY}{path.basename(path.dirname(path.abspath(__file__)))}"
+MOD_KEY = path.basename(path.dirname(path.abspath(__file__)))
+RES_KEY = f"{X_KEY}{MOD_KEY}"
+
 TABLE_SSM_PREFIX = f"/{RES_KEY}/"

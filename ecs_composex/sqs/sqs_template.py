@@ -124,26 +124,19 @@ def define_queue(queue, queues, mono_template=True):
     return queue
 
 
-def generate_sqs_root_template(settings):
+def render_new_queues(settings, new_queues, xstack, template):
     """
     Function to create the root DynamdoDB template.
 
     :param ecs_composex.common.settings.ComposeXSettings settings: Execution settings.
-    :return:
     """
     mono_template = False
     output_per_resource = 3
-    if not keyisset(RES_KEY, settings.compose_content):
-        return None
-
     queues = settings.compose_content[RES_KEY]
-    new_queues = [
-        queues[queue_name] for queue_name in queues if not queues[queue_name].lookup
-    ]
     if (len(new_queues) * output_per_resource) <= CFN_MAX_OUTPUTS:
         mono_template = True
-    template = build_template("SQS for ECS ComposeX")
     for queue in new_queues:
+        queue.stack = xstack
         define_queue(queue, queues, mono_template)
         if queue.cfn_resource:
             queue.init_outputs()
@@ -178,4 +171,3 @@ def generate_sqs_root_template(settings):
                     stack_parameters=parameters,
                 )
                 template.add_resource(queue_stack)
-    return template

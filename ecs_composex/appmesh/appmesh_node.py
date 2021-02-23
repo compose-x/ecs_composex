@@ -36,7 +36,7 @@ from ecs_composex.appmesh.appmesh_params import (
     BACKENDS_KEY,
 )
 from ecs_composex.common import LOG, add_parameters
-from ecs_composex.common.compose_services import extend_container_envvars
+from ecs_composex.common.services_helpers import extend_container_envvars
 from ecs_composex.common.outputs import ComposeXOutput
 from ecs_composex.dns.dns_params import PRIVATE_DNS_ZONE_NAME
 from ecs_composex.ecs import ecs_params

@@ -24,13 +24,12 @@ from troposphere import Sub, Ref, GetAtt, Tags
 from troposphere import docdb
 from troposphere.ec2 import SecurityGroup
 
-from ecs_composex.resources_import import import_record_properties
 from ecs_composex.common import (
     keyisset,
     keypresent,
     build_template,
 )
-from ecs_composex.docdb.docdb_params import DOCDB_SUBNET_GROUP_T
+from ecs_composex.resources_import import import_record_properties
 from ecs_composex.secrets import (
     add_db_secret,
     attach_to_secret_to_resource,
@@ -144,19 +143,17 @@ def add_db_instances(template, db):
             )
 
 
-def create_docdb_template(new_resources, settings):
+def create_docdb_template(root_template, new_resources, settings, self_stack):
     """
     Function to create the root template for DocDB and associate the new resources to it.
 
+    :param troposphere.Template root_template:
     :param list new_resources:
     :param ecs_composex.common.settings.ComposeXSettings settings:
-    :return: docdb root template
-    :rtype: troposphere.Template
+    :param ecs_composex.docdb.docdb_stack.XStack self_stack:
     """
-    root_template = init_doc_db_template()
-
     for resource in new_resources:
-
+        resource.stack = self_stack
         resource.db_subnets_group = docdb.DBSubnetGroup(
             f"{resource.logical_name}SubnetGroup",
             DBSubnetGroupDescription=Sub(
@@ -190,4 +187,3 @@ def create_docdb_template(new_resources, settings):
         resource.init_outputs()
         resource.generate_outputs()
         root_template.add_output(resource.outputs)
-    return root_template

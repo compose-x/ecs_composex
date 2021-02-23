@@ -24,7 +24,8 @@ which it heavily relies onto.
 
 You can change the names *values* so you like so long as you keep it [a-zA-Z0-9]
 """
-from troposphere import Parameter
+
+from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME_T
 
 HOST_ROLE_T = "EcsHostsRole"

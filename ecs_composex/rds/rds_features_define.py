@@ -18,10 +18,10 @@
 import re
 
 from troposphere import AWS_PARTITION, AWS_NO_VALUE
-from troposphere import Parameter
 from troposphere import Ref, Sub, GetAtt, FindInMap
 from troposphere.iam import Policy as IamPolicy
 
+from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.common import LOG, keyisset, add_parameters
 
 S3_KEY = "x-s3"

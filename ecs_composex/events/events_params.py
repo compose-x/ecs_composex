@@ -16,5 +16,7 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from os import path
+from ecs_composex.ecs_composex import X_KEY
 
-RES_KEY = f"x-{path.basename(path.dirname(path.abspath(__file__)))}"
+MOD_KEY = path.basename(path.dirname(path.abspath(__file__)))
+RES_KEY = f"{X_KEY}{MOD_KEY}"

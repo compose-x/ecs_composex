@@ -22,39 +22,34 @@ Module to control S3 stack
 from troposphere import MAX_OUTPUTS
 from troposphere import Ref, GetAtt
 
-from ecs_composex.common import LOG, keyisset, build_template
+from ecs_composex.common import build_template
 from ecs_composex.common.compose_resources import XResource, set_resources
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.s3.s3_params import RES_KEY, S3_BUCKET_NAME, S3_BUCKET_ARN
+from ecs_composex.s3.s3_params import (
+    MOD_KEY,
+    RES_KEY,
+    S3_BUCKET_NAME,
+    S3_BUCKET_ARN,
+    S3_BUCKET_DOMAIN_NAME,
+)
 from ecs_composex.s3.s3_template import generate_bucket
 
 COMPOSEX_MAX_OUTPUTS = MAX_OUTPUTS - 10
 
 
-def create_s3_template(settings):
+def create_s3_template(new_buckets, template):
     """
     Function to create the root S3 template.
 
     :param ecs_composex.common.settings.ComposeXSettings settings:
+    :param list new_buckets:
+    :param troposphere.Template template:
     :return:
     """
     mono_template = False
-    if not keyisset(RES_KEY, settings.compose_content):
-        return None
-    xresources = settings.compose_content[RES_KEY]
-    new_buckets = [
-        xresources[bucket_name]
-        for bucket_name in xresources
-        if not xresources[bucket_name].lookup
-    ]
-    if not new_buckets:
-        LOG.info("There are no buckets to create.")
-        return None
-
     if len(list(new_buckets)) <= COMPOSEX_MAX_OUTPUTS:
         mono_template = True
 
-    template = build_template(f"S3 root by ECS ComposeX for {settings.name}")
     for bucket in new_buckets:
         bucket = generate_bucket(bucket)
         if bucket and bucket.cfn_resource:
@@ -81,20 +76,22 @@ class Bucket(XResource):
     Class for S3 bucket.
     """
 
-    def __init__(self, name, definition, settings):
-        super().__init__(name, definition, settings)
-        self.arn_attr = S3_BUCKET_ARN
-        self.main_attr = S3_BUCKET_NAME
-
     def init_outputs(self):
         self.output_properties = {
-            S3_BUCKET_ARN.title: (
+            S3_BUCKET_NAME: (self.logical_name, self.cfn_resource, Ref, None),
+            S3_BUCKET_ARN: (
                 f"{self.logical_name}{S3_BUCKET_ARN.title}",
                 self.cfn_resource,
                 GetAtt,
-                S3_BUCKET_ARN.title,
+                S3_BUCKET_ARN.return_value,
             ),
-            S3_BUCKET_NAME.title: (self.logical_name, self.cfn_resource, Ref, None),
+            S3_BUCKET_DOMAIN_NAME: (
+                f"{self.logical_name}{S3_BUCKET_DOMAIN_NAME.return_value}",
+                self.cfn_resource,
+                GetAtt,
+                S3_BUCKET_DOMAIN_NAME.return_value,
+                None,
+            ),
         }
 
 
@@ -104,9 +101,20 @@ class XStack(ComposeXStack):
     """
 
     def __init__(self, title, settings, **kwargs):
-        set_resources(settings, Bucket, RES_KEY)
-        stack_template = create_s3_template(settings)
-        if stack_template:
+        set_resources(settings, Bucket, RES_KEY, MOD_KEY)
+        new_buckets = [
+            bucket
+            for bucket in settings.compose_content[RES_KEY].values()
+            if not bucket.lookup and not bucket.use
+        ]
+        if new_buckets:
+            stack_template = build_template(
+                f"S3 root by ECS ComposeX for {settings.name}"
+            )
             super().__init__(title, stack_template, **kwargs)
+            create_s3_template(new_buckets, stack_template)
         else:
             self.is_void = True
+
+        for resource in settings.compose_content[RES_KEY].values():
+            resource.stack = self

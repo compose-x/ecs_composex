@@ -21,31 +21,26 @@ Module for DynamoDB to create the root template
 
 from troposphere import MAX_OUTPUTS
 
-from ecs_composex.common import keyisset, build_template
+from ecs_composex.common import build_template
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.dynamodb.dynamodb_params import RES_KEY
 from ecs_composex.dynamodb.dynamodb_table import generate_table
 
 CFN_MAX_OUTPUTS = MAX_OUTPUTS - 10
 
 
-def create_dynamodb_template(settings):
+def create_dynamodb_template(new_tables, template, self_stack):
     """
     Function to create the root DynamdoDB template.
 
     :param ecs_composex.common.settings.ComposeXSettings settings:
+    :param troposphere.Template template: Root template for DynamoDB
     :return:
     """
     mono_template = False
-    if not keyisset(RES_KEY, settings.compose_content):
-        return None
-    tables = settings.compose_content[RES_KEY]
-    if len(list(tables.keys())) <= CFN_MAX_OUTPUTS:
+    if len(list(new_tables)) <= CFN_MAX_OUTPUTS:
         mono_template = True
-
-    template = build_template("DynamoDB for ECS ComposeX")
-    for table_name in tables:
-        table = tables[table_name]
+    for table in new_tables:
+        table.stack = self_stack
         generate_table(table)
         if table.cfn_resource:
             table.init_outputs()

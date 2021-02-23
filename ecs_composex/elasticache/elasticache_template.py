@@ -213,7 +213,6 @@ def create_root_template(new_resources):
 
     root_template = init_root_template()
     for resource in new_resources:
-        print(resource.name, resource.subnets_override)
         resource.db_subnet_group = SubnetGroup(
             f"{resource.logical_name}SubnetGroup",
             Description="ElasticCacheSubnetGroup",

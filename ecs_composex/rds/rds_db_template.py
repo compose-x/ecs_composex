@@ -31,21 +31,14 @@ from troposphere.rds import (
 
 from ecs_composex.common import (
     build_template,
-    cfn_conditions,
     keyisset,
     LOG,
 )
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
-from ecs_composex.iam import define_iam_policy
 from ecs_composex.rds import rds_conditions
 from ecs_composex.rds.rds_parameter_groups_helper import (
     get_family_from_engine_version,
     get_family_settings,
-)
-from ecs_composex.rds.rds_params import (
-    CLUSTER_SUBNET_GROUP,
-    PARAMETER_GROUP_T,
-    CLUSTER_PARAMETER_GROUP_T,
 )
 from ecs_composex.rds.rds_params import (
     DB_ENGINE_VERSION,
@@ -57,6 +50,10 @@ from ecs_composex.rds.rds_params import (
     DB_USERNAME,
     DB_STORAGE_CAPACITY,
     DB_STORAGE_TYPE,
+)
+from ecs_composex.rds.rds_params import (
+    PARAMETER_GROUP_T,
+    CLUSTER_PARAMETER_GROUP_T,
 )
 from ecs_composex.resources_import import import_record_properties
 from ecs_composex.secrets import (
@@ -131,6 +128,7 @@ def add_db_outputs(db_template, db):
 
     :param troposphere.Template db_template: DB Template
     :param ecs_composex.rds.rds_stack.Rds db:
+    :param ecs_composex.rds.rds_stack.XStack parent_stack:
     """
     db.generate_outputs()
     db_template.add_output(db.outputs)
@@ -141,7 +139,6 @@ def create_db_subnet_group(template, db, subnets=None):
     Function to create a subnet group
 
     :param troposphere.Template template: the template to add the subnet group to.
-    :param bool conditional: Whether or not the object should have a Condition for creation in CFN
     :param subnets: The subnets to use.
     :return: group, the DB Subnets Group
     :rtype: troposphere.rds.DBSubnetGroup

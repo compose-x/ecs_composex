@@ -19,7 +19,7 @@
 Parameters related to the VPC settings. Used by ecs_composex.vpc and others
 """
 
-from troposphere import Parameter
+from ecs_composex.common.cfn_params import Parameter
 
 VPC_TYPE = "AWS::EC2::VPC::Id"
 AMI_TYPE = "AWS::EC2::Image::Id"

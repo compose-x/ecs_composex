@@ -21,11 +21,9 @@ Module to add topics and subscriptions to the SNS stack
 
 from troposphere.sns import Topic, Subscription
 
-from ecs_composex.common import LOG, keyisset, keypresent, build_template
+from ecs_composex.common import LOG, keyisset, keypresent
 from ecs_composex.common.outputs import get_import_value
-from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.sns import metadata
-from ecs_composex.sns.sns_params import RES_KEY
 from ecs_composex.sqs.sqs_params import SQS_ARN_T, RES_KEY as SQS_KEY
 
 TOPICS_KEY = "Topics"
@@ -119,7 +117,6 @@ def define_topic(topic, content):
             if type(topic.properties[key]) != list:
                 setattr(topic.cfn_resource, key, topic.properties[key])
     topic.generate_outputs()
-    return topic
 
 
 def add_topics_to_template(template, topics, content):
@@ -130,35 +127,23 @@ def add_topics_to_template(template, topics, content):
     :param dict topics:
     :param dict content: Content of the compose file
     """
-    for topic_name in topics:
-        topic = define_topic(topics[topic_name], content)
+    for topic in topics:
+        define_topic(topic, content)
         topic.init_outputs()
         topic.generate_outputs()
-        template.add_resource(topics[topic_name].cfn_resource)
+        template.add_resource(topic.cfn_resource)
         template.add_output(topic.outputs)
 
 
-def add_sns_topics(root_template, content, res_count, count=190):
+def add_sns_topics(root_template, new_topics, content):
     """
     Function to add SNS topics to the root template
 
-    :param int count: quantity of resources that should trigger the split into nested stacks
     :param troposphere.Template root_template:
     :param dict content:
-    :param int res_count: Number of resources created related to SNS
     :return:
     """
-    if res_count > count:
-        LOG.info(
-            f"There are more than {count} resources to handle for SNS. Splitting into nested stacks"
-        )
-        template = build_template("Root stack for SNS topics")
-        add_topics_to_template(template, content[RES_KEY][TOPICS_KEY], content)
-        root_template.add_resource(
-            ComposeXStack(title=TOPICS_STACK_NAME, stack_template=template)
-        )
-    else:
-        add_topics_to_template(root_template, content[RES_KEY][TOPICS_KEY], content)
+    add_topics_to_template(root_template, new_topics, content)
 
 
 def define_resources(res_content):
@@ -177,7 +162,9 @@ def define_resources(res_content):
     return res_count
 
 
-def generate_sns_templates(settings):
+def generate_sns_templates(
+    settings, new_topics, new_subscriptions, xstack, root_template
+):
     """
     Entrypoint function to generate the SNS topics templates
 
@@ -185,19 +172,8 @@ def generate_sns_templates(settings):
     :type settings: ecs_composex.common.settings.ComposeXSettings
     :return:
     """
-    allowed_keys = [TOPICS_KEY, SUBSCRIPTIONS_KEY]
-    res_content = settings.compose_content[RES_KEY]
-    if not set(res_content).issubset(allowed_keys):
-        raise KeyError(
-            "SNS Only supports two types of resources",
-            allowed_keys,
-            "provided",
-            res_content.keys(),
-        )
-    root_template = build_template("SNS Root Template")
-    res_count = define_resources(res_content)
-    if keyisset(TOPICS_KEY, res_content):
-        add_sns_topics(root_template, settings.compose_content, res_count)
-    if keyisset(SUBSCRIPTIONS_KEY, res_content):
+    if new_topics:
+        add_sns_topics(root_template, new_topics, settings.compose_content)
+    if new_subscriptions:
         pass
     return root_template

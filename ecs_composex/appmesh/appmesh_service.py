@@ -32,10 +32,6 @@ from troposphere.servicediscovery import (
 from ecs_composex.appmesh import appmesh_conditions
 from ecs_composex.appmesh.appmesh_params import NODE_KEY, ROUTER_KEY, ROUTERS_KEY
 from ecs_composex.common import NONALPHANUM, keyisset
-from ecs_composex.dns.dns_params import (
-    PRIVATE_DNS_ZONE_ID,
-    PRIVATE_DNS_ZONE_NAME,
-)
 
 
 def validate_service_backend(service, routers, nodes):

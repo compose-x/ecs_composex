@@ -20,7 +20,7 @@ Module for DNS parameters
 """
 
 from os import path
-from troposphere import Parameter, Sub
+from ecs_composex.common.cfn_params import Parameter
 
 MOD_KEY = path.basename(path.dirname(path.abspath(__file__)))
 RES_KEY = f"x-{path.basename(path.dirname(path.abspath(__file__)))}"

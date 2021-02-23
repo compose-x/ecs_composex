@@ -37,11 +37,12 @@ otherwise you could not, i.e., *vpc::usage::ecsapps*
 
 import copy
 
-from troposphere import Tags, Parameter, Ref
+from troposphere import Tags, Ref
 from troposphere.ec2 import LaunchTemplate, TagSpecifications
 from troposphere.ssm import Parameter as SSMParameter
 
 from ecs_composex.common import keyisset, NONALPHANUM, LOG, add_parameters
+from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.common.stacks import ComposeXStack
 
 

@@ -15,21 +15,20 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from troposphere import Ref, Sub, If, GetAtt
 from troposphere import AWS_PARTITION, AWS_ACCOUNT_ID
+from troposphere import Ref, Sub, If, GetAtt
 from troposphere.kms import Key, Alias
 
-from ecs_composex.resources_import import import_record_properties
-from ecs_composex.common import keyisset, LOG
-from ecs_composex.common.cfn_params import ROOT_STACK_NAME
+from ecs_composex.common import keyisset, build_template, LOG
 from ecs_composex.common.cfn_conditions import USE_STACK_NAME_CON_T
-from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.common.cfn_params import ROOT_STACK_NAME
 from ecs_composex.common.compose_resources import set_resources, XResource
-
+from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.kms import metadata
-from ecs_composex.kms.kms_template import create_kms_template
-from ecs_composex.kms.kms_params import RES_KEY, KMS_KEY_ARN, KMS_KEY_ID
+from ecs_composex.kms.kms_params import RES_KEY, KMS_KEY_ARN, KMS_KEY_ID, MOD_KEY
 from ecs_composex.kms.kms_perms import get_access_types
+from ecs_composex.kms.kms_template import create_kms_template
+from ecs_composex.resources_import import import_record_properties
 
 
 def define_default_key_policy():
@@ -68,22 +67,17 @@ class KmsKey(XResource):
 
     policies_scaffolds = get_access_types()
 
-    def __init__(self, name, definition, settings):
-        super().__init__(name, definition, settings)
-        self.arn_attr = KMS_KEY_ARN
-        self.main_attr = KMS_KEY_ID
-        self.kms_arn_attr = None
-        self.arn_attr_value = self.arn_attr
-        self.main_attr_value = self.main_attr
+    def __init__(self, name, definition, module_name, settings):
+        super().__init__(name, definition, module_name, settings)
 
     def init_outputs(self):
         self.output_properties = {
-            KMS_KEY_ID.title: (self.logical_name, self.cfn_resource, Ref, None),
-            KMS_KEY_ARN.title: (
-                f"{self.logical_name}{KMS_KEY_ARN.title}",
+            KMS_KEY_ID: (self.logical_name, self.cfn_resource, Ref, None),
+            KMS_KEY_ARN: (
+                f"{self.logical_name}{KMS_KEY_ARN.return_value}",
                 self.cfn_resource,
                 GetAtt,
-                KMS_KEY_ARN.title,
+                KMS_KEY_ARN.return_value,
             ),
         }
 
@@ -140,6 +134,17 @@ class XStack(ComposeXStack):
     """
 
     def __init__(self, title, settings, **kwargs):
-        set_resources(settings, KmsKey, RES_KEY)
-        stack_template = create_kms_template(settings)
-        super().__init__(title, stack_template, **kwargs)
+        set_resources(settings, KmsKey, RES_KEY, MOD_KEY)
+        new_keys = [
+            key
+            for key in settings.compose_content[RES_KEY].values()
+            if not key.lookup and not key.use
+        ]
+        if new_keys:
+            stack_template = build_template("Root template for KMS")
+            super().__init__(title, stack_template, **kwargs)
+            create_kms_template(stack_template, new_keys, self)
+        else:
+            self.is_void = True
+        for resource in settings.compose_content[RES_KEY].values():
+            resource.stack = self

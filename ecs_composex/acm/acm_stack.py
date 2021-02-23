@@ -19,10 +19,11 @@
 Main module for ACM
 """
 
+import re
 from copy import deepcopy
 from warnings import warn
 
-from troposphere import Ref, Tags
+from troposphere import Tags
 from troposphere.certificatemanager import (
     Certificate as AcmCert,
     DomainValidationOption,
@@ -35,7 +36,6 @@ from ecs_composex.common import (
     keyisset,
 )
 from ecs_composex.common.compose_resources import set_resources
-from ecs_composex.dns.dns_params import PUBLIC_DNS_ZONE_ID
 from ecs_composex.resources_import import import_record_properties
 
 
@@ -44,9 +44,10 @@ class Certificate(object):
     Class specifically for ACM Certificate
     """
 
-    def __init__(self, name, definition, settings):
+    def __init__(self, name, definition, module_name, settings):
         self.name = name
         self.logical_name = NONALPHANUM.sub("", name)
+        self.module_name = module_name
         self.definition = deepcopy(definition)
         self.cfn_resource = None
         self.settings = (
@@ -72,6 +73,7 @@ class Certificate(object):
         )
 
     def define_parameters_props(self, dns_settings):
+        tag_filter = re.compile(r"(^\*.)")
         if not keyisset("DomainNames", self.parameters):
             raise KeyError(
                 "For MacroParameters, you need to define at least DomainNames"
@@ -87,7 +89,7 @@ class Certificate(object):
             "DomainName": self.parameters["DomainNames"][0],
             "ValidationMethod": "DNS",
             "Tags": Tags(
-                Name=self.parameters["DomainNames"][0],
+                Name=tag_filter.sub("wildcard.", self.parameters["DomainNames"][0]),
                 ZoneId=dns_settings.public_zone.id_value,
             ),
             "SubjectAlternativeNames": self.parameters["DomainNames"][1:],
@@ -98,7 +100,6 @@ class Certificate(object):
         """
         Method to set the ACM Certificate definition
         """
-        print(self.name, self.properties, self.parameters)
         if self.properties:
             props = import_record_properties(self.properties, AcmCert)
         elif self.parameters:
@@ -142,7 +143,7 @@ def create_acm_mappings(resources, settings):
 
 
 def init_acm_certs(settings, dns_settings, root_stack):
-    set_resources(settings, Certificate, RES_KEY)
+    set_resources(settings, Certificate, RES_KEY, MOD_KEY)
     new_resources = [
         settings.compose_content[RES_KEY][cert_name]
         for cert_name in settings.compose_content[RES_KEY]

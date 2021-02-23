@@ -24,7 +24,6 @@ from troposphere import (
     AWS_NO_VALUE,
     AWS_URL_SUFFIX,
 )
-from troposphere import Parameter
 
 from troposphere.events import (
     Target,
@@ -36,6 +35,7 @@ from troposphere.events import (
 from troposphere.iam import Role, Policy, PolicyType
 
 from ecs_composex.common import add_parameters, keyisset, LOG
+from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.ecs.ecs_params import (
     CLUSTER_NAME,
     FARGATE_VERSION,

@@ -21,9 +21,9 @@ Class and functions to interact with the volumes: defined in compose files.
 
 import re
 from copy import deepcopy
-from troposphere import Ref
+
 from troposphere import AWS_NO_VALUE
-from troposphere.efs import LifecyclePolicy, BackupPolicy
+from troposphere import Ref
 
 from ecs_composex.common import keyisset, LOG
 
