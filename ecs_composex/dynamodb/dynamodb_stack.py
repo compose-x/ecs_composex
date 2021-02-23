@@ -37,9 +37,6 @@ class Table(XResource):
 
     policies_scaffolds = get_access_types()
 
-    # def __init__(self, name, definition, module_name, settings):
-    #     super().__init__(name, definition, module_name, settings)
-
     def init_outputs(self):
         self.output_properties = {
             TABLE_NAME: (self.logical_name, self.cfn_resource, Ref, None),
@@ -50,14 +47,6 @@ class Table(XResource):
                 TABLE_ARN.return_value,
             ),
         }
-
-    def set_outputs(self):
-        """
-        Method to set the outputs and imports settings.
-        :return:
-        """
-        if not self.cfn_resource:
-            return
 
 
 class XStack(ComposeXStack):
