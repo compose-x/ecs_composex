@@ -350,7 +350,7 @@ class XResource(object):
             )
         else:
             return FindInMap(
-                self.module_name, self.logical_name, self.logical_name
+                self.module_name, self.logical_name, attribute_parameter.title
             )
 
     def define_export_name(self, output_definition, attribute_parameter):
@@ -437,6 +437,7 @@ class XResource(object):
                         root_stack,
                         f"Outputs.{output_name}",
                     ),
+                    "Original": attribute_parameter
                 }
         for attr in self.attributes_outputs.values():
             if keyisset("Output", attr):

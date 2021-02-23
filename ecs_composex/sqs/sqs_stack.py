@@ -48,14 +48,14 @@ class Queue(XResource):
         self.output_properties = {
             SQS_URL: (self.logical_name, self.cfn_resource, Ref, None, "Url"),
             SQS_ARN: (
-                f"{self.logical_name}{SQS_ARN.title}",
+                f"{self.logical_name}{SQS_ARN.return_value}",
                 self.cfn_resource,
                 GetAtt,
                 SQS_ARN.return_value,
                 "Arn",
             ),
             SQS_NAME: (
-                f"{self.logical_name}{SQS_NAME.title}",
+                f"{self.logical_name}{SQS_NAME.return_value}",
                 self.cfn_resource,
                 GetAtt,
                 SQS_NAME.return_value,

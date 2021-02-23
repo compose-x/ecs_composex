@@ -153,7 +153,7 @@ def create_sqs_mappings(mapping, resources, settings):
     :return:
     """
     for res in resources:
-        res_config = lookup_queue_config(res.logical_name, res.lookup, settings.session)
+        res_config = lookup_queue_config(res.lookup, settings.session)
         mapping.update({res.logical_name: res_config})
         if keyisset(SQS_KMS_KEY_T, res_config):
             LOG.info(f"Identified CMK {res_config[SQS_KMS_KEY_T]} for {res.name}")
@@ -166,7 +166,7 @@ def sqs_to_ecs(resources, services_stack, res_root_stack, settings):
     """
     resource_mappings = {}
     new_resources = [
-        resources[res_name] for res_name in resources if not resources[res_name].lookup
+        resources[res_name] for res_name in resources if not resources[res_name].lookup and not resources[res_name].use
     ]
     lookup_resources = [
         resources[res_name]
