@@ -19,6 +19,7 @@
 Main module for ACM
 """
 
+import re
 from copy import deepcopy
 from warnings import warn
 
@@ -72,6 +73,7 @@ class Certificate(object):
         )
 
     def define_parameters_props(self, dns_settings):
+        tag_filter = re.compile(r"(^\*.)")
         if not keyisset("DomainNames", self.parameters):
             raise KeyError(
                 "For MacroParameters, you need to define at least DomainNames"
@@ -87,7 +89,7 @@ class Certificate(object):
             "DomainName": self.parameters["DomainNames"][0],
             "ValidationMethod": "DNS",
             "Tags": Tags(
-                Name=self.parameters["DomainNames"][0],
+                Name=tag_filter.sub("wildcard.", self.parameters["DomainNames"][0]),
                 ZoneId=dns_settings.public_zone.id_value,
             ),
             "SubjectAlternativeNames": self.parameters["DomainNames"][1:],
