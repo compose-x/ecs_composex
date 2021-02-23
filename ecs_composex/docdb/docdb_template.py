@@ -24,13 +24,12 @@ from troposphere import Sub, Ref, GetAtt, Tags
 from troposphere import docdb
 from troposphere.ec2 import SecurityGroup
 
-from ecs_composex.resources_import import import_record_properties
 from ecs_composex.common import (
     keyisset,
     keypresent,
     build_template,
 )
-from ecs_composex.docdb.docdb_params import DOCDB_SUBNET_GROUP_T
+from ecs_composex.resources_import import import_record_properties
 from ecs_composex.secrets import (
     add_db_secret,
     attach_to_secret_to_resource,

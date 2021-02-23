@@ -24,16 +24,10 @@ import re
 import requests
 import boto3
 import tempfile
-from os import path, mkdir
+import yaml
+from os import path
 from copy import deepcopy
 from urllib.parse import urlparse
-
-import yaml
-
-try:
-    from yaml import CLoader as Loader
-except ImportError:
-    from yaml import Loader
 
 from ecs_composex.common import LOG, keyisset
 from ecs_composex.common.settings import ComposeXSettings

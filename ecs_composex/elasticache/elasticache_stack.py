@@ -20,12 +20,12 @@ Module to handle the AWS ES Stack and resources creation
 """
 
 import json
+
 from troposphere import Ref, GetAtt, Sub
 from troposphere.ssm import Parameter as SSMParameter
 
 from ecs_composex.common.compose_resources import XResource, set_resources
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.vpc.vpc_params import STORAGE_SUBNETS
 from ecs_composex.elasticache.elasticache_params import (
     MOD_KEY,
     RES_KEY,
@@ -38,11 +38,11 @@ from ecs_composex.elasticache.elasticache_params import (
     REPLICA_READ_ENDPOINT_PORTS,
     REPLICA_PRIMARY_ADDRESS,
     REPLICA_PRIMARY_PORT,
-    CLUSTER_PORT,
     CLUSTER_SG,
     CLUSTER_CONFIG,
 )
 from ecs_composex.elasticache.elasticache_template import create_root_template
+from ecs_composex.vpc.vpc_params import STORAGE_SUBNETS
 
 
 class CacheCluster(XResource):

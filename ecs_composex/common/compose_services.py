@@ -16,12 +16,13 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import re
-from os import path
 from copy import deepcopy
 from json import dumps
+from os import path
 
 from troposphere import AWS_NO_VALUE, AWS_REGION, AWS_STACK_NAME, AWS_PARTITION
-from troposphere import Sub, Ref, GetAtt, ImportValue, Join, If, FindInMap, Tags
+from troposphere import Sub, Ref, GetAtt, Join, If, FindInMap, Tags
+from troposphere.codeguruprofiler import ProfilingGroup
 from troposphere.ecs import (
     HealthCheck,
     Environment,
@@ -32,30 +33,32 @@ from troposphere.ecs import (
     EnvironmentFile,
     RepositoryCredentials,
     Volume,
-    Host,
     MountPoint,
-    VolumesFrom,
-    EFSVolumeConfiguration,
     DockerVolumeConfiguration,
 )
 from troposphere.iam import Policy, PolicyType
-from troposphere.codeguruprofiler import ProfilingGroup
 
-from ecs_composex.resources_import import import_record_properties
 from ecs_composex.common import NONALPHANUM, LOG, FILE_PREFIX
 from ecs_composex.common import keyisset, keypresent
-from ecs_composex.common.files import upload_file
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME, Parameter
 from ecs_composex.common.compose_volumes import (
     ComposeVolume,
     handle_volume_dict_config,
     handle_volume_str_config,
 )
+from ecs_composex.common.files import upload_file
+from ecs_composex.common.services_helpers import (
+    import_env_variables,
+    define_ingress_mappings,
+    set_else_none,
+    validate_healthcheck,
+)
 from ecs_composex.ecs import ecs_params
 from ecs_composex.ecs.docker_tools import (
     find_closest_fargate_configuration,
     set_memory_to_mb,
 )
+from ecs_composex.ecs.ecs_conditions import USE_FARGATE_CON_T
 from ecs_composex.ecs.ecs_iam import add_service_roles
 from ecs_composex.ecs.ecs_params import (
     AWS_XRAY_IMAGE,
@@ -65,23 +68,13 @@ from ecs_composex.ecs.ecs_params import (
     TASK_ROLE_T,
     TASK_T,
 )
-from ecs_composex.ecs.ecs_conditions import USE_FARGATE_CON_T
 from ecs_composex.iam import define_iam_policy, add_role_boundaries
+from ecs_composex.resources_import import import_record_properties
 from ecs_composex.secrets.compose_secrets import (
     ComposeSecret,
     match_secrets_services_config,
 )
 from ecs_composex.vpc.vpc_params import APP_SUBNETS
-
-from ecs_composex.common.services_helpers import (
-    import_secrets,
-    import_env_variables,
-    define_ingress_mappings,
-    define_string_interpolation,
-    set_else_none,
-    validate_healthcheck,
-)
-
 
 NUMBERS_REG = r"[^0-9.]"
 MINIMUM_SUPPORTED = 4

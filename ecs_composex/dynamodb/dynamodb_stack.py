@@ -65,7 +65,7 @@ class XStack(ComposeXStack):
         if new_resources:
             stack_template = build_template("Root template for DynamoDB tables")
             super().__init__(title, stack_template, **kwargs)
-            create_dynamodb_template(settings, new_resources, stack_template, self)
+            create_dynamodb_template(new_resources, stack_template, self)
         else:
             self.is_void = True
         for resource in x_resources:

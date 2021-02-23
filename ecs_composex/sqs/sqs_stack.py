@@ -19,15 +19,9 @@
 Module for the XStack SQS
 """
 
-import sys
-
 from troposphere import GetAtt, Ref
 
 from ecs_composex.common import (
-    validate_input,
-    keyisset,
-    LOG,
-    EXIT_CODES,
     build_template,
 )
 from ecs_composex.common.compose_resources import set_resources, XResource
@@ -37,7 +31,6 @@ from ecs_composex.sqs.sqs_params import (
     RES_KEY,
     SQS_ARN,
     SQS_URL,
-    SQS_KMS_KEY,
     SQS_NAME,
 )
 from ecs_composex.sqs.sqs_perms import get_access_types

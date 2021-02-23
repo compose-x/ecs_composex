@@ -17,14 +17,13 @@
 
 from troposphere import GetAtt, Ref
 
-from ecs_composex.common import keyisset, LOG, build_template
+from ecs_composex.common import keyisset, build_template
 from ecs_composex.common.compose_resources import XResource
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.sns.sns_params import (
     RES_KEY,
     TOPIC_NAME,
     TOPIC_ARN,
-    TOPIC_KMS_KEY,
     MOD_KEY,
 )
 from ecs_composex.sns.sns_perms import ACCESS_TYPES

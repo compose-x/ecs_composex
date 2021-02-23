@@ -328,7 +328,7 @@ class XResource(object):
         for env_name in env_names:
             for parameter in self.output_properties.keys():
                 if parameter.return_value:
-                    env_var = self.define_return_value_env_vars(env_name, parameter)
+                    env_var = Environment(**self.define_return_value_env_vars(env_name, parameter))
                 else:
                     env_var = Environment(
                         **self.define_ref_env_vars(env_name, parameter)
@@ -350,7 +350,7 @@ class XResource(object):
             )
         else:
             return FindInMap(
-                self.module_name, self.logical_name, attribute_parameter.title
+                self.module_name, self.logical_name, self.logical_name
             )
 
     def define_export_name(self, output_definition, attribute_parameter):

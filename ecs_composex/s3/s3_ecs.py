@@ -24,22 +24,20 @@ from json import dumps
 from troposphere import FindInMap, Sub, Ref
 
 from ecs_composex.common import LOG, keyisset, add_parameters
-from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common.compose_resources import get_parameter_settings
+from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.kms.kms_perms import ACCESS_TYPES as KMS_ACCESS_TYPES
 from ecs_composex.resource_settings import (
     add_iam_policy_to_service_task_role,
     generate_resource_permissions,
     get_selected_services,
 )
+from ecs_composex.s3.s3_aws import lookup_bucket_config
 from ecs_composex.s3.s3_params import (
     MOD_KEY,
     S3_BUCKET_NAME,
     S3_BUCKET_ARN,
-    S3_BUCKET_DOMAIN_NAME,
-    S3_BUCKET_REGION_DOMAIN_NAME,
 )
-from ecs_composex.s3.s3_aws import lookup_bucket_config
 from ecs_composex.s3.s3_perms import ACCESS_TYPES
 
 

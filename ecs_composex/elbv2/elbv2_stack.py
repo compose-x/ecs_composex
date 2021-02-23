@@ -1039,7 +1039,6 @@ class XStack(ComposeXStack):
 
     def __init__(self, title, settings, **kwargs):
         set_resources(settings, Elbv2, RES_KEY, MOD_KEY)
-        resources = settings.compose_content[RES_KEY]
         new_resources = [
             lb
             for lb in settings.compose_content[RES_KEY].values()

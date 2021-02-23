@@ -19,14 +19,13 @@
 Core ECS Template building
 """
 
+from troposphere import If, Ref, Sub, Tags, GetAtt
 from troposphere import AWS_ACCOUNT_ID, AWS_PARTITION, AWS_REGION, AWS_NO_VALUE
-from troposphere import If
-from troposphere import Ref, Sub, Tags, GetAtt
 from troposphere.ec2 import SecurityGroup
 from troposphere.iam import PolicyType
 from troposphere.logs import LogGroup
 
-from ecs_composex.common import build_template, LOG
+from ecs_composex.common import build_template
 from ecs_composex.common.cfn_params import (
     ROOT_STACK_NAME_T,
     ROOT_STACK_NAME,

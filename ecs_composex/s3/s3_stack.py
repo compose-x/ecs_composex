@@ -22,7 +22,7 @@ Module to control S3 stack
 from troposphere import MAX_OUTPUTS
 from troposphere import Ref, GetAtt
 
-from ecs_composex.common import LOG, keyisset, build_template
+from ecs_composex.common import build_template
 from ecs_composex.common.compose_resources import XResource, set_resources
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.s3.s3_params import (

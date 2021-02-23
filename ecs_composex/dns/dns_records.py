@@ -32,7 +32,7 @@ from troposphere.route53 import RecordSetType, AliasTarget, BaseRecordSet
 from ecs_composex.common import NONALPHANUM, LOG
 from ecs_composex.common import keyisset, add_outputs
 from ecs_composex.common.ecs_composex import X_KEY
-from ecs_composex.dns.dns_params import RES_KEY, PUBLIC_DNS_ZONE_ID
+from ecs_composex.dns.dns_params import RES_KEY
 from ecs_composex.elbv2.elbv2_params import LB_DNS_ZONE_ID, LB_DNS_NAME
 from ecs_composex.resources_import import import_record_properties
 

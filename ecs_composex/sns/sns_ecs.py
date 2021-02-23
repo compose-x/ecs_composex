@@ -24,9 +24,9 @@ from ecs_composex.resource_settings import (
     handle_resource_to_services,
     handle_lookup_resource,
 )
-from ecs_composex.sns.sns_params import TOPIC_NAME, TOPIC_ARN, TOPIC_KMS_KEY
-from ecs_composex.sns.sns_stack import Topic as XTopic
 from ecs_composex.sns.sns_aws import lookup_topic_config
+from ecs_composex.sns.sns_params import TOPIC_NAME, TOPIC_ARN
+from ecs_composex.sns.sns_stack import Topic as XTopic
 
 
 def create_sns_mappings(mapping, resources, settings):

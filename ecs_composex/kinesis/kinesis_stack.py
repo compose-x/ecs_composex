@@ -25,10 +25,9 @@ from ecs_composex.kinesis.kinesis_params import (
     STREAM_ARN,
     RES_KEY,
     MOD_KEY,
-    STREAM_KMS_KEY_ID,
 )
-from ecs_composex.kinesis.kinesis_template import create_streams_template
 from ecs_composex.kinesis.kinesis_perms import ACCESS_TYPES
+from ecs_composex.kinesis.kinesis_template import create_streams_template
 
 
 class Stream(XResource):

@@ -28,7 +28,7 @@ from ecs_composex.common.aws import (
     find_aws_resource_arn_from_tags_api,
     define_lookup_role_from_info,
 )
-from ecs_composex.kinesis.kinesis_params import STREAM_KMS_KEY_ID, STREAM_ARN, STREAM_ID
+from ecs_composex.kinesis.kinesis_params import STREAM_KMS_KEY_ID, STREAM_ARN
 
 
 def get_stream_config(logical_name, stream_arn, session):

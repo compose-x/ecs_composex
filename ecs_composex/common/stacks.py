@@ -20,8 +20,8 @@ Module to handle Root stacks and substacks in ECS composeX. Allows to treat ever
 files into S3 and on disk.
 """
 
-from troposphere import Template, GetAtt, Ref, If, Join, ImportValue, FindInMap
 from troposphere import AWS_STACK_NAME
+from troposphere import Template, GetAtt, Ref, If, Join, ImportValue, FindInMap
 from troposphere.cloudformation import Stack
 
 from ecs_composex.common import LOG, keyisset, add_parameters, NONALPHANUM
@@ -276,12 +276,6 @@ class ComposeXStack(Stack, object):
         """
         Method to set the stack parameters when we are not creating a VPC.
         """
-        default_parameters = [
-            VPC_ID,
-            PUBLIC_SUBNETS,
-            STORAGE_SUBNETS,
-            APP_SUBNETS,
-        ]
         add_parameters(self.stack_template, settings.subnets_parameters)
         self.Parameters.update(
             {VPC_ID_T: FindInMap("Network", VPC_ID.title, VPC_ID.title)}
