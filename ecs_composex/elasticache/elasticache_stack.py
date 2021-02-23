@@ -40,7 +40,7 @@ from ecs_composex.elasticache.elasticache_params import (
     REPLICA_PRIMARY_PORT,
     CLUSTER_PORT,
     CLUSTER_SG,
-    CLUSTER_CONFIG
+    CLUSTER_CONFIG,
 )
 from ecs_composex.elasticache.elasticache_template import create_root_template
 

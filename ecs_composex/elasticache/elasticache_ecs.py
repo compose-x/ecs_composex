@@ -84,7 +84,12 @@ def elasticache_to_ecs(resources, services_stack, res_root_stack, settings):
         resources[res_name] for res_name in resources if resources[res_name].lookup
     ]
     for new_res in new_resources:
-        handle_new_tcp_resource(new_res, res_root_stack, port_parameter=    new_res.port_attr, sg_parameter=CLUSTER_SG)
+        handle_new_tcp_resource(
+            new_res,
+            res_root_stack,
+            port_parameter=new_res.port_attr,
+            sg_parameter=CLUSTER_SG,
+        )
     create_lookup_mappings(db_mappings, lookup_resources, settings)
     for lookup_res in lookup_resources:
         if keyisset(lookup_res.logical_name, db_mappings):

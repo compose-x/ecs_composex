@@ -263,10 +263,12 @@ class XResource(object):
             elif service_name in [s.name for s in settings.services]:
                 self.handle_family_scaling_expansion(service, settings)
 
-    def generate_resource_envvars(self):
+    def init_env_names(self):
         """
-        :return: environment key/pairs
-        :rtype: list<troposphere.ecs.Environment>
+        Method to define the environment variables for the resource
+
+        :return: list of environment variable names
+        :rtype: list
         """
         env_names = [self.name]
         if (
@@ -277,34 +279,61 @@ class XResource(object):
             for env_name in self.settings["EnvNames"]:
                 if isinstance(env_name, str) and env_name not in env_names:
                     env_names.append(env_name)
+        return env_names
+
+    def define_ref_env_vars(self, env_name, parameter):
+        """
+        Method to define construct parameters for Environment Variable for default Ref value of resource
+
+        :param str env_name:
+        :param ecs_composex.common.cfn_params.Parameter parameter:
+        :return: dict with the Name and Value for environment variable
+        :rtype: dict
+        """
+        container_env_name = env_name
+        if self.lookup:
+            container_env_value = self.attributes_outputs[parameter]["ImportValue"]
+        else:
+            container_env_value = Ref(
+                self.attributes_outputs[parameter]["ImportParameter"]
+            )
+        return {"Name": container_env_name, "Value": container_env_value}
+
+    def define_return_value_env_vars(self, env_name, parameter):
+        """
+        Method to define construct parameters for Environment Variable for parameters with specific return_value
+
+        :param str env_name:
+        :param ecs_composex.common.cfn_params.Parameter parameter:
+        :return: dict with the Name and Value for environment variable
+        :rtype: dict
+        """
+        container_env_name = f"{env_name}_{parameter.return_value}"
+        if self.lookup:
+            container_env_value = Sub(
+                f"${{ResourceName}}_{parameter.return_value}",
+                ResourceName=self.attributes_outputs[parameter]["ImportValue"],
+            )
+        else:
+            container_env_value = Ref(
+                self.attributes_outputs[parameter]["ImportParameter"]
+            )
+        return {"Name": container_env_name, "Value": container_env_value}
+
+    def generate_resource_envvars(self):
+        """
+        Method to define all the env var of a resource based on its own defined output attributes
+        """
+        env_names = self.init_env_names()
         for env_name in env_names:
             for parameter in self.output_properties.keys():
                 if parameter.return_value:
-                    container_env_name = f"{env_name}_{parameter.return_value}"
-                    if self.lookup:
-                        container_env_value = Sub(
-                            f"${{ResourceName}}_{parameter.return_value}",
-                            ResourceName=self.attributes_outputs[parameter][
-                                "ImportValue"
-                            ],
-                        )
-                    else:
-                        container_env_value = Ref(
-                            self.attributes_outputs[parameter]["ImportParameter"]
-                        )
+                    env_var = self.define_return_value_env_vars(env_name, parameter)
                 else:
-                    container_env_name = env_name
-                    if self.lookup:
-                        container_env_value = self.attributes_outputs[parameter][
-                            "ImportValue"
-                        ]
-                    else:
-                        container_env_value = Ref(
-                            self.attributes_outputs[parameter]["ImportParameter"]
-                        )
-                self.env_vars.append(
-                    Environment(Name=container_env_name, Value=container_env_value)
-                )
+                    env_var = Environment(
+                        **self.define_ref_env_vars(env_name, parameter)
+                    )
+                self.env_vars.append(env_var)
         self.env_vars = list({v.Name: v for v in self.env_vars}.values())
 
     def set_attributes_from_mapping(self, attribute_parameter):
@@ -375,7 +404,6 @@ class XResource(object):
     def generate_outputs(self):
         """
         Method to create the outputs for XResources
-        :return:
         """
         if self.stack:
             root_stack = self.stack.title
