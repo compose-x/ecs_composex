@@ -20,6 +20,9 @@ secrets:
           SecretKey: test
 services:
   app01:
+    sysctls:
+      - net.core.somaxconn=2048
+      - net.ipv4.tcp_syncookies=1
     cap_add:
       - ALL
     env_file: ./use-cases/env-files/dummy.env
@@ -115,6 +118,9 @@ services:
         DisableScaleIn: true
     x-xray: false
   app03:
+    sysctls:
+      net.core.somaxconn: 1024
+      net.ipv4.tcp_syncookies: 0
     cap_add:
       - NET_ADMIN
       - SYS_PTRACE
