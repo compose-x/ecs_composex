@@ -300,6 +300,9 @@ class ComposeService(object):
                 keyisset("Privileged", self.definition),
             ),
             ReadonlyRootFilesystem=keyisset("read_only", self.definition),
+            WorkingDirectory=Ref(AWS_NO_VALUE)
+            if not keyisset("working_dir", self.definition)
+            else self.definition["working_dir"],
         )
         self.container_parameters.update({self.image_param.title: self.image})
 
