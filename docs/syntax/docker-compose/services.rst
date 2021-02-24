@@ -19,6 +19,8 @@ However, there are only a limited number of settings that are today working:
 * `depends_on <https://docs.docker.com/compose/compose-file/#environment>`__
 * `deploy <https://docs.docker.com/compose/compose-file/#deploy>`__
 * `secrets <https://docs.docker.com/compose/compose-file/#secrets>`__
+* user
+* `ulimits`_
 
 .. seealso::
 
@@ -35,3 +37,15 @@ However, there are only a limited number of settings that are today working:
 
     Checkout the ECS ComposeX secrets definition syntax :ref:`secrets_syntax_reference` to import AWS Secrets Manager
     secrets to your container.
+
+
+.. hint::
+
+    Not all ulimits are supported in AWS Fargate. ECS Compose-X Will automatically deactivate the ones not supported.
+
+.. _ulimits: https://docs.docker.com/compose/compose-file/compose-file-v3/#ulimits
+
+
+.. tip::
+
+    **user** expects the format **uid:gid** to use

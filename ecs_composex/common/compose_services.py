@@ -35,6 +35,7 @@ from troposphere.ecs import (
     Volume,
     MountPoint,
     DockerVolumeConfiguration,
+    Ulimit,
 )
 from troposphere.iam import Policy, PolicyType
 
@@ -282,8 +283,73 @@ class ComposeService(object):
             DependsOn=Ref(AWS_NO_VALUE),
             Essential=self.is_essential,
             Secrets=secrets,
+            Ulimits=self.define_ulimits(),
         )
         self.container_parameters.update({self.image_param.title: self.image})
+
+    def define_ulimits(self):
+        """
+        Method to set the ulimits
+        """
+        if not keyisset("ulimits", self.definition):
+            return Ref(AWS_NO_VALUE)
+        limits = self.definition["ulimits"]
+        rendered_limits = []
+        fargate_supported = ["nofile"]
+        allowed = [
+            "core",
+            "cpu",
+            "data",
+            "fsize",
+            "locks",
+            "memlock",
+            "msgqueue",
+            "nice",
+            "nofile",
+            "nproc",
+            "rss",
+            "rtprio",
+            "rttime",
+            "sigpending",
+            "stack",
+        ]
+        for limit_name, limit_value in limits.items():
+            if limit_name not in allowed:
+                raise KeyError(
+                    f"Ulimit property {limit_name} is not supported by ECS. Valid ones are",
+                    allowed,
+                )
+            elif isinstance(limit_value, (str, int)):
+                ulimit = Ulimit(
+                    SoftLimit=int(limit_value),
+                    HardLimit=int(limit_value),
+                    Name=limit_name,
+                )
+            elif (
+                isinstance(limit_value, dict)
+                and keyisset("soft", limit_value)
+                and keyisset("hard", limit_value)
+            ):
+                ulimit = Ulimit(
+                    SoftLimit=int(limit_value["soft"]),
+                    HardLimit=int(limit_value["hard"]),
+                    Name=limit_name,
+                )
+            elif isinstance(limit_value, dict) and not (
+                keyisset("soft", limit_value) and keyisset("hard", limit_value)
+            ):
+                raise KeyError(
+                    f"Missing hard or soft properties for ulimit {limit_name}"
+                )
+            else:
+                raise TypeError("ulimit is not of the proper definition")
+            if limit_name not in fargate_supported:
+                rendered_limits.append(If(USE_FARGATE_CON_T, Ref(AWS_NO_VALUE), ulimit))
+            else:
+                rendered_limits.append(ulimit)
+        if rendered_limits:
+            return rendered_limits
+        return Ref(AWS_NO_VALUE)
 
     def set_code_profiler(self):
         """
@@ -739,7 +805,7 @@ def add_policies(config, key, new_policies):
         generated_name = (
             f"PolicyGenerated{count}"
             if f"PolicyGenerated{count}" not in existing_policy_names
-            else f"PolicyGenerated{count+len(existing_policy_names)}"
+            else f"PolicyGenerated{count + len(existing_policy_names)}"
         )
         name = (
             generated_name

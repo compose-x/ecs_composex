@@ -328,7 +328,9 @@ class XResource(object):
         for env_name in env_names:
             for parameter in self.output_properties.keys():
                 if parameter.return_value:
-                    env_var = Environment(**self.define_return_value_env_vars(env_name, parameter))
+                    env_var = Environment(
+                        **self.define_return_value_env_vars(env_name, parameter)
+                    )
                 else:
                     env_var = Environment(
                         **self.define_ref_env_vars(env_name, parameter)
@@ -437,7 +439,7 @@ class XResource(object):
                         root_stack,
                         f"Outputs.{output_name}",
                     ),
-                    "Original": attribute_parameter
+                    "Original": attribute_parameter,
                 }
         for attr in self.attributes_outputs.values():
             if keyisset("Output", attr):
