@@ -14,6 +14,7 @@ Welcome to ECS-ComposeX's documentation!
     requisites
     installation
     macro_usage
+    compatibility_matrix
     contributing
 
 .. toctree::
