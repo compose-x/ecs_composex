@@ -20,6 +20,8 @@ secrets:
           SecretKey: test
 services:
   app01:
+    cap_add:
+      - ALL
     env_file: ./use-cases/env-files/dummy.env
     deploy:
       labels:
@@ -113,6 +115,11 @@ services:
         DisableScaleIn: true
     x-xray: false
   app03:
+    cap_add:
+      - NET_ADMIN
+      - SYS_PTRACE
+    cap_drop:
+      - SYS_ADMIN
     ulimits:
       nofile:
         soft: 1024
