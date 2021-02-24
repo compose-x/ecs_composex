@@ -83,9 +83,6 @@ For example, you would have:
 
     * a dictionary
 
-.. _cluster_syntax_reference:
-
-
 ecs.depends.condition
 +++++++++++++++++++++
 
