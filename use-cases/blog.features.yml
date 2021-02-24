@@ -113,6 +113,11 @@ services:
         DisableScaleIn: true
     x-xray: false
   app03:
+    ulimits:
+      nofile:
+        soft: 1024
+        hard: 2048
+      nproc: 512
     deploy:
       resources:
         reservations:

@@ -166,7 +166,9 @@ def sqs_to_ecs(resources, services_stack, res_root_stack, settings):
     """
     resource_mappings = {}
     new_resources = [
-        resources[res_name] for res_name in resources if not resources[res_name].lookup and not resources[res_name].use
+        resources[res_name]
+        for res_name in resources
+        if not resources[res_name].lookup and not resources[res_name].use
     ]
     lookup_resources = [
         resources[res_name]
