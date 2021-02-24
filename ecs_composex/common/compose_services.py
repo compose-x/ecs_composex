@@ -124,7 +124,10 @@ class ComposeService(object):
         ("isolation", str),
         ("pid", str),
         ("ports", list),
+        ("privileged", bool),
+        ("read_only", bool),
         ("restart", str),
+        ("shm_size", str),
         ("security_opt", str),
         ("secrets", list),
         ("stop_signal", str),
@@ -287,9 +290,27 @@ class ComposeService(object):
             Essential=self.is_essential,
             Secrets=secrets,
             Ulimits=self.define_ulimits(),
-            LinuxParameters=LinuxParameters(Capabilities=self.define_kernel_options()),
+            LinuxParameters=LinuxParameters(
+                Capabilities=self.define_kernel_options(),
+                SharedMemorySize=self.define_shm_size(),
+            ),
+            Privileged=If(
+                USE_FARGATE_CON_T,
+                Ref(AWS_NO_VALUE),
+                keyisset("Privileged", self.definition),
+            ),
+            ReadonlyRootFilesystem=keyisset("read_only", self.definition),
         )
         self.container_parameters.update({self.image_param.title: self.image})
+
+    def define_shm_size(self):
+        """
+        Method to import and determine SHM SIZE
+        """
+        if not keyisset("shm_size", self.definition):
+            return Ref(AWS_NO_VALUE)
+        memory_value = set_memory_to_mb(self.definition["shm_size"])
+        return If(USE_FARGATE_CON_T, Ref(AWS_NO_VALUE), memory_value)
 
     def define_kernel_options(self):
         """
