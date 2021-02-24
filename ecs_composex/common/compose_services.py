@@ -35,6 +35,7 @@ from troposphere.ecs import (
     Volume,
     MountPoint,
     DockerVolumeConfiguration,
+    SystemControl,
     Ulimit,
     KernelCapabilities,
     LinuxParameters,
@@ -303,8 +304,30 @@ class ComposeService(object):
             WorkingDirectory=Ref(AWS_NO_VALUE)
             if not keyisset("working_dir", self.definition)
             else self.definition["working_dir"],
+            SystemControls=self.define_sysctls(),
         )
         self.container_parameters.update({self.image_param.title: self.image})
+
+    def define_sysctls(self):
+        """
+        Method to define the SystemControls
+        """
+        sysctls_key = "sysctls"
+        if not keyisset(sysctls_key, self.definition):
+            return Ref(AWS_NO_VALUE)
+        def_dict = {}
+        if isinstance(self.definition[sysctls_key], list):
+            for prop in self.definition[sysctls_key]:
+                splits = prop.split(r"=")
+                if not splits or len(splits) != 2:
+                    raise ValueError(f"Property define {prop} is not valid.")
+                def_dict[splits[0]] = splits[1]
+        elif isinstance(self.definition[sysctls_key], dict):
+            def_dict = self.definition[sysctls_key]
+        controls = []
+        for name, value in def_dict.items():
+            controls.append(SystemControl(Namespace=name, Value=str(value)))
+        return If(USE_FARGATE_CON_T, Ref(AWS_NO_VALUE), controls)
 
     def define_shm_size(self):
         """
