@@ -477,11 +477,12 @@ class ComposeXSettings(object):
                 or volume.driver == "nfs"
                 or volume.driver == "efs"
             ):
-                if not keyisset("Properties", volume.efs_definition):
-                    volume.efs_definition = {"Properties": ComposeVolume.efs_defaults}
                 if not keyisset(volume.name, efs):
                     efs[volume.name] = {
                         "Properties": volume.efs_definition,
+                        "MacroParameters": volume.parameters,
+                        "Lookup": volume.lookup,
+                        "Use": volume.use,
                         "Services": [
                             {"name": service.name, "access": "RW"}
                             for service in volume.services

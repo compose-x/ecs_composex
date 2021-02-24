@@ -136,6 +136,7 @@ class ComposeService(object):
         ("sysctls", (list, dict)),
         ("tmpfs", (str, list)),
         ("ulimits", dict),
+        ("user", (int, str)),
         ("userns_mode", str),
         ("volumes", list),
         ("x-configs", dict),
@@ -202,6 +203,9 @@ class ComposeService(object):
         self.secrets = []
         self.env_files = []
         self.tmpfses = []
+        self.user = None
+        self.group = None
+        self.user_group = None
         self.code_profiler = None
         self.set_env_files()
         self.set_code_profiler()
@@ -241,6 +245,7 @@ class ComposeService(object):
         self.define_logging()
         self.container_parameters = {}
 
+        self.set_user_group()
         self.map_volumes(volumes)
         self.map_secrets(secrets)
         self.define_families()
@@ -308,6 +313,7 @@ class ComposeService(object):
             if not keyisset("working_dir", self.definition)
             else self.definition["working_dir"],
             SystemControls=self.define_sysctls(),
+            User=self.user_group if self.user_group else Ref(AWS_NO_VALUE),
         )
         self.container_parameters.update({self.image_param.title: self.image})
 
@@ -510,6 +516,29 @@ class ComposeService(object):
         if rendered_limits:
             return rendered_limits
         return Ref(AWS_NO_VALUE)
+
+    def set_user_group(self):
+        """
+        Method to assign the user / group IDs for the container
+        """
+        if not keyisset("user", self.definition):
+            return
+        user_value = self.definition["user"]
+        if isinstance(user_value, int):
+            self.user = user_value
+        elif isinstance(user_value, str):
+            valid_pattern = re.compile(r"^\d{1,5}$|(^\d{1,5})(?::)(\d{1,5})$")
+            if not valid_pattern.match(user_value):
+                raise ValueError(
+                    "user property must be of the format", valid_pattern.pattern
+                )
+            groups = valid_pattern.match(user_value).groups()
+            self.user = groups[0]
+            if len(groups) == 2:
+                self.group = groups[-1]
+        self.user_group = self.user
+        if self.group:
+            self.user_group = f"{self.user}:{self.group}"
 
     def set_code_profiler(self):
         """

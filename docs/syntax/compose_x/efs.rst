@@ -8,6 +8,10 @@ As described in the :ref:`volumes_syntax_reference` documentation, in order to s
 either use the ECS Plugin definition, which will let ECS Compose-X import and define default settings, or alternatively,
 you can define your own settings using **x-efs**.
 
+.. attention::
+
+    For more details around permissions and access to the filesystem, refer to `Filesystem, Access Point and services access`_
+
 Syntax reference
 ================
 
@@ -119,6 +123,30 @@ either through use or through the original ECS Plugin definition.
         x-efs:
           Use: fs-abcd1234
 
+
+Filesystem, Access Point and services access
+=============================================
+
+AWS EFS has a notion of Access Point, which are very well described in the docs and other blog articles on the AWS sites.
+In a nutshell, they will allow you to control access to the Filesystem and "proxy" your access so that your services can
+set use specific POSIX users and root folders to the filesystem
+
+This comes in to be very important if you are using a shared EFS among multiple tenants (applications, services etc.) and
+want to ensure separation for each but not have to spend hours configuring each service clients.
+
+Access point per "container" within the task definition
+--------------------------------------------------------
+
+In ECS Compose-X there is only so much that we can understand from the settings set at the volumes level.
+Given ECS Compose-X tries to focus as much as possible on security, we have implemented the following:
+
+* If your task definition only has 1 container definition, there is one volume created in the task level, used by containers
+* If there is more than one container definition and you defined a different **user** property for the service, a new
+    access point is created specifically for that container, added to the task definition.
+
+.. warning::
+
+    Even with 1 access point per container in the task definition, the access remains at the task level for IAM permissions.
 
 .. _AWS CFN EFS syntax reference: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-efs-filesystem.html
 .. _Mount Targets: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-efs-mounttarget.html

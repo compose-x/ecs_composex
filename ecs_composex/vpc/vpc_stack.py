@@ -109,7 +109,6 @@ class VpcStack(ComposeXStack):
             app_subnets[1],
         )
         if keyisset("EnableFlowLogs", vpc_settings):
-            print("ADDING FLOW LOGS")
             add_vpc_flow(
                 template,
                 self.vpc,
@@ -239,7 +238,6 @@ def apply_vpc_settings(x_settings, root_stack, settings):
             settings.subnets_parameters.append(param)
 
     root_stack.stack_template.add_mapping("Network", settings.subnets_mappings)
-    print("X SETTINGS", x_settings)
     settings.set_azs_from_vpc_import(
         x_settings,
         session=x_settings["session"] if keyisset("session", x_settings) else None,

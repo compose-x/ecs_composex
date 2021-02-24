@@ -43,6 +43,9 @@ FS_PORT = Parameter(
     FS_PORT_T, Type="Number", MinValue=1, MaxValue=((2 ** 16) - 1), Default=2049
 )
 
+FS_ARN_T = "FilesystemArn"
+FS_ARN = Parameter(FS_ARN_T, return_value="Arn", Type="String")
+
 FS_AS_ID_T = "EfsAccessPointId"
 FS_AS_ID = Parameter(FS_AS_ID_T, Type="String")
 
