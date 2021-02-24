@@ -19,14 +19,20 @@
 Module to handle the creation of the root EFS stack
 """
 
-from troposphere import Ref, GetAtt, Sub
+from troposphere import Ref, GetAtt, Sub, Select
 from troposphere.ec2 import SecurityGroup
-from troposphere.efs import FileSystem, AccessPoint
+from troposphere.efs import FileSystem, AccessPoint, MountTarget
 
 from ecs_composex.common import build_template
 from ecs_composex.common.compose_resources import XResource, set_resources
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.efs.efs_params import RES_KEY, FS_ID, FS_PORT
+from ecs_composex.efs.efs_params import (
+    RES_KEY,
+    FS_ID,
+    FS_PORT,
+    MOD_KEY,
+    FS_MNT_PT_SG_ID,
+)
 from ecs_composex.resources_import import import_record_properties
 from ecs_composex.vpc.vpc_params import STORAGE_SUBNETS, VPC_ID
 
@@ -50,6 +56,28 @@ def create_efs_stack(settings, new_resources):
             GroupDescription=Sub(f"SG for EFS {res.cfn_resource.title}"),
             VpcId=Ref(VPC_ID),
         )
+        if settings.vpc_imported:
+            for count, az in enumerate(
+                settings.subnets_mappings[STORAGE_SUBNETS.title]["Azs"]
+            ):
+                template.add_resource(
+                    MountTarget(
+                        f"{res.logical_name}MountPoint{az.title().strip().split('-')[-1]}",
+                        FileSystemId=Ref(res.cfn_resource),
+                        SecurityGroups=[GetAtt(res.db_sg, "GroupId")],
+                        SubnetId=Select(count, Ref(STORAGE_SUBNETS)),
+                    )
+                )
+        else:
+            for count, az in enumerate(settings.aws_azs):
+                template.add_resource(
+                    MountTarget(
+                        f"{res.logical_name}MountPoint{az['ZoneName'].title().strip().split('-')[-1]}",
+                        FileSystemId=Ref(res.cfn_resource),
+                        SecurityGroups=[GetAtt(res.db_sg, "GroupId")],
+                        SubnetId=Select(count, Ref(STORAGE_SUBNETS)),
+                    )
+                )
         template.add_resource(res.cfn_resource)
         template.add_resource(res.db_sg)
         res.init_outputs()
@@ -65,13 +93,13 @@ class Efs(XResource):
 
     subnets_param = STORAGE_SUBNETS
 
-    def __init__(self, name, definition, settings):
+    def __init__(self, name, definition, module_name, settings):
         self.db_sg = None
         self.db_secret = None
         self.mnt_targets = []
         self.access_points = []
         self.volume = definition["Volume"]
-        super().__init__(name, definition, settings)
+        super().__init__(name, definition, module_name, settings)
         self.set_override_subnets()
 
     def init_outputs(self):
@@ -79,14 +107,14 @@ class Efs(XResource):
         Method to init the DocDB output attributes
         """
         self.output_properties = {
-            FS_ID.title: (self.logical_name, self.cfn_resource, Ref, None),
-            self.db_sg.title: (
-                self.db_sg.title,
+            FS_ID: (self.logical_name, self.cfn_resource, Ref, None),
+            FS_PORT: (f"{self.logical_name}{FS_PORT.title}", FS_PORT, Ref, None),
+            FS_MNT_PT_SG_ID: (
+                f"{self.logical_name}{FS_MNT_PT_SG_ID.return_value}",
                 self.db_sg,
                 GetAtt,
-                "GroupId",
+                FS_MNT_PT_SG_ID.return_value,
             ),
-            FS_PORT.title: (f"{self.logical_name}{FS_PORT.title}", FS_PORT, Ref, None),
         }
 
 
@@ -96,15 +124,16 @@ class XStack(ComposeXStack):
     """
 
     def __init__(self, name, settings, **kwargs):
-        set_resources(settings, Efs, RES_KEY)
+        set_resources(settings, Efs, RES_KEY, MOD_KEY)
         new_resources = [
-            settings.compose_content[RES_KEY][resource]
-            for resource in settings.compose_content[RES_KEY].keys()
-            if not settings.compose_content[RES_KEY][resource].lookup
-            and settings.compose_content[RES_KEY][resource].properties
+            fs
+            for fs in settings.compose_content[RES_KEY].values()
+            if not fs.lookup and not fs.use and fs.properties
         ]
         if new_resources:
             stack_template = create_efs_stack(settings, new_resources)
             super().__init__(name, stack_template, **kwargs)
         else:
             self.is_void = True
+        for resource in settings.compose_content[RES_KEY].values():
+            resource.stack = self

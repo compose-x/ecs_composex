@@ -56,7 +56,7 @@ class Rds(XResource):
                 self.cfn_resource,
                 GetAtt,
                 DB_ENDPOINT_PORT.return_value,
-                DB_ENDPOINT_PORT.return_value,
+                DB_ENDPOINT_PORT.return_value.replace(r".", ""),
             ),
             DB_SECRET_ARN: (
                 self.db_secret.title,

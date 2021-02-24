@@ -30,7 +30,6 @@ from cfn_flip.yaml_dumper import LongCleanDumper
 
 from ecs_composex import __version__
 from ecs_composex.common import keyisset, LOG, load_composex_file, NONALPHANUM
-from ecs_composex.common.envsubst import expandvars
 from ecs_composex.common.aws import get_account_id, get_region_azs
 from ecs_composex.common.aws import get_cross_role_session
 from ecs_composex.common.cfn_params import USE_FLEET_T
@@ -40,7 +39,7 @@ from ecs_composex.common.compose_services import (
     ComposeFamily,
 )
 from ecs_composex.common.compose_volumes import ComposeVolume
-from ecs_composex.common.compose_networks import ComposeNetwork
+from ecs_composex.common.envsubst import expandvars
 from ecs_composex.iam import ROLE_ARN_ARG
 from ecs_composex.iam import validate_iam_role_arn
 from ecs_composex.ingress_settings import set_service_ports
@@ -406,6 +405,7 @@ class ComposeXSettings(object):
         self.services = []
         self.secrets = []
         self.networks = []
+        self.vpc_imported = False
         self.subnets_parameters = []
         self.subnets_mappings = {}
         self.secrets_mappings = {}
@@ -458,19 +458,26 @@ class ComposeXSettings(object):
         """
         Method to add a x-efs definition to the compose-x definition when a volume is flagged as using NFS/EFS
         """
-
+        if (
+            not self.volumes
+            or not keyisset(ComposeVolume.main_key, self.compose_content)
+            or not self.compose_content[ComposeVolume.main_key]
+        ):
+            return
         if not keyisset("x-efs", self.compose_content):
             efs = {}
             self.compose_content["x-efs"] = efs
         else:
             efs = self.compose_content["x-efs"]
         for volume in self.compose_content[ComposeVolume.main_key].values():
+            if volume.lookup or volume.use:
+                continue
             if (
                 volume.efs_definition
                 or volume.driver == "nfs"
                 or volume.driver == "efs"
             ):
-                if not volume.efs_definition and not (volume.lookup or volume.use):
+                if not keyisset("Properties", volume.efs_definition):
                     volume.efs_definition = {"Properties": ComposeVolume.efs_defaults}
                 if not keyisset(volume.name, efs):
                     efs[volume.name] = {
@@ -722,15 +729,10 @@ class ComposeXSettings(object):
             else:
                 LOG.error(error)
 
-    def set_azs_from_vpc_import(
-        self, public_subnets, app_subnets, storage_subnets, session=None
-    ):
+    def set_azs_from_vpc_import(self, subnets, session=None):
         """
         Function to get the list of AZs for a given set of subnets
-
-        :param list public_subnets:
-        :param list app_subnets:
-        :param list storage_subnets:
+        :param dict subnets:
         :param session: The Session used to find the EC2 subnets (useful for lookup).
         :return:
         """
@@ -738,19 +740,19 @@ class ComposeXSettings(object):
             client = self.session.client("ec2")
         else:
             client = session.client("ec2")
-        try:
-            public_r = client.describe_subnets(SubnetIds=public_subnets)["Subnets"]
-            app_r = client.describe_subnets(SubnetIds=app_subnets)["Subnets"]
-            storage_r = client.describe_subnets(SubnetIds=storage_subnets)["Subnets"]
-            self.public_azs = [sub["AvailabilityZone"] for sub in public_r]
-            self.subnets_mappings[PUBLIC_SUBNETS.title]["Azs"] = self.public_azs
-            self.storage_azs = [sub["AvailabilityZone"] for sub in storage_r]
-            self.subnets_mappings[STORAGE_SUBNETS.title]["Azs"] = self.storage_azs
-            self.app_azs = [sub["AvailabilityZone"] for sub in app_r]
-            self.subnets_mappings[APP_SUBNETS.title]["Azs"] = self.app_azs
-            LOG.info("Successfully updated self with AZs from looked up VPC subnets")
-        except ClientError:
-            LOG.warning("Could not define the AZs based on the imported subnets")
+        for subnet_name, subnet_definition in subnets.items():
+            if not isinstance(subnet_definition, list):
+                continue
+            try:
+                subnets_r = client.describe_subnets(SubnetIds=subnet_definition)[
+                    "Subnets"
+                ]
+                self.subnets_mappings[subnet_name]["Azs"] = [
+                    subnet["AvailabilityZone"] for subnet in subnets_r
+                ]
+            except ClientError:
+                LOG.warning("Could not define the AZs based on the imported subnets")
+        self.vpc_imported = True
 
     def set_bucket_name_from_account_id(self):
         if self.bucket_name and isinstance(self.bucket_name, str):

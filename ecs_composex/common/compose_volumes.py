@@ -182,13 +182,15 @@ class ComposeVolume(object):
         self.device = None
         self.cfn_volume = None
         self.efs_definition = {}
-        self.use: {}
+        self.use = {}
         self.lookup = {}
         self.type = "volume"
         self.driver = "local"
         self.external = False
         self.efs_definition = evaluate_efs_properties(self.definition)
-        if self.efs_definition:
+        if not keyisset("Properties", self.efs_definition):
+            self.efs_definition = {}
+        elif self.efs_definition and keyisset("Properties", self.efs_definition):
             LOG.info("Identified properties as defined by Docker Plugin")
             self.type = "bind"
             self.driver = "nfs"

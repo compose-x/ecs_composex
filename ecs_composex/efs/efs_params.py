@@ -17,9 +17,9 @@
 
 import re
 from os import path
-from troposphere import Parameter
 
 from ecs_composex.ecs_composex import X_KEY
+from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.vpc.vpc_params import SG_ID_TYPE
 
 MOD_KEY = path.basename(path.dirname(path.abspath(__file__)))
@@ -47,4 +47,4 @@ FS_AS_ID_T = "EfsAccessPointId"
 FS_AS_ID = Parameter(FS_AS_ID_T, Type="String")
 
 FS_MNT_PT_SG_ID_T = "FilesystemMountPointSgId"
-FS_MNT_PT_SG_ID = Parameter(FS_MNT_PT_SG_ID_T, Type=SG_ID_TYPE)
+FS_MNT_PT_SG_ID = Parameter(FS_MNT_PT_SG_ID_T, return_value="GroupId", Type=SG_ID_TYPE)

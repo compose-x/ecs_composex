@@ -27,7 +27,6 @@ from pytest import raises, fixture
 from botocore.exceptions import ClientError
 
 from troposphere import ImportValue
-from ecs_composex.resource_settings import generate_export_strings
 from ecs_composex.common.settings import ComposeXSettings
 from ecs_composex.common import load_composex_file
 
@@ -35,17 +34,6 @@ from ecs_composex.common import load_composex_file
 @fixture(autouse=False)
 def env_setup(monkeypatch):
     monkeypatch.setenv("AWS_PROFILE", "ANCD")
-
-
-def test_export_attribute():
-    """
-    Function to verify the raise for invalid attribute
-    """
-    export_string = generate_export_strings("toto", "Arn")
-    assert isinstance(export_string, ImportValue)
-
-    with raises(TypeError):
-        generate_export_strings("toto", 123)
 
 
 def get_basic_content():

@@ -882,7 +882,7 @@ class Elbv2(XResource):
         :return:
         """
         if self.is_nlb() and self.lb_is_public:
-            for public_az in settings.public_azs:
+            for public_az in settings.subnets_mappings[PUBLIC_SUBNETS.title]["Azs"]:
                 self.lb_eips.append(
                     EIP(
                         f"{self.logical_name}Eip{public_az.title().split('-')[-1]}",

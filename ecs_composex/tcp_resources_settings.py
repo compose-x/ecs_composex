@@ -25,6 +25,8 @@ from troposphere.ecs import Secret as EcsSecret
 from troposphere.iam import PolicyType
 
 from ecs_composex.common import LOG
+from ecs_composex.common import keyisset, keypresent, add_parameters
+from ecs_composex.common.compose_resources import get_parameter_settings
 from ecs_composex.common.services_helpers import extend_container_secrets
 from ecs_composex.ecs.ecs_params import TASK_ROLE_T, EXEC_ROLE_T, SG_T
 from ecs_composex.rds.rds_params import (

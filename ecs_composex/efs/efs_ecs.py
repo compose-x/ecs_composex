@@ -24,7 +24,7 @@ from troposphere.iam import Policy, PolicyType
 from ecs_composex.common import add_parameters, keyisset
 from ecs_composex.ecs.ecs_params import TASK_T, TASK_ROLE_T, SERVICE_T
 from ecs_composex.tcp_resources_settings import handle_new_tcp_resource
-from ecs_composex.efs.efs_params import FS_PORT, FS_REGEXP
+from ecs_composex.efs.efs_params import FS_PORT, FS_REGEXP, FS_MNT_PT_SG_ID, FS_ID
 
 
 def add_task_iam_access_to_access_point(family, access_point, efs):
@@ -81,17 +81,10 @@ def expand_family_with_efs_volumes(efs_root_stack_title, new_efs, settings):
     :param ecs_composex.common.settings.ComposeXSettings settings:
     :return:
     """
-    fs_id_parameter = Parameter(
-        new_efs.logical_name, Type="String", AllowedPattern=FS_REGEXP.pattern
-    )
+    fs_id_parameter = new_efs.attributes_outputs[FS_ID]["ImportParameter"]
+    fs_id_getatt = new_efs.attributes_outputs[FS_ID]["ImportValue"]
     for target in new_efs.families_targets:
-        target[0].stack.Parameters.update(
-            {
-                new_efs.logical_name: GetAtt(
-                    efs_root_stack_title, f"Outputs.{new_efs.logical_name}"
-                )
-            }
-        )
+        target[0].stack.Parameters.update({fs_id_parameter.title: fs_id_getatt})
         add_parameters(target[0].template, [fs_id_parameter])
         task_definition = target[0].template.resources[TASK_T]
         efs_config_kwargs = {"FilesystemId": Ref(fs_id_parameter)}
@@ -144,5 +137,10 @@ def efs_to_ecs(resources, services_stack, res_root_stack, settings):
         resources[res_name] for res_name in resources if resources[res_name].lookup
     ]
     for new_res in new_resources:
-        handle_new_tcp_resource(new_res, res_root_stack, FS_PORT)
+        handle_new_tcp_resource(
+            new_res,
+            res_root_stack,
+            port_parameter=FS_PORT,
+            sg_parameter=FS_MNT_PT_SG_ID,
+        )
         expand_family_with_efs_volumes(res_root_stack.title, new_res, settings)
