@@ -36,6 +36,8 @@ from troposphere.ecs import (
     MountPoint,
     DockerVolumeConfiguration,
     Ulimit,
+    KernelCapabilities,
+    LinuxParameters,
 )
 from troposphere.iam import Policy, PolicyType
 
@@ -92,6 +94,7 @@ class ComposeService(object):
     keys = [
         ("build", dict),
         ("cap_add", list),
+        ("cap_drop", list),
         ("cgroup_parent", str),
         ("command", (list, str)),
         ("configs", dict),
@@ -284,8 +287,99 @@ class ComposeService(object):
             Essential=self.is_essential,
             Secrets=secrets,
             Ulimits=self.define_ulimits(),
+            LinuxParameters=LinuxParameters(Capabilities=self.define_kernel_options()),
         )
         self.container_parameters.update({self.image_param.title: self.image})
+
+    def define_kernel_options(self):
+        """
+        Method to define and return the kernel option settings for cap_add and cap_drop
+        :return:
+        """
+        valid = [
+            "ALL",
+            "AUDIT_CONTROL",
+            "AUDIT_WRITE",
+            "BLOCK_SUSPEND",
+            "CHOWN",
+            "DAC_OVERRIDE",
+            "DAC_READ_SEARCH",
+            "FOWNER",
+            "FSETID",
+            "IPC_LOCK",
+            "IPC_OWNER",
+            "KILL",
+            "LEASE",
+            "LINUX_IMMUTABLE",
+            "MAC_ADMIN",
+            "MAC_OVERRIDE",
+            "MKNOD",
+            "NET_ADMIN",
+            "NET_BIND_SERVICE",
+            "NET_BROADCAST",
+            "NET_RAW",
+            "SETFCAP",
+            "SETGID",
+            "SETPCAP",
+            "SETUID",
+            "SYS_ADMIN",
+            "SYS_BOOT",
+            "SYS_CHROOT",
+            "SYS_MODULE",
+            "SYS_NICE",
+            "SYS_PACCT",
+            "SYS_PTRACE",
+            "SYS_RAWIO",
+            "SYS_RESOURCE",
+            "SYS_TIME",
+            "SYS_TTY_CONFIG",
+            "SYSLOG",
+            "WAKE_ALARM",
+        ]
+        fargate = ["SYS_PTRACE"]
+        add_key = "cap_add"
+        drop_key = "cap_drop"
+        cap_adds = []
+        cap_drops = []
+        all_adds = []
+        all_drops = []
+        if not keyisset(add_key, self.definition) and not keyisset(
+            drop_key, self.definition
+        ):
+            return Ref(AWS_NO_VALUE)
+        if keyisset(add_key, self.definition):
+            for capacity in self.definition[add_key]:
+                if capacity not in valid:
+                    raise ValueError(
+                        f"Linux kernel capacity {capacity} is not supported in ECS or simply not valid"
+                    )
+                if capacity in fargate:
+                    cap_adds.append(capacity)
+                else:
+                    all_adds.append(capacity)
+        if keyisset(drop_key, self.definition):
+            for capacity in self.definition[drop_key]:
+                if capacity not in valid:
+                    raise ValueError(
+                        f"Linux kernel capacity {capacity} is not supported in ECS or simply not valid"
+                    )
+                if capacity in all_adds or capacity in cap_adds:
+                    raise KeyError(
+                        f"Capacity {capacity} already detected in cap_add. "
+                        "You cannot both add and remove the capacity"
+                    )
+                if capacity in fargate:
+                    cap_adds.append(capacity)
+                else:
+                    all_drops.append(capacity)
+        if all_adds:
+            cap_adds.append(If(USE_FARGATE_CON_T, Ref(AWS_NO_VALUE), all_adds))
+        if all_drops:
+            cap_drops.append(If(USE_FARGATE_CON_T, Ref(AWS_NO_VALUE), all_drops))
+        return KernelCapabilities(
+            Add=cap_adds if cap_adds else Ref(AWS_NO_VALUE),
+            Drop=cap_drops if cap_drops else Ref(AWS_NO_VALUE),
+        )
 
     def define_ulimits(self):
         """
