@@ -844,7 +844,7 @@ class Elbv2(XResource):
                 Tags=Tags(Name=Sub(f"elbv2-{self.logical_name}-${{{AWS_STACK_NAME}}}")),
             )
 
-    def sort_alb_ingress(self, stack_template):
+    def sort_alb_ingress(self, settings, stack_template):
         """
         Method to handle Ingress to ALB
         """
@@ -867,7 +867,7 @@ class Elbv2(XResource):
         self.ingress = Ingress(self.parameters["Ingress"], ports)
         if self.ingress and self.is_alb():
             self.ingress.set_aws_sources(
-                self.logical_name, GetAtt(self.lb_sg, "GroupId")
+                settings, self.logical_name, GetAtt(self.lb_sg, "GroupId")
             )
             self.ingress.set_ext_sources_ingress(
                 self.logical_name, GetAtt(self.lb_sg, "GroupId")
@@ -1055,5 +1055,5 @@ class XStack(ComposeXStack):
         }
         for resource in new_resources:
             resource.set_lb_definition(settings)
-            resource.sort_alb_ingress(stack_template)
+            resource.sort_alb_ingress(settings, stack_template)
         super().__init__(title, stack_template, stack_parameters=lb_input, **kwargs)

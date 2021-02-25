@@ -278,7 +278,7 @@ def generate_services(settings):
         family.service_config = ServiceConfig(family, settings)
         family.ecs_service = Service(family, settings)
         family.service_config.network.set_aws_sources(
-            family.logical_name, GetAtt(family.ecs_service.sg, "GroupId")
+            settings, family.logical_name, GetAtt(family.ecs_service.sg, "GroupId")
         )
         family.service_config.network.set_ext_sources_ingress(
             family.logical_name, GetAtt(family.ecs_service.sg, "GroupId")

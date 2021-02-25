@@ -19,6 +19,7 @@
 Module to help with defining the network settings for the ECS Service based on the family services definitions.
 """
 
+import re
 from copy import deepcopy
 from ipaddress import IPv4Interface
 from json import dumps
@@ -29,6 +30,11 @@ from troposphere.ec2 import SecurityGroupIngress
 
 from ecs_composex.common import LOG, NONALPHANUM
 from ecs_composex.common import keyisset
+from ecs_composex.common.aws import (
+    get_cross_role_session,
+    define_lookup_role_from_info,
+    find_aws_resource_arn_from_tags_api,
+)
 
 
 def flatten_ip(ip_str):
@@ -128,6 +134,32 @@ def set_service_ports(ports):
     return service_ports
 
 
+def lookup_security_group(settings, lookup):
+    """
+    Function to fetch the security group ID based on lookup details
+
+    :param ecs_composex.common.settings.ComposeXSettings settings:
+    :param lookup:
+    :return:
+    """
+    sg_re = re.compile(
+        r"(?:^arn:aws(?:-[a-z]+)?:ec2:[a-z0-9-]+:\d{12}:security-group/)([\S]+)$"
+    )
+    ec2_types = {
+        "ec2:security-group": {"regexp": sg_re.pattern},
+    }
+    lookup_session = define_lookup_role_from_info(lookup, settings.session)
+    sg_arn = find_aws_resource_arn_from_tags_api(
+        lookup,
+        lookup_session,
+        "ec2:security-group",
+        types=ec2_types,
+    )
+    if not sg_arn:
+        raise LookupError("Failed to identify EC2 SecurityGroup based on tags")
+    return sg_re.match(sg_arn).groups()[0]
+
+
 class Ingress(object):
     """
     Class to group the configuration for Service network settings
@@ -167,9 +199,6 @@ class Ingress(object):
             if keyisset(self.services_key, self.definition)
             else []
         )
-        self.aws_sources = [
-            dict(y) for y in set(tuple(x.items()) for x in self.aws_sources)
-        ]
         self.ports = ports
         self.aws_ingress_rules = []
         self.ext_ingress_rules = []
@@ -178,7 +207,7 @@ class Ingress(object):
         return dumps(self.definition, indent=2)
 
     def validate_aws_sources(self):
-        allowed_keys = ["Type", "Id"]
+        allowed_keys = ["Type", "Id", "Lookup"]
         allowed_types = ["SecurityGroup", "PrefixList"]
         for source in self.aws_sources:
             if not all(key in allowed_keys for key in source.keys()):
@@ -196,7 +225,7 @@ class Ingress(object):
                     allowed_types,
                 )
 
-    def set_aws_sources(self, destination_title, sg_ref):
+    def set_aws_sources(self, settings, destination_title, sg_ref):
         """
         Method to define AWS Sources ingresses
 
@@ -212,15 +241,27 @@ class Ingress(object):
                     "ToPort": port["published"],
                     "IpProtocol": port["protocol"],
                     "GroupId": sg_ref,
-                    "Description": Sub(
-                        f"From {source['Id']} to {destination_title} on port {port['published']}"
-                    ),
                 }
                 if source["Type"] == "SecurityGroup":
+                    if keyisset("Id", source):
+                        sg_id = source["Id"]
+                    elif keyisset("Lookup", source):
+                        sg_id = lookup_security_group(settings, source["Lookup"])
+                    else:
+                        raise KeyError(
+                            "Information missing to identify the SecurityGroup. Requires either Id or Lookup"
+                        )
+                    common_args.update(
+                        {
+                            "Description": Sub(
+                                f"From {sg_id} to {destination_title} on port {port['published']}"
+                            )
+                        }
+                    )
                     self.aws_ingress_rules.append(
                         SecurityGroupIngress(
-                            f"From{NONALPHANUM.sub('', source['Id'])}ToServiceOn{port['published']}",
-                            SourceSecurityGroupId=source["Id"],
+                            f"From{NONALPHANUM.sub('', sg_id)}ToServiceOn{port['published']}",
+                            SourceSecurityGroupId=sg_id,
                             SourceSecurityGroupOwnerId=Ref(AWS_ACCOUNT_ID),
                             **common_args,
                         )
