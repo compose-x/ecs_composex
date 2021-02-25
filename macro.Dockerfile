@@ -1,6 +1,6 @@
 ﻿ARG ARCH=
 ARG SRC_TAG=3.7.20210113
-ARG BASE_IMAGE=public.ecr.aws/i9v7p2w3/python:${SRC_TAG}${ARCH}
+ARG BASE_IMAGE=public.ecr.aws/compose-x/python:${SRC_TAG}${ARCH}
 ARG LAMBDA_IMAGE=public.ecr.aws/lambda/python:latest
 FROM $BASE_IMAGE as builder
 
