@@ -59,7 +59,7 @@ services:
     environment:
       LOGLEVEL: DEBUG
     volumes:
-      - shared-images
+      - shared-images:/shared/images
     secrets:
       - abcd
       - zyx
