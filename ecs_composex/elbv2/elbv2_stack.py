@@ -875,6 +875,27 @@ class Elbv2(XResource):
             self.ingress.associate_aws_igress_rules(stack_template)
             self.ingress.associate_ext_igress_rules(stack_template)
 
+    def define_override_subnets(self, subnets, settings):
+        """
+        Method to define the subnets overrides to use for the LB
+
+        :param subnets: The original subnets to replace
+        :param ecs_composex.common.settings.ComposeXSettings settings:
+        :return: the subnet name to use
+        :rtype: str
+        """
+
+        if isinstance(subnets, Ref):
+            subnets = subnets.data["Ref"]
+        if self.parameters and keyisset("Subnets", self.parameters):
+            if not self.parameters["Subnets"] in settings.subnets_mappings.keys():
+                raise KeyError(
+                    f"The subnets indicated for {self.name} is not valid. Valid ones are",
+                    settings.subnets_mappings.keys(),
+                )
+            subnets = self.parameters["Subnets"]
+        return subnets
+
     def set_eips(self, settings):
         """
 
@@ -891,7 +912,8 @@ class Elbv2(XResource):
                         )
                     )
             else:
-                for public_az in settings.subnets_mappings[PUBLIC_SUBNETS.title]["Azs"]:
+                subnets = self.define_override_subnets(PUBLIC_SUBNETS.title, settings)
+                for public_az in settings.subnets_mappings[subnets]["Azs"]:
                     self.lb_eips.append(
                         EIP(
                             f"{self.logical_name}Eip{public_az.title().split('-')[-1]}",
@@ -899,25 +921,53 @@ class Elbv2(XResource):
                         )
                     )
 
-    def set_subnets(self):
+    def set_subnets(self, settings):
+        """
+        Method to define which subnets to use for the
+        :param ecs_composex.common.settings.ComposeXSettings settings:
+        :return:
+        """
+        subnets = APP_SUBNETS.title
         if self.is_nlb() and self.lb_is_public:
-            return Ref(AWS_NO_VALUE)
-        elif self.is_alb() and self.lb_is_public:
-            return Ref(PUBLIC_SUBNETS)
-        elif not self.lb_is_public:
-            return Ref(APP_SUBNETS)
+            subnets = Ref(AWS_NO_VALUE)
+        elif (
+            not self.lb_is_public
+            and self.parameters
+            and keyisset("Subnets", self.parameters)
+        ):
+            override_name = self.define_override_subnets(subnets, settings)
+            if settings.create_vpc and override_name not in [
+                PUBLIC_SUBNETS.title,
+                APP_SUBNETS.title,
+            ]:
+                raise ValueError(
+                    "When Compose-X creates the VPC, the only subnets you can define to use are",
+                    [PUBLIC_SUBNETS.title, APP_SUBNETS.title],
+                )
+            elif (
+                not settings.create_vpc
+                and override_name in settings.subnets_mappings.keys()
+            ):
+                subnets = Ref(override_name)
+        else:
+            if self.is_alb() and self.lb_is_public:
+                subnets = Ref(PUBLIC_SUBNETS)
+            elif not self.lb_is_public:
+                subnets = Ref(APP_SUBNETS)
+        return subnets
 
     def set_subnet_mappings(self, settings):
         if not (self.is_nlb() and self.lb_is_public):
             return Ref(AWS_NO_VALUE)
-        if not self.lb_eips:
+        if not self.lb_eips and self.lb_is_public:
             self.set_eips(settings)
         mappings = []
+        subnets = self.define_override_subnets(PUBLIC_SUBNETS.title, settings)
         for count, eip in enumerate(self.lb_eips):
             mappings.append(
                 SubnetMapping(
                     AllocationId=GetAtt(eip, "AllocationId"),
-                    SubnetId=Select(count, Ref(PUBLIC_SUBNETS)),
+                    SubnetId=Select(count, Ref(subnets)),
                 )
             )
         return mappings
@@ -995,7 +1045,7 @@ class Elbv2(XResource):
             "SecurityGroups": [Ref(self.lb_sg)]
             if isinstance(self.lb_sg, SecurityGroup)
             else self.lb_sg,
-            "Subnets": self.set_subnets(),
+            "Subnets": self.set_subnets(settings),
             "SubnetMappings": self.set_subnet_mappings(settings),
             "LoadBalancerAttributes": self.set_lb_attributes(),
             "Tags": Tags(Name=Sub(f"${{{ROOT_STACK_NAME.title}}}{self.logical_name}")),
