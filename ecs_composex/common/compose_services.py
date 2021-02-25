@@ -39,6 +39,7 @@ from troposphere.ecs import (
     Ulimit,
     KernelCapabilities,
     LinuxParameters,
+    Tmpfs,
 )
 from troposphere.iam import Policy, PolicyType
 
@@ -200,6 +201,7 @@ class ComposeService(object):
         self.volumes = []
         self.secrets = []
         self.env_files = []
+        self.tmpfses = []
         self.code_profiler = None
         self.set_env_files()
         self.set_code_profiler()
@@ -294,6 +296,7 @@ class ComposeService(object):
             LinuxParameters=LinuxParameters(
                 Capabilities=self.define_kernel_options(),
                 SharedMemorySize=self.define_shm_size(),
+                Tmpfs=self.define_tmpfs(),
             ),
             Privileged=If(
                 USE_FARGATE_CON_T,
@@ -307,6 +310,22 @@ class ComposeService(object):
             SystemControls=self.define_sysctls(),
         )
         self.container_parameters.update({self.image_param.title: self.image})
+
+    def define_tmpfs(self):
+        """
+        Method to define the tmpfs settings
+        """
+        tmpfs_key = "tmpfs"
+        if not keyisset(tmpfs_key, self.definition) and not self.tmpfses:
+            return Ref(AWS_NO_VALUE)
+        elif keyisset(tmpfs_key, self.definition):
+            if isinstance(self.definition[tmpfs_key], str):
+                self.tmpfses.append({"ContainerPath": self.definition[tmpfs_key]})
+            elif isinstance(self.definition[tmpfs_key], list):
+                for pathes in self.definition[tmpfs_key]:
+                    self.tmpfses.append({"ContainerPath": pathes})
+        rendered_fs = [Tmpfs(**args) for args in self.tmpfses]
+        return If(USE_FARGATE_CON_T, Ref(AWS_NO_VALUE), rendered_fs)
 
     def define_sysctls(self):
         """
@@ -643,12 +662,32 @@ class ComposeService(object):
         :param list volumes:
         :return:
         """
-        if keyisset(ComposeVolume.main_key, self.definition) and volumes:
+        if keyisset(ComposeVolume.main_key, self.definition):
             for s_volume in self.definition[ComposeVolume.main_key]:
-                if isinstance(s_volume, str):
-                    handle_volume_str_config(self, s_volume, volumes)
-                elif isinstance(s_volume, dict):
-                    handle_volume_dict_config(self, s_volume, volumes)
+                if (
+                    isinstance(s_volume, dict)
+                    and (keyisset("type", s_volume) and s_volume["type"] == "tmpfs")
+                    or keyisset("tmpfs", s_volume)
+                ):
+                    tmpfs_def = {}
+                    if not keyisset("target", s_volume):
+                        raise KeyError(
+                            "When defining tmpfs as volume, you must define a target"
+                        )
+                    tmpfs_def["ContainerPath"] = s_volume["target"]
+                    if (
+                        keyisset("tmpfs", s_volume)
+                        and isinstance(s_volume["tmpfs"], dict)
+                        and keyisset("size", s_volume["tmpfs"])
+                    ):
+                        tmpfs_def["Size"] = int(s_volume["tmpfs"]["size"])
+                    self.tmpfses.append(tmpfs_def)
+            if volumes:
+                for s_volume in self.definition[ComposeVolume.main_key]:
+                    if isinstance(s_volume, str):
+                        handle_volume_str_config(self, s_volume, volumes)
+                    elif isinstance(s_volume, dict):
+                        handle_volume_dict_config(self, s_volume, volumes)
 
     def map_secrets(self, secrets):
         if keyisset(ComposeSecret.main_key, self.definition) and secrets:
