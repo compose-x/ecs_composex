@@ -25,7 +25,7 @@ services:
       - net.ipv4.tcp_syncookies=1
     cap_add:
       - ALL
-    env_file: ./use-cases/env-files/dummy.env
+#    env_file: ./use-cases/env-files/dummy.env
     deploy:
       labels:
         ecs.task.family: bignicefamily
@@ -39,6 +39,10 @@ services:
       TERMY: screen
     image: nginx
     volumes:
+      - type: tmpfs
+        target: /tmp
+        tmpfs:
+          size: 1024
       - normal-vol:/var/tmp/shared
       - some-volume:/var/anotherpath:ro
     links:
@@ -76,8 +80,8 @@ services:
     x-scaling:
       Range: "1-4"
   app02:
-    env_file:
-      - ./use-cases/env-files/dummy.env
+#    env_file:
+#      - ./use-cases/env-files/dummy.env
     deploy:
       labels:
         ecs.task.family: youtoo
@@ -117,7 +121,11 @@ services:
         CpuTarget: 88
         DisableScaleIn: true
     x-xray: false
+    tmpfs: /run
   app03:
+    tmpfs:
+      - /run
+      - /tmp
     sysctls:
       net.core.somaxconn: 1024
       net.ipv4.tcp_syncookies: 0

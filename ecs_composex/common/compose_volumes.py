@@ -75,6 +75,21 @@ def handle_volume_str_config(service, config, volumes):
     match_volumes_services_config(service, volume_config, volumes)
 
 
+def is_tmpfs(config):
+    """
+    Function to identify whether the volume defined is tmpfs
+
+    :param dict config:
+    :return: whether the volume defined is tmpfs
+    :rtype: bool
+    """
+    if keyisset("tmpfs", config) or (
+        keyisset("type", config) and config["type"] == "tmpfs"
+    ):
+        return True
+    return False
+
+
 def handle_volume_dict_config(service, config, volumes):
     """
     :param ComposeService service:
@@ -83,15 +98,16 @@ def handle_volume_dict_config(service, config, volumes):
     """
     volume_config = {"read_only": False}
     required_keys = ["target", "source"]
-    if not all(key in config.keys() for key in required_keys):
+    if not is_tmpfs(config) and not all(key in config.keys() for key in required_keys):
         raise KeyError(
-            "Volume configuration requires at least",
+            "Volume configuration, when not tmpfs, requires at least",
             required_keys,
             "Got",
             config.keys(),
         )
     volume_config.update(config)
-    match_volumes_services_config(service, volume_config, volumes)
+    if not is_tmpfs(volume_config):
+        match_volumes_services_config(service, volume_config, volumes)
 
 
 def evaluate_efs_properties(definition):
