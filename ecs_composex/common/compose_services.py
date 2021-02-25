@@ -525,7 +525,7 @@ class ComposeService(object):
             return
         user_value = self.definition["user"]
         if isinstance(user_value, int):
-            self.user = user_value
+            self.user = str(user_value)
         elif isinstance(user_value, str):
             valid_pattern = re.compile(r"^\d{1,5}$|(^\d{1,5})(?::)(\d{1,5})$")
             if not valid_pattern.match(user_value):

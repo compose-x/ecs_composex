@@ -102,7 +102,9 @@ def override_service_volume(new_efs, fs_id, target, access_points, volumes):
         sub_service_specific_access_point = AccessPoint(
             f"{new_efs.logical_name}{service.logical_name}ServiceEfsAccessPoint",
             FileSystemId=Ref(fs_id),
-            PosixUser=PosixUser(Uid=service.user, Gid=service.group),
+            PosixUser=PosixUser(
+                Uid=service.user, Gid=service.group if service.group else service.user
+            ),
         )
         target[0].template.add_resource(sub_service_specific_access_point)
         access_points.append(sub_service_specific_access_point)
@@ -202,7 +204,9 @@ def expand_family_with_efs_volumes(efs_root_stack_title, new_efs, settings):
             for service in target[2]:
                 if service.user and service.group:
                     set_user_to_access_points(
-                        access_points, service.user, service.group
+                        access_points,
+                        service.user,
+                        service.group if service.group else service.user,
                     )
         add_task_iam_access_to_access_point(target[0], access_points, new_efs)
 
