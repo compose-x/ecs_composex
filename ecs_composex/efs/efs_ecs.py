@@ -18,7 +18,7 @@
 from troposphere import Ref, GetAtt
 from troposphere import Parameter
 from troposphere.ecs import EFSVolumeConfiguration, Volume, AuthorizationConfig
-from troposphere.efs import AccessPoint, PosixUser
+from troposphere.efs import AccessPoint, PosixUser, RootDirectory, CreationInfo
 from troposphere.iam import Policy, PolicyType
 
 from ecs_composex.common import add_parameters, keyisset
@@ -99,27 +99,6 @@ def override_service_volume(new_efs, fs_id, target, access_points, volumes):
     for service in target[2]:
         if not service.user:
             continue
-        sub_service_specific_access_point = AccessPoint(
-            f"{new_efs.logical_name}{service.logical_name}ServiceEfsAccessPoint",
-            FileSystemId=Ref(fs_id),
-            PosixUser=PosixUser(
-                Uid=service.user, Gid=service.group if service.group else service.user
-            ),
-        )
-        target[0].template.add_resource(sub_service_specific_access_point)
-        access_points.append(sub_service_specific_access_point)
-        volumes.append(
-            Volume(
-                EFSVolumeConfiguration=EFSVolumeConfiguration(
-                    FilesystemId=Ref(fs_id),
-                    AuthorizationConfig=AuthorizationConfig(
-                        AccessPointId=Ref(sub_service_specific_access_point),
-                        IAM="ENABLED",
-                    ),
-                ),
-                Name=f"{new_efs.volume.volume_name}{service.logical_name}",
-            )
-        )
         mount_points = []
         if not hasattr(service.container_definition, "MountPoints"):
             setattr(service.container_definition, "MountPoints", mount_points)
@@ -127,19 +106,72 @@ def override_service_volume(new_efs, fs_id, target, access_points, volumes):
             mount_points = getattr(service.container_definition, "MountPoints")
         for count, mount_pt in enumerate(mount_points):
             if mount_pt.SourceVolume == new_efs.volume.volume_name:
+                container_volume_name = (
+                    f"{new_efs.volume.volume_name}{service.logical_name}"
+                )
                 setattr(
                     mount_pt,
                     "SourceVolume",
-                    f"{new_efs.volume.volume_name}{service.logical_name}",
+                    container_volume_name,
+                )
+                sub_service_specific_access_point = AccessPoint(
+                    f"{new_efs.logical_name}{service.logical_name}ServiceEfsAccessPoint",
+                    FileSystemId=Ref(fs_id),
+                    PosixUser=PosixUser(
+                        Uid=service.user,
+                        Gid=service.group if service.group else service.user,
+                    ),
+                    RootDirectory=RootDirectory(
+                        CreationInfo=CreationInfo(
+                            OwnerUid=service.user,
+                            OwnerGid=service.group if service.group else service.user,
+                            Permissions="0755",
+                        ),
+                        Path=mount_pt.ContainerPath,
+                    ),
+                )
+                target[0].template.add_resource(sub_service_specific_access_point)
+                access_points.append(sub_service_specific_access_point)
+                volumes.append(
+                    Volume(
+                        EFSVolumeConfiguration=EFSVolumeConfiguration(
+                            FilesystemId=Ref(fs_id),
+                            AuthorizationConfig=AuthorizationConfig(
+                                AccessPointId=Ref(sub_service_specific_access_point),
+                                IAM="ENABLED",
+                            ),
+                        ),
+                        Name=container_volume_name,
+                    )
                 )
 
 
-def set_user_to_access_points(access_points, uid, gid):
+def set_user_to_access_points(efs, fs_id, access_points, service):
     """
     Function to set the PosixUser to a specific access point for a specific given service
     """
-    for access_point in access_points:
-        setattr(access_point, "PosixUser", PosixUser(Uid=uid, Gid=gid))
+    group_id = service.group if service.group else service.user
+    mount_points = []
+    if not hasattr(service.container_definition, "MountPoints"):
+        setattr(service.container_definition, "MountPoints", mount_points)
+    else:
+        mount_points = getattr(service.container_definition, "MountPoints")
+    for mount_pt in mount_points:
+        if mount_pt.SourceVolume == efs.volume.volume_name:
+            for access_point in access_points:
+                setattr(
+                    access_point, "PosixUser", PosixUser(Uid=service.user, Gid=group_id)
+                )
+                setattr(
+                    access_point,
+                    "RootDirectory",
+                    RootDirectory(
+                        CreationInfo=CreationInfo(
+                            OwnerUid=service.user, OwnerGid=group_id, Permissions="0755"
+                        ),
+                        Path=mount_pt.ContainerPath,
+                    ),
+                ),
 
 
 def expand_family_with_efs_volumes(efs_root_stack_title, new_efs, settings):
@@ -204,9 +236,10 @@ def expand_family_with_efs_volumes(efs_root_stack_title, new_efs, settings):
             for service in target[2]:
                 if service.user:
                     set_user_to_access_points(
+                        new_efs,
+                        fs_id_parameter,
                         access_points,
-                        service.user,
-                        service.group if service.group else service.user,
+                        service,
                     )
         add_task_iam_access_to_access_point(target[0], access_points, new_efs)
 
