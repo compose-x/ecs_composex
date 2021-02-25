@@ -1,12 +1,7 @@
-.. meta::
-    :description: ECS Compose-X
-    :keywords: AWS, AWS ECS, Docker, Containers, Compose, docker-compose
-
-
 .. _syntax:
 
 .. toctree::
-    :caption: Compose compatibility matrix
+    :caption: Docker Compose syntax
     :maxdepth: 1
 
     syntax/docker-compose/services
@@ -36,6 +31,7 @@
     syntax/compose_x/docdb
     syntax/compose_x/elasticache
     syntax/compose_x/s3
+    syntax/compose_x/efs
     syntax/compose_x/appmesh
     syntax/compose_x/dns
     syntax/compose_x/elbv2

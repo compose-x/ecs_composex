@@ -2,6 +2,7 @@
     :description: ECS Compose-X
     :keywords: AWS, AWS ECS, Docker, Containers, Compose, docker-compose
 
+
 Welcome to ECS-ComposeX's documentation!
 ========================================
 
@@ -14,14 +15,12 @@ Welcome to ECS-ComposeX's documentation!
     requisites
     installation
     macro_usage
-    compatibility_matrix
     contributing
 
-.. toctree::
-    :maxdepth: 2
-    :caption: Extra Features
+.. include:: compatibility_matrix.rst
 
 .. include:: modules_syntax.rst
+
 
 .. toctree::
     :maxdepth: 2

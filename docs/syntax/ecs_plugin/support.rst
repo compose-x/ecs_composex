@@ -22,6 +22,7 @@ the ECS Plugin extensions fields.
 
     `Docker and ECS official documentation`_
 
+.. _x-aws-cluster:
 
 x-aws-cluster
 --------------
@@ -39,6 +40,7 @@ as **x-cluster/Use**
 
     :ref:`ecs_cluster_syntax_reference`
 
+.. _x-aws-pull_credentials:
 
 x-aws-pull_credentials
 -----------------------
@@ -84,6 +86,8 @@ the docker-compose secrets.
 
     You cannot use JsonKeys for this secret.
 
+.. _x-aws-autoscaling:
+
 x-aws-autoscaling
 -----------------
 
@@ -97,6 +101,8 @@ However, in case you set both **x-aws-autoscaling** and **x-scaling**, the latte
 x-aws-autoscaling settings are ignored.
 
 This is by design as **x-scaling** allows for a lot more settings to be defined than **x-aws-autoscaling**
+
+.. _x-aws-policies::
 
 x-aws-policies
 ---------------
@@ -121,6 +127,8 @@ It behaves exactly in the same way as **x-iam/ManagedPolicies** does.
         x-iam:
           ManagedPolicies:
             - "arn:aws:iam::aws:policy/AmazonS3FullAccess"
+
+.. _x-aws-role:
 
 x-aws-role
 -----------
@@ -172,6 +180,7 @@ your own policy and you can have multiple ones.
     If you need to defined IAM permissions boundary, you can with ECS Compose-X.
     :ref:`x_iam_syntax_reference`
 
+.. _x-aws-logs_retention:
 
 x-aws-logs_retention
 ---------------------
