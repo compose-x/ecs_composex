@@ -882,13 +882,22 @@ class Elbv2(XResource):
         :return:
         """
         if self.is_nlb() and self.lb_is_public:
-            for public_az in settings.public_azs:
-                self.lb_eips.append(
-                    EIP(
-                        f"{self.logical_name}Eip{public_az.title().split('-')[-1]}",
-                        Domain="vpc",
+            if settings.create_vpc:
+                for public_az in settings.aws_azs:
+                    self.lb_eips.append(
+                        EIP(
+                            f"{self.logical_name}Eip{public_az['ZoneName'].title().split('-')[-1]}",
+                            Domain="vpc",
+                        )
                     )
-                )
+            else:
+                for public_az in settings.subnets_mappings[PUBLIC_SUBNETS.title]["Azs"]:
+                    self.lb_eips.append(
+                        EIP(
+                            f"{self.logical_name}Eip{public_az.title().split('-')[-1]}",
+                            Domain="vpc",
+                        )
+                    )
 
     def set_subnets(self):
         if self.is_nlb() and self.lb_is_public:

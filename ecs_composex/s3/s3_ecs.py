@@ -85,7 +85,7 @@ def assign_new_bucket_to_services(bucket, res_root_stack, nested=False):
     params_values = {}
     for setting in attributes_settings:
         params_to_add.append(setting[1])
-        params_values[setting[1].title] = {setting[0]: setting[2]}
+        params_values[setting[0]] = setting[2]
     for target in bucket.families_targets:
         select_services = get_selected_services(bucket, target)
         access = {objects_key: "RW", bucket_key: "ListOnly"}

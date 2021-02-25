@@ -1,4 +1,4 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 #   ECS ComposeX <https://github.com/lambda-my-aws/ecs_composex>
 #   Copyright (C) 2020-2021  John Mille <john@lambda-my-aws.io>
 #  #
@@ -25,9 +25,9 @@ from troposphere.ecs import Secret as EcsSecret
 from troposphere.iam import PolicyType
 
 from ecs_composex.common import LOG
-from ecs_composex.common import keyisset, add_parameters, keypresent
-from ecs_composex.common.services_helpers import extend_container_secrets
+from ecs_composex.common import keyisset, keypresent, add_parameters
 from ecs_composex.common.compose_resources import get_parameter_settings
+from ecs_composex.common.services_helpers import extend_container_secrets
 from ecs_composex.ecs.ecs_params import TASK_ROLE_T, EXEC_ROLE_T, SG_T
 from ecs_composex.rds.rds_params import (
     DB_SECRET_POLICY_NAME,
@@ -172,12 +172,12 @@ def add_security_group_ingress(service_stack, db_name, sg_id, port):
     """
     service_template = service_stack.stack_template
     SecurityGroupIngress(
-        f"AllowRdsFrom{db_name}to{service_stack.title}",
+        f"AllowFrom{service_stack.title}to{db_name}",
         template=service_template,
         GroupId=sg_id,
         FromPort=port,
         ToPort=port,
-        Description=Sub(f"Allow FROM {db_name} TO {service_stack.title}"),
+        Description=Sub(f"Allow FROM {service_stack.title} TO {db_name}"),
         SourceSecurityGroupId=GetAtt(service_template.resources[SG_T], "GroupId"),
         SourceSecurityGroupOwnerId=Ref("AWS::AccountId"),
         IpProtocol="6",
@@ -259,7 +259,9 @@ def handle_new_tcp_resource(
     :return:
     """
     if resource.logical_name not in res_root_stack.stack_template.resources:
-        raise KeyError(f"DB {resource.logical_name} not defined in DocDB Root template")
+        raise KeyError(
+            f"DB {resource.logical_name} not defined in {res_root_stack.title} root template"
+        )
 
     parameters_to_add = []
     parameters_values = {}

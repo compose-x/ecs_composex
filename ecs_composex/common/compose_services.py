@@ -1,4 +1,4 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 #   ECS ComposeX <https://github.com/lambda-my-aws/ecs_composex>
 #   Copyright (C) 2020-2021  John Mille <john@lambda-my-aws.io>
 #  #
@@ -136,6 +136,7 @@ class ComposeService(object):
         ("sysctls", (list, dict)),
         ("tmpfs", (str, list)),
         ("ulimits", dict),
+        ("user", (int, str)),
         ("userns_mode", str),
         ("volumes", list),
         ("x-configs", dict),
@@ -202,6 +203,9 @@ class ComposeService(object):
         self.secrets = []
         self.env_files = []
         self.tmpfses = []
+        self.user = None
+        self.group = None
+        self.user_group = None
         self.code_profiler = None
         self.set_env_files()
         self.set_code_profiler()
@@ -241,6 +245,7 @@ class ComposeService(object):
         self.define_logging()
         self.container_parameters = {}
 
+        self.set_user_group()
         self.map_volumes(volumes)
         self.map_secrets(secrets)
         self.define_families()
@@ -308,6 +313,7 @@ class ComposeService(object):
             if not keyisset("working_dir", self.definition)
             else self.definition["working_dir"],
             SystemControls=self.define_sysctls(),
+            User=self.user_group if self.user_group else Ref(AWS_NO_VALUE),
         )
         self.container_parameters.update({self.image_param.title: self.image})
 
@@ -511,6 +517,29 @@ class ComposeService(object):
             return rendered_limits
         return Ref(AWS_NO_VALUE)
 
+    def set_user_group(self):
+        """
+        Method to assign the user / group IDs for the container
+        """
+        if not keyisset("user", self.definition):
+            return
+        user_value = self.definition["user"]
+        if isinstance(user_value, int):
+            self.user = str(user_value)
+        elif isinstance(user_value, str):
+            valid_pattern = re.compile(r"^\d{1,5}$|(^\d{1,5})(?::)(\d{1,5})$")
+            if not valid_pattern.match(user_value):
+                raise ValueError(
+                    "user property must be of the format", valid_pattern.pattern
+                )
+            groups = valid_pattern.match(user_value).groups()
+            self.user = groups[0]
+            if len(groups) == 2:
+                self.group = groups[-1]
+        self.user_group = self.user
+        if self.group:
+            self.user_group = f"{self.user}:{self.group}"
+
     def set_code_profiler(self):
         """
         Method to define the code guru profiler for the service
@@ -682,8 +711,10 @@ class ComposeService(object):
                     ):
                         tmpfs_def["Size"] = int(s_volume["tmpfs"]["size"])
                     self.tmpfses.append(tmpfs_def)
-            if volumes:
-                for s_volume in self.definition[ComposeVolume.main_key]:
+                    continue
+                else:
+                    if not volumes:
+                        continue
                     if isinstance(s_volume, str):
                         handle_volume_str_config(self, s_volume, volumes)
                     elif isinstance(s_volume, dict):
@@ -1653,7 +1684,7 @@ class ComposeFamily(object):
         family_task_volumes = []
         for service in self.services:
             for volume in service.volumes:
-                if volume["volume"] not in family_task_volumes:
+                if volume["volume"] and volume["volume"] not in family_task_volumes:
                     family_task_volumes.append(volume["volume"])
                 else:
                     volume["volume"].is_shared = True
@@ -1687,5 +1718,6 @@ class ComposeFamily(object):
                         ),
                     ),
                 )
-            family_definition_volumes.append(volume.cfn_volume)
+            if volume.cfn_volume:
+                family_definition_volumes.append(volume.cfn_volume)
         self.set_services_mount_points()

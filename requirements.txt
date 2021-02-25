@@ -1,4 +1,4 @@
-troposphere==2.6.3
+troposphere @ git+https://github.com/cloudtools/troposphere@master#egg=troposphere
 boto3==1.16.35
 aws-sam-translator==1.32.0
 requests==2.25.1

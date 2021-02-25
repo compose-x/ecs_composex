@@ -1,4 +1,4 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 #   ECS ComposeX <https://github.com/lambda-my-aws/ecs_composex>
 #   Copyright (C) 2020-2021  John Mille <john@lambda-my-aws.io>
 #  #
@@ -24,8 +24,8 @@ from copy import deepcopy
 
 from troposphere import AWS_NO_VALUE
 from troposphere import Ref
-
 from ecs_composex.common import keyisset, LOG
+from ecs_composex.efs.efs_params import FS_REGEXP, RES_KEY
 
 
 def match_volumes_services_config(service, vol_config, volumes):
@@ -57,7 +57,7 @@ def handle_volume_str_config(service, config, volumes):
     :param list volumes:
     """
     volume_config = {"read_only": False}
-    path_finder = re.compile(r"(^[^:]+$)|(^[^:]+)(?::(\/[\d\w\/]+))(?::(ro$|rw$))?")
+    path_finder = re.compile(r"(^/[^:]+$)|(^[^:]+)(?::(/[\d\w/]+))(?::(ro$|rw$))?")
     path_match = path_finder.match(config)
     if not path_match:
         raise ValueError(
@@ -65,8 +65,13 @@ def handle_volume_str_config(service, config, volumes):
             path_finder.pattern,
         )
     if path_match.groups()[0]:
-        volume_config["source"] = path_match.groups()[0]
-        volume_config["target"] = f"/{path_match.groups()[0]}"
+        volume_config["source"] = path_match.groups()[0].strip("/").replace(r"/", "")
+        volume_config["target"] = path_match.groups()[0]
+        volume = ComposeVolume(
+            volume_config["source"], {"type": "volume", "driver": "local"}
+        )
+        volumes.append(volume)
+        LOG.info(f"Added self generated volume from path {volume_config['target']}")
     elif path_match.groups()[1] and path_match.groups()[2]:
         volume_config["source"] = path_match.groups()[1]
         volume_config["target"] = path_match.groups()[2]
@@ -110,17 +115,15 @@ def handle_volume_dict_config(service, config, volumes):
         match_volumes_services_config(service, volume_config, volumes)
 
 
-def evaluate_efs_properties(definition):
+def evaluate_plugin_efs_properties(definition):
     """
     Function to parse the definition in case user uses the docker cli definition for EFS
 
     :return:
     """
     efs_keys = {
-        "backup_policy": ("BackupPolicy", str),
-        "lifecycle_policy": ("ThroughputMode", str),
         "performance_mode": ("PerformanceMode", str),
-        "throughput_mode": ("PerformanceMode", str),
+        "throughput_mode": ("ThroughputMode", str),
         "provisioned_throughput": ("ProvisionedThroughputInMibps", (int, float)),
     }
     props = {}
@@ -128,6 +131,12 @@ def evaluate_efs_properties(definition):
         definition[ComposeVolume.driver_opts_key], dict
     ):
         opts = definition[ComposeVolume.driver_opts_key]
+        if keyisset("lifecycle_policy", opts) and isinstance(
+            opts["lifecycle_policy"], str
+        ):
+            props["LifecyclePolicies"] = [{"TransitionToIA": opts["lifecycle_policy"]}]
+        if keyisset("backup_policy", opts) and isinstance(opts["backup_policy"], str):
+            props["BackupPolicy"] = {"Status": opts["backup_policy"]}
         for name, config in efs_keys.items():
             if not keyisset(name, opts):
                 props[config[0]] = Ref(AWS_NO_VALUE)
@@ -158,6 +167,11 @@ class ComposeVolume(object):
     main_key = "volumes"
     driver_key = "driver"
     driver_opts_key = "driver_opts"
+    efs_defaults = {
+        "Encrypted": True,
+        "LifecyclePolicies": [{"TransitionToIA": "AFTER_14_DAYS"}],
+        "PerformanceMode": "generalPurpose",
+    }
 
     def __init__(self, name, definition):
         self.name = name
@@ -165,33 +179,57 @@ class ComposeVolume(object):
         self.definition = deepcopy(definition)
         self.is_shared = False
         self.services = []
+        self.parameters = {}
         self.device = None
-        self.cfn_fs = None
-        self.cfn_ap = None
         self.cfn_volume = None
-        self.efs_props = {}
+        self.efs_definition = {}
+        self.use = {}
+        self.lookup = {}
         self.type = "volume"
         self.driver = "local"
-        self.efs_props = evaluate_efs_properties(self.definition)
-        if self.efs_props:
+        self.external = False
+        self.efs_definition = evaluate_plugin_efs_properties(self.definition)
+        if self.efs_definition:
             LOG.info("Identified properties as defined by Docker Plugin")
             self.type = "bind"
             self.driver = "nfs"
+        elif (
+            keyisset("external", self.definition)
+            and keyisset("name", self.definition)
+            and FS_REGEXP.match(self.definition["name"])
+        ):
+            LOG.warning("Identified a EFS to use")
+            self.efs_definition = {"Use": self.definition["name"]}
+            self.use = self.definition["name"]
         else:
-            if keyisset("x-efs", self.definition):
+            if keyisset(RES_KEY, self.definition):
                 self.driver = "nfs"
                 self.type = "bind"
                 self.is_shared = True
-                self.efs_props = self.definition["x-efs"]
+                if keyisset("Lookup", self.efs_definition):
+                    self.lookup = self.efs_definition["Lookup"]
+                elif keyisset("Use", self.efs_definition):
+                    self.use = self.efs_definition["Use"]
+                if not self.use and not self.lookup:
+                    self.efs_definition = (
+                        self.definition[RES_KEY]["Properties"]
+                        if keyisset("Properties", self.efs_definition)
+                        else self.efs_defaults
+                    )
+                    self.parameters = (
+                        self.definition[RES_KEY]["MacroParameters"]
+                        if keyisset("MacroParameters", self.definition[RES_KEY])
+                        else {}
+                    )
             elif (
-                not keyisset("x-efs", self.definition)
+                not keyisset(RES_KEY, self.definition)
                 and keyisset(self.driver_key, self.definition)
                 and not keyisset(self.driver_opts_key, self.definition)
             ):
                 if self.definition[self.driver_key] == "local":
                     self.type = "volume"
                     self.driver = "local"
-                    self.efs_props = None
+                    self.efs_definition = None
                 elif (
                     self.definition[self.driver_key] == "nfs"
                     or self.definition[self.driver_key] == "efs"
@@ -203,3 +241,6 @@ class ComposeVolume(object):
                 self.type = "volume"
                 self.driver = "local"
                 self.is_shared = False
+
+    def __repr__(self):
+        return self.name

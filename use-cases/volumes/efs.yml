@@ -1,0 +1,9 @@
+
+volumes:
+  shared-images:
+    driver_opts:
+      backup_policy: ENABLED
+      lifecycle_policy: AFTER_14_DAYS
+      performance_mode: maxIO
+      throughput_mode: provisioned
+      provisioned_throughput: 1

@@ -277,6 +277,7 @@ class ComposeXStack(Stack, object):
         Method to set the stack parameters when we are not creating a VPC.
         """
         add_parameters(self.stack_template, settings.subnets_parameters)
+        add_parameters(self.stack_template, [VPC_ID])
         self.Parameters.update(
             {VPC_ID_T: FindInMap("Network", VPC_ID.title, VPC_ID.title)}
         )

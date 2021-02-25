@@ -19,51 +19,17 @@
 Module to handle resource settings definition to containers.
 """
 
-from troposphere import Sub, ImportValue, FindInMap, Ref
+from troposphere import Sub, FindInMap, Ref
 from troposphere.iam import Policy as IamPolicy
 
 from ecs_composex.common import LOG, keyisset, add_parameters
-from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T, Parameter
+from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.services_helpers import extend_container_envvars
 from ecs_composex.common.compose_resources import get_parameter_settings
-from ecs_composex.common.ecs_composex import CFN_EXPORT_DELIMITER as DELIM
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.ecs.ecs_iam import define_service_containers
 from ecs_composex.ecs.ecs_params import TASK_ROLE_T
 from ecs_composex.kms.kms_perms import ACCESS_TYPES as KMS_ACCESS_TYPES
-
-
-def define_attribute(attribute):
-    """
-    Function to check that we either have a str or a Parameter for attribute
-
-    :param str|Parameter attribute:
-    :return: attribute name
-    :rtype: str
-    """
-    if isinstance(attribute, str):
-        return attribute
-    elif isinstance(attribute, Parameter):
-        return attribute.title
-    else:
-        raise TypeError("Attribute can only be a string or Parameter")
-
-
-def generate_export_strings(res_name, attribute):
-    """
-    Function to generate the SSM and CFN import/export strings
-    Returns the import in a tuple
-
-    :param str res_name: name of the queue as defined in ComposeX File
-    :param str|Parameter attribute: The attribute to use in Import Name.
-
-    :returns: ImportValue for CFN
-    :rtype: ImportValue
-    """
-    cfn_string = (
-        f"${{{ROOT_STACK_NAME_T}}}{DELIM}{res_name}{DELIM}{define_attribute(attribute)}"
-    )
-    return ImportValue(Sub(cfn_string))
 
 
 def generate_resource_permissions(resource_name, policies, arn):
