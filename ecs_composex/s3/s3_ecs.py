@@ -199,11 +199,13 @@ def define_bucket_mappings(buckets_mappings, buckets, settings):
             )
 
 
-def define_lookup_buckets_access(bucket, target, services, access):
+def define_lookup_buckets_access(bucket, target, services):
     """
     Function to create the IAM policy for the service access to bucket
 
     :param bucket:
+    :param target:
+    :param services:
     :return:
     """
     bucket_key = "bucket"
@@ -255,19 +257,10 @@ def assign_lookup_buckets(bucket, mappings):
     if not keyisset(bucket.logical_name, mappings):
         LOG.warning(f"Bucket {bucket.logical_name} was not found in mappings. Skipping")
         return
-    bucket_key = "bucket"
-    objects_key = "objects"
     for target in bucket.families_targets:
-        access = {objects_key: "RW", bucket_key: "ListOnly"}
         select_services = get_selected_services(bucket, target)
         if select_services:
             target[0].template.add_mapping("s3", mappings)
-            if not keyisset("access", target[3]) or isinstance(target[3], str):
-                LOG.warning(
-                    f"No permissions associated for {target[0].name}. Setting default."
-                )
-            else:
-                access = target[3]
             if keyisset("KmsKey", mappings[bucket.logical_name]):
                 kms_perms = generate_resource_permissions(
                     f"{bucket.logical_name}KmsKey",
@@ -281,7 +274,7 @@ def assign_lookup_buckets(bucket, mappings):
                     "EncryptDecrypt",
                     select_services,
                 )
-            define_lookup_buckets_access(bucket, target, select_services, access)
+            define_lookup_buckets_access(bucket, target, select_services)
 
 
 def s3_to_ecs(xresources, services_stack, res_root_stack, settings):
