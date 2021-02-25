@@ -711,8 +711,10 @@ class ComposeService(object):
                     ):
                         tmpfs_def["Size"] = int(s_volume["tmpfs"]["size"])
                     self.tmpfses.append(tmpfs_def)
-            if volumes:
-                for s_volume in self.definition[ComposeVolume.main_key]:
+                    continue
+                else:
+                    if not volumes:
+                        continue
                     if isinstance(s_volume, str):
                         handle_volume_str_config(self, s_volume, volumes)
                     elif isinstance(s_volume, dict):

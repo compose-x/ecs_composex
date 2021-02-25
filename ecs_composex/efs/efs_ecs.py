@@ -202,7 +202,7 @@ def expand_family_with_efs_volumes(efs_root_stack_title, new_efs, settings):
             [service.user for service in target[2]]
         ) == 1:
             for service in target[2]:
-                if service.user and service.group:
+                if service.user:
                     set_user_to_access_points(
                         access_points,
                         service.user,
