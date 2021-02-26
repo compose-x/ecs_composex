@@ -109,6 +109,28 @@ Everything with regards to the access and other properties, depending on the typ
 This is accomplished by using AWS Resources Group Tags API which means, at this point in time, you can only find resources
 that are tagged.
 
+.. code-block:: yaml
+    :caption: Generic format for Lookup
+
+    Lookup:
+      Tags:
+        - Key: Value
+        - Key: Value
+      RoleArn: <str|optional>
+
+Tags
+------
+
+The tags are a list of Tags that have been assigned to the resource. Based on the type of resource, this might
+need to resolve to a single specific resource in your AWS account / region.
+
+RoleArn
+--------
+
+This allows you to provide the ARN of an IAM Role that ComposeX can use in order to lookup for resources.
+It is very useful in case you plan to do cross-account lookup for shared resources or simply to render
+your templates in a central CICD account.
+
 .. note::
 
     It will never modify the looked up object!

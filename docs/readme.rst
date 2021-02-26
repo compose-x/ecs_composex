@@ -2,9 +2,9 @@
     :description: ECS Compose-X - README
     :keywords: AWS, AWS ECS, Docker, Containers, Compose, docker-compose
 
-==============
-ECS Compose-X
-==============
+============
+ECS ComposeX
+============
 
 |PYPI_VERSION| |PYPI_LICENSE|
 
@@ -14,39 +14,45 @@ ECS Compose-X
 
 |BUILD|
 
-----------------------------------------------------------------------------------------------------
-Build your infrastructure and deploy your services to AWS services using docker-compose file format.
-----------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------
+Manage, Configure and deploy your applications/services and AWS resources from your docker-compose definitions
+---------------------------------------------------------------------------------------------------------------
 
-.. contents::
-    :local:
-    :depth: 2
+Why use ECS Compose-X?
+========================
 
-Install
-=======
+As a developer, working locally is a crucial part of your day to day work, and **docker-compose** allows you to do
+just that, for simple services as well as very complex structures.
 
-Deploy to your AWS Account
+Your prototype works, and you want to deploy to AWS. But what about IAM ? Networking ? Security ? Configuration ?
+
+Using ECS Compose-X, you keep your docker-compose definitions as they are, add the AWS services you have chosen
+as part of that definition, such as ELB, RDS/DynamodDB Databases etc, and the program will automatically
+generate all the AWS CloudFormation templates required to deploy all your services.
+
+It automatically takes care of network access requirements and IAM permissions, following best practices.
+
+
+Installation
+============
+
+ECS Compose-X can be used as a CLI ran locally, in CICD pipelines, or as an AWS CloudFormation macro, allowing you
+to use your Docker Compose files directly in CloudFormation!
+
+On AWS using AWS CloudFormation Macro
 --------------------------------------
 
 .. list-table::
-    :widths: 50 50 50
+    :widths: 50 50
     :header-rows: 1
 
     * - Region
       - Lambda Layer based Macro
-      - Docker based Macro
     * - us-east-1
       - |LAYER_US_EAST_1|
-      - |DOCKER_US_EAST_1|
     * - eu-west-1
       - |LAYER_EU_WEST_1|
-      - |DOCKER_EU_WEST_1|
 
-.. |DOCKER_US_EAST_1| image:: https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png
-    :target: https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/new?stackName=compose-x-macro&templateURL=https://s3.eu-west-1.amazonaws.com/files.compose-x.io/macro/docker-macro.yaml
-
-.. |DOCKER_EU_WEST_1| image:: https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png
-    :target: https://console.aws.amazon.com/cloudformation/home?region=eu-west-1#/stacks/new?stackName=compose-x-macro&templateURL=https://s3.eu-west-1.amazonaws.com/files.compose-x.io/macro/docker-macro.yaml
 
 .. |LAYER_US_EAST_1| image:: https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png
     :target: https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/new?stackName=compose-x-macro&templateURL=https://s3.eu-west-1.amazonaws.com/files.compose-x.io/macro/layer-macro.yaml
@@ -54,15 +60,18 @@ Deploy to your AWS Account
 .. |LAYER_EU_WEST_1| image:: https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png
     :target: https://console.aws.amazon.com/cloudformation/home?region=eu-west-1#/stacks/new?stackName=compose-x-macro&templateURL=https://s3.eu-west-1.amazonaws.com/files.compose-x.io/macro/layer-macro.yaml
 
-From Pip
+`Find out how to use ECS Compose-X in AWS here`_
+
+Via pip
 --------
 
 .. code-block:: bash
 
     pip install ecs_composex
 
-Usage
-=====
+
+CLI Usage
+==========
 
 .. code-block:: bash
 
@@ -87,142 +96,55 @@ Usage
       -h, --help            show this help message and exit
 
 
-.. code-block:: bash
-    :caption: CLI for up and render
-
-    usage: ecs_composex up [-h] -n NAME -f DOCKERCOMPOSEXFILE [-d OUTPUTDIRECTORY]
-                           [--format {json,yaml,text}] [--region REGIONNAME]
-                           [--az ZONES] [-b BUCKETNAME] [--use-spot-fleet]
-
-    optional arguments:
-      -h, --help            show this help message and exit
-      -n NAME, --name NAME  Name of your stack
-      -f DOCKERCOMPOSEXFILE, --docker-compose-file DOCKERCOMPOSEXFILE
-                            Path to the Docker compose file
-      -d OUTPUTDIRECTORY, --output-dir OUTPUTDIRECTORY
-                            Output directory to write all the templates to.
-      --format {json,yaml,text}
-                            Defines the format you want to use.
-      --region REGIONNAME   Specify the region you want to build fordefault use
-                            default region from config or environment vars
-      --az ZONES            List AZs you want to deploy to specifically within the
-                            region
-      -b BUCKETNAME, --bucket-name BUCKETNAME
-                            Bucket name to upload the templates to
-      --use-spot-fleet      Runs spotfleet for EC2. If used in combination of
-                            --use-fargate, it will create an additional SpotFleet
-
+Examples
+--------
 
 .. code-block:: bash
-    :caption: CLI for config
 
-    usage: ecs-composex config [-h] -f DOCKERCOMPOSEXFILE [-d OUTPUTDIRECTORY]
+    # Render all your CFN templates from your docker compose and extension files
+    ecs-compose-x render --format yaml -n my-awesome-app -f docker-compose.yml -f aws.yml -d outputs
 
-    optional arguments:
-      -h, --help            show this help message and exit
-      -f DOCKERCOMPOSEXFILE, --docker-compose-file DOCKERCOMPOSEXFILE
-                            Path to the Docker compose file
-      -d OUTPUTDIRECTORY, --output-dir OUTPUTDIRECTORY
-                            Output directory to write all the templates to.
+    # Deploy / Update your application to AWS
+    ecs-compose-x up --format yaml -n my-awesome-app -f docker-compose.yml -f aws.yml -d outputs
 
+How is it different ?
+=====================
 
-Why use ECS ComposeX ?
-======================
+There are a lot of similar tools out there, including published by AWS. So here are a few of the features
+that we think could be of interest to you.
 
-ECS ComposeX (or ComposeX for friends) first came out in early March, with some very basic features
-and has grown over the past few months to add more and more features.
-
-Since then, AWS released Copilot and has announced working with Docker to implement similar capabilities to allow
-developers to have a better experience at developing as they would normally do and deploying to ECS.
-
-However, I found that the feature set still remains somewhat limited, and as a Cloud Engineer working daily with developers,
-I constantly have to balance features for developers and best practice in using AWS.
-
-And at this point in time, neither of the previous tools are mentioned allow to do what ECS ComposeX do:
-
-* Retain full docker-compose format specification compatibility without introducing
-  a new format (Copilot has its own Environment file format)
-* Provide support for more AWS services, such as RDS, DynamoDB, SQS etc.,
-  which is not something supported in the Docker ecs-plugin or desktop app.
-
-
-Trying to implement DevOps starting with developers
-----------------------------------------------------
-
-Whilst this is something that can be used by AWS Cloud Engineers tomorrow to deploy applications on ECS on the behalf
-of their developers, the purpose of ECS ComposeX is to enable developers with a simplistic and familiar syntax that
-takes away the need to be an AWS Expert. If tomorrow developers using ComposeX feel comfortable to deploy services
-by themselves, I would be able to stop hand-holding them all the time and focus on other areas.
-
-
-Philosphy
-==========
-
-CloudFormation is awesome, the documentation is excellent and the format easy. So ECS ComposeX wants to keep the format
-of resources Properties as close to the orignal as possible as well as making it easier as well, just alike resources
-like **AWS::Serverless::Function** which will create all the resources around your Lambda Function as well as the function.
-
-Community focused
-------------------
-
-Any new Feature Request submitted by someone other than myself will get their request prioritized to try address their
-use-cases as quickly as possible.
-
-`Submit your Feature Request here <https://github.com/lambda-my-aws/ecs_composex/issues/new/choose>`_
-
-Ensure things work
-------------------
-
-It takes an insane amount of time to test everything as, generating CFN templates is easy, testing that everything
-works end-to-end is a completely different thing.
-
-I will always do my best to ensure that any new feature is tested end-to-end, but shall anything slip through the cracks,
-please feel free to report your errors `here <https://github.com/lambda-my-aws/ecs_composex/issues/new/choose>`_
-
-
-Modularity or "Plug & Play"
+Modularity / "Plug & Play"
 ---------------------------
 
 The majority of people who are going to use ECS ComposeX on a daily basis should be developers who need to have an
-environment of their own and want to quickly iterate over it. However, it is certainly something that Cloud Engineers
-in charge of the AWS accounts etc. would want to use to make their own lives easy too.
+environment of their own and want to quickly iterate over it.
+
+However, it is certainly something that Cloud Engineers in charge of the AWS accounts etc. would want to use to make their own lives easy too.
 
 In many areas, you as the end-user of ComposeX will already have infrastructure in place: VPC, DBs and what not.
 So as much as possible, you will be able in ComposeX to define :ref:`lookup_syntax_reference` sections which will find your existing resources,
 and map these to the services.
 
-Fargate First
--------------
+Built for AWS Fargate
+----------------------
 
 However the original deployments and work on this project was done using EC2 instances (using SpotFleet), everything
 is now implemented to work on AWS Fargate First (2020-06-06).
 
-.. note::
+That said, all features that can be supported with EC2 instances are available to you with ECS Compose-X, which, will
+simply disable such settings when deployed on top of AWS Fargate.
 
-    | :ref:`vpc_network_design`
-    | :ref:`vpc_syntax_reference`
-    | :ref:`syntax_reference`
+Attributes auto-correct
+-------------------------
 
-.. note::
+A fair amount of the time, deployments via AWS CloudFormation, Ansible and other IaC will fail because of incompatible
+settings. This happened a number of times, with a lot of different AWS Services.
 
-    If you do not need extra AWS resources such as SQS queues to be created as part of these microservices deployments,
-    I would recommend to use `AWS ECS CLI`_ which does already a lot of the work for the services.
-    Alternatively, use Copilot (the AWS CLI v2). It is very developer friendly to start new projects.
+Whilst giving you the ability to use all properties of AWS CloudFormation objects, whenever possible, ECS Compose-X
+will understand how two services are connected and will auto-correct the settings for you.
 
-License
-=======
-
-* Free software: GPLv3+
-
-The Blog
-========
-
-.. |BLOG_RELEASE| image:: https://codebuild.eu-west-1.amazonaws.com/badges?uuid=eyJlbmNyeXB0ZWREYXRhIjoicHZaQXFLNGYya3pzWExXM09ZTDZqbkU4cXZENzlZc2grQ0s5RXNxN0tYSXF6U3hJSkZWd3JqZkcrd29RUExmZGw1VXVsTTd6ckE4RjhSenl4QUtUY3I0PSIsIml2UGFyYW1ldGVyU3BlYyI6IjdleGRRTS9rbTRIUUY4TkoiLCJtYXRlcmlhbFNldFNlcmlhbCI6MX0%3D&branch=master
-
-Follow the news and technical articles on using ECS ComposeX on the `Blog`_ |BLOG_RELEASE|
-
-* `CICD Pipeline for multiple services on AWS ECS with ECS ComposeX`_
-
+For example, if you set the Log retention to be 42 days, which is invalid, it will automatically change that to the
+closest valid value (here, 30).
 
 Credits
 =======
@@ -243,8 +165,11 @@ This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypack
 .. _Extensions fields:  https://docs.docker.com/compose/compose-file/#extension-fields
 .. _ECS ComposeX Project: https://github.com/orgs/lambda-my-aws/projects/3
 .. _CICD Pipeline for multiple services on AWS ECS with ECS ComposeX: https://blog.ecs-composex.lambda-my-aws.io/posts/cicd-pipeline-for-multiple-services-on-aws-ecs-with-ecs-composex/
+.. _the compatibilty matrix: https://nightly.docs.compose-x.io/compatibility/docker_compose.html
+.. _Find out how to use ECS Compose-X in AWS here: https://blog.compose-x.io/posts/use-your-docker-compose-files-as-a-cloudformation-template/index.html
 
-.. |BUILD| image:: https://codebuild.eu-west-1.amazonaws.com/badges?uuid=eyJlbmNyeXB0ZWREYXRhIjoidThwNXVIKzVvSnlXcUNVRzVlNE5wN0FiWE4rYzYvaHRNMEM0ZHMxeXRLMytSanhsckozVEN3L1Y5Szl5ZEdJVGxXVElyalZmaFVzR2tSbDBHeFI5cHBRPSIsIml2UGFyYW1ldGVyU3BlYyI6IlZkaml2d28wSGR1YU1xb2ciLCJtYXRlcmlhbFNldFNlcmlhbCI6MX0%3D&branch=master
+
+.. |BUILD| image:: https://codebuild.eu-west-1.amazonaws.com/badges?uuid=eyJlbmNyeXB0ZWREYXRhIjoiWjIrbSsvdC9jZzVDZ3N5dVNiMlJCOUZ4M0FQNFZQeXRtVmtQbWIybUZ1ZmV4NVJEdG9yZURXMk5SVVFYUjEwYXpxUWV1Y0ZaOEcwWS80M0pBSkVYQjg0PSIsIml2UGFyYW1ldGVyU3BlYyI6Ik1rT0NaR05yZHpTMklCT0MiLCJtYXRlcmlhbFNldFNlcmlhbCI6MX0%3D&branch=main
 
 .. |DOCS_BUILD| image:: https://readthedocs.org/projects/ecs-composex/badge/?version=latest
         :target: https://ecs-composex.readthedocs.io/en/latest/?badge=latest
