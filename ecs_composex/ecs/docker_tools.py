@@ -29,6 +29,41 @@ NUMBERS_REG = r"[^0-9.]"
 MINIMUM_SUPPORTED = 4
 
 
+def import_time_values_to_seconds(time_string, as_tuple=False):
+    """
+    Function to parse strings with h/m/s
+
+    :param str time_string:
+    :param bool as_tuple: Whether or not return a tuple (hours, minutes, seconds)
+    :return: The number of seconds or tuple of time breakdown as ints
+    :rtype: int, tuple(int, int, int)
+    """
+    time_re = re.compile(
+        r"(\d{1,2}h)?([0-9]{1}m|[1-5]{1}[0-9]{1}m)?([0-9]{1}s|[1-5]{1}[0-9]{1}s)?"
+    )
+    time_groups = time_re.match(time_string).groups()
+    if not any(t for t in time_groups):
+        raise ValueError(
+            "The time provided",
+            time_string,
+            "Does not match the expected pattern",
+            time_re.pattern,
+        )
+    hours = 0
+    minutes = 0
+    seconds = 0
+    if time_groups[2]:
+        seconds = int(re.sub(r"[^\d]", "", time_groups[2]))
+    if time_groups[1]:
+        minutes = int(re.sub(r"[^\d]", "", time_groups[1]))
+    if time_groups[0]:
+        hours = int(re.sub(r"[^\d]", "", time_groups[0]))
+    if as_tuple:
+        return (hours, minutes, seconds)
+    seconds += (60 * minutes) + (60 * 60 * hours)
+    return seconds
+
+
 def handle_bytes_units(value, factor):
     """
     Function to handle KB use-case
