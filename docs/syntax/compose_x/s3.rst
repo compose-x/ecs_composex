@@ -13,17 +13,35 @@ Properties
 
 For the properties, go to to `AWS CFN S3 Definition`_
 
-Settings
-=========
+MacroParameters
+=================
 
 Some use-cases require special adjustments. This is what this section is for.
 
+* `NameSeparator`_
 * `ExpandRegionToBucket`_
 * `ExpandAccountIdToBucket`_
-* `EnableEncryption`_
+
+NameSeparator
+--------------
+
+Default is **-** which separates the different parts of the bucket that you might have automatically
+added via the other MacroParameters
+
+As shown below, the separator between the bucket name and AWS::AccountId or AWS::Region is **-**. This parameter allows
+you to define something else.
+
+.. note::
+
+    I would recommend not more than 2 characters separator.
+
+.. warning::
+
+    The separator must allow for DNS compliance **[a-z0-9.-]**
+
 
 ExpandRegionToBucket
-^^^^^^^^^^^^^^^^^^^^
+---------------------
 
 When definining the `BucketName` in properties, if wanted to, for uniqueness or readability, you can append to that string
 the region id (which is DNS compliant) to the bucket name.
@@ -42,7 +60,7 @@ Results into
     !Sub abcd-01-${AWS::Region}
 
 ExpandAccountIdToBucket
-^^^^^^^^^^^^^^^^^^^^^^^
+------------------------
 
 Similar to ExpandRegionToBucket, it will append the account ID (additional or instead of).
 
@@ -67,29 +85,6 @@ Results into
 
         !Sub 'abcd-01-${AWS::Region}-${AWS::AccountId}'
 
-NameSeparator
-^^^^^^^^^^^^^
-
-As shown above, the separator between the bucket name and AWS::AccountId or AWS::Region is **-**. This parameter allows
-you to define something else.
-
-.. note::
-
-    I would recommend not more than 2 characters separator.
-
-.. warning::
-
-    The separator must allow for DNS compliance **[a-z0-9.-]**
-
-
-EnableEncryption
-^^^^^^^^^^^^^^^^
-
-If set to True (default) it will automatically define bucket encryption using AES256.
-
-.. hint::
-
-    Soon will link x-kms keys definition to that to allow you to re-use existing keys.
 
 Services
 ========
