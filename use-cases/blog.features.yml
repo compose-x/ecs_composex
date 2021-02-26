@@ -93,7 +93,9 @@ services:
     environment:
       LOGLEVEL: DEBUG
     healthcheck:
-      interval: 30
+      interval: 1m30s
+      timeout: 10s
+      start_period: 1h
       retries: 3
       test:
         - CMD

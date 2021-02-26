@@ -62,6 +62,7 @@ from ecs_composex.ecs import ecs_params
 from ecs_composex.ecs.docker_tools import (
     find_closest_fargate_configuration,
     set_memory_to_mb,
+    import_time_values_to_seconds,
 )
 from ecs_composex.ecs.ecs_conditions import USE_FARGATE_CON_T
 from ecs_composex.ecs.ecs_iam import add_service_roles
@@ -791,21 +792,22 @@ class ComposeService(object):
             return
         valid_keys = ["test", "interval", "timeout", "retries", "start_period"]
         attr_mappings = {
-            "test": "Command",
-            "interval": "Interval",
-            "timeout": "Timeout",
-            "retries": "Retries",
-            "start_period": "StartPeriod",
+            "test": ("Command", None),
+            "interval": ("Interval", import_time_values_to_seconds),
+            "timeout": ("Timeout", import_time_values_to_seconds),
+            "retries": ("Retries", None),
+            "start_period": ("StartPeriod", import_time_values_to_seconds),
         }
         required_keys = ["test"]
         validate_healthcheck(self.healthcheck, valid_keys, required_keys)
         params = {}
-        for key in self.healthcheck.keys():
-            params[attr_mappings[key]] = self.healthcheck[key]
+        for key, value in self.healthcheck.items():
+            ecs_key = attr_mappings[key][0]
+            params[ecs_key] = value
+            if attr_mappings[key][1] is not None:
+                params[ecs_key] = attr_mappings[key][1](self.healthcheck[key])
         if isinstance(params["Command"], str):
-            params["Command"] = [self.healthcheck["test"]]
-        if keyisset("Interval", params) and isinstance(params["Interval"], str):
-            params["Interval"] = int(self.healthcheck["interval"])
+            params["Command"] = [params["Command"]]
         self.ecs_healthcheck = HealthCheck(**params)
 
     def set_replicas(self, deployment):
