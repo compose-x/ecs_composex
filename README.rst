@@ -10,39 +10,45 @@ ECS ComposeX
 
 |BUILD|
 
-----------------------------------------------------------------------------------------------------
-Be for AWS ECS and docker-compose what AWS SAM is to Lambda
-----------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------
+Manage, Configure and deploy your applications/services and AWS resources from your docker-compose definitions
+---------------------------------------------------------------------------------------------------------------
 
-.. contents::
-    :local:
-    :depth: 2
+Why use ECS Compose-X?
+========================
+
+As a developer, working locally is a crucial part of your day to day work, and docker-compose allows you to do
+just that, for simple services as well as very complex structures.
+
+Your prototype works, and you want to deploy to AWS. But what about IAM ? Networking ? Security ? Configuration ?
+
+Using ECS Compose-X, you keep your docker-compose deifnitions as they are, add the AWS services you have chosen
+as part of that definition, such as ELB, RDS/DynamodDB Databases etc, and the program will automatically
+generate all the AWS CloudFormation templates required to deploy all your services.
+
+It automatically takes care of network access requirements and IAM permissions, following best practices.
+
 
 Installation
 ============
+
+ECS Compose-X can be used as a CLI ran locally, in CICD pipelines, or as an AWS CloudFormation macro, allowing you
+to use your Docker Compose files directly in CloudFormation!
 
 On AWS using AWS CloudFormation Macro
 --------------------------------------
 
 .. list-table::
-    :widths: 50 50 50
+    :widths: 50 50
     :header-rows: 1
 
     * - Region
       - Lambda Layer based Macro
-      - Docker based Macro
     * - us-east-1
       - |LAYER_US_EAST_1|
-      - |DOCKER_US_EAST_1|
     * - eu-west-1
       - |LAYER_EU_WEST_1|
-      - |DOCKER_EU_WEST_1|
 
-.. |DOCKER_US_EAST_1| image:: https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png
-    :target: https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/new?stackName=compose-x-macro&templateURL=https://s3.eu-west-1.amazonaws.com/files.compose-x.io/macro/docker-macro.yaml
-
-.. |DOCKER_EU_WEST_1| image:: https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png
-    :target: https://console.aws.amazon.com/cloudformation/home?region=eu-west-1#/stacks/new?stackName=compose-x-macro&templateURL=https://s3.eu-west-1.amazonaws.com/files.compose-x.io/macro/docker-macro.yaml
 
 .. |LAYER_US_EAST_1| image:: https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png
     :target: https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/new?stackName=compose-x-macro&templateURL=https://s3.eu-west-1.amazonaws.com/files.compose-x.io/macro/layer-macro.yaml
@@ -58,8 +64,8 @@ Via pip
     pip install ecs_composex
 
 
-Usage
-=====
+CLI Usage
+==========
 
 .. code-block:: bash
 
@@ -84,39 +90,7 @@ Usage
       -h, --help            show this help message and exit
 
 
-
-CLI for `up` and `render`
-
-.. code-block:: bash
-
-    usage: ecs_composex up [-h] -n NAME -f DOCKERCOMPOSEXFILE [-d OUTPUTDIRECTORY]
-                           [--format {json,yaml,text}] [--region REGIONNAME]
-                           [--az ZONES] [-b BUCKETNAME] [--use-spot-fleet]
-
-    optional arguments:
-      -h, --help            show this help message and exit
-      -n NAME, --name NAME  Name of your stack
-      -f DOCKERCOMPOSEXFILE, --docker-compose-file DOCKERCOMPOSEXFILE
-                            Path to the Docker compose file
-      -d OUTPUTDIRECTORY, --output-dir OUTPUTDIRECTORY
-                            Output directory to write all the templates to.
-      --format {json,yaml,text}
-                            Defines the format you want to use.
-      --region REGIONNAME   Specify the region you want to build fordefault use
-                            default region from config or environment vars
-      --az ZONES            List AZs you want to deploy to specifically within the
-                            region
-      -b BUCKETNAME, --bucket-name BUCKETNAME
-                            Bucket name to upload the templates to
-      --use-spot-fleet      Runs spotfleet for EC2. If used in combination of
-                            --use-fargate, it will create an additional SpotFleet
-
-
-.. hint::
-
-    Each sub menu has its own manual, alike the aws cli
-
-
+`Find out how to use ECS Compose-X in AWS here`_
 
 AWS & Docker Resources support
 ==============================
@@ -141,87 +115,11 @@ AWS Services support
 * `AWS VPC`_
 * `AWS EC2`_
 
-
 docker-compose
---------------
+---------------
 
-* healthcheck
-* environment
-* secrets
-* deploy/replicas: Define how many tasks you want running for your service.
-* deploy/resources: Automatically map your services resources to an AWS Fargate compatible CPU/RAM combination
-* image (that'd be a problem if that did not work!)
-
-Why use ECS ComposeX ?
-======================
-
-ECS ComposeX (or ComposeX for friends) first came out in early March, with some very basic features
-and has grown over the past few months to add more and more features.
-
-Since then, AWS released Copilot and has announced working with Docker to implement similar capabilities to allow
-developers to have a better experience at developing as they would normally do and deploying to ECS.
-
-However, I found that the feature set still remains somewhat limited, and as a Cloud Engineer working daily with developers,
-I constantly have to balance features for developers and best practice in using AWS.
-
-And at this point in time, neither of the previous tools are mentioned allow to do what ECS ComposeX do:
-
-* Retain full docker-compose format specification compatibility without introducing
-  a new format (Copilot has its own Environment file format)
-* Provide support for more AWS services, such as RDS, DynamoDB, SQS etc.,
-  which is not something supported in the Docker ecs-plugin or desktop app.
-
-
-Trying to implement DevOps starting with developers
-----------------------------------------------------
-
-Whilst this is something that can be used by AWS Cloud Engineers tomorrow to deploy applications on ECS on the behalf
-of their developers, the purpose of ECS ComposeX is to enable developers with a simplistic and familiar syntax that
-takes away the need to be an AWS Expert. If tomorrow developers using ComposeX feel comfortable to deploy services
-by themselves, I would be able to stop hand-holding them all the time and focus on other areas.
-
-
-Philosophy
-==========
-
-CloudFormation is awesome, the documentation is excellent and the format easy. So ECS ComposeX wants to keep the format
-of resources Properties as close to the orignal as possible as well as making it easier as well, just alike resources
-like **AWS::Serverless::Function** which will create all the resources around your Lambda Function as well as the function.
-
-Community focused
-------------------
-
-Any new Feature Request submitted by someone other than myself will get their request prioritized to try address their
-use-cases as quickly as possible.
-
-`Submit your Feature Request here <https://github.com/lambda-my-aws/ecs_composex/issues/new/choose>`_
-
-Ensure things work
-------------------
-
-It takes an insane amount of time to test everything as, generating CFN templates is easy, testing that everything
-works end-to-end is a completely different thing.
-
-I will always do my best to ensure that any new feature is tested end-to-end, but shall anything slip through the cracks,
-please feel free to report your errors `here <https://github.com/lambda-my-aws/ecs_composex/issues/new/choose>`_
-
-
-Modularity or "Plug & Play"
----------------------------
-
-The majority of people who are going to use ECS ComposeX on a daily basis should be developers who need to have an
-environment of their own and want to quickly iterate over it. However, it is certainly something that Cloud Engineers
-in charge of the AWS accounts etc. would want to use to make their own lives easy too.
-
-In many areas, you as the end-user of ComposeX will already have infrastructure in place: VPC, DBs and what not.
-So as much as possible, you will be able in ComposeX to define `Lookup`_ sections which will find your existing resources,
-and map these to the services.
-
-Fargate First
--------------
-
-However the original deployments and work on this project was done using EC2 instances (using SpotFleet), everything
-is now implemented to work on AWS Fargate First (2020-06-06).
+The docker-compose compatibility is aimed to be 100%. However, some features won't be supported by AWS ECS, or by AWS Fargate.
+To have an extensive list of support, refer to `the compatibilty matrix`_
 
 Documentation
 =============
@@ -230,8 +128,7 @@ Documentation
 
 .. tip::
 
-    `Nightly documentation <https://nightly.docs.ecs-composex.lambda-my-aws.io/>`_ following the master branch.
-
+    `Nightly documentation <https://nightly.docs.ecs-composex.lambda-my-aws.io/>`_ following the main branch.
 
 RoadMap
 ========
@@ -239,14 +136,10 @@ RoadMap
 * `Feature requests <https://github.com/lambda-my-aws/ecs_composex/projects/2>`_
 * `Issues <https://github.com/lambda-my-aws/ecs_composex/projects/3>`_
 
-
 Blog
 ====
 
-Follow the news and technical articles on using ECS ComposeX on the `Blog`_
-
-* `CICD Pipeline for multiple services on AWS ECS with ECS ComposeX`_
-
+`Follow the latest publications on our blog <https://blog.compose-x.io>`__
 
 Credits
 =======
@@ -286,12 +179,10 @@ This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypack
 .. _AWS AppMesh: https://nightly.docs.ecs-composex.lambda-my-aws.io/readme/appmesh.html
 
 .. _Lookup: https://nightly.docs.ecs-composex.lambda-my-aws.io/syntax/composex/common.html#lookup
+.. _the compatibilty matrix: https://nightly.docs.compose-x.io/compatibility/docker_compose.html
+.. _Find out how to use ECS Compose-X in AWS here: https://blog.compose-x.io/posts/use-your-docker-compose-files-as-a-cloudformation-template/index.html
 
-.. |BUILD| image:: https://codebuild.eu-west-1.amazonaws.com/badges?uuid=eyJlbmNyeXB0ZWREYXRhIjoidThwNXVIKzVvSnlXcUNVRzVlNE5wN0FiWE4rYzYvaHRNMEM0ZHMxeXRLMytSanhsckozVEN3L1Y5Szl5ZEdJVGxXVElyalZmaFVzR2tSbDBHeFI5cHBRPSIsIml2UGFyYW1ldGVyU3BlYyI6IlZkaml2d28wSGR1YU1xb2ciLCJtYXRlcmlhbFNldFNlcmlhbCI6MX0%3D&branch=master
-
-.. |DOCS_BUILD| image:: https://readthedocs.org/projects/ecs-composex/badge/?version=latest
-        :target: https://ecs-composex.readthedocs.io/en/latest/?badge=latest
-        :alt: Documentation Status
+.. |BUILD| image:: https://codebuild.eu-west-1.amazonaws.com/badges?uuid=eyJlbmNyeXB0ZWREYXRhIjoiWjIrbSsvdC9jZzVDZ3N5dVNiMlJCOUZ4M0FQNFZQeXRtVmtQbWIybUZ1ZmV4NVJEdG9yZURXMk5SVVFYUjEwYXpxUWV1Y0ZaOEcwWS80M0pBSkVYQjg0PSIsIml2UGFyYW1ldGVyU3BlYyI6Ik1rT0NaR05yZHpTMklCT0MiLCJtYXRlcmlhbFNldFNlcmlhbCI6MX0%3D&branch=main
 
 .. |PYPI_VERSION| image:: https://img.shields.io/pypi/v/ecs_composex.svg
         :target: https://pypi.python.org/pypi/ecs_composex
@@ -323,8 +214,6 @@ This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypack
 .. |BDD| image:: https://img.shields.io/badge/bdd-behave-black
     :alt: BDD with Behave
     :target: https://behave.readthedocs.io/en/latest/
-
-.. |BLOG_RELEASE| image:: https://codebuild.eu-west-1.amazonaws.com/badges?uuid=eyJlbmNyeXB0ZWREYXRhIjoicHZaQXFLNGYya3pzWExXM09ZTDZqbkU4cXZENzlZc2grQ0s5RXNxN0tYSXF6U3hJSkZWd3JqZkcrd29RUExmZGw1VXVsTTd6ckE4RjhSenl4QUtUY3I0PSIsIml2UGFyYW1ldGVyU3BlYyI6IjdleGRRTS9rbTRIUUY4TkoiLCJtYXRlcmlhbFNldFNlcmlhbCI6MX0%3D&branch=master
 
 .. |QUALITY| image:: https://sonarcloud.io/api/project_badges/measure?project=lambda-my-aws_ecs_composex&metric=alert_status
     :alt: Code scan with SonarCloud
