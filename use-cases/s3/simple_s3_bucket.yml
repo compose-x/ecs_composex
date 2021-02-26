@@ -20,10 +20,10 @@ x-s3:
               KMSMasterKeyID: "aws/s3"
       VersioningConfiguration:
         Status: "Enabled"
-
-    Settings:
+    MacroParameters:
       ExpandRegionToBucket: True
       ExpandAccountIdToBucket: True
+    Settings:
       EnvNames:
         - bucket01
         - BUCKET_ABCD-01
