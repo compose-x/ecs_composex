@@ -17,12 +17,12 @@ Manage, Configure and deploy your applications/services and AWS resources from y
 Why use ECS Compose-X?
 ========================
 
-As a developer, working locally is a crucial part of your day to day work, and docker-compose allows you to do
+As a developer, working locally is a crucial part of your day to day work, and **docker-compose** allows you to do
 just that, for simple services as well as very complex structures.
 
 Your prototype works, and you want to deploy to AWS. But what about IAM ? Networking ? Security ? Configuration ?
 
-Using ECS Compose-X, you keep your docker-compose deifnitions as they are, add the AWS services you have chosen
+Using ECS Compose-X, you keep your docker-compose definitions as they are, add the AWS services you have chosen
 as part of that definition, such as ELB, RDS/DynamodDB Databases etc, and the program will automatically
 generate all the AWS CloudFormation templates required to deploy all your services.
 
@@ -55,6 +55,8 @@ On AWS using AWS CloudFormation Macro
 
 .. |LAYER_EU_WEST_1| image:: https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png
     :target: https://console.aws.amazon.com/cloudformation/home?region=eu-west-1#/stacks/new?stackName=compose-x-macro&templateURL=https://s3.eu-west-1.amazonaws.com/files.compose-x.io/macro/layer-macro.yaml
+
+`Find out how to use ECS Compose-X in AWS here`_
 
 Via pip
 --------
@@ -90,10 +92,20 @@ CLI Usage
       -h, --help            show this help message and exit
 
 
-`Find out how to use ECS Compose-X in AWS here`_
+Examples
+--------
 
-AWS & Docker Resources support
-==============================
+.. code-block:: bash
+
+    # Render all your CFN templates from your docker compose and extension files
+    ecs-compose-x render --format yaml -n my-awesome-app -f docker-compose.yml -f aws.yml -d outputs
+
+    # Deploy / Update your application to AWS
+    ecs-compose-x up --format yaml -n my-awesome-app -f docker-compose.yml -f aws.yml -d outputs
+
+
+Features
+=========
 
 AWS Services support
 ---------------------
@@ -115,16 +127,52 @@ AWS Services support
 * `AWS VPC`_
 * `AWS EC2`_
 
-docker-compose
----------------
+To have an extensive list of support, refer to `the compatibilty matrix`_ and the syntax reference for each AWS services
+in our `documentation`_
 
-The docker-compose compatibility is aimed to be 100%. However, some features won't be supported by AWS ECS, or by AWS Fargate.
-To have an extensive list of support, refer to `the compatibilty matrix`_
+How is it different ?
+=====================
+
+There are a lot of similar tools out there, including published by AWS. So here are a few of the features
+that we think could be of interest to you.
+
+Modularity / "Plug & Play"
+---------------------------
+
+The majority of people who are going to use ECS ComposeX on a daily basis should be developers who need to have an
+environment of their own and want to quickly iterate over it.
+
+However, it is certainly something that Cloud Engineers in charge of the AWS accounts etc. would want to use to make their own lives easy too.
+
+In many areas, you as the end-user of ComposeX will already have infrastructure in place: VPC, DBs and what not.
+So as much as possible, you will be able in ComposeX to define `Lookup`_ sections which will find your existing resources,
+and map these to the services.
+
+Built for AWS Fargate
+----------------------
+
+However the original deployments and work on this project was done using EC2 instances (using SpotFleet), everything
+is now implemented to work on AWS Fargate First (2020-06-06).
+
+That said, all features that can be supported with EC2 instances are available to you with ECS Compose-X, which, will
+simply disable such settings when deployed on top of AWS Fargate.
+
+Attributes auto-correct
+-------------------------
+
+A fair amount of the time, deployments via AWS CloudFormation, Ansible and other IaC will fail because of incompatible
+settings. This happened a number of times, with a lot of different AWS Services.
+
+Whilst giving you the ability to use all properties of AWS CloudFormation objects, whenever possible, ECS Compose-X
+will understand how two services are connected and will auto-correct the settings for you.
+
+For example, if you set the Log retention to be 42 days, which is invalid, it will automatically change that to the
+closest valid value (here, 30).
 
 Documentation
 =============
 
-`Find all the documentation to get started and all the features references here. <https://docs.ecs-composex.lambda-my-aws.io>`_
+Find all the `documentation` to get started and and start deploying to AWS
 
 .. tip::
 
@@ -178,9 +226,10 @@ This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypack
 .. _AWS EC2: https://nightly.docs.ecs-composex.lambda-my-aws.io/features.html#ec2-resources-for-ecs-cluster
 .. _AWS AppMesh: https://nightly.docs.ecs-composex.lambda-my-aws.io/readme/appmesh.html
 
-.. _Lookup: https://nightly.docs.ecs-composex.lambda-my-aws.io/syntax/composex/common.html#lookup
+.. _Lookup: https://docs.compose-x.io/syntax/compose_x/common.html#lookup
 .. _the compatibilty matrix: https://nightly.docs.compose-x.io/compatibility/docker_compose.html
 .. _Find out how to use ECS Compose-X in AWS here: https://blog.compose-x.io/posts/use-your-docker-compose-files-as-a-cloudformation-template/index.html
+.. _documentation: https://docs.compose-x.io
 
 .. |BUILD| image:: https://codebuild.eu-west-1.amazonaws.com/badges?uuid=eyJlbmNyeXB0ZWREYXRhIjoiWjIrbSsvdC9jZzVDZ3N5dVNiMlJCOUZ4M0FQNFZQeXRtVmtQbWIybUZ1ZmV4NVJEdG9yZURXMk5SVVFYUjEwYXpxUWV1Y0ZaOEcwWS80M0pBSkVYQjg0PSIsIml2UGFyYW1ldGVyU3BlYyI6Ik1rT0NaR05yZHpTMklCT0MiLCJtYXRlcmlhbFNldFNlcmlhbCI6MX0%3D&branch=main
 
