@@ -29,7 +29,7 @@ from troposphere.servicediscovery import (
 from ecs_composex.common import cfn_params, keyisset, add_parameters, LOG
 from ecs_composex.common.aws import get_cross_role_session
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.dns import dns_params, dns_conditions
+from ecs_composex.dns import dns_params
 from ecs_composex.dns.dns_lookup import lookup_namespace
 
 

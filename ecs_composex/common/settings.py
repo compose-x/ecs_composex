@@ -46,11 +46,6 @@ from ecs_composex.ingress_settings import set_service_ports
 from ecs_composex.secrets.compose_secrets import ComposeSecret
 from ecs_composex.utils.init_ecs import set_ecs_settings
 from ecs_composex.utils.init_s3 import create_bucket
-from ecs_composex.vpc.vpc_params import (
-    APP_SUBNETS,
-    PUBLIC_SUBNETS,
-    STORAGE_SUBNETS,
-)
 
 
 def render_services_ports(services):
