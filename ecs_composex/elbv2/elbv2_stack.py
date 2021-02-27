@@ -975,7 +975,9 @@ class Elbv2(XResource):
     def parse_attributes_settings(self):
         """
         Method to parse pre-defined settings for shortcuts
-        :return:
+
+        :return: the lb attributes mappings
+        :rtype: list
         """
         valid_settings = [
             ("timeout_seconds", int, handle_timeout_seconds, self.is_alb()),
@@ -997,16 +999,16 @@ class Elbv2(XResource):
         mappings = []
         for setting in valid_settings:
             if (
-                keypresent(setting[0], self.settings)
-                and isinstance(self.settings[setting[0]], setting[1])
+                keypresent(setting[0], self.parameters)
+                and isinstance(self.parameters[setting[0]], setting[1])
                 and setting[3]
             ):
                 if setting[2] and setting[3]:
-                    mappings.append(setting[2](self.settings[setting[0]]))
+                    mappings.append(setting[2](self.parameters[setting[0]]))
                 elif setting[3]:
                     mappings.append(
                         LoadBalancerAttributes(
-                            Key=setting[0], Value=str(self.settings[setting[0]])
+                            Key=setting[0], Value=str(self.parameters[setting[0]])
                         )
                     )
         return mappings
@@ -1014,6 +1016,9 @@ class Elbv2(XResource):
     def set_lb_attributes(self):
         """
         Method to define the LB attributes
+
+        :return: List of LB Attributes
+        :rtype: list
         """
         attributes = []
         if keyisset("LoadBalancerAttributes", self.properties):
@@ -1023,7 +1028,9 @@ class Elbv2(XResource):
                         Key=prop, Value=self.properties["LoadBalancerAttributes"][prop]
                     )
                 )
-        elif not keyisset("LoadBalancerAttributes", self.definition) and self.settings:
+        elif (
+            not keyisset("LoadBalancerAttributes", self.definition) and self.parameters
+        ):
             attributes = self.parse_attributes_settings()
         if attributes:
             return attributes
@@ -1034,7 +1041,7 @@ class Elbv2(XResource):
         Function to parse the LB settings and properties and build the LB object
 
         :param ecs_composex.elbv2.elbv2_stack.Elbv2 self:
-        :return:
+        :param ecs_composex.common.settings.ComposeXSettings settings:
         """
         attrs = {
             "IpAddressType": "ipv4"
