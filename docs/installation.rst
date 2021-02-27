@@ -15,13 +15,13 @@ Stable release
 From Pip
 ---------
 
-To install ECS-ComposeX, run this command in your terminal:
+To install ECS-Compose-X, run this command in your terminal:
 
 .. code-block:: console
 
     $ pip install ecs_composex
 
-This is the preferred method to install ECS-ComposeX, as it will always install the most recent stable release.
+This is the preferred method to install ECS-Compose-X, as it will always install the most recent stable release.
 
 If you don't have `pip`_ installed, this `Python installation guide`_ can guides
 you through the process.
@@ -30,7 +30,7 @@ you through the process.
 From sources
 ============
 
-The sources for ECS-ComposeX can be downloaded from the `Github repo`_.
+The sources for ECS-Compose-X can be downloaded from the `Github repo`_.
 
 You can either clone the public repository:
 

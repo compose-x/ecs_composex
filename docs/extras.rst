@@ -43,10 +43,10 @@ In order to keep make the integration and inter-operability of tools used by dev
 for, mostly, services level x-aws keys such as **-xaws-iam-role** or **x-aws-autoscaling**.
 
 This will allow developers who might have started a journey to ECS using the docker ecs plugin to continue that journey
-with ECS ComposeX without making too many changes.
+with ECS Compose-X without making too many changes.
 
 In case for a similar setting, such as *x-aws-iam-policies* which in ECS Compose-X is under *x-iam/Policies*, these
-non conflicting settings will add up together. However, in case of conflicting information, the ECS ComposeX definition
+non conflicting settings will add up together. However, in case of conflicting information, the ECS Compose-X definition
 will prevail over the x-aws-keys.
 
 AWS AppMesh integration
@@ -68,7 +68,7 @@ Using AWS AppMesh empowers developers to declare how services are supposed to co
 of errors, and administrators can define whether or not the traffic between all the components should be done using TLS
 termination end-to-end, to ensure no man-in-the-middle attacks could happen.
 
-The syntax for AppMesh in ECS ComposeX is a mix of Istio, Envoy and AWS AppMesh definitions.
+The syntax for AppMesh in ECS Compose-X is a mix of Istio, Envoy and AWS AppMesh definitions.
 
 .. seealso::
 
@@ -162,7 +162,7 @@ how much CPU and RAM these containers can use out of the Task Definition.
 In docker-compose (or with swarm), you already have the ability to define the CPU limits and reservations you want to
 give to each individual service in the compose file.
 
-To help having to know the different CPU/RAM settings supported by AWS Fargate, ECS ComposeX, if defined, will automatically
+To help having to know the different CPU/RAM settings supported by AWS Fargate, ECS Compose-X, if defined, will automatically
 use the limits and reservations configuration set in your Docker compose file, and determine what is the closest
 CPU/RAM configuration that will allow your services to run into.
 
@@ -249,7 +249,7 @@ On your workstation, when you run *docker-compose up*, it obviously is going to 
 these are defined as individual services.
 
 To allow multiple services to be merged into a single **Task Definition**, and still treat your docker images separately,
-you can use a specific label that **ECS ComposeX** will recognize to group services into what we called a **family**.
+you can use a specific label that **ECS Compose-X** will recognize to group services into what we called a **family**.
 
 ECS already has a notion of *family*, so I thought, we should use that naming to group services logically.
 
@@ -265,7 +265,7 @@ Remember, the permissions are set at the **Task definition** level. So any conta
 same permissions.
 
 **However**, for the database as an example, which creates a Secret in AWS Secrets Manager, which we would then expose
-to the service with the *Secrets* attribute of the **Container Definition**, ECS ComposeX will specifically add that
+to the service with the *Secrets* attribute of the **Container Definition**, ECS Compose-X will specifically add that
 secret to that container only.
 Equally, for the services linked to SQS queues or SNS topics (etc.), the environment variable providing with the ARN of
 the resource, will also only expose the value to the container set specifically.

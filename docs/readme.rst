@@ -2,9 +2,9 @@
     :description: ECS Compose-X - README
     :keywords: AWS, AWS ECS, Docker, Containers, Compose, docker-compose
 
-============
-ECS ComposeX
-============
+=============
+ECS Compose-X
+=============
 
 |PYPI_VERSION| |PYPI_LICENSE|
 
@@ -90,7 +90,7 @@ CLI Usage
                             compose content version
         init                Initializes your AWS Account with prerequisites
                             settings for ECS
-        version             ECS ComposeX Version
+        version             ECS Compose-X Version
 
     optional arguments:
       -h, --help            show this help message and exit
@@ -116,13 +116,13 @@ that we think could be of interest to you.
 Modularity / "Plug & Play"
 ---------------------------
 
-The majority of people who are going to use ECS ComposeX on a daily basis should be developers who need to have an
+The majority of people who are going to use ECS Compose-X on a daily basis should be developers who need to have an
 environment of their own and want to quickly iterate over it.
 
 However, it is certainly something that Cloud Engineers in charge of the AWS accounts etc. would want to use to make their own lives easy too.
 
-In many areas, you as the end-user of ComposeX will already have infrastructure in place: VPC, DBs and what not.
-So as much as possible, you will be able in ComposeX to define :ref:`lookup_syntax_reference` sections which will find your existing resources,
+In many areas, you as the end-user of Compose-X will already have infrastructure in place: VPC, DBs and what not.
+So as much as possible, you will be able in Compose-X to define :ref:`lookup_syntax_reference` sections which will find your existing resources,
 and map these to the services.
 
 Built for AWS Fargate
@@ -160,11 +160,11 @@ This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypack
 .. _Troposphere: https://github.com/cloudtools/troposphere
 .. _Blog: https://blog.ecs-composex.lambda-my-aws.io/
 .. _Docker Compose: https://docs.docker.com/compose/
-.. _ECS ComposeX: https://github.com/lambda-my-aws/ecs_composex
+.. _ECS Compose-X: https://github.com/lambda-my-aws/ecs_composex
 .. _YAML Specifications: https://yaml.org/spec/
 .. _Extensions fields:  https://docs.docker.com/compose/compose-file/#extension-fields
-.. _ECS ComposeX Project: https://github.com/orgs/lambda-my-aws/projects/3
-.. _CICD Pipeline for multiple services on AWS ECS with ECS ComposeX: https://blog.ecs-composex.lambda-my-aws.io/posts/cicd-pipeline-for-multiple-services-on-aws-ecs-with-ecs-composex/
+.. _ECS Compose-X Project: https://github.com/orgs/lambda-my-aws/projects/3
+.. _CICD Pipeline for multiple services on AWS ECS with ECS Compose-X: https://blog.ecs-composex.lambda-my-aws.io/posts/cicd-pipeline-for-multiple-services-on-aws-ecs-with-ecs-composex/
 .. _the compatibilty matrix: https://nightly.docs.compose-x.io/compatibility/docker_compose.html
 .. _Find out how to use ECS Compose-X in AWS here: https://blog.compose-x.io/posts/use-your-docker-compose-files-as-a-cloudformation-template/index.html
 

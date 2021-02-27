@@ -8,7 +8,7 @@
 Philosophy
 ==========
 
-CloudFormation is awesome, the documentation is excellent and the format easy. So ECS ComposeX wants to keep the format
+CloudFormation is awesome, the documentation is excellent and the format easy. So ECS Compose-X wants to keep the format
 of resources Properties as close to the orignal as possible as well as making it easier as well, just alike resources
 like **AWS::Serverless::Function** which will create all the resources around your Lambda Function as well as the function.
 
@@ -16,8 +16,8 @@ Trying to implement DevOps starting with developers
 ----------------------------------------------------
 
 Whilst this is something that can be used by AWS Cloud Engineers tomorrow to deploy applications on ECS on the behalf
-of their developers, the purpose of ECS ComposeX is to enable developers with a simplistic and familiar syntax that
-takes away the need to be an AWS Expert. If tomorrow developers using ComposeX feel comfortable to deploy services
+of their developers, the purpose of ECS Compose-X is to enable developers with a simplistic and familiar syntax that
+takes away the need to be an AWS Expert. If tomorrow developers using Compose-X feel comfortable to deploy services
 by themselves, I would be able to stop hand-holding them all the time and focus on other areas.
 
 Community focused
@@ -46,13 +46,13 @@ But what about these other services that you need for your application to work? 
 Are you going to run your MySQL server onto ECS too or are you going to want to use AWS RDS?
 How are you going to define the IAM roles and policies for each service? Access Secrets? Configuration settings?
 
-That is the second focus of ECS ComposeX: defining extra sections in the YAML document of your docker compose file, you
+That is the second focus of ECS Compose-X: defining extra sections in the YAML document of your docker compose file, you
 can define, for your databases, queues, secrets etc.
 
-ECS ComposeX will parse every single one of these components. These components can exist on their own but what is of interest
+ECS Compose-X will parse every single one of these components. These components can exist on their own but what is of interest
 is to allow the services to access these.
 
-That is where ECS ComposeX will automatically take care of all of that for you.
+That is where ECS Compose-X will automatically take care of all of that for you.
 
 For services like SQS or SNS, it will create the IAM policies and assign the permissions to your ECS Task Role so the service
 gets access to these via IAM and STS. Credentials will be available through the metadata endpoint, which your SDK will pick
@@ -64,7 +64,7 @@ will handle to generate secrets and expose these via ECS Secrets to your service
 How does it work?
 -----------------
 
-To do so, ECS ComposeX will use the library called `Troposphere`_ and generate all the CloudFormation templates for it.
+To do so, ECS Compose-X will use the library called `Troposphere`_ and generate all the CloudFormation templates for it.
 These extra resources that you need (RDS, SQS etc.), need to be defined. To keep things simple, you can defined them
 in the same way you would do in AWS CloudFormation templates, add these resources to your compose definition.
 
@@ -77,10 +77,10 @@ in the same way you would do in AWS CloudFormation templates, add these resource
     x- and y- are natively defined in the `YAML Specifications`_
 
 
-What does ECS ComposeX do differently? Long version
+What does ECS Compose-X do differently? Long version
 ====================================================
 
-Where ECS ComposeX distinguishes itself from other tools is embedding security for each service individually,
+Where ECS Compose-X distinguishes itself from other tools is embedding security for each service individually,
 so that developers only have to connect resources logically together in the same way they would use links between
 microservices in their Docker Compose definition.
 
@@ -98,7 +98,7 @@ via the definitions in the Docker Compose file that defines the application stac
 permissions.
 
 
-Why did I create ECS ComposeX?
+Why did I create ECS Compose-X?
 ==============================
 
 Many companies I have worked with struggle with providing a true cloudy experience to their developers and enable them
@@ -139,18 +139,18 @@ AWS CloudFormation, which gives a sense of standard to the user, allowing an exp
 are directly involved in the day-to-day life of the project.
 
 
-Implementing least privileges at the heart of ECS ComposeX
+Implementing least privileges at the heart of ECS Compose-X
 ===========================================================
 
 One of the most important value add for a team of Cloud/DevOps engineers who have to look after an environment to use
-ECS ComposeX is the persistent implementation of best practices:
+ECS Compose-X is the persistent implementation of best practices:
 
 * All microservices are using different sets of credentials
 * All microservices are isolated by default and allowed traffic only when explicitly permitted
 * All microservices must be defined as the consumer of a resource (DB, Queue, Table) to be granted access to it.
 
 There have been to many instances of breaches on AWS due to a lack of strict IAM definitions and permissions. Automation
-can solve that problem and with ECS ComposeX the effort is to constantly abide by the least privileges access principle.
+can solve that problem and with ECS Compose-X the effort is to constantly abide by the least privileges access principle.
 
 
 .. _Cookiecutter: https://github.com/audreyr/cookiecutter
@@ -160,6 +160,6 @@ can solve that problem and with ECS ComposeX the effort is to constantly abide b
 .. _Troposphere: https://github.com/cloudtools/troposphere
 .. _Blog: https://blog.ecs-composex.lambda-my-aws.io/
 .. _Docker Compose: https://docs.docker.com/compose/
-.. _ECS ComposeX: https://github.com/lambda-my-aws/ecs_composex
+.. _ECS Compose-X: https://github.com/lambda-my-aws/ecs_composex
 .. _YAML Specifications: https://yaml.org/spec/
 .. _Extensions fields:  https://docs.docker.com/compose/compose-file/#extension-fields

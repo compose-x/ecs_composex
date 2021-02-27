@@ -3,12 +3,12 @@
     :keywords: AWS, AWS ECS, Docker, Containers, Compose, docker-compose
 
 
-Welcome to ECS-ComposeX's documentation!
+Welcome to ECS-Compose-X's documentation!
 ========================================
 
 .. toctree::
     :maxdepth: 1
-    :caption: ECS ComposeX
+    :caption: ECS Compose-X
     :titlesonly:
 
     readme

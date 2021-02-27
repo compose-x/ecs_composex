@@ -14,6 +14,7 @@ Syntax
 ======
 
 .. code-block:: yaml
+    :caption: Private Namespace definition (Uses AWS CloudMap)
 
     PrivateNamespace:
       Name: str # TLD to use for the deployment.
@@ -25,26 +26,17 @@ Syntax
     This domain will be associated with the VPC Route53 "database". If another Namespace using the same domain
     name already is associated with the VPC, this will fail.
 
-
 .. code-block::
-
-    PublicNamespace:
-      Name: str # TLD to use for the deployment.
-      Lookup: str # Domain name to find in CloudMap
-      Use: str # Expects the CloudMap ns- namespace ID
-
-
-.. warning::
-
-    When using CloudMap for public namespace, you CAN NOT use AWS-ACM DNS validation method!
-
-.. code-block::
+    :caption: Public DNS Zone using Route53.
 
     PublicZone:
       Name: str # TLD to use for the deployment.
       Lookup: str # Domain name to find in CloudMap
       Use: str # Expects the CloudMap Z[A-Z0-9]+- Hosted Zone Id
 
+.. attention::
+
+    For ACM DNS Validation and other validations to work, the zone must be able to be resolved.
 
 Examples
 =========
@@ -61,6 +53,8 @@ Examples
 
     x-dns:
       PrivateNamespace:
+        Name: mycluster.lan
         Use: ns-abcd012344
       PublicZone:
+        Name: public-domain.net
         Use: Z0123456ABCD

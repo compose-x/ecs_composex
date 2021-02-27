@@ -22,7 +22,7 @@
     syntax/compose_x/ecs.details/codeguru_profiler
 
 .. toctree::
-    :caption: ComposeX syntax
+    :caption: Compose-X syntax
     :maxdepth: 1
 
     syntax/compose_x/common

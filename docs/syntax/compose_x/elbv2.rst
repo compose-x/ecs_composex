@@ -8,9 +8,8 @@
 x-elbv2
 =======
 
-This module is a rework in-depth of the previous **lb_type** property in **x-configs** aimed to allow a lot more detailed
-configuration, and in the future, to allow more detailed LB configuration, to allow pointing to Lambda or use Cognito
-to authenticate etc.
+This module allows you to define Application and Network Load-Balancers (Gateways not tested yet), and define which
+of your services should receive traffic, and add settings such as health check etc.
 
 Syntax
 ======
@@ -20,13 +19,8 @@ Syntax
     x-elbv2:
       lbA:
         Properties: {}
-        Settings:
-          timeout_seconds: int
-          desync_mitigation_mode: str
-          drop_invalid_header_fields: bool
-          http2: bool
-          cross_zone: bool
-        Services:
+        MacroParameters: {}
+        Services: []
           - name: str
             protocol: str
             port: int
@@ -38,30 +32,49 @@ Syntax
 Properties
 ==========
 
-These as for every other x-resource is to re-use the similar properties as described in the CFN definition of a `Load
-Balancer v2 <https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-elasticloadbalancingv2-loadbalancer.html>`_.
-
-Although once again, the aim of ECS ComposeX is to take a lot of the complexity away from the user.
-The only two properties that are really necessary to set are
+For this particular resource, the only attributes that match the CFN definition that ECS Compose-X will import are
 
 * `Scheme`_
 * `Type`_
+* `LoadBalancerAttributes`_
+
+All other settings are automatically generated for you based on the network and security definitions you have defined in
+the services and targets section.
+
+Subnets associations can be overridden in the `Settings`_ below.
 
 .. hint::
 
     For Application Load Balancers, a new security group will be created automatically.
     Subnets are selected automatically based on the scheme you indicated.
-    If selected a public NLB, the IP addressed will automatically be provisioned too.
+    If selected a public NLB, the EIP addressed will automatically be provisioned too.
+
+
 
 MacroParameters
 ================
+
+.. code-block:: yaml
+    :caption: ELBv2 Macro Parameters
+
+    timeout_seconds: int
+    desync_mitigation_mode: str
+    drop_invalid_header_fields: bool
+    http2: bool
+    cross_zone: bool
+    Ingress: {}
+
 
 .. _load_balancers_ingress_syntax_ref:
 
 Ingress
 -------
 
-Similar syntax as for ECS Services Ingress, allow you to define Ingress (only applies to ALB).
+Similar syntax as for ECS Services Ingress, allow you to define Ingress.
+
+.. tip::
+
+    When using NLB, ingress must be defined at the service level, as NLB do not have a SecurityGroup
 
 .. code-block:: yaml
     :caption: Ingress Syntax
@@ -84,19 +97,32 @@ Similar syntax as for ECS Services Ingress, allow you to define Ingress (only ap
     AwsSources:
       - Type: SecurityGroup|PrefixList (str)
         Id: sg-[a-z0-9]+|pl-[a-z0-9]+
+        Lookup: {}
 
-Settings
-========
+.. tip::
 
-Once again in an effort of making configuration shorter and easier, here as the options you can simply indicate.
+    You can use either Id or Lookup to identify the SecurityGroups.
+    Check out the :ref:`lookup_syntax_reference` syntax reference
 
-* timeout_seconds: 60
-* desync_mitigation_mode: defensive
-* drop_invalid_header_fields: True
-* http2: False
-* cross_zone: True
 
+Other attribute shortcuts
+--------------------------
 These settings are just a shorter notation for the `LB Attributes`_
+
++----------------------------+-------------------------------------------------+---------+
+| Shorthand                  | AttributeName                                   | LB Type |
++============================+=================================================+=========+
+| timeout_seconds            | idle_timeout.timeout_seconds                    | ALB     |
++----------------------------+-------------------------------------------------+---------+
+| desync_mitigation_mode     | routing.http.desync_mitigation_mode             | ALB     |
++----------------------------+-------------------------------------------------+---------+
+| drop_invalid_header_fields | routing.http.drop_invalid_header_fields.enabled | ALB     |
++----------------------------+-------------------------------------------------+---------+
+| http2                      | routing.http2.enabled                           | ALB     |
++----------------------------+-------------------------------------------------+---------+
+| cross_zone                 | load_balancing.cross_zone.enabled               | NLB     |
++----------------------------+-------------------------------------------------+---------+
+
 
 Services
 ========
@@ -132,7 +158,7 @@ The Target Group protocol
 
 
 port
-^^^^
+----
 
 The port of the target to send the traffic to
 
@@ -231,7 +257,6 @@ Properties as per CFN definition.
 
     We highly recommend that you store the OIDC details into a secret in secrets manager!
 
-
 .. hint::
 
     For both AuthenticateCognitoConfig and AuthenticateOidcConfig, the rules defined in `access` will be set to come **after**
@@ -293,3 +318,4 @@ Examples
 .. _Listener definition: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-elasticloadbalancingv2-listener.html
 .. _AuthenticateCognitoConfig : https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-elasticloadbalancingv2-listenerrule-authenticatecognitoconfig.html#cfn-elasticloadbalancingv2-listenerrule-authenticatecognitoconfig-userpoolarn
 .. _AuthenticateOidcConfig: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-elasticloadbalancingv2-listenerrule-authenticateoidcconfig.html
+.. _LoadBalancerAttributes: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-elasticloadbalancingv2-loadbalancer.html#cfn-elasticloadbalancingv2-loadbalancer-loadbalancerattributes

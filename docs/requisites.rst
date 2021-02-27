@@ -7,17 +7,17 @@ Requirements
 AWS Account configuration
 ==========================
 
-IAM Permissions to execute ECS ComposeX
+IAM Permissions to execute ECS Compose-X
 ----------------------------------------
 
-Since ECS ComposeX adds more and more features, we highly recommend to use the AWS Managed policy
+Since ECS Compose-X adds more and more features, we highly recommend to use the AWS Managed policy
 **arn:aws:iam:aws::policy/ReadOnlyAccess**.
 
 Additionally, you will need to use all the features and push your files to S3
 
 .. literalinclude:: composex_iam_policy.json
     :language: json
-    :caption: ECS ComposeX specific permissions
+    :caption: ECS Compose-X specific permissions
 
 
 ECS Settings

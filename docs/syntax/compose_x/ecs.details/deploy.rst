@@ -5,54 +5,38 @@
 .. _composex_deploy_extension:
 
 deploy
-------
+=======
 
 The deploy section allows to set various settings around how the container should be deployed, and what compute resources
 are required to run the service.
 
-For more details on the deploy, see `docker documentation for deploy here <https://docs.docker.com/compose/compose-file/#deploy>`_
+For more details on the deploy, see `docker documentation for deploy here <https://docs.docker.com/compose/compose-file/compose-file-v3/#deploy>`_
 
 At the moment, all keys are not supported, mostly due to the way Fargate by nature is expecting settings to be.
 
 resources
-"""""""""
+-----------
 
-The resources is probably what interests most individuals, in setting up how much CPU and RAM should be setup for the service.
-I have tried to capture for various exceptions for the RAM settings, as you can find in ecs_composex.ecs.docker_tools.set_memory_to_mb
+The resources allow you to define the CPU/RAM reservations and limits. In AWS ECS, the CPU only has one attribute, so
+ECS Compose-X will **use the highest value of the two if both set**.
 
-Once the container definitions are put together, the CPU and RAM requirements are put together. From there, it will automatically
-select the closest valid Fargate CPU/RAM combination and set the parameter for the Task definition.
+Once the container definitions have been generated, the CPU and RAM requirements are added up together.
+From there, it will automatically select the closest valid Fargate CPU/RAM combination and set the parameter for the Task.
 
 .. important::
 
     CPUs should be set between 0.25 and 4 to be valid for Fargate, otherwise you will have an error.
 
-.. warning::
-
-    At the moment, I decided to hardcode these values in the CFN template. It is ugly, but pending bigger work to allow
-    services merging, after which these will be put into a CFN parameter to allow you to change it on the fly.
-
-
 replicas
-^^^^^^^^
++++++++++
 
 This setting allows you to define how many tasks should be running for a given service.
-To make this work, I simply update the MicroserviceCount parameter default value, to keep things configurable.
-
-.. important::::
-
-    It is important for you to know that currently, ECS Does not support restart_policy, so there is no immediate plan
-    to support that value.
-
-.. note::
-
-    update_config will be use very soon to support replacement of services using a LB to possibly use CodeDeploy
-    Blue/Green deployment.
+The value is used to define **MicroserviceCount**.
 
 .. _composex_families_labels_syntax_reference:
 
 labels
-^^^^^^^
++++++++
 
 These labels aren't used for much in native Docker compose as per the documentation. They are only used for the service,
 but not for the containers themselves. Which is great for us, as we can then leverage that structure to implement a
@@ -67,7 +51,7 @@ So, here is the tag that will allow you to merge your reverse proxy or waf (if y
 your web application:
 
 ecs.task.family
-++++++++++++++++
+^^^^^^^^^^^^^^^
 
 For example, you would have:
 
@@ -84,7 +68,7 @@ For example, you would have:
     * a dictionary
 
 ecs.depends.condition
-+++++++++++++++++++++
+^^^^^^^^^^^^^^^^^^^^^^
 
 This label allows to define what condition should this service be monitored under by ECS. Useful when container is set
 as a dependency to another.

@@ -11,7 +11,7 @@ boundaries of the `VPC Limits`_.
 
 .. hint::
 
-    See `VPC Limits`_ for default VPC settings. These can be changed, but ECS ComposeX assumes you are using the default
+    See `VPC Limits`_ for default VPC settings. These can be changed, but ECS Compose-X assumes you are using the default
     settings.
 
 

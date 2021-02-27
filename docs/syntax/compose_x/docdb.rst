@@ -32,7 +32,7 @@ Properties
 DocDB Cluster is rather very simple in its configuration. There aren't 200+ combinations of EngineName and Engine Version
 as for RDS, make life very easy.
 
-Howerver you can copy-paste all the properties you would find in the `DocDB Cluster properties`_, some properties will be
+However you can copy-paste all the properties you would find in the `DocDB Cluster properties`_, some properties will be
 ignored in order to keep the automation going:
 
 * MasterUsername and MasterUserPassword

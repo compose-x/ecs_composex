@@ -43,9 +43,10 @@ Examples:
           iam:
             boundary: arn:aws:iam::aws:policy/PowerUserAccess
 
-.. note::
+.. tip::
 
-    if you specify ony the name, ie. containers, this will resolve into arn:${partition}:iam::${accountId}:policy/containers
+    if you specify ony the name, ie. **containers**, this will resolve into
+    **arn:${AWS::Partition}:iam::${AWS::AccountId}:policy/containers**
 
 Policies
 ========
@@ -69,11 +70,19 @@ Follows the same pattern as CFN IAM Policies
                     - "*"
                   Sid: "AllowDescribeAll"
 
+.. tip::
+
+    If you used the ECS Plugin from docker before, this is equivalent to *x-aws-role*
+
 ManagedPolicies
 ================
 
 Allows you to add additional managed policies. You can specify the full ARN or just a string for the name / path of the
 policy. If will resolve into the same regexp as for `PermissionsBoundary`_
+
+.. tip::
+
+    If you used the ECS Plugin from docker before, this is equivalent to *x-aws-policies*
 
 
 .. hint::

@@ -48,8 +48,8 @@ source_suffix = ".rst"
 master_doc = "index"
 
 # General information about the project.
-project = u"ECS-ComposeX"
-copyright = u"2020, John Mille"
+project = u"ECS Compose-X"
+copyright = u"2020-2021, John Mille"
 author = u"John Preston"
 
 # The version info for the project you're documenting, acts as replacement
@@ -97,7 +97,7 @@ extensions += [
     "sphinx_sitemap",
 ]
 sitemap_locales = ["en"]
-html_baseurl = 'https://docs.composex.io'
+html_baseurl = "https://docs.composex.io"
 
 html_theme = "sphinx_rtd_theme"
 
@@ -145,7 +145,7 @@ latex_documents = [
     (
         master_doc,
         "ecs_composex.tex",
-        u"ECS-ComposeX Documentation",
+        u"ECS Compose-X Documentation",
         u"John Preston",
         "manual",
     ),
@@ -156,7 +156,7 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [(master_doc, "ecs_composex", u"ECS-ComposeX Documentation", [author], 1)]
+man_pages = [(master_doc, "ecs_composex", u"ECS Compose-X Documentation", [author], 1)]
 
 
 # -- Options for Texinfo output ----------------------------------------
@@ -168,10 +168,10 @@ texinfo_documents = [
     (
         master_doc,
         "ecs_composex",
-        u"ECS-ComposeX Documentation",
+        u"ECS Compose-X Documentation",
         author,
         "ecs_composex",
-        "Build your infrastructure and deploy your services to AWS services using docker-compose format file.",
+        "Manage, Configure and deploy your applications/services and AWS resources from your docker-compose definitions.",
         "Miscellaneous",
     ),
 ]
