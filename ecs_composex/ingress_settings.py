@@ -31,7 +31,6 @@ from troposphere.ec2 import SecurityGroupIngress
 from ecs_composex.common import LOG, NONALPHANUM
 from ecs_composex.common import keyisset
 from ecs_composex.common.aws import (
-    get_cross_role_session,
     define_lookup_role_from_info,
     find_aws_resource_arn_from_tags_api,
 )

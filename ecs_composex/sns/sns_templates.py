@@ -174,6 +174,4 @@ def generate_sns_templates(
     """
     if new_topics:
         add_sns_topics(root_template, new_topics, settings.compose_content)
-    if new_subscriptions:
-        pass
     return root_template

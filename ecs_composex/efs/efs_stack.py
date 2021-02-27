@@ -21,7 +21,7 @@ Module to handle the creation of the root EFS stack
 
 from troposphere import Ref, GetAtt, Sub, Select
 from troposphere.ec2 import SecurityGroup
-from troposphere.efs import FileSystem, AccessPoint, MountTarget
+from troposphere.efs import FileSystem, MountTarget
 
 from ecs_composex.common import build_template
 from ecs_composex.common.compose_resources import XResource, set_resources

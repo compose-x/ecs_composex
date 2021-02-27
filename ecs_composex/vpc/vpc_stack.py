@@ -272,7 +272,7 @@ def add_vpc_to_root(root_stack, settings):
             ):
                 settings.create_vpc = True
                 LOG.warning(
-                    "We have both Create and Lookup set for x-vpc." "Creating a new VPC"
+                    "We have both Create and Lookup set for x-vpc. Creating a new VPC"
                 )
             vpc_stack = create_new_vpc(vpc_xkey, settings)
             settings.create_vpc = True

@@ -364,6 +364,56 @@ class ComposeService(object):
         memory_value = set_memory_to_mb(self.definition["shm_size"])
         return If(USE_FARGATE_CON_T, Ref(AWS_NO_VALUE), memory_value)
 
+    def set_add_capacities(self, add_key, valid, cap_adds, all_adds, fargate):
+        """
+        Method to set the kernel capacities to add
+
+        :param str add_key:
+        :param list valid:
+        :param list cap_adds:
+        :param list all_adds:
+        :param list fargate:
+        """
+        if keyisset(add_key, self.definition):
+            for capacity in self.definition[add_key]:
+                if capacity not in valid:
+                    raise ValueError(
+                        f"Linux kernel capacity {capacity} is not supported in ECS or simply not valid"
+                    )
+                if capacity in fargate:
+                    cap_adds.append(capacity)
+                else:
+                    all_adds.append(capacity)
+
+    def set_drop_capacities(
+        self, drop_key, valid, cap_adds, all_adds, all_drops, fargate
+    ):
+        """
+        Method to set the drop kernel capacities
+
+        :param str drop_key:
+        :param list valid:
+        :param list cap_adds:
+        :param list all_adds:
+        :param list all_drops:
+        :param list fargate:
+        """
+        if keyisset(drop_key, self.definition):
+            for capacity in self.definition[drop_key]:
+                if capacity not in valid:
+                    raise ValueError(
+                        f"Linux kernel capacity {capacity} is not supported in ECS or simply not valid"
+                    )
+                if capacity in all_adds or capacity in cap_adds:
+                    raise KeyError(
+                        f"Capacity {capacity} already detected in cap_add. "
+                        "You cannot both add and remove the capacity"
+                    )
+                if capacity in fargate:
+                    cap_adds.append(capacity)
+                else:
+                    all_drops.append(capacity)
+
     def define_kernel_options(self):
         """
         Method to define and return the kernel option settings for cap_add and cap_drop
@@ -420,39 +470,20 @@ class ComposeService(object):
             drop_key, self.definition
         ):
             return Ref(AWS_NO_VALUE)
-        if keyisset(add_key, self.definition):
-            for capacity in self.definition[add_key]:
-                if capacity not in valid:
-                    raise ValueError(
-                        f"Linux kernel capacity {capacity} is not supported in ECS or simply not valid"
-                    )
-                if capacity in fargate:
-                    cap_adds.append(capacity)
-                else:
-                    all_adds.append(capacity)
-        if keyisset(drop_key, self.definition):
-            for capacity in self.definition[drop_key]:
-                if capacity not in valid:
-                    raise ValueError(
-                        f"Linux kernel capacity {capacity} is not supported in ECS or simply not valid"
-                    )
-                if capacity in all_adds or capacity in cap_adds:
-                    raise KeyError(
-                        f"Capacity {capacity} already detected in cap_add. "
-                        "You cannot both add and remove the capacity"
-                    )
-                if capacity in fargate:
-                    cap_adds.append(capacity)
-                else:
-                    all_drops.append(capacity)
+
+        self.set_add_capacities(add_key, valid, cap_adds, all_adds, fargate)
+        self.set_drop_capacities(
+            drop_key, valid, cap_adds, all_adds, all_drops, fargate
+        )
+        kwargs = {
+            "Add": cap_adds or Ref(AWS_NO_VALUE),
+            "Drop": cap_drops or Ref(AWS_NO_VALUE),
+        }
         if all_adds:
             cap_adds.append(If(USE_FARGATE_CON_T, Ref(AWS_NO_VALUE), all_adds))
         if all_drops:
             cap_drops.append(If(USE_FARGATE_CON_T, Ref(AWS_NO_VALUE), all_drops))
-        return KernelCapabilities(
-            Add=cap_adds if cap_adds else Ref(AWS_NO_VALUE),
-            Drop=cap_drops if cap_drops else Ref(AWS_NO_VALUE),
-        )
+        return KernelCapabilities(**kwargs)
 
     def define_ulimits(self):
         """
@@ -712,7 +743,6 @@ class ComposeService(object):
                     ):
                         tmpfs_def["Size"] = int(s_volume["tmpfs"]["size"])
                     self.tmpfses.append(tmpfs_def)
-                    continue
                 else:
                     if not volumes:
                         continue

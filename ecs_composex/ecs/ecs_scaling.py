@@ -34,14 +34,13 @@ from ecs_composex.common import LOG, keyisset, keypresent
 from ecs_composex.ecs.ecs_params import SERVICE_SCALING_TARGET
 
 
-def generate_scaling_out_steps(steps, target):
+def validate_steps_definition(steps, unordered):
     """
+    Validates that the steps definition is correct
 
-    :param list steps:
-    :param tropsphere.applicationautoscaling.ScalingTarget target: The defined max in the Scalable Target
-    :return:
+    :param list steps: list of step definitions
+    :param list unordered: list of steps, unordered.
     """
-    unordered = []
     allowed_keys = ["lower_bound", "upper_bound", "count"]
     for step_def in steps:
         if not all(key in allowed_keys for key in step_def.keys()):
@@ -57,15 +56,27 @@ def generate_scaling_out_steps(steps, target):
                 step_def,
             )
         unordered.append(step_def)
-    ordered = sorted(unordered, key=lambda i: i["lower_bound"])
-    if target and ordered[-1]["count"] > target.MaxCapacity:
+
+
+def rectify_scaling_steps(cfn_steps):
+    """
+    Function to rectify settings to avoid errors
+
+    :param list cfn_steps:
+    """
+    if hasattr(cfn_steps[-1], "MetricIntervalUpperBound") and not isinstance(
+        getattr(cfn_steps[-1], "MetricIntervalUpperBound"), Ref
+    ):
+        LOG.warning("The last upper bound shall not be set. Deleting value to comply}")
+        setattr(cfn_steps[-1], "MetricIntervalUpperBound", Ref(AWS_NO_VALUE))
+    if cfn_steps[0].MetricIntervalLowerBound == 0:
         LOG.warning(
-            f"The current maximum in your Range is {target.MaxCapacity} whereas you defined {ordered[-1]['count']}"
-            " for step scaling. Adjusting to step scaling max."
+            "You defined the lower bound to 0. To enable alarm threshold we are setting it to 1"
         )
-        setattr(target, "MaxCapacity", ordered[-1]["count"])
-    cfn_steps = []
-    pre_upper = 0
+        setattr(cfn_steps[0], "MetricIntervalLowerBound", 1)
+
+
+def define_step_adjustment(pre_upper, ordered, cfn_steps):
     for step_def in ordered:
         if pre_upper and not int(step_def["lower_bound"]) >= pre_upper:
             raise ValueError(
@@ -84,16 +95,29 @@ def generate_scaling_out_steps(steps, target):
         pre_upper = (
             int(step_def["upper_bound"]) if keyisset("upper_bound", step_def) else None
         )
-    if hasattr(cfn_steps[-1], "MetricIntervalUpperBound") and not isinstance(
-        getattr(cfn_steps[-1], "MetricIntervalUpperBound"), Ref
-    ):
-        LOG.warning("The last upper bound shall not be set. Deleting value to comply}")
-        setattr(cfn_steps[-1], "MetricIntervalUpperBound", Ref(AWS_NO_VALUE))
-    if cfn_steps[0].MetricIntervalLowerBound == 0:
+
+
+def generate_scaling_out_steps(steps, target):
+    """
+    Function to generate the scaling steps
+
+    :param list steps:
+    :param tropsphere.applicationautoscaling.ScalingTarget target: The defined max in the Scalable Target
+    :return:
+    """
+    unordered = []
+    validate_steps_definition(steps, unordered)
+    ordered = sorted(unordered, key=lambda i: i["lower_bound"])
+    if target and ordered[-1]["count"] > target.MaxCapacity:
         LOG.warning(
-            "You defined the lower bound to 0. To enable alarm threshold we are setting it to 1"
+            f"The current maximum in your Range is {target.MaxCapacity} whereas you defined {ordered[-1]['count']}"
+            " for step scaling. Adjusting to step scaling max."
         )
-        setattr(cfn_steps[0], "MetricIntervalLowerBound", 1)
+        setattr(target, "MaxCapacity", ordered[-1]["count"])
+    cfn_steps = []
+    pre_upper = 0
+    define_step_adjustment(pre_upper, ordered, cfn_steps)
+    rectify_scaling_steps(cfn_steps)
     return cfn_steps
 
 
