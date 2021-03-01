@@ -62,8 +62,18 @@ def set_resources(settings, resource_class, res_key, mod_key=None):
 
 
 def validate_service_definition(service):
+    """
+    Function to validate that the minimum required information is provided.
+
+    :param service:
+    :return:
+    """
+    variants = []
     required_keys = ["name", "access"]
-    if not set(required_keys).issubset(service):
+    for key in required_keys:
+        variants.append(key.lower())
+        variants.append(key.title())
+    if not all(key in variants for key in service.keys()):
         raise KeyError(
             "Services definition must contain at least",
             required_keys,
@@ -87,6 +97,12 @@ def get_parameter_settings(resource, parameter):
         resource.attributes_outputs[parameter]["ImportValue"],
         parameter,
     )
+
+
+def get_setting_key(name, settings_dict):
+    if keyisset(name.title(), settings_dict):
+        return name.title()
+    return name
 
 
 class XResource(object):
@@ -159,6 +175,9 @@ class XResource(object):
         return self.logical_name
 
     def debug_families_targets(self):
+        """
+        Method to troubleshoot family and service mapping
+        """
         for family in self.families_targets:
             LOG.debug(f"Mapped {family[0].name} to {self.name}.")
             if not family[1] and family[2]:
@@ -167,7 +186,16 @@ class XResource(object):
                 LOG.debug(f"Applies to all services of {family[0].name}")
 
     def handle_families_targets_expansion(self, service, settings):
-        the_service = [s for s in settings.services if s.name == service["name"]][0]
+        """
+        Method to list all families and services that are targets of the resource.
+        Allows to implement family and service level association to resource
+
+        :param dict service: Service definition in compose file
+        :param ecs_composex.common.settings.ComposeXSettings settings: Execution settings
+        """
+        name_key = get_setting_key("name", service)
+        access_key = get_setting_key("access", service)
+        the_service = [s for s in settings.services if s.name == service[name_key]][0]
         for family_name in the_service.families:
             family_name = NONALPHANUM.sub("", family_name)
             if family_name not in [f[0].name for f in self.families_targets]:
@@ -176,7 +204,7 @@ class XResource(object):
                         settings.families[family_name],
                         False,
                         [the_service],
-                        service["access"],
+                        service[access_key],
                         service,
                     )
                 )
@@ -194,8 +222,10 @@ class XResource(object):
             LOG.info(f"No services defined for {self.name}")
             return
         for service in self.services:
+            name_key = get_setting_key("name", service)
+            access_key = get_setting_key("access", service)
             validate_service_definition(service)
-            service_name = service["name"]
+            service_name = service[name_key]
             if service_name in settings.families and service_name not in [
                 f[0].name for f in self.families_targets
             ]:
@@ -204,7 +234,7 @@ class XResource(object):
                         settings.families[service_name],
                         True,
                         settings.families[service_name].services,
-                        service["access"],
+                        service[access_key],
                         service,
                     )
                 )
@@ -226,12 +256,14 @@ class XResource(object):
         :param ecs_composex.common.settings.ComposeXSettings settings:
         :return:
         """
-        the_service = [s for s in settings.services if s.name == service["name"]][0]
+        name_key = get_setting_key("name", service)
+        scaling_key = get_setting_key("scaling", service)
+        the_service = [s for s in settings.services if s.name == service[name_key]][0]
         for family_name in the_service.families:
             family_name = NONALPHANUM.sub("", family_name)
             if family_name not in [f[0].name for f in self.families_scaling]:
                 self.families_scaling.append(
-                    (settings.families[family_name], service["scaling"])
+                    (settings.families[family_name], service[scaling_key])
                 )
 
     def set_services_scaling(self, settings):
@@ -244,17 +276,19 @@ class XResource(object):
         if not self.services:
             return
         for service in self.services:
-            if not keyisset("scaling", service):
+            name_key = get_setting_key("name", service)
+            scaling_key = get_setting_key("scaling", service)
+            if not keyisset(scaling_key, service):
                 LOG.debug(
-                    f"No scaling for {service['name']} defined based on {self.name}"
+                    f"No scaling for {service[name_key]} defined based on {self.name}"
                 )
                 continue
-            service_name = service["name"]
+            service_name = service[name_key]
             if service_name in settings.families and service_name not in [
                 f[0].name for f in self.families_scaling
             ]:
                 self.families_scaling.append(
-                    (settings.families[service_name], service["scaling"])
+                    (settings.families[service_name], service[scaling_key])
                 )
             elif service_name in settings.families and service_name in [
                 f[0].name for f in self.families_scaling
@@ -407,7 +441,7 @@ class XResource(object):
         """
         Method to create the outputs for XResources
         """
-        if self.stack:
+        if self.stack and not self.stack.is_void:
             root_stack = self.stack.title
         else:
             root_stack = self.module_name
