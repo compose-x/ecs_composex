@@ -61,27 +61,6 @@ def set_resources(settings, resource_class, res_key, mod_key=None):
         settings.compose_content[res_key][resource_name] = new_definition
 
 
-def validate_service_definition(service):
-    """
-    Function to validate that the minimum required information is provided.
-
-    :param service:
-    :return:
-    """
-    variants = []
-    required_keys = ["name", "access"]
-    for key in required_keys:
-        variants.append(key.lower())
-        variants.append(key.title())
-    if not all(key in variants for key in service.keys()):
-        raise KeyError(
-            "Services definition must contain at least",
-            required_keys,
-            "Got",
-            service.keys(),
-        )
-
-
 def get_parameter_settings(resource, parameter):
     """
     Function to define a set of values for the purpose of exposing resources settings from their stack to another.
@@ -224,7 +203,6 @@ class XResource(object):
         for service in self.services:
             name_key = get_setting_key("name", service)
             access_key = get_setting_key("access", service)
-            validate_service_definition(service)
             service_name = service[name_key]
             if service_name in settings.families and service_name not in [
                 f[0].name for f in self.families_targets
