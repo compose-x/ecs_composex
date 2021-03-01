@@ -8,6 +8,11 @@
 x-s3
 =====
 
+-----------------------------------------------------------------
+Create or use existing S3 buckets to use for your applications
+-----------------------------------------------------------------
+
+
 Properties
 ===========
 
@@ -140,5 +145,9 @@ Examples
 .. literalinclude:: ../../../use-cases/s3/lookup_only.yml
     :language: yaml
     :caption: Lookup and use only existing buckets
+
+.. literalinclude:: ../../../use-cases/s3/full_s3_bucket_properties.yml
+    :language: yaml
+    :caption: Create new bucket with AWS CFN properties
 
 .. _AWS CFN S3 Definition: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-s3-bucket.html
