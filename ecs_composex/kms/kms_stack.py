@@ -67,9 +67,6 @@ class KmsKey(XResource):
 
     policies_scaffolds = get_access_types()
 
-    def __init__(self, name, definition, module_name, settings):
-        super().__init__(name, definition, module_name, settings)
-
     def init_outputs(self):
         self.output_properties = {
             KMS_KEY_ID: (self.logical_name, self.cfn_resource, Ref, None),

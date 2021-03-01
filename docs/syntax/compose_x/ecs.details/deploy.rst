@@ -57,7 +57,7 @@ For example, you would have:
 
 .. literalinclude:: ../../../../use-cases/blog.features.yml
     :language: yaml
-    :emphasize-lines: 25-26, 68-70, 147-149
+    :emphasize-lines: 30-31, 83-85
 
 .. warning::
 

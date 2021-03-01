@@ -8,6 +8,10 @@
 x-sqs
 ======
 
+----------------------------------------------------------------------------
+Define your AWS SQS Queues and service scaling based on messages queue depth
+----------------------------------------------------------------------------
+
 Syntax
 =======
 
@@ -24,22 +28,18 @@ Properties
 ==========
 
 Mandatory Properties
-^^^^^^^^^^^^^^^^^^^^^
+--------------------
 
 SQS does not require any properties to be set in order to create the queue. No settings are mandatory.
 
 Special properties
-^^^^^^^^^^^^^^^^^^
+------------------
 
 It is possible to define Dead Letter Queues for SQS messages (DLQ). It is possible to easily define this in ECS ComposeX
 simply by referring to the name of the queue, deployed in this same deployment.
 
 .. warning:: It won't be possible to import a queue ARN at this time in ECS ComposeX that exists outside of the stack today.
 
-Settings
-========
-
-No specific settings for SQS at this point.
 
 Services
 ========
@@ -51,7 +51,7 @@ Similar to all other modules, we have a list of dictionaries, with two keys of i
 * scaling: Allow to define the scaling behaviour of the service based on SQS Approximate Messages Visible.
 
 IAM Permissions
-==================
+----------------
 
 * RO - read only
 * RWMessages - read/write messages on the queue
@@ -61,10 +61,34 @@ IAM Permissions
 
     IAM policies, are defined in sqs/sqs_perms.json
 
+.. hint::
+
+    You can also use AWS SAM Permissions as defined in `AWS Documentation <https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-policy-template-list.html>`__
+
+    .. code-block:: yaml
+        :caption: SAM Policy Example
+
+        services:
+          serviceA: {}
+        x-sqs:
+          QueueA:
+            Services:
+              - name: serviceA
+                access: SQSPollerPolicy
+
 Lookup
 ======
 
-Lookup is currently implemented for SQS!
+See :ref:`lookup_syntax_reference` for more details about Lookup.
+
+.. code-block:: yaml
+
+    x-sqs:
+      QueueA:
+        Lookup:
+          Tags:
+            - Name: queue-a-123
+            - owner: app01
 
 Scaling
 =======
@@ -83,15 +107,19 @@ You can now defined StepScaling on the ECS Service based on the number of messag
       scaling_out_cooldown: int
 
 
-.. note::
+.. tip::
+
+    You can define scaling rules on SQS Queues that you are importing via `Lookup`_
+
+.. attention::
 
     If you already setup other Scaling policies for the service, beware of race conditions!
 
-ComposeX Features
+Special Features
 =================
 
 Redrive policy
-^^^^^^^^^^^^^^
+--------------
 
 The redrive policy works exactly as you would expect it and is defined in the exact same way as for within
 the SQS proprties. Only, here, you only need to put the queue name of the DLQ. The generated ARN etc. will be
@@ -117,6 +145,10 @@ Example with DLQ:
           - APPQUEUE01
 
 
+Settings
+===========
+
+Refer to :ref:`settings_syntax_reference`
 
 Examples
 ========

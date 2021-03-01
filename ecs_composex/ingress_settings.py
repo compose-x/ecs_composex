@@ -56,13 +56,13 @@ def generate_security_group_props(allowed_source):
     """
     props = {
         "CidrIp": (
-            allowed_source["IPv4"]
-            if keyisset("IPv4", allowed_source)
+            allowed_source[Ingress.ipv4_key]
+            if keyisset(Ingress.ipv4_key, allowed_source)
             else Ref(AWS_NO_VALUE)
         ),
         "CidrIpv6": (
-            allowed_source["IPv6"]
-            if keyisset("IPv6", allowed_source)
+            allowed_source[Ingress.ipv6_key]
+            if keyisset(Ingress.ipv6_key, allowed_source)
             else Ref(AWS_NO_VALUE)
         ),
     }
