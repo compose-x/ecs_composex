@@ -192,9 +192,14 @@ def import_vpc_settings(vpc_settings):
         raise KeyError("You must specify the VPC ID to use for deployment")
     settings = {VPC_ID.title: vpc_settings[VPC_ID.title]}
     required_subnets = [APP_SUBNETS.title, PUBLIC_SUBNETS.title, STORAGE_SUBNETS.title]
+    excluded = [VPC_ID.title, "RoleArn"]
     if not all(subnet in vpc_settings.keys() for subnet in required_subnets):
         raise KeyError("All required subnets must be indicated", required_subnets)
-    extra_subnets = [key for key in vpc_settings.keys() if key not in required_subnets]
+    extra_subnets = [
+        key
+        for key in vpc_settings.keys()
+        if key not in required_subnets and key not in excluded
+    ]
     set_subnets_from_use(required_subnets, vpc_settings, settings)
     set_subnets_from_use(extra_subnets, vpc_settings, settings)
 
