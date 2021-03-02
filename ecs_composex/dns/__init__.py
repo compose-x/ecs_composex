@@ -225,6 +225,7 @@ class DnsSettings(object):
     Class to ingest the x-dns settings
     """
 
+    main_key = "x-dns"
     private_namespace_key = "PrivateNamespace"
     public_namespace_key = "PublicNamespace"
     public_zone_key = "PublicZone"
@@ -245,21 +246,22 @@ class DnsSettings(object):
                 PrivateNamespace.nested_name_parameter.title: self.default_private_name
             }
         }
-        dns_settings = {PrivateNamespace.key: {"Name": self.default_private_name}}
+        dns_settings = (
+            {}
+            if not keyisset(self.main_key, settings.compose_content)
+            else settings.compose_content[self.main_key]
+        )
 
-        if keyisset("x-dns", settings.compose_content):
-            dns_settings = settings.compose_content["x-dns"]
-        if (
-            keyisset("x-dns", settings.compose_content)
-            and not keyisset(PrivateNamespace.key, settings.compose_content["x-dns"])
-            and settings.use_appmesh
-        ):
+        if not dns_settings and not settings.requires_private_namespace:
             LOG.warning(
-                "You defined to use AppMesh without setting up a PrivateNamespace. Adding a default one."
+                f"No {self.main_key} defined and no mesh nor service registry defined. Skipping"
             )
-            dns_settings.update(
-                {PrivateNamespace.key: {"Name": self.default_private_name}}
+            return
+        elif not dns_settings and settings.requires_private_namespace:
+            LOG.info(
+                f"No {self.main_key} defined but a private namespace is required. Using default"
             )
+            dns_settings = {PrivateNamespace.key: {"Name": self.default_private_name}}
 
         if keyisset(PrivateNamespace.key, dns_settings):
             self.private_zone = PrivateNamespace(dns_settings[PrivateNamespace.key])
