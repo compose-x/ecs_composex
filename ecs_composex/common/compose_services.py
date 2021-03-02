@@ -201,6 +201,7 @@ class ComposeService(object):
         self.replicas = 1
         self.container = None
         self.volumes = []
+        self.logging = {}
         self.secrets = []
         self.env_files = []
         self.tmpfses = []
@@ -277,6 +278,7 @@ class ComposeService(object):
         """
         secrets = [secret for secrets in self.secrets for secret in secrets.ecs_secret]
         ports_mappings = self.define_port_mappings()
+        self.define_compose_logging()
         self.container_definition = ContainerDefinition(
             Image=Ref(self.image_param),
             Name=self.name,
@@ -285,14 +287,7 @@ class ComposeService(object):
             MemoryReservation=self.mem_resa if self.mem_resa else Ref(AWS_NO_VALUE),
             PortMappings=ports_mappings[0] if self.ports else Ref(AWS_NO_VALUE),
             Environment=self.cfn_environment,
-            LogConfiguration=LogConfiguration(
-                LogDriver="awslogs",
-                Options={
-                    "awslogs-group": self.logical_name,
-                    "awslogs-region": Ref(AWS_REGION),
-                    "awslogs-stream-prefix": self.name,
-                },
-            ),
+            LogConfiguration=self.logging,
             Command=self.command,
             HealthCheck=self.ecs_healthcheck,
             DependsOn=Ref(AWS_NO_VALUE),
@@ -317,6 +312,69 @@ class ComposeService(object):
             User=self.user_group if self.user_group else Ref(AWS_NO_VALUE),
         )
         self.container_parameters.update({self.image_param.title: self.image})
+
+    def define_compose_logging(self):
+        """
+        Method to define logging for service.
+        """
+        print("HELLO")
+        default = LogConfiguration(
+            LogDriver="awslogs",
+            Options={
+                "awslogs-group": self.logical_name,
+                "awslogs-region": Ref(AWS_REGION),
+                "awslogs-stream-prefix": self.name,
+            },
+        )
+        if not keyisset("logging", self.definition) or (
+            keyisset("logging", self.definition)
+            and not keyisset("driver", self.definition["logging"])
+        ):
+            print("No logging defined. Using default")
+            self.logging = default
+            return
+        logging_def = self.definition["logging"]
+        valid_drivers = ["awslogs"]
+        if not logging_def["driver"] in valid_drivers:
+            LOG.warning(
+                "The logging driver",
+                logging_def["driver"],
+                "is not supported. Only supported are",
+                valid_drivers,
+            )
+            self.logging = default
+        elif logging_def["driver"] == "awslogs" and keyisset("options", logging_def):
+            options_def = logging_def["options"]
+            options = {
+                "awslogs-group": set_else_none(
+                    "awslogs-group", options_def, alt_value=self.logical_name
+                ),
+                "awslogs-region": set_else_none(
+                    "awslogs-region", options_def, alt_value=Ref(AWS_REGION)
+                ),
+                "awslogs-stream-prefix": set_else_none(
+                    "awslogs-stream-prefix", options_def, alt_value=self.name
+                ),
+                "awslogs-endpoint": set_else_none(
+                    "awslogs-endpoint", options_def, alt_value=Ref(AWS_NO_VALUE)
+                ),
+                "awslogs-datetime-format": set_else_none(
+                    "awslogs-datetime-format", options_def, alt_value=Ref(AWS_NO_VALUE)
+                ),
+                "awslogs-multiline-pattern": set_else_none(
+                    "awslogs-multiline-pattern",
+                    options_def,
+                    alt_value=Ref(AWS_NO_VALUE),
+                ),
+                "mode": set_else_none("mode", options_def, alt_value=Ref(AWS_NO_VALUE)),
+                "max-buffer-size": set_else_none(
+                    "max-buffer-size", options_def, alt_value=Ref(AWS_NO_VALUE)
+                ),
+            }
+            self.logging = LogConfiguration(
+                LogDriver="awslogs",
+                Options=options,
+            )
 
     def define_tmpfs(self):
         """
@@ -1210,11 +1268,6 @@ class ComposeFamily(object):
             for service in self.services
             if service.x_logging and keyisset("RetentionInDays", service.x_logging)
         ]
-        enabled = [
-            service.x_logging["CreateLogGroup"]
-            for service in self.services
-            if service.x_logging and keypresent("CreateLogGroup", service.x_logging)
-        ]
         if periods and max(periods) != LOG_GROUP_RETENTION.Default:
             closest_valid = min(
                 ecs_params.LOG_GROUP_RETENTION.AllowedValues,
@@ -1226,9 +1279,15 @@ class ComposeFamily(object):
                 )
             self.reset_logging_retention_period(closest_valid)
             self.stack_parameters.update({LOG_GROUP_RETENTION.title: closest_valid})
+        create = [
+            service.logging.Options["awslogs-create-group"]
+            for service in self.services
+            if service.logging
+            and keypresent("awslogs-create-group", service.logging.Options)
+        ]
         if (
-            enabled
-            and not all(enabled)
+            create
+            and not all(isinstance(opt, Ref) for opt in create)
             and (
                 not keypresent(ecs_params.CREATE_LOG_GROUP.title, self.stack_parameters)
                 or not self.stack_parameters[ecs_params.CREATE_LOG_GROUP.title]
