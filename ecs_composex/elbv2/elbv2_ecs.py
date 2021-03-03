@@ -178,13 +178,6 @@ def set_healthcheck_definition(props, target_definition):
             except ValueError:
                 LOG.error(target_definition["name"], target_definition["healthcheck"])
                 raise
-    if (
-        keyisset("healthcheck", target_definition)
-        and isinstance(target_definition["healthcheck"], str)
-        and not healthcheck_reg.match(target_definition["healthcheck"])
-    ):
-        LOG.error(target_definition["healthcheck"])
-        raise
     props.update(healthcheck_props)
 
 
