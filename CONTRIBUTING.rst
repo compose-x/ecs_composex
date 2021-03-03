@@ -15,7 +15,7 @@ Types of Contributions
 Report Bugs
 ~~~~~~~~~~~
 
-Report bugs at https://github.com/lambda-my-aws/ecs_composex/issues.
+Report bugs at https://github.com/compose-x/ecs_composex/issues.
 
 If you are reporting a bug, please include:
 
