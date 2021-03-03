@@ -285,6 +285,7 @@ def generate_services(settings):
         )
         family.service_config.network.associate_aws_igress_rules(family.template)
         family.service_config.network.associate_ext_igress_rules(family.template)
+        family.service_config.network.add_self_ingress(family)
         family.stack_parameters.update(
             {
                 ecs_params.SERVICE_NAME_T: family.logical_name,

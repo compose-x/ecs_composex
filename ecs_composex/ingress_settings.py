@@ -201,6 +201,7 @@ class Ingress(object):
         self.ports = ports
         self.aws_ingress_rules = []
         self.ext_ingress_rules = []
+        self.to_self_rules = []
 
     def __repr__(self):
         return dumps(self.definition, indent=2)
