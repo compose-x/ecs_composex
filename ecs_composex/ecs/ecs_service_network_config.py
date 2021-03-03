@@ -258,9 +258,9 @@ class ServiceNetworking(Ingress):
         self.configuration = merge_services_network(family)
         self.use_cloudmap = self.configuration["UseCloudmap"]
         self.is_public = self.configuration["IsPublic"]
-        self.ingress_from_self = True
+        self.ingress_from_self = False
         super().__init__(self.configuration[self.master_key], self.ports)
-        self.add_self_ingress(family)
+        self.ingress_from_self = keyisset(self.self_key, self.definition)
 
     def merge_networks(self, family):
         """
@@ -294,25 +294,27 @@ class ServiceNetworking(Ingress):
     def add_self_ingress(self, family):
         """
         Method to allow communications internally to the group on set ports
-        :param troposphere.ec2.SecurityGroup sg:
+
         :param ecs_composex.common.compose_services.ComposeFamily family:
         :return:
         """
         if not family.template or not family.ecs_service or not self.ingress_from_self:
             return
         for port in self.ports:
-            SecurityGroupIngress(
-                f"AllowingMyselfToMyselfOnPort{port['published']}",
-                template=family.template,
-                FromPort=port["published"],
-                ToPort=port["published"],
-                IpProtocol=port["protocol"],
-                GroupId=GetAtt(family.ecs_service.sg, "GroupId"),
-                SourceSecurityGroupId=GetAtt(family.ecs_service.sg, "GroupId"),
-                SourceSecurityGroupOwnerId=Ref(AWS_ACCOUNT_ID),
-                Description=Sub(
-                    f"Allowing traffic internally on port {port['published']}"
-                ),
+            self.to_self_rules.append(
+                SecurityGroupIngress(
+                    f"AllowingInterCommunicationPort{port['published']}{port['protocol']}",
+                    template=family.template,
+                    FromPort=port["published"],
+                    ToPort=port["published"],
+                    IpProtocol=port["protocol"],
+                    GroupId=GetAtt(family.ecs_service.sg, "GroupId"),
+                    SourceSecurityGroupId=GetAtt(family.ecs_service.sg, "GroupId"),
+                    SourceSecurityGroupOwnerId=Ref(AWS_ACCOUNT_ID),
+                    Description=Sub(
+                        f"Allowing traffic internally on port {port['published']}"
+                    ),
+                )
             )
 
     def add_lb_ingress(self, family, lb_name, lb_sg_ref):
