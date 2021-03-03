@@ -80,14 +80,16 @@ def fix_nlb_settings(props):
     validate_tcp_health_counts(props)
 
 
-def handle_ping_settings(props, groups):
+def handle_ping_settings(props, ping_raw):
     """
     Function to setup the "ping" settings
 
     :param dict props:
-    :param list, tuple groups:
+    :param str ping_raw:
     :return:
     """
+    ping_re = re.compile(r"^([\d]|10):([\d]|10):([\d]{1,3}):([\d]{1,3})$")
+    groups = ping_re.match(ping_raw).groups()
     ping_mapping = (
         ("HealthyThresholdCount", (2, 10)),
         ("UnhealthyThresholdCount", (2, 10)),
@@ -103,45 +105,32 @@ def handle_ping_settings(props, groups):
     fix_nlb_settings(props)
 
 
-def handle_path_settings(props, groups):
+def handle_path_settings(props, path_raw):
     """
     Function to set the path and codes properties
 
     :param dict props:
-    :param list,tuple groups:
+    :param str path_raw:
     :return:
     """
-    if props["HealthCheckProtocol"] not in ["HTTP", "HTTPS"]:
+    path_re = re.compile(
+        r"(/[\S][^:]+.$)|(/[\S]+)(?::)((?:[\d]{1,4},?){1,}.$)|((?:[\d]{1,4},?){1,}.$)"
+    )
+    groups = path_re.search(path_raw).groups()
+    if not groups:
+        LOG.debug("No PATH or ReturnCodes set.")
+        return
+    path = groups[0] or groups[1]
+    codes = groups[2] or groups[3]
+    if path:
+        props["HealthCheckPath"] = path
+    if codes:
+        props["Matcher"] = Matcher(HttpCode=codes)
+    if props["HealthCheckProtocol"] not in ["HTTP", "HTTPS"] and codes:
         raise ValueError(
             groups,
-            "Protocol and return codes are only valid for HTTP and HTTPS healthcheck",
+            "Protocol and return codes are only valid for HTTP and HTTPS HealthCheck",
         )
-    path_re = re.compile(r"^[/]{1}[\S]+$")
-    codes_re = re.compile(r"^[\d,]+$")
-    for value in groups:
-        if path_re.match(value):
-            props["HealthCheckPath"] = value
-        elif codes_re.match(value):
-            props["Matcher"] = Matcher(HttpCode=value)
-
-
-def handle_optional_settings(props, groups):
-    """
-    Function to handle optional parts of the healtcheck
-
-    :param dict props:
-    :param tuple, groups:
-    :return:
-    """
-    ping_rex = r"^([\d]{1}|10):([\d]{1}|10):([\d]{1,3}):([\d]{1,3})$"
-    ping_re = re.compile(ping_rex)
-    path_rex = r"(?:.*):?([\/]{1}[\S]+):([\d,]+$)"
-    path_re = re.compile(path_rex)
-    handlers = [(path_re, handle_path_settings), (ping_re, handle_ping_settings)]
-    for value in groups:
-        for handle in handlers:
-            if value and handle[0].match(value):
-                handle[1](props, handle[0].match(value).groups())
 
 
 def set_healthcheck_definition(props, target_definition):
@@ -164,26 +153,28 @@ def set_healthcheck_definition(props, target_definition):
         "HealthCheckPort",
         "HealthCheckProtocol",
     )
-    required_rex = r"^([\d]{2,5}):(HTTPS|HTTP|TCP_UDP|TCP|TLS|UDP)$"
-    healthcheck_regexp = (
+    required_rex = re.compile(r"^([\d]{2,5}):(HTTPS|HTTP|TCP_UDP|TCP|TLS|UDP)$")
+    healthcheck_reg = re.compile(
         r"(^(?:[\d]{2,5}):(?:HTTPS|HTTP|TCP_UDP|TCP|TLS|UDP)):?"
-        r"((?:[\d]{1}|10):(?:[\d]{1}|10):[\d]{1,3}:[\d]{1,3})?:?"
-        r"([\/a-z0-9.-_][^:]+:[\d,]+$)?"
+        r"((?:[\d]{1}|10):(?:[\d]{1}|10):[\d]{1,3}:[\d]{1,3})?:"
+        r"?((?:/[\S][^:]+.$)|(?:/[\S]+)(?::)(?:(?:[\d]{1,4},?){1,}.$)|(?:(?:[\d]{1,4},?){1,}.$))?"
     )
-    LOG.debug(healthcheck_regexp)
-    healthcheck_reg = re.compile(healthcheck_regexp)
-    if (
-        keyisset("healthcheck", target_definition)
-        and isinstance(target_definition["healthcheck"], str)
-        and healthcheck_reg.match(target_definition["healthcheck"])
+    if keyisset("healthcheck", target_definition) and isinstance(
+        target_definition["healthcheck"], str
     ):
-        groups = healthcheck_reg.match(target_definition["healthcheck"]).groups()
-        required_re = re.compile(required_rex)
-        for count, value in enumerate(required_re.match(groups[0]).groups()):
+        healthcheck_raw = target_definition["healthcheck"]
+        groups = healthcheck_reg.search(healthcheck_raw).groups()
+        if not groups[0]:
+            raise ValueError(
+                "You need to define at least the Protocol and port for healthcheck"
+            )
+        for count, value in enumerate(required_rex.match(groups[0]).groups()):
             healthcheck_props[required_mapping[count]] = value
-        if len(groups) >= 2:
+        if groups[1]:
+            handle_ping_settings(healthcheck_props, groups[1])
+        if groups[2]:
             try:
-                handle_optional_settings(healthcheck_props, groups[1:])
+                handle_path_settings(healthcheck_props, groups[2])
             except ValueError:
                 LOG.error(target_definition["name"], target_definition["healthcheck"])
                 raise
@@ -193,10 +184,7 @@ def set_healthcheck_definition(props, target_definition):
         and not healthcheck_reg.match(target_definition["healthcheck"])
     ):
         LOG.error(target_definition["healthcheck"])
-        raise ValueError(
-            "The healthcheck pattern is not respected. Expected",
-            "(healthcheck_port:protocol)(:healthy_count:unhealthy_count:intervals:timeout)?(:path?:match_codes)?",
-        )
+        raise
     props.update(healthcheck_props)
 
 
