@@ -60,7 +60,7 @@ x-elbv2:
           - name: youtoo:rproxy
             access: /stupid
           - name: bignicefamily:app01
-            access: thereisnospoon.ews-network.net:8080/abcd
+            access: thereisnospoon.ews-network.net:8080/abcd/test.html
 
     Services:
       - name: bignicefamily:rproxy
@@ -68,7 +68,7 @@ x-elbv2:
         healthcheck: 5000:HTTP:/healthcheck:200,201
       - name: bignicefamily:app01
         port: 5000
-        healthcheck: 5000:HTTP:/healthcheck:200,201
+        healthcheck: 5000:HTTP:/path/to/healthcheck:200,201
       - name: youtoo:rproxy
         port: 80
         healthcheck: 5000:HTTP:5:2:15:3:/ping.This.Method:200,201
