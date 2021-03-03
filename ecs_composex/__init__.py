@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #  ECS ComposeX <https://github.com/lambda-my-aws/ecs_composex>
-#  Copyright (C) 2020-2021  John Mille <john@lambda-my-aws.io>
+#  Copyright (C) 2020-2021  John Mille <john@compose-x.io>
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -19,5 +19,5 @@
 """Top-level package for ECS ComposeX."""
 
 __author__ = """John Preston"""
-__email__ = "john@lambda-my-aws.io"
+__email__ = "john@compose-x.io"
 __version__ = "0.12.2"
