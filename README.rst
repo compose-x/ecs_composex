@@ -181,8 +181,8 @@ Find all the `documentation` to get started and and start deploying to AWS
 RoadMap
 ========
 
-* `Feature requests <https://github.com/lambda-my-aws/ecs_composex/projects/2>`_
-* `Issues <https://github.com/lambda-my-aws/ecs_composex/projects/3>`_
+* `Feature requests <https://github.com/compose-x/ecs_composex/projects/2>`_
+* `Issues <https://github.com/compose-x/ecs_composex/projects/3>`_
 
 Blog
 ====
@@ -242,7 +242,7 @@ This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypack
 
 .. |PYPI_LICENSE| image:: https://img.shields.io/github/license/lambda-my-aws/ecs_composex
     :alt: GitHub
-    :target: https://github.com/lambda-my-aws/ecs_composex/blob/master/LICENSE
+    :target: https://github.com/compose-x/ecs_composex/blob/master/LICENSE
 
 .. |PYPI_PYVERS| image:: https://img.shields.io/pypi/pyversions/ecs_composex
     :alt: PyPI - Python Version

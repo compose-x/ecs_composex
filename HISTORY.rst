@@ -187,17 +187,17 @@ Documentation theme changed to Read The Docs and tuned some colors.
 
 New features:
 --------------
-* `Support for ECS Scaling based on SQS Messages in queue <https://github.com/lambda-my-aws/ecs_composex/pull/194>`_
-* `Support for ECS Scaling based on Service CPU/RAM values (TargetTracking) <https://github.com/lambda-my-aws/ecs_composex/issues/188>`_
-* `Support for using existing Secrets in AWS Secrets Manager <https://github.com/lambda-my-aws/ecs_composex/pull/193>`_
-* `Support for Service logs expiry from compose definition <https://github.com/lambda-my-aws/ecs_composex/issues/165>`_
-* `Enable to use AWS CFN native PseudoParameters in string values <https://github.com/lambda-my-aws/ecs_composex/issues/182>`_
-* `Improved Environment variables interpolation to follow the docker-compose behaviour <https://github.com/lambda-my-aws/ecs_composex/issues/185>`_
+* `Support for ECS Scaling based on SQS Messages in queue <https://github.com/compose-x/ecs_composex/pull/194>`_
+* `Support for ECS Scaling based on Service CPU/RAM values (TargetTracking) <https://github.com/compose-x/ecs_composex/issues/188>`_
+* `Support for using existing Secrets in AWS Secrets Manager <https://github.com/compose-x/ecs_composex/pull/193>`_
+* `Support for Service logs expiry from compose definition <https://github.com/compose-x/ecs_composex/issues/165>`_
+* `Enable to use AWS CFN native PseudoParameters in string values <https://github.com/compose-x/ecs_composex/issues/182>`_
+* `Improved Environment variables interpolation to follow the docker-compose behaviour <https://github.com/compose-x/ecs_composex/issues/185>`_
 
 
 Closed reported issues:
 ------------------------
-* https://github.com/lambda-my-aws/ecs_composex/issues/175
+* https://github.com/compose-x/ecs_composex/issues/175
 
 Some code refactor and bug fixes have gone in as well to improve stability and addition of new services.
 
@@ -207,7 +207,7 @@ Some code refactor and bug fixes have gone in as well to improve stability and a
 
 New features:
 
-* `Support for AWS Secrets mapping to secrets in docker-compose <https://github.com/lambda-my-aws/ecs_composex/pull/142>`_
+* `Support for AWS Secrets mapping to secrets in docker-compose <https://github.com/compose-x/ecs_composex/pull/142>`_
 * Support for `Use` on VPC which needs no lookup
 * Support for IAM policies to manually add ad-hoc permissions outside of the pre-defined ones
 * Additional configuration file to use with CodePipeline
@@ -221,7 +221,7 @@ without cross-account lookup.
 ===================
 
 New features:
-* `Docker-compose multi-files (override support) <https://github.com/lambda-my-aws/ecs_composex/issues/121>`_
+* `Docker-compose multi-files (override support) <https://github.com/compose-x/ecs_composex/issues/121>`_
 
 The new CLI uses positional arguments matching a specific command which drives what's executed onwards.
 Trying to re-implement features as close to the docker-compose CLI as possible.
@@ -241,7 +241,7 @@ A lot of minor bug fixes and removing CLI commands to the benefit of better impl
 
 New features:
 
-* `Support for AWS KMS <https://github.com/lambda-my-aws/ecs_composex/issues/77>`_
+* `Support for AWS KMS <https://github.com/compose-x/ecs_composex/issues/77>`_
 
 The support for KMS will be extended to use the CMK for RDS/SQS/SNS and any resource that can use KMS for encryption
 at rest.
@@ -261,14 +261,14 @@ SQS now into a single stack unless there are more than 30 queues.
 New features
 ------------
 
-* `DynOAamoDB support <https://github.com/lambda-my-aws/ecs_composex/issues/31>`_
+* `DynOAamoDB support <https://github.com/compose-x/ecs_composex/issues/31>`_
 * Lookup for existing tables which the services get IAM access to.
 
 0.4.0 (2020-07-20)
 ==================
 
-* `ACM Support for ALB/NLB for public services. <https://github.com/lambda-my-aws/ecs_composex/issues/93>`_
-* `AWS AppMesh support <https://github.com/lambda-my-aws/ecs_composex/issues/57>`_
+* `ACM Support for ALB/NLB for public services. <https://github.com/compose-x/ecs_composex/issues/93>`_
+* `AWS AppMesh support <https://github.com/compose-x/ecs_composex/issues/57>`_
 * Attempt to making navigation through docs better.
 * Automatic release to https://nightly.docs.ecs-composex.lambda-my-aws.io/ from master
 
@@ -283,8 +283,8 @@ To help with code quality and support, I subscribed to the following services:
 
 Refactored the way the services, task definitions and containers are put together, in order to support multiple new features:
 
-* `Allow multiple services to be merged into one Task definition <https://github.com/lambda-my-aws/ecs_composex/issues/78>`_
-* `Support Docker compose v3 compute definition <https://github.com/lambda-my-aws/ecs_composex/issues/32>`_
+* `Allow multiple services to be merged into one Task definition <https://github.com/compose-x/ecs_composex/issues/78>`_
+* `Support Docker compose v3 compute definition <https://github.com/compose-x/ecs_composex/issues/32>`_
 
 The support for Docker compose compute settings allows to add up all the CPU / RAM of your service(s) and identify the
 closest Fargate CPU/RAM configuration for the **Task Definition** (the respective CPU/RAM of each task is unchanged).
@@ -306,18 +306,18 @@ Documentation has been updated to reflect the changes in the structure of the co
 New features
 -------------
 
-* Enable AWS X-Ray (`#56 <https://github.com/lambda-my-aws/ecs_composex/issues/56>`_)
+* Enable AWS X-Ray (`#56 <https://github.com/compose-x/ecs_composex/issues/56>`_)
     Enabling X-Ray will allow developer to get APM metrics and visualize the application interaction with other
     services.
 
-* No-upload (`#64 <https://github.com/lambda-my-aws/ecs_composex/issues/64>`_)
+* No-upload (`#64 <https://github.com/compose-x/ecs_composex/issues/64>`_)
     This allows to store the templates locally only.
 
     .. note::
 
         The templates are still validated from their body
 
-* IAM Boundary for the IAM roles (`#55 <https://github.com/lambda-my-aws/ecs_composex/issues/55>`_)
+* IAM Boundary for the IAM roles (`#55 <https://github.com/compose-x/ecs_composex/issues/55>`_)
     Permissions boundary are an IAM feature that allows to set boundaries which superseed other permissions associated
     to the entity. It is often the put as a condition for users creating roles to assign a specific Permission Boundary
     policy to the roles created.
@@ -374,8 +374,8 @@ See overall progress on `GH Project`_
 Issues closed
 --------------
 
-* `Issue 14 <https://github.com/lambda-my-aws/ecs_composex/issues/14>`_
-* `Issue 15 <https://github.com/lambda-my-aws/ecs_composex/issues/15>`_
+* `Issue 14 <https://github.com/compose-x/ecs_composex/issues/14>`_
+* `Issue 15 <https://github.com/compose-x/ecs_composex/issues/15>`_
 
 
 0.1.2 (2020-04-04)
@@ -387,9 +387,9 @@ in EC2 are standalone and can be created separately if one so wished to reuse.
 Issues closed
 -------------
 
- `Issue <https://github.com/lambda-my-aws/ecs_composex/issues/7>`_ related to the fix.
+ `Issue <https://github.com/compose-x/ecs_composex/issues/7>`_ related to the fix.
 
- `PR <https://github.com/lambda-my-aws/ecs_composex/pull/8>`_ related to the fix.
+ `PR <https://github.com/compose-x/ecs_composex/pull/8>`_ related to the fix.
 
 0.1.1 (2020-04-02)
 ==================
@@ -430,12 +430,12 @@ or alternatively in an object/dict format
 
 .. _GH Project: https://github.com/orgs/lambda-my-aws/projects/3
 
-.. _#22: https://github.com/lambda-my-aws/ecs_composex/issues/22
-.. _#39: https://github.com/lambda-my-aws/ecs_composex/issues/39
-.. _#38: https://github.com/lambda-my-aws/ecs_composex/issues/38
-.. _#27: https://github.com/lambda-my-aws/ecs_composex/issues/27
-.. _#26: https://github.com/lambda-my-aws/ecs_composex/issues/26
-.. _#25: https://github.com/lambda-my-aws/ecs_composex/issues/25
-.. _#24: https://github.com/lambda-my-aws/ecs_composex/issues/24
-.. _#20: https://github.com/lambda-my-aws/ecs_composex/issues/20
-.. _#6: https://github.com/lambda-my-aws/ecs_composex/issues/6
+.. _#22: https://github.com/compose-x/ecs_composex/issues/22
+.. _#39: https://github.com/compose-x/ecs_composex/issues/39
+.. _#38: https://github.com/compose-x/ecs_composex/issues/38
+.. _#27: https://github.com/compose-x/ecs_composex/issues/27
+.. _#26: https://github.com/compose-x/ecs_composex/issues/26
+.. _#25: https://github.com/compose-x/ecs_composex/issues/25
+.. _#24: https://github.com/compose-x/ecs_composex/issues/24
+.. _#20: https://github.com/compose-x/ecs_composex/issues/20
+.. _#6: https://github.com/compose-x/ecs_composex/issues/6

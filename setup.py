@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-#  ECS ComposeX <https://github.com/lambda-my-aws/ecs_composex>
+#  ECS ComposeX <https://github.com/compose-x/ecs_composex>
 #  Copyright (C) 2020  John Mille <john@lambda-my-aws.io>
 #
 #  This program is free software: you can redistribute it and/or modify
@@ -88,7 +88,7 @@ setup(
     setup_requires=setup_requirements,
     test_suite="tests",
     tests_require=test_requirements,
-    url="https://github.com/lambda-my-aws/ecs_composex",
+    url="https://github.com/compose-x/ecs_composex",
     version="0.12.2",
     zip_safe=False,
 )
