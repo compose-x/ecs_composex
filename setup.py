@@ -63,7 +63,7 @@ setup(
         "Intended Audience :: Developers",
         "Intended Audience :: System Administrators",
         "Intended Audience :: Information Technology",
-        "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+        "License :: OSI Approved :: GNU General Public License v2 (GPLv2)",
         "Natural Language :: English",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.6",
@@ -78,7 +78,7 @@ setup(
         ]
     },
     install_requires=requirements,
-    license="GPLv3+",
+    license="GPL-2.0-only",
     long_description=readme,
     long_description_content_type="text/x-rst",
     include_package_data=True,
