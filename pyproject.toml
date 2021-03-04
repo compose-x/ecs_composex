@@ -1,0 +1,30 @@
+github_url = "https://github.com/compose-x/ecs_composex"
+
+[tool.tbump.version]
+current = "0.13.0-rc1"
+
+regex = '''
+  (?P<major>\d+)
+  \.
+  (?P<minor>\d+)
+  \.
+  (?P<patch>\d+)
+  (?:\-(?P<rc>[\S]+))?
+  '''
+
+[tool.tbump.git]
+message_template = "Bump to {new_version}"
+tag_template = "v{new_version}"
+
+[[tool.tbump.file]]
+src = "setup.py"
+
+[[tool.tbump.file]]
+src = "setup.cfg"
+
+[[tool.tbump.file]]
+src = "ecs_composex/__init__.py"
+
+[[tool.tbump.before_commit]]
+name = "Files format"
+cmd = "make conform"
