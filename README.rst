@@ -240,8 +240,8 @@ This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypack
     :alt: PyPI - Downloads
     :target: https://pypi.python.org/pypi/ecs_composex
 
-.. |PYPI_LICENSE| image:: https://img.shields.io/github/license/lambda-my-aws/ecs_composex
-    :alt: GitHub
+.. |PYPI_LICENSE| image:: https://img.shields.io/pypi/l/ecs_composex
+    :alt: PyPI - License
     :target: https://github.com/compose-x/ecs_composex/blob/master/LICENSE
 
 .. |PYPI_PYVERS| image:: https://img.shields.io/pypi/pyversions/ecs_composex
@@ -264,6 +264,6 @@ This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypack
     :alt: BDD with Behave
     :target: https://behave.readthedocs.io/en/latest/
 
-.. |QUALITY| image:: https://sonarcloud.io/api/project_badges/measure?project=lambda-my-aws_ecs_composex&metric=alert_status
+.. |QUALITY| image:: https://sonarcloud.io/api/project_badges/measure?project=compose-x_ecs_composex&metric=alert_status
     :alt: Code scan with SonarCloud
-    :target: https://sonarcloud.io/dashboard?id=lambda-my-aws_ecs_composex
+    :target: https://sonarcloud.io/dashboard?id=compose-x_ecs_composex
