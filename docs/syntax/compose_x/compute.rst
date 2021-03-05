@@ -1,4 +1,4 @@
-﻿.. _compute_syntax_reference:
+.. _compute_syntax_reference:
 
 ========================
 spot_config

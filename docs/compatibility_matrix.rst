@@ -1,4 +1,4 @@
-﻿.. _compatibility_matrix:
+.. _compatibility_matrix:
 
 .. toctree::
     :caption: Compatibility Matrix

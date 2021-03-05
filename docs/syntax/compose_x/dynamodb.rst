@@ -1,4 +1,4 @@
-﻿.. meta::
+.. meta::
     :description: ECS Compose-X AWS DynamoDB syntax reference
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS DynamoDB, dynamodb, serverless
 

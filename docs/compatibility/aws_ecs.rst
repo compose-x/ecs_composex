@@ -1,4 +1,4 @@
-﻿.. _aws_ecs_compat_matrix:
+.. _aws_ecs_compat_matrix:
 
 AWS ECS (and AWS Fargate) Features
 ===================================

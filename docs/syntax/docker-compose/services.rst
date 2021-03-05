@@ -1,4 +1,4 @@
-﻿.. meta::
+.. meta::
     :description: ECS Compose-X docker-compose services syntax support
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, ecs-composex, services
 

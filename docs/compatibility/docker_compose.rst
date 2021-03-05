@@ -1,4 +1,4 @@
-﻿.. _docker_compose_compat_matrix:
+.. _docker_compose_compat_matrix:
 
 Docker Compose
 ===============

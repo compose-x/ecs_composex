@@ -1,4 +1,4 @@
-﻿Type: AWS::RDS::DBInstance
+Type: AWS::RDS::DBInstance
 Properties:
   AllocatedStorage: 1024
   AllowMajorVersionUpgrade: True

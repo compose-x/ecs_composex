@@ -1,4 +1,5 @@
-# -*- coding: utf-8 -*-
+# Copyright 2020 - 2021, John Mille (john@compose-x.io) and the ECS Compose-X contributors
+# SPDX-License-Identifier: GPL-2.0-only
 
 """
 Functions to manage a template and wheter it should be stored in S3

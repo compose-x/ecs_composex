@@ -1,4 +1,4 @@
-﻿.. _sam_policies_compatibily:
+.. _sam_policies_compatibily:
 
 AWS IAM Policies from AWS SAM
 ==============================

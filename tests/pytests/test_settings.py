@@ -1,19 +1,6 @@
-﻿#  -*- coding: utf-8 -*-
-#   ECS ComposeX <https://github.com/lambda-my-aws/ecs_composex>
-#   Copyright (C) 2020-2021  John Mille <john@compose-x.io>
-#  #
-#   This program is free software: you can redistribute it and/or modify
-#   it under the terms of the GNU General Public License as published by
-#   the Free Software Foundation, either version 3 of the License, or
-#   (at your option) any later version.
-#  #
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#  #
-#   You should have received a copy of the GNU General Public License
-#   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# Copyright 2020 - 2021, John Mille (john@compose-x.io) and the ECS Compose-X contributors
+# SPDX-License-Identifier: GPL-2.0-only
+
 
 """
 Module to test ecs_composex generic oneliner raise functions.
@@ -53,7 +40,6 @@ def test_iam_role_arn():
     here = path.abspath(path.dirname(__file__))
     session = boto3.session.Session()
     pill = placebo.attach(session, data_path=f"{here}/{case_path}")
-    # pill.record()
     pill.playback()
 
     settings = ComposeXSettings(
@@ -108,7 +94,6 @@ def test_secrets_import():
     here = path.abspath(path.dirname(__file__))
     session = boto3.session.Session()
     pill = placebo.attach(session, data_path=f"{here}/{case_path}")
-    # pill.record()
     pill.playback()
 
     settings = ComposeXSettings(

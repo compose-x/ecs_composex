@@ -1,4 +1,4 @@
-﻿.. _volumes_syntax_reference:
+.. _volumes_syntax_reference:
 
 ===================
 volumes

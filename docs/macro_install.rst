@@ -1,4 +1,4 @@
-﻿Deploy to your AWS Account
+Deploy to your AWS Account
 ============================
 
 .. list-table::
