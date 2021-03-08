@@ -20,6 +20,11 @@ secrets:
           SecretKey: test
 services:
   app01:
+    logging:
+      driver: awslogs
+      options:
+        awslogs-group: a-custom-name
+        awslogs-create-group: "true"
     sysctls:
       - net.core.somaxconn=2048
       - net.ipv4.tcp_syncookies=1
@@ -174,6 +179,10 @@ services:
     x-scaling:
       Range: 1-10
   rproxy:
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: us-east-1
     depends_on:
       - app01
       - app02
