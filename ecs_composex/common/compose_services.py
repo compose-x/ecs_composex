@@ -95,7 +95,7 @@ class ComposeService(object):
 
     main_key = "services"
     keys = [
-        ("build", dict),
+        ("build", (str, dict)),
         ("cap_add", list),
         ("cap_drop", list),
         ("cgroup_parent", str),
