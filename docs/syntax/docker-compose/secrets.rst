@@ -163,10 +163,10 @@ Examples
               - costcentre: lambda
               - composexdev: "yes"
           JsonKeys:
-            - Key: username
-              Name: PSQL_USERNAME
-            - Key: password
-              Name: PSQL_PASSWORD
+            - SecretKey: username
+              VarName: PSQL_USERNAME
+            - SecretKey: password
+              VarName: PSQL_PASSWORD
 
 
 .. code-block:: yaml

@@ -71,7 +71,7 @@ CLI Usage
 
 .. code-block:: bash
 
-    usage: ecs-composex [-h] {up,render,create,config,init,version} ...
+    usage: ecs-compose-x [-h] {up,render,create,config,init,version} ...
 
     positional arguments:
       {up,render,create,config,init,version}
@@ -176,7 +176,7 @@ Find all the `documentation` to get started and and start deploying to AWS
 
 .. tip::
 
-    `Nightly documentation <https://nightly.docs.ecs-composex.lambda-my-aws.io/>`_ following the main branch.
+    `Nightly documentation <https://nightly.docs.compose-x.io/>`_ following the main branch.
 
 RoadMap
 ========
@@ -201,30 +201,30 @@ This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypack
 .. _`Mark Peek`: https://github.com/markpeek
 .. _`AWS ECS CLI`: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ECS_CLI.html
 .. _Troposphere: https://github.com/cloudtools/troposphere
-.. _Blog: https://blog.ecs-composex.lambda-my-aws.io/
+.. _Blog: https://blog.compose-x.io/
 .. _Docker Compose: https://docs.docker.com/compose/
-.. _ECS ComposeX: https://docs.ecs-composex.lambda-my-aws.io
+.. _ECS ComposeX: https://docs.compose-x.io
 .. _YAML Specifications: https://yaml.org/spec/
 .. _Extensions fields:  https://docs.docker.com/compose/compose-file/#extension-fields
 .. _ECS ComposeX Project: https://github.com/orgs/lambda-my-aws/projects/3
-.. _CICD Pipeline for multiple services on AWS ECS with ECS ComposeX: https://blog.ecs-composex.lambda-my-aws.io/posts/cicd-pipeline-for-multiple-services-on-aws-ecs-with-ecs-composex/
+.. _CICD Pipeline for multiple services on AWS ECS with ECS ComposeX: https://blog.compose-x.io/posts/cicd-pipeline-for-multiple-services-on-aws-ecs-with-ecs-composex/
 
-.. _AWS ECS: https://docs.ecs-composex.lambda-my-aws.io/syntax/composex/ecs.html
-.. _AWS VPC: https://docs.ecs-composex.lambda-my-aws.io/syntax/composex/vpc.html
-.. _AWS RDS: https://docs.ecs-composex.lambda-my-aws.io/syntax/composex/rds.html
-.. _AWS DynamoDB: https://docs.ecs-composex.lambda-my-aws.io/syntax/composex/dynamodb.html
-.. _AWS DocumentDB: https://docs.ecs-composex.lambda-my-aws.io/syntax/composex/docdb.html
-.. _AWS ACM: https://docs.ecs-composex.lambda-my-aws.io/syntax/composex/acm.html
-.. _AWS ELBv2: https://docs.ecs-composex.lambda-my-aws.io/syntax/composex/elbv2.html
-.. _AWS S3: https://docs.ecs-composex.lambda-my-aws.io/syntax/composex/s3.html
-.. _AWS IAM: https://docs.ecs-composex.lambda-my-aws.io/syntax/composex/ecs.details/iam.html
-.. _AWS Kinesis: https://docs.ecs-composex.lambda-my-aws.io/syntax/composex/kinesis.html
-.. _AWS SQS: https://docs.ecs-composex.lambda-my-aws.io/syntax/composex/sqs.html
-.. _AWS SNS: https://docs.ecs-composex.lambda-my-aws.io/syntax/composex/sns.html
-.. _AWS KMS: https://docs.ecs-composex.lambda-my-aws.io/syntax/composex/kms.html
+.. _AWS ECS: https://docs.compose-x.io/syntax/composex/ecs.html
+.. _AWS VPC: https://docs.compose-x.io/syntax/composex/vpc.html
+.. _AWS RDS: https://docs.compose-x.io/syntax/composex/rds.html
+.. _AWS DynamoDB: https://docs.compose-x.io/syntax/composex/dynamodb.html
+.. _AWS DocumentDB: https://docs.compose-x.io/syntax/composex/docdb.html
+.. _AWS ACM: https://docs.compose-x.io/syntax/composex/acm.html
+.. _AWS ELBv2: https://docs.compose-x.io/syntax/composex/elbv2.html
+.. _AWS S3: https://docs.compose-x.io/syntax/composex/s3.html
+.. _AWS IAM: https://docs.compose-x.io/syntax/composex/ecs.details/iam.html
+.. _AWS Kinesis: https://docs.compose-x.io/syntax/composex/kinesis.html
+.. _AWS SQS: https://docs.compose-x.io/syntax/composex/sqs.html
+.. _AWS SNS: https://docs.compose-x.io/syntax/composex/sns.html
+.. _AWS KMS: https://docs.compose-x.io/syntax/composex/kms.html
 .. _AWS ElastiCache: https://docs.compose-x.io/syntax/composex/elasticache.html
-.. _AWS EC2: https://nightly.docs.ecs-composex.lambda-my-aws.io/features.html#ec2-resources-for-ecs-cluster
-.. _AWS AppMesh: https://nightly.docs.ecs-composex.lambda-my-aws.io/readme/appmesh.html
+.. _AWS EC2: https://nightly.docs.compose-x.io/features.html#ec2-resources-for-ecs-cluster
+.. _AWS AppMesh: https://nightly.docs.compose-x.io/readme/appmesh.html
 
 .. _Lookup: https://docs.compose-x.io/syntax/compose_x/common.html#lookup
 .. _the compatibilty matrix: https://nightly.docs.compose-x.io/compatibility/docker_compose.html

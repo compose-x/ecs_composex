@@ -75,7 +75,7 @@ CLI Usage
 
 .. code-block:: bash
 
-    usage: ecs-composex [-h] {up,render,create,config,init,version} ...
+    usage: ecs-compose-x [-h] {up,render,create,config,init,version} ...
 
     positional arguments:
       {up,render,create,config,init,version}
@@ -158,7 +158,7 @@ This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypack
 .. _`Mark Peek`: https://github.com/markpeek
 .. _`AWS ECS CLI`: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ECS_CLI.html
 .. _Troposphere: https://github.com/cloudtools/troposphere
-.. _Blog: https://blog.ecs-composex.lambda-my-aws.io/
+.. _Blog: https://blog.compose-x.io/
 .. _Docker Compose: https://docs.docker.com/compose/
 .. _ECS Compose-X: https://github.com/lambda-my-aws/ecs_composex
 .. _YAML Specifications: https://yaml.org/spec/
