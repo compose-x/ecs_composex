@@ -52,4 +52,3 @@ awslogs
 
 .. _Docker Compose logging syntax reference: https://docs.docker.com/compose/compose-file/compose-file-v3/#logging
 .. _awslogs driver: https://docs.aws.amazon.com/AmazonECS/latest/userguide/using_awslogs.html
-

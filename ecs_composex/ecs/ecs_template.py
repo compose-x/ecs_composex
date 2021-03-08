@@ -76,6 +76,7 @@ def initialize_service_template(service_name):
             ecs_params.SERVICE_NAME,
             ecs_params.ELB_GRACE_PERIOD,
             ecs_params.FARGATE_VERSION,
+            ecs_params.LOG_GROUP_RETENTION,
             vpc_params.VPC_ID,
             vpc_params.APP_SUBNETS,
             vpc_params.PUBLIC_SUBNETS,
@@ -120,95 +121,38 @@ def initialize_service_template(service_name):
     return service_tpl
 
 
-# def create_log_group(service_tpl, family):
-#     """
-#     Function to create a new Log Group for the services
-#     :return:
-#     """
-#     svc_log = service_tpl.add_resource(
-#         LogGroup(
-#             ecs_params.LOG_GROUP_T,
-#             Condition=ecs_conditions.CREATE_LOG_GROUP_CON_T,
-#             RetentionInDays=Ref(ecs_params.LOG_GROUP_RETENTION),
-#             LogGroupName=If(
-#                 ecs_conditions.GENERATED_LOG_GROUP_NAME_CON_T,
-#                 Sub(
-#                     f"${{{ROOT_STACK_NAME.title}}}/"
-#                     f"svc/ecs/${{{ecs_params.CLUSTER_NAME_T}}}/${{{ecs_params.SERVICE_NAME_T}}}",
-#                 ),
-#                 Ref(ecs_params.LOG_GROUP_NAME),
-#             ),
-#         )
-#     )
-#     service_tpl.add_resource(
-#         PolicyType(
-#             "CloudWatchLogsAcccess",
-#             Roles=[Ref(ecs_params.EXEC_ROLE_T)],
-#             PolicyName=Sub(f"CloudWatchAccessFor${{{ecs_params.SERVICE_NAME_T}}}"),
-#             PolicyDocument={
-#                 "Version": "2012-10-17",
-#                 "Statement": [
-#                     {
-#                         "Sid": "AllowCloudWatchLoggingToSpecificLogGroup",
-#                         "Effect": "Allow",
-#                         "Action": [
-#                             "logs:CreateLogStream",
-#                             "logs:PutLogEvents",
-#                             If(
-#                                 ecs_conditions.GENERATED_LOG_GROUP_NAME_CON_T,
-#                                 "logs:CreateLogGroup",
-#                                 Ref(AWS_NO_VALUE),
-#                             ),
-#                         ],
-#                         "Resource": If(
-#                             ecs_conditions.CREATE_LOG_GROUP_CON_T,
-#                             [GetAtt(svc_log, "Arn")],
-#                             If(
-#                                 ecs_conditions.GENERATED_LOG_GROUP_NAME_CON_T,
-#                                 [
-#                                     Sub(
-#                                         f"arn:${{{AWS_PARTITION}}}:logs:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:"
-#                                         f"log-group:${{{ROOT_STACK_NAME.title}}}/svc/ecs/"
-#                                         f"${{{ecs_params.CLUSTER_NAME_T}}}/${{{ecs_params.SERVICE_NAME_T}}}:*"
-#                                     ),
-#                                     Sub(
-#                                         f"arn:${{{AWS_PARTITION}}}:logs:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:"
-#                                         f"${{{ROOT_STACK_NAME.title}}}log-group:svc/ecs/"
-#                                         f"${{{ecs_params.CLUSTER_NAME_T}}}/${{{ecs_params.SERVICE_NAME_T}}}"
-#                                     ),
-#                                 ],
-#                                 [
-#                                     Sub(
-#                                         f"arn:${{{AWS_PARTITION}}}:logs:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:"
-#                                         f"log-group:${{{ecs_params.LOG_GROUP_NAME.title}}}:*"
-#                                     ),
-#                                     Sub(
-#                                         f"arn:${{{AWS_PARTITION}}}:logs:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:"
-#                                         f"log-group:${{{ecs_params.LOG_GROUP_NAME.title}}}"
-#                                     ),
-#                                 ],
-#                             ),
-#                         ),
-#                     },
-#                 ],
-#             },
-#         )
-#     )
-#     family.task_logging_options = {
-#         "awslogs-group": If(
-#             ecs_conditions.CREATE_LOG_GROUP_CON_T,
-#             Ref(svc_log),
-#             If(
-#                 ecs_conditions.GENERATED_LOG_GROUP_NAME_CON_T,
-#                 Sub(
-#                     f"svc/ecs/${{{ecs_params.CLUSTER_NAME_T}}}/${{{ecs_params.SERVICE_NAME_T}}}",
-#                 ),
-#                 Ref(ecs_params.LOG_GROUP_NAME),
-#             ),
-#         ),
-#         "awslogs-region": Ref(AWS_REGION),
-#         "awslogs-create-group": True,
-#     }
+def create_log_group(family):
+    """
+    Function to create a new Log Group for the services
+    :return:
+    """
+    svc_log = family.template.add_resource(
+        LogGroup(
+            ecs_params.LOG_GROUP_T,
+            RetentionInDays=Ref(ecs_params.LOG_GROUP_RETENTION),
+            LogGroupName=Sub(
+                f"${{{ROOT_STACK_NAME.title}}}/"
+                f"svc/ecs/${{{ecs_params.CLUSTER_NAME_T}}}/${family.logical_name}",
+            ),
+        ),
+    )
+    family.exec_role.Policies.append(
+        PolicyType(
+            f"{family.logical_name}LogGroupAccess",
+            PolicyName=Sub(f"CloudWatchAccessFor${{{ecs_params.SERVICE_NAME_T}}}"),
+            PolicyDocument={
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Sid": "AllowCloudWatchLoggingToSpecificLogGroup",
+                        "Effect": "Allow",
+                        "Action": ["logs:CreateLogStream", "logs:PutLogEvents"],
+                        "Resource": [GetAtt(svc_log, "Arn")],
+                    }
+                ],
+            },
+        )
+    )
 
 
 def add_clusterwide_security_group(template):
@@ -258,7 +202,6 @@ def generate_services(settings):
     for family_name in settings.families:
         family = settings.families[family_name]
         family.template = initialize_service_template(family_name)
-        # create_log_group(family.template, family)
         if settings.secrets_mappings:
             family.template.add_mapping(SECRETS_KEY, settings.secrets_mappings)
         family.init_task_definition()
@@ -287,4 +230,5 @@ def generate_services(settings):
         family.set_repository_credentials(settings)
         family.set_codeguru_profiles_arns()
         family.set_volumes()
+        create_log_group(family)
         family.handle_logging()
