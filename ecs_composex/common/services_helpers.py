@@ -20,6 +20,7 @@ from troposphere.ecs import ContainerDefinition
 from troposphere.ecs import Environment
 from ecs_composex.common import LOG
 from ecs_composex.common import keyisset, keypresent
+from ecs_composex.ecs.ecs_params import LOG_GROUP_RETENTION
 
 
 def import_secrets(template, service, container, settings):
@@ -189,3 +190,22 @@ def set_else_none(key, props, alt_value=None, eval_bool=False):
         return alt_value if not keyisset(key, props) else props[key]
     elif eval_bool:
         return alt_value if not keypresent(key, props) else props[key]
+
+
+def set_logging_expiry(service):
+    """
+    Method to reset the logging retention period to the closest valid value.
+
+    :param ecs_composex.common.compose_services.ComposeService service:
+    :return:
+    """
+    closest_valid = LOG_GROUP_RETENTION.Default
+    if service.x_logging and keyisset("RetentionInDays", service.x_logging):
+        set_expiry = int(service.x_logging["RetentionInDays"])
+        if set_expiry not in LOG_GROUP_RETENTION.AllowedValues:
+            closest_valid = min(
+                LOG_GROUP_RETENTION.AllowedValues,
+                key=lambda x: abs(x - max([set_expiry])),
+            )
+    service.x_logging.update({"RetentionInDays": closest_valid})
+    return closest_valid

@@ -11,6 +11,10 @@ secrets:
       Name: SFTP/smicuser
 services:
   app01:
+    logging:
+      driver: awslogs
+      options:
+        awslogs-group: app01-custom
     deploy:
       labels:
         ecs.task.family: bignicefamily
@@ -46,6 +50,10 @@ services:
                 Sid: SomethingStupid
   app02:
     deploy:
+      logging:
+        driver: awslogs
+        options:
+          awslogs-region: us-east-1
       labels:
         ecs.task.family: youtoo
       replicas: 2

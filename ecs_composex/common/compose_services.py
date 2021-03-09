@@ -42,6 +42,7 @@ from troposphere.ecs import (
     Tmpfs,
 )
 from troposphere.iam import Policy, PolicyType
+from troposphere.logs import LogGroup
 
 from ecs_composex.common import NONALPHANUM, LOG, FILE_PREFIX
 from ecs_composex.common import keyisset, keypresent
@@ -57,6 +58,7 @@ from ecs_composex.common.services_helpers import (
     define_ingress_mappings,
     set_else_none,
     validate_healthcheck,
+    set_logging_expiry,
 )
 from ecs_composex.ecs import ecs_params
 from ecs_composex.ecs.docker_tools import (
@@ -194,13 +196,14 @@ class ComposeService(object):
         self.x_scaling = set_else_none("x-scaling", self.definition, None, False)
         self.x_network = set_else_none("x-network", self.definition, None, False)
         self.x_iam = set_else_none("x-iam", self.definition)
-        self.x_logging = {"RetentionInDays": 14, "CreateLogGroup": True}
+        self.x_logging = {"RetentionInDays": 14}
         self.x_repo_credentials = None
         self.import_x_aws_settings()
         self.networks = {}
         self.replicas = 1
         self.container = None
         self.volumes = []
+        self.logging = {}
         self.secrets = []
         self.env_files = []
         self.tmpfses = []
@@ -232,7 +235,6 @@ class ComposeService(object):
         self.mem_alloc = None
         self.mem_resa = None
         self.cpu_amount = None
-        self.logging = None
         self.families = []
         self.my_family = None
         self.is_aws_sidecar = False
@@ -277,6 +279,7 @@ class ComposeService(object):
         """
         secrets = [secret for secrets in self.secrets for secret in secrets.ecs_secret]
         ports_mappings = self.define_port_mappings()
+        self.define_compose_logging()
         self.container_definition = ContainerDefinition(
             Image=Ref(self.image_param),
             Name=self.name,
@@ -285,14 +288,7 @@ class ComposeService(object):
             MemoryReservation=self.mem_resa if self.mem_resa else Ref(AWS_NO_VALUE),
             PortMappings=ports_mappings[0] if self.ports else Ref(AWS_NO_VALUE),
             Environment=self.cfn_environment,
-            LogConfiguration=LogConfiguration(
-                LogDriver="awslogs",
-                Options={
-                    "awslogs-group": self.logical_name,
-                    "awslogs-region": Ref(AWS_REGION),
-                    "awslogs-stream-prefix": self.name,
-                },
-            ),
+            LogConfiguration=self.logging,
             Command=self.command,
             HealthCheck=self.ecs_healthcheck,
             DependsOn=Ref(AWS_NO_VALUE),
@@ -317,6 +313,79 @@ class ComposeService(object):
             User=self.user_group if self.user_group else Ref(AWS_NO_VALUE),
         )
         self.container_parameters.update({self.image_param.title: self.image})
+
+    def define_compose_logging(self):
+        """
+        Method to define logging for service.
+        """
+        default = LogConfiguration(
+            LogDriver="awslogs",
+            Options={
+                "awslogs-group": self.logical_name,
+                "awslogs-region": Ref(AWS_REGION),
+                "awslogs-stream-prefix": self.name,
+            },
+        )
+        if not keyisset("logging", self.definition) or (
+            keyisset("logging", self.definition)
+            and not keyisset("driver", self.definition["logging"])
+        ):
+            self.logging = default
+            return
+        logging_def = self.definition["logging"]
+        valid_drivers = ["awslogs"]
+        if not logging_def["driver"] in valid_drivers:
+            LOG.warning(
+                "The logging driver",
+                logging_def["driver"],
+                "is not supported. Only supported are",
+                valid_drivers,
+            )
+            self.logging = default
+        elif logging_def["driver"] == "awslogs" and keyisset("options", logging_def):
+            options_def = logging_def["options"]
+            options = {
+                "awslogs-group": set_else_none(
+                    "awslogs-group", options_def, alt_value=self.logical_name
+                ),
+                "awslogs-region": set_else_none(
+                    "awslogs-region", options_def, alt_value=Ref(AWS_REGION)
+                ),
+                "awslogs-stream-prefix": set_else_none(
+                    "awslogs-stream-prefix", options_def, alt_value=self.name
+                ),
+                "awslogs-endpoint": set_else_none(
+                    "awslogs-endpoint", options_def, alt_value=Ref(AWS_NO_VALUE)
+                ),
+                "awslogs-datetime-format": set_else_none(
+                    "awslogs-datetime-format", options_def, alt_value=Ref(AWS_NO_VALUE)
+                ),
+                "awslogs-multiline-pattern": set_else_none(
+                    "awslogs-multiline-pattern",
+                    options_def,
+                    alt_value=Ref(AWS_NO_VALUE),
+                ),
+                "mode": set_else_none("mode", options_def, alt_value=Ref(AWS_NO_VALUE)),
+                "max-buffer-size": set_else_none(
+                    "max-buffer-size", options_def, alt_value=Ref(AWS_NO_VALUE)
+                ),
+            }
+            if keypresent("awslogs-create-group", options_def) and isinstance(
+                options_def["awslogs-create-group"], bool
+            ):
+                options["awslogs-create-group"] = keyisset(
+                    "awslogs-create-group", options_def
+                )
+            elif keypresent("awslogs-create-group", options_def) and isinstance(
+                options_def["awslogs-create-group"], str
+            ):
+                options["awslogs-create-group"] = options_def[
+                    "awslogs-create-group"
+                ] in ["yes", "true", "Yes", "True"]
+            self.logging = LogConfiguration(
+                LogDriver="awslogs",
+                Options=options,
+            )
 
     def define_tmpfs(self):
         """
@@ -1148,7 +1217,6 @@ class ComposeFamily(object):
         self.set_xray()
         self.sort_container_configs()
         self.handle_iam()
-        self.handle_logging()
         self.apply_services_params()
 
     def add_service(self, service):
@@ -1191,54 +1259,83 @@ class ComposeFamily(object):
             if xray_service.name not in self.ignored_services:
                 self.ignored_services.append(xray_service)
 
-    def reset_logging_retention_period(self, closest_valid):
-        """
-        Method to reset the logging retention period to the closest valid value.
-
-        :param int closest_valid:
-        :return:
-        """
-        for service in self.services:
-            if service.x_logging and keyisset("RetentionInDays", service.x_logging):
-                service.x_logging["RetentionInDays"] = closest_valid
-            else:
-                service.x_logging = {"RetentionInDays": closest_valid}
-
     def handle_logging(self):
-        periods = [
-            service.x_logging["RetentionInDays"]
-            for service in self.services
-            if service.x_logging and keyisset("RetentionInDays", service.x_logging)
-        ]
-        enabled = [
-            service.x_logging["CreateLogGroup"]
-            for service in self.services
-            if service.x_logging and keypresent("CreateLogGroup", service.x_logging)
-        ]
-        if periods and max(periods) != LOG_GROUP_RETENTION.Default:
-            closest_valid = min(
-                ecs_params.LOG_GROUP_RETENTION.AllowedValues,
-                key=lambda x: abs(x - max(periods)),
-            )
-            if closest_valid != max(periods):
+        """
+        Method to go over each service logging configuration and accordingly define the IAM permissions needed for
+        the exec role
+        """
+        if not self.template:
+            return
+        for service in self.services:
+            expiry = set_logging_expiry(service)
+            log_group_title = f"{service.logical_name}LogGroup"
+            if keyisset("awslogs-region", service.logging.Options) and not isinstance(
+                service.logging.Options["awslogs-region"], Ref
+            ):
                 LOG.warning(
-                    f"The days you set for logging was invalid ({max(periods)}). Adjusted to {closest_valid}"
+                    "When defining awslogs-region, Compose-X does not create the CW Log Group"
                 )
-            self.reset_logging_retention_period(closest_valid)
-            self.stack_parameters.update({LOG_GROUP_RETENTION.title: closest_valid})
-        if (
-            enabled
-            and not all(enabled)
-            and (
-                not keypresent(ecs_params.CREATE_LOG_GROUP.title, self.stack_parameters)
-                or not self.stack_parameters[ecs_params.CREATE_LOG_GROUP.title]
-                == "False"
-            )
-        ):
-            LOG.warning(
-                "At least one of the services has CreateLogGroup set to False. Disabling new LogsGroups creation"
-            )
-            self.stack_parameters.update({ecs_params.CREATE_LOG_GROUP.title: "False"})
+                self.exec_role.Policies.append(
+                    Policy(
+                        PolicyName=Sub(
+                            f"CloudWatchAccessFor${{{ecs_params.SERVICE_NAME_T}}}"
+                        ),
+                        PolicyDocument={
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Sid": "AllowCloudWatchLoggingToSpecificLogGroup",
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "logs:CreateLogStream",
+                                        "logs:CreateLogGroup",
+                                        "logs:PutLogEvents",
+                                    ],
+                                    "Resource": "*",
+                                }
+                            ],
+                        },
+                    )
+                )
+            elif keyisset("awslogs-group", service.logging.Options):
+                if log_group_title not in self.template.resources:
+                    log_group = self.template.add_resource(
+                        LogGroup(
+                            log_group_title,
+                            LogGroupName=service.logging.Options["awslogs-group"],
+                            RetentionInDays=expiry,
+                        )
+                    )
+                    policy = Policy(
+                        PolicyName=Sub(
+                            f"CloudWatchAccessFor${{{ecs_params.SERVICE_NAME_T}}}"
+                        ),
+                        PolicyDocument={
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Sid": "AllowCloudWatchLoggingToSpecificLogGroup",
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "logs:CreateLogStream",
+                                        "logs:PutLogEvents",
+                                    ],
+                                    "Resource": GetAtt(log_group, "Arn"),
+                                }
+                            ],
+                        },
+                    )
+                    try:
+                        self.exec_role.Policies.append(policy)
+                    except AttributeError:
+                        setattr(self.exec_role, "Policies", [policy])
+                    service.logging.Options.update({"awslogs-group": Ref(log_group)})
+                else:
+                    LOG.debug("LOG Group and policy already exist")
+            else:
+                service.logging.Options.update(
+                    {"awslogs-group": Ref(ecs_params.LOG_GROUP_T)}
+                )
 
     def sort_container_configs(self):
         """
