@@ -118,9 +118,6 @@ service.deploy
 .. tip::
 
     See :ref:`ecs_composex_scaling_syntax_reference` and :ref:`composex_deploy_extension` for more scaling settings.
-
-.. tip::
-
     See :ref:`composex_families_labels_syntax_reference` for more details on combining services into a single task definition
 
 
