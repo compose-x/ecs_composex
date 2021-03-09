@@ -36,6 +36,8 @@ from troposphere.ecs import (
     AwsvpcConfiguration,
     NetworkConfiguration,
     DeploymentController,
+    DeploymentConfiguration,
+    DeploymentCircuitBreaker,
 )
 from troposphere.ecs import ServiceRegistry
 from troposphere.elasticloadbalancingv2 import (
@@ -308,6 +310,32 @@ def define_service_ingress(family, settings):
     return service_attrs
 
 
+def define_deployment_options(family, settings, kwargs):
+    """
+    Function to define the DeploymentConfiguration
+
+    :param ecs_composex.common.compose_services.ComposeFamily family:
+    :param ecs_composex.common.settings.ComposeXSettings settings:
+    :param dict kwargs:
+    :return:
+    """
+    family.set_service_update_config()
+    default = DeploymentConfiguration(
+        DeploymentCircuitBreaker=DeploymentCircuitBreaker(Enable=True, RollBack=True),
+    )
+    if family.deployment_config:
+        deploy_config = DeploymentConfiguration(
+            MaximumPercent=family.deployment_config["MaximumPercent"],
+            MinimumHealthyPercent=family.deployment_config["MinimumHealthyPercent"],
+            DeploymentCircuitBreaker=DeploymentCircuitBreaker(
+                Enable=True, RollBack=keyisset("RollBack", family.deployment_config)
+            ),
+        )
+        kwargs.update({"DeploymentConfiguration": deploy_config})
+    else:
+        kwargs.update({"DeploymentConfiguration": default})
+
+
 class Service(object):
     """
     Class representing the service from the Docker compose file and translate it into
@@ -355,6 +383,7 @@ class Service(object):
         ]
         service_sgs += [sg for sg in self.sgs if isinstance(sg, (Ref, Sub, If, GetAtt))]
         attrs = define_service_ingress(family, settings)
+        define_deployment_options(family, settings, attrs)
         self.ecs_service = EcsService(
             ecs_params.SERVICE_T,
             template=family.template,

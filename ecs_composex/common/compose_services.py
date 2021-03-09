@@ -157,6 +157,8 @@ class ComposeService(object):
         ("x-aws-autoscaling", dict),
         ("x-aws-pull_credentials", str),
         ("x-aws-logs_retention", int),
+        ("x-aws-min_percent", int),
+        ("x-aws-max_percent", int),
     ]
 
     def __init__(self, name, definition, volumes=None, secrets=None):
@@ -240,6 +242,7 @@ class ComposeService(object):
         self.is_aws_sidecar = False
         self.is_essential = True
         self.container_definition = None
+        self.update_config = {}
 
         self.container_start_condition = "START"
         self.healthcheck = set_else_none("healthcheck", self.definition, None)
@@ -996,6 +999,23 @@ class ComposeService(object):
         else:
             self.families.append(self.name)
 
+    def set_update_config(self, deployment):
+        """
+        Method to set the update_config from the deploy service keys
+
+        :param dict deployment:
+        :return:
+        """
+        key = "update_config"
+        if not keyisset(key, deployment):
+            return
+        if not isinstance(deployment[key], dict):
+            raise TypeError(
+                "The deploy.update_config must be a dict/map. Got",
+                type(deployment[key]),
+            )
+        self.update_config = deployment[key]
+
     def set_service_deploy(self):
         """
         Function to setup the service configuration from the deploy section of the service in compose file.
@@ -1007,6 +1027,7 @@ class ComposeService(object):
         self.set_replicas(self.definition[deploy])
         self.define_start_condition(self.definition[deploy])
         self.define_essential(self.definition[deploy])
+        self.set_update_config(self.definition[deploy])
 
 
 def handle_same_task_services_dependencies(services_config):
@@ -1202,6 +1223,7 @@ class ComposeFamily(object):
             "ManagedPolicyArns": [],
             "Policies": [],
         }
+        self.deployment_config = {}
         self.template = None
         self.use_xray = None
         self.stack = None
@@ -1850,3 +1872,41 @@ class ComposeFamily(object):
             if volume.cfn_volume:
                 family_definition_volumes.append(volume.cfn_volume)
         self.set_services_mount_points()
+
+    def set_service_update_config(self):
+        """
+        Method to determine the update_config for the service. When a family has multiple containers, this applies
+        to all tasks.
+        """
+        min_percents = [
+            int(service.definition["x-aws-min_percent"])
+            for service in self.services
+            if keyisset("x-aws-min_percent", service.definition)
+        ]
+        max_percents = [
+            int(service.definition["x-aws-max_percent"])
+            for service in self.services
+            if keyisset("x-aws-max_percent", service.definition)
+        ]
+        family_min_percent = (
+            sum(min_percents) / len(min_percents) if min_percents else 100
+        )
+        family_max_percent = (
+            sum(max_percents) / len(max_percents) if max_percents else 200
+        )
+        rollback = True
+        actions = [
+            service.update_config["failure_action"] != "rollback"
+            for service in self.services
+            if service.update_config
+            and keyisset("failure_action", service.update_config)
+        ]
+        if any(actions):
+            rollback = False
+        self.deployment_config.update(
+            {
+                "MinimumHealthyPercent": family_min_percent,
+                "MaximumPercent": family_max_percent,
+                "RollBack": rollback,
+            }
+        )

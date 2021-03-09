@@ -217,4 +217,23 @@ If either is set and the other is not, the value is set accordingly.
     If you set an arbitrary value that would not be a valid value for AWS logs retention, ComposeX will automatically
     match to the closest valid value. For example, for 42, this will be 30. For 64, it will be 60.
 
+.. _x_aws_update_config:
+
+x-aws-min_percent & x-aws-max_percent
+======================================
+
+This allows to define the percentages for ECS Deployment Configuration.
+
+.. code-block:: yaml
+
+    services:
+      serviceA:
+        x-aws-min_percent: 50
+        x-aws-max_percent: 150
+        deploy:
+          replicas: 4
+          update_config:
+            failure_action: rollback
+
+
 .. _Docker and ECS official documentation: https://docs.docker.com/engine/context/ecs-integration/
