@@ -319,12 +319,21 @@ def define_deployment_options(family, settings, kwargs):
     :param dict kwargs:
     :return:
     """
-    deploy_config = DeploymentConfiguration(
-        MaximumPercent=family.deployment_config["MaximumPercent"],
-        MinimumHealthyPercent=family.deployment_config["MinimumHealthyPercent"],
-        DeploymentCircuitBreaker=DeploymentCircuitBreaker(Enable=True, Rollback=True),
+    family.set_service_update_config()
+    default = DeploymentConfiguration(
+        DeploymentCircuitBreaker=DeploymentCircuitBreaker(Enable=True, RollBack=True),
     )
-    kwargs.update({"DeploymentConfiguration": deploy_config})
+    if family.deployment_config:
+        deploy_config = DeploymentConfiguration(
+            MaximumPercent=family.deployment_config["MaximumPercent"],
+            MinimumHealthyPercent=family.deployment_config["MinimumHealthyPercent"],
+            DeploymentCircuitBreaker=DeploymentCircuitBreaker(
+                Enable=True, RollBack=keyisset("RollBack", family.deployment_config)
+            ),
+        )
+        kwargs.update({"DeploymentConfiguration": deploy_config})
+    else:
+        kwargs.update({"DeploymentConfiguration": default})
 
 
 class Service(object):
