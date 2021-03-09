@@ -1202,6 +1202,7 @@ class ComposeFamily(object):
             "ManagedPolicyArns": [],
             "Policies": [],
         }
+        self.deployment_config = {"MinimumHealthyPercent": 100, "MaximumPercent": 200}
         self.template = None
         self.use_xray = None
         self.stack = None
