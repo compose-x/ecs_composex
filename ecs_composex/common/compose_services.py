@@ -1297,22 +1297,16 @@ class ComposeFamily(object):
                         },
                     )
                 )
-            elif log_group_title not in self.template.resources:
-                log_group = self.template.add_resource(
-                    LogGroup(
-                        log_group_title,
-                        LogGroupName=service.logging.Options["awslogs-group"]
-                        if keyisset("awslogs-group", service.logging.Options)
-                        else Sub(
-                            f"${{{ROOT_STACK_NAME.title}}}/"
-                            f"svc/ecs/${{{ecs_params.CLUSTER_NAME_T}}}/${{{ecs_params.SERVICE_NAME_T}}}",
-                        ),
-                        RetentionInDays=expiry,
+            elif keyisset("awslogs-group", service.logging.Options):
+                if log_group_title not in self.template.resources:
+                    log_group = self.template.add_resource(
+                        LogGroup(
+                            log_group_title,
+                            LogGroupName=service.logging.Options["awslogs-group"],
+                            RetentionInDays=expiry,
+                        )
                     )
-                )
-                service.logging.Options.update({"awslogs-group": Ref(log_group)})
-                self.exec_role.Policies.append(
-                    Policy(
+                    policy = Policy(
                         PolicyName=Sub(
                             f"CloudWatchAccessFor${{{ecs_params.SERVICE_NAME_T}}}"
                         ),
@@ -1331,6 +1325,16 @@ class ComposeFamily(object):
                             ],
                         },
                     )
+                    try:
+                        self.exec_role.Policies.append(policy)
+                    except AttributeError:
+                        setattr(self.exec_role, "Policies", [policy])
+                    service.logging.Options.update({"awslogs-group": Ref(log_group)})
+                else:
+                    LOG.debug("LOG Group and policy already exist")
+            else:
+                service.logging.Options.update(
+                    {"awslogs-group": Ref(ecs_params.LOG_GROUP_T)}
                 )
 
     def sort_container_configs(self):
