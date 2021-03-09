@@ -15,10 +15,16 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
+import re
 from troposphere.cloudwatch import Alarm as CWAlarm
 
-from ecs_composex.common import LOG, keyisset, keypresent, build_template, add_parameters
+from ecs_composex.common import (
+    LOG,
+    keyisset,
+    keypresent,
+    build_template,
+    add_parameters,
+)
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common.compose_resources import set_resources, XResource
 from ecs_composex.resources_import import import_record_properties
@@ -26,23 +32,35 @@ from ecs_composex.resources_import import import_record_properties
 from ecs_composex.alarms.alarms_params import RES_KEY
 
 
-def create_alarms(settings, new_alarms):
+def create_alarms(template, settings, new_alarms):
     """
     Main function to create new alarms
     :return:
     """
-    root_template = build_template("Root stack for Alarms created via Compose-X")
     for alarm in new_alarms:
+        if not alarm.topics:
+            continue
         if alarm.properties:
             props = import_record_properties(alarm.properties, CWAlarm)
             alarm.cfn_resource = CWAlarm(alarm.logical_name, **props)
-
+            template.add_resource(alarm.cfn_resource)
 
 
 class Alarm(XResource):
     """
     Class to represent CW Alarms
     """
+
+    topics_key = "Topics"
+
+    def __init__(self, name, definition, module_name, settings):
+        self.topics = []
+        super().__init__(name, definition, module_name, settings)
+        self.topics = (
+            definition[self.topics_key]
+            if keyisset(self.topics_key, self.definition)
+            else []
+        )
 
 
 class XStack(ComposeXStack):
@@ -57,9 +75,10 @@ class XStack(ComposeXStack):
             for db_name in settings.compose_content[RES_KEY]
             if not settings.compose_content[RES_KEY][db_name].lookup
         ]
-        if new_alarms:
-            template = create_alarms(settings, new_alarms)
+        if new_alarms and any([alarm.topics for alarm in new_alarms]):
+            template = build_template("Root stack for Alarms created via Compose-X")
             super().__init__(name, stack_template=template, **kwargs)
+            create_alarms(template, settings, new_alarms)
             self.mark_nested_stacks()
         else:
             self.is_void = True

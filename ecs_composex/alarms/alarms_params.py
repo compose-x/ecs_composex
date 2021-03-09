@@ -17,5 +17,12 @@
 
 from os import path
 from ecs_composex.ecs_composex import X_KEY
+from ecs_composex.common.cfn_params import Parameter
 
 RES_KEY = f"{X_KEY}{path.basename(path.dirname(path.abspath(__file__)))}"
+
+ALARM_NAME_T = "AlarmName"
+ALARM_NAME = Parameter(ALARM_NAME_T, Type="String")
+
+ALARM_ARN_T = "AlarmArn"
+ALARM_ARN = Parameter(ALARM_ARN_T, return_value="Arn", Type="String")

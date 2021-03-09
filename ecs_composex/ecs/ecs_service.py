@@ -221,12 +221,34 @@ def create_scalable_target(family):
     Method to automatically create a scalable target
     """
     LOG.debug(family.service_config.scaling.scaling_range)
+    if ecs_params.SERVICE_SCALING_TARGET in family.template.resources:
+        return
     if family.service_config.scaling.scaling_range:
         family.scalable_target = applicationautoscaling.ScalableTarget(
             ecs_params.SERVICE_SCALING_TARGET,
             template=family.template,
             MaxCapacity=family.service_config.scaling.scaling_range["max"],
             MinCapacity=family.service_config.scaling.scaling_range["min"],
+            ScalableDimension="ecs:service:DesiredCount",
+            ServiceNamespace="ecs",
+            RoleARN=Sub(
+                "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/"
+                "ecs.application-autoscaling.${AWS::URLSuffix}/"
+                "AWSServiceRoleForApplicationAutoScaling_ECSService"
+            ),
+            ResourceId=Sub(
+                f"service/${{{ecs_params.CLUSTER_NAME.title}}}/${{{family.service_definition.title}.Name}}"
+            ),
+            SuspendedState=applicationautoscaling.SuspendedState(
+                DynamicScalingInSuspended=False
+            ),
+        )
+    else:
+        family.scalable_target = applicationautoscaling.ScalableTarget(
+            ecs_params.SERVICE_SCALING_TARGET,
+            template=family.template,
+            MaxCapacity=family.service_config.replicas,
+            MinCapacity=family.service_config.replicas,
             ScalableDimension="ecs:service:DesiredCount",
             ServiceNamespace="ecs",
             RoleARN=Sub(
@@ -284,6 +306,11 @@ def generate_service_template_outputs(family):
                     vpc_params.APP_SUBNETS,
                     vpc_params.APP_SUBNETS.title,
                     Join(",", Ref(vpc_params.APP_SUBNETS)),
+                ),
+                (
+                    family.scalable_target.title,
+                    ecs_params.SERVICE_SCALING_TARGET,
+                    Ref(family.scalable_target),
                 ),
             ],
             duplicate_attr=False,

@@ -65,6 +65,7 @@ SUPPORTED_X_MODULE_NAMES = [
     "kinesis",
     "elasticache",
     "efs",
+    "alarms",
 ]
 
 SUPPORTED_X_MODULES = [f"{X_KEY}{mod_name}" for mod_name in SUPPORTED_X_MODULE_NAMES]

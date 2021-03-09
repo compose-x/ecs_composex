@@ -15,6 +15,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import re
 from os import path
 from ecs_composex.ecs_composex import X_KEY
 from ecs_composex.common.cfn_params import Parameter
@@ -23,6 +24,8 @@ from ecs_composex.common.cfn_params import Parameter
 MOD_KEY = path.basename(path.dirname(path.abspath(__file__)))
 RES_KEY = f"{X_KEY}{MOD_KEY}"
 SSM_PREFIX = f"/{RES_KEY}/"
+
+TOPIC_ARN_RE = re.compile(r"(^arn:aws(?:-[a-z]+)?:sns:[\S]+:[0-9]+:[\S]+)$")
 
 TOPIC_ARN_T = "TopicArn"
 TOPIC_NAME_T = "TopicName"

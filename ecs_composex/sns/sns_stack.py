@@ -28,7 +28,22 @@ from ecs_composex.sns.sns_params import (
 )
 from ecs_composex.sns.sns_perms import ACCESS_TYPES
 from ecs_composex.sns.sns_templates import generate_sns_templates
+from ecs_composex.sns.sns_aws import lookup_topic_config
 from ecs_composex.sqs.sqs_params import RES_KEY as SQS_KEY
+
+
+def create_sns_mappings(resources, settings):
+    if not keyisset(RES_KEY, settings.mappings):
+        mappings = {}
+        settings.mappings[RES_KEY] = mappings
+    else:
+        mappings = settings.mappings[RES_KEY]
+    for resource in resources:
+        resource_config = lookup_topic_config(
+            resource.logical_name, resource.lookup, settings.session
+        )
+        if resource_config:
+            mappings.update({resource.logical_name: resource_config})
 
 
 class Topic(XResource):
@@ -115,6 +130,11 @@ class XStack(ComposeXStack):
             topic.stack = self
         for subscription in subscriptions:
             subscription.stack = self
+        lookup_topics = [
+            topic for topic in topics if topic.lookup and not topic.properties
+        ]
+        if lookup_topics:
+            create_sns_mappings(lookup_topics, settings)
 
     def handle_sqs(self, root_template, sqs_root_stack):
         """
