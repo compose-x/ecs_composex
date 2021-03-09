@@ -44,6 +44,7 @@
     syntax/compose_x/kms
     syntax/compose_x/vpc
     syntax/compose_x/ecs_cluster
+    syntax/compose_x/alarms
     syntax/compose_x/compute
 
 
