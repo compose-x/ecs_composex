@@ -158,7 +158,7 @@ can solve that problem and with ECS Compose-X the effort is to constantly abide 
 .. _`Mark Peek`: https://github.com/markpeek
 .. _`AWS ECS CLI`: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ECS_CLI.html
 .. _Troposphere: https://github.com/cloudtools/troposphere
-.. _Blog: https://blog.ecs-composex.lambda-my-aws.io/
+.. _Blog: https://blog.composex.io/
 .. _Docker Compose: https://docs.docker.com/compose/
 .. _ECS Compose-X: https://github.com/lambda-my-aws/ecs_composex
 .. _YAML Specifications: https://yaml.org/spec/
