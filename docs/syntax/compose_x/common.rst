@@ -99,6 +99,8 @@ name.
 
     No need to add the name of the resource as defined in the docker compose file, this will always be added by default.
 
+.. _common_settings_subnets:
+
 Subnets
 -------
 

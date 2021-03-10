@@ -4,7 +4,7 @@
 
 
 Welcome to ECS-Compose-X's documentation!
-========================================
+===========================================
 
 .. toctree::
     :maxdepth: 1

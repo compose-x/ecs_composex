@@ -110,10 +110,6 @@ However, for buckets, this means distinguish the bucket and the objects resource
               objects: RW
               bucket: ListOnly
 
-.. hint::
-
-    Refer to :ref:`s3_access_types_reference` to review available permissions
-
 Lookup
 =======
 

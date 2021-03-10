@@ -6,7 +6,7 @@
 
 
 Philosophy
-==========
+=============
 
 CloudFormation is awesome, the documentation is excellent and the format easy. So ECS Compose-X wants to keep the format
 of resources Properties as close to the orignal as possible as well as making it easier as well, just alike resources
@@ -78,7 +78,7 @@ in the same way you would do in AWS CloudFormation templates, add these resource
 
 
 What does ECS Compose-X do differently? Long version
-====================================================
+=======================================================
 
 Where ECS Compose-X distinguishes itself from other tools is embedding security for each service individually,
 so that developers only have to connect resources logically together in the same way they would use links between
@@ -99,7 +99,7 @@ permissions.
 
 
 Why did I create ECS Compose-X?
-==============================
+=================================
 
 Many companies I have worked with struggle with providing a true cloudy experience to their developers and enable them
 to deploy AWS resources in a controlled fashion. And when they do give poweruser/administrator level of permissions to
@@ -128,15 +128,19 @@ like DataDog provide the ability to create non AWS resources as part of the CFN 
 Why am I not using AWS CDK?
 ==============================
 
-I started this work before AWS CDK came out with any python support, and I am not a developer professionally but I do
-love developing, and python is my language of choice.
+ECS Compose-X was started before AWS CDK came out with any python support, and python was the language of choice for this
+project.
 
-Troposphere was the obvious choice as the python library to use to build all the CFN templates.
-I find the way Troposphere has been built is awesome, the name of the properties are the same as they are in
+Therefore, Troposphere was the obvious choice as the python library to use to build all the CFN templates.
+The way Troposphere has been built is simple and clear, the name of the properties are the same as they are in
 AWS CloudFormation, which gives a sense of standard to the user, allowing an experience as close to copy-paste as possible.
 
-`Troposphere`_ has a very nice community and is released often. The community is active and other AWS Projects members
-are directly involved in the day-to-day life of the project.
+`Troposphere`_ has a very strong community and has wide set of AWS services support.
+The community is active and other AWS Projects members are directly involved in the day-to-day life of the project.
+
+In CDK, all the properties you have to set for a CFN resource have been renamed, Troposphere kept the same name definition
+for the resources properties. To me, this is a very valuable thing, not to have to map CFN properties to a language specific
+one.
 
 
 Implementing least privileges at the heart of ECS Compose-X

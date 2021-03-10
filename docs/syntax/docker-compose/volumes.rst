@@ -18,7 +18,7 @@ In docker world, one can create docker volumes and attach these to the container
 
 As very well synthesized in the `tmpfs`_ documentation page, we have
 
-.. pull-quote::
+.. code-block:: text
 
     Volumes and bind mounts let you share files between the host machine and container so that you can persist data even after the container is stopped.
 

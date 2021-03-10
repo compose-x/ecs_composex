@@ -11,20 +11,12 @@ services
 We try to re-use as much as possible the docker compose (v3) reference as much as possible.
 
 For the definition of the services, you can simply use the already existing Docker compose definition for your services.
-However, there are only a limited number of settings that are today working:
+Most of the docker-compose services keys are functional, to get a full breakdown, check the :ref:`docker_compose_compat_matrix` compatibily matrix.
 
-* `ports <https://docs.docker.com/compose/compose-file/#ports>`__
-* `environment <https://docs.docker.com/compose/compose-file/#environment>`__
-* `links <https://docs.docker.com/compose/compose-file/#links>`__
-* `depends_on <https://docs.docker.com/compose/compose-file/#environment>`__
-* `deploy <https://docs.docker.com/compose/compose-file/#deploy>`__
-* `secrets <https://docs.docker.com/compose/compose-file/#secrets>`__
-* user
-* `ulimits`_
 
 .. seealso::
 
-    `Docker Compose file reference <https://docs.docker.com/compose/compose-file>`__
+    `Docker Compose 3 file reference <https://docs.docker.com/compose/compose-file/compose-file-v3/>`__
 
 
 .. note::
@@ -37,15 +29,3 @@ However, there are only a limited number of settings that are today working:
 
     Checkout the ECS ComposeX secrets definition syntax :ref:`secrets_syntax_reference` to import AWS Secrets Manager
     secrets to your container.
-
-
-.. hint::
-
-    Not all ulimits are supported in AWS Fargate. ECS Compose-X Will automatically deactivate the ones not supported.
-
-.. _ulimits: https://docs.docker.com/compose/compose-file/compose-file-v3/#ulimits
-
-
-.. tip::
-
-    **user** expects the format **uid:gid** to use

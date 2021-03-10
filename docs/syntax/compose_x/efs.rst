@@ -24,7 +24,7 @@ Syntax reference
           MacroParameters: {}
           Settings: {}
           Lookup: {}
-          Use: <fs ID>
+          Use: <str>
 
 .. hint::
 
@@ -122,6 +122,13 @@ either through use or through the original ECS Plugin definition.
       abcd:
         x-efs:
           Use: fs-abcd1234
+
+
+Examples
+=========
+
+A full example using Bitnami Wordpress image (which requires users permissions etc. to be set) can be found in
+`GitHub <https://github.com/compose-x/wordpress-demo>`__
 
 
 Filesystem, Access Point and services access
