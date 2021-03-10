@@ -19,10 +19,9 @@
 Core ECS Template building
 """
 
-from troposphere import If, Ref, Sub, Tags, GetAtt
-from troposphere import AWS_ACCOUNT_ID, AWS_PARTITION, AWS_REGION, AWS_NO_VALUE
+from troposphere import Ref, Sub, Tags, GetAtt
 from troposphere.ec2 import SecurityGroup
-from troposphere.iam import PolicyType
+from troposphere.iam import Policy
 from troposphere.logs import LogGroup
 
 from ecs_composex.common import build_template
@@ -132,14 +131,14 @@ def create_log_group(family):
             RetentionInDays=Ref(ecs_params.LOG_GROUP_RETENTION),
             LogGroupName=Sub(
                 f"${{{ROOT_STACK_NAME.title}}}/"
-                f"svc/ecs/${{{ecs_params.CLUSTER_NAME_T}}}/${family.logical_name}",
+                f"svc/ecs/${{{ecs_params.CLUSTER_NAME_T}}}/{family.logical_name}",
             ),
         ),
     )
     family.exec_role.Policies.append(
-        PolicyType(
+        Policy(
             f"{family.logical_name}LogGroupAccess",
-            PolicyName=Sub(f"CloudWatchAccessFor${{{ecs_params.SERVICE_NAME_T}}}"),
+            PolicyName=Sub(f"CloudWatchAccessForFamily{family.logical_name}"),
             PolicyDocument={
                 "Version": "2012-10-17",
                 "Statement": [
