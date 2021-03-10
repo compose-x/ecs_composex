@@ -1,4 +1,6 @@
-
+.. meta::
+    :description: ECS Compose-X
+    :keywords: AWS, ECS, Fargate, Docker, Containers, Compose, docker-compose
 
 ============
 ECS ComposeX
