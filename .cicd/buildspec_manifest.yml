@@ -1,9 +1,9 @@
-﻿version: 0.2
+version: 0.2
 env:
   shell: /bin/bash
   variables:
     USE_EPOCH: 0
-    PUBLIC_REGISTRY: public.ecr.aws/i9v7p2w3
+    PUBLIC_REGISTRY: public.ecr.aws/compose-x
     DOCKER_CLI_EXPERIMENTAL: enabled
     REPOSITORY_NAME: compose-x
     MACRO_REPO_NAME: compose-x-macro
@@ -63,17 +63,22 @@ phases:
       - if [ $USE_EPOCH -eq 1 ]; then SUFFIX=$EPOCH; fi
       - |
           if ! [ -z "${CODEBUILD_WEBHOOK_TRIGGER+x}" ]; then
+            echo TRIGGER is $CODEBUILD_WEBHOOK_TRIGGER
             PRE=`echo $CODEBUILD_WEBHOOK_TRIGGER|cut -d '/' -f 1`;
-            if [ $PRE == "tag" ]; then SUFFIX=`cut -d '/' -f 2`; TAG_RELEASE=1 ; fi
+            echo PRE is $PRE
+            echo SUFFIX is $SUFFIX
+            if [ "${PRE}" == "tag" ]; then SUFFIX=`echo $CODEBUILD_WEBHOOK_TRIGGER|cut -d '/' -f 2`; TAG_RELEASE=1 ; fi
           fi
+      - echo SUFFIX ends up being $SUFFIX
   build:
     commands:
       - |
           for VERSION in py37 py38; do
             for ARCH in "amd64" "arm64v8"; do
               TAG=${SUFFIX}-${VERSION}-${ARCH}
+              echo TAG is $TAG
 
-              echo Publish from ${REGISTRY_URI}$/{REPOSITORY_NAME}:${TAG} to ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${TAG}
+              echo Publish from ${REGISTRY_URI}/{REPOSITORY_NAME}:${TAG} to ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${TAG}
               docker pull ${REGISTRY_URI}/${REPOSITORY_NAME}:${TAG}
               docker tag  ${REGISTRY_URI}/${REPOSITORY_NAME}:${TAG} ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${TAG}
               docker push ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${TAG}
@@ -103,6 +108,7 @@ phases:
                   --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py38-arm64v8 ;
             docker manifest push ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:latest
           fi
+
       - docker pull ${REGISTRY_URI}/${MACRO_REPO_NAME}:${SUFFIX}
       - docker tag ${REGISTRY_URI}/${MACRO_REPO_NAME}:${SUFFIX} ${PUBLIC_REGISTRY}/${MACRO_REPO_NAME}:${SUFFIX}
       - docker push ${PUBLIC_REGISTRY}/${MACRO_REPO_NAME}:${SUFFIX}
@@ -112,7 +118,7 @@ phases:
                   --amend ${PUBLIC_REGISTRY}/${MACRO_REPO_NAME}:${SUFFIX}
             docker manifest push ${PUBLIC_REGISTRY}/${MACRO_REPO_NAME}:nightly
           else
-            docker manifest create ${PUBLIC_REGISTRY}compose-x-macro:latest   \
+            docker manifest create ${PUBLIC_REGISTRY}/${MACRO_REPO_NAME}:latest   \
                   --amend ${PUBLIC_REGISTRY}/${MACRO_REPO_NAME}:${SUFFIX}
             docker manifest push ${PUBLIC_REGISTRY}/${MACRO_REPO_NAME}:latest
           fi

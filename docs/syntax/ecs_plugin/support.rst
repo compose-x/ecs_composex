@@ -102,7 +102,7 @@ x-aws-autoscaling settings are ignored.
 
 This is by design as **x-scaling** allows for a lot more settings to be defined than **x-aws-autoscaling**
 
-.. _x-aws-policies::
+.. _x-aws-policies:
 
 x-aws-policies
 ---------------

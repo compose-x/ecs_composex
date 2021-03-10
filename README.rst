@@ -214,24 +214,24 @@ This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypack
 .. _ECS ComposeX Project: https://github.com/orgs/lambda-my-aws/projects/3
 .. _CICD Pipeline for multiple services on AWS ECS with ECS ComposeX: https://blog.compose-x.io/posts/cicd-pipeline-for-multiple-services-on-aws-ecs-with-ecs-composex/
 
-.. _AWS ECS:        https://nightly.docs.compose-x.io/syntax/composex/ecs.html
-.. _AWS VPC:        https://nightly.docs.compose-x.io/syntax/composex/vpc.html
-.. _AWS RDS:        https://nightly.docs.compose-x.io/syntax/composex/rds.html
-.. _AWS DynamoDB:   https://nightly.docs.compose-x.io/syntax/composex/dynamodb.html
-.. _AWS DocumentDB: https://nightly.docs.compose-x.io/syntax/composex/docdb.html
-.. _AWS ACM:        https://nightly.docs.compose-x.io/syntax/composex/acm.html
-.. _AWS ELBv2:      https://nightly.docs.compose-x.io/syntax/composex/elbv2.html
-.. _AWS S3:         https://nightly.docs.compose-x.io/syntax/composex/s3.html
-.. _AWS IAM:        https://nightly.docs.compose-x.io/syntax/composex/ecs.details/iam.html
-.. _AWS Kinesis:    https://nightly.docs.compose-x.io/syntax/composex/kinesis.html
-.. _AWS SQS:        https://nightly.docs.compose-x.io/syntax/composex/sqs.html
-.. _AWS SNS:        https://nightly.docs.compose-x.io/syntax/composex/sns.html
-.. _AWS KMS:        https://nightly.docs.compose-x.io/syntax/composex/kms.html
-.. _AWS ElastiCache:https://nightly.docs.compose-x.io/syntax/composex/elasticache.html
-.. _AWS EC2:        https://nightly.docs.compose-x.io/features.html#ec2-resources-for-ecs-cluster
-.. _AWS AppMesh:    https://nightly.docs.compose-x.io/readme/appmesh.html
-.. _AWS CloudWatch: https://nightly.docs.compose-x.io/syntax/compose_x/alarms.html
-.. _Lookup:         https://nightly.docs.compose-x.io/syntax/compose_x/common.html#lookup
+.. _AWS ECS:            https://nightly.docs.compose-x.io/syntax/composex/ecs.html
+.. _AWS VPC:            https://nightly.docs.compose-x.io/syntax/composex/vpc.html
+.. _AWS RDS:            https://nightly.docs.compose-x.io/syntax/composex/rds.html
+.. _AWS DynamoDB:       https://nightly.docs.compose-x.io/syntax/composex/dynamodb.html
+.. _AWS DocumentDB:     https://nightly.docs.compose-x.io/syntax/composex/docdb.html
+.. _AWS ACM:            https://nightly.docs.compose-x.io/syntax/composex/acm.html
+.. _AWS ELBv2:          https://nightly.docs.compose-x.io/syntax/composex/elbv2.html
+.. _AWS S3:             https://nightly.docs.compose-x.io/syntax/composex/s3.html
+.. _AWS IAM:            https://nightly.docs.compose-x.io/syntax/composex/ecs.details/iam.html
+.. _AWS Kinesis:        https://nightly.docs.compose-x.io/syntax/composex/kinesis.html
+.. _AWS SQS:            https://nightly.docs.compose-x.io/syntax/composex/sqs.html
+.. _AWS SNS:            https://nightly.docs.compose-x.io/syntax/composex/sns.html
+.. _AWS KMS:            https://nightly.docs.compose-x.io/syntax/composex/kms.html
+.. _AWS ElastiCache:    https://nightly.docs.compose-x.io/syntax/composex/elasticache.html
+.. _AWS EC2:            https://nightly.docs.compose-x.io/features.html#ec2-resources-for-ecs-cluster
+.. _AWS AppMesh:        https://nightly.docs.compose-x.io/readme/appmesh.html
+.. _AWS CloudWatch:     https://nightly.docs.compose-x.io/syntax/compose_x/alarms.html
+.. _Lookup:             https://nightly.docs.compose-x.io/syntax/compose_x/common.html#lookup
 .. _the compatibilty matrix: https://nightly.docs.compose-x.io/compatibility/docker_compose.html
 .. _Find out how to use ECS Compose-X in AWS here: https://blog.compose-x.io/posts/use-your-docker-compose-files-as-a-cloudformation-template/index.html
 .. _documentation: https://docs.compose-x.io

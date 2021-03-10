@@ -25,6 +25,8 @@ Syntax
             protocol: str
             port: int
             healthcheck: str
+        Listeners: []
+
 
 
 
@@ -41,7 +43,7 @@ For this particular resource, the only attributes that match the CFN definition 
 All other settings are automatically generated for you based on the network and security definitions you have defined in
 the services and targets section.
 
-Subnets associations can be overridden in the `Settings`_ below.
+Subnets associations can be overridden in the Settings.Subnets section. See :ref:`common_settings_subnets` for more details.
 
 .. hint::
 

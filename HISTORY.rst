@@ -2,6 +2,60 @@
 History
 =======
 
+0.13.0 (2021-03-10)
+===================
+
+This new version comes with a good mix of fixes and new features supported.
+In an effort of always improving docker-compose compatibility, a number of features have been added.
+Volumes support is added for both local volumes (non-bind) and shared volumes (via EFS).
+Alarm support added to allow creating arbitrary alarms and scaling policies on metrics for non Compose-X managed
+resources.
+
+New Features
+-------------
+
+* 33f7b45 x-alarms support (#425)
+* e12d25a ECS DeploymentConfiguration support with Circuit breaker (#423)
+* dad6d02 awslogs drivers options support (#422)
+* b66876b Added lookup for SecurityGroups in Ingress (#401)
+* c3c1565 x-efs (#395)
+* df7d085 Added tmpfs support
+* d19e60d Added sysctls support
+* 8c4c30e Added working_dir support
+* 71cb736 Added shm_size support
+* a09d233 Added cap_add,cap_drop support
+* 69bc348 Added support for Ulimits
+* 3f380c7 docker-compose ECS local volumes support (#391)
+
+Fixes
+------
+* 811f88d Fixing URLs
+* cae1336 build can be either a string or dict
+* f093931 Fixed self-ingress process (#417)
+* ec3dbc4 Fixing VpcId.Use and x-dns when not set (#415)
+* f0d6635 Fixing lookup resource output condition (#411)
+* 6dbef07 Fixing s3 to ecs bug for lookup (#400)
+* 7edc838 Renamed and fixed condition for registries (#392)
+* 8876047 For PrivateNamespace in CloudMap, using ns-ID (#388)
+* b7130ea Family name is as defined in compose files, and LB use that name instead of logical name (#386)
+
+Improvements
+-------------
+
+* 765426b Updated docs
+* 07c6db2 Using troposphere 2.6.4
+* 7a31e63 Simpler regexp to group required, ping and optional healthcheck (#416)
+* 4977767 x-elbv2 settings in macro parameters for LB Attributes (#410)
+* 0ea035a Code Cleanup and Refactor (#409)
+* 8059454 Moved x-s3 settings to MacroParameters and cleaned up old unused code (#407)
+* 8773299 Healthcheck times translated from str to int (#406)
+* 5a49890 When not public NLB, allows to override the LB Subnets to use (#402)
+* 695624f Added compatibility matrix (#398)
+* ec184fc Generic attributes output configuration (#396)
+* 5f1cc0b Adding a message to inform that no port were defined but UseCloudmap (#387)
+
+
+
 0.12.0 (2021-01-31)
 ===================
 

@@ -1,4 +1,4 @@
-.. _syntax:
+.. _syntax_reference:
 
 .. toctree::
     :caption: Docker Compose syntax

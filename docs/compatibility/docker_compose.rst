@@ -112,13 +112,25 @@ services
 +-------------------+-----------+----------------------+-------------+-----------+
 
 
-service.deploy
-+++++++++++++++
+deploy
+++++++++
 
 .. tip::
 
     See :ref:`ecs_composex_scaling_syntax_reference` and :ref:`composex_deploy_extension` for more scaling settings.
     See :ref:`composex_families_labels_syntax_reference` for more details on combining services into a single task definition
+
+
+.. hint::
+
+    Not all `ulimits`_ are supported in AWS Fargate. ECS Compose-X Will automatically deactivate the ones not supported.
+
+
+.. tip::
+
+    **user** expects the format **uid:gid** to use, users and group names aren't supported.
+
+.. _ulimits: https://docs.docker.com/compose/compose-file/compose-file-v3/#ulimits
 
 
 volumes
@@ -136,7 +148,7 @@ volumes
 | driver_opts.type | Y         | override to bind       |             |           |
 |                  |           | for Fargate            |             |           |
 +------------------+-----------+------------------------+-------------+-----------+
-| driver_opts.o    | Y         |                        |             |           |
+| driver_opts.o    | N         |                        |             |           |
 +------------------+-----------+------------------------+-------------+-----------+
 | driver.name      | Y         | efs/nfs autodetect for |             |           |
 |                  |           | NFS with AWS EFS       |             |           |
