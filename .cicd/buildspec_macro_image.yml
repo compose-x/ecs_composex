@@ -1,4 +1,4 @@
-﻿
+
 version: 0.2
 env:
   shell: /bin/bash
@@ -13,10 +13,19 @@ phases:
       - if ! [ -z ${VERSION+} ]; then echo "Missing required parameter VERSION" && exit 1; fi
       - REGISTRY_URI=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION:-$AWS_DEFAULT_REGION}.amazonaws.com
       - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin ${REGISTRY_URI}
-      - COMMIT_HASH=${CODEBUILD_RESOLVED_SOURCE_VERSION::7}
+      - if ! [ -z ${CODEBUILD_RESOLVED_SOURCE_VERSION+x} ]; then COMMIT_HASH=${CODEBUILD_RESOLVED_SOURCE_VERSION::7}; fi
       - EPOCH=`date +'%Y%m%d'`
       - SUFFIX=${COMMIT_HASH:=$EPOCH}
       - if [ $USE_EPOCH -eq 1 ]; then SUFFIX=$EPOCH; fi
+      - |
+          if ! [ -z "${CODEBUILD_WEBHOOK_TRIGGER+x}" ]; then
+            echo TRIGGER is $CODEBUILD_WEBHOOK_TRIGGER
+            PRE=`echo $CODEBUILD_WEBHOOK_TRIGGER|cut -d '/' -f 1`;
+            echo PRE is $PRE
+            echo SUFFIX is $SUFFIX
+            if [ "${PRE}" == "tag" ]; then SUFFIX=`echo $CODEBUILD_WEBHOOK_TRIGGER|cut -d '/' -f 2`; TAG_RELEASE=1 ; fi
+          fi
+      - echo SUFFIX ends up being $SUFFIX
 
   build:
     commands:

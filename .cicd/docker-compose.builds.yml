@@ -1,4 +1,6 @@
-﻿version: "3.8"
+---
+# Docker compose file for the purpose of building images
+version: "3.8"
 services:
   py37:
     build:
