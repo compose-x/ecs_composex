@@ -325,7 +325,7 @@ class ComposeService(object):
             LogDriver="awslogs",
             Options={
                 "awslogs-group": Sub(
-                    f"${{{ROOT_STACK_NAME.title}}}/" f"svc/ecs/{self.logical_name}",
+                    f"${{{ROOT_STACK_NAME.title}}}/svc/ecs/{self.logical_name}"
                 ),
                 "awslogs-region": Ref(AWS_REGION),
                 "awslogs-stream-prefix": self.name,
