@@ -164,7 +164,7 @@ CLUSTER_SG_ID = Parameter(
 SERVICE_GROUP_ID_T = "ServiceGroupId"
 SERVICE_GROUP_ID = Parameter(SERVICE_GROUP_ID_T, Type=SG_ID_TYPE, Default="<none>")
 
-AWS_XRAY_IMAGE = "public.ecr.aws/w1m2m2a3/aws-xray-daemon:latest"
+AWS_XRAY_IMAGE = "public.ecr.aws/xray/aws-xray-daemon:latest"
 XRAY_IMAGE_T = "AWSXRayImage"
 XRAY_IMAGE = Parameter(XRAY_IMAGE_T, Type="String", Default=AWS_XRAY_IMAGE)
 
