@@ -324,7 +324,9 @@ class ComposeService(object):
         default = LogConfiguration(
             LogDriver="awslogs",
             Options={
-                "awslogs-group": self.logical_name,
+                "awslogs-group": Sub(
+                    f"${{{ROOT_STACK_NAME.title}}}/svc/ecs/{self.logical_name}"
+                ),
                 "awslogs-region": Ref(AWS_REGION),
                 "awslogs-stream-prefix": self.name,
             },
@@ -1281,6 +1283,47 @@ class ComposeFamily(object):
             if xray_service.name not in self.ignored_services:
                 self.ignored_services.append(xray_service)
 
+    def add_container_level_log_group(self, service, log_group_title, expiry):
+        """
+        Method to add a new log group for a specific container/service defined when awslogs-group has been set.
+
+        :param service:
+        :param str log_group_title:
+        :param expiry:
+        """
+        if log_group_title not in self.template.resources:
+            log_group = self.template.add_resource(
+                LogGroup(
+                    log_group_title,
+                    LogGroupName=service.logging.Options["awslogs-group"],
+                    RetentionInDays=expiry,
+                )
+            )
+            policy = Policy(
+                PolicyName=Sub(f"CloudWatchAccessFor${{{ecs_params.SERVICE_NAME_T}}}"),
+                PolicyDocument={
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Sid": "AllowCloudWatchLoggingToSpecificLogGroup",
+                            "Effect": "Allow",
+                            "Action": [
+                                "logs:CreateLogStream",
+                                "logs:PutLogEvents",
+                            ],
+                            "Resource": GetAtt(log_group, "Arn"),
+                        }
+                    ],
+                },
+            )
+            try:
+                self.exec_role.Policies.append(policy)
+            except AttributeError:
+                setattr(self.exec_role, "Policies", [policy])
+            service.logging.Options.update({"awslogs-group": Ref(log_group)})
+        else:
+            LOG.debug("LOG Group and policy already exist")
+
     def handle_logging(self):
         """
         Method to go over each service logging configuration and accordingly define the IAM permissions needed for
@@ -1319,41 +1362,10 @@ class ComposeFamily(object):
                         },
                     )
                 )
-            elif keyisset("awslogs-group", service.logging.Options):
-                if log_group_title not in self.template.resources:
-                    log_group = self.template.add_resource(
-                        LogGroup(
-                            log_group_title,
-                            LogGroupName=service.logging.Options["awslogs-group"],
-                            RetentionInDays=expiry,
-                        )
-                    )
-                    policy = Policy(
-                        PolicyName=Sub(
-                            f"CloudWatchAccessFor${{{ecs_params.SERVICE_NAME_T}}}"
-                        ),
-                        PolicyDocument={
-                            "Version": "2012-10-17",
-                            "Statement": [
-                                {
-                                    "Sid": "AllowCloudWatchLoggingToSpecificLogGroup",
-                                    "Effect": "Allow",
-                                    "Action": [
-                                        "logs:CreateLogStream",
-                                        "logs:PutLogEvents",
-                                    ],
-                                    "Resource": GetAtt(log_group, "Arn"),
-                                }
-                            ],
-                        },
-                    )
-                    try:
-                        self.exec_role.Policies.append(policy)
-                    except AttributeError:
-                        setattr(self.exec_role, "Policies", [policy])
-                    service.logging.Options.update({"awslogs-group": Ref(log_group)})
-                else:
-                    LOG.debug("LOG Group and policy already exist")
+            elif keyisset("awslogs-group", service.logging.Options) and not isinstance(
+                service.logging.Options["awslogs-group"], (Ref, Sub)
+            ):
+                self.add_container_level_log_group(service, log_group_title, expiry)
             else:
                 service.logging.Options.update(
                     {"awslogs-group": Ref(ecs_params.LOG_GROUP_T)}
