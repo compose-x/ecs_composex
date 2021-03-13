@@ -324,7 +324,10 @@ class ComposeService(object):
         default = LogConfiguration(
             LogDriver="awslogs",
             Options={
-                "awslogs-group": self.logical_name,
+                "awslogs-group": Sub(
+                    f"${{{ROOT_STACK_NAME.title}}}/"
+                    f"svc/ecs/{self.logical_name}",
+                ),
                 "awslogs-region": Ref(AWS_REGION),
                 "awslogs-stream-prefix": self.name,
             },
@@ -1319,7 +1322,9 @@ class ComposeFamily(object):
                         },
                     )
                 )
-            elif keyisset("awslogs-group", service.logging.Options):
+            elif keyisset("awslogs-group", service.logging.Options) and not isinstance(
+                service.logging.Options["awslogs-group"], (Ref, Sub)
+            ):
                 if log_group_title not in self.template.resources:
                     log_group = self.template.add_resource(
                         LogGroup(
