@@ -1,0 +1,66 @@
+---
+# x-alarms basic use-case
+
+x-alarms:
+  alarm-01:
+    Properties:
+      ActionsEnabled: True
+      AlarmDescription: A simple CW alarm
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      DatapointsToAlarm: 1
+      Dimensions:
+        - Name: Cluster
+          Value: DEV
+        - Name: Topic
+          Value: sainsburys.data.price-specification.batch.v1
+        - Name: ConsumerGroup
+          Value: sainsburys.applications.sc-dis.price-specification.retail-price.aut-test-consumer
+      EvaluationPeriods: 5
+      MetricName: TotalLagForTopicAndConsumerGroup
+      Namespace: lag-metrics-v4
+      Period: 60
+      Statistic: Sum
+      Threshold: 1.0
+      TreatMissingData: notBreaching
+
+
+  alarm-02:
+    Properties:
+      ActionsEnabled: True
+      AlarmDescription: A simple CW alarm
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      DatapointsToAlarm: 1
+      Dimensions:
+        - Name: Cluster
+          Value: DEV
+        - Name: Topic
+          Value: sainsburys.data.price-specification.batch.v1
+        - Name: ConsumerGroup
+          Value: sainsburys.applications.sc-dis.price-specification.retail-price.aut-test-consumer
+      EvaluationPeriods: 5
+      MetricName: TotalLagForTopicAndConsumerGroup
+      Namespace: lag-metrics-v4
+      Period: 60
+      Statistic: Sum
+      Threshold: 1.0
+      TreatMissingData: notBreaching
+
+  composite-alarm:
+    MacroParameters:
+      CompositeExpression: ALARM(alarm-01) and (OK(alarm-02) or INSUFFICIENT_DATA(alarm-02))
+
+    Services:
+      - name: app03
+        access: NA
+        Scaling:
+          scaling_in_cooldown: 300
+          scaling_out_cooldown: 60
+          steps:
+            - lower_bound: 0
+              upper_bound: 1000
+              count: 1
+            - lower_bound: 1000
+              upper_bound: 10000
+              count: 3
+    Topics:
+      - TopicArn: arn:aws:sns:eu-west-1:012346578900:topic/sometopic

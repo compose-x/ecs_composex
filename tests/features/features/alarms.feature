@@ -8,6 +8,9 @@ Feature: ecs_composex.alarms
 
 
     Examples:
-      | file_path                   | override_file                                |
-      | use-cases/blog.features.yml | use-cases/alarms/create_only.yml             |
-      | use-cases/blog.features.yml | use-cases/alarms/create_only.with_topics.yml |
+      | file_path                   | override_file                                  |
+      | use-cases/blog.features.yml | use-cases/alarms/create_only.yml               |
+      | use-cases/blog.features.yml | use-cases/alarms/create_only.with_topics.yml   |
+      | use-cases/blog.features.yml | use-cases/alarms/composite_alarm.yml           |
+      | use-cases/blog.features.yml | use-cases/alarms/composite_alarm.duplicate.yml |
+
