@@ -16,14 +16,12 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from troposphere import Ref, GetAtt
 from troposphere import Output
-from troposphere.cloudwatch import Alarm as CWAlarm
+from troposphere import Ref, GetAtt
 
 from ecs_composex.common import LOG
 from ecs_composex.common import keyisset, add_parameters, add_outputs
 from ecs_composex.common.cfn_params import Parameter
-from ecs_composex.resources_import import import_record_properties
 from ecs_composex.ecs.ecs_params import SERVICE_SCALING_TARGET
 from ecs_composex.ecs.ecs_scaling import (
     generate_alarm_scaling_out_policy,
@@ -31,7 +29,6 @@ from ecs_composex.ecs.ecs_scaling import (
 )
 from ecs_composex.sns.sns_params import (
     RES_KEY as SNS_KEY,
-    MOD_KEY as SNS_MKEY,
     TOPIC_ARN_RE,
     TOPIC_ARN,
 )
@@ -90,56 +87,45 @@ def add_service_actions(
         ),
     )
     if not alarm.cfn_resource:
-        if not alarm.properties:
-            raise KeyError("You defined an Alarm without any properties")
-        props = import_record_properties(alarm.properties, CWAlarm)
-        props.update(
-            {
-                "OKActions": [Ref(scaling_in_policy)],
-                "AlarmActions": [Ref(scaling_out_policy)],
-            }
-        )
-        alarm.cfn_resource = CWAlarm(alarm.logical_name, **props)
-        target[0].template.add_resource(alarm.cfn_resource)
-    else:
-        service_scaling_in_policy_param = Parameter(
-            f"{target[0].logical_name}ScaleInPolicy", Type="String"
-        )
-        service_scaling_out_policy_param = Parameter(
-            f"{target[0].logical_name}ScaleOutPolicy", Type="String"
-        )
-        add_parameters(
-            alarms_stack.stack_template,
-            [service_scaling_in_policy_param, service_scaling_out_policy_param],
-        )
-        add_outputs(
-            target[0].template,
-            [
-                Output(
-                    f"{target[0].logical_name}ScaleInPolicy",
-                    Value=Ref(scaling_in_policy),
-                ),
-                Output(
-                    f"{target[0].logical_name}ScaleOutPolicy",
-                    Value=Ref(scaling_out_policy),
-                ),
-            ],
-        )
-        alarms_stack.Parameters.update(
-            {
-                service_scaling_in_policy_param.title: GetAtt(
-                    target[0].logical_name,
-                    f"Outputs.{target[0].logical_name}ScaleInPolicy",
-                ),
-                service_scaling_out_policy_param.title: GetAtt(
-                    target[0].logical_name,
-                    f"Outputs.{target[0].logical_name}ScaleOutPolicy",
-                ),
-            }
-        )
-        actions = get_alarm_actions(alarm)
-        actions[0].append(Ref(service_scaling_in_policy_param))
-        actions[1].append(Ref(service_scaling_out_policy_param))
+        raise AttributeError(f"Alarm {alarm.logical_name} has no CFN object associated")
+    service_scaling_in_policy_param = Parameter(
+        f"{target[0].logical_name}ScaleInPolicy", Type="String"
+    )
+    service_scaling_out_policy_param = Parameter(
+        f"{target[0].logical_name}ScaleOutPolicy", Type="String"
+    )
+    add_parameters(
+        alarms_stack.stack_template,
+        [service_scaling_in_policy_param, service_scaling_out_policy_param],
+    )
+    add_outputs(
+        target[0].template,
+        [
+            Output(
+                f"{target[0].logical_name}ScaleInPolicy",
+                Value=Ref(scaling_in_policy),
+            ),
+            Output(
+                f"{target[0].logical_name}ScaleOutPolicy",
+                Value=Ref(scaling_out_policy),
+            ),
+        ],
+    )
+    alarms_stack.Parameters.update(
+        {
+            service_scaling_in_policy_param.title: GetAtt(
+                target[0].logical_name,
+                f"Outputs.{target[0].logical_name}ScaleInPolicy",
+            ),
+            service_scaling_out_policy_param.title: GetAtt(
+                target[0].logical_name,
+                f"Outputs.{target[0].logical_name}ScaleOutPolicy",
+            ),
+        }
+    )
+    actions = get_alarm_actions(alarm)
+    actions[0].append(Ref(service_scaling_in_policy_param))
+    actions[1].append(Ref(service_scaling_out_policy_param))
 
 
 def handle_service_scaling(alarm, alarms_stack):
@@ -202,7 +188,7 @@ def handle_notify_on(topic_def):
     valid_values = ["all", "okay", "alarm"]
     notify_on = "alarm"
     if not keyisset("NotifyOn", topic_def):
-        LOG.warning("NotifyOn was not set for topic. Will default to Alarms")
+        LOG.warning("NotifyOn was not set for topic. Will default to AlarmActions")
     else:
         if not isinstance(topic_def["NotifyOn"], str):
             raise TypeError("NotifyOn must be a string")
@@ -287,6 +273,8 @@ def alarms_to_ecs(resources, services_stack, res_root_stack, settings):
         if not resource.lookup and not resource.use
     ]
     for alarm in new_resources:
+        if alarm.in_composite:
+            continue
         handle_service_scaling(alarm, res_root_stack)
         if alarm.topics:
             handle_alarm_topics(alarm, res_root_stack, settings)
