@@ -10,7 +10,7 @@ import argparse
 import sys
 
 from ecs_composex.common import LOG
-from ecs_composex.common.aws import deploy
+from ecs_composex.common.aws import deploy, plan
 from ecs_composex.common.settings import ComposeXSettings
 from ecs_composex.common.stacks import process_stacks
 from ecs_composex.ecs_composex import generate_full_template
@@ -168,6 +168,8 @@ def main():
 
     if settings.deploy:
         deploy(settings, root_stack)
+    elif settings.plan:
+        plan(settings, root_stack)
     return 0
 
 

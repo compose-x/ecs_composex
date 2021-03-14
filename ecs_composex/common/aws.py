@@ -7,7 +7,10 @@ Common functions and variables fetched from AWS.
 """
 import re
 import boto3
+import string
+import random
 from botocore.exceptions import ClientError
+from time import sleep
 
 from ecs_composex.common import LOG, keyisset
 from ecs_composex.iam import ROLE_ARN_ARG
@@ -292,11 +295,11 @@ def assert_can_update_stack(client, name):
     return False
 
 
-def deploy(settings, root_stack):
+def validate_stack_availability(settings, root_stack):
     """
-    Function to deploy (create or update) the stack to CFN.
-    :param ComposeXSettings settings:
-    :param ComposeXStack root_stack:
+    Function to check that the stack can be updated
+    :param settings:
+    :param root_stack:
     :return:
     """
     if not settings.upload:
@@ -308,6 +311,16 @@ def deploy(settings, root_stack):
             f"The URL for the stack is incorrect.: {root_stack.TemplateURL}",
             "TemplateURL must be a s3 URL",
         )
+
+
+def deploy(settings, root_stack):
+    """
+    Function to deploy (create or update) the stack to CFN.
+    :param ComposeXSettings settings:
+    :param ComposeXStack root_stack:
+    :return:
+    """
+    validate_stack_availability(settings, root_stack)
     client = settings.session.client("cloudformation")
     if assert_can_create_stack(client, settings.name):
         res = client.create_stack(
@@ -331,3 +344,78 @@ def deploy(settings, root_stack):
         LOG.info(res["StackId"])
         return res["StackId"]
     return None
+
+
+def get_change_set_status(client, change_set_name, settings):
+    pending_statuses = [
+        "CREATE_PENDING",
+        "CREATE_IN_PROGRESS",
+        "DELETE_PENDING",
+        "DELETE_IN_PROGRESS",
+    ]
+    success_statuses = ["CREATE_COMPLETE", "DELETE_COMPLETE"]
+    failed_statuses = ["DELETE_FAILED", "FAILED"]
+    ready = False
+    status = None
+    while not ready:
+        status = client.describe_change_set(
+            ChangeSetName=change_set_name, StackName=settings.name
+        )
+        if status["Status"] in failed_statuses:
+            raise SystemExit("Change set is unsucessful", status["Status"])
+        if status["Status"] in pending_statuses:
+            LOG.info("ChangeSet creation in progress. Waiting 10 seconds")
+            sleep(10)
+        elif status["Status"] in success_statuses:
+            ready = True
+
+    print("Changes")
+    for change in status["Changes"]:
+        print(
+            f"{change['ResourceChange']['LogicalResourceId']}\t"
+            f"{change['ResourceChange']['ResourceType']}\t"
+            f"{change['ResourceChange']['Action']}"
+        )
+    return status
+
+
+def plan(settings, root_stack):
+    """
+    Function to create a recursive change-set and return diffs
+    :param ComposeXSettings settings:
+    :param ComposeXStack root_stack:
+    :return:
+    """
+    validate_stack_availability(settings, root_stack)
+    client = settings.session.client("cloudformation")
+    change_set_name = f"{settings.name}" + "".join(
+        random.choices(string.ascii_uppercase + string.digits, k=10)
+    )
+    if assert_can_create_stack(client, settings.name):
+        res = client.create_change_set(
+            StackName=settings.name,
+            Capabilities=["CAPABILITY_IAM", "CAPABILITY_AUTO_EXPAND"],
+            Parameters=root_stack.render_parameters_list_cfn(),
+            TemplateURL=root_stack.TemplateURL,
+            UsePreviousTemplate=False,
+            IncludeNestedStacks=True,
+            ChangeSetType="CREATE",
+            ChangeSetName=change_set_name,
+        )
+        LOG.info(
+            f"ChangeSet {settings.name} successfully triggered. Pending for changes."
+        )
+    elif assert_can_update_stack(client, settings.name):
+        LOG.warning(f"Stack {settings.name} already exists. Updating.")
+        res = client.create_change_set(
+            StackName=settings.name,
+            Capabilities=["CAPABILITY_IAM", "CAPABILITY_AUTO_EXPAND"],
+            Parameters=root_stack.render_parameters_list_cfn(),
+            TemplateURL=root_stack.TemplateURL,
+            UsePreviousTemplate=False,
+            IncludeNestedStacks=True,
+            ChangeSetType="UPDATE",
+            ChangeSetName=change_set_name,
+        )
+    status = get_change_set_status(client, change_set_name, settings)
+    return status
