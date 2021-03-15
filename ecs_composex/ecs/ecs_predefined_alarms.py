@@ -65,11 +65,13 @@ PREDEFINED_SERVICE_ALARMS_DEFINITION = {
             "ScalingOutMaxed": deepcopy(
                 PREDEFINED_ALARMS_DEFINITION["ScalingOutMaxed"]
             ),
-            "HighCpuUsageAndMaxScaledOut": deepcopy({
-                "MacroParameters": {
-                    "CompositeExpression": "ALARM(HighCpuUsage) AND ALARM(ScalingOutMaxed)"
+            "HighCpuUsageAndMaxScaledOut": deepcopy(
+                {
+                    "MacroParameters": {
+                        "CompositeExpression": "ALARM(HighCpuUsage) AND ALARM(ScalingOutMaxed)"
+                    }
                 }
-            }),
+            ),
         },
     }
 }
