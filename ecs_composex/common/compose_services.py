@@ -1300,6 +1300,9 @@ class ComposeFamily(object):
 
         finalized_alarms = {}
         for name, settings in PREDEFINED_SERVICE_ALARMS_DEFINITION.items():
+            if keyisset("requires_scaling", settings) and not self.service_config.scaling.defined:
+                LOG.error(f"No scaling range was defined for the service and rule {name} requires it. Skipping")
+                continue
             new_settings = deepcopy(settings)
             for alarm_name, alarm_def in new_settings["Alarms"].items():
                 if not keyisset("Properties", alarm_def):
