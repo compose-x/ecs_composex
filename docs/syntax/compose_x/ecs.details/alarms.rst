@@ -93,7 +93,7 @@ count is equal to the max scaling capacity (or otherwise overriden value).
 .. code-block:: yaml
     :caption: Example at 50% CPU usage and override to 4 tasks.
 
-    - Name: HighCpuUsageAndMaxScaledOut
+    - Name: HighRamUsageAndMaxScaledOut
       Settings:
         MemoryUtilization: 50          # In percent
         RunningTaskCount: 4            # Number of tasks to evaluate against.

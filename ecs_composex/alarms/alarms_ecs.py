@@ -349,7 +349,7 @@ def set_services_alarms(settings):
                 MetricDimension(
                     **{
                         "Name": "ServiceName",
-                        "Value": Ref(family.ecs_service.ecs_service),
+                        "Value": GetAtt(family.ecs_service.ecs_service, "Name"),
                     }
                 ),
             ]
