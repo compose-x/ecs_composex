@@ -16,21 +16,15 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import re
-from troposphere import Ref, Sub, Join
+
+from troposphere import Sub, Join
 from troposphere.cloudwatch import Alarm as CWAlarm, CompositeAlarm
 
-from ecs_composex.common import (
-    LOG,
-    keyisset,
-    keypresent,
-    build_template,
-    add_parameters,
-)
-from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.common.compose_resources import set_resources, XResource
-from ecs_composex.resources_import import import_record_properties
-
 from ecs_composex.alarms.alarms_params import RES_KEY
+from ecs_composex.common import keyisset, build_template, LOG
+from ecs_composex.common.compose_resources import set_resources, XResource
+from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.resources_import import import_record_properties
 
 
 def map_expression_to_alarms(expression, alarms):
@@ -137,7 +131,8 @@ def add_composite_alarms(template, new_alarms):
         ):
             alarm.is_composite = True
             create_composite_alarm(alarm, new_alarms)
-            template.add_resource(alarm.cfn_resource)
+            if alarm.cfn_resource.title not in template.resources:
+                template.add_resource(alarm.cfn_resource)
 
 
 def create_alarms(template, settings, new_alarms):
@@ -162,7 +157,8 @@ def create_alarms(template, settings, new_alarms):
             except KeyError:
                 props = import_record_properties(alarm.properties, CWAlarm)
                 alarm.cfn_resource = CWAlarm(alarm.logical_name, **props)
-                template.add_resource(alarm.cfn_resource)
+                if alarm.cfn_resource.title not in template.resources:
+                    template.add_resource(alarm.cfn_resource)
         elif alarm.parameters and keyisset("CompositeExpression", alarm.parameters):
             continue
 

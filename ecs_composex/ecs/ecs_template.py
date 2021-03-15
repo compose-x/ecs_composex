@@ -231,3 +231,4 @@ def generate_services(settings):
         family.set_volumes()
         create_log_group(family)
         family.handle_logging()
+        family.handle_alarms()

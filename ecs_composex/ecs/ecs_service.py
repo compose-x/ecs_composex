@@ -401,6 +401,9 @@ class Service(object):
         self.network_settings = None
         self.ecs_service = None
         self.scalable_target = None
+        self.scaling_out_policies = {}
+        self.scaling_in_policies = {}
+        self.alarms = {}
         family.stack_parameters.update({ecs_params.SERVICE_NAME_T: family.name})
         self.sgs = []
         self.sg = add_service_default_sg(family.template)

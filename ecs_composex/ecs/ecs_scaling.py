@@ -334,9 +334,10 @@ class ServiceScaling(object):
         configuration = merge_family_services_scaling(services)
         self.scaling_range = None
         self.target_scaling = None
+        self.defined = False
         if not keyisset("Range", configuration):
-            self.defined = False
             return
+        self.defined = True
         self.scaling_range = configuration["Range"]
         for key in self.target_scaling_keys:
             if keyisset("TargetScaling", configuration) and keyisset(

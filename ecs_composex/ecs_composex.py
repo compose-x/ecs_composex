@@ -45,6 +45,7 @@ from ecs_composex.ecs.ecs_cluster import add_ecs_cluster
 from ecs_composex.ecs.ecs_stack import associate_services_to_root_stack
 from ecs_composex.vpc import vpc_params
 from ecs_composex.vpc.vpc_stack import add_vpc_to_root
+from ecs_composex.alarms.alarms_ecs import set_services_alarms
 
 RES_REGX = re.compile(r"(^([x-]+))")
 COMPUTE_STACK_NAME = "Ec2Compute"
@@ -359,5 +360,6 @@ def generate_full_template(settings):
     dns_records = DnsRecords(settings)
     dns_records.associate_records_to_resources(settings, root_stack, dns_settings)
     dns_settings.associate_settings_to_nested_stacks(root_stack)
+    set_services_alarms(settings)
     add_all_tags(root_stack.stack_template, settings)
     return root_stack
