@@ -17,18 +17,14 @@
 
 import re
 
-from troposphere import Sub, Join, Ref
-from troposphere.cloudwatch import Alarm as CWAlarm, CompositeAlarm, MetricDimension
+from troposphere import Sub, Join
+from troposphere.cloudwatch import Alarm as CWAlarm, CompositeAlarm
 
 from ecs_composex.alarms.alarms_params import RES_KEY
-from ecs_composex.common import (
-    keyisset,
-    build_template,
-)
+from ecs_composex.common import keyisset, build_template, LOG
 from ecs_composex.common.compose_resources import set_resources, XResource
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.resources_import import import_record_properties
-from ecs_composex.ecs.ecs_params import CLUSTER_NAME, SERVICE_T
 
 
 def map_expression_to_alarms(expression, alarms):

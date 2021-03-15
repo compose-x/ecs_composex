@@ -25,19 +25,41 @@ services.x-alarms
 Predefined alarms
 =================
 
+Common Settings
+++++++++++++++++
+
+Note that the following properties can be set to override defaults.
+It will only update the "Primary" alarm when alarms are composite.
+
++----------------------+---------+
+| Setting              | Default |
++======================+=========+
+| `DatapointsToAlarm`_ | 10      |
++----------------------+---------+
+| `EvaluationPeriods`_ | 5       |
++----------------------+---------+
+| `Period`_            | 60      |
++----------------------+---------+
+
+.. attention::
+
+    Define some scaling range to allow scaling out
+    The alarms below will only be active if there are scaling rules defined.
+
+
 HighCpuUsageAndMaxScaledOut
 ++++++++++++++++++++++++++++
 
-+------------------+---------------+------------------------------+
-| Setting name     | Default Value | Comment                      |
-+==================+===============+==============================+
-| CPUUtilization   | 75            | Percentage, float            |
-+------------------+---------------+------------------------------+
-| RunningTaskCount | MAX()         | Count, int.                  |
-|                  |               | Default goes to max value of |
-|                  |               |                              |
-|                  |               | x-scaling.Range              |
-+------------------+---------------+------------------------------+
++------------------+---------------+----------+------------------------------+
+| Setting name     | Default Value | Primary? | Comment                      |
++==================+===============+==========+==============================+
+| CPUUtilization   | 75            | Y        | Percentage, float            |
++------------------+---------------+----------+------------------------------+
+| RunningTaskCount | MAX()         | N        | Count, int.                  |
+|                  |               |          | Default goes to max value of |
+|                  |               |          |                              |
+|                  |               |          | x-scaling.Range              |
++------------------+---------------+----------+------------------------------+
 
 This rule will trigger an alert when the CPUUtilization of a given service will go over the threshold and the tasks
 count is equal to the max scaling capacity (or otherwise overriden value).
@@ -50,10 +72,32 @@ count is equal to the max scaling capacity (or otherwise overriden value).
         CPUUtilization: 50             # In percent
         RunningTaskCount: 4            # Number of tasks to evaluate against.
 
-.. hint::
 
-    Define some scaling range to allow scaling out
-    This alarm will only be active if there are scaling rules defined.
+HighRamUsageAndMaxScaledOut
+++++++++++++++++++++++++++++
+
++-------------------+---------------+----------+------------------------------+
+| Setting name      | Default Value | Primary? | Comment                      |
++===================+===============+==========+==============================+
+| MemoryUtilization | 75            | Y        | Percentage, float            |
++-------------------+---------------+----------+------------------------------+
+| RunningTaskCount  | MAX()         | N        | Count, int.                  |
+|                   |               |          | Default goes to max value of |
+|                   |               |          |                              |
+|                   |               |          | x-scaling.Range              |
++-------------------+---------------+----------+------------------------------+
+
+This rule will trigger an alert when the CPUUtilization of a given service will go over the threshold and the tasks
+count is equal to the max scaling capacity (or otherwise overriden value).
+
+.. code-block:: yaml
+    :caption: Example at 50% CPU usage and override to 4 tasks.
+
+    - Name: HighCpuUsageAndMaxScaledOut
+      Settings:
+        MemoryUtilization: 50          # In percent
+        RunningTaskCount: 4            # Number of tasks to evaluate against.
+
 
 
 A little bit of philosophy behind alarms
@@ -70,3 +114,7 @@ throttling.
 
 So as much as alarms are valuable, you should always try to have ones that will action a corrective fix, automated wherever
 possible, and if not possible, alert people so risks get mitigated.
+
+.. _DatapointsToAlarm: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-cw-alarm.html#cfn-cloudwatch-alarm-datapointstoalarm
+.. _EvaluationPeriods: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-cw-alarm.html#cfn-cloudwatch-alarms-evaluationperiods
+.. _Period: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-cw-alarm.html#cfn-cloudwatch-alarms-period

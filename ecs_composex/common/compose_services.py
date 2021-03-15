@@ -1341,9 +1341,9 @@ class ComposeFamily(object):
         ):
             raise KeyError(
                 f"For {self.logical_name}, only valid service_predefined alarms are",
-                valid_predefined,
+                valid_predefined.keys(),
                 "Got",
-                service_predefined,
+                service_predefined.keys(),
             )
 
     def define_default_alarm_settings(self, key, value, settings_key, valid_predefined):
@@ -1359,7 +1359,7 @@ class ComposeFamily(object):
                 for subkey, subvalue in value[settings_key].items():
                     self.predefined_alarms[key][settings_key][subkey] = subvalue
 
-    def merge_alarm_settings(self, key, value, settings_key):
+    def merge_alarm_settings(self, key, value, settings_key, valid_predefined):
         """
         Method to merge multiple services alarms definitions
 
@@ -1373,13 +1373,9 @@ class ComposeFamily(object):
                 subkey, self.predefined_alarms[key][settings_key]
             ):
                 set_value = self.predefined_alarms[key][settings_key][subkey]
-                new_value = min(
-                    subvalue,
-                    self.predefined_alarms[key][settings_key][subkey],
-                )
+                new_value = subvalue
                 LOG.warning(
-                    f"Value for {key}.Settings.{subkey} was already defined to {set_value}."
-                    f" Now set to {new_value} for {self.logical_name}"
+                    f"Value for {key}.Settings.{subkey} override from {set_value} to {new_value}."
                 )
                 self.predefined_alarms[key]["Settings"][subkey] = new_value
 
@@ -1420,7 +1416,7 @@ class ComposeFamily(object):
                 and isinstance(value, dict)
                 and keyisset(settings_key, value)
             ):
-                self.merge_alarm_settings(key, value, settings_key)
+                self.merge_alarm_settings(key, value, settings_key, valid_predefined)
             if keyisset("Topics", value):
                 self.set_merge_alarm_topics(key, value)
 

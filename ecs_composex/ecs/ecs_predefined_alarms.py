@@ -32,6 +32,16 @@ PREDEFINED_ALARMS_DEFINITION = {
             "Statistic": "Average",
         }
     },
+    "HighRamUsage": {
+        "Properties": {
+            "ActionsEnabled": True,
+            "AlarmDescription": "HighRamUsage",
+            "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+            "MetricName": "MemoryUtilization",
+            "Namespace": "AWS/ECS",
+            "Statistic": "Average",
+        }
+    },
     "ScalingOutMaxed": {
         "Properties": {
             "ActionsEnabled": True,
@@ -73,5 +83,31 @@ PREDEFINED_SERVICE_ALARMS_DEFINITION = {
                 }
             ),
         },
-    }
+    },
+    "HighRamUsageAndMaxScaledOut": {
+        "requires_scaling": True,
+        "scaling_key": "RunningTaskCount",
+        "range_key": "max",
+        "Settings": {
+            "MemoryUtilization": 75,
+            "RunningTaskCount": 0,
+            "DatapointsToAlarm": 5,
+            "EvaluationPeriods": 10,
+            "Period": 60,
+        },
+        "Primary": "HighRamUsage",
+        "Alarms": {
+            "HighRamUsage": deepcopy(PREDEFINED_ALARMS_DEFINITION["HighRamUsage"]),
+            "ScalingOutMaxed": deepcopy(
+                PREDEFINED_ALARMS_DEFINITION["ScalingOutMaxed"]
+            ),
+            "HighRamUsageAndMaxScaledOut": deepcopy(
+                {
+                    "MacroParameters": {
+                        "CompositeExpression": "ALARM(HighRamUsage) AND ALARM(ScalingOutMaxed)"
+                    }
+                }
+            ),
+        },
+    },
 }

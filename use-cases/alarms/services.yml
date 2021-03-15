@@ -10,6 +10,9 @@ services:
             - x-sns: topic-01
           Settings:
             CPUUtilization: 50
+            Period: 30
+            EvaluationPeriods: 15
+            DatapointsToAlarm: 10
   app02:
     x-alarms:
       Predefined:
@@ -26,6 +29,15 @@ services:
           Settings:
             CPUUtilization: 85
             RunningTaskCount: 8
+        HighRamUsageAndMaxScaledOut:
+          Topics:
+            - x-sns: topic-02
+          Settings:
+            MemoryUtilization: 60
+            RunningTaskCount: 6
+            Period: 30
+            EvaluationPeriods: 21
+            DatapointsToAlarm: 7
 
 x-sns:
   Topics:
