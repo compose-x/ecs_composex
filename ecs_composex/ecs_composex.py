@@ -45,7 +45,7 @@ from ecs_composex.ecs.ecs_cluster import add_ecs_cluster
 from ecs_composex.ecs.ecs_stack import associate_services_to_root_stack
 from ecs_composex.vpc import vpc_params
 from ecs_composex.vpc.vpc_stack import add_vpc_to_root
-from ecs_composex.alarms.alarms_stack import set_services_alarms
+from ecs_composex.alarms.alarms_ecs import set_services_alarms
 
 RES_REGX = re.compile(r"(^([x-]+))")
 COMPUTE_STACK_NAME = "Ec2Compute"

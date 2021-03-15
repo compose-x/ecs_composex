@@ -1,0 +1,35 @@
+---
+# Services level alarms
+
+services:
+  rproxy:
+    x-alarms:
+      Predefined:
+        HighCpuUsageAndMaxScaledOut:
+          Topics:
+            - x-sns: topic-01
+          Settings:
+            CPUUtilization: 50
+  app02:
+    x-alarms:
+      Predefined:
+        HighCpuUsageAndMaxScaledOut:
+          Topics:
+            - x-sns: topic-02
+
+  app03:
+    x-alarms:
+      Predefined:
+        HighCpuUsageAndMaxScaledOut:
+          Topics:
+            - x-sns: topic-01
+          Settings:
+            CPUUtilization: 85
+            RunningTaskCount: 8
+
+x-sns:
+  Topics:
+    topic-01:
+      Properties: {}
+    topic-02:
+      Properties: {}

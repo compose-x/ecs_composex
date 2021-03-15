@@ -50,11 +50,11 @@ PREDEFINED_ALARMS_DEFINITION = {
 PREDEFINED_SERVICE_ALARMS_DEFINITION = {
     "HighCpuUsageAndMaxScaledOut": {
         "requires_scaling": True,
-        "scaling_key": "TaskCount",
+        "scaling_key": "RunningTaskCount",
         "range_key": "max",
         "Settings": {
             "CPUUtilization": 75,
-            "TaskCount": 0,
+            "RunningTaskCount": 0,
             "DatapointsToAlarm": 5,
             "EvaluationPeriods": 10,
             "Period": 60,
@@ -65,11 +65,11 @@ PREDEFINED_SERVICE_ALARMS_DEFINITION = {
             "ScalingOutMaxed": deepcopy(
                 PREDEFINED_ALARMS_DEFINITION["ScalingOutMaxed"]
             ),
-            "HighCpuUsageAndMaxScaledOut": {
+            "HighCpuUsageAndMaxScaledOut": deepcopy({
                 "MacroParameters": {
                     "CompositeExpression": "ALARM(HighCpuUsage) AND ALARM(ScalingOutMaxed)"
                 }
-            },
+            }),
         },
     }
 }

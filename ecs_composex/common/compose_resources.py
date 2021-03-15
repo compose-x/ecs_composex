@@ -198,7 +198,7 @@ class XResource(object):
         :return:
         """
         if not self.services:
-            LOG.info(f"No services defined for {self.name}")
+            LOG.debug(f"No services defined for {self.name}")
             return
         for service in self.services:
             name_key = get_setting_key("name", service)

@@ -169,53 +169,6 @@ def create_alarms(template, settings, new_alarms):
     add_composite_alarms(template, new_alarms)
 
 
-def update_definition_from_settings(alarm_definition, settings):
-    """
-    Function to update the alarm definition with the global settings
-
-    :param dict alarm_definition:
-    :param dict settings:
-    :return:
-    """
-    alarm_definition["Properties"].update(
-        {
-            "DatapointsToAlarm": settings["DatapointsToAlarm"],
-            "EvaluationPeriods": settings["EvaluationPeriods"],
-            "Period": settings["Period"],
-        }
-    )
-
-
-def set_services_alarms(settings):
-    """
-    Function to create and assign alarms to services
-
-    :param ecs_composex.common.settings.ComposeXSettings settings:
-    :return:
-    """
-    for family in settings.families.values():
-        if not family.predefined_alarms:
-            continue
-        family_alarms = []
-        for name, definition in family.predefined_alarms.items():
-            primary_name = definition["Primary"]
-            primary = definition["Alarms"][primary_name]
-            update_definition_from_settings(primary, definition["Settings"])
-            for alarm_name, alarm_definition in definition["Alarms"].items():
-                the_alarm = Alarm(
-                    alarm_name, alarm_definition, family.logical_name, settings
-                )
-                family_alarms.append(the_alarm)
-        create_alarms(family.template, settings, family_alarms)
-        for alarm in family_alarms:
-            dimensions = [
-                MetricDimension(**{"Name": "ClusterName", "Value": Ref(CLUSTER_NAME)}),
-                MetricDimension(**{"Name": "ServiceName", "Value": Ref(family.ecs_service.ecs_service)}),
-            ]
-            if isinstance(alarm.cfn_resource, CWAlarm):
-                setattr(alarm.cfn_resource, "Dimensions", dimensions)
-
-
 class Alarm(XResource):
     """
     Class to represent CW Alarms

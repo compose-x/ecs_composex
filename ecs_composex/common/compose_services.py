@@ -1300,16 +1300,24 @@ class ComposeFamily(object):
 
         finalized_alarms = {}
         for name, settings in PREDEFINED_SERVICE_ALARMS_DEFINITION.items():
-            if settings["requires_scaling"] and not self.service_config.scaling.defined:
-                LOG.warning(
-                    f"No scaling was defined for {self.logical_name}. Can not defined {name} alarm"
-                )
-            else:
-                scaling_key = settings["scaling_key"]
-                finalized_alarms[name] = settings
-                settings["Settings"][
-                    scaling_key
-                ] = self.service_config.scaling.scaling_range[settings["range_key"]]
+            new_settings = deepcopy(settings)
+            for alarm_name, alarm_def in new_settings["Alarms"].items():
+                if not keyisset("Properties", alarm_def):
+                    continue
+                props = alarm_def["Properties"]
+                if not keyisset("MetricName", props):
+                    raise KeyError(
+                        "You must define a MetricName for the pre-defined alarm"
+                    )
+                metric_name = props["MetricName"]
+                if metric_name == "RunningTaskCount":
+                    range_key = "max"
+                    if keyisset("range_key", new_settings):
+                        range_key = new_settings["range_key"]
+                    new_settings["Settings"][
+                        metric_name
+                    ] = self.service_config.scaling.scaling_range[range_key]
+            finalized_alarms[name] = new_settings
         return finalized_alarms
 
     def handle_alarms(self):
@@ -1326,25 +1334,30 @@ class ComposeFamily(object):
             if keyisset(alarm_key, service.definition) and keyisset(
                 "Predefined", service.definition[alarm_key]
             ):
-                predefined = service.definition[alarm_key]["Predefined"]
+                service_predefined = service.definition[alarm_key]["Predefined"]
                 if not all(
-                    name in valid_predefined.keys() for name in predefined.keys()
+                    name in valid_predefined.keys() for name in service_predefined.keys()
                 ):
                     raise KeyError(
-                        "Only valid predefined alarms are",
+                        "Only valid service_predefined alarms are",
                         valid_predefined,
                         "Got",
-                        predefined,
+                        service_predefined,
                     )
-                for key, value in predefined.items():
+                for key, value in service_predefined.items():
                     if not keyisset(key, self.predefined_alarms):
                         self.predefined_alarms[key] = valid_predefined[key]
-                        if isinstance(value, dict) and not keyisset(
-                            settings_key, value
-                        ):
+                        self.predefined_alarms[key][
+                            settings_key
+                        ] = valid_predefined[key][settings_key]
+                        if isinstance(value, dict) and keyisset(settings_key, value):
                             self.predefined_alarms[key][
                                 settings_key
                             ] = valid_predefined[key][settings_key]
+                            for subkey, subvalue in value[settings_key].items():
+                                self.predefined_alarms[key][settings_key][
+                                    subkey
+                                ] = subvalue
                     elif (
                         keyisset(key, self.predefined_alarms)
                         and isinstance(value, dict)
@@ -1368,7 +1381,31 @@ class ComposeFamily(object):
                                 self.predefined_alarms[key]["Settings"][
                                     subkey
                                 ] = new_value
-        LOG.debug(self.predefined_alarms)
+                    if keyisset("Topics", value):
+                        topics = value["Topics"]
+                        set_topics = []
+                        if keyisset("Topics", self.predefined_alarms[key]):
+                            set_topics = self.predefined_alarms[key]["Topics"]
+                        else:
+                            self.predefined_alarms[key]["Topics"] = set_topics
+                        for topic in topics:
+                            if (
+                                isinstance(topic, str)
+                                and topic not in [t for t in set_topics if isinstance(t, str)]
+                            ):
+                                set_topics.append(topic)
+                            elif (
+                                isinstance(topic, dict)
+                                and keyisset("x-sns", topic)
+                                and topic["x-sns"]
+                                not in [
+                                    t["x-sns"]
+                                    for t in set_topics
+                                    if isinstance(t, dict) and keyisset("x-sns", t)
+                                ]
+                            ):
+                                set_topics.append(topic)
+                LOG.debug(self.predefined_alarms)
 
     def add_container_level_log_group(self, service, log_group_title, expiry):
         """
