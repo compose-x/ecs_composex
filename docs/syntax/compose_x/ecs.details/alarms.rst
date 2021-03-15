@@ -18,8 +18,8 @@ services.x-alarms
         x-alarms:
           Predefined:
             HighCpuUsageAndMaxScaledOut:
-              Topics: []
-              Settings: {}
+              Topics: []                    # Similar to other x-alarms settings
+              Settings: {}                  # Input values override.
 
 
 Predefined alarms
@@ -28,24 +28,27 @@ Predefined alarms
 HighCpuUsageAndMaxScaledOut
 ++++++++++++++++++++++++++++
 
-+----------------+---------------+
-| Setting name   | Default Value |
-+================+===============+
-| CpuUtilization | 75            |
-+----------------+---------------+
-| TaskCount      | MAX()         |
-+----------------+---------------+
++------------------+---------------+------------------------------+
+| Setting name     | Default Value | Comment                      |
++==================+===============+==============================+
+| CPUUtilization   | 75            | Percentage, float            |
++------------------+---------------+------------------------------+
+| RunningTaskCount | MAX()         | Count, int.                  |
+|                  |               | Default goes to max value of |
+|                  |               |                              |
+|                  |               | x-scaling.Range              |
++------------------+---------------+------------------------------+
 
-This rule will trigger an alert when the CpuUtilization of a given service will go over the threshold and the tasks
-count is equal to the max scaling capacity.
+This rule will trigger an alert when the CPUUtilization of a given service will go over the threshold and the tasks
+count is equal to the max scaling capacity (or otherwise overriden value).
 
 .. code-block:: yaml
-    :caption: Example at 50% CPU usage
+    :caption: Example at 50% CPU usage and override to 4 tasks.
 
     - Name: HighCpuUsageAndMaxScaledOut
       Settings:
-        CpuUtilization: 50      # In percent
-        TaskCount: 4            # Number of tasks to evaluate against.
+        CPUUtilization: 50             # In percent
+        RunningTaskCount: 4            # Number of tasks to evaluate against.
 
 .. hint::
 
