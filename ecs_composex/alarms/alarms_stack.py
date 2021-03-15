@@ -16,21 +16,19 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import re
-from troposphere import Ref, Sub, Join
-from troposphere.cloudwatch import Alarm as CWAlarm, CompositeAlarm
 
-from ecs_composex.common import (
-    LOG,
-    keyisset,
-    keypresent,
-    build_template,
-    add_parameters,
-)
-from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.common.compose_resources import set_resources, XResource
-from ecs_composex.resources_import import import_record_properties
+from troposphere import Sub, Join, Ref
+from troposphere.cloudwatch import Alarm as CWAlarm, CompositeAlarm, MetricDimension
 
 from ecs_composex.alarms.alarms_params import RES_KEY
+from ecs_composex.common import (
+    keyisset,
+    build_template,
+)
+from ecs_composex.common.compose_resources import set_resources, XResource
+from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.resources_import import import_record_properties
+from ecs_composex.ecs.ecs_params import CLUSTER_NAME, SERVICE_T
 
 
 def map_expression_to_alarms(expression, alarms):
@@ -137,7 +135,8 @@ def add_composite_alarms(template, new_alarms):
         ):
             alarm.is_composite = True
             create_composite_alarm(alarm, new_alarms)
-            template.add_resource(alarm.cfn_resource)
+            if alarm.cfn_resource.title not in template.resources:
+                template.add_resource(alarm.cfn_resource)
 
 
 def create_alarms(template, settings, new_alarms):
@@ -162,11 +161,59 @@ def create_alarms(template, settings, new_alarms):
             except KeyError:
                 props = import_record_properties(alarm.properties, CWAlarm)
                 alarm.cfn_resource = CWAlarm(alarm.logical_name, **props)
-                template.add_resource(alarm.cfn_resource)
+                if alarm.cfn_resource.title not in template.resources:
+                    template.add_resource(alarm.cfn_resource)
         elif alarm.parameters and keyisset("CompositeExpression", alarm.parameters):
             continue
 
     add_composite_alarms(template, new_alarms)
+
+
+def update_definition_from_settings(alarm_definition, settings):
+    """
+    Function to update the alarm definition with the global settings
+
+    :param dict alarm_definition:
+    :param dict settings:
+    :return:
+    """
+    alarm_definition["Properties"].update(
+        {
+            "DatapointsToAlarm": settings["DatapointsToAlarm"],
+            "EvaluationPeriods": settings["EvaluationPeriods"],
+            "Period": settings["Period"],
+        }
+    )
+
+
+def set_services_alarms(settings):
+    """
+    Function to create and assign alarms to services
+
+    :param ecs_composex.common.settings.ComposeXSettings settings:
+    :return:
+    """
+    for family in settings.families.values():
+        if not family.predefined_alarms:
+            continue
+        family_alarms = []
+        for name, definition in family.predefined_alarms.items():
+            primary_name = definition["Primary"]
+            primary = definition["Alarms"][primary_name]
+            update_definition_from_settings(primary, definition["Settings"])
+            for alarm_name, alarm_definition in definition["Alarms"].items():
+                the_alarm = Alarm(
+                    alarm_name, alarm_definition, family.logical_name, settings
+                )
+                family_alarms.append(the_alarm)
+        create_alarms(family.template, settings, family_alarms)
+        for alarm in family_alarms:
+            dimensions = [
+                MetricDimension(**{"Name": "ClusterName", "Value": Ref(CLUSTER_NAME)}),
+                MetricDimension(**{"Name": "ServiceName", "Value": Ref(family.ecs_service.ecs_service)}),
+            ]
+            if isinstance(alarm.cfn_resource, CWAlarm):
+                setattr(alarm.cfn_resource, "Dimensions", dimensions)
 
 
 class Alarm(XResource):
