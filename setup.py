@@ -89,6 +89,6 @@ setup(
     test_suite="tests",
     tests_require=test_requirements,
     url="https://github.com/compose-x/ecs_composex",
-    version="0.13.1",
+    version="0.13.2",
     zip_safe=False,
 )
