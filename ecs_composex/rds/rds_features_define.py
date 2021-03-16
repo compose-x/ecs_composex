@@ -23,17 +23,22 @@ from troposphere.iam import Policy as IamPolicy
 
 from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.common import LOG, keyisset, add_parameters
+from ecs_composex.s3.s3_params import S3_BUCKET_ARN
 
 S3_KEY = "x-s3"
 
 
 def get_s3_bucket_arn_from_resource(db_template, stack, resource):
-    param = Parameter(f"{resource.logical_name}Arn", Type="String")
+    param = Parameter(f"{resource.logical_name}{S3_BUCKET_ARN.title}", Type="String")
     add_parameters(db_template, [param])
     if stack.parent_stack:
         add_parameters(stack.parent_stack.stack_template, [param])
         stack.parent_stack.Parameters.update(
-            {param.title: GetAtt("s3", f"Outputs.{resource.logical_name}Arn")}
+            {
+                param.title: GetAtt(
+                    "s3", f"Outputs.{resource.logical_name}{S3_BUCKET_ARN.title}"
+                )
+            }
         )
     stack.Parameters.update({param.title: Ref(param.title)})
     return Sub(f"${{{param.title}}}/*")
