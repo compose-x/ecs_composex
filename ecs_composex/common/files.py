@@ -1,4 +1,6 @@
-# -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
+# SPDX-License-Identifier: MPL-2.0
+# Copyright 2020-2021 John Mille <john@compose-x.io>
 
 """
 Functions to manage a template and wheter it should be stored in S3

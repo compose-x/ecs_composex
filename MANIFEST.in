@@ -4,6 +4,7 @@ include HISTORY.rst
 include LICENSE
 include README.rst
 include USAGE.rst
+include NOTICES.rst
 include requirements*.txt
 
 recursive-exclude * __pycache__

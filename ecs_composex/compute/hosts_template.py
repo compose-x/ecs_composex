@@ -1,20 +1,6 @@
-# -*- coding: utf-8 -*-
-#  ECS ComposeX <https://github.com/lambda-my-aws/ecs_composex>
-#  Copyright (C) 2020-2021  John Mille <john@compose-x.io>
-#
-#  This program is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  This program is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU General Public License for more details.
-#
-#  You should have received a copy of the GNU General Public License
-#  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+#  -*- coding: utf-8 -*-
+# SPDX-License-Identifier: MPL-2.0
+# Copyright 2020-2021 John Mille <john@compose-x.io>
 
 """
 Module to create the Launch Template for the hosts and the associated security group and
@@ -132,23 +118,6 @@ def add_launch_template(template, hosts_sg):
     :return: launch_template
     :rtype: troposphere.ec2.LaunchTemplate
     """
-    # from troposphere.cloudformation import (
-    #     WaitCondition, WaitConditionHandle
-    # )
-    #  Deactivated conditions given you could run with no EC2 at all.
-    # Tricky condition to do as the WaitCondition and Handler cannot be created on a CFN Update, but only at the
-    # very creation of the stack.
-    # wait_handle = WaitConditionHandle(
-    #     'BootstrapHandle',
-    #     template=template
-    # )
-    # WaitCondition(
-    #     'BootStrapCondition',
-    #     template=template,
-    #     DependsOn=[hosts_role],
-    #     Handle=Ref(wait_handle),
-    #     Timeout='900'
-    # )
 
     launch_template = LaunchTemplate(
         "LaunchTemplate",
@@ -280,12 +249,6 @@ def add_launch_template(template, hosts_sg):
                         Sub(
                             "cfn-init --region ${AWS::Region} -r LaunchTemplate -s ${AWS::StackName}"
                         ),
-                        # 'if [ $? -ne 0 ]; then',
-                        # Sub(f'cfn-signal -e 1 -r "Failed to bootstrap" \'${{{wait_handle.title}}}\''),
-                        # 'halt',
-                        # 'else',
-                        # Sub(f'cfn-signal -e 0 -r "Successfully bootstrapped" \'${{{wait_handle.title}}}\''),
-                        # 'fi',
                         "# EOF",
                     ],
                 )
