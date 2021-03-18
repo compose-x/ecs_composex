@@ -160,7 +160,7 @@ Resources:
 
       Description: ECS Compose-X Lambda Layer
       LayerName: ecs_composex
-      LicenseInfo: GPLv3
+      LicenseInfo: MPL-2.0
 
   MacroLambdaFunction:
     Type: AWS::Serverless::Function
