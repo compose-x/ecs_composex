@@ -49,6 +49,23 @@ from ecs_composex.ecs.ecs_params import (
 from ecs_composex.vpc.vpc_params import APP_SUBNETS, SG_ID_TYPE, SUBNETS_TYPE
 
 
+def delete_service_from_template(service):
+    """
+    Function to delete the ECS Service definition and scaling related resources from the template
+
+    :param tuple service:
+    """
+    del service[0].template.resources[SERVICE_SCALING_TARGET]
+    stack_resources = list(service[0].template.resources.values())
+    for resource in stack_resources:
+        if issubclass(type(resource), ScalingPolicy):
+            del service[0].template.resources[resource.title]
+    outputs = list(service[0].template.outputs.keys())
+    for output_name in outputs:
+        if output_name.find(SERVICE_SCALING_TARGET) > 0:
+            del service[0].template.outputs[output_name]
+
+
 def define_service_targets(settings, stack, rule, cluster_arn):
     """
     Function to define the targets for service.
@@ -203,15 +220,7 @@ def define_service_targets(settings, stack, rule, cluster_arn):
             LOG.warning(
                 f"Target for event {rule.logical_name} also had scaling rules. Deleting"
             )
-            del service[0].template.resources[SERVICE_SCALING_TARGET]
-            stack_resources = list(service[0].template.resources.values())
-            for resource in stack_resources:
-                if issubclass(type(resource), ScalingPolicy):
-                    del service[0].template.resources[resource.title]
-            outputs = list(service[0].template.outputs.keys())
-            for output_name in outputs:
-                if output_name.find(SERVICE_SCALING_TARGET) > 0:
-                    del service[0].template.outputs[output_name]
+            delete_service_from_template(service)
 
 
 def events_to_ecs(resources, services_stack, res_root_stack, settings):
