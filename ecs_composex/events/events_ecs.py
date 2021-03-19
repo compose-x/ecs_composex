@@ -204,9 +204,10 @@ def define_service_targets(settings, stack, rule, cluster_arn):
                 f"Target for event {rule.logical_name} also had scaling rules. Deleting"
             )
             del service[0].template.resources[SERVICE_SCALING_TARGET]
-            for res_name, resource in service[0].template.resources.items():
+            stack_resources = list(service[0].template.resources.values())
+            for resource in stack_resources:
                 if issubclass(type(resource), ScalingPolicy):
-                    del service[0].template.resources[res_name]
+                    del service[0].template.resources[resource.title]
             outputs = list(service[0].template.outputs.keys())
             for output_name in outputs:
                 if output_name.find(SERVICE_SCALING_TARGET) > 0:
