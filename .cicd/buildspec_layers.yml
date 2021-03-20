@@ -1,4 +1,5 @@
-
+﻿---
+# BUILDSPEC to merge the .zip of different runtimes for the final layer
 version: 0.2
 env:
   shell: /bin/bash
@@ -64,13 +65,26 @@ phases:
             unzip -q -o ${PY_VERSION}.zip -d merged
           done
       - cd merged; zip -r9 ../layer.zip python; cd -
-      - aws cloudformation package --template-file .cicd/layer_template.yaml --s3-bucket ${PUBLIC_FILES_BUCKET}  --output-template-file layer.yml
-      - aws cloudformation deploy --template-file layer.yml --stack-name ${DEPLOYMENT_NAME:-ecs-compose-x-layer} --capabilities CAPABILITY_AUTO_EXPAND --role-arn ${CFN_IAM_ROLE}
-
+      - LAYER_FILE="${EPOCH}.zip"
+      - cp layer.zip ${LAYER_FILE}
+      - |
+          for REGION in `aws ec2 describe-regions | jq -r .Regions[].RegionName`; do
+            aws --REGION ${REGION} s3 cp layer.zip s3://${REGION}.${PUBLIC_FILES_BUCKET}/layer/latest.zip \
+              --sse AES256 --acl public-read --storage-class STANDARD_IA;
+            aws --REGION ${REGION} s3 cp layer.zip s3://${REGION}.${PUBLIC_FILES_BUCKET}/layer/${LAYER_FILE} \
+              --sse AES256 --acl public-read --storage-class STANDARD_IA;
+          done
+      - envsubst < .install/layer-macro-sar.yml > ecs-compose-x-sar.yaml
+      - |
+          aws s3 cp ecs-compose-x-sar.yaml s3://${PUBLIC_FILES_BUCKET}/aws-sar/ecs-compose-x.yaml \
+            --sse AES256 --acl public-read --storage-class STANDARD_IA
   post_build:
     commands:
-      - aws s3 cp .install/layer-macro.yaml s3://${PUBLIC_FILES_BUCKET}/ --sse AES256 --acl public-read --storage-class STANDARD_IA
+      - aws cloudformation package --template-file .cicd/layer_template.yaml --s3-bucket ${PUBLIC_FILES_BUCKET}  --output-template-file layer.yml
+#      - aws cloudformation deploy --template-file layer.yml --stack-name ${DEPLOYMENT_NAME:-ecs-compose-x-layer} --capabilities CAPABILITY_AUTO_EXPAND --role-arn ${CFN_IAM_ROLE}
 
 artifacts:
   files:
     - layer.yml
+    - ecs-compose-x-sar.yaml
+

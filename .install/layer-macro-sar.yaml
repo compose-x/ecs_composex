@@ -5,24 +5,40 @@ Description: >-
 
 Mappings:
   compose-x:
-    layer:
-      eu-west-3: eu-west-3.files.compose-x.io
-      eu-west-2: eu-west-2.files.compose-x.io
-      eu-west-1: eu-west-1.files.compose-x.io
-      eu-north-1: eu-north-1.files.compose-x.io
-      eu-central-1: eu-central-1.files.compose-x.io
-      ap-south-1: ap-south-1.files.compose-x.io
-      sa-east-1: sa-east-1.files.compose-x.io
-      ap-northeast-3: ap-northeast-3.files.compose-x.io
-      ap-northeast-2: ap-northeast-2.files.compose-x.io
-      ap-northeast-1: ap-northeast-1.files.compose-x.io
-      ap-southeast-1: ap-southeast-1.files.compose-x.io
-      ap-southeast-2: ap-southeast-2.files.compose-x.io
-      ca-central-1: ca-central-1.files.compose-x.io
-      us-east-1: us-east-1.files.compose-x.io
-      us-east-2: us-east-2.files.compose-x.io
-      us-west-1: us-west-1.files.compose-x.io
-      us-west-2: us-west-2.files.compose-x.io
+    eu-west-3:
+      bucket: eu-west-3.files.compose-x.io
+    eu-west-2:
+      bucket: eu-west-2.files.compose-x.io
+    eu-west-1:
+      bucket: eu-west-1.files.compose-x.io
+    eu-north-1:
+      bucket: eu-north-1.files.compose-x.io
+    eu-central-1:
+      bucket: eu-central-1.files.compose-x.io
+    ap-south-1:
+      bucket: ap-south-1.files.compose-x.io
+    sa-east-1:
+      bucket: sa-east-1.files.compose-x.io
+    ap-northeast-3:
+      bucket: ap-northeast-3.files.compose-x.io
+    ap-northeast-2:
+      bucket: ap-northeast-2.files.compose-x.io
+    ap-northeast-1:
+      bucket: ap-northeast-1.files.compose-x.io
+    ap-southeast-1:
+      bucket: ap-southeast-1.files.compose-x.io
+    ap-southeast-2:
+      bucket: ap-southeast-2.files.compose-x.io
+    ca-central-1:
+      bucket: ca-central-1.files.compose-x.io
+    us-east-1:
+      bucket: us-east-1.files.compose-x.io
+    us-east-2:
+      bucket: us-east-2.files.compose-x.io
+    us-west-1:
+      bucket: us-west-1.files.compose-x.io
+    us-west-2:
+      bucket: us-west-2.files.compose-x.io
 
 Transform:
   - AWS::Serverless-2016-10-31
@@ -47,7 +63,6 @@ Metadata:
           default: Lambda Settings
       - Parameters:
           - TemplatesBucket
-          - ComposeXLambdaLayerVersion
         Label:
           default: ECS ComposeX Settings
       - Parameters:
@@ -57,11 +72,6 @@ Metadata:
           default: IAM Settings
 
 Parameters:
-  ComposeXLambdaLayerVersion:
-    Type: String
-    AllowedPattern: (arn:aws([a-z]+)?:lambda:[a-z0-9-]+:\d{12}:layer:[a-zA-Z0-9-_]+:\d{1,3}$)
-    Default: arn:aws:lambda:eu-west-1:518078317392:layer:ecs_composex:48
-
   MemorySize:
     Type: Number
     Default: 128
@@ -136,6 +146,20 @@ Resources:
                   - - "*"
                   - - !Sub "arn:${AWS::Partition}:s3:::${TemplatesBucket}/*"
 
+  MacroLambdaLayer:
+    Type: AWS::Lambda::LayerVersion
+    Properties:
+      CompatibleRuntimes:
+        - python3.7
+        - python3.8
+      Content:
+        S3Bucket: !FindInMap [ "compose-x", !Ref AWS::Region, "bucket" ]
+        S3Key: ${LAYER_FILE:-layer/latest.zip}
+
+      Description: ECS Compose-X Lambda Layer
+      LayerName: ecs_composex
+      LicenseInfo: GPLv3
+
   MacroLambdaFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -151,7 +175,7 @@ Resources:
       FunctionName: !Sub "ecs-compose-x-macro-${AWS::Region}"
       Handler: index.lambda_handler
       Layers:
-        - !Ref ComposeXLambdaLayerVersion
+        - !Ref MacroLambdaLayer
       InlineCode: |
         #!/usr/bin/env python
         from ecs_composex.macro import lambda_handler as macro_function
