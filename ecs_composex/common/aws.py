@@ -11,6 +11,8 @@ import string
 import random
 from botocore.exceptions import ClientError
 from time import sleep
+from tabulate import tabulate
+
 
 from ecs_composex.common import LOG, keyisset
 from ecs_composex.iam import ROLE_ARN_ARG
@@ -264,7 +266,15 @@ def assert_can_create_stack(client, name):
     Checks whether a stack already exists or not
     """
     try:
-        client.describe_stacks(StackName=name)
+        stack_r = client.describe_stacks(StackName=name)
+        if not keyisset("Stacks", stack_r):
+            return True
+        stacks = stack_r["Stacks"]
+        if len(stacks) != 1:
+            raise LookupError("Too many stacks found with machine name", name)
+        stack = stacks[0]
+        if stack["StackStatus"] == "REVIEW_IN_PROGRESS":
+            return stack
         return False
     except ClientError as error:
         if (
@@ -352,6 +362,7 @@ def get_change_set_status(client, change_set_name, settings):
         "CREATE_IN_PROGRESS",
         "DELETE_PENDING",
         "DELETE_IN_PROGRESS",
+        "REVIEW_IN_PROGRESS"
     ]
     success_statuses = ["CREATE_COMPLETE", "DELETE_COMPLETE"]
     failed_statuses = ["DELETE_FAILED", "FAILED"]
@@ -364,19 +375,37 @@ def get_change_set_status(client, change_set_name, settings):
         if status["Status"] in failed_statuses:
             raise SystemExit("Change set is unsucessful", status["Status"])
         if status["Status"] in pending_statuses:
-            LOG.info("ChangeSet creation in progress. Waiting 10 seconds")
+            print("ChangeSet creation in progress. Waiting 10 seconds", end="\r", flush=True)
             sleep(10)
         elif status["Status"] in success_statuses:
             ready = True
 
-    print("Changes")
-    for change in status["Changes"]:
-        print(
-            f"{change['ResourceChange']['LogicalResourceId']}\t"
-            f"{change['ResourceChange']['ResourceType']}\t"
-            f"{change['ResourceChange']['Action']}"
+    print(
+        tabulate(
+            [
+                [
+                    change["ResourceChange"]["LogicalResourceId"],
+                    change["ResourceChange"]["ResourceType"],
+                    change["ResourceChange"]["Action"],
+                ]
+                for change in status["Changes"]
+            ],
+            ["LogicalResourceId", "ResourceType", "Action"],
+            tablefmt="rst"
         )
+    )
     return status
+
+
+def watch_changes(client, stack_name, vizualize_nested=False):
+    """
+    Function to view the changes in real-time
+
+    :param client:
+    :param stack_name:
+    :param vizualize_nested:
+    :return:
+    """
 
 
 def plan(settings, root_stack):
@@ -391,7 +420,7 @@ def plan(settings, root_stack):
     change_set_name = f"{settings.name}" + "".join(
         random.choices(string.ascii_uppercase + string.digits, k=10)
     )
-    if assert_can_create_stack(client, settings.name):
+    if assert_can_create_stack(client, settings.name) or assert_can_update_stack(client, settings.name):
         res = client.create_change_set(
             StackName=settings.name,
             Capabilities=["CAPABILITY_IAM", "CAPABILITY_AUTO_EXPAND"],
@@ -402,20 +431,11 @@ def plan(settings, root_stack):
             ChangeSetType="CREATE",
             ChangeSetName=change_set_name,
         )
-        LOG.info(
-            f"ChangeSet {settings.name} successfully triggered. Pending for changes."
-        )
-    elif assert_can_update_stack(client, settings.name):
-        LOG.warning(f"Stack {settings.name} already exists. Updating.")
-        res = client.create_change_set(
-            StackName=settings.name,
-            Capabilities=["CAPABILITY_IAM", "CAPABILITY_AUTO_EXPAND"],
-            Parameters=root_stack.render_parameters_list_cfn(),
-            TemplateURL=root_stack.TemplateURL,
-            UsePreviousTemplate=False,
-            IncludeNestedStacks=True,
-            ChangeSetType="UPDATE",
-            ChangeSetName=change_set_name,
-        )
-    status = get_change_set_status(client, change_set_name, settings)
-    return status
+        status = get_change_set_status(client, change_set_name, settings)
+        if status:
+            apply_q = input("Want to apply? [yN]: ")
+            if apply_q in ["y", "Y", "YES", "Yes", "yes"]:
+                client.execute_change_set(
+                    ChangeSetName=change_set_name,
+                    StackName=settings.name
+                )
