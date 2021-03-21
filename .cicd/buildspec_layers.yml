@@ -70,11 +70,11 @@ phases:
       - |
           for REGION in `aws ec2 describe-regions | jq -r .Regions[].RegionName`; do
             aws --region ${REGION} s3 cp layer.zip s3://${REGION}.${PUBLIC_FILES_BUCKET}/layer/latest.zip \
-              --sse AES256 --acl public-read --storage-class STANDARD_IA;
+              --sse AES256 --acl public-read --storage-class STANDARD_IA --no-progress;
             aws --region ${REGION} s3 cp layer.zip s3://${REGION}.${PUBLIC_FILES_BUCKET}/layer/${LAYER_FILE} \
-              --sse AES256 --acl public-read --storage-class STANDARD_IA;
+              --sse AES256 --acl public-read --storage-class STANDARD_IA --no-progress;
           done
-      - envsubst < .install/layer-macro-sar.yml > ecs-compose-x-sar.yaml
+      - envsubst < .install/layer-macro-sar.yaml > ecs-compose-x-sar.yaml
       - |
           aws s3 cp ecs-compose-x-sar.yaml s3://${PUBLIC_FILES_BUCKET}/aws-sar/ecs-compose-x.yaml \
             --sse AES256 --acl public-read --storage-class STANDARD_IA
