@@ -154,7 +154,7 @@ Resources:
         - python3.8
       Content:
         S3Bucket: !FindInMap [ "files", !Ref AWS::Region, "bucket" ]
-        S3Key: ${LAYER_FILE:-layer/latest.zip}
+        S3Key: ${LAYER_FILE}
 
       Description: ECS Compose-X Lambda Layer
       LayerName: ecs_composex
