@@ -4,7 +4,7 @@ Description: >-
   from within your AWS CloudFormation templates.
 
 Mappings:
-  compose-x:
+  files:
     eu-west-3:
       bucket: eu-west-3.files.compose-x.io
     eu-west-2:
@@ -153,7 +153,7 @@ Resources:
         - python3.7
         - python3.8
       Content:
-        S3Bucket: !FindInMap [ "compose-x", !Ref AWS::Region, "bucket" ]
+        S3Bucket: !FindInMap [ "files", !Ref AWS::Region, "bucket" ]
         S3Key: ${LAYER_FILE:-layer/latest.zip}
 
       Description: ECS Compose-X Lambda Layer
