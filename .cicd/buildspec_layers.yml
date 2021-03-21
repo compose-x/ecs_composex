@@ -64,7 +64,7 @@ phases:
             file ${PY_VERSION}.zip && ls -lh ${PY_VERSION}.zip
             unzip -q -o ${PY_VERSION}.zip -d merged
           done
-      - cd merged; zip -r9 ../layer.zip python; cd -
+      - cd merged; zip -q -r9 ../layer.zip python; cd -
       - LAYER_FILE="${EPOCH}.zip"
       - cp layer.zip ${LAYER_FILE}
       - |
