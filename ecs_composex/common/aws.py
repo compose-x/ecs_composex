@@ -362,7 +362,7 @@ def get_change_set_status(client, change_set_name, settings):
         "CREATE_IN_PROGRESS",
         "DELETE_PENDING",
         "DELETE_IN_PROGRESS",
-        "REVIEW_IN_PROGRESS"
+        "REVIEW_IN_PROGRESS",
     ]
     success_statuses = ["CREATE_COMPLETE", "DELETE_COMPLETE"]
     failed_statuses = ["DELETE_FAILED", "FAILED"]
@@ -375,7 +375,11 @@ def get_change_set_status(client, change_set_name, settings):
         if status["Status"] in failed_statuses:
             raise SystemExit("Change set is unsucessful", status["Status"])
         if status["Status"] in pending_statuses:
-            print("ChangeSet creation in progress. Waiting 10 seconds", end="\r", flush=True)
+            print(
+                "ChangeSet creation in progress. Waiting 10 seconds",
+                end="\r",
+                flush=True,
+            )
             sleep(10)
         elif status["Status"] in success_statuses:
             ready = True
@@ -391,7 +395,7 @@ def get_change_set_status(client, change_set_name, settings):
                 for change in status["Changes"]
             ],
             ["LogicalResourceId", "ResourceType", "Action"],
-            tablefmt="rst"
+            tablefmt="rst",
         )
     )
     return status
@@ -406,6 +410,25 @@ def watch_changes(client, stack_name, vizualize_nested=False):
     :param vizualize_nested:
     :return:
     """
+    while 42:
+        stack_r = client.describe_stack_resources(StackName=stack_name)
+        resources = []
+        for res in stack_r["StackResources"]:
+            res_def = [
+                res["LogicalResourceId"],
+                res["PhysicalResourceId"]
+                if keyisset("PhysicalResourceId", res)
+                else "---",
+                res["ResourceStatus"],
+            ]
+            resources.append(res_def)
+        table = tabulate(
+                resources,
+                ["LogicalResourceId", "PhysicalResourceId", "ResourceStatus"],
+                tablefmt="rst",
+            )
+
+        sleep(1)
 
 
 def plan(settings, root_stack):
@@ -420,7 +443,9 @@ def plan(settings, root_stack):
     change_set_name = f"{settings.name}" + "".join(
         random.choices(string.ascii_uppercase + string.digits, k=10)
     )
-    if assert_can_create_stack(client, settings.name) or assert_can_update_stack(client, settings.name):
+    if assert_can_create_stack(client, settings.name) or assert_can_update_stack(
+        client, settings.name
+    ):
         res = client.create_change_set(
             StackName=settings.name,
             Capabilities=["CAPABILITY_IAM", "CAPABILITY_AUTO_EXPAND"],
@@ -436,6 +461,6 @@ def plan(settings, root_stack):
             apply_q = input("Want to apply? [yN]: ")
             if apply_q in ["y", "Y", "YES", "Yes", "yes"]:
                 client.execute_change_set(
-                    ChangeSetName=change_set_name,
-                    StackName=settings.name
+                    ChangeSetName=change_set_name, StackName=settings.name
                 )
+                watch_changes(client, stack_name=settings.name)
