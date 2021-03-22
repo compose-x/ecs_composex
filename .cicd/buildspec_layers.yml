@@ -65,13 +65,13 @@ phases:
             unzip -q -o ${PY_VERSION}.zip -d merged
           done
       - cd merged; zip -q -r9 ../layer.zip python; cd -
-      - LAYER_FILE="${EPOCH}.zip"
+      - LAYER_FILE="layer/${EPOCH}.zip"
       - cp layer.zip ${LAYER_FILE}
       - |
           for REGION in `aws ec2 describe-regions | jq -r .Regions[].RegionName`; do
-            aws --region ${REGION} s3 cp layer.zip s3://${REGION}.${PUBLIC_FILES_BUCKET}/layer/latest.zip \
+            aws --region ${REGION} s3 cp layer.zip s3://${REGION}.${PUBLIC_FILES_BUCKET}/${LAYER_FILE} \
               --sse AES256 --acl public-read --storage-class STANDARD_IA --no-progress;
-            aws --region ${REGION} s3 cp layer.zip s3://${REGION}.${PUBLIC_FILES_BUCKET}/layer/${LAYER_FILE} \
+            aws --region ${REGION} s3 cp layer.zip s3://${REGION}.${PUBLIC_FILES_BUCKET}/${LAYER_FILE} \
               --sse AES256 --acl public-read --storage-class STANDARD_IA --no-progress;
           done
       - envsubst < .install/layer-macro-sar.yaml > ecs-compose-x-sar.yaml
@@ -87,4 +87,3 @@ artifacts:
   files:
     - layer.yml
     - ecs-compose-x-sar.yaml
-
