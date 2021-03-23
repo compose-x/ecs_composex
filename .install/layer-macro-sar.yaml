@@ -101,7 +101,7 @@ Conditions:
 Resources:
   MacroFunctionRole:
     Type: AWS::IAM::Role
-    Condition: UseOverrideRole
+    Condition: NotUseOverrideRole
     Properties:
       Tags:
         - Key: Name
@@ -167,7 +167,7 @@ Resources:
       Description: Lambda function to execute ECS Compose-X CFN Macro
       MemorySize: !Ref MemorySize
       Role: !If
-        - UseOverrideRole
+        - NotUseOverrideRole
         - !GetAtt 'MacroFunctionRole.Arn'
         - !Ref FunctionRoleArn
       Timeout: 30
