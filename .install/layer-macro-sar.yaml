@@ -1,0 +1,237 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >-
+  This CFN Template allows you to install the AWS CFN Macro as a Lambda Function to execute ECS Compose-X directly
+  from within your AWS CloudFormation templates.
+
+Mappings:
+  files:
+    eu-west-3:
+      bucket: eu-west-3.files.compose-x.io
+    eu-west-2:
+      bucket: eu-west-2.files.compose-x.io
+    eu-west-1:
+      bucket: eu-west-1.files.compose-x.io
+    eu-north-1:
+      bucket: eu-north-1.files.compose-x.io
+    eu-central-1:
+      bucket: eu-central-1.files.compose-x.io
+    ap-south-1:
+      bucket: ap-south-1.files.compose-x.io
+    sa-east-1:
+      bucket: sa-east-1.files.compose-x.io
+    ap-northeast-3:
+      bucket: ap-northeast-3.files.compose-x.io
+    ap-northeast-2:
+      bucket: ap-northeast-2.files.compose-x.io
+    ap-northeast-1:
+      bucket: ap-northeast-1.files.compose-x.io
+    ap-southeast-1:
+      bucket: ap-southeast-1.files.compose-x.io
+    ap-southeast-2:
+      bucket: ap-southeast-2.files.compose-x.io
+    ca-central-1:
+      bucket: ca-central-1.files.compose-x.io
+    us-east-1:
+      bucket: us-east-1.files.compose-x.io
+    us-east-2:
+      bucket: us-east-2.files.compose-x.io
+    us-west-1:
+      bucket: us-west-1.files.compose-x.io
+    us-west-2:
+      bucket: us-west-2.files.compose-x.io
+
+Transform:
+  - AWS::Serverless-2016-10-31
+
+Metadata:
+  Maintainer: john@compose-x.io
+  Version: 2021-01-25
+  AWS::CloudFormation::Interface:
+    ParameterLabels:
+      ComposeXLambdaLayerVersion:
+        default: ECS Compose-X Macro Lambda Layer version
+      TemplatesBucket:
+        default: Bucket to store all rendered CloudFormation templates and config files.
+      FunctionRoleArn:
+        default: Existing IAM Role to use for the CFN Macro Lambda function
+      PermissionsBoundary:
+        default: When creating a new role, assigns permissions boundary IAM policy via ARN
+    ParameterGroups:
+      - Parameters:
+          - MemorySize
+        Label:
+          default: Lambda Settings
+      - Parameters:
+          - TemplatesBucket
+        Label:
+          default: ECS ComposeX Settings
+      - Parameters:
+          - FunctionRoleArn
+          - PermissionsBoundary
+        Label:
+          default: IAM Settings
+
+Parameters:
+  MemorySize:
+    Type: Number
+    Default: 128
+    MaxValue: 10240
+    MinValue: 128
+
+  TemplatesBucket:
+    Type: String
+    Default: none
+
+  PermissionsBoundary:
+    Type: String
+    Default: none
+    AllowedPattern: none|(arn:aws([a-z]+)?:iam::\d{12}:policy/\S+$)
+
+  FunctionRoleArn:
+    Type: String
+    AllowedPattern: none|(arn:aws([a-z]+)?:iam::\d{12}:role/\S+$)
+    Default: none
+
+Conditions:
+  AnyBucket: !Equals [ !Ref TemplatesBucket, "none" ]
+  UseBoundary: !Not [ !Equals [ !Ref PermissionsBoundary, "none" ] ]
+  NotUseOverrideRole: !Equals [ FunctionRoleArn , "none" ]
+  UseOverrideRole: !Not [ !Condition NotUseOverrideRole ]
+
+Resources:
+  MacroFunctionRole:
+    Type: AWS::IAM::Role
+    Condition: UseOverrideRole
+    Properties:
+      Tags:
+        - Key: Name
+          Value: lambda-compose-x-macro
+        - Key: Usage
+          Value: ECS Compose-X CFN macro
+      PermissionsBoundary: !If
+        - UseBoundary
+        - !Ref PermissionsBoundary
+        - !Ref AWS::NoValue
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - !Sub 'lambda.${AWS::URLSuffix}'
+        Version: '2012-10-17'
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/ResourceGroupsandTagEditorReadOnlyAccess
+        - arn:aws:iam::aws:policy/ReadOnlyAccess
+      Policies:
+        - PolicyName: ECSComposeXAwsAccess
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: CloudFormationAccess
+                Effect: Allow
+                Action:
+                  - cloudformation:ValidateTemplate
+                Resource:
+                  - "*"
+              - Sid: S3ObjectsAccess
+                Effect: Allow
+                Action:
+                  - s3:PutObject*
+                  - s3:GetObject*
+                Resource: !If
+                  - AnyBucket
+                  - - "*"
+                  - - !Sub "arn:${AWS::Partition}:s3:::${TemplatesBucket}/*"
+
+  MacroLambdaLayer:
+    Type: AWS::Lambda::LayerVersion
+    Properties:
+      CompatibleRuntimes:
+        - python3.7
+        - python3.8
+      Content:
+        S3Bucket: !FindInMap [ "files", !Ref AWS::Region, "bucket" ]
+        S3Key: ${LAYER_FILE}
+
+      Description: ECS Compose-X Lambda Layer
+      LayerName: ecs_composex
+      LicenseInfo: GPLv3
+
+  MacroLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      AutoPublishAlias: live
+      Description: Lambda function to execute ECS Compose-X CFN Macro
+      MemorySize: !Ref MemorySize
+      Role: !If
+        - UseOverrideRole
+        - !GetAtt 'MacroFunctionRole.Arn'
+        - !Ref FunctionRoleArn
+      Timeout: 30
+      Runtime: python3.8
+      FunctionName: !Sub "ecs-compose-x-macro-${AWS::Region}"
+      Handler: index.lambda_handler
+      Layers:
+        - !Ref MacroLambdaLayer
+      InlineCode: |
+        #!/usr/bin/env python
+        from ecs_composex.macro import lambda_handler as macro_function
+
+
+        def lambda_handler(event, context):
+            """ Entry point function """
+            return macro_function(event, context)
+
+      Tags:
+        Name: !Sub "ecs-compose-x-macro-${AWS::Region}"
+        Usage: ECS Compose-X CFN macro
+
+  CloudFormationLogRole:
+    Type: AWS::IAM::Role
+    Properties:
+      PermissionsBoundary: !If
+        - UseBoundary
+        - !Ref PermissionsBoundary
+        - !Ref AWS::NoValue
+      Tags:
+        - Key: Name
+          Value: CFN Macro Logging role
+        - Key: Usage
+          Value: ECS Compose-X
+      Policies:
+        - PolicyName: 'AllowLoggingForMacro'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Action:
+                  - logs:PutLogEvents
+                  - logs:CreateLogStream
+                Effect: Allow
+                Resource: [ !GetAtt 'CloudFormationLogGroup.Arn' ]
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - !Sub 'cloudformation.${AWS::URLSuffix}'
+
+  CloudFormationMacro:
+    Type: AWS::CloudFormation::Macro
+    Properties:
+      Description: Macro for ECS ComposeX embedded in CFN
+      FunctionName: !Ref MacroLambdaFunction
+      LogGroupName: !Ref CloudFormationLogGroup
+      LogRoleARN: !GetAtt 'CloudFormationLogRole.Arn'
+      Name: compose-x
+
+  CloudFormationLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub 'cloudformation/macro/compose-x'
+      RetentionInDays: 14
