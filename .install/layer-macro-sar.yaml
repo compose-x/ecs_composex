@@ -45,7 +45,7 @@ Transform:
 
 Metadata:
   Maintainer: john@compose-x.io
-  Version: 2021-01-25
+  Version: 2021-03-23
   AWS::CloudFormation::Interface:
     ParameterLabels:
       ComposeXLambdaLayerVersion:
@@ -94,6 +94,7 @@ Parameters:
 
 Conditions:
   AnyBucket: !Equals [ !Ref TemplatesBucket, "none" ]
+  SetUploadBucket: !Not [ !Condition AnyBucket ]
   UseBoundary: !Not [ !Equals [ !Ref PermissionsBoundary, "none" ] ]
   NotUseOverrideRole: !Equals [ FunctionRoleArn , "none" ]
   UseOverrideRole: !Not [ !Condition NotUseOverrideRole ]
@@ -156,6 +157,7 @@ Resources:
         S3Bucket: !FindInMap [ "files", !Ref AWS::Region, "bucket" ]
         S3Key: ${LAYER_FILE}
 
+
       Description: ECS Compose-X Lambda Layer
       LayerName: ecs_composex
       LicenseInfo: GPLv3
@@ -174,6 +176,13 @@ Resources:
       Runtime: python3.8
       FunctionName: !Sub "ecs-compose-x-macro-${AWS::Region}"
       Handler: index.lambda_handler
+      Environment:
+        Variables:
+          UPLOAD_BUCKET_NAME: !If
+            - SetUploadBucket
+            - !Ref TemplatesBucket
+            - !Ref AWS::NoValue
+          LAYER_ARN: !Ref MacroLambdaLayer
       Layers:
         - !Ref MacroLambdaLayer
       InlineCode: |

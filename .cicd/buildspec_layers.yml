@@ -44,7 +44,7 @@ phases:
       python: "$(echo $PY_VERSION)"
     commands:
       - COMMIT_HASH=${CODEBUILD_RESOLVED_SOURCE_VERSION::7}
-      - EPOCH=`date +'%Y%m%d'`
+      - EPOCH=`date +'%Y%m%d-%H-%M'`
       - SUFFIX=${COMMIT_HASH:=$EPOCH}
       - if [ $USE_EPOCH -eq 1 ]; then SUFFIX=$EPOCH; fi
       - (pip --version && pip install pip -U --no-cache-dir) && pip install wheel --no-cache-dir
