@@ -14,7 +14,6 @@ from troposphere import (
     AWS_NO_VALUE,
     AWS_STACK_NAME,
 )
-from troposphere.validators import boolean
 from troposphere import Ref, Sub, GetAtt
 from troposphere import applicationautoscaling
 from troposphere.ec2 import SecurityGroup
@@ -57,17 +56,6 @@ from ecs_composex.ecs.ecs_params import (
 )
 from ecs_composex.vpc import vpc_params
 from ecs_composex.vpc.vpc_params import VPC_ID, PUBLIC_SUBNETS
-
-
-class DeploymentCircuitBreaker(EcsDeploymentCircuitBreaker):
-    """
-    In-built fix for property syntax
-    """
-
-    def __init__(self, **kwargs):
-        self.props.update({"Rollback": (boolean, True)})
-        self.props.pop("RollBack", None)
-        super().__init__(**kwargs)
 
 
 def define_placement_strategies():
@@ -347,13 +335,15 @@ def define_deployment_options(family, settings, kwargs):
     """
     family.set_service_update_config()
     default = DeploymentConfiguration(
-        DeploymentCircuitBreaker=DeploymentCircuitBreaker(Enable=True, Rollback=True),
+        DeploymentCircuitBreaker=EcsDeploymentCircuitBreaker(
+            Enable=True, Rollback=True
+        ),
     )
     if family.deployment_config:
         deploy_config = DeploymentConfiguration(
             MaximumPercent=family.deployment_config["MaximumPercent"],
             MinimumHealthyPercent=family.deployment_config["MinimumHealthyPercent"],
-            DeploymentCircuitBreaker=DeploymentCircuitBreaker(
+            DeploymentCircuitBreaker=EcsDeploymentCircuitBreaker(
                 Enable=True, Rollback=keyisset("RollBack", family.deployment_config)
             ),
         )
