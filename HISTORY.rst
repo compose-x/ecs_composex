@@ -2,6 +2,37 @@
 History
 =======
 
+0.14.0 (2021-03-23)
+====================
+
+Version 0.14.0 is a release coming with a new LICENSE attached, the Mozilla Public License 2.0 (MPL 2.0).
+
+* 1e82eed LICENSE change to MPL-2.0 (John Preston)
+
+
+New features
+---------------
+* 9fbe3aa New pre-defined alarms for services (#432) (John Preston)
+* a6083d7 Added CompositeAlarm support (#431) (John Preston)
+
+
+Fixes
+-------
+* 534dcd0 reversed conditions logic for IAM Role for SAR template (John Preston)
+* 9f145cf Publish template for AWS SAR (#438) (John Preston)
+* 8008043 Removing the scaling target and scaling policies (#436) (John Preston)
+* 122efae Fixed output attribute name for S3 to RDS feature (#433) (John Preston)
+
+Improvements
+----------------
+* 1eeb6f6 Upgrade to Troposphere 2.7.0 (John Preston)
+* 2afec02 Improved macro settings override and layer key (#440) (John Preston)
+* 51a568f new cfn-macro Parameter BucketName (#439) (John Preston)
+* ef08ae9 New image URL for XRay (John Preston)
+* 670bf27 Adding default prefix for default log group name (#428) (John Preston)
+
+
+
 0.13.0 (2021-03-10)
 ===================
 
