@@ -25,7 +25,7 @@ import requests
 import boto3
 import tempfile
 import yaml
-from os import path
+from os import path, environ
 from copy import deepcopy
 from urllib.parse import urlparse
 
@@ -106,6 +106,22 @@ def init_settings_params(settings_params, fragment, request_id, folder):
     return new_fragment
 
 
+def define_s3_bucket_upload(settings, params):
+    """
+    Function to override the buckets settings before rendering
+    Priority goes to BucketName if defined in the CFN template in the macro Parameters
+    Fall back to env var UPLOAD_BUCKET_NAME if set, else, sticks to default behaviour
+    """
+    if keyisset(settings.bucket_arg, params):
+        settings.bucket_name = params["BucketName"]
+        LOG.info(f"Overriding bucket name to {settings.bucket_name}")
+    elif environ.get("UPLOAD_BUCKET_NAME"):
+        settings.bucket_name = environ.get("UPLOAD_BUCKET_NAME")
+        LOG.info(
+            f"Found BUCKET_NAME defined in the environment variables. Setting to {settings.bucket_name}"
+        )
+
+
 def lambda_handler(event, context):
     """
     Lambda function entrypoint.
@@ -129,6 +145,7 @@ def lambda_handler(event, context):
     new_fragment = init_settings_params(settings_params, fragment, request_id, folder)
     settings = ComposeXSettings(for_macro=True, **settings_params)
     settings.set_bucket_name_from_account_id()
+    define_s3_bucket_upload(settings, params)
     settings.set_azs_from_api()
     settings.deploy = True
     settings.upload = True
