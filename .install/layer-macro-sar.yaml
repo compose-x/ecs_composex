@@ -3,43 +3,6 @@ Description: >-
   This CFN Template allows you to install the AWS CFN Macro as a Lambda Function to execute ECS Compose-X directly
   from within your AWS CloudFormation templates.
 
-Mappings:
-  files:
-    eu-west-3:
-      bucket: eu-west-3.files.compose-x.io
-    eu-west-2:
-      bucket: eu-west-2.files.compose-x.io
-    eu-west-1:
-      bucket: eu-west-1.files.compose-x.io
-    eu-north-1:
-      bucket: eu-north-1.files.compose-x.io
-    eu-central-1:
-      bucket: eu-central-1.files.compose-x.io
-    ap-south-1:
-      bucket: ap-south-1.files.compose-x.io
-    sa-east-1:
-      bucket: sa-east-1.files.compose-x.io
-    ap-northeast-3:
-      bucket: ap-northeast-3.files.compose-x.io
-    ap-northeast-2:
-      bucket: ap-northeast-2.files.compose-x.io
-    ap-northeast-1:
-      bucket: ap-northeast-1.files.compose-x.io
-    ap-southeast-1:
-      bucket: ap-southeast-1.files.compose-x.io
-    ap-southeast-2:
-      bucket: ap-southeast-2.files.compose-x.io
-    ca-central-1:
-      bucket: ca-central-1.files.compose-x.io
-    us-east-1:
-      bucket: us-east-1.files.compose-x.io
-    us-east-2:
-      bucket: us-east-2.files.compose-x.io
-    us-west-1:
-      bucket: us-west-1.files.compose-x.io
-    us-west-2:
-      bucket: us-west-2.files.compose-x.io
-
 Transform:
   - AWS::Serverless-2016-10-31
 
@@ -96,8 +59,7 @@ Conditions:
   AnyBucket: !Equals [ !Ref TemplatesBucket, "none" ]
   SetUploadBucket: !Not [ !Condition AnyBucket ]
   UseBoundary: !Not [ !Equals [ !Ref PermissionsBoundary, "none" ] ]
-  NotUseOverrideRole: !Equals [ FunctionRoleArn , "none" ]
-  UseOverrideRole: !Not [ !Condition NotUseOverrideRole ]
+  NotUseOverrideRole: !Equals [ !Ref FunctionRoleArn , "none" ]
 
 Resources:
   MacroFunctionRole:
@@ -148,16 +110,12 @@ Resources:
                   - - !Sub "arn:${AWS::Partition}:s3:::${TemplatesBucket}/*"
 
   MacroLambdaLayer:
-    Type: AWS::Lambda::LayerVersion
+    Type: AWS::Serverless::LayerVersion
     Properties:
       CompatibleRuntimes:
         - python3.7
         - python3.8
-      Content:
-        S3Bucket: !FindInMap [ "files", !Ref AWS::Region, "bucket" ]
-        S3Key: ${LAYER_FILE}
-
-
+      ContentUri: s3://eu-west-1.files.compose-x.io/${LAYER_FILE}
       Description: ECS Compose-X Lambda Layer
       LayerName: ecs_composex
       LicenseInfo: MPL-2.0
