@@ -42,23 +42,13 @@ to use your Docker Compose files directly in CloudFormation!
 On AWS using AWS CloudFormation Macro
 --------------------------------------
 
-.. list-table::
-    :widths: 50 50
-    :header-rows: 1
+You can now deploy the CloudFormation macro to your AWS Account using AWS Serverless Application Repository (SAR).
 
-    * - Region
-      - Lambda Layer based Macro
-    * - us-east-1
-      - |LAYER_US_EAST_1|
-    * - eu-west-1
-      - |LAYER_EU_WEST_1|
+Deploy it in your account today |AWS_SAR|
 
+.. |AWS_SAR| image:: https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png
+    :target: https://serverlessrepo.aws.amazon.com/applications/eu-west-1/518078317392/compose-x
 
-.. |LAYER_US_EAST_1| image:: https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png
-    :target: https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/new?stackName=compose-x-macro&templateURL=https://s3.eu-west-1.amazonaws.com/files.compose-x.io/macro/layer-macro.yaml
-
-.. |LAYER_EU_WEST_1| image:: https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png
-    :target: https://console.aws.amazon.com/cloudformation/home?region=eu-west-1#/stacks/new?stackName=compose-x-macro&templateURL=https://s3.eu-west-1.amazonaws.com/files.compose-x.io/macro/layer-macro.yaml
 
 `Find out how to use ECS Compose-X in AWS here`_
 

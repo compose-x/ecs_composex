@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
+import re
 from ecs_composex.common.aws import (
     define_lookup_role_from_info,
     find_aws_resource_arn_from_tags_api,

@@ -53,11 +53,7 @@ files directly from there.
         ComposeFiles:
           - s3://files.compose-x.io/docker-compose.yml
           - s3://files.compose-x.io/aws.yml
-
-.. attention::
-
-    Just like with the CLI, the order in which the files are composed together (first file least priority, last highest priority)
-    the order you list files in **ComposeFiles** matters in the same way.
+        BucketName: !Sub cfn-templates-${AWS::Region}-${AWS::AccountId}
 
 
 Customize to your needs or requirements
@@ -75,6 +71,29 @@ If you wish to use the :ref:`lookup_syntax_reference` feature, this is totally p
 file indicates which **RoleArn** to use for the specific lookup and adapt the IAM role of the Lambda function role to allow
 **sts:AssumeRole** on that role ARN you are indicating.
 
+CFN Macro Parameters
+=====================
+
+.. code-block:: yaml
+    :caption: Parameters syntax reference
+
+    ComposeFiles: <list>
+    BucketName: <str>
+
+ComposeFiles
+-------------
+
+The List of files you want to have compiled together in order to deploy your stack
+
+.. attention::
+
+    Just like with the CLI, the order in which the files are composed together (first file least priority, last highest priority)
+    the order you list files in **ComposeFiles** matters in the same way.
+
+BucketName
+-----------
+
+The name of the Bucket you have allowed the Lambda Function used for the CFN Macro to upload files to.
 
 Current Limitations
 =====================
