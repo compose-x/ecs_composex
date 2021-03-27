@@ -2,3 +2,4 @@ troposphere==2.7.0
 boto3>=1.16.35
 aws-sam-translator>=1.32.0
 requests>=2.25.1
+compose_x_render>=0.0.1
