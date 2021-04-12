@@ -348,7 +348,11 @@ class ComposeXSettings(object):
         :param dict content:
         :param bool fully_load:
         """
-        files = [] if not keyisset(self.input_file_arg, kwargs) else kwargs[self.input_file_arg]
+        files = (
+            []
+            if not keyisset(self.input_file_arg, kwargs)
+            else kwargs[self.input_file_arg]
+        )
         content_def = ComposeDefinition(files, content)
         self.compose_content = content_def.definition
         if fully_load:

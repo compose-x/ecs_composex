@@ -376,7 +376,9 @@ class XResource(object):
             export = Export(
                 If(
                     USE_STACK_NAME_CON_T,
-                    Sub(f"${{{AWS_STACK_NAME}}}{DELIM}{self.logical_name}{DELIM}{attribute_parameter.title}"),
+                    Sub(
+                        f"${{{AWS_STACK_NAME}}}{DELIM}{self.logical_name}{DELIM}{attribute_parameter.title}"
+                    ),
                     Sub(
                         f"${{{ROOT_STACK_NAME.title}}}{DELIM}{self.logical_name}{DELIM}{attribute_parameter.title}"
                     ),
