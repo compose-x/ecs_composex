@@ -87,6 +87,9 @@ services:
     x-scaling:
       Range: "1-4"
   app02:
+    depends_on:
+      - app01
+      - bignicefamily
 #    env_file:
 #      - ./use-cases/env-files/dummy.env
     deploy:

@@ -1218,6 +1218,7 @@ class ComposeFamily(object):
             "ManagedPolicyArns": [],
             "Policies": [],
         }
+        self.services_depends_on = []
         self.deployment_config = {}
         self.template = None
         self.use_xray = None
@@ -1233,6 +1234,7 @@ class ComposeFamily(object):
         self.stack_parameters = {}
         self.alarms = {}
         self.predefined_alarms = {}
+        self.set_initial_services_dependencies()
         self.set_xray()
         self.sort_container_configs()
         self.handle_iam()
@@ -1248,6 +1250,18 @@ class ComposeFamily(object):
         self.handle_iam()
         self.handle_logging()
         self.apply_services_params()
+
+    def set_initial_services_dependencies(self):
+        """
+        Method to iterate over each depends_on service set in the family services and add them up
+
+        :return:
+        """
+        for service in self.services:
+            if service.depends_on:
+                for service_depends_on in service.depends_on:
+                    if service_depends_on not in self.services_depends_on:
+                        self.services_depends_on.append(service_depends_on)
 
     def set_xray(self):
         self.use_xray = any(

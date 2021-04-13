@@ -4,6 +4,7 @@
 
 from troposphere import FindInMap
 
+from ecs_composex.common import LOG
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.ecs import ecs_params, metadata
 from ecs_composex.ecs.ecs_service_network_config import set_compose_services_ingress
@@ -14,6 +15,24 @@ class ServiceStack(ComposeXStack):
     """
     Class to identify specifically a service stack
     """
+
+
+def handle_families_dependencies(settings, families_post):
+    """
+    Function to handle family to family services based on docker compose depends_on
+
+    :param ecs_composex.common.settings.ComposeXSettings settings:
+    :param list families_post:
+    """
+    for family in families_post:
+        for family_name in settings.families[family].services_depends_on:
+            if family_name not in families_post:
+                continue
+            if family_name not in settings.families[family].stack.DependsOn:
+                LOG.info(f"Adding dependency between {family_name} and {family}")
+                settings.families[family].stack.DependsOn.append(
+                    settings.families[family_name].stack.title
+                )
 
 
 def associate_services_to_root_stack(root_stack, settings, vpc_stack=None):
@@ -58,6 +77,7 @@ def associate_services_to_root_stack(root_stack, settings, vpc_stack=None):
             and isinstance(settings.families[family].stack, ServiceStack)
         )
     ]
+    handle_families_dependencies(settings, families_post)
     for family in families_post:
         set_compose_services_ingress(
             root_stack, settings.families[family], families_post, settings
