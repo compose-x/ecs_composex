@@ -188,19 +188,26 @@ def define_bucket_mappings(buckets_mappings, lookup_buckets, use_buckets, settin
     for bucket in use_buckets:
         if bucket.use.startswith("arn:aws"):
             bucket_arn = bucket.use
-            bucket_name = re.match(r"(^[\S]+:)(?P<bucketname>[a-z0-9-.]+$)", bucket_arn).group("bucketname")
-            if not bucket_name:
-                raise ValueError("Could not determine the bucket name from the give ARN", bucket.use)
+            try:
+                bucket_name = re.match(
+                    r"(?:arn:aws(?:[a-z-]+)?:s3:{3})(?P<bucketname>[a-z0-9-.]+.$)",
+                    bucket_arn,
+                ).group("bucketname")
+            except AttributeError:
+                raise ValueError(
+                    "Could not determine the bucket name from the give ARN", bucket.use
+                )
             LOG.info(f"Determined bucket name is {bucket_name} from arn {bucket_arn}")
         else:
             bucket_name = bucket.use
-            bucket_arn = Sub(f"arn:${{{AWS_PARTITION}}}:s3:::{bucket_name}")
-        buckets_mappings.update({
-            bucket.logical_name: {
-                bucket.logical_name: bucket_name,
-                "Arn": bucket_arn
-            }
-        })
+            bucket_arn = f"arn:aws:s3:::{bucket_name}"
+            LOG.warning(
+                "In the absence of a full ARN, assuming partition to be `aws`. Set full ARN to rectify"
+            )
+            LOG.warning(f"ARN for {bucket_name} is set to {bucket_arn}")
+        buckets_mappings.update(
+            {bucket.logical_name: {bucket.logical_name: bucket_name, "Arn": bucket_arn}}
+        )
 
 
 def define_lookup_buckets_access(bucket, target, services):
@@ -298,14 +305,16 @@ def s3_to_ecs(xresources, services_stack, res_root_stack, settings):
         key = res_root_stack.title
     settings.mappings[key] = buckets_mappings
     new_resources = [
-        xresources[name] for name in xresources if not xresources[name].lookup and not xresources[name].use
+        xresources[name]
+        for name in xresources
+        if not xresources[name].lookup and not xresources[name].use
     ]
     lookup_buckets = [
-        xresources[name] for name in xresources if xresources[name].lookup and not xresources[name].use
+        xresources[name]
+        for name in xresources
+        if xresources[name].lookup and not xresources[name].use
     ]
-    use_buckets = [
-        xresources[name] for name in xresources if xresources[name].use
-    ]
+    use_buckets = [xresources[name] for name in xresources if xresources[name].use]
     define_bucket_mappings(buckets_mappings, lookup_buckets, use_buckets, settings)
     LOG.debug(dumps(buckets_mappings, indent=4))
     for res in new_resources:
