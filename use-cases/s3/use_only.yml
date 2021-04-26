@@ -1,0 +1,21 @@
+﻿version: "3.8"
+
+x-s3:
+  bucket-07:
+    Use: pipeline-shared-buckets
+    Services:
+      - name: app03
+        access:
+          bucket: PowerUser
+          objects: RW
+
+  bucket-08:
+    Settings:
+      EnvNames:
+        - BUCKET03
+    Use: arn:aws:s3:::sacrificial-lamb
+    Services:
+      - name: app03
+        access:
+          bucket: PowerUser
+          objects: RW

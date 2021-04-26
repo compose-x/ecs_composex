@@ -5,10 +5,11 @@
 """
 Functions to pass permissions to Services to access S3 buckets.
 """
-
+import re
 from json import dumps
 
 from troposphere import FindInMap, Sub, Ref
+from troposphere import AWS_PARTITION
 
 from ecs_composex.common import LOG, keyisset, add_parameters
 from ecs_composex.common.compose_resources import get_parameter_settings
@@ -159,14 +160,14 @@ def get_bucket_kms_key_from_config(bucket_config):
     return None
 
 
-def define_bucket_mappings(buckets_mappings, buckets, settings):
+def define_bucket_mappings(buckets_mappings, lookup_buckets, use_buckets, settings):
     """
     Function to populate bucket mapping
 
     :param buckets_mappings:
     :return:
     """
-    for bucket in buckets:
+    for bucket in lookup_buckets:
         bucket_config = lookup_bucket_config(bucket.lookup, settings.session)
         buckets_mappings.update(
             {
@@ -184,6 +185,29 @@ def define_bucket_mappings(buckets_mappings, buckets, settings):
             LOG.info(
                 "No KMS Key has been identified to encrypt the bucket. Won't grant service access."
             )
+    for bucket in use_buckets:
+        if bucket.use.startswith("arn:aws"):
+            bucket_arn = bucket.use
+            try:
+                bucket_name = re.match(
+                    r"(?:arn:aws(?:[a-z-]+)?:s3:{3})(?P<bucketname>[a-z0-9-.]+.$)",
+                    bucket_arn,
+                ).group("bucketname")
+            except AttributeError:
+                raise ValueError(
+                    "Could not determine the bucket name from the give ARN", bucket.use
+                )
+            LOG.info(f"Determined bucket name is {bucket_name} from arn {bucket_arn}")
+        else:
+            bucket_name = bucket.use
+            bucket_arn = f"arn:aws:s3:::{bucket_name}"
+            LOG.warning(
+                "In the absence of a full ARN, assuming partition to be `aws`. Set full ARN to rectify"
+            )
+            LOG.warning(f"ARN for {bucket_name} is set to {bucket_arn}")
+        buckets_mappings.update(
+            {bucket.logical_name: {bucket.logical_name: bucket_name, "Arn": bucket_arn}}
+        )
 
 
 def define_lookup_buckets_access(bucket, target, services):
@@ -281,12 +305,17 @@ def s3_to_ecs(xresources, services_stack, res_root_stack, settings):
         key = res_root_stack.title
     settings.mappings[key] = buckets_mappings
     new_resources = [
-        xresources[name] for name in xresources if not xresources[name].lookup
+        xresources[name]
+        for name in xresources
+        if not xresources[name].lookup and not xresources[name].use
     ]
     lookup_buckets = [
-        xresources[name] for name in xresources if xresources[name].lookup
+        xresources[name]
+        for name in xresources
+        if xresources[name].lookup and not xresources[name].use
     ]
-    define_bucket_mappings(buckets_mappings, lookup_buckets, settings)
+    use_buckets = [xresources[name] for name in xresources if xresources[name].use]
+    define_bucket_mappings(buckets_mappings, lookup_buckets, use_buckets, settings)
     LOG.debug(dumps(buckets_mappings, indent=4))
     for res in new_resources:
         LOG.info(f"Creating {res.name} as {res.logical_name}")
@@ -296,4 +325,6 @@ def s3_to_ecs(xresources, services_stack, res_root_stack, settings):
             res_root_stack,
         )
     for res in lookup_buckets:
+        assign_lookup_buckets(res, buckets_mappings)
+    for res in use_buckets:
         assign_lookup_buckets(res, buckets_mappings)
