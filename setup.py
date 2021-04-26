@@ -69,7 +69,7 @@ setup(
     long_description=readme,
     long_description_content_type="text/x-rst",
     include_package_data=True,
-    keywords="ecs_composex",
+    keywords="ecs_composex aws cloudformation iac docker compose",
     name="ecs_composex",
     packages=find_packages(include=["ecs_composex", "ecs_composex.*"]),
     setup_requires=setup_requirements,
