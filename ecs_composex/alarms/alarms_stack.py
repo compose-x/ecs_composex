@@ -99,14 +99,20 @@ def create_composite_alarm(alarm, alarms):
         mapping, eval_expression, alarms
     )
     stack_id = Select(4, Split("-", Select(2, Split("/", Ref(AWS_STACK_ID)))))
-    alarm_name = (
-        f"${{{AWS_REGION}}}${{StackId}}CompositeAlarmFor"
-        + "".join([a.title for a in mapping.values()])
+    alarm_name = f"${{{AWS_REGION}}}-${{StackId}}-CompositeAlarmFor" + "".join(
+        [a.title for a in mapping.values()]
     )
-    alarm_name = alarm_name[:254] if len(alarm_name) > 254 else alarm_name
+    alarm_name = (
+        alarm_name[: (254 - 12)] if len(alarm_name) > (254 - 12) else alarm_name
+    )
     if alarm.properties:
         props = import_record_properties(alarm.properties, CompositeAlarm)
-        props.update({"AlarmRule": composite_expression, "AlarmName": Sub(alarm_name, StackId=stack_id)})
+        props.update(
+            {
+                "AlarmRule": composite_expression,
+                "AlarmName": Sub(alarm_name, StackId=stack_id),
+            }
+        )
     else:
         props = {
             "AlarmRule": composite_expression,

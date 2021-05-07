@@ -190,7 +190,7 @@ class PublicZone(DnsZone):
     nested_id_parameter = dns_params.PUBLIC_DNS_ZONE_ID
 
     def __init__(self, definition):
-        """"""
+        """ """
         super().__init__(definition)
 
     def add_zone(self, template):
