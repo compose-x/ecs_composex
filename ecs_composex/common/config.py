@@ -3,6 +3,9 @@
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
 
+from ecs_composex.common import keyisset, keypresent, LOG
+
+
 class ComposeXConfig(object):
     """
     Class to parse and define configuration settings for ECS ComposeX

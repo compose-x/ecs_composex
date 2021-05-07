@@ -7,8 +7,9 @@ Main module to create x-alarms defined at the top level.
 """
 
 import re
+from uuid import uuid4
 
-from troposphere import Sub, Join
+from troposphere import Sub, Join, AWS_REGION
 from troposphere.cloudwatch import Alarm as CWAlarm, CompositeAlarm
 
 from ecs_composex.alarms.alarms_params import RES_KEY
@@ -97,14 +98,19 @@ def create_composite_alarm(alarm, alarms):
     composite_expression = create_composite_alarm_expression(
         mapping, eval_expression, alarms
     )
+    alarm_name = (
+        f"${{{AWS_REGION}}}CompositeAlarmFor"
+        + "".join([a.title for a in mapping.values()])
+        + str(uuid4().hex)[:6]
+    )
+    alarm_name = alarm_name[:254] if len(alarm_name) > 254 else alarm_name
     if alarm.properties:
         props = import_record_properties(alarm.properties, CompositeAlarm)
-        props.update({"AlarmRule": composite_expression})
+        props.update({"AlarmRule": composite_expression, "AlarmName": Sub(alarm_name)})
     else:
         props = {
             "AlarmRule": composite_expression,
-            "AlarmName": f"CompositeAlarmFor"
-            + "".join([a.title for a in mapping.values()]),
+            "AlarmName": Sub(alarm_name),
             "ActionsEnabled": True,
         }
     alarm.properties = props
