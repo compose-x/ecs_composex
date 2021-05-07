@@ -7,9 +7,9 @@ Main module to create x-alarms defined at the top level.
 """
 
 import re
-from uuid import uuid4
 
-from troposphere import Sub, Join, AWS_REGION
+from troposphere import Ref, Sub, Join, Split, Select
+from troposphere import AWS_REGION, AWS_STACK_NAME, AWS_STACK_ID
 from troposphere.cloudwatch import Alarm as CWAlarm, CompositeAlarm
 
 from ecs_composex.alarms.alarms_params import RES_KEY
@@ -98,19 +98,25 @@ def create_composite_alarm(alarm, alarms):
     composite_expression = create_composite_alarm_expression(
         mapping, eval_expression, alarms
     )
-    alarm_name = (
-        f"${{{AWS_REGION}}}CompositeAlarmFor"
-        + "".join([a.title for a in mapping.values()])
-        + str(uuid4().hex)[:6]
+    stack_id = Select(4, Split("-", Select(2, Split("/", Ref(AWS_STACK_ID)))))
+    alarm_name = f"${{{AWS_REGION}}}-${{StackId}}-CompositeAlarmFor" + "".join(
+        [a.title for a in mapping.values()]
     )
-    alarm_name = alarm_name[:254] if len(alarm_name) > 254 else alarm_name
+    alarm_name = (
+        alarm_name[: (254 - 12)] if len(alarm_name) > (254 - 12) else alarm_name
+    )
     if alarm.properties:
         props = import_record_properties(alarm.properties, CompositeAlarm)
-        props.update({"AlarmRule": composite_expression, "AlarmName": Sub(alarm_name)})
+        props.update(
+            {
+                "AlarmRule": composite_expression,
+                "AlarmName": Sub(alarm_name, StackId=stack_id),
+            }
+        )
     else:
         props = {
             "AlarmRule": composite_expression,
-            "AlarmName": Sub(alarm_name),
+            "AlarmName": Sub(alarm_name, StackId=stack_id),
             "ActionsEnabled": True,
         }
     alarm.properties = props
