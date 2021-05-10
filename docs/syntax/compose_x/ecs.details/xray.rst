@@ -4,9 +4,9 @@
 
 .. _xray_syntax_reference:
 
-=======
-x-xray
-=======
+==================
+services.x-xray
+==================
 
 This section allows to enable X-Ray to run right next to your container.
 It will use the AWS original image for X-Ray Daemon and exposes the ports to the task.

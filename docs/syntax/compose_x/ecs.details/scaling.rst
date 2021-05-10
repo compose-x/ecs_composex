@@ -4,9 +4,9 @@
 
 .. _ecs_composex_scaling_syntax_reference:
 
-=========
-x-scaling
-=========
+======================
+services.x-scaling
+======================
 
 .. contents::
 

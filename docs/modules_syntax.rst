@@ -14,6 +14,7 @@
     :caption: Services-level Extension Fields
     :maxdepth: 1
 
+    syntax/compose_x/ecs.details/alarms
     syntax/compose_x/ecs.details/deploy
     syntax/compose_x/ecs.details/scaling
     syntax/compose_x/ecs.details/iam

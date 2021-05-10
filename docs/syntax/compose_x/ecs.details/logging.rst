@@ -4,9 +4,9 @@
 
 .. _x_configs_logging_syntax_reference:
 
-=========
-x-logging
-=========
+======================
+services.x-logging
+======================
 
 The following parameter is identical in behaviour to **x-aws-logs_retention** defined in the docker ECS Plugin.
 

@@ -4,9 +4,9 @@
 
 .. _x_iam_syntax_reference:
 
-======
-x-iam
-======
+==================
+services.x-iam
+==================
 
 .. contents::
 
@@ -34,14 +34,12 @@ Examples:
     services:
       serviceA:
         image: nginx
-        x-configs:
-          iam:
-            boundary: containers
+        x-iam:
+          PermissionsBoundary: containers
       serviceB:
         image: redis
-        x-configs:
-          iam:
-            boundary: arn:aws:iam::aws:policy/PowerUserAccess
+        x-iam:
+          PermissionsBoundary: arn:aws:iam::aws:policy/PowerUserAccess
 
 .. tip::
 
@@ -84,7 +82,16 @@ policy. If will resolve into the same regexp as for `PermissionsBoundary`_
 
     If you used the ECS Plugin from docker before, this is equivalent to *x-aws-policies*
 
-
 .. hint::
 
     You can also use the Docker ECS-Plugin **x-aws-iam** extension fields with ECS ComposeX
+
+.. code-block:: yaml
+    :caption: ManagedPolicies example
+
+    services:
+      serviceA:
+        x-iam:
+          ManagedPolicies:
+            - arn:aws:iam::aws:policy/Administrator # AWS Managed Policy
+            - developer                             # User Managed Policy
