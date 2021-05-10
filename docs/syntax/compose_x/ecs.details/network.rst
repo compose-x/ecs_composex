@@ -5,7 +5,7 @@
 .. _x_configs_network_syntax:
 
 ==================
-x-network
+services.x-network
 ==================
 
 .. code-block:: yaml

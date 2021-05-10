@@ -4,8 +4,9 @@
 
 .. _composex_deploy_extension:
 
-deploy
-=======
+===================
+services.deploy
+===================
 
 The deploy section allows to set various settings around how the container should be deployed, and what compute resources
 are required to run the service.

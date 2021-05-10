@@ -4,9 +4,9 @@
 
 .. _x_iam_syntax_reference:
 
-======
-x-iam
-======
+==================
+services.x-iam
+==================
 
 .. contents::
 

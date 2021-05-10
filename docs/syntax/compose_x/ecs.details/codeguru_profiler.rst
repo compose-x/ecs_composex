@@ -4,9 +4,9 @@
 
 .. _codeguru_profiler_syntax_reference:
 
-======================
-x-codeguru-profiler
-======================
+==============================
+services.x-codeguru-profiler
+==============================
 
 Enables to use or create an existing/a new CodeProfiling group for your service.
 

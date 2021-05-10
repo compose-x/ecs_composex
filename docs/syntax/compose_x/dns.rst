@@ -8,10 +8,13 @@
 x-dns
 ======
 
-Allows you to indicate what the DNS settings shall be for the deployment of your containers.
+Allows you to configure the DNS settings for the deployment of your containers.
 
 Syntax
 ======
+
+PrivateNamespace (AWS CloudMap)
+---------------------------------
 
 .. code-block:: yaml
     :caption: Private Namespace definition (Uses AWS CloudMap)
@@ -23,8 +26,11 @@ Syntax
 
 .. warning::
 
-    This domain will be associated with the VPC Route53 "database". If another Namespace using the same domain
-    name already is associated with the VPC, this will fail.
+    When creating a new one, this domain will be associated with the VPC Route53 "database".
+    If another Namespace using the same domain name already is associated with the VPC, this will fail.
+
+Public Zone (Route53)
+----------------------
 
 .. code-block::
     :caption: Public DNS Zone using Route53.
@@ -36,7 +42,18 @@ Syntax
 
 .. attention::
 
-    For ACM DNS Validation and other validations to work, the zone must be able to be resolved.
+    For ACM DNS Validation and other validations to work, the zone must be able to be resolved otherwise automated
+    validation will not work.
+
+
+DNS records
+--------------
+
+This section of x-dns allows you to define DNS Records pointing to resources defined in the compose-x files.
+
+The record properties follow the same properties as `AWS Route53 RecordSet`_
+
+When the target is an ELBv2 it automatically creates an `alias`_ record.
 
 Examples
 =========
@@ -58,3 +75,27 @@ Examples
       PublicZone:
         Name: public-domain.net
         Use: Z0123456ABCD
+
+.. code-block:: yaml
+    :caption: Private and public zone with a DNS record pointing to an ELBv2
+
+    x-dns:
+      PrivateNamespace:
+        Name: dev.internal
+        Lookup:
+          RoleArn: ${NONPROD_RO_ROLE_ARN}
+
+      PublicZone:
+        Name: dev.my-domain.net
+        Lookup:
+          RoleArn: ${NONPROD_RO_ROLE_ARN}
+
+      Records:
+        - Properties:
+            Name: controlcenter.dev.my-domain.net
+            Type: A
+          Target: x-elbv2::controlcenter
+
+
+.. _AWS Route53 RecordSet: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-route53-recordset.html
+.. _alias: https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resource-record-sets-choosing-alias-non-alias.html
