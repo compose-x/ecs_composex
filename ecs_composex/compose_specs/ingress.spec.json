@@ -1,0 +1,62 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "id": "ingress",
+    "type": "object",
+    "title": "ingress",
+    "$id": "ingress.spec.json",
+    "description": "The Ingress specification for ComposeX",
+    "properties": {
+        "Myself": {
+            "type": "boolean"
+        },
+        "ExtSources": {
+            "type": "array",
+            "items": {
+                "$ref": "#/definitions/ExtSource"
+            }
+        },
+        "AwsSources": {
+            "type": "array",
+            "items": {
+                "$ref": "#/definitions/AwsSource"
+            }
+        }
+    },
+    "definitions": {
+        "AwsSource": {
+            "type": "object",
+            "properties": {
+                "Type": {
+                    "type": "string",
+                    "enum": [
+                        "SecurityGroup",
+                        "PrefixList"
+                    ]
+                },
+                "Id": {
+                    "type": "string",
+                    "pattern": "^sg-[a-z0-9]+$|^pl-[a-z0-9]+$"
+                }
+            }
+        },
+        "ExtSource": {
+            "type": "object",
+            "properties": {
+                "IPv4": {
+                    "type": "string",
+                    "format": "ipv4"
+                },
+                "IPv6": {
+                    "type": "string",
+                    "format": "ipv6"
+                },
+                "Name": {
+                    "type": "string"
+                },
+                "Description": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}

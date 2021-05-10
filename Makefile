@@ -130,4 +130,4 @@ install: clean ## install the package to the active Python's site-packages
 
 conform	: ## Conform to a standard of coding syntax
 	black ecs_composex tests setup.py
-
+	find ecs_composex -name "*.json" -type f  -exec sed -i '1s/^\xEF\xBB\xBF//' {} +

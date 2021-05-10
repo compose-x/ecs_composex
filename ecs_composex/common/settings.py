@@ -285,7 +285,7 @@ class ComposeXSettings(object):
             self.services.append(service)
 
     def add_new_family(self, family_name, service, assigned_services):
-        if service.name in [service.name for service in assigned_services]:
+        if service.name in [r_service.name for r_service in assigned_services]:
             LOG.info(
                 f"Detected {service.name} is-reused in different family. Making a deepcopy"
             )
@@ -303,7 +303,7 @@ class ComposeXSettings(object):
 
     def handle_assigned_existing_service(self, family_name, service, assigned_services):
         the_family = self.families[family_name]
-        if service.name in [service.name for service in assigned_services]:
+        if service.name in [r_service.name for r_service in assigned_services]:
             LOG.info(
                 f"Detected {service.name} is-reused in different family. Making a deepcopy"
             )
