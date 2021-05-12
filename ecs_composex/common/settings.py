@@ -6,12 +6,16 @@
 Module for the ComposeXSettings class
 """
 
+from os import path
+from json import loads
 from copy import deepcopy
 from datetime import datetime as dt
 from re import sub
 
 import boto3
 import yaml
+import jsonschema
+from importlib_resources import files as pkg_files
 from botocore.exceptions import ClientError
 from cfn_flip.yaml_dumper import LongCleanDumper
 from compose_x_render.compose_x_render import ComposeDefinition
@@ -355,6 +359,16 @@ class ComposeXSettings(object):
         )
         content_def = ComposeDefinition(files, content)
         self.compose_content = content_def.definition
+        source = pkg_files("ecs_composex_specs").joinpath("compose-spec.json")
+        print(source)
+        resolver = jsonschema.RefResolver(
+            f"file://{path.abspath(path.dirname(source))}/", None
+        )
+        jsonschema.validate(
+            content_def.definition,
+            loads(source.read_text()),
+            resolver=resolver,
+        )
         if fully_load:
             self.set_secrets()
             self.set_volumes()

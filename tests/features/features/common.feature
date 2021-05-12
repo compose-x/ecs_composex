@@ -36,15 +36,6 @@ Feature: common
       | file_path                      | bucket_name                         |
       | use-cases/sqs/simple_queue.yml | ecs-composex-373709687836-eu-west-1 |
 
-  @common
-  Scenario Outline: All in one
-    Given I use <file_path> as my docker-compose file and <override_file> as override file
-    Then I render the docker-compose to composex to validate
-    And I render all files to verify execution
-    Examples:
-      | file_path          | override_file            |
-      | use-cases/blog.yml | use-cases/all-in-one.yml |
-
   @cluster
   Scenario Outline: ECS Cluster override
     Given I use <file_path> as my docker-compose file and <override_file> as override file

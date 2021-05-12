@@ -193,7 +193,6 @@ class ComposeService(object):
         self.x_scaling = set_else_none("x-scaling", self.definition, None, False)
         self.x_network = set_else_none("x-network", self.definition, None, False)
         self.x_iam = set_else_none("x-iam", self.definition)
-        self.validate_x_iam()
         self.x_logging = {"RetentionInDays": 14}
         self.x_repo_credentials = None
         self.import_x_aws_settings()
@@ -254,14 +253,6 @@ class ComposeService(object):
         self.set_service_deploy()
         self.set_container_definition()
         self.set_networks()
-
-    def validate_x_iam(self):
-        source = (
-            files("ecs_composex.compose_specs")
-            .joinpath("services.x-iam.spec.json")
-            .read_text(encoding="utf-8-sig")
-        )
-        jsonschema.validate(self.x_iam, loads(source))
 
     def define_port_mappings(self):
         """

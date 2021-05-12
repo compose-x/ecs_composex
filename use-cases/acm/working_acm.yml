@@ -27,7 +27,7 @@ services:
         - "ecs.task.family=app01"
     x-configs:
       network:
-        is_public: True
+        IsPublic: True
         lb_type: application
     depends_on:
       - app

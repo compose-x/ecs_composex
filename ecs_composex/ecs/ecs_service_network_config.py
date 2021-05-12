@@ -251,17 +251,7 @@ class ServiceNetworking(Ingress):
         self.ingress_from_self = False
         super().__init__(self.configuration[self.master_key], self.ports)
         self.ingress_from_self = keyisset(self.self_key, self.definition)
-        source = files("ecs_composex.compose_specs").joinpath(
-            "services.x-network.spec.json"
-        )
-        resolver = jsonschema.RefResolver(
-            f"file://{path.abspath(path.dirname(source))}/", None
-        )
-        jsonschema.validate(
-            self.configuration,
-            loads(source.read_text()),
-            resolver=resolver,
-        )
+
 
     def merge_networks(self, family):
         """
