@@ -5,4 +5,4 @@ requests>=2.25.1
 compose_x_render>=0.0.1
 importlib-resources==5.1.2
 jsonschema>=3.2.0
-ecs_composex_specs>=0.0.3
+ecs_composex_specs>=0.0.4
