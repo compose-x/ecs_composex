@@ -252,7 +252,6 @@ class ServiceNetworking(Ingress):
         super().__init__(self.configuration[self.master_key], self.ports)
         self.ingress_from_self = keyisset(self.self_key, self.definition)
 
-
     def merge_networks(self, family):
         """
         Method to merge network
