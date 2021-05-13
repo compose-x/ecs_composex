@@ -2,6 +2,47 @@
 History
 =======
 
+0.15.0 (2021-05-13)
+===================
+
+Version 0.15.0 marks the start of using JSON Schema validation to validate
+early the content of the Compose files.
+
+The original compose-spec is updated with the varied x-resources and features,
+source is taken from gh:compose-spec/compose-spec.
+
+This will lead into better and easier long term maintenance of the input definition.
+Eventually, a lot of the custom settings and classes will use models generated with
+Pydantic.
+
+New features
+-------------
+
+* 92e9d48 Using newer minimum definition (John Preston)
+* 6c0688c Use schema validation to validate compose user-input. (#458) (John Preston)
+
+
+Improvements
+-------------
+
+* ef01b4a Improving documentation (#457) (John Preston)
+* 97c7b65 Adding region and randomness to composite alarm name (#455) (John Preston)
+* b9a8399 Workaround limitation of 20 DB Parameters (Jack Saunders)
+* 3c57cfe Adding CRUD policy template for s3 objects (John Preston)
+* 94d868a Adding `Use` support to x-s3 (#450) (John Preston)
+* 137a10c Using compose-x render lib to ingest multiple compose files content (#442) (John Preston)
+
+
+Fixes
+-----
+* f7b5ccc Fix/alarm name should be consistent over updates (#456) (John Preston)
+* 92e0693 CRUD policy patch (John Preston)
+* b71f448 Adding forgotten CreateMultipartUpload (John Preston)
+* 5493e6e Fixed families dependencies (#446) (John Preston)
+* 51eb1cb Code formatting (John Preston)
+* 69c5964 Fixing duplicate export names (#445) (John Preston)
+
+
 0.14.0 (2021-03-23)
 ====================
 
