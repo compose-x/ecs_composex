@@ -1,5 +1,8 @@
-troposphere==2.7.0
+troposphere==2.7.1
 boto3>=1.16.35
 aws-sam-translator>=1.32.0
 requests>=2.25.1
 compose_x_render>=0.0.1
+importlib-resources==5.1.2
+jsonschema>=3.2.0
+ecs_composex_specs>=0.0.3

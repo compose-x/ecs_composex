@@ -32,9 +32,9 @@ x-elbv2:
     MacroParameters:
       Ingress:
         ExtSources:
-          - Ipv4: "0.0.0.0/0"
+          - IPv4: "0.0.0.0/0"
             Description: ANY
-          - Ipv4: "1.1.1.1/32"
+          - IPv4: "1.1.1.1/32"
             Description: CLOUDFLARE
             Name: CLOUDFLARE
     Listeners:

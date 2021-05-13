@@ -6,7 +6,10 @@
 Module to help with defining the network settings for the ECS Service based on the family services definitions.
 """
 
-from json import dumps
+import jsonschema
+from os import path
+from importlib_resources import files
+from json import dumps, loads
 
 from troposphere import AWS_ACCOUNT_ID
 from troposphere import Sub, Ref, GetAtt
@@ -248,6 +251,7 @@ class ServiceNetworking(Ingress):
         self.ingress_from_self = False
         super().__init__(self.configuration[self.master_key], self.ports)
         self.ingress_from_self = keyisset(self.self_key, self.definition)
+
 
     def merge_networks(self, family):
         """

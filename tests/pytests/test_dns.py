@@ -27,7 +27,7 @@ def zone_create():
     return {
         "x-dns": {
             "PrivateNamespace": {"Name": "mycluster.lan"},
-            "PublicNamespace": {"Name": "lambda-my-aws.io"},
+            "PublicZone": {"Name": "lambda-my-aws.io"},
         }
     }
 
@@ -37,7 +37,7 @@ def zone_lookup():
     return {
         "x-dns": {
             "PrivateNamespace": {"Name": "mycluster.lan", "Lookup": "ns-aieijfieojf"},
-            "PublicNamespace": {
+            "PublicZone": {
                 "Name": "lambda-my-aws.io",
                 "Lookup": "ns-abaiejfiefjio",
             },

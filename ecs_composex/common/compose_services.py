@@ -3,8 +3,10 @@
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
 import re
+import jsonschema
+from importlib_resources import files, as_file
 from copy import deepcopy
-from json import dumps
+from json import dumps, loads
 from os import path
 
 from troposphere import AWS_NO_VALUE, AWS_REGION, AWS_STACK_NAME, AWS_PARTITION

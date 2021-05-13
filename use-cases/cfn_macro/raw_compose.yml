@@ -50,7 +50,7 @@ services:
       RetentionInDays: 42
       CreateLogGroup: False
     x-network:
-      is_public: False
+      IsPublic: False
       use_cloudmap: True
       Ingress:
         Myself: False
@@ -137,7 +137,7 @@ services:
       Ingress:
         Myself: False
         ExtSources:
-          - Ipv4: 0.0.0.0/0
+          - IPv4: 0.0.0.0/0
             Description: ANYWHERE
 
     x-logging:
@@ -170,7 +170,7 @@ services:
         - arn:aws:iam::aws:policy/ReadOnlyAccess
     x-xray: true
     x-network:
-      is_public: False
+      IsPublic: False
       use_cloudmap: True
 volumes:
   shared-images: {}
