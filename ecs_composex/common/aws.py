@@ -401,36 +401,6 @@ def get_change_set_status(client, change_set_name, settings):
     return status
 
 
-def watch_changes(client, stack_name, vizualize_nested=False):
-    """
-    Function to view the changes in real-time
-
-    :param client:
-    :param stack_name:
-    :param vizualize_nested:
-    :return:
-    """
-    while 42:
-        stack_r = client.describe_stack_resources(StackName=stack_name)
-        resources = []
-        for res in stack_r["StackResources"]:
-            res_def = [
-                res["LogicalResourceId"],
-                res["PhysicalResourceId"]
-                if keyisset("PhysicalResourceId", res)
-                else "---",
-                res["ResourceStatus"],
-            ]
-            resources.append(res_def)
-        table = tabulate(
-                resources,
-                ["LogicalResourceId", "PhysicalResourceId", "ResourceStatus"],
-                tablefmt="rst",
-            )
-
-        sleep(1)
-
-
 def plan(settings, root_stack):
     """
     Function to create a recursive change-set and return diffs
@@ -463,4 +433,9 @@ def plan(settings, root_stack):
                 client.execute_change_set(
                     ChangeSetName=change_set_name, StackName=settings.name
                 )
-                watch_changes(client, stack_name=settings.name)
+            else:
+                delete_q = input("Cleanup ChangeSet ? [yN]: ")
+                if delete_q in ["y", "Y", "YES", "Yes", "yes"]:
+                    client.delete_stack(
+                        StackName=settings.name
+                    )
