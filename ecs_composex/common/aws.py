@@ -7,11 +7,11 @@ Common functions and variables fetched from AWS.
 """
 import re
 import boto3
-import string
-import random
+import secrets
 from botocore.exceptions import ClientError
 from time import sleep
 from tabulate import tabulate
+from string import ascii_lowercase
 
 
 from ecs_composex.common import LOG, keyisset
@@ -411,7 +411,7 @@ def plan(settings, root_stack):
     validate_stack_availability(settings, root_stack)
     client = settings.session.client("cloudformation")
     change_set_name = f"{settings.name}" + "".join(
-        random.choices(string.ascii_uppercase + string.digits, k=10)
+        secrets.choice(ascii_lowercase) for _ in range(10)
     )
     if assert_can_create_stack(client, settings.name) or assert_can_update_stack(
         client, settings.name
