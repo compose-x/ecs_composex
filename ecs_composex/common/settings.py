@@ -57,6 +57,7 @@ class ComposeXSettings(object):
     deploy_arg = "up"
     render_arg = "render"
     create_arg = "create"
+    plan_arg = "plan"
     config_render_arg = "config"
     command_arg = "command"
 
@@ -86,6 +87,10 @@ class ComposeXSettings(object):
         {
             "name": create_arg,
             "help": "Generates & Validates the CFN templates locally. Uploads files to S3",
+        },
+        {
+            "name": plan_arg,
+            "help": "Creates a recursive change-set to show the diff prior to an update",
         },
     ]
     validation_commands = [
@@ -145,6 +150,7 @@ class ComposeXSettings(object):
         self.single_nat = None
         self.lookup_vpc = False
         self.deploy = True if keyisset(self.deploy_arg, kwargs) else False
+        self.plan = True if keyisset(self.plan_arg, kwargs) else False
         self.no_upload = True if keyisset(self.render_arg, kwargs) else False
 
         self.upload = False if self.no_upload else True
@@ -390,6 +396,9 @@ class ComposeXSettings(object):
             exit(1)
         if command == self.deploy_arg:
             self.deploy = True
+            self.upload = True
+        elif command == self.plan_arg:
+            self.plan = True
             self.upload = True
         elif command == self.render_arg:
             self.no_upload = True

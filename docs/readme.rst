@@ -65,22 +65,18 @@ CLI Usage
 
 .. code-block:: bash
 
-    usage: ecs-compose-x [-h] {up,render,create,config,init,version} ...
+    usage: ecs-compose-x [-h] {up,render,create,plan,config,init,version} ...
 
     positional arguments:
-      {up,render,create,config,init,version}
+      {up,render,create,plan,config,init,version}
                             Command to execute.
-        up                  Generates & Validates the CFN templates,
-                            Creates/Updates stack in CFN
-        render              Generates & Validates the CFN templates locally. No
-                            upload to S3
-        create              Generates & Validates the CFN templates locally.
-                            Uploads files to S3
-        config              Merges docker-compose files to provide with the final
-                            compose content version
-        init                Initializes your AWS Account with prerequisites
-                            settings for ECS
-        version             ECS Compose-X Version
+        up                  Generates & Validates the CFN templates, Creates/Updates stack in CFN
+        render              Generates & Validates the CFN templates locally. No upload to S3
+        create              Generates & Validates the CFN templates locally. Uploads files to S3
+        plan                Creates a recursive change-set to show the diff prior to an update
+        config              Merges docker-compose files to provide with the final compose content version
+        init                Initializes your AWS Account with prerequisites settings for ECS
+        version             ECS ComposeX Version
 
     optional arguments:
       -h, --help            show this help message and exit

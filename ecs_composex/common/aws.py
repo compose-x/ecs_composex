@@ -7,7 +7,12 @@ Common functions and variables fetched from AWS.
 """
 import re
 import boto3
+import secrets
 from botocore.exceptions import ClientError
+from time import sleep
+from tabulate import tabulate
+from string import ascii_lowercase
+
 
 from ecs_composex.common import LOG, keyisset
 from ecs_composex.iam import ROLE_ARN_ARG
@@ -261,7 +266,15 @@ def assert_can_create_stack(client, name):
     Checks whether a stack already exists or not
     """
     try:
-        client.describe_stacks(StackName=name)
+        stack_r = client.describe_stacks(StackName=name)
+        if not keyisset("Stacks", stack_r):
+            return True
+        stacks = stack_r["Stacks"]
+        if len(stacks) != 1:
+            raise LookupError("Too many stacks found with machine name", name)
+        stack = stacks[0]
+        if stack["StackStatus"] == "REVIEW_IN_PROGRESS":
+            return stack
         return False
     except ClientError as error:
         if (
@@ -292,11 +305,11 @@ def assert_can_update_stack(client, name):
     return False
 
 
-def deploy(settings, root_stack):
+def validate_stack_availability(settings, root_stack):
     """
-    Function to deploy (create or update) the stack to CFN.
-    :param ComposeXSettings settings:
-    :param ComposeXStack root_stack:
+    Function to check that the stack can be updated
+    :param settings:
+    :param root_stack:
     :return:
     """
     if not settings.upload:
@@ -308,6 +321,16 @@ def deploy(settings, root_stack):
             f"The URL for the stack is incorrect.: {root_stack.TemplateURL}",
             "TemplateURL must be a s3 URL",
         )
+
+
+def deploy(settings, root_stack):
+    """
+    Function to deploy (create or update) the stack to CFN.
+    :param ComposeXSettings settings:
+    :param ComposeXStack root_stack:
+    :return:
+    """
+    validate_stack_availability(settings, root_stack)
     client = settings.session.client("cloudformation")
     if assert_can_create_stack(client, settings.name):
         res = client.create_stack(
@@ -331,3 +354,88 @@ def deploy(settings, root_stack):
         LOG.info(res["StackId"])
         return res["StackId"]
     return None
+
+
+def get_change_set_status(client, change_set_name, settings):
+    pending_statuses = [
+        "CREATE_PENDING",
+        "CREATE_IN_PROGRESS",
+        "DELETE_PENDING",
+        "DELETE_IN_PROGRESS",
+        "REVIEW_IN_PROGRESS",
+    ]
+    success_statuses = ["CREATE_COMPLETE", "DELETE_COMPLETE"]
+    failed_statuses = ["DELETE_FAILED", "FAILED"]
+    ready = False
+    status = None
+    while not ready:
+        status = client.describe_change_set(
+            ChangeSetName=change_set_name, StackName=settings.name
+        )
+        if status["Status"] in failed_statuses:
+            raise SystemExit("Change set is unsucessful", status["Status"])
+        if status["Status"] in pending_statuses:
+            print(
+                "ChangeSet creation in progress. Waiting 10 seconds",
+                end="\r",
+                flush=True,
+            )
+            sleep(10)
+        elif status["Status"] in success_statuses:
+            ready = True
+
+    print(
+        tabulate(
+            [
+                [
+                    change["ResourceChange"]["LogicalResourceId"],
+                    change["ResourceChange"]["ResourceType"],
+                    change["ResourceChange"]["Action"],
+                ]
+                for change in status["Changes"]
+            ],
+            ["LogicalResourceId", "ResourceType", "Action"],
+            tablefmt="rst",
+        )
+    )
+    return status
+
+
+def plan(settings, root_stack):
+    """
+    Function to create a recursive change-set and return diffs
+    :param ComposeXSettings settings:
+    :param ComposeXStack root_stack:
+    :return:
+    """
+    validate_stack_availability(settings, root_stack)
+    client = settings.session.client("cloudformation")
+    change_set_name = f"{settings.name}" + "".join(
+        secrets.choice(ascii_lowercase) for _ in range(10)
+    )
+    if assert_can_create_stack(client, settings.name) or assert_can_update_stack(
+        client, settings.name
+    ):
+        res = client.create_change_set(
+            StackName=settings.name,
+            Capabilities=["CAPABILITY_IAM", "CAPABILITY_AUTO_EXPAND"],
+            Parameters=root_stack.render_parameters_list_cfn(),
+            TemplateURL=root_stack.TemplateURL,
+            UsePreviousTemplate=False,
+            IncludeNestedStacks=True,
+            ChangeSetType="CREATE",
+            ChangeSetName=change_set_name,
+        )
+        status = get_change_set_status(client, change_set_name, settings)
+        if status:
+            apply_q = input("Want to apply? [yN]: ")
+            if apply_q in ["y", "Y", "YES", "Yes", "yes"]:
+                client.execute_change_set(
+                    ChangeSetName=change_set_name, StackName=settings.name
+                )
+            else:
+                delete_q = input("Cleanup ChangeSet ? [yN]: ")
+                if delete_q in ["y", "Y", "YES", "Yes", "yes"]:
+                    client.delete_stack(
+                        StackName=settings.name
+                    )
