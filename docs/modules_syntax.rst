@@ -1,16 +1,6 @@
 .. _syntax_reference:
 
 .. toctree::
-    :caption: Docker Compose syntax
-    :maxdepth: 1
-
-    syntax/docker-compose/services
-    syntax/docker-compose/volumes
-    syntax/docker-compose/secrets
-    syntax/docker-compose/networks
-    syntax/docker-compose/logging
-
-.. toctree::
     :caption: Services-level Extension Fields
     :maxdepth: 1
 
@@ -48,9 +38,17 @@
     syntax/compose_x/alarms
     syntax/compose_x/compute
 
+.. toctree::
+    :caption: Docker Compose syntax
+    :maxdepth: 1
+
+    syntax/docker-compose/services
+    syntax/docker-compose/volumes
+    syntax/docker-compose/secrets
+    syntax/docker-compose/networks
+    syntax/docker-compose/logging
 
 .. toctree::
-    :caption: Docker ECS Plugin support
     :maxdepth: 1
 
     syntax/ecs_plugin/support

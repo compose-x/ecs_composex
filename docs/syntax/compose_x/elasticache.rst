@@ -5,7 +5,7 @@
 .. _elastic_cache_syntax_reference:
 
 ===================
-x-elastic_cache
+x-elasticache
 ===================
 
 .. code-block:: yaml

@@ -1,4 +1,4 @@
-﻿.. _syntax_reference:
+﻿.. _common_syntax_reference:
 
 ==============================
 Common syntax for x-resources
