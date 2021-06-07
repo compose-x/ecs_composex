@@ -5,16 +5,16 @@
 .. _codeguru_profiler_syntax_reference:
 
 ==============================
-services.x-codeguru-profiler
+x-codeguru_profiler
 ==============================
 
-Enables to use or create an existing/a new CodeProfiling group for your service.
+Enables to use or create a new AWS Code Guru profiling group.
 
-Unlike most of the resources attachments, this is not done at the "family" level but at the service
-level, as it might not be wanted to profile every single container in the task.
+.. code-block:: yaml
 
-x-codeguru-profiler is a service/task level setting which offers a 1:1 mapping between your application
-and the profiler.
+    Properties: {}
+    MacroParameters: {}
+    Services: []
 
 .. hint::
 
@@ -22,44 +22,49 @@ and the profiler.
     **AWS_CODEGURU_PROFILER_GROUP_ARN** and **AWS_CODEGURU_PROFILER_GROUP_NAME** with the ARN
     of the newly created Profiling Group.
 
-Syntax reference / Examples
-==============================
+.. hint::
 
-I wanted to make it easy for people to use as well as being flexible and support all CFN definition.
+    If you do not specify any Properties, the Profiling group name gets generated for you.
 
+Properties
+===========
 
-.. code-block:: yaml
-    :caption: Syntax for setting pre-defined codeprifiling group without creating a new one.
-
-    x-codeguru-profiler: name (str)
-
-
-.. code-block:: yaml
-    :caption: Create a new CodeProfiling group with default settings.
-
-    x-codeguru-profiler: True|False (bool)
-
-.. code-block:: yaml
-    :caption: Properties as defined in AWS CFN for ProflingGroup
-
-    x-codeguru-profiler:
-      AgentPermissions: Json
-      AnomalyDetectionNotificationConfiguration:
-        - Channel
-      ComputePlatform: String
-      ProfilingGroupName: String
-      Tags:
-        - Tag
-
+Ths properties allow to use the same definition as in AWS Syntax Reference.
 
 .. seealso::
 
     `AWS CFN definition for CodeGuru profiling group <https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-codeguruprofiler-profilinggroup.html>`__
 
-.. note::
+MacroParameters
+================
 
-    When you define the properties, in case you already had principals, it will still automatically
-    add the **IAM Task Role** to the list of Principals that should publish to the profiling group.
+AppendStackId
+--------------
+
+Type: Boolean
+Description: Allows you to automatically add the stack ID to the provided Profiling Group Name so you can have multiple
+profiling groups of the same logical name in your compose definition but different names when deploying to the same account
+and same AWS region.
+
+.. tip::
+
+    We recommend to set the value to True at all times, but did not make it default.
+
+Example
+--------
+
+.. code-block:: yaml
+
+    x-codeguru_profiler:
+        Profiler01:
+          Properties: {}
+        Services:
+            - name: service01
+              access: RW
+
+.. attention::
+
+    The only valid access mode is **RW**
 
 Code Example
 =============
