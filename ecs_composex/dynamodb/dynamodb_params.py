@@ -5,7 +5,7 @@
 from os import path
 
 from ecs_composex.common.cfn_params import Parameter
-from ecs_composex.ecs_composex import X_KEY
+from ecs_composex.common.ecs_composex import X_KEY
 
 TABLE_NAME_T = "TableName"
 TABLE_NAME = Parameter(TABLE_NAME_T, Type="String", AllowedPattern=r"[a-zA-Z0-9_.-]+")

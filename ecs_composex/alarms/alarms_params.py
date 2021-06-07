@@ -5,7 +5,7 @@
 from os import path
 
 from ecs_composex.common.cfn_params import Parameter
-from ecs_composex.ecs_composex import X_KEY
+from ecs_composex.common.ecs_composex import X_KEY
 
 RES_KEY = f"{X_KEY}{path.basename(path.dirname(path.abspath(__file__)))}"
 
