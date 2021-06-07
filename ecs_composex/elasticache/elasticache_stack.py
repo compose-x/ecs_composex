@@ -8,25 +8,25 @@ Module to handle the AWS ES Stack and resources creation
 
 import json
 
-from troposphere import Ref, GetAtt, Sub
+from troposphere import GetAtt, Ref, Sub
 from troposphere.ssm import Parameter as SSMParameter
 
 from ecs_composex.common.compose_resources import XResource, set_resources
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.elasticache.elasticache_params import (
-    MOD_KEY,
-    RES_KEY,
-    CLUSTER_NAME,
+    CLUSTER_CONFIG,
     CLUSTER_MEMCACHED_ADDRESS,
     CLUSTER_MEMCACHED_PORT,
-    CLUSTER_REDIS_PORT,
+    CLUSTER_NAME,
     CLUSTER_REDIS_ADDRESS,
-    REPLICA_READ_ENDPOINT_ADDRESSES,
-    REPLICA_READ_ENDPOINT_PORTS,
+    CLUSTER_REDIS_PORT,
+    CLUSTER_SG,
+    MOD_KEY,
     REPLICA_PRIMARY_ADDRESS,
     REPLICA_PRIMARY_PORT,
-    CLUSTER_SG,
-    CLUSTER_CONFIG,
+    REPLICA_READ_ENDPOINT_ADDRESSES,
+    REPLICA_READ_ENDPOINT_PORTS,
+    RES_KEY,
 )
 from ecs_composex.elasticache.elasticache_template import create_root_template
 from ecs_composex.vpc.vpc_params import STORAGE_SUBNETS

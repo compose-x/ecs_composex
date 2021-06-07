@@ -12,7 +12,7 @@ which it heavily relies onto.
 You can change the names *values* so you like so long as you keep it Alphanumerical [a-zA-Z0-9]
 """
 
-from troposphere import Condition, Ref, Equals, And, Not
+from troposphere import And, Condition, Equals, Not, Ref
 
 from ecs_composex.ecs import ecs_params
 

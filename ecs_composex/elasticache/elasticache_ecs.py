@@ -12,8 +12,8 @@ from ecs_composex.common import keyisset
 from ecs_composex.elasticache.elasticache_aws import lookup_cluster_resource
 from ecs_composex.elasticache.elasticache_params import CLUSTER_SG
 from ecs_composex.tcp_resources_settings import (
-    handle_new_tcp_resource,
     add_security_group_ingress,
+    handle_new_tcp_resource,
 )
 
 

@@ -6,19 +6,16 @@
 Module of functions factorizing common patterns for TCP based access such as RDS, DocumentDB
 """
 
-from troposphere import Ref, GetAtt, Sub, FindInMap
+from troposphere import FindInMap, GetAtt, Ref, Sub
 from troposphere.ec2 import SecurityGroupIngress
 from troposphere.ecs import Secret as EcsSecret
 from troposphere.iam import PolicyType
 
-from ecs_composex.common import LOG
-from ecs_composex.common import keyisset, keypresent, add_parameters
+from ecs_composex.common import LOG, add_parameters, keyisset, keypresent
 from ecs_composex.common.compose_resources import get_parameter_settings
 from ecs_composex.common.services_helpers import extend_container_secrets
-from ecs_composex.ecs.ecs_params import TASK_ROLE_T, EXEC_ROLE_T, SG_T
-from ecs_composex.rds.rds_params import (
-    DB_SECRET_POLICY_NAME,
-)
+from ecs_composex.ecs.ecs_params import EXEC_ROLE_T, SG_T, TASK_ROLE_T
+from ecs_composex.rds.rds_params import DB_SECRET_POLICY_NAME
 
 
 def define_db_prefix(db, mappings_definition):

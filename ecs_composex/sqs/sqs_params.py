@@ -4,6 +4,7 @@
 
 
 from os import path
+
 from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.ecs_composex import X_KEY
 

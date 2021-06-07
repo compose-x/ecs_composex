@@ -6,26 +6,27 @@
 Functions to add to the Cluster template when people want to use SpotFleet for their ECS Cluster.
 """
 
-from troposphere import Ref, Sub, GetAtt, Select, If
+from troposphere import GetAtt, If, Ref, Select, Sub
 from troposphere.applicationautoscaling import (
     ScalableTarget,
+    ScalingPolicy,
     StepAdjustment,
     StepScalingPolicyConfiguration,
-    ScalingPolicy,
 )
-from troposphere.cloudwatch import Alarm, MetricDimension as CwMetricDimension
+from troposphere.cloudwatch import Alarm
+from troposphere.cloudwatch import MetricDimension as CwMetricDimension
 from troposphere.ec2 import (
-    SpotFleet,
-    SpotFleetRequestConfigData,
     LaunchTemplate,
     LaunchTemplateConfigs,
-    LaunchTemplateSpecification,
     LaunchTemplateOverrides,
+    LaunchTemplateSpecification,
+    SpotFleet,
+    SpotFleetRequestConfigData,
 )
 from troposphere.iam import Role
 
 from ecs_composex.common import LOG, build_template
-from ecs_composex.compute import compute_params, compute_conditions
+from ecs_composex.compute import compute_conditions, compute_params
 from ecs_composex.iam import service_role_trust_policy
 from ecs_composex.vpc import vpc_params
 

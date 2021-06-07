@@ -7,6 +7,7 @@ Parameters specific to AWS ACM
 """
 
 from os import path
+
 from troposphere import Parameter
 
 from ecs_composex.common.ecs_composex import X_KEY

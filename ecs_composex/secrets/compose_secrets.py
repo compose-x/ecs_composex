@@ -9,15 +9,14 @@ Represent a service from the docker-compose services
 import re
 from copy import deepcopy
 
-from troposphere import Sub, FindInMap
-from troposphere import AWS_PARTITION, AWS_REGION, AWS_ACCOUNT_ID
+from troposphere import AWS_ACCOUNT_ID, AWS_PARTITION, AWS_REGION, FindInMap, Sub
 from troposphere.ecs import Secret as EcsSecret
 
-from ecs_composex.common import LOG, keyisset, NONALPHANUM
-from ecs_composex.ecs.ecs_params import TASK_ROLE_T, EXEC_ROLE_T
+from ecs_composex.common import LOG, NONALPHANUM, keyisset
+from ecs_composex.ecs.ecs_params import EXEC_ROLE_T, TASK_ROLE_T
 from ecs_composex.kms.kms_params import KMS_KEY_ARN_RE
 from ecs_composex.secrets.secrets_aws import lookup_secret_config
-from ecs_composex.secrets.secrets_params import XRES_KEY, RES_KEY
+from ecs_composex.secrets.secrets_params import RES_KEY, XRES_KEY
 
 
 def get_name_from_arn(secret_arn):

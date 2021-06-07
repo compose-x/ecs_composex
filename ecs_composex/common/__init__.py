@@ -10,9 +10,9 @@ Most commonly used functions shared across all modules.
 import logging as logthings
 import re
 import sys
-from uuid import uuid4
 from datetime import datetime as dt
 from os import environ
+from uuid import uuid4
 
 import yaml
 
@@ -21,13 +21,10 @@ try:
 except ImportError:
     from yaml import Loader
 
-from troposphere import Ref, AWS_NO_VALUE
-from troposphere import Template, Parameter, Output
-
-from ecs_composex.common import cfn_params
-from ecs_composex.common import cfn_conditions
+from troposphere import AWS_NO_VALUE, Output, Parameter, Ref, Template
 
 from ecs_composex import __version__ as version
+from ecs_composex.common import cfn_conditions, cfn_params
 
 DATE = dt.utcnow().isoformat()
 FILE_PREFIX = f'{dt.utcnow().strftime("%Y/%m/%d/%H%M")}/{str(uuid4().hex)[:6]}'

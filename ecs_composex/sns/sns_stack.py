@@ -4,18 +4,13 @@
 
 from troposphere import GetAtt, Ref
 
-from ecs_composex.common import keyisset, build_template
+from ecs_composex.common import build_template, keyisset
 from ecs_composex.common.compose_resources import XResource
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.sns.sns_params import (
-    RES_KEY,
-    TOPIC_NAME,
-    TOPIC_ARN,
-    MOD_KEY,
-)
+from ecs_composex.sns.sns_aws import lookup_topic_config
+from ecs_composex.sns.sns_params import MOD_KEY, RES_KEY, TOPIC_ARN, TOPIC_NAME
 from ecs_composex.sns.sns_perms import ACCESS_TYPES
 from ecs_composex.sns.sns_templates import generate_sns_templates
-from ecs_composex.sns.sns_aws import lookup_topic_config
 from ecs_composex.sqs.sqs_params import RES_KEY as SQS_KEY
 
 

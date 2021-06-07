@@ -6,10 +6,10 @@
 Module to apply SQS settings onto ECS Services
 """
 
-from troposphere import Ref, GetAtt, FindInMap
+from troposphere import FindInMap, GetAtt, Ref
 from troposphere.cloudwatch import Alarm, MetricDimension
 
-from ecs_composex.common import LOG, keyisset, add_parameters
+from ecs_composex.common import LOG, add_parameters, keyisset
 from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.ecs.ecs_params import SERVICE_SCALING_TARGET
 from ecs_composex.ecs.ecs_scaling import (
@@ -17,15 +17,15 @@ from ecs_composex.ecs.ecs_scaling import (
     reset_to_zero_policy,
 )
 from ecs_composex.resource_settings import (
-    handle_resource_to_services,
     handle_lookup_resource,
+    handle_resource_to_services,
 )
 from ecs_composex.sqs.sqs_aws import lookup_queue_config
 from ecs_composex.sqs.sqs_params import (
-    SQS_NAME,
-    SQS_KMS_KEY_T,
     MOD_KEY,
     SQS_ARN,
+    SQS_KMS_KEY_T,
+    SQS_NAME,
     SQS_URL,
 )
 

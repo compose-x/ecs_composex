@@ -7,55 +7,52 @@ Functions to build the ECS Service Definition
 """
 
 from troposphere import (
-    Join,
-    Select,
-    If,
-    Tags,
     AWS_NO_VALUE,
     AWS_STACK_NAME,
+    GetAtt,
+    If,
+    Join,
+    Ref,
+    Select,
+    Sub,
+    Tags,
+    applicationautoscaling,
 )
-from troposphere import Ref, Sub, GetAtt
-from troposphere import applicationautoscaling
 from troposphere.ec2 import SecurityGroup
+from troposphere.ecs import AwsvpcConfiguration
+from troposphere.ecs import DeploymentCircuitBreaker as EcsDeploymentCircuitBreaker
 from troposphere.ecs import (
-    Service as EcsService,
-    PlacementStrategy,
-    AwsvpcConfiguration,
-    NetworkConfiguration,
-    DeploymentController,
     DeploymentConfiguration,
-    DeploymentCircuitBreaker as EcsDeploymentCircuitBreaker,
+    DeploymentController,
+    NetworkConfiguration,
+    PlacementStrategy,
 )
+from troposphere.ecs import Service as EcsService
 from troposphere.ecs import ServiceRegistry
-from troposphere.elasticloadbalancingv2 import (
-    SubnetMapping,
-)
+from troposphere.elasticloadbalancingv2 import SubnetMapping
+from troposphere.servicediscovery import DnsConfig as SdDnsConfig
+from troposphere.servicediscovery import DnsRecord as SdDnsRecord
 from troposphere.servicediscovery import (
-    DnsConfig as SdDnsConfig,
-    Service as SdService,
-    DnsRecord as SdDnsRecord,
     HealthCheckCustomConfig as SdHealthCheckCustomConfig,
 )
+from troposphere.servicediscovery import Service as SdService
 
-from ecs_composex.common import keyisset, LOG
+from ecs_composex.common import LOG, keyisset
 from ecs_composex.common.cfn_conditions import USE_STACK_NAME_CON_T
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.outputs import ComposeXOutput
-from ecs_composex.dns.dns_conditions import (
-    PRIVATE_NAMESPACE_CON_T,
-)
-from ecs_composex.dns.dns_params import (
-    PRIVATE_NAMESPACE_ID,
-)
-from ecs_composex.ecs import ecs_params, ecs_conditions
+from ecs_composex.dns.dns_conditions import PRIVATE_NAMESPACE_CON_T
+from ecs_composex.dns.dns_params import PRIVATE_NAMESPACE_ID
+from ecs_composex.ecs import ecs_conditions, ecs_params
 from ecs_composex.ecs.ecs_conditions import USE_HOSTNAME_CON_T
-from ecs_composex.ecs.ecs_params import SERVICE_NAME, SERVICE_HOSTNAME
 from ecs_composex.ecs.ecs_params import (
+    SERVICE_HOSTNAME,
+    SERVICE_NAME,
     SERVICE_NAME_T,
     SG_T,
 )
 from ecs_composex.vpc import vpc_params
-from ecs_composex.vpc.vpc_params import VPC_ID, PUBLIC_SUBNETS
+from ecs_composex.vpc.vpc_params import PUBLIC_SUBNETS, VPC_ID
 
 
 def define_placement_strategies():

@@ -6,17 +6,16 @@
 Common functions and variables fetched from AWS.
 """
 import re
-import boto3
 import secrets
-from botocore.exceptions import ClientError
-from time import sleep
-from tabulate import tabulate
 from string import ascii_lowercase
+from time import sleep
 
+import boto3
+from botocore.exceptions import ClientError
+from tabulate import tabulate
 
 from ecs_composex.common import LOG, keyisset
-from ecs_composex.iam import ROLE_ARN_ARG
-from ecs_composex.iam import validate_iam_role_arn
+from ecs_composex.iam import ROLE_ARN_ARG, validate_iam_role_arn
 
 
 def get_cross_role_session(session, arn, session_name=None):
@@ -436,6 +435,4 @@ def plan(settings, root_stack):
             else:
                 delete_q = input("Cleanup ChangeSet ? [yN]: ")
                 if delete_q in ["y", "Y", "YES", "Yes", "yes"]:
-                    client.delete_stack(
-                        StackName=settings.name
-                    )
+                    client.delete_stack(StackName=settings.name)

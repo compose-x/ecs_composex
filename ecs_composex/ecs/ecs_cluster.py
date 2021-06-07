@@ -5,9 +5,8 @@
 import re
 
 from botocore.exceptions import ClientError
-from troposphere import AWS_STACK_NAME
-from troposphere import Ref, FindInMap
-from troposphere.ecs import Cluster, CapacityProviderStrategyItem
+from troposphere import AWS_STACK_NAME, FindInMap, Ref
+from troposphere.ecs import CapacityProviderStrategyItem, Cluster
 
 from ecs_composex.common import LOG, keyisset
 from ecs_composex.ecs import metadata

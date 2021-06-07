@@ -8,19 +8,29 @@ Create the VPC template and its associated resources
 
 import re
 
-from troposphere import AWS_ACCOUNT_ID, AWS_PARTITION, AWS_REGION, AWS_NO_VALUE
-from troposphere import Tags, Join, Ref, Sub, If, GetAtt
-from troposphere.ec2 import (
-    VPC as VPCType,
-    VPCGatewayAttachment,
-    InternetGateway,
-    DHCPOptions,
-    VPCDHCPOptionsAssociation,
-    FlowLog,
-    PrefixList,
-    Entry,
+from troposphere import (
+    AWS_ACCOUNT_ID,
+    AWS_NO_VALUE,
+    AWS_PARTITION,
+    AWS_REGION,
+    GetAtt,
+    If,
+    Join,
+    Ref,
+    Sub,
+    Tags,
 )
-from troposphere.iam import Role, Policy
+from troposphere.ec2 import VPC as VPCType
+from troposphere.ec2 import (
+    DHCPOptions,
+    Entry,
+    FlowLog,
+    InternetGateway,
+    PrefixList,
+    VPCDHCPOptionsAssociation,
+    VPCGatewayAttachment,
+)
+from troposphere.iam import Policy, Role
 from troposphere.logs import LogGroup
 
 from ecs_composex.common.cfn_conditions import USE_STACK_NAME_CON_T
@@ -28,9 +38,8 @@ from ecs_composex.common.cfn_params import ROOT_STACK_NAME, ROOT_STACK_NAME_T
 from ecs_composex.common.outputs import ComposeXOutput
 from ecs_composex.dns.dns_params import PRIVATE_DNS_ZONE_NAME
 from ecs_composex.iam import service_role_trust_policy
-from ecs_composex.vpc import metadata
-from ecs_composex.vpc import vpc_params
-from ecs_composex.vpc.vpc_params import VPC_T, IGW_T
+from ecs_composex.vpc import metadata, vpc_params
+from ecs_composex.vpc.vpc_params import IGW_T, VPC_T
 
 AZ_INDEX_PATTERN = r"(([a-z0-9-]+)([a-z]{1}$))"
 AZ_INDEX_RE = re.compile(AZ_INDEX_PATTERN)

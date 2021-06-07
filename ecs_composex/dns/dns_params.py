@@ -7,6 +7,7 @@ Module for DNS parameters
 """
 
 from os import path
+
 from ecs_composex.common.cfn_params import Parameter
 
 MOD_KEY = path.basename(path.dirname(path.abspath(__file__)))

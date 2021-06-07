@@ -7,23 +7,36 @@ Module to handle Root stacks and substacks in ECS composeX. Allows to treat ever
 files into S3 and on disk.
 """
 
-from troposphere import AWS_STACK_NAME
-from troposphere import Template, GetAtt, Ref, If, Join, ImportValue, FindInMap
+from troposphere import (
+    AWS_STACK_NAME,
+    FindInMap,
+    GetAtt,
+    If,
+    ImportValue,
+    Join,
+    Ref,
+    Template,
+)
 from troposphere.cloudformation import Stack
 
-from ecs_composex.common import LOG, keyisset, add_parameters, NONALPHANUM
-from ecs_composex.common import cfn_conditions
+from ecs_composex.common import (
+    LOG,
+    NONALPHANUM,
+    add_parameters,
+    cfn_conditions,
+    keyisset,
+)
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.files import FileArtifact
 from ecs_composex.vpc.vpc_params import (
+    APP_SUBNETS,
+    APP_SUBNETS_T,
+    PUBLIC_SUBNETS,
+    PUBLIC_SUBNETS_T,
+    STORAGE_SUBNETS,
+    STORAGE_SUBNETS_T,
     VPC_ID,
     VPC_ID_T,
-    STORAGE_SUBNETS_T,
-    STORAGE_SUBNETS,
-    APP_SUBNETS_T,
-    APP_SUBNETS,
-    PUBLIC_SUBNETS_T,
-    PUBLIC_SUBNETS,
 )
 
 

@@ -12,10 +12,10 @@ from botocore.exceptions import ClientError
 
 from ecs_composex.common import LOG, keyisset
 from ecs_composex.common.aws import (
-    find_aws_resource_arn_from_tags_api,
     define_lookup_role_from_info,
+    find_aws_resource_arn_from_tags_api,
 )
-from ecs_composex.kinesis.kinesis_params import STREAM_KMS_KEY_ID, STREAM_ARN
+from ecs_composex.kinesis.kinesis_params import STREAM_ARN, STREAM_KMS_KEY_ID
 
 
 def get_stream_config(logical_name, stream_arn, session):

@@ -6,13 +6,12 @@
 Module to apply SNS settings onto ECS Services
 """
 
-from ecs_composex.common import LOG
-from ecs_composex.common import keyisset
+from ecs_composex.common import LOG, keyisset
 from ecs_composex.resource_settings import (
-    handle_resource_to_services,
     handle_lookup_resource,
+    handle_resource_to_services,
 )
-from ecs_composex.sns.sns_params import TOPIC_NAME, TOPIC_ARN, RES_KEY
+from ecs_composex.sns.sns_params import RES_KEY, TOPIC_ARN, TOPIC_NAME
 from ecs_composex.sns.sns_stack import Topic as XTopic
 
 

@@ -2,9 +2,9 @@
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
-from troposphere import Ref, Sub, s3, AWS_NO_VALUE, AWS_ACCOUNT_ID, AWS_REGION
+from troposphere import AWS_ACCOUNT_ID, AWS_NO_VALUE, AWS_REGION, Ref, Sub, s3
 
-from ecs_composex.common import keyisset, LOG
+from ecs_composex.common import LOG, keyisset
 from ecs_composex.resources_import import import_record_properties
 
 

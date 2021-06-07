@@ -3,35 +3,35 @@
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
 
-from troposphere import Ref, Sub, GetAtt
 from troposphere import (
-    AWS_REGION,
-    AWS_PARTITION,
     AWS_ACCOUNT_ID,
     AWS_NO_VALUE,
+    AWS_PARTITION,
+    AWS_REGION,
     AWS_URL_SUFFIX,
-)
-
-from troposphere.events import (
-    Target,
-    EcsParameters,
-    NetworkConfiguration,
-    AwsVpcConfiguration,
+    GetAtt,
+    Ref,
+    Sub,
 )
 from troposphere.applicationautoscaling import ScalingPolicy
+from troposphere.events import (
+    AwsVpcConfiguration,
+    EcsParameters,
+    NetworkConfiguration,
+    Target,
+)
+from troposphere.iam import Policy, PolicyType, Role
 
-from troposphere.iam import Role, Policy, PolicyType
-
-from ecs_composex.common import add_parameters, keyisset, LOG
+from ecs_composex.common import LOG, add_parameters, keyisset
 from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.ecs.ecs_params import (
     CLUSTER_NAME,
+    EXEC_ROLE_T,
     FARGATE_VERSION,
-    TASK_T,
+    SERVICE_SCALING_TARGET,
     SERVICE_T,
     TASK_ROLE_T,
-    EXEC_ROLE_T,
-    SERVICE_SCALING_TARGET,
+    TASK_T,
 )
 from ecs_composex.vpc.vpc_params import APP_SUBNETS, SG_ID_TYPE, SUBNETS_TYPE
 

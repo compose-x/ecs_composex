@@ -28,3 +28,7 @@ src = "ecs_composex/__init__.py"
 [[tool.tbump.before_commit]]
 name = "Files format"
 cmd = "make conform"
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3

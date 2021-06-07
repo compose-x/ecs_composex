@@ -7,12 +7,12 @@ Module to manage IAM policies to grant access to ECS Services to KMS Keys
 """
 
 from ecs_composex.common import LOG
-from ecs_composex.resource_settings import (
-    handle_resource_to_services,
-    handle_lookup_resource,
-)
-from ecs_composex.kms.kms_params import KMS_KEY_ID, KMS_KEY_ARN
 from ecs_composex.kms.kms_aws import lookup_key_config
+from ecs_composex.kms.kms_params import KMS_KEY_ARN, KMS_KEY_ID
+from ecs_composex.resource_settings import (
+    handle_lookup_resource,
+    handle_resource_to_services,
+)
 
 
 def create_kms_mappings(mapping, resources, settings):

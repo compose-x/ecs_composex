@@ -8,12 +8,11 @@ Module to scan and find the DB and Secret for Lookup of x-rds
 
 import re
 
-from ecs_composex.common import keyisset, LOG
+from ecs_composex.common import LOG, keyisset
 from ecs_composex.common.aws import (
-    find_aws_resource_arn_from_tags_api,
     define_lookup_role_from_info,
+    find_aws_resource_arn_from_tags_api,
 )
-
 from ecs_composex.elasticache import elasticache_params
 
 

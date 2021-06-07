@@ -6,14 +6,7 @@
 AppMesh related conditions
 """
 
-from troposphere import (
-    Ref,
-    Equals,
-    If,
-    AWS_ACCOUNT_ID,
-    GetAtt,
-    AWS_STACK_NAME,
-)
+from troposphere import AWS_ACCOUNT_ID, AWS_STACK_NAME, Equals, GetAtt, If, Ref
 from troposphere.appmesh import Mesh
 
 from ecs_composex.appmesh.appmesh_params import MESH_NAME, MESH_OWNER_ID

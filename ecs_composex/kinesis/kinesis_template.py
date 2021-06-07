@@ -5,11 +5,7 @@
 from troposphere import Tags
 from troposphere.kinesis import Stream, StreamEncryption
 
-from ecs_composex.common import LOG
-from ecs_composex.common import (
-    keyisset,
-    build_template,
-)
+from ecs_composex.common import LOG, build_template, keyisset
 from ecs_composex.resources_import import import_record_properties
 
 

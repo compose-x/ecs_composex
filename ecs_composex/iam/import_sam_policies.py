@@ -7,6 +7,7 @@ Module to import Policies templates from AWS SAM policies templates.
 """
 
 import json
+
 from samtranslator.policy_templates_data import POLICY_TEMPLATES_FILE
 
 

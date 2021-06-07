@@ -5,11 +5,11 @@
 import sys
 
 from ecs_composex.cli import main_parser
+from ecs_composex.common.aws import deploy
 from ecs_composex.common.settings import ComposeXSettings
 from ecs_composex.common.stacks import process_stacks
-from ecs_composex.vpc.vpc_stack import VpcStack
 from ecs_composex.vpc.vpc_params import RES_KEY
-from ecs_composex.common.aws import deploy
+from ecs_composex.vpc.vpc_stack import VpcStack
 
 
 def main():

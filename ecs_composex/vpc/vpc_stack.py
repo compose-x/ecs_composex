@@ -10,8 +10,7 @@ import re
 
 from troposphere import FindInMap
 
-from ecs_composex.common import LOG
-from ecs_composex.common import build_template, keyisset
+from ecs_composex.common import LOG, build_template, keyisset
 from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.common.ecs_composex import X_KEY
 from ecs_composex.common.stacks import ComposeXStack
@@ -20,15 +19,15 @@ from ecs_composex.vpc import aws_mappings
 from ecs_composex.vpc.vpc_aws import lookup_x_vpc_settings
 from ecs_composex.vpc.vpc_maths import get_subnet_layers
 from ecs_composex.vpc.vpc_params import (
-    RES_KEY,
-    VPC_ID,
     APP_SUBNETS,
-    STORAGE_SUBNETS,
-    PUBLIC_SUBNETS,
     DEFAULT_VPC_CIDR,
-    VPC_CIDR,
-    VPC_SINGLE_NAT,
+    PUBLIC_SUBNETS,
+    RES_KEY,
+    STORAGE_SUBNETS,
     SUBNETS_TYPE,
+    VPC_CIDR,
+    VPC_ID,
+    VPC_SINGLE_NAT,
 )
 from ecs_composex.vpc.vpc_subnets import (
     add_apps_subnets,
@@ -36,10 +35,10 @@ from ecs_composex.vpc.vpc_subnets import (
     add_storage_subnets,
 )
 from ecs_composex.vpc.vpc_template import (
-    add_vpc_core,
-    add_vpc_flow,
     add_template_outputs,
     add_vpc_cidrs_outputs,
+    add_vpc_core,
+    add_vpc_flow,
 )
 
 AZ_INDEX_PATTERN = r"(([a-z0-9-]+)([a-z]{1}$))"

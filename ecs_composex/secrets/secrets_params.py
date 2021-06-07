@@ -8,7 +8,6 @@ Module for Secrets parameters
 
 from ecs_composex.common.cfn_params import Parameter
 
-
 RES_KEY = "secrets"
 XRES_KEY = "x-secrets"
 

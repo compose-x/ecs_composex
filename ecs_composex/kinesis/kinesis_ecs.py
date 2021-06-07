@@ -8,10 +8,10 @@ Module to add permissions etc. for services to kinesis streams
 
 from ecs_composex.common import LOG, keyisset
 from ecs_composex.kinesis.kinesis_aws import lookup_stream_config
-from ecs_composex.kinesis.kinesis_params import STREAM_KMS_KEY_ID, STREAM_ARN, STREAM_ID
+from ecs_composex.kinesis.kinesis_params import STREAM_ARN, STREAM_ID, STREAM_KMS_KEY_ID
 from ecs_composex.resource_settings import (
-    handle_resource_to_services,
     handle_lookup_resource,
+    handle_resource_to_services,
 )
 
 

@@ -3,16 +3,11 @@
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
 
-from troposphere import Ref, GetAtt
+from troposphere import GetAtt, Ref
 
 from ecs_composex.common.compose_resources import XResource, set_resources
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.kinesis.kinesis_params import (
-    STREAM_ID,
-    STREAM_ARN,
-    RES_KEY,
-    MOD_KEY,
-)
+from ecs_composex.kinesis.kinesis_params import MOD_KEY, RES_KEY, STREAM_ARN, STREAM_ID
 from ecs_composex.kinesis.kinesis_perms import ACCESS_TYPES
 from ecs_composex.kinesis.kinesis_template import create_streams_template
 

@@ -6,26 +6,23 @@
 Main module template to generate the RDS Root template and all stacks according to x-rds settings
 """
 
-from troposphere import Output
-from troposphere import Ref, Join, GetAtt
+from troposphere import GetAtt, Join, Output, Ref
 
 from ecs_composex.common import keyisset
-from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T, ROOT_STACK_NAME
+from ecs_composex.common.cfn_params import ROOT_STACK_NAME, ROOT_STACK_NAME_T
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.rds.rds_db_template import (
-    generate_database_template,
-)
+from ecs_composex.rds.rds_db_template import generate_database_template
 from ecs_composex.rds.rds_params import (
-    DB_NAME_T,
-    DB_ENGINE_VERSION_T,
     DB_ENGINE_NAME_T,
+    DB_ENGINE_VERSION_T,
+    DB_NAME_T,
     DB_SNAPSHOT_ID,
 )
 from ecs_composex.vpc.vpc_params import (
-    VPC_ID,
-    VPC_ID_T,
     STORAGE_SUBNETS,
     STORAGE_SUBNETS_T,
+    VPC_ID,
+    VPC_ID_T,
 )
 
 

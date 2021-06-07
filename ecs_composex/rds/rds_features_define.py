@@ -8,12 +8,11 @@ Module to define and match RDS Features to other AWS resources.
 
 import re
 
-from troposphere import AWS_PARTITION, AWS_NO_VALUE
-from troposphere import Ref, Sub, GetAtt, FindInMap
+from troposphere import AWS_NO_VALUE, AWS_PARTITION, FindInMap, GetAtt, Ref, Sub
 from troposphere.iam import Policy as IamPolicy
 
+from ecs_composex.common import LOG, add_parameters, keyisset
 from ecs_composex.common.cfn_params import Parameter
-from ecs_composex.common import LOG, keyisset, add_parameters
 from ecs_composex.s3.s3_params import S3_BUCKET_ARN
 
 S3_KEY = "x-s3"

@@ -1,0 +1,14 @@
+---
+# Override file to enable variances for code guru profiler
+
+x-codeguru_profiler:
+  Profiler01:
+    Properties:
+#      ProfilingGroupName: "MyProfilingGroup"
+      AnomalyDetectionNotificationConfiguration:
+        - channelUri: SOME_SNS_TOPIC_ARN
+          channelId: aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee
+    Services:
+      - name: app03
+        access: RW
+

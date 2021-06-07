@@ -11,7 +11,9 @@ which it heavily relies onto.
 You can change the names *values* so you like so long as you keep it Alphanumerical [a-zA-Z0-9]
 """
 
+from troposphere import AWS_STACK_ID
 from troposphere import Parameter as CfnParameter
+from troposphere import Ref, Select, Split, Sub
 
 COMPUTE_STACK_NAME = "Ec2Compute"
 VPC_STACK_NAME = "vpc"
@@ -48,3 +50,5 @@ USE_ONDEMAND_T = "UseOnDemandHosts"
 USE_ONDEMAND = Parameter(
     USE_ONDEMAND_T, Type="String", Default="False", AllowedValues=["True", "False"]
 )
+
+STACK_ID_SHORT = Select(0, Split("-", Select(1, Split("/", Ref(AWS_STACK_ID)))))

@@ -79,4 +79,4 @@ Feature: common
     And I render all files to verify execution
     Examples:
       | file_path                   | override_file                 |
-      | use-cases/blog.features.yml | use-cases/codeguru/simple.yml |
+      | use-cases/blog.features.yml | use-cases/codeguru/top_level.yml |

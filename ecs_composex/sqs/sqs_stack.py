@@ -8,18 +8,10 @@ Module for the XStack SQS
 
 from troposphere import GetAtt, Ref
 
-from ecs_composex.common import (
-    build_template,
-)
-from ecs_composex.common.compose_resources import set_resources, XResource
+from ecs_composex.common import build_template
+from ecs_composex.common.compose_resources import XResource, set_resources
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.sqs.sqs_params import (
-    MOD_KEY,
-    RES_KEY,
-    SQS_ARN,
-    SQS_URL,
-    SQS_NAME,
-)
+from ecs_composex.sqs.sqs_params import MOD_KEY, RES_KEY, SQS_ARN, SQS_NAME, SQS_URL
 from ecs_composex.sqs.sqs_perms import get_access_types
 from ecs_composex.sqs.sqs_template import render_new_queues
 

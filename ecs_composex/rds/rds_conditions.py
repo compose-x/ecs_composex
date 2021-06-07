@@ -6,8 +6,9 @@
 ecs_composex.rds conditions for CFN. Allows to implement conditional logic in native CFN format.
 """
 
-from troposphere import Ref, Equals, Split, Select, Not, Condition, And, Or
-from ecs_composex.rds.rds_params import DBS_SUBNET_GROUP, DB_ENGINE_NAME, DB_SNAPSHOT_ID
+from troposphere import And, Condition, Equals, Not, Or, Ref, Select, Split
+
+from ecs_composex.rds.rds_params import DB_ENGINE_NAME, DB_SNAPSHOT_ID, DBS_SUBNET_GROUP
 
 DBS_SUBNET_GROUP_CON_T = "CreateSubnetGroupCondition"
 DBS_SUBNET_GROUP_CON = Equals(Ref(DBS_SUBNET_GROUP), DBS_SUBNET_GROUP.Default)

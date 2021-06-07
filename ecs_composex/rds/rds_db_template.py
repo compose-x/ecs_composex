@@ -6,21 +6,17 @@
 RDS DB template generator
 """
 
-from troposphere import Sub, Ref, GetAtt, If, Tags, AWS_NO_VALUE
+from troposphere import AWS_NO_VALUE, GetAtt, If, Ref, Sub, Tags
 from troposphere.ec2 import SecurityGroup
 from troposphere.rds import (
-    DBSubnetGroup,
     DBCluster,
     DBClusterParameterGroup,
     DBInstance,
     DBParameterGroup,
+    DBSubnetGroup,
 )
 
-from ecs_composex.common import (
-    build_template,
-    keyisset,
-    LOG,
-)
+from ecs_composex.common import LOG, build_template, keyisset
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.rds import rds_conditions
 from ecs_composex.rds.rds_parameter_groups_helper import (
@@ -28,30 +24,25 @@ from ecs_composex.rds.rds_parameter_groups_helper import (
     get_family_settings,
 )
 from ecs_composex.rds.rds_params import (
-    DB_ENGINE_VERSION,
+    CLUSTER_PARAMETER_GROUP_T,
     DB_ENGINE_NAME,
-    DB_NAME,
-    DB_SNAPSHOT_ID,
+    DB_ENGINE_VERSION,
     DB_INSTANCE_CLASS,
+    DB_NAME,
     DB_PASSWORD_LENGTH,
-    DB_USERNAME,
+    DB_SNAPSHOT_ID,
     DB_STORAGE_CAPACITY,
     DB_STORAGE_TYPE,
-)
-from ecs_composex.rds.rds_params import (
+    DB_USERNAME,
     PARAMETER_GROUP_T,
-    CLUSTER_PARAMETER_GROUP_T,
 )
 from ecs_composex.resources_import import import_record_properties
 from ecs_composex.secrets import (
-    add_db_secret,
     add_db_dependency,
+    add_db_secret,
     attach_to_secret_to_resource,
 )
-from ecs_composex.vpc.vpc_params import (
-    VPC_ID,
-    STORAGE_SUBNETS,
-)
+from ecs_composex.vpc.vpc_params import STORAGE_SUBNETS, VPC_ID
 
 
 def init_database_template(db):

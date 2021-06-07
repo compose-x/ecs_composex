@@ -13,17 +13,18 @@ These settings are all documented on AWS official documentation:
 https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-agent-config.html
 """
 
-from troposphere import cloudformation, Tags, Sub, Base64, Ref, GetAtt, Join
-from troposphere.ec2 import Monitoring, IamInstanceProfile
+from troposphere import Base64, GetAtt, Join, Ref, Sub, Tags, cloudformation
 from troposphere.ec2 import (
-    SecurityGroup,
-    LaunchTemplate,
-    LaunchTemplateData,
-    TagSpecifications,
     EBSBlockDevice,
+    IamInstanceProfile,
+    LaunchTemplate,
     LaunchTemplateBlockDeviceMapping,
+    LaunchTemplateData,
+    Monitoring,
+    SecurityGroup,
+    TagSpecifications,
 )
-from troposphere.iam import Role, Policy, InstanceProfile
+from troposphere.iam import InstanceProfile, Policy, Role
 
 from ecs_composex.compute import compute_params
 from ecs_composex.compute.compute_params import HOST_PROFILE_T, HOST_ROLE_T, NODES_SG_T

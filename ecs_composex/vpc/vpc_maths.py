@@ -7,7 +7,7 @@
 """
 
 import ipaddress
-from math import log, ceil
+from math import ceil, log
 
 pow2_2_prefix = {
     "16": 28,

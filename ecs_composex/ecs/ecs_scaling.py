@@ -10,11 +10,11 @@ import random
 import string
 from json import dumps
 
-from troposphere import Ref, AWS_NO_VALUE
+from troposphere import AWS_NO_VALUE, Ref
 from troposphere.applicationautoscaling import (
     ScalingPolicy,
-    StepScalingPolicyConfiguration,
     StepAdjustment,
+    StepScalingPolicyConfiguration,
 )
 
 from ecs_composex.common import LOG, keyisset, keypresent

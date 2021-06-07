@@ -3,8 +3,7 @@
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
 
-from troposphere import Ref, Tags
-from troposphere import dynamodb
+from troposphere import Ref, Tags, dynamodb
 
 from ecs_composex.common import LOG
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME

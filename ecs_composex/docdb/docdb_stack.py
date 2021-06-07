@@ -6,23 +6,23 @@
 AWS DocumentDB entrypoint for ECS ComposeX
 """
 
-from troposphere import Ref, GetAtt
+from troposphere import GetAtt, Ref
 
 from ecs_composex.common.compose_resources import XResource, set_resources
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.docdb.docdb_params import (
-    MOD_KEY,
-    RES_KEY,
     DOCDB_NAME,
     DOCDB_PORT,
     DOCDB_SECRET,
     DOCDB_SG,
+    MOD_KEY,
+    RES_KEY,
 )
-from ecs_composex.vpc.vpc_params import STORAGE_SUBNETS
 from ecs_composex.docdb.docdb_template import (
     create_docdb_template,
     init_doc_db_template,
 )
+from ecs_composex.vpc.vpc_params import STORAGE_SUBNETS
 
 
 class DocDb(XResource):

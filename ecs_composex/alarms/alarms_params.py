@@ -3,8 +3,9 @@
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
 from os import path
-from ecs_composex.ecs_composex import X_KEY
+
 from ecs_composex.common.cfn_params import Parameter
+from ecs_composex.ecs_composex import X_KEY
 
 RES_KEY = f"{X_KEY}{path.basename(path.dirname(path.abspath(__file__)))}"
 

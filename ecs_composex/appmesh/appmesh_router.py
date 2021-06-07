@@ -5,24 +5,22 @@
 """
 Module to manage Routers specifically.
 """
-from troposphere import AWS_NO_VALUE
-from troposphere import Sub, Ref, GetAtt
-from troposphere import appmesh
+from troposphere import AWS_NO_VALUE, GetAtt, Ref, Sub, appmesh
 
 from ecs_composex.appmesh import appmesh_conditions
 from ecs_composex.appmesh.appmesh_params import (
-    PREFIX_KEY,
-    METHOD_KEY,
-    SCHEME_KEY,
     LISTENER_KEY,
-    PROTOCOL_KEY,
-    ROUTES_KEY,
     MATCH_KEY,
+    METHOD_KEY,
     NAME_KEY,
     NODES_KEY,
     PORT_KEY,
+    PREFIX_KEY,
+    PROTOCOL_KEY,
+    ROUTES_KEY,
+    SCHEME_KEY,
 )
-from ecs_composex.common import NONALPHANUM, keyisset, LOG
+from ecs_composex.common import LOG, NONALPHANUM, keyisset
 
 
 def define_http_route(route_match, route_nodes):
