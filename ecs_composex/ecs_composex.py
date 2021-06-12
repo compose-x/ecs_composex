@@ -9,20 +9,15 @@ Main module to generate a full stack with VPC, Cluster, Compute, Services and al
 import re
 from importlib import import_module
 
-from troposphere import Ref, AWS_STACK_NAME, GetAtt, FindInMap
+from troposphere import AWS_STACK_NAME, FindInMap, GetAtt, Ref
 
 from ecs_composex.acm.acm_params import RES_KEY as ACM_KEY
 from ecs_composex.acm.acm_stack import init_acm_certs
+from ecs_composex.alarms.alarms_ecs import set_services_alarms
 from ecs_composex.appmesh.appmesh_mesh import Mesh
-from ecs_composex.common import LOG, NONALPHANUM
-from ecs_composex.common import (
-    init_template,
-    keyisset,
-)
-from ecs_composex.common.cfn_params import (
-    ROOT_STACK_NAME_T,
-)
-from ecs_composex.common.ecs_composex import X_KEY, X_AWS_KEY
+from ecs_composex.common import LOG, NONALPHANUM, init_template, keyisset
+from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
+from ecs_composex.common.ecs_composex import X_AWS_KEY, X_KEY
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common.tagging import add_all_tags
 from ecs_composex.compute.compute_stack import ComputeStack
@@ -32,7 +27,6 @@ from ecs_composex.ecs.ecs_cluster import add_ecs_cluster
 from ecs_composex.ecs.ecs_stack import associate_services_to_root_stack
 from ecs_composex.vpc import vpc_params
 from ecs_composex.vpc.vpc_stack import add_vpc_to_root
-from ecs_composex.alarms.alarms_ecs import set_services_alarms
 
 RES_REGX = re.compile(r"(^([x-]+))")
 COMPUTE_STACK_NAME = "Ec2Compute"
@@ -54,6 +48,7 @@ SUPPORTED_X_MODULE_NAMES = [
     "elasticache",
     "efs",
     "alarms",
+    "codeguru_profiler",
 ]
 
 SUPPORTED_X_MODULES = [f"{X_KEY}{mod_name}" for mod_name in SUPPORTED_X_MODULE_NAMES]

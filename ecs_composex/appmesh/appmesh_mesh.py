@@ -8,27 +8,20 @@ Main module for AppMesh.
 Once all services have been deployed and their VirtualNodes are setup, we deploy the Mesh for it.
 """
 
-from troposphere import Ref, GetAtt, AWS_ACCOUNT_ID, AWS_STACK_NAME
-from troposphere import appmesh
+from troposphere import AWS_ACCOUNT_ID, AWS_STACK_NAME, GetAtt, Ref, appmesh
 
-from ecs_composex.resources_import import import_record_properties
-from ecs_composex.common import (
-    keyisset,
-    add_parameters,
-    LOG,
-)
-from ecs_composex.common.cfn_params import ROOT_STACK_NAME
-from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.ecs import ecs_params
-
-from ecs_composex.appmesh import appmesh_params, appmesh_conditions
-from ecs_composex.appmesh import metadata
+from ecs_composex.appmesh import appmesh_conditions, appmesh_params, metadata
 from ecs_composex.appmesh.appmesh_aws import lookup_mesh_by_name
 from ecs_composex.appmesh.appmesh_conditions import add_appmesh_conditions
 from ecs_composex.appmesh.appmesh_node import MeshNode
 from ecs_composex.appmesh.appmesh_params import MESH_NAME, MESH_OWNER_ID
 from ecs_composex.appmesh.appmesh_router import MeshRouter
 from ecs_composex.appmesh.appmesh_service import MeshService
+from ecs_composex.common import LOG, add_parameters, keyisset
+from ecs_composex.common.cfn_params import ROOT_STACK_NAME
+from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.ecs import ecs_params
+from ecs_composex.resources_import import import_record_properties
 
 
 class Mesh(object):

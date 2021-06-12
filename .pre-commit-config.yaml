@@ -16,3 +16,8 @@ repos:
         entry: .scripts/cleanup_placebo.sh
         require_serial: true
         files: ".json$"
+  - repo: https://github.com/pycqa/isort
+    rev: 5.6.4
+    hooks:
+      - id: isort
+        args: ["--profile", "black", "--filter-files"]

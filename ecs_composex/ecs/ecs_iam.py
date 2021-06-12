@@ -4,12 +4,12 @@
 
 
 from troposphere import Sub
-from troposphere.iam import Role, Policy
+from troposphere.iam import Policy, Role
 
 from ecs_composex.ecs.ecs_params import (
-    SERVICE_NAME_T,
     CLUSTER_NAME_T,
     EXEC_ROLE_T,
+    SERVICE_NAME_T,
     TASK_ROLE_T,
     TASK_T,
 )

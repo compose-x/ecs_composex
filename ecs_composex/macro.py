@@ -8,13 +8,14 @@ Passes all the arguments to ECS ComposeX to render the CFN templates for the doc
 """
 
 import re
-import requests
-import boto3
 import tempfile
-import yaml
-from os import path, environ
 from copy import deepcopy
+from os import environ, path
 from urllib.parse import urlparse
+
+import boto3
+import requests
+import yaml
 
 from ecs_composex.common import LOG, keyisset
 from ecs_composex.common.settings import ComposeXSettings

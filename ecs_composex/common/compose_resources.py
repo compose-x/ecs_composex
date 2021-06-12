@@ -6,20 +6,17 @@
 Module to define the ComposeX Resources into a simple object to make it easier to navigate through.
 """
 
-from re import sub
 from copy import deepcopy
+from re import sub
 
-from troposphere import Output, Export
-from troposphere import Ref, GetAtt, Sub, If, FindInMap
-from troposphere import AWS_STACK_NAME
+from troposphere import AWS_STACK_NAME, Export, FindInMap, GetAtt, If, Output, Ref, Sub
 from troposphere.ecs import Environment
 
-
 from ecs_composex.common import LOG, NONALPHANUM, keyisset, keypresent
-from ecs_composex.common.cfn_params import Parameter
-from ecs_composex.common.ecs_composex import CFN_EXPORT_DELIMITER as DELIM, X_KEY
 from ecs_composex.common.cfn_conditions import USE_STACK_NAME_CON_T
-from ecs_composex.common.cfn_params import ROOT_STACK_NAME
+from ecs_composex.common.cfn_params import ROOT_STACK_NAME, Parameter
+from ecs_composex.common.ecs_composex import CFN_EXPORT_DELIMITER as DELIM
+from ecs_composex.common.ecs_composex import X_KEY
 
 
 def set_resources(settings, resource_class, res_key, mod_key=None):

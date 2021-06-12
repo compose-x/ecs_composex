@@ -2,29 +2,24 @@
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
-from troposphere import Parameter
-from troposphere import Ref, Sub, GetAtt
-from troposphere import appmesh
+from troposphere import GetAtt, Parameter, Ref, Sub, appmesh
 from troposphere.ec2 import SecurityGroupIngress
 from troposphere.ecs import (
-    Environment,
-    PortMapping,
-    LogConfiguration,
     ContainerDefinition,
-    Ulimit,
-    ProxyConfiguration,
+    Environment,
     HealthCheck,
+    LogConfiguration,
+    PortMapping,
+    ProxyConfiguration,
+    Ulimit,
 )
 from troposphere.iam import Policy
 
-from ecs_composex.appmesh import appmesh_params, appmesh_conditions, metadata
-from ecs_composex.appmesh.appmesh_params import (
-    NAME_KEY,
-    BACKENDS_KEY,
-)
+from ecs_composex.appmesh import appmesh_conditions, appmesh_params, metadata
+from ecs_composex.appmesh.appmesh_params import BACKENDS_KEY, NAME_KEY
 from ecs_composex.common import LOG, add_parameters
-from ecs_composex.common.services_helpers import extend_container_envvars
 from ecs_composex.common.outputs import ComposeXOutput
+from ecs_composex.common.services_helpers import extend_container_envvars
 from ecs_composex.dns.dns_params import PRIVATE_DNS_ZONE_NAME
 from ecs_composex.ecs import ecs_params
 

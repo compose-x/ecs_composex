@@ -7,16 +7,15 @@
 Module to handle RDS Features definition
 """
 
-from troposphere import AWS_NO_VALUE, AWS_STACK_NAME
-from troposphere import Ref, Sub, GetAtt
+from troposphere import AWS_NO_VALUE, AWS_STACK_NAME, GetAtt, Ref, Sub
 from troposphere.iam import Role as IamRole
 from troposphere.rds import DBClusterRole
 
 from ecs_composex.common import LOG, keyisset
-from ecs_composex.iam import service_role_trust_policy, define_iam_policy
+from ecs_composex.iam import define_iam_policy, service_role_trust_policy
 from ecs_composex.rds.rds_features_define import (
-    define_s3_import_feature_policy,
     define_s3_export_feature_policy,
+    define_s3_import_feature_policy,
 )
 
 S3_KEY = "x-s3"

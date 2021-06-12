@@ -12,8 +12,8 @@ from botocore.exceptions import ClientError
 
 from ecs_composex.common import LOG, keyisset
 from ecs_composex.common.aws import (
-    find_aws_resource_arn_from_tags_api,
     define_lookup_role_from_info,
+    find_aws_resource_arn_from_tags_api,
 )
 from ecs_composex.sns.sns_params import TOPIC_ARN, TOPIC_KMS_KEY, TOPIC_NAME
 

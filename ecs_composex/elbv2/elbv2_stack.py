@@ -10,46 +10,61 @@ import re
 from copy import deepcopy
 from json import dumps
 
-from troposphere import AWS_STACK_NAME, AWS_NO_VALUE
-from troposphere import Ref, Sub, GetAtt, Select, Tags, FindInMap
-from troposphere.ec2 import SecurityGroup, EIP
+from troposphere import (
+    AWS_NO_VALUE,
+    AWS_STACK_NAME,
+    FindInMap,
+    GetAtt,
+    Ref,
+    Select,
+    Sub,
+    Tags,
+)
+from troposphere.ec2 import EIP, SecurityGroup
 from troposphere.elasticloadbalancingv2 import (
-    LoadBalancer,
-    LoadBalancerAttributes,
-    SubnetMapping,
-    Listener,
-    ListenerRule,
-    ListenerCertificate,
-    Certificate,
     Action,
-    Condition,
-    RedirectConfig,
-    ForwardConfig,
-    FixedResponseConfig,
-    HostHeaderConfig,
-    PathPatternConfig,
-    TargetGroupTuple,
     AuthenticateCognitoConfig,
     AuthenticateOidcConfig,
+    Certificate,
+    Condition,
+    FixedResponseConfig,
+    ForwardConfig,
+    HostHeaderConfig,
+    Listener,
+    ListenerCertificate,
+    ListenerRule,
+    LoadBalancer,
+    LoadBalancerAttributes,
+    PathPatternConfig,
+    RedirectConfig,
+    SubnetMapping,
+    TargetGroupTuple,
 )
 
-from ecs_composex.resources_import import import_record_properties
-from ecs_composex.ingress_settings import Ingress, set_service_ports
-from ecs_composex.acm.acm_params import RES_KEY as ACM_KEY, MOD_KEY as ACM_MOD_KEY
-from ecs_composex.common import NONALPHANUM, LOG
-from ecs_composex.common import keyisset, keypresent, build_template, add_parameters
+from ecs_composex.acm.acm_params import MOD_KEY as ACM_MOD_KEY
+from ecs_composex.acm.acm_params import RES_KEY as ACM_KEY
+from ecs_composex.common import (
+    LOG,
+    NONALPHANUM,
+    add_parameters,
+    build_template,
+    keyisset,
+    keypresent,
+)
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME, Parameter
 from ecs_composex.common.compose_resources import XResource, set_resources
 from ecs_composex.common.outputs import ComposeXOutput
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.elbv2.elbv2_params import (
+    LB_DNS_NAME,
+    LB_DNS_ZONE_ID,
+    LB_SG_ID,
     MOD_KEY,
     RES_KEY,
-    LB_SG_ID,
-    LB_DNS_ZONE_ID,
-    LB_DNS_NAME,
 )
-from ecs_composex.vpc.vpc_params import VPC_ID, PUBLIC_SUBNETS, APP_SUBNETS
+from ecs_composex.ingress_settings import Ingress, set_service_ports
+from ecs_composex.resources_import import import_record_properties
+from ecs_composex.vpc.vpc_params import APP_SUBNETS, PUBLIC_SUBNETS, VPC_ID
 
 
 def handle_cross_zone(value):

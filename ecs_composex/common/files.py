@@ -14,13 +14,14 @@ try:
     from yaml import CDumper as Dumper
 except ImportError:
     from yaml import Dumper
-from os import mkdir
 
 import json
+from os import mkdir
+
 from botocore.exceptions import ClientError
 from troposphere import Template
-from ecs_composex.common import FILE_PREFIX
-from ecs_composex.common import LOG
+
+from ecs_composex.common import FILE_PREFIX, LOG
 
 JSON_MIME = "application/json"
 YAML_MIME = "application/x-yaml"

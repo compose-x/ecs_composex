@@ -6,26 +6,21 @@
 Module to define CloudWatch alarms in x-alarms and match these to services
 """
 
-from troposphere import Output
-from troposphere import Ref, GetAtt
-from troposphere.cloudwatch import Alarm as CWAlarm, CompositeAlarm, MetricDimension
+from troposphere import GetAtt, Output, Ref
+from troposphere.cloudwatch import Alarm as CWAlarm
+from troposphere.cloudwatch import CompositeAlarm, MetricDimension
 
-from ecs_composex.common import LOG
-from ecs_composex.common import keyisset, add_parameters, add_outputs
+from ecs_composex.alarms.alarms_stack import Alarm, create_alarms
+from ecs_composex.common import LOG, add_outputs, add_parameters, keyisset
 from ecs_composex.common.cfn_params import Parameter
-from ecs_composex.ecs.ecs_params import SERVICE_SCALING_TARGET
+from ecs_composex.ecs.ecs_params import CLUSTER_NAME, SERVICE_SCALING_TARGET, SERVICE_T
 from ecs_composex.ecs.ecs_scaling import (
     generate_alarm_scaling_out_policy,
     reset_to_zero_policy,
 )
-from ecs_composex.ecs.ecs_params import SERVICE_T, CLUSTER_NAME
-from ecs_composex.sns.sns_params import (
-    RES_KEY as SNS_KEY,
-    TOPIC_ARN_RE,
-    TOPIC_ARN,
-)
+from ecs_composex.sns.sns_params import RES_KEY as SNS_KEY
+from ecs_composex.sns.sns_params import TOPIC_ARN, TOPIC_ARN_RE
 from ecs_composex.sns.sns_stack import Topic
-from ecs_composex.alarms.alarms_stack import create_alarms, Alarm
 
 
 def get_alarm_actions(alarm):

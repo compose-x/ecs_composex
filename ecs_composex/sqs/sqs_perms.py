@@ -7,8 +7,9 @@ Set of functions to generate permissions to access queues
 based on pre-defined SQS policies for consumers
 """
 
-from os import path
 from json import loads
+from os import path
+
 from ecs_composex.iam.import_sam_policies import import_and_cleanse_policies
 
 

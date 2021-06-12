@@ -16,3 +16,4 @@ pre-commit==2.9.3
 bump2version==1.0.1
 watchdog==1.0.1
 placebo==0.9.0
+isort==5.8.0

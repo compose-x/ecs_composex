@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
-from troposphere import Not, Ref, Equals
+from troposphere import Equals, Not, Ref
 
 from ecs_composex.dns import dns_params
 

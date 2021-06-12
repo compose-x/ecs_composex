@@ -1,0 +1,9 @@
+{
+    "RW": {
+        "Effect": "Allow",
+        "Action": [
+            "codeguru-profiler:ConfigureAgent",
+            "codeguru-profiler:PostAgentProfile"
+        ]
+    }
+}

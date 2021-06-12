@@ -3,15 +3,16 @@
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
 import re
+
 from ecs_composex.common.aws import (
     define_lookup_role_from_info,
     find_aws_resource_arn_from_tags_api,
 )
 from ecs_composex.vpc.vpc_params import (
-    VPC_ID,
     APP_SUBNETS,
     PUBLIC_SUBNETS,
     STORAGE_SUBNETS,
+    VPC_ID,
 )
 
 TAGS_KEY = "Tags"

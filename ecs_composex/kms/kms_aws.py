@@ -10,14 +10,10 @@ from botocore.exceptions import ClientError
 
 from ecs_composex.common import LOG
 from ecs_composex.common.aws import (
-    find_aws_resource_arn_from_tags_api,
     define_lookup_role_from_info,
+    find_aws_resource_arn_from_tags_api,
 )
-from ecs_composex.kms.kms_params import (
-    KMS_KEY_ARN,
-    KMS_KEY_ID,
-    KMS_KEY_ALIAS_NAME,
-)
+from ecs_composex.kms.kms_params import KMS_KEY_ALIAS_NAME, KMS_KEY_ARN, KMS_KEY_ID
 
 
 def get_key_config(logical_name, key_arn, session):

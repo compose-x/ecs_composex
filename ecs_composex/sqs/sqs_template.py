@@ -5,25 +5,14 @@
 
 from copy import deepcopy
 
-from troposphere import Sub, GetAtt, Ref
+from troposphere import GetAtt, Ref, Sub
 from troposphere.sqs import Queue, RedrivePolicy
 
-from ecs_composex.common import (
-    build_template,
-    keyisset,
-    keypresent,
-    LOG,
-    NONALPHANUM,
-)
+from ecs_composex.common import LOG, NONALPHANUM, build_template, keyisset, keypresent
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.sqs import metadata
-from ecs_composex.sqs.sqs_params import RES_KEY
-from ecs_composex.sqs.sqs_params import (
-    SQS_ARN_T,
-    DLQ_ARN,
-    DLQ_ARN_T,
-)
+from ecs_composex.sqs.sqs_params import DLQ_ARN, DLQ_ARN_T, RES_KEY, SQS_ARN_T
 
 CFN_MAX_OUTPUTS = 190
 

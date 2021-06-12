@@ -2,8 +2,9 @@
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
-from os import path
 from json import loads
+from os import path
+
 from ecs_composex.iam.import_sam_policies import import_and_cleanse_policies
 
 

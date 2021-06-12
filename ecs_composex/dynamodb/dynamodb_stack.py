@@ -6,15 +6,19 @@
 Module to create the root stack for DynamoDB tables
 """
 
-from troposphere import Ref, GetAtt
+from troposphere import GetAtt, Ref
 
 from ecs_composex.common import build_template
+from ecs_composex.common.compose_resources import XResource, set_resources
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.common.compose_resources import set_resources, XResource
-from ecs_composex.dynamodb.dynamodb_params import RES_KEY, MOD_KEY
-from ecs_composex.dynamodb.dynamodb_template import create_dynamodb_template
-from ecs_composex.dynamodb.dynamodb_params import TABLE_ARN, TABLE_NAME
+from ecs_composex.dynamodb.dynamodb_params import (
+    MOD_KEY,
+    RES_KEY,
+    TABLE_ARN,
+    TABLE_NAME,
+)
 from ecs_composex.dynamodb.dynamodb_perms import get_access_types
+from ecs_composex.dynamodb.dynamodb_template import create_dynamodb_template
 
 
 class Table(XResource):

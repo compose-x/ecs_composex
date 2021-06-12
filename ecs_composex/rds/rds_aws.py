@@ -7,13 +7,13 @@
 Module to scan and find the DB and Secret for Lookup of x-rds
 """
 
-from ecs_composex.common import keyisset, LOG
+from ecs_composex.common import LOG, keyisset
 from ecs_composex.common.aws import (
-    find_aws_resource_arn_from_tags_api,
     define_lookup_role_from_info,
+    find_aws_resource_arn_from_tags_api,
 )
-from ecs_composex.rds.rds_params import DB_SECRET_T
 from ecs_composex.iam import ROLE_ARN_ARG
+from ecs_composex.rds.rds_params import DB_SECRET_T
 
 
 def validate_rds_settings(lookup_properties):

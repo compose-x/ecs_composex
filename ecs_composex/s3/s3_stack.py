@@ -6,8 +6,7 @@
 Module to control S3 stack
 """
 
-from troposphere import MAX_OUTPUTS
-from troposphere import Ref, GetAtt
+from troposphere import MAX_OUTPUTS, GetAtt, Ref
 
 from ecs_composex.common import build_template
 from ecs_composex.common.compose_resources import XResource, set_resources
@@ -15,9 +14,9 @@ from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.s3.s3_params import (
     MOD_KEY,
     RES_KEY,
-    S3_BUCKET_NAME,
     S3_BUCKET_ARN,
     S3_BUCKET_DOMAIN_NAME,
+    S3_BUCKET_NAME,
 )
 from ecs_composex.s3.s3_template import generate_bucket
 

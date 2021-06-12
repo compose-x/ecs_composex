@@ -3,9 +3,9 @@
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
 import re
-from ecs_composex.dns.dns_params import ZONES_PATTERN
-from ecs_composex.common import LOG, keyisset
 
+from ecs_composex.common import LOG, keyisset
+from ecs_composex.dns.dns_params import ZONES_PATTERN
 
 LAST_DOT_RE = re.compile(r"(\.{1}$)")
 

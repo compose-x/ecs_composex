@@ -11,7 +11,6 @@
     syntax/compose_x/ecs.details/network
     syntax/compose_x/ecs.details/logging
     syntax/compose_x/ecs.details/xray
-    syntax/compose_x/ecs.details/codeguru_profiler
 
 .. toctree::
     :caption: Compose-X syntax
@@ -36,6 +35,7 @@
     syntax/compose_x/vpc
     syntax/compose_x/ecs_cluster
     syntax/compose_x/alarms
+    syntax/compose_x/codeguru_profiler
     syntax/compose_x/compute
 
 .. toctree::

@@ -6,29 +6,21 @@
 Core ECS Template building
 """
 
-from troposphere import Ref, Sub, Tags, GetAtt
+from troposphere import GetAtt, Ref, Sub, Tags
 from troposphere.ec2 import SecurityGroup
 from troposphere.iam import Policy
 from troposphere.logs import LogGroup
 
 from ecs_composex.common import build_template
-from ecs_composex.common.cfn_params import (
-    ROOT_STACK_NAME_T,
-    ROOT_STACK_NAME,
-)
-from ecs_composex.dns import dns_params, dns_conditions
+from ecs_composex.common.cfn_params import ROOT_STACK_NAME, ROOT_STACK_NAME_T
+from ecs_composex.dns import dns_conditions, dns_params
 from ecs_composex.dns.dns_conditions import (
-    CREATE_PUBLIC_NAMESPACE_CON_T,
     CREATE_PUBLIC_NAMESPACE_CON,
+    CREATE_PUBLIC_NAMESPACE_CON_T,
 )
 from ecs_composex.ecs import ecs_conditions, ecs_params
-from ecs_composex.ecs.ecs_params import (
-    CLUSTER_NAME,
-    CLUSTER_NAME_T,
-)
-from ecs_composex.ecs.ecs_service import (
-    Service,
-)
+from ecs_composex.ecs.ecs_params import CLUSTER_NAME, CLUSTER_NAME_T
+from ecs_composex.ecs.ecs_service import Service
 from ecs_composex.ecs.ecs_service_config import ServiceConfig
 from ecs_composex.secrets.secrets_params import RES_KEY as SECRETS_KEY
 from ecs_composex.vpc import vpc_params
@@ -214,7 +206,6 @@ def generate_services(settings):
         )
         family.upload_services_env_files(settings)
         family.set_repository_credentials(settings)
-        family.set_codeguru_profiles_arns()
         family.set_volumes()
         create_log_group(family)
         family.handle_logging()

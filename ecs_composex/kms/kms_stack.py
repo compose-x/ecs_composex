@@ -2,17 +2,16 @@
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
-from troposphere import AWS_PARTITION, AWS_ACCOUNT_ID
-from troposphere import Ref, Sub, If, GetAtt
-from troposphere.kms import Key, Alias
+from troposphere import AWS_ACCOUNT_ID, AWS_PARTITION, GetAtt, If, Ref, Sub
+from troposphere.kms import Alias, Key
 
-from ecs_composex.common import keyisset, build_template, LOG
+from ecs_composex.common import LOG, build_template, keyisset
 from ecs_composex.common.cfn_conditions import USE_STACK_NAME_CON_T
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME
-from ecs_composex.common.compose_resources import set_resources, XResource
+from ecs_composex.common.compose_resources import XResource, set_resources
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.kms import metadata
-from ecs_composex.kms.kms_params import RES_KEY, KMS_KEY_ARN, KMS_KEY_ID, MOD_KEY
+from ecs_composex.kms.kms_params import KMS_KEY_ARN, KMS_KEY_ID, MOD_KEY, RES_KEY
 from ecs_composex.kms.kms_perms import get_access_types
 from ecs_composex.kms.kms_template import create_kms_template
 from ecs_composex.resources_import import import_record_properties

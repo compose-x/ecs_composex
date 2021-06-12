@@ -3,39 +3,49 @@
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
 import re
-import jsonschema
-from importlib_resources import files, as_file
 from copy import deepcopy
 from json import dumps, loads
 from os import path
 
-from troposphere import AWS_NO_VALUE, AWS_REGION, AWS_STACK_NAME, AWS_PARTITION
-from troposphere import Sub, Ref, GetAtt, Join, If, FindInMap, Tags
+import jsonschema
+from importlib_resources import as_file, files
+from troposphere import (
+    AWS_NO_VALUE,
+    AWS_PARTITION,
+    AWS_REGION,
+    AWS_STACK_NAME,
+    FindInMap,
+    GetAtt,
+    If,
+    Join,
+    Ref,
+    Sub,
+    Tags,
+)
+from troposphere.cloudwatch import MetricDimension
 from troposphere.codeguruprofiler import ProfilingGroup
 from troposphere.ecs import (
-    HealthCheck,
-    Environment,
-    PortMapping,
-    LogConfiguration,
     ContainerDefinition,
-    TaskDefinition,
-    EnvironmentFile,
-    RepositoryCredentials,
-    Volume,
-    MountPoint,
     DockerVolumeConfiguration,
-    SystemControl,
-    Ulimit,
+    Environment,
+    EnvironmentFile,
+    HealthCheck,
     KernelCapabilities,
     LinuxParameters,
+    LogConfiguration,
+    MountPoint,
+    PortMapping,
+    RepositoryCredentials,
+    SystemControl,
+    TaskDefinition,
     Tmpfs,
+    Ulimit,
+    Volume,
 )
 from troposphere.iam import Policy, PolicyType
 from troposphere.logs import LogGroup
-from troposphere.cloudwatch import MetricDimension
 
-from ecs_composex.common import NONALPHANUM, LOG, FILE_PREFIX
-from ecs_composex.common import keyisset, keypresent
+from ecs_composex.common import FILE_PREFIX, LOG, NONALPHANUM, keyisset, keypresent
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME, Parameter
 from ecs_composex.common.compose_volumes import (
     ComposeVolume,
@@ -44,25 +54,25 @@ from ecs_composex.common.compose_volumes import (
 )
 from ecs_composex.common.files import upload_file
 from ecs_composex.common.services_helpers import (
-    import_env_variables,
     define_ingress_mappings,
+    import_env_variables,
     set_else_none,
-    validate_healthcheck,
     set_logging_expiry,
+    validate_healthcheck,
 )
 from ecs_composex.ecs import ecs_params
 from ecs_composex.ecs.docker_tools import (
     find_closest_fargate_configuration,
-    set_memory_to_mb,
     import_time_values_to_seconds,
+    set_memory_to_mb,
 )
 from ecs_composex.ecs.ecs_conditions import USE_FARGATE_CON_T
 from ecs_composex.ecs.ecs_iam import add_service_roles
 from ecs_composex.ecs.ecs_params import (
     AWS_XRAY_IMAGE,
+    EXEC_ROLE_T,
     LOG_GROUP_RETENTION,
     NETWORK_MODE,
-    EXEC_ROLE_T,
     TASK_ROLE_T,
     TASK_T,
 )
@@ -70,7 +80,7 @@ from ecs_composex.ecs.ecs_predefined_alarms import (
     PREDEFINED_ALARMS_DEFINITION,
     PREDEFINED_SERVICE_ALARMS_DEFINITION,
 )
-from ecs_composex.iam import define_iam_policy, add_role_boundaries
+from ecs_composex.iam import add_role_boundaries, define_iam_policy
 from ecs_composex.resources_import import import_record_properties
 from ecs_composex.secrets.compose_secrets import (
     ComposeSecret,
@@ -143,7 +153,6 @@ class ComposeService(object):
         ("x-scaling", dict),
         ("x-network", dict),
         ("x-alarms", dict),
-        ("x-codeguru-profiler", (str, bool, dict)),
     ]
 
     ecs_plugin_aws_keys = [
@@ -209,7 +218,6 @@ class ComposeService(object):
         self.user_group = None
         self.code_profiler = None
         self.set_env_files()
-        self.set_code_profiler()
         self.environment = set_else_none("environment", self.definition, None, False)
         self.cfn_environment = (
             import_env_variables(self.environment)
@@ -640,37 +648,6 @@ class ComposeService(object):
         self.user_group = self.user
         if self.group:
             self.user_group = f"{self.user}:{self.group}"
-
-    def set_code_profiler(self):
-        """
-        Method to define the code guru profiler for the service
-        :return:
-        """
-        profiler_key = "x-codeguru-profiler"
-        if not keypresent(profiler_key, self.definition):
-            return
-        if isinstance(self.definition[profiler_key], str):
-            self.cfn_environment.append(
-                Environment(
-                    Name="AWS_CODEGURU_PROFILER_GROUP_ARN",
-                    Value=self.definition[profiler_key],
-                )
-            )
-        elif (
-            isinstance(self.definition[profiler_key], bool)
-            and self.definition[profiler_key]
-        ):
-            self.code_profiler = ProfilingGroup(
-                f"ProfilingGroup{self.logical_name}",
-                ProfilingGroupName=Sub(f"${{{AWS_STACK_NAME}}}-{self.name}"),
-            )
-        elif isinstance(self.definition[profiler_key], dict):
-            props = import_record_properties(
-                self.definition[profiler_key], ProfilingGroup
-            )
-            self.code_profiler = ProfilingGroup(
-                f"ProfilingGroup{self.logical_name}", **props
-            )
 
     def set_env_files(self):
         """
@@ -1795,85 +1772,6 @@ class ComposeFamily(object):
                 LOG.info(
                     f"Set {network.subnet_name} as {APP_SUBNETS.title} for {self.name}"
                 )
-
-    def set_codeguru_principals(self, service):
-        """
-        Method to set codeguru principal for profiling group
-        :return:
-        """
-        if hasattr(service.code_profiler, "AgentPermissions"):
-            principals = getattr(service.code_profiler, "AgentPermissions")[
-                "Principals"
-            ]
-            potential_principals = [
-                p.data["Fn::GetAtt"][0] for p in principals if isinstance(p, GetAtt)
-            ]
-            if self.task_role.title not in potential_principals:
-                principals.append(GetAtt(self.task_role, "Arn"))
-        else:
-            setattr(
-                service.code_profiler,
-                "AgentPermissions",
-                {
-                    "Principals": [GetAtt(self.task_role, "Arn")],
-                },
-            )
-
-    def set_codeguru_iam_access(self, service):
-        """
-        Method to add IAM permissions via an IAM policy to publish to CodeGuru
-        """
-        self.template.add_resource(
-            PolicyType(
-                "CodeGuruAccess",
-                PolicyName="CodeGuruAccess",
-                PolicyDocument={
-                    "Version": "2012-10-17",
-                    "Statement": [
-                        {
-                            "Effect": "Allow",
-                            "Action": [
-                                "codeguru-profiler:ConfigureAgent",
-                                "codeguru-profiler:PostAgentProfile",
-                            ],
-                            "Resource": GetAtt(service.code_profiler, "Arn"),
-                        }
-                    ],
-                },
-                Roles=[Ref(self.task_role)],
-            )
-        )
-
-    def set_codeguru_profiles_arns(self):
-        if not self.template:
-            LOG.warning(f"No template yet defined for {self.name}")
-            return
-        for service in self.services:
-            if service.code_profiler and isinstance(
-                service.code_profiler, ProfilingGroup
-            ):
-                if (
-                    isinstance(service.container_definition.Environment, Ref)
-                    and service.container_definition.Environment.data["Ref"]
-                    == AWS_NO_VALUE
-                ):
-                    service.container_definition.Environment = []
-                service.container_definition.Environment.append(
-                    Environment(
-                        Name="AWS_CODEGURU_PROFILER_GROUP_ARN",
-                        Value=GetAtt(service.code_profiler, "Arn"),
-                    ),
-                )
-                service.container_definition.Environment.append(
-                    Environment(
-                        Name="AWS_CODEGURU_PROFILER_GROUP_NAME",
-                        Value=Ref(service.code_profiler),
-                    )
-                )
-                if service.code_profiler not in self.template.resources:
-                    self.template.add_resource(service.code_profiler)
-                self.set_codeguru_principals(service)
-                self.set_codeguru_iam_access(service)
 
     def upload_services_env_files(self, settings):
         """

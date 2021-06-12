@@ -9,10 +9,9 @@ The root stack is to build the IAM Instance profile for the hosts that can be us
 That way it is easy for anyone to deploy an instance in standalone if you wanted that.
 """
 
-from troposphere import Ref, If, GetAtt
+from troposphere import GetAtt, If, Ref
 
-from ecs_composex.common import build_template
-from ecs_composex.common import cfn_conditions
+from ecs_composex.common import build_template, cfn_conditions
 from ecs_composex.common.cfn_params import (
     ROOT_STACK_NAME,
     ROOT_STACK_NAME_T,
@@ -21,7 +20,7 @@ from ecs_composex.common.cfn_params import (
 )
 from ecs_composex.common.config import ComputeConfig
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.compute import compute_params, compute_conditions
+from ecs_composex.compute import compute_conditions, compute_params
 from ecs_composex.compute.hosts_template import add_hosts_resources
 from ecs_composex.compute.spot_fleet import generate_spot_fleet_template
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME

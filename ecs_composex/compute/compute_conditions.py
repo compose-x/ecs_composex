@@ -7,6 +7,7 @@ Conditions relative to the Compute stack.
 """
 
 from troposphere import Equals, Ref
+
 from ecs_composex.compute import compute_params
 
 MAX_IS_MIN_T = "CapacityMaxIsMinCondition"

@@ -2,14 +2,14 @@
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
-from troposphere import Ref, GetAtt
-from troposphere.ecs import EFSVolumeConfiguration, Volume, AuthorizationConfig
-from troposphere.efs import AccessPoint, PosixUser, RootDirectory, CreationInfo
+from troposphere import GetAtt, Ref
+from troposphere.ecs import AuthorizationConfig, EFSVolumeConfiguration, Volume
+from troposphere.efs import AccessPoint, CreationInfo, PosixUser, RootDirectory
 from troposphere.iam import PolicyType
 
 from ecs_composex.common import add_parameters, keyisset
-from ecs_composex.ecs.ecs_params import TASK_T, TASK_ROLE_T, SERVICE_T
-from ecs_composex.efs.efs_params import FS_PORT, FS_MNT_PT_SG_ID, FS_ID, FS_ARN
+from ecs_composex.ecs.ecs_params import SERVICE_T, TASK_ROLE_T, TASK_T
+from ecs_composex.efs.efs_params import FS_ARN, FS_ID, FS_MNT_PT_SG_ID, FS_PORT
 from ecs_composex.tcp_resources_settings import handle_new_tcp_resource
 
 

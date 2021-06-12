@@ -3,7 +3,7 @@
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
 
-from ecs_composex.common import keyisset, keypresent, LOG
+from ecs_composex.common import LOG, keyisset, keypresent
 
 
 class ComposeXConfig(object):

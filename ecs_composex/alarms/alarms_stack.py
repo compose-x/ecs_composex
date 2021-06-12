@@ -8,13 +8,22 @@ Main module to create x-alarms defined at the top level.
 
 import re
 
-from troposphere import Ref, Sub, Join, Split, Select
-from troposphere import AWS_REGION, AWS_STACK_NAME, AWS_STACK_ID
-from troposphere.cloudwatch import Alarm as CWAlarm, CompositeAlarm
+from troposphere import (
+    AWS_REGION,
+    AWS_STACK_ID,
+    AWS_STACK_NAME,
+    Join,
+    Ref,
+    Select,
+    Split,
+    Sub,
+)
+from troposphere.cloudwatch import Alarm as CWAlarm
+from troposphere.cloudwatch import CompositeAlarm
 
 from ecs_composex.alarms.alarms_params import RES_KEY
-from ecs_composex.common import keyisset, build_template, LOG
-from ecs_composex.common.compose_resources import set_resources, XResource
+from ecs_composex.common import LOG, build_template, keyisset
+from ecs_composex.common.compose_resources import XResource, set_resources
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.resources_import import import_record_properties
 

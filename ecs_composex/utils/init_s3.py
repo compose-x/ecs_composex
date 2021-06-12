@@ -3,6 +3,7 @@
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
 from botocore.exceptions import ClientError
+
 from ecs_composex.common import LOG
 
 

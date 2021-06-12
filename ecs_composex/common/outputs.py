@@ -7,14 +7,14 @@ Functions to format CFN template Outputs
 """
 
 from troposphere import (
-    Output,
+    AWS_STACK_NAME,
+    AWSHelperFn,
+    AWSObject,
     Export,
-    Sub,
     If,
     ImportValue,
-    AWSObject,
-    AWSHelperFn,
-    AWS_STACK_NAME,
+    Output,
+    Sub,
 )
 
 from ecs_composex.common import LOG

@@ -6,15 +6,17 @@
 Package to handle recurring Secrets tasks
 """
 
-from troposphere import Parameter
-from troposphere import Ref, Sub
-from troposphere.docdb import DBCluster as DocdbCluster, DBInstance as DocdbInstance
-from troposphere.rds import DBCluster as RdsCluster, DBInstance as RdsInstance
+from troposphere import Parameter, Ref, Sub
+from troposphere.docdb import DBCluster as DocdbCluster
+from troposphere.docdb import DBInstance as DocdbInstance
+from troposphere.rds import DBCluster as RdsCluster
+from troposphere.rds import DBInstance as RdsInstance
 from troposphere.secretsmanager import (
+    GenerateSecretString,
     Secret,
     SecretTargetAttachment,
-    GenerateSecretString,
 )
+
 from ecs_composex.common import add_parameters
 
 

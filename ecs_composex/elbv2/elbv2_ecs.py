@@ -4,22 +4,20 @@
 
 import re
 
-from troposphere import AWS_NO_VALUE
-from troposphere import Ref, GetAtt
+from troposphere import AWS_NO_VALUE, GetAtt, Ref
 from troposphere.ecs import LoadBalancer as EcsLb
 from troposphere.elasticloadbalancingv2 import (
-    TargetGroup,
     Matcher,
+    TargetGroup,
     TargetGroupAttribute,
 )
 
-from ecs_composex.common import LOG
-from ecs_composex.common import keyisset, add_parameters
+from ecs_composex.common import LOG, add_parameters, keyisset
 from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.common.outputs import ComposeXOutput
-from ecs_composex.elbv2.elbv2_params import TGT_GROUP_ARN
-from ecs_composex.vpc.vpc_params import VPC_ID, SG_ID_TYPE
 from ecs_composex.ecs.ecs_params import ELB_GRACE_PERIOD
+from ecs_composex.elbv2.elbv2_params import TGT_GROUP_ARN
+from ecs_composex.vpc.vpc_params import SG_ID_TYPE, VPC_ID
 
 
 def validate_tcp_health_counts(props):

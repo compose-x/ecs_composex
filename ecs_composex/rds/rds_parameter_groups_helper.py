@@ -7,6 +7,7 @@ Helper to generate default parameter group settings from engine name and version
 """
 import boto3
 from botocore.exceptions import ClientError
+
 from ecs_composex.common import LOG
 
 

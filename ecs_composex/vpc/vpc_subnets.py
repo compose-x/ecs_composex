@@ -18,24 +18,24 @@ respective AZ
 
 """
 
-from math import log, ceil
+from math import ceil, log
 
-from troposphere import GetAtt, Tags, Ref, Sub, If
+from troposphere import GetAtt, If, Ref, Sub, Tags
 from troposphere.ec2 import (
-    Subnet,
-    SubnetRouteTableAssociation,
-    NatGateway,
     EIP,
+    Entry,
+    NatGateway,
+    PrefixList,
     Route,
     RouteTable,
-    VPCEndpoint,
     SecurityGroup,
     SecurityGroupRule,
-    PrefixList,
-    Entry,
+    Subnet,
+    SubnetRouteTableAssociation,
+    VPCEndpoint,
 )
 
-from ecs_composex.common import keyisset, NONALPHANUM
+from ecs_composex.common import NONALPHANUM, keyisset
 from ecs_composex.common.cfn_conditions import USE_STACK_NAME_CON_T
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.ecs_composex import CFN_EXPORT_DELIMITER as DELIM
