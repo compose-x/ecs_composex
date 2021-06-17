@@ -29,7 +29,9 @@ x-s3:
         - BUCKET_ABCD-01
     Services:
       - name: app03
-        access: RWObjects
+        access:
+          bucket: ListOnly
+          objects: CRUD
   bucket-03:
     Properties:
       BucketName: bucket-03
@@ -57,7 +59,9 @@ x-s3:
         - BUCKET_ABCD-01
     Services:
       - name: app03
-        access: RWObjects
+        access:
+          bucket: ListOnly
+          objects: CRUD
   bucket-02:
     Properties: {}
     Settings:

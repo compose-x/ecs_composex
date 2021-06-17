@@ -91,4 +91,6 @@ x-s3:
         - BUCKET_ABCD-01
     Services:
       - name: app03
-        access: RWObjects
+        access:
+          objects: CRUD
+          bucket: ListOnly

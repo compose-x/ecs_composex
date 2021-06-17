@@ -76,12 +76,15 @@ x-elbv2:
       - name: bignicefamily:rproxy
         port: 80
         healthcheck: 5000:HTTP:/healthcheck:200,201
+        protocol: HTTP
       - name: bignicefamily:app01
         port: 5000
         healthcheck: 5000:HTTP:/healthcheck:200,201
+        protocol: HTTP
       - name: youtoo:rproxy
         port: 80
         healthcheck: 5000:HTTP:5:2:15:3:/ping.This.Method:200,201
+        protocol: HTTP
 
   lbC:
     Properties:
