@@ -73,17 +73,7 @@ def assign_new_bucket_to_services(bucket, res_root_stack, nested=False):
         select_services = get_selected_services(bucket, target)
         access = {objects_key: "RW", bucket_key: "ListOnly"}
         if select_services:
-            if not keyisset("access", target[3]):
-                LOG.warning(
-                    f"No permissions associated for {target[0].name}. Setting default."
-                )
-            elif isinstance(target[3], str):
-                LOG.warning(
-                    f"Permissions for bucket must be a map with {bucket_key} and {objects_key}"
-                    " defined. Setting to default"
-                )
-            else:
-                access = target[3]
+            access = target[3]
             add_parameters(
                 target[0].template,
                 params_to_add,
