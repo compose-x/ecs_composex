@@ -88,6 +88,7 @@ class XResource(object):
         self.name = name
         self.module_name = module_name
         self.definition = deepcopy(definition)
+        self.env_names = []
         self.env_vars = []
         self.logical_name = NONALPHANUM.sub("", self.name)
         self.settings = (
@@ -130,9 +131,11 @@ class XResource(object):
         self.subnets_override = None
         self.is_nested = False
         self.stack = None
+        self.init_env_names()
         self.ref_parameter = Parameter(self.logical_name, Type="String")
         self.set_services_targets(settings)
         self.set_services_scaling(settings)
+        self.mappings = {}
 
     def __repr__(self):
         return self.logical_name
@@ -266,16 +269,15 @@ class XResource(object):
         :return: list of environment variable names
         :rtype: list
         """
-        env_names = [self.name]
+        self.env_names.append(self.name.replace("-", "_"))
         if (
             self.settings
             and keyisset("EnvNames", self.settings)
             and isinstance(self.settings["EnvNames"], list)
         ):
             for env_name in self.settings["EnvNames"]:
-                if isinstance(env_name, str) and env_name not in env_names:
-                    env_names.append(env_name)
-        return env_names
+                if isinstance(env_name, str) and env_name not in self.env_names:
+                    self.env_names.append(env_name)
 
     def define_ref_env_vars(self, env_name, parameter):
         """
@@ -320,18 +322,25 @@ class XResource(object):
         """
         Method to define all the env var of a resource based on its own defined output attributes
         """
-        env_names = self.init_env_names()
-        for env_name in env_names:
-            for parameter in self.output_properties.keys():
-                if parameter.return_value:
+        for env_name in self.env_names:
+            if self.cfn_resource:
+                for parameter in self.output_properties.keys():
+                    if parameter.return_value:
+                        env_var = Environment(
+                            **self.define_return_value_env_vars(env_name, parameter)
+                        )
+                    else:
+                        env_var = Environment(
+                            **self.define_ref_env_vars(env_name, parameter)
+                        )
+                    self.env_vars.append(env_var)
+            elif not self.cfn_resource and self.mappings:
+                for key in self.mappings.keys():
                     env_var = Environment(
-                        **self.define_return_value_env_vars(env_name, parameter)
+                        Name=env_name if key == self.logical_name else f"{env_name}_{key}",
+                        Value=FindInMap(self.module_name, self.logical_name, key)
                     )
-                else:
-                    env_var = Environment(
-                        **self.define_ref_env_vars(env_name, parameter)
-                    )
-                self.env_vars.append(env_var)
+                    self.env_vars.append(env_var)
         self.env_vars = list({v.Name: v for v in self.env_vars}.values())
 
     def set_attributes_from_mapping(self, attribute_parameter):

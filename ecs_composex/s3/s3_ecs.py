@@ -12,6 +12,7 @@ from troposphere import AWS_PARTITION, FindInMap, Ref, Sub
 
 from ecs_composex.common import LOG, add_parameters, keyisset
 from ecs_composex.common.compose_resources import get_parameter_settings
+from ecs_composex.common.services_helpers import extend_container_envvars
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.kms.kms_perms import ACCESS_TYPES as KMS_ACCESS_TYPES
 from ecs_composex.resource_settings import (
@@ -29,7 +30,7 @@ def assign_service_permissions_to_bucket(bucket, family, services, access, value
     objects_key = "objects"
 
     bucket.generate_resource_envvars()
-
+    extend_container_envvars()
     if keyisset(bucket_key, access):
         bucket_perms = generate_resource_permissions(
             f"BucketAccess{bucket.logical_name}",
@@ -154,14 +155,13 @@ def define_bucket_mappings(buckets_mappings, lookup_buckets, use_buckets, settin
     """
     for bucket in lookup_buckets:
         bucket_config = lookup_bucket_config(bucket.lookup, settings.session)
-        buckets_mappings.update(
+        bucket.mappings.update(
             {
-                bucket.logical_name: {
-                    bucket.logical_name: bucket_config["Name"],
-                    "Arn": bucket_config["Arn"],
-                }
+                bucket.logical_name: bucket_config["Name"],
+                "Arn": bucket_config["Arn"],
             }
         )
+        buckets_mappings.update({bucket.logical_name: bucket.mappings})
         bucket_key = get_bucket_kms_key_from_config(bucket_config)
         if bucket_key:
             LOG.info(f"Identified CMK {bucket_key} to be default key for encryption")
@@ -253,6 +253,9 @@ def assign_lookup_buckets(bucket, mappings):
     if not keyisset(bucket.logical_name, mappings):
         LOG.warning(f"Bucket {bucket.logical_name} was not found in mappings. Skipping")
         return
+    bucket.init_outputs()
+    bucket.generate_outputs()
+    bucket.generate_resource_envvars()
     for target in bucket.families_targets:
         select_services = get_selected_services(bucket, target)
         if select_services:

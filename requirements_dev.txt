@@ -8,7 +8,6 @@ docker-compose==1.27.4
 behave==1.2.6
 Sphinx==3.3.1
 twine==3.2.0
-sphinx-rtd-theme==0.5.0
 sphinx-sitemap==2.2.0
 sphinx-material==0.0.32
 black==20.8b1
