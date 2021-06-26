@@ -12,7 +12,6 @@ from troposphere import AWS_PARTITION, FindInMap, Ref, Sub
 
 from ecs_composex.common import LOG, add_parameters, keyisset
 from ecs_composex.common.compose_resources import get_parameter_settings
-from ecs_composex.common.services_helpers import extend_container_envvars
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.kms.kms_perms import ACCESS_TYPES as KMS_ACCESS_TYPES
 from ecs_composex.resource_settings import (
@@ -30,7 +29,6 @@ def assign_service_permissions_to_bucket(bucket, family, services, access, value
     objects_key = "objects"
 
     bucket.generate_resource_envvars()
-    extend_container_envvars()
     if keyisset(bucket_key, access):
         bucket_perms = generate_resource_permissions(
             f"BucketAccess{bucket.logical_name}",
