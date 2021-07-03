@@ -3,13 +3,16 @@
 #  Copyright 2020-2021 John Mille <john@compose-x.io>
 
 
+from ecs_composex.codeguru_profiler.codeguru_profiler_aws import lookup_profile_config
 from ecs_composex.codeguru_profiler.codeguru_profiler_params import (
     PROFILER_ARN,
     PROFILER_NAME,
 )
 from ecs_composex.common import add_outputs
-from ecs_composex.resource_settings import assign_new_resource_to_service, handle_lookup_resource
-from ecs_composex.codeguru_profiler.codeguru_profiler_aws import lookup_profile_config
+from ecs_composex.resource_settings import (
+    assign_new_resource_to_service,
+    handle_lookup_resource,
+)
 
 
 def define_lookup_profile_mappings(mappings, resources, settings):
@@ -43,9 +46,7 @@ def codeguru_profiler_to_ecs(resources, services_stack, res_root_stack, settings
     lookup_resources = [
         resources[res_name] for res_name in resources if resources[res_name].lookup
     ]
-    define_lookup_profile_mappings(
-        resource_mappings, lookup_resources, settings
-    )
+    define_lookup_profile_mappings(resource_mappings, lookup_resources, settings)
     for res in new_resources:
         res.init_outputs()
         res.generate_outputs()
