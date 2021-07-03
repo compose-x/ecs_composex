@@ -227,7 +227,7 @@ class ComposeService(object):
         self.ports = set_else_none("ports", self.definition, [])
         self.depends_on = set_else_none("depends_on", self.definition, [], False)
         self.command = (
-            definition["command"].strip().split(";")
+            definition["command"]
             if keyisset("command", definition)
             else Ref(AWS_NO_VALUE)
         )
