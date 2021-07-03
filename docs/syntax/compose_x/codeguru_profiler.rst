@@ -8,7 +8,12 @@
 x-codeguru_profiler
 ==============================
 
-Enables to use or create a new AWS Code Guru profiling group.
+.. contents::
+    :depth: 2
+
+
+Syntax
+=======
 
 .. code-block:: yaml
 
@@ -25,6 +30,11 @@ Enables to use or create a new AWS Code Guru profiling group.
 .. hint::
 
     If you do not specify any Properties, the Profiling group name gets generated for you.
+
+.. tip::
+
+    You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/codeguru>`__ to use
+    as reference for your use-case.
 
 Properties
 ===========
@@ -53,7 +63,7 @@ and same AWS region.
 Lookup
 ========
 
-Lookup is available as for any other resources. See :ref:`lookup_syntax_reference` for syntax.
+See :ref:`lookup_syntax_reference` for syntax.
 
 .. note::
 
@@ -61,7 +71,7 @@ Lookup is available as for any other resources. See :ref:`lookup_syntax_referenc
     environment variable.
 
 Example
-=========
+=======
 
 .. code-block:: yaml
 
@@ -77,57 +87,6 @@ Example
     The only valid access mode is **RW**
 
 Code Example
-=============
+-------------
 
-Here is an example of a simple Flask application I added the codeguru profiler for.
-
-.. code-block:: python
-
-    import boto3
-    import logging
-    from aws_xray_sdk.ext.flask.middleware import XRayMiddleware
-    from aws_xray_sdk.core import patcher, xray_recorder
-    from werkzeug.middleware.proxy_fix import ProxyFix
-    from codeguru_profiler_agent import Profiler
-    from app02 import APP
-
-
-    def start_app():
-        debug = False
-        if "DEBUG" in APP.config and APP.config["DEBUG"]:
-            debug = True
-
-        if "USE_XRAY" in APP.config and APP.config["USE_XRAY"]:
-            xray_recorder.configure(service=APP.name)
-            XRayMiddleware(APP, xray_recorder)
-            xray_recorder.configure(service="app01")
-            if "USE_XRAY" in APP.config and APP.config["USE_XRAY"]:
-                patcher.patch(
-                    (
-                        "requests",
-                        "boto3",
-                    )
-                )
-            print("Using XRay")
-
-        if APP.config["AWS_CODEGURU_PROFILER_GROUP_NAME"]:
-            p = Profiler(
-                profiling_group_name=APP.config["AWS_CODEGURU_PROFILER_GROUP_NAME"],
-                aws_session=boto3.session.Session(),
-            )
-            p.start()
-            print(
-                f"Started profiler {p} for {APP.config['AWS_CODEGURU_PROFILER_GROUP_NAME']}"
-            )
-            logging.getLogger('codeguru_profiler_agent').setLevel(logging.INFO)
-
-        APP.wsgi_app = ProxyFix(APP.wsgi_app)
-        APP.run(host="0.0.0.0", debug=debug)
-
-
-    if __name__ == "__main__":
-        start_app()
-
-.. seealso::
-
-    Full Applications code used for this sort of testing can be found `here <https://github.com/lambda-my-aws/composex-testing-apps/tree/main/app02>`__
+Full Applications code used for this sort of testing can be found `here <https://github.com/lambda-my-aws/composex-testing-apps/tree/main/app02>`__

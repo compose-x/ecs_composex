@@ -8,9 +8,8 @@
 x-cluster
 ==========
 
-This section allows you to define how you would like the ECS Cluster to be configured.
-It also allows you to define `Lookup` to use an existing ECS Cluster.
-
+.. contents::
+    :depth: 2
 
 Properties
 ==========

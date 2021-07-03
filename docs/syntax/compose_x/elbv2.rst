@@ -8,9 +8,6 @@
 x-elbv2
 =======
 
-This module allows you to define Application and Network Load-Balancers (Gateways not tested yet), and define which
-of your services should receive traffic, and add settings such as health check etc.
-
 Syntax
 ======
 
@@ -27,9 +24,10 @@ Syntax
             healthcheck: str
         Listeners: []
 
+.. tip::
 
-
-
+    You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/elbv2>`__ to use
+    as reference for your use-case.
 
 Properties
 ==========

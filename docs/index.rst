@@ -18,7 +18,7 @@ Welcome to ECS Compose-X documentation
 Manage, Configure and deploy your applications/services and AWS resources from your docker-compose definitions
 ---------------------------------------------------------------------------------------------------------------
 
-Why use ECS Compose-X?
+What does it do?
 ========================
 
 As a developer, working locally is a crucial part of your day to day work, and **docker-compose** allows you to do
@@ -207,12 +207,10 @@ This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypack
     contributing
 
 .. include:: compatibility_matrix.rst
-
 .. include:: modules_syntax.rst
 
 
 .. toctree::
-    :maxdepth: 2
     :caption: Additional content
 
     changelog
@@ -220,14 +218,14 @@ This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypack
     story
 
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 1
     :caption: Thanks & Credits
 
     authors
     credits
 
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 1
     :caption: Library Modules
 
     modules

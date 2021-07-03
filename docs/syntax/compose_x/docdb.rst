@@ -8,6 +8,9 @@
 x-docdb
 =========
 
+.. contents::
+    :depth: 2
+
 Syntax
 =======
 
@@ -25,6 +28,11 @@ Syntax
 
     For production workloads, to avoid any CFN deadlock situations, I recommend you generate the CFN templates for docdb,
     and deploy the stacks separately. Using Lookup you can use existing DocDB clusters with your new services.
+
+.. tip::
+
+    You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/docdb>`__ to use
+    as reference for your use-case.
 
 Properties
 ===========

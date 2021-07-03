@@ -8,13 +8,8 @@
 x-acm
 =====
 
-This module to allow people to create ACM certificates, auto-validate these with their DNS registration, and front their applications with HTTPS.
-
-.. hint::
-
-    Recently got supported by CloudFormation to natively add the CNAME entry to your Route53 DNS record as the certificate
-    is created, removing the manual validation process.
-
+.. contents::
+    :depth: 2
 
 Syntax
 ======
@@ -25,6 +20,12 @@ Syntax
       certificate-01:
         Properties: {} # AWS CFN Properties
         MacroParameters: {} # ComposeX Macro parameters for ACM
+
+
+.. tip::
+
+    You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/acm>`__ to use
+    as reference for your use-case.
 
 
 .. warning::
@@ -64,7 +65,7 @@ DomainNames
 
 List of the domain names you want to create the ACM Certificate for.
 
-.. hint::
+.. note::
 
     The first domain name will be used for the CN, and the following ones will be used for SubjectAlternative names
 
@@ -73,7 +74,7 @@ HostedZoneId
 
 If you wish to override the x-dns/PublicZone settings you can set that here.
 
-.. note::
+.. attention::
 
     That HostedZone ID will be used for *all* of the Domain Validation.
 

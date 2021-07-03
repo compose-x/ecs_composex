@@ -4,13 +4,8 @@
 x-efs
 =================
 
-As described in the :ref:`volumes_syntax_reference` documentation, in order to setup an AWS EFS Filesystem, you can
-either use the ECS Plugin definition, which will let ECS Compose-X import and define default settings, or alternatively,
-you can define your own settings using **x-efs**.
-
-.. attention::
-
-    For more details around permissions and access to the filesystem, refer to `Filesystem, Access Point and services access`_
+.. contents::
+    :depth: 2
 
 Syntax reference
 ================
@@ -30,6 +25,18 @@ Syntax reference
 
     Even though x-efs is defined at the volumes level, at rendering time, a top level EFS stack will be created to contain
     the various filesystems required to be shared access across services.
+
+Synopsis
+=========
+
+As described in the :ref:`volumes_syntax_reference` documentation, in order to setup an AWS EFS Filesystem, you can
+either use the ECS Plugin definition, which will let ECS Compose-X import and define default settings, or alternatively,
+you can define your own settings using **x-efs**.
+
+.. attention::
+
+    For more details around permissions and access to the filesystem, refer to `Filesystem, Access Point and services access`_
+
 
 Properties
 ===========

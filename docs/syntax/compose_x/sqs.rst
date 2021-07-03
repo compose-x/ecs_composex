@@ -8,10 +8,6 @@
 x-sqs
 ======
 
-----------------------------------------------------------------------------
-Define your AWS SQS Queues and service scaling based on messages queue depth
-----------------------------------------------------------------------------
-
 Syntax
 =======
 
@@ -24,13 +20,21 @@ Syntax
         Settings: {}
         Services: []
 
+.. tip::
+
+    You can find the test files for SQS `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/sqs>`__ to use
+    as reference for your use-case.
+
 Properties
 ==========
 
 Mandatory Properties
 --------------------
 
-SQS does not require any properties to be set in order to create the queue. No settings are mandatory.
+SQS does not require any properties to be set in order to create the queue. No settings are mandatory. The QueueName
+will be automatically generated for you.
+
+
 
 Special properties
 ------------------

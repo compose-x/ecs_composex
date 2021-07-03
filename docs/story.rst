@@ -5,6 +5,10 @@
 .. highlight:: shell
 
 
+=================
+The why and how
+=================
+
 Philosophy
 =============
 

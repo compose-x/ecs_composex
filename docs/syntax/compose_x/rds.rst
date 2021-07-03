@@ -8,6 +8,11 @@
 x-rds
 =====
 
+.. tip::
+
+    You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/rds>`__ to use
+    as reference for your use-case.
+
 Syntax
 =======
 
@@ -30,13 +35,14 @@ that the RDS Cluster or RDS Instance would need with the same definition as in A
 However, some settings will be replaced automatically (at least for the foreseeable future), such as the master username
 and password. The reason for it is to allow to keep integration to your ECS Services as seamless as possible.
 
-Using properties
----------------------
+.. note::
 
-When using Properties, you can use either the `RDS Aurora Cluster`_ properties or `RDS Instances`_ properties.
-ECS ComposeX will attempt to automatically identify whether this is a DB Cluster or DB Instance properties set.
-If successful, it will ingest all your properties, and explained earlier, interpolate a few with new ones created for you.
+    When using Properties, you can use either the `RDS Aurora Cluster`_ properties or `RDS Instances`_ properties.
+    ECS ComposeX will attempt to automatically identify whether this is a DB Cluster or DB Instance properties set.
+    If successful, it will ingest all your properties, and explained earlier, interpolate a few with new ones created for you.
 
+Properties overridden
+----------------------
 
 * `MasterUsername <https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-rds-database-instance.html#cfn-rds-dbinstance-masterusername>`__
 * `MasterUserPassword <https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-rds-database-instance.html#cfn-rds-dbinstance-masteruserpassword>`__

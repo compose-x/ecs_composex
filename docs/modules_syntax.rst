@@ -2,19 +2,14 @@
 
 .. toctree::
     :caption: Services-level Extension Fields
-    :maxdepth: 1
+    :glob:
+    :maxdepth: 2
 
-    syntax/compose_x/ecs.details/alarms
-    syntax/compose_x/ecs.details/deploy
-    syntax/compose_x/ecs.details/scaling
-    syntax/compose_x/ecs.details/iam
-    syntax/compose_x/ecs.details/network
-    syntax/compose_x/ecs.details/logging
-    syntax/compose_x/ecs.details/xray
+    syntax/compose_x/ecs.details/*
 
 .. toctree::
     :caption: Compose-X syntax
-    :maxdepth: 1
+    :maxdepth: 2
 
     syntax/compose_x/common
     syntax/compose_x/dynamodb
@@ -40,13 +35,10 @@
 
 .. toctree::
     :caption: Docker Compose syntax
-    :maxdepth: 1
+    :glob:
+    :maxdepth: 2
 
-    syntax/docker-compose/services
-    syntax/docker-compose/volumes
-    syntax/docker-compose/secrets
-    syntax/docker-compose/networks
-    syntax/docker-compose/logging
+    syntax/docker-compose/*
 
 .. toctree::
     :maxdepth: 1

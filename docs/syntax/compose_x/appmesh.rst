@@ -9,7 +9,7 @@ x-appmesh
 ==========
 
 .. contents::
-    :local:
+    :depth: 2
 
 .. warning::
 
@@ -35,10 +35,14 @@ Syntax
           - <service>
 
 
-
 The properties for the mesh are very straight forward. Even though, the wish with ECS ComposeX is to keep the Properties
 the same as the ones defined in CFN as much as possible, for AWS AppMesh, given the simplicity of the properties,
 we are going with somewhat custom properties, mostly to allow for more features integration down the line.
+
+.. tip::
+
+    You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/appmesh>`__ to use
+    as reference for your use-case.
 
 .. warning::
 

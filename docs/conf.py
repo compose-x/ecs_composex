@@ -68,14 +68,12 @@ pygments_style = "sphinx"
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = True
 
-import sphinx_rtd_theme
 import sphinx_material
 
 extensions += [
     "sphinx.ext.todo",
     "sphinx.ext.viewcode",
     "sphinx.ext.autodoc",
-    "sphinx_rtd_theme",
     "sphinx_sitemap",
 ]
 
@@ -112,9 +110,9 @@ html_theme_options = {
     "repo_name": "compose-x/ecs_composex",
     "repo_type": "github",
     # Visible levels of the global TOC; -1 means unlimited
-    "globaltoc_depth": 1,
+    "globaltoc_depth": 2,
     # If False, expand all TOC entries
-    "globaltoc_collapse": False,
+    "globaltoc_collapse": True,
     # If True, show hidden TOC entries
     "globaltoc_includehidden": False,
 }

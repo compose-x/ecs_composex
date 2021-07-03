@@ -8,10 +8,6 @@
 x-vpc
 ======
 
------------------------------------------------------------------
-Define a new VPC for your services or use an existing one
------------------------------------------------------------------
-
 Syntax Reference
 ================
 
@@ -21,6 +17,11 @@ Syntax Reference
       Create: {}
       Lookup: {}
       Use: {}
+
+.. tip::
+
+    You can find the test files for VPC `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/vpc>`__ to use
+    as reference for your use-case.
 
 Create
 ------
