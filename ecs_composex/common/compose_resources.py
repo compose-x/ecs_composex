@@ -262,14 +262,15 @@ class XResource(object):
             elif service_name in [s.name for s in settings.services]:
                 self.handle_family_scaling_expansion(service, settings)
 
-    def init_env_names(self):
+    def init_env_names(self, add_self_default=True):
         """
         Method to define the environment variables for the resource
 
         :return: list of environment variable names
         :rtype: list
         """
-        self.env_names.append(self.name.replace("-", "_"))
+        if add_self_default:
+            self.env_names.append(self.name.replace("-", "_"))
         if (
             self.settings
             and keyisset("EnvNames", self.settings)
@@ -337,8 +338,10 @@ class XResource(object):
             elif not self.cfn_resource and self.mappings:
                 for key in self.mappings.keys():
                     env_var = Environment(
-                        Name=env_name if key == self.logical_name else f"{env_name}_{key}",
-                        Value=FindInMap(self.module_name, self.logical_name, key)
+                        Name=env_name
+                        if key == self.logical_name
+                        else f"{env_name}_{key}",
+                        Value=FindInMap(self.module_name, self.logical_name, key),
                     )
                     self.env_vars.append(env_var)
         self.env_vars = list({v.Name: v for v in self.env_vars}.values())

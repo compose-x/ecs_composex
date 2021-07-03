@@ -68,6 +68,15 @@ class CodeProfiler(XResource):
 
     policies_scaffolds = ACCESS_TYPES
 
+    def __init__(self, name, definition, module_name, settings):
+        super().__init__(name, definition, module_name, settings)
+        for count, env_name in enumerate(self.env_names):
+            if env_name == self.name.replace("-", "_"):
+                self.env_names.pop(count)
+                break
+        self.env_names.append("AWS_CODEGURU_PROFILER_GROUP_NAME")
+        self.init_env_names(add_self_default=False)
+
     def init_outputs(self):
         self.output_properties = {
             PROFILER_NAME: (self.logical_name, self.cfn_resource, Ref, None),
@@ -86,7 +95,7 @@ class XStack(ComposeXStack):
     """
 
     def __init__(self, title, settings, **kwargs):
-        set_resources(settings, CodeProfiler, RES_KEY, MOD_KEY)
+        set_resources(settings, CodeProfiler, RES_KEY, "codeguru")
         new_resources = [
             cache
             for cache in settings.compose_content[RES_KEY].values()

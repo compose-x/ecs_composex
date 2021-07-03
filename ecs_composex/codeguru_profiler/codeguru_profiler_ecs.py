@@ -8,7 +8,23 @@ from ecs_composex.codeguru_profiler.codeguru_profiler_params import (
     PROFILER_NAME,
 )
 from ecs_composex.common import add_outputs
-from ecs_composex.resource_settings import assign_new_resource_to_service
+from ecs_composex.resource_settings import assign_new_resource_to_service, handle_lookup_resource
+from ecs_composex.codeguru_profiler.codeguru_profiler_aws import lookup_profile_config
+
+
+def define_lookup_profile_mappings(mappings, resources, settings):
+    """
+    Function to update the mappings of CodeGuru profile identified via Lookup
+    :param mappings:
+    :param resources:
+    :return:
+    """
+    for res in resources:
+        mapping = lookup_profile_config(res.lookup, settings.session)
+        if mapping:
+            res.mappings = mapping
+            res.mappings.update({res.logical_name: mapping[PROFILER_NAME.title]})
+            mappings.update({res.logical_name: mapping})
 
 
 def codeguru_profiler_to_ecs(resources, services_stack, res_root_stack, settings):
@@ -20,15 +36,24 @@ def codeguru_profiler_to_ecs(resources, services_stack, res_root_stack, settings
     :param ecs_composex.common.stacks.ComposeXStack res_root_stack:
     :param ecs_composex.common.settings.ComposeXSettings settings:
     """
-    db_mappings = {}
+    resource_mappings = {}
     new_resources = [
         resources[res_name] for res_name in resources if not resources[res_name].lookup
     ]
+    lookup_resources = [
+        resources[res_name] for res_name in resources if resources[res_name].lookup
+    ]
+    define_lookup_profile_mappings(
+        resource_mappings, lookup_resources, settings
+    )
     for res in new_resources:
         res.init_outputs()
         res.generate_outputs()
-        print(res.outputs)
         add_outputs(res_root_stack.stack_template, res.outputs)
         assign_new_resource_to_service(
             res, res_root_stack, PROFILER_ARN, [PROFILER_NAME]
+        )
+    for res in lookup_resources:
+        handle_lookup_resource(
+            resource_mappings, "codeguru", res, PROFILER_ARN, [PROFILER_NAME]
         )
