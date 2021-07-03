@@ -3,7 +3,7 @@
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
 """
-Module to find the SQS queues in lookup
+Module to find the CodeGuru profiles from tagging API
 """
 
 import re
