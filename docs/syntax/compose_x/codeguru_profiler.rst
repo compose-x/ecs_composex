@@ -14,13 +14,13 @@ Enables to use or create a new AWS Code Guru profiling group.
 
     Properties: {}
     MacroParameters: {}
+    Lookup: {}
     Services: []
 
 .. hint::
 
     Using ECS ComposeX, this automatically adds an Environment variable to your container,
-    **AWS_CODEGURU_PROFILER_GROUP_ARN** and **AWS_CODEGURU_PROFILER_GROUP_NAME** with the ARN
-    of the newly created Profiling Group.
+    and **AWS_CODEGURU_PROFILER_GROUP_NAME** of the newly created Profiling Group.
 
 .. hint::
 
@@ -50,8 +50,18 @@ and same AWS region.
 
     We recommend to set the value to True at all times, but did not make it default.
 
+Lookup
+========
+
+Lookup is available as for any other resources. See :ref:`lookup_syntax_reference` for syntax.
+
+.. note::
+
+    For Lookup as when you create it, the profiling group name is available via **AWS_CODEGURU_PROFILER_GROUP_NAME**
+    environment variable.
+
 Example
---------
+=========
 
 .. code-block:: yaml
 
