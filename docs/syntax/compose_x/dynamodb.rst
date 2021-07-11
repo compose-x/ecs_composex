@@ -8,6 +8,9 @@
 x-dynamodb
 ===========
 
+Syntax
+=======
+
 .. code-block:: yaml
     :caption: Syntax reference
 
@@ -17,6 +20,13 @@ x-dynamodb
         MacroParameters: {}
         Settings: {}
         Services: []
+
+
+.. tip::
+
+    You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/dynamodb>`__ to use
+    as reference for your use-case.
+
 
 Properties
 ===========

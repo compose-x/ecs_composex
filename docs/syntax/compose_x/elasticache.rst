@@ -8,6 +8,9 @@
 x-elasticache
 ===================
 
+Syntax
+=======
+
 .. code-block:: yaml
     :caption: syntax reference
 
@@ -18,10 +21,15 @@ x-elasticache
     Lookup: {}          # Lookup definition to find existing Cache or ReplicationGroup.
 
 
-.. hint::
+.. note::
 
     ECS ComposeX will always create a new SecurityGroup for a new resource to ensure the services can get access by
     setting EC2 Security Ingress rules.
+
+.. tip::
+
+    You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/elasticache>`__ to use
+    as reference for your use-case.
 
 Properties
 ==========

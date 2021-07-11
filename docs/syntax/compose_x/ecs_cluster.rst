@@ -8,9 +8,10 @@
 x-cluster
 ==========
 
-This section allows you to define how you would like the ECS Cluster to be configured.
-It also allows you to define `Lookup` to use an existing ECS Cluster.
+.. contents::
+    :depth: 2
 
+`JSON Schema Definition <https://github.com/compose-x/ecs_composex_specs/blob/main/ecs_composex_specs/x-cluster.spec.json>`_
 
 Properties
 ==========

@@ -1,3 +1,4 @@
+[tool.tbump]
 github_url = "https://github.com/compose-x/ecs_composex"
 
 [tool.tbump.version]

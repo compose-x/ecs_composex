@@ -37,8 +37,7 @@ Lookup
 Allows you to Lookup existing resources (tagged) that you would like to use with the new services you are deploying.
 Everything with regards to the access and other properties, depending on the type of resources, will remain the same.
 
-This is accomplished by using AWS Resources Group Tags API which means, at this point in time, you can only find resources
-that are tagged.
+This is accomplished by using **AWS Resources Group Tags API** which means, you can only find resources that are tagged.
 
 .. code-block:: yaml
     :caption: Generic format for Lookup
@@ -64,16 +63,17 @@ your templates in a central CICD account.
 
 .. note::
 
-    It will never modify the looked up object!
+    Compose-X will never modify the looked up object!
 
 
 .. warning::
 
     You can only lookup tagged resource on AWS.
+    The only exception is x-dns which will lookup into Route53 directly.
 
 .. tip::
 
-    Tags keys and values are case sensitive. At this stage, this does not support regexps.
+    Tags keys and values are case sensitive.
 
 .. _settings_syntax_reference:
 
@@ -122,6 +122,7 @@ resources that do not have this override.
     * x-rds
     * x-docdb
     * x-elasticache
+    * x-elbv2
 
 
 .. note::

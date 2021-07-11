@@ -8,14 +8,9 @@
 services.x-network
 ==================
 
-.. code-block:: yaml
-    :caption: Overview
-
-    UseCloudmap: bool
-    Ingress: {ingress_definition}
-
-
 .. contents::
+
+`JSON Schema Definition <https://github.com/compose-x/ecs_composex_specs/blob/main/ecs_composex_specs/services.x-network.spec.json>`_
 
 UseCloudmap
 ============

@@ -8,6 +8,11 @@
 x-rds
 =====
 
+.. tip::
+
+    You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/rds>`__ to use
+    as reference for your use-case.
+
 Syntax
 =======
 
@@ -30,13 +35,14 @@ that the RDS Cluster or RDS Instance would need with the same definition as in A
 However, some settings will be replaced automatically (at least for the foreseeable future), such as the master username
 and password. The reason for it is to allow to keep integration to your ECS Services as seamless as possible.
 
-Using properties
----------------------
+.. note::
 
-When using Properties, you can use either the `RDS Aurora Cluster`_ properties or `RDS Instances`_ properties.
-ECS ComposeX will attempt to automatically identify whether this is a DB Cluster or DB Instance properties set.
-If successful, it will ingest all your properties, and explained earlier, interpolate a few with new ones created for you.
+    When using Properties, you can use either the `RDS Aurora Cluster`_ properties or `RDS Instances`_ properties.
+    ECS ComposeX will attempt to automatically identify whether this is a DB Cluster or DB Instance properties set.
+    If successful, it will ingest all your properties, and explained earlier, interpolate a few with new ones created for you.
 
+Properties overridden
+----------------------
 
 * `MasterUsername <https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-rds-database-instance.html#cfn-rds-dbinstance-masterusername>`__
 * `MasterUserPassword <https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-rds-database-instance.html#cfn-rds-dbinstance-masteruserpassword>`__
@@ -143,17 +149,51 @@ might re-define in **RdsFeatures** will be skipped. If you wish to use **RdsFeat
 Services
 ========
 
-At this point in time, there is no plan to deploy as part of ECS ComposeX a lambda function that would connect to the DB
-and create a DB/schema specifically for the microservice, as would `this lambda function <https://github.com/lambda-my-aws/rds-auth-helper>`_ do.
+List of the services that we want to provide access to the database.
 
-The syntax for listing the services remains the same as the other x- resources but the access type won't be respected.
+name
+------
 
-Access types
+The name of the service we want to grant the access to.
+
+access
 ------------
 
 .. warning::
 
     The access key value won't be respected at this stage. This is required to keep compatibility with other modules.
+    Any string value will work at this time.
+
+SecretsMapping
+---------------
+
+This is an optional feature that allows you to map the secret key stored into Secrets Manager (see `Credentials`_) to a different
+environment variable.
+
+.. code-block:: yaml
+    :caption: Sample for bitnami wordpress application
+
+    x-rds:
+      wordpress-db:
+        Properties:
+          Engine: "aurora-mysql"
+          EngineVersion: "5.7"
+          BackupRetentionPeriod: 1
+          DatabaseName: wordpress
+          StorageEncrypted: True
+          Tags:
+            - Key: Name
+              Value: "dummy-db"
+        Services:
+          - name: wordpress
+            access: RW
+            SecretsMappings:
+              Mappings:
+                host: MARIADB_HOST
+                port: MARIADB_PORT_NUMBER
+                username: WORDPRESS_DATABASE_USER
+                password: WORDPRESS_DATABASE_PASSWORD
+                dbname: WORDPRESS_DATABASE_NAME
 
 Settings
 ========
@@ -201,19 +241,28 @@ Aurora and traditional RDS Databases support both Username/Password generic auth
 that authentication mechanism, all RDS Dbs will come with a username/password, auto generated and stored in AWS Secrets Manager.
 
 
-.. hint::
-
-    We do plan to allow a tick button to enable Aurora authentication with IAM, however have not received a Feature Request
-    for it.
-
 AWS Secrets Manager integrates very nicely to AWS RDS. This has no intention to implement the rotation system at this
 point in time, however, it will generate the password for the database and expose it securely to the microservices which
 can via environment variables fetch
 
-* DB Endpoint
-* DB username
-* DB Password
-* DB Port
+After attachment between the RDS and the secret, the secret will not only contain the username and password, but additional
+information that is required by your application to connect to the database.
+
+.. code-block:: json
+
+    {
+      "password": "string<>"
+      "dbname": "string<>",
+      "engine": "string<>",
+      "port": int<port>,
+      "host": "string<>"
+      "username": "string<>"
+    }
+
+.. hint::
+
+    We do plan to allow a tick button to enable Aurora authentication with IAM, however have not received a Feature Request
+    for it.
 
 
 Examples

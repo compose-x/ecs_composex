@@ -8,9 +8,7 @@
 x-vpc
 ======
 
------------------------------------------------------------------
-Define a new VPC for your services or use an existing one
------------------------------------------------------------------
+`JSON Schema Definition <https://github.com/compose-x/ecs_composex_specs/blob/main/ecs_composex_specs/x-vpc.spec.json>`_
 
 Syntax Reference
 ================
@@ -22,8 +20,13 @@ Syntax Reference
       Lookup: {}
       Use: {}
 
+.. tip::
+
+    You can find the test files for VPC `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/vpc>`__ to use
+    as reference for your use-case.
+
 Create
-------
+=======
 
 .. code-block::
     :caption: Create example with a single NAT and 3 VPC Endpoints

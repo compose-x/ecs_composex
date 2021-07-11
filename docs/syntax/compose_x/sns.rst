@@ -28,6 +28,11 @@ Syntax
           Topics: []
 
 
+.. tip::
+
+    You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/sns>`__ to use
+    as reference for your use-case.
+
 .. warning::
 
     At this current version, **Subscriptions** are not supported.

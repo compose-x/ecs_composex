@@ -10,6 +10,8 @@ services.x-scaling
 
 .. contents::
 
+`JSON Schema definition <https://github.com/compose-x/ecs_composex_specs/blob/main/ecs_composex_specs/services.x-scaling.spec.json>`_
+
 This section allows to define scaling for the ECS Service.
 For SQS Based scaling using step scaling, refer to SQS Documentation.
 

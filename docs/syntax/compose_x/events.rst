@@ -8,8 +8,12 @@
 x-events
 ==========
 
-This extension allows you to define an AWS EventBride rule to stop start services at specific times
-of the day or based on specific events.
+Define an AWS EventBride rule to stop start services.
+
+.. tip::
+
+    You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/events>`__ to use
+    as reference for your use-case.
 
 Properties
 ==========

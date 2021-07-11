@@ -8,6 +8,8 @@
 services.x-logging
 ======================
 
+`JSON Schema Definition <https://github.com/compose-x/ecs_composex_specs/blob/main/ecs_composex_specs/services.x-logging.spec.json>`_
+
 The following parameter is identical in behaviour to **x-aws-logs_retention** defined in the docker ECS Plugin.
 
 .. code-block:: yaml

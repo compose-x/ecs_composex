@@ -8,9 +8,6 @@
 x-kinesis
 ===========
 
-This module helps you create new Kinesis Data Streams supporting all the AWS CFN properties and link these streams to your
-services.
-
 Syntax reference
 ==================
 
@@ -24,6 +21,10 @@ Syntax reference
         MacroParameters: {}
         Services: []
 
+.. tip::
+
+    You can find the test files for Kinesis `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/kinesis>`__ to use
+    as reference for your use-case.
 
 Properties
 ===========

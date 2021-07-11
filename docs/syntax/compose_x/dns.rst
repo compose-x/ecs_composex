@@ -8,10 +8,10 @@
 x-dns
 ======
 
-Allows you to configure the DNS settings for the deployment of your containers.
+.. contents::
+    :depth: 2
 
-Syntax
-======
+`JSON Schema Definition <https://github.com/compose-x/ecs_composex_specs/blob/main/ecs_composex_specs/x-dns.spec.json>`_
 
 PrivateNamespace (AWS CloudMap)
 ---------------------------------
@@ -56,7 +56,7 @@ The record properties follow the same properties as `AWS Route53 RecordSet`_
 When the target is an ELBv2 it automatically creates an `alias`_ record.
 
 Examples
-=========
+---------
 
 .. code-block:: yaml
     :caption: Private definition only

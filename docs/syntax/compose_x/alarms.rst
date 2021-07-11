@@ -8,6 +8,12 @@
 x-alarms
 ===========
 
+Syntax
+=======
+
+.. contents::
+    :depth: 2
+
 .. code-block:: yaml
     :caption: Syntax reference
 
@@ -19,6 +25,10 @@ x-alarms
         Services: []
         Topics: []
 
+.. tip::
+
+    You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/alarms>`__ to use
+    as reference for your use-case.
 
 Properties
 ==============
