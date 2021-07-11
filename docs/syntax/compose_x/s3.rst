@@ -16,7 +16,6 @@ Syntax
 
 .. code-block:: yaml
 
-
     x-s3:
       bucket-name:
         Properties: {}
@@ -29,6 +28,8 @@ Syntax
 
     You can find the test files for S3 `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/s3>`__ to use
     as reference for your use-case.
+
+`JSON Schema Definition <https://github.com/compose-x/ecs_composex_specs/blob/main/ecs_composex_specs/x-s3.spec.json>`_
 
 Properties
 ===========

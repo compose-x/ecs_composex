@@ -21,6 +21,8 @@ Syntax reference
           Lookup: {}
           Use: <str>
 
+`JSON Schema Definition <https://github.com/compose-x/ecs_composex_specs/blob/main/ecs_composex_specs/x-efs.spec.json>`_
+
 .. hint::
 
     Even though x-efs is defined at the volumes level, at rendering time, a top level EFS stack will be created to contain

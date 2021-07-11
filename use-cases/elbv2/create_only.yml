@@ -24,7 +24,6 @@ x-elbv2:
     Properties:
       Type: application
     MacroParameters:
-      S3Logs: bucket:/prefix
       timeout_seconds: 60
       desync_mitigation_mode: defensive
       drop_invalid_header_fields: True

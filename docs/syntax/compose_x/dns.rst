@@ -11,6 +11,8 @@ x-dns
 .. contents::
     :depth: 2
 
+`JSON Schema Definition <https://github.com/compose-x/ecs_composex_specs/blob/main/ecs_composex_specs/x-dns.spec.json>`_
+
 PrivateNamespace (AWS CloudMap)
 ---------------------------------
 

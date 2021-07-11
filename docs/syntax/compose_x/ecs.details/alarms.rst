@@ -10,6 +10,8 @@ services.x-alarms
 
 *This section describes the service level alarms that will automatically monitor the ECS Service*
 
+`JSON Schema Definition <https://github.com/compose-x/ecs_composex_specs/blob/main/ecs_composex_specs/services.x-alarms.spec.json>`_
+
 .. code-block:: yaml
     :caption: Service level x-alarms reference
 
@@ -17,16 +19,16 @@ services.x-alarms
       app01:
         x-alarms:
           Predefined:
-            HighCpuUsageAndMaxScaledOut:
-              Topics: []                    # Similar to other x-alarms settings
-              Settings: {}                  # Input values override.
+            RuleName:
+              Topics: []        # Similar to other x-alarms settings
+              Settings: {}      # Input values override.
 
 
 Predefined alarms
 =================
 
 Common Settings
-++++++++++++++++
+---------------
 
 Note that the following properties can be set to override defaults.
 It will only update the "Primary" alarm when alarms are composite.
@@ -48,7 +50,7 @@ It will only update the "Primary" alarm when alarms are composite.
 
 
 HighCpuUsageAndMaxScaledOut
-++++++++++++++++++++++++++++
+---------------------------
 
 +------------------+---------------+----------+------------------------------+
 | Setting name     | Default Value | Primary? | Comment                      |
@@ -74,7 +76,7 @@ count is equal to the max scaling capacity (or otherwise overriden value).
 
 
 HighRamUsageAndMaxScaledOut
-++++++++++++++++++++++++++++
+---------------------------
 
 +-------------------+---------------+----------+------------------------------+
 | Setting name      | Default Value | Primary? | Comment                      |

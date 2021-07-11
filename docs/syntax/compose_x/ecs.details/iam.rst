@@ -12,6 +12,8 @@ services.x-iam
 
 This section is the entrypoint to further extension of IAM definition for the IAM roles created throughout.
 
+`JSON Schema Definition <https://github.com/compose-x/ecs_composex_specs/blob/main/ecs_composex_specs/services.x-iam.spec.json>`_
+
 PermissionsBoundary
 ====================
 

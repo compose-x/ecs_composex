@@ -17,17 +17,17 @@ Syntax
       lbA:
         Properties: {}
         MacroParameters: {}
-        Services: []
-          - name: str
-            protocol: str
-            port: int
-            healthcheck: str
         Listeners: []
+        Services: []
 
 .. tip::
 
     You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/elbv2>`__ to use
     as reference for your use-case.
+
+.. seealso::
+
+    `x-elbv2 JSON Schema Definition`_
 
 Properties
 ==========
@@ -37,6 +37,7 @@ For this particular resource, the only attributes that match the CFN definition 
 * `Scheme`_
 * `Type`_
 * `LoadBalancerAttributes`_
+* `Tags`_
 
 All other settings are automatically generated for you based on the network and security definitions you have defined in
 the services and targets section.
@@ -65,12 +66,32 @@ MacroParameters
     Ingress: {}
 
 
+Attributes shortcuts
+--------------------------
+These settings are just a shorter notation for the `LB Attributes`_
+
++----------------------------+-------------------------------------------------+---------+
+| Shorthand                  | AttributeName                                   | LB Type |
++============================+=================================================+=========+
+| timeout_seconds            | idle_timeout.timeout_seconds                    | ALB     |
++----------------------------+-------------------------------------------------+---------+
+| desync_mitigation_mode     | routing.http.desync_mitigation_mode             | ALB     |
++----------------------------+-------------------------------------------------+---------+
+| drop_invalid_header_fields | routing.http.drop_invalid_header_fields.enabled | ALB     |
++----------------------------+-------------------------------------------------+---------+
+| http2                      | routing.http2.enabled                           | ALB     |
++----------------------------+-------------------------------------------------+---------+
+| cross_zone                 | load_balancing.cross_zone.enabled               | NLB     |
++----------------------------+-------------------------------------------------+---------+
+
+
+
 .. _load_balancers_ingress_syntax_ref:
 
 Ingress
 -------
 
-Similar syntax as for ECS Services Ingress, allow you to define Ingress.
+Similar syntax as for ECS Services Ingress, allow you to define Ingress. See the `Ingress JSON Schema definition`_.
 
 .. tip::
 
@@ -105,25 +126,6 @@ Similar syntax as for ECS Services Ingress, allow you to define Ingress.
     Check out the :ref:`lookup_syntax_reference` syntax reference
 
 
-Other attribute shortcuts
---------------------------
-These settings are just a shorter notation for the `LB Attributes`_
-
-+----------------------------+-------------------------------------------------+---------+
-| Shorthand                  | AttributeName                                   | LB Type |
-+============================+=================================================+=========+
-| timeout_seconds            | idle_timeout.timeout_seconds                    | ALB     |
-+----------------------------+-------------------------------------------------+---------+
-| desync_mitigation_mode     | routing.http.desync_mitigation_mode             | ALB     |
-+----------------------------+-------------------------------------------------+---------+
-| drop_invalid_header_fields | routing.http.drop_invalid_header_fields.enabled | ALB     |
-+----------------------------+-------------------------------------------------+---------+
-| http2                      | routing.http2.enabled                           | ALB     |
-+----------------------------+-------------------------------------------------+---------+
-| cross_zone                 | load_balancing.cross_zone.enabled               | NLB     |
-+----------------------------+-------------------------------------------------+---------+
-
-
 Services
 ========
 
@@ -132,6 +134,18 @@ The services represent the `Target Group`_ definition of your service. Once agai
 you do not have to indicate all of the settings exactly as CFN does.
 
 The Targets will automatically be pointing towards the ECS Service tasks.
+
+Syntax
+------
+
+.. code-block:: yaml
+
+    name: <family name:container name>
+    protocol: <str>
+    port : <int>
+    healthcheck: <str>
+
+`JSON Schema definition <https://github.com/compose-x/ecs_composex_specs/blob/main/ecs_composex_specs/x-elbv2.spec.json#L38>`__
 
 name
 ----
@@ -198,6 +212,7 @@ The following properties are identical to the original CFN definition.
 * `SslPolicy <https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-elasticloadbalancingv2-listener.html#cfn-elasticloadbalancingv2-listener-sslpolicy>`_
 * `Certificates <https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-elasticloadbalancingv2-listener.html#cfn-elasticloadbalancingv2-listener-certificates>`_
 
+`JSON Schema definition <https://github.com/compose-x/ecs_composex_specs/blob/main/ecs_composex_specs/x-elbv2.spec.json#L82>`__
 
 .. hint::
 
@@ -216,6 +231,8 @@ The following properties are identical to the original CFN definition.
 Target Groups
 ================================
 
+
+
 List of targets to send the requests to. These are equivalent to ELBv2::TargetGroup
 
 .. code-block:: yaml
@@ -233,6 +250,7 @@ name
 
 The name of the family and service in that family to send the requests to.
 
+
 access
 ------
 
@@ -244,7 +262,7 @@ If you only define the domain name, any path in that domain will be what's match
 AuthenticateCognitoConfig
 ---------------------------
 
-Defines the `AuthenticateCognitoConfig`_ requirement condition / action
+Defines the `AuthenticateCognitoConfig`_ requirement condition / action.
 
 
 AuthenticateOidcConfig
@@ -319,3 +337,6 @@ Examples
 .. _AuthenticateCognitoConfig : https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-elasticloadbalancingv2-listenerrule-authenticatecognitoconfig.html#cfn-elasticloadbalancingv2-listenerrule-authenticatecognitoconfig-userpoolarn
 .. _AuthenticateOidcConfig: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-elasticloadbalancingv2-listenerrule-authenticateoidcconfig.html
 .. _LoadBalancerAttributes: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-elasticloadbalancingv2-loadbalancer.html#cfn-elasticloadbalancingv2-loadbalancer-loadbalancerattributes
+.. _Tags: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-elasticloadbalancingv2-loadbalancer.html#cfn-elasticloadbalancingv2-loadbalancer-tags
+.. _x-elbv2 JSON Schema Definition: https://github.com/compose-x/ecs_composex_specs/blob/main/ecs_composex_specs/x-elbv2.spec.json
+.. _Ingress JSON Schema definition: https://github.com/compose-x/ecs_composex_specs/blob/main/ecs_composex_specs/ingress.spec.json

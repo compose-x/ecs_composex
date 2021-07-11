@@ -11,6 +11,8 @@ x-cluster
 .. contents::
     :depth: 2
 
+`JSON Schema Definition <https://github.com/compose-x/ecs_composex_specs/blob/main/ecs_composex_specs/x-cluster.spec.json>`_
+
 Properties
 ==========
 Refer to the `AWS CFN reference for ECS Cluster`_

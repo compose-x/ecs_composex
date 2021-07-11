@@ -39,8 +39,8 @@ Installation
 ECS Compose-X can be used as a CLI ran locally, in CICD pipelines, or as an AWS CloudFormation macro, allowing you
 to use your Docker Compose files directly in CloudFormation!
 
-On AWS using AWS CloudFormation Macro
---------------------------------------
+Run in AWS using AWS CloudFormation Macro
+-------------------------------------------
 
 You can now deploy the CloudFormation macro to your AWS Account using AWS Serverless Application Repository (SAR).
 
@@ -131,6 +131,13 @@ will understand how two services are connected and will auto-correct the setting
 
 For example, if you set the Log retention to be 42 days, which is invalid, it will automatically change that to the
 closest valid value (here, 30).
+
+Using JSON Specification
+-------------------------
+
+Docker Compose follows a well known, well documented and open source JSON Schema definition to ensure consistency in the
+compose files syntax, making it very accessible for all to use. So in the same spirit, from version 0.15 onwards,
+Compose-X will make use of JSON Schema definition.
 
 Credits
 =======

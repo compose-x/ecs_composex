@@ -8,6 +8,8 @@
 x-vpc
 ======
 
+`JSON Schema Definition <https://github.com/compose-x/ecs_composex_specs/blob/main/ecs_composex_specs/x-vpc.spec.json>`_
+
 Syntax Reference
 ================
 
@@ -24,7 +26,7 @@ Syntax Reference
     as reference for your use-case.
 
 Create
-------
+=======
 
 .. code-block::
     :caption: Create example with a single NAT and 3 VPC Endpoints
