@@ -216,3 +216,4 @@ def generate_services(settings):
         create_log_group(family)
         family.handle_logging()
         family.handle_alarms()
+        family.handle_prometheus()

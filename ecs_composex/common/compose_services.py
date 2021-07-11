@@ -113,7 +113,6 @@ class ComposeService(object):
         ("extra_hosts", list),
         ("healthcheck", dict),
         ("hostname", str),
-        ("labels", dict),
         ("labels", (dict, list)),
         ("logging", dict),
         ("links", list),
@@ -145,6 +144,7 @@ class ComposeService(object):
         ("x-network", dict),
         ("x-alarms", dict),
         ("x-ecr", dict),
+        ("x-prometheus", dict),
     ]
 
     ecs_plugin_aws_keys = [
@@ -275,6 +275,22 @@ class ComposeService(object):
             ]
         return aws_vpc_mappings, ec2_mappings
 
+    def import_docker_labels(self):
+        """
+        Method to import the Docker labels if defined
+        """
+        labels = {}
+        if not keyisset("labels", self.definition):
+            return labels
+        else:
+            if isinstance(self.definition["labels"], dict):
+                return self.definition["labels"]
+            elif isinstance(self.definition["labels"], list):
+                for label in self.definition["labels"]:
+                    splits = label.split("=")
+                    labels.update({splits[0]: splits[1] if len(splits) == 2 else ""})
+        return labels
+
     def set_container_definition(self):
         """
         Function to define the container definition matching the service definition
@@ -307,6 +323,7 @@ class ComposeService(object):
                 Ref(AWS_NO_VALUE),
                 keyisset("Privileged", self.definition),
             ),
+            DockerLabels=self.import_docker_labels(),
             ReadonlyRootFilesystem=keyisset("read_only", self.definition),
             WorkingDirectory=Ref(AWS_NO_VALUE)
             if not keyisset("working_dir", self.definition)
@@ -1737,6 +1754,13 @@ class ComposeFamily(object):
                 }
             ),
         )
+        for service in self.services:
+            service.container_definition.DockerLabels.update(
+                {
+                    "container_name": service.container_name,
+                    "ecs_task_family": Ref(ecs_params.SERVICE_NAME),
+                }
+            )
 
     def apply_services_params(self):
         if not self.template:
@@ -2000,3 +2024,20 @@ class ComposeFamily(object):
                 "RollBack": rollback,
             }
         )
+
+    def handle_prometheus(self):
+        """
+        Reviews services config
+        :return:
+        """
+        from ecs_composex.ecs.ecs_prometheus import add_cw_agent_to_family
+
+        options = {"CollectForAppMesh": False, "CollectForJavaJmx": False}
+        for service in self.services:
+            if keyisset("x-prometheus", service.definition):
+                config = service.definition["x-prometheus"]
+                for key in options.keys():
+                    if keyisset(key, config):
+                        options[key] = True
+        if any(options.values()):
+            add_cw_agent_to_family(self, **options)
