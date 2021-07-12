@@ -25,9 +25,7 @@ def import_time_values_to_seconds(time_string, as_tuple=False):
     :return: The number of seconds or tuple of time breakdown as ints
     :rtype: int, tuple(int, int, int)
     """
-    time_re = re.compile(
-        r"(\d{1,2}h)?([0-9]{1}m|[1-5]{1}[0-9]{1}m)?([0-9]{1}s|[1-5]{1}[0-9]{1}s)?"
-    )
+    time_re = re.compile(r"(?P<hours>\d+h)?(?P<minutes>\d+m)?(?P<seconds>\d+s)?")
     time_groups = time_re.match(time_string).groups()
     if not any(t for t in time_groups):
         raise ValueError(
@@ -36,15 +34,15 @@ def import_time_values_to_seconds(time_string, as_tuple=False):
             "Does not match the expected pattern",
             time_re.pattern,
         )
-    hours = 0
-    minutes = 0
-    seconds = 0
-    if time_groups[2]:
-        seconds = int(re.sub(r"[^\d]", "", time_groups[2]))
-    if time_groups[1]:
-        minutes = int(re.sub(r"[^\d]", "", time_groups[1]))
-    if time_groups[0]:
-        hours = int(re.sub(r"[^\d]", "", time_groups[0]))
+    hours = time_re.match(time_string).group("hours") or 0
+    minutes = time_re.match(time_string).groups("minutes") or 0
+    seconds = time_re.match(time_string).groups("seconds") or 0
+    if hours:
+        hours = int(re.sub(r"[^\d]", "", hours))
+    if minutes:
+        minutes = int(re.sub(r"[^\d]", "", minutes))
+    if seconds:
+        seconds = int(re.sub(r"[^\d]", "", seconds))
     if as_tuple:
         return (hours, minutes, seconds)
     seconds += (60 * minutes) + (60 * 60 * hours)
