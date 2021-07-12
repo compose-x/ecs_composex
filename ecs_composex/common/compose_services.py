@@ -854,7 +854,7 @@ class ComposeService(object):
         self.cpu_amount = (
             max(cpu_resa, cpu_alloc) if (cpu_resa or cpu_alloc) else Ref(AWS_NO_VALUE)
         )
-        if self.cpu_amount > 4096:
+        if isinstance(self.cpu_amount, int) and self.cpu_amount > 4096:
             LOG.warning("Fargate does not support more than 4 vCPU. Scaling down")
             self.cpu_amount = 4096
 
