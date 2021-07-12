@@ -819,10 +819,9 @@ class ComposeService(object):
 
         :param dict deployment: definition['deploy']
         """
-        if keyisset("resources", deployment):
-            resources = deployment["resources"]
-        else:
+        if not keyisset("resources", deployment):
             return
+        resources = deployment["resources"]
         cpu_alloc = 0
         cpu_resa = 0
         cpus = "cpus"
