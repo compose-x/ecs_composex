@@ -35,8 +35,8 @@ def import_time_values_to_seconds(time_string, as_tuple=False):
             time_re.pattern,
         )
     hours = time_re.match(time_string).group("hours") or 0
-    minutes = time_re.match(time_string).groups("minutes") or 0
-    seconds = time_re.match(time_string).groups("seconds") or 0
+    minutes = time_re.match(time_string).group("minutes") or 0
+    seconds = time_re.match(time_string).group("seconds") or 0
     if hours:
         hours = int(re.sub(r"[^\d]", "", hours))
     if minutes:
