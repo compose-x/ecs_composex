@@ -76,6 +76,6 @@ setup(
     test_suite="tests",
     tests_require=test_requirements,
     url="https://github.com/compose-x/ecs_composex",
-    version="0.15.1",
+    version="0.15.2",
     zip_safe=False,
 )
