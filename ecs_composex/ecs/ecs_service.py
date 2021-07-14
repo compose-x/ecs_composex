@@ -338,8 +338,10 @@ def define_deployment_options(family, settings, kwargs):
     )
     if family.deployment_config:
         deploy_config = DeploymentConfiguration(
-            MaximumPercent=family.deployment_config["MaximumPercent"],
-            MinimumHealthyPercent=family.deployment_config["MinimumHealthyPercent"],
+            MaximumPercent=int(family.deployment_config["MaximumPercent"]),
+            MinimumHealthyPercent=int(
+                family.deployment_config["MinimumHealthyPercent"]
+            ),
             DeploymentCircuitBreaker=EcsDeploymentCircuitBreaker(
                 Enable=True, Rollback=keyisset("RollBack", family.deployment_config)
             ),

@@ -819,10 +819,9 @@ class ComposeService(object):
 
         :param dict deployment: definition['deploy']
         """
-        if keyisset("resources", deployment):
-            resources = deployment["resources"]
-        else:
+        if not keyisset("resources", deployment):
             return
+        resources = deployment["resources"]
         cpu_alloc = 0
         cpu_resa = 0
         cpus = "cpus"
@@ -854,7 +853,7 @@ class ComposeService(object):
         self.cpu_amount = (
             max(cpu_resa, cpu_alloc) if (cpu_resa or cpu_alloc) else Ref(AWS_NO_VALUE)
         )
-        if self.cpu_amount > 4096:
+        if isinstance(self.cpu_amount, int) and self.cpu_amount > 4096:
             LOG.warning("Fargate does not support more than 4 vCPU. Scaling down")
             self.cpu_amount = 4096
 
@@ -1954,19 +1953,30 @@ class ComposeFamily(object):
         min_percents = [
             int(service.definition["x-aws-min_percent"])
             for service in self.services
-            if keyisset("x-aws-min_percent", service.definition)
+            if keypresent("x-aws-min_percent", service.definition)
         ]
         max_percents = [
             int(service.definition["x-aws-max_percent"])
             for service in self.services
-            if keyisset("x-aws-max_percent", service.definition)
+            if keypresent("x-aws-max_percent", service.definition)
         ]
-        family_min_percent = (
-            sum(min_percents) / len(min_percents) if min_percents else 100
-        )
-        family_max_percent = (
-            sum(max_percents) / len(max_percents) if max_percents else 200
-        )
+        if min_percents:
+            minis_sum = sum(min_percents)
+            if not minis_sum:
+                family_min_percent = 0
+            else:
+                family_min_percent = minis_sum / len(min_percents)
+        else:
+            family_min_percent = 100
+
+        if max_percents:
+            maxis_sum = sum(max_percents)
+            if not maxis_sum:
+                family_max_percent = 0
+            else:
+                family_max_percent = maxis_sum / len(max_percents)
+        else:
+            family_max_percent = 200
         rollback = True
         actions = [
             service.update_config["failure_action"] != "rollback"
