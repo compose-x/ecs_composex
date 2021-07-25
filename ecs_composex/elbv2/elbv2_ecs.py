@@ -372,6 +372,7 @@ def handle_services_association(resource, res_root_stack, settings):
         listener.map_services(resource)
     for listener in resource.listeners:
         listener.handle_certificates(settings, stack)
+        listener.handle_cognito_pools(settings, stack)
         listener.define_default_actions(template)
 
 

@@ -20,6 +20,7 @@ from troposphere import (
     Sub,
     Tags,
 )
+from troposphere.cognito import UserPoolClient
 from troposphere.ec2 import EIP, SecurityGroup
 from troposphere.elasticloadbalancingv2 import (
     Action,
@@ -43,6 +44,14 @@ from troposphere.elasticloadbalancingv2 import (
 
 from ecs_composex.acm.acm_params import MOD_KEY as ACM_MOD_KEY
 from ecs_composex.acm.acm_params import RES_KEY as ACM_KEY
+from ecs_composex.cognito_userpool.cognito_params import MAPPINGS_KEY as COGNITO_MAP
+from ecs_composex.cognito_userpool.cognito_params import MOD_KEY as COGNITO_MOD
+from ecs_composex.cognito_userpool.cognito_params import RES_KEY as COGNITO_KEY
+from ecs_composex.cognito_userpool.cognito_params import (
+    USERPOOL_ARN,
+    USERPOOL_DOMAIN,
+    USERPOOL_ID,
+)
 from ecs_composex.common import (
     LOG,
     NONALPHANUM,
@@ -470,6 +479,71 @@ def import_new_acm_certs(listener, src_name, settings, listener_stack):
     rectify_listener_protocol(listener)
 
 
+def import_cognito_pool(src_name, settings, listener_stack):
+    """
+    Function to Import an Cognito Pool defined in x-cognito_pool
+
+    :param src_name:
+    :param ecs_composex.common.settings.ComposeXSettings settings:
+    :param listener_stack:
+    :return:
+    """
+    if not keyisset(COGNITO_KEY, settings.compose_content):
+        raise LookupError(
+            f"There is no {COGNITO_KEY} defined in your docker-compose files"
+        )
+    new_cognito_userpools = [
+        settings.compose_content[COGNITO_KEY][name]
+        for name in settings.compose_content[COGNITO_KEY]
+        if settings.compose_content[COGNITO_KEY][name].cfn_resource
+    ]
+    lookup_cognito_userpools = [
+        settings.compose_content[COGNITO_KEY][name]
+        for name in settings.compose_content[COGNITO_KEY]
+        if settings.compose_content[COGNITO_KEY][name].lookup
+    ]
+    the_pool = None
+    for pool in new_cognito_userpools:
+        if pool.name == src_name:
+            the_pool = pool
+    if not the_pool:
+        for pool in lookup_cognito_userpools:
+            if pool.name == src_name:
+                the_pool = pool
+                break
+
+    if the_pool is None:
+        raise LookupError("Failed to identify the cognito userpool to use", src_name)
+    if the_pool.cfn_resource and not the_pool.lookup:
+        pool_id_param = Parameter(
+            f"{the_pool.logical_name}{USERPOOL_ID.title}", Type="String"
+        )
+        pool_arn = Parameter(
+            f"{the_pool.logical_name}{USERPOOL_ARN.title}", Type="String"
+        )
+        add_parameters(listener_stack.stack_template, [pool_id_param, pool_arn])
+        listener_stack.Parameters.update(
+            {
+                pool_id_param.title: Ref(the_pool.cfn_resource),
+                pool_arn.title: Ref(pool_arn),
+            }
+        )
+        return Ref(pool_id_param), Ref(pool_arn)
+    elif the_pool.lookup and not the_pool.cfn_resource:
+        if (
+            keyisset(COGNITO_MAP, settings.mappings)
+            and COGNITO_MAP not in listener_stack.stack_template.mappings
+        ):
+            listener_stack.stack_template.add_mapping(
+                COGNITO_MAP, settings.mappings[COGNITO_MAP]
+            )
+        return (
+            FindInMap(COGNITO_MAP, the_pool.logical_name, USERPOOL_ID.title),
+            FindInMap(COGNITO_MAP, the_pool.logical_name, USERPOOL_ARN.title),
+            FindInMap(COGNITO_MAP, the_pool.logical_name, USERPOOL_DOMAIN.title),
+        )
+
+
 def add_acm_certs_arn(listener, src_value, settings, listener_stack):
     """
     Function to add Certificate to Listener with input from manual ARN entry
@@ -485,13 +559,10 @@ def add_acm_certs_arn(listener, src_value, settings, listener_stack):
     )
     if not cert_arn_re.match(src_value):
         raise ValueError(
-            "The CertificateArn/Arn is not valid. Got",
+            "The CertificateArn is not valid. Got",
             src_value,
             "Expected",
-            (
-                r"((?:^arn:aws(?:-[a-z]+)?:acm:[\S]+:[0-9]+:certificate/)"
-                r"([a-z0-9]{8}(?:-[a-z0-9]{4}){3}-[a-z0-9]{12})$)"
-            ),
+            cert_arn_re.pattern,
         )
     LOG.info("Adding new cert from defined ARN")
     add_extra_certificate(listener, src_value)
@@ -595,12 +666,66 @@ class ComposeListener(Listener):
         else:
             raise ValueError(f"Failed to determine any default action for {self.title}")
 
+    def handle_cognito_pools(self, settings, listener_stack):
+        """
+
+        :param ecs_composex.common.settings.ComposeXSettings settings:
+        :param ecs_composex.common.stacks.ComposeXStack listener_stack:
+        :return:
+        """
+        cognito_auth_key = "AuthenticateCognitoConfig"
+        for target in self.services:
+            if keyisset("CreateCognitoClient", target):
+                user_pool_client_params = target["CreateCognitoClient"]
+                pool_id = user_pool_client_params["UserPoolId"]
+                pool_params = import_cognito_pool(pool_id, settings, listener_stack)
+                user_pool_client_params["UserPoolId"] = pool_params[0].data
+                user_pool_client_props = import_record_properties(
+                    user_pool_client_params, UserPoolClient
+                )
+                user_pool_client = listener_stack.stack_template.add_resource(
+                    UserPoolClient(
+                        f"{listener_stack.title}UserPoolClient{NONALPHANUM.sub('', target['name'])}",
+                        **user_pool_client_props,
+                    )
+                )
+                if keyisset(cognito_auth_key, target):
+                    target[cognito_auth_key]["UserPoolArn"] = pool_params[1]
+                    target[cognito_auth_key]["UserPoolDomain"] = pool_params[2]
+                    target[cognito_auth_key]["UserPoolClientId"] = Ref(user_pool_client)
+                else:
+                    LOG.warning(
+                        "No AuthenticateCognitoConfig defined. Setting to default settings"
+                    )
+                    target.update(
+                        {
+                            cognito_auth_key: {
+                                "OnUnauthenticatedRequest": "authenticate",
+                                "Scope": "openid email profile",
+                                "UserPoolArn": pool_params[1].data,
+                                "UserPoolDomain": pool_params[2].data,
+                                "UserPoolClientId": Ref(user_pool_client).data,
+                            }
+                        }
+                    )
+                del target["CreateCognitoClient"]
+            elif not keyisset("CreateCognitoClient", target) and keyisset(
+                cognito_auth_key, target
+            ):
+                if keyisset("UserPoolArn", target[cognito_auth_key]) and target[
+                    cognito_auth_key
+                ]["UserPoolArn"].startswith("x-cognito"):
+                    pool_id = target[cognito_auth_key]["UserPoolArn"].split(r"::")[-1]
+                    pool_params = import_cognito_pool(pool_id, settings, listener_stack)
+                    target[cognito_auth_key]["UserPoolArn"] = pool_params[1].data
+                    target[cognito_auth_key]["UserPoolDomain"] = pool_params[2].data
+
     def handle_certificates(self, settings, listener_stack):
         """
         Method to handle certificates
 
         :param ecs_composex.common.settings.ComposeXSettings settings:
-        :param ecs_composex.common.stacks.ComposeXStack listener_stack:
+
         :return:
         """
         valid_sources = [
