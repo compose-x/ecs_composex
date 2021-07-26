@@ -18,8 +18,8 @@ except ImportError:
 
 from copy import deepcopy
 
-from troposphere import AWS_ACCOUNT_ID, AWS_PARTITION, AWS_REGION, Ref, Sub
-from troposphere.ecs import ContainerDefinition, LogConfiguration, Secret
+from troposphere import AWS_ACCOUNT_ID, AWS_PARTITION, AWS_REGION, Sub
+from troposphere.ecs import Secret
 from troposphere.iam import Policy
 from troposphere.ssm import Parameter as SSMParameter
 
@@ -183,16 +183,17 @@ def get_jmx_envoy_processor(label=None, labels=None):
 
 
 def generate_emf_processors(**options):
+    metrics_key = "metric_declaration"
     emf_processors = {
         "metric_declaration_dedup": "true",
-        "metric_declaration": [],
+        metrics_key: [],
     }
     if keyisset("CollectForAppMesh", options):
-        emf_processors["metric_declaration"].append(get_ecs_envoy_processor())
+        emf_processors[metrics_key] += get_ecs_envoy_processor()
     if keyisset("CollectForJavaJmx", options):
-        emf_processors["metric_declaration"].append(get_jmx_envoy_processor())
+        emf_processors[metrics_key] += get_jmx_envoy_processor()
     if keyisset("CustomRules", options):
-        emf_processors["metric_declaration"].append(options["CustomRules"])
+        emf_processors[metrics_key] += options["CustomRules"]
     return emf_processors
 
 
@@ -211,7 +212,7 @@ def set_cw_config_parameter(family, **options):
                 "prometheus": {
                     "prometheus_config_path": "env:PROMETHEUS_CONFIG_CONTENT",
                     "emf_processor": {
-                        "metric_declaration_dedup": "true",
+                        "metric_declaration_dedup": True,
                         "metric_declaration": [],
                     },
                 }
@@ -232,7 +233,7 @@ def set_cw_config_parameter(family, **options):
     if keyisset("CollectForAppMesh", options) or keyisset("CollectForJavaJmx", options):
         emf_processors = generate_emf_processors(**options)
         value_py["logs"]["metrics_collected"]["prometheus"][
-            "emf_processors"
+            "emf_processor"
         ] = emf_processors
     parameter = SSMParameter(
         f"{family.logical_name}SSMCWAgentPrometheusConfig",
@@ -244,7 +245,7 @@ def set_cw_config_parameter(family, **options):
         Description=Sub(
             f"Prometheus Scraping SSM Parameter for ECS Cluster: ${{{ecs_params.CLUSTER_NAME.title}}}"
         ),
-        Value=json.dumps(value_py, indent=2),
+        Value=json.dumps(value_py, ensure_ascii=True, sort_keys=True, indent=2),
     )
     family.template.add_resource(parameter)
     return parameter
@@ -273,14 +274,14 @@ def define_cloudwatch_agent(family, cw_prometheus_config, cw_agent_config):
             Name="PROMETHEUS_CONFIG_CONTENT",
             ValueFrom=Sub(
                 f"arn:${{{AWS_PARTITION}}}:ssm:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}"
-                f":parameter/${{{cw_prometheus_config.title}}}"
+                f":parameter${{{cw_prometheus_config.title}}}"
             ),
         ),
         Secret(
             Name="CW_CONFIG_CONTENT",
             ValueFrom=Sub(
                 f"arn:${{{AWS_PARTITION}}}:ssm:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}"
-                f":parameter/${{{cw_agent_config.title}}}"
+                f":parameter${{{cw_agent_config.title}}}"
             ),
         ),
     ]
@@ -317,7 +318,7 @@ def set_ecs_cw_policy(prometheus_parameter, cw_config_parameter):
                     "Effect": "Allow",
                     "Action": [
                         "ecs:DescribeTasks",
-                        "ecs: ListTasks",
+                        "ecs:ListTasks",
                         "ecs:DescribeContainerInstances",
                         "ecs:DescribeServices",
                         "ecs:ListServices",
@@ -335,18 +336,18 @@ def set_ecs_cw_policy(prometheus_parameter, cw_config_parameter):
                 {
                     "Sid": "ExtractFromCloudWatchAgentServerPolicy",
                     "Effect": "Allow",
-                    "Action": ["ssm:GetParameter"],
+                    "Action": ["ssm:GetParameter*"],
                     "Resource": [
                         Sub(
                             "arn:aws:ssm:*:${AWS::AccountId}:parameter/AmazonCloudWatch-*"
                         ),
                         Sub(
                             f"arn:${{{AWS_PARTITION}}}:ssm:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}"
-                            f":parameter/${{{prometheus_parameter.title}}}"
+                            f":parameter${{{prometheus_parameter.title}}}"
                         ),
                         Sub(
                             f"arn:${{{AWS_PARTITION}}}:ssm:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}"
-                            f":parameter/${{{cw_config_parameter.title}}}"
+                            f":parameter${{{cw_config_parameter.title}}}"
                         ),
                     ],
                 },
@@ -361,7 +362,6 @@ def add_cw_agent_to_family(family, **options):
     Function to add the CW Agent to the task family for additional monitoring
     :param ecs_composex.common.compose_services.ComposeFamily family:
     """
-    # family.template.add_parameter(CW_IMAGE_PARAMETER)
     prometheus_config = set_cw_prometheus_config_parameter(family)
     cw_agent_config = set_cw_config_parameter(family, **options)
     family.add_service(
@@ -369,6 +369,7 @@ def add_cw_agent_to_family(family, **options):
     )
     family.refresh()
     task_role = family.template.resources[ecs_params.TASK_ROLE_T]
+    exec_role = family.template.resources[ecs_params.EXEC_ROLE_T]
     ecs_sd_policy = set_ecs_cw_policy(prometheus_config, cw_agent_config)
     if hasattr(task_role, "Policies") and isinstance(
         getattr(task_role, "Policies"), list
@@ -377,3 +378,10 @@ def add_cw_agent_to_family(family, **options):
         policies.append(ecs_sd_policy)
     elif not hasattr(task_role, "Policies"):
         setattr(task_role, "Policies", [ecs_sd_policy])
+    if hasattr(exec_role, "Policies") and isinstance(
+        getattr(exec_role, "Policies"), list
+    ):
+        policies = getattr(exec_role, "Policies")
+        policies.append(ecs_sd_policy)
+    elif not hasattr(exec_role, "Policies"):
+        setattr(exec_role, "Policies", [ecs_sd_policy])
