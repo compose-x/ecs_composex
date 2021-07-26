@@ -190,6 +190,8 @@ def generate_emf_processors(**options):
         emf_processors["metric_declaration"].append(get_ecs_envoy_processor())
     if keyisset("CollectForJavaJmx", options):
         emf_processors["metric_declaration"].append(get_jmx_envoy_processor())
+    if keyisset("CustomRules", options):
+        emf_processors["metric_declaration"].append(options["CustomRules"])
     return emf_processors
 
 

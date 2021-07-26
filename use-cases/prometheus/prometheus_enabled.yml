@@ -8,8 +8,6 @@ services:
       CreateLogGroup: False
     x-network:
       IsPublic: False
-      lb_type: application
-      use_cloudmap: True
       Ingress:
         Myself: False
         AwsSources:
@@ -53,6 +51,21 @@ services:
       Range: 1-10
       TargetScaling:
         CpuTarget: 50
+    x-prometheus:
+      ContainersInsights:
+        CollectForAppMesh: false
+        CollectForJavaJmx: true
+        CustomRules:
+          - source_labels:
+              - container_name
+            label_matcher: app03
+            dimensions:
+              - - ClusterName
+                - TaskDefinitionFamily
+            metrics_selector:
+              - "^startsEnds$"
+    labels:
+      Java_EMF_Metrics: "true"
 
   rproxy:
     x-iam:
@@ -63,7 +76,3 @@ services:
       TargetScaling:
         CpuTarget: 50
     x-xray: true
-    x-network:
-      IsPublic: False
-      lb_type: application
-      use_cloudmap: True
