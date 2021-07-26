@@ -690,9 +690,9 @@ class ComposeListener(Listener):
                     )
                 )
                 if keyisset(cognito_auth_key, target):
-                    target[cognito_auth_key]["UserPoolArn"] = pool_params[1]
-                    target[cognito_auth_key]["UserPoolDomain"] = pool_params[2]
-                    target[cognito_auth_key]["UserPoolClientId"] = Ref(user_pool_client)
+                    target[cognito_auth_key]["UserPoolArn"] = pool_params[1].data
+                    target[cognito_auth_key]["UserPoolDomain"] = pool_params[2].data
+                    target[cognito_auth_key]["UserPoolClientId"] = Ref(user_pool_client).data
                 else:
                     LOG.warning(
                         "No AuthenticateCognitoConfig defined. Setting to default settings"
@@ -709,16 +709,16 @@ class ComposeListener(Listener):
                         }
                     )
                 del target["CreateCognitoClient"]
-            elif not keyisset("CreateCognitoClient", target) and keyisset(
-                cognito_auth_key, target
+            elif (
+                not keyisset("CreateCognitoClient", target)
+                and keyisset(cognito_auth_key, target)
+                and keyisset("UserPoolArn", target[cognito_auth_key])
+                and target[cognito_auth_key]["UserPoolArn"].startswith("x-cognito")
             ):
-                if keyisset("UserPoolArn", target[cognito_auth_key]) and target[
-                    cognito_auth_key
-                ]["UserPoolArn"].startswith("x-cognito"):
-                    pool_id = target[cognito_auth_key]["UserPoolArn"].split(r"::")[-1]
-                    pool_params = import_cognito_pool(pool_id, settings, listener_stack)
-                    target[cognito_auth_key]["UserPoolArn"] = pool_params[1].data
-                    target[cognito_auth_key]["UserPoolDomain"] = pool_params[2].data
+                pool_id = target[cognito_auth_key]["UserPoolArn"].split(r"::")[-1]
+                pool_params = import_cognito_pool(pool_id, settings, listener_stack)
+                target[cognito_auth_key]["UserPoolArn"] = pool_params[1].data
+                target[cognito_auth_key]["UserPoolDomain"] = pool_params[2].data
 
     def handle_certificates(self, settings, listener_stack):
         """
