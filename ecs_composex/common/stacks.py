@@ -72,6 +72,7 @@ class ComposeXStack(Stack, object):
         "UpdateReplacePolicy",
     ]
     is_void = False
+    mappings = {}
 
     def __init__(
         self, name, stack_template, stack_parameters=None, file_name=None, **kwargs

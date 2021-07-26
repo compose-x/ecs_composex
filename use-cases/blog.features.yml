@@ -3,21 +3,21 @@
 version: '3.8'
 secrets:
   abcd: {}
-  john:
-    x-secrets:
-      LinksTo:
-        - EcsExecutionRole
-        - EcsTaskRole
-      Name: SFTP/asl-cscs-files-dev
-  zyx:
-    x-secrets:
-      Name: secret/with/kmskey
-      Lookup:
-        Tags:
-          - costcentre: lambda
-      JsonKeys:
-        - VarName: ZYX_TEST
-          SecretKey: test
+  john: {}
+#    x-secrets:
+#      LinksTo:
+#        - EcsExecutionRole
+#        - EcsTaskRole
+#      Name: SFTP/asl-cscs-files-dev
+  zyx: {}
+#    x-secrets:
+#      Name: secret/with/kmskey
+#      Lookup:
+#        Tags:
+#          - costcentre: lambda
+#      JsonKeys:
+#        - VarName: ZYX_TEST
+#          SecretKey: test
 services:
   app01:
     logging:

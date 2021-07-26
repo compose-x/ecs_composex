@@ -8,7 +8,7 @@ Module to import CFN Resources defined by their properties
 
 from inspect import isfunction
 
-from troposphere import AWSProperty
+from troposphere import AWSProperty, AWSHelperFn
 
 from ecs_composex.common import keyisset, keypresent
 
@@ -41,7 +41,9 @@ def import_non_functions(props, prop_name, top_class, properties, set_to_novalue
     :param dict properties:
     :param bool set_to_novalue:
     """
-    if isinstance(properties[prop_name], (str, int, float, tuple)) or top_class.props[
+    if isinstance(properties[prop_name], AWSHelperFn):
+        props[prop_name] = properties[prop_name]
+    elif isinstance(properties[prop_name], (str, int, float, tuple)) or top_class.props[
         prop_name
     ][0] in (str, int, float):
         if top_class.props[prop_name][0] in (str, int, float):
