@@ -25,6 +25,7 @@ from troposphere.ssm import Parameter as SSMParameter
 
 from ecs_composex.common import LOG, keyisset
 from ecs_composex.common.cfn_params import Parameter
+from ecs_composex.common.compose_services import ComposeService
 from ecs_composex.ecs import ecs_params
 
 CW_IMAGE_PARAMETER = Parameter(
@@ -249,48 +250,46 @@ def set_cw_config_parameter(family, **options):
     return parameter
 
 
-def define_cloudwatch_agent(cw_prometheus_config, cw_agent_config):
+def define_cloudwatch_agent(family, cw_prometheus_config, cw_agent_config):
     """
     Function to define the CW Agent image task definition
 
+    :param family:
     :param cw_prometheus_config:
     :param cw_agent_config:
     :return:
     """
-    cw_agent_container_name = "cw_agent"
-    cw_agent_log_config = LogConfiguration(
-        LogDriver="awslogs",
-        Options={
-            "awslogs-group": Ref(ecs_params.LOG_GROUP_T),
-            "awslogs-region": Ref(AWS_REGION),
-            "awslogs-stream-prefix": cw_agent_container_name,
+    cw_agent_service_config = {
+        "image": CW_IMAGE_PARAMETER.Default,
+        "deploy": {
+            "resources": {"limits": {"cpus": 0.1, "memory": "256M"}},
+            "labels": {"ecs.task.family": family.name},
         },
-    )
-    agent = ContainerDefinition(
-        Image=Ref(CW_IMAGE_PARAMETER),
-        Name=cw_agent_container_name,
-        Cpu=128,
-        Memory=256,
-        Essential=False,
-        LogConfiguration=cw_agent_log_config,
-        Secrets=[
-            Secret(
-                Name="PROMETHEUS_CONFIG_CONTENT",
-                ValueFrom=Sub(
-                    f"arn:${{{AWS_PARTITION}}}:ecs:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}"
-                    f"parameter/${{{cw_prometheus_config.title}}}"
-                ),
+        "labels": {"container_name": "cw-agent"},
+    }
+    cw_service = ComposeService("cw_agent", cw_agent_service_config)
+    secrets = [
+        Secret(
+            Name="PROMETHEUS_CONFIG_CONTENT",
+            ValueFrom=Sub(
+                f"arn:${{{AWS_PARTITION}}}:ssm:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}"
+                f":parameter/${{{cw_prometheus_config.title}}}"
             ),
-            Secret(
-                Name="CW_CONFIG_CONTENT",
-                ValueFrom=Sub(
-                    f"arn:${{{AWS_PARTITION}}}:ecs:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}"
-                    f"parameter/${{{cw_agent_config.title}}}"
-                ),
+        ),
+        Secret(
+            Name="CW_CONFIG_CONTENT",
+            ValueFrom=Sub(
+                f"arn:${{{AWS_PARTITION}}}:ssm:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}"
+                f":parameter/${{{cw_agent_config.title}}}"
             ),
-        ],
-    )
-    return agent
+        ),
+    ]
+    if hasattr(cw_service.container_definition, "Secrets"):
+        s_secrets = getattr(cw_service.container_definition, "Secrets")
+        s_secrets += secrets
+    else:
+        setattr(cw_service.container_definition, "Secrets", secrets)
+    return cw_service
 
 
 def set_ecs_cw_policy(prometheus_parameter, cw_config_parameter):
@@ -342,12 +341,12 @@ def set_ecs_cw_policy(prometheus_parameter, cw_config_parameter):
                             "arn:aws:ssm:*:${AWS::AccountId}:parameter/AmazonCloudWatch-*"
                         ),
                         Sub(
-                            f"arn:${{{AWS_PARTITION}}}:ecs:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}"
-                            f"parameter/${{{prometheus_parameter.title}}}"
+                            f"arn:${{{AWS_PARTITION}}}:ssm:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}"
+                            f":parameter/${{{prometheus_parameter.title}}}"
                         ),
                         Sub(
-                            f"arn:${{{AWS_PARTITION}}}:ecs:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}"
-                            f"parameter/${{{cw_config_parameter.title}}}"
+                            f"arn:${{{AWS_PARTITION}}}:ssm:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}"
+                            f":parameter/${{{cw_config_parameter.title}}}"
                         ),
                     ],
                 },
@@ -362,14 +361,13 @@ def add_cw_agent_to_family(family, **options):
     Function to add the CW Agent to the task family for additional monitoring
     :param ecs_composex.common.compose_services.ComposeFamily family:
     """
-    family.template.add_parameter(CW_IMAGE_PARAMETER)
+    # family.template.add_parameter(CW_IMAGE_PARAMETER)
     prometheus_config = set_cw_prometheus_config_parameter(family)
     cw_agent_config = set_cw_config_parameter(family, **options)
-    family.task_definition.ContainerDefinitions.append(
-        define_cloudwatch_agent(prometheus_config, cw_agent_config)
+    family.add_service(
+        define_cloudwatch_agent(family, prometheus_config, cw_agent_config)
     )
     family.refresh()
-
     task_role = family.template.resources[ecs_params.TASK_ROLE_T]
     ecs_sd_policy = set_ecs_cw_policy(prometheus_config, cw_agent_config)
     if hasattr(task_role, "Policies") and isinstance(

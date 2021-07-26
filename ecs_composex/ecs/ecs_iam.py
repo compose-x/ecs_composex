@@ -25,7 +25,6 @@ def add_service_roles(task_family):
     """
     task_family.exec_role = Role(
         EXEC_ROLE_T,
-        template=task_family.template,
         AssumeRolePolicyDocument=service_role_trust_policy("ecs-tasks"),
         Description=Sub(
             f"Execution role for ${{{SERVICE_NAME_T}}} in ${{{CLUSTER_NAME_T}}}"
@@ -88,12 +87,15 @@ def add_service_roles(task_family):
     )
     task_family.task_role = Role(
         TASK_ROLE_T,
-        template=task_family.template,
         AssumeRolePolicyDocument=service_role_trust_policy("ecs-tasks"),
         Description=Sub(f"TaskRole - ${{{SERVICE_NAME_T}}} in ${{{CLUSTER_NAME_T}}}"),
         ManagedPolicyArns=[],
         Policies=[],
     )
+    if TASK_ROLE_T not in task_family.template.resources:
+        task_family.template.add_resource(task_family.task_role)
+    if EXEC_ROLE_T not in task_family.template.resources:
+        task_family.template.add_resource(task_family.exec_role)
 
 
 def define_service_containers(service_template):

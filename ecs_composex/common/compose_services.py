@@ -1243,6 +1243,11 @@ class ComposeFamily(object):
 
     def add_service(self, service):
         self.services.append(service)
+        if self.task_definition and service.container_definition:
+            self.task_definition.ContainerDefinitions.append(
+                service.container_definition
+            )
+            self.set_secrets_access()
         self.set_xray()
         self.refresh()
 
@@ -1251,6 +1256,7 @@ class ComposeFamily(object):
         self.handle_iam()
         self.handle_logging()
         self.apply_services_params()
+        self.set_task_compute_parameter()
 
     def set_initial_services_dependencies(self):
         """
@@ -1777,7 +1783,8 @@ class ComposeFamily(object):
             logging_def.Options.update(self.task_logging_options)
 
     def init_task_definition(self):
-        add_service_roles(self)
+        if self.template:
+            add_service_roles(self)
         self.set_task_compute_parameter()
         self.set_task_definition()
         self.refresh_container_logging_definition()
