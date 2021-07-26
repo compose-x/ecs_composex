@@ -679,7 +679,7 @@ class ComposeListener(Listener):
                 user_pool_client_params = target["CreateCognitoClient"]
                 pool_id = user_pool_client_params["UserPoolId"]
                 pool_params = import_cognito_pool(pool_id, settings, listener_stack)
-                user_pool_client_params["UserPoolId"] = pool_params[0].data
+                user_pool_client_params["UserPoolId"] = pool_params[0]
                 user_pool_client_props = import_record_properties(
                     user_pool_client_params, UserPoolClient
                 )
@@ -690,9 +690,9 @@ class ComposeListener(Listener):
                     )
                 )
                 if keyisset(cognito_auth_key, target):
-                    target[cognito_auth_key]["UserPoolArn"] = pool_params[1].data
-                    target[cognito_auth_key]["UserPoolDomain"] = pool_params[2].data
-                    target[cognito_auth_key]["UserPoolClientId"] = Ref(user_pool_client).data
+                    target[cognito_auth_key]["UserPoolArn"] = pool_params[1]
+                    target[cognito_auth_key]["UserPoolDomain"] = pool_params[2]
+                    target[cognito_auth_key]["UserPoolClientId"] = Ref(user_pool_client)
                 else:
                     LOG.warning(
                         "No AuthenticateCognitoConfig defined. Setting to default settings"
@@ -702,9 +702,9 @@ class ComposeListener(Listener):
                             cognito_auth_key: {
                                 "OnUnauthenticatedRequest": "authenticate",
                                 "Scope": "openid email profile",
-                                "UserPoolArn": pool_params[1].data,
-                                "UserPoolDomain": pool_params[2].data,
-                                "UserPoolClientId": Ref(user_pool_client).data,
+                                "UserPoolArn": pool_params[1],
+                                "UserPoolDomain": pool_params[2],
+                                "UserPoolClientId": Ref(user_pool_client),
                             }
                         }
                     )
@@ -717,8 +717,8 @@ class ComposeListener(Listener):
             ):
                 pool_id = target[cognito_auth_key]["UserPoolArn"].split(r"::")[-1]
                 pool_params = import_cognito_pool(pool_id, settings, listener_stack)
-                target[cognito_auth_key]["UserPoolArn"] = pool_params[1].data
-                target[cognito_auth_key]["UserPoolDomain"] = pool_params[2].data
+                target[cognito_auth_key]["UserPoolArn"] = pool_params[1]
+                target[cognito_auth_key]["UserPoolDomain"] = pool_params[2]
 
     def handle_certificates(self, settings, listener_stack):
         """
