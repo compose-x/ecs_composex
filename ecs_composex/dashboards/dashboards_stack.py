@@ -20,6 +20,7 @@ from ecs_composex.common import (
     keyisset,
     keypresent,
 )
+from ecs_composex.common.cfn_conditions import define_stack_name
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.dashboards.dashboards_params import DASHBOARD_NAME, MOD_KEY, RES_KEY
 from ecs_composex.dashboards.dashboards_services_metrics import ServiceEcsWidget
@@ -98,7 +99,11 @@ def create_dashboards(settings, x_stack):
         dashboard_body_header = {"start": "-PT12H", "widgets": widgets}
         dashboard_body = Sub(json.dumps(dashboard_body_header))
         cfn_dashboard = CWDashboard(
-            NONALPHANUM.sub("", name), DashboardBody=dashboard_body, DashboardName=name
+            NONALPHANUM.sub("", name),
+            DashboardBody=dashboard_body,
+            DashboardName=Sub(
+                f"${{StackName}}--{name}", StackName=define_stack_name(x_stack.template)
+            ),
         )
         x_stack.stack_template.add_resource(cfn_dashboard)
 
