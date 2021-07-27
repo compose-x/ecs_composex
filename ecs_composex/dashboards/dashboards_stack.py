@@ -109,6 +109,9 @@ class XStack(ComposeXStack):
     """
 
     def __init__(self, title, settings, **kwargs):
+        params = {
+            CLUSTER_NAME.title: settings.ecs_cluster,
+        }
         stack_template = build_template("Root template for Dashboards", [CLUSTER_NAME])
-        super().__init__(title, stack_template, **kwargs)
+        super().__init__(title, stack_template, stack_parameters=params, **kwargs)
         create_dashboards(settings, self)
