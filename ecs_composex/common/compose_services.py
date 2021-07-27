@@ -2039,13 +2039,16 @@ class ComposeFamily(object):
         """
         from ecs_composex.ecs.ecs_prometheus import add_cw_agent_to_family
 
-        insights_options = {"CollectForAppMesh": False, "CollectForJavaJmx": False}
+        insights_options = {
+            "CollectForAppMesh": False,
+            "CollectForJavaJmx": False,
+            "EnableTasksDiscovery": False,
+        }
         for service in self.services:
             if keyisset("x-prometheus", service.definition):
                 prometheus_config = service.definition["x-prometheus"]
                 if keyisset("ContainersInsights", prometheus_config):
                     config = service.definition["x-prometheus"]["ContainersInsights"]
-                    print("CONFIG", config)
                     for key in insights_options.keys():
                         if keyisset(key, config):
                             insights_options[key] = True

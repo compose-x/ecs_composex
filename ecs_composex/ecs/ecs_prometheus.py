@@ -83,9 +83,7 @@ def generate_ecs_sd_config_snippet(task_def_names):
     )
     skeleton = {
         "sd_job_name": "",
-        "sd_metrics_ports": "9901",
         "sd_task_definition_arn_pattern": "",
-        "sd_metrics_path": "/stats/prometheus",
     }
     sd_configs = []
     for task_def_name in task_def_names:
@@ -212,7 +210,6 @@ def set_cw_config_parameter(family, **options):
                 "prometheus": {
                     "prometheus_config_path": "env:PROMETHEUS_CONFIG_CONTENT",
                     "emf_processor": {
-                        "metric_declaration_dedup": True,
                         "metric_declaration": [],
                     },
                 }
@@ -220,7 +217,10 @@ def set_cw_config_parameter(family, **options):
             "force_flush_interval": 5,
         }
     }
-    families_config_list = generate_ecs_sd_config_snippet([family.name])
+    if keyisset("EnableTasksDiscovery", options):
+        families_config_list = generate_ecs_sd_config_snippet([family.name])
+    else:
+        families_config_list = []
     ecs_sd_config = {
         "sd_frequency": "1m",
         "sd_result_file": "/tmp/cwagent_ecs_auto_sd.yaml",
