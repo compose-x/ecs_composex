@@ -8,7 +8,11 @@ Module to find the Cognito UserPools from tagging API
 
 import re
 
-from ecs_composex.cognito_userpool.cognito_params import USERPOOL_ARN, USERPOOL_ID, USERPOOL_DOMAIN
+from ecs_composex.cognito_userpool.cognito_params import (
+    USERPOOL_ARN,
+    USERPOOL_DOMAIN,
+    USERPOOL_ID,
+)
 from ecs_composex.common import LOG, keyisset
 from ecs_composex.common.aws import (
     define_lookup_role_from_info,
@@ -35,7 +39,9 @@ def get_userpool_config(userpool_arn, session):
     try:
         userpool_r = client.describe_user_pool(UserPoolId=userpool_id)
         if keyisset("CustomDomain", userpool_r["UserPool"]):
-            userpool_config[USERPOOL_DOMAIN.title] = userpool_r["UserPool"]["CustomDomain"]
+            userpool_config[USERPOOL_DOMAIN.title] = userpool_r["UserPool"][
+                "CustomDomain"
+            ]
         elif keyisset("Domain", userpool_r["UserPool"]):
             userpool_config[USERPOOL_DOMAIN.title] = userpool_r["UserPool"]["Domain"]
         LOG.debug(f"Pool domain is {userpool_config[USERPOOL_DOMAIN.title]}")

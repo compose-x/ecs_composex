@@ -8,7 +8,7 @@ Module to import CFN Resources defined by their properties
 
 from inspect import isfunction
 
-from troposphere import AWSProperty, AWSHelperFn
+from troposphere import AWSHelperFn, AWSProperty
 
 from ecs_composex.common import keyisset, keypresent
 

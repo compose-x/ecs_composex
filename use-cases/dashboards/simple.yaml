@@ -1,0 +1,11 @@
+﻿---
+# Simple dashboards definition
+
+x-dashboards:
+  all-services:
+    Type: clouwatch
+    Services:
+      app03:
+        UsePredefinedMetrics: true
+      bignicefamily:
+        UsePredefinedMetrics: true

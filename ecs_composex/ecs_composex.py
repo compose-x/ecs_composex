@@ -21,6 +21,7 @@ from ecs_composex.common.ecs_composex import X_AWS_KEY, X_KEY
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common.tagging import add_all_tags
 from ecs_composex.compute.compute_stack import ComputeStack
+from ecs_composex.dashboards.dashboards_stack import XStack as DashboardsStack
 from ecs_composex.dns import DnsSettings
 from ecs_composex.dns.dns_records import DnsRecords
 from ecs_composex.ecs.ecs_cluster import add_ecs_cluster
@@ -343,5 +344,7 @@ def generate_full_template(settings):
     dns_records.associate_records_to_resources(settings, root_stack, dns_settings)
     dns_settings.associate_settings_to_nested_stacks(root_stack)
     set_services_alarms(settings)
+    if keyisset("x-dashboards", settings.compose_content):
+        dashboards_stack = DashboardsStack("dashboards", settings)
     add_all_tags(root_stack.stack_template, settings)
     return root_stack
