@@ -3,7 +3,7 @@
 
 x-dashboards:
   all-services:
-    Type: clouwatch
+    Type: cloudwatch
     Services:
       app03:
         UsePredefinedMetrics: true
