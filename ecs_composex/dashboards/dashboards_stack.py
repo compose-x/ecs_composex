@@ -60,9 +60,12 @@ def retrieve_services(settings, services, x_stack):
                 f"Could not identify the {name} family in {families_original_names}"
             )
             continue
-        s_param = Parameter(f"{family.stack.title}{SERVICE_T}", Type="String")
+        s_param = Parameter(f"{family.stack.title}{SERVICE_T}Name", Type="String")
         if SERVICE_T not in family.template.outputs:
-            add_outputs(family.template, [Output(s_param.title, Value=Ref(SERVICE_T))])
+            add_outputs(
+                family.template,
+                [Output(s_param.title, Value=GetAtt(SERVICE_T, "Name"))],
+            )
         x_stack.Parameters.update(
             {s_param.title: GetAtt(family.stack.title, f"Outputs.{s_param.title}")}
         )
