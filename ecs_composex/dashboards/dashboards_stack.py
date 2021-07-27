@@ -26,20 +26,40 @@ from ecs_composex.dashboards.dashboards_services_metrics import ServiceEcsWidget
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME, SERVICE_T
 
 
+def get_family_from_name(settings, name):
+    """
+
+    :param ecs_composex.common.settings.ComposeXSettings settings:
+    :param name:
+    :return:
+    """
+    for family in settings.families.values():
+        if family.name == name:
+            return family
+    return None
+
+
 def retrieve_services(settings, services, x_stack):
     """
     Function to
+
     :param ecs_composex.common.settings.ComposeXSettings settings:
     :param dict services:
     :param ecs_composex.common.stacks.ComposeXStack x_stack:
     :return:
     """
     services_params = []
+    families_original_names = [f.name for f in settings.families.values()]
     for name, service_def in services.items():
-        if name not in settings.families.keys():
+        if name not in families_original_names:
             LOG.warn(f"Service family {name} is not defined. Skipping")
             continue
-        family = settings.families[name]
+        family = get_family_from_name(settings, name)
+        if family is None:
+            LOG.warn(
+                f"Could not identify the {name} family in {families_original_names}"
+            )
+            continue
         s_param = Parameter(f"{family.stack.title}{SERVICE_T}", Type="String")
         if SERVICE_T not in family.template.outputs:
             add_outputs(family.template, [Output(s_param.title, Value=Ref(SERVICE_T))])
