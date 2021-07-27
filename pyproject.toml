@@ -2,7 +2,7 @@
 github_url = "https://github.com/compose-x/ecs_composex"
 
 [tool.tbump.version]
-current = "0.15.2"
+current = "0.15.3"
 
 regex = '''
   (?P<major>\d+)
