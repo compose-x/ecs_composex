@@ -6,7 +6,7 @@
 ECS ComposeX
 ============
 
-|PYPI_VERSION| |PYPI_LICENSE|
+|PYPI_VERSION| |PYPI_LICENSE| |PY_DLS|
 
 |CODE_STYLE| |TDD| |BDD|
 
@@ -258,3 +258,6 @@ This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypack
 .. |QUALITY| image:: https://sonarcloud.io/api/project_badges/measure?project=compose-x_ecs_composex&metric=alert_status
     :alt: Code scan with SonarCloud
     :target: https://sonarcloud.io/dashboard?id=compose-x_ecs_composex
+
+.. |PY_DLS| image:: https://img.shields.io/pypi/dm/ecs-composex
+    :target: https://pypi.org/project/ecs-composex/
