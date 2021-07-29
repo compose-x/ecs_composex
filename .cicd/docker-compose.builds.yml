@@ -7,7 +7,7 @@ services:
       dockerfile: cli.Dockerfile
       context: ../
       args:
-        SRC_TAG: "3.8.20210310"
+        SRC_TAG: "3.8.20210729"
         ARCH: "-${ARCH}"
     image: ${REGISTRY_URI}compose-x:${SUFFIX:-main}-py37-${ARCH}
 
@@ -16,6 +16,6 @@ services:
       dockerfile: cli.Dockerfile
       context: ../
       args:
-        SRC_TAG: "3.8.20210310"
+        SRC_TAG: "3.8.20210729"
         ARCH: "-${ARCH}"
     image: ${REGISTRY_URI}compose-x:${SUFFIX:-main}-py38-${ARCH}
