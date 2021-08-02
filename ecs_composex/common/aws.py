@@ -18,12 +18,13 @@ from ecs_composex.common import LOG, keyisset
 from ecs_composex.iam import ROLE_ARN_ARG, validate_iam_role_arn
 
 
-def get_cross_role_session(session, arn, session_name=None):
+def get_cross_role_session(session, arn, region_name=None, session_name=None):
     """
     Function to override ComposeXSettings session to specific session for Lookup
 
     :param boto3.session.Session session: The original session fetching the credentials for X-Role
     :param str arn:
+    :param str region_name: Name of region for session
     :param str session_name: Override name of the session
     :return: boto3 session from lookup settings
     :rtype: boto3.session.Session
@@ -43,6 +44,7 @@ def get_cross_role_session(session, arn, session_name=None):
             f"Successfully assumed role. Session ID: {creds['AssumedRoleUser']['AssumedRoleId']}"
         )
         return boto3.session.Session(
+            region_name=region_name,
             aws_access_key_id=creds["Credentials"]["AccessKeyId"],
             aws_session_token=creds["Credentials"]["SessionToken"],
             aws_secret_access_key=creds["Credentials"]["SecretAccessKey"],

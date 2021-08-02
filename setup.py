@@ -64,6 +64,7 @@ setup(
             "ecs_compose_x=ecs_composex.cli:main",
         ]
     },
+    extras_requires={"ECRScan": ["ecr-scan-reporter==0.2.2"]},
     install_requires=requirements,
     license="MPL-2.0",
     long_description=readme,

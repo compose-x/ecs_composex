@@ -8,12 +8,13 @@ Console script for ecs_composex.
 
 import argparse
 import sys
+import warnings
 
 from ecs_composex.common import LOG
 from ecs_composex.common.aws import deploy, plan
 from ecs_composex.common.settings import ComposeXSettings
 from ecs_composex.common.stacks import process_stacks
-from ecs_composex.ecs_composex import generate_full_template
+from ecs_composex.ecs_composex import generate_full_template, scan_services_images
 
 
 class ArgparseHelper(argparse._HelpAction):
@@ -54,6 +55,7 @@ def main_parser():
     )
     base_command_parser = argparse.ArgumentParser(add_help=False)
     files_parser = argparse.ArgumentParser(add_help=False)
+    extras_parser = argparse.ArgumentParser(add_help=False)
     files_parser.add_argument(
         "-f",
         "--docker-compose-file",
@@ -125,11 +127,18 @@ def main_parser():
         help="Allow you to run API calls using a specific IAM role, within same or for cross-account",
         required=False,
     )
+    extras_parser.add_argument(
+        "--ignore-ecr-findings",
+        dest=ComposeXSettings.ecr_arg,
+        action="store_true",
+        default=False,
+        help="For services with x-ecr defined, ignores errors if any found",
+    )
     for command in ComposeXSettings.active_commands:
         cmd_parsers.add_parser(
             name=command["name"],
             help=command["help"],
-            parents=[base_command_parser, files_parser],
+            parents=[base_command_parser, files_parser, extras_parser],
         )
     for command in ComposeXSettings.validation_commands:
         cmd_parsers.add_parser(
@@ -162,7 +171,10 @@ def main():
             "You must update the templates in order to deploy. We won't be deploying."
         )
         settings.deploy = False
-
+    scan_results = scan_services_images(settings)
+    if scan_results and not settings.ignore_ecr_findings:
+        warnings.warn("SCAN Images failed for instructed images. Failure")
+        return 1
     root_stack = generate_full_template(settings)
     process_stacks(root_stack, settings)
 
