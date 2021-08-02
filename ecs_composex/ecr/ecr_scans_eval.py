@@ -35,28 +35,71 @@ ECR_URI_RE = re.compile(
 def initial_scan_retrieval(
     registry, repository_name, image, image_url, trigger_scan, ecr_session=None
 ):
+    """
+    Function to retrieve the scan findings from ECR, and if none, can trigger scan
+
+    :param str registry:
+    :param str repository_name:
+    :param dict image:
+    :param str image_url:
+    :param bool trigger_scan:
+    :param boto3.session.Session ecr_session:
+    :return: The scan report
+    :rtype: dict
+    """
     if ecr_session is None:
         ecr_session = Session()
+    client = ecr_session.client("ecr")
+    while True:
+        try:
+            image_scan_r = client.describe_image_scan_findings(
+                registryId=registry, repositoryName=repository_name, imageId=image
+            )
+            return image_scan_r
+        except client.exceptions.ScanNotFoundException:
+            LOG.error(f"No scan report found for {image_url}")
+            if trigger_scan:
+                LOG.info(
+                    f"Triggering scan for {image_url}, trigger_scan={trigger_scan}"
+                )
+                trigger_images_scan(
+                    repo_name=repository_name,
+                    images_to_scan=[image],
+                    ecr_session=ecr_session,
+                )
+            else:
+                LOG.warn(
+                    f"No scan was available and scanning not requested for {image_url}. Skipping"
+                )
+                return None
+
+
+def scan_poll_and_wait(registry, repository_name, image, image_url, ecr_session=None):
+    """
+    Function to pull the scans results until no longer in progress
+
+    :param boto3.session.Session ecr_session:
+    :param registry:
+    :param repository_name:
+    :param image:
+    :param image_url:
+    :param ecr_session:
+    :return: The scan report
+    :rtype: dict
+    """
     client = ecr_session.client("ecr")
     try:
         image_scan_r = client.describe_image_scan_findings(
             registryId=registry, repositoryName=repository_name, imageId=image
         )
-        return image_scan_r
-    except client.exceptions.ScanNotFoundException:
-        LOG.error(f"No scan report found for {image_url}")
-        if trigger_scan:
-            LOG.info(f"Triggering scan for {image_url}, trigger_scan={trigger_scan}")
-            trigger_images_scan(
-                repo_name=repository_name,
-                images_to_scan=[image],
-                ecr_session=ecr_session,
-            )
+        if image_scan_r["imageScanStatus"]["status"] == "IN_PROGRESS":
+            LOG.info(f"{image_url} - Scan in progress - waiting 10 seconds")
+            sleep(10)
         else:
-            LOG.warn(
-                f"No scan was available and scanning not requested for {image_url}. Skipping"
-            )
-            return None
+            return image_scan_r
+    except client.exceptions.LimitExceededException:
+        LOG.warn(f"{image_url} - Exceeding API Calls quota. Waiting 10 seconds")
+        sleep(10)
 
 
 def wait_for_scan_report(
@@ -83,24 +126,14 @@ def wait_for_scan_report(
         keyisset("imageScanStatus", image_scan_r)
         and image_scan_r["imageScanStatus"]["status"] == "IN_PROGRESS"
     ):
-        client = ecr_session.client("ecr")
-        while True:
-            try:
-                image_scan_r = client.describe_image_scan_findings(
-                    registryId=registry, repositoryName=repository_name, imageId=image
-                )
-                if image_scan_r["imageScanStatus"]["status"] == "IN_PROGRESS":
-                    LOG.info(f"{image_url} - Scan in progress - waiting 10 seconds")
-                    sleep(10)
-                else:
-                    break
-            except client.exceptions.LimitExceededException:
-                LOG.warn(f"{image_url} - Exceeding API Calls quota. Waiting 10 seconds")
-                sleep(10)
-    elif image_scan_r["imageScanStatus"]["status"] == "COMPLETE":
-        scan_findings = image_scan_r["imageScanFindings"]
-        if keyisset("findingSeverityCounts", scan_findings):
-            findings = scan_findings["findingSeverityCounts"]
+        image_scan_r = scan_poll_and_wait(
+            registry, repository_name, image, image_url, ecr_session
+        )
+
+    if image_scan_r["imageScanStatus"]["status"] == "COMPLETE" and keyisset(
+        "findingSeverityCounts", image_scan_r["imageScanFindings"]
+    ):
+        findings = image_scan_r["imageScanFindings"]["findingSeverityCounts"]
     elif image_scan_r["imageScanStatus"]["status"] == "FAILED":
         findings = {
             "FAILED": True,
