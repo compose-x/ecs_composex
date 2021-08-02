@@ -7,6 +7,7 @@ Main module to generate a full stack with VPC, Cluster, Compute, Services and al
 """
 
 import re
+import warnings
 from importlib import import_module
 
 from troposphere import AWS_STACK_NAME, FindInMap, GetAtt, Ref
@@ -28,6 +29,17 @@ from ecs_composex.ecs.ecs_cluster import add_ecs_cluster
 from ecs_composex.ecs.ecs_stack import associate_services_to_root_stack
 from ecs_composex.vpc import vpc_params
 from ecs_composex.vpc.vpc_stack import add_vpc_to_root
+
+try:
+    from ecs_composex.ecr.ecr_scans_eval import scan_service_image
+
+    SCANS_POSSIBLE = True
+except ImportError:
+    warnings.warn(
+        "You must install ecs-composex[ECRScan] extra to use this functionality"
+    )
+    SCANS_POSSIBLE = False
+
 
 RES_REGX = re.compile(r"(^([x-]+))")
 COMPUTE_STACK_NAME = "Ec2Compute"
@@ -300,6 +312,24 @@ def init_root_template(settings):
     template = init_template("Root template generated via ECS ComposeX")
     template.add_mapping("ComposeXDefaults", {"ECS": {"PlatformVersion": "1.4.0"}})
     return template
+
+
+def scan_services_images(settings):
+    """
+    Function to go over each service of each family in its final state and evaluate the ECR Image validity.
+
+    :param ecs_composex.common.settings.ComposeXSettings settings: The settings for the execution
+    :return:
+    """
+    result = 0
+    if not SCANS_POSSIBLE:
+        return result
+    for family in settings.families.values():
+        for service in family.services:
+            if scan_service_image(service, settings):
+                LOG.warn(f"{family.name}.{service.name} - vulnerabilities found")
+                result = 1
+    return result
 
 
 def generate_full_template(settings):

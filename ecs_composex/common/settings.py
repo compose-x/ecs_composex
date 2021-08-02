@@ -66,6 +66,7 @@ class ComposeXSettings(object):
     format_arg = "TemplateFormat"
     default_format = "json"
     allowed_formats = ["json", "yaml", "text"]
+    ecr_arg = "SkipScanEcrImages"
 
     vpc_cidr_arg = "VpcCidr"
     single_nat_arg = "SingleNat"
@@ -165,6 +166,7 @@ class ComposeXSettings(object):
         self.evaluate_private_namespace()
         self.name = kwargs[self.name_arg]
         self.ecs_cluster = None
+        self.ignore_ecr_findings = keyisset(self.ecr_arg, kwargs)
 
     def evaluate_private_namespace(self):
         """

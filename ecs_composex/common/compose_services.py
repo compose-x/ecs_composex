@@ -153,6 +153,7 @@ class ComposeService(object):
         ("x-scaling", dict),
         ("x-network", dict),
         ("x-alarms", dict),
+        ("x-ecr", dict),
     ]
 
     ecs_plugin_aws_keys = [
@@ -261,6 +262,7 @@ class ComposeService(object):
         self.set_service_deploy()
         self.set_container_definition()
         self.set_networks()
+        self.ecr_config = set_else_none("x-ecr", self.definition, None)
 
     def define_port_mappings(self):
         """

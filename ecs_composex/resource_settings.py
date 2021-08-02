@@ -57,8 +57,6 @@ def add_iam_policy_to_service_task_role(
     :return:
     """
     containers = define_service_containers(service_template)
-    print(containers)
-    print(resource.env_vars)
     policy = perms[access_type]
     task_role = service_template.resources[TASK_ROLE_T]
     task_role.Policies.append(policy)
