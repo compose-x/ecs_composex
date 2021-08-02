@@ -23,13 +23,40 @@ except ImportError:
         "You must install ecr-scan-reporter in order to use this functionality"
     )
 
-from ecs_composex.common import LOG, keyisset, keypresent
+from ecs_composex.common import LOG, keyisset
 from ecs_composex.common.aws import get_cross_role_session
 
 ECR_URI_RE = re.compile(
     r"(?P<account_id>\d{12}).dkr.ecr.(?P<region>[a-z0-9-]+).amazonaws.com/"
     r"(?P<repo_name>[a-zA-Z0-9-_./]+)(?P<tag>(?:\@sha[\d]+:[a-z-Z0-9]+$)|(?::[\S]+$))"
 )
+
+
+def initial_scan_retrieval(
+    registry, repository_name, image, image_url, trigger_scan, ecr_session=None
+):
+    if ecr_session is None:
+        ecr_session = Session()
+    client = ecr_session.client("ecr")
+    try:
+        image_scan_r = client.describe_image_scan_findings(
+            registryId=registry, repositoryName=repository_name, imageId=image
+        )
+        return image_scan_r
+    except client.exceptions.ScanNotFoundException:
+        LOG.error(f"No scan report found for {image_url}")
+        if trigger_scan:
+            LOG.info(f"Triggering scan for {image_url}, trigger_scan={trigger_scan}")
+            trigger_images_scan(
+                repo_name=repository_name,
+                images_to_scan=[image],
+                ecr_session=ecr_session,
+            )
+        else:
+            LOG.warn(
+                f"No scan was available and scanning not requested for {image_url}. Skipping"
+            )
+            return None
 
 
 def wait_for_scan_report(
@@ -48,30 +75,15 @@ def wait_for_scan_report(
     """
     if not ecr_session:
         ecr_session = Session()
-    client = ecr_session.client("ecr")
     findings = {}
-    try:
-        image_scan_r = client.describe_image_scan_findings(
-            registryId=registry, repositoryName=repository_name, imageId=image
-        )
-    except client.exceptions.ScanNotFoundException:
-        LOG.error(f"No scan report found for {image_url}")
-        if trigger_scan:
-            LOG.info(f"Triggering scan for {image_url}, trigger_scan={trigger_scan}")
-            trigger_images_scan(
-                repo_name=repository_name,
-                images_to_scan=[image],
-                ecr_session=ecr_session,
-            )
-        else:
-            LOG.warn(
-                f"No scan was available and scanning not requested for {image_url}. Skipping"
-            )
-            return findings
+    image_scan_r = initial_scan_retrieval(
+        registry, repository_name, image, image_url, trigger_scan, ecr_session
+    )
     if (
         keyisset("imageScanStatus", image_scan_r)
         and image_scan_r["imageScanStatus"]["status"] == "IN_PROGRESS"
     ):
+        client = ecr_session.client("ecr")
         while True:
             try:
                 image_scan_r = client.describe_image_scan_findings(
@@ -85,12 +97,15 @@ def wait_for_scan_report(
             except client.exceptions.LimitExceededException:
                 LOG.warn(f"{image_url} - Exceeding API Calls quota. Waiting 10 seconds")
                 sleep(10)
-    if image_scan_r["imageScanStatus"]["status"] == "COMPLETE":
+    elif image_scan_r["imageScanStatus"]["status"] == "COMPLETE":
         scan_findings = image_scan_r["imageScanFindings"]
         if keyisset("findingSeverityCounts", scan_findings):
             findings = scan_findings["findingSeverityCounts"]
     elif image_scan_r["imageScanStatus"]["status"] == "FAILED":
-        findings = {"FAILED": True, "reason": image_scan_r["imageScanStatus"]["description"]}
+        findings = {
+            "FAILED": True,
+            "reason": image_scan_r["imageScanStatus"]["description"],
+        }
     return findings
 
 
@@ -166,9 +181,7 @@ def identify_service_image(repo_name, image_sha, image_tag, session):
             image_sha
             and keyisset("imageDigest", image)
             and image["imageDigest"] == image_sha
-        ):
-            the_image = image
-        elif (
+        ) or (
             image_tag and keyisset("imageTag", image) and image["imageTag"] == image_tag
         ):
             the_image = image
@@ -191,7 +204,9 @@ def define_result(image_url, security_findings, thresholds, vulnerability_config
     if not security_findings:
         return result
     elif keyisset("FAILED", security_findings):
-        LOG.error(f"{image_url} - Scan of image failed. - {security_findings['reason']}")
+        LOG.error(
+            f"{image_url} - Scan of image failed. - {security_findings['reason']}"
+        )
         if keyisset("TreatFailedAs", vulnerability_config):
             if vulnerability_config["TreatFailedAs"] == "Success":
                 LOG.info("TreatFailedAs set to Success - ignoring scan failure")
@@ -255,4 +270,6 @@ def scan_service_image(service, settings):
         image_url=service.image,
         ecr_session=session,
     )
-    return define_result(service.image, security_findings, thresholds, vulnerability_config)
+    return define_result(
+        service.image, security_findings, thresholds, vulnerability_config
+    )
