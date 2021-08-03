@@ -58,9 +58,7 @@ def initial_scan_retrieval(
     except client.exceptions.ScanNotFoundException:
         LOG.error(f"No scan report found for {image_url}")
         if trigger_scan:
-            LOG.info(
-                f"Triggering scan for {image_url}, trigger_scan={trigger_scan}"
-            )
+            LOG.info(f"Triggering scan for {image_url}, trigger_scan={trigger_scan}")
             trigger_images_scan(
                 repo_name=repository_name,
                 images_to_scan=[image],
@@ -123,7 +121,8 @@ def wait_for_scan_report(
         registry, repository_name, image, image_url, trigger_scan, ecr_session
     )
     if (
-        image_scan_r and keyisset("imageScanStatus", image_scan_r)
+        image_scan_r
+        and keyisset("imageScanStatus", image_scan_r)
         and image_scan_r["imageScanStatus"]["status"] == "IN_PROGRESS"
     ):
         image_scan_r = scan_poll_and_wait(
@@ -132,10 +131,7 @@ def wait_for_scan_report(
     if image_scan_r is None:
         reason = "Failed to retrieve or poll scan report"
         LOG.error(reason)
-        return {
-            "FAILED": True,
-            "reason": reason
-        }
+        return {"FAILED": True, "reason": reason}
     if image_scan_r["imageScanStatus"]["status"] == "COMPLETE" and keyisset(
         "findingSeverityCounts", image_scan_r["imageScanFindings"]
     ):
