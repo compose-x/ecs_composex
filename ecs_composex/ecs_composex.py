@@ -31,7 +31,11 @@ from ecs_composex.vpc import vpc_params
 from ecs_composex.vpc.vpc_stack import add_vpc_to_root
 
 try:
-    from ecs_composex.ecr.ecr_scans_eval import scan_service_image
+    from ecs_composex.ecr.ecr_scans_eval import (
+        define_service_image,
+        interpolate_ecr_uri_tag_with_digest,
+        scan_service_image,
+    )
 
     SCANS_POSSIBLE = True
 except ImportError:
@@ -314,7 +318,7 @@ def init_root_template(settings):
     return template
 
 
-def scan_services_images(settings):
+def evaluate_ecr_configs(settings):
     """
     Function to go over each service of each family in its final state and evaluate the ECR Image validity.
 
@@ -326,7 +330,17 @@ def scan_services_images(settings):
         return result
     for family in settings.families.values():
         for service in family.services:
-            if scan_service_image(service, settings):
+            service_image = define_service_image(service, settings)
+            if (
+                service.ecr_config
+                and keyisset("InterpolateWithDigest", service.ecr_config)
+                and keyisset("imageDigest", service_image)
+            ):
+                service.image = interpolate_ecr_uri_tag_with_digest(
+                    service.image, service_image["imageDigest"]
+                )
+                LOG.info(f"Update service {family.name}.{service.name} image to {service.image}")
+            if scan_service_image(service, settings, service_image):
                 LOG.warn(f"{family.name}.{service.name} - vulnerabilities found")
                 result = 1
     return result

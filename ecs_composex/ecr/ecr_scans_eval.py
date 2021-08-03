@@ -144,6 +144,23 @@ def wait_for_scan_report(
     return findings
 
 
+def validate_image_from_ecr(service):
+    """
+    Function to validate that the image URI is from valid and from private ECR
+
+    :param ecs_composex.common.compose_services.ComposeService service:
+    :return:
+    """
+    if not ECR_URI_RE.match(service.image):
+        LOG.info(
+            f"{service.name} - image provided not valid ECR URI - "
+            f"{service.image} - "
+        )
+        LOG.info(f"Expected ECR Regexp {ECR_URI_RE.pattern}")
+        return True
+    return False
+
+
 def validate_input(service):
     """
     Validates that we have enough settings and the URL matches AWS ECR Private Repo
@@ -157,41 +174,34 @@ def validate_input(service):
     if not keyisset("VulnerabilitiesScan", service.ecr_config):
         LOG.info(f"{service.name} - No scan to be evaluated.")
         return True
-    if not ECR_URI_RE.match(service.image):
-        LOG.info(
-            f"{service.name} - image provided not valid ECR URI - "
-            f"{service.image} - "
-        )
-        LOG.info(f"Expected ECR Regexp {ECR_URI_RE.pattern}")
+    if validate_image_from_ecr(service):
         return True
     return False
 
 
-def define_scanning_session(
-    account_id, current_account_id, repo_name, vulnerability_config, region, settings
+def define_ecr_session(
+    account_id, current_account_id, repo_name, region, settings, role_arn=None
 ):
     """
     Function to determine the boto3 session to use for subsequent API calls to ECR
     :param account_id:
     :param current_account_id:
     :param repo_name:
-    :param vulnerability_config:
     :param region:
     :param settings:
+    :param str role_arn:
     :return:
     """
     session = Session(region_name=region)
-    if account_id != current_account_id and not keyisset(
-        "RoleArn", vulnerability_config
-    ):
+    if account_id != current_account_id and role_arn is None:
         raise KeyError(
             f"The account for repository {repo_name} detected from image URI is in account "
             f"{account_id}, execution session in {current_account_id} and no RoleArn provided"
         )
-    elif account_id != current_account_id and keyisset("RoleArn", vulnerability_config):
+    elif account_id != current_account_id and role_arn:
         session = get_cross_role_session(
             settings.session,
-            vulnerability_config["RoleArn"],
+            role_arn,
             region_name=region,
             session_name="ecr-scan@compose-x",
         )
@@ -259,24 +269,32 @@ def define_result(image_url, security_findings, thresholds, vulnerability_config
     return result
 
 
-def scan_service_image(service, settings):
+def interpolate_ecr_uri_tag_with_digest(image_url, image_digest):
     """
-    Function to review the service definition and evaluate scan if properties defined
+    Function to replace the tag from image_url
+
+    :param str image_url:
+    :param str image_digest:
+    :return:
+    """
+    tag = ECR_URI_RE.match(image_url).group("tag")
+    if tag.startswith(r"@"):
+        return image_url
+    new_image = re.sub(tag, f"@{image_digest}", image_url)
+    return new_image
+
+
+def define_service_image(service, settings):
+    """
+    Function to parse and identify the image for the service in AWS ECR
 
     :param ecs_composex.common.compose_services.ComposeService service:
     :param ecs_composex.common.settings.ComposeXSettings settings: The settings for the execution
     :return:
     """
-    region = None
     current_account_id = settings.session.client("sts").get_caller_identity()["Account"]
-    if validate_input(service):
+    if validate_image_from_ecr(service):
         return
-    vulnerability_config = service.ecr_config["VulnerabilitiesScan"]
-    if keyisset("Thresholds", vulnerability_config):
-        thresholds = vulnerability_config["Thresholds"]
-    else:
-        LOG.warn(f"No thresholds defined. Using defaults {DEFAULT_THRESHOLDS}")
-        thresholds = DEFAULT_THRESHOLDS
     image_sha = None
     image_tag = None
     tag = ECR_URI_RE.match(service.image).group("tag")
@@ -287,17 +305,71 @@ def scan_service_image(service, settings):
     repo_name = ECR_URI_RE.match(service.image).group("repo_name")
     account_id = ECR_URI_RE.match(service.image).group("account_id")
     region = ECR_URI_RE.match(service.image).group("region")
-    session = define_scanning_session(
+    session = define_ecr_session(
         account_id,
         current_account_id,
         repo_name,
-        vulnerability_config,
         region,
         settings,
+        role_arn=service.ecr_config["RoleArn"]
+        if keyisset("RoleArn", service.ecr_config)
+        else None,
     )
     the_image = identify_service_image(repo_name, image_sha, image_tag, session)
+    return the_image
+
+
+def validate_the_image_input(the_image):
+    """
+    Function to validet the_image input
+
+    :param dict the_image:
+    :raises: ValueError if is None
+    :raises: TypeError if the_image is not dict
+    :raises: KeyError if imageDigest is missing
+    """
     if the_image is None:
-        raise LookupError(f"Failed to find the image {tag}")
+        raise ValueError("You must provide the image information")
+    elif not isinstance(the_image, dict):
+        raise TypeError("the_image must be of type", dict, "got", type(the_image))
+    elif not keyisset("imageDigest", the_image):
+        raise KeyError("imageDigest must be set in the_image")
+
+
+def scan_service_image(service, settings, the_image=None):
+    """
+    Function to review the service definition and evaluate scan if properties defined
+
+    :param ecs_composex.common.compose_services.ComposeService service:
+    :param ecs_composex.common.settings.ComposeXSettings settings: The settings for the execution
+    :param the_image: The image to use for scanning references.
+    :return:
+    """
+    region = None
+    current_account_id = settings.session.client("sts").get_caller_identity()["Account"]
+    if validate_input(service):
+        return
+    vulnerability_config = service.ecr_config["VulnerabilitiesScan"]
+    if keyisset("Thresholds", vulnerability_config):
+        thresholds = dict(DEFAULT_THRESHOLDS)
+        thresholds.update(vulnerability_config["Thresholds"])
+    else:
+        LOG.warn(f"No thresholds defined. Using defaults {DEFAULT_THRESHOLDS}")
+        thresholds = DEFAULT_THRESHOLDS
+    validate_the_image_input(the_image)
+    repo_name = ECR_URI_RE.match(service.image).group("repo_name")
+    account_id = ECR_URI_RE.match(service.image).group("account_id")
+    region = ECR_URI_RE.match(service.image).group("region")
+    session = define_ecr_session(
+        account_id,
+        current_account_id,
+        repo_name,
+        region,
+        settings,
+        role_arn=service.ecr_config["RoleArn"]
+        if keyisset("RoleArn", vulnerability_config)
+        else None,
+    )
     security_findings = wait_for_scan_report(
         registry=account_id,
         repository_name=repo_name,
