@@ -14,7 +14,7 @@ from ecs_composex.common import LOG
 from ecs_composex.common.aws import deploy, plan
 from ecs_composex.common.settings import ComposeXSettings
 from ecs_composex.common.stacks import process_stacks
-from ecs_composex.ecs_composex import generate_full_template, evaluate_ecr_configs
+from ecs_composex.ecs_composex import evaluate_ecr_configs, generate_full_template
 
 
 class ArgparseHelper(argparse._HelpAction):

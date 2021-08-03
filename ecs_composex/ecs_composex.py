@@ -339,7 +339,9 @@ def evaluate_ecr_configs(settings):
                 service.image = interpolate_ecr_uri_tag_with_digest(
                     service.image, service_image["imageDigest"]
                 )
-                LOG.info(f"Update service {family.name}.{service.name} image to {service.image}")
+                LOG.info(
+                    f"Update service {family.name}.{service.name} image to {service.image}"
+                )
             if scan_service_image(service, settings, service_image):
                 LOG.warn(f"{family.name}.{service.name} - vulnerabilities found")
                 result = 1
