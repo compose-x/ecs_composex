@@ -9,17 +9,6 @@
 services.x-ecr
 ==================
 
-Most companies running applications in AWS use the power of AWS ECR to store their docker images, and most use the
-free scan feature to detect security vulnerabilities by scanning the content of the images and match it against CVE
-databases.
-
-To validate that the images that we are about to use, ECS Compose-X uses `ECR Scan Reporter`_ as a library to perform
-some images securities evaluations.
-
-.. hint::
-
-    Future features to come won't necessarily be related to security.
-
 Syntax Reference
 ==================
 
@@ -29,6 +18,7 @@ Syntax Reference
       serviceA:
         image: 012345678912.dkr.region.amazonaws.com/repo:tag
         x-ecr:
+          InterpolateWithDigest: bool
           VulnerabilitiesScan:
             IgnoreFailure: bool
             TreatFailedAs: str
@@ -39,29 +29,88 @@ Syntax Reference
               LOW: number
             RoleArn: str
 
+InterpolateWithDigest
+=====================
+
+When the image comes from ECR, we can very easily identify the image digest (sha256) for it and use that instead of a tag.
+However not as human user friendly, this allows to always point to the same image regardless of tags change.
+
++----------+---------+
+| Type     | Boolean |
++----------+---------+
+| Default  | False   |
++----------+---------+
+| Required | False   |
++----------+---------+
+
+
+VulnerabilitiesScan
+====================
+
+Most companies running applications in AWS use the power of AWS ECR to store their docker images, and most use the
+free scan feature to detect security vulnerabilities by scanning the content of the images and match it against CVE
+databases.
+
+To validate that the images that we are about to use, ECS Compose-X uses `ECR Scan Reporter`_ as a library to perform
+some images securities evaluations.
+
++----------+--------+
+| Type     | Object |
++----------+--------+
+| Default  | None   |
++----------+--------+
+| Required | False  |
++----------+--------+
+
 IgnoreFailure
 --------------
 
 Boolean to indicate that, although you wanted the scan to be evaluated, it won't stop compose-x execution.
 
-*Required*: No
++----------+---------+
+| Type     | Boolean |
++----------+---------+
+| Default  | True    |
++----------+---------+
+| Required | False   |
++----------+---------+
 
 TreatFailedAs
 ---------------
 
 When the scan status is FAILED (unsupported image for example), allow do define whether that is fine or not.
 
-*Allowed Values*: Success | Failure
-*Required*: No
++----------------+-----------+
+| Type           | Boolean   |
++----------------+-----------+
+| Default        | Failure   |
++----------------+-----------+
+| Required       | False     |
++----------------+-----------+
+| Allowed Values | * Success |
+|                | * Failure |
++----------------+-----------+
 
 Thresholds
 ----------
 
 Allows you to define the level for evaluation that you wish to have for stopping the execution.
 
-*Default*: 0 for all 4 levels.
-*Required*: No
-*Allowed Properties*: CRITICAL, HIGH, MEDIUM, LOW
++--------------------+-------------+
+| Type               | Object      |
++--------------------+-------------+
+| Default            | CRITICAL: 0 |
+|                    | HIGH: 0     |
+|                    | MEDIUM: 0   |
+|                    | LOW: 0      |
++--------------------+-------------+
+| Required           | False       |
++--------------------+-------------+
+| Allowed Attributes | * CRITICAL  |
+|                    | * HIGH      |
+|                    | * MEDIUM    |
+|                    | * LOW       |
++--------------------+-------------+
 
 RoleArn
 --------
@@ -78,6 +127,7 @@ Examples
     services:
       grafana:
         x-ecr:
+          InterpolateWithDigest: true
           VulnerabilitiesScan:
             IgnoreFailure: false
             Thresholds:
