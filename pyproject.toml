@@ -60,6 +60,7 @@ Sphinx = "4.1.2"
 docker-compose = "^1.29.2"
 docker = "^5.0.0"
 tox = "^3.24.1"
+tbump = "6.3.1"
 
 [tool.poetry.scripts]
 ecs-compose-x = "ecs_composex.cli:main"
@@ -91,9 +92,6 @@ regex = '''
 [tool.tbump.git]
 message_template = "Bump to {new_version}"
 tag_template = "v{new_version}"
-
-[[tool.tbump.file]]
-src = "setup.py"
 
 [[tool.tbump.file]]
 src = "pyproject.toml"
