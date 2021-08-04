@@ -74,7 +74,6 @@ extensions += [
     "sphinx.ext.todo",
     "sphinx.ext.viewcode",
     "sphinx.ext.autodoc",
-    "sphinx_sitemap",
 ]
 
 autosummary_generate = True
