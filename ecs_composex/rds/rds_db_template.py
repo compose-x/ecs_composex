@@ -6,6 +6,7 @@
 RDS DB template generator
 """
 
+from compose_x_common.compose_x_common import keyisset
 from troposphere import AWS_NO_VALUE, GetAtt, If, Ref, Sub, Tags
 from troposphere.ec2 import SecurityGroup
 from troposphere.rds import (
@@ -16,7 +17,7 @@ from troposphere.rds import (
     DBSubnetGroup,
 )
 
-from ecs_composex.common import LOG, build_template, keyisset
+from ecs_composex.common import LOG, build_template
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.rds import rds_conditions
 from ecs_composex.rds.rds_parameter_groups_helper import (

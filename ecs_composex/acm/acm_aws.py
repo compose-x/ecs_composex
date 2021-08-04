@@ -7,8 +7,9 @@ Module to import existing ACM Certificates just as for other resources.
 """
 
 from botocore.exceptions import ClientError
+from compose_x_common.compose_x_common import keyisset
 
-from ecs_composex.common import LOG, keyisset
+from ecs_composex.common import LOG
 from ecs_composex.common.aws import (
     define_lookup_role_from_info,
     find_aws_resource_arn_from_tags_api,

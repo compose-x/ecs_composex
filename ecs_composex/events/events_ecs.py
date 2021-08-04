@@ -3,6 +3,7 @@
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
 
+from compose_x_common.compose_x_common import keyisset
 from troposphere import (
     AWS_ACCOUNT_ID,
     AWS_NO_VALUE,
@@ -22,7 +23,7 @@ from troposphere.events import (
 )
 from troposphere.iam import Policy, PolicyType, Role
 
-from ecs_composex.common import LOG, add_parameters, keyisset
+from ecs_composex.common import LOG, add_parameters
 from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.ecs.ecs_params import (
     CLUSTER_NAME,

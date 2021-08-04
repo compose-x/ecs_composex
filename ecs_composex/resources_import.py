@@ -8,9 +8,8 @@ Module to import CFN Resources defined by their properties
 
 from inspect import isfunction
 
+from compose_x_common.compose_x_common import keyisset, keypresent
 from troposphere import AWSHelperFn, AWSProperty
-
-from ecs_composex.common import keyisset, keypresent
 
 
 def handle_list(properties, property_class):

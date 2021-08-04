@@ -5,10 +5,11 @@
 import re
 
 from botocore.exceptions import ClientError
+from compose_x_common.compose_x_common import keyisset
 from troposphere import AWS_STACK_NAME, FindInMap, Ref
 from troposphere.ecs import CapacityProviderStrategyItem, Cluster
 
-from ecs_composex.common import LOG, keyisset
+from ecs_composex.common import LOG
 from ecs_composex.ecs import metadata
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME, CLUSTER_T
 from ecs_composex.resources_import import import_record_properties

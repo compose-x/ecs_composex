@@ -8,9 +8,10 @@ Module for VpcStack
 
 import re
 
+from compose_x_common.compose_x_common import keyisset
 from troposphere import FindInMap
 
-from ecs_composex.common import LOG, build_template, keyisset
+from ecs_composex.common import LOG, build_template
 from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.common.ecs_composex import X_KEY
 from ecs_composex.common.stacks import ComposeXStack

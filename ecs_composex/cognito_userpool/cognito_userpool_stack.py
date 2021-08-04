@@ -6,17 +6,7 @@
 Module to manage top level AWS CodeGuru profiles
 """
 
-from troposphere import (
-    AWS_NO_VALUE,
-    AWS_PARTITION,
-    AWS_REGION,
-    AWS_STACK_NAME,
-    GetAtt,
-    Join,
-    Ref,
-    Sub,
-)
-from troposphere.cognito import UserPool as CfnUserPool
+from troposphere import GetAtt, Ref
 
 from ecs_composex.codeguru_profiler.codeguru_profiler_perms import ACCESS_TYPES
 from ecs_composex.cognito_userpool.cognito_aws import lookup_userpool_config
@@ -27,11 +17,9 @@ from ecs_composex.cognito_userpool.cognito_params import (
     USERPOOL_ARN,
     USERPOOL_ID,
 )
-from ecs_composex.common import build_template, keyisset
-from ecs_composex.common.cfn_params import STACK_ID_SHORT
+from ecs_composex.common import build_template
 from ecs_composex.common.compose_resources import XResource, set_resources
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.resources_import import import_record_properties
 
 
 def create_root_template(new_resources):

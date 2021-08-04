@@ -6,9 +6,10 @@
 Module to add topics and subscriptions to the SNS stack
 """
 
+from compose_x_common.compose_x_common import keyisset, keypresent
 from troposphere.sns import Subscription, Topic
 
-from ecs_composex.common import LOG, keyisset, keypresent
+from ecs_composex.common import LOG
 from ecs_composex.common.outputs import get_import_value
 from ecs_composex.sns import metadata
 from ecs_composex.sqs.sqs_params import RES_KEY as SQS_KEY

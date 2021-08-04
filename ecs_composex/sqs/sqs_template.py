@@ -5,10 +5,11 @@
 
 from copy import deepcopy
 
+from compose_x_common.compose_x_common import keyisset, keypresent
 from troposphere import GetAtt, Ref, Sub
 from troposphere.sqs import Queue, RedrivePolicy
 
-from ecs_composex.common import LOG, NONALPHANUM, build_template, keyisset, keypresent
+from ecs_composex.common import LOG, NONALPHANUM, build_template
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.sqs import metadata

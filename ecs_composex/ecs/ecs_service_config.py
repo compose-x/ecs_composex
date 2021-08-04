@@ -6,7 +6,8 @@
 Module for the ServiceConfig Class which is used for Container, Task and Service definitions.
 """
 
-from ecs_composex.common import keyisset
+from compose_x_common.compose_x_common import keyisset
+
 from ecs_composex.ecs.ecs_params import SERVICE_COUNT
 from ecs_composex.ecs.ecs_scaling import ServiceScaling
 from ecs_composex.ecs.ecs_service_network_config import ServiceNetworking

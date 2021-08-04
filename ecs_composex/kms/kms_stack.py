@@ -2,10 +2,11 @@
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
+from compose_x_common.compose_x_common import keyisset
 from troposphere import AWS_ACCOUNT_ID, AWS_PARTITION, GetAtt, If, Ref, Sub
 from troposphere.kms import Alias, Key
 
-from ecs_composex.common import LOG, build_template, keyisset
+from ecs_composex.common import LOG, build_template
 from ecs_composex.common.cfn_conditions import USE_STACK_NAME_CON_T
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME
 from ecs_composex.common.compose_resources import XResource, set_resources

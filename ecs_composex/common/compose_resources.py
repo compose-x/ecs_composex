@@ -9,10 +9,11 @@ Module to define the ComposeX Resources into a simple object to make it easier t
 from copy import deepcopy
 from re import sub
 
+from compose_x_common.compose_x_common import keyisset, keypresent
 from troposphere import AWS_STACK_NAME, Export, FindInMap, GetAtt, If, Output, Ref, Sub
 from troposphere.ecs import Environment
 
-from ecs_composex.common import LOG, NONALPHANUM, keyisset, keypresent
+from ecs_composex.common import LOG, NONALPHANUM
 from ecs_composex.common.cfn_conditions import USE_STACK_NAME_CON_T
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME, Parameter
 from ecs_composex.common.ecs_composex import CFN_EXPORT_DELIMITER as DELIM

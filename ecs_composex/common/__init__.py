@@ -21,6 +21,7 @@ try:
 except ImportError:
     from yaml import Loader
 
+from compose_x_common.compose_x_common import keyisset, keypresent
 from troposphere import AWS_NO_VALUE, Output, Parameter, Ref, Template
 
 from ecs_composex import __version__ as version
@@ -31,40 +32,6 @@ FILE_PREFIX = f'{dt.utcnow().strftime("%Y/%m/%d/%H%M")}/{str(uuid4().hex)[:6]}'
 NONALPHANUM = re.compile(r"([^a-zA-Z0-9]+)")
 
 EXIT_CODES = {"MODULE_NOT_FOUND": 8, "MISSING_RESOURCE_DEFINITION": 9}
-
-
-def keyisset(x, y):
-    """
-    Macro to figure if the the dictionary contains a key and that the key is not empty
-
-    :param x: The key to check presence in the dictionary
-    :type x: str
-    :param y: The dictionary to check for
-    :type y: dict
-
-    :returns: True/False
-    :rtype: bool
-    """
-    if isinstance(y, dict) and x in y.keys() and y[x]:
-        return True
-    return False
-
-
-def keypresent(x, y):
-    """
-    Macro to figure if the the dictionary contains a key and that the key is not empty
-
-    :param x: The key to check presence in the dictionary
-    :type x: str
-    :param y: The dictionary to check for
-    :type y: dict
-
-    :returns: True/False
-    :rtype: bool
-    """
-    if isinstance(y, dict) and x in y.keys():
-        return True
-    return False
 
 
 def no_value_if_not_set(props, key, is_bool=False):

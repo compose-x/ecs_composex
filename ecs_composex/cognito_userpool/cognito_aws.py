@@ -8,12 +8,14 @@ Module to find the Cognito UserPools from tagging API
 
 import re
 
+from compose_x_common.compose_x_common import keyisset
+
 from ecs_composex.cognito_userpool.cognito_params import (
     USERPOOL_ARN,
     USERPOOL_DOMAIN,
     USERPOOL_ID,
 )
-from ecs_composex.common import LOG, keyisset
+from ecs_composex.common import LOG
 from ecs_composex.common.aws import (
     define_lookup_role_from_info,
     find_aws_resource_arn_from_tags_api,

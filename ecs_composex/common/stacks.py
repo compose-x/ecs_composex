@@ -7,6 +7,7 @@ Module to handle Root stacks and substacks in ECS composeX. Allows to treat ever
 files into S3 and on disk.
 """
 
+from compose_x_common.compose_x_common import keyisset
 from troposphere import (
     AWS_STACK_NAME,
     FindInMap,
@@ -19,13 +20,7 @@ from troposphere import (
 )
 from troposphere.cloudformation import Stack
 
-from ecs_composex.common import (
-    LOG,
-    NONALPHANUM,
-    add_parameters,
-    cfn_conditions,
-    keyisset,
-)
+from ecs_composex.common import LOG, NONALPHANUM, add_parameters, cfn_conditions
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.files import FileArtifact
 from ecs_composex.vpc.vpc_params import (

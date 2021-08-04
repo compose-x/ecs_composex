@@ -6,6 +6,7 @@
 Module to create the ElasticCache Cluster and nodes
 """
 
+from compose_x_common.compose_x_common import keyisset
 from troposphere import AWS_STACK_NAME, GetAtt, Ref, Sub, Tags
 from troposphere.ec2 import SecurityGroup
 from troposphere.elasticache import (
@@ -15,7 +16,7 @@ from troposphere.elasticache import (
     SubnetGroup,
 )
 
-from ecs_composex.common import LOG, build_template, keyisset
+from ecs_composex.common import LOG, build_template
 from ecs_composex.resources_import import import_record_properties
 from ecs_composex.vpc.vpc_params import STORAGE_SUBNETS, VPC_ID
 

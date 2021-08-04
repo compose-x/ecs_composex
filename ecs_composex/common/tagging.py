@@ -23,11 +23,12 @@ otherwise you could not, i.e., *vpc::usage::ecsapps*
 
 import copy
 
+from compose_x_common.compose_x_common import keyisset
 from troposphere import Ref, Tags
 from troposphere.ec2 import LaunchTemplate, TagSpecifications
 from troposphere.ssm import Parameter as SSMParameter
 
-from ecs_composex.common import LOG, NONALPHANUM, add_parameters, keyisset
+from ecs_composex.common import LOG, NONALPHANUM, add_parameters
 from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.common.stacks import ComposeXStack
 

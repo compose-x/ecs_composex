@@ -6,6 +6,7 @@
 Functions to build the ECS Service Definition
 """
 
+from compose_x_common.compose_x_common import keyisset
 from troposphere import (
     AWS_NO_VALUE,
     AWS_STACK_NAME,
@@ -37,7 +38,7 @@ from troposphere.servicediscovery import (
 )
 from troposphere.servicediscovery import Service as SdService
 
-from ecs_composex.common import LOG, keyisset
+from ecs_composex.common import LOG
 from ecs_composex.common.cfn_conditions import USE_STACK_NAME_CON_T
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.outputs import ComposeXOutput

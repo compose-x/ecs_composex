@@ -6,6 +6,7 @@
 Module to manage the AppMesh Virtual service
 """
 
+from compose_x_common.compose_x_common import keyisset
 from troposphere import AWS_NO_VALUE, GetAtt, Ref, Select, Split, Sub, appmesh
 from troposphere.servicediscovery import DnsConfig as SdDnsConfig
 from troposphere.servicediscovery import DnsRecord as SdDnsRecord
@@ -14,7 +15,7 @@ from troposphere.servicediscovery import Service as SdService
 
 from ecs_composex.appmesh import appmesh_conditions
 from ecs_composex.appmesh.appmesh_params import NODE_KEY, ROUTER_KEY, ROUTERS_KEY
-from ecs_composex.common import NONALPHANUM, keyisset
+from ecs_composex.common import NONALPHANUM
 
 
 def validate_service_backend(service, routers, nodes):

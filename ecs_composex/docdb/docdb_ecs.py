@@ -6,7 +6,9 @@
 Module to link DocDB cluster to ECS Services.
 """
 
-from ecs_composex.common import LOG, keyisset
+from compose_x_common.compose_x_common import keyisset
+
+from ecs_composex.common import LOG
 from ecs_composex.docdb.docdb_params import DOCDB_PORT, DOCDB_SECRET, DOCDB_SG
 from ecs_composex.rds.rds_ecs import (
     DB_SECRET_T,

@@ -2,10 +2,11 @@
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
+from compose_x_common.compose_x_common import keyisset
 from troposphere import Tags
 from troposphere.kinesis import Stream, StreamEncryption
 
-from ecs_composex.common import LOG, build_template, keyisset
+from ecs_composex.common import LOG, build_template
 from ecs_composex.resources_import import import_record_properties
 
 

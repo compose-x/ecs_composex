@@ -6,7 +6,9 @@
 Class and functions to interact with the networks: defined in compose files.
 """
 
-from ecs_composex.common import LOG, keyisset
+from compose_x_common.compose_x_common import keyisset
+
+from ecs_composex.common import LOG
 
 
 def match_networks_services_config(service, net_config, networks):

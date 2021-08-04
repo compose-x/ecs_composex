@@ -9,10 +9,11 @@ Module to handle creation of the DNS records for specific targets
 from copy import deepcopy
 from re import compile
 
+from compose_x_common.compose_x_common import keyisset
 from troposphere import AWS_REGION, AWS_STACK_NAME, GetAtt, Ref
 from troposphere.route53 import AliasTarget, BaseRecordSet, RecordSetType
 
-from ecs_composex.common import LOG, NONALPHANUM, add_outputs, keyisset
+from ecs_composex.common import LOG, NONALPHANUM, add_outputs
 from ecs_composex.common.ecs_composex import X_KEY
 from ecs_composex.dns.dns_params import RES_KEY
 from ecs_composex.elbv2.elbv2_params import LB_DNS_NAME, LB_DNS_ZONE_ID

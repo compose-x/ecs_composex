@@ -6,11 +6,12 @@
 Package for x-dns
 """
 
+from compose_x_common.compose_x_common import keyisset
 from troposphere import AWS_NO_VALUE, FindInMap, GetAtt, Ref, Sub, Tags
 from troposphere.route53 import HostedZone, HostedZoneConfiguration
 from troposphere.servicediscovery import PrivateDnsNamespace as VpcSpace
 
-from ecs_composex.common import LOG, add_parameters, cfn_params, keyisset
+from ecs_composex.common import LOG, add_parameters, cfn_params
 from ecs_composex.common.aws import get_cross_role_session
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.dns import dns_params

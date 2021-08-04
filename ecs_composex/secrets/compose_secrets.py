@@ -9,10 +9,11 @@ Represent a service from the docker-compose services
 import re
 from copy import deepcopy
 
+from compose_x_common.compose_x_common import keyisset
 from troposphere import AWS_ACCOUNT_ID, AWS_PARTITION, AWS_REGION, FindInMap, Sub
 from troposphere.ecs import Secret as EcsSecret
 
-from ecs_composex.common import LOG, NONALPHANUM, keyisset
+from ecs_composex.common import LOG, NONALPHANUM
 from ecs_composex.ecs.ecs_params import EXEC_ROLE_T, TASK_ROLE_T
 from ecs_composex.kms.kms_params import KMS_KEY_ARN_RE
 from ecs_composex.secrets.secrets_aws import lookup_secret_config

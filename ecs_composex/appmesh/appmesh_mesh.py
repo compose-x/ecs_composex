@@ -8,6 +8,7 @@ Main module for AppMesh.
 Once all services have been deployed and their VirtualNodes are setup, we deploy the Mesh for it.
 """
 
+from compose_x_common.compose_x_common import keyisset
 from troposphere import AWS_ACCOUNT_ID, AWS_STACK_NAME, GetAtt, Ref, appmesh
 
 from ecs_composex.appmesh import appmesh_conditions, appmesh_params, metadata
@@ -17,7 +18,7 @@ from ecs_composex.appmesh.appmesh_node import MeshNode
 from ecs_composex.appmesh.appmesh_params import MESH_NAME, MESH_OWNER_ID
 from ecs_composex.appmesh.appmesh_router import MeshRouter
 from ecs_composex.appmesh.appmesh_service import MeshService
-from ecs_composex.common import LOG, add_parameters, keyisset
+from ecs_composex.common import LOG, add_parameters
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.ecs import ecs_params

@@ -16,8 +16,9 @@ from urllib.parse import urlparse
 import boto3
 import requests
 import yaml
+from compose_x_common.compose_x_common import keyisset
 
-from ecs_composex.common import LOG, keyisset
+from ecs_composex.common import LOG
 from ecs_composex.common.settings import ComposeXSettings
 from ecs_composex.common.stacks import process_stacks
 from ecs_composex.ecs_composex import generate_full_template

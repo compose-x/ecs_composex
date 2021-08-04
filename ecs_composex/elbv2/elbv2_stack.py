@@ -10,6 +10,7 @@ import re
 from copy import deepcopy
 from json import dumps
 
+from compose_x_common.compose_x_common import keyisset, keypresent
 from troposphere import (
     AWS_NO_VALUE,
     AWS_STACK_NAME,
@@ -52,14 +53,7 @@ from ecs_composex.cognito_userpool.cognito_params import (
     USERPOOL_DOMAIN,
     USERPOOL_ID,
 )
-from ecs_composex.common import (
-    LOG,
-    NONALPHANUM,
-    add_parameters,
-    build_template,
-    keyisset,
-    keypresent,
-)
+from ecs_composex.common import LOG, NONALPHANUM, add_parameters, build_template
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME, Parameter
 from ecs_composex.common.compose_resources import XResource, set_resources
 from ecs_composex.common.outputs import ComposeXOutput

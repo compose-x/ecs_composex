@@ -5,6 +5,7 @@
 """
 Module to manage Routers specifically.
 """
+from compose_x_common.compose_x_common import keyisset
 from troposphere import AWS_NO_VALUE, GetAtt, Ref, Sub, appmesh
 
 from ecs_composex.appmesh import appmesh_conditions
@@ -20,7 +21,7 @@ from ecs_composex.appmesh.appmesh_params import (
     ROUTES_KEY,
     SCHEME_KEY,
 )
-from ecs_composex.common import LOG, NONALPHANUM, keyisset
+from ecs_composex.common import LOG, NONALPHANUM
 
 
 def define_http_route(route_match, route_nodes):

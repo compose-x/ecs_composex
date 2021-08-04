@@ -11,10 +11,11 @@ from copy import deepcopy
 from ipaddress import IPv4Interface
 from json import dumps
 
+from compose_x_common.compose_x_common import keyisset
 from troposphere import AWS_ACCOUNT_ID, AWS_NO_VALUE, Ref, Sub
 from troposphere.ec2 import SecurityGroupIngress
 
-from ecs_composex.common import LOG, NONALPHANUM, keyisset
+from ecs_composex.common import LOG, NONALPHANUM
 from ecs_composex.common.aws import (
     define_lookup_role_from_info,
     find_aws_resource_arn_from_tags_api,

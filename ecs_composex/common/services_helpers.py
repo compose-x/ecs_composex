@@ -2,10 +2,11 @@
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
+from compose_x_common.compose_x_common import keyisset, keypresent
 from troposphere import FindInMap, GetAtt, ImportValue, Ref, Sub
 from troposphere.ecs import ContainerDefinition, Environment
 
-from ecs_composex.common import LOG, keyisset, keypresent
+from ecs_composex.common import LOG
 from ecs_composex.ecs.ecs_params import LOG_GROUP_RETENTION
 
 

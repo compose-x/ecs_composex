@@ -6,6 +6,7 @@
 Module to manage top level AWS CodeGuru profiles
 """
 
+from compose_x_common.compose_x_common import keyisset
 from troposphere import (
     AWS_NO_VALUE,
     AWS_PARTITION,
@@ -25,7 +26,7 @@ from ecs_composex.codeguru_profiler.codeguru_profiler_params import (
     RES_KEY,
 )
 from ecs_composex.codeguru_profiler.codeguru_profiler_perms import ACCESS_TYPES
-from ecs_composex.common import build_template, keyisset
+from ecs_composex.common import build_template
 from ecs_composex.common.cfn_params import STACK_ID_SHORT
 from ecs_composex.common.compose_resources import XResource, set_resources
 from ecs_composex.common.stacks import ComposeXStack

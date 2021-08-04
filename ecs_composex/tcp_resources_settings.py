@@ -6,12 +6,13 @@
 Module of functions factorizing common patterns for TCP based access such as RDS, DocumentDB
 """
 
+from compose_x_common.compose_x_common import keyisset, keypresent
 from troposphere import FindInMap, GetAtt, Ref, Sub
 from troposphere.ec2 import SecurityGroupIngress
 from troposphere.ecs import Secret as EcsSecret
 from troposphere.iam import PolicyType
 
-from ecs_composex.common import LOG, add_parameters, keyisset, keypresent
+from ecs_composex.common import LOG, add_parameters
 from ecs_composex.common.compose_resources import get_parameter_settings
 from ecs_composex.common.services_helpers import extend_container_secrets
 from ecs_composex.ecs.ecs_params import EXEC_ROLE_T, SG_T, TASK_ROLE_T

@@ -6,9 +6,9 @@
 Module to handle Linking ECS tasks and the elastic cache clusters
 """
 
+from compose_x_common.compose_x_common import keyisset
 from troposphere import FindInMap, Select
 
-from ecs_composex.common import keyisset
 from ecs_composex.elasticache.elasticache_aws import lookup_cluster_resource
 from ecs_composex.elasticache.elasticache_params import CLUSTER_SG
 from ecs_composex.tcp_resources_settings import (

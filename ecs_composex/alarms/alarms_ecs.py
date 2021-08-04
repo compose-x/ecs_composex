@@ -6,12 +6,13 @@
 Module to define CloudWatch alarms in x-alarms and match these to services
 """
 
+from compose_x_common.compose_x_common import keyisset
 from troposphere import GetAtt, Output, Ref
 from troposphere.cloudwatch import Alarm as CWAlarm
 from troposphere.cloudwatch import CompositeAlarm, MetricDimension
 
 from ecs_composex.alarms.alarms_stack import Alarm, create_alarms
-from ecs_composex.common import LOG, add_outputs, add_parameters, keyisset
+from ecs_composex.common import LOG, add_outputs, add_parameters
 from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME, SERVICE_SCALING_TARGET, SERVICE_T
 from ecs_composex.ecs.ecs_scaling import (

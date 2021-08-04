@@ -4,6 +4,7 @@
 
 import re
 
+from compose_x_common.compose_x_common import keyisset
 from troposphere import AWS_NO_VALUE, GetAtt, Ref
 from troposphere.ecs import LoadBalancer as EcsLb
 from troposphere.elasticloadbalancingv2 import (
@@ -12,7 +13,7 @@ from troposphere.elasticloadbalancingv2 import (
     TargetGroupAttribute,
 )
 
-from ecs_composex.common import LOG, add_parameters, keyisset
+from ecs_composex.common import LOG, add_parameters
 from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.common.outputs import ComposeXOutput
 from ecs_composex.ecs.ecs_params import ELB_GRACE_PERIOD

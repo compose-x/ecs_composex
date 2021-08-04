@@ -10,13 +10,14 @@ import re
 import warnings
 from importlib import import_module
 
+from compose_x_common.compose_x_common import keyisset
 from troposphere import AWS_STACK_NAME, FindInMap, GetAtt, Ref
 
 from ecs_composex.acm.acm_params import RES_KEY as ACM_KEY
 from ecs_composex.acm.acm_stack import init_acm_certs
 from ecs_composex.alarms.alarms_ecs import set_services_alarms
 from ecs_composex.appmesh.appmesh_mesh import Mesh
-from ecs_composex.common import LOG, NONALPHANUM, init_template, keyisset
+from ecs_composex.common import LOG, NONALPHANUM, init_template
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.ecs_composex import X_AWS_KEY, X_KEY
 from ecs_composex.common.stacks import ComposeXStack

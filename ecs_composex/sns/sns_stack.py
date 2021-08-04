@@ -2,9 +2,10 @@
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
+from compose_x_common.compose_x_common import keyisset
 from troposphere import GetAtt, Ref
 
-from ecs_composex.common import build_template, keyisset
+from ecs_composex.common import build_template
 from ecs_composex.common.compose_resources import XResource
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.sns.sns_aws import lookup_topic_config

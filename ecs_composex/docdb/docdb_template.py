@@ -6,10 +6,11 @@
 DocDB
 """
 
+from compose_x_common.compose_x_common import keyisset, keypresent
 from troposphere import AWS_NO_VALUE, AWS_STACK_NAME, GetAtt, Ref, Sub, Tags, docdb
 from troposphere.ec2 import SecurityGroup
 
-from ecs_composex.common import build_template, keyisset, keypresent
+from ecs_composex.common import build_template
 from ecs_composex.resources_import import import_record_properties
 from ecs_composex.secrets import (
     add_db_dependency,

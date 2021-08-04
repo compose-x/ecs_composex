@@ -106,7 +106,7 @@ phases:
                   --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py37-arm64v8  \
                   --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py38-amd64    \
                   --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py38-arm64v8 ;
-            docker manifest push ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:latest
+            docker manifest push ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:lates
           fi
 
       - docker pull ${REGISTRY_URI}/${MACRO_REPO_NAME}:${SUFFIX}

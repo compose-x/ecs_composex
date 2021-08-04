@@ -3,9 +3,10 @@
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
 
+from compose_x_common.compose_x_common import keyisset
 from troposphere.events import Rule
 
-from ecs_composex.common import LOG, keyisset
+from ecs_composex.common import LOG
 from ecs_composex.resources_import import import_record_properties
 
 

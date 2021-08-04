@@ -9,9 +9,10 @@ Class and functions to interact with the volumes: defined in compose files.
 import re
 from copy import deepcopy
 
+from compose_x_common.compose_x_common import keyisset
 from troposphere import AWS_NO_VALUE, Ref
 
-from ecs_composex.common import LOG, keyisset
+from ecs_composex.common import LOG
 from ecs_composex.efs.efs_params import FS_REGEXP, RES_KEY
 
 

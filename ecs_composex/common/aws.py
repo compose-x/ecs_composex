@@ -12,9 +12,10 @@ from time import sleep
 
 import boto3
 from botocore.exceptions import ClientError
+from compose_x_common.compose_x_common import keyisset
 from tabulate import tabulate
 
-from ecs_composex.common import LOG, keyisset
+from ecs_composex.common import LOG
 from ecs_composex.iam import ROLE_ARN_ARG, validate_iam_role_arn
 
 

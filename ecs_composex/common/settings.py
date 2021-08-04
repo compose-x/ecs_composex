@@ -17,11 +17,12 @@ import jsonschema
 import yaml
 from botocore.exceptions import ClientError
 from cfn_flip.yaml_dumper import LongCleanDumper
+from compose_x_common.compose_x_common import keyisset
 from compose_x_render.compose_x_render import ComposeDefinition
 from importlib_resources import files as pkg_files
 
 from ecs_composex import __version__
-from ecs_composex.common import LOG, NONALPHANUM, keyisset
+from ecs_composex.common import LOG, NONALPHANUM
 from ecs_composex.common.aws import (
     get_account_id,
     get_cross_role_session,

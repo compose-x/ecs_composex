@@ -8,6 +8,7 @@ Module to manage the creation of Dashboards
 
 import json
 
+from compose_x_common.compose_x_common import keyisset
 from troposphere import GetAtt, Output, Parameter, Ref, Sub
 from troposphere.cloudwatch import Dashboard as CWDashboard
 
@@ -17,8 +18,6 @@ from ecs_composex.common import (
     add_outputs,
     add_parameters,
     build_template,
-    keyisset,
-    keypresent,
 )
 from ecs_composex.common.cfn_conditions import define_stack_name
 from ecs_composex.common.stacks import ComposeXStack

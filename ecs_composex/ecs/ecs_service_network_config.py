@@ -6,15 +6,13 @@
 Module to help with defining the network settings for the ECS Service based on the family services definitions.
 """
 
-from json import dumps, loads
-from os import path
+from json import dumps
 
-import jsonschema
-from importlib_resources import files
+from compose_x_common.compose_x_common import keyisset, keypresent
 from troposphere import AWS_ACCOUNT_ID, GetAtt, Parameter, Ref, Sub
 from troposphere.ec2 import SecurityGroupIngress
 
-from ecs_composex.common import LOG, add_parameters, keyisset, keypresent
+from ecs_composex.common import LOG, add_parameters
 from ecs_composex.ecs.ecs_params import SERVICE_NAME_T
 from ecs_composex.ingress_settings import Ingress, set_service_ports
 from ecs_composex.vpc.vpc_params import SG_ID_TYPE

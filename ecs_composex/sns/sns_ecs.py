@@ -6,7 +6,9 @@
 Module to apply SNS settings onto ECS Services
 """
 
-from ecs_composex.common import LOG, keyisset
+from compose_x_common.compose_x_common import keyisset
+
+from ecs_composex.common import LOG
 from ecs_composex.resource_settings import (
     handle_lookup_resource,
     handle_resource_to_services,

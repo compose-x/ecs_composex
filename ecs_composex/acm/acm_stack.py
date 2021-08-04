@@ -10,13 +10,14 @@ import re
 from copy import deepcopy
 from warnings import warn
 
+from compose_x_common.compose_x_common import keyisset
 from troposphere import Tags
 from troposphere.certificatemanager import Certificate as AcmCert
 from troposphere.certificatemanager import DomainValidationOption
 
 from ecs_composex.acm.acm_aws import lookup_cert_config
 from ecs_composex.acm.acm_params import MOD_KEY, RES_KEY
-from ecs_composex.common import NONALPHANUM, keyisset
+from ecs_composex.common import NONALPHANUM
 from ecs_composex.common.compose_resources import set_resources
 from ecs_composex.resources_import import import_record_properties
 

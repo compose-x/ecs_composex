@@ -23,7 +23,9 @@ except ImportError:
         "You must install ecr-scan-reporter in order to use this functionality"
     )
 
-from ecs_composex.common import LOG, keyisset
+from compose_x_common.compose_x_common import keyisset
+
+from ecs_composex.common import LOG
 from ecs_composex.common.aws import get_cross_role_session
 
 ECR_URI_RE = re.compile(

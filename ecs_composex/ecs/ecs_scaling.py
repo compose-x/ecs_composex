@@ -10,6 +10,7 @@ import random
 import string
 from json import dumps
 
+from compose_x_common.compose_x_common import keyisset, keypresent
 from troposphere import AWS_NO_VALUE, Ref
 from troposphere.applicationautoscaling import (
     ScalingPolicy,
@@ -17,7 +18,7 @@ from troposphere.applicationautoscaling import (
     StepScalingPolicyConfiguration,
 )
 
-from ecs_composex.common import LOG, keyisset, keypresent
+from ecs_composex.common import LOG
 from ecs_composex.ecs.ecs_params import SERVICE_SCALING_TARGET
 
 

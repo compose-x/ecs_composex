@@ -8,9 +8,10 @@ Functions to pass permissions to Services to access S3 buckets.
 import re
 from json import dumps
 
+from compose_x_common.compose_x_common import keyisset
 from troposphere import AWS_PARTITION, FindInMap, Ref, Sub
 
-from ecs_composex.common import LOG, add_parameters, keyisset
+from ecs_composex.common import LOG, add_parameters
 from ecs_composex.common.compose_resources import get_parameter_settings
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.kms.kms_perms import ACCESS_TYPES as KMS_ACCESS_TYPES

@@ -6,9 +6,10 @@
 Module to provide services with access to the RDS databases.
 """
 
+from compose_x_common.compose_x_common import keyisset
 from troposphere import FindInMap, Select
 
-from ecs_composex.common import LOG, keyisset
+from ecs_composex.common import LOG
 from ecs_composex.rds.rds_aws import lookup_rds_resource, validate_rds_lookup
 from ecs_composex.rds.rds_params import (
     DB_ENDPOINT_PORT,

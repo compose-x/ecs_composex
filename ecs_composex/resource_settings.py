@@ -6,10 +6,11 @@
 Module to handle resource settings definition to containers.
 """
 
+from compose_x_common.compose_x_common import keyisset
 from troposphere import FindInMap, Ref, Sub
 from troposphere.iam import Policy as IamPolicy
 
-from ecs_composex.common import LOG, add_parameters, keyisset
+from ecs_composex.common import LOG, add_parameters
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.compose_resources import get_parameter_settings
 from ecs_composex.common.services_helpers import extend_container_envvars

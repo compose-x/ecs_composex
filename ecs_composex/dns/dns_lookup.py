@@ -4,7 +4,9 @@
 
 import re
 
-from ecs_composex.common import LOG, keyisset
+from compose_x_common.compose_x_common import keyisset
+
+from ecs_composex.common import LOG
 from ecs_composex.dns.dns_params import ZONES_PATTERN
 
 LAST_DOT_RE = re.compile(r"(\.{1}$)")

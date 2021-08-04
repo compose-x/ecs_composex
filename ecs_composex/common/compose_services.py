@@ -4,11 +4,10 @@
 
 import re
 from copy import deepcopy
-from json import dumps, loads
+from json import dumps
 from os import path
 
-import jsonschema
-from importlib_resources import as_file, files
+from compose_x_common.compose_x_common import keyisset, keypresent
 from troposphere import (
     AWS_NO_VALUE,
     AWS_PARTITION,
@@ -22,12 +21,9 @@ from troposphere import (
     Sub,
     Tags,
 )
-from troposphere.cloudwatch import MetricDimension
-from troposphere.codeguruprofiler import ProfilingGroup
 from troposphere.ecs import (
     ContainerDefinition,
     DockerVolumeConfiguration,
-    Environment,
     EnvironmentFile,
     HealthCheck,
     KernelCapabilities,
@@ -42,10 +38,10 @@ from troposphere.ecs import (
     Ulimit,
     Volume,
 )
-from troposphere.iam import Policy, PolicyType
+from troposphere.iam import Policy
 from troposphere.logs import LogGroup
 
-from ecs_composex.common import FILE_PREFIX, LOG, NONALPHANUM, keyisset, keypresent
+from ecs_composex.common import FILE_PREFIX, LOG, NONALPHANUM
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME, Parameter
 from ecs_composex.common.compose_volumes import (
     ComposeVolume,
@@ -71,17 +67,12 @@ from ecs_composex.ecs.ecs_iam import add_service_roles
 from ecs_composex.ecs.ecs_params import (
     AWS_XRAY_IMAGE,
     EXEC_ROLE_T,
-    LOG_GROUP_RETENTION,
     NETWORK_MODE,
     TASK_ROLE_T,
     TASK_T,
 )
-from ecs_composex.ecs.ecs_predefined_alarms import (
-    PREDEFINED_ALARMS_DEFINITION,
-    PREDEFINED_SERVICE_ALARMS_DEFINITION,
-)
+from ecs_composex.ecs.ecs_predefined_alarms import PREDEFINED_SERVICE_ALARMS_DEFINITION
 from ecs_composex.iam import add_role_boundaries, define_iam_policy
-from ecs_composex.resources_import import import_record_properties
 from ecs_composex.secrets.compose_secrets import (
     ComposeSecret,
     match_secrets_services_config,
