@@ -18,6 +18,17 @@ ECS ComposeX
 Manage, Configure and deploy your applications/services and AWS resources from your docker-compose definitions
 ---------------------------------------------------------------------------------------------------------------
 
+Useful Links
+===============
+
+* `Documentation`_
+* `Blog`_
+* `Labs <https://labs.compose-x.io/>`_
+* `Feature requests <https://github.com/compose-x/ecs_composex/projects/2>`_
+* `Issues <https://github.com/compose-x/ecs_composex/projects/3>`_
+* `Compatibility Matrix`_
+
+
 Why use ECS Compose-X?
 ========================
 
@@ -60,67 +71,6 @@ Via pip
     pip install ecs_composex
 
 
-CLI Usage
-==========
-
-.. code-block:: bash
-
-    usage: ecs-compose-x [-h] {up,render,create,plan,config,init,version} ...
-
-    positional arguments:
-      {up,render,create,plan,config,init,version}
-                            Command to execute.
-        up                  Generates & Validates the CFN templates, Creates/Updates stack in CFN
-        render              Generates & Validates the CFN templates locally. No upload to S3
-        create              Generates & Validates the CFN templates locally. Uploads files to S3
-        plan                Creates a recursive change-set to show the diff prior to an update
-        config              Merges docker-compose files to provide with the final compose content version
-        init                Initializes your AWS Account with prerequisites settings for ECS
-        version             ECS ComposeX Version
-
-    optional arguments:
-      -h, --help            show this help message and exit
-
-
-Examples
---------
-
-.. code-block:: bash
-
-    # Render all your CFN templates from your docker compose and extension files
-    ecs-compose-x render --format yaml -n my-awesome-app -f docker-compose.yml -f aws.yml -d outputs
-
-    # Deploy / Update your application to AWS
-    ecs-compose-x up --format yaml -n my-awesome-app -f docker-compose.yml -f aws.yml -d outputs
-
-
-Features
-=========
-
-AWS Services support
----------------------
-
-* `AWS ECS`_
-* `AWS RDS`_
-* `AWS DynamoDB`_
-* `AWS DocumentDB`_
-* `AWS ElastiCache`_
-* `AWS S3`_
-* `AWS SQS`_
-* `AWS Kinesis`_
-* `AWS SNS`_
-* `AWS ELBv2`_
-* `AWS ACM`_
-* `AWS AppMesh`_
-* `AWS IAM`_
-* `AWS KMS`_
-* `AWS CloudWatch`_
-* `AWS VPC`_
-* `AWS EC2`_
-
-To have an extensive list of support, refer to `the compatibilty matrix`_ and the syntax reference for each AWS services
-in our `documentation`_
-
 How is it different ?
 =====================
 
@@ -160,35 +110,14 @@ will understand how two services are connected and will auto-correct the setting
 For example, if you set the Log retention to be 42 days, which is invalid, it will automatically change that to the
 closest valid value (here, 30).
 
-Documentation
-=============
 
-Find all the `documentation` to get started and and start deploying to AWS
-
-.. tip::
-
-    `Nightly documentation <https://nightly.docs.compose-x.io/>`_ following the main branch.
-
-RoadMap
-========
-
-* `Feature requests <https://github.com/compose-x/ecs_composex/projects/2>`_
-* `Issues <https://github.com/compose-x/ecs_composex/projects/3>`_
-
-Blog
-====
-
-`Follow the latest publications on our blog <https://blog.compose-x.io>`__
 
 Credits
 =======
 
 This package would not have been possible without the amazing job done by the AWS CloudFormation team!
 This package would not have been possible without the amazing community around `Troposphere`_!
-This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypackage`_ project template.
 
-.. _Cookiecutter: https://github.com/audreyr/cookiecutter
-.. _`audreyr/cookiecutter-pypackage`: https://github.com/audreyr/cookiecutter-pypackage
 .. _`Mark Peek`: https://github.com/markpeek
 .. _`AWS ECS CLI`: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ECS_CLI.html
 .. _Troposphere: https://github.com/cloudtools/troposphere
@@ -219,8 +148,9 @@ This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypack
 .. _AWS CloudWatch:     https://nightly.docs.compose-x.io/syntax/compose_x/alarms.html
 .. _Lookup:             https://nightly.docs.compose-x.io/syntax/compose_x/common.html#lookup
 .. _the compatibilty matrix: https://nightly.docs.compose-x.io/compatibility/docker_compose.html
+.. _Compatibility Matrix: https://nightly.docs.compose-x.io/compatibility/docker_compose.html
 .. _Find out how to use ECS Compose-X in AWS here: https://blog.compose-x.io/posts/use-your-docker-compose-files-as-a-cloudformation-template/index.html
-.. _documentation: https://docs.compose-x.io
+.. _Documentation: https://docs.compose-x.io
 
 .. |BUILD| image:: https://codebuild.eu-west-1.amazonaws.com/badges?uuid=eyJlbmNyeXB0ZWREYXRhIjoiWjIrbSsvdC9jZzVDZ3N5dVNiMlJCOUZ4M0FQNFZQeXRtVmtQbWIybUZ1ZmV4NVJEdG9yZURXMk5SVVFYUjEwYXpxUWV1Y0ZaOEcwWS80M0pBSkVYQjg0PSIsIml2UGFyYW1ldGVyU3BlYyI6Ik1rT0NaR05yZHpTMklCT0MiLCJtYXRlcmlhbFNldFNlcmlhbCI6MX0%3D&branch=main
 

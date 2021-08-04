@@ -16,10 +16,12 @@ phases:
       - SUFFIX=${COMMIT_HASH:=$EPOCH}
       - if [ $USE_EPOCH -eq 1 ]; then SUFFIX=$EPOCH; fi
       - (pip --version && pip install pip -U --no-cache-dir) && pip install wheel --no-cache-dir
+      - pip install poetry
 
   build:
     commands:
       - python --version
+      - poetry build
       - python setup.py sdist bdist_wheel
       - BUILD_WHL=`find . -name "ecs_compose*.whl" -type f`
       - echo $BUILD_WHL

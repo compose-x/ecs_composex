@@ -6,8 +6,8 @@ FROM $BASE_IMAGE as builder
 
 WORKDIR /opt
 COPY ecs_composex       /opt/ecs_composex
-COPY setup.py requirements.txt MANIFEST.in README.rst LICENSE /opt/
-RUN python -m venv venv ; source venv/bin/activate ; pip install wheel;  python setup.py sdist bdist_wheel; ls -l dist/
+COPY setup.py pyproject.toml MANIFEST.in README.rst LICENSE /opt/
+RUN python -m pip install pip -U ; pip install poetry ; poetry build
 
 FROM $BASE_IMAGE
 COPY --from=builder /opt/dist/ecs_composex-*.whl /opt/
