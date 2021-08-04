@@ -11,9 +11,11 @@ phases:
       python: "$(echo $PY_VERSION)"
     commands:
       - (pip --version && pip install pip -U) || curl -s https://bootstrap.pypa.io/get-pip.py | python
-      - pip install -r requirements_dev.txt
+      - python -m pip install poetry
+      - poetry install
+      - poetry install -E ECRScan
   build:
     commands:
-      - echo "Building nightly docs"
+      - echo "Building docs"
       - make nightly-docs
       - aws cloudfront create-invalidation --distribution-id ${DISTRIBUTION_ID} --paths "/*"
