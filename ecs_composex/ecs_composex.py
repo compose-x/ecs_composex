@@ -67,6 +67,7 @@ SUPPORTED_X_MODULE_NAMES = [
     "efs",
     "alarms",
     "codeguru_profiler",
+    "ssm_parameter",
 ]
 
 SUPPORTED_X_MODULES = [f"{X_KEY}{mod_name}" for mod_name in SUPPORTED_X_MODULE_NAMES]
