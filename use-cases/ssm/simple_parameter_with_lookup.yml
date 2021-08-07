@@ -28,7 +28,7 @@ x-ssm_parameter:
         - parameterb
     Services:
       - name: bignicefamily
-        access: RW
+        access: RO
 
   parameterC:
     Properties:
@@ -38,9 +38,22 @@ x-ssm_parameter:
       FromFile: ./use-cases/ssm/test_json.json
     Services:
       - name: rproxy
-        access: RO
+        access: ROStrict
+      - name: youtoo
+        access: RW
+    Settings:
+      EnvNames:
+        - FIFO_parameter
+
+  parameterD:
+    Lookup:
+      Tags:
+        - aws:cloudformation:logical-id: SsmLambdaArnPointer
+    Services:
+      - name: rproxy
+        access: SSMParameterReadPolicy
       - name: youtoo
         access: SSMParameterReadPolicy
     Settings:
       EnvNames:
-        - FIFO_parameter
+        - IMPORTED

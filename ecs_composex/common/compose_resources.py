@@ -20,15 +20,15 @@ from ecs_composex.common.ecs_composex import CFN_EXPORT_DELIMITER as DELIM
 from ecs_composex.common.ecs_composex import X_KEY
 
 
-def set_resources(settings, resource_class, res_key, mod_key=None):
+def set_resources(settings, resource_class, res_key, mod_key=None, mapping_key=None):
     """
     Method to define the ComposeXResource for each service.
 
     :param ecs_composex.common.settings.ComposeXSettings settings:
-    :param ecs_composex.common.compose_resources.ComposeResource resource_class:
+    :param ecs_composex.common.compose_resources.XResource.__init__ resource_class:
     :param str res_key: The compose key identifier for resource
     :param str mod_key: The module name in ecs_composex mapping the resource type
-    :param ecs_composex.common.stacks.ComposeXStack stack:
+    :param str mapping_key: The value of the Mapping map name for FindInMap
     """
     if not mod_key:
         mod_key = sub(X_KEY, "", res_key)
@@ -40,6 +40,7 @@ def set_resources(settings, resource_class, res_key, mod_key=None):
             definition=settings.compose_content[res_key][resource_name],
             module_name=mod_key,
             settings=settings,
+            mapping_key=mapping_key,
         )
         LOG.debug(type(new_definition))
         LOG.debug(new_definition.__dict__)
@@ -80,7 +81,7 @@ class XResource(object):
 
     policies_scaffolds = {}
 
-    def __init__(self, name, definition, module_name, settings):
+    def __init__(self, name, definition, module_name, settings, mapping_key=None):
         """
         Init the class
         :param str name: Name of the resource in the template
@@ -88,6 +89,9 @@ class XResource(object):
         """
         self.name = name
         self.module_name = module_name
+        self.mapping_key = mapping_key
+        if self.mapping_key is None:
+            self.mapping_key = self.module_name
         self.definition = deepcopy(definition)
         self.env_names = []
         self.env_vars = []
@@ -342,7 +346,7 @@ class XResource(object):
                         Name=env_name
                         if key == self.logical_name
                         else f"{env_name}_{key}",
-                        Value=FindInMap(self.module_name, self.logical_name, key),
+                        Value=FindInMap(self.mapping_key, self.logical_name, key),
                     )
                     self.env_vars.append(env_var)
         self.env_vars = list({v.Name: v for v in self.env_vars}.values())
@@ -357,11 +361,11 @@ class XResource(object):
         """
         if attribute_parameter.return_value:
             return FindInMap(
-                self.module_name, self.logical_name, attribute_parameter.return_value
+                self.mapping_key, self.logical_name, attribute_parameter.return_value
             )
         else:
             return FindInMap(
-                self.module_name, self.logical_name, attribute_parameter.title
+                self.mapping_key, self.logical_name, attribute_parameter.title
             )
 
     def define_export_name(self, output_definition, attribute_parameter):
@@ -404,10 +408,12 @@ class XResource(object):
             value = Ref(output_definition[1])
         elif output_definition[2] is GetAtt:
             value = GetAtt(output_definition[1], output_definition[3])
+        elif output_definition[2] is Sub:
+            value = Sub(output_definition[3])
         else:
             raise TypeError(
                 f"3rd argument for {output_definition[0]} must be one of",
-                (Ref, GetAtt),
+                (Ref, GetAtt, Sub),
                 "Got",
                 output_definition[2],
             )
@@ -421,7 +427,7 @@ class XResource(object):
         if self.stack and not self.stack.is_void:
             root_stack = self.stack.title
         else:
-            root_stack = self.module_name
+            root_stack = self.mapping_key
         for attribute_parameter, output_definition in self.output_properties.items():
             output_name = f"{self.logical_name}{attribute_parameter.title}"
             if self.lookup:

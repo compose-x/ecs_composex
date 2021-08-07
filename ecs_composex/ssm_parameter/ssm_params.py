@@ -5,14 +5,20 @@
 
 from os import path
 
+from ecs_composex.common import NONALPHANUM
 from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.common.ecs_composex import X_KEY
 
 MOD_KEY = path.basename(path.dirname(path.abspath(__file__)))
-RES_KEY = f"x-{MOD_KEY}"
+RES_KEY = f"{X_KEY}{MOD_KEY}"
+MAPPINGS_KEY = NONALPHANUM.sub("", MOD_KEY)
 
 SSM_PARAM_NAME_T = "ParameterName"
 SSM_PARAM_NAME = Parameter(SSM_PARAM_NAME_T, Type="String")
+
+SSM_PARAM_ARN_T = "ParameterArn"
+SSM_PARAM_ARN = Parameter(SSM_PARAM_ARN_T, Type="String")
+
 
 SSM_PARAM_TYPE_T = "ParameterType"
 SSM_PARAM_TYPE = Parameter(
@@ -21,3 +27,6 @@ SSM_PARAM_TYPE = Parameter(
     Type="String",
     AllowedValues=["String", "StringList", "SecureString"],
 )
+
+SSM_PARAM_KMS_KEY_T = "ParameterKeyId"
+SSM_PARAM_KMS_KEY = Parameter(SSM_PARAM_KMS_KEY_T, return_value="KeyId", Type="String")
