@@ -12,6 +12,7 @@ phases:
     commands:
       - (pip --version && pip install pip -U)|| curl -s https://bootstrap.pypa.io/get-pip.py | python
       - python -m pip install poetry
+      - export PATH=$HOME/.poetry/bin/poetry:$PATH
       - poetry install
       - poetry install -E ECRScan
 
