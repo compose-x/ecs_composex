@@ -68,7 +68,7 @@ ecs_compose_x = "ecs_composex.cli:main"
 compose-x = "ecs_composex.cli:main"
 
 [tool.poetry.extras]
-ECRScan = ["ecr-scan-reporter"]
+ecrscan = ["ecr-scan-reporter"]
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

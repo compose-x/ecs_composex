@@ -12,9 +12,12 @@ phases:
     commands:
       - (pip --version && pip install pip -U)|| curl -s https://bootstrap.pypa.io/get-pip.py | python
       - python -m pip install poetry
-      - export PATH=$HOME/.poetry/bin:$PATH
+      - POETRY_BIN_FILE=`find /root -name poetry -type f 2>/dev/null`
+      - echo $POETRY_BIN_FILE
+      - POETRY_BIN_DIR=$(dirname "${POETRY_BIN_FILE}")
+      - PATH=$POETRY_BIN_DIR:$PATH
       - poetry install
-      - poetry install -E ECRScan
+      - poetry install -E ecrscan
 
   build:
     commands:
