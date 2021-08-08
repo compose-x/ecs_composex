@@ -89,7 +89,9 @@ class Mesh(object):
                     "MeshName": appmesh_conditions.set_mesh_name(),
                 }
             self.appmesh = appmesh.Mesh(
-                self.mesh_title, template=services_root_stack.stack_template, **props
+                self.mesh_title,
+                template=services_root_stack.stack_template,
+                **props,
             )
             services_root_stack.Parameters.update(
                 {
@@ -150,7 +152,8 @@ class Mesh(object):
                 else None,
             )
             self.nodes[family.logical_name].get_node_param = GetAtt(
-                self.nodes[family.logical_name].param_name, "Outputs.VirtualNode"
+                self.nodes[family.logical_name].param_name,
+                "Outputs.VirtualNode",
             )
             self.nodes[family.logical_name].get_sg_param = GetAtt(
                 self.nodes[family.logical_name].param_name,
@@ -164,7 +167,10 @@ class Mesh(object):
         for router in self.mesh_settings[self.routers_key]:
             name = router[appmesh_params.NAME_KEY]
             self.routers[name] = MeshRouter(
-                router[appmesh_params.NAME_KEY], router, self.appmesh, self.nodes
+                router[appmesh_params.NAME_KEY],
+                router,
+                self.appmesh,
+                self.nodes,
             )
 
     def define_virtual_services(self, dns_settings):
@@ -174,7 +180,12 @@ class Mesh(object):
         for service in self.mesh_settings[self.services_key]:
             name = service[appmesh_params.NAME_KEY]
             self.services[name] = MeshService(
-                name, service, self.routers, self.nodes, self.appmesh, dns_settings
+                name,
+                service,
+                self.routers,
+                self.nodes,
+                self.appmesh,
+                dns_settings,
             )
 
     def render_mesh_template(self, services_stack, settings, dns_settings):

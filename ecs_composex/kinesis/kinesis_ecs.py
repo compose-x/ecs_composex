@@ -54,7 +54,12 @@ def kinesis_to_ecs(resources, services_stack, res_root_stack, settings):
         LOG.info(f"Added dependency between services and {res_root_stack.title}")
     for new_res in new_resources:
         handle_resource_to_services(
-            new_res, services_stack, res_root_stack, settings, STREAM_ARN, [STREAM_ID]
+            new_res,
+            services_stack,
+            res_root_stack,
+            settings,
+            STREAM_ARN,
+            [STREAM_ID],
         )
     create_kinesis_mappings(resource_mappings, lookup_resources, settings)
     for lookup_res in lookup_resources:

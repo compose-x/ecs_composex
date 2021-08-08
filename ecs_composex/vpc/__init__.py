@@ -6,5 +6,8 @@ from ecs_composex import __version__ as version
 
 metadata = {
     "Type": "ComposeX",
-    "Properties": {"ecs_composex::module": "ecs_composex.vpc", "Version": version},
+    "Properties": {
+        "ecs_composex::module": "ecs_composex.vpc",
+        "Version": version,
+    },
 }

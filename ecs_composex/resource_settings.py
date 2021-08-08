@@ -136,7 +136,11 @@ def handle_kms_access(mapping_family, resource, target, selected_services):
         f"{resource.logical_name}KmsKey", KMS_ACCESS_TYPES, arn=key_arn
     )
     add_iam_policy_to_service_task_role(
-        target[0].template, resource, kms_perms, "EncryptDecrypt", selected_services
+        target[0].template,
+        resource,
+        kms_perms,
+        "EncryptDecrypt",
+        selected_services,
     )
 
 

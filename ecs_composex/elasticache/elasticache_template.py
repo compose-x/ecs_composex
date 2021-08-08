@@ -169,7 +169,8 @@ def create_cluster_from_parameters(cluster, template):
         key in required_keys for key in cluster.parameters
     ):
         raise KeyError(
-            "When using MacroParameters only, you must specify at least", required_keys
+            "When using MacroParameters only, you must specify at least",
+            required_keys,
         )
     props = {
         "CacheNodeType": "cache.t3.small"

@@ -6,7 +6,7 @@ from pytest import raises
 from troposphere import Ref
 
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME
-from ecs_composex.common.outputs import validate, ComposeXOutput, get_import_value
+from ecs_composex.common.outputs import ComposeXOutput, get_import_value, validate
 
 
 def test_output_validation():
@@ -37,11 +37,15 @@ def test_composex_output():
         ComposeXOutput(ROOT_STACK_NAME, values=[[1, 2, 3], [4, 5, 6]])
     ComposeXOutput(ROOT_STACK_NAME, [(ROOT_STACK_NAME, "stack", Ref(ROOT_STACK_NAME))])
     ComposeXOutput(
-        None, [(ROOT_STACK_NAME, "stack", Ref(ROOT_STACK_NAME))], duplicate_attr=True
+        None,
+        [(ROOT_STACK_NAME, "stack", Ref(ROOT_STACK_NAME))],
+        duplicate_attr=True,
     )
     with raises(TypeError):
         ComposeXOutput(
-            123, [(ROOT_STACK_NAME, "stack", Ref(ROOT_STACK_NAME))], duplicate_attr=True
+            123,
+            [(ROOT_STACK_NAME, "stack", Ref(ROOT_STACK_NAME))],
+            duplicate_attr=True,
         )
 
 

@@ -70,7 +70,12 @@ class CacheCluster(XResource):
                 GetAtt,
                 CLUSTER_MEMCACHED_ADDRESS.return_value,
             ),
-            CLUSTER_SG: (self.db_sg.title, self.db_sg, GetAtt, CLUSTER_SG.return_value),
+            CLUSTER_SG: (
+                self.db_sg.title,
+                self.db_sg,
+                GetAtt,
+                CLUSTER_SG.return_value,
+            ),
         }
 
     def add_memcahed_config(self, template):
@@ -123,7 +128,12 @@ class CacheCluster(XResource):
                 GetAtt,
                 REPLICA_READ_ENDPOINT_PORTS.return_value,
             ),
-            CLUSTER_SG: (self.db_sg.title, self.db_sg, GetAtt, CLUSTER_SG.return_value),
+            CLUSTER_SG: (
+                self.db_sg.title,
+                self.db_sg,
+                GetAtt,
+                CLUSTER_SG.return_value,
+            ),
         }
         self.port_attr = REPLICA_PRIMARY_PORT
 
@@ -168,7 +178,12 @@ class CacheCluster(XResource):
                 GetAtt,
                 CLUSTER_REDIS_ADDRESS.return_value,
             ),
-            CLUSTER_SG: (self.db_sg.title, self.db_sg, GetAtt, CLUSTER_SG.return_value),
+            CLUSTER_SG: (
+                self.db_sg.title,
+                self.db_sg,
+                GetAtt,
+                CLUSTER_SG.return_value,
+            ),
         }
         self.port_attr = CLUSTER_REDIS_PORT
 

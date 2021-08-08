@@ -37,7 +37,7 @@ python = "^3.7"
 boto3 = "^1.18"
 troposphere = "^3.0"
 ecr-scan-reporter = {version = "^0.3", optional = true}
-compose-x-render = "^0.1.0"
+compose-x-render = "^0.2.0"
 compose-x-common = "^0.0.2"
 jsonschema = "^3.2.0"
 requests = "^2.26.0"
@@ -45,6 +45,7 @@ tabulate = "^0.8.9"
 importlib-resources = "^5.2.2"
 aws-sam-translator = "^1.38.0"
 ecs-composex-specs = "^0.1.0"
+PyYAML = "^5.4.1"
 
 [tool.poetry.dev-dependencies]
 isort = "^5.9.3"
@@ -69,10 +70,6 @@ compose-x = "ecs_composex.cli:main"
 
 [tool.poetry.extras]
 ecrscan = ["ecr-scan-reporter"]
-
-[build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
 
 [tool.tbump]
 github_url = "https://github.com/compose-x/ecs_composex"
@@ -103,9 +100,16 @@ src = "ecs_composex/__init__.py"
 name = "Files format"
 cmd = "make conform"
 
+[tool.black]
+line-length = 88
+
 [tool.isort]
 profile = "black"
 multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+known_first_party = "kelvin"
 
 [tool.coverage.report]
 exclude_lines = [
@@ -115,3 +119,6 @@ exclude_lines = [
 omit = [
   "*/cli.py"
 ]
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

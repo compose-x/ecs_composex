@@ -146,7 +146,9 @@ def create_new_vpc(vpc_xkey, settings, default=False):
     vpc_stack.add_parameter(
         {
             dns_params.PRIVATE_DNS_ZONE_NAME.title: FindInMap(
-                "Dns", "PrivateNamespace", dns_params.PRIVATE_DNS_ZONE_NAME.title
+                "Dns",
+                "PrivateNamespace",
+                dns_params.PRIVATE_DNS_ZONE_NAME.title,
             )
         }
     )
@@ -157,7 +159,11 @@ def set_subnets_from_use(subnets_list, vpc_settings, subnets_def):
     for subnet_name in subnets_list:
         if not isinstance(vpc_settings[subnet_name], (list, str)):
             raise TypeError(
-                "The subnet_name must be of type", str, list, "Got", type(subnet_name)
+                "The subnet_name must be of type",
+                str,
+                list,
+                "Got",
+                type(subnet_name),
             )
         subnets = (
             vpc_settings[subnet_name].split(",")
@@ -178,7 +184,11 @@ def import_vpc_settings(vpc_settings):
     if not keyisset(VPC_ID.title, vpc_settings):
         raise KeyError("You must specify the VPC ID to use for deployment")
     settings = {VPC_ID.title: vpc_settings[VPC_ID.title]}
-    required_subnets = [APP_SUBNETS.title, PUBLIC_SUBNETS.title, STORAGE_SUBNETS.title]
+    required_subnets = [
+        APP_SUBNETS.title,
+        PUBLIC_SUBNETS.title,
+        STORAGE_SUBNETS.title,
+    ]
     excluded = [VPC_ID.title, "RoleArn"]
     if not all(subnet in vpc_settings.keys() for subnet in required_subnets):
         raise KeyError("All required subnets must be indicated", required_subnets)

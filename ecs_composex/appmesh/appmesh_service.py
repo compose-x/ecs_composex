@@ -83,7 +83,8 @@ class MeshService(object):
             MeshName=appmesh_conditions.get_mesh_name(mesh),
             MeshOwner=appmesh_conditions.set_mesh_owner_id(),
             VirtualServiceName=Sub(
-                f"{name}.${{ZoneName}}", ZoneName=dns_settings.private_zone.name_value
+                f"{name}.${{ZoneName}}",
+                ZoneName=dns_settings.private_zone.name_value,
             ),
             Spec=appmesh.VirtualServiceSpec(
                 Provider=appmesh.VirtualServiceProvider(

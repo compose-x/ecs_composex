@@ -35,7 +35,11 @@ def lookup_x_vpc_settings(lookup, session):
         APP_SUBNETS.title,
         STORAGE_SUBNETS.title,
     ]
-    subnets_keys = [PUBLIC_SUBNETS.title, APP_SUBNETS.title, STORAGE_SUBNETS.title]
+    subnets_keys = [
+        PUBLIC_SUBNETS.title,
+        APP_SUBNETS.title,
+        STORAGE_SUBNETS.title,
+    ]
     if not all(key in lookup.keys() for key in required_keys):
         raise KeyError(
             "Missing keys for x-vpc Lookup. Got",

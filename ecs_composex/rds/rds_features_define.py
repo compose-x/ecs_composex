@@ -27,7 +27,8 @@ def get_s3_bucket_arn_from_resource(db_template, stack, resource):
         stack.parent_stack.Parameters.update(
             {
                 param.title: GetAtt(
-                    "s3", f"Outputs.{resource.logical_name}{S3_BUCKET_ARN.title}"
+                    "s3",
+                    f"Outputs.{resource.logical_name}{S3_BUCKET_ARN.title}",
                 )
             }
         )

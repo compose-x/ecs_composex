@@ -91,13 +91,19 @@ def add_db_stack(root_template, db, settings):
     parameters.update(non_stack_params)
     db_template = generate_database_template(db, settings)
     db_stack = RdsDbStack(
-        db.logical_name, db=db, stack_template=db_template, stack_parameters=parameters
+        db.logical_name,
+        db=db,
+        stack_template=db_template,
+        stack_parameters=parameters,
     )
     root_template.add_resource(db_stack)
     new_outputs = []
     for output_name in db_stack.stack_template.outputs:
         new_outputs.append(
-            Output(output_name, Value=GetAtt(db.logical_name, f"Outputs.{output_name}"))
+            Output(
+                output_name,
+                Value=GetAtt(db.logical_name, f"Outputs.{output_name}"),
+            )
         )
     root_template.add_output(new_outputs)
 

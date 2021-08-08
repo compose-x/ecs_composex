@@ -48,7 +48,10 @@ USE_FLEET = Parameter(
 
 USE_ONDEMAND_T = "UseOnDemandHosts"
 USE_ONDEMAND = Parameter(
-    USE_ONDEMAND_T, Type="String", Default="False", AllowedValues=["True", "False"]
+    USE_ONDEMAND_T,
+    Type="String",
+    Default="False",
+    AllowedValues=["True", "False"],
 )
 
 STACK_ID_SHORT = Select(0, Split("-", Select(1, Split("/", Ref(AWS_STACK_ID)))))

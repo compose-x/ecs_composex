@@ -246,7 +246,8 @@ def handle_alarm_topics(alarm, alarms_stack, settings):
             if not keyisset(SNS_KEY, settings.compose_content) or (
                 keyisset(SNS_KEY, settings.compose_content)
                 and not keyisset(
-                    topic[SNS_KEY], settings.compose_content[SNS_KEY][Topic.keyword]
+                    topic[SNS_KEY],
+                    settings.compose_content[SNS_KEY][Topic.keyword],
                 )
             ):
                 raise KeyError(

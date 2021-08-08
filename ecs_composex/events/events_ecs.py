@@ -164,7 +164,8 @@ def define_service_targets(settings, stack, rule, cluster_arn):
         stack.Parameters.update(
             {
                 service_sg_param.title: GetAtt(
-                    service[0].logical_name, f"Outputs.{service[0].logical_name}GroupId"
+                    service[0].logical_name,
+                    f"Outputs.{service[0].logical_name}GroupId",
                 ),
                 service_task_def_param.title: GetAtt(
                     service[0].logical_name,

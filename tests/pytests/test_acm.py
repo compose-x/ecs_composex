@@ -2,11 +2,11 @@
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille<john@compose-x.io>
 
+from os import path
+
 import boto3
 import placebo
-from os import path
 from pytest import raises
-
 
 from ecs_composex.acm.acm_aws import lookup_cert_config
 
@@ -21,7 +21,9 @@ def test_lookup_acm():
     pill = placebo.attach(session, data_path=f"{here}/x_acm_lookup")
     pill.playback()
     lookup_cert_config(
-        "cert01", {"Tags": [{"Name": "docs.ecs-composex.lambda-my-aws.io"}]}, session
+        "cert01",
+        {"Tags": [{"Name": "docs.ecs-composex.lambda-my-aws.io"}]},
+        session,
     )
     with raises(ValueError):
         lookup_cert_config(

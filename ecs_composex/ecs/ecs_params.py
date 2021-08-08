@@ -31,7 +31,10 @@ SERVICE_SCALING_TARGET = "ServiceScalingTarget"
 
 LAUNCH_TYPE_T = "EcsLaunchType"
 LAUNCH_TYPE = Parameter(
-    LAUNCH_TYPE_T, Type="String", AllowedValues=["EC2", "FARGATE"], Default="FARGATE"
+    LAUNCH_TYPE_T,
+    Type="String",
+    AllowedValues=["EC2", "FARGATE"],
+    Default="FARGATE",
 )
 
 FARGATE_VERSION_T = "FargatePlatformVersion"
@@ -47,12 +50,18 @@ IS_PUBLIC = Parameter(IS_PUBLIC_T, AllowedValues=["True", "False"], Type="String
 
 CLUSTER_NAME_T = "EcsClusterName"
 CLUSTER_NAME = Parameter(
-    CLUSTER_NAME_T, Type="String", AllowedPattern=r"[a-zA-Z0-9-]+", Default="default"
+    CLUSTER_NAME_T,
+    Type="String",
+    AllowedPattern=r"[a-zA-Z0-9-]+",
+    Default="default",
 )
 
 CREATE_CLUSTER_PT = "CreateEcsCluster"
 CREATE_CLUSTER = Parameter(
-    CREATE_CLUSTER_PT, Type="String", AllowedValues=["True", "False"], Default="True"
+    CREATE_CLUSTER_PT,
+    Type="String",
+    AllowedValues=["True", "False"],
+    Default="True",
 )
 
 SERVICE_NAME_T = "MicroServiceName"
@@ -74,7 +83,11 @@ SERVICE_COUNT = Parameter(SERVICE_COUNT_T, Type="Number", MinValue=0, Default=0)
 
 ELB_GRACE_PERIOD_T = "ElbGracePeriod"
 ELB_GRACE_PERIOD = Parameter(
-    ELB_GRACE_PERIOD_T, Type="Number", MinValue=0, Default=300, MaxValue=2147483647
+    ELB_GRACE_PERIOD_T,
+    Type="Number",
+    MinValue=0,
+    Default=300,
+    MaxValue=2147483647,
 )
 
 ECS_CONTROLLER_T = "EcsServiceDeploymentController"
@@ -87,7 +100,10 @@ ECS_CONTROLLER = Parameter(
 
 CREATE_LOG_GROUP_T = "CreateLogGroup"
 CREATE_LOG_GROUP = Parameter(
-    CREATE_LOG_GROUP_T, Type="String", AllowedValues=["True", "False"], Default="True"
+    CREATE_LOG_GROUP_T,
+    Type="String",
+    AllowedValues=["True", "False"],
+    Default="True",
 )
 LOG_GROUP_NAME_T = "ServicesLogGroupName"
 LOG_GROUP_NAME = Parameter(LOG_GROUP_NAME_T, Type="String", Default="ComposeXDefined")

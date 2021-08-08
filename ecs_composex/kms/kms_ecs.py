@@ -46,7 +46,12 @@ def kms_to_ecs(resources, services_stack, res_root_stack, settings):
         LOG.info(f"Added dependency between services and {res_root_stack.title}")
     for new_res in new_resources:
         handle_resource_to_services(
-            new_res, services_stack, res_root_stack, settings, KMS_KEY_ARN, [KMS_KEY_ID]
+            new_res,
+            services_stack,
+            res_root_stack,
+            settings,
+            KMS_KEY_ARN,
+            [KMS_KEY_ID],
         )
     create_kms_mappings(resources_mappings, lookup_resources, settings)
     for lookup_res in lookup_resources:

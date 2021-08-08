@@ -57,7 +57,8 @@ def validate_rds_lookup(db_name, lookup):
     """
     if not lookup or not isinstance(lookup, dict):
         raise TypeError(
-            "The Lookup section for RDS must be an object/dictionary. Got", type(lookup)
+            "The Lookup section for RDS must be an object/dictionary. Got",
+            type(lookup),
         )
     allowed_keys = ["secret", "cluster", "db", ROLE_ARN_ARG]
     rds_specific = ["secret", "cluster", "db"]
@@ -68,7 +69,10 @@ def validate_rds_lookup(db_name, lookup):
     for key_name in lookup:
         if key_name in rds_specific and not isinstance(lookup[key_name], dict):
             raise TypeError(
-                f"{key_name} is of type", type(lookup[key_name]), "Expected", dict
+                f"{key_name} is of type",
+                type(lookup[key_name]),
+                "Expected",
+                dict,
             )
         elif key_name == ROLE_ARN_ARG and not isinstance(lookup[ROLE_ARN_ARG], str):
             raise TypeError(f"{ROLE_ARN_ARG} must be of type", str)

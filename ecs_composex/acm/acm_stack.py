@@ -66,7 +66,8 @@ class Certificate(object):
             )
         validations = [
             DomainValidationOption(
-                DomainName=domain_name, HostedZoneId=dns_settings.public_zone.id_value
+                DomainName=domain_name,
+                HostedZoneId=dns_settings.public_zone.id_value,
             )
             for domain_name in self.parameters["DomainNames"]
         ]

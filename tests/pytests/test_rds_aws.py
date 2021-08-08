@@ -2,11 +2,13 @@
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille<john@compose-x.io>
 
-import boto3
 from os import path
-from pytest import fixture, raises
+
+import boto3
 import placebo
-from ecs_composex.rds.rds_aws import validate_rds_lookup, lookup_rds_resource
+from pytest import fixture, raises
+
+from ecs_composex.rds.rds_aws import lookup_rds_resource, validate_rds_lookup
 
 
 @fixture(autouse=True)
@@ -50,7 +52,13 @@ def invalid_cluster_property_type():
 
 @fixture(autouse=True)
 def unknown_cluster_property():
-    return {"cluster": {"Name": "abcd", "Tags": [{"name": "dbtesting"}], "intruder": 1}}
+    return {
+        "cluster": {
+            "Name": "abcd",
+            "Tags": [{"name": "dbtesting"}],
+            "intruder": 1,
+        }
+    }
 
 
 @fixture(autouse=True)

@@ -3,15 +3,15 @@
 # Copyright 2020-2021 John Mille<john@compose-x.io>
 
 from os import path
+
+import placebo
+from behave import given, then
 from pytest import raises
 
-from behave import given, then
-import placebo
-
+from ecs_composex.common.aws import deploy
 from ecs_composex.common.settings import ComposeXSettings
 from ecs_composex.common.stacks import process_stacks
 from ecs_composex.ecs_composex import generate_full_template
-from ecs_composex.common.aws import deploy
 
 
 def here():
@@ -139,7 +139,8 @@ def step_impl(context):
     Function to test the deployment.
     """
     pill = placebo.attach(
-        session=context.settings.session, data_path=f"{here()}/cfn_cannot_update"
+        session=context.settings.session,
+        data_path=f"{here()}/cfn_cannot_update",
     )
     pill.playback()
     context.stack_id = deploy(context.settings, context.root_stack)

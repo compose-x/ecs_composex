@@ -43,7 +43,8 @@ def handle_service_scaling(resource, res_root_stack):
     resource_attribute = SQS_NAME.title
     if not resource.lookup:
         resource_value = GetAtt(
-            res_root_stack.title, f"Outputs.{resource.logical_name}{SQS_NAME.title}"
+            res_root_stack.title,
+            f"Outputs.{resource.logical_name}{SQS_NAME.title}",
         )
     else:
         resource_value = FindInMap(MOD_KEY, resource.logical_name, resource_attribute)

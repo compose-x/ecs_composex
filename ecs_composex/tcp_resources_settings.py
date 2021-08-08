@@ -91,7 +91,8 @@ def generate_secrets_from_secrets_mappings(
             secret_from = Sub(f"${{{param_name}}}:{secret['SecretKey']}::")
         elif isinstance(secret_definition, FindInMap):
             secret_from = Sub(
-                f"${{SecretArn}}:{secret['SecretKey']}::", SecretArn=secret_definition
+                f"${{SecretArn}}:{secret['SecretKey']}::",
+                SecretArn=secret_definition,
             )
         else:
             raise TypeError(
@@ -231,7 +232,11 @@ def handle_new_dbs_to_services(db, sg_import, target, port=None):
 
 
 def handle_new_tcp_resource(
-    resource, res_root_stack, port_parameter, sg_parameter, secret_parameter=None
+    resource,
+    res_root_stack,
+    port_parameter,
+    sg_parameter,
+    secret_parameter=None,
 ):
     """
     Funnction to standardize TCP services access from services.

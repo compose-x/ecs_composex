@@ -112,7 +112,10 @@ def evaluate_plugin_efs_properties(definition):
     efs_keys = {
         "performance_mode": ("PerformanceMode", str),
         "throughput_mode": ("ThroughputMode", str),
-        "provisioned_throughput": ("ProvisionedThroughputInMibps", (int, float)),
+        "provisioned_throughput": (
+            "ProvisionedThroughputInMibps",
+            (int, float),
+        ),
     }
     props = {}
     if keyisset(ComposeVolume.driver_opts_key, definition) and isinstance(

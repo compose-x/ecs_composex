@@ -18,7 +18,8 @@ def handle_encryption(stream):
     :return:
     """
     return StreamEncryption(
-        EncryptionType="KMS", KeyId=stream.properties["StreamEncryption"]["KeyId"]
+        EncryptionType="KMS",
+        KeyId=stream.properties["StreamEncryption"]["KeyId"],
     )
 
 

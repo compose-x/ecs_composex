@@ -132,9 +132,15 @@ def add_vpc_core(template, vpc_cidr):
         EnableDnsHostnames=True,
         EnableDnsSupport=True,
         Tags=Tags(
-            Name=If(USE_STACK_NAME_CON_T, Ref("AWS::StackName"), Ref(ROOT_STACK_NAME)),
+            Name=If(
+                USE_STACK_NAME_CON_T,
+                Ref("AWS::StackName"),
+                Ref(ROOT_STACK_NAME),
+            ),
             EnvironmentName=If(
-                USE_STACK_NAME_CON_T, Ref("AWS::StackName"), Ref(ROOT_STACK_NAME)
+                USE_STACK_NAME_CON_T,
+                Ref("AWS::StackName"),
+                Ref(ROOT_STACK_NAME),
             ),
         ),
         Metadata=metadata,
@@ -145,7 +151,8 @@ def add_vpc_core(template, vpc_cidr):
             AddressFamily="IPv4",
             Entries=[
                 Entry(
-                    Cidr=vpc_cidr, Description=Sub(f"Primary CIDR for ${{{vpc.title}}}")
+                    Cidr=vpc_cidr,
+                    Description=Sub(f"Primary CIDR for ${{{vpc.title}}}"),
                 )
             ],
             MaxEntries=5,

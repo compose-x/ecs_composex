@@ -61,7 +61,8 @@ def initialize_service_template(service_name):
         ],
     )
     service_tpl.add_condition(
-        ecs_conditions.SERVICE_COUNT_ZERO_CON_T, ecs_conditions.SERVICE_COUNT_ZERO_CON
+        ecs_conditions.SERVICE_COUNT_ZERO_CON_T,
+        ecs_conditions.SERVICE_COUNT_ZERO_CON,
     )
     service_tpl.add_condition(
         ecs_conditions.SERVICE_COUNT_ZERO_AND_FARGATE_CON_T,
@@ -71,10 +72,12 @@ def initialize_service_template(service_name):
         ecs_conditions.USE_HOSTNAME_CON_T, ecs_conditions.USE_HOSTNAME_CON
     )
     service_tpl.add_condition(
-        ecs_conditions.NOT_USE_HOSTNAME_CON_T, ecs_conditions.NOT_USE_HOSTNAME_CON
+        ecs_conditions.NOT_USE_HOSTNAME_CON_T,
+        ecs_conditions.NOT_USE_HOSTNAME_CON,
     )
     service_tpl.add_condition(
-        ecs_conditions.NOT_USE_CLUSTER_SG_CON_T, ecs_conditions.NOT_USE_CLUSTER_SG_CON
+        ecs_conditions.NOT_USE_CLUSTER_SG_CON_T,
+        ecs_conditions.NOT_USE_CLUSTER_SG_CON,
     )
     service_tpl.add_condition(
         ecs_conditions.USE_CLUSTER_SG_CON_T, ecs_conditions.USE_CLUSTER_SG_CON
@@ -94,7 +97,8 @@ def initialize_service_template(service_name):
         dns_conditions.PRIVATE_ZONE_ID_CON_T, dns_conditions.PRIVATE_ZONE_ID_CON
     )
     service_tpl.add_condition(
-        dns_conditions.PRIVATE_NAMESPACE_CON_T, dns_conditions.PRIVATE_NAMESPACE_CON
+        dns_conditions.PRIVATE_NAMESPACE_CON_T,
+        dns_conditions.PRIVATE_NAMESPACE_CON,
     )
     return service_tpl
 
@@ -189,7 +193,9 @@ def generate_services(settings):
         family.service_config = ServiceConfig(family, settings)
         family.ecs_service = Service(family, settings)
         family.service_config.network.set_aws_sources(
-            settings, family.logical_name, GetAtt(family.ecs_service.sg, "GroupId")
+            settings,
+            family.logical_name,
+            GetAtt(family.ecs_service.sg, "GroupId"),
         )
         family.service_config.network.set_ext_sources_ingress(
             family.logical_name, GetAtt(family.ecs_service.sg, "GroupId")

@@ -152,10 +152,12 @@ def add_independant_rules(dst_family, service_name, root_stack):
                 f" on port {port['published']}/{port['protocol']}"
             ),
             GroupId=GetAtt(
-                dst_family.stack.title, f"Outputs.{dst_family.logical_name}GroupId"
+                dst_family.stack.title,
+                f"Outputs.{dst_family.logical_name}GroupId",
             ),
             SourceSecurityGroupId=GetAtt(
-                src_service_stack.title, f"Outputs.{src_service_stack.title}GroupId"
+                src_service_stack.title,
+                f"Outputs.{src_service_stack.title}GroupId",
             ),
             SourceSecurityGroupOwnerId=Ref(AWS_ACCOUNT_ID),
         )

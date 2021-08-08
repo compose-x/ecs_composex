@@ -44,5 +44,8 @@ PRIVATE_DNS_ZONE_ID = Parameter(
 
 PRIVATE_NAMESPACE_ID_T = "PrivateNamespaceId"
 PRIVATE_NAMESPACE_ID = Parameter(
-    PRIVATE_NAMESPACE_ID_T, Type="String", Default="none", AllowedPattern=ZONES_PATTERN
+    PRIVATE_NAMESPACE_ID_T,
+    Type="String",
+    Default="none",
+    AllowedPattern=ZONES_PATTERN,
 )

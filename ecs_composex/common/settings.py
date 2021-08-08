@@ -111,7 +111,12 @@ class ComposeXSettings(object):
     all_commands = active_commands + validation_commands + neutral_commands
 
     def __init__(
-        self, content=None, profile_name=None, session=None, for_macro=False, **kwargs
+        self,
+        content=None,
+        profile_name=None,
+        session=None,
+        for_macro=False,
+        **kwargs,
     ):
         """
         Class to init the configuration
@@ -253,7 +258,8 @@ class ComposeXSettings(object):
             return
         for volume_name in self.compose_content[ComposeVolume.main_key]:
             volume = ComposeVolume(
-                volume_name, self.compose_content[ComposeVolume.main_key][volume_name]
+                volume_name,
+                self.compose_content[ComposeVolume.main_key][volume_name],
             )
             self.compose_content[ComposeVolume.main_key][volume_name] = volume
             self.volumes.append(volume)

@@ -44,7 +44,11 @@ def import_non_functions(props, prop_name, top_class, properties, set_to_novalue
         props[prop_name] = properties[prop_name]
     elif isinstance(properties[prop_name], (str, int, float, tuple)) or top_class.props[
         prop_name
-    ][0] in (str, int, float):
+    ][0] in (
+        str,
+        int,
+        float,
+    ):
         if top_class.props[prop_name][0] in (str, int, float):
             props[prop_name] = top_class.props[prop_name][0](properties[prop_name])
         else:

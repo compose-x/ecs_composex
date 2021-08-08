@@ -101,7 +101,8 @@ def create_dashboards(settings, x_stack):
             NONALPHANUM.sub("", name),
             DashboardBody=dashboard_body,
             DashboardName=Sub(
-                f"${{StackName}}--{name}", StackName=define_stack_name(x_stack.template)
+                f"${{StackName}}--{name}",
+                StackName=define_stack_name(x_stack.template),
             ),
         )
         x_stack.stack_template.add_resource(cfn_dashboard)

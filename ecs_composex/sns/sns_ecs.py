@@ -43,7 +43,12 @@ def sns_to_ecs(resources, services_stack, res_root_stack, settings):
         LOG.info(f"Added dependency between services and {res_root_stack.title}")
     for new_res in new_resources:
         handle_resource_to_services(
-            new_res, services_stack, res_root_stack, settings, TOPIC_ARN, [TOPIC_NAME]
+            new_res,
+            services_stack,
+            res_root_stack,
+            settings,
+            TOPIC_ARN,
+            [TOPIC_NAME],
         )
     for lookup_resource in lookup_resources:
         handle_lookup_resource(

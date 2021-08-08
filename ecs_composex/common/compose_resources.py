@@ -361,7 +361,9 @@ class XResource(object):
         """
         if attribute_parameter.return_value:
             return FindInMap(
-                self.mapping_key, self.logical_name, attribute_parameter.return_value
+                self.mapping_key,
+                self.logical_name,
+                attribute_parameter.return_value,
             )
         else:
             return FindInMap(
@@ -428,7 +430,10 @@ class XResource(object):
             root_stack = self.stack.title
         else:
             root_stack = self.mapping_key
-        for attribute_parameter, output_definition in self.output_properties.items():
+        for (
+            attribute_parameter,
+            output_definition,
+        ) in self.output_properties.items():
             output_name = f"{self.logical_name}{attribute_parameter.title}"
             if self.lookup:
                 self.attributes_outputs[attribute_parameter] = {

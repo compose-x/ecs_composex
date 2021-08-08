@@ -30,7 +30,8 @@ def validate(value):
     """
     if not len(value) == 3:
         raise ValueError(
-            "Output argument expects Name, AttributeName, Value. Only got", len(value)
+            "Output argument expects Name, AttributeName, Value. Only got",
+            len(value),
         )
     if not isinstance(value[0], (Parameter, str)):
         raise TypeError("Name should be of type", str, Parameter, "Got", type(value[0]))
@@ -67,7 +68,8 @@ class ComposeXOutput(object):
         for value in self.values:
             if not isinstance(value, tuple):
                 raise TypeError(
-                    "All values should be a tuple of (str, value). Got", type(value)
+                    "All values should be a tuple of (str, value). Got",
+                    type(value),
                 )
             validate(value)
             attr_name = (
@@ -85,7 +87,11 @@ class ComposeXOutput(object):
             output = Output(output_name, Value=attr_value)
             if export:
                 output.Export = Export(
-                    If(USE_STACK_NAME_CON_T, Sub(stack_string), Sub(root_string))
+                    If(
+                        USE_STACK_NAME_CON_T,
+                        Sub(stack_string),
+                        Sub(root_string),
+                    )
                 )
             self.outputs.append(output)
             if self.duplicate_attr:
@@ -105,7 +111,10 @@ class ComposeXOutput(object):
                 self.duplicate_attr = False
         else:
             raise TypeError(
-                "object should be a subclass of", AWSObject, "Got", type(resource)
+                "object should be a subclass of",
+                AWSObject,
+                "Got",
+                type(resource),
             )
         if not isinstance(values, list):
             raise TypeError("values must be of type", list)

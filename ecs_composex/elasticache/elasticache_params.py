@@ -58,7 +58,9 @@ CLUSTER_MEMCACHED_PORT = Parameter(
 
 REPLICA_PRIMARY_ADDRESS_T = "PrimaryEndPointAddress"
 REPLICA_PRIMARY_ADDRESS = Parameter(
-    REPLICA_PRIMARY_ADDRESS_T, return_value="PrimaryEndPoint.Address", Type="String"
+    REPLICA_PRIMARY_ADDRESS_T,
+    return_value="PrimaryEndPoint.Address",
+    Type="String",
 )
 
 REPLICA_PRIMARY_PORT_T = "PrimaryEndPointPort"

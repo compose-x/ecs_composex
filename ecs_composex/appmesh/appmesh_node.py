@@ -200,7 +200,8 @@ class MeshNode(object):
                 Environment(Name="ProxyEgressPort", Value="15001"),
                 Environment(Name="IgnoredGID", Value=""),
                 Environment(
-                    Name="EgressIgnoredIPs", Value="169.254.170.2,169.254.169.254"
+                    Name="EgressIgnoredIPs",
+                    Value="169.254.170.2,169.254.169.254",
                 ),
                 Environment(Name="EgressIgnoredPorts", Value=""),
                 Environment(
@@ -291,7 +292,8 @@ class MeshNode(object):
             )
             container_envvars.append(
                 Environment(
-                    Name=f"{backend.upper()}_BACKEND", Value=Ref(backend_parameter)
+                    Name=f"{backend.upper()}_BACKEND",
+                    Value=Ref(backend_parameter),
                 )
             )
         for container in task_def.ContainerDefinitions:

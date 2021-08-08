@@ -90,7 +90,9 @@ def scan_poll_and_wait(registry, repository_name, image, image_url, ecr_session=
     while True:
         try:
             image_scan_r = client.describe_image_scan_findings(
-                registryId=registry, repositoryName=repository_name, imageId=image
+                registryId=registry,
+                repositoryName=repository_name,
+                imageId=image,
             )
             if image_scan_r["imageScanStatus"]["status"] == "IN_PROGRESS":
                 LOG.info(f"{image_url} - Scan in progress - waiting 10 seconds")
@@ -103,7 +105,12 @@ def scan_poll_and_wait(registry, repository_name, image, image_url, ecr_session=
 
 
 def wait_for_scan_report(
-    registry, repository_name, image, image_url, trigger_scan=False, ecr_session=None
+    registry,
+    repository_name,
+    image,
+    image_url,
+    trigger_scan=False,
+    ecr_session=None,
 ):
     """
     Function to wait for the scan report to go from In Progress to else
