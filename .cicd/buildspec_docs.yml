@@ -27,5 +27,5 @@ phases:
   build:
     commands:
       - echo "Building docs"
-      - make nightly-docs
+      - make publish-docs
       - aws cloudfront create-invalidation --distribution-id ${DISTRIBUTION_ID} --paths "/*"
