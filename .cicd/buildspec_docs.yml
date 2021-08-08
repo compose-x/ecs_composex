@@ -10,10 +10,20 @@ phases:
     runtime-versions:
       python: "$(echo $PY_VERSION)"
     commands:
-      - (pip --version && pip install pip -U) || curl -s https://bootstrap.pypa.io/get-pip.py | python
+      - (pip --version && pip install pip -U)|| curl -s https://bootstrap.pypa.io/get-pip.py | python
       - python -m pip install poetry
+      - POETRY_BIN_FILE=`find /root/.pyenv -name poetry -type f 2>/dev/null`
+      - echo $POETRY_BIN_FILE
+      - POETRY_BIN_DIR=$(dirname "${POETRY_BIN_FILE}")
+      - PATH=$POETRY_BIN_DIR:$PATH
       - poetry install
-      - poetry install -E ECRScan
+      - poetry install -E ecrscan
+      - BEHAVE_FILE=`find /root/.cache/pypoetry -name behave -type f`
+      - echo $BEHAVE_FILE
+      - BEHAVE_DIR=$(dirname "${BEHAVE_FILE}")
+      - echo $BEHAVE_DIR
+      - PATH=$BEHAVE_DIR:$PATH
+
   build:
     commands:
       - echo "Building docs"
