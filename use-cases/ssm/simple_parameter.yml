@@ -36,6 +36,8 @@ x-ssm_parameter:
       Type: String
     MacroParameters:
       FromFile: ./use-cases/ssm/test_json.json
+      ValidateJson: true
+      MinimizeJson: true
     Services:
       - name: rproxy
         access: RO
@@ -44,3 +46,36 @@ x-ssm_parameter:
     Settings:
       EnvNames:
         - FIFO_parameter
+
+  parameterD:
+    Properties:
+      Name: /some/yet-other-parameter
+      Type: String
+    MacroParameters:
+      FromFile: ./use-cases/ssm/test_yaml.yaml
+      ValidateYaml: true
+    Services:
+      - name: rproxy
+        access: RO
+      - name: youtoo
+        access: SSMParameterReadPolicy
+    Settings:
+      EnvNames:
+        - YAML_PARAM
+
+  parameterS:
+    Properties:
+      Name: /some/yet-other-parameter
+      Type: String
+    MacroParameters:
+      FromFile: ./use-cases/ssm/test_yaml.yaml
+      ValidateYaml: true
+      RenderToJson: true
+    Services:
+      - name: rproxy
+        access: RO
+      - name: youtoo
+        access: SSMParameterReadPolicy
+    Settings:
+      EnvNames:
+        - YAML_CONVERTED_PARAM
