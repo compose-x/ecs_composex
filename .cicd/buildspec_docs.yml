@@ -16,13 +16,12 @@ phases:
       - echo $POETRY_BIN_FILE
       - POETRY_BIN_DIR=$(dirname "${POETRY_BIN_FILE}")
       - PATH=$POETRY_BIN_DIR:$PATH
+      - poetry env use system
       - poetry install
       - poetry install -E ecrscan
-      - BEHAVE_FILE=`find /root/.cache/pypoetry -name behave -type f`
-      - echo $BEHAVE_FILE
-      - BEHAVE_DIR=$(dirname "${BEHAVE_FILE}")
-      - echo $BEHAVE_DIR
-      - PATH=$BEHAVE_DIR:$PATH
+      - POETRY_ENV=`poetry env info --path`
+      - echo $POETRY_ENV
+      - PATH=$POETRY_ENV/bin:$PATH
 
   build:
     commands:
