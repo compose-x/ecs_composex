@@ -35,6 +35,7 @@ try:
     from ecs_composex.ecr.ecr_scans_eval import (
         define_service_image,
         interpolate_ecr_uri_tag_with_digest,
+        invalidate_image_from_ecr,
         scan_service_image,
     )
 
@@ -44,7 +45,6 @@ except ImportError:
         "You must install ecs-composex[ECRScan] extra to use this functionality"
     )
     SCANS_POSSIBLE = False
-
 
 RES_REGX = re.compile(r"(^([x-]+))")
 COMPUTE_STACK_NAME = "Ec2Compute"
@@ -333,6 +333,10 @@ def evaluate_ecr_configs(settings):
         return result
     for family in settings.families.values():
         for service in family.services:
+            if not keyisset("x-ecr", service.definition) or invalidate_image_from_ecr(
+                service, True
+            ):
+                continue
             service_image = define_service_image(service, settings)
             if (
                 service.ecr_config

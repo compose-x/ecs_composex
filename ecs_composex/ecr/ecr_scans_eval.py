@@ -146,19 +146,22 @@ def wait_for_scan_report(
     return findings
 
 
-def validate_image_from_ecr(service):
+def invalidate_image_from_ecr(service, mute=False):
     """
     Function to validate that the image URI is from valid and from private ECR
 
     :param ecs_composex.common.compose_services.ComposeService service:
-    :return:
+    :param bool mute: Whether we display output
+    :return: True when the image is not from ECR
+    :rtype: bool
     """
     if not ECR_URI_RE.match(service.image):
-        LOG.info(
-            f"{service.name} - image provided not valid ECR URI - "
-            f"{service.image} - "
-        )
-        LOG.info(f"Expected ECR Regexp {ECR_URI_RE.pattern}")
+        if not mute:
+            LOG.info(
+                f"{service.name} - image provided not valid ECR URI - "
+                f"{service.image} - "
+            )
+            LOG.info(f"Expected ECR Regexp {ECR_URI_RE.pattern}")
         return True
     return False
 
@@ -176,7 +179,7 @@ def validate_input(service):
     if not keyisset("VulnerabilitiesScan", service.ecr_config):
         LOG.info(f"{service.name} - No scan to be evaluated.")
         return True
-    if validate_image_from_ecr(service):
+    if invalidate_image_from_ecr(service, True):
         return True
     return False
 
@@ -268,6 +271,8 @@ def define_result(image_url, security_findings, thresholds, vulnerability_config
                 )
                 if not keyisset("IgnoreFailure", vulnerability_config):
                     result = True
+    LOG.info("ECR Scan Thresholds")
+    LOG.info(",".join([f"{name}/{limit}" for name, limit in thresholds.items()]))
     return result
 
 
@@ -295,7 +300,7 @@ def define_service_image(service, settings):
     :return:
     """
     current_account_id = settings.session.client("sts").get_caller_identity()["Account"]
-    if validate_image_from_ecr(service):
+    if invalidate_image_from_ecr(service):
         return
     image_sha = None
     image_tag = None
