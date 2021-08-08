@@ -137,7 +137,8 @@ def render_new_queues(settings, new_queues, xstack, template):
                         }
                     )
                 queue_template = build_template(
-                    f"Template for SQS queue {queue.cfn_resource.title}", [DLQ_ARN]
+                    f"Template for SQS queue {queue.cfn_resource.title}",
+                    [DLQ_ARN],
                 )
                 queue_template.add_resource(queue.cfn_resource)
                 queue_template.add_output(queue.outputs)

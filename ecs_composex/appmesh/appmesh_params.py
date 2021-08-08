@@ -31,12 +31,18 @@ MESH_NAME = Parameter(MESH_NAME_T, Type="String", Default="AutoCreate")
 
 MESH_OWNER_ID_T = "MeshOwnerId"
 MESH_OWNER_ID = Parameter(
-    MESH_OWNER_ID_T, Type="String", AllowedPattern=r"self|^[0-9]{12}$", Default="self"
+    MESH_OWNER_ID_T,
+    Type="String",
+    AllowedPattern=r"self|^[0-9]{12}$",
+    Default="self",
 )
 
 USE_APP_MESH_T = "UseAppMesh"
 USE_APP_MESH = Parameter(
-    USE_APP_MESH_T, Type="String", AllowedValues=["True", "False"], Default="True"
+    USE_APP_MESH_T,
+    Type="String",
+    AllowedValues=["True", "False"],
+    Default="True",
 )
 
 ENVOY_IMAGE_URL_T = "EnvoyLatestImageUrl"

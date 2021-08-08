@@ -66,7 +66,12 @@ class DocDb(XResource):
                 Ref,
                 None,
             ),
-            DOCDB_SG: (self.db_sg.title, self.db_sg, GetAtt, DOCDB_SG.return_value),
+            DOCDB_SG: (
+                self.db_sg.title,
+                self.db_sg,
+                GetAtt,
+                DOCDB_SG.return_value,
+            ),
         }
 
 

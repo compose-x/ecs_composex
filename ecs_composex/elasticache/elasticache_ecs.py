@@ -32,7 +32,8 @@ def link_cluster_to_service(cluster, cluster_mappings, mapping_name):
             target[0].stack,
             cluster.logical_name,
             sg_id=Select(
-                0, FindInMap(mapping_name, cluster.logical_name, CLUSTER_SG.title)
+                0,
+                FindInMap(mapping_name, cluster.logical_name, CLUSTER_SG.title),
             ),
             port=FindInMap(mapping_name, cluster.logical_name, cluster.port_attr.title),
         )

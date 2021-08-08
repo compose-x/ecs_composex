@@ -98,8 +98,18 @@ class Efs(XResource):
         """
         self.output_properties = {
             FS_ID: (self.logical_name, self.cfn_resource, Ref, None),
-            FS_ARN: (self.logical_name, self.cfn_resource, GetAtt, FS_ARN.return_value),
-            FS_PORT: (f"{self.logical_name}{FS_PORT.title}", FS_PORT, Ref, None),
+            FS_ARN: (
+                self.logical_name,
+                self.cfn_resource,
+                GetAtt,
+                FS_ARN.return_value,
+            ),
+            FS_PORT: (
+                f"{self.logical_name}{FS_PORT.title}",
+                FS_PORT,
+                Ref,
+                None,
+            ),
             FS_MNT_PT_SG_ID: (
                 f"{self.logical_name}{FS_MNT_PT_SG_ID.return_value}",
                 self.db_sg,

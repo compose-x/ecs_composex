@@ -131,7 +131,9 @@ def create_composite_alarm(alarm, alarms):
         }
     alarm.properties = props
     alarm.cfn_resource = CompositeAlarm(
-        alarm.logical_name, DependsOn=[a.title for a in mapping.values()], **props
+        alarm.logical_name,
+        DependsOn=[a.title for a in mapping.values()],
+        **props,
     )
 
 
@@ -165,7 +167,9 @@ def create_alarms(template, settings, new_alarms):
         ):
             try:
                 import_record_properties(
-                    alarm.properties, CompositeAlarm, ignore_missing_required=False
+                    alarm.properties,
+                    CompositeAlarm,
+                    ignore_missing_required=False,
                 )
             except KeyError:
                 props = import_record_properties(alarm.properties, CWAlarm)

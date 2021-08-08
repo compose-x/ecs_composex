@@ -65,12 +65,19 @@ DB_USERNAME = Parameter(
 
 DB_STORAGE_CAPACITY_T = "DatabaseStorageCapacity"
 DB_STORAGE_CAPACITY = Parameter(
-    DB_STORAGE_CAPACITY_T, Type="Number", MinValue=8, MaxValue=(18 * 1024), Default=8
+    DB_STORAGE_CAPACITY_T,
+    Type="Number",
+    MinValue=8,
+    MaxValue=(18 * 1024),
+    Default=8,
 )
 
 DB_STORAGE_TYPE_T = "DatabaseStorageType"
 DB_STORAGE_TYPE = Parameter(
-    DB_STORAGE_TYPE_T, Type="String", AllowedValues=["gp2", "io1"], Default="gp2"
+    DB_STORAGE_TYPE_T,
+    Type="String",
+    AllowedValues=["gp2", "io1"],
+    Default="gp2",
 )
 
 DB_EXPORT_PREFIX_T = "RdsDb"

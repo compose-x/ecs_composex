@@ -82,7 +82,8 @@ def handle_http2(value):
 
 def handle_drop_invalid_headers(value):
     return LoadBalancerAttributes(
-        Key="routing.http.drop_invalid_header_fields.enabled", Value=str(value).lower()
+        Key="routing.http.drop_invalid_header_fields.enabled",
+        Value=str(value).lower(),
     )
 
 
@@ -100,7 +101,8 @@ def handle_desync_mitigation_mode(value):
 def handle_timeout_seconds(timeout_seconds):
     if 1 < int(timeout_seconds) < 4000:
         return LoadBalancerAttributes(
-            Key="idle_timeout.timeout_seconds", Value=str(timeout_seconds).lower()
+            Key="idle_timeout.timeout_seconds",
+            Value=str(timeout_seconds).lower(),
         )
     else:
         raise ValueError(
@@ -1131,7 +1133,8 @@ class Elbv2(XResource):
                 elif setting[3]:
                     mappings.append(
                         LoadBalancerAttributes(
-                            Key=setting[0], Value=str(self.parameters[setting[0]])
+                            Key=setting[0],
+                            Value=str(self.parameters[setting[0]]),
                         )
                     )
         return mappings
@@ -1148,7 +1151,8 @@ class Elbv2(XResource):
             for prop in self.properties["LoadBalancerAttributes"]:
                 attributes.append(
                     LoadBalancerAttributes(
-                        Key=prop, Value=self.properties["LoadBalancerAttributes"][prop]
+                        Key=prop,
+                        Value=self.properties["LoadBalancerAttributes"][prop],
                     )
                 )
         elif (

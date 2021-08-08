@@ -42,7 +42,8 @@ def define_iam_policy(policy):
 
     if not policy_re.match(policy):
         raise ValueError(
-            f"policy name {policy} does not match expected regexp", policy_re.pattern
+            f"policy name {policy} does not match expected regexp",
+            policy_re.pattern,
         )
     if isinstance(policy, str) and not policy.startswith("arn:aws:iam::"):
         policy_def = Sub(

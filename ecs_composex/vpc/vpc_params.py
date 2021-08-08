@@ -56,5 +56,8 @@ APP_SUBNETS = Parameter(APP_SUBNETS_T, Type=SUBNETS_TYPE)
 
 USE_SUB_ZONE_T = "UseSubDnsZone"
 USE_SUB_ZONE = Parameter(
-    USE_SUB_ZONE_T, Type="String", AllowedValues=["True", "False"], Default="True"
+    USE_SUB_ZONE_T,
+    Type="String",
+    AllowedValues=["True", "False"],
+    Default="True",
 )

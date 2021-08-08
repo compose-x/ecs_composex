@@ -35,7 +35,10 @@ def get_queue_config(queue_arn, session):
             QueueName=queue_name, QueueOwnerAWSAccountId=queue_owner
         )
         queue_config.update(
-            {SQS_URL.title: url_r["QueueUrl"], SQS_NAME.return_value: queue_name}
+            {
+                SQS_URL.title: url_r["QueueUrl"],
+                SQS_NAME.return_value: queue_name,
+            }
         )
         try:
             encryption_config_r = client.get_queue_attributes(

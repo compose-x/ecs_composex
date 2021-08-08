@@ -185,7 +185,8 @@ def add_public_subnets(template, vpc, az_index, layers, igw, single_nat):
         subnets.append(subnet)
         entries.append(
             Entry(
-                Cidr=subnet_cidr, Description=Sub(f"public-{index} -- ${{{vpc.title}}}")
+                Cidr=subnet_cidr,
+                Description=Sub(f"public-{index} -- ${{{vpc.title}}}"),
             )
         )
     template.add_resource(
@@ -264,7 +265,12 @@ def add_apps_subnets(template, vpc, az_index, layers, nats, endpoints=None):
                     Sub(f"${{{ROOT_STACK_NAME_T}}}-App-{index}"),
                 ),
             )
-            + Tags({f"vpc{DELIM}usage": "application", f"vpc{DELIM}vpc-id": Ref(vpc)}),
+            + Tags(
+                {
+                    f"vpc{DELIM}usage": "application",
+                    f"vpc{DELIM}vpc-id": Ref(vpc),
+                }
+            ),
             Metadata=metadata,
         )
         rtb = RouteTable(
@@ -292,7 +298,8 @@ def add_apps_subnets(template, vpc, az_index, layers, nats, endpoints=None):
         subnets.append(subnet)
         entries.append(
             Entry(
-                Cidr=subnet_cidr, Description=Sub(f"apps-{index} -- ${{{vpc.title}}}")
+                Cidr=subnet_cidr,
+                Description=Sub(f"apps-{index} -- ${{{vpc.title}}}"),
             )
         )
     if endpoints is not None and keyisset("AwsServices", endpoints):

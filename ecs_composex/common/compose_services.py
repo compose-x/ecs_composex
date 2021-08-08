@@ -160,7 +160,10 @@ class ComposeService(object):
     def __init__(self, name, definition, volumes=None, secrets=None):
         if not isinstance(definition, dict):
             raise TypeError(
-                "The definition of a service must be", dict, "got", type(definition)
+                "The definition of a service must be",
+                dict,
+                "got",
+                type(definition),
             )
         if not all(
             key in [title[0] for title in self.ecs_plugin_aws_keys + self.keys]
@@ -359,7 +362,9 @@ class ComposeService(object):
                     "awslogs-endpoint", options_def, alt_value=Ref(AWS_NO_VALUE)
                 ),
                 "awslogs-datetime-format": set_else_none(
-                    "awslogs-datetime-format", options_def, alt_value=Ref(AWS_NO_VALUE)
+                    "awslogs-datetime-format",
+                    options_def,
+                    alt_value=Ref(AWS_NO_VALUE),
                 ),
                 "awslogs-multiline-pattern": set_else_none(
                     "awslogs-multiline-pattern",
@@ -382,7 +387,12 @@ class ComposeService(object):
             ):
                 options["awslogs-create-group"] = options_def[
                     "awslogs-create-group"
-                ] in ["yes", "true", "Yes", "True"]
+                ] in [
+                    "yes",
+                    "true",
+                    "Yes",
+                    "True",
+                ]
             self.logging = LogConfiguration(
                 LogDriver="awslogs",
                 Options=options,
@@ -1020,7 +1030,10 @@ def handle_same_task_services_dependencies(services_config):
                 if s_service[1].name in service[1].depends_on
             ]
             parents_dependency = [
-                {"ContainerName": p.name, "Condition": p.container_start_condition}
+                {
+                    "ContainerName": p.name,
+                    "Condition": p.container_start_condition,
+                }
                 for p in parents
             ]
             setattr(service[1].container_definition, "DependsOn", parents_dependency)
@@ -1757,7 +1770,8 @@ class ComposeFamily(object):
                 self.stack_parameters.update(
                     {
                         APP_SUBNETS.title: Join(
-                            ",", FindInMap("Network", network.subnet_name, "Ids")
+                            ",",
+                            FindInMap("Network", network.subnet_name, "Ids"),
                         )
                     }
                 )

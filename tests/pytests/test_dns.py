@@ -3,16 +3,18 @@
 # Copyright 2020-2021 John Mille<john@compose-x.io>
 
 from os import path
-import pytest
-import placebo
+
 import boto3
-from botocore.exceptions import ClientError
+import placebo
+import pytest
 from botocore.errorfactory import ClientExceptionsFactory
+from botocore.exceptions import ClientError
 from troposphere import Ref
-from ecs_composex.common.stacks import ComposeXStack
+
+from ecs_composex.common import build_template, load_composex_file
 from ecs_composex.common.settings import ComposeXSettings
+from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.dns import DnsSettings
-from ecs_composex.common import load_composex_file, build_template
 from ecs_composex.dns.dns_records import Record
 
 
@@ -36,7 +38,10 @@ def zone_create():
 def zone_lookup():
     return {
         "x-dns": {
-            "PrivateNamespace": {"Name": "mycluster.lan", "Lookup": "ns-aieijfieojf"},
+            "PrivateNamespace": {
+                "Name": "mycluster.lan",
+                "Lookup": "ns-aieijfieojf",
+            },
             "PublicZone": {
                 "Name": "lambda-my-aws.io",
                 "Lookup": "ns-abaiejfiefjio",
@@ -111,7 +116,12 @@ def test_invalid_records():
         Record(
             {
                 "Properties": {},
-                "Names": ["google.com", "test.net", "amazonaws.com", ["something.net"]],
+                "Names": [
+                    "google.com",
+                    "test.net",
+                    "amazonaws.com",
+                    ["something.net"],
+                ],
             }
         )
     with pytest.raises(NameError):

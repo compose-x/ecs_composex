@@ -126,7 +126,12 @@ def add_launch_template(template, hosts_sg):
         Metadata=cloudformation.Metadata(
             cloudformation.Init(
                 cloudformation.InitConfigSets(
-                    default=["awspackages", "dockerconfig", "ecsconfig", "awsservices"]
+                    default=[
+                        "awspackages",
+                        "dockerconfig",
+                        "ecsconfig",
+                        "awsservices",
+                    ]
                 ),
                 awspackages=cloudformation.InitConfig(
                     packages={"yum": {"awslogs": [], "amazon-ssm-agent": []}},
@@ -138,7 +143,10 @@ def add_launch_template(template, hosts_sg):
                 awsservices=cloudformation.InitConfig(
                     services={
                         "sysvinit": {
-                            "amazon-ssm-agent": {"enabled": True, "ensureRunning": True}
+                            "amazon-ssm-agent": {
+                                "enabled": True,
+                                "ensureRunning": True,
+                            }
                         }
                     }
                 ),

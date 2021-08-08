@@ -187,7 +187,8 @@ def validate_search_input(res_types, res_type):
         raise KeyError("type must be one of", res_types.keys(), "Got", res_type)
     if res_type not in res_types.keys():
         raise KeyError(
-            f"There is not resource type {res_type} defined. Got", res_types.keys()
+            f"There is not resource type {res_type} defined. Got",
+            res_types.keys(),
         )
 
 

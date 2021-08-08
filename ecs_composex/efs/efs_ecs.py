@@ -173,14 +173,18 @@ def set_user_to_access_points(efs, fs_id, access_points, service):
         if mount_pt.SourceVolume == efs.volume.volume_name:
             for access_point in access_points:
                 setattr(
-                    access_point, "PosixUser", PosixUser(Uid=service.user, Gid=group_id)
+                    access_point,
+                    "PosixUser",
+                    PosixUser(Uid=service.user, Gid=group_id),
                 )
                 setattr(
                     access_point,
                     "RootDirectory",
                     RootDirectory(
                         CreationInfo=CreationInfo(
-                            OwnerUid=service.user, OwnerGid=group_id, Permissions="0755"
+                            OwnerUid=service.user,
+                            OwnerGid=group_id,
+                            Permissions="0755",
                         ),
                         Path=mount_pt.ContainerPath,
                     ),

@@ -112,7 +112,13 @@ class FileArtifact(object):
             and template is None
         ):
             raise TypeError(
-                "content must be of type", tuple, dict, str, list, "Got", type(content)
+                "content must be of type",
+                tuple,
+                dict,
+                str,
+                list,
+                "Got",
+                type(content),
             )
         elif (
             content is None and template is not None and isinstance(template, Template)

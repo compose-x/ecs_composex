@@ -109,7 +109,8 @@ def add_db_instances(template, db):
                 raise TypeError("Instances definition should be all objects/dict")
             if not keyisset("DBInstanceClass", instance):
                 raise KeyError(
-                    "You must specify at least the DBInstanceClass", instance.keys()
+                    "You must specify at least the DBInstanceClass",
+                    instance.keys(),
                 )
             instance_props = import_record_properties(
                 instance, docdb.DBInstance, ignore_missing_required=True

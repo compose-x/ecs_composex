@@ -209,7 +209,9 @@ class ComposeSecret(object):
                             f"arn:${{{AWS_PARTITION}}}:secretsmanager:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:"
                             f"secret:${{SecretName}}:{json_key}::",
                             SecretName=FindInMap(
-                                self.map_name, self.logical_name, self.map_name_name
+                                self.map_name,
+                                self.logical_name,
+                                self.map_name_name,
                             ),
                         ),
                     )
@@ -221,7 +223,9 @@ class ComposeSecret(object):
                         ValueFrom=Sub(
                             f"${{SecretArn}}:{json_key}::",
                             SecretArn=FindInMap(
-                                self.map_name, self.logical_name, self.map_arn_name
+                                self.map_name,
+                                self.logical_name,
+                                self.map_arn_name,
                             ),
                         ),
                     )

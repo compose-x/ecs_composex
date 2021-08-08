@@ -54,5 +54,6 @@ class ComposeNetwork(object):
         subnet_names = [subnet.title for subnet in subnets_list]
         if self.subnet_name not in subnet_names:
             raise KeyError(
-                f"No subnet {self.name} defined. Valid options are", subnet_names
+                f"No subnet {self.name} defined. Valid options are",
+                subnet_names,
             )

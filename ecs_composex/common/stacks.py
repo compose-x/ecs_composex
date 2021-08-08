@@ -70,7 +70,12 @@ class ComposeXStack(Stack, object):
     mappings = {}
 
     def __init__(
-        self, name, stack_template, stack_parameters=None, file_name=None, **kwargs
+        self,
+        name,
+        stack_template,
+        stack_parameters=None,
+        file_name=None,
+        **kwargs,
     ):
         """
         Class to keep track of the template object along with the stack object it represents.
@@ -238,7 +243,11 @@ class ComposeXStack(Stack, object):
             vpc = vpc_stack
         else:
             raise TypeError(
-                "vpc_stack must be of type", ComposeXStack, str, "got", type(vpc_stack)
+                "vpc_stack must be of type",
+                ComposeXStack,
+                str,
+                "got",
+                type(vpc_stack),
             )
         default_parameters = [
             VPC_ID,

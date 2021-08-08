@@ -42,7 +42,7 @@ try:
     SCANS_POSSIBLE = True
 except ImportError:
     warnings.warn(
-        "You must install ecs-composex[ECRScan] extra to use this functionality"
+        "You must install ecs-composex[ecrscan] extra to use this functionality"
     )
     SCANS_POSSIBLE = False
 
@@ -392,7 +392,10 @@ def generate_full_template(settings):
     apply_x_to_x_configs(root_stack, settings)
     if settings.use_appmesh:
         mesh = Mesh(
-            settings.compose_content["x-appmesh"], root_stack, settings, dns_settings
+            settings.compose_content["x-appmesh"],
+            root_stack,
+            settings,
+            dns_settings,
         )
         mesh.render_mesh_template(root_stack, settings, dns_settings)
     dns_records = DnsRecords(settings)

@@ -33,7 +33,10 @@ def validate_steps_definition(steps, unordered):
     for step_def in steps:
         if not all(key in allowed_keys for key in step_def.keys()):
             raise KeyError(
-                "Step definition only allows", allowed_keys, "Got", step_def.keys()
+                "Step definition only allows",
+                allowed_keys,
+                "Got",
+                step_def.keys(),
             )
         if (
             keyisset("upper_bound", step_def)

@@ -176,7 +176,10 @@ def define_tracking_target_configuration(target_scaling_config, config_key):
     :return:
     """
     settings = {
-        "cpu": {"key": "CpuTarget", "property": "ECSServiceAverageCPUUtilization"},
+        "cpu": {
+            "key": "CpuTarget",
+            "property": "ECSServiceAverageCPUUtilization",
+        },
         "memory": {
             "key": "MemoryTarget",
             "property": "ECSServiceAverageMemoryUtilization",
@@ -286,7 +289,11 @@ def generate_service_template_outputs(family):
                     "GroupId",
                     GetAtt(ecs_params.SG_T, "GroupId"),
                 ),
-                (ecs_params.TASK_T, ecs_params.TASK_T, Ref(family.task_definition)),
+                (
+                    ecs_params.TASK_T,
+                    ecs_params.TASK_T,
+                    Ref(family.task_definition),
+                ),
                 (
                     vpc_params.APP_SUBNETS,
                     vpc_params.APP_SUBNETS.title,
@@ -344,7 +351,8 @@ def define_deployment_options(family, settings, kwargs):
                 family.deployment_config["MinimumHealthyPercent"]
             ),
             DeploymentCircuitBreaker=EcsDeploymentCircuitBreaker(
-                Enable=True, Rollback=keyisset("RollBack", family.deployment_config)
+                Enable=True,
+                Rollback=keyisset("RollBack", family.deployment_config),
             ),
         )
         kwargs.update({"DeploymentConfiguration": deploy_config})
@@ -440,7 +448,8 @@ class Service(object):
             ),
             NetworkConfiguration=NetworkConfiguration(
                 AwsvpcConfiguration=AwsvpcConfiguration(
-                    Subnets=Ref(vpc_params.APP_SUBNETS), SecurityGroups=service_sgs
+                    Subnets=Ref(vpc_params.APP_SUBNETS),
+                    SecurityGroups=service_sgs,
                 )
             ),
             TaskDefinition=Ref(family.task_definition),

@@ -46,7 +46,11 @@ def assign_service_permissions_to_bucket(bucket, family, services, access, value
             arn=Sub("${BucketArn}/*", BucketArn=arn),
         )
         add_iam_policy_to_service_task_role(
-            family.template, bucket, objects_perms, access[objects_key], services
+            family.template,
+            bucket,
+            objects_perms,
+            access[objects_key],
+            services,
         )
 
 
@@ -179,7 +183,8 @@ def define_bucket_mappings(buckets_mappings, lookup_buckets, use_buckets, settin
                 ).group("bucketname")
             except AttributeError:
                 raise ValueError(
-                    "Could not determine the bucket name from the give ARN", bucket.use
+                    "Could not determine the bucket name from the give ARN",
+                    bucket.use,
                 )
             LOG.info(f"Determined bucket name is {bucket_name} from arn {bucket_arn}")
         else:
@@ -190,7 +195,12 @@ def define_bucket_mappings(buckets_mappings, lookup_buckets, use_buckets, settin
             )
             LOG.warning(f"ARN for {bucket_name} is set to {bucket_arn}")
         buckets_mappings.update(
-            {bucket.logical_name: {bucket.logical_name: bucket_name, "Arn": bucket_arn}}
+            {
+                bucket.logical_name: {
+                    bucket.logical_name: bucket_name,
+                    "Arn": bucket_arn,
+                }
+            }
         )
 
 
@@ -227,18 +237,27 @@ def define_lookup_buckets_access(bucket, target, services):
             arn=FindInMap("s3", bucket.logical_name, "Arn"),
         )
         add_iam_policy_to_service_task_role(
-            target[0].template, bucket, bucket_perms, access[bucket_key], services
+            target[0].template,
+            bucket,
+            bucket_perms,
+            access[bucket_key],
+            services,
         )
     if keyisset(objects_key, access):
         objects_perms = generate_resource_permissions(
             f"ObjectsAccess{bucket.logical_name}",
             ACCESS_TYPES[objects_key],
             arn=Sub(
-                "${BucketArn}/*", BucketArn=FindInMap("s3", bucket.logical_name, "Arn")
+                "${BucketArn}/*",
+                BucketArn=FindInMap("s3", bucket.logical_name, "Arn"),
             ),
         )
         add_iam_policy_to_service_task_role(
-            target[0].template, bucket, objects_perms, access[objects_key], services
+            target[0].template,
+            bucket,
+            objects_perms,
+            access[objects_key],
+            services,
         )
 
 

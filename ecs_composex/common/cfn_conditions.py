@@ -29,7 +29,9 @@ def pass_root_stack_name():
     """
     return {
         cfn_params.ROOT_STACK_NAME_T: If(
-            USE_STACK_NAME_CON_T, Ref("AWS::StackName"), Ref(cfn_params.ROOT_STACK_NAME)
+            USE_STACK_NAME_CON_T,
+            Ref("AWS::StackName"),
+            Ref(cfn_params.ROOT_STACK_NAME),
         )
     }
 
@@ -45,5 +47,7 @@ def define_stack_name(template=None):
     if template and USE_STACK_NAME_CON_T not in template.conditions:
         template.add_condition(USE_STACK_NAME_CON_T, USE_STACK_NAME_CON)
     return If(
-        USE_STACK_NAME_CON_T, Ref("AWS::StackName"), Ref(cfn_params.ROOT_STACK_NAME)
+        USE_STACK_NAME_CON_T,
+        Ref("AWS::StackName"),
+        Ref(cfn_params.ROOT_STACK_NAME),
     )

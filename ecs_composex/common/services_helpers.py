@@ -72,7 +72,8 @@ def import_env_variables(environment):
         else:
             env_vars.append(
                 Environment(
-                    Name=key, Value=define_string_interpolation(environment[key])
+                    Name=key,
+                    Value=define_string_interpolation(environment[key]),
                 )
             )
     return env_vars

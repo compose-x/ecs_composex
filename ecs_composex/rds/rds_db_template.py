@@ -74,7 +74,8 @@ def init_database_template(db):
         rds_conditions.USE_DB_SNAPSHOT_CON_T, rds_conditions.USE_DB_SNAPSHOT_CON
     )
     template.add_condition(
-        rds_conditions.NOT_USE_DB_SNAPSHOT_CON_T, rds_conditions.NOT_USE_DB_SNAPSHOT_CON
+        rds_conditions.NOT_USE_DB_SNAPSHOT_CON_T,
+        rds_conditions.NOT_USE_DB_SNAPSHOT_CON,
     )
     template.add_condition(
         rds_conditions.USE_CLUSTER_CON_T, rds_conditions.USE_CLUSTER_CON
@@ -162,7 +163,9 @@ def add_default_instance_definition(db, for_cluster=False):
         "Engine": Ref(DB_ENGINE_NAME),
         "EngineVersion": Ref(DB_ENGINE_VERSION),
         "StorageType": If(
-            rds_conditions.USE_CLUSTER_CON_T, Ref(AWS_NO_VALUE), Ref(DB_STORAGE_TYPE)
+            rds_conditions.USE_CLUSTER_CON_T,
+            Ref(AWS_NO_VALUE),
+            Ref(DB_STORAGE_TYPE),
         ),
         "DBSubnetGroupName": If(
             rds_conditions.NOT_USE_CLUSTER_CON_T,
@@ -183,7 +186,9 @@ def add_default_instance_definition(db, for_cluster=False):
             ),
         ),
         "DBClusterIdentifier": If(
-            rds_conditions.USE_CLUSTER_CON_T, Ref(db.cfn_resource), Ref(AWS_NO_VALUE)
+            rds_conditions.USE_CLUSTER_CON_T,
+            Ref(db.cfn_resource),
+            Ref(AWS_NO_VALUE),
         ),
         "MasterUserPassword": If(
             rds_conditions.USE_CLUSTER_CON_T,
@@ -288,7 +293,10 @@ def add_parameter_group(template, db):
     :type db: ecs_composex.common.compose_resources.Rds
     """
 
-    parameters_properties = ["DBClusterParameterGroupName", "DBParameterGroupName"]
+    parameters_properties = [
+        "DBClusterParameterGroupName",
+        "DBParameterGroupName",
+    ]
     if db.properties and not any(
         key in parameters_properties for key in db.properties.keys()
     ):
