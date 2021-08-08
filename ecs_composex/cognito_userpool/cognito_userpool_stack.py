@@ -39,9 +39,6 @@ class UserPool(XResource):
 
     policies_scaffolds = ACCESS_TYPES
 
-    def __init__(self, name, definition, module_name, settings):
-        super().__init__(name, definition, module_name, settings)
-
     def init_outputs(self):
         self.output_properties = {
             USERPOOL_ID: (self.logical_name, self.cfn_resource, Ref, None),
