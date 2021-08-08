@@ -25,6 +25,7 @@
     syntax/compose_x/kinesis
     syntax/compose_x/sqs
     syntax/compose_x/sns
+    syntax/compose_x/ssm_parameter
     syntax/compose_x/events
     syntax/compose_x/kms
     syntax/compose_x/vpc
