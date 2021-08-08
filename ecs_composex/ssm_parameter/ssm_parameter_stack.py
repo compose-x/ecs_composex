@@ -20,7 +20,7 @@ from troposphere import (
 )
 from troposphere.ssm import Parameter as CfnSsmParameter
 
-from ecs_composex.common import LOG, build_template
+from ecs_composex.common import LOG, add_outputs, build_template
 from ecs_composex.common.compose_resources import XResource, set_resources
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.resources_import import import_record_properties
@@ -66,6 +66,7 @@ def render_new_parameters(new_resources, root_stack):
         root_stack.stack_template.add_resource(new_res.cfn_resource)
         new_res.init_outputs()
         new_res.generate_outputs()
+        add_outputs(root_stack.stack_template, new_res.outputs)
 
 
 class SsmParameter(XResource):

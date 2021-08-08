@@ -34,7 +34,7 @@ def get_cross_role_session(session, arn, region_name=None, session_name=None):
     if not session_name:
         session_name = "ComposeX@Lookup"
     try:
-        get_assume_role_session(
+        return get_assume_role_session(
             session, arn, region=region_name, session_name=session_name
         )
     except ClientError:
