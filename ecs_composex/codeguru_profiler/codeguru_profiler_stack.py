@@ -69,8 +69,10 @@ class CodeProfiler(XResource):
 
     policies_scaffolds = ACCESS_TYPES
 
-    def __init__(self, name, definition, module_name, settings):
-        super().__init__(name, definition, module_name, settings)
+    def __init__(self, name, definition, module_name, settings, mapping_key=None):
+        super().__init__(
+            name, definition, module_name, settings, mapping_key=mapping_key
+        )
         for count, env_name in enumerate(self.env_names):
             if env_name == self.name.replace("-", "_"):
                 self.env_names.pop(count)

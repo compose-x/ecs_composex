@@ -27,10 +27,13 @@ class Certificate(object):
     Class specifically for ACM Certificate
     """
 
-    def __init__(self, name, definition, module_name, settings):
+    def __init__(self, name, definition, module_name, settings, mapping_key=None):
         self.name = name
         self.logical_name = NONALPHANUM.sub("", name)
         self.module_name = module_name
+        self.mapping_key = mapping_key
+        if self.mapping_key is None:
+            self.mapping_key = self.module_name
         self.definition = deepcopy(definition)
         self.cfn_resource = None
         self.settings = (

@@ -185,11 +185,13 @@ class Alarm(XResource):
 
     topics_key = "Topics"
 
-    def __init__(self, name, definition, module_name, settings):
+    def __init__(self, name, definition, module_name, settings, mapping_key=None):
         self.topics = []
         self.is_composite = False
         self.in_composite = False
-        super().__init__(name, definition, module_name, settings)
+        super().__init__(
+            name, definition, module_name, settings, mapping_key=mapping_key
+        )
         self.topics = (
             definition[self.topics_key]
             if keyisset(self.topics_key, self.definition)

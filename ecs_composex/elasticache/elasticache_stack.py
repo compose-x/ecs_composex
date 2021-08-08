@@ -39,7 +39,7 @@ class CacheCluster(XResource):
 
     subnets_param = STORAGE_SUBNETS
 
-    def __init__(self, name, definition, module_name, settings):
+    def __init__(self, name, definition, module_name, settings, mapping_key=None):
         self.db_sg = None
         self.parameter_group = None
         self.db_secret = None
@@ -47,7 +47,9 @@ class CacheCluster(XResource):
         self.engine = None
         self.port_attr = None
         self.config_parameter = None
-        super().__init__(name, definition, module_name, settings)
+        super().__init__(
+            name, definition, module_name, settings, mapping_key=mapping_key
+        )
         self.set_override_subnets()
 
     def init_memcached_outputs(self):

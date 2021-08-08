@@ -1,0 +1,39 @@
+{
+    "RW": {
+        "Sid": "RW",
+        "Effect": "Allow",
+        "Action": [
+            "ssm:PutParameter",
+            "ssm:GetParameterHistory",
+            "ssm:GetParametersByPath",
+            "ssm:GetParameters",
+            "ssm:GetParameter"
+        ]
+    },
+    "RWStrict": {
+        "Sid": "RW",
+        "Effect": "Allow",
+        "Action": [
+            "ssm:PutParameter",
+            "ssm:GetParameterHistory",
+            "ssm:GetParameter"
+        ]
+    },
+    "RO": {
+        "Sid": "RW",
+        "Effect": "Allow",
+        "Action": [
+            "ssm:GetParameterHistory",
+            "ssm:GetParametersByPath",
+            "ssm:GetParameter"
+        ]
+    },
+    "ROStrict": {
+        "Sid": "RW",
+        "Effect": "Allow",
+        "Action": [
+            "ssm:GetParameterHistory",
+            "ssm:GetParameter"
+        ]
+    }
+}

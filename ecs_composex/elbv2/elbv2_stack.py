@@ -804,7 +804,7 @@ class Elbv2(XResource):
 
     subnets_param = APP_SUBNETS
 
-    def __init__(self, name, definition, module_name, settings):
+    def __init__(self, name, definition, module_name, settings, mapping_key=None):
         if not keyisset("Listeners", definition):
             raise KeyError("You must specify at least one Listener for a LB.", name)
         self.lb_is_public = False
@@ -815,7 +815,9 @@ class Elbv2(XResource):
         self.unique_service_lb = False
         self.lb = None
         self.listeners = []
-        super().__init__(name, definition, module_name, settings)
+        super().__init__(
+            name, definition, module_name, settings, mapping_key=mapping_key
+        )
         self.validate_services()
         self.sort_props()
 

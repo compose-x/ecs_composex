@@ -1,0 +1,59 @@
+---
+# Blog applications
+
+version: '3.8'
+
+x-ssm_parameter:
+  parameterA:
+    Properties:
+      DataType: text
+      Description: Something
+      Name: /some/parameter
+      Type: String
+      Value: ABCD
+
+    Settings:
+      EnvNames:
+        - parameterA
+
+  parameterB:
+    Properties:
+      DataType: text
+      Description: Something
+      Name: /some/other-parameter
+      Type: String
+      Value: ABCD
+    Settings:
+      EnvNames:
+        - parameterb
+    Services:
+      - name: bignicefamily
+        access: RO
+
+  parameterC:
+    Properties:
+      Name: /some/yet-other-parameter
+      Type: String
+    MacroParameters:
+      FromFile: ./use-cases/ssm/test_json.json
+    Services:
+      - name: rproxy
+        access: ROStrict
+      - name: youtoo
+        access: RW
+    Settings:
+      EnvNames:
+        - FIFO_parameter
+
+  parameterD:
+    Lookup:
+      Tags:
+        - aws:cloudformation:logical-id: SsmLambdaArnPointer
+    Services:
+      - name: rproxy
+        access: SSMParameterReadPolicy
+      - name: youtoo
+        access: SSMParameterReadPolicy
+    Settings:
+      EnvNames:
+        - IMPORTED

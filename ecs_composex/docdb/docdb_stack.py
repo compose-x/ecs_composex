@@ -32,7 +32,7 @@ class DocDb(XResource):
 
     subnets_param = STORAGE_SUBNETS
 
-    def __init__(self, name, definition, module_name, settings):
+    def __init__(self, name, definition, module_name, settings, mapping_key=None):
         """
         Init method
 
@@ -43,7 +43,9 @@ class DocDb(XResource):
         self.db_secret = None
         self.db_sg = None
         self.db_subnets_group = None
-        super().__init__(name, definition, module_name, settings)
+        super().__init__(
+            name, definition, module_name, settings, mapping_key=mapping_key
+        )
         self.set_override_subnets()
 
     def init_outputs(self):

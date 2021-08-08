@@ -67,6 +67,7 @@ SUPPORTED_X_MODULE_NAMES = [
     "efs",
     "alarms",
     "codeguru_profiler",
+    "ssm_parameter",
 ]
 
 SUPPORTED_X_MODULES = [f"{X_KEY}{mod_name}" for mod_name in SUPPORTED_X_MODULE_NAMES]
@@ -78,6 +79,7 @@ EXCLUDED_X_KEYS = [
     f"{X_KEY}vpc",
     f"{X_KEY}dns",
     f"{X_KEY}cluster",
+    f"{X_KEY}dashboards",
 ]
 TCP_MODES = ["rds", "appmesh", "elbv2", "docdb", "elasticache", "efs"]
 TCP_SERVICES = [f"{X_KEY}{mode}" for mode in TCP_MODES]
