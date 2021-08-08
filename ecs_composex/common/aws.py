@@ -12,11 +12,12 @@ from time import sleep
 
 import boto3
 from botocore.exceptions import ClientError
+from compose_x_common.aws import get_assume_role_session, validate_iam_role_arn
 from compose_x_common.compose_x_common import keyisset
 from tabulate import tabulate
 
 from ecs_composex.common import LOG
-from ecs_composex.iam import ROLE_ARN_ARG, validate_iam_role_arn
+from ecs_composex.iam import ROLE_ARN_ARG
 
 
 def get_cross_role_session(session, arn, region_name=None, session_name=None):
@@ -32,23 +33,9 @@ def get_cross_role_session(session, arn, region_name=None, session_name=None):
     """
     if not session_name:
         session_name = "ComposeX@Lookup"
-    validate_iam_role_arn(arn)
     try:
-        if not session:
-            session = boto3.session.Session()
-        creds = session.client("sts").assume_role(
-            RoleArn=arn,
-            RoleSessionName=session_name,
-            DurationSeconds=900,
-        )
-        LOG.info(
-            f"Successfully assumed role. Session ID: {creds['AssumedRoleUser']['AssumedRoleId']}"
-        )
-        return boto3.session.Session(
-            region_name=region_name,
-            aws_access_key_id=creds["Credentials"]["AccessKeyId"],
-            aws_session_token=creds["Credentials"]["SessionToken"],
-            aws_secret_access_key=creds["Credentials"]["SecretAccessKey"],
+        get_assume_role_session(
+            session, arn, region=region_name, session_name=session_name
         )
     except ClientError:
         LOG.error(f"Failed to use the Role ARN {arn}")

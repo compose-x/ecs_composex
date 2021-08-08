@@ -17,6 +17,7 @@ import jsonschema
 import yaml
 from botocore.exceptions import ClientError
 from cfn_flip.yaml_dumper import LongCleanDumper
+from compose_x_common.aws import validate_iam_role_arn
 from compose_x_common.compose_x_common import keyisset
 from compose_x_render.compose_x_render import ComposeDefinition
 from importlib_resources import files as pkg_files
@@ -32,7 +33,7 @@ from ecs_composex.common.cfn_params import USE_FLEET_T
 from ecs_composex.common.compose_networks import ComposeNetwork
 from ecs_composex.common.compose_services import ComposeFamily, ComposeService
 from ecs_composex.common.compose_volumes import ComposeVolume
-from ecs_composex.iam import ROLE_ARN_ARG, validate_iam_role_arn
+from ecs_composex.iam import ROLE_ARN_ARG
 from ecs_composex.secrets.compose_secrets import ComposeSecret
 from ecs_composex.utils.init_ecs import set_ecs_settings
 from ecs_composex.utils.init_s3 import create_bucket
