@@ -348,6 +348,8 @@ def evaluate_ecr_configs(settings):
             if scan_service_image(service, settings, service_image):
                 LOG.warn(f"{family.name}.{service.name} - vulnerabilities found")
                 result = 1
+            else:
+                LOG.info(f"{family.name}.{service.name} - ECR Evaluation Passed.")
     return result
 
 
