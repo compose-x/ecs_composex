@@ -39,7 +39,7 @@ troposphere = "^3.0"
 ecr-scan-reporter = {version = "^0.3", optional = true}
 ecs-composex-specs = "^0.0.8"
 compose-x-render = "^0.1.0"
-compose-x-common = { extras = ["aws"], version = "^0.0.1" }
+compose-x-common = "^0.0.2"
 jsonschema = "^3.2.0"
 requests = "^2.26.0"
 tabulate = "^0.8.9"
