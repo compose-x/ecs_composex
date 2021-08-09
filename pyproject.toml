@@ -83,7 +83,7 @@ regex = '''
   (?P<minor>\d+)
   \.
   (?P<patch>\d+)
-  (?:[-.](?P<rc>[\S]+))?
+  (?:(?P<rc>[\S]+))?
   '''
 
 [tool.tbump.git]
