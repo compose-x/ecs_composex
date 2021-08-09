@@ -1,4 +1,4 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
@@ -8,8 +8,10 @@ Module to import CFN Resources defined by their properties
 
 from inspect import isfunction
 
+
 from compose_x_common.compose_x_common import keyisset, keypresent
 from troposphere import AWSHelperFn, AWSProperty
+
 
 
 def handle_list(properties, property_class):
