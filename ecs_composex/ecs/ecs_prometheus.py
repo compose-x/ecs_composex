@@ -218,6 +218,8 @@ def set_cw_config_parameter(family, **options):
             "force_flush_interval": 5,
         }
     }
+    if keyisset("EnableCWAgentDebug", options):
+        value_py["agent"] = {"debug": True}
     if keyisset("EnableTasksDiscovery", options):
         families_config_list = generate_ecs_sd_config_snippet([family.name])
     else:
