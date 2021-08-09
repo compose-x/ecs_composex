@@ -2043,6 +2043,7 @@ class ComposeFamily(object):
             "CollectForAppMesh": False,
             "CollectForJavaJmx": False,
             "EnableTasksDiscovery": False,
+            "EnableCWAgentDebug": False,
         }
         for service in self.services:
             if keyisset("x-prometheus", service.definition):
