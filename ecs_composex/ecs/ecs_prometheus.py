@@ -46,15 +46,16 @@ def set_cw_prometheus_config_parameter(family):
         "global": {
             "scrape_interval": "1m",
             "scrape_timeout": "10s",
-            "scrape_configs": [
-                {
-                    "job_name": "cwagent-ecs-file-sd-config",
-                    "sample_limit": 10000,
-                    "file_sd_configs": [{"files": ["/tmp/cwagent_ecs_auto_sd.yaml"]}],
-                }
-            ],
-        }
+        },
+        "scrape_configs": [
+            {
+                "job_name": "cwagent-ecs-file-sd-config",
+                "sample_limit": 10000,
+                "file_sd_configs": [{"files": ["/tmp/cwagent_ecs_auto_sd.yaml"]}],
+            }
+        ],
     }
+
     parameter = SSMParameter(
         f"{family.logical_name}SSMPrometheusConfig",
         Tier="Standard",
@@ -183,7 +184,7 @@ def get_jmx_envoy_processor(label=None, labels=None):
 def generate_emf_processors(**options):
     metrics_key = "metric_declaration"
     emf_processors = {
-        "metric_declaration_dedup": "true",
+        "metric_declaration_dedup": True,
         metrics_key: [],
     }
     if keyisset("CollectForAppMesh", options):
