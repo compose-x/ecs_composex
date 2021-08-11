@@ -18,7 +18,7 @@ except ImportError:
 
 from copy import deepcopy
 
-from troposphere import AWS_ACCOUNT_ID, AWS_PARTITION, AWS_REGION, Sub
+from troposphere import AWS_ACCOUNT_ID, AWS_PARTITION, AWS_REGION, AWS_STACK_NAME, Sub
 from troposphere.ecs import Secret
 from troposphere.iam import Policy
 from troposphere.ssm import Parameter as SSMParameter
@@ -209,10 +209,22 @@ def get_ngnix_processor(
             ),
         },
     )
+    ecs_sd_config["service_name_list_for_tasks"] = [
+        {
+            "sd_job_name": "nginx-prometheus-exporter",
+            "sd_metrics_path": "/metrics"
+            if not keyisset("ExporterPath", nginx_config)
+            else nginx_config["ExporterPath"],
+            "sd_metrics_ports": "9113"
+            if not keyisset("ExporterPort", nginx_config)
+            else str(nginx_config["ExporterPort"]),
+            "sd_service_name_pattern": f"^.*${{{AWS_STACK_NAME}}}.*$",
+        }
+    ]
     return nginx_metrics
 
 
-def get_jmx_processor(family, ecs_sd_config, jmx_config, label=None, labels=None):
+def get_jmx_processor(family, ecs_sd_config, jmx_config):
     labels = (
         ["job"]
         if not keyisset("source_labels", jmx_config)
@@ -348,7 +360,7 @@ def set_cw_config_parameter(family, **options):
         Description=Sub(
             f"Prometheus Scraping SSM Parameter for ECS Cluster: ${{{ecs_params.CLUSTER_NAME.title}}}"
         ),
-        Value=json.dumps(value_py, ensure_ascii=True, sort_keys=True, indent=2),
+        Value=Sub(json.dumps(value_py, ensure_ascii=True, sort_keys=True, indent=2)),
     )
     family.template.add_resource(parameter)
     return parameter
