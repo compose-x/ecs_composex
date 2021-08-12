@@ -7,6 +7,7 @@ from copy import deepcopy
 from json import dumps
 from os import path
 
+import docker
 from compose_x_common.compose_x_common import keyisset, keypresent
 from troposphere import (
     AWS_NO_VALUE,
@@ -145,6 +146,7 @@ class ComposeService(object):
         ("x-alarms", dict),
         ("x-ecr", dict),
         ("x-prometheus", dict),
+        ("x-docker_opts", dict),
     ]
 
     ecs_plugin_aws_keys = [
@@ -227,6 +229,7 @@ class ComposeService(object):
             else Ref(AWS_NO_VALUE)
         )
         self.image = self.definition["image"]
+        self.image_digest = None
         self.image_param = Parameter(
             f"{self.logical_name}ImageUrl", Default=self.image, Type="String"
         )
@@ -257,6 +260,40 @@ class ComposeService(object):
         self.set_container_definition()
         self.set_networks()
         self.ecr_config = set_else_none("x-ecr", self.definition, None)
+
+    def retrieve_image_digest(self):
+        dkr_client = docker.APIClient()
+        valid_media_types = [
+            "application/vnd.docker.distribution.manifest.v1+json",
+            "application/vnd.docker.distribution.manifest.v2+json",
+            "application/vnd.docker.distribution.manifest.v1+prettyjws",
+            "application/vnd.docker.distribution.manifest.list.v2+json",
+        ]
+        try:
+            image_details = dkr_client.inspect_distribution(self.image)
+            if not keyisset("Descriptor", image_details):
+                raise KeyError(f"No information retrieved for {self.image}")
+            details = image_details["Descriptor"]
+            if (
+                keyisset("mediaType", details)
+                and details["mediaType"] not in valid_media_types
+            ):
+                raise ValueError(
+                    "The mediaType is not valid. Got",
+                    details["mediaType"],
+                    "Expected one of",
+                    valid_media_types,
+                )
+            if keyisset("digest", details):
+                self.image_digest = details["digest"]
+            else:
+                LOG.warning(
+                    "No digest found. This might be due to Registry API prior to V2"
+                )
+
+        except docker.errors.APIError as error:
+            LOG.error(f"Failed to retrieve the image digest for {self.image}")
+            print(error)
 
     def define_port_mappings(self):
         """

@@ -321,6 +321,35 @@ def init_root_template(settings):
     return template
 
 
+def evaluate_docker_configs(settings):
+    """
+    Function to go over the services settings and evaluate x-docker
+
+    :param ecs_composex.common.settings.ComposeXSettings settings: The settings for the execution
+    :return:
+    """
+    image_tag_re = re.compile(r"(?P<tag>(?:\@sha[\d]+:[a-z-Z0-9]+$)|(?::[\S]+$))")
+    for family in settings.families.values():
+        for service in family.services:
+            if not keyisset("x-docker_opts", service.definition):
+                continue
+            docker_config = service.definition["x-docker_opts"]
+            if keyisset("InterpolateWithDigest", docker_config):
+                if not invalidate_image_from_ecr(service, mute=True):
+                    LOG.warn(
+                        "You set InterpolateWithDigest to true for x-docker for an image in AWS ECR."
+                        "Please refer to x-ecr"
+                    )
+                    continue
+                service.retrieve_image_digest()
+                if service.image_digest:
+                    service.image = image_tag_re.sub(
+                        f"@{service.image_digest}", service.image
+                    )
+                    LOG.info(f"Successfully retrieved digest for {service.name}.")
+                    LOG.info(f"{service.name} - {service.image}")
+
+
 def evaluate_ecr_configs(settings):
     """
     Function to go over each service of each family in its final state and evaluate the ECR Image validity.
@@ -366,6 +395,7 @@ def generate_full_template(settings):
     :rtype: root_template, list
     """
     LOG.debug(settings)
+    evaluate_docker_configs(settings)
     root_stack_title = NONALPHANUM.sub("", settings.name.title())
     root_stack = ComposeXStack(
         root_stack_title,
