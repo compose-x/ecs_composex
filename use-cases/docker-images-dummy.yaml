@@ -1,4 +1,5 @@
 
+version: "3.9"
 services:
   # Invalid image
   serviceA:
@@ -21,5 +22,10 @@ services:
   serviceD:
     # Image
     image: public.ecr.aws/compose-x/nginx/nginx-prometheus-exporter:0.9.0-amd64
+    x-docker_opts:
+      InterpolateWithDigest: true
+
+  serviceE:
+    image: busybox:latest
     x-docker_opts:
       InterpolateWithDigest: true
