@@ -40,6 +40,8 @@ NGINX_EXPORTER_IMAGE_PARAMETER = Parameter(
     Default="public.ecr.aws/compose-x/nginx-prometheus-exporter:0.9.0",
 )
 
+METRICS_DEFAULT_PATH = r"/metrics"
+
 
 def set_cw_prometheus_config_parameter(family):
     """
@@ -198,7 +200,7 @@ def get_ngnix_processor(
     ecs_sd_config["task_definition_list"].append(
         {
             "sd_job_name": "nginx-prometheus-exporter",
-            "sd_metrics_path": "/metrics"
+            "sd_metrics_path": METRICS_DEFAULT_PATH
             if not keyisset("ExporterPath", nginx_config)
             else nginx_config["ExporterPath"],
             "sd_metrics_ports": "9113"
@@ -212,7 +214,7 @@ def get_ngnix_processor(
     ecs_sd_config["service_name_list_for_tasks"].append(
         {
             "sd_job_name": "nginx-prometheus-exporter",
-            "sd_metrics_path": "/metrics"
+            "sd_metrics_path": METRICS_DEFAULT_PATH
             if not keyisset("ExporterPath", nginx_config)
             else nginx_config["ExporterPath"],
             "sd_metrics_ports": "9113"
@@ -266,7 +268,7 @@ def get_jmx_processor(family, ecs_sd_config, jmx_config):
     ecs_sd_config["task_definition_list"].append(
         {
             "sd_job_name": "javajmx-prometheus-exporter",
-            "sd_metrics_path": "/metrics"
+            "sd_metrics_path": METRICS_DEFAULT_PATH
             if not keyisset("ExporterPath", jmx_config)
             else jmx_config["ExporterPath"],
             "sd_metrics_ports": "9404"
@@ -295,7 +297,7 @@ def process_custom_rules(family, ecs_sd_config, options, emf_processors):
         ecs_sd_config["service_name_list_for_tasks"].append(
             {
                 "sd_job_name": f"service-def-{family.logical_name}-custom-sd-{count}",
-                "sd_metrics_path": "/metrics"
+                "sd_metrics_path": METRICS_DEFAULT_PATH
                 if not keyisset("ExporterPath", rule)
                 else rule["ExporterPath"],
                 "sd_metrics_ports": str(rule["ExporterPort"]),
@@ -305,7 +307,7 @@ def process_custom_rules(family, ecs_sd_config, options, emf_processors):
         ecs_sd_config["task_definition_list"].append(
             {
                 "sd_job_name": f"task-def-{family.logical_name}-custom-sd-{count}",
-                "sd_metrics_path": "/metrics"
+                "sd_metrics_path": METRICS_DEFAULT_PATH
                 if not keyisset("ExporterPath", rule)
                 else rule["ExporterPath"],
                 "sd_metrics_ports": str(rule["ExporterPort"]),
