@@ -264,7 +264,6 @@ class ComposeService(object):
         self.ecr_config = set_else_none("x-ecr", self.definition, None)
 
     def retrieve_image_digest(self):
-        dkr_client = docker.APIClient()
         valid_media_types = [
             "application/vnd.docker.distribution.manifest.v1+json",
             "application/vnd.docker.distribution.manifest.v2+json",
@@ -272,6 +271,7 @@ class ComposeService(object):
             "application/vnd.docker.distribution.manifest.list.v2+json",
         ]
         try:
+            dkr_client = docker.APIClient()
             image_details = dkr_client.inspect_distribution(self.image)
             if not keyisset("Descriptor", image_details):
                 raise KeyError(f"No information retrieved for {self.image}")
