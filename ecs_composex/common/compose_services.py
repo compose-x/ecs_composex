@@ -293,9 +293,11 @@ class ComposeService(object):
                     "No digest found. This might be due to Registry API prior to V2"
                 )
 
-        except Exception as error:
+        except (docker.errors.APIError, docker.errors.DockerException) as error:
             LOG.error(f"Failed to retrieve the image digest for {self.image}")
             print(error)
+        except (FileNotFoundError, urllib3.exceptions, requests.exceptions):
+            LOG.error("Failed to connect to any docker engine.")
 
     def define_port_mappings(self):
         """
