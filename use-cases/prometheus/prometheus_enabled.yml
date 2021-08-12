@@ -55,14 +55,16 @@ services:
         CollectForAppMesh: false
         CollectForJavaJmx: true
         CustomRules:
-          - source_labels:
-              - container_name
-            label_matcher: app03
-            dimensions:
-              - - ClusterName
-                - TaskDefinitionFamily
-            metric_selectors:
-              - "^startsEnds$"
+          - ExporterPort: 1234
+            EmfProcessors:
+              - source_labels:
+                  - container_name
+                label_matcher: app03
+                dimensions:
+                  - - ClusterName
+                    - TaskDefinitionFamily
+                metric_selectors:
+                  - "^startsEnds$"
     labels:
       Java_EMF_Metrics: "true"
 

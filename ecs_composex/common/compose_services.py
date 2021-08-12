@@ -2042,7 +2042,10 @@ class ComposeFamily(object):
         insights_options = {
             "CollectForAppMesh": False,
             "CollectForJavaJmx": False,
+            "CollectForNginx": False,
             "EnableTasksDiscovery": False,
+            "EnableCWAgentDebug": False,
+            "AutoAddNginxPrometheusExporter": False,
         }
         for service in self.services:
             if keyisset("x-prometheus", service.definition):
@@ -2051,7 +2054,7 @@ class ComposeFamily(object):
                     config = service.definition["x-prometheus"]["ContainersInsights"]
                     for key in insights_options.keys():
                         if keyisset(key, config):
-                            insights_options[key] = True
+                            insights_options[key] = config[key]
                     if keyisset("CustomRules", config):
                         insights_options.update({"CustomRules": config["CustomRules"]})
         if any(insights_options.values()):
