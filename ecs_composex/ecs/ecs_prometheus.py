@@ -209,7 +209,7 @@ def get_ngnix_processor(
             ),
         },
     )
-    ecs_sd_config["service_name_list_for_tasks"] = [
+    ecs_sd_config["service_name_list_for_tasks"].append(
         {
             "sd_job_name": "nginx-prometheus-exporter",
             "sd_metrics_path": "/metrics"
@@ -220,7 +220,7 @@ def get_ngnix_processor(
             else str(nginx_config["ExporterPort"]),
             "sd_service_name_pattern": f"^.*${{{AWS_STACK_NAME}}}.*$",
         }
-    ]
+    )
     return nginx_metrics
 
 
@@ -280,6 +280,30 @@ def get_jmx_processor(family, ecs_sd_config, jmx_config):
     return jmx_metrics
 
 
+def process_custom_rules(family, ecs_sd_config, options, emf_processors):
+    """
+    Func
+    :param ecs_composex.common.compose_services.ComposeFamily family:
+    :param dict ecs_sd_config:
+    :param dict options:
+    :param dict emf_processors:
+    :return:
+    """
+    custom_rules = options["CustomRules"]
+    for count, rule in enumerate(custom_rules):
+        emf_processors["metric_declaration"] += rule["EmfProcessors"]
+        ecs_sd_config["service_name_list_for_tasks"].append(
+            {
+                "sd_job_name": f"{family.logical_name}-custom-sd-{count}",
+                "sd_metrics_path": "/metrics"
+                if not keyisset("ExporterPath", rule)
+                else rule["ExporterPath"],
+                "sd_metrics_ports": str(rule["ExporterPort"]),
+                "sd_service_name_pattern": f"^.*${{{AWS_STACK_NAME}}}.*$",
+            }
+        )
+
+
 def generate_emf_processors(family, ecs_sd_config, **options):
     metrics_key = "metric_declaration"
     emf_processors = {
@@ -299,7 +323,7 @@ def generate_emf_processors(family, ecs_sd_config, **options):
         if keyisset("AutoAddNginxPrometheusExporter", options):
             define_nginx_exporter_sidecar(family)
     if keyisset("CustomRules", options):
-        emf_processors[metrics_key] += options["CustomRules"]
+        process_custom_rules(family, ecs_sd_config, options, emf_processors)
     return emf_processors
 
 
