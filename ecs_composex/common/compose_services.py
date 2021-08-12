@@ -8,6 +8,8 @@ from json import dumps
 from os import path
 
 import docker
+import requests
+import urllib3
 from compose_x_common.compose_x_common import keyisset, keypresent
 from troposphere import (
     AWS_NO_VALUE,
@@ -294,6 +296,8 @@ class ComposeService(object):
         except docker.errors.APIError as error:
             LOG.error(f"Failed to retrieve the image digest for {self.image}")
             print(error)
+        except (FileNotFoundError, urllib3.exceptions, requests.exceptions):
+            LOG.error("Failed to connect to any docker engine.")
 
     def define_port_mappings(self):
         """
