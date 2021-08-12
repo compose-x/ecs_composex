@@ -294,13 +294,25 @@ def process_custom_rules(family, ecs_sd_config, options, emf_processors):
         emf_processors["metric_declaration"] += rule["EmfProcessors"]
         ecs_sd_config["service_name_list_for_tasks"].append(
             {
-                "sd_job_name": f"{family.logical_name}-custom-sd-{count}",
+                "sd_job_name": f"service-def-{family.logical_name}-custom-sd-{count}",
                 "sd_metrics_path": "/metrics"
                 if not keyisset("ExporterPath", rule)
                 else rule["ExporterPath"],
                 "sd_metrics_ports": str(rule["ExporterPort"]),
                 "sd_service_name_pattern": f"^.*${{{AWS_STACK_NAME}}}.*$",
             }
+        )
+        ecs_sd_config["task_definition_list"].append(
+            {
+                "sd_job_name": f"task-def-{family.logical_name}-custom-sd-{count}",
+                "sd_metrics_path": "/metrics"
+                if not keyisset("ExporterPath", rule)
+                else rule["ExporterPath"],
+                "sd_metrics_ports": str(rule["ExporterPort"]),
+                "sd_task_definition_arn_pattern": generate_ecs_sd_service_name_pattern(
+                    family.name
+                ),
+            },
         )
 
 

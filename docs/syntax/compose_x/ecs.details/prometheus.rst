@@ -2,7 +2,7 @@
     :description: ECS Compose-X advanced network syntax reference
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, networking, subnets, vpc, cloudmap
 
-.. _x_configs_network_syntax:
+.. _x_services_prometheus_syntax:
 
 ======================
 services.x-prometheus
@@ -37,7 +37,7 @@ ContainersInsights
     CollectForJavaJmx: bool|ExporterConfig
     CollectForNginx: bool|ExporterConfig
     AutoAddNginxPrometheusExporter: bool
-    CustomRules: [Rule]
+    CustomRules: [ExporterConfig]
 
 CollectForAppMesh
 -------------------
@@ -64,7 +64,6 @@ When setting the value to true (boolean) then the following default properties a
 | Container labes              | job       |
 +------------------------------+-----------+
 
-
 CollectForNginx
 ------------------
 
@@ -77,6 +76,11 @@ When set to true, the following default values are used
 +------------------------------+-------------+
 | Container labes              | job         |
 +------------------------------+-------------+
+
+AutoAddNginxPrometheusExporter
+------------------------------
+
+When set to true, saves you from having to add the nginx prometheus exporter and creates the sidecar for you automatically.
 
 ExporterConfig
 ------------------
@@ -117,9 +121,17 @@ label_matcher
 Regular expression that allows to identify the containers in a task that are exporting. The regular expression is matched
 against the values defined in `source_labels`_
 
+CustomRules
+------------
+
+Custom rules allow you to determine a list of various extra scans to perform.
+
+.. hint::
+
+    This is a lis of `ExporterConfig`_, with a slight modification: the `ExporterPort`_ and at least 1 `Rule`_ is required.
 
 Rule
------
+++++++
 
 .. code-block:: yaml
 
