@@ -293,7 +293,7 @@ class ComposeService(object):
                     "No digest found. This might be due to Registry API prior to V2"
                 )
 
-        except docker.errors.APIError as error:
+        except docker.errors as error:
             LOG.error(f"Failed to retrieve the image digest for {self.image}")
             print(error)
         except (FileNotFoundError, urllib3.exceptions, requests.exceptions):
