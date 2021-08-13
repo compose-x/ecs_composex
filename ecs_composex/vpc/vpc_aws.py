@@ -2,7 +2,10 @@
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
+import logging
 import re
+
+from boto3.session import Session
 
 from ecs_composex.common.aws import (
     define_lookup_role_from_info,
@@ -16,6 +19,41 @@ from ecs_composex.vpc.vpc_params import (
 )
 
 TAGS_KEY = "Tags"
+
+
+def validate_subnets_belong_with_vpc(vpc_settings, subnet_keys, session=None):
+    """
+    Function to ensure all subnets belong to the identified VPC
+
+    :param dict vpc_settings:
+    :param list[str] subnet_keys:
+    :param boto3.session.Session session:
+    :raises: boto3.client.exceptions
+
+    """
+    if session is None:
+        session = Session()
+    client = session.client("ec2")
+    for subnet_key in subnet_keys:
+        try:
+
+            client.describe_subnets(
+                Filters=[
+                    {
+                        "Name": "vpc-id",
+                        "Values": [
+                            vpc_settings[VPC_ID.title],
+                        ],
+                    },
+                ],
+                SubnetIds=vpc_settings[subnet_key],
+            )
+        except client.exceptions:
+            logging.error(
+                "Failed to describe the subnet(s)"
+                f" {','.join(vpc_settings[subnet_key])} in VPC {vpc_settings[VPC_ID.title]}"
+            )
+            raise
 
 
 def lookup_x_vpc_settings(lookup, session):
@@ -101,4 +139,10 @@ def lookup_x_vpc_settings(lookup, session):
             for subnet_arn in subnet_arns
         ]
     vpc_settings["session"] = lookup_session
+    total_subnets_keys = subnets_keys + extra_subnets
+    validate_subnets_belong_with_vpc(
+        vpc_settings=vpc_settings,
+        subnet_keys=total_subnets_keys,
+        session=lookup_session,
+    )
     return vpc_settings
