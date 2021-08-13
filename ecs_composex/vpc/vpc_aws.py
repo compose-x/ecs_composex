@@ -35,25 +35,23 @@ def validate_subnets_belong_with_vpc(vpc_settings, subnet_keys, session=None):
         session = Session()
     client = session.client("ec2")
     for subnet_key in subnet_keys:
-        try:
-
-            client.describe_subnets(
-                Filters=[
-                    {
-                        "Name": "vpc-id",
-                        "Values": [
-                            vpc_settings[VPC_ID.title],
-                        ],
-                    },
-                ],
-                SubnetIds=vpc_settings[subnet_key],
+        subnets = client.describe_subnets(
+            Filters=[
+                {
+                    "Name": "vpc-id",
+                    "Values": [
+                        vpc_settings[VPC_ID.title],
+                    ],
+                },
+            ],
+            SubnetIds=vpc_settings[subnet_key],
+        )["Subnets"]
+        if not vpc_settings[VPC_ID.title] in [subnet["VpcId"] for subnet in subnets]:
+            raise LookupError(
+                "One or more subnet in "
+                f" {','.join(vpc_settings[subnet_key])} "
+                f"not in VPC {vpc_settings[VPC_ID.title]}"
             )
-        except client.exceptions:
-            logging.error(
-                "Failed to describe the subnet(s)"
-                f" {','.join(vpc_settings[subnet_key])} in VPC {vpc_settings[VPC_ID.title]}"
-            )
-            raise
 
 
 def lookup_x_vpc_settings(lookup, session):
