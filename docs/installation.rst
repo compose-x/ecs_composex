@@ -12,6 +12,17 @@ Installation
 Stable release
 ==============
 
+From docker
+------------
+
+.. code-block:: console
+
+    docker run --rm -v ~/.aws:/root/.aws public.ecr.aws/compose-x/compose-x:latest
+
+.. hint::
+
+    Head to https://gallery.ecr.aws/compose-x/compose-x to select a particular version if need be.
+
 From Pip
 ---------
 
@@ -19,7 +30,16 @@ To install ECS-Compose-X, run this command in your terminal:
 
 .. code-block:: console
 
-    $ pip install ecs_composex
+    pip install --user ecs_composex
+
+.. hint::
+
+    Highly recommend to create a new python virtualenv in order not to spread on all your machine
+
+    .. code-block:: console
+
+        python -m venv venv
+        source venv/bin/activate
 
 This is the preferred method to install ECS-Compose-X, as it will always install the most recent stable release.
 
@@ -46,14 +66,6 @@ Or download the `tarball`_:
 
 Once you have a copy of the source, you can install it
 
-.. hint::
-
-    Highly recommend to create a new python virtualenv in order not to spread on all your machine
-
-    .. code-block:: console
-
-        python -m venv venv
-        source venv/bin/activate
 
 Using pip
 -----------
