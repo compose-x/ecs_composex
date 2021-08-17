@@ -153,7 +153,7 @@ This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypack
 .. _Troposphere: https://github.com/cloudtools/troposphere
 .. _Blog: https://blog.compose-x.io/
 .. _Docker Compose: https://docs.docker.com/compose/
-.. _ECS Compose-X: https://github.com/lambda-my-aws/ecs_composex
+.. _ECS Compose-X: https://github.com/compose-x/ecs_composex
 .. _YAML Specifications: https://yaml.org/spec/
 .. _Extensions fields:  https://docs.docker.com/compose/compose-file/#extension-fields
 .. _ECS Compose-X Project: https://github.com/orgs/lambda-my-aws/projects/3
