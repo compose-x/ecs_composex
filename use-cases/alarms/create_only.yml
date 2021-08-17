@@ -12,9 +12,9 @@ x-alarms:
         - Name: Cluster
           Value: DEV
         - Name: Topic
-          Value: sainsburys.data.price-specification.batch.v1
+          Value: topic01
         - Name: ConsumerGroup
-          Value: sainsburys.applications.sc-dis.price-specification.retail-price.aut-test-consumer
+          Value: consumer01
       EvaluationPeriods: 5
       MetricName: TotalLagForTopicAndConsumerGroup
       Namespace: lag-metrics-v4
