@@ -34,9 +34,9 @@ def create_bucket(bucket_name, session, no_location=False):
     try:
         bucket.create(**params)
         LOG.info(f"Bucket {bucket_name} successfully created.")
-    except client.exceptions.BucketAlreadyExists:
+    except client.meta.client.exceptions.BucketAlreadyExists:
         LOG.warning(f"Bucket {bucket_name} already exists.")
-    except client.exceptions.BucketAlreadyOwnedByYou:
+    except client.meta.client.exceptions.BucketAlreadyOwnedByYou:
         LOG.info(f"You already own the bucket {bucket_name}")
     except ClientError as error:
         print(error.response)
