@@ -11,7 +11,7 @@ volumes:
       type: bind
 
 services:
-  front-end:
+  frontend:
     image: ${REGISTRY_URI}nginx:${TAG:-latest}
     volumes:
       # We mount our volume app to NGINX default path
