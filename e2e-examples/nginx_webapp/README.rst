@@ -253,12 +253,14 @@ resources. You could also use **up** that will either create or update a new / e
 
 .. code-block:: bash
 
-    # Output should look like when using plan
+    # For the following command, we run docker with our own user so that the generated files
+    # do not require sudo access to remove.
 
     docker run -u $(id -u):$(id -u) -it --rm -v ~/.aws:/tmp/.aws -e HOME=/tmp -v $PWD:/tmp \
     public.ecr.aws/compose-x/compose-x:latest \
     plan -f docker-compose.yaml -f aws-compose-x.yaml -n frontend-app
 
+    # Output should look like when using plan
     # We create a new VPC and ECS Cluster given we did not specify existing ones.
     2021-08-18 09:26:02 [INFO], No x-vpc detected. Creating a new VPC.
     2021-08-18 09:26:02 [INFO], No cluster information provided. Creating a new one
