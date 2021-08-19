@@ -11,11 +11,7 @@ from ecs_composex.resource_settings import (
     handle_resource_to_services,
 )
 from ecs_composex.ssm_parameter.ssm_parameter_aws import lookup_param_config
-from ecs_composex.ssm_parameter.ssm_params import (
-    MAPPINGS_KEY,
-    SSM_PARAM_ARN,
-    SSM_PARAM_NAME,
-)
+from ecs_composex.ssm_parameter.ssm_params import SSM_PARAM_ARN, SSM_PARAM_NAME
 
 
 def create_ssm_param_mappings(mapping, resources, settings):

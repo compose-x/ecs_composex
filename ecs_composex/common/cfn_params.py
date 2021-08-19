@@ -13,7 +13,7 @@ You can change the names *values* so you like so long as you keep it Alphanumeri
 
 from troposphere import AWS_STACK_ID
 from troposphere import Parameter as CfnParameter
-from troposphere import Ref, Select, Split, Sub
+from troposphere import Ref, Select, Split
 
 COMPUTE_STACK_NAME = "Ec2Compute"
 VPC_STACK_NAME = "vpc"

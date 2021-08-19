@@ -18,8 +18,9 @@ from ecs_composex.resource_settings import (
 def define_lookup_profile_mappings(mappings, resources, settings):
     """
     Function to update the mappings of CodeGuru profile identified via Lookup
-    :param mappings:
-    :param resources:
+    :param dict mappings:
+    :param list resources:
+    :param ecs_composex.common.settings.ComposeXSettings settings:
     :return:
     """
     for res in resources:

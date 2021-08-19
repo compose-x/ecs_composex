@@ -6,24 +6,26 @@ authors = ["John Preston <john@compose-x.io>"]
 maintainers = ["John Preston <john@compose-x.io>"]
 license = "MPL-2.0"
 readme = "README.rst"
-keywords=["compose-x", "aws", "cloudformation", "docker", "compose"]
-classifiers=[
-        "Development Status :: 4 - Beta",
-        "Intended Audience :: Developers",
-        "Intended Audience :: System Administrators",
-        "Intended Audience :: Information Technology",
-        "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)",
-        "Natural Language :: English",
-        "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: 3.7",
-        "Programming Language :: Python :: 3.8",
-  ]
+keywords = ["compose-x", "aws", "cloudformation", "docker", "compose"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Intended Audience :: System Administrators",
+  "Intended Audience :: Information Technology",
+  "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)",
+  "Natural Language :: English",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.6",
+  "Programming Language :: Python :: 3.7",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+]
 include = [
-    "LICENSE",
-    "MANIFEST.in",
-    "ecs_composex/**/*.json"
-  ]
+  "LICENSE",
+  "MANIFEST.in",
+  "NOTICES.rst",
+  "ecs_composex/**/*.json"
+]
 exclude = ["*.pyc", "*~", "*pycache*"]
 
 [tool.poetry.urls]
@@ -36,9 +38,9 @@ exclude = ["*.pyc", "*~", "*pycache*"]
 python = "^3.7"
 boto3 = "^1.18"
 troposphere = "^3.0"
-ecr-scan-reporter = {version = "^0.3", optional = true}
-compose-x-render = "^0.2.0"
-compose-x-common = "^0.1.0"
+ecr-scan-reporter = { version = "^0.3", optional = true }
+compose-x-render = "^0.2.1"
+compose-x-common = "^0.1.1"
 jsonschema = "^3.2.0"
 requests = "^2.26.0"
 tabulate = "^0.8.9"
@@ -56,7 +58,7 @@ pre-commit = "^2.13.0"
 black = "^21.7b0"
 sphinx-material = "^0.0.34"
 behave = "^1.2.6"
-coverage = {extras = ["toml"], version = "^5.5"}
+coverage = { extras = ["toml"], version = "^5.5" }
 flake8 = "^3.9.2"
 pytest = "^6.2.4"
 Sphinx = "4.1.2"
@@ -120,6 +122,7 @@ exclude_lines = [
 omit = [
   "*/cli.py"
 ]
+
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"

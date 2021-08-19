@@ -10,7 +10,6 @@ import secrets
 from string import ascii_lowercase
 from time import sleep
 
-import boto3
 from botocore.exceptions import ClientError
 from compose_x_common.aws import get_assume_role_session, validate_iam_role_arn
 from compose_x_common.compose_x_common import keyisset
@@ -406,7 +405,7 @@ def plan(settings, root_stack):
     if assert_can_create_stack(client, settings.name) or assert_can_update_stack(
         client, settings.name
     ):
-        res = client.create_change_set(
+        client.create_change_set(
             StackName=settings.name,
             Capabilities=["CAPABILITY_IAM", "CAPABILITY_AUTO_EXPAND"],
             Parameters=root_stack.render_parameters_list_cfn(),

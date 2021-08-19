@@ -4,6 +4,10 @@
 
 """
 Helper to generate default parameter group settings from engine name and version
+
+Strip rds internal params to try and fit within 20 param limit
+https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-rds-dbparametergroup.html#cfn-rds-dbparametergroup-parameters
+
 """
 import boto3
 from botocore.exceptions import ClientError
@@ -35,8 +39,6 @@ def get_db_cluster_engine_parameter_group_defaults(engine_family):
                 and "{" not in param["ParameterValue"]
                 and "IsModifiable" in param.keys()
                 and param["IsModifiable"] is True
-                # Strip rds internal params to try and fit within 20 param limit
-                # See https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-rds-dbparametergroup.html#cfn-rds-dbparametergroup-parameters
                 and not param["ParameterName"].startswith("rds.")
             ):
                 params_return[param["ParameterName"]] = param["ParameterValue"]

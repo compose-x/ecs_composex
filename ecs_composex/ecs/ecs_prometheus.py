@@ -12,18 +12,15 @@ import yaml
 
 try:
     from yaml import CDumper as Dumper
-    from yaml import CLoader as Loader
 except ImportError:
-    from yaml import Loader, Dumper
-
-from copy import deepcopy
+    from yaml import Dumper
 
 from troposphere import AWS_ACCOUNT_ID, AWS_PARTITION, AWS_REGION, AWS_STACK_NAME, Sub
 from troposphere.ecs import Secret
 from troposphere.iam import Policy
 from troposphere.ssm import Parameter as SSMParameter
 
-from ecs_composex.common import LOG, keyisset
+from ecs_composex.common import keyisset
 from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.common.compose_services import ComposeService
 from ecs_composex.ecs import ecs_params
@@ -117,9 +114,11 @@ def get_ecs_envoy_processor(envoy_container_name=None):
                 "^envoy_cluster_membership_(healthy|total)$",
                 "^envoy_server_memory_(allocated|heap_size)$",
                 "^envoy_cluster_upstream_cx_(connect_timeout|destroy_local_with_active_rq)$",
-                "^envoy_cluster_upstream_rq_(pending_failure_eject|pending_overflow|timeout|per_try_timeout|rx_reset|maintenance_mode)$",
+                "^envoy_cluster_upstream_rq_(pending_failure_eject|"
+                "pending_overflow|timeout|per_try_timeout|rx_reset|maintenance_mode)$",
                 "^envoy_http_downstream_cx_destroy_remote_active_rq$",
-                "^envoy_cluster_upstream_flow_control_(paused_reading_total|resumed_reading_total|backed_up_total|drained_total)$",
+                "^envoy_cluster_upstream_flow_control_(paused_reading_total|"
+                "resumed_reading_total|backed_up_total|drained_total)$",
                 "^envoy_cluster_upstream_rq_retry$",
                 "^envoy_cluster_upstream_rq_retry_(success|overflow)$",
                 "^envoy_server_(version|uptime|live)$",
@@ -368,11 +367,7 @@ def set_cw_config_parameter(family, **options):
     ecs_sd_config = {
         "sd_frequency": "1m",
         "sd_result_file": "/tmp/cwagent_ecs_auto_sd.yaml",
-        "docker_label": {
-            # "sd_port_label": f"{family.logical_name}_sd_port",
-            # "sd_metrics_path_label": f"{family.logical_name}_sd_metrics_path",
-            # "sd_job_name_label": f"{family.logical_name}_sd_job_name"
-        },
+        "docker_label": {},
         "task_definition_list": [],
         "service_name_list_for_tasks": [],
     }

@@ -1,93 +1,93 @@
 {
-    "objects": {
-        "CRUD": {
-            "Action": [
-                "s3:GetObject",
-                "s3:DeleteObject",
-                "s3:PutObject",
-                "s3:GetObjectTagging",
-                "s3:GetObjectVersionTagging",
-                "s3:PutObjectTagging",
-                "s3:PutObjectVersionTagging",
-                "s3:DeleteObjectTagging",
-                "s3:DeleteObjectVersionTagging",
-                "s3:PutObjectAcl",
-                "s3:AbortMultipartUpload",
-                "s3:CreateMultipartUpload"
-            ],
-            "Effect": "Allow"
-        },
-        "RW": {
-            "Action": [
-                "s3:GetObject*",
-                "s3:PutObject*"
-            ],
-            "Effect": "Allow"
-        },
-        "StrictRW": {
-            "Action": [
-                "s3:GetObject",
-                "s3:PutObject"
-            ],
-            "Effect": "Allow"
-        },
-        "StrictRWDelete": {
-            "Action": [
-                "s3:GetObject",
-                "s3:PutObject",
-                "s3:DeleteObject"
-            ],
-            "Effect": "Allow"
-        },
-        "RWDelete": {
-            "Action": [
-                "s3:GetObject*",
-                "s3:PutObject*",
-                "s3:DeleteObject*"
-            ],
-            "Effect": "Allow"
-        },
-        "ReadOnly": {
-            "Action": [
-                "s3:GetObject*"
-            ],
-            "Effect": "Allow"
-        },
-        "StrictReadOnly": {
-            "Action": [
-                "s3:GetObject"
-            ],
-            "Effect": "Allow"
-        },
-        "WriteOnly": {
-            "Action": [
-                "s3:PutObject*"
-            ],
-            "Effect": "Allow"
-        },
-        "StrictWriteOnly": {
-            "Action": [
-                "s3:PutObject"
-            ],
-            "Effect": "Allow"
-        }
+  "objects": {
+    "CRUD": {
+      "Action": [
+        "s3:GetObject",
+        "s3:DeleteObject",
+        "s3:PutObject",
+        "s3:GetObjectTagging",
+        "s3:GetObjectVersionTagging",
+        "s3:PutObjectTagging",
+        "s3:PutObjectVersionTagging",
+        "s3:DeleteObjectTagging",
+        "s3:DeleteObjectVersionTagging",
+        "s3:PutObjectAcl",
+        "s3:AbortMultipartUpload",
+        "s3:CreateMultipartUpload"
+      ],
+      "Effect": "Allow"
     },
-    "bucket": {
-        "ListOnly": {
-            "Effect": "Allow",
-            "Action": [
-                "s3:ListBucket",
-                "s3:GetBucketLocation",
-                "s3:GetBucketPublicAccessBlock"
-            ]
-        },
-        "PowerUser": {
-            "Effect": "Allow",
-            "Action": [
-                "s3:ListBucket",
-                "s3:GetBucket*",
-                "s3:SetBucket*"
-            ]
-        }
+    "RW": {
+      "Action": [
+        "s3:GetObject*",
+        "s3:PutObject*"
+      ],
+      "Effect": "Allow"
+    },
+    "StrictRW": {
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject"
+      ],
+      "Effect": "Allow"
+    },
+    "StrictRWDelete": {
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject"
+      ],
+      "Effect": "Allow"
+    },
+    "RWDelete": {
+      "Action": [
+        "s3:GetObject*",
+        "s3:PutObject*",
+        "s3:DeleteObject*"
+      ],
+      "Effect": "Allow"
+    },
+    "ReadOnly": {
+      "Action": [
+        "s3:GetObject*"
+      ],
+      "Effect": "Allow"
+    },
+    "StrictReadOnly": {
+      "Action": [
+        "s3:GetObject"
+      ],
+      "Effect": "Allow"
+    },
+    "WriteOnly": {
+      "Action": [
+        "s3:PutObject*"
+      ],
+      "Effect": "Allow"
+    },
+    "StrictWriteOnly": {
+      "Action": [
+        "s3:PutObject"
+      ],
+      "Effect": "Allow"
     }
+  },
+  "bucket": {
+    "ListOnly": {
+      "Effect": "Allow",
+      "Action": [
+        "s3:ListBucket",
+        "s3:GetBucketLocation",
+        "s3:GetBucketPublicAccessBlock"
+      ]
+    },
+    "PowerUser": {
+      "Effect": "Allow",
+      "Action": [
+        "s3:ListBucket",
+        "s3:GetBucket*",
+        "s3:SetBucket*"
+      ]
+    }
+  }
 }

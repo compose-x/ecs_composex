@@ -5,19 +5,11 @@
 import re
 from time import sleep
 
-import boto3
 from boto3.session import Session
 
 try:
-    from ecr_scan_reporter.ecr_scan_reporter import (
-        DEFAULT_THRESHOLDS,
-        parse_scan_report,
-    )
-    from ecr_scan_reporter.images_scanner import (
-        define_images_to_scan,
-        list_all_images,
-        trigger_images_scan,
-    )
+    from ecr_scan_reporter.ecr_scan_reporter import DEFAULT_THRESHOLDS
+    from ecr_scan_reporter.images_scanner import list_all_images, trigger_images_scan
 except ImportError:
     raise ImportError(
         "You must install ecr-scan-reporter in order to use this functionality"
