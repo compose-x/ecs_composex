@@ -2,6 +2,79 @@
 History
 =======
 
+0.16.0 (2021-08-19)
+======================
+
+This release adds features that revolve around the monitoring of applications by supporting
+Prometheus and AWS CloudWatch integration integration making it easy for users to collect metrics
+for Prometheus enabled applications.
+
+It also improves the docker experience for users that wish to automatically use the docker image digest instead of tags,
+and for users of AWS ECR, allows to perform an image scan of the indicated image prior to continue the process.
+
+Fixed docs and trying to steer towards a CLI usage with docker for new starters to avoid python environments problems.
+
+New features
+--------------
+
+* b81d444 x-alarms schema validation (#494) (John Preston)
+* 604dbfe docker images digest substitution (#492) (John Preston)
+* a2c740e Battletesting prometheus and EMF processors (#491) (John Preston)
+* f19899b Adding docs, tests, and lib dependency to enable prometheus (#488) (John Preston)
+* c67d3c9 Adding some prometheus support (#472) (John Preston)
+* d92a1ca Adding x-ssm_parameters macro parameters (John Preston)
+* e956203 Better ECR display conditions (John Preston)
+* ae10da7 Add successful notice output for ECR Scan (John Preston)
+* b307f6d Feature - x-ssm (#486) (John Preston)
+* de345c1 Feature x-ecr interpolate digest (#482) (John Preston)
+* c448650 Adding ECR Scan at execution time (#478) (John Preston)
+* cd441d8 Adding x-dashboards feature (#476) (John Preston)
+* 6c2e95e Cognito ALB app profile creation (#475) (John Preston)
+* 9ae02ff Feature - Lookup codeguru profiler (#468) (John Preston)
+* 56156b0 Using codeguru at top level (#462) (John Preston)
+* 1e6016a CLI Feature: `plan` (#459) (John Preston)
+
+Improvements
+-------------
+
+* 381aab9 Adding ECR Scan reporter lib to CLI and macro (John Preston)
+* 3650792 Matching PEP0440 RC syntax (John Preston)
+* dc903fb Changing docs theme (John Preston)
+* 25b3e7b Using poetry env commands to make life easier (John Preston)
+* 507b917 Pyproject black settings update (John Preston)
+* 024852f Fixes and new features to help with life comfort (John Preston)
+* 2d778d2 Updated deps (John Preston)
+* fadab75 Updating dependency (John Preston)
+* fd99dbb Using more of common compose_x lib (John Preston)
+* cef8f1e Removing cognito init override (John Preston)
+* 6aa54ea Not using sphinx-material to generate sitemap.xml (John Preston)
+* b5e1d63 Using common lib for keyisset and keypresent (John Preston)
+* 043d787 use Poetry and pyproject.toml (#483) (John Preston)
+* 7aff79e Added x-ecr docs for scans (#479) (John Preston)
+* 79c3346 Addind DL stats. (John Preston)
+* 280b0f6 Newer docker image source (John Preston)
+* dbfd70c Docs improvements (#467) (John Preston)
+
+
+Fixes
+------
+
+* 923ee23 Fixing docs(#497) (John Preston)
+* 2a7cc3e Adding exception for bucket init creation in us-east-1 (#496) (John Preston)
+* 8c6a159 Fix/subnets must belong to same vpc (#493) (John Preston)
+* d2d9ba4 Fix missing return and outputs for new SSM Parameters (John Preston)
+* 42b442f Fix docs buildspec (John Preston)
+* 6297604 Fix layer buildspec (John Preston)
+* 7c72014 Fixing build for docs and manifest (John Preston)
+* 7da9538 Indentation fix (John Preston)
+* 2390d23 Fixing loop and scan report return (#480) (John Preston)
+* 14de30c Fixing setup.py for extra (John Preston)
+* 3b30cf7 Fixing pyproject version (John Preston)
+* 3131973 Bug fixes (#473) (John Preston)
+* 40d0195 Fixed missing env vars via lookup (#466) (John Preston)
+* 6306ed0 Fixing S3 perms bug and adding s3 to JSON specs (#464) (John Preston)
+
+
 0.15.0 (2021-05-13)
 ===================
 

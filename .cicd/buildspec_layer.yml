@@ -32,7 +32,6 @@ phases:
     commands:
       - python --version
       - poetry build
-      - python setup.py sdist bdist_wheel
       - BUILD_WHL=`find . -name "ecs_compose*.whl" -type f`
       - echo $BUILD_WHL
       - PY_BUILD=python/lib/python${PY_VERSION}/site-packages/
