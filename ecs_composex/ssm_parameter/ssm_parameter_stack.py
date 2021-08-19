@@ -10,17 +10,9 @@ from os import path
 
 import yaml
 from compose_x_common.compose_x_common import keyisset
-from troposphere import (
-    AWS_ACCOUNT_ID,
-    AWS_PARTITION,
-    AWS_REGION,
-    AWS_STACK_NAME,
-    GetAtt,
-    Ref,
-    Sub,
-)
+from troposphere import AWS_ACCOUNT_ID, AWS_PARTITION, AWS_REGION, Ref, Sub
 from troposphere.ssm import Parameter as CfnSsmParameter
-from yaml import Dumper, Loader
+from yaml import Loader
 
 from ecs_composex.common import LOG, add_outputs, build_template
 from ecs_composex.common.compose_resources import XResource, set_resources

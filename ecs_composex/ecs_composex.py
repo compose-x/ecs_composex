@@ -433,6 +433,6 @@ def generate_full_template(settings):
     dns_settings.associate_settings_to_nested_stacks(root_stack)
     set_services_alarms(settings)
     if keyisset("x-dashboards", settings.compose_content):
-        dashboards_stack = DashboardsStack("dashboards", settings)
+        DashboardsStack("dashboards", settings)
     add_all_tags(root_stack.stack_template, settings)
     return root_stack

@@ -7,16 +7,7 @@ Module to manage top level AWS CodeGuru profiles
 """
 
 from compose_x_common.compose_x_common import keyisset
-from troposphere import (
-    AWS_NO_VALUE,
-    AWS_PARTITION,
-    AWS_REGION,
-    AWS_STACK_NAME,
-    GetAtt,
-    Join,
-    Ref,
-    Sub,
-)
+from troposphere import GetAtt, Ref, Sub
 from troposphere.codeguruprofiler import ProfilingGroup
 
 from ecs_composex.codeguru_profiler.codeguru_profiler_params import (

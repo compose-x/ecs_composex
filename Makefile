@@ -113,22 +113,21 @@ servedocs: docs ## compile the docs watching for changes
 
 release: dist ## package and upload a release
 	twine check dist/*
-	twine upload dist/*
+	poetry publish --build
 
 release-test: dist ## package and upload a release
 	twine check dist/* || echo Failed to validate release
-	twine upload --repository-url https://test.pypi.org/legacy/ dist/*
-
+	poetry config repositories.pypitest https://test.pypi.org/legacy/
+	poetry publish -r pypitest --build
 
 dist: clean ## builds source and wheel package
-	python setup.py sdist
-	python setup.py bdist_wheel
+	poetry build
 	ls -l dist
 
 install: clean ## install the package to the active Python's site-packages
-	python setup.py install
+	pip install . --use-pep517 --use-feature=in-tree-build
 
 conform	: ## Conform to a standard of coding syntax
 	isort --profile black ecs_composex
-	black ecs_composex tests setup.py
+	black ecs_composex tests
 	find ecs_composex -name "*.json" -type f  -exec sed -i '1s/^\xEF\xBB\xBF//' {} +

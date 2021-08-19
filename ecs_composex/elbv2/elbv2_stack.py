@@ -46,7 +46,6 @@ from troposphere.elasticloadbalancingv2 import (
 from ecs_composex.acm.acm_params import MOD_KEY as ACM_MOD_KEY
 from ecs_composex.acm.acm_params import RES_KEY as ACM_KEY
 from ecs_composex.cognito_userpool.cognito_params import MAPPINGS_KEY as COGNITO_MAP
-from ecs_composex.cognito_userpool.cognito_params import MOD_KEY as COGNITO_MOD
 from ecs_composex.cognito_userpool.cognito_params import RES_KEY as COGNITO_KEY
 from ecs_composex.cognito_userpool.cognito_params import (
     USERPOOL_ARN,
@@ -475,6 +474,44 @@ def import_new_acm_certs(listener, src_name, settings, listener_stack):
     rectify_listener_protocol(listener)
 
 
+def handle_import_cognito_pool(the_pool, listener_stack, settings):
+    """
+    Function to map AWS Cognito Pool to attributes
+    :param the_pool:
+    :param listener_stack:
+    :param settings:
+    :return:
+    """
+    if the_pool.cfn_resource and not the_pool.lookup:
+        pool_id_param = Parameter(
+            f"{the_pool.logical_name}{USERPOOL_ID.title}", Type="String"
+        )
+        pool_arn = Parameter(
+            f"{the_pool.logical_name}{USERPOOL_ARN.title}", Type="String"
+        )
+        add_parameters(listener_stack.stack_template, [pool_id_param, pool_arn])
+        listener_stack.Parameters.update(
+            {
+                pool_id_param.title: Ref(the_pool.cfn_resource),
+                pool_arn.title: Ref(pool_arn),
+            }
+        )
+        return Ref(pool_id_param), Ref(pool_arn)
+    elif the_pool.lookup and not the_pool.cfn_resource:
+        if (
+            keyisset(COGNITO_MAP, settings.mappings)
+            and COGNITO_MAP not in listener_stack.stack_template.mappings
+        ):
+            listener_stack.stack_template.add_mapping(
+                COGNITO_MAP, settings.mappings[COGNITO_MAP]
+            )
+        return (
+            FindInMap(COGNITO_MAP, the_pool.logical_name, USERPOOL_ID.title),
+            FindInMap(COGNITO_MAP, the_pool.logical_name, USERPOOL_ARN.title),
+            FindInMap(COGNITO_MAP, the_pool.logical_name, USERPOOL_DOMAIN.title),
+        )
+
+
 def import_cognito_pool(src_name, settings, listener_stack):
     """
     Function to Import an Cognito Pool defined in x-cognito_pool
@@ -510,34 +547,7 @@ def import_cognito_pool(src_name, settings, listener_stack):
 
     if the_pool is None:
         raise LookupError("Failed to identify the cognito userpool to use", src_name)
-    if the_pool.cfn_resource and not the_pool.lookup:
-        pool_id_param = Parameter(
-            f"{the_pool.logical_name}{USERPOOL_ID.title}", Type="String"
-        )
-        pool_arn = Parameter(
-            f"{the_pool.logical_name}{USERPOOL_ARN.title}", Type="String"
-        )
-        add_parameters(listener_stack.stack_template, [pool_id_param, pool_arn])
-        listener_stack.Parameters.update(
-            {
-                pool_id_param.title: Ref(the_pool.cfn_resource),
-                pool_arn.title: Ref(pool_arn),
-            }
-        )
-        return Ref(pool_id_param), Ref(pool_arn)
-    elif the_pool.lookup and not the_pool.cfn_resource:
-        if (
-            keyisset(COGNITO_MAP, settings.mappings)
-            and COGNITO_MAP not in listener_stack.stack_template.mappings
-        ):
-            listener_stack.stack_template.add_mapping(
-                COGNITO_MAP, settings.mappings[COGNITO_MAP]
-            )
-        return (
-            FindInMap(COGNITO_MAP, the_pool.logical_name, USERPOOL_ID.title),
-            FindInMap(COGNITO_MAP, the_pool.logical_name, USERPOOL_ARN.title),
-            FindInMap(COGNITO_MAP, the_pool.logical_name, USERPOOL_DOMAIN.title),
-        )
+    handle_import_cognito_pool(the_pool, listener_stack, settings)
 
 
 def add_acm_certs_arn(listener, src_value, settings, listener_stack):

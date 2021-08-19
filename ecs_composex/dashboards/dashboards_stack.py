@@ -9,7 +9,7 @@ Module to manage the creation of Dashboards
 import json
 
 from compose_x_common.compose_x_common import keyisset
-from troposphere import GetAtt, Output, Parameter, Ref, Sub
+from troposphere import GetAtt, Output, Parameter, Sub
 from troposphere.cloudwatch import Dashboard as CWDashboard
 
 from ecs_composex.common import (
@@ -21,7 +21,7 @@ from ecs_composex.common import (
 )
 from ecs_composex.common.cfn_conditions import define_stack_name
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.dashboards.dashboards_params import DASHBOARD_NAME, MOD_KEY, RES_KEY
+from ecs_composex.dashboards.dashboards_params import RES_KEY
 from ecs_composex.dashboards.dashboards_services_metrics import ServiceEcsWidget
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME, SERVICE_T
 

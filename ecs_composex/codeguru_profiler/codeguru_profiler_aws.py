@@ -8,8 +8,6 @@ Module to find the CodeGuru profiles from tagging API
 
 import re
 
-from botocore.exceptions import ClientError
-
 from ecs_composex.codeguru_profiler.codeguru_profiler_params import (
     PROFILER_ARN,
     PROFILER_NAME,
