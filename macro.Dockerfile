@@ -12,5 +12,6 @@ RUN python -m pip install pip -U ; pip install poetry ; poetry build
 FROM ${LAMBDA_IMAGE:-$BASE_IMAGE}
 WORKDIR ${LAMBDA_TASK_ROOT:-/opt/}
 COPY --from=builder /opt/dist/ecs_composex-*.whl ${LAMBDA_TASK_ROOT:-/opt/}/
-RUN pip install pip -U --no-cache-dir && pip install wheel --no-cache-dir && pip install *.whl --no-cache-dir
+RUN pip install pip -U --no-cache-dir && pip install wheel --no-cache-dir && pip install *.whl --no-cache-dir ;\
+    pip install --no-cache-dir ecs-composex[ecrscan]
 CMD ["ecs_composex.macro.lambda_handler"]
