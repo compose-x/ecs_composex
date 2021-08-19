@@ -26,6 +26,14 @@ Using docker
 From Pip
 ---------
 
+.. warning::
+
+    You must use pip>=21 to have all functionalities work. Simply run
+
+    .. code-block::
+
+        pip install pip -U
+
 To install ECS-Compose-X, run this command in your terminal:
 
 .. code-block:: console
@@ -40,6 +48,7 @@ To install ECS-Compose-X, run this command in your terminal:
 
         python -m venv venv
         source venv/bin/activate
+        pip install pip -U
         pip install ecs_composex
 
 This is the preferred method to install ECS-Compose-X, as it will always install the most recent stable release.
@@ -77,6 +86,7 @@ Using pip
     cd ecs_composex
     python -m venv venv
     source venv/bin/activate
+    pip install pip -U
     pip install . --use-pep517 --use-feature=in-tree-build
 
 Using poetry
@@ -88,6 +98,7 @@ Using poetry
     cd ecs_composex
     python -m venv venv
     source venv/bin/activate
+    pip install pip -U
     pip install poetry
     poetry install
 
