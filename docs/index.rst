@@ -220,6 +220,7 @@ This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypack
     macro_usage
     contributing
 
+.. include:: examples.rst
 .. include:: compatibility_matrix.rst
 .. include:: modules_syntax.rst
 

@@ -5,6 +5,9 @@
 
 .. _examples_e2e_nginx:
 
+======================
+NGINX static content
+======================
 
 Local use of docker-compose
 ============================
@@ -18,6 +21,7 @@ Docker compose is great to allow you to do just that, and generally there are tw
 So let's look at our basic docker-compose file.
 
 .. code-block:: yaml
+    :caption: docker-compose.yaml
 
     ---
     # Base NGINX with small page example
@@ -56,6 +60,7 @@ Well, for local development you can create a new file that docker-compose will a
 Let's have a look at it
 
 .. code-block:: yaml
+    :caption: docker-compose.override.yaml
 
     version: "3.8"
     volumes:
@@ -91,6 +96,7 @@ We then indicate that we now want to just use the nginx original docker image an
     able to write to, for example, as shown below.
 
     .. code-block::
+        :caption: Add a volume and mount it to container
 
         volumes:
           uploads:
@@ -159,6 +165,7 @@ Deploy to AWS
 In the spirit of override files, we create another file that is going to be used for our AWS Environment.
 
 .. code-block:: yaml
+    :caption: aws-compose-x.yaml
 
     services:
       frontend:
@@ -248,7 +255,8 @@ resources. You could also use **up** that will either create or update a new / e
 
     # Output should look like when using plan
 
-    docker run -it --rm -v ~/.aws:/root/.aws -v $PWD:/tmp public.ecr.aws/compose-x/compose-x:latest \
+    docker run -u $(id -u):$(id -u) -it --rm -v ~/.aws:/tmp/.aws -e HOME=/tmp -v $PWD:/tmp \
+    public.ecr.aws/compose-x/compose-x:latest \
     plan -f docker-compose.yaml -f aws-compose-x.yaml -n frontend-app
 
     # We create a new VPC and ECS Cluster given we did not specify existing ones.
