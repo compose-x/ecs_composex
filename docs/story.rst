@@ -30,7 +30,7 @@ Community focused
 Any new Feature Request submitted by someone other than myself will get their request prioritized to try address their
 use-cases as quickly as possible.
 
-`Submit your Feature Request here <https://github.com/lambda-my-aws/ecs_composex/issues/new/choose>`_
+`Submit your Feature Request here <https://github.com/compose-x/ecs_composex/issues/new/choose>`_
 
 Ensure things work
 ------------------
@@ -39,7 +39,7 @@ It takes an insane amount of time to test everything as, generating CFN template
 works end-to-end is a completely different thing.
 
 I will always do my best to ensure that any new feature is tested end-to-end, but shall anything slip through the cracks,
-please feel free to report your errors `here <https://github.com/lambda-my-aws/ecs_composex/issues/new/choose>`_
+please feel free to report your errors `here <https://github.com/compose-x/ecs_composex/issues/new/choose>`_
 
 
 Provision other AWS resources your services need
@@ -168,6 +168,6 @@ can solve that problem and with ECS Compose-X the effort is to constantly abide 
 .. _Troposphere: https://github.com/cloudtools/troposphere
 .. _Blog: https://blog.composex.io/
 .. _Docker Compose: https://docs.docker.com/compose/
-.. _ECS Compose-X: https://github.com/lambda-my-aws/ecs_composex
+.. _ECS Compose-X: https://github.com/compose-x/ecs_composex
 .. _YAML Specifications: https://yaml.org/spec/
 .. _Extensions fields:  https://docs.docker.com/compose/compose-file/#extension-fields

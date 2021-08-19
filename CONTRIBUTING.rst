@@ -45,7 +45,7 @@ articles, and such.
 Submit Feedback
 ~~~~~~~~~~~~~~~
 
-The best way to send feedback is to file an issue at https://github.com/lanbda-my-aws/ecs_composex/issues.
+The best way to send feedback is to file an issue at https://github.com/compose-x/ecs_composex/issues.
 
 If you are proposing a feature:
 
@@ -64,11 +64,13 @@ Ready to contribute? Here's how to set up `ecs_composex` for local development.
 
     $ git clone git@github.com:your_name_here/ecs_composex.git
 
-3. Install your local copy into a virtualenv. Assuming you have virtualenvwrapper installed, this is how you set up your fork for local development::
+3. Install your local copy into a virtualenv. Assuming you have python3 and pip installed, this is how you set up your fork for local development::
 
-    $ mkvirtualenv ecs_composex
+    $ python -m venv venv
+    $ source venv/bin/activate
     $ cd ecs_composex/
-    $ python setup.py develop
+    $ pip install poetry
+    $ poetry install
 
 4. Create a branch for local development::
 
@@ -80,6 +82,7 @@ Ready to contribute? Here's how to set up `ecs_composex` for local development.
    tests, including testing other Python versions with tox::
 
     $ make lint
+    $ make conform
     $ make coverage
 
    To get flake8 and tox, just pip install them into your virtualenv.
@@ -108,6 +111,7 @@ Tips
 To run a subset of tests::
 
 $ make test
+$ make conform
 $ make coverage
 
 
@@ -118,7 +122,7 @@ A reminder for the maintainers on how to deploy.
 Make sure all your changes are committed (including an entry in HISTORY.rst).
 Then run::
 
-$ bump2version patch # possible: major / minor / patch
+$ tbump --no-push major.minor.patch
 $ git push
 $ git push --tags
 

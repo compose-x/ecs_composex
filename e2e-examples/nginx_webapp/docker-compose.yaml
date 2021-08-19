@@ -1,0 +1,24 @@
+﻿---
+# Base NGINX with small page example
+
+version: "3.8"
+volumes:
+  app:
+
+services:
+  frontend:
+    image: ${REGISTRY_URI}frontend:${TAG:-latest}
+    ports:
+      - protocol: tcp
+        target: 80
+    build:
+      context: .
+      dockerfile: Dockerfile
+    deploy:
+      resources:
+        limits:
+          cpus: 0.5
+          memory: 256MB
+        reservations:
+          cpus: 0.1
+          memory: 128MB

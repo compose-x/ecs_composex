@@ -1,0 +1,36 @@
+﻿---
+# Compose-X config file for Networking, where we define DNS Settings and an ALB to send traffic to our application
+
+services:
+  frontend:
+    x-ecr:
+      InterpolateWithDigest: true
+
+# We need DNS information. We indicate which DNS zone to use publicly and which one to use in the VPC.
+# Given that we do not indicate Lookup, the new DNS Zones will be created.
+
+x-dns:
+  PublicZone:
+    Name: mydomain.net
+  PrivateNamespace:
+    Name: cluster.internal
+
+# We create an ALB and send traffic to our frontend. Note that the listener is not encrypted at this point.
+# To use encryption we need n ACM certificate and set the listener protocol to HTTPS
+
+x-elbv2:
+  public-alb:
+    Properties:
+      Scheme: internet-facing
+      Type: application
+    Services:
+      - name: frontend:frontend
+        port: 80
+        protocol: HTTP
+        healthcheck: 80:HTTP:/:200,201
+    Listeners:
+      - Port: 80
+        Protocol: HTTP
+        Targets:
+          - name: frontend:frontend
+            access: /

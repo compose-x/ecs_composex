@@ -1,0 +1,22 @@
+﻿---
+# Base NGINX with small page example
+
+version: "3.8"
+volumes:
+  app: # Using the same volume name, we override the config to mount a local file system
+    driver: local
+    driver_opts:
+      o: bind
+      device: ./app
+      type: bind
+
+services:
+  frontend:
+    image: ${REGISTRY_URI}nginx:${TAG:-latest}
+    volumes:
+      # We mount our volume app to NGINX default path
+      - app:/usr/share/nginx/html:ro
+    ports:
+      - protocol: tcp
+        published: 8080
+        target: 80

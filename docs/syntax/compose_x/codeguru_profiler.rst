@@ -89,4 +89,4 @@ Example
 Code Example
 -------------
 
-Full Applications code used for this sort of testing can be found `here <https://github.com/lambda-my-aws/composex-testing-apps/tree/main/app02>`__
+Full Applications code used for this sort of testing can be found `here <https://github.com/compose-x/composex-testing-apps/tree/main/app02>`__

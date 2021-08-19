@@ -6,13 +6,11 @@
 Welcome to ECS Compose-X documentation
 ========================================
 
-|PYPI_VERSION| |PYPI_LICENSE|
+|PYPI_VERSION| |PYPI_LICENSE| |PY_DLS|
 
 |CODE_STYLE| |TDD| |BDD|
 
-|QUALITY|
-
-|BUILD|
+|QUALITY| |BUILD|
 
 ---------------------------------------------------------------------------------------------------------------
 Manage, Configure and deploy your applications/services and AWS resources from your docker-compose definitions
@@ -52,13 +50,19 @@ Deploy it in your account today |AWS_SAR|
 
 `Find out how to use ECS Compose-X in AWS here`_
 
+Via docker
+-----------
+
+.. code-block:: bash
+
+    docker run --rm -v ~/.aws:/root/.aws public.ecr.aws/compose-x/compose-x:latest
+
 Via pip
 --------
 
 .. code-block:: bash
 
     pip install ecs_composex
-
 
 CLI Usage
 ==========
@@ -153,7 +157,7 @@ This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypack
 .. _Troposphere: https://github.com/cloudtools/troposphere
 .. _Blog: https://blog.compose-x.io/
 .. _Docker Compose: https://docs.docker.com/compose/
-.. _ECS Compose-X: https://github.com/lambda-my-aws/ecs_composex
+.. _ECS Compose-X: https://github.com/compose-x/ecs_composex
 .. _YAML Specifications: https://yaml.org/spec/
 .. _Extensions fields:  https://docs.docker.com/compose/compose-file/#extension-fields
 .. _ECS Compose-X Project: https://github.com/orgs/lambda-my-aws/projects/3
@@ -203,6 +207,9 @@ This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypack
     :alt: Code scan with SonarCloud
     :target: https://sonarcloud.io/dashboard?id=compose-x_ecs_composex
 
+.. |PY_DLS| image:: https://img.shields.io/pypi/dm/ecs-composex
+    :target: https://pypi.org/project/ecs-composex/
+
 
 .. toctree::
     :maxdepth: 1
@@ -213,6 +220,7 @@ This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypack
     macro_usage
     contributing
 
+.. include:: examples.rst
 .. include:: compatibility_matrix.rst
 .. include:: modules_syntax.rst
 

@@ -12,6 +12,17 @@ Installation
 Stable release
 ==============
 
+From docker
+------------
+
+.. code-block:: console
+
+    docker run --rm -v ~/.aws:/root/.aws public.ecr.aws/compose-x/compose-x:latest
+
+.. hint::
+
+    Head to https://gallery.ecr.aws/compose-x/compose-x to select a particular version if need be.
+
 From Pip
 ---------
 
@@ -19,7 +30,16 @@ To install ECS-Compose-X, run this command in your terminal:
 
 .. code-block:: console
 
-    $ pip install ecs_composex
+    pip install --user ecs_composex
+
+.. hint::
+
+    Highly recommend to create a new python virtualenv in order not to spread on all your machine
+
+    .. code-block:: console
+
+        python -m venv venv
+        source venv/bin/activate
 
 This is the preferred method to install ECS-Compose-X, as it will always install the most recent stable release.
 
@@ -36,22 +56,41 @@ You can either clone the public repository:
 
 .. code-block:: console
 
-    $ git clone git://github.com/lambda-my-aws/ecs_composex
+    $ git clone git://github.com/compose-x/ecs_composex
 
 Or download the `tarball`_:
 
 .. code-block:: console
 
-    $ curl -OJL https://github.com/lambda-my-aws/ecs_composex/tarball/master
+    $ curl -OJL https://github.com/compose-x/ecs_composex/tarball/main
 
-Once you have a copy of the source, you can install it with:
+Once you have a copy of the source, you can install it
+
+
+Using pip
+-----------
 
 .. code-block:: console
 
-    $ python setup.py install
+    # After git clone
+    cd ecs_composex
+    pip install .
 
+Using poetry
+-------------------
 
-.. _Github repo: https://github.com/lambda-my-aws/ecs_composex
-.. _tarball: https://github.com/lambda-my-aws/ecs_composex/tarball/master
+.. code-block:: console
+
+    # After git clone
+    cd ecs_composex
+    python -m pip install poetry
+    poetry install
+
+.. hint::
+
+    Using poetry will also install all the dev dependencies for local dev.
+
+.. _Github repo: https://github.com/compose-x/ecs_composex
+.. _tarball: https://github.com/compose-x/ecs_composex/tarball/master
 .. _pip: https://pip.pypa.io
 .. _Python installation guide: http://docs.python-guide.org/en/latest/starting/installation/
