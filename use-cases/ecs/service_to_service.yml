@@ -3,6 +3,9 @@
 version: '3.8'
 services:
   app01:
+    deploy:
+      labels:
+        ecs.ephemeral.storage: 65
     x-logging:
       RetentionInDays: 42
       CreateLogGroup: True
@@ -17,6 +20,9 @@ services:
         Services:
           - Name: app03
   app03:
+    deploy:
+      labels:
+        ecs.ephemeral.storage: 128GB
     x-network:
       Ingress:
         Myself: False

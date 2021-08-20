@@ -74,10 +74,43 @@ ecs.depends.condition
 This label allows to define what condition should this service be monitored under by ECS. Useful when container is set
 as a dependency to another.
 
++----------------+-----------------------+
+| label          | ecs.depends.condition |
++----------------+-----------------------+
+| Allowed Values | * START               |
+|                | * SUCCESS             |
+|                | * HEALTHY             |
+|                | * COMPLETE            |
++----------------+-----------------------+
+| Default        | START                 |
++----------------+-----------------------+
+
 .. hint::
 
-    Allowed values are : START, SUCCESS, COMPLETE, HEALTHY. By default, sets to START, and if you defined **healthcheck**,
-    defaults to HEALTHY.
+    f you defined **healthcheck** on your service, changes to HEALTHY.
     See `Dependency reference for more information`_
+
+ecs.ephemeral.storage
+^^^^^^^^^^^^^^^^^^^^^^
+
+This label allows you to extend the local capacity (ephemeral, which is destroyed after the task is stopped) of storage
+beyond the free 20GB coming by default.
+
++---------+-----------------------+
+| label   | ecs.ephemeral.storage |
++---------+-----------------------+
+| Minimum | 21                    |
++---------+-----------------------+
+| Maximum | 200                   |
++---------+-----------------------+
+
+.. hint::
+
+    The minimum valid value is 21, maximum is 200. If below 21, it is ignored, if above 200, set to 200.
+
+.. warning::
+
+    This parameter only when using Fargate. This will be ignored when using EC2 or EXTERNAL deployment modes.
+    For more storage using EC2, provide more local storage for your EC2 nodes.
 
 .. _Dependency reference for more information: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ecs-taskdefinition-containerdependency.html

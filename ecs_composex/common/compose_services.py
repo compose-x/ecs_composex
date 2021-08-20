@@ -28,6 +28,7 @@ from troposphere.ecs import (
     ContainerDefinition,
     DockerVolumeConfiguration,
     EnvironmentFile,
+    EphemeralStorage,
     HealthCheck,
     KernelCapabilities,
     LinuxParameters,
@@ -212,6 +213,7 @@ class ComposeService(object):
         self.secrets = []
         self.env_files = []
         self.tmpfses = []
+        self.ephemeral_storage = 0
         self.user = None
         self.group = None
         self.user_group = None
@@ -979,6 +981,47 @@ class ComposeService(object):
             if deployment[labels][essential_key] in negative_values:
                 self.is_essential = False
 
+    def define_ephemeral_storage_condition(self, deployment):
+        """
+        Method to define the start condition success for the container
+
+        :param deployment:
+        :return:
+        """
+        storage_key = "ecs.ephemeral.storage"
+        labels = "labels"
+        if not keyisset(labels, deployment) or (
+            keyisset(labels, deployment)
+            and not keyisset(storage_key, deployment[labels])
+        ):
+            return
+        storage_value = deployment[labels][storage_key]
+        print(storage_value, type(storage_value))
+        if isinstance(storage_value, (int, float)):
+            ephemeral_storage = int(storage_value)
+        elif isinstance(storage_value, str):
+            ephemeral_storage = int(set_memory_to_mb(storage_value) / 1024)
+        else:
+            raise TypeError(
+                f"The value for {storage_key} is of type",
+                type(storage_value),
+                "Expected one of",
+                [int, float, str],
+            )
+        if ephemeral_storage < 21:
+            LOG.warning(
+                f"{self.name} - {storage_key}={ephemeral_storage} is smaller than 20(GB). Ignoring."
+            )
+            return
+        elif ephemeral_storage > 200:
+            LOG.warning(
+                f"{self.name} - {storage_key}={ephemeral_storage} is bigger than 200(GB). Setting to 200"
+            )
+            self.ephemeral_storage = 200
+        else:
+            self.ephemeral_storage = int(ephemeral_storage)
+            LOG.info(f"{self.name} - {storage_key} set to {self.ephemeral_storage}")
+
     def define_start_condition(self, deployment):
         """
         Method to define the start condition success for the container
@@ -1062,6 +1105,7 @@ class ComposeService(object):
         self.define_start_condition(self.definition[deploy])
         self.define_essential(self.definition[deploy])
         self.set_update_config(self.definition[deploy])
+        self.define_ephemeral_storage_condition(self.definition[deploy])
 
 
 def handle_same_task_services_dependencies(services_config):
@@ -1268,6 +1312,7 @@ class ComposeFamily(object):
         self.task_definition = None
         self.service_definition = None
         self.service_config = None
+        self.task_ephemeral_storage = 0
         self.exec_role = None
         self.task_role = None
         self.scalable_target = None
@@ -1290,6 +1335,7 @@ class ComposeFamily(object):
             )
             self.set_secrets_access()
         self.set_xray()
+        self.set_task_ephemeral_storage()
         self.refresh()
 
     def refresh(self):
@@ -1311,7 +1357,18 @@ class ComposeFamily(object):
                     if service_depends_on not in self.services_depends_on:
                         self.services_depends_on.append(service_depends_on)
 
+    def set_task_ephemeral_storage(self):
+        """
+        If any service ephemeral storage is defined above, sets the ephemeral storage to the maximum of them.
+        """
+        max_storage = max([service.ephemeral_storage for service in self.services])
+        if max_storage >= 21:
+            self.task_ephemeral_storage = max_storage
+
     def set_xray(self):
+        """
+        Automatically adds the xray-daemon sidecar to the task definition.
+        """
         self.use_xray = any(
             [keyisset("use_xray", service.x_configs) for service in self.services]
         )
@@ -1789,6 +1846,13 @@ class ComposeFamily(object):
             Cpu=ecs_params.FARGATE_CPU,
             Memory=ecs_params.FARGATE_RAM,
             NetworkMode=NETWORK_MODE,
+            EphemeralStorage=If(
+                USE_FARGATE_CON_T,
+                EphemeralStorage(SizeInGiB=self.task_ephemeral_storage),
+                Ref(AWS_NO_VALUE),
+            )
+            if 0 < self.task_ephemeral_storage >= 21
+            else Ref(AWS_NO_VALUE),
             Family=Ref(ecs_params.SERVICE_NAME),
             TaskRoleArn=GetAtt(TASK_ROLE_T, "Arn"),
             ExecutionRoleArn=GetAtt(EXEC_ROLE_T, "Arn"),
