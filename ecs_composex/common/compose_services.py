@@ -1030,7 +1030,6 @@ class ComposeService(object):
         """
         compute_key = "ecs.compute.platform"
         labels = "labels"
-        print(deployment)
         allowed_values = ["EC2", "FARGATE", "EXTERNAL"]
         if keyisset(labels, deployment) and keyisset(compute_key, deployment[labels]):
             if not deployment[labels][compute_key] in allowed_values:
@@ -1040,7 +1039,7 @@ class ComposeService(object):
                     allowed_values,
                 )
             self.compute_platform = deployment[labels][compute_key]
-            print(self.name, self.compute_platform)
+            LOG.info(f"{self.name} set ecs.compute.platform to {self.compute_platform}")
 
 
     def define_start_condition(self, deployment):

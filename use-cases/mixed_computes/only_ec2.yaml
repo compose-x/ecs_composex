@@ -1,0 +1,60 @@
+---
+version: "3.7"
+
+x-cluster:
+  Lookup: dev
+
+services:
+  session-cache:
+    image: redis:6.0.5-alpine
+    deploy:
+      labels:
+        ecs.compute.platform: EC2
+    ports:
+    - 6349:6349
+
+  frontend:
+    image: ${REGISTRY_URI}frontend:${TAG:-latest}
+    ports:
+      - protocol: tcp
+        target: 80
+    build:
+      context: .
+      dockerfile: Dockerfile
+    deploy:
+      resources:
+        limits:
+          cpus: 0.5
+          memory: 256MB
+        reservations:
+          cpus: 0.1
+          memory: 128MB
+      labels:
+        ecs.compute.platform: EC2
+    x-ecr:
+      InterpolateWithDigest: true
+
+
+x-dns:
+  PublicZone:
+    Name: mydomain.net
+  PrivateNamespace:
+    Name: cluster.internal
+
+
+x-elbv2:
+  public-alb:
+    Properties:
+      Scheme: internet-facing
+      Type: application
+    Services:
+      - name: frontend:frontend
+        port: 80
+        protocol: HTTP
+        healthcheck: 80:HTTP:/:200,201
+    Listeners:
+      - Port: 80
+        Protocol: HTTP
+        Targets:
+          - name: frontend:frontend
+            access: /

@@ -150,6 +150,17 @@ def import_from_x_aws_cluster(compose_content):
     compose_content[RES_KEY] = {"Use": cluster_name}
 
 
+def define_cluster_lookup_props(cluster_r, settings):
+    cluster_mapping = {}
+    if not cluster_r:
+        return cluster_mapping
+    if cluster_r[0]:
+        cluster_mapping = {CLUSTER_NAME.title: {"Name": cluster_r[0]}}
+    if cluster_r[1] is not None:
+        settings.ecs_cluster_platform_override = cluster_r[1]
+    return cluster_mapping
+
+
 def add_ecs_cluster(root_stack, settings):
     """
     Function to create the ECS Cluster.
@@ -177,10 +188,7 @@ def add_ecs_cluster(root_stack, settings):
             cluster_r = lookup_ecs_cluster(
                 settings.session, settings.compose_content[RES_KEY]["Lookup"]
             )
-            if cluster_r[0]:
-                cluster_mapping = {CLUSTER_NAME.title: {"Name": cluster_r[0]}}
-            if cluster_r[1] is not None:
-                settings.ecs_cluster_platform_override = cluster_r[1]
+            cluster_mapping = define_cluster_lookup_props(cluster_r, settings)
         elif keyisset("Properties", settings.compose_content[RES_KEY]):
             cluster = define_cluster(settings.compose_content[RES_KEY])
             root_stack.stack_template.add_resource(cluster)
