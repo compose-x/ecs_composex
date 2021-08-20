@@ -1012,7 +1012,6 @@ class ComposeService(object):
             LOG.warning(
                 f"{self.name} - {storage_key}={ephemeral_storage} is smaller than 20(GB). Ignoring."
             )
-            return
         elif ephemeral_storage > 200:
             LOG.warning(
                 f"{self.name} - {storage_key}={ephemeral_storage} is bigger than 200(GB). Setting to 200"
