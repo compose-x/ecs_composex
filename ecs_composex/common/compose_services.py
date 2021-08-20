@@ -1041,7 +1041,6 @@ class ComposeService(object):
             self.compute_platform = deployment[labels][compute_key]
             LOG.info(f"{self.name} set ecs.compute.platform to {self.compute_platform}")
 
-
     def define_start_condition(self, deployment):
         """
         Method to define the start condition success for the container
@@ -1365,6 +1364,7 @@ class ComposeFamily(object):
 
     def refresh(self):
         self.sort_container_configs()
+        self.set_compute_platform()
         self.handle_iam()
         self.handle_logging()
         self.apply_services_params()
@@ -1382,7 +1382,6 @@ class ComposeFamily(object):
                     if service_depends_on not in self.services_depends_on:
                         self.services_depends_on.append(service_depends_on)
 
-<<<<<<< HEAD
     def set_task_ephemeral_storage(self):
         """
         If any service ephemeral storage is defined above, sets the ephemeral storage to the maximum of them.
@@ -1390,7 +1389,7 @@ class ComposeFamily(object):
         max_storage = max([service.ephemeral_storage for service in self.services])
         if max_storage >= 21:
             self.task_ephemeral_storage = max_storage
-=======
+
     def set_compute_platform(self):
         """
         Iterates over all services and if ecs.compute.platform
@@ -1422,7 +1421,6 @@ class ComposeFamily(object):
                         self.stack.Parameters.update(
                             {ecs_params.LAUNCH_TYPE: self.compute_platform}
                         )
->>>>>>> d4bdcb7 (Adds deploy label ecs.compute.platform to override from FARGATE)
 
     def set_xray(self):
         """

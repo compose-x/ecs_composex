@@ -1,9 +1,6 @@
 ---
 version: "3.7"
 
-x-cluster:
-  Lookup: dev
-
 services:
   session-cache:
     image: redis:6.0.5-alpine

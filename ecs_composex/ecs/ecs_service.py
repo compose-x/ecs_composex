@@ -436,9 +436,9 @@ class Service(object):
                 ecs_conditions.USE_FARGATE_CON_T,
                 "REPLICA",
                 If(
-                    ecs_conditions.SERVICE_COUNT_ZERO_AND_FARGATE_CON_T,
-                    "REPLICA",
+                    ecs_conditions.SERVICE_COUNT_ZERO_CON_T,
                     "DAEMON",
+                    "REPLICA",
                 ),
             ),
             PlacementStrategies=If(

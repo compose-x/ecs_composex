@@ -210,10 +210,15 @@ class FileArtifact(object):
                 pp.pprint(self.template.to_dict())
                 raise error
         elif isinstance(self.content, (list, dict, tuple)):
-            if self.mime == YAML_MIME:
-                self.body = yaml.dump(self.content, Dumper=Dumper)
-            elif self.mime == JSON_MIME:
-                self.body = json.dumps(self.content, indent=4)
+            try:
+                if self.mime == YAML_MIME:
+                    self.body = yaml.dump(self.content, Dumper=Dumper)
+                elif self.mime == JSON_MIME:
+                    self.body = json.dumps(self.content, indent=4)
+            except Exception as error:
+                pp = pprint.PrettyPrinter(indent=2)
+                pp.pprint(self.content)
+                raise error
 
     def define_file_specs(self, file_name, file_format, settings):
         """

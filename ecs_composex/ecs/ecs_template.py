@@ -208,6 +208,7 @@ def generate_services(settings):
                 ecs_params.SERVICE_NAME_T: family.logical_name,
                 CLUSTER_NAME_T: Ref(CLUSTER_NAME),
                 ROOT_STACK_NAME_T: Ref(ROOT_STACK_NAME),
+                ecs_params.LAUNCH_TYPE.title: family.compute_platform,
             }
         )
         family.upload_services_env_files(settings)
