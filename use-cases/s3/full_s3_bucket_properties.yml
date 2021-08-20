@@ -82,3 +82,9 @@ x-s3:
         access:
           objects: CRUD
           bucket: ListOnly
+          s3-bucket-ssl-requests-only: true
+
+      - name: app02
+        access:
+          objects: CRUD
+          bucket: ListOnly

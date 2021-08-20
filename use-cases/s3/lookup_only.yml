@@ -25,3 +25,4 @@ x-s3:
         access:
           bucket: PowerUser
           objects: RW
+          s3-bucket-ssl-requests-only: true
