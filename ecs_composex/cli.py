@@ -116,15 +116,6 @@ def main_parser():
         dest="BucketName",
     )
     base_command_parser.add_argument(
-        "--use-spot-fleet",
-        required=False,
-        default=False,
-        action="store_true",
-        dest=ComposeXSettings.create_spotfleet_arg,
-        help="Runs spotfleet for EC2. If used in combination "
-        "of --use-fargate, it will create an additional SpotFleet",
-    )
-    base_command_parser.add_argument(
         "--role-arn",
         dest=ComposeXSettings.arn_arg,
         help="Allow you to run API calls using a specific IAM role, within same or for cross-account",

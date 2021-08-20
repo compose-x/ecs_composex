@@ -49,7 +49,6 @@ class ComposeXSettings(object):
 
     create_vpc_arg = "CreateVpc"
     create_ec2_arg = "AddComputeResources"
-    create_spotfleet_arg = USE_FLEET_T
 
     region_arg = "RegionName"
     zones_arg = "Zones"
