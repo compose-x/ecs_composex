@@ -89,5 +89,17 @@
         "s3:SetBucket*"
       ]
     }
+  },
+  "s3-bucket-ssl-requests-only": {
+    "s3-bucket-ssl-requests-only": {
+      "Sid": "AllowSSLRequestsOnly",
+      "Action": "s3:*",
+      "Effect": "Deny",
+      "Condition": {
+        "Bool": {
+          "aws:SecureTransport": "false"
+        }
+      }
+    }
   }
 }

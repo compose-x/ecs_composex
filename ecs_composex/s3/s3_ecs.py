@@ -28,6 +28,7 @@ from ecs_composex.s3.s3_perms import ACCESS_TYPES
 def assign_service_permissions_to_bucket(bucket, family, services, access, value, arn):
     bucket_key = "bucket"
     objects_key = "objects"
+    ssl_key = "s3-bucket-ssl-requests-only"
 
     bucket.generate_resource_envvars()
     if keyisset(bucket_key, access):
@@ -52,6 +53,22 @@ def assign_service_permissions_to_bucket(bucket, family, services, access, value
             access[objects_key],
             services,
         )
+    if keyisset(ssl_key, access):
+        ssl_perms = generate_resource_permissions(
+            f"SslBucketObjefsAccess{bucket.logical_name}",
+            ACCESS_TYPES[ssl_key],
+            arn=[
+                arn,
+                Sub("${BucketArn}/*", BucketArn=arn),
+            ],
+        )
+        add_iam_policy_to_service_task_role(
+            family.template,
+            bucket,
+            ssl_perms,
+            ssl_key,
+            services,
+        )
 
 
 def assign_new_bucket_to_services(bucket, res_root_stack, nested=False):
@@ -64,6 +81,7 @@ def assign_new_bucket_to_services(bucket, res_root_stack, nested=False):
     """
     bucket_key = "bucket"
     objects_key = "objects"
+    ssl_key = "s3-bucket-ssl-requests-only"
     attributes_settings = [
         get_parameter_settings(bucket, attribute)
         for attribute in bucket.output_properties
@@ -75,7 +93,7 @@ def assign_new_bucket_to_services(bucket, res_root_stack, nested=False):
         params_values[setting[0]] = setting[2]
     for target in bucket.families_targets:
         select_services = get_selected_services(bucket, target)
-        access = {objects_key: "RW", bucket_key: "ListOnly"}
+        access = {objects_key: "RW", bucket_key: "ListOnly", ssl_key: False}
         if select_services:
             access = target[3]
             add_parameters(
@@ -215,7 +233,8 @@ def define_lookup_buckets_access(bucket, target, services):
     """
     bucket_key = "bucket"
     objects_key = "objects"
-    access = {objects_key: "RW", bucket_key: "ListOnly"}
+    ssl_key = "s3-bucket-ssl-requests-only"
+    access = {objects_key: "RW", bucket_key: "ListOnly", ssl_key: False}
     if isinstance(target[3], str):
         LOG.warning(
             "For s3 buckets, you should define a dict for access, with bucket and/or object policies separate."
@@ -257,6 +276,28 @@ def define_lookup_buckets_access(bucket, target, services):
             bucket,
             objects_perms,
             access[objects_key],
+            services,
+        )
+    if keyisset(ssl_key, access):
+        ssl_perms = generate_resource_permissions(
+            f"SslBucketObjefsAccess{bucket.logical_name}",
+            ACCESS_TYPES[ssl_key],
+            arn=[
+                Sub(
+                    "${BucketArn}",
+                    BucketArn=FindInMap("s3", bucket.logical_name, "Arn"),
+                ),
+                Sub(
+                    "${BucketArn}/*",
+                    BucketArn=FindInMap("s3", bucket.logical_name, "Arn"),
+                ),
+            ],
+        )
+        add_iam_policy_to_service_task_role(
+            target[0].template,
+            bucket,
+            ssl_perms,
+            ssl_key,
             services,
         )
 

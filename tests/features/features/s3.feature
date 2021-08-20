@@ -1,9 +1,10 @@
 Feature: ecs_composex.s3
 
-    @s3
+    @s3 @create
     Scenario Outline: New s3 buckets and services
         Given I use <file_path> as my docker-compose file and <override_file> as override file
         Then I render the docker-compose to composex to validate
+        And I render all files to verify execution
 
         Examples:
             | file_path                   | override_file                              |
@@ -21,6 +22,7 @@ Feature: ecs_composex.s3
     Scenario Outline: NLookup s3 buckets only
         Given I use <file_path> as my docker-compose file and <override_file> as override file
         Then I render the docker-compose to composex to validate
+        And I render all files to verify execution
 
         Examples:
             | file_path                   | override_file                |

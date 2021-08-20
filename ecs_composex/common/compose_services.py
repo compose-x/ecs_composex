@@ -996,7 +996,6 @@ class ComposeService(object):
         ):
             return
         storage_value = deployment[labels][storage_key]
-        print(storage_value, type(storage_value))
         if isinstance(storage_value, (int, float)):
             ephemeral_storage = int(storage_value)
         elif isinstance(storage_value, str):

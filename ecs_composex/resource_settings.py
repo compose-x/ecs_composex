@@ -28,6 +28,7 @@ def generate_resource_permissions(resource_name, policies, arn):
     :param dict policies: the policies associated with the x-resource type.
     :param str,AWSHelper arn: The ARN of the resource if already looked up.
     :return: dict of the IAM policies associated with the resource.
+    :param list arns: List of ARNs to pass multiple resources at once with the same action
     :rtype dict:
     """
     resource_policies = {}
@@ -36,7 +37,7 @@ def generate_resource_permissions(resource_name, policies, arn):
         LOG.debug(a_type)
         policy_doc = policies[a_type].copy()
         policy_doc["Sid"] = Sub(f"{a_type}To{resource_name}")
-        policy_doc["Resource"] = arn
+        policy_doc["Resource"] = [arn] if not isinstance(arn, list) else arn
         clean_policy["Statement"].append(policy_doc)
         resource_policies[a_type] = IamPolicy(
             PolicyName=Sub(f"{a_type}{resource_name}${{{ROOT_STACK_NAME_T}}}"),
