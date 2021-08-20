@@ -4,20 +4,8 @@ version: '3.8'
 secrets:
   abcd: {}
   john: {}
-#    x-secrets:
-#      LinksTo:
-#        - EcsExecutionRole
-#        - EcsTaskRole
-#      Name: SFTP/asl-cscs-files-dev
+
   zyx: {}
-#    x-secrets:
-#      Name: secret/with/kmskey
-#      Lookup:
-#        Tags:
-#          - costcentre: lambda
-#      JsonKeys:
-#        - VarName: ZYX_TEST
-#          SecretKey: test
 services:
   app01:
     logging:
@@ -35,6 +23,7 @@ services:
       update_config:
         failure_action: rollback
       labels:
+        ecs.ephemeral.storage: 65
         ecs.task.family: bignicefamily
       resources:
         reservations:
@@ -96,6 +85,7 @@ services:
       update_config:
         failure_action: pause
       labels:
+        ecs.ephemeral.storage: 12128GB
         ecs.task.family: youtoo
       replicas: 2
       resources:
@@ -156,6 +146,8 @@ services:
     x-aws-min_percent: 50
     x-aws-max_percent: 150
     deploy:
+      labels:
+        ecs.ephemeral.storage: 20
       resources:
         reservations:
           cpus: '0.25'
@@ -198,6 +190,7 @@ services:
     deploy:
       labels:
         ecs.task.family: bignicefamily,youtoo
+        ecs.ephemeral.storage: 175
       replicas: 1
       resources:
         limits:
