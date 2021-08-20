@@ -58,7 +58,6 @@ For example, you would have:
 
 .. literalinclude:: ../../../../use-cases/blog.features.yml
     :language: yaml
-    :emphasize-lines: 30-31, 83-85
 
 .. warning::
 
@@ -113,4 +112,92 @@ beyond the free 20GB coming by default.
     This parameter only when using Fargate. This will be ignored when using EC2 or EXTERNAL deployment modes.
     For more storage using EC2, provide more local storage for your EC2 nodes.
 
+ecs.compute.platform
+^^^^^^^^^^^^^^^^^^^^^^
+
+This setting allows you to define which compute platform to deploy your services onto. This is useful if you
+have cluster that has a mix of EC2 capacity (default behaviour) and Fargate ones.
+This can also allow you to define to deploy your container to ECS Anywhere (using EXTERNAL mode).
+
++----------------+----------------------+
+| label          | ecs.compute.platform |
++----------------+----------------------+
+| Allowed Values | * EC2                |
+|                | * FARGATE            |
+|                | * EXTERNAL           |
++----------------+----------------------+
+
+.. hint::
+
+    By default, ECS Clusters created with ECS Compose-X will use AWS Fargate as the compute platform.
+
+.. hint::
+
+    If you created your cluster without providing any Capacity Providers, Fargate cannot work.
+    Compose-X, when using x-cluster.Lookup will attempt to determine whether the Fargate capacity providers
+    are present, and if not, override to EC2 **for all services**
+
+.. tip::
+
+    Below two ECS Clusters, one created via CLI without any arguments, the other created in the AWS Console.
+
+    .. code-block:: bash
+        :caption: ECS cluster created without capacity providers
+
+        aws ecs create-cluster --cluster-name testing
+        {
+            "cluster": {
+                "clusterArn": "arn:aws:ecs:eu-west-1:2111111111111:cluster/testing",
+                "clusterName": "testing",
+                "status": "ACTIVE",
+                "registeredContainerInstancesCount": 0,
+                "runningTasksCount": 0,
+                "pendingTasksCount": 0,
+                "activeServicesCount": 0,
+                "statistics": [],
+                "tags": [],
+                "settings": [
+                    {
+                        "name": "containerInsights",
+                        "value": "enabled"
+                    }
+                ],
+                "capacityProviders": [],
+                "defaultCapacityProviderStrategy": []
+            }
+        }
+
+    .. code-block:: json
+        :caption: Cluster created in the AWS Console which automatically adds FARGATE providers
+
+        [
+          {
+            "clusterArn": "arn:aws:ecs:eu-west-1:211111111111:cluster/testinginconsole",
+            "clusterName": "testinginconsole",
+            "status": "ACTIVE",
+            "registeredContainerInstancesCount": 0,
+            "runningTasksCount": 0,
+            "pendingTasksCount": 0,
+            "activeServicesCount": 0,
+            "statistics": [],
+            "tags": [],
+            "settings": [
+              {
+                "name": "containerInsights",
+                "value": "enabled"
+              }
+            ],
+            "capacityProviders": [
+              "FARGATE_SPOT",
+              "FARGATE"
+            ],
+            "defaultCapacityProviderStrategy": []
+          }
+        ]
+
+    .. seealso::
+
+        `Add CapacityProviders via the CLI`_
+
 .. _Dependency reference for more information: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ecs-taskdefinition-containerdependency.html
+.. _Add CapacityProviders via the CLI: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/fargate-capacity-providers.html#fargate-capacity-providers-existing-cluster
