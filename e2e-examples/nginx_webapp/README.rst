@@ -257,9 +257,13 @@ resources. You could also use **up** that will either create or update a new / e
     # For the following command, we run docker with our own user so that the generated files
     # do not require sudo access to remove.
 
+    # Using docker
     docker run -u $(id -u):$(id -u) -it --rm -v ~/.aws:/tmp/.aws -e HOME=/tmp -v $PWD:/tmp \
     public.ecr.aws/compose-x/compose-x:latest \
     plan -f docker-compose.yaml -f aws-compose-x.yaml -n frontend-app
+
+    # Using compose-x after install
+    ecs-compose-x plan -f docker-compose.yaml -f aws-compose-x.yaml -n frontend-app
 
     # Output should look like when using plan
     # We create a new VPC and ECS Cluster given we did not specify existing ones.
