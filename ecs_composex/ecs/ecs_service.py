@@ -465,7 +465,11 @@ class Service(object):
                 }
             ),
             PropagateTags="SERVICE",
-            PlatformVersion=Ref(ecs_params.FARGATE_VERSION),
+            PlatformVersion=If(
+                ecs_conditions.USE_FARGATE_CON_T,
+                Ref(ecs_params.FARGATE_VERSION),
+                Ref(AWS_NO_VALUE),
+            ),
             **attrs,
         )
         family.service_definition = self.ecs_service

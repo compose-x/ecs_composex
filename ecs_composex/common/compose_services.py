@@ -242,6 +242,7 @@ class ComposeService(object):
         self.mem_alloc = None
         self.mem_resa = None
         self.cpu_amount = None
+        self.compute_platform = "FARGATE"
         self.families = []
         self.my_family = None
         self.is_aws_sidecar = False
@@ -1021,6 +1022,27 @@ class ComposeService(object):
             self.ephemeral_storage = int(ephemeral_storage)
             LOG.info(f"{self.name} - {storage_key} set to {self.ephemeral_storage}")
 
+    def define_compute_platform(self, deployment):
+        """
+        Determines whether to use ECS with EC2 or Fargate
+
+        :param dict deployment:
+        """
+        compute_key = "ecs.compute.platform"
+        labels = "labels"
+        print(deployment)
+        allowed_values = ["EC2", "FARGATE", "EXTERNAL"]
+        if keyisset(labels, deployment) and keyisset(compute_key, deployment[labels]):
+            if not deployment[labels][compute_key] in allowed_values:
+                raise ValueError(
+                    f"ecs.compute.platform is {deployment[labels][compute_key]}"
+                    "Must be one of",
+                    allowed_values,
+                )
+            self.compute_platform = deployment[labels][compute_key]
+            print(self.name, self.compute_platform)
+
+
     def define_start_condition(self, deployment):
         """
         Method to define the start condition success for the container
@@ -1102,6 +1124,7 @@ class ComposeService(object):
         self.set_compute_resources(self.definition[deploy])
         self.set_replicas(self.definition[deploy])
         self.define_start_condition(self.definition[deploy])
+        self.define_compute_platform(self.definition[deploy])
         self.define_essential(self.definition[deploy])
         self.set_update_config(self.definition[deploy])
         self.define_ephemeral_storage_condition(self.definition[deploy])
@@ -1292,6 +1315,8 @@ class ComposeFamily(object):
     Class to group services logically to create the final ECS Service
     """
 
+    default_compute_platform = "FARGATE"
+
     def __init__(self, services, family_name):
         self.services = services
         self.ordered_services = []
@@ -1316,6 +1341,8 @@ class ComposeFamily(object):
         self.task_role = None
         self.scalable_target = None
         self.ecs_service = None
+        self.compute_platform = "FARGATE"
+        self.set_compute_platform()
         self.task_logging_options = {}
         self.stack_parameters = {}
         self.alarms = {}
@@ -1356,6 +1383,7 @@ class ComposeFamily(object):
                     if service_depends_on not in self.services_depends_on:
                         self.services_depends_on.append(service_depends_on)
 
+<<<<<<< HEAD
     def set_task_ephemeral_storage(self):
         """
         If any service ephemeral storage is defined above, sets the ephemeral storage to the maximum of them.
@@ -1363,6 +1391,39 @@ class ComposeFamily(object):
         max_storage = max([service.ephemeral_storage for service in self.services])
         if max_storage >= 21:
             self.task_ephemeral_storage = max_storage
+=======
+    def set_compute_platform(self):
+        """
+        Iterates over all services and if ecs.compute.platform
+        :return:
+        """
+        if self.compute_platform != self.default_compute_platform:
+            LOG.warning(
+                f"{self.name} - The compute platform is already overridden to {self.compute_platform}"
+            )
+            if self.stack:
+                self.stack.Parameters.update(
+                    {ecs_params.LAUNCH_TYPE: self.compute_platform}
+                )
+            for service in self.services:
+                setattr(service, "compute_platform", self.compute_platform)
+        elif not all(
+            service.compute_platform == self.compute_platform
+            for service in self.services
+        ):
+            for service in self.services:
+                if service.compute_platform != self.compute_platform:
+                    platform = service.compute_platform
+                    LOG.info(
+                        f"{self.name} - At least one service is defined not to be on FARGATE."
+                        f" Overriding to {platform}"
+                    )
+                    self.compute_platform = platform
+                    if self.stack:
+                        self.stack.Parameters.update(
+                            {ecs_params.LAUNCH_TYPE: self.compute_platform}
+                        )
+>>>>>>> d4bdcb7 (Adds deploy label ecs.compute.platform to override from FARGATE)
 
     def set_xray(self):
         """

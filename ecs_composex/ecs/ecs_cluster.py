@@ -43,6 +43,41 @@ def get_default_cluster_config():
     )
 
 
+def evaluate_capacity_providers(cluster_def):
+    """
+    When using Looked'Up cluster, if there is no Fargate Capacity Provider, defined on cluster,
+    rollback to EC2 mode.
+
+    :param dict cluster_def:
+    :return: The override Capacity Provider
+    :rtype: str|None
+    """
+    providers = []
+    providers_strategies = []
+    if keyisset("capacityProviders", cluster_def):
+        providers = cluster_def["capacityProviders"]
+    if keyisset("defaultCapacityProviderStrategy", cluster_def):
+        providers_strategies = [
+            provider["capacityProvider"]
+            for provider in cluster_def["defaultCapacityProviderStrategy"]
+        ]
+    if not providers and not providers_strategies:
+        return "EC2"
+    if providers and providers_strategies:
+        for name in providers_strategies:
+            if name not in providers:
+                providers.append(name)
+        if "FARGATE" not in providers or "FARGATE_SPOT" in providers:
+            return "EC2"
+    fargate_present = "FARGATE" in providers or "FARGATE" in providers_strategies
+    fargate_spot_present = (
+        "FARGATE_SPOT" in providers or "FARGATE_SPOT" in providers_strategies
+    )
+    if not fargate_present and not fargate_spot_present:
+        return "EC2"
+    return None
+
+
 def lookup_ecs_cluster(session, cluster_lookup):
     """
     Function to find the ECS Cluster.
@@ -70,7 +105,8 @@ def lookup_ecs_cluster(session, cluster_lookup):
             LOG.info(
                 f"Found ECS Cluster {cluster_lookup}. Setting {CLUSTER_NAME.title} accordingly."
             )
-            return cluster_r["clusters"][0]["clusterName"]
+            override = evaluate_capacity_providers(cluster_r["clusters"][0])
+            return cluster_r["clusters"][0]["clusterName"], override
     except ClientError as error:
         LOG.error(error)
         raise
@@ -138,11 +174,13 @@ def add_ecs_cluster(root_stack, settings):
                 CLUSTER_NAME.title: {"Name": settings.compose_content[RES_KEY]["Use"]}
             }
         elif keyisset("Lookup", settings.compose_content[RES_KEY]):
-            cluster_name = lookup_ecs_cluster(
+            cluster_r = lookup_ecs_cluster(
                 settings.session, settings.compose_content[RES_KEY]["Lookup"]
             )
-            if cluster_name:
-                cluster_mapping = {CLUSTER_NAME.title: {"Name": cluster_name}}
+            if cluster_r[0]:
+                cluster_mapping = {CLUSTER_NAME.title: {"Name": cluster_r[0]}}
+            if cluster_r[1] is not None:
+                settings.ecs_cluster_platform_override = cluster_r[1]
         elif keyisset("Properties", settings.compose_content[RES_KEY]):
             cluster = define_cluster(settings.compose_content[RES_KEY])
             root_stack.stack_template.add_resource(cluster)

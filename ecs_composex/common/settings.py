@@ -172,6 +172,7 @@ class ComposeXSettings(object):
         self.evaluate_private_namespace()
         self.name = kwargs[self.name_arg]
         self.ecs_cluster = None
+        self.ecs_cluster_platform_override = None
         self.ignore_ecr_findings = keyisset(self.ecr_arg, kwargs)
 
     def evaluate_private_namespace(self):
