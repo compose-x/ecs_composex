@@ -164,10 +164,10 @@ description = "The AWS SDK for Python"
 name = "boto3"
 optional = false
 python-versions = ">= 3.6"
-version = "1.18.25"
+version = "1.18.26"
 
 [package.dependencies]
-botocore = ">=1.21.25,<1.22.0"
+botocore = ">=1.21.26,<1.22.0"
 jmespath = ">=0.7.1,<1.0.0"
 s3transfer = ">=0.5.0,<0.6.0"
 
@@ -180,7 +180,7 @@ description = "Low-level, data-driven core of boto 3."
 name = "botocore"
 optional = false
 python-versions = ">= 3.6"
-version = "1.21.25"
+version = "1.21.26"
 
 [package.dependencies]
 jmespath = ">=0.7.1,<1.0.0"
@@ -460,7 +460,7 @@ description = "JSON Schema Specifications for ECS Compose-X"
 name = "ecs-composex-specs"
 optional = false
 python-versions = ">=3.7,<4.0"
-version = "0.2.7"
+version = "0.2.8"
 
 [package.dependencies]
 jsonschema = ">=3.2.0,<4.0.0"
@@ -1305,7 +1305,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytes
 ecrscan = ["ecr-scan-reporter"]
 
 [metadata]
-content-hash = "048ac4d9994e948128b81160b2765daed464b17362204fc3125127ca9ee9d521"
+content-hash = "341d634fee741e33937df4ed368cf8f95535112bb74a5b402f01445eb7cd095c"
 lock-version = "1.1"
 python-versions = "^3.7"
 
@@ -1366,12 +1366,12 @@ black = [
     {file = "black-21.7b0.tar.gz", hash = "sha256:c8373c6491de9362e39271630b65b964607bc5c79c83783547d76c839b3aa219"},
 ]
 boto3 = [
-    {file = "boto3-1.18.25-py3-none-any.whl", hash = "sha256:057196ac15de4de2221a24a3a0a41692414fa1dd697994d062ebd447163265e7"},
-    {file = "boto3-1.18.25.tar.gz", hash = "sha256:852e776cea4287f74edcb45564f8345fb6b0168dde0fd5bf46668b94c3f21177"},
+    {file = "boto3-1.18.26-py3-none-any.whl", hash = "sha256:3eedef0719639892dc263bed7adfc00821544388e3d86a6fa31d82f936a6b613"},
+    {file = "boto3-1.18.26.tar.gz", hash = "sha256:39ed0f5004b671e4a4241ae23023ad63674cd25f766bfe1617cfc809728bc3e0"},
 ]
 botocore = [
-    {file = "botocore-1.21.25-py3-none-any.whl", hash = "sha256:201e10d3b1b40d65b7c9214be7087d78ed65de00e7362bd1e020741301d09fbc"},
-    {file = "botocore-1.21.25.tar.gz", hash = "sha256:b9820ee29d70059c9b0e2a69ec13ebf80f4a0bc85f47578f17e951438c506b2d"},
+    {file = "botocore-1.21.26-py3-none-any.whl", hash = "sha256:37f77bf5f72c86d9b5f38e107c3822da66dbf0ef123768a6e80a58590c2796bf"},
+    {file = "botocore-1.21.26.tar.gz", hash = "sha256:911246faac450e13a3ef0e81993dd9bd9c282a7c0f4546bfe8cccf9649364cef"},
 ]
 cached-property = [
     {file = "cached-property-1.5.2.tar.gz", hash = "sha256:9fa5755838eecbb2d234c3aa390bd80fbd3ac6b6869109bfc1b499f7bd89a130"},
@@ -1567,8 +1567,8 @@ ecr-scan-reporter = [
     {file = "ecr_scan_reporter-0.3.0.tar.gz", hash = "sha256:29ace7c90512996f93fb63ce73e168e7b33231f76e418e785a6a9ee712718b07"},
 ]
 ecs-composex-specs = [
-    {file = "ecs_composex_specs-0.2.7-py3-none-any.whl", hash = "sha256:dbf77cf052363b818099b7e8c82d636bb1c999d8530eda7e1c3d2feab186e98b"},
-    {file = "ecs_composex_specs-0.2.7.tar.gz", hash = "sha256:0377943fa90236d79024d227762c0d974b69b16c2dbcd75f0cd8f0782d351cb8"},
+    {file = "ecs_composex_specs-0.2.8-py3-none-any.whl", hash = "sha256:7d664729143c8dc55fdf69afb7dbfcb8dca746a2949f00e83743597ab8fb0a8c"},
+    {file = "ecs_composex_specs-0.2.8.tar.gz", hash = "sha256:8f94113e08d8795adec4aad6f5aee32272c05805e5428fd74998416c6af75467"},
 ]
 filelock = [
     {file = "filelock-3.0.12-py3-none-any.whl", hash = "sha256:929b7d63ec5b7d6b71b0fa5ac14e030b3f70b75747cef1b10da9b879fef15836"},
