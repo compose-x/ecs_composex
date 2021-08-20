@@ -146,15 +146,16 @@ If you have not already, let's create a new ECR Repository, and let's log into i
     # Create the new ECR Repository
     aws ecr create-repository --repository-name frontend
 
+    export AWS_ACCOUNT_ID=$(aws sts get-caller-identity | jq -r .Account)
     # We define the Registy URI based on the region and account ID
-    REGISTRY_URI=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION:-$AWS_DEFAULT_REGION}.amazonaws.com/
+    export REGISTRY_URI=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION:-$AWS_DEFAULT_REGION}.amazonaws.com/
 
     # We then log in.
     aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin ${REGISTRY_URI}
 
     # We rebuild the image even if there is no change, so that the image gets tagged properly
     docker-compose -f docker-compose.yaml build
-    docker-compose push
+    docker-compose -f docker-compose.yaml push
 
 And that's it, our image has been built and pushed into AWS ECR. So what to do now to get it deployed?
 
