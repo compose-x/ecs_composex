@@ -39,6 +39,10 @@ x-docdb:
     Services:
       - name: app03
         access: RW
+        SecretsMappings:
+          Mappings:
+            - SecretKey: host
+              VarName: DB_HOST
     MacroParameters:
       Instances:
         - DBInstanceClass: db.r5.large
