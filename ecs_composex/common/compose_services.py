@@ -2316,9 +2316,10 @@ class ComposeFamily(object):
                     "CapacityProviderStrategy",
                     Ref(AWS_NO_VALUE),
                 )
-            self.stack.Parameters.update(
-                {ecs_params.LAUNCH_TYPE.title: self.launch_type}
-            )
+                if self.stack:
+                    self.stack.Parameters.update(
+                        {ecs_params.LAUNCH_TYPE.title: self.launch_type}
+                    )
         else:
             self.merge_capacity_providers()
             if (
