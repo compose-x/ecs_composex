@@ -4,13 +4,14 @@
 
 from os import path
 
+from ecs_composex.common import NONALPHANUM
 from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.common.ecs_composex import X_KEY
 from ecs_composex.vpc.vpc_params import SG_ID_TYPE
 
 MOD_KEY = path.basename(path.dirname(path.abspath(__file__)))
 RES_KEY = f"{X_KEY}{MOD_KEY}"
-
+MAPPINGS_KEY = NONALPHANUM.sub("", MOD_KEY)
 
 DOCDB_NAME_T = "DocDBName"
 DOCDB_ID_T = "ClusterResourceId"

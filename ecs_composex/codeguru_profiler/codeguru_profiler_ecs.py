@@ -5,6 +5,7 @@
 
 from ecs_composex.codeguru_profiler.codeguru_profiler_aws import lookup_profile_config
 from ecs_composex.codeguru_profiler.codeguru_profiler_params import (
+    MAPPINGS_KEY,
     PROFILER_ARN,
     PROFILER_NAME,
 )
@@ -42,12 +43,13 @@ def codeguru_profiler_to_ecs(resources, services_stack, res_root_stack, settings
     """
     resource_mappings = {}
     new_resources = [
-        resources[res_name] for res_name in resources if not resources[res_name].lookup
+        resources[res_name]
+        for res_name in resources
+        if resources[res_name].cfn_resource
     ]
     lookup_resources = [
-        resources[res_name] for res_name in resources if resources[res_name].lookup
+        resources[res_name] for res_name in resources if resources[res_name].mappings
     ]
-    define_lookup_profile_mappings(resource_mappings, lookup_resources, settings)
     for res in new_resources:
         res.init_outputs()
         res.generate_outputs()
@@ -57,5 +59,5 @@ def codeguru_profiler_to_ecs(resources, services_stack, res_root_stack, settings
         )
     for res in lookup_resources:
         handle_lookup_resource(
-            resource_mappings, "codeguru", res, PROFILER_ARN, [PROFILER_NAME]
+            resource_mappings, MAPPINGS_KEY, res, PROFILER_ARN, [PROFILER_NAME]
         )

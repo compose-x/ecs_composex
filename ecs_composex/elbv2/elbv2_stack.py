@@ -7,6 +7,7 @@ Module to handle elbv2.
 """
 
 import re
+import warnings
 from copy import deepcopy
 from json import dumps
 
@@ -1242,11 +1243,29 @@ class XStack(ComposeXStack):
 
     def __init__(self, title, settings, **kwargs):
         set_resources(settings, Elbv2, RES_KEY, MOD_KEY)
+        x_resources = settings.compose_content[RES_KEY].values()
         new_resources = [
-            lb
-            for lb in settings.compose_content[RES_KEY].values()
-            if not lb.lookup and not lb.use
+            resource
+            for resource in x_resources
+            if (resource.properties or resource.parameters or resource.uses_default)
+            and not (resource.lookup or resource.use)
         ]
+        lookup_resources = [
+            resource
+            for resource in x_resources
+            if resource.lookup
+            and not (resource.properties or resource.parameters or resource.use)
+        ]
+        use_resources = [
+            resource
+            for resource in x_resources
+            if resource.use
+            and not (resource.properties or resource.parameters or resource.lookup)
+        ]
+        if lookup_resources or use_resources:
+            warnings.warn(
+                f"{RES_KEY} - Lookup not supported. You can only create new resources."
+            )
         if not new_resources:
             self.is_void = True
             return

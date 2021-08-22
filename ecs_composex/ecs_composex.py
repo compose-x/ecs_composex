@@ -334,13 +334,18 @@ def evaluate_docker_configs(settings):
             if not keyisset("x-docker_opts", service.definition):
                 continue
             docker_config = service.definition["x-docker_opts"]
-            if keyisset("InterpolateWithDigest", docker_config):
-                if not invalidate_image_from_ecr(service, mute=True):
-                    LOG.warn(
-                        "You set InterpolateWithDigest to true for x-docker for an image in AWS ECR."
-                        "Please refer to x-ecr"
+            if SCANS_POSSIBLE:
+                if keyisset("InterpolateWithDigest", docker_config):
+                    if not invalidate_image_from_ecr(service, mute=True):
+                        LOG.warn(
+                            "You set InterpolateWithDigest to true for x-docker for an image in AWS ECR."
+                            "Please refer to x-ecr"
+                        )
+                        continue
+                else:
+                    warnings.warn(
+                        "Run pip install ecs_composex[ecrscan] to use x-ecr features"
                     )
-                    continue
                 service.retrieve_image_digest()
                 if service.image_digest:
                     service.image = image_tag_re.sub(

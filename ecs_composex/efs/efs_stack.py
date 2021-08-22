@@ -5,6 +5,7 @@
 """
 Module to handle the creation of the root EFS stack
 """
+import warnings
 
 from troposphere import GetAtt, Ref, Select, Sub
 from troposphere.ec2 import SecurityGroup
@@ -126,15 +127,33 @@ class XStack(ComposeXStack):
 
     def __init__(self, name, settings, **kwargs):
         set_resources(settings, Efs, RES_KEY, MOD_KEY)
+        x_resources = settings.compose_content[RES_KEY].values()
         new_resources = [
-            fs
-            for fs in settings.compose_content[RES_KEY].values()
-            if not fs.lookup and not fs.use and fs.properties
+            resource
+            for resource in x_resources
+            if (resource.properties or resource.parameters or resource.uses_default)
+            and not (resource.lookup or resource.use)
+        ]
+        lookup_resources = [
+            resource
+            for resource in x_resources
+            if resource.lookup
+            and not (resource.properties or resource.parameters or resource.use)
+        ]
+        use_resources = [
+            resource
+            for resource in x_resources
+            if resource.use
+            and not (resource.properties or resource.parameters or resource.lookup)
         ]
         if new_resources:
             stack_template = create_efs_stack(settings, new_resources)
             super().__init__(name, stack_template, **kwargs)
         else:
             self.is_void = True
+        if lookup_resources or use_resources:
+            warnings.warn(
+                f"{RES_KEY} - Lookup not supported. You can only create new resources"
+            )
         for resource in settings.compose_content[RES_KEY].values():
             resource.stack = self

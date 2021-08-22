@@ -45,10 +45,11 @@ def lookup_profile_config(lookup, session):
     :param boto3.session.Session session: Boto3 session for clients
     :return:
     """
+    codeguru_profiler_re = re.compile(
+        r"(?:^arn:aws(?:-[a-z]+)?:codeguru-profiler:[\S]+:[0-9]{12}:profilingGroup/)([\S]+)$"
+    )
     lookup_types = {
-        "codeguru-profiler": {
-            "regexp": r"(?:^arn:aws(?:-[a-z]+)?:codeguru-profiler:[\S]+:[0-9]{12}:profilingGroup/)([\S]+)$"
-        },
+        "codeguru-profiler": {"regexp": codeguru_profiler_re.pattern},
     }
     lookup_session = define_lookup_role_from_info(lookup, session)
     profile_arn = find_aws_resource_arn_from_tags_api(

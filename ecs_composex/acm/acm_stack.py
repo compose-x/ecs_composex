@@ -7,6 +7,7 @@ Main module for ACM
 """
 
 import re
+import warnings
 from copy import deepcopy
 from warnings import warn
 
@@ -16,9 +17,14 @@ from troposphere.certificatemanager import Certificate as AcmCert
 from troposphere.certificatemanager import DomainValidationOption
 
 from ecs_composex.acm.acm_aws import lookup_cert_config
-from ecs_composex.acm.acm_params import MOD_KEY, RES_KEY
+from ecs_composex.acm.acm_params import MAPPINGS_KEY, MOD_KEY, RES_KEY
 from ecs_composex.common import NONALPHANUM
-from ecs_composex.common.compose_resources import set_resources
+from ecs_composex.common.compose_resources import (
+    set_lookup_resources,
+    set_new_resources,
+    set_resources,
+    set_use_resources,
+)
 from ecs_composex.resources_import import import_record_properties
 
 
@@ -130,17 +136,11 @@ def create_acm_mappings(resources, settings):
 
 
 def init_acm_certs(settings, dns_settings, root_stack):
-    set_resources(settings, Certificate, RES_KEY, MOD_KEY)
-    new_resources = [
-        settings.compose_content[RES_KEY][cert_name]
-        for cert_name in settings.compose_content[RES_KEY]
-        if not settings.compose_content[RES_KEY][cert_name].lookup
-    ]
-    lookup_resources = [
-        settings.compose_content[RES_KEY][cert_name]
-        for cert_name in settings.compose_content[RES_KEY]
-        if settings.compose_content[RES_KEY][cert_name].lookup
-    ]
+    set_resources(settings, Certificate, RES_KEY, MOD_KEY, mapping_key=MAPPINGS_KEY)
+    x_resources = settings.compose_content[RES_KEY].values()
+    new_resources = set_new_resources(x_resources, RES_KEY, False)
+    lookup_resources = set_lookup_resources(x_resources, RES_KEY)
+    use_resources = set_use_resources(x_resources, RES_KEY, False)
     if new_resources:
         define_acm_certs(new_resources, dns_settings, root_stack)
     if new_resources and dns_settings.public_zone.create_zone:
@@ -149,6 +149,11 @@ def init_acm_certs(settings, dns_settings, root_stack):
             "CFN Will fail if the ACM cert validation is not complete."
         )
     if lookup_resources:
+        if not keyisset(RES_KEY, settings.mappings):
+            settings.mapping[RES_KEY] = {}
         mappings = create_acm_mappings(lookup_resources, settings)
         if mappings:
             root_stack.stack_template.add_mapping(MOD_KEY, mappings)
+            settings.mappings = mappings
+    if use_resources:
+        warnings.warn("x-acm.Use is not yet supported.")

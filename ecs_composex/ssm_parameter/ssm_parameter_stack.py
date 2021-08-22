@@ -15,9 +15,16 @@ from troposphere.ssm import Parameter as CfnSsmParameter
 from yaml import Loader
 
 from ecs_composex.common import LOG, add_outputs, build_template
-from ecs_composex.common.compose_resources import XResource, set_resources
+from ecs_composex.common.compose_resources import (
+    XResource,
+    set_lookup_resources,
+    set_new_resources,
+    set_resources,
+    set_use_resources,
+)
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.resources_import import import_record_properties
+from ecs_composex.ssm_parameter.ssm_parameter_ecs import create_ssm_param_mappings
 from ecs_composex.ssm_parameter.ssm_params import (
     MAPPINGS_KEY,
     MOD_KEY,
@@ -167,20 +174,21 @@ class XStack(ComposeXStack):
         set_resources(
             settings, SsmParameter, RES_KEY, MOD_KEY, mapping_key=MAPPINGS_KEY
         )
-        new_resources = [
-            resource
-            for resource in settings.compose_content[RES_KEY].values()
-            if not resource.lookup and not resource.use
-        ]
+        x_resources = settings.compose_content[RES_KEY].values()
+        new_resources = set_new_resources(x_resources, RES_KEY, False)
+        lookup_resources = set_lookup_resources(x_resources, RES_KEY)
+        use_resources = set_use_resources(x_resources, RES_KEY, False)
         if new_resources:
             template = build_template("Parent template for SSM in ECS Compose-X")
             super().__init__(title, stack_template=template, **kwargs)
             render_new_parameters(new_resources, self)
         else:
             self.is_void = True
-
         for resource in settings.compose_content[RES_KEY].values():
             resource.stack = self
-        for resource in new_resources:
-            if resource.lookup:
-                resource.stack = self
+        if lookup_resources:
+            if not keyisset(RES_KEY, settings.mappings):
+                settings.mappings[RES_KEY] = {}
+            create_ssm_param_mappings(
+                settings.mappings[RES_KEY], lookup_resources, settings
+            )

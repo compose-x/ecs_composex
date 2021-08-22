@@ -10,7 +10,11 @@ from compose_x_common.compose_x_common import keyisset
 from troposphere import FindInMap, Select
 
 from ecs_composex.elasticache.elasticache_aws import lookup_cluster_resource
-from ecs_composex.elasticache.elasticache_params import CLUSTER_SG
+from ecs_composex.elasticache.elasticache_params import (
+    CLUSTER_SG,
+    MAPPINGS_KEY,
+    RES_KEY,
+)
 from ecs_composex.tcp_resources_settings import (
     add_security_group_ingress,
     handle_new_tcp_resource,
@@ -64,12 +68,13 @@ def elasticache_to_ecs(resources, services_stack, res_root_stack, settings):
     :param ecs_composex.common.stacks.ComposeXStack res_root_stack:
     :param ecs_composex.common.settings.ComposeXSettings settings:
     """
-    db_mappings = {}
     new_resources = [
-        resources[res_name] for res_name in resources if not resources[res_name].lookup
+        resources[res_name]
+        for res_name in resources
+        if resources[res_name].cfn_resource
     ]
     lookup_resources = [
-        resources[res_name] for res_name in resources if resources[res_name].lookup
+        resources[res_name] for res_name in resources if resources[res_name].mappings
     ]
     for new_res in new_resources:
         handle_new_tcp_resource(
@@ -78,7 +83,8 @@ def elasticache_to_ecs(resources, services_stack, res_root_stack, settings):
             port_parameter=new_res.port_attr,
             sg_parameter=CLUSTER_SG,
         )
-    create_lookup_mappings(db_mappings, lookup_resources, settings)
     for lookup_res in lookup_resources:
-        if keyisset(lookup_res.logical_name, db_mappings):
-            link_cluster_to_service(lookup_res, db_mappings, mapping_name="ElastiCache")
+        if keyisset(lookup_res.logical_name, settings.mappings[RES_KEY]):
+            link_cluster_to_service(
+                lookup_res, settings.mappings[RES_KEY], mapping_name=MAPPINGS_KEY
+            )

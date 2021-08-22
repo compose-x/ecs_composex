@@ -10,10 +10,12 @@ from os import path
 
 from troposphere import Parameter
 
+from ecs_composex.common import NONALPHANUM
 from ecs_composex.common.ecs_composex import X_KEY
 
 MOD_KEY = f"{path.basename(path.dirname(path.abspath(__file__)))}"
 RES_KEY = f"{X_KEY}{MOD_KEY}"
+MAPPINGS_KEY = NONALPHANUM.sub("", MOD_KEY)
 
 VALIDATION_DOMAIN_NAME_T = "ValidationDomainName"
 VALIDATION_DOMAIN_NAME = Parameter(

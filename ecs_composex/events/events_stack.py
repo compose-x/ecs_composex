@@ -5,9 +5,16 @@
 """
 Module to define the entry point for AWS Event Rules
 """
+import warnings
 
 from ecs_composex.common import LOG, NONALPHANUM, build_template
-from ecs_composex.common.compose_resources import XResource, set_resources
+from ecs_composex.common.compose_resources import (
+    XResource,
+    set_lookup_resources,
+    set_new_resources,
+    set_resources,
+    set_use_resources,
+)
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME, FARGATE_VERSION
 from ecs_composex.events.events_params import MOD_KEY, RES_KEY
@@ -97,12 +104,11 @@ class XStack(ComposeXStack):
         :param dict kwargs:
         """
         set_resources(settings, Rule, RES_KEY, MOD_KEY)
-        new_resources = [
-            event
-            for event in settings.compose_content[RES_KEY].values()
-            if not event.lookup and not event.use
-        ]
-        if new_resources:
+        x_resources = settings.compose_content[RES_KEY].values()
+        new_resources = set_new_resources(x_resources, RES_KEY, False)
+        lookup_resources = set_lookup_resources(x_resources, RES_KEY)
+        use_resources = set_use_resources(x_resources, RES_KEY, False)
+        if new_resources or use_resources:
             params = {
                 CLUSTER_NAME.title: settings.ecs_cluster,
             }
@@ -114,3 +120,7 @@ class XStack(ComposeXStack):
             create_events_template(self, settings, new_resources)
         else:
             self.is_void = True
+        if lookup_resources or use_resources:
+            warnings.warn(
+                f"{RES_KEY} does not support Lookup. You can only create new resources"
+            )

@@ -11,7 +11,12 @@ from ecs_composex.resource_settings import (
     handle_resource_to_services,
 )
 from ecs_composex.ssm_parameter.ssm_parameter_aws import lookup_param_config
-from ecs_composex.ssm_parameter.ssm_params import SSM_PARAM_ARN, SSM_PARAM_NAME
+from ecs_composex.ssm_parameter.ssm_params import (
+    MAPPINGS_KEY,
+    RES_KEY,
+    SSM_PARAM_ARN,
+    SSM_PARAM_NAME,
+)
 
 
 def create_ssm_param_mappings(mapping, resources, settings):
@@ -34,7 +39,6 @@ def ssm_parameter_to_ecs(resources, services_stack, res_root_stack, settings):
     Function to apply SSM Parameters settings to ECS Services
     :return:
     """
-    resources_mappings = {}
     new_resources = [
         resources[res_name]
         for res_name in resources
@@ -47,7 +51,6 @@ def ssm_parameter_to_ecs(resources, services_stack, res_root_stack, settings):
         and not resources[res_name].properties
         and not resources[res_name].use
     ]
-    create_ssm_param_mappings(resources_mappings, lookup_resources, settings)
     for new_res in new_resources:
         handle_resource_to_services(
             new_res,
@@ -60,7 +63,7 @@ def ssm_parameter_to_ecs(resources, services_stack, res_root_stack, settings):
         )
     for resource in lookup_resources:
         handle_lookup_resource(
-            resources_mappings,
+            settings.mappings[RES_KEY],
             resource.mapping_key,
             resource,
             SSM_PARAM_ARN,

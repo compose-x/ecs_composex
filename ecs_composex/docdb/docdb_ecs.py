@@ -9,7 +9,13 @@ Module to link DocDB cluster to ECS Services.
 from compose_x_common.compose_x_common import keyisset
 
 from ecs_composex.common import LOG
-from ecs_composex.docdb.docdb_params import DOCDB_PORT, DOCDB_SECRET, DOCDB_SG
+from ecs_composex.docdb.docdb_params import (
+    DOCDB_PORT,
+    DOCDB_SECRET,
+    DOCDB_SG,
+    MAPPINGS_KEY,
+    RES_KEY,
+)
 from ecs_composex.rds.rds_ecs import (
     DB_SECRET_T,
     import_dbs,
@@ -71,7 +77,6 @@ def docdb_to_ecs(resources, services_stack, res_root_stack, settings):
     :param ecs_composex.common.stacks.ComposeXStack res_root_stack:
     :param ecs_composex.common.settings.ComposeXSettings settings:
     """
-    db_mappings = {}
     new_resources = [
         resources[res_name] for res_name in resources if not resources[res_name].lookup
     ]
@@ -86,7 +91,8 @@ def docdb_to_ecs(resources, services_stack, res_root_stack, settings):
             sg_parameter=DOCDB_SG,
             secret_parameter=DOCDB_SECRET,
         )
-    create_lookup_mappings(db_mappings, lookup_resources, settings)
     for lookup_res in lookup_resources:
-        if keyisset(lookup_res.logical_name, db_mappings):
-            import_dbs(lookup_res, db_mappings, mapping_name="DocDb")
+        if keyisset(lookup_res.logical_name, settings.mappings[RES_KEY]):
+            import_dbs(
+                lookup_res, settings.mappings[RES_KEY], mapping_name=MAPPINGS_KEY
+            )

@@ -5,7 +5,7 @@
 """
 Module to define the ComposeX Resources into a simple object to make it easier to navigate through.
 """
-
+import warnings
 from copy import deepcopy
 from re import sub
 
@@ -18,6 +18,67 @@ from ecs_composex.common.cfn_conditions import USE_STACK_NAME_CON_T
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME, Parameter
 from ecs_composex.common.ecs_composex import CFN_EXPORT_DELIMITER as DELIM
 from ecs_composex.common.ecs_composex import X_KEY
+
+
+def set_new_resources(x_resources, res_key, supports_uses_default=False):
+    """
+    Function to create a list of new resources. Check if empty resource is supported
+
+    :param list[XResource] x_resources:
+    :param str res_key:
+    :param bool supports_uses_default:
+    :return: list of resources to create
+    :rtype: list[XResource] x_resources:
+    """
+    new_resources = []
+    for resource in x_resources:
+        if (
+            resource.properties or resource.parameters or resource.uses_default
+        ) and not (resource.lookup or resource.use):
+            if resource.uses_default and not supports_uses_default:
+                raise KeyError(
+                    f"{res_key}.{resource.name} - Requires either or both Properties or MacroParameters. Got neither",
+                    resource.definition.keys(),
+                )
+            new_resources.append(resource)
+    return new_resources
+
+
+def set_lookup_resources(x_resources, res_key):
+    """
+
+    :param list[XResource] x_resources:
+    :param str res_key:
+    :return: list of resources to import from Lookup
+    :rtype: list[XResource] x_resources:
+    """
+    lookup_resources = [
+        resource
+        for resource in x_resources
+        if resource.lookup
+        and not (resource.properties or resource.parameters or resource.use)
+    ]
+    return lookup_resources
+
+
+def set_use_resources(x_resources, res_key, use_supported=False):
+    """
+
+    :param list[XResource] x_resources:
+    :param str res_key:
+    :param bool use_supported:
+    :return: list of resources to import from Use
+    :rtype: list[XResource] x_resources:
+    """
+    use_resources = [
+        resource
+        for resource in x_resources
+        if resource.use
+        and not (resource.properties or resource.parameters or resource.lookup)
+    ]
+    if not use_supported and use_resources:
+        warnings.warn(f"{res_key}.Use is not (yet) supported")
+    return use_resources
 
 
 def set_resources(settings, resource_class, res_key, mod_key=None, mapping_key=None):
@@ -126,6 +187,9 @@ class XResource(object):
             {}
             if not keyisset("MacroParameters", self.definition)
             else self.definition["MacroParameters"]
+        )
+        self.uses_default = not any(
+            [self.lookup, self.parameters, self.use, self.properties]
         )
         self.cfn_resource = None
         self.output_properties = {}
