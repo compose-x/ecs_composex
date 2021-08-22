@@ -26,13 +26,27 @@ def nonexisting_cluster():
     return {"x-cluster": {"Lookup": "test2"}}
 
 
-def test_ecs_cluster_lookup(existing_cluster, nonexisting_cluster):
+@pytest.fixture
+def existing_cluster_no_fargate():
+    return {
+        "x-cluster": {"Lookup": "testing"},
+        "services": {
+            "servicea": {
+                "image": "nginx/nginx",
+                "deploy": {"labels": {"ecs.compute.platform": "FARGATE"}},
+            }
+        },
+    }
+
+
+def test_ecs_cluster_lookup(existing_cluster):
     """
     Function to test the ECS Cluster Lookup
     """
     here = path.abspath(path.dirname(__file__))
     session = boto3.session.Session()
-    pill = placebo.attach(session, data_path=f"{here}/x_ecs")
+    pill = placebo.attach(session, data_path=f"{here}/x_ecs/existing_cluster")
+    # pill.record()
     pill.playback()
     template = Template()
     stack = ComposeXStack("test", stack_template=template)
@@ -46,9 +60,16 @@ def test_ecs_cluster_lookup(existing_cluster, nonexisting_cluster):
         },
     )
     add_ecs_cluster(stack, settings)
-    print(stack.stack_template.mappings)
     assert keyisset(CLUSTER_NAME.title, stack.stack_template.mappings["Ecs"])
+    assert settings.ecs_cluster_platform_override is None
 
+
+def test_nonexisting_cluster(nonexisting_cluster):
+    here = path.abspath(path.dirname(__file__))
+    session = boto3.session.Session()
+    pill = placebo.attach(session, data_path=f"{here}/x_ecs/nonexisting_cluster")
+    # pill.record()
+    pill.playback()
     template = Template()
     stack = ComposeXStack("test", stack_template=template)
     settings = ComposeXSettings(
@@ -62,3 +83,24 @@ def test_ecs_cluster_lookup(existing_cluster, nonexisting_cluster):
     )
     add_ecs_cluster(stack, settings)
     assert not keyisset(CLUSTER_NAME.title, stack.Parameters)
+
+
+def test_existing_cluster_no_fargate(existing_cluster_no_fargate):
+    here = path.abspath(path.dirname(__file__))
+    session = boto3.session.Session()
+    pill = placebo.attach(session, data_path=f"{here}/x_ecs/cluster_no_fargate")
+    # pill.record()
+    pill.playback()
+    template = Template()
+    stack = ComposeXStack("test", stack_template=template)
+    settings = ComposeXSettings(
+        content=existing_cluster_no_fargate,
+        session=session,
+        **{
+            ComposeXSettings.name_arg: "test",
+            ComposeXSettings.command_arg: ComposeXSettings.render_arg,
+            ComposeXSettings.format_arg: "yaml",
+        },
+    )
+    add_ecs_cluster(stack, settings)
+    assert settings.ecs_cluster_platform_override == "EC2"

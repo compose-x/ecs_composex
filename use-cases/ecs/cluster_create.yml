@@ -15,3 +15,15 @@ x-cluster:
       - Base: 1
         Weight: 1
         CapacityProvider: FARGATE
+
+version: "3.8"
+services:
+  app03:
+    x-ecs:
+      CapacityProviderStrategy:
+        - CapacityProvider: FARGATE
+          Base: 0
+          Weight: 1
+        - CapacityProvider: FARGATE_SPOT
+          Base: 1
+          Weight: 2

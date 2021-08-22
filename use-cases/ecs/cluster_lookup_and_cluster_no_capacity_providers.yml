@@ -1,0 +1,36 @@
+
+x-cluster:
+  Lookup: testing
+
+version: "3.8"
+services:
+  app03:
+    x-ecs:
+      CapacityProviderStrategy:
+        - CapacityProvider: FARGATE
+          Base: 1
+          Weight: 2
+
+  rproxy:
+    x-ecs:
+      CapacityProviderStrategy:
+        - CapacityProvider: FARGATE
+          Base: 1
+          Weight: 2
+
+  app01:
+    x-ecs:
+      CapacityProviderStrategy:
+        - CapacityProvider: FARGATE
+          Base: 2
+          Weight: 4
+
+  app02:
+    x-ecs:
+      CapacityProviderStrategy:
+        - CapacityProvider: FARGATE
+          Base: 1
+          Weight: 2
+        - CapacityProvider: FARGATE_SPOT
+          Base: 4
+          Weight: 8

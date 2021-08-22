@@ -9,12 +9,13 @@
             }
         ],
         "ResponseMetadata": {
-            "RequestId": "c9a22a9a-5461-4329-99a1-af3fef532700",
+            "RequestId": "704cf308-33ca-40e5-bfd8-dfb9c9b9e955",
             "HTTPStatusCode": 200,
             "HTTPHeaders": {
-                "x-amzn-requestid": "c9a22a9a-5461-4329-99a1-af3fef532700",
+                "x-amzn-requestid": "704cf308-33ca-40e5-bfd8-dfb9c9b9e955",
                 "content-type": "application/x-amz-json-1.1",
-                "content-length": "106"
+                "content-length": "106",
+                "date": "Sat, 21 Aug 2021 14:28:59 GMT"
             },
             "RetryAttempts": 0
         }

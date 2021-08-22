@@ -91,6 +91,10 @@ def initialize_service_template(service_name):
         ecs_conditions.USE_CLUSTER_CAPACITY_PROVIDERS_CON,
     )
     service_tpl.add_condition(
+        ecs_conditions.NOT_USE_CLUSTER_CAPACITY_PROVIDERS_CON_T,
+        ecs_conditions.NOT_USE_CLUSTER_CAPACITY_PROVIDERS_CON,
+    )
+    service_tpl.add_condition(
         CREATE_PUBLIC_NAMESPACE_CON_T, CREATE_PUBLIC_NAMESPACE_CON
     )
     service_tpl.add_condition(
@@ -203,12 +207,14 @@ def generate_services(settings):
         family.service_config.network.associate_aws_igress_rules(family.template)
         family.service_config.network.associate_ext_igress_rules(family.template)
         family.service_config.network.add_self_ingress(family)
+        family.merge_capacity_providers()
+        family.validate_capacity_providers(settings.ecs_cluster_providers)
         family.stack_parameters.update(
             {
                 ecs_params.SERVICE_NAME_T: family.logical_name,
                 CLUSTER_NAME_T: Ref(CLUSTER_NAME),
                 ROOT_STACK_NAME_T: Ref(ROOT_STACK_NAME),
-                ecs_params.LAUNCH_TYPE.title: family.compute_platform,
+                ecs_params.LAUNCH_TYPE.title: family.launch_type,
             }
         )
         family.upload_services_env_files(settings)
@@ -218,3 +224,4 @@ def generate_services(settings):
         family.handle_logging()
         family.handle_alarms()
         family.handle_prometheus()
+        family.validate_compute_configuration_for_task(settings)

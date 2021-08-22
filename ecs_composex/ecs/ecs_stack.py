@@ -61,7 +61,7 @@ def associate_services_to_root_stack(root_stack, settings, vpc_stack=None):
             }
         )
         if settings.ecs_cluster_platform_override:
-            family.compute_platform = settings.ecs_cluster_platform_override
+            family.launch_type = settings.ecs_cluster_platform_override
             family.stack.Parameters.update(
                 {ecs_params.LAUNCH_TYPE.title: settings.ecs_cluster_platform_override}
             )
