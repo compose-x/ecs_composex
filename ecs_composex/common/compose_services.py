@@ -241,7 +241,7 @@ class ComposeService(object):
         self.mem_alloc = None
         self.mem_resa = None
         self.cpu_amount = None
-        self.compute_platform = "FARGATE"
+        self.launch_type = ecs_params.LAUNCH_TYPE.Default
         self.families = []
         self.my_family = None
         self.is_aws_sidecar = False
@@ -1031,17 +1031,25 @@ class ComposeService(object):
         :param dict deployment:
         """
         compute_key = "ecs.compute.platform"
+        launch_key = "ecs.launch.type"
         labels = "labels"
-        allowed_values = ["EC2", "FARGATE", "EXTERNAL"]
+        allowed_values = ecs_params.LAUNCH_TYPE.AllowedValues
         if keyisset(labels, deployment) and keyisset(compute_key, deployment[labels]):
-            if not deployment[labels][compute_key] in allowed_values:
-                raise ValueError(
-                    f"ecs.compute.platform is {deployment[labels][compute_key]}"
-                    "Must be one of",
-                    allowed_values,
-                )
-            self.compute_platform = deployment[labels][compute_key]
-            LOG.info(f"{self.name} set ecs.compute.platform to {self.compute_platform}")
+            value = deployment[labels][compute_key]
+        elif keyisset(labels, deployment) and keyisset(launch_key, deployment[labels]):
+            value = deployment[labels][launch_key]
+        else:
+            return
+        if value not in allowed_values:
+            raise ValueError(
+                f"ecs.compute.platform is {deployment[labels][compute_key]}"
+                "Must be one of",
+                allowed_values,
+            )
+        self.launch_type = value
+        LOG.info(
+            f"{self.name} - {ecs_params.LAUNCH_TYPE.title} set to {self.launch_type}"
+        )
 
     def define_start_condition(self, deployment):
         """
