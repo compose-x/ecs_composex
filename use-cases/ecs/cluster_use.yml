@@ -1,2 +1,11 @@
 x-cluster:
   Use: dev
+
+version: "3.8"
+services:
+  app03:
+    x-ecs:
+      CapacityProviderStrategy:
+        - CapacityProvider: FARGATE
+          Base: 1
+          Weight: 2

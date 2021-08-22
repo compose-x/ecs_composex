@@ -435,4 +435,6 @@ def generate_full_template(settings):
     if keyisset("x-dashboards", settings.compose_content):
         DashboardsStack("dashboards", settings)
     add_all_tags(root_stack.stack_template, settings)
+    for family in settings.families.values():
+        family.validate_compute_configuration_for_task(settings)
     return root_stack

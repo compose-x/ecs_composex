@@ -455,9 +455,13 @@ class Service(object):
             ),
             TaskDefinition=Ref(family.task_definition),
             LaunchType=If(
-                ecs_conditions.USE_CLUSTER_CAPACITY_PROVIDERS_CON_T,
+                ecs_conditions.NOT_USE_CLUSTER_CAPACITY_PROVIDERS_CON_T,
                 Ref(AWS_NO_VALUE),
-                Ref(ecs_params.LAUNCH_TYPE),
+                If(
+                    ecs_conditions.USE_CLUSTER_CAPACITY_PROVIDERS_CON_T,
+                    Ref(ecs_params.LAUNCH_TYPE),
+                    Ref(AWS_NO_VALUE),
+                ),
             ),
             Tags=Tags(
                 {
