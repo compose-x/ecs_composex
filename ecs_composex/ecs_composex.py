@@ -405,7 +405,7 @@ def generate_full_template(settings):
     vpc_stack = add_vpc_to_root(root_stack, settings)
     settings.set_networks(vpc_stack, root_stack)
     dns_settings = DnsSettings(root_stack, settings, get_vpc_id(vpc_stack))
-    settings.ecs_cluster = add_ecs_cluster(root_stack, settings)
+    add_ecs_cluster(root_stack, settings)
     associate_services_to_root_stack(root_stack, settings, vpc_stack)
     if keyisset(ACM_KEY, settings.compose_content):
         init_acm_certs(settings, dns_settings, root_stack)

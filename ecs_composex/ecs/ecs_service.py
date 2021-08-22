@@ -418,6 +418,7 @@ class Service(object):
             DeploymentController=DeploymentController(
                 Type=Ref(ecs_params.ECS_CONTROLLER)
             ),
+            CapacityProviderStrategy=Ref(AWS_NO_VALUE),
             EnableECSManagedTags=True,
             DesiredCount=If(
                 ecs_conditions.SERVICE_COUNT_ZERO_AND_FARGATE_CON_T,

@@ -172,6 +172,12 @@ def step_impl(context):
     context.root_stack = generate_full_template(context.settings)
 
 
+@then("I render the docker-compose expecting an error")
+def step_impl(context):
+    with raises((ValueError, KeyError)):
+        context.root_stack = generate_full_template(context.settings)
+
+
 @then("With missing module from file, program quits with code {code:d}")
 def step_impl(context, code):
     with raises(SystemExit) as exit_error:

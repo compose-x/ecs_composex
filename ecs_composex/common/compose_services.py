@@ -25,6 +25,7 @@ from troposphere import (
     Tags,
 )
 from troposphere.ecs import (
+    CapacityProviderStrategyItem,
     ContainerDefinition,
     DockerVolumeConfiguration,
     EnvironmentFile,
@@ -36,12 +37,9 @@ from troposphere.ecs import (
     MountPoint,
     PortMapping,
     RepositoryCredentials,
-    SystemControl,
-    TaskDefinition,
-    Tmpfs,
-    Ulimit,
-    Volume,
 )
+from troposphere.ecs import Service as EcsService
+from troposphere.ecs import SystemControl, TaskDefinition, Tmpfs, Ulimit, Volume
 from troposphere.iam import Policy
 from troposphere.logs import LogGroup
 
@@ -150,6 +148,7 @@ class ComposeService(object):
         ("x-ecr", dict),
         ("x-prometheus", dict),
         ("x-docker_opts", dict),
+        ("x-ecs", dict),
     ]
 
     ecs_plugin_aws_keys = [
@@ -249,6 +248,10 @@ class ComposeService(object):
         self.is_essential = True
         self.container_definition = None
         self.update_config = {}
+        self.x_ecs = set_else_none("x-ecs", self.definition, None)
+        self.capacity_provider_strategy = set_else_none(
+            "CapacityProviderStrategy", self.x_ecs, None
+        )
 
         self.container_start_condition = "START"
         self.healthcheck = set_else_none("healthcheck", self.definition, None)
@@ -1339,6 +1342,7 @@ class ComposeFamily(object):
         self.scalable_target = None
         self.ecs_service = None
         self.compute_platform = "FARGATE"
+        self.ecs_capacity_providers = []
         self.set_compute_platform()
         self.task_logging_options = {}
         self.stack_parameters = {}
@@ -1364,6 +1368,7 @@ class ComposeFamily(object):
     def refresh(self):
         self.sort_container_configs()
         self.set_compute_platform()
+        self.merge_capacity_providers()
         self.handle_iam()
         self.handle_logging()
         self.apply_services_params()
@@ -2220,3 +2225,67 @@ class ComposeFamily(object):
                         insights_options.update({"CustomRules": config["CustomRules"]})
         if any(insights_options.values()):
             add_cw_agent_to_family(self, **insights_options)
+
+    def merge_capacity_providers(self):
+        """
+        Merge capacity providers set on the services of the task family if service is not sidecar
+        """
+        task_config = {}
+        for svc in self.services:
+            if not svc.capacity_provider_strategy or svc.is_aws_sidecar:
+                continue
+            for provider in svc.capacity_provider_strategy:
+                if provider["CapacityProvider"] not in task_config.keys():
+                    name = provider["CapacityProvider"]
+                    task_config[name] = {
+                        "Base": [],
+                        "Weight": [],
+                        "CapacityProvider": name,
+                    }
+                    task_config[name]["Base"].append(
+                        set_else_none("Base", provider, alt_value=0)
+                    )
+                    task_config[name]["Weight"].append(
+                        set_else_none("Weight", provider, alt_value=0)
+                    )
+        for provider in task_config.values():
+            provider["Base"] = int(max(provider["Base"]))
+            provider["Weight"] = int(max(provider["Weight"]))
+        self.ecs_capacity_providers = list(task_config.values())
+        cfn_capacity_providers = [
+            CapacityProviderStrategyItem(**props)
+            for props in self.ecs_capacity_providers
+        ]
+        if isinstance(self.service_definition, EcsService):
+            setattr(
+                self.service_definition,
+                "CapacityProviderStrategy",
+                cfn_capacity_providers,
+            )
+
+    def validate_capacity_providers(self, cluster_providers):
+        """
+        Validates that the defined ecs_capacity_providers are all available in the ECS Cluster Providers
+
+        :param list[str] cluster_providers:
+        :raises: ValueError if not all task family providers in the cluster providers
+        :raises: TypeError if cluster_providers not a list
+        """
+        cap_names = [cap["CapacityProvider"] for cap in self.ecs_capacity_providers]
+        if not isinstance(cluster_providers, list):
+            raise TypeError("clusters_providers must be a list")
+        if not self.ecs_capacity_providers:
+            LOG.info(
+                f"{self.name} - No capacity providers specified in task definition"
+            )
+            return True
+        elif not cluster_providers:
+            LOG.info(f"{self.name} - No capacity provider set for cluster")
+            return True
+        elif not all(provider in cluster_providers for provider in cap_names):
+            raise ValueError(
+                "Providers",
+                cap_names,
+                "not defined in ECS Cluster providers. Valid values are",
+                cluster_providers,
+            )
