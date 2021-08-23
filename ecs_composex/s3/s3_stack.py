@@ -97,7 +97,7 @@ class XStack(ComposeXStack):
     def __init__(self, title, settings, **kwargs):
         set_resources(settings, Bucket, RES_KEY, MOD_KEY, mapping_key=MAPPINGS_KEY)
         x_resources = settings.compose_content[RES_KEY].values()
-        new_resources = set_new_resources(x_resources, RES_KEY, False)
+        new_resources = set_new_resources(x_resources, RES_KEY, True)
         lookup_resources = set_lookup_resources(x_resources, RES_KEY)
         use_resources = set_use_resources(x_resources, RES_KEY, True)
         if new_resources:

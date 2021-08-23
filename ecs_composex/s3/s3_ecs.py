@@ -6,7 +6,6 @@
 Functions to pass permissions to Services to access S3 buckets.
 """
 import re
-from json import dumps
 
 from compose_x_common.compose_x_common import keyisset
 from troposphere import FindInMap, Ref, Sub
@@ -21,13 +20,7 @@ from ecs_composex.resource_settings import (
     get_selected_services,
 )
 from ecs_composex.s3.s3_aws import lookup_bucket_config
-from ecs_composex.s3.s3_params import (
-    MAPPINGS_KEY,
-    MOD_KEY,
-    RES_KEY,
-    S3_BUCKET_ARN,
-    S3_BUCKET_NAME,
-)
+from ecs_composex.s3.s3_params import RES_KEY, S3_BUCKET_ARN, S3_BUCKET_NAME
 from ecs_composex.s3.s3_perms import ACCESS_TYPES
 
 

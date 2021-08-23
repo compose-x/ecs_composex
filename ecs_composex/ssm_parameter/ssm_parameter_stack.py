@@ -186,7 +186,7 @@ class XStack(ComposeXStack):
             self.is_void = True
         for resource in settings.compose_content[RES_KEY].values():
             resource.stack = self
-        if lookup_resources:
+        if lookup_resources or use_resources:
             if not keyisset(RES_KEY, settings.mappings):
                 settings.mappings[RES_KEY] = {}
             create_ssm_param_mappings(
