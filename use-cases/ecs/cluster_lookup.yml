@@ -1,3 +1,5 @@
 
 x-cluster:
-  Lookup: test
+  Lookup:
+    ClusterName: test
+    RoleArn: ${EMPTY}

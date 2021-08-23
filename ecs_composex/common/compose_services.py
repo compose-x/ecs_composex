@@ -1925,7 +1925,7 @@ class ComposeFamily(object):
             TaskRoleArn=GetAtt(TASK_ROLE_T, "Arn"),
             ExecutionRoleArn=GetAtt(EXEC_ROLE_T, "Arn"),
             ContainerDefinitions=[s.container_definition for s in self.services],
-            RequiresCompatibilities=["EC2", "FARGATE", "EXTERNAL"],
+            RequiresCompatibilities=["EC2", "FARGATE"],
             Tags=Tags(
                 {
                     "Name": Ref(ecs_params.SERVICE_NAME),
