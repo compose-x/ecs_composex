@@ -138,6 +138,7 @@ class ComposeService(object):
         ("user", (int, str)),
         ("userns_mode", str),
         ("volumes", list),
+        ("working_dir", str),
         ("x-configs", dict),
         ("x-logging", dict),
         ("x-iam", dict),
@@ -248,6 +249,9 @@ class ComposeService(object):
         self.is_essential = True
         self.container_definition = None
         self.update_config = {}
+        self.working_dir = set_else_none(
+            "working_dir", self.definition, alt_value=Ref(AWS_NO_VALUE)
+        )
         self.x_ecs = set_else_none("x-ecs", self.definition, None)
         self.capacity_provider_strategy = set_else_none(
             "CapacityProviderStrategy", self.x_ecs, None
@@ -370,11 +374,9 @@ class ComposeService(object):
                 Ref(AWS_NO_VALUE),
                 keyisset("Privileged", self.definition),
             ),
+            WorkingDirectory=self.working_dir,
             DockerLabels=self.import_docker_labels(),
             ReadonlyRootFilesystem=keyisset("read_only", self.definition),
-            WorkingDirectory=Ref(AWS_NO_VALUE)
-            if not keyisset("working_dir", self.definition)
-            else self.definition["working_dir"],
             SystemControls=self.define_sysctls(),
             User=self.user_group if self.user_group else Ref(AWS_NO_VALUE),
         )
