@@ -27,3 +27,4 @@ services:
         - CapacityProvider: FARGATE_SPOT
           Base: 1
           Weight: 2
+    working_dir: /tmp
