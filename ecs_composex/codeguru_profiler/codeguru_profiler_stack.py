@@ -10,7 +10,11 @@ from compose_x_common.compose_x_common import keyisset
 from troposphere import GetAtt, Ref, Sub
 from troposphere.codeguruprofiler import ProfilingGroup
 
+from ecs_composex.codeguru_profiler.codeguru_profiler_ecs import (
+    define_lookup_profile_mappings,
+)
 from ecs_composex.codeguru_profiler.codeguru_profiler_params import (
+    MAPPINGS_KEY,
     MOD_KEY,
     PROFILER_ARN,
     PROFILER_NAME,
@@ -19,7 +23,13 @@ from ecs_composex.codeguru_profiler.codeguru_profiler_params import (
 from ecs_composex.codeguru_profiler.codeguru_profiler_perms import ACCESS_TYPES
 from ecs_composex.common import build_template
 from ecs_composex.common.cfn_params import STACK_ID_SHORT
-from ecs_composex.common.compose_resources import XResource, set_resources
+from ecs_composex.common.compose_resources import (
+    XResource,
+    set_lookup_resources,
+    set_new_resources,
+    set_resources,
+    set_use_resources,
+)
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.resources_import import import_record_properties
 
@@ -89,16 +99,28 @@ class XStack(ComposeXStack):
     """
 
     def __init__(self, title, settings, **kwargs):
-        set_resources(settings, CodeProfiler, RES_KEY, "codeguru")
-        new_resources = [
-            cache
-            for cache in settings.compose_content[RES_KEY].values()
-            if not cache.lookup and not cache.use
-        ]
+        """
+        Init method
+
+        :param str title:
+        :param ecs_composex.common.settings.ComposeXSettings settings:
+        :param kwargs:
+        """
+        set_resources(settings, CodeProfiler, RES_KEY, MAPPINGS_KEY)
+        x_resources = settings.compose_content[RES_KEY].values()
+        new_resources = set_new_resources(x_resources, RES_KEY, False)
+        lookup_resources = set_lookup_resources(x_resources, RES_KEY)
+        use_resources = set_use_resources(x_resources, RES_KEY, False)
         if new_resources:
             stack_template = create_root_template(new_resources)
             super().__init__(title, stack_template, **kwargs)
         else:
             self.is_void = True
+        if lookup_resources or use_resources:
+            if not keyisset(RES_KEY, settings.mappings):
+                settings.mappings[RES_KEY] = {}
+            define_lookup_profile_mappings(
+                settings.mappings[RES_KEY], lookup_resources, settings
+            )
         for resource in settings.compose_content[RES_KEY].values():
             resource.stack = self

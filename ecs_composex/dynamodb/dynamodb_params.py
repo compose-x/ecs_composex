@@ -4,16 +4,16 @@
 
 from os import path
 
+from ecs_composex.common import NONALPHANUM
 from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.common.ecs_composex import X_KEY
+
+MOD_KEY = path.basename(path.dirname(path.abspath(__file__)))
+RES_KEY = f"{X_KEY}{MOD_KEY}"
+MAPPINGS_KEY = NONALPHANUM.sub("", MOD_KEY)
 
 TABLE_NAME_T = "TableName"
 TABLE_NAME = Parameter(TABLE_NAME_T, Type="String", AllowedPattern=r"[a-zA-Z0-9_.-]+")
 
 TABLE_ARN_T = "Arn"
 TABLE_ARN = Parameter(TABLE_ARN_T, return_value="Arn", Type="String")
-
-MOD_KEY = path.basename(path.dirname(path.abspath(__file__)))
-RES_KEY = f"{X_KEY}{MOD_KEY}"
-
-TABLE_SSM_PREFIX = f"/{RES_KEY}/"

@@ -57,11 +57,11 @@ def set_db_cluster(template, db, secret, sgs):
     """
     Function to parse and transform yaml definition to Troposphere
 
+    :param troposphere.Template template:
     :param ecs_composex.docdb.docdb_stack.DocDb db:
     :param troposphere.secretsmanager.Secret secret:
-    :param list<roposphere.ec2.SecurityGroup> sgs:
+    :param list sgs:
     """
-    parameter_group = None
     props = import_record_properties(db.properties, docdb.DBCluster)
     if not keypresent("StorageEncrypted", props):
         props["StorageEncrypted"] = True

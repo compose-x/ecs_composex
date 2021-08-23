@@ -7,6 +7,7 @@ Module to handle elbv2.
 """
 
 import re
+import warnings
 from copy import deepcopy
 from json import dumps
 
@@ -54,7 +55,13 @@ from ecs_composex.cognito_userpool.cognito_params import (
 )
 from ecs_composex.common import LOG, NONALPHANUM, add_parameters, build_template
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME, Parameter
-from ecs_composex.common.compose_resources import XResource, set_resources
+from ecs_composex.common.compose_resources import (
+    XResource,
+    set_lookup_resources,
+    set_new_resources,
+    set_resources,
+    set_use_resources,
+)
 from ecs_composex.common.outputs import ComposeXOutput
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.elbv2.elbv2_params import (
@@ -1242,11 +1249,14 @@ class XStack(ComposeXStack):
 
     def __init__(self, title, settings, **kwargs):
         set_resources(settings, Elbv2, RES_KEY, MOD_KEY)
-        new_resources = [
-            lb
-            for lb in settings.compose_content[RES_KEY].values()
-            if not lb.lookup and not lb.use
-        ]
+        x_resources = settings.compose_content[RES_KEY].values()
+        new_resources = set_new_resources(x_resources, RES_KEY, True)
+        lookup_resources = set_lookup_resources(x_resources, RES_KEY)
+        use_resources = set_use_resources(x_resources, RES_KEY, False)
+        if lookup_resources or use_resources:
+            warnings.warn(
+                f"{RES_KEY} - Lookup not supported. You can only create new resources."
+            )
         if not new_resources:
             self.is_void = True
             return

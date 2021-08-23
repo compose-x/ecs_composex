@@ -7,6 +7,7 @@ Main module to create x-alarms defined at the top level.
 """
 
 import re
+import warnings
 
 from compose_x_common.compose_x_common import keyisset
 from troposphere import AWS_REGION, AWS_STACK_ID, Join, Ref, Select, Split, Sub
@@ -15,7 +16,13 @@ from troposphere.cloudwatch import CompositeAlarm
 
 from ecs_composex.alarms.alarms_params import RES_KEY
 from ecs_composex.common import build_template
-from ecs_composex.common.compose_resources import XResource, set_resources
+from ecs_composex.common.compose_resources import (
+    XResource,
+    set_lookup_resources,
+    set_new_resources,
+    set_resources,
+    set_use_resources,
+)
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.resources_import import import_record_properties
 
@@ -201,15 +208,19 @@ class XStack(ComposeXStack):
 
     def __init__(self, name, settings, **kwargs):
         set_resources(settings, Alarm, RES_KEY)
-        new_alarms = [
-            settings.compose_content[RES_KEY][db_name]
-            for db_name in settings.compose_content[RES_KEY]
-            if not settings.compose_content[RES_KEY][db_name].lookup
-        ]
-        if new_alarms:
+        x_resources = settings.compose_content[RES_KEY].values()
+        new_resources = set_new_resources(x_resources, RES_KEY, False)
+        lookup_resources = set_lookup_resources(x_resources, RES_KEY)
+        use_resources = set_use_resources(x_resources, RES_KEY, False)
+        if new_resources:
             template = build_template("Root stack for Alarms created via Compose-X")
             super().__init__(name, stack_template=template, **kwargs)
-            create_alarms(template, settings, new_alarms)
+            create_alarms(template, settings, new_resources)
             self.mark_nested_stacks()
         else:
             self.is_void = True
+        if lookup_resources or use_resources:
+            warnings.warn(
+                f"{RES_KEY} - Lookup and Use are not supported. "
+                "You can only create new resources"
+            )

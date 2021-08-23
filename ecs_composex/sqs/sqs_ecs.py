@@ -23,7 +23,9 @@ from ecs_composex.resource_settings import (
 )
 from ecs_composex.sqs.sqs_aws import lookup_queue_config
 from ecs_composex.sqs.sqs_params import (
+    MAPPINGS_KEY,
     MOD_KEY,
+    RES_KEY,
     SQS_ARN,
     SQS_KMS_KEY_T,
     SQS_NAME,
@@ -153,17 +155,22 @@ def sqs_to_ecs(resources, services_stack, res_root_stack, settings):
     Function to apply SQS settings to ECS Services
     :return:
     """
-    resource_mappings = {}
     new_resources = [
         resources[res_name]
         for res_name in resources
-        if not resources[res_name].lookup and not resources[res_name].use
+        if resources[res_name].cfn_resource
     ]
     lookup_resources = [
         resources[res_name]
         for res_name in resources
-        if resources[res_name].lookup and not resources[res_name].properties
+        if resources[res_name].mappings and resources[res_name].lookup
     ]
+    use_resources = [
+        resources[name]
+        for name in resources
+        if resources[name].use and resources[name].mappings
+    ]
+    LOG.debug(use_resources)
     if new_resources and res_root_stack.title not in services_stack.DependsOn:
         services_stack.DependsOn.append(res_root_stack.title)
         LOG.info(f"Added dependency between services and {res_root_stack.title}")
@@ -177,9 +184,12 @@ def sqs_to_ecs(resources, services_stack, res_root_stack, settings):
             [SQS_URL, SQS_NAME],
         )
         handle_service_scaling(new_res, res_root_stack)
-    create_sqs_mappings(resource_mappings, lookup_resources, settings)
     for lookup_res in lookup_resources:
         handle_lookup_resource(
-            resource_mappings, MOD_KEY, lookup_res, SQS_ARN, [SQS_URL, SQS_NAME]
+            settings.mappings[RES_KEY],
+            MAPPINGS_KEY,
+            lookup_res,
+            SQS_ARN,
+            [SQS_URL, SQS_NAME],
         )
         handle_service_scaling(lookup_res, None)

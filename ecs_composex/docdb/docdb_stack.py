@@ -6,15 +6,24 @@
 AWS DocumentDB entrypoint for ECS ComposeX
 """
 
+from compose_x_common.compose_x_common import keyisset
 from troposphere import GetAtt, Ref
 
-from ecs_composex.common.compose_resources import XResource, set_resources
+from ecs_composex.common.compose_resources import (
+    XResource,
+    set_lookup_resources,
+    set_new_resources,
+    set_resources,
+    set_use_resources,
+)
 from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.docdb.docdb_ecs import create_lookup_mappings
 from ecs_composex.docdb.docdb_params import (
     DOCDB_NAME,
     DOCDB_PORT,
     DOCDB_SECRET,
     DOCDB_SG,
+    MAPPINGS_KEY,
     MOD_KEY,
     RES_KEY,
 )
@@ -81,17 +90,22 @@ class XStack(ComposeXStack):
     """
 
     def __init__(self, title, settings, **kwargs):
-        set_resources(settings, DocDb, RES_KEY, MOD_KEY)
-        new_resources = [
-            docdb
-            for docdb in settings.compose_content[RES_KEY].values()
-            if not docdb.lookup and not docdb.use
-        ]
+        set_resources(settings, DocDb, RES_KEY, MOD_KEY, mapping_key=MAPPINGS_KEY)
+        x_resources = settings.compose_content[RES_KEY].values()
+        new_resources = set_new_resources(x_resources, RES_KEY, True)
+        lookup_resources = set_lookup_resources(x_resources, RES_KEY)
+        use_resources = set_use_resources(x_resources, RES_KEY, False)
         if new_resources:
             stack_template = init_doc_db_template()
             super().__init__(title, stack_template, **kwargs)
             create_docdb_template(stack_template, new_resources, settings, self)
         else:
             self.is_void = True
+        if lookup_resources or use_resources:
+            if not keyisset(RES_KEY, settings.mappings):
+                settings.mappings[RES_KEY] = {}
+            create_lookup_mappings(
+                settings.mappings[RES_KEY], lookup_resources, settings
+            )
         for resource in settings.compose_content[RES_KEY].values():
             resource.stack = self

@@ -6,7 +6,6 @@
 Functions to pass permissions to Services to access S3 buckets.
 """
 import re
-from json import dumps
 
 from compose_x_common.compose_x_common import keyisset
 from troposphere import FindInMap, Ref, Sub
@@ -21,7 +20,7 @@ from ecs_composex.resource_settings import (
     get_selected_services,
 )
 from ecs_composex.s3.s3_aws import lookup_bucket_config
-from ecs_composex.s3.s3_params import MOD_KEY, S3_BUCKET_ARN, S3_BUCKET_NAME
+from ecs_composex.s3.s3_params import RES_KEY, S3_BUCKET_ARN, S3_BUCKET_NAME
 from ecs_composex.s3.s3_perms import ACCESS_TYPES
 
 
@@ -191,6 +190,7 @@ def define_bucket_mappings(buckets_mappings, lookup_buckets, use_buckets, settin
             LOG.info(
                 "No KMS Key has been identified to encrypt the bucket. Won't grant service access."
             )
+    settings.mappings[RES_KEY] = buckets_mappings
     for bucket in use_buckets:
         if bucket.use.startswith("arn:aws"):
             bucket_arn = bucket.use
@@ -335,35 +335,31 @@ def assign_lookup_buckets(bucket, mappings):
             define_lookup_buckets_access(bucket, target, select_services)
 
 
-def s3_to_ecs(xresources, services_stack, res_root_stack, settings):
+def s3_to_ecs(resources, services_stack, res_root_stack, settings):
     """
     Function to handle permissions assignment to ECS services.
 
-    :param xresources: x-sqs queues defined in compose file
+    :param resources: x-sqs queues defined in compose file
     :param ecs_composex.common.stack.ComposeXStack services_stack: services root stack
     :param ecs_composex.common.stack.ComposeXStack res_root_stack: s3 root stack
     :param ecs_composex.common.settings.ComposeXSettings settings: ComposeX Settings for execution
     :return:
     """
-    buckets_mappings = {}
-    if res_root_stack.is_void:
-        key = MOD_KEY
-    else:
-        key = res_root_stack.title
-    settings.mappings[key] = buckets_mappings
     new_resources = [
-        xresources[name]
-        for name in xresources
-        if not xresources[name].lookup and not xresources[name].use
+        resources[res_name]
+        for res_name in resources
+        if resources[res_name].cfn_resource
     ]
-    lookup_buckets = [
-        xresources[name]
-        for name in xresources
-        if xresources[name].lookup and not xresources[name].use
+    lookup_resources = [
+        resources[res_name]
+        for res_name in resources
+        if resources[res_name].mappings and resources[res_name].lookup
     ]
-    use_buckets = [xresources[name] for name in xresources if xresources[name].use]
-    define_bucket_mappings(buckets_mappings, lookup_buckets, use_buckets, settings)
-    LOG.debug(dumps(buckets_mappings, indent=4))
+    use_resources = [
+        resources[name]
+        for name in resources
+        if resources[name].use and resources[name].mappings
+    ]
     for res in new_resources:
         LOG.info(f"Creating {res.name} as {res.logical_name}")
         handle_new_resources(
@@ -371,7 +367,7 @@ def s3_to_ecs(xresources, services_stack, res_root_stack, settings):
             services_stack,
             res_root_stack,
         )
-    for res in lookup_buckets:
-        assign_lookup_buckets(res, buckets_mappings)
-    for res in use_buckets:
-        assign_lookup_buckets(res, buckets_mappings)
+    for res in lookup_resources:
+        assign_lookup_buckets(res, settings.mappings[RES_KEY])
+    for res in use_resources:
+        assign_lookup_buckets(res, settings.mappings[RES_KEY])

@@ -9,10 +9,23 @@ from troposphere.kms import Alias, Key
 from ecs_composex.common import LOG, build_template
 from ecs_composex.common.cfn_conditions import USE_STACK_NAME_CON_T
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME
-from ecs_composex.common.compose_resources import XResource, set_resources
+from ecs_composex.common.compose_resources import (
+    XResource,
+    set_lookup_resources,
+    set_new_resources,
+    set_resources,
+    set_use_resources,
+)
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.kms import metadata
-from ecs_composex.kms.kms_params import KMS_KEY_ARN, KMS_KEY_ID, MOD_KEY, RES_KEY
+from ecs_composex.kms.kms_ecs import create_kms_mappings
+from ecs_composex.kms.kms_params import (
+    KMS_KEY_ARN,
+    KMS_KEY_ID,
+    MAPPINGS_KEY,
+    MOD_KEY,
+    RES_KEY,
+)
 from ecs_composex.kms.kms_perms import get_access_types
 from ecs_composex.kms.kms_template import create_kms_template
 from ecs_composex.resources_import import import_record_properties
@@ -118,17 +131,20 @@ class XStack(ComposeXStack):
     """
 
     def __init__(self, title, settings, **kwargs):
-        set_resources(settings, KmsKey, RES_KEY, MOD_KEY)
-        new_keys = [
-            key
-            for key in settings.compose_content[RES_KEY].values()
-            if not key.lookup and not key.use
-        ]
-        if new_keys:
+        set_resources(settings, KmsKey, RES_KEY, MOD_KEY, mapping_key=MAPPINGS_KEY)
+        x_resources = settings.compose_content[RES_KEY].values()
+        new_resources = set_new_resources(x_resources, RES_KEY, True)
+        lookup_resources = set_lookup_resources(x_resources, RES_KEY)
+        use_resources = set_use_resources(x_resources, RES_KEY, False)
+        if new_resources:
             stack_template = build_template("Root template for KMS")
             super().__init__(title, stack_template, **kwargs)
-            create_kms_template(stack_template, new_keys, self)
+            create_kms_template(stack_template, new_resources, self)
         else:
             self.is_void = True
+        if lookup_resources or use_resources:
+            if not keyisset(RES_KEY, settings.mappings):
+                settings.mappings[RES_KEY] = {}
+            create_kms_mappings(settings.mappings[RES_KEY], lookup_resources, settings)
         for resource in settings.compose_content[RES_KEY].values():
             resource.stack = self

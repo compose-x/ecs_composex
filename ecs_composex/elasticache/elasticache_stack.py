@@ -8,11 +8,19 @@ Module to handle the AWS ES Stack and resources creation
 
 import json
 
+from compose_x_common.compose_x_common import keyisset
 from troposphere import GetAtt, Ref, Sub
 from troposphere.ssm import Parameter as SSMParameter
 
-from ecs_composex.common.compose_resources import XResource, set_resources
+from ecs_composex.common.compose_resources import (
+    XResource,
+    set_lookup_resources,
+    set_new_resources,
+    set_resources,
+    set_use_resources,
+)
 from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.elasticache.elasticache_ecs import create_lookup_mappings
 from ecs_composex.elasticache.elasticache_params import (
     CLUSTER_CONFIG,
     CLUSTER_MEMCACHED_ADDRESS,
@@ -21,6 +29,7 @@ from ecs_composex.elasticache.elasticache_params import (
     CLUSTER_REDIS_ADDRESS,
     CLUSTER_REDIS_PORT,
     CLUSTER_SG,
+    MAPPINGS_KEY,
     MOD_KEY,
     REPLICA_PRIMARY_ADDRESS,
     REPLICA_PRIMARY_PORT,
@@ -218,16 +227,23 @@ class XStack(ComposeXStack):
     """
 
     def __init__(self, title, settings, **kwargs):
-        set_resources(settings, CacheCluster, RES_KEY, MOD_KEY)
-        new_resources = [
-            cache
-            for cache in settings.compose_content[RES_KEY].values()
-            if not cache.lookup and not cache.use
-        ]
+        set_resources(
+            settings, CacheCluster, RES_KEY, MOD_KEY, mapping_key=MAPPINGS_KEY
+        )
+        x_resources = settings.compose_content[RES_KEY].values()
+        new_resources = set_new_resources(x_resources, RES_KEY, False)
+        lookup_resources = set_lookup_resources(x_resources, RES_KEY)
+        use_resources = set_use_resources(x_resources, RES_KEY, False)
         if new_resources:
             stack_template = create_root_template(new_resources)
             super().__init__(title, stack_template, **kwargs)
         else:
             self.is_void = True
+        if lookup_resources or use_resources:
+            if not keyisset(RES_KEY, settings.mappings):
+                settings.mappings[RES_KEY] = {}
+            create_lookup_mappings(
+                settings.mappings[RES_KEY], lookup_resources, settings
+            )
         for resource in settings.compose_content[RES_KEY].values():
             resource.stack = self
