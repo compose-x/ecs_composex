@@ -5,6 +5,7 @@
 import re
 
 from botocore.exceptions import ClientError
+from compose_x_common.aws import get_assume_role_session
 from compose_x_common.compose_x_common import keyisset
 from troposphere import AWS_STACK_NAME, FindInMap, Ref
 from troposphere.ecs import CapacityProviderStrategyItem, Cluster
@@ -113,27 +114,39 @@ def lookup_ecs_cluster(session, cluster_lookup):
     Function to find the ECS Cluster.
 
     :param boto3.session.Session session: Boto3 session to make API calls.
-    :param cluster_lookup: Cluster lookup definition.
-    :return:
+    :param str|dict cluster_lookup: Cluster lookup definition.
+    :return: The cluster details
+    :rtype: dict
     """
-    if not isinstance(cluster_lookup, str):
+    if not isinstance(cluster_lookup, (str, dict)):
         raise TypeError(
-            "The value for Lookup must be", str, "Got", type(cluster_lookup)
+            "The value for Lookup must be", str, dict, "Got", type(cluster_lookup)
         )
     client = session.client("ecs")
+    if isinstance(cluster_lookup, dict):
+        if keyisset("RoleArn", cluster_lookup):
+            ecs_session = get_assume_role_session(
+                session,
+                cluster_lookup["RoleArn"],
+                session_name="EcsClusterLookup@ComposeX",
+            )
+            client = ecs_session.client("ecs")
+        cluster_name = cluster_lookup["ClusterName"]
+    else:
+        cluster_name = cluster_lookup
     try:
-        cluster_r = client.describe_clusters(clusters=[cluster_lookup])
+        cluster_r = client.describe_clusters(clusters=[cluster_name])
         if not keyisset("clusters", cluster_r):
             LOG.warning(
-                f"No cluster named {cluster_lookup} found. Creating one with default settings"
+                f"No cluster named {cluster_name} found. Creating one with default settings"
             )
             return None
         elif (
             keyisset("clusters", cluster_r)
-            and cluster_r["clusters"][0]["clusterName"] == cluster_lookup
+            and cluster_r["clusters"][0]["clusterName"] == cluster_name
         ):
             LOG.info(
-                f"Found ECS Cluster {cluster_lookup}. Setting {CLUSTER_NAME.title} accordingly."
+                f"Found ECS Cluster {cluster_name}. Setting {CLUSTER_NAME.title} accordingly."
             )
             return cluster_r["clusters"][0]
     except ClientError as error:

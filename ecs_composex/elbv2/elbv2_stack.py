@@ -489,7 +489,7 @@ def handle_import_cognito_pool(the_pool, listener_stack, settings):
     :param settings:
     :return:
     """
-    if the_pool.cfn_resource and not the_pool.lookup:
+    if the_pool.cfn_resource and not the_pool.mappings:
         pool_id_param = Parameter(
             f"{the_pool.logical_name}{USERPOOL_ID.title}", Type="String"
         )
@@ -504,13 +504,13 @@ def handle_import_cognito_pool(the_pool, listener_stack, settings):
             }
         )
         return Ref(pool_id_param), Ref(pool_arn)
-    elif the_pool.lookup and not the_pool.cfn_resource:
+    elif the_pool.mappings and not the_pool.cfn_resource:
         if (
-            keyisset(COGNITO_MAP, settings.mappings)
+            keyisset(COGNITO_KEY, settings.mappings)
             and COGNITO_MAP not in listener_stack.stack_template.mappings
         ):
             listener_stack.stack_template.add_mapping(
-                COGNITO_MAP, settings.mappings[COGNITO_MAP]
+                COGNITO_MAP, settings.mappings[COGNITO_KEY]
             )
         return (
             FindInMap(COGNITO_MAP, the_pool.logical_name, USERPOOL_ID.title),
@@ -532,29 +532,13 @@ def import_cognito_pool(src_name, settings, listener_stack):
         raise LookupError(
             f"There is no {COGNITO_KEY} defined in your docker-compose files"
         )
-    new_cognito_userpools = [
-        settings.compose_content[COGNITO_KEY][name]
-        for name in settings.compose_content[COGNITO_KEY]
-        if settings.compose_content[COGNITO_KEY][name].cfn_resource
-    ]
-    lookup_cognito_userpools = [
-        settings.compose_content[COGNITO_KEY][name]
-        for name in settings.compose_content[COGNITO_KEY]
-        if settings.compose_content[COGNITO_KEY][name].lookup
-    ]
-    the_pool = None
-    for pool in new_cognito_userpools:
-        if pool.name == src_name:
-            the_pool = pool
-    if not the_pool:
-        for pool in lookup_cognito_userpools:
-            if pool.name == src_name:
-                the_pool = pool
-                break
-
-    if the_pool is None:
-        raise LookupError("Failed to identify the cognito userpool to use", src_name)
-    handle_import_cognito_pool(the_pool, listener_stack, settings)
+    pool_names = [pool.name for pool in settings.compose_content[COGNITO_KEY].values()]
+    if src_name not in pool_names:
+        raise KeyError(f"{COGNITO_KEY} - pool {src_name} not found", pool_names)
+    for pool in settings.compose_content[COGNITO_KEY].values():
+        if src_name == pool.name:
+            return handle_import_cognito_pool(pool, listener_stack, settings)
+    raise LookupError("Failed to identify the cognito userpool to use", src_name)
 
 
 def add_acm_certs_arn(listener, src_value, settings, listener_stack):
