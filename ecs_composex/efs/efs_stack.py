@@ -12,7 +12,13 @@ from troposphere.ec2 import SecurityGroup
 from troposphere.efs import FileSystem, MountTarget
 
 from ecs_composex.common import build_template
-from ecs_composex.common.compose_resources import XResource, set_resources
+from ecs_composex.common.compose_resources import (
+    XResource,
+    set_lookup_resources,
+    set_new_resources,
+    set_resources,
+    set_use_resources,
+)
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.efs.efs_params import (
     FS_ARN,
@@ -128,24 +134,9 @@ class XStack(ComposeXStack):
     def __init__(self, name, settings, **kwargs):
         set_resources(settings, Efs, RES_KEY, MOD_KEY)
         x_resources = settings.compose_content[RES_KEY].values()
-        new_resources = [
-            resource
-            for resource in x_resources
-            if (resource.properties or resource.parameters or resource.uses_default)
-            and not (resource.lookup or resource.use)
-        ]
-        lookup_resources = [
-            resource
-            for resource in x_resources
-            if resource.lookup
-            and not (resource.properties or resource.parameters or resource.use)
-        ]
-        use_resources = [
-            resource
-            for resource in x_resources
-            if resource.use
-            and not (resource.properties or resource.parameters or resource.lookup)
-        ]
+        new_resources = set_new_resources(x_resources, RES_KEY, False)
+        lookup_resources = set_lookup_resources(x_resources, RES_KEY)
+        use_resources = set_use_resources(x_resources, RES_KEY, False)
         if new_resources:
             stack_template = create_efs_stack(settings, new_resources)
             super().__init__(name, stack_template, **kwargs)

@@ -55,7 +55,13 @@ from ecs_composex.cognito_userpool.cognito_params import (
 )
 from ecs_composex.common import LOG, NONALPHANUM, add_parameters, build_template
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME, Parameter
-from ecs_composex.common.compose_resources import XResource, set_resources
+from ecs_composex.common.compose_resources import (
+    XResource,
+    set_lookup_resources,
+    set_new_resources,
+    set_resources,
+    set_use_resources,
+)
 from ecs_composex.common.outputs import ComposeXOutput
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.elbv2.elbv2_params import (
@@ -1244,24 +1250,9 @@ class XStack(ComposeXStack):
     def __init__(self, title, settings, **kwargs):
         set_resources(settings, Elbv2, RES_KEY, MOD_KEY)
         x_resources = settings.compose_content[RES_KEY].values()
-        new_resources = [
-            resource
-            for resource in x_resources
-            if (resource.properties or resource.parameters or resource.uses_default)
-            and not (resource.lookup or resource.use)
-        ]
-        lookup_resources = [
-            resource
-            for resource in x_resources
-            if resource.lookup
-            and not (resource.properties or resource.parameters or resource.use)
-        ]
-        use_resources = [
-            resource
-            for resource in x_resources
-            if resource.use
-            and not (resource.properties or resource.parameters or resource.lookup)
-        ]
+        new_resources = set_new_resources(x_resources, RES_KEY, False)
+        lookup_resources = set_lookup_resources(x_resources, RES_KEY)
+        use_resources = set_use_resources(x_resources, RES_KEY, False)
         if lookup_resources or use_resources:
             warnings.warn(
                 f"{RES_KEY} - Lookup not supported. You can only create new resources."
