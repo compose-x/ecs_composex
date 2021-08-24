@@ -92,11 +92,21 @@ def set_service_ports(ports):
                 "ports must be of types", dict, "or", list, "got", type(port)
             )
         if isinstance(port, str):
+            ports_str_re = re.compile(
+                r"(?:(?P<published>\d{1,5})?(?::))?(?P<target>\d{1,5})(?:(?=/(?P<protocol>udp|tcp)))?"
+            )
+            if not ports_str_re.match(port):
+                raise ValueError(
+                    f"Port {port} is not valid. Must match", ports_str_re.pattern
+                )
+            parts = ports_str_re.match(port)
+            print("PROTOCOL VALUE IS ", parts.group("protocol"))
             service_ports.append(
                 {
-                    "protocol": define_protocol(port),
-                    "published": int(port.split(":")[0]),
-                    "target": int(port.split(":")[-1].split("/")[0].strip()),
+                    "protocol": parts.group("protocol") or "tcp",
+                    "published": int(parts.group("published"))
+                    or int(parts.group("target")),
+                    "target": int(parts.group("target")),
                     "mode": "awsvpc",
                 }
             )
@@ -115,7 +125,6 @@ def set_service_ports(ports):
                     "mode": "awsvpc",
                 }
             )
-    LOG.debug(service_ports)
     return service_ports
 
 

@@ -299,7 +299,7 @@ description = "Library & Tool to compile/merge compose files with top level exte
 name = "compose-x-render"
 optional = false
 python-versions = ">=3.7,<4.0"
-version = "0.3.0"
+version = "0.3.1"
 
 [package.dependencies]
 argparse = ">=1.4.0,<2.0.0"
@@ -1307,7 +1307,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytes
 ecrscan = ["ecr-scan-reporter"]
 
 [metadata]
-content-hash = "8dce1e00291d0e9bea042f0d209e6ac6993c0de1c2d724d6f1d684ec8fb24893"
+content-hash = "6c554fcbd226689012adcc4c91cb681076ba221293d19433895216dd66d9e9ae"
 lock-version = "1.1"
 python-versions = "^3.7"
 
@@ -1458,8 +1458,8 @@ compose-x-common = [
     {file = "compose_x_common-0.1.1.tar.gz", hash = "sha256:124db4ae13655e8253f699ea932343c2698dc88e4bc471ae108b767cbf91c59e"},
 ]
 compose-x-render = [
-    {file = "compose_x_render-0.3.0-py3-none-any.whl", hash = "sha256:b9385dfa0a2864d548702226c0dfb485e3620cb1f822acee26180d498f229fde"},
-    {file = "compose_x_render-0.3.0.tar.gz", hash = "sha256:8da2ede2ee2fb5cbc035a2f678084af2dac5f6983266895d2d5239790156276c"},
+    {file = "compose_x_render-0.3.1-py3-none-any.whl", hash = "sha256:c60d69afdb51c7b418a1b005d09d7a7b38e188292b8a2f53c7b56474cab9d0c0"},
+    {file = "compose_x_render-0.3.1.tar.gz", hash = "sha256:c2cee4357092a4783895af0a1db09c45e274215bfa031b0f2468e40b6aeb83c1"},
 ]
 contextlib2 = [
     {file = "contextlib2-21.6.0-py2.py3-none-any.whl", hash = "sha256:3fbdb64466afd23abaf6c977627b75b6139a5a3e8ce38405c5b413aed7a0471f"},
