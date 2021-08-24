@@ -2261,7 +2261,7 @@ class ComposeFamily(object):
             elif count > 0 and keypresent("Base", provider):
                 del provider["Base"]
                 LOG.warning(
-                    "Only one capacity provider can have a base value."
+                    "Only one capacity provider can have a base value. "
                     f"Deleting for {provider['CapacityProvider']}"
                 )
             provider["Weight"] = int(max(provider["Weight"]))
@@ -2334,9 +2334,9 @@ class ComposeFamily(object):
                 self.service_definition, "CapacityProviderStrategy"
             ) and isinstance(self.service_definition.CapacityProviderStrategy, list):
                 LOG.warning(
-                    f"Due to Launch Type override to {settings.ecs_cluster_platform_override}"
+                    f"{self.name} - Due to Launch Type override to {settings.ecs_cluster_platform_override}"
                     ", ignoring CapacityProviders"
-                    f"{[cap.CapacityProvider for cap in self.service_definition.ecs_capacity_providers]}"
+                    f"{[cap.CapacityProvider for cap in self.service_definition.CapacityProviderStrategy]}"
                 )
                 setattr(
                     self.service_definition,
@@ -2352,5 +2352,6 @@ class ComposeFamily(object):
             self.validate_capacity_providers(settings.ecs_cluster_providers)
             if self.stack:
                 LOG.info(
-                    f"{self.name} - Updated {ecs_params.LAUNCH_TYPE.title} to {self.stack.Parameters[ecs_params.LAUNCH_TYPE.title]}"
+                    f"{self.name} - Updated {ecs_params.LAUNCH_TYPE.title} to"
+                    f" {self.stack.Parameters[ecs_params.LAUNCH_TYPE.title]}"
                 )
