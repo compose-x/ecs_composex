@@ -83,16 +83,28 @@ def initialize_service_template(service_name):
         ecs_conditions.USE_CLUSTER_SG_CON_T, ecs_conditions.USE_CLUSTER_SG_CON
     )
     service_tpl.add_condition(
+        ecs_conditions.USE_EC2_CON_T,
+        ecs_conditions.USE_EC2_CON,
+    )
+    service_tpl.add_condition(
         ecs_conditions.USE_FARGATE_CON_T,
         ecs_conditions.USE_FARGATE_CON,
     )
     service_tpl.add_condition(
-        ecs_conditions.USE_CLUSTER_CAPACITY_PROVIDERS_CON_T,
-        ecs_conditions.USE_CLUSTER_CAPACITY_PROVIDERS_CON,
+        ecs_conditions.USE_NORMAL_LAUNCH_TYPES_CON_T,
+        ecs_conditions.USE_NORMAL_LAUNCH_TYPES_CON,
     )
     service_tpl.add_condition(
-        ecs_conditions.NOT_USE_CLUSTER_CAPACITY_PROVIDERS_CON_T,
-        ecs_conditions.NOT_USE_CLUSTER_CAPACITY_PROVIDERS_CON,
+        ecs_conditions.USE_FARGATE_PROVIDERS_CON_T,
+        ecs_conditions.USE_FARGATE_PROVIDERS_CON,
+    )
+    service_tpl.add_condition(
+        ecs_conditions.USE_MIXED_CAPACITY_PROVIDERS_CON_T,
+        ecs_conditions.USE_MIXED_CAPACITY_PROVIDERS_CON,
+    )
+    service_tpl.add_condition(
+        ecs_conditions.USE_SOME_CAPACITY_PROVIDER_CON_T,
+        ecs_conditions.USE_SOME_CAPACITY_PROVIDER_CON,
     )
     service_tpl.add_condition(
         CREATE_PUBLIC_NAMESPACE_CON_T, CREATE_PUBLIC_NAMESPACE_CON

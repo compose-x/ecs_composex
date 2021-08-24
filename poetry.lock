@@ -164,10 +164,10 @@ description = "The AWS SDK for Python"
 name = "boto3"
 optional = false
 python-versions = ">= 3.6"
-version = "1.18.26"
+version = "1.18.27"
 
 [package.dependencies]
-botocore = ">=1.21.26,<1.22.0"
+botocore = ">=1.21.27,<1.22.0"
 jmespath = ">=0.7.1,<1.0.0"
 s3transfer = ">=0.5.0,<0.6.0"
 
@@ -180,7 +180,7 @@ description = "Low-level, data-driven core of boto 3."
 name = "botocore"
 optional = false
 python-versions = ">= 3.6"
-version = "1.21.26"
+version = "1.21.27"
 
 [package.dependencies]
 jmespath = ">=0.7.1,<1.0.0"
@@ -299,11 +299,13 @@ description = "Library & Tool to compile/merge compose files with top level exte
 name = "compose-x-render"
 optional = false
 python-versions = ">=3.7,<4.0"
-version = "0.2.1"
+version = "0.3.1"
 
 [package.dependencies]
 argparse = ">=1.4.0,<2.0.0"
 compose-x-common = ">=0.1.0,<0.2.0"
+importlib-resources = ">=5.2.2,<6.0.0"
+jsonschema = ">=3.2.0,<4.0.0"
 PyYAML = ">=5.4.1,<6.0.0"
 
 [[package]]
@@ -1305,7 +1307,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytes
 ecrscan = ["ecr-scan-reporter"]
 
 [metadata]
-content-hash = "37e6a508a614decb200d4aef8bc1e2e74538a041f7ce6a7f096647f7c7f867c3"
+content-hash = "6c554fcbd226689012adcc4c91cb681076ba221293d19433895216dd66d9e9ae"
 lock-version = "1.1"
 python-versions = "^3.7"
 
@@ -1366,12 +1368,12 @@ black = [
     {file = "black-21.7b0.tar.gz", hash = "sha256:c8373c6491de9362e39271630b65b964607bc5c79c83783547d76c839b3aa219"},
 ]
 boto3 = [
-    {file = "boto3-1.18.26-py3-none-any.whl", hash = "sha256:3eedef0719639892dc263bed7adfc00821544388e3d86a6fa31d82f936a6b613"},
-    {file = "boto3-1.18.26.tar.gz", hash = "sha256:39ed0f5004b671e4a4241ae23023ad63674cd25f766bfe1617cfc809728bc3e0"},
+    {file = "boto3-1.18.27-py3-none-any.whl", hash = "sha256:7209b79833bdf13753aa24f76bf533890ffed2cc4fe1fe08619d223c209bbd11"},
+    {file = "boto3-1.18.27.tar.gz", hash = "sha256:f46c93d09acd4d4bfc6b9522ed852fecbdc508e0365f29ddfb3c146aae784b4e"},
 ]
 botocore = [
-    {file = "botocore-1.21.26-py3-none-any.whl", hash = "sha256:37f77bf5f72c86d9b5f38e107c3822da66dbf0ef123768a6e80a58590c2796bf"},
-    {file = "botocore-1.21.26.tar.gz", hash = "sha256:911246faac450e13a3ef0e81993dd9bd9c282a7c0f4546bfe8cccf9649364cef"},
+    {file = "botocore-1.21.27-py3-none-any.whl", hash = "sha256:8c99abd7093ab11ce8d09c68732aeeb6065a53d2fe371568452e99291817fff5"},
+    {file = "botocore-1.21.27.tar.gz", hash = "sha256:b9e2c90bad164d111c229102f58f995c28576e719dd116b446965e1b786f8fa5"},
 ]
 cached-property = [
     {file = "cached-property-1.5.2.tar.gz", hash = "sha256:9fa5755838eecbb2d234c3aa390bd80fbd3ac6b6869109bfc1b499f7bd89a130"},
@@ -1456,8 +1458,8 @@ compose-x-common = [
     {file = "compose_x_common-0.1.1.tar.gz", hash = "sha256:124db4ae13655e8253f699ea932343c2698dc88e4bc471ae108b767cbf91c59e"},
 ]
 compose-x-render = [
-    {file = "compose_x_render-0.2.1-py3-none-any.whl", hash = "sha256:9d9fda4550b0091d4aa00c2846d3bdc5688f338fbd715d69a1e5952bde850725"},
-    {file = "compose_x_render-0.2.1.tar.gz", hash = "sha256:299deb0260f3d69d1196a32155acfaccfe7b4281f16184d62b51add2692e1c28"},
+    {file = "compose_x_render-0.3.1-py3-none-any.whl", hash = "sha256:c60d69afdb51c7b418a1b005d09d7a7b38e188292b8a2f53c7b56474cab9d0c0"},
+    {file = "compose_x_render-0.3.1.tar.gz", hash = "sha256:c2cee4357092a4783895af0a1db09c45e274215bfa031b0f2468e40b6aeb83c1"},
 ]
 contextlib2 = [
     {file = "contextlib2-21.6.0-py2.py3-none-any.whl", hash = "sha256:3fbdb64466afd23abaf6c977627b75b6139a5a3e8ce38405c5b413aed7a0471f"},

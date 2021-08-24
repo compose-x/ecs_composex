@@ -434,18 +434,22 @@ class Service(object):
                 ),
             ),
             SchedulingStrategy=If(
-                ecs_conditions.USE_FARGATE_CON_T,
-                "REPLICA",
+                ecs_conditions.USE_SOME_CAPACITY_PROVIDER_CON_T,
+                Ref(AWS_NO_VALUE),
                 If(
-                    ecs_conditions.SERVICE_COUNT_ZERO_CON_T,
-                    "DAEMON",
+                    ecs_conditions.USE_FARGATE_CON_T,
                     "REPLICA",
+                    If(ecs_conditions.USE_EC2_CON_T, "DAEMON", "REPLICA"),
                 ),
             ),
             PlacementStrategies=If(
-                ecs_conditions.USE_FARGATE_CON_T,
+                ecs_conditions.USE_SOME_CAPACITY_PROVIDER_CON_T,
                 Ref(AWS_NO_VALUE),
-                define_placement_strategies(),
+                If(
+                    ecs_conditions.USE_FARGATE_CON_T,
+                    Ref(AWS_NO_VALUE),
+                    define_placement_strategies(),
+                ),
             ),
             NetworkConfiguration=NetworkConfiguration(
                 AwsvpcConfiguration=AwsvpcConfiguration(
@@ -455,13 +459,9 @@ class Service(object):
             ),
             TaskDefinition=Ref(family.task_definition),
             LaunchType=If(
-                ecs_conditions.NOT_USE_CLUSTER_CAPACITY_PROVIDERS_CON_T,
+                ecs_conditions.USE_NORMAL_LAUNCH_TYPES_CON_T,
+                Ref(ecs_params.LAUNCH_TYPE),
                 Ref(AWS_NO_VALUE),
-                If(
-                    ecs_conditions.USE_CLUSTER_CAPACITY_PROVIDERS_CON_T,
-                    Ref(ecs_params.LAUNCH_TYPE),
-                    Ref(AWS_NO_VALUE),
-                ),
             ),
             Tags=Tags(
                 {

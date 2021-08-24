@@ -15,7 +15,6 @@ classifiers = [
   "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)",
   "Natural Language :: English",
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.6",
   "Programming Language :: Python :: 3.7",
   "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
@@ -39,7 +38,7 @@ python = "^3.7"
 boto3 = "^1.18"
 troposphere = "^3.0"
 ecr-scan-reporter = { version = "^0.3", optional = true }
-compose-x-render = "^0.2.1"
+compose-x-render = "^0.3.1"
 compose-x-common = "^0.1.1"
 jsonschema = "^3.2.0"
 requests = "^2.26.0"
