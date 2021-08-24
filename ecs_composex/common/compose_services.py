@@ -2255,12 +2255,25 @@ class ComposeFamily(object):
                     task_config[name]["Weight"].append(
                         set_else_none("Weight", provider, alt_value=0)
                     )
-        for provider in task_config.values():
-            provider["Base"] = int(max(provider["Base"]))
+        for count, provider in enumerate(task_config.values()):
+            if count == 0:
+                provider["Base"] = int(max(provider["Base"]))
+            elif count > 0 and keypresent("Base", provider):
+                del provider["Base"]
+                LOG.warning(
+                    "Only one capacity provider can have a base value."
+                    f"Deleting for {provider['CapacityProvider']}"
+                )
             provider["Weight"] = int(max(provider["Weight"]))
         self.ecs_capacity_providers = list(task_config.values())
         if self.ecs_capacity_providers:
-            self.launch_type = "CAPACITY_PROVIDERS"
+            if all(
+                provider["CapacityProvider"] in ["FARGATE", "FARGATE_SPOT"]
+                for provider in self.ecs_capacity_providers
+            ):
+                self.launch_type = "FARGATE_PROVIDERS"
+            else:
+                self.launch_type = "CAPACITY_PROVIDERS"
             cfn_capacity_providers = [
                 CapacityProviderStrategyItem(**props)
                 for props in self.ecs_capacity_providers
@@ -2270,6 +2283,17 @@ class ComposeFamily(object):
                     self.service_definition,
                     "CapacityProviderStrategy",
                     cfn_capacity_providers,
+                )
+        else:
+            if isinstance(self.service_definition, EcsService):
+                setattr(
+                    self.service_definition,
+                    "CapacityProviderStrategy",
+                    Ref(AWS_NO_VALUE),
+                )
+            if self.launch_type and self.stack:
+                self.stack.Parameters.update(
+                    {ecs_params.LAUNCH_TYPE.title: self.launch_type}
                 )
 
     def validate_capacity_providers(self, cluster_providers):
@@ -2312,6 +2336,7 @@ class ComposeFamily(object):
                 LOG.warning(
                     f"Due to Launch Type override to {settings.ecs_cluster_platform_override}"
                     ", ignoring CapacityProviders"
+                    f"{[cap.CapacityProvider for cap in self.service_definition.ecs_capacity_providers]}"
                 )
                 setattr(
                     self.service_definition,
@@ -2324,14 +2349,8 @@ class ComposeFamily(object):
                     )
         else:
             self.merge_capacity_providers()
-            if (
-                hasattr(self.service_definition, "CapacityProviderStrategy")
-                and isinstance(self.service_definition.CapacityProviderStrategy, list)
-                and self.stack
-            ):
-                self.stack.Parameters.update(
-                    {ecs_params.LAUNCH_TYPE.title: "CAPACITY_PROVIDERS"}
-                )
+            self.validate_capacity_providers(settings.ecs_cluster_providers)
+            if self.stack:
                 LOG.info(
-                    f"{self.name} - Updated {ecs_params.LAUNCH_TYPE.title} to CAPACITY_PROVIDERS"
+                    f"{self.name} - Updated {ecs_params.LAUNCH_TYPE.title} to {self.stack.Parameters[ecs_params.LAUNCH_TYPE.title]}"
                 )

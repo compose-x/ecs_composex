@@ -33,7 +33,7 @@ LAUNCH_TYPE_T = "EcsLaunchType"
 LAUNCH_TYPE = Parameter(
     LAUNCH_TYPE_T,
     Type="String",
-    AllowedValues=["EC2", "FARGATE", "CAPACITY_PROVIDERS"],
+    AllowedValues=["EC2", "FARGATE", "FARGATE_PROVIDERS", "CAPACITY_PROVIDERS"],
     Default="FARGATE",
 )
 
