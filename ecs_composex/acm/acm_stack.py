@@ -153,7 +153,7 @@ def init_acm_certs(settings, dns_settings, root_stack):
         )
     if lookup_resources:
         if not keyisset(RES_KEY, settings.mappings):
-            settings.mapping[RES_KEY] = {}
+            settings.mappings[RES_KEY] = {}
         mappings = create_acm_mappings(lookup_resources, settings)
         if mappings:
             root_stack.stack_template.add_mapping(MOD_KEY, mappings)
