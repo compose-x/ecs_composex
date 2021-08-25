@@ -5,6 +5,10 @@ x-cluster:
 version: "3.8"
 services:
   app03:
+    expose:
+      - 999
+      - 998/tcp
+      - 997/udp
     x-ecs:
       CapacityProviderStrategy:
         - CapacityProvider: FARGATE

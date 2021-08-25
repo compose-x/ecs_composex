@@ -336,6 +336,7 @@ def generate_emf_processors(family, ecs_sd_config, **options):
         if keyisset("AutoAddNginxPrometheusExporter", options):
             define_nginx_exporter_sidecar(family)
     if keyisset("CustomRules", options):
+        print("CUSTOM OPTIONS. YAY")
         process_custom_rules(family, ecs_sd_config, options, emf_processors)
     return emf_processors
 
@@ -374,11 +375,7 @@ def set_cw_config_parameter(family, **options):
     value_py["logs"]["metrics_collected"]["prometheus"][
         "ecs_service_discovery"
     ] = ecs_sd_config
-    if (
-        keyisset("CollectForAppMesh", options)
-        or keyisset("CollectForJavaJmx", options)
-        or keyisset("CollectForNginx", options)
-    ):
+    if options.values():
         emf_processors = generate_emf_processors(family, ecs_sd_config, **options)
         value_py["logs"]["metrics_collected"]["prometheus"][
             "emf_processor"
