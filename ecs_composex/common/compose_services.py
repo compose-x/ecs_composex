@@ -249,7 +249,7 @@ class ComposeService(object):
                         expose_port_re.pattern,
                     )
                 port = int(parts.group("target"))
-                protocol = "tcp" or parts.group("protocol")
+                protocol = parts.group("protocol") or "tcp"
             elif isinstance(expose_port, int):
                 port = expose_port
                 protocol = "tcp"
