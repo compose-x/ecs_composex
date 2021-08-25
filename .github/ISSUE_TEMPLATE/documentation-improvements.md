@@ -1,8 +1,8 @@
 ---
 name: Documentation improvements
 about: Where was the manual not clear?
-title: ''
-labels: documentation, enhancement
+title: "[DOCS] "
+labels: documentation
 assignees: JohnPreston
 
 ---

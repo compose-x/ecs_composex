@@ -1,7 +1,7 @@
 ---
 name: Feature request
 about: Suggest an idea for this project
-title: ''
+title: "[FR] <aws service|docker compose> "
 labels: enhancement
 assignees: JohnPreston
 
