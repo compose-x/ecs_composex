@@ -81,9 +81,6 @@ from ecs_composex.secrets.compose_secrets import (
 )
 from ecs_composex.vpc.vpc_params import APP_SUBNETS
 
-NUMBERS_REG = r"[^0-9.]"
-MINIMUM_SUPPORTED = 4
-
 
 class ComposeService(object):
     """
@@ -93,65 +90,6 @@ class ComposeService(object):
     """
 
     main_key = "services"
-    keys = [
-        ("build", (str, dict)),
-        ("cap_add", list),
-        ("cap_drop", list),
-        ("cgroup_parent", str),
-        ("command", (list, str)),
-        ("configs", dict),
-        ("container_name", str),
-        ("credential_spec", str),
-        ("depends_on", list),
-        ("deploy", dict),
-        ("devices", list),
-        ("dns", (list, str)),
-        ("dns_search", list),
-        ("entrypoint", (str, list)),
-        ("environment", (list, dict)),
-        ("env_file", (list, str)),
-        ("expose", list),
-        ("external_links", list),
-        ("extra_hosts", list),
-        ("healthcheck", dict),
-        ("hostname", str),
-        ("labels", (dict, list)),
-        ("logging", dict),
-        ("links", list),
-        ("network_mode", str),
-        ("networks", (list, dict)),
-        ("image", str),
-        ("init", bool),
-        ("isolation", str),
-        ("pid", str),
-        ("ports", list),
-        ("privileged", bool),
-        ("read_only", bool),
-        ("restart", str),
-        ("shm_size", str),
-        ("security_opt", str),
-        ("secrets", list),
-        ("stop_signal", str),
-        ("sysctls", (list, dict)),
-        ("tmpfs", (str, list)),
-        ("ulimits", dict),
-        ("user", (int, str)),
-        ("userns_mode", str),
-        ("volumes", list),
-        ("working_dir", str),
-        ("x-configs", dict),
-        ("x-logging", dict),
-        ("x-iam", dict),
-        ("x-xray", bool),
-        ("x-scaling", dict),
-        ("x-network", dict),
-        ("x-alarms", dict),
-        ("x-ecr", dict),
-        ("x-prometheus", dict),
-        ("x-docker_opts", dict),
-        ("x-ecs", dict),
-    ]
-
     ecs_plugin_aws_keys = [
         ("x-aws-role", dict),
         ("x-aws-policies", list),
@@ -163,25 +101,8 @@ class ComposeService(object):
     ]
 
     def __init__(self, name, definition, volumes=None, secrets=None):
-        if not isinstance(definition, dict):
-            raise TypeError(
-                "The definition of a service must be",
-                dict,
-                "got",
-                type(definition),
-            )
-        if not all(
-            key in [title[0] for title in self.ecs_plugin_aws_keys + self.keys]
-            for key in list(definition.keys())
-        ):
-            raise KeyError(
-                "Only valid keys for a service definition are",
-                sorted([key[0] for key in self.keys]),
-                sorted([key[0] for key in self.ecs_plugin_aws_keys]),
-                "Got",
-                sorted(list(definition.keys())),
-            )
-        for setting in self.keys:
+
+        for setting in self.ecs_plugin_aws_keys:
             if keyisset(setting[0], definition) and not isinstance(
                 definition[setting[0]], setting[1]
             ):
@@ -239,6 +160,7 @@ class ComposeService(object):
         )
         self.deploy = set_else_none("deploy", self.definition, None)
         self.ingress_mappings = define_ingress_mappings(self.ports)
+        self.expose_ports = set_else_none("expose", self.definition, [])
         self.mem_alloc = None
         self.mem_resa = None
         self.cpu_amount = None
@@ -309,21 +231,62 @@ class ComposeService(object):
         except (FileNotFoundError, urllib3.exceptions, requests.exceptions):
             LOG.error("Failed to connect to any docker engine.")
 
+    def handle_expose_ports(self, aws_vpc_mappings):
+        """
+        Function to import the expose ports to AWS VPC Mappings
+
+        :param list[troposphere.ecs.PortMapping] aws_vpc_mappings: List of ECS Port Mappings defined from ports[]
+        """
+        expose_port_re = re.compile(
+            r"(?P<target>\d{1,5})(?:(?=/(?P<protocol>udp|tcp)))?"
+        )
+        for expose_port in self.expose_ports:
+            if isinstance(expose_port, str):
+                parts = expose_port_re.match(expose_port)
+                if not parts:
+                    raise ValueError(
+                        "Expose port value is invalid. Must match",
+                        expose_port_re.pattern,
+                    )
+                port = int(parts.group("target"))
+                protocol = parts.group("protocol") or "tcp"
+            elif isinstance(expose_port, int):
+                port = expose_port
+                protocol = "tcp"
+            else:
+                raise TypeError(
+                    expose_port, "is", type(expose_port), "expected one of", (str, int)
+                )
+            if port not in [p.ContainerPort for p in aws_vpc_mappings]:
+                aws_vpc_mappings.append(
+                    PortMapping(
+                        HostPort=Ref(AWS_NO_VALUE),
+                        ContainerPort=port,
+                        Protocol=protocol.lower(),
+                    )
+                )
+            else:
+                LOG.warning(
+                    f"Port {port} was already defined as Container Port."
+                    " In awsvpc mode the Container Ports must be unique."
+                    f" Skipping {self.name}.expose.{expose_port}"
+                )
+
     def define_port_mappings(self):
         """
         Method to determine the list of port mappings to use for either AWS VPC deployments or else (bridge etc).
         Not in use atm as AWS VPC is made mandatory
         """
         ec2_mappings = []
-        aws_vpc_mappings = []
         for c_port, h_ports in self.ingress_mappings.items():
             for port in h_ports:
                 ec2_mappings.append(PortMapping(ContainerPort=c_port, HostPort=port))
-        for port in self.ingress_mappings.keys():
-            aws_vpc_mappings = [
-                PortMapping(ContainerPort=port, HostPort=port)
-                for port in self.ingress_mappings.keys()
-            ]
+        aws_vpc_mappings = [
+            PortMapping(ContainerPort=port, HostPort=port)
+            for port in self.ingress_mappings.keys()
+        ]
+        self.handle_expose_ports(aws_vpc_mappings)
+        print([(p.ContainerPort, p.HostPort) for p in aws_vpc_mappings])
         return aws_vpc_mappings, ec2_mappings
 
     def import_docker_labels(self):
@@ -2229,7 +2192,7 @@ class ComposeFamily(object):
                         if keyisset(key, config):
                             insights_options[key] = config[key]
                     if keyisset("CustomRules", config):
-                        insights_options.update({"CustomRules": config["CustomRules"]})
+                        insights_options["CustomRules"] = config["CustomRules"]
         if any(insights_options.values()):
             add_cw_agent_to_family(self, **insights_options)
 
