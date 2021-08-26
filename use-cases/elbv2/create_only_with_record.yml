@@ -109,3 +109,13 @@ x-elbv2:
         port: 5000
         healthcheck: 5000:TCP:7:2:15:5
         protocol: TCP
+        TargetGroupAttributes:
+          - Key: deregistration_delay.timeout_seconds
+            Value: "30"
+          - Key: proxy_protocol_v2.enabled
+            Value: "true"
+          - Key: preserve_client_ip.enabled
+            Value: "true"
+#          deregistration_delay.timeout_seconds: "30"
+#          proxy_protocol_v2.enabled: "true"
+#          preserve_client_ip.enabled: "true"

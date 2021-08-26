@@ -286,7 +286,6 @@ class ComposeService(object):
             for port in self.ingress_mappings.keys()
         ]
         self.handle_expose_ports(aws_vpc_mappings)
-        print([(p.ContainerPort, p.HostPort) for p in aws_vpc_mappings])
         return aws_vpc_mappings, ec2_mappings
 
     def import_docker_labels(self):
