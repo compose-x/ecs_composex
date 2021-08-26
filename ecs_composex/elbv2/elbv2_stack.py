@@ -788,18 +788,6 @@ class ComposeListener(Listener):
             map_service_target(lb, name, l_service_def)
 
 
-def validate_service_def(service_def):
-    required_settings = [
-        ("name", str),
-        ("port", int),
-        ("healthcheck", str),
-    ]
-    if not all(
-        prop in service_def.keys() for prop in [attr[0] for attr in required_settings]
-    ):
-        raise KeyError("For services you must at least define", required_settings)
-
-
 class Elbv2(XResource):
     """
     Class to handle ELBv2 creation and mapping to ECS Services
@@ -867,7 +855,6 @@ class Elbv2(XResource):
             LOG.info(f"No services defined for {self.name}")
             return
         for service_def in self.services:
-            validate_service_def(service_def)
             family_combo_name = service_def["name"]
             service_name = family_combo_name.split(":")[-1]
             family_name = NONALPHANUM.sub("", family_combo_name.split(":")[0])
@@ -908,29 +895,6 @@ class Elbv2(XResource):
         self.debug_families_targets()
 
     def validate_services(self):
-        allowed_keys = [
-            ("name", str),
-            ("port", int),
-            ("healthcheck", str),
-            ("protocol", str),
-        ]
-        for service in self.services:
-            if not all(
-                key in [attr[0] for attr in allowed_keys] for key in service.keys()
-            ):
-                raise KeyError(
-                    "Only allowed keys allowed are",
-                    [key[0] for key in allowed_keys],
-                    "Got",
-                    service.keys(),
-                )
-            for key in allowed_keys:
-                if keyisset(key[0], service) and not isinstance(
-                    service[key[0]], key[1]
-                ):
-                    raise TypeError(
-                        f"{key} should be", key[1], "Got", type(service[key[0]])
-                    )
         services_names = list(set([service["name"] for service in self.services]))
         if len(services_names) == 1:
             LOG.info(

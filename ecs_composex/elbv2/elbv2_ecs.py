@@ -238,6 +238,94 @@ def handle_sg_lb_ingress_to_service(resource, family, resources_stack):
     )
 
 
+def validate_target_group_attributes(target_attributes, validation, lb_type):
+    """
+    Function to ensure that each attribute set is compatible with elbv2.type == application
+
+    :param list[TargetGroupAttribute] target_attributes:
+    :param dict validation:
+    :param str lb_type:
+    :raises: ValueError
+    """
+    for attr in target_attributes:
+        if attr.Key not in validation.keys():
+            raise ValueError(
+                f"Attribute {attr.Key} is not compatible with {lb_type}. Valid ones",
+                validation.keys(),
+            )
+        evaluation = validation[attr.Key]
+        if not evaluation(attr.Value):
+            raise ValueError(f"{attr.Key} value {attr.Value} is not valid.")
+
+
+def import_target_group_attributes(props, target_def, elbv2, service):
+    """
+
+    :param dict props:
+    :param dict target_def:
+    :param ecs_composex.elbv2.elbv2_stack.Elbv2 elbv2:
+    :param ecs_composex.common.compose_services.ComposeService service:
+    :return:
+    """
+    attributes_key = "TargetGroupAttributes"
+    if not keyisset(attributes_key, target_def):
+        props[attributes_key] = [
+            TargetGroupAttribute(Key="deregistration_delay.timeout_seconds", Value="60")
+        ]
+    else:
+        if isinstance(target_def[attributes_key], list):
+            props[attributes_key] = [
+                TargetGroupAttribute(Key=attr["Key"], Value=str(attr["Value"]))
+                for attr in target_def[attributes_key]
+            ]
+        elif isinstance(target_def[attributes_key], dict):
+            props[attributes_key] = [
+                TargetGroupAttribute(Key=key, Value=str(value))
+                for key, value in target_def[attributes_key].items()
+            ]
+    if not keyisset(attributes_key, props):
+        props[attributes_key] = [
+            TargetGroupAttribute(Key="deregistration_delay.timeout_seconds", Value="60")
+        ]
+        return
+    if "deregistration_delay.timeout_seconds" not in [
+        attr.Key for attr in props[attributes_key]
+    ]:
+        props[attributes_key].append(
+            TargetGroupAttribute(Key="deregistration_delay.timeout_seconds", Value="60")
+        )
+    nlb_valid = {
+        "deregistration_delay.connection_termination.enabled": lambda x: x
+        in ("true", "false"),
+        "preserve_client_ip.enabled": lambda x: x in ("true", "false"),
+        "proxy_protocol_v2.enabled": lambda x: x in ("true", "false"),
+        "stickiness.type": lambda x: x == "source_ip",
+        "deregistration_delay.timeout_seconds": lambda x: 0 <= int(x) <= 3600,
+        "stickiness.enabled": lambda x: x in ("true", "false"),
+    }
+    alb_valid = {
+        "stickiness.enabled": lambda x: x in ("true", "false"),
+        "stickiness.type": lambda x: x in ("lb_cookie", "app_cookie"),
+        "stickiness.app_cookie.cookie_name": lambda x: isinstance(x, str)
+        and not re.match(r"^AWSALB.*$|^AWSALBAPP.*|^AWSALBTG.*$", x),
+        "stickiness.app_cookie.duration_seconds": lambda x: 1 <= int(x) <= 604800,
+        "stickiness.lb_cookie.duration_seconds": lambda x: 1 <= int(x) <= 604800,
+        "deregistration_delay.timeout_seconds": lambda x: 0 <= int(x) <= 3600,
+        "load_balancing.algorithm.type": lambda x: x
+        in ("round_robin", "least_outstanding_requests"),
+        "slow_start.duration_seconds": lambda x: 30 <= int(x) <= 900,
+    }
+    # pragma: ignore use-case for now "lambda.multi_value_headers.enabled": lambda x: x in ("true", "false"),
+    if elbv2.cfn_resource.Type == "application":
+        validate_target_group_attributes(
+            props[attributes_key], alb_valid, elbv2.cfn_resource.Type
+        )
+    if elbv2.cfn_resource.Type == "network":
+        validate_target_group_attributes(
+            props[attributes_key], nlb_valid, elbv2.cfn_resource.Type
+        )
+
+
 def define_service_target_group(
     resource,
     service,
@@ -247,11 +335,11 @@ def define_service_target_group(
 ):
     """
     Function to create the elbv2 target group
-    :param ecs_composex.elbv2.elbv2_stack.Elbv2 resource:
-    :param ecs_composex.common.compose_services.ComposeService service:
-    :param ecs_composex.common.compose_services.ComposeFamily family:
+    :param ecs_composex.elbv2.elbv2_stack.Elbv2 resource: the ELBv2 to attach to
+    :param ecs_composex.common.compose_services.ComposeService service: the service target
+    :param ecs_composex.common.compose_services.ComposeFamily family: the family owning the service
     :param ecs_composex.common.stacks.ComposeXStack resources_root_stack:
-    :param dict target_definition:
+    :param dict target_definition: the Service definition
     :return: the target group
     :rtype: troposphere.elasticloadbalancingv2.TargetGroup
     """
@@ -265,9 +353,7 @@ def define_service_target_group(
         else target_definition["protocol"]
     )
     props["TargetType"] = "ip"
-    props["TargetGroupAttributes"] = [
-        TargetGroupAttribute(Key="deregistration_delay.timeout_seconds", Value="60")
-    ]
+    import_target_group_attributes(props, target_definition, resource, service)
     validate_props_and_service_definition(props, service)
     target_group = TargetGroup(
         f"Tgt{resource.logical_name}{family.logical_name}{service.logical_name}{props['Port']}",

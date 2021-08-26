@@ -4,12 +4,12 @@
 
 .. _elbv2_syntax_reference:
 
-=======
+=========
 x-elbv2
-=======
+=========
 
 Syntax
-======
+========
 
 .. code-block:: yaml
 
@@ -144,6 +144,7 @@ Syntax
     protocol: <str>
     port : <int>
     healthcheck: <str>
+    TargetGroupAttributes: list|map
 
 `JSON Schema definition <https://github.com/compose-x/ecs_composex_specs/blob/main/ecs_composex_specs/x-elbv2.spec.json#L38>`__
 
@@ -197,6 +198,100 @@ However, it is also possible to shorten the syntax into a simple string
     The last part, for path and HTTP codes, is only valid for ALB
 
 
+TargetGroupAttributes
+======================
+
+In order to set Target Group specific settings, you can use `CFN TargetGroupAttributes`_ properties.
+
+In AWS CFN, it is a list of Key/Value objects, so compose-x supports it that way.
+
+.. code-block:: yaml
+
+    Services:
+      - name: app03:app03
+        port: 5000
+        healthcheck: 5000:TCP:7:2:15:5
+        protocol: TCP
+        TargetGroupAttributes:
+          - Key: deregistration_delay.timeout_seconds
+            Value: "30"
+          - Key: proxy_protocol_v2.enabled
+            Value: "true"
+          - Key: preserve_client_ip.enabled
+            Value: "true"
+
+But in order to **avoid duplicates** and make the merge of compose files easier, you can also defined these properties
+into a map/dict structure and compose-x will automatically convert it to the CFN Expected format.
+
+.. code-block:: yaml
+
+    Services:
+      - name: app03:app03
+        port: 5000
+        healthcheck: 5000:TCP:7:2:15:5
+        protocol: TCP
+        TargetGroupAttributes:
+          deregistration_delay.timeout_seconds: "30"
+          proxy_protocol_v2.enabled: "true"
+          preserve_client_ip.enabled: "true"
+
+
+.. hint::
+
+    Compose-X will, based on the type of Load Balancer, ensure that the properties you set are compatible with the
+    LoadBalancer type and the values are valid / in range.
+
+    +-----------------------------------------------------+---------+------------------------------+
+    | Property Name                                       | LB Type | Allowed Values               |
+    +-----------------------------------------------------+---------+------------------------------+
+    | deregistration_delay.timeout_seconds                | ALL     | Range(0,3600)                |
+    |                                                     |         | Seconds                      |
+    +-----------------------------------------------------+---------+------------------------------+
+    | stickiness.enabled                                  | * ALB   | * "true"                     |
+    |                                                     | * NLB   | * "false"                    |
+    +-----------------------------------------------------+---------+------------------------------+
+    | stickiness.type                                     | * ALB   | ALB:                         |
+    |                                                     | * NLB   |  * lb_cookie                 |
+    |                                                     |         |  * app_cookie                |
+    |                                                     |         | NLB:                         |
+    |                                                     |         |  * source_ip                 |
+    +-----------------------------------------------------+---------+------------------------------+
+    | load_balancing.algorithm.type                       | * ALB   | * round_robin                |
+    |                                                     |         | * least_outstanding_requests |
+    +-----------------------------------------------------+---------+------------------------------+
+    | slow_start.duration_seconds                         | * ALB   | Range(30-900)                |
+    |                                                     |         | Seconds                      |
+    +-----------------------------------------------------+---------+------------------------------+
+    | stickiness.app_cookie.cookie_name                   | * ALB   | String                       |
+    |                                                     |         | Cannot use or start with     |
+    |                                                     |         | * AWSALB                     |
+    |                                                     |         | * AWSALBAPP                  |
+    |                                                     |         | * AWSALBTG                   |
+    +-----------------------------------------------------+---------+------------------------------+
+    | stickiness.app_cookie.duration_seconds              | * ALB   | Range(1,604800)              |
+    |                                                     |         | Seconds                      |
+    +-----------------------------------------------------+---------+------------------------------+
+    | stickiness.lb_cookie.duration_seconds               | * ALB   | Range(1,604800)              |
+    |                                                     |         | Seconds                      |
+    +-----------------------------------------------------+---------+------------------------------+
+    | lambda.multi_value_headers.enabled                  | * ALB   | * "true"                     |
+    | * Works only for Lambda targets                     |         | * "false"                    |
+    +-----------------------------------------------------+---------+------------------------------+
+    | deregistration_delay.connection_termination.enabled | * NLB   | * "true"                     |
+    |                                                     |         | * "false"                    |
+    +-----------------------------------------------------+---------+------------------------------+
+    | preserve_client_ip.enabled                          | * NLB   | * "true"                     |
+    |                                                     |         | * "false"                    |
+    +-----------------------------------------------------+---------+------------------------------+
+    | proxy_protocol_v2.enabled                           | * NLB   | * "true"                     |
+    |                                                     |         | * "false"                    |
+    +-----------------------------------------------------+---------+------------------------------+
+
+    .. seealso::
+
+        `Target Group Attributes`_
+
+
 Listeners
 =========
 
@@ -228,8 +323,8 @@ The following properties are identical to the original CFN definition.
     The certificate ARN must be valid when set, however, we are not checking that it actually exists.(yet)
 
 
-Target Groups
-================================
+Listener Targets
+=================
 
 
 
@@ -340,3 +435,5 @@ Examples
 .. _Tags: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-elasticloadbalancingv2-loadbalancer.html#cfn-elasticloadbalancingv2-loadbalancer-tags
 .. _x-elbv2 JSON Schema Definition: https://github.com/compose-x/ecs_composex_specs/blob/main/ecs_composex_specs/x-elbv2.spec.json
 .. _Ingress JSON Schema definition: https://github.com/compose-x/ecs_composex_specs/blob/main/ecs_composex_specs/ingress.spec.json
+.. _CFN TargetGroupAttributes: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-elasticloadbalancingv2-targetgroup.html#cfn-elasticloadbalancingv2-targetgroup-targetgroupattributes
+.. _Target Group Attributes: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-elasticloadbalancingv2-targetgroup-targetgroupattribute.html#aws-properties-elasticloadbalancingv2-targetgroup-targetgroupattribute-properties
