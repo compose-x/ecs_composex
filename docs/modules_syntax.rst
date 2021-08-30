@@ -33,6 +33,7 @@
     syntax/compose_x/alarms
     syntax/compose_x/codeguru_profiler
     syntax/compose_x/compute
+    syntax/compose_x/tagging
 
 .. toctree::
     :caption: Docker Compose syntax

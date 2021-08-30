@@ -54,16 +54,11 @@ def define_extended_tags(tags):
     :return: Tags() or None
     :rtype: troposphere.Tags or None
     """
-    tags_keys = ["name", "value"]
     rendered_tags = []
     if isinstance(tags, list):
         for tag in tags:
-            if not isinstance(tag, dict):
-                raise TypeError("Tags must be of type", dict)
-            elif not set(tag.keys()) == set(tags_keys):
-                raise KeyError("Keys for tags must be", "value", "name")
             rendered_tags.append(
-                {tag["name"]: Ref(define_tag_parameter_title(tag["name"]))}
+                {tag["Key"]: Ref(define_tag_parameter_title(tag["Key"]))}
             )
     elif isinstance(tags, dict):
         for tag in tags:
@@ -84,7 +79,7 @@ def generate_tags_parameters(tags):
     for tag in tags:
         parameters.append(
             Parameter(
-                define_tag_parameter_title(tag["name"])
+                define_tag_parameter_title(tag["Key"])
                 if isinstance(tags, list)
                 else define_tag_parameter_title(tag),
                 Type="String",
@@ -92,7 +87,7 @@ def generate_tags_parameters(tags):
                 MaxLength=128,
                 AllowedPattern=r"[\x20-\x7E]+",
                 ConstraintDescription="Must be ASCII",
-                Default=tag["value"] if isinstance(tags, list) else tags[tag],
+                Default=tag["Value"] if isinstance(tags, list) else tags[tag],
             )
         )
     return parameters
