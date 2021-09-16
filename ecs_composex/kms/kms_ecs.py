@@ -26,6 +26,7 @@ def create_kms_mappings(mapping, resources, settings):
     """
     for res in resources:
         res_config = lookup_key_config(res.logical_name, res.lookup, settings.session)
+        res.mappings = res_config
         mapping.update({res.logical_name: res_config})
 
 
