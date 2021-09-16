@@ -99,11 +99,11 @@ category = "dev"
 description = "Screen-scraping library"
 name = "beautifulsoup4"
 optional = false
-python-versions = "*"
-version = "4.9.3"
+python-versions = ">3.0.0"
+version = "4.10.0"
 
 [package.dependencies]
-soupsieve = {version = ">1.2", markers = "python_version >= \"3.0\""}
+soupsieve = ">1.2"
 
 [package.extras]
 html5lib = ["html5lib"]
@@ -132,7 +132,7 @@ description = "The uncompromising code formatter."
 name = "black"
 optional = false
 python-versions = ">=3.6.2"
-version = "21.8b0"
+version = "21.9b0"
 
 [package.dependencies]
 click = ">=7.1.2"
@@ -160,10 +160,10 @@ description = "The AWS SDK for Python"
 name = "boto3"
 optional = false
 python-versions = ">= 3.6"
-version = "1.18.31"
+version = "1.18.42"
 
 [package.dependencies]
-botocore = ">=1.21.31,<1.22.0"
+botocore = ">=1.21.42,<1.22.0"
 jmespath = ">=0.7.1,<1.0.0"
 s3transfer = ">=0.5.0,<0.6.0"
 
@@ -176,7 +176,7 @@ description = "Low-level, data-driven core of boto 3."
 name = "botocore"
 optional = false
 python-versions = ">= 3.6"
-version = "1.21.31"
+version = "1.21.42"
 
 [package.dependencies]
 jmespath = ">=0.7.1,<1.0.0"
@@ -240,7 +240,7 @@ description = "The Real First Universal Charset Detector. Open, modern and activ
 name = "charset-normalizer"
 optional = false
 python-versions = ">=3.5.0"
-version = "2.0.4"
+version = "2.0.5"
 
 [package.extras]
 unicode_backport = ["unicodedata2"]
@@ -375,7 +375,7 @@ description = "A Python library for the Docker Engine API."
 name = "docker"
 optional = false
 python-versions = ">=3.6"
-version = "5.0.0"
+version = "5.0.2"
 
 [package.dependencies]
 paramiko = {version = ">=2.4.2", optional = true, markers = "extra == \"ssh\""}
@@ -491,7 +491,7 @@ description = "File identification library for Python"
 name = "identify"
 optional = false
 python-versions = ">=3.6.1"
-version = "2.2.13"
+version = "2.2.14"
 
 [package.extras]
 license = ["editdistance-s"]
@@ -728,7 +728,7 @@ description = "A small Python module for determining appropriate platform-specif
 name = "platformdirs"
 optional = false
 python-versions = ">=3.6"
-version = "2.2.0"
+version = "2.3.0"
 
 [package.extras]
 docs = ["Sphinx (>=4)", "furo (>=2021.7.5b38)", "proselint (>=0.10.2)", "sphinx-autodoc-typehints (>=1.12)"]
@@ -739,14 +739,15 @@ category = "dev"
 description = "plugin and hook calling mechanisms for python"
 name = "pluggy"
 optional = false
-python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
-version = "0.13.1"
+python-versions = ">=3.6"
+version = "1.0.0"
 
 [package.dependencies]
 importlib-metadata = {version = ">=0.12", markers = "python_version < \"3.8\""}
 
 [package.extras]
 dev = ["pre-commit", "tox"]
+testing = ["pytest", "pytest-benchmark"]
 
 [[package]]
 category = "dev"
@@ -754,7 +755,7 @@ description = "A framework for managing and maintaining multi-language pre-commi
 name = "pre-commit"
 optional = false
 python-versions = ">=3.6.1"
-version = "2.14.1"
+version = "2.15.0"
 
 [package.dependencies]
 cfgv = ">=2.0.0"
@@ -843,7 +844,7 @@ description = "pytest: simple powerful testing with Python"
 name = "pytest"
 optional = false
 python-versions = ">=3.6"
-version = "6.2.4"
+version = "6.2.5"
 
 [package.dependencies]
 atomicwrites = {version = ">=1.0", markers = "sys_platform == \"win32\""}
@@ -852,7 +853,7 @@ colorama = {version = "*", markers = "sys_platform == \"win32\""}
 importlib-metadata = {version = ">=0.12", markers = "python_version < \"3.8\""}
 iniconfig = "*"
 packaging = "*"
-pluggy = ">=0.12,<1.0.0a1"
+pluggy = ">=0.12,<2.0"
 py = ">=1.8.2"
 toml = "*"
 
@@ -1001,7 +1002,7 @@ description = "Python documentation generator"
 name = "sphinx"
 optional = false
 python-versions = ">=3.6"
-version = "4.1.2"
+version = "4.2.0"
 
 [package.dependencies]
 alabaster = ">=0.7,<0.8"
@@ -1131,15 +1132,15 @@ category = "dev"
 description = "Bump software releases"
 name = "tbump"
 optional = false
-python-versions = ">=3.6,<4.0"
-version = "6.3.1"
+python-versions = ">=3.6.2,<4.0.0"
+version = "6.4.0"
 
 [package.dependencies]
 attrs = ">=19.3.0,<20.0.0"
 cli-ui = ">=0.10.3,<0.11.0"
 docopt = ">=0.6.2,<0.7.0"
 schema = ">=0.7.1,<0.8.0"
-tomlkit = ">=0.5.8,<0.6.0"
+tomlkit = ">=0.5.8"
 
 [[package]]
 category = "dev"
@@ -1178,8 +1179,8 @@ category = "dev"
 description = "Style preserving TOML library"
 name = "tomlkit"
 optional = false
-python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
-version = "0.5.11"
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
+version = "0.7.2"
 
 [[package]]
 category = "dev"
@@ -1187,7 +1188,7 @@ description = "tox is a generic virtualenv management and test command line tool
 name = "tox"
 optional = false
 python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,>=2.7"
-version = "3.24.3"
+version = "3.24.4"
 
 [package.dependencies]
 colorama = {version = ">=0.4.1", markers = "platform_system == \"Windows\""}
@@ -1233,23 +1234,15 @@ description = "Backported and Experimental Type Hints for Python 3.5+"
 name = "typing-extensions"
 optional = false
 python-versions = "*"
-version = "3.7.4.3"
-
-[[package]]
-category = "main"
-description = "Backported and Experimental Type Hints for Python 3.5+"
-name = "typing-extensions"
-optional = false
-python-versions = "*"
-version = "3.10.0.1"
+version = "3.10.0.2"
 
 [[package]]
 category = "dev"
 description = "ASCII transliterations of Unicode text"
 name = "unidecode"
 optional = false
-python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
-version = "1.2.0"
+python-versions = ">=3.5"
+version = "1.3.2"
 
 [[package]]
 category = "main"
@@ -1311,7 +1304,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytes
 ecrscan = ["ecr-scan-reporter"]
 
 [metadata]
-content-hash = "215098486ef6b50ad06f3a4258a0557295981734ac9df217e1cf1cf3b4bd7850"
+content-hash = "9d32bb342c7c1015ddf173eb14e07c6318d5df4fa785641244c408f7cb7e4e6d"
 lock-version = "1.1"
 python-versions = "^3.7"
 
@@ -1355,25 +1348,24 @@ bcrypt = [
     {file = "bcrypt-3.2.0.tar.gz", hash = "sha256:5b93c1726e50a93a033c36e5ca7fdcd29a5c7395af50a6892f5d9e7c6cfbfb29"},
 ]
 beautifulsoup4 = [
-    {file = "beautifulsoup4-4.9.3-py2-none-any.whl", hash = "sha256:4c98143716ef1cb40bf7f39a8e3eec8f8b009509e74904ba3a7b315431577e35"},
-    {file = "beautifulsoup4-4.9.3-py3-none-any.whl", hash = "sha256:fff47e031e34ec82bf17e00da8f592fe7de69aeea38be00523c04623c04fb666"},
-    {file = "beautifulsoup4-4.9.3.tar.gz", hash = "sha256:84729e322ad1d5b4d25f805bfa05b902dd96450f43842c4e99067d5e1369eb25"},
+    {file = "beautifulsoup4-4.10.0-py3-none-any.whl", hash = "sha256:9a315ce70049920ea4572a4055bc4bd700c940521d36fc858205ad4fcde149bf"},
+    {file = "beautifulsoup4-4.10.0.tar.gz", hash = "sha256:c23ad23c521d818955a4151a67d81580319d4bf548d3d49f4223ae041ff98891"},
 ]
 behave = [
     {file = "behave-1.2.6-py2.py3-none-any.whl", hash = "sha256:ebda1a6c9e5bfe95c5f9f0a2794e01c7098b3dde86c10a95d8621c5907ff6f1c"},
     {file = "behave-1.2.6.tar.gz", hash = "sha256:b9662327aa53294c1351b0a9c369093ccec1d21026f050c3bd9b3e5cccf81a86"},
 ]
 black = [
-    {file = "black-21.8b0-py3-none-any.whl", hash = "sha256:2a0f9a8c2b2a60dbcf1ccb058842fb22bdbbcb2f32c6cc02d9578f90b92ce8b7"},
-    {file = "black-21.8b0.tar.gz", hash = "sha256:570608d28aa3af1792b98c4a337dbac6367877b47b12b88ab42095cfc1a627c2"},
+    {file = "black-21.9b0-py3-none-any.whl", hash = "sha256:380f1b5da05e5a1429225676655dddb96f5ae8c75bdf91e53d798871b902a115"},
+    {file = "black-21.9b0.tar.gz", hash = "sha256:7de4cfc7eb6b710de325712d40125689101d21d25283eed7e9998722cf10eb91"},
 ]
 boto3 = [
-    {file = "boto3-1.18.31-py3-none-any.whl", hash = "sha256:203e86311253d291d39588ae2e8dce82eecc10b9f4567ef765d7c54ec02a3e2b"},
-    {file = "boto3-1.18.31.tar.gz", hash = "sha256:59445d0e1d55c8c9675697ea41c98a0d82089a4be3076ea60e3a87cbe94dc141"},
+    {file = "boto3-1.18.42-py3-none-any.whl", hash = "sha256:63b9846c26e0905f4e9e39d6b59f152330c53a926d693439161c43dcf9779365"},
+    {file = "boto3-1.18.42.tar.gz", hash = "sha256:a9232185d8e7e2fd2b166c0ebee5d7b1f787fdb3093f33bbf5aa932c08f0ccac"},
 ]
 botocore = [
-    {file = "botocore-1.21.31-py3-none-any.whl", hash = "sha256:8bc35ae34256cac76828ab96c80bc6653b942f85ad1898e7e265196fe92b659e"},
-    {file = "botocore-1.21.31.tar.gz", hash = "sha256:58cd315e2ae0971acdb3d7cda9c9c36b41c73181f41943a7443812d6d3c9ad18"},
+    {file = "botocore-1.21.42-py3-none-any.whl", hash = "sha256:6de4fec4ee10987e4dea96f289553c2f45109fcaafcb74a5baee1221926e1306"},
+    {file = "botocore-1.21.42.tar.gz", hash = "sha256:0952d1200968365b440045efe8e45bbae38cf603fee12bcfc3d7b5f963cbfa18"},
 ]
 cached-property = [
     {file = "cached-property-1.5.2.tar.gz", hash = "sha256:9fa5755838eecbb2d234c3aa390bd80fbd3ac6b6869109bfc1b499f7bd89a130"},
@@ -1438,8 +1430,8 @@ cfn-flip = [
     {file = "cfn_flip-1.2.3.tar.gz", hash = "sha256:2bed32a1f4dca26dc64178d52511fd4ef778b5ccbcf32559cac884ace75bde6a"},
 ]
 charset-normalizer = [
-    {file = "charset-normalizer-2.0.4.tar.gz", hash = "sha256:f23667ebe1084be45f6ae0538e4a5a865206544097e4e8bbcacf42cd02a348f3"},
-    {file = "charset_normalizer-2.0.4-py3-none-any.whl", hash = "sha256:0c8911edd15d19223366a194a513099a302055a962bca2cec0f54b8b63175d8b"},
+    {file = "charset-normalizer-2.0.5.tar.gz", hash = "sha256:7098e7e862f6370a2a8d1a6398cd359815c45d12626267652c3f13dec58e2367"},
+    {file = "charset_normalizer-2.0.5-py3-none-any.whl", hash = "sha256:fa471a601dfea0f492e4f4fca035cd82155e65dc45c9b83bf4322dfab63755dd"},
 ]
 cli-ui = [
     {file = "cli-ui-0.10.3.tar.gz", hash = "sha256:be517ec1a5385eb22c06d578c08ca65be59a33f00a0c09aa111db44a2f9dd211"},
@@ -1552,8 +1544,8 @@ distro = [
     {file = "distro-1.6.0.tar.gz", hash = "sha256:83f5e5a09f9c5f68f60173de572930effbcc0287bb84fdc4426cb4168c088424"},
 ]
 docker = [
-    {file = "docker-5.0.0-py2.py3-none-any.whl", hash = "sha256:fc961d622160e8021c10d1bcabc388c57d55fb1f917175afbe24af442e6879bd"},
-    {file = "docker-5.0.0.tar.gz", hash = "sha256:3e8bc47534e0ca9331d72c32f2881bb13b93ded0bcdeab3c833fb7cf61c0a9a5"},
+    {file = "docker-5.0.2-py2.py3-none-any.whl", hash = "sha256:9b17f0723d83c1f3418d2aa17bf90b24dbe97deda06208dd4262fa30a6ee87eb"},
+    {file = "docker-5.0.2.tar.gz", hash = "sha256:21ec4998e90dff7a7aaaa098ca8d839c7de412b89e6f6c30908372d58fecf663"},
 ]
 docker-compose = [
     {file = "docker-compose-1.29.2.tar.gz", hash = "sha256:4c8cd9d21d237412793d18bd33110049ee9af8dab3fe2c213bbd0733959b09b7"},
@@ -1586,8 +1578,8 @@ flake8 = [
     {file = "flake8-3.9.2.tar.gz", hash = "sha256:07528381786f2a6237b061f6e96610a4167b226cb926e2aa2b6b1d78057c576b"},
 ]
 identify = [
-    {file = "identify-2.2.13-py2.py3-none-any.whl", hash = "sha256:7199679b5be13a6b40e6e19ea473e789b11b4e3b60986499b1f589ffb03c217c"},
-    {file = "identify-2.2.13.tar.gz", hash = "sha256:7bc6e829392bd017236531963d2d937d66fc27cadc643ac0aba2ce9f26157c79"},
+    {file = "identify-2.2.14-py2.py3-none-any.whl", hash = "sha256:113a76a6ba614d2a3dd408b3504446bcfac0370da5995aa6a17fd7c6dffde02d"},
+    {file = "identify-2.2.14.tar.gz", hash = "sha256:32f465f3c48083f345ad29a9df8419a4ce0674bf4a8c3245191d65c83634bdbf"},
 ]
 idna = [
     {file = "idna-3.2-py3-none-any.whl", hash = "sha256:14475042e284991034cb48e06f6851428fb14c4dc953acd9be9a5e95c7b6dd7a"},
@@ -1766,16 +1758,16 @@ placebo = [
     {file = "placebo-0.9.0.tar.gz", hash = "sha256:03157f8527bbc2965b71b88f4a139ef8038618b346787f20d63e3c5da541b047"},
 ]
 platformdirs = [
-    {file = "platformdirs-2.2.0-py3-none-any.whl", hash = "sha256:4666d822218db6a262bdfdc9c39d21f23b4cfdb08af331a81e92751daf6c866c"},
-    {file = "platformdirs-2.2.0.tar.gz", hash = "sha256:632daad3ab546bd8e6af0537d09805cec458dce201bccfe23012df73332e181e"},
+    {file = "platformdirs-2.3.0-py3-none-any.whl", hash = "sha256:8003ac87717ae2c7ee1ea5a84a1a61e87f3fbd16eb5aadba194ea30a9019f648"},
+    {file = "platformdirs-2.3.0.tar.gz", hash = "sha256:15b056538719b1c94bdaccb29e5f81879c7f7f0f4a153f46086d155dffcd4f0f"},
 ]
 pluggy = [
-    {file = "pluggy-0.13.1-py2.py3-none-any.whl", hash = "sha256:966c145cd83c96502c3c3868f50408687b38434af77734af1e9ca461a4081d2d"},
-    {file = "pluggy-0.13.1.tar.gz", hash = "sha256:15b2acde666561e1298d71b523007ed7364de07029219b604cf808bfa1c765b0"},
+    {file = "pluggy-1.0.0-py2.py3-none-any.whl", hash = "sha256:74134bbf457f031a36d68416e1509f34bd5ccc019f0bcc952c7b909d06b37bd3"},
+    {file = "pluggy-1.0.0.tar.gz", hash = "sha256:4224373bacce55f955a878bf9cfa763c1e360858e330072059e10bad68531159"},
 ]
 pre-commit = [
-    {file = "pre_commit-2.14.1-py2.py3-none-any.whl", hash = "sha256:a22d12a02da4d8df314187dfe7a61bda6291d57992060522feed30c8cd658b68"},
-    {file = "pre_commit-2.14.1.tar.gz", hash = "sha256:7977a3103927932d4823178cbe4719ab55bb336f42a9f3bb2776cff99007a117"},
+    {file = "pre_commit-2.15.0-py2.py3-none-any.whl", hash = "sha256:a4ed01000afcb484d9eb8d504272e642c4c4099bbad3a6b27e519bd6a3e928a6"},
+    {file = "pre_commit-2.15.0.tar.gz", hash = "sha256:3c25add78dbdfb6a28a651780d5c311ac40dd17f160eb3954a0c59da40a505a7"},
 ]
 py = [
     {file = "py-1.10.0-py2.py3-none-any.whl", hash = "sha256:3b80836aa6d1feeaa108e046da6423ab8f6ceda6468545ae8d02d9d58d18818a"},
@@ -1845,8 +1837,8 @@ pyrsistent = [
     {file = "pyrsistent-0.18.0.tar.gz", hash = "sha256:773c781216f8c2900b42a7b638d5b517bb134ae1acbebe4d1e8f1f41ea60eb4b"},
 ]
 pytest = [
-    {file = "pytest-6.2.4-py3-none-any.whl", hash = "sha256:91ef2131a9bd6be8f76f1f08eac5c5317221d6ad1e143ae03894b862e8976890"},
-    {file = "pytest-6.2.4.tar.gz", hash = "sha256:50bcad0a0b9c5a72c8e4e7c9855a3ad496ca6a881a3641b4260605450772c54b"},
+    {file = "pytest-6.2.5-py3-none-any.whl", hash = "sha256:7310f8d27bc79ced999e760ca304d69f6ba6c6649c0b60fb0e04a4a77cacc134"},
+    {file = "pytest-6.2.5.tar.gz", hash = "sha256:131b36680866a76e6781d13f101efb86cf674ebb9762eb70d3082b6f29889e89"},
 ]
 python-dateutil = [
     {file = "python-dateutil-2.8.2.tar.gz", hash = "sha256:0123cacc1627ae19ddf3c27a5de5bd67ee4586fbdd6440d9748f8abb483d3e86"},
@@ -1977,8 +1969,8 @@ soupsieve = [
     {file = "soupsieve-2.2.1.tar.gz", hash = "sha256:052774848f448cf19c7e959adf5566904d525f33a3f8b6ba6f6f8f26ec7de0cc"},
 ]
 sphinx = [
-    {file = "Sphinx-4.1.2-py3-none-any.whl", hash = "sha256:46d52c6cee13fec44744b8c01ed692c18a640f6910a725cbb938bc36e8d64544"},
-    {file = "Sphinx-4.1.2.tar.gz", hash = "sha256:3092d929cd807926d846018f2ace47ba2f3b671b309c7a89cd3306e80c826b13"},
+    {file = "Sphinx-4.2.0-py3-none-any.whl", hash = "sha256:98a535c62a4fcfcc362528592f69b26f7caec587d32cd55688db580be0287ae0"},
+    {file = "Sphinx-4.2.0.tar.gz", hash = "sha256:94078db9184491e15bce0a56d9186e0aec95f16ac20b12d00e06d4e36f1058a6"},
 ]
 sphinx-material = [
     {file = "sphinx_material-0.0.34-py3-none-any.whl", hash = "sha256:c084ecf98a31ba2ec197c35e4bb3b26c6ce034d75dd25345f1797d1cd2f85dc4"},
@@ -2013,8 +2005,8 @@ tabulate = [
     {file = "tabulate-0.8.9.tar.gz", hash = "sha256:eb1d13f25760052e8931f2ef80aaf6045a6cceb47514db8beab24cded16f13a7"},
 ]
 tbump = [
-    {file = "tbump-6.3.1-py3-none-any.whl", hash = "sha256:60a8b0e36654c705a359b0a1af289eff2397d4482a348219e150ee1169d63c7f"},
-    {file = "tbump-6.3.1.tar.gz", hash = "sha256:9b63ef205105b16bf41617c484ccf9e3adb98ebae92e3557a6da5e97118880ad"},
+    {file = "tbump-6.4.0-py3-none-any.whl", hash = "sha256:43d385a89a77a8820080ae16c5612e9820d27b575e2808e5d35ef2c84468699d"},
+    {file = "tbump-6.4.0.tar.gz", hash = "sha256:7861b155ad7082e8fa1dfd8b26c435ec4b7f1f32d8eabe52d39f992e5c661fa9"},
 ]
 text-unidecode = [
     {file = "text-unidecode-1.3.tar.gz", hash = "sha256:bad6603bb14d279193107714b288be206cac565dfa49aa5b105294dd5c4aab93"},
@@ -2033,12 +2025,12 @@ tomli = [
     {file = "tomli-1.2.1.tar.gz", hash = "sha256:a5b75cb6f3968abb47af1b40c1819dc519ea82bcc065776a866e8d74c5ca9442"},
 ]
 tomlkit = [
-    {file = "tomlkit-0.5.11-py2.py3-none-any.whl", hash = "sha256:4e1bd6c9197d984528f9ff0cc9db667c317d8881288db50db20eeeb0f6b0380b"},
-    {file = "tomlkit-0.5.11.tar.gz", hash = "sha256:f044eda25647882e5ef22b43a1688fb6ab12af2fc50e8456cdfc751c873101cf"},
+    {file = "tomlkit-0.7.2-py2.py3-none-any.whl", hash = "sha256:173ad840fa5d2aac140528ca1933c29791b79a374a0861a80347f42ec9328117"},
+    {file = "tomlkit-0.7.2.tar.gz", hash = "sha256:d7a454f319a7e9bd2e249f239168729327e4dd2d27b17dc68be264ad1ce36754"},
 ]
 tox = [
-    {file = "tox-3.24.3-py2.py3-none-any.whl", hash = "sha256:9fbf8e2ab758b2a5e7cb2c72945e4728089934853076f67ef18d7575c8ab6b88"},
-    {file = "tox-3.24.3.tar.gz", hash = "sha256:c6c4e77705ada004283610fd6d9ba4f77bc85d235447f875df9f0ba1bc23b634"},
+    {file = "tox-3.24.4-py2.py3-none-any.whl", hash = "sha256:5e274227a53dc9ef856767c21867377ba395992549f02ce55eb549f9fb9a8d10"},
+    {file = "tox-3.24.4.tar.gz", hash = "sha256:c30b57fa2477f1fb7c36aa1d83292d5c2336cd0018119e1b1c17340e2c2708ca"},
 ]
 troposphere = [
     {file = "troposphere-3.0.2-py3-none-any.whl", hash = "sha256:a8492656bcf917b45b253dc3623cb9c81e45e5c7aaa524647650547d505016e1"},
@@ -2077,16 +2069,13 @@ typed-ast = [
     {file = "typed_ast-1.4.3.tar.gz", hash = "sha256:fb1bbeac803adea29cedd70781399c99138358c26d05fcbd23c13016b7f5ec65"},
 ]
 typing-extensions = [
-    {file = "typing_extensions-3.7.4.3-py2-none-any.whl", hash = "sha256:dafc7639cde7f1b6e1acc0f457842a83e722ccca8eef5270af2d74792619a89f"},
-    {file = "typing_extensions-3.7.4.3-py3-none-any.whl", hash = "sha256:7cb407020f00f7bfc3cb3e7881628838e69d8f3fcab2f64742a5e76b2f841918"},
-    {file = "typing_extensions-3.7.4.3.tar.gz", hash = "sha256:99d4073b617d30288f569d3f13d2bd7548c3a7e4c8de87db09a9d29bb3a4a60c"},
-    {file = "typing_extensions-3.10.0.1-py2-none-any.whl", hash = "sha256:8bbffbd37fbeb9747a0241fdfde5ae99d4531ad1d1a41ccaea62100e15a5814c"},
-    {file = "typing_extensions-3.10.0.1-py3-none-any.whl", hash = "sha256:045dd532231acfa03628df5e0c66dba64e2cc8fc8b844538d4ad6d5dd6cb82dc"},
-    {file = "typing_extensions-3.10.0.1.tar.gz", hash = "sha256:83af6730a045fda60f46510f7f1f094776d90321caa4d97d20ef38871bef4bd3"},
+    {file = "typing_extensions-3.10.0.2-py2-none-any.whl", hash = "sha256:d8226d10bc02a29bcc81df19a26e56a9647f8b0a6d4a83924139f4a8b01f17b7"},
+    {file = "typing_extensions-3.10.0.2-py3-none-any.whl", hash = "sha256:f1d25edafde516b146ecd0613dabcc61409817af4766fbbcfb8d1ad4ec441a34"},
+    {file = "typing_extensions-3.10.0.2.tar.gz", hash = "sha256:49f75d16ff11f1cd258e1b988ccff82a3ca5570217d7ad8c5f48205dd99a677e"},
 ]
 unidecode = [
-    {file = "Unidecode-1.2.0-py2.py3-none-any.whl", hash = "sha256:12435ef2fc4cdfd9cf1035a1db7e98b6b047fe591892e81f34e94959591fad00"},
-    {file = "Unidecode-1.2.0.tar.gz", hash = "sha256:8d73a97d387a956922344f6b74243c2c6771594659778744b2dbdaad8f6b727d"},
+    {file = "Unidecode-1.3.2-py3-none-any.whl", hash = "sha256:215fe33c9d1c889fa823ccb66df91b02524eb8cc8c9c80f9c5b8129754d27829"},
+    {file = "Unidecode-1.3.2.tar.gz", hash = "sha256:669898c1528912bcf07f9819dc60df18d057f7528271e31f8ec28cc88ef27504"},
 ]
 urllib3 = [
     {file = "urllib3-1.26.6-py2.py3-none-any.whl", hash = "sha256:39fb8672126159acb139a7718dd10806104dec1e2f0f6c88aab05d17df10c8d4"},
