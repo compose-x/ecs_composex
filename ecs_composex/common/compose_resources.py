@@ -393,6 +393,8 @@ class XResource(object):
         Method to define all the env var of a resource based on its own defined output attributes
         """
         for env_name in self.env_names:
+            if env_name in [var.Name for var in self.env_vars]:
+                continue
             if self.cfn_resource:
                 for parameter in self.output_properties.keys():
                     if parameter.return_value:

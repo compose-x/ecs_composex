@@ -336,7 +336,6 @@ def generate_emf_processors(family, ecs_sd_config, **options):
         if keyisset("AutoAddNginxPrometheusExporter", options):
             define_nginx_exporter_sidecar(family)
     if keyisset("CustomRules", options):
-        print("CUSTOM OPTIONS. YAY")
         process_custom_rules(family, ecs_sd_config, options, emf_processors)
     return emf_processors
 
