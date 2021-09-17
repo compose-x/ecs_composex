@@ -1,34 +1,34 @@
 [[package]]
-category = "dev"
-description = "A configurable sidebar-enabled Sphinx theme"
 name = "alabaster"
-optional = false
-python-versions = "*"
 version = "0.7.12"
-
-[[package]]
-category = "main"
-description = "Python command-line parsing library"
-name = "argparse"
+description = "A configurable sidebar-enabled Sphinx theme"
+category = "dev"
 optional = false
 python-versions = "*"
-version = "1.4.0"
 
 [[package]]
-category = "dev"
-description = "Atomic file writes."
-name = "atomicwrites"
-optional = false
-python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+name = "argparse"
 version = "1.4.0"
-
-[[package]]
+description = "Python command-line parsing library"
 category = "main"
-description = "Classes Without Boilerplate"
-name = "attrs"
+optional = false
+python-versions = "*"
+
+[[package]]
+name = "atomicwrites"
+version = "1.4.0"
+description = "Atomic file writes."
+category = "dev"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+
+[[package]]
+name = "attrs"
 version = "19.3.0"
+description = "Classes Without Boilerplate"
+category = "main"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 
 [package.extras]
 azure-pipelines = ["coverage", "hypothesis", "pympler", "pytest (>=4.3.0)", "six", "zope.interface", "pytest-azurepipelines"]
@@ -37,12 +37,12 @@ docs = ["sphinx", "zope.interface"]
 tests = ["coverage", "hypothesis", "pympler", "pytest (>=4.3.0)", "six", "zope.interface"]
 
 [[package]]
-category = "main"
-description = "AWS SAM Translator is a library that transform SAM templates into AWS CloudFormation templates"
 name = "aws-sam-translator"
+version = "1.38.0"
+description = "AWS SAM Translator is a library that transform SAM templates into AWS CloudFormation templates"
+category = "main"
 optional = false
 python-versions = "*"
-version = "1.38.0"
 
 [package.dependencies]
 boto3 = ">=1.5,<2.0"
@@ -53,23 +53,23 @@ six = ">=1.15,<2.0"
 dev = ["coverage (>=5.3,<6.0)", "flake8 (>=3.8.4,<3.9.0)", "tox (>=3.20.1,<3.21.0)", "pytest-cov (>=2.10.1,<2.11.0)", "pylint (>=1.7.2,<2.0)", "pyyaml (>=5.3.1,<5.4.0)", "mock (>=3.0.5,<4.0.0)", "parameterized (>=0.7.4,<0.8.0)", "click (>=7.1,<8.0)", "dateparser (>=0.7,<1.0)", "requests (>=2.24.0,<2.25.0)", "docopt (>=0.6.2,<0.7.0)", "pathlib2 (>=2.3.5)", "pytest (>=4.6.11,<4.7.0)", "pytest (>=6.1.1,<6.2.0)", "black (==20.8b1)"]
 
 [[package]]
-category = "dev"
-description = "Internationalization utilities"
 name = "babel"
+version = "2.9.1"
+description = "Internationalization utilities"
+category = "dev"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
-version = "2.9.1"
 
 [package.dependencies]
 pytz = ">=2015.7"
 
 [[package]]
-category = "dev"
-description = "Compatibility shim providing selectable entry points for older implementations"
 name = "backports.entry-points-selectable"
+version = "1.1.0"
+description = "Compatibility shim providing selectable entry points for older implementations"
+category = "dev"
 optional = false
 python-versions = ">=2.7"
-version = "1.1.0"
 
 [package.dependencies]
 importlib-metadata = {version = "*", markers = "python_version < \"3.8\""}
@@ -79,12 +79,12 @@ docs = ["sphinx", "jaraco.packaging (>=8.2)", "rst.linker (>=1.9)"]
 testing = ["pytest (>=4.6)", "pytest-flake8", "pytest-cov", "pytest-black (>=0.3.7)", "pytest-mypy", "pytest-checkdocs (>=2.4)", "pytest-enabler (>=1.0.1)"]
 
 [[package]]
-category = "dev"
-description = "Modern password hashing for your software and your servers"
 name = "bcrypt"
+version = "3.2.0"
+description = "Modern password hashing for your software and your servers"
+category = "dev"
 optional = false
 python-versions = ">=3.6"
-version = "3.2.0"
 
 [package.dependencies]
 cffi = ">=1.1"
@@ -95,12 +95,12 @@ tests = ["pytest (>=3.2.1,!=3.3.0)"]
 typecheck = ["mypy"]
 
 [[package]]
-category = "dev"
-description = "Screen-scraping library"
 name = "beautifulsoup4"
+version = "4.10.0"
+description = "Screen-scraping library"
+category = "dev"
 optional = false
 python-versions = ">3.0.0"
-version = "4.10.0"
 
 [package.dependencies]
 soupsieve = ">1.2"
@@ -110,12 +110,12 @@ html5lib = ["html5lib"]
 lxml = ["lxml"]
 
 [[package]]
-category = "dev"
-description = "behave is behaviour-driven development, Python style"
 name = "behave"
+version = "1.2.6"
+description = "behave is behaviour-driven development, Python style"
+category = "dev"
 optional = false
 python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*"
-version = "1.2.6"
 
 [package.dependencies]
 parse = ">=1.8.2"
@@ -127,12 +127,12 @@ develop = ["coverage", "pytest (>=3.0)", "pytest-cov", "tox", "invoke (>=0.21.0)
 docs = ["sphinx (>=1.6)", "sphinx-bootstrap-theme (>=0.6)"]
 
 [[package]]
-category = "dev"
-description = "The uncompromising code formatter."
 name = "black"
+version = "21.9b0"
+description = "The uncompromising code formatter."
+category = "dev"
 optional = false
 python-versions = ">=3.6.2"
-version = "21.9b0"
 
 [package.dependencies]
 click = ">=7.1.2"
@@ -155,15 +155,15 @@ python2 = ["typed-ast (>=1.4.2)"]
 uvloop = ["uvloop (>=0.15.2)"]
 
 [[package]]
-category = "main"
-description = "The AWS SDK for Python"
 name = "boto3"
+version = "1.18.44"
+description = "The AWS SDK for Python"
+category = "main"
 optional = false
 python-versions = ">= 3.6"
-version = "1.18.42"
 
 [package.dependencies]
-botocore = ">=1.21.42,<1.22.0"
+botocore = ">=1.21.44,<1.22.0"
 jmespath = ">=0.7.1,<1.0.0"
 s3transfer = ">=0.5.0,<0.6.0"
 
@@ -171,12 +171,12 @@ s3transfer = ">=0.5.0,<0.6.0"
 crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
 
 [[package]]
-category = "main"
-description = "Low-level, data-driven core of boto 3."
 name = "botocore"
+version = "1.21.44"
+description = "Low-level, data-driven core of boto 3."
+category = "main"
 optional = false
 python-versions = ">= 3.6"
-version = "1.21.42"
 
 [package.dependencies]
 jmespath = ">=0.7.1,<1.0.0"
@@ -187,47 +187,47 @@ urllib3 = ">=1.25.4,<1.27"
 crt = ["awscrt (==0.11.24)"]
 
 [[package]]
-category = "dev"
-description = "A decorator for caching properties in classes."
 name = "cached-property"
-optional = false
-python-versions = "*"
 version = "1.5.2"
-
-[[package]]
-category = "main"
-description = "Python package for providing Mozilla's CA Bundle."
-name = "certifi"
-optional = false
-python-versions = "*"
-version = "2021.5.30"
-
-[[package]]
+description = "A decorator for caching properties in classes."
 category = "dev"
-description = "Foreign Function Interface for Python calling C code."
-name = "cffi"
 optional = false
 python-versions = "*"
+
+[[package]]
+name = "certifi"
+version = "2021.5.30"
+description = "Python package for providing Mozilla's CA Bundle."
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
+name = "cffi"
 version = "1.14.6"
+description = "Foreign Function Interface for Python calling C code."
+category = "dev"
+optional = false
+python-versions = "*"
 
 [package.dependencies]
 pycparser = "*"
 
 [[package]]
-category = "dev"
-description = "Validate configuration and produce human readable error messages."
 name = "cfgv"
+version = "3.3.1"
+description = "Validate configuration and produce human readable error messages."
+category = "dev"
 optional = false
 python-versions = ">=3.6.1"
-version = "3.3.1"
 
 [[package]]
-category = "main"
-description = "Convert AWS CloudFormation templates between JSON and YAML formats"
 name = "cfn-flip"
+version = "1.2.3"
+description = "Convert AWS CloudFormation templates between JSON and YAML formats"
+category = "main"
 optional = false
 python-versions = "*"
-version = "1.2.3"
 
 [package.dependencies]
 Click = "*"
@@ -235,23 +235,23 @@ PyYAML = ">=4.1"
 six = "*"
 
 [[package]]
-category = "main"
-description = "The Real First Universal Charset Detector. Open, modern and actively maintained alternative to Chardet."
 name = "charset-normalizer"
+version = "2.0.5"
+description = "The Real First Universal Charset Detector. Open, modern and actively maintained alternative to Chardet."
+category = "main"
 optional = false
 python-versions = ">=3.5.0"
-version = "2.0.5"
 
 [package.extras]
 unicode_backport = ["unicodedata2"]
 
 [[package]]
-category = "dev"
-description = "Build Nice User Interfaces In The Terminal"
 name = "cli-ui"
+version = "0.10.3"
+description = "Build Nice User Interfaces In The Terminal"
+category = "dev"
 optional = false
 python-versions = ">=3.5,<4.0"
-version = "0.10.3"
 
 [package.dependencies]
 colorama = ">=0.4.1,<0.5.0"
@@ -259,66 +259,69 @@ tabulate = ">=0.8.3,<0.9.0"
 unidecode = ">=1.0.23,<2.0.0"
 
 [[package]]
-category = "main"
-description = "Composable command line interface toolkit"
 name = "click"
+version = "8.0.1"
+description = "Composable command line interface toolkit"
+category = "main"
 optional = false
 python-versions = ">=3.6"
-version = "8.0.1"
 
 [package.dependencies]
 colorama = {version = "*", markers = "platform_system == \"Windows\""}
 importlib-metadata = {version = "*", markers = "python_version < \"3.8\""}
 
 [[package]]
-category = "main"
-description = "Cross-platform colored terminal text."
 name = "colorama"
+version = "0.4.4"
+description = "Cross-platform colored terminal text."
+category = "main"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
-version = "0.4.4"
 
 [[package]]
-category = "main"
-description = "Common Library for Compose-X Projects"
 name = "compose-x-common"
+version = "0.2.0"
+description = "Common Library for Compose-X Projects"
+category = "main"
 optional = false
 python-versions = ">=3.7,<4.0"
-version = "0.1.1"
+
+[package.dependencies]
+boto3 = {version = ">=1.18.0,<2.0.0", optional = true, markers = "extra == \"aws\""}
 
 [package.extras]
 aws = ["boto3 (>=1.18.0,<2.0.0)"]
 
 [[package]]
-category = "main"
-description = "Library & Tool to compile/merge compose files with top level extension fields"
 name = "compose-x-render"
+version = "0.3.2"
+description = "Library & Tool to compile/merge compose files with top level extension fields"
+category = "main"
 optional = false
 python-versions = ">=3.7,<4.0"
-version = "0.3.1"
 
 [package.dependencies]
 argparse = ">=1.4.0,<2.0.0"
-compose-x-common = ">=0.1.0,<0.2.0"
+compose-x-common = ">=0.2.0,<0.3.0"
 importlib-resources = ">=5.2.2,<6.0.0"
 jsonschema = ">=3.2.0,<4.0.0"
 PyYAML = ">=5.4.1,<6.0.0"
 
 [[package]]
-category = "dev"
-description = "Backports and enhancements for the contextlib module"
 name = "contextlib2"
+version = "21.6.0"
+description = "Backports and enhancements for the contextlib module"
+category = "dev"
 optional = false
 python-versions = ">=3.6"
-version = "21.6.0"
 
 [[package]]
-category = "dev"
-description = "Code coverage measurement for Python"
 name = "coverage"
+version = "5.5"
+description = "Code coverage measurement for Python"
+category = "dev"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, <4"
-version = "5.5"
 
 [package.dependencies]
 toml = {version = "*", optional = true, markers = "extra == \"toml\""}
@@ -327,12 +330,12 @@ toml = {version = "*", optional = true, markers = "extra == \"toml\""}
 toml = ["toml"]
 
 [[package]]
-category = "dev"
-description = "cryptography is a package which provides cryptographic recipes and primitives to Python developers."
 name = "cryptography"
+version = "3.4.8"
+description = "cryptography is a package which provides cryptographic recipes and primitives to Python developers."
+category = "dev"
 optional = false
 python-versions = ">=3.6"
-version = "3.4.8"
 
 [package.dependencies]
 cffi = ">=1.12"
@@ -346,36 +349,36 @@ ssh = ["bcrypt (>=3.1.5)"]
 test = ["pytest (>=6.0)", "pytest-cov", "pytest-subtests", "pytest-xdist", "pretend", "iso8601", "pytz", "hypothesis (>=1.11.4,!=3.79.2)"]
 
 [[package]]
-category = "dev"
-description = "CSS HTML JS Minifier"
 name = "css-html-js-minify"
-optional = false
-python-versions = ">=3.6"
 version = "2.5.5"
-
-[[package]]
+description = "CSS HTML JS Minifier"
 category = "dev"
-description = "Distribution utilities"
-name = "distlib"
-optional = false
-python-versions = "*"
-version = "0.3.2"
-
-[[package]]
-category = "dev"
-description = "Distro - an OS platform information API"
-name = "distro"
-optional = false
-python-versions = "*"
-version = "1.6.0"
-
-[[package]]
-category = "main"
-description = "A Python library for the Docker Engine API."
-name = "docker"
 optional = false
 python-versions = ">=3.6"
+
+[[package]]
+name = "distlib"
+version = "0.3.2"
+description = "Distribution utilities"
+category = "dev"
+optional = false
+python-versions = "*"
+
+[[package]]
+name = "distro"
+version = "1.6.0"
+description = "Distro - an OS platform information API"
+category = "dev"
+optional = false
+python-versions = "*"
+
+[[package]]
+name = "docker"
 version = "5.0.2"
+description = "A Python library for the Docker Engine API."
+category = "main"
+optional = false
+python-versions = ">=3.6"
 
 [package.dependencies]
 paramiko = {version = ">=2.4.2", optional = true, markers = "extra == \"ssh\""}
@@ -388,12 +391,12 @@ ssh = ["paramiko (>=2.4.2)"]
 tls = ["pyOpenSSL (>=17.5.0)", "cryptography (>=3.4.7)", "idna (>=2.0.0)"]
 
 [[package]]
-category = "dev"
-description = "Multi-container orchestration for Docker"
 name = "docker-compose"
+version = "1.29.2"
+description = "Multi-container orchestration for Docker"
+category = "dev"
 optional = false
 python-versions = ">=3.4"
-version = "1.29.2"
 
 [package.dependencies]
 cached-property = {version = ">=1.2.0,<2", markers = "python_version < \"3.8\""}
@@ -414,70 +417,71 @@ socks = ["PySocks (>=1.5.6,!=1.5.7,<2)"]
 tests = ["ddt (>=1.2.2,<2)", "pytest (<6)"]
 
 [[package]]
-category = "dev"
-description = "Python library to use the pseudo-tty of a docker container"
 name = "dockerpty"
+version = "0.4.1"
+description = "Python library to use the pseudo-tty of a docker container"
+category = "dev"
 optional = false
 python-versions = "*"
-version = "0.4.1"
 
 [package.dependencies]
 six = ">=1.3.0"
 
 [[package]]
-category = "dev"
-description = "Pythonic argument parser, that will make you smile"
 name = "docopt"
+version = "0.6.2"
+description = "Pythonic argument parser, that will make you smile"
+category = "dev"
 optional = false
 python-versions = "*"
-version = "0.6.2"
 
 [[package]]
-category = "dev"
-description = "Docutils -- Python Documentation Utilities"
 name = "docutils"
+version = "0.17.1"
+description = "Docutils -- Python Documentation Utilities"
+category = "dev"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
-version = "0.17.1"
 
 [[package]]
-category = "main"
-description = "Stay on top of your docker images security vulnerabilities in AWS ECR"
 name = "ecr-scan-reporter"
+version = "0.4.1"
+description = "Stay on top of your docker images security vulnerabilities in AWS ECR"
+category = "main"
 optional = true
 python-versions = ">=3.7,<4.0"
-version = "0.3.0"
 
 [package.dependencies]
 boto3 = ">=1.18,<2.0"
+compose-x-common = {version = ">=0.2.0,<0.3.0", extras = ["aws"]}
 pytz = ">=2021.1,<2022.0"
 
 [[package]]
-category = "main"
-description = "JSON Schema Specifications for ECS Compose-X"
 name = "ecs-composex-specs"
+version = "0.2.12"
+description = "JSON Schema Specifications for ECS Compose-X"
+category = "main"
 optional = false
 python-versions = ">=3.7,<4.0"
-version = "0.2.12"
 
 [package.dependencies]
 jsonschema = ">=3.2.0,<4.0.0"
 
 [[package]]
-category = "dev"
-description = "A platform independent file lock."
 name = "filelock"
+version = "3.0.12"
+description = "A platform independent file lock."
+category = "dev"
 optional = false
 python-versions = "*"
-version = "3.0.12"
 
 [[package]]
-category = "dev"
-description = "the modular source code checker: pep8 pyflakes and co"
 name = "flake8"
+version = "3.9.2"
+description = "the modular source code checker: pep8 pyflakes and co"
+category = "dev"
 optional = false
 python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,>=2.7"
-version = "3.9.2"
 
 [package.dependencies]
 importlib-metadata = {version = "*", markers = "python_version < \"3.8\""}
@@ -486,39 +490,39 @@ pycodestyle = ">=2.7.0,<2.8.0"
 pyflakes = ">=2.3.0,<2.4.0"
 
 [[package]]
-category = "dev"
-description = "File identification library for Python"
 name = "identify"
+version = "2.2.14"
+description = "File identification library for Python"
+category = "dev"
 optional = false
 python-versions = ">=3.6.1"
-version = "2.2.14"
 
 [package.extras]
 license = ["editdistance-s"]
 
 [[package]]
-category = "main"
-description = "Internationalized Domain Names in Applications (IDNA)"
 name = "idna"
+version = "3.2"
+description = "Internationalized Domain Names in Applications (IDNA)"
+category = "main"
 optional = false
 python-versions = ">=3.5"
-version = "3.2"
 
 [[package]]
-category = "dev"
-description = "Getting image size from png/jpeg/jpeg2000/gif file"
 name = "imagesize"
+version = "1.2.0"
+description = "Getting image size from png/jpeg/jpeg2000/gif file"
+category = "dev"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
-version = "1.2.0"
 
 [[package]]
-category = "main"
-description = "Read metadata from Python packages"
 name = "importlib-metadata"
+version = "4.8.1"
+description = "Read metadata from Python packages"
+category = "main"
 optional = false
 python-versions = ">=3.6"
-version = "4.8.1"
 
 [package.dependencies]
 typing-extensions = {version = ">=3.6.4", markers = "python_version < \"3.8\""}
@@ -530,12 +534,12 @@ perf = ["ipython"]
 testing = ["pytest (>=4.6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-cov", "pytest-enabler (>=1.0.1)", "packaging", "pep517", "pyfakefs", "flufl.flake8", "pytest-perf (>=0.9.2)", "pytest-black (>=0.3.7)", "pytest-mypy", "importlib-resources (>=1.3)"]
 
 [[package]]
-category = "main"
-description = "Read resources from Python packages"
 name = "importlib-resources"
+version = "5.2.2"
+description = "Read resources from Python packages"
+category = "main"
 optional = false
 python-versions = ">=3.6"
-version = "5.2.2"
 
 [package.dependencies]
 zipp = {version = ">=3.1.0", markers = "python_version < \"3.10\""}
@@ -545,34 +549,34 @@ docs = ["sphinx", "jaraco.packaging (>=8.2)", "rst.linker (>=1.9)"]
 testing = ["pytest (>=4.6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-cov", "pytest-enabler (>=1.0.1)", "pytest-black (>=0.3.7)", "pytest-mypy"]
 
 [[package]]
-category = "dev"
-description = "iniconfig: brain-dead simple config-ini parsing"
 name = "iniconfig"
+version = "1.1.1"
+description = "iniconfig: brain-dead simple config-ini parsing"
+category = "dev"
 optional = false
 python-versions = "*"
-version = "1.1.1"
 
 [[package]]
-category = "dev"
-description = "A Python utility / library to sort Python imports."
 name = "isort"
+version = "5.9.3"
+description = "A Python utility / library to sort Python imports."
+category = "dev"
 optional = false
 python-versions = ">=3.6.1,<4.0"
-version = "5.9.3"
 
 [package.extras]
-colors = ["colorama (>=0.4.3,<0.5.0)"]
 pipfile_deprecated_finder = ["pipreqs", "requirementslib"]
-plugins = ["setuptools"]
 requirements_deprecated_finder = ["pipreqs", "pip-api"]
+colors = ["colorama (>=0.4.3,<0.5.0)"]
+plugins = ["setuptools"]
 
 [[package]]
-category = "dev"
-description = "A very fast and expressive template engine."
 name = "jinja2"
+version = "3.0.1"
+description = "A very fast and expressive template engine."
+category = "dev"
 optional = false
 python-versions = ">=3.6"
-version = "3.0.1"
 
 [package.dependencies]
 MarkupSafe = ">=2.0"
@@ -581,20 +585,20 @@ MarkupSafe = ">=2.0"
 i18n = ["Babel (>=2.7)"]
 
 [[package]]
-category = "main"
-description = "JSON Matching Expressions"
 name = "jmespath"
+version = "0.10.0"
+description = "JSON Matching Expressions"
+category = "main"
 optional = false
 python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*"
-version = "0.10.0"
 
 [[package]]
-category = "main"
-description = "An implementation of JSON Schema validation for Python"
 name = "jsonschema"
+version = "3.2.0"
+description = "An implementation of JSON Schema validation for Python"
+category = "main"
 optional = false
 python-versions = "*"
-version = "3.2.0"
 
 [package.dependencies]
 attrs = ">=17.4.0"
@@ -607,12 +611,12 @@ format = ["idna", "jsonpointer (>1.13)", "rfc3987", "strict-rfc3339", "webcolors
 format_nongpl = ["idna", "jsonpointer (>1.13)", "webcolors", "rfc3986-validator (>0.1.0)", "rfc3339-validator"]
 
 [[package]]
-category = "dev"
-description = "Powerful and Pythonic XML processing library combining libxml2/libxslt with the ElementTree API."
 name = "lxml"
+version = "4.6.3"
+description = "Powerful and Pythonic XML processing library combining libxml2/libxslt with the ElementTree API."
+category = "dev"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, != 3.4.*"
-version = "4.6.3"
 
 [package.extras]
 cssselect = ["cssselect (>=0.7)"]
@@ -621,55 +625,55 @@ htmlsoup = ["beautifulsoup4"]
 source = ["Cython (>=0.29.7)"]
 
 [[package]]
-category = "dev"
-description = "Safely add untrusted strings to HTML/XML markup."
 name = "markupsafe"
-optional = false
-python-versions = ">=3.6"
 version = "2.0.1"
-
-[[package]]
+description = "Safely add untrusted strings to HTML/XML markup."
 category = "dev"
-description = "McCabe checker, plugin for flake8"
-name = "mccabe"
-optional = false
-python-versions = "*"
-version = "0.6.1"
-
-[[package]]
-category = "dev"
-description = "Experimental type system extensions for programs checked with the mypy typechecker."
-name = "mypy-extensions"
-optional = false
-python-versions = "*"
-version = "0.4.3"
-
-[[package]]
-category = "dev"
-description = "Node.js virtual environment builder"
-name = "nodeenv"
-optional = false
-python-versions = "*"
-version = "1.6.0"
-
-[[package]]
-category = "dev"
-description = "Core utilities for Python packages"
-name = "packaging"
 optional = false
 python-versions = ">=3.6"
+
+[[package]]
+name = "mccabe"
+version = "0.6.1"
+description = "McCabe checker, plugin for flake8"
+category = "dev"
+optional = false
+python-versions = "*"
+
+[[package]]
+name = "mypy-extensions"
+version = "0.4.3"
+description = "Experimental type system extensions for programs checked with the mypy typechecker."
+category = "dev"
+optional = false
+python-versions = "*"
+
+[[package]]
+name = "nodeenv"
+version = "1.6.0"
+description = "Node.js virtual environment builder"
+category = "dev"
+optional = false
+python-versions = "*"
+
+[[package]]
+name = "packaging"
 version = "21.0"
+description = "Core utilities for Python packages"
+category = "dev"
+optional = false
+python-versions = ">=3.6"
 
 [package.dependencies]
 pyparsing = ">=2.0.2"
 
 [[package]]
-category = "dev"
-description = "SSH2 protocol library"
 name = "paramiko"
+version = "2.7.2"
+description = "SSH2 protocol library"
+category = "dev"
 optional = false
 python-versions = "*"
-version = "2.7.2"
 
 [package.dependencies]
 bcrypt = ">=3.1.3"
@@ -683,20 +687,20 @@ gssapi = ["pyasn1 (>=0.1.7)", "gssapi (>=1.4.1)", "pywin32 (>=2.1.8)"]
 invoke = ["invoke (>=1.3)"]
 
 [[package]]
-category = "dev"
-description = "parse() is the opposite of format()"
 name = "parse"
+version = "1.19.0"
+description = "parse() is the opposite of format()"
+category = "dev"
 optional = false
 python-versions = "*"
-version = "1.19.0"
 
 [[package]]
-category = "dev"
-description = "Simplifies to build parse types based on the parse module"
 name = "parse-type"
+version = "0.5.2"
+description = "Simplifies to build parse types based on the parse module"
+category = "dev"
 optional = false
 python-versions = ">=2.6, !=3.0.*, !=3.1.*"
-version = "0.5.2"
 
 [package.dependencies]
 parse = ">=1.8.4"
@@ -707,40 +711,40 @@ develop = ["coverage (>=4.4)", "pytest (>=3.2)", "pytest-cov", "tox (>=2.8)"]
 docs = ["sphinx (>=1.2)"]
 
 [[package]]
-category = "dev"
-description = "Utility library for gitignore style pattern matching of file paths."
 name = "pathspec"
+version = "0.9.0"
+description = "Utility library for gitignore style pattern matching of file paths."
+category = "dev"
 optional = false
 python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,>=2.7"
-version = "0.9.0"
 
 [[package]]
-category = "dev"
-description = "Make boto3 calls that look real but have no effect"
 name = "placebo"
+version = "0.9.0"
+description = "Make boto3 calls that look real but have no effect"
+category = "dev"
 optional = false
 python-versions = "*"
-version = "0.9.0"
 
 [[package]]
-category = "dev"
-description = "A small Python module for determining appropriate platform-specific dirs, e.g. a \"user data dir\"."
 name = "platformdirs"
+version = "2.3.0"
+description = "A small Python module for determining appropriate platform-specific dirs, e.g. a \"user data dir\"."
+category = "dev"
 optional = false
 python-versions = ">=3.6"
-version = "2.3.0"
 
 [package.extras]
 docs = ["Sphinx (>=4)", "furo (>=2021.7.5b38)", "proselint (>=0.10.2)", "sphinx-autodoc-typehints (>=1.12)"]
 test = ["appdirs (==1.4.4)", "pytest (>=6)", "pytest-cov (>=2.7)", "pytest-mock (>=3.6)"]
 
 [[package]]
-category = "dev"
-description = "plugin and hook calling mechanisms for python"
 name = "pluggy"
+version = "1.0.0"
+description = "plugin and hook calling mechanisms for python"
+category = "dev"
 optional = false
 python-versions = ">=3.6"
-version = "1.0.0"
 
 [package.dependencies]
 importlib-metadata = {version = ">=0.12", markers = "python_version < \"3.8\""}
@@ -750,12 +754,12 @@ dev = ["pre-commit", "tox"]
 testing = ["pytest", "pytest-benchmark"]
 
 [[package]]
-category = "dev"
-description = "A framework for managing and maintaining multi-language pre-commit hooks."
 name = "pre-commit"
+version = "2.15.0"
+description = "A framework for managing and maintaining multi-language pre-commit hooks."
+category = "dev"
 optional = false
 python-versions = ">=3.6.1"
-version = "2.15.0"
 
 [package.dependencies]
 cfgv = ">=2.0.0"
@@ -767,52 +771,52 @@ toml = "*"
 virtualenv = ">=20.0.8"
 
 [[package]]
-category = "dev"
-description = "library with cross-python path, ini-parsing, io, code, log facilities"
 name = "py"
-optional = false
-python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 version = "1.10.0"
+description = "library with cross-python path, ini-parsing, io, code, log facilities"
+category = "dev"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 
 [[package]]
-category = "dev"
-description = "Python style guide checker"
 name = "pycodestyle"
-optional = false
-python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 version = "2.7.0"
+description = "Python style guide checker"
+category = "dev"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 
 [[package]]
-category = "dev"
-description = "C parser in Python"
 name = "pycparser"
-optional = false
-python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 version = "2.20"
-
-[[package]]
+description = "C parser in Python"
 category = "dev"
-description = "passive checker of Python programs"
-name = "pyflakes"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
-version = "2.3.1"
 
 [[package]]
+name = "pyflakes"
+version = "2.3.1"
+description = "passive checker of Python programs"
 category = "dev"
-description = "Pygments is a syntax highlighting package written in Python."
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+
+[[package]]
 name = "pygments"
+version = "2.10.0"
+description = "Pygments is a syntax highlighting package written in Python."
+category = "dev"
 optional = false
 python-versions = ">=3.5"
-version = "2.10.0"
 
 [[package]]
-category = "dev"
-description = "Python binding to the Networking and Cryptography (NaCl) library"
 name = "pynacl"
+version = "1.4.0"
+description = "Python binding to the Networking and Cryptography (NaCl) library"
+category = "dev"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
-version = "1.4.0"
 
 [package.dependencies]
 cffi = ">=1.4.1"
@@ -823,28 +827,28 @@ docs = ["sphinx (>=1.6.5)", "sphinx-rtd-theme"]
 tests = ["pytest (>=3.2.1,!=3.3.0)", "hypothesis (>=3.27.0)"]
 
 [[package]]
-category = "dev"
-description = "Python parsing module"
 name = "pyparsing"
+version = "2.4.7"
+description = "Python parsing module"
+category = "dev"
 optional = false
 python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*"
-version = "2.4.7"
 
 [[package]]
-category = "main"
-description = "Persistent/Functional/Immutable data structures"
 name = "pyrsistent"
+version = "0.18.0"
+description = "Persistent/Functional/Immutable data structures"
+category = "main"
 optional = false
 python-versions = ">=3.6"
-version = "0.18.0"
 
 [[package]]
-category = "dev"
-description = "pytest: simple powerful testing with Python"
 name = "pytest"
+version = "6.2.5"
+description = "pytest: simple powerful testing with Python"
+category = "dev"
 optional = false
 python-versions = ">=3.6"
-version = "6.2.5"
 
 [package.dependencies]
 atomicwrites = {version = ">=1.0", markers = "sys_platform == \"win32\""}
@@ -861,34 +865,34 @@ toml = "*"
 testing = ["argcomplete", "hypothesis (>=3.56)", "mock", "nose", "requests", "xmlschema"]
 
 [[package]]
-category = "main"
-description = "Extensions to the standard Python datetime module"
 name = "python-dateutil"
+version = "2.8.2"
+description = "Extensions to the standard Python datetime module"
+category = "main"
 optional = false
 python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,>=2.7"
-version = "2.8.2"
 
 [package.dependencies]
 six = ">=1.5"
 
 [[package]]
-category = "dev"
-description = "Read key-value pairs from a .env file and set them as environment variables"
 name = "python-dotenv"
+version = "0.19.0"
+description = "Read key-value pairs from a .env file and set them as environment variables"
+category = "dev"
 optional = false
 python-versions = ">=3.5"
-version = "0.19.0"
 
 [package.extras]
 cli = ["click (>=5.0)"]
 
 [[package]]
-category = "dev"
-description = "A Python Slugify application that handles Unicode"
 name = "python-slugify"
+version = "5.0.2"
+description = "A Python Slugify application that handles Unicode"
+category = "dev"
 optional = false
 python-versions = ">=3.6"
-version = "5.0.2"
 
 [package.dependencies]
 text-unidecode = ">=1.3"
@@ -898,44 +902,44 @@ Unidecode = {version = ">=1.1.1", optional = true, markers = "extra == \"unideco
 unidecode = ["Unidecode (>=1.1.1)"]
 
 [[package]]
-category = "main"
-description = "World timezone definitions, modern and historical"
 name = "pytz"
-optional = false
-python-versions = "*"
 version = "2021.1"
+description = "World timezone definitions, modern and historical"
+category = "main"
+optional = false
+python-versions = "*"
 
 [[package]]
-category = "main"
-description = "Python for Window Extensions"
 name = "pywin32"
-optional = false
-python-versions = "*"
 version = "227"
-
-[[package]]
+description = "Python for Window Extensions"
 category = "main"
-description = "YAML parser and emitter for Python"
-name = "pyyaml"
-optional = false
-python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*"
-version = "5.4.1"
-
-[[package]]
-category = "dev"
-description = "Alternative regular expression module, to replace re."
-name = "regex"
 optional = false
 python-versions = "*"
-version = "2021.8.28"
 
 [[package]]
+name = "pyyaml"
+version = "5.4.1"
+description = "YAML parser and emitter for Python"
 category = "main"
-description = "Python HTTP for Humans."
-name = "requests"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*"
+
+[[package]]
+name = "regex"
+version = "2021.8.28"
+description = "Alternative regular expression module, to replace re."
+category = "dev"
+optional = false
+python-versions = "*"
+
+[[package]]
+name = "requests"
 version = "2.26.0"
+description = "Python HTTP for Humans."
+category = "main"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*"
 
 [package.dependencies]
 certifi = ">=2017.4.17"
@@ -948,12 +952,12 @@ socks = ["PySocks (>=1.5.6,!=1.5.7)", "win-inet-pton"]
 use_chardet_on_py3 = ["chardet (>=3.0.2,<5)"]
 
 [[package]]
-category = "main"
-description = "An Amazon S3 Transfer Manager"
 name = "s3transfer"
+version = "0.5.0"
+description = "An Amazon S3 Transfer Manager"
+category = "main"
 optional = false
 python-versions = ">= 3.6"
-version = "0.5.0"
 
 [package.dependencies]
 botocore = ">=1.12.36,<2.0a.0"
@@ -962,47 +966,47 @@ botocore = ">=1.12.36,<2.0a.0"
 crt = ["botocore[crt] (>=1.20.29,<2.0a.0)"]
 
 [[package]]
-category = "dev"
-description = "Simple data validation library"
 name = "schema"
+version = "0.7.4"
+description = "Simple data validation library"
+category = "dev"
 optional = false
 python-versions = "*"
-version = "0.7.4"
 
 [package.dependencies]
 contextlib2 = ">=0.5.5"
 
 [[package]]
-category = "main"
-description = "Python 2 and 3 compatibility utilities"
 name = "six"
+version = "1.16.0"
+description = "Python 2 and 3 compatibility utilities"
+category = "main"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*"
-version = "1.16.0"
 
 [[package]]
-category = "dev"
-description = "This package provides 29 stemmers for 28 languages generated from Snowball algorithms."
 name = "snowballstemmer"
+version = "2.1.0"
+description = "This package provides 29 stemmers for 28 languages generated from Snowball algorithms."
+category = "dev"
 optional = false
 python-versions = "*"
-version = "2.1.0"
 
 [[package]]
-category = "dev"
-description = "A modern CSS selector implementation for Beautiful Soup."
 name = "soupsieve"
+version = "2.2.1"
+description = "A modern CSS selector implementation for Beautiful Soup."
+category = "dev"
 optional = false
 python-versions = ">=3.6"
-version = "2.2.1"
 
 [[package]]
-category = "dev"
-description = "Python documentation generator"
 name = "sphinx"
+version = "4.2.0"
+description = "Python documentation generator"
+category = "dev"
 optional = false
 python-versions = ">=3.6"
-version = "4.2.0"
 
 [package.dependencies]
 alabaster = ">=0.7,<0.8"
@@ -1028,12 +1032,12 @@ lint = ["flake8 (>=3.5.0)", "isort", "mypy (>=0.900)", "docutils-stubs", "types-
 test = ["pytest", "pytest-cov", "html5lib", "cython", "typed-ast"]
 
 [[package]]
-category = "dev"
-description = "Material sphinx theme"
 name = "sphinx-material"
+version = "0.0.34"
+description = "Material sphinx theme"
+category = "dev"
 optional = false
 python-versions = ">=3.6"
-version = "0.0.34"
 
 [package.dependencies]
 beautifulsoup4 = "*"
@@ -1046,94 +1050,94 @@ sphinx = ">=2.0"
 dev = ["black (==19.10b0)"]
 
 [[package]]
-category = "dev"
-description = "sphinxcontrib-applehelp is a sphinx extension which outputs Apple help books"
 name = "sphinxcontrib-applehelp"
+version = "1.0.2"
+description = "sphinxcontrib-applehelp is a sphinx extension which outputs Apple help books"
+category = "dev"
 optional = false
 python-versions = ">=3.5"
-version = "1.0.2"
 
 [package.extras]
 lint = ["flake8", "mypy", "docutils-stubs"]
 test = ["pytest"]
 
 [[package]]
-category = "dev"
-description = "sphinxcontrib-devhelp is a sphinx extension which outputs Devhelp document."
 name = "sphinxcontrib-devhelp"
+version = "1.0.2"
+description = "sphinxcontrib-devhelp is a sphinx extension which outputs Devhelp document."
+category = "dev"
 optional = false
 python-versions = ">=3.5"
-version = "1.0.2"
 
 [package.extras]
 lint = ["flake8", "mypy", "docutils-stubs"]
 test = ["pytest"]
 
 [[package]]
-category = "dev"
-description = "sphinxcontrib-htmlhelp is a sphinx extension which renders HTML help files"
 name = "sphinxcontrib-htmlhelp"
+version = "2.0.0"
+description = "sphinxcontrib-htmlhelp is a sphinx extension which renders HTML help files"
+category = "dev"
 optional = false
 python-versions = ">=3.6"
-version = "2.0.0"
 
 [package.extras]
 lint = ["flake8", "mypy", "docutils-stubs"]
 test = ["pytest", "html5lib"]
 
 [[package]]
-category = "dev"
-description = "A sphinx extension which renders display math in HTML via JavaScript"
 name = "sphinxcontrib-jsmath"
+version = "1.0.1"
+description = "A sphinx extension which renders display math in HTML via JavaScript"
+category = "dev"
 optional = false
 python-versions = ">=3.5"
-version = "1.0.1"
 
 [package.extras]
 test = ["pytest", "flake8", "mypy"]
 
 [[package]]
-category = "dev"
-description = "sphinxcontrib-qthelp is a sphinx extension which outputs QtHelp document."
 name = "sphinxcontrib-qthelp"
-optional = false
-python-versions = ">=3.5"
 version = "1.0.3"
-
-[package.extras]
-lint = ["flake8", "mypy", "docutils-stubs"]
-test = ["pytest"]
-
-[[package]]
+description = "sphinxcontrib-qthelp is a sphinx extension which outputs QtHelp document."
 category = "dev"
-description = "sphinxcontrib-serializinghtml is a sphinx extension which outputs \"serialized\" HTML files (json and pickle)."
-name = "sphinxcontrib-serializinghtml"
 optional = false
 python-versions = ">=3.5"
-version = "1.1.5"
 
 [package.extras]
 lint = ["flake8", "mypy", "docutils-stubs"]
 test = ["pytest"]
 
 [[package]]
-category = "main"
-description = "Pretty-print tabular data"
+name = "sphinxcontrib-serializinghtml"
+version = "1.1.5"
+description = "sphinxcontrib-serializinghtml is a sphinx extension which outputs \"serialized\" HTML files (json and pickle)."
+category = "dev"
+optional = false
+python-versions = ">=3.5"
+
+[package.extras]
+lint = ["flake8", "mypy", "docutils-stubs"]
+test = ["pytest"]
+
+[[package]]
 name = "tabulate"
+version = "0.8.9"
+description = "Pretty-print tabular data"
+category = "main"
 optional = false
 python-versions = "*"
-version = "0.8.9"
 
 [package.extras]
 widechars = ["wcwidth"]
 
 [[package]]
-category = "dev"
-description = "Bump software releases"
 name = "tbump"
+version = "6.4.0"
+description = "Bump software releases"
+category = "dev"
 optional = false
 python-versions = ">=3.6.2,<4.0.0"
-version = "6.4.0"
 
 [package.dependencies]
 attrs = ">=19.3.0,<20.0.0"
@@ -1143,52 +1147,52 @@ schema = ">=0.7.1,<0.8.0"
 tomlkit = ">=0.5.8"
 
 [[package]]
-category = "dev"
-description = "The most basic Text::Unidecode port"
 name = "text-unidecode"
-optional = false
-python-versions = "*"
 version = "1.3"
-
-[[package]]
+description = "The most basic Text::Unidecode port"
 category = "dev"
-description = "module for creating simple ASCII tables"
-name = "texttable"
 optional = false
 python-versions = "*"
-version = "1.6.4"
 
 [[package]]
+name = "texttable"
+version = "1.6.4"
+description = "module for creating simple ASCII tables"
 category = "dev"
-description = "Python Library for Tom's Obvious, Minimal Language"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "toml"
+version = "0.10.2"
+description = "Python Library for Tom's Obvious, Minimal Language"
+category = "dev"
 optional = false
 python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*"
-version = "0.10.2"
 
 [[package]]
-category = "dev"
-description = "A lil' TOML parser"
 name = "tomli"
+version = "1.2.1"
+description = "A lil' TOML parser"
+category = "dev"
 optional = false
 python-versions = ">=3.6"
-version = "1.2.1"
 
 [[package]]
-category = "dev"
-description = "Style preserving TOML library"
 name = "tomlkit"
+version = "0.7.2"
+description = "Style preserving TOML library"
+category = "dev"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
-version = "0.7.2"
 
 [[package]]
-category = "dev"
-description = "tox is a generic virtualenv management and test command line tool"
 name = "tox"
+version = "3.24.4"
+description = "tox is a generic virtualenv management and test command line tool"
+category = "dev"
 optional = false
 python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,>=2.7"
-version = "3.24.4"
 
 [package.dependencies]
 colorama = {version = ">=0.4.1", markers = "platform_system == \"Windows\""}
@@ -1206,12 +1210,12 @@ docs = ["pygments-github-lexers (>=0.0.5)", "sphinx (>=2.0.0)", "sphinxcontrib-a
 testing = ["flaky (>=3.4.0)", "freezegun (>=0.3.11)", "psutil (>=5.6.1)", "pytest (>=4.0.0)", "pytest-cov (>=2.5.1)", "pytest-mock (>=1.10.0)", "pytest-randomly (>=1.0.0)", "pytest-xdist (>=1.22.2)", "pathlib2 (>=2.3.3)"]
 
 [[package]]
-category = "main"
-description = "AWS CloudFormation creation library"
 name = "troposphere"
+version = "3.0.2"
+description = "AWS CloudFormation creation library"
+category = "main"
 optional = false
 python-versions = ">=3.6.2"
-version = "3.0.2"
 
 [package.dependencies]
 cfn-flip = ">=1.0.2"
@@ -1221,36 +1225,36 @@ typing-extensions = {version = ">=3.7.4.3", markers = "python_version < \"3.8\""
 policy = ["awacs (>=2.0.0)"]
 
 [[package]]
-category = "dev"
-description = "a fork of Python 2 and 3 ast modules with type comment support"
 name = "typed-ast"
-optional = false
-python-versions = "*"
 version = "1.4.3"
-
-[[package]]
-category = "main"
-description = "Backported and Experimental Type Hints for Python 3.5+"
-name = "typing-extensions"
+description = "a fork of Python 2 and 3 ast modules with type comment support"
+category = "dev"
 optional = false
 python-versions = "*"
-version = "3.10.0.2"
 
 [[package]]
-category = "dev"
-description = "ASCII transliterations of Unicode text"
+name = "typing-extensions"
+version = "3.10.0.2"
+description = "Backported and Experimental Type Hints for Python 3.5+"
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "unidecode"
+version = "1.3.2"
+description = "ASCII transliterations of Unicode text"
+category = "dev"
 optional = false
 python-versions = ">=3.5"
-version = "1.3.2"
 
 [[package]]
-category = "main"
-description = "HTTP library with thread-safe connection pooling, file post, and more."
 name = "urllib3"
+version = "1.26.6"
+description = "HTTP library with thread-safe connection pooling, file post, and more."
+category = "main"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, <4"
-version = "1.26.6"
 
 [package.extras]
 brotli = ["brotlipy (>=0.6.0)"]
@@ -1258,12 +1262,12 @@ secure = ["pyOpenSSL (>=0.14)", "cryptography (>=1.3.4)", "idna (>=2.0.0)", "cer
 socks = ["PySocks (>=1.5.6,!=1.5.7,<2.0)"]
 
 [[package]]
-category = "dev"
-description = "Virtual Python Environment builder"
 name = "virtualenv"
+version = "20.8.0"
+description = "Virtual Python Environment builder"
+category = "dev"
 optional = false
 python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,>=2.7"
-version = "20.7.2"
 
 [package.dependencies]
 "backports.entry-points-selectable" = ">=1.0.4"
@@ -1278,23 +1282,23 @@ docs = ["proselint (>=0.10.2)", "sphinx (>=3)", "sphinx-argparse (>=0.2.5)", "sp
 testing = ["coverage (>=4)", "coverage-enable-subprocess (>=1)", "flaky (>=3)", "pytest (>=4)", "pytest-env (>=0.6.2)", "pytest-freezegun (>=0.4.1)", "pytest-mock (>=2)", "pytest-randomly (>=1)", "pytest-timeout (>=1)", "packaging (>=20.0)"]
 
 [[package]]
-category = "main"
-description = "WebSocket client for Python with low level API options"
 name = "websocket-client"
+version = "0.59.0"
+description = "WebSocket client for Python with low level API options"
+category = "main"
 optional = false
 python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
-version = "0.59.0"
 
 [package.dependencies]
 six = "*"
 
 [[package]]
-category = "main"
-description = "Backport of pathlib-compatible object wrapper for zip files"
 name = "zipp"
+version = "3.5.0"
+description = "Backport of pathlib-compatible object wrapper for zip files"
+category = "main"
 optional = false
 python-versions = ">=3.6"
-version = "3.5.0"
 
 [package.extras]
 docs = ["sphinx", "jaraco.packaging (>=8.2)", "rst.linker (>=1.9)"]
@@ -1304,9 +1308,9 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytes
 ecrscan = ["ecr-scan-reporter"]
 
 [metadata]
-content-hash = "9d32bb342c7c1015ddf173eb14e07c6318d5df4fa785641244c408f7cb7e4e6d"
 lock-version = "1.1"
 python-versions = "^3.7"
+content-hash = "3cba197ac288ec6778eb3f35bf34c471ed63037089a5a895bb17e7bf3d3a565f"
 
 [metadata.files]
 alabaster = [
@@ -1360,12 +1364,12 @@ black = [
     {file = "black-21.9b0.tar.gz", hash = "sha256:7de4cfc7eb6b710de325712d40125689101d21d25283eed7e9998722cf10eb91"},
 ]
 boto3 = [
-    {file = "boto3-1.18.42-py3-none-any.whl", hash = "sha256:63b9846c26e0905f4e9e39d6b59f152330c53a926d693439161c43dcf9779365"},
-    {file = "boto3-1.18.42.tar.gz", hash = "sha256:a9232185d8e7e2fd2b166c0ebee5d7b1f787fdb3093f33bbf5aa932c08f0ccac"},
+    {file = "boto3-1.18.44-py3-none-any.whl", hash = "sha256:3a270f002818703d5f2eef5296c2fd8b44ef21a3f3290a716ec2202da8dd464e"},
+    {file = "boto3-1.18.44.tar.gz", hash = "sha256:8bc3211a7d7767c2c72ae9b226edb5eec5bb96989c83696832b8a5c35feb356a"},
 ]
 botocore = [
-    {file = "botocore-1.21.42-py3-none-any.whl", hash = "sha256:6de4fec4ee10987e4dea96f289553c2f45109fcaafcb74a5baee1221926e1306"},
-    {file = "botocore-1.21.42.tar.gz", hash = "sha256:0952d1200968365b440045efe8e45bbae38cf603fee12bcfc3d7b5f963cbfa18"},
+    {file = "botocore-1.21.44-py3-none-any.whl", hash = "sha256:c7640cb49c0e009bea4ad767715acbe0d305b7007235f52422bf31b5d23be8f1"},
+    {file = "botocore-1.21.44.tar.gz", hash = "sha256:2e134c9f799015e448086ed2b809fe50cc776f6600f093d1a44772288e61260f"},
 ]
 cached-property = [
     {file = "cached-property-1.5.2.tar.gz", hash = "sha256:9fa5755838eecbb2d234c3aa390bd80fbd3ac6b6869109bfc1b499f7bd89a130"},
@@ -1446,12 +1450,12 @@ colorama = [
     {file = "colorama-0.4.4.tar.gz", hash = "sha256:5941b2b48a20143d2267e95b1c2a7603ce057ee39fd88e7329b0c292aa16869b"},
 ]
 compose-x-common = [
-    {file = "compose_x_common-0.1.1-py3-none-any.whl", hash = "sha256:4715dd6707e357240767c954476ef5955518dc4bbf2ad528e6850bbccee04a52"},
-    {file = "compose_x_common-0.1.1.tar.gz", hash = "sha256:124db4ae13655e8253f699ea932343c2698dc88e4bc471ae108b767cbf91c59e"},
+    {file = "compose_x_common-0.2.0-py3-none-any.whl", hash = "sha256:406f439e4c2c4d02698b7766cc2c02c30aee78f7dc7592142e704f711cd6e023"},
+    {file = "compose_x_common-0.2.0.tar.gz", hash = "sha256:3b1c7fff6fa9adc375ce430b14c412df7a49cb169d90e11a2faecdc846413afb"},
 ]
 compose-x-render = [
-    {file = "compose_x_render-0.3.1-py3-none-any.whl", hash = "sha256:c60d69afdb51c7b418a1b005d09d7a7b38e188292b8a2f53c7b56474cab9d0c0"},
-    {file = "compose_x_render-0.3.1.tar.gz", hash = "sha256:c2cee4357092a4783895af0a1db09c45e274215bfa031b0f2468e40b6aeb83c1"},
+    {file = "compose_x_render-0.3.2-py3-none-any.whl", hash = "sha256:22b9765c88d326b884090d5594ab5a6d3a0f3863b7c53ce93e4c0d28cec3d3d9"},
+    {file = "compose_x_render-0.3.2.tar.gz", hash = "sha256:5ba4d15d324ebef928bcb5b8afd2b4f9651e329e0e1b686c9f367ed8f5382911"},
 ]
 contextlib2 = [
     {file = "contextlib2-21.6.0-py2.py3-none-any.whl", hash = "sha256:3fbdb64466afd23abaf6c977627b75b6139a5a3e8ce38405c5b413aed7a0471f"},
@@ -1562,8 +1566,8 @@ docutils = [
     {file = "docutils-0.17.1.tar.gz", hash = "sha256:686577d2e4c32380bb50cbb22f575ed742d58168cee37e99117a854bcd88f125"},
 ]
 ecr-scan-reporter = [
-    {file = "ecr_scan_reporter-0.3.0-py3-none-any.whl", hash = "sha256:82fbe01abb799878a70267c62187162f9a1837f088cea3c185f5278e4c8af6d3"},
-    {file = "ecr_scan_reporter-0.3.0.tar.gz", hash = "sha256:29ace7c90512996f93fb63ce73e168e7b33231f76e418e785a6a9ee712718b07"},
+    {file = "ecr_scan_reporter-0.4.1-py3-none-any.whl", hash = "sha256:965dadd138e1be32a835b1159a4a700a0778bff1ed79b4be749fe7be9a4a558b"},
+    {file = "ecr_scan_reporter-0.4.1.tar.gz", hash = "sha256:f0e1517e485eefbe5ed47347f54d9edf8324b27da5cb14a81b7cba05a864efb4"},
 ]
 ecs-composex-specs = [
     {file = "ecs_composex_specs-0.2.12-py3-none-any.whl", hash = "sha256:b5b75128baac51654a86c05db8e4a13ac90bc983f65a51a9b0492a4327ced129"},
@@ -2082,8 +2086,8 @@ urllib3 = [
     {file = "urllib3-1.26.6.tar.gz", hash = "sha256:f57b4c16c62fa2760b7e3d97c35b255512fb6b59a259730f36ba32ce9f8e342f"},
 ]
 virtualenv = [
-    {file = "virtualenv-20.7.2-py2.py3-none-any.whl", hash = "sha256:e4670891b3a03eb071748c569a87cceaefbf643c5bac46d996c5a45c34aa0f06"},
-    {file = "virtualenv-20.7.2.tar.gz", hash = "sha256:9ef4e8ee4710826e98ff3075c9a4739e2cb1040de6a2a8d35db0055840dc96a0"},
+    {file = "virtualenv-20.8.0-py2.py3-none-any.whl", hash = "sha256:a4b987ec31c3c9996cf1bc865332f967fe4a0512c41b39652d6224f696e69da5"},
+    {file = "virtualenv-20.8.0.tar.gz", hash = "sha256:4da4ac43888e97de9cf4fdd870f48ed864bbfd133d2c46cbdec941fed4a25aef"},
 ]
 websocket-client = [
     {file = "websocket-client-0.59.0.tar.gz", hash = "sha256:d376bd60eace9d437ab6d7ee16f4ab4e821c9dae591e1b783c58ebd8aaf80c5c"},

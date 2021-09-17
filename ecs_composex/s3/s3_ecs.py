@@ -6,11 +6,18 @@
 Functions to pass permissions to Services to access S3 buckets.
 """
 import re
+import warnings
 
+from compose_x_common.aws.kms import (
+    KMS_ALIAS_ARN_RE,
+    KMS_KEY_ARN_RE,
+    get_key_from_alias,
+)
 from compose_x_common.compose_x_common import keyisset
 from troposphere import FindInMap, Ref, Sub
 
 from ecs_composex.common import LOG, add_parameters
+from ecs_composex.common.aws import define_lookup_role_from_info
 from ecs_composex.common.compose_resources import get_parameter_settings
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.kms.kms_perms import ACCESS_TYPES as KMS_ACCESS_TYPES
@@ -139,12 +146,41 @@ def handle_new_resources(
     assign_new_bucket_to_services(resource, res_root_stack, nested)
 
 
-def get_bucket_kms_key_from_config(bucket_config):
+def validate_bucket_kms_key(bucket, kms_key, session):
     """
-    Functiont to get the KMS Encryption key if defined.
+    Function to evaluate the KMS Key ID and ensure we return a KMS Key ARN
 
-    :param bucket_config:
-    :return:
+    :param ecs_composex.s3.s3_stack.Bucket bucket: The S3 bucket looked'up
+    :param str kms_key:
+    :param boto3.session.Session session: Settings session
+    :return: The KMS Key ARN or None
+    :rtype: str
+    """
+    lookup_session = define_lookup_role_from_info(bucket.lookup, session)
+    if KMS_KEY_ARN_RE.match(kms_key):
+        return kms_key
+    elif KMS_ALIAS_ARN_RE.match(kms_key):
+        key_alias = KMS_ALIAS_ARN_RE.match(kms_key).group("key_alias")
+        key = get_key_from_alias(key_alias, kms_session=lookup_session)
+        if key and keyisset("KeyArn", key):
+            return key["KeyArn"]
+    elif kms_key == "aws/s3":
+        LOG.warn("KMS Key used the aws/s3 default key.")
+        key = get_key_from_alias("alias/aws/s3", kms_session=lookup_session)
+        if key and keyisset("KeyArn", key):
+            return key["KeyArn"]
+    return None
+
+
+def get_bucket_kms_key_from_config(bucket, bucket_config, session):
+    """
+    Function to get the KMS Encryption key if defined.
+
+    :param ecs_composex.s3.s3_stack.Bucket bucket:
+    :param dict bucket_config:
+    :param boto3.session.Session session: Settings session
+    :return: The KMS Key ARN or None
+    :rtype: str
     """
     rules = (
         []
@@ -162,7 +198,9 @@ def get_bucket_kms_key_from_config(bucket_config):
                 and settings["SSEAlgorithm"] == "aws:kms"
                 and keyisset("KMSMasterKeyID", settings)
             ):
-                return settings["KMSMasterKeyID"]
+                return validate_bucket_kms_key(
+                    bucket, settings["KMSMasterKeyID"], session
+                )
     return None
 
 
@@ -182,7 +220,9 @@ def define_bucket_mappings(buckets_mappings, lookup_buckets, use_buckets, settin
             }
         )
         buckets_mappings.update({bucket.logical_name: bucket.mappings})
-        bucket_key = get_bucket_kms_key_from_config(bucket_config)
+        bucket_key = get_bucket_kms_key_from_config(
+            bucket, bucket_config, settings.session
+        )
         if bucket_key:
             LOG.info(f"Identified CMK {bucket_key} to be default key for encryption")
             buckets_mappings[bucket.logical_name]["KmsKey"] = bucket_key
