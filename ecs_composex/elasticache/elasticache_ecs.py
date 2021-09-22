@@ -57,6 +57,7 @@ def create_lookup_mappings(mappings, lookup_resources, settings):
         if not resource_config:
             continue
         mappings[resource.logical_name] = resource_config
+        resource.mappings = resource_config
 
 
 def elasticache_to_ecs(resources, services_stack, res_root_stack, settings):

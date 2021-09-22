@@ -125,6 +125,7 @@ def create_lookup_mappings(mappings, lookup_dbs, settings):
             return
         config = create_rds_db_config_mapping(db, db_config)
         mappings.update(config)
+        db.mappings = db_config
 
 
 def rds_to_ecs(rds_dbs, services_stack, res_root_stack, settings):
