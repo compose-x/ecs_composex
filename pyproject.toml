@@ -49,6 +49,7 @@ ecs-composex-specs = "0.2.12"
 PyYAML = "^5.4.1"
 docker = "^5.0.0"
 urllib3 = "^1.26.6"
+awacs = "^2.0.1"
 
 [tool.poetry.dev-dependencies]
 isort = "^5.9.3"

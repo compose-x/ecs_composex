@@ -30,6 +30,7 @@ def create_dyndb_mappings(mapping, resources, settings):
     """
     for res in resources:
         res_config = lookup_dynamodb_config(res.lookup, settings.session)
+        res.mappings = res_config
         mapping.update({res.logical_name: res_config})
 
 

@@ -66,6 +66,7 @@ def create_lookup_mappings(mappings, lookup_dbs, settings):
             return
         config = create_docdb_cluster_config_mapping(db, db_config)
         mappings.update(config)
+        db.mappings = db_config
 
 
 def docdb_to_ecs(resources, services_stack, res_root_stack, settings):

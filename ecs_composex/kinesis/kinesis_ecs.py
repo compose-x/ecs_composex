@@ -36,6 +36,7 @@ def create_kinesis_mappings(mapping, resources, settings):
         res_config = lookup_stream_config(
             res.logical_name, res.lookup, settings.session
         )
+        res.mappings = res_config
         mapping.update({res.logical_name: res_config})
         if keyisset(STREAM_KMS_KEY_ID.title, res_config):
             LOG.info(
