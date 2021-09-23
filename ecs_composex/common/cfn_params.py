@@ -54,4 +54,4 @@ USE_ONDEMAND = Parameter(
     AllowedValues=["True", "False"],
 )
 
-STACK_ID_SHORT = Select(0, Split("-", Select(1, Split("/", Ref(AWS_STACK_ID)))))
+STACK_ID_SHORT = Select(0, Split("-", Select(2, Split("/", Ref(AWS_STACK_ID)))))

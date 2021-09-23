@@ -11,7 +11,7 @@ from troposphere import FindInMap, Ref, Sub
 from troposphere.iam import Policy as IamPolicy
 
 from ecs_composex.common import LOG, add_parameters
-from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
+from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T, STACK_ID_SHORT
 from ecs_composex.common.compose_resources import get_parameter_settings
 from ecs_composex.common.services_helpers import extend_container_envvars
 from ecs_composex.common.stacks import ComposeXStack
@@ -23,12 +23,14 @@ from ecs_composex.kms.kms_perms import ACCESS_TYPES as KMS_ACCESS_TYPES
 def generate_resource_permissions(resource_name, policies, arn):
     """
     Function to generate IAM permissions for a given x-resource. Returns the mapping of these for the given resource.
+    Suffix takes the values and reduces to the first 118 characters to ensure policy length is below 128
+    Short prefix ensures the uniqueness of the policy name but allows to be a constant throughout the life
+    of the CFN Stack. It is 8 chars long, leaving a 2 chars margin
 
     :param str resource_name: The name of the resource
     :param dict policies: the policies associated with the x-resource type.
     :param str,AWSHelper arn: The ARN of the resource if already looked up.
     :return: dict of the IAM policies associated with the resource.
-    :param list arns: List of ARNs to pass multiple resources at once with the same action
     :rtype dict:
     """
     resource_policies = {}
@@ -39,8 +41,9 @@ def generate_resource_permissions(resource_name, policies, arn):
         policy_doc["Sid"] = Sub(f"{a_type}To{resource_name}")
         policy_doc["Resource"] = [arn] if not isinstance(arn, list) else arn
         clean_policy["Statement"].append(policy_doc)
+        suffix = f"{a_type}{resource_name}"[:(118)]
         resource_policies[a_type] = IamPolicy(
-            PolicyName=Sub(f"{a_type}{resource_name}${{{ROOT_STACK_NAME_T}}}"),
+            PolicyName=Sub(f"${{ID}}{suffix}", ID=STACK_ID_SHORT),
             PolicyDocument=clean_policy,
         )
     return resource_policies

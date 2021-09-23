@@ -34,7 +34,7 @@ from ecs_composex.s3.s3_perms import ACCESS_TYPES
 def assign_service_permissions_to_bucket(bucket, family, services, access, value, arn):
     bucket_key = "bucket"
     objects_key = "objects"
-    ssl_key = "s3-bucket-ssl-requests-only"
+    ssl_key = "enforceSecureConnection"
 
     bucket.generate_resource_envvars()
     if keyisset(bucket_key, access):
@@ -87,7 +87,7 @@ def assign_new_bucket_to_services(bucket, res_root_stack, nested=False):
     """
     bucket_key = "bucket"
     objects_key = "objects"
-    ssl_key = "s3-bucket-ssl-requests-only"
+    ssl_key = "enforceSecureConnection"
     attributes_settings = [
         get_parameter_settings(bucket, attribute)
         for attribute in bucket.output_properties
@@ -273,7 +273,7 @@ def define_lookup_buckets_access(bucket, target, services):
     """
     bucket_key = "bucket"
     objects_key = "objects"
-    ssl_key = "s3-bucket-ssl-requests-only"
+    ssl_key = "enforceSecureConnection"
     access = {objects_key: "RW", bucket_key: "ListOnly", ssl_key: False}
     if isinstance(target[3], str):
         LOG.warning(
