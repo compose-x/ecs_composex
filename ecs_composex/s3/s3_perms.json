@@ -101,5 +101,17 @@
         }
       }
     }
+  },
+  "enforceSecureConnection": {
+    "enforceSecureConnection": {
+      "Sid": "AllowSSLRequestsOnly",
+      "Action": "s3:*",
+      "Effect": "Deny",
+      "Condition": {
+        "Bool": {
+          "aws:SecureTransport": "false"
+        }
+      }
+    }
   }
 }
