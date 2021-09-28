@@ -162,7 +162,7 @@ class SsmParameter(XResource):
                 self.logical_name,
                 self.cfn_resource,
                 Sub,
-                f"arn:{{{AWS_PARTITION}}}:ssm:{{{AWS_REGION}}}:{{{AWS_ACCOUNT_ID}}}:parameter:"
+                f"arn:${{{AWS_PARTITION}}}:ssm:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:parameter:"
                 f"{self.logical_name.title()}",
             ),
         }
