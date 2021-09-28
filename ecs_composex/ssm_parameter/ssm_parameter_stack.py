@@ -156,13 +156,20 @@ class SsmParameter(XResource):
     policies_scaffolds = get_access_types()
 
     def init_outputs(self):
+        spacer = ""
+        if (
+            self.properties
+            and keyisset("Name", self.properties)
+            and not self.properties["Name"].startswith(r"/")
+        ):
+            spacer = "/"
         self.output_properties = {
             SSM_PARAM_NAME: (self.logical_name, self.cfn_resource, Ref, None),
             SSM_PARAM_ARN: (
                 self.logical_name,
                 self.cfn_resource,
                 Sub,
-                f"arn:${{{AWS_PARTITION}}}:ssm:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:parameter:"
+                f"arn:${{{AWS_PARTITION}}}:ssm:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:parameter{spacer}"
                 f"${{{self.cfn_resource.title}}}",
             ),
         }
