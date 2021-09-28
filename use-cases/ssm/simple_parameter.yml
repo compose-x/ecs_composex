@@ -79,3 +79,16 @@ x-ssm_parameter:
     Settings:
       EnvNames:
         - YAML_CONVERTED_PARAM
+
+  parameterENCODED:
+    Properties:
+      Name: /some/yet-other-parameter
+      Type: String
+    MacroParameters:
+      FromFile: ./use-cases/ssm/test_yaml_jinja2.yaml
+      EncodeToBase64: true
+    Services:
+      - name: rproxy
+        access: RO
+      - name: youtoo
+        access: SSMParameterReadPolicy

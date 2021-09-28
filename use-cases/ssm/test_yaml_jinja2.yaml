@@ -1,0 +1,13 @@
+---
+# YAML File test
+
+key: value
+this:
+  - a
+  - b
+  - c
+test:
+  abcd:
+    a: 1
+    c: "{{ default | env_override('SHELL')}}"
+    d: [abc, 123]

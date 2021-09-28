@@ -469,7 +469,7 @@ pytz = ">=2021.1,<2022.0"
 
 [[package]]
 name = "ecs-composex-specs"
-version = "0.2.12"
+version = "0.2.13"
 description = "JSON Schema Specifications for ECS Compose-X"
 category = "main"
 optional = false
@@ -739,7 +739,7 @@ python-versions = "*"
 
 [[package]]
 name = "platformdirs"
-version = "2.3.0"
+version = "2.4.0"
 description = "A small Python module for determining appropriate platform-specific dirs, e.g. a \"user data dir\"."
 category = "dev"
 optional = false
@@ -1321,7 +1321,7 @@ ecrscan = ["ecr-scan-reporter"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "d38d1427fd3140e5e18459fc6a6d236416f7a82b26a326d528c1e2f439631c85"
+content-hash = "023a01acd8b2f0a57b01ad2207efeff55499b1908b0a5e5a04bc671d67596b71"
 
 [metadata.files]
 alabaster = [
@@ -1585,8 +1585,8 @@ ecr-scan-reporter = [
     {file = "ecr_scan_reporter-0.4.1.tar.gz", hash = "sha256:f0e1517e485eefbe5ed47347f54d9edf8324b27da5cb14a81b7cba05a864efb4"},
 ]
 ecs-composex-specs = [
-    {file = "ecs_composex_specs-0.2.12-py3-none-any.whl", hash = "sha256:b5b75128baac51654a86c05db8e4a13ac90bc983f65a51a9b0492a4327ced129"},
-    {file = "ecs_composex_specs-0.2.12.tar.gz", hash = "sha256:ffdcd0cad1a2a5efd57d0c7c4b6566dd3cc021afe569f861b35948aaa18f201a"},
+    {file = "ecs_composex_specs-0.2.13-py3-none-any.whl", hash = "sha256:a3a63a5d24e24c56cf56a4edb24f98206dc693e4751c7aba9fcd438d031ea38a"},
+    {file = "ecs_composex_specs-0.2.13.tar.gz", hash = "sha256:0c46a6ef711befcb1a59ee99758310c633da772e54a74da9b6c905bf8f89c39b"},
 ]
 filelock = [
     {file = "filelock-3.0.12-py3-none-any.whl", hash = "sha256:929b7d63ec5b7d6b71b0fa5ac14e030b3f70b75747cef1b10da9b879fef15836"},
@@ -1777,8 +1777,8 @@ placebo = [
     {file = "placebo-0.9.0.tar.gz", hash = "sha256:03157f8527bbc2965b71b88f4a139ef8038618b346787f20d63e3c5da541b047"},
 ]
 platformdirs = [
-    {file = "platformdirs-2.3.0-py3-none-any.whl", hash = "sha256:8003ac87717ae2c7ee1ea5a84a1a61e87f3fbd16eb5aadba194ea30a9019f648"},
-    {file = "platformdirs-2.3.0.tar.gz", hash = "sha256:15b056538719b1c94bdaccb29e5f81879c7f7f0f4a153f46086d155dffcd4f0f"},
+    {file = "platformdirs-2.4.0-py3-none-any.whl", hash = "sha256:8868bbe3c3c80d42f20156f22e7131d2fb321f5bc86a2a345375c6481a67021d"},
+    {file = "platformdirs-2.4.0.tar.gz", hash = "sha256:367a5e80b3d04d2428ffa76d33f124cf11e8fff2acdaa9b43d545f5c7d661ef2"},
 ]
 pluggy = [
     {file = "pluggy-1.0.0-py2.py3-none-any.whl", hash = "sha256:74134bbf457f031a36d68416e1509f34bd5ccc019f0bcc952c7b909d06b37bd3"},

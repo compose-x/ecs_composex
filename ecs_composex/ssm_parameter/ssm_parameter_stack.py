@@ -5,12 +5,13 @@
 """
 Module for the XStack SSM
 """
+import base64
 import json
 from os import path
 
 import yaml
 from compose_x_common.compose_x_common import keyisset
-from troposphere import AWS_ACCOUNT_ID, AWS_PARTITION, AWS_REGION, Ref, Sub
+from troposphere import AWS_ACCOUNT_ID, AWS_PARTITION, AWS_REGION, Base64, Ref, Sub
 from troposphere.ssm import Parameter as CfnSsmParameter
 from yaml import Loader
 
@@ -103,6 +104,8 @@ def import_value_from_file(resource):
     file_path = path.abspath(resource.parameters["FromFile"])
     with open(file_path, "r") as file_fd:
         value = file_fd.read()
+    if keyisset("EncodeToBase64", resource.parameters):
+        return Base64(value)
     if keyisset("ValidateJson", resource.parameters):
         return handle_json_validation(resource, value, file_path)
     elif keyisset("ValidateYaml", resource.parameters):
