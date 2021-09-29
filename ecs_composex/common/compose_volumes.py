@@ -45,25 +45,27 @@ def handle_volume_str_config(service, config, volumes):
     :param list volumes:
     """
     volume_config = {"read_only": False}
-    path_finder = re.compile(r"(^/[^:]+$)|(^[^:]+)(?::(/[\d\w/]+))(?::(ro$|rw$))?")
+    path_finder = re.compile(
+        r"(?P<path>^/[\S][^:\n]{1,}$)|(?P<source>^[^:]+)(?::(?P<dest>/[\S][^:]+))(?::(?P<mode>ro$|rw$))?$"
+    )
     path_match = path_finder.match(config)
     if not path_match:
         raise ValueError(
             f"Volume syntax {config} is invalid. Must follow the pattern",
             path_finder.pattern,
         )
-    if path_match.groups()[0]:
-        volume_config["source"] = path_match.groups()[0].strip("/").replace(r"/", "")
-        volume_config["target"] = path_match.groups()[0]
+    if path_match.group("path"):
+        volume_config["source"] = path_match.group("path").strip("/").replace(r"/", "")
+        volume_config["target"] = path_match.group("path")
         volume = ComposeVolume(
             volume_config["source"], {"type": "volume", "driver": "local"}
         )
         volumes.append(volume)
         LOG.info(f"Added self generated volume from path {volume_config['target']}")
-    elif path_match.groups()[1] and path_match.groups()[2]:
-        volume_config["source"] = path_match.groups()[1]
-        volume_config["target"] = path_match.groups()[2]
-        if path_match.groups()[3] and path_match.groups()[3] == "ro":
+    elif path_match.group("source") and path_match.group("dest"):
+        volume_config["source"] = path_match.group("source")
+        volume_config["target"] = path_match.group("dest")
+        if path_match.group("mode") and path_match.group("mode") == "ro":
             volume_config["read_only"] = True
     match_volumes_services_config(service, volume_config, volumes)
 
