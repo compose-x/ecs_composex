@@ -125,18 +125,19 @@ def validate_listeners_duplicates(name, ports):
         )
 
 
-def add_listener_certificate_via_arn(listener, certificates_arn):
+def add_listener_certificate_via_arn(listener_stack, listener, certificates_arn):
     """
 
     :param ecs_composex.elbv2.elbv2_stack.ComposeListener listener:
     :param list certificates_arn: list of str or other defined ARN
     :return:
     """
-    ListenerCertificate(
-        f"AcmCert{listener.title}",
-        template=listener.template,
-        Certificates=[Certificate(CertificateArn=arn) for arn in certificates_arn],
-        ListenerArn=Ref(listener),
+    listener_stack.stack_template.add_resource(
+        ListenerCertificate(
+            f"AcmCert{listener.title}",
+            Certificates=[Certificate(CertificateArn=arn) for arn in certificates_arn],
+            ListenerArn=Ref(listener),
+        )
     )
 
 
@@ -160,7 +161,7 @@ def tea_pot(default_of_all=False):
         FixedResponseConfig=FixedResponseConfig(
             ContentType="application/json",
             MessageBody=dumps({"Info": "Be our guest"}),
-            StatusCode="HTTP_418",
+            StatusCode="418",
         ),
         Type="fixed-response",
         Order=Ref(AWS_NO_VALUE) if not default_of_all else 50000,
@@ -240,9 +241,7 @@ def handle_string_condition_format(access_string):
         return [
             Condition(
                 Field="host-header",
-                HostHeaderConfig=HostHeaderConfig(
-                    HttpHeaderName="Host", Values=[access_string]
-                ),
+                HostHeaderConfig=HostHeaderConfig(Values=[access_string]),
             )
         ]
     elif path_re.match(access_string):
@@ -396,17 +395,16 @@ def validate_new_or_lookup_cert_matches(src_name, new_acm_certs, lookup_acm_cert
         )
 
 
-def add_extra_certificate(listener, cert_arn):
+def add_extra_certificate(listener_stack, listener, cert_arn):
     """
     Function to add Certificates to listener
 
-    :param troposphere.elasticloadbalancingv2.Listener listener:
-    :param cert_arn:
-    :return:
+    :param listener_stack: The stack that "owns" the listener.
+    :param listener: The listener to add the certificate to
+    :param cert_arn: The identifier of the certificate
     """
-    if hasattr(listener, "Certificates"):
-        certs = getattr(listener, "Certificates")
-        certs.append(Certificate(CertificateArn=cert_arn))
+    if hasattr(listener, "Certificates") and listener.Certificates:
+        add_listener_certificate_via_arn(listener_stack, listener, [cert_arn])
     else:
         setattr(listener, "Certificates", [Certificate(CertificateArn=cert_arn)])
 
@@ -477,7 +475,7 @@ def import_new_acm_certs(listener, src_name, settings, listener_stack):
                 )
             }
         )
-    add_extra_certificate(listener, Ref(cert_param))
+    add_extra_certificate(listener_stack, listener, Ref(cert_param))
     rectify_listener_protocol(listener)
 
 
@@ -562,7 +560,7 @@ def add_acm_certs_arn(listener, src_value, settings, listener_stack):
             cert_arn_re.pattern,
         )
     LOG.info("Adding new cert from defined ARN")
-    add_extra_certificate(listener, src_value)
+    add_extra_certificate(listener_stack, listener, src_value)
     rectify_listener_protocol(listener)
 
 
