@@ -9,6 +9,7 @@ Module to handle resource settings definition to containers.
 from compose_x_common.compose_x_common import keyisset
 from troposphere import FindInMap, Ref, Sub
 from troposphere.iam import Policy as IamPolicy
+from troposphere.iam import PolicyType
 
 from ecs_composex.common import LOG, add_parameters
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T, STACK_ID_SHORT
@@ -116,8 +117,17 @@ def map_service_perms_to_resource(
     resource.generate_resource_envvars()
     containers = define_service_containers(family.template)
     policy = res_perms[access_type]
-    task_role = family.template.resources[TASK_ROLE_T]
-    task_role.Policies.append(policy)
+    policy_title = (
+        f"{family.logical_name}To{resource.mapping_key}{resource.logical_name}"
+    )
+    if policy_title not in family.template.resources:
+        res_policy = PolicyType(
+            policy_title,
+            PolicyName=policy.PolicyName,
+            PolicyDocument=policy.PolicyDocument,
+            Roles=[Ref(family.task_role.name["ImportParameter"])],
+        )
+        family.template.add_resource(res_policy)
     for container in containers:
         for service in services:
             if container.Name == service.name:

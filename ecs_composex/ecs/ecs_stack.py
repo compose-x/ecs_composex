@@ -4,11 +4,14 @@
 
 from troposphere import FindInMap
 
-from ecs_composex.common import LOG
+from ecs_composex.common import LOG, add_parameters
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.ecs import ecs_params, metadata
 from ecs_composex.ecs.ecs_service_network_config import set_compose_services_ingress
-from ecs_composex.ecs.ecs_template import generate_services
+from ecs_composex.ecs.ecs_template import (
+    initialize_family_services,
+    initialize_service_template,
+)
 
 
 class ServiceStack(ComposeXStack):
@@ -44,13 +47,22 @@ def associate_services_to_root_stack(root_stack, settings, vpc_stack=None):
     :param ecs_composex.common.stacks.ComposeXStack vpc_stack:
     :return:
     """
-    generate_services(settings)
-    for family_name in settings.families:
-        family = settings.families[family_name]
+    for family_name, family in settings.families.items():
+        family.template = initialize_service_template(family.logical_name)
         family.stack = ServiceStack(
             family.logical_name,
             stack_template=family.template,
             stack_parameters=family.stack_parameters,
+        )
+        initialize_family_services(settings, family)
+        add_parameters(
+            family.template,
+            [
+                family.task_role.arn["ImportParameter"],
+                family.task_role.name["ImportParameter"],
+                family.exec_role.arn["ImportParameter"],
+                family.exec_role.name["ImportParameter"],
+            ],
         )
         family.stack.Parameters.update(
             {
@@ -58,6 +70,18 @@ def associate_services_to_root_stack(root_stack, settings, vpc_stack=None):
                 ecs_params.FARGATE_VERSION.title: FindInMap(
                     "ComposeXDefaults", "ECS", "PlatformVersion"
                 ),
+                family.task_role.arn["ImportParameter"].title: family.task_role.arn[
+                    "ImportValue"
+                ],
+                family.task_role.name["ImportParameter"].title: family.task_role.name[
+                    "ImportValue"
+                ],
+                family.exec_role.arn["ImportParameter"].title: family.exec_role.arn[
+                    "ImportValue"
+                ],
+                family.exec_role.name["ImportParameter"].title: family.exec_role.name[
+                    "ImportValue"
+                ],
             }
         )
         if settings.ecs_cluster_platform_override:

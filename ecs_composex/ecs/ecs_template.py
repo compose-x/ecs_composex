@@ -8,7 +8,7 @@ Core ECS Template building
 
 from troposphere import GetAtt, Ref, Sub, Tags
 from troposphere.ec2 import SecurityGroup
-from troposphere.iam import Policy
+from troposphere.iam import Policy, PolicyType
 from troposphere.logs import LogGroup
 
 from ecs_composex.common import build_template
@@ -134,43 +134,27 @@ def create_log_group(family):
             ),
         ),
     )
-    family.exec_role.Policies.append(
-        Policy(
-            f"{family.logical_name}LogGroupAccess",
-            PolicyName=Sub(f"CloudWatchAccessForFamily{family.logical_name}"),
-            PolicyDocument={
-                "Version": "2012-10-17",
-                "Statement": [
-                    {
-                        "Sid": "AllowCloudWatchLoggingToSpecificLogGroup",
-                        "Effect": "Allow",
-                        "Action": ["logs:CreateLogStream", "logs:PutLogEvents"],
-                        "Resource": [GetAtt(svc_log, "Arn")],
-                    }
-                ],
-            },
-        )
+    policy = PolicyType(
+        f"{family.logical_name}LogGroupAccess",
+        PolicyName=Sub(f"CloudWatchAccessForFamily{family.logical_name}"),
+        PolicyDocument={
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Sid": "AllowCloudWatchLoggingToSpecificLogGroup",
+                    "Effect": "Allow",
+                    "Action": ["logs:CreateLogStream", "logs:PutLogEvents"],
+                    "Resource": [GetAtt(svc_log, "Arn")],
+                }
+            ],
+        },
+        Roles=[Ref(family.exec_role.name["ImportParameter"])],
     )
-
-
-def add_clusterwide_security_group(template):
-    """
-    Function to generate the ecs_service Load Balancers (if Any)
-    """
-    sg = SecurityGroup(
-        "ClusterWideSecurityGroup",
-        template=template,
-        GroupDescription=Sub(f"SG for ${{{CLUSTER_NAME_T}}}"),
-        GroupName=Sub(f"cluster-${{{CLUSTER_NAME_T}}}"),
-        Tags=Tags(
-            {
-                "Name": Sub(f"clustersg-${{{CLUSTER_NAME_T}}}"),
-                "ClusterName": Ref(CLUSTER_NAME),
-            }
-        ),
-        VpcId=Ref(vpc_params.VPC_ID),
-    )
-    return sg
+    if (
+        family.template
+        and f"{family.logical_name}LogGroupAccess" not in family.template.resources
+    ):
+        family.template.add_resource(policy)
 
 
 def get_service_family_name(services_families, service_name):
@@ -190,50 +174,51 @@ def get_service_family_name(services_families, service_name):
     return None
 
 
-def generate_services(settings):
+def initialize_family_services(settings, family):
     """
     Function to handle creation of services within the same family.
 
     :param ecs_composex.common.settings.ComposeXSettings settings:
     :return:
     """
-    for family_name in settings.families:
-        family = settings.families[family_name]
-        family.template = initialize_service_template(family_name)
-        if settings.secrets_mappings:
-            family.template.add_mapping(SECRETS_KEY, settings.secrets_mappings)
-        family.init_task_definition()
-        family.set_secrets_access()
-        family.refresh()
-        family.assign_policies()
-        family.service_config = ServiceConfig(family, settings)
-        family.ecs_service = Service(family, settings)
-        family.service_config.network.set_aws_sources(
-            settings,
-            family.logical_name,
-            GetAtt(family.ecs_service.sg, "GroupId"),
-        )
-        family.service_config.network.set_ext_sources_ingress(
-            family.logical_name, GetAtt(family.ecs_service.sg, "GroupId")
-        )
-        family.service_config.network.associate_aws_igress_rules(family.template)
-        family.service_config.network.associate_ext_igress_rules(family.template)
-        family.service_config.network.add_self_ingress(family)
-        family.merge_capacity_providers()
-        family.validate_capacity_providers(settings.ecs_cluster_providers)
-        family.stack_parameters.update(
-            {
-                ecs_params.SERVICE_NAME_T: family.logical_name,
-                CLUSTER_NAME_T: Ref(CLUSTER_NAME),
-                ROOT_STACK_NAME_T: Ref(ROOT_STACK_NAME),
-                ecs_params.LAUNCH_TYPE.title: family.launch_type,
-            }
-        )
-        family.upload_services_env_files(settings)
-        family.set_repository_credentials(settings)
-        family.set_volumes()
-        create_log_group(family)
-        family.handle_logging()
-        family.handle_alarms()
-        family.handle_prometheus()
-        family.validate_compute_configuration_for_task(settings)
+    if settings.secrets_mappings:
+        family.template.add_mapping(SECRETS_KEY, settings.secrets_mappings)
+        if SECRETS_KEY not in family.exec_role.stack.stack_template.resources:
+            family.exec_role.stack.stack_template.add_mapping(
+                SECRETS_KEY, settings.secrets_mappings
+            )
+    family.init_task_definition()
+    family.set_secrets_access()
+    family.refresh()
+    family.assign_policies()
+    family.service_config = ServiceConfig(family, settings)
+    family.ecs_service = Service(family, settings)
+    family.service_config.network.set_aws_sources(
+        settings,
+        family.logical_name,
+        GetAtt(family.ecs_service.sg, "GroupId"),
+    )
+    family.service_config.network.set_ext_sources_ingress(
+        family.logical_name, GetAtt(family.ecs_service.sg, "GroupId")
+    )
+    family.service_config.network.associate_aws_igress_rules(family.template)
+    family.service_config.network.associate_ext_igress_rules(family.template)
+    family.service_config.network.add_self_ingress(family)
+    family.merge_capacity_providers()
+    family.validate_capacity_providers(settings.ecs_cluster_providers)
+    family.stack.Parameters.update(
+        {
+            ecs_params.SERVICE_NAME_T: family.logical_name,
+            CLUSTER_NAME_T: Ref(CLUSTER_NAME),
+            ROOT_STACK_NAME_T: Ref(ROOT_STACK_NAME),
+            ecs_params.LAUNCH_TYPE.title: family.launch_type,
+        }
+    )
+    family.upload_services_env_files(settings)
+    family.set_repository_credentials(settings)
+    family.set_volumes()
+    create_log_group(family)
+    family.handle_logging()
+    family.handle_alarms()
+    family.handle_prometheus()
+    family.validate_compute_configuration_for_task(settings)
