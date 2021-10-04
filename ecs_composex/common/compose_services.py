@@ -1912,8 +1912,6 @@ class ComposeFamily(object):
             logging_def.Options.update(self.task_logging_options)
 
     def init_task_definition(self):
-        # if self.template:
-        #     add_service_roles(self)
         self.set_task_compute_parameter()
         self.set_task_definition()
         self.refresh_container_logging_definition()

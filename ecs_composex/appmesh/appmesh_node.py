@@ -245,6 +245,8 @@ class MeshNode(object):
             },
             Roles=[Ref(family.task_role.name["ImportParameter"])],
         )
+        if policy.title not in family.template.resources:
+            family.template.add_resource(policy)
 
     def expand_backends(self, root_stack, services):
         """
