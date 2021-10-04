@@ -50,7 +50,7 @@ def handle_import_dbs_to_services(db, rds_mapping, target, mapping_name):
                 target,
             )
         add_secrets_access_policy(
-            target[0].template,
+            target[0],
             FindInMap(mapping_name, db.logical_name, DB_SECRET_T),
             db.logical_name,
         )

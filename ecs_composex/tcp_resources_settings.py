@@ -15,7 +15,7 @@ from troposphere.iam import PolicyType
 from ecs_composex.common import LOG, add_parameters
 from ecs_composex.common.compose_resources import get_parameter_settings
 from ecs_composex.common.services_helpers import extend_container_secrets
-from ecs_composex.ecs.ecs_params import EXEC_ROLE_T, SG_T, TASK_ROLE_T
+from ecs_composex.ecs.ecs_params import SG_T
 from ecs_composex.rds.rds_params import DB_SECRET_POLICY_NAME
 
 
@@ -184,27 +184,27 @@ def generate_rds_secrets_permissions(resources, db_name):
 
 
 def add_secrets_access_policy(
-    service_template, secret_import, db_name, use_task_role=False
+    service_family, secret_import, db_name, use_task_role=False
 ):
     """
     Function to add or append policy to access DB Secret for the Execution Role
 
-    :param service_template:
+    :param service_family:
     :param secret_import:
     :return:
     """
     db_policy_statement = generate_rds_secrets_permissions(secret_import, db_name)
-    task_role = service_template.resources[TASK_ROLE_T]
-    exec_role = service_template.resources[EXEC_ROLE_T]
-    if keyisset(DB_SECRET_POLICY_NAME, service_template.resources):
-        db_policy = service_template.resources[DB_SECRET_POLICY_NAME]
+    task_role = service_family.task_role.name["ImportParameter"]
+    exec_role = service_family.exec_role.name["ImportParameter"]
+    if keyisset(DB_SECRET_POLICY_NAME, service_family.template.resources):
+        db_policy = service_family.template.resources[DB_SECRET_POLICY_NAME]
         db_policy.PolicyDocument["Statement"].append(db_policy_statement)
         if use_task_role:
             db_policy.Roles.append(Ref(task_role))
     else:
         policy = PolicyType(
             DB_SECRET_POLICY_NAME,
-            template=service_template,
+            template=service_family.template,
             Roles=[Ref(exec_role)],
             PolicyName=DB_SECRET_POLICY_NAME,
             PolicyDocument={
@@ -222,7 +222,7 @@ def handle_db_secret_to_services(db, secret_import, target):
     ]
     for service in valid_ones:
         add_secret_to_container(db, secret_import, service, target)
-    add_secrets_access_policy(target[0].template, secret_import, db.logical_name)
+    add_secrets_access_policy(target[0], secret_import, db.logical_name)
 
 
 def handle_new_dbs_to_services(db, sg_import, target, port=None):

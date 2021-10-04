@@ -27,11 +27,9 @@ from ecs_composex.common import LOG, add_parameters
 from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.ecs.ecs_params import (
     CLUSTER_NAME,
-    EXEC_ROLE_T,
     FARGATE_VERSION,
     SERVICE_SCALING_TARGET,
     SERVICE_T,
-    TASK_ROLE_T,
     TASK_T,
 )
 from ecs_composex.vpc.vpc_params import APP_SUBNETS, SG_ID_TYPE, SUBNETS_TYPE
@@ -129,8 +127,8 @@ def define_service_targets(settings, stack, rule, cluster_arn):
                 PolicyName="EventsAccess",
                 PolicyDocument=task_events_policy_doc,
                 Roles=[
-                    Ref(service[0].template.resources[TASK_ROLE_T]),
-                    Ref(service[0].template.resources[EXEC_ROLE_T]),
+                    Ref(service[0].task_role.name["ImportParameter"]),
+                    Ref(service[0].exec_role.name["ImportParameter"]),
                 ],
             )
         )
