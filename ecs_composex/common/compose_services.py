@@ -1977,7 +1977,11 @@ class ComposeFamily(object):
                 setattr(service.container_definition, "EnvironmentFiles", env_files)
             else:
                 service.container_definition.EnvironmentFiles += env_files
-            if self.template and "S3EnvFilesAccess" not in self.template.resources:
+            if (
+                env_files
+                and self.template
+                and "S3EnvFilesAccess" not in self.template.resources
+            ):
                 self.template.add_resource(
                     PolicyType(
                         "S3EnvFilesAccess",
@@ -1995,8 +1999,8 @@ class ComposeFamily(object):
                             ],
                         },
                         Roles=[
-                            Ref(self.exec_role.name["ParameterValue"]),
-                            Ref(self.task_role.name["ParameterValue"]),
+                            Ref(self.exec_role.name["ImportParameter"]),
+                            Ref(self.task_role.name["ImportParameter"]),
                         ],
                     )
                 )
