@@ -1732,15 +1732,17 @@ class ComposeFamily(object):
         self.set_secrets_access()
 
     def handle_permission_boundary(self, prop_key):
-        if keyisset("PermissionsBoundary", self.iam) and self.template:
-            if EXEC_ROLE_T in self.template.resources:
-                add_role_boundaries(
-                    self.template.resources[EXEC_ROLE_T], self.iam[prop_key]
-                )
-            if TASK_ROLE_T in self.template.resources:
-                add_role_boundaries(
-                    self.template.resources[TASK_ROLE_T], self.iam[prop_key]
-                )
+        """
+        Function to add the permissions boundary to IAM roles
+
+        :param str prop_key:
+        :return:
+        """
+        print(self.iam)
+        if keyisset(prop_key, self.iam):
+            print(self.iam[prop_key])
+            add_role_boundaries(self.exec_role.cfn_resource, self.iam[prop_key])
+            add_role_boundaries(self.task_role.cfn_resource, self.iam[prop_key])
 
     def assign_iam_policies(self, role, prop):
         """
@@ -1785,9 +1787,10 @@ class ComposeFamily(object):
         """
         if role_name is None:
             role_name = TASK_ROLE_T
-        if not self.template or role_name not in self.template.resources:
-            return
-        role = self.template.resources[role_name]
+        if role_name == EXEC_ROLE_T:
+            role = self.exec_role.cfn_resource
+        else:
+            role = self.task_role.cfn_resource
         props = [
             (
                 "ManagedPolicyArns",
