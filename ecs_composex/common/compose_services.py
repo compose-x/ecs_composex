@@ -2316,3 +2316,21 @@ class ComposeFamily(object):
                     f"{self.name} - Updated {ecs_params.LAUNCH_TYPE.title} to"
                     f" {self.stack.Parameters[ecs_params.LAUNCH_TYPE.title]}"
                 )
+
+    def wait_for_all_policies(self):
+        """
+        Function to ensure the Service does not get created/updated before all policies were set completely
+        """
+        policies = [
+            p.title
+            for p in self.template.resources.values()
+            if isinstance(p, PolicyType)
+        ]
+        if hasattr(self.ecs_service.ecs_service, "DependsOn"):
+            depends_on = getattr(self.ecs_service, "DependsOn")
+            for policy in policies:
+                if policy not in depends_on:
+                    depends_on.append(policy)
+        else:
+            setattr(self.ecs_service.ecs_service, "DependsOn", policies)
+        LOG.debug(self.ecs_service.ecs_service.DependsOn)
