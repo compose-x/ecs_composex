@@ -1372,7 +1372,9 @@ class ComposeFamily(object):
                 f"{self.name} - The compute platform is already overridden to {self.launch_type}"
             )
             if self.stack:
-                self.stack.Parameters.update({ecs_params.LAUNCH_TYPE: self.launch_type})
+                self.stack.Parameters.update(
+                    {ecs_params.LAUNCH_TYPE.title: self.launch_type}
+                )
             for service in self.services:
                 setattr(service, "compute_platform", self.launch_type)
         elif not all(
@@ -1388,7 +1390,7 @@ class ComposeFamily(object):
                     self.launch_type = platform
                     if self.stack:
                         self.stack.Parameters.update(
-                            {ecs_params.LAUNCH_TYPE: self.launch_type}
+                            {ecs_params.LAUNCH_TYPE.title: self.launch_type}
                         )
 
     def set_xray(self):
@@ -1737,9 +1739,7 @@ class ComposeFamily(object):
         :param str prop_key:
         :return:
         """
-        print(self.iam)
         if keyisset(prop_key, self.iam):
-            print(self.iam[prop_key])
             add_role_boundaries(self.exec_role.cfn_resource, self.iam[prop_key])
             add_role_boundaries(self.task_role.cfn_resource, self.iam[prop_key])
 
