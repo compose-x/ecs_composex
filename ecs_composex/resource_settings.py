@@ -20,6 +20,40 @@ from ecs_composex.ecs.ecs_params import TASK_ROLE_T
 from ecs_composex.kms.kms_perms import ACCESS_TYPES as KMS_ACCESS_TYPES
 
 
+def determine_arns(arn, policy_doc):
+    """
+    Function allowing to detect whether the resource permissions has a defined override for
+    resources ARN. This allows to extend the ARN syntax.
+
+    The policy skeleton must have Resource as a list, and contain ${ARN} into it.
+
+    :param str, list, AWSHelperFn arn:
+    :return: The list or Resource to put in to the IAM policy
+    """
+    resources = []
+    base_arn = r"${ARN}"
+    if keyisset("Resource", policy_doc):
+        if base_arn not in policy_doc["Resource"]:
+            raise KeyError(
+                f"The policy skeletion must contain at least {base_arn} when Resource is defined"
+            )
+        if issubclass(type(arn), AWSHelperFn):
+            for resource in policy_doc["Resource"]:
+                if not resource.startswith(base_arn):
+                    raise ValueError(
+                        f"The value {resource} is invalid. It must start with {base_arn}"
+                    )
+                if resource == base_arn:
+                    resources.append(arn)
+                else:
+                    resources.append(Sub(f"{resource}", ARN=arn))
+    elif not isinstance(arn, list):
+        resources = [arn]
+    else:
+        resources = arn
+    return resources
+
+
 def generate_resource_permissions(resource_name, policies, arn):
     """
     Function to generate IAM permissions for a given x-resource. Returns the mapping of these for the given resource.
@@ -37,23 +71,8 @@ def generate_resource_permissions(resource_name, policies, arn):
     for a_type in policies:
         clean_policy = {"Version": "2012-10-17", "Statement": []}
         LOG.debug(a_type)
-        resources = []
         policy_doc = policies[a_type].copy()
-        if keyisset("Resource", policy_doc):
-            if issubclass(type(arn), AWSHelperFn):
-                for resource in policy_doc["Resource"]:
-                    if not resource.startswith(r"${ARN}"):
-                        raise ValueError(
-                            f"The value {resource} is invalid. It must start with ${{ARN}}"
-                        )
-                    if resource == "${ARN}":
-                        resources.append(arn)
-                    else:
-                        resources.append(Sub(f"{resource}", ARN=arn))
-        elif not isinstance(arn, list):
-            resources = [arn]
-        else:
-            resources = arn
+        resources = determine_arns(arn, policy_doc)
         policy_doc["Sid"] = Sub(f"{a_type}To{resource_name}")
         policy_doc["Resource"] = resources
         clean_policy["Statement"].append(policy_doc)
