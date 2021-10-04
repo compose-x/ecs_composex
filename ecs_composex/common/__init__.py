@@ -82,7 +82,7 @@ def add_parameters(template, parameters):
     """
     for param in parameters:
         if not isinstance(param, Parameter):
-            raise TypeError("Parameter must be of type", Parameter)
+            raise TypeError("Parameter must be of type", Parameter, "Got", type(param))
         if template and param.title not in template.parameters:
             template.add_parameter(param)
 

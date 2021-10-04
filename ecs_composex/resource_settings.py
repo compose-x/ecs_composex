@@ -9,14 +9,14 @@ Module to handle resource settings definition to containers.
 from compose_x_common.compose_x_common import keyisset
 from troposphere import FindInMap, Ref, Sub
 from troposphere.iam import Policy as IamPolicy
+from troposphere.iam import PolicyType
 
 from ecs_composex.common import LOG, add_parameters
-from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T, STACK_ID_SHORT
+from ecs_composex.common.cfn_params import STACK_ID_SHORT
 from ecs_composex.common.compose_resources import get_parameter_settings
 from ecs_composex.common.services_helpers import extend_container_envvars
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.ecs.ecs_iam import define_service_containers
-from ecs_composex.ecs.ecs_params import TASK_ROLE_T
 from ecs_composex.kms.kms_perms import ACCESS_TYPES as KMS_ACCESS_TYPES
 
 
@@ -49,22 +49,27 @@ def generate_resource_permissions(resource_name, policies, arn):
     return resource_policies
 
 
-def add_iam_policy_to_service_task_role(
-    service_template, resource, perms, access_type, services
-):
+def add_iam_policy_to_service_task_role(family, resource, perms, access_type, services):
     """
     Function to expand the ECS Task Role policy with the permissions for the resource
-    :param troposphere.Template service_template:
+    :param ecs_composex.common.compose_services.ComposeFamily family:
     :param resource:
     :param perms:
     :param access_type:
     :param list services:
     :return:
     """
-    containers = define_service_containers(service_template)
+    containers = define_service_containers(family.template)
     policy = perms[access_type]
-    task_role = service_template.resources[TASK_ROLE_T]
-    task_role.Policies.append(policy)
+    policy_title = f"{family.logical_name}{access_type}To{resource.mapping_key}{resource.logical_name}"
+    if policy_title not in family.template.resources:
+        res_policy = PolicyType(
+            policy_title,
+            PolicyName=policy.PolicyName,
+            PolicyDocument=policy.PolicyDocument,
+            Roles=[Ref(family.task_role.name["ImportParameter"])],
+        )
+        family.template.add_resource(res_policy)
     for container in containers:
         for service in services:
             if container.Name == service.name:
@@ -99,7 +104,7 @@ def map_service_perms_to_resource(
     """
     Function to
     :param resource:
-    :param family:
+    :param ecs_composex.common.compose_services.ComposeFamily family:
     :param services:
     :param str access_type:
     :param value: The value for main attribute, used for env vars
@@ -116,8 +121,17 @@ def map_service_perms_to_resource(
     resource.generate_resource_envvars()
     containers = define_service_containers(family.template)
     policy = res_perms[access_type]
-    task_role = family.template.resources[TASK_ROLE_T]
-    task_role.Policies.append(policy)
+    policy_title = (
+        f"{family.logical_name}To{resource.mapping_key}{resource.logical_name}"
+    )
+    if policy_title not in family.template.resources:
+        res_policy = PolicyType(
+            policy_title,
+            PolicyName=policy.PolicyName,
+            PolicyDocument=policy.PolicyDocument,
+            Roles=[Ref(family.task_role.name["ImportParameter"])],
+        )
+        family.template.add_resource(res_policy)
     for container in containers:
         for service in services:
             if container.Name == service.name:

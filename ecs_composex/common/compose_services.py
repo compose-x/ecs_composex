@@ -40,7 +40,7 @@ from troposphere.ecs import (
 )
 from troposphere.ecs import Service as EcsService
 from troposphere.ecs import SystemControl, TaskDefinition, Tmpfs, Ulimit, Volume
-from troposphere.iam import Policy
+from troposphere.iam import Policy, PolicyType
 from troposphere.logs import LogGroup
 
 from ecs_composex.common import FILE_PREFIX, LOG, NONALPHANUM
@@ -65,7 +65,6 @@ from ecs_composex.ecs.docker_tools import (
     set_memory_to_mb,
 )
 from ecs_composex.ecs.ecs_conditions import USE_FARGATE_CON_T
-from ecs_composex.ecs.ecs_iam import add_service_roles
 from ecs_composex.ecs.ecs_params import (
     AWS_XRAY_IMAGE,
     EXEC_ROLE_T,
@@ -1222,14 +1221,6 @@ def add_policies(config, key, new_policies):
         )
         if name in existing_policy_names:
             return
-        if not keyisset("PolicyDocument", policy):
-            raise KeyError("You must set the policy document for the policy")
-        if (
-            keyisset("Version", policy["PolicyDocument"])
-            and not isinstance(policy["PolicyDocument"]["Version"], str)
-            or not keyisset("Version", policy["PolicyDocument"])
-        ):
-            policy["PolicyDocument"]["Version"] = "2012-10-17"
         policy_object = Policy(PolicyName=name, PolicyDocument=policy["PolicyDocument"])
         existing_policies.append(policy_object)
 
@@ -1253,7 +1244,6 @@ def identify_repo_credentials_secret(settings, task, secret_name):
     :param secret_name:
     :return:
     """
-    secret_arn = None
     for secret in settings.secrets:
         if secret.name == secret_name:
             secret_arn = secret.arn
@@ -1262,9 +1252,14 @@ def identify_repo_credentials_secret(settings, task, secret_name):
                     f"secret {secret_name} was not found in the defined secrets",
                     [s.name for s in settings.secrets],
                 )
-            if secret.kms_key_arn:
-                task.exec_role.Policies.append(
-                    Policy(
+            if (
+                secret.kms_key_arn
+                and task.template
+                and "RepositoryCredsKmsKeyAccess" not in task.template.resources
+            ):
+                task.template.add_resource(
+                    PolicyType(
+                        "RepositoryCredsKmsKeyAccess",
                         PolicyName="RepositoryCredsKmsKeyAccess",
                         PolicyDocument={
                             "Version": "2012-10-17",
@@ -1276,6 +1271,7 @@ def identify_repo_credentials_secret(settings, task, secret_name):
                                 }
                             ],
                         },
+                        Roles=[Ref(task.exec_role.name["ImportParameter"])],
                     )
                 )
             return secret_arn
@@ -1376,7 +1372,9 @@ class ComposeFamily(object):
                 f"{self.name} - The compute platform is already overridden to {self.launch_type}"
             )
             if self.stack:
-                self.stack.Parameters.update({ecs_params.LAUNCH_TYPE: self.launch_type})
+                self.stack.Parameters.update(
+                    {ecs_params.LAUNCH_TYPE.title: self.launch_type}
+                )
             for service in self.services:
                 setattr(service, "compute_platform", self.launch_type)
         elif not all(
@@ -1392,7 +1390,7 @@ class ComposeFamily(object):
                     self.launch_type = platform
                     if self.stack:
                         self.stack.Parameters.update(
-                            {ecs_params.LAUNCH_TYPE: self.launch_type}
+                            {ecs_params.LAUNCH_TYPE.title: self.launch_type}
                         )
 
     def set_xray(self):
@@ -1595,8 +1593,9 @@ class ComposeFamily(object):
                     RetentionInDays=expiry,
                 )
             )
-            policy = Policy(
-                PolicyName=Sub(f"CloudWatchAccessFor${{{ecs_params.SERVICE_NAME_T}}}"),
+            policy = PolicyType(
+                f"CloudWatchAccessFor{self.logical_name}{log_group_title}",
+                PolicyName=f"CloudWatchAccessFor{self.logical_name}{log_group_title}",
                 PolicyDocument={
                     "Version": "2012-10-17",
                     "Statement": [
@@ -1611,11 +1610,10 @@ class ComposeFamily(object):
                         }
                     ],
                 },
+                Roles=[Ref(self.exec_role.name["ImportParameter"])],
             )
-            try:
-                self.exec_role.Policies.append(policy)
-            except AttributeError:
-                setattr(self.exec_role, "Policies", [policy])
+            if self.template and policy.title not in self.template.resources:
+                self.template.add_resource(policy)
             service.logging.Options.update({"awslogs-group": Ref(log_group)})
         else:
             LOG.debug("LOG Group and policy already exist")
@@ -1636,11 +1634,9 @@ class ComposeFamily(object):
                 LOG.warning(
                     "When defining awslogs-region, Compose-X does not create the CW Log Group"
                 )
-                self.exec_role.Policies.append(
+                self.exec_role.cfn_resource.Policies.append(
                     Policy(
-                        PolicyName=Sub(
-                            f"CloudWatchAccessFor${{{ecs_params.SERVICE_NAME_T}}}"
-                        ),
+                        PolicyName=f"CloudWatchAccessFor{self.logical_name}",
                         PolicyDocument={
                             "Version": "2012-10-17",
                             "Statement": [
@@ -1737,15 +1733,15 @@ class ComposeFamily(object):
         self.set_secrets_access()
 
     def handle_permission_boundary(self, prop_key):
-        if keyisset("PermissionsBoundary", self.iam) and self.template:
-            if EXEC_ROLE_T in self.template.resources:
-                add_role_boundaries(
-                    self.template.resources[EXEC_ROLE_T], self.iam[prop_key]
-                )
-            if TASK_ROLE_T in self.template.resources:
-                add_role_boundaries(
-                    self.template.resources[TASK_ROLE_T], self.iam[prop_key]
-                )
+        """
+        Function to add the permissions boundary to IAM roles
+
+        :param str prop_key:
+        :return:
+        """
+        if keyisset(prop_key, self.iam):
+            add_role_boundaries(self.exec_role.cfn_resource, self.iam[prop_key])
+            add_role_boundaries(self.task_role.cfn_resource, self.iam[prop_key])
 
     def assign_iam_policies(self, role, prop):
         """
@@ -1790,9 +1786,10 @@ class ComposeFamily(object):
         """
         if role_name is None:
             role_name = TASK_ROLE_T
-        if not self.template or role_name not in self.template.resources:
-            return
-        role = self.template.resources[role_name]
+        if role_name == EXEC_ROLE_T:
+            role = self.exec_role.cfn_resource
+        else:
+            role = self.task_role.cfn_resource
         props = [
             (
                 "ManagedPolicyArns",
@@ -1814,21 +1811,18 @@ class ComposeFamily(object):
         """
         Method to handle secrets permissions access
         """
-        if (
-            self.template
-            and EXEC_ROLE_T in self.template.resources
-            and TASK_ROLE_T in self.template.resources
-        ):
-            secrets = []
-            for service in self.services:
-                for secret in service.secrets:
-                    secrets.append(secret)
-            if secrets:
-                assign_secrets_to_roles(
-                    secrets,
-                    self.template.resources[EXEC_ROLE_T],
-                    self.template.resources[TASK_ROLE_T],
-                )
+        if not self.exec_role or not self.task_role:
+            return
+        secrets = []
+        for service in self.services:
+            for secret in service.secrets:
+                secrets.append(secret)
+        if secrets:
+            assign_secrets_to_roles(
+                secrets,
+                self.exec_role.cfn_resource,
+                self.task_role.cfn_resource,
+            )
 
     def set_task_compute_parameter(self):
         """
@@ -1884,8 +1878,8 @@ class ComposeFamily(object):
             if 0 < self.task_ephemeral_storage >= 21
             else Ref(AWS_NO_VALUE),
             Family=Ref(ecs_params.SERVICE_NAME),
-            TaskRoleArn=GetAtt(TASK_ROLE_T, "Arn"),
-            ExecutionRoleArn=GetAtt(EXEC_ROLE_T, "Arn"),
+            TaskRoleArn=Ref(self.task_role.arn["ImportParameter"]),
+            ExecutionRoleArn=Ref(self.exec_role.arn["ImportParameter"]),
             ContainerDefinitions=[s.container_definition for s in self.services],
             RequiresCompatibilities=["EC2", "FARGATE"],
             Tags=Tags(
@@ -1918,8 +1912,6 @@ class ComposeFamily(object):
             logging_def.Options.update(self.task_logging_options)
 
     def init_task_definition(self):
-        if self.template:
-            add_service_roles(self)
         self.set_task_compute_parameter()
         self.set_task_definition()
         self.refresh_container_logging_definition()
@@ -1985,13 +1977,14 @@ class ComposeFamily(object):
                 setattr(service.container_definition, "EnvironmentFiles", env_files)
             else:
                 service.container_definition.EnvironmentFiles += env_files
-            if "S3EnvFilesAccess" not in [
-                policy.PolicyName
-                for policy in self.exec_role.Policies
-                if isinstance(policy.PolicyName, str)
-            ]:
-                self.exec_role.Policies.append(
-                    Policy(
+            if (
+                env_files
+                and self.template
+                and "S3EnvFilesAccess" not in self.template.resources
+            ):
+                self.template.add_resource(
+                    PolicyType(
+                        "S3EnvFilesAccess",
                         PolicyName="S3EnvFilesAccess",
                         PolicyDocument={
                             "Version": "2012-10-17",
@@ -2005,6 +1998,10 @@ class ComposeFamily(object):
                                 }
                             ],
                         },
+                        Roles=[
+                            Ref(self.exec_role.name["ImportParameter"]),
+                            Ref(self.task_role.name["ImportParameter"]),
+                        ],
                     )
                 )
 
@@ -2035,22 +2032,24 @@ class ComposeFamily(object):
                 "RepositoryCredentials",
                 RepositoryCredentials(CredentialsParameter=secret_arn),
             )
-            self.exec_role.Policies.append(
-                Policy(
-                    PolicyName="AccessToRepoCredentialsSecret",
-                    PolicyDocument={
-                        "Version": "2012-10-17",
-                        "Statement": [
-                            {
-                                "Effect": "Allow",
-                                "Action": ["secretsmanager:GetSecretValue"],
-                                "Sid": "AccessToRepoCredentialsSecret",
-                                "Resource": [secret_arn],
-                            }
-                        ],
-                    },
-                )
+            policy = PolicyType(
+                "AccessToRepoCredentialsSecret",
+                PolicyName="AccessToRepoCredentialsSecret",
+                PolicyDocument={
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Action": ["secretsmanager:GetSecretValue"],
+                            "Sid": "AccessToRepoCredentialsSecret",
+                            "Resource": [secret_arn],
+                        }
+                    ],
+                },
+                Roles=[Ref(self.exec_role.name["ImportParameter"])],
             )
+            if self.template and policy.title not in self.template.resources:
+                self.template.add_resource(policy)
 
     def set_services_mount_points(self):
         """
