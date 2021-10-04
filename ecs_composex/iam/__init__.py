@@ -58,10 +58,8 @@ def add_role_boundaries(iam_role, policy):
     """
     Function to set permission boundary onto an IAM role
 
-    :param iam_role: the IAM Role to add the boundary to
-    :type iam_role: troposphere.iam.Role
-    :param policy: the name or ARN of the policy
-    :type policy: str
+    :param troposphere.iam.Role iam_role: the IAM Role to add the boundary to
+    :param str policy: the name or ARN of the policy
     """
     if not isinstance(iam_role, Role):
         raise TypeError(f"{iam_role} is of type", type(iam_role), "expected", Role)

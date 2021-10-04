@@ -3,7 +3,9 @@
 version: '3.8'
 secrets:
   abcd: {}
-  john: {}
+  john:
+    x-secrets:
+      Name: /cicd/shared/github.com/token
 
   zyx: {}
 services:

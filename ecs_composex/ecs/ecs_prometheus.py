@@ -15,9 +15,16 @@ try:
 except ImportError:
     from yaml import Dumper
 
-from troposphere import AWS_ACCOUNT_ID, AWS_PARTITION, AWS_REGION, AWS_STACK_NAME, Sub
+from troposphere import (
+    AWS_ACCOUNT_ID,
+    AWS_PARTITION,
+    AWS_REGION,
+    AWS_STACK_NAME,
+    Ref,
+    Sub,
+)
 from troposphere.ecs import Secret
-from troposphere.iam import Policy
+from troposphere.iam import Policy, PolicyType
 from troposphere.ssm import Parameter as SSMParameter
 
 from ecs_composex.common import keyisset
@@ -441,16 +448,16 @@ def define_cloudwatch_agent(family, cw_prometheus_config, cw_agent_config):
     return cw_service
 
 
-def set_ecs_cw_policy(prometheus_parameter, cw_config_parameter):
+def set_ecs_cw_policy(family, prometheus_parameter, cw_config_parameter):
     """
     Renders the IAM policy to grant the TaskRole access to CW, ECS and SSM Parameters
 
+    :param family: The Service family
     :param troposphere.ssm.Parameter prometheus_parameter:
     :param troposphere.ssm.Parameter cw_config_parameter:
-    :return: The IAM policy
-    :rtype: troposphere.iam.Policy
     """
-    ecs_sd_policy = Policy(
+    ecs_sd_policy = PolicyType(
+        "CWAgentAccessForPrometheusScraping",
         PolicyName="CWAgentAccessForPrometheusScraping",
         PolicyDocument={
             "Version": "2012-10-17",
@@ -524,8 +531,13 @@ def set_ecs_cw_policy(prometheus_parameter, cw_config_parameter):
                 },
             ],
         },
+        Roles=[
+            Ref(family.exec_role.name["ImportParameter"]),
+            Ref(family.task_role.name["ImportParameter"]),
+        ],
     )
-    return ecs_sd_policy
+    if ecs_sd_policy.title not in family.template.resources:
+        family.template.add_resource(ecs_sd_policy)
 
 
 def add_cw_agent_to_family(family, **options):
@@ -539,20 +551,4 @@ def add_cw_agent_to_family(family, **options):
         define_cloudwatch_agent(family, prometheus_config, cw_agent_config)
     )
     family.refresh()
-    task_role = family.template.resources[ecs_params.TASK_ROLE_T]
-    exec_role = family.template.resources[ecs_params.EXEC_ROLE_T]
-    ecs_sd_policy = set_ecs_cw_policy(prometheus_config, cw_agent_config)
-    if hasattr(task_role, "Policies") and isinstance(
-        getattr(task_role, "Policies"), list
-    ):
-        policies = getattr(task_role, "Policies")
-        policies.append(ecs_sd_policy)
-    elif not hasattr(task_role, "Policies"):
-        setattr(task_role, "Policies", [ecs_sd_policy])
-    if hasattr(exec_role, "Policies") and isinstance(
-        getattr(exec_role, "Policies"), list
-    ):
-        policies = getattr(exec_role, "Policies")
-        policies.append(ecs_sd_policy)
-    elif not hasattr(exec_role, "Policies"):
-        setattr(exec_role, "Policies", [ecs_sd_policy])
+    set_ecs_cw_policy(family, prometheus_config, cw_agent_config)
