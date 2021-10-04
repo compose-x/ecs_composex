@@ -445,4 +445,5 @@ def generate_full_template(settings):
     add_all_tags(root_stack.stack_template, settings)
     for family in settings.families.values():
         family.validate_compute_configuration_for_task(settings)
+        family.wait_for_all_policies()
     return root_stack
