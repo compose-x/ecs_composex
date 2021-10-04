@@ -44,7 +44,7 @@ def assign_service_permissions_to_bucket(bucket, family, services, access, value
             arn=arn,
         )
         add_iam_policy_to_service_task_role(
-            family.template, bucket, bucket_perms, access[bucket_key], services
+            family, bucket, bucket_perms, access[bucket_key], services
         )
     if keyisset(objects_key, access):
         objects_perms = generate_resource_permissions(
@@ -53,7 +53,7 @@ def assign_service_permissions_to_bucket(bucket, family, services, access, value
             arn=Sub("${BucketArn}/*", BucketArn=arn),
         )
         add_iam_policy_to_service_task_role(
-            family.template,
+            family,
             bucket,
             objects_perms,
             access[objects_key],
@@ -69,7 +69,7 @@ def assign_service_permissions_to_bucket(bucket, family, services, access, value
             ],
         )
         add_iam_policy_to_service_task_role(
-            family.template,
+            family,
             bucket,
             ssl_perms,
             ssl_key,
@@ -296,7 +296,7 @@ def define_lookup_buckets_access(bucket, target, services):
             arn=FindInMap("s3", bucket.logical_name, "Arn"),
         )
         add_iam_policy_to_service_task_role(
-            target[0].template,
+            target[0],
             bucket,
             bucket_perms,
             access[bucket_key],
@@ -312,7 +312,7 @@ def define_lookup_buckets_access(bucket, target, services):
             ),
         )
         add_iam_policy_to_service_task_role(
-            target[0].template,
+            target[0],
             bucket,
             objects_perms,
             access[objects_key],
@@ -334,7 +334,7 @@ def define_lookup_buckets_access(bucket, target, services):
             ],
         )
         add_iam_policy_to_service_task_role(
-            target[0].template,
+            target[0],
             bucket,
             ssl_perms,
             ssl_key,
@@ -366,7 +366,7 @@ def assign_lookup_buckets(bucket, mappings):
                     arn=FindInMap("s3", bucket.logical_name, "KmsKey"),
                 )
                 add_iam_policy_to_service_task_role(
-                    target[0].template,
+                    target[0],
                     bucket,
                     kms_perms,
                     "EncryptDecrypt",

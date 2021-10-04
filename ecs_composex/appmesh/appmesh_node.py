@@ -13,7 +13,7 @@ from troposphere.ecs import (
     ProxyConfiguration,
     Ulimit,
 )
-from troposphere.iam import Policy
+from troposphere.iam import Policy, PolicyType
 
 from ecs_composex.appmesh import appmesh_conditions, appmesh_params, metadata
 from ecs_composex.appmesh.appmesh_params import BACKENDS_KEY, NAME_KEY
@@ -50,7 +50,7 @@ class MeshNode(object):
         self.set_listeners_port_mappings()
         self.extend_service_stack(mesh)
         self.add_envoy_container_definition(family)
-        self.extend_task_policy()
+        self.extend_task_policy(family)
 
     def set_port_mappings(self):
         """
@@ -214,11 +214,12 @@ class MeshNode(object):
         setattr(family.task_definition, "ProxyConfiguration", proxy_config)
         family.refresh()
 
-    def extend_task_policy(self):
+    def extend_task_policy(self, family):
         """
         Method to add a policy for AppMesh Access
         """
-        policy = Policy(
+        policy = PolicyType(
+            "AppMeshAccess",
             PolicyName="AppMeshAccess",
             PolicyDocument={
                 "Version": "2012-10-17",
@@ -242,15 +243,8 @@ class MeshNode(object):
                     },
                 ],
             },
+            Roles=[Ref(family.task_role.name["ImportParameter"])],
         )
-        task_role = self.stack.stack_template.resources[ecs_params.TASK_ROLE_T]
-        if hasattr(task_role, "Policies") and isinstance(
-            getattr(task_role, "Policies"), list
-        ):
-            policies = getattr(task_role, "Policies")
-            policies.append(policy)
-        elif not hasattr(task_role, "Policies"):
-            setattr(task_role, "Policies", [policy])
 
     def expand_backends(self, root_stack, services):
         """

@@ -65,7 +65,6 @@ from ecs_composex.ecs.docker_tools import (
     set_memory_to_mb,
 )
 from ecs_composex.ecs.ecs_conditions import USE_FARGATE_CON_T
-from ecs_composex.ecs.ecs_iam import add_service_roles
 from ecs_composex.ecs.ecs_params import (
     AWS_XRAY_IMAGE,
     EXEC_ROLE_T,
