@@ -59,7 +59,7 @@ def add_iam_policy_to_service_task_role(family, resource, perms, access_type, se
     :param list services:
     :return:
     """
-    containers = define_service_containers(service_template)
+    containers = define_service_containers(family.template)
     policy = perms[access_type]
     policy_title = f"{family.logical_name}{access_type}To{resource.mapping_key}{resource.logical_name}"
     if policy_title not in family.template.resources:
