@@ -408,12 +408,12 @@ def generate_full_template(settings):
         stack_template=init_root_template(settings),
         file_name=settings.name,
     )
+    add_ecs_cluster(root_stack, settings)
     iam_stack = IamStack("iam", settings)
     vpc_stack = add_vpc_to_root(root_stack, settings)
     root_stack.stack_template.add_resource(iam_stack)
     settings.set_networks(vpc_stack, root_stack)
     dns_settings = DnsSettings(root_stack, settings, get_vpc_id(vpc_stack))
-    add_ecs_cluster(root_stack, settings)
     associate_services_to_root_stack(root_stack, settings, vpc_stack)
     if keyisset(ACM_KEY, settings.compose_content):
         init_acm_certs(settings, dns_settings, root_stack)

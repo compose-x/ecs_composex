@@ -176,8 +176,7 @@ class EcsRole(object):
                     "ImportParameter": None,
                 }
             else:
-                settings = self.set_new_resource_outputs(output_definition)
-                value = settings
+                value = self.set_new_resource_outputs(output_definition)
                 self.attributes_outputs[attribute_parameter] = {
                     "Name": output_name,
                     "Output": Output(output_name, Value=value),
@@ -220,6 +219,7 @@ class XStack(ComposeXStack):
         stack_template = build_template("Root stack for IAM Roles")
         add_parameters(stack_template, [CLUSTER_NAME])
         super().__init__(name, stack_template, **kwargs)
+        self.Parameters.update({CLUSTER_NAME.title: settings.ecs_cluster})
         new_roles = create_new_roles(settings)
         for role in new_roles:
             self.stack_template.add_resource(role.cfn_resource)
