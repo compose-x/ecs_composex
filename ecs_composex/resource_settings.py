@@ -7,7 +7,7 @@ Module to handle resource settings definition to containers.
 """
 
 from compose_x_common.compose_x_common import keyisset
-from troposphere import FindInMap, Ref, Sub
+from troposphere import AWSHelperFn, FindInMap, Ref, Sub
 from troposphere.iam import Policy as IamPolicy
 
 from ecs_composex.common import LOG, add_parameters
@@ -37,9 +37,25 @@ def generate_resource_permissions(resource_name, policies, arn):
     for a_type in policies:
         clean_policy = {"Version": "2012-10-17", "Statement": []}
         LOG.debug(a_type)
+        resources = []
         policy_doc = policies[a_type].copy()
+        if keyisset("Resource", policy_doc):
+            if issubclass(type(arn), AWSHelperFn):
+                for resource in policy_doc["Resource"]:
+                    if not resource.startswith(r"${ARN}"):
+                        raise ValueError(
+                            f"The value {resource} is invalid. It must start with ${{ARN}}"
+                        )
+                    if resource == "${ARN}":
+                        resources.append(arn)
+                    else:
+                        resources.append(Sub(f"{resource}", ARN=arn))
+        elif not isinstance(arn, list):
+            resources = [arn]
+        else:
+            resources = arn
         policy_doc["Sid"] = Sub(f"{a_type}To{resource_name}")
-        policy_doc["Resource"] = [arn] if not isinstance(arn, list) else arn
+        policy_doc["Resource"] = resources
         clean_policy["Statement"].append(policy_doc)
         suffix = f"{a_type}{resource_name}"[:(118)]
         resource_policies[a_type] = IamPolicy(

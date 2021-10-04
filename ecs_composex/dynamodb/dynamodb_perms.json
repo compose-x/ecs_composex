@@ -12,7 +12,11 @@
       "dynamodb:UpdateItem",
       "dynamodb:PutItem"
     ],
-    "Effect": "Allow"
+    "Effect": "Allow",
+    "Resource": [
+      "${ARN}",
+      "${ARN}/index/*"
+    ]
   },
   "RO": {
     "Action": [
@@ -21,13 +25,21 @@
       "dynamodb:Scan",
       "dynamodb:GetItem"
     ],
-    "Effect": "Allow"
+    "Effect": "Allow",
+    "Resource": [
+      "${ARN}",
+      "${ARN}/index/*"
+    ]
   },
   "PowerUser": {
     "NotAction": [
       "dynamodb:CreateTable",
       "dynamodb:DeleteTable",
       "dynamodb:DeleteBackup"
+    ],
+    "Resource": [
+      "${ARN}",
+      "${ARN}/index/*"
     ]
   }
 }
