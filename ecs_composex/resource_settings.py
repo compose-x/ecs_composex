@@ -20,7 +20,7 @@ from ecs_composex.ecs.ecs_iam import define_service_containers
 from ecs_composex.kms.kms_perms import ACCESS_TYPES as KMS_ACCESS_TYPES
 
 
-def determine_arns(arn, policy_doc):
+def determine_arns(arn, policy_doc, ignore_missing_primary=False):
     """
     Function allowing to detect whether the resource permissions has a defined override for
     resources ARN. This allows to extend the ARN syntax.
@@ -28,12 +28,14 @@ def determine_arns(arn, policy_doc):
     The policy skeleton must have Resource as a list, and contain ${ARN} into it.
 
     :param str, list, AWSHelperFn arn:
+    :param dict policy_doc: The policy document content
+    :param bool ignore_missing_primary: Whether the policy should contain ${ARN} at least
     :return: The list or Resource to put in to the IAM policy
     """
     resources = []
     base_arn = r"${ARN}"
     if keyisset("Resource", policy_doc):
-        if base_arn not in policy_doc["Resource"]:
+        if base_arn not in policy_doc["Resource"] and not ignore_missing_primary:
             raise KeyError(
                 f"The policy skeletion must contain at least {base_arn} when Resource is defined"
             )
@@ -54,7 +56,9 @@ def determine_arns(arn, policy_doc):
         return arn
 
 
-def generate_resource_permissions(resource_name, policies, arn):
+def generate_resource_permissions(
+    resource_name, policies, arn, ignore_missing_primary=False
+):
     """
     Function to generate IAM permissions for a given x-resource. Returns the mapping of these for the given resource.
     Suffix takes the values and reduces to the first 118 characters to ensure policy length is below 128
@@ -64,6 +68,7 @@ def generate_resource_permissions(resource_name, policies, arn):
     :param str resource_name: The name of the resource
     :param dict policies: the policies associated with the x-resource type.
     :param str,AWSHelper arn: The ARN of the resource if already looked up.
+    :param bool ignore_missing_primary: Whether the policy should contain ${ARN} at least
     :return: dict of the IAM policies associated with the resource.
     :rtype dict:
     """
@@ -72,7 +77,7 @@ def generate_resource_permissions(resource_name, policies, arn):
         clean_policy = {"Version": "2012-10-17", "Statement": []}
         LOG.debug(a_type)
         policy_doc = policies[a_type].copy()
-        resources = determine_arns(arn, policy_doc)
+        resources = determine_arns(arn, policy_doc, ignore_missing_primary)
         policy_doc["Sid"] = f"{a_type}To{resource_name}"
         policy_doc["Resource"] = resources
         clean_policy["Statement"].append(policy_doc)

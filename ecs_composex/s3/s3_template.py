@@ -87,34 +87,77 @@ def generate_bucket(bucket):
     return bucket
 
 
+def handle_predefined_policies(bucket, param_key, managed_policies_key, statement):
+    """
+    Function to configure and add statements for bucket policy based on predefined Bucket Policies
+
+    :param bucket:
+    :param str param_key:
+    :param str managed_policies_key:
+    :param list statement:
+    """
+    unique_policies = list(
+        set(bucket.parameters[param_key]["PredefinedBucketPolicies"])
+    )
+    for policy_name in unique_policies:
+        if policy_name not in ACCESS_TYPES[managed_policies_key].keys():
+            LOG.error(
+                f"Policy {policy_name} is not defined as part of possible permissions set"
+            )
+            continue
+        policies = generate_resource_permissions(
+            bucket.logical_name,
+            ACCESS_TYPES[managed_policies_key],
+            Sub(f"arn:${{{AWS_PARTITION}}}:s3:::${{{bucket.cfn_resource.title}}}"),
+        )
+        statement += policies[policy_name].PolicyDocument["Statement"]
+
+
+def handle_user_defined_policies(bucket, param_key, user_policies_key, statement):
+    """
+    Function to add user defined policies
+
+    :param bucket:
+    :param str param_key:
+    :param str user_policies_key:
+    :param list statement:
+    """
+    policies = bucket.parameters[param_key][user_policies_key]
+    policy_docs = {}
+    for count, policy_doc in enumerate(policies):
+        if keyisset("Sid", policy_doc):
+            name = policy_doc["Sid"]
+        else:
+            name = f"UserDefined{count}"
+        policy_docs[name] = policy_doc
+    generated_policies = generate_resource_permissions(
+        bucket.logical_name,
+        policy_docs,
+        Sub(f"arn:${{{AWS_PARTITION}}}:s3:::${{{bucket.cfn_resource.title}}}"),
+        True,
+    )
+    for policy in generated_policies.values():
+        statement += policy.PolicyDocument["Statement"]
+
+
 def implement_bucket_policy(bucket, param_key, bucket_template):
     """
     Function to parse the input parameter for the Bucket Policy, and generate the policy accordingly
 
     :param ecs_composex.s3.s3_stack.Bucket bucket:
+    :param str param_key: The MacroParameters sub parameter to evaluate
     :param troposphere.Template bucket_template:
     """
     statement = []
-    managed_policies = "PredefinedBucketPolicies"
+    managed_policies_key = "PredefinedBucketPolicies"
+    user_policies_key = "Policies"
     policy_document = {"Version": "2012-10-17", "Statement": statement}
-    if keyisset(managed_policies, bucket.parameters[param_key]) and keyisset(
-        managed_policies, ACCESS_TYPES
+    if keyisset(managed_policies_key, bucket.parameters[param_key]) and keyisset(
+        managed_policies_key, ACCESS_TYPES
     ):
-        unique_policies = list(
-            set(bucket.parameters[param_key]["PredefinedBucketPolicies"])
-        )
-        for policy_name in unique_policies:
-            if policy_name not in ACCESS_TYPES[managed_policies].keys():
-                LOG.error(
-                    f"Policy {policy_name} is not defined as part of possible permissions set"
-                )
-                continue
-            policies = generate_resource_permissions(
-                bucket.logical_name,
-                ACCESS_TYPES[managed_policies],
-                Sub(f"arn:${{{AWS_PARTITION}}}:s3:::${{{bucket.cfn_resource.title}}}"),
-            )
-            statement += policies[policy_name].PolicyDocument["Statement"]
+        handle_predefined_policies(bucket, param_key, managed_policies_key, statement)
+    if keyisset(user_policies_key, bucket.parameters[param_key]):
+        handle_user_defined_policies(bucket, param_key, user_policies_key, statement)
     bucket_policy = s3.BucketPolicy(
         f"{bucket.logical_name}BucketPolicy",
         Bucket=Ref(bucket.cfn_resource),
