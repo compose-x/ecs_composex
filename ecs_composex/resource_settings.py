@@ -7,7 +7,7 @@ Module to handle resource settings definition to containers.
 """
 
 from compose_x_common.compose_x_common import keyisset
-from troposphere import FindInMap, Ref, Sub
+from troposphere import AWSHelperFn, FindInMap, Ref, Sub
 from troposphere.iam import Policy as IamPolicy
 
 from ecs_composex.common import LOG, add_parameters
@@ -18,6 +18,40 @@ from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.ecs.ecs_iam import define_service_containers
 from ecs_composex.ecs.ecs_params import TASK_ROLE_T
 from ecs_composex.kms.kms_perms import ACCESS_TYPES as KMS_ACCESS_TYPES
+
+
+def determine_arns(arn, policy_doc):
+    """
+    Function allowing to detect whether the resource permissions has a defined override for
+    resources ARN. This allows to extend the ARN syntax.
+
+    The policy skeleton must have Resource as a list, and contain ${ARN} into it.
+
+    :param str, list, AWSHelperFn arn:
+    :return: The list or Resource to put in to the IAM policy
+    """
+    resources = []
+    base_arn = r"${ARN}"
+    if keyisset("Resource", policy_doc):
+        if base_arn not in policy_doc["Resource"]:
+            raise KeyError(
+                f"The policy skeletion must contain at least {base_arn} when Resource is defined"
+            )
+        if issubclass(type(arn), AWSHelperFn):
+            for resource in policy_doc["Resource"]:
+                if not resource.startswith(base_arn):
+                    raise ValueError(
+                        f"The value {resource} is invalid. It must start with {base_arn}"
+                    )
+                if resource == base_arn:
+                    resources.append(arn)
+                else:
+                    resources.append(Sub(f"{resource}", ARN=arn))
+    elif not isinstance(arn, list):
+        resources = [arn]
+    else:
+        resources = arn
+    return resources
 
 
 def generate_resource_permissions(resource_name, policies, arn):
@@ -38,8 +72,9 @@ def generate_resource_permissions(resource_name, policies, arn):
         clean_policy = {"Version": "2012-10-17", "Statement": []}
         LOG.debug(a_type)
         policy_doc = policies[a_type].copy()
+        resources = determine_arns(arn, policy_doc)
         policy_doc["Sid"] = Sub(f"{a_type}To{resource_name}")
-        policy_doc["Resource"] = [arn] if not isinstance(arn, list) else arn
+        policy_doc["Resource"] = resources
         clean_policy["Statement"].append(policy_doc)
         suffix = f"{a_type}{resource_name}"[:(118)]
         resource_policies[a_type] = IamPolicy(
