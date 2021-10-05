@@ -99,3 +99,19 @@ x-s3:
       BucketPolicy:
         PredefinedBucketPolicies:
           - enforceSecureConnection
+        Policies:
+          - Effect: Allow
+            Action:
+              - s3:Get*
+            Resource:
+              - "${!ARN}/*"
+          - Effect: Allow
+            Action:
+              - s3:Get*
+              - s3:List*
+            Resource:
+              - "${!ARN}/*"
+              - "${!ARN}"
+            Condition:
+              bool:
+                aws:sourceIp: abcd
