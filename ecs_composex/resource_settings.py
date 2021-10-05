@@ -73,7 +73,7 @@ def generate_resource_permissions(resource_name, policies, arn):
         LOG.debug(a_type)
         policy_doc = policies[a_type].copy()
         resources = determine_arns(arn, policy_doc)
-        policy_doc["Sid"] = Sub(f"{a_type}To{resource_name}")
+        policy_doc["Sid"] = f"{a_type}To{resource_name}"
         policy_doc["Resource"] = resources
         clean_policy["Statement"].append(policy_doc)
         suffix = f"{a_type}{resource_name}"[:(118)]

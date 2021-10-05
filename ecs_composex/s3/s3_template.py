@@ -100,7 +100,10 @@ def implement_bucket_policy(bucket, param_key, bucket_template):
     if keyisset(managed_policies, bucket.parameters[param_key]) and keyisset(
         managed_policies, ACCESS_TYPES
     ):
-        for policy_name in bucket.parameters[param_key]["PredefinedBucketPolicies"]:
+        unique_policies = list(
+            set(bucket.parameters[param_key]["PredefinedBucketPolicies"])
+        )
+        for policy_name in unique_policies:
             if policy_name not in ACCESS_TYPES[managed_policies].keys():
                 LOG.error(
                     f"Policy {policy_name} is not defined as part of possible permissions set"
