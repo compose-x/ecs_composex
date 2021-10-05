@@ -63,10 +63,7 @@ def assign_service_permissions_to_bucket(bucket, family, services, access, value
         ssl_perms = generate_resource_permissions(
             f"SslBucketObjefsAccess{bucket.logical_name}",
             ACCESS_TYPES[ssl_key],
-            arn=[
-                arn,
-                Sub("${BucketArn}/*", BucketArn=arn),
-            ],
+            arn=arn,
         )
         add_iam_policy_to_service_task_role(
             family,
@@ -322,16 +319,7 @@ def define_lookup_buckets_access(bucket, target, services):
         ssl_perms = generate_resource_permissions(
             f"SslBucketObjefsAccess{bucket.logical_name}",
             ACCESS_TYPES[ssl_key],
-            arn=[
-                Sub(
-                    "${BucketArn}",
-                    BucketArn=FindInMap("s3", bucket.logical_name, "Arn"),
-                ),
-                Sub(
-                    "${BucketArn}/*",
-                    BucketArn=FindInMap("s3", bucket.logical_name, "Arn"),
-                ),
-            ],
+            arn=FindInMap("s3", bucket.logical_name, "Arn"),
         )
         add_iam_policy_to_service_task_role(
             target[0],

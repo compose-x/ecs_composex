@@ -95,3 +95,7 @@ x-s3:
         access:
           bucket: ListOnly
           objects: RW
+    MacroParameters:
+      BucketPolicy:
+        PredefinedBucketPolicies:
+          - enforceSecureConnection

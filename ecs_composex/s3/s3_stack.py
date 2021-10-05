@@ -27,7 +27,7 @@ from ecs_composex.s3.s3_params import (
     S3_BUCKET_DOMAIN_NAME,
     S3_BUCKET_NAME,
 )
-from ecs_composex.s3.s3_template import generate_bucket
+from ecs_composex.s3.s3_template import evaluate_parameters, generate_bucket
 
 COMPOSEX_MAX_OUTPUTS = MAX_OUTPUTS - 10
 
@@ -49,9 +49,10 @@ def create_s3_template(new_buckets, template):
         if bucket and bucket.cfn_resource:
             bucket.init_outputs()
             bucket.generate_outputs()
+            bucket_template = template
             if mono_template:
-                template.add_resource(bucket.cfn_resource)
-                template.add_output(bucket.outputs)
+                bucket_template.add_resource(bucket.cfn_resource)
+                bucket_template.add_output(bucket.outputs)
             elif not mono_template:
                 bucket_template = build_template(
                     f"Template for S3 Bucket {bucket.title}"
@@ -62,6 +63,7 @@ def create_s3_template(new_buckets, template):
                     bucket.logical_name, stack_template=bucket_template
                 )
                 template.add_resource(bucket_stack)
+            evaluate_parameters(bucket, bucket_template)
     return template
 
 
