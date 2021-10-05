@@ -90,18 +90,6 @@
       ]
     }
   },
-  "s3-bucket-ssl-requests-only": {
-    "s3-bucket-ssl-requests-only": {
-      "Sid": "AllowSSLRequestsOnly",
-      "Action": "s3:*",
-      "Effect": "Deny",
-      "Condition": {
-        "Bool": {
-          "aws:SecureTransport": "false"
-        }
-      }
-    }
-  },
   "enforceSecureConnection": {
     "enforceSecureConnection": {
       "Sid": "AllowSSLRequestsOnly",
@@ -111,7 +99,30 @@
         "Bool": {
           "aws:SecureTransport": "false"
         }
-      }
+      },
+      "Resource": [
+        "${ARN}",
+        "${ARN}/*"
+      ]
+    }
+  },
+  "PredefinedBucketPolicies": {
+    "enforceSecureConnection": {
+      "Sid": "AllowSSLRequestsOnly",
+      "Principal": {
+        "AWS": "*"
+      },
+      "Action": "s3:*",
+      "Effect": "Deny",
+      "Condition": {
+        "Bool": {
+          "aws:SecureTransport": "false"
+        }
+      },
+      "Resource": [
+        "${ARN}",
+        "${ARN}/*"
+      ]
     }
   }
 }

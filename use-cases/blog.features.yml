@@ -67,6 +67,7 @@ services:
       Policies:
         - PolicyName: AllowPublishToCw
           PolicyDocument:
+            Version: "2012-10-17"
             Statement:
               - Action:
                   - cloudwatch:PutMetricData
