@@ -47,11 +47,11 @@ def determine_arns(arn, policy_doc):
                     resources.append(arn)
                 else:
                     resources.append(Sub(f"{resource}", ARN=arn))
+        return resources
     elif not isinstance(arn, list):
-        resources = [arn]
+        return [arn]
     else:
-        resources = arn
-    return resources
+        return arn
 
 
 def generate_resource_permissions(resource_name, policies, arn):
