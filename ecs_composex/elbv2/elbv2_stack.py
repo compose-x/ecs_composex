@@ -263,7 +263,16 @@ def define_target_conditions(definition):
     :rtype: list
     """
     conditions = []
-    if isinstance(definition["access"], str):
+    if keyisset("Conditions", definition) and isinstance(
+        definition["Conditions"], list
+    ):
+        conditions = import_record_properties(
+            {"Conditions": definition["Conditions"]},
+            ListenerRule,
+            set_to_novalue=False,
+            ignore_missing_required=True,
+        )["Conditions"]
+    elif keyisset("access", definition) and isinstance(definition["access"], str):
         return handle_string_condition_format(definition["access"])
     return conditions
 

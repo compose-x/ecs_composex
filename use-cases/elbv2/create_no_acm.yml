@@ -20,7 +20,18 @@ x-elbv2:
           - name: youtoo:rproxy
             access: /stupid
           - name: bignicefamily:app01
-            access: thereisnospoon.ews-network.net:8080/abcd
+#            access: thereisnospoon.ews-network.net:8080/abcd
+            Conditions:
+              - HostHeaderConfig:
+                  Values:
+                    - thereisnospoon.ews-network.net
+                HttpRequestMethodConfig:
+                  Values:
+                    - GET
+                    - HEAD
+                PathPatternConfig:
+                  Values:
+                    - /abcd
 
     Services:
       - name: bignicefamily:rproxy
