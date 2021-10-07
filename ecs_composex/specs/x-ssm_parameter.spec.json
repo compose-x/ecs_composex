@@ -1,0 +1,89 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "id": "x-ssm_parameter.spec.json",
+  "$id": "x-ssm_parameter.spec.json",
+  "title": "x-ssm_parameter",
+  "description": "x-ssm_parameter specification",
+  "type": "object",
+  "properties": {
+    "Lookup": {
+      "$ref": "x-resources.common.spec.json#/definitions/Lookup"
+    },
+    "Use": {
+      "type": "string"
+    },
+    "Properties": {
+      "type": "object",
+      "description": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ssm-parameter.html"
+    },
+    "Settings": {
+      "$ref": "x-resources.common.spec.json#/definitions/Settings"
+    },
+    "MacroParameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "FromFile": {
+          "type": "string",
+          "description": "Path to the file to read the content of and set as Value"
+        },
+        "ValidateJson": {
+          "type": "boolean",
+          "description": "Whether or not the content should be a valid JSON"
+        },
+        "MinimizeJson": {
+          "type": "boolean",
+          "default": true,
+          "description": "When set to yes, will load are dump JSON string without indentation"
+        },
+        "IgnoreInvalidJson": {
+          "type": "boolean",
+          "default": false,
+          "description": "If the JSON encoding failed, allows to ignore and use default content"
+        },
+        "ValidateYaml": {
+          "type": "boolean",
+          "description": "Whether or not the content should be a valid Yaml"
+        },
+        "RenderToJson": {
+          "type": "boolean",
+          "default": true,
+          "description": "When set to yes, will transform the object loaded in YAML and set it into JSON"
+        },
+        "IgnoreInvalidYaml": {
+          "type": "boolean",
+          "default": false,
+          "description": "If the Yaml encoding failed, allows to ignore and use default content"
+        },
+        "EncodeToBase64": {
+          "type": "boolean",
+          "description": "Whether the content should be encoded to base64",
+          "default": false
+        }
+      }
+    },
+    "Services": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/ServicesDef"
+      }
+    }
+  },
+  "definitions": {
+    "ServicesDef": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "access": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "access"
+      ]
+    }
+  }
+}

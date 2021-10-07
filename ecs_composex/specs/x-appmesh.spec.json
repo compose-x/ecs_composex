@@ -1,0 +1,208 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "id": "x-appmesh.spec.json",
+  "$id": "x-appmesh.spec.json",
+  "title": "x-appmesh",
+  "description": "x-appmesh specification",
+  "type": "object",
+  "properties": {
+    "Properties": {
+      "type": "object"
+    },
+    "Settings": {
+      "type": "object",
+      "properties": {
+        "Nodes": {
+          "$ref": "#/definitions/NodesDef"
+        },
+        "Routers": {
+          "$ref": "#/definitions/RoutersDef"
+        },
+        "Services": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "required": [
+              "Name"
+            ],
+            "properties": {
+              "Name": {
+                "type": "string"
+              },
+              "Node": {
+                "type": "string"
+              },
+              "Router": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "Gateways": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "Name": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "NodesDef": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "properties": {
+          "Name": {
+            "type": "string",
+            "description": "Name of the node, must be the name of a service or family"
+          },
+          "Protocol": {
+            "$ref": "#/definitions/ProtocolDef"
+          },
+          "Backends": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "uniqueItems": true
+            }
+          }
+        }
+      }
+    },
+    "RoutersDef": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "properties": {
+          "Name": {
+            "type": "string"
+          },
+          "Listener": {
+            "$ref": "#/definitions/ListenerDef"
+          },
+          "Routes": {
+            "type": "object",
+            "properties": {
+              "Http": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/HttpRouteMatch"
+                }
+              },
+              "Tcp": {
+                "$ref": "#/definitions/TcpRoutesDef"
+              }
+            },
+            "oneOf": [
+              {
+                "required": [
+                  "Http"
+                ],
+                "properties": {
+                }
+              },
+              {
+                "required": [
+                  "Tcp"
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    "HttpRouteMatch": {
+      "type": "object",
+      "required": [
+        "Match",
+        "Nodes"
+      ],
+      "properties": {
+        "Match": {
+          "$ref": "#/definitions/HttpMatchDef"
+        },
+        "Nodes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/HttpNodeDef"
+          }
+        }
+      }
+    },
+    "HttpMatchDef": {
+      "type": "object",
+      "properties": {
+        "Prefix": {
+          "type": "string"
+        },
+        "Method": {
+          "type": "string"
+        },
+        "Scheme": {
+          "type": "string"
+        }
+      }
+    },
+    "HttpNodeDef": {
+      "type": "object",
+      "required": [
+        "Name"
+      ],
+      "properties": {
+        "Name": {
+          "type": "string"
+        },
+        "Weight": {
+          "type": [
+            "string",
+            "number"
+          ]
+        }
+      }
+    },
+    "TcpRoutesDef": {
+      "type": "array",
+      "maxItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "properties": {
+          "Nodes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/HttpNodeDef"
+            }
+          }
+        }
+      }
+    },
+    "ListenerDef": {
+      "type": "object",
+      "properties": {
+        "Port": {
+          "$ref": "#/definitions/PortDef"
+        },
+        "Protocol": {
+          "$ref": "#/definitions/ProtocolDef"
+        }
+      }
+    },
+    "ProtocolDef": {
+      "type": "string"
+    },
+    "PortDef": {
+      "type": "number",
+      "minimum": 1,
+      "maximum": 65535
+    }
+  }
+}

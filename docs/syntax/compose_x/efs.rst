@@ -21,7 +21,9 @@ Syntax reference
           Lookup: {}
           Use: <str>
 
-`JSON Schema Definition <https://github.com/compose-x/ecs_composex_specs/blob/main/ecs_composex_specs/x-efs.spec.json>`_
+.. seealso::
+
+    For more structural details, see `JSON Schema`_
 
 .. hint::
 
@@ -163,6 +165,14 @@ Given ECS Compose-X tries to focus as much as possible on security, we have impl
 .. warning::
 
     Even with 1 access point per container in the task definition, the access remains at the task level for IAM permissions.
+
+JSON Schema
+=============
+
+.. jsonschema:: ../../../ecs_composex/specs/x-efs.spec.json
+
+.. literalinclude:: ../../../ecs_composex/specs/x-efs.spec.json
+
 
 .. _AWS CFN EFS syntax reference: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-efs-filesystem.html
 .. _Mount Targets: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-efs-mounttarget.html

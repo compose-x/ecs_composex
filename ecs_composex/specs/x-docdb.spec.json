@@ -1,0 +1,48 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "id": "x-docdb.spec.json",
+  "$id": "x-docdb.spec.json",
+  "title": "x-docdb",
+  "description": "x-docdb specification",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "Lookup": {
+      "$ref": "x-resources.common.spec.json#/definitions/Lookup"
+    },
+    "Use": {
+      "type": "string"
+    },
+    "Properties": {
+      "type": "object",
+      "description": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-docdb-dbcluster.html"
+    },
+    "Settings": {
+      "$ref": "x-resources.common.spec.json#/definitions/Settings"
+    },
+    "Services": {
+      "$ref": "x-rds.spec.json#/definitions/ServicesDef"
+    },
+    "MacroParameters": {
+      "$ref": "#/definitions/MacroParameters"
+    }
+  },
+  "definitions": {
+    "MacroParameters": {
+      "type": "object",
+      "properties": {
+        "Instances": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "description": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-docdb-dbinstance.html"
+          }
+        },
+        "DBClusterParameterGroup": {
+          "type": "object",
+          "description": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-docdb-dbclusterparametergroup.html"
+        }
+      }
+    }
+  }
+}

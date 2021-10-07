@@ -15,6 +15,7 @@ services:
     x-iam:
       Policies:
         - PolicyDocument:
+            Version: "2012-10-17"
             Statement:
               - Action:
                   - cloudwatch:PutMetricData
@@ -22,7 +23,7 @@ services:
                 Resource:
                   - '*'
                 Sid: AllowPublishMetricsToCw
-            PolicyName: AllowPublishToCw
+          PolicyName: AllowPublishToCw
     x-xray: false
   app02:
     x-iam:
@@ -45,7 +46,7 @@ services:
             Description: ANYWHERE
 
     x-logging:
-        RetentionInDays: 42
+      RetentionInDays: 42
     x-scaling:
       Range: 1-10
       TargetScaling:

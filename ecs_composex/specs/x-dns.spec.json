@@ -1,0 +1,89 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "id": "x-dns.spec.json",
+  "$id": "x-dns.spec.json",
+  "title": "x-dns",
+  "description": "x-dns specification",
+  "type": "object",
+  "definitions": {
+    "ZoneName": {
+      "type": "string",
+      "format": "idn-hostname"
+    },
+    "PrivateNamespace": {
+      "type": "object",
+      "required": [
+        "Name"
+      ],
+      "properties": {
+        "Lookup": {
+          "type": [
+            "string",
+            "object"
+          ]
+        },
+        "Name": {
+          "$ref": "#/definitions/ZoneName"
+        },
+        "Use": {
+          "type": "string",
+          "pattern": "ns-[a-z0-9]+$"
+        }
+      }
+    },
+    "PublicZone": {
+      "type": "object",
+      "required": [
+        "Name"
+      ],
+      "properties": {
+        "Lookup": {
+          "type": [
+            "string",
+            "object"
+          ]
+        },
+        "Name": {
+          "$ref": "#/definitions/ZoneName"
+        },
+        "Use": {
+          "type": "string",
+          "pattern": "Z[A-Z0-9]+$"
+        }
+      }
+    },
+    "Record": {
+      "type": "object",
+      "required": [
+        "Properties",
+        "Target"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "Properties": {
+          "type": "object"
+        },
+        "Target": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "properties": {
+    "PrivateNamespace": {
+      "type": "object",
+      "$ref": "#/definitions/PrivateNamespace"
+    },
+    "PublicZone": {
+      "type": "object",
+      "$ref": "#/definitions/PublicZone"
+    },
+    "Records": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Record"
+      }
+    }
+  },
+  "additionalProperties": false
+}

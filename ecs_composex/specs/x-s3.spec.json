@@ -1,0 +1,93 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "id": "x-s3.spec.json",
+  "$id": "x-s3.spec.json",
+  "title": "x-s3",
+  "description": "x-s3 specification for ECS Cluster",
+  "type": "object",
+  "properties": {
+    "Lookup": {
+      "$ref": "x-resources.common.spec.json#/definitions/Lookup"
+    },
+    "Use": {
+      "type": "string"
+    },
+    "Properties": {
+      "type": "object",
+      "description": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-s3-bucket.html"
+    },
+    "Settings": {
+      "$ref": "x-resources.common.spec.json#/definitions/Settings"
+    },
+    "MacroParameters": {
+      "type": "object",
+      "properties": {
+        "BucketPolicy": {
+          "type": "object",
+          "properties": {
+            "Statement": {
+              "type": "array",
+              "items": {
+                "$ref": "services.x-iam.spec.json#/definitions/Statement"
+              }
+            },
+            "PredefinedBucketPolicies": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "enum": [
+                  "enforceSecureConnection"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "Services": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/ServicesDef"
+      }
+    }
+  },
+  "definitions": {
+    "ServicesAccess": {
+      "type": "object",
+      "properties": {
+        "enforceSecureConnection": {
+          "type": "boolean",
+          "description": "Whether or not to auto-add an IAM policy that denies query not over TLS",
+          "default": false
+        },
+        "bucket": {
+          "type": "string",
+          "description": "The name of the predefined policy to use for bucket access"
+        },
+        "objects": {
+          "type": "string",
+          "description": "The name of the predefined policy to use for objects access"
+        }
+      },
+      "required": [
+        "bucket",
+        "objects"
+      ]
+    },
+    "ServicesDef": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "access": {
+          "$ref": "#/definitions/ServicesAccess"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    }
+  }
+}

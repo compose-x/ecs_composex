@@ -1,0 +1,146 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "id": "services.x-prometheus",
+  "$id": "services.x-prometheus.spec.json",
+  "type": "object",
+  "title": "services.x-prometheus specification",
+  "description": "The services.x-prometheus specification for ComposeX",
+  "additionalProperties": false,
+  "properties": {
+    "ContainersInsights": {
+      "type": "object",
+      "properties": {
+        "EnableCWAgentDebug": {
+          "type": "boolean",
+          "description": "Whether or not enable debug mode for the CloudWatch agent",
+          "default": false
+        },
+        "CollectForAppmesh": {
+          "type": "boolean",
+          "description": "Automatically adds envoy EMF Processor"
+        },
+        "CollectForJavaJmx": {
+          "oneOf": [
+            {
+              "$ref": "#/definitions/ExporterConfig"
+            },
+            {
+              "type": "boolean",
+              "description": "Automatically adds JavaJMX/Catalina EMF Processor"
+            }
+          ]
+        },
+        "CollectForNginx": {
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/definitions/ExporterConfig"
+            }
+          ]
+        },
+        "AutoAddNginxPrometheusExporter": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, ECS Compose-X will automatically add nginx-prometheus-exporter sidecar. Requires CollectForNginx or CollectForNginxPlus to be true"
+        },
+        "CollectForNginxPlus": {
+          "type": "boolean"
+        },
+        "CustomRules": {
+          "$ref": "#/definitions/CustomRulesDef"
+        }
+      }
+    }
+  },
+  "definitions": {
+    "ExporterConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "ExporterPort": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Prometheus Exporter port"
+        },
+        "ExporterPath": {
+          "type": "string",
+          "description": "Override path for metrics collection",
+          "default": "/metrics",
+          "pattern": "^/[\\x00-\\x7F]+$"
+        },
+        "source_labels": {
+          "description": "List of docker labels to match tne container to scrape for metrics",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "label_matcher": {
+          "type": "string",
+          "description": "Regular expression to of values to match the source_labels against"
+        }
+      }
+    },
+    "CustomRulesDef": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "EmfProcessors",
+          "ExporterPort"
+        ],
+        "properties": {
+          "ExporterPort": {
+            "$ref": "#/definitions/ExporterConfig/properties/ExporterPort"
+          },
+          "ExporterPath": {
+            "$ref": "#/definitions/ExporterConfig/properties/ExporterPath"
+          },
+          "EmfProcessors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/EmfProcessorDef"
+            }
+          }
+        }
+      }
+    },
+    "EmfProcessorDef": {
+      "type": "object",
+      "required": [
+        "source_labels",
+        "dimensions",
+        "metric_selectors",
+        "label_matcher"
+      ],
+      "properties": {
+        "source_labels": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "label_matcher": {
+          "type": "string"
+        },
+        "dimensions": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "metric_selectors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

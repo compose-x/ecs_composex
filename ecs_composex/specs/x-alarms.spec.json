@@ -1,0 +1,66 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "id": "x-alarms.spec.json",
+  "$id": "x-alarms.spec.json",
+  "title": "x-alarms",
+  "description": "x-alarms",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "Properties": {
+      "type": "object",
+      "description": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-alarms-bucket.html"
+    },
+    "Settings": {
+      "$ref": "x-resources.common.spec.json#/definitions/Settings"
+    },
+    "MacroParameters": {
+      "type": "object",
+      "properties": {
+        "CompositeExpression": {
+          "type": "string"
+        }
+      }
+    },
+    "Services": {
+      "$ref": "x-resources.common.spec.json#/definitions/Services"
+    },
+    "Topics": {
+      "description": "List of SNS Topics to use for notifications",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/TopicDef"
+      }
+    }
+  },
+  "definitions": {
+    "TopicDef": {
+      "description": "SNS Topic definition for x-alarms.Topics[]",
+      "type": "object",
+      "properties": {
+        "TopicArn": {
+          "type": "string",
+          "description": "The SNS Topic full ARN",
+          "format": "arn:aws(?:-[a-z]+)?:sns:[a-z0-9A-Z-]+:\\d{12}:[a-z0-9A-Z-._]+$"
+        },
+        "x-sns": {
+          "type": "string",
+          "description": "The name of a topic defined in x-sns.Topic."
+        },
+        "NotifyOn": {
+          "description": "The status to trigger the SNS action on.",
+          "type": "array",
+          "default": "all",
+          "items": {
+            "type": "string",
+            "enum": [
+              "all",
+              "alarm",
+              "okay"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

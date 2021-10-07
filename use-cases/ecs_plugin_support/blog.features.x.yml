@@ -31,7 +31,9 @@ services:
             - "*"
     x-iam:
       Policies:
-        - PolicyDocument:
+        - PolicyName: AllowPublishToCw
+          PolicyDocument:
+            Version: "2012-10-17"
             Statement:
               - Action:
                   - cloudwatch:PutMetricData
@@ -39,7 +41,6 @@ services:
                 Resource:
                   - '*'
                 Sid: AllowPublishMetricsToCw
-            PolicyName: AllowPublishToCw
     x-xray: false
   app02:
     x-aws-pull_credentials: secrets::private_repository

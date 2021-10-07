@@ -27,7 +27,7 @@ Syntax
 
 .. seealso::
 
-    `x-elbv2 JSON Schema Definition`_
+    For more structural details, see `JSON Schema`_
 
 Properties
 ==========
@@ -422,6 +422,14 @@ Examples
             port: 5000
             healthcheck: 5000:HTTP:7:2:15:5
             protocol: HTTP
+
+
+JSON Schema
+============
+
+.. jsonschema:: ../../../ecs_composex/specs/x-elbv2.spec.json
+
+.. literalinclude:: ../../../ecs_composex/specs/x-elbv2.spec.json
 
 
 .. _LB Attributes: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-elasticloadbalancingv2-loadbalancer.html#cfn-elasticloadbalancingv2-loadbalancer-loadbalancerattributes

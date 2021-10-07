@@ -375,7 +375,7 @@ class ComposeXSettings(object):
         )
         content_def = ComposeDefinition(files, content)
         self.compose_content = content_def.definition
-        source = pkg_files("ecs_composex_specs").joinpath("compose-spec.json")
+        source = pkg_files("ecs_composex").joinpath("specs/compose-spec.json")
         print(source)
         resolver = jsonschema.RefResolver(
             f"file://{path.abspath(path.dirname(source))}/", None

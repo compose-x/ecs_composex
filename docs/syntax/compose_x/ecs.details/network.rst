@@ -10,7 +10,20 @@ services.x-network
 
 .. contents::
 
-`JSON Schema Definition <https://github.com/compose-x/ecs_composex_specs/blob/main/ecs_composex_specs/services.x-network.spec.json>`_
+Syntax
+=======
+
+.. code-block:: yaml
+
+    x-network:
+      UseCloudmap: bool
+      Ingress: {} # Ingress Definition
+
+
+.. seealso::
+
+    For more structural details, see `JSON Schema`_
+
 
 UseCloudmap
 ============
@@ -112,3 +125,10 @@ Map VPC subnets to docker-compose networks
 In some cases, you might have complex VPC topology and created new specific Subnets in **x-vpc**, and map that subnet
 name to a docker-network defined network. Then later, you can set your service in the services definition to be put into
 that network.
+
+JSON Schema
+============
+
+.. jsonschema:: ../../../../ecs_composex/specs/services.x-network.spec.json
+
+.. literalinclude:: ../../../../ecs_composex/specs/services.x-network.spec.json
