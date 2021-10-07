@@ -10,7 +10,8 @@ services.x-alarms
 
 *This section describes the service level alarms that will automatically monitor the ECS Service*
 
-`JSON Schema Definition <https://github.com/compose-x/ecs_composex_specs/blob/main/ecs_composex_specs/services.x-alarms.spec.json>`_
+Syntax reference
+=================
 
 .. code-block:: yaml
     :caption: Service level x-alarms reference
@@ -22,6 +23,10 @@ services.x-alarms
             RuleName:
               Topics: []        # Similar to other x-alarms settings
               Settings: {}      # Input values override.
+
+.. seealso::
+
+    For more structural details, see `JSON Schema`_
 
 
 Predefined alarms
@@ -116,6 +121,14 @@ throttling.
 
 So as much as alarms are valuable, you should always try to have ones that will action a corrective fix, automated wherever
 possible, and if not possible, alert people so risks get mitigated.
+
+JSON Schema
+============
+
+.. jsonschema:: ../../../../ecs_composex/specs/services.x-alarms.spec.json
+
+.. literalinclude:: ../../../../ecs_composex/specs/services.x-alarms.spec.json
+    :language: json
 
 .. _DatapointsToAlarm: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-cw-alarm.html#cfn-cloudwatch-alarm-datapointstoalarm
 .. _EvaluationPeriods: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-cw-alarm.html#cfn-cloudwatch-alarms-evaluationperiods

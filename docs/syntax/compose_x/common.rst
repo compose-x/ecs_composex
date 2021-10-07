@@ -14,6 +14,10 @@ In general for each x- section of the docker compose document, we will find thre
 * `Services`_
 * `Lookup`_
 
+.. seealso::
+
+    For more structural details, see `JSON Schema`_
+
 Properties
 ==========
 
@@ -145,3 +149,17 @@ file.
     to the resources. In a future version, I might add a configuration file to override that behaviour.
 
 Refer to each x- resource syntax to see which access types are available.
+
+
+JSON Schema
+============
+
+Ingress Definition
+-----------------------
+
+.. jsonschema:: ../../../ecs_composex/specs/ingress.spec.json
+
+Common specifications for resources
+-------------------------------------
+
+.. jsonschema:: ../../../ecs_composex/specs/x-resources.common.spec.json

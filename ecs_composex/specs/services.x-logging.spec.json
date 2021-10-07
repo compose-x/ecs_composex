@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "services.x-logging.spec.json",
+  "id": "services.x-logging",
+  "type": "object",
+  "title": "services.x-logging specification",
+  "description": "The services.x-logging specification for ComposeX",
+  "additionalProperties": false,
+  "properties": {
+    "RetentionInDays": {
+      "type": "integer",
+      "description": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-logs-loggroup.html#cfn-logs-loggroup-retentionindays"
+    },
+    "CreateLogGroup": {
+      "type": "boolean"
+    }
+  }
+}

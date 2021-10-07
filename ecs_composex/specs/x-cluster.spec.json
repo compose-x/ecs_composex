@@ -1,0 +1,84 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "id": "x-cluster.spec.json",
+  "$id": "x-cluster.spec.json",
+  "title": "x-cluster",
+  "description": "x-cluster specification for ECS Cluster",
+  "type": "object",
+  "properties": {
+    "Lookup": {
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "required": [
+            "ClusterName"
+          ],
+          "properties": {
+            "ClusterName": {
+              "type": "string"
+            },
+            "RoleArn": {
+              "$ref": "x-resources.common.spec.json#/definitions/Lookup/properties/RoleArn"
+            }
+          }
+        }
+      ]
+    },
+    "Use": {
+      "type": "string"
+    },
+    "Properties": {
+      "type": "object",
+      "description": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ecs-cluster.html"
+    },
+    "MacroParameters": {
+      "type": "object",
+      "properties": {
+        "CreateExecLoggingLogGroup": {
+          "description": "Define whether Compose-X should create a CW LogGroup to log exec commands",
+          "type": [
+            "boolean",
+            "string"
+          ]
+        },
+        "CreateExecLoggingBucket": {
+          "description": "Define whether Compose-X should create a new S3 bucket to log exec commands",
+          "type": [
+            "boolean",
+            "string"
+          ]
+        }
+      },
+      "CreateExecLoggingKmsKey": {
+        "description": "Define whether Compose-X should create a new KMS Key to encrypt log exec commands",
+        "type": [
+          "boolean",
+          "string"
+        ]
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "type": "object",
+      "required": [
+        "Use"
+      ]
+    },
+    {
+      "type": "object",
+      "required": [
+        "Lookup"
+      ]
+    },
+    {
+      "type": "object",
+      "required": [
+        "Properties"
+      ]
+    }
+  ]
+}

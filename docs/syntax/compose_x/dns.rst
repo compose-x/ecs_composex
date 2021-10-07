@@ -11,7 +11,9 @@ x-dns
 .. contents::
     :depth: 2
 
-`JSON Schema Definition <https://github.com/compose-x/ecs_composex_specs/blob/main/ecs_composex_specs/x-dns.spec.json>`_
+.. seealso::
+
+    For more structural details, see `JSON Schema`_
 
 PrivateNamespace (AWS CloudMap)
 ---------------------------------
@@ -95,6 +97,14 @@ Examples
             Name: controlcenter.dev.my-domain.net
             Type: A
           Target: x-elbv2::controlcenter
+
+
+JSON Schema
+===========
+
+.. jsonschema:: ../../../ecs_composex/specs/x-dns.spec.json
+
+.. literalinclude:: ../../../ecs_composex/specs/x-dns.spec.json
 
 
 .. _AWS Route53 RecordSet: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-route53-recordset.html

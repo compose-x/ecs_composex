@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "id": "x-tags.spec.json",
+  "$id": "x-tags.spec.json",
+  "title": "x-tags",
+  "description": "x-tags specification",
+  "oneOf": [
+    {
+      "type": "object",
+      "patternProperties": {
+        "[\\x20-\\x7E]+": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 256
+        }
+      }
+    },
+    {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "Key",
+          "Value"
+        ],
+        "properties": {
+          "Key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "Value": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 256
+          }
+        }
+      }
+    }
+  ]
+}

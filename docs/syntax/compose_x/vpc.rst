@@ -8,8 +8,6 @@
 x-vpc
 ======
 
-`JSON Schema Definition <https://github.com/compose-x/ecs_composex_specs/blob/main/ecs_composex_specs/x-vpc.spec.json>`_
-
 Syntax Reference
 ================
 
@@ -24,6 +22,10 @@ Syntax Reference
 
     You can find the test files for VPC `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/vpc>`__ to use
     as reference for your use-case.
+
+.. seealso::
+
+    For more structural details, see `JSON Schema`_
 
 Create
 =======
@@ -181,3 +183,11 @@ This leaves a just under 120 IP address for the EC2 hosts and/or Docker containe
 
     The range can be changed via **VpcCidr** but not the structure detailed above.
     Works for all RFC 1918 and the 100.64.0.0/10 ranges.
+
+JSON Schema
+============
+
+.. jsonschema:: ../../../ecs_composex/specs/x-vpc.spec.json
+
+.. literalinclude:: ../../../ecs_composex/specs/x-vpc.spec.json
+    :language: json

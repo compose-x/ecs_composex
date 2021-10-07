@@ -8,7 +8,6 @@
 services.x-logging
 ======================
 
-`JSON Schema Definition <https://github.com/compose-x/ecs_composex_specs/blob/main/ecs_composex_specs/services.x-logging.spec.json>`_
 
 The following parameter is identical in behaviour to **x-aws-logs_retention** defined in the docker ECS Plugin.
 
@@ -21,6 +20,12 @@ The following parameter is identical in behaviour to **x-aws-logs_retention** de
 
     Alternatively you can use the ECS Plugin logging definition will ECS Compose-X will use.
     If both are defined, priority goes to the highest value.
+
+
+.. seealso::
+
+    For more structural details, see `JSON Schema`_
+
 
 RetentionInDays
 =====================
@@ -44,6 +49,12 @@ Examples
       serviceA:
         x-logging:
           RetentionInDays: 42
+
+
+JSON Schema
+===========
+
+.. jsonschema:: ../../../../ecs_composex/specs/services.x-logging.spec.json
 
 
 .. _RetentionInDays Property: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-logs-loggroup.html#cfn-logs-loggroup-retentionindays

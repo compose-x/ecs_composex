@@ -37,6 +37,11 @@ Syntax
       JsonKeys: []
       Lookup: {}
 
+.. seealso::
+
+    For more structural details, see `JSON Schema`_
+
+
 Name
 ----
 
@@ -180,5 +185,11 @@ Examples
             - EcsExecutionRole
             - EcsTaskRole
           Name: arn:aws:secretsmanager:eu-west-1:123456789012:secret:/secret/abcd
+
+JSON Schema
+============
+
+.. jsonschema:: ../../../ecs_composex/specs/secrets.x-secrets.spec.json
+
 
 .. _docker-compose secrets reference: https://docs.docker.com/compose/compose-file/#secrets

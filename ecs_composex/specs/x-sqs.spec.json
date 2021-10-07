@@ -1,0 +1,31 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "id": "x-sqs.spec.json",
+  "$id": "x-sqs.spec.json",
+  "title": "x-sqs",
+  "description": "x-sqs specification",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "Lookup": {
+      "$ref": "x-resources.common.spec.json#/definitions/Lookup"
+    },
+    "Use": {
+      "type": "string"
+    },
+    "Properties": {
+      "type": "object",
+      "description": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-sqs-queues.html"
+    },
+    "Settings": {
+      "$ref": "x-resources.common.spec.json#/definitions/Settings"
+    },
+    "Services": {
+      "$ref": "x-resources.common.spec.json#/definitions/Services"
+    },
+    "MacroParameters": {
+      "type": "object"
+    }
+  },
+  "definitions": {}
+}

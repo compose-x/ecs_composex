@@ -468,17 +468,6 @@ compose-x-common = {version = ">=0.2.0,<0.3.0", extras = ["aws"]}
 pytz = ">=2021.1,<2022.0"
 
 [[package]]
-name = "ecs-composex-specs"
-version = "0.2.13"
-description = "JSON Schema Specifications for ECS Compose-X"
-category = "main"
-optional = false
-python-versions = ">=3.7,<4.0"
-
-[package.dependencies]
-jsonschema = ">=3.2.0,<4.0.0"
-
-[[package]]
 name = "filelock"
 version = "3.1.0"
 description = "A platform independent file lock."
@@ -606,6 +595,14 @@ description = "JSON Matching Expressions"
 category = "main"
 optional = false
 python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*"
+
+[[package]]
+name = "jsonpointer"
+version = "2.1"
+description = "Identify specific nodes in a JSON document (RFC 6901)"
+category = "dev"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 
 [[package]]
 name = "jsonschema"
@@ -1047,6 +1044,20 @@ lint = ["flake8 (>=3.5.0)", "isort", "mypy (>=0.900)", "docutils-stubs", "types-
 test = ["pytest", "pytest-cov", "html5lib", "cython", "typed-ast"]
 
 [[package]]
+name = "sphinx-jsonschema"
+version = "1.16.11"
+description = "Sphinx extension to display JSON Schema"
+category = "dev"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+docutils = "*"
+jsonpointer = "*"
+pyyaml = "*"
+requests = "*"
+
+[[package]]
 name = "sphinx-material"
 version = "0.0.34"
 description = "Material sphinx theme"
@@ -1325,7 +1336,7 @@ ecrscan = ["ecr-scan-reporter"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "023a01acd8b2f0a57b01ad2207efeff55499b1908b0a5e5a04bc671d67596b71"
+content-hash = "ec0d76f8d3ce9ad8dcf8a11f431afdef1eb0c8cea54322157fdbc4e38035c734"
 
 [metadata.files]
 alabaster = [
@@ -1588,10 +1599,6 @@ ecr-scan-reporter = [
     {file = "ecr_scan_reporter-0.4.1-py3-none-any.whl", hash = "sha256:965dadd138e1be32a835b1159a4a700a0778bff1ed79b4be749fe7be9a4a558b"},
     {file = "ecr_scan_reporter-0.4.1.tar.gz", hash = "sha256:f0e1517e485eefbe5ed47347f54d9edf8324b27da5cb14a81b7cba05a864efb4"},
 ]
-ecs-composex-specs = [
-    {file = "ecs_composex_specs-0.2.13-py3-none-any.whl", hash = "sha256:a3a63a5d24e24c56cf56a4edb24f98206dc693e4751c7aba9fcd438d031ea38a"},
-    {file = "ecs_composex_specs-0.2.13.tar.gz", hash = "sha256:0c46a6ef711befcb1a59ee99758310c633da772e54a74da9b6c905bf8f89c39b"},
-]
 filelock = [
     {file = "filelock-3.1.0-py2.py3-none-any.whl", hash = "sha256:d9e9c7d8191e915339843c81c90d3e44f7c84e5fb03bdc6b1b4d019025cf953b"},
     {file = "filelock-3.1.0.tar.gz", hash = "sha256:78925788ce8c8945fac28a68c1d05cf33a6a6c4fba14fe02835122c53268ceef"},
@@ -1635,6 +1642,10 @@ jinja2 = [
 jmespath = [
     {file = "jmespath-0.10.0-py2.py3-none-any.whl", hash = "sha256:cdf6525904cc597730141d61b36f2e4b8ecc257c420fa2f4549bac2c2d0cb72f"},
     {file = "jmespath-0.10.0.tar.gz", hash = "sha256:b85d0567b8666149a93172712e68920734333c0ce7e89b78b3e987f71e5ed4f9"},
+]
+jsonpointer = [
+    {file = "jsonpointer-2.1-py2.py3-none-any.whl", hash = "sha256:150f80c5badd02c757da6644852f612f88e8b4bc2f9852dcbf557c8738919686"},
+    {file = "jsonpointer-2.1.tar.gz", hash = "sha256:5a34b698db1eb79ceac454159d3f7c12a451a91f6334a4f638454327b7a89962"},
 ]
 jsonschema = [
     {file = "jsonschema-3.2.0-py2.py3-none-any.whl", hash = "sha256:4e5b3cf8216f577bee9ce139cbe72eca3ea4f292ec60928ff24758ce626cd163"},
@@ -1994,6 +2005,9 @@ soupsieve = [
 sphinx = [
     {file = "Sphinx-4.2.0-py3-none-any.whl", hash = "sha256:98a535c62a4fcfcc362528592f69b26f7caec587d32cd55688db580be0287ae0"},
     {file = "Sphinx-4.2.0.tar.gz", hash = "sha256:94078db9184491e15bce0a56d9186e0aec95f16ac20b12d00e06d4e36f1058a6"},
+]
+sphinx-jsonschema = [
+    {file = "sphinx-jsonschema-1.16.11.tar.gz", hash = "sha256:94f21c6920f9e09334f96e7ec1042d16ef4578383f625b687922fedd5e4efac5"},
 ]
 sphinx-material = [
     {file = "sphinx_material-0.0.34-py3-none-any.whl", hash = "sha256:c084ecf98a31ba2ec197c35e4bb3b26c6ce034d75dd25345f1797d1cd2f85dc4"},

@@ -29,6 +29,10 @@ Syntax Reference
               LOW: number
             RoleArn: str
 
+.. seealso::
+
+    For more structural details, see `JSON Schema`_
+
 InterpolateWithDigest
 =====================
 
@@ -135,5 +139,15 @@ Examples
               HIGH: 5
               MEDIUM: 10
               LOW: 10
+
+JSON Schema
+============
+
+.. jsonschema:: ../../../../ecs_composex/specs/services.x-ecr.spec.json
+
+.. literalinclude:: ../../../../ecs_composex/specs/services.x-ecr.spec.json
+    :language: json
+
+
 
 .. _ECR Scan Reporter: https://ecr-scan-reporter.compose-x.io/

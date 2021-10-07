@@ -1,0 +1,42 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "id": "x-acm.spec.json",
+  "$id": "x-acm.spec.json",
+  "title": "x-acm",
+  "description": "x-acm specification for ECS Cluster",
+  "type": "object",
+  "properties": {
+    "Lookup": {
+      "$ref": "x-resources.common.spec.json#/definitions/Lookup"
+    },
+    "Use": {
+      "type": "string"
+    },
+    "Properties": {
+      "type": "object",
+      "description": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-certificatemanager-certificate.html"
+    },
+    "Settings": {
+      "$ref": "x-resources.common.spec.json#/definitions/Settings"
+    },
+    "MacroParameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "DomainNames": {
+          "type": "array",
+          "description": "List domain names to generate the certificate for. First in list will be CN",
+          "items": {
+            "type": "string",
+            "format": "hostname"
+          }
+        },
+        "HostedZoneId": {
+          "type": "string",
+          "description": "Override zone ID from the one detected by x-dns.PublicZone"
+        }
+      }
+    }
+  },
+  "definitions": {}
+}

@@ -25,6 +25,10 @@ Syntax
     You can find the test files for SQS `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/sqs>`__ to use
     as reference for your use-case.
 
+.. seealso::
+
+    For more structural details, see `JSON Schema`_
+
 Properties
 ==========
 
@@ -215,6 +219,14 @@ Examples
 .. note::
 
     You need to have defined x-configs/scaling/Range to enable step scaling on the ECS Service.
+
+JSON Schema
+=============
+
+.. jsonschema:: ../../../ecs_composex/specs/x-sqs.spec.json
+
+.. literalinclude:: ../../../ecs_composex/specs/x-sqs.spec.json
+
 
 .. _Engine: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-rds-dbcluster.html#cfn-rds-dbcluster-engine
 .. _EngineVersion: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-rds-dbcluster.html#cfn-rds-dbcluster-engineversion
