@@ -1,0 +1,60 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "services.x-alarms.spec.json",
+  "id": "services.x-alarms",
+  "type": "object",
+  "title": "services.x-alarms specification",
+  "description": "The services.x-alarms specification for ComposeX",
+  "additionalProperties": false,
+  "properties": {
+    "Predefined": {
+      "type": "object",
+      "items": {
+        "$ref": "#/definitions/predefinedAlarms"
+      }
+    }
+  },
+  "definitions": {
+    "predefinedAlarms": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "Topics": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "Settings": {
+          "type": "object",
+          "properties": {
+            "Period": {
+              "type": "integer"
+            },
+            "EvaluationPeriods": {
+              "type": "integer"
+            },
+            "DatapointsToAlarm": {
+              "type": "integer"
+            },
+            "RunningTaskCount": {
+              "type": "integer"
+            },
+            "CPUUtilization": {
+              "type": [
+                "integer",
+                "number"
+              ]
+            },
+            "MemoryUtilization": {
+              "type": [
+                "integer",
+                "number"
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}

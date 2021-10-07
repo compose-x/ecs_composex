@@ -4,10 +4,36 @@ repos:
     hooks:
       - id: end-of-file-fixer
       - id: trailing-whitespace
+      - id: check-case-conflict
+      - id: check-json
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: mixed-line-ending
+      - id: check-byte-order-marker
+      - id: detect-aws-credentials
+      - id: detect-private-key
+
   - repo: https://github.com/psf/black
     rev: 21.9b0
     hooks:
       - id: black
+
+  - repo: https://github.com/asottile/blacken-docs
+    rev: v1.8.0
+    hooks:
+      - id: blacken-docs
+        additional_dependencies: [ black ]
+  - repo: https://github.com/asottile/seed-isort-config
+    rev: v2.2.0
+    hooks:
+      - id: seed-isort-config
+  - repo: https://github.com/pycqa/isort
+    rev: 5.9.3
+    hooks:
+      - id: isort
+        args: [ "--profile", "black", "--filter-files" ]
+
   - repo: local
     hooks:
       - id: arn-reset
@@ -15,9 +41,4 @@ repos:
         language: script
         entry: .scripts/cleanup_placebo.sh
         require_serial: true
-        files: ".json$"
-  - repo: https://github.com/pycqa/isort
-    rev: 5.9.3
-    hooks:
-      - id: isort
-        args: ["--profile", "black", "--filter-files"]
+        files: "tests/*.json$"

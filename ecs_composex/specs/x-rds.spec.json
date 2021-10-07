@@ -1,0 +1,155 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "id": "x-rds.spec.json",
+  "$id": "x-rds.spec.json",
+  "title": "x-rds",
+  "description": "x-rds specification",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "Lookup": {
+      "$ref": "#/definitions/Lookup"
+    },
+    "Use": {
+      "type": "string"
+    },
+    "Properties": {
+      "type": "object"
+    },
+    "Settings": {
+      "$ref": "#/definitions/SettingsDef"
+    },
+    "Services": {
+      "$ref": "#/definitions/ServicesDef"
+    },
+    "MacroParameters": {
+      "$ref": "#/definitions/RdsMacros"
+    }
+  },
+  "definitions": {
+    "ServicesDef": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "access": {
+            "type": "string"
+          },
+          "SecretsMappings": {
+            "$ref": "#/definitions/SecretsMappingsDef"
+          }
+        }
+      }
+    },
+    "SettingsDef": {
+      "type": "object",
+      "properties": {
+        "EnvNames": {
+          "$ref": "x-resources.common.spec.json#/definitions/Settings/properties/EnvNames"
+        },
+        "SecretsMappings": {
+          "$ref": "#/definitions/SecretsMappingsDef"
+        },
+        "Subnets": {
+          "type": "string"
+        }
+      }
+    },
+    "SecretsMappingsDef": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "PrefixWithDbName": {
+          "type": ["string", "boolean"]
+        },
+        "Mappings": {
+          "oneOf": [
+            {
+              "$ref": "#/definitions/SecretsMappingsList"
+            },
+            {
+              "$ref": "#/definitions/SecretsMappingsObject"
+            }
+          ]
+        }
+      }
+    },
+    "SecretsMappingsList": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "SecretKey"
+        ],
+        "properties": {
+          "SecretKey": {
+            "type": "string"
+          },
+          "VarName": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "SecretsMappingsObject": {
+      "type": "object"
+    },
+    "Lookup": {
+      "type": "object",
+      "properties": {
+        "RoleArn": {
+          "$ref": "x-resources.common.spec.json#/definitions/Lookup/properties/RoleArn"
+        },
+        "cluster": {
+          "type": "object",
+          "properties": {
+            "Name": {
+              "type": "string"
+            },
+            "Tags": {
+              "$ref": "x-resources.common.spec.json#/definitions/Lookup/properties/Tags"
+            }
+          }
+        },
+        "instance": {
+          "type": "object",
+          "properties": {
+            "Name": {
+              "type": "string"
+            },
+            "Tags": {
+              "$ref": "x-resources.common.spec.json#/definitions/Lookup/properties/Tags"
+            }
+          }
+        },
+        "secret": {
+          "type": "object",
+          "properties": {
+            "Name": {
+              "type": "string"
+            },
+            "Tags": {
+              "$ref": "x-resources.common.spec.json#/definitions/Lookup/properties/Tags"
+            }
+          }
+        }
+      }
+    },
+    "RdsMacros": {
+      "type": "object",
+      "properties": {
+        "Engine": {
+          "type": "string",
+          "description": "The RDS Engine name"
+        },
+        "EngineVersion": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

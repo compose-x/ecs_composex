@@ -1,0 +1,219 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "x-elbv2.spec.json",
+  "type": "object",
+  "title": "x-elbv2",
+  "description": "The specifications of x-elbv2 in ComposeX",
+  "properties": {
+    "Properties": {
+      "type": "object"
+    },
+    "MacroParameters": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "Ingress": {
+          "$ref": "ingress.spec.json"
+        }
+      }
+    },
+    "Listeners": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Listener"
+      }
+    },
+    "Services": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/TargetDef"
+      }
+    },
+    "Settings": {
+      "type": "object",
+      "properties": {
+        "Subnets": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "definitions": {
+    "TargetDef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "protocol",
+        "port",
+        "healthcheck"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "protocol": {
+          "$ref": "#/definitions/Protocol"
+        },
+        "port": {
+          "$ref": "#/definitions/Port"
+        },
+        "healthcheck": {
+          "type": "string"
+        },
+        "TargetGroupAttributes": {
+          "oneOf": [
+            {
+              "type": "array",
+              "description": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-elasticloadbalancingv2-targetgroup.html",
+              "items": {
+                "$ref": "#/definitions/TargetGroupAttribute"
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "patternProperties": {
+                "^[a-zA-Z0-9._]+$": {
+                  "type": "string"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "TargetGroupAttribute": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-elasticloadbalancingv2-targetgroup-targetgroupattribute.html",
+      "properties": {
+        "Key": {
+          "type": "string",
+          "description": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-elasticloadbalancingv2-targetgroup-targetgroupattribute.html",
+          "enum": [
+            "deregistration_delay.timeout_seconds",
+            "stickiness.enabled",
+            "stickiness.type",
+            "load_balancing.algorithm.type",
+            "slow_start.duration_seconds",
+            "stickiness.app_cookie.cookie_name",
+            "stickiness.app_cookie.duration_seconds",
+            "stickiness.lb_cookie.duration_seconds",
+            "lambda.multi_value_headers.enabled",
+            "deregistration_delay.connection_termination.enabled",
+            "preserve_client_ip.enabled",
+            "proxy_protocol_v2.enabled"
+          ]
+        },
+        "Value": {
+          "type": "string"
+        }
+      }
+    },
+    "TargetRule": {
+      "type": "object",
+      "required": [
+        "name"
+      ],
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "access"
+          ]
+        },
+        {
+          "type": "object",
+          "required": [
+            "Conditions"
+          ]
+        }
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "access": {
+          "type": "string",
+          "description": "Predefined condition on the hostname and path allowing to use human friendly syntax"
+        },
+        "Conditions": {
+          "type": "array",
+          "description": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-elasticloadbalancingv2-listenerrule-rulecondition.html",
+          "items": {
+            "type": "object"
+          }
+        },
+        "CreateCognitoClient": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "UserPoolId"
+          ],
+          "description": "Allows to create a new UserPool Client when using AuthenticateCognitoConfig and x-cognito_userpool",
+          "properties": {
+            "UserPoolId": {
+              "type": "string"
+            }
+          }
+        },
+        "AuthenticateCognitoConfig": {
+          "type": "object",
+          "description": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-elasticloadbalancingv2-listener-authenticatecognitoconfig.html"
+        },
+        "AuthenticateOidcConfig": {
+          "type": "object"
+        }
+      }
+    },
+    "Listener": {
+      "type": "object",
+      "properties": {
+        "Port": {
+          "$ref": "#/definitions/Port"
+        },
+        "Protocol": {
+          "$ref": "#/definitions/Protocol"
+        },
+        "SslPolicy": {
+          "type": "string"
+        },
+        "Certificates": {
+          "type": "array",
+          "items": {
+            "type": [
+              "string",
+              "object"
+            ]
+          }
+        },
+        "DefaultActions": {
+          "type": "array"
+        },
+        "Targets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TargetRule"
+          }
+        }
+      }
+    },
+    "Port": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 65535
+    },
+    "Protocol": {
+      "type": "string",
+      "enum": [
+        "HTTP",
+        "HTTPS",
+        "TCP",
+        "UDP",
+        "TCP_UDP",
+        "TLS"
+      ]
+    }
+  }
+}

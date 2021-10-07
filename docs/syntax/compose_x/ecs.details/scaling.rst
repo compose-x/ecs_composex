@@ -10,8 +10,6 @@ services.x-scaling
 
 .. contents::
 
-`JSON Schema definition <https://github.com/compose-x/ecs_composex_specs/blob/main/ecs_composex_specs/services.x-scaling.spec.json>`_
-
 This section allows to define scaling for the ECS Service.
 For SQS Based scaling using step scaling, refer to SQS Documentation.
 
@@ -23,6 +21,10 @@ For SQS Based scaling using step scaling, refer to SQS Documentation.
           Range: "1-10"
           TargetScaling:
             CpuTarget: 80
+
+.. seealso::
+
+    For more structural details, see `JSON Schema`_
 
 Range
 =====
@@ -89,3 +91,8 @@ applications that do not support to scale-in.
 
     If you define multiple services within the same **family**, the lowest value for CPU/RAM and highest for scale in/out
     are used in order to minimize the impact and focus on the weakest point.
+
+JSON Schema
+===========
+
+.. jsonschema:: ../../../../ecs_composex/specs/services.x-scaling.spec.json

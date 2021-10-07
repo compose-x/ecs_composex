@@ -1,0 +1,45 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "id": "services.x-ecs",
+  "$id": "services.x-ecs.spec.json",
+  "type": "object",
+  "title": "services.x-ecs specification",
+  "description": "The services.x-ecs specification for ComposeX",
+  "properties": {
+    "EnableExecuteCommand": {
+      "type": "boolean",
+      "description": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ecs-service.html#cfn-ecs-service-enableexecutecommand"
+    },
+    "CapacityProviderStrategy": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ecs-service-capacityproviderstrategyitem.html",
+        "required": [
+          "CapacityProvider"
+        ],
+        "properties": {
+          "Base": {
+            "type": "number",
+            "default": 0,
+            "minimum": 0,
+            "maximum": 100000,
+            "description": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ecs-service-capacityproviderstrategyitem.html#cfn-ecs-service-capacityproviderstrategyitem-base"
+          },
+          "Weight": {
+            "type": "number",
+            "description": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ecs-service-capacityproviderstrategyitem.html#cfn-ecs-service-capacityproviderstrategyitem-weight",
+            "default": 0,
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "CapacityProvider": {
+            "type": "string",
+            "description": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ecs-service-capacityproviderstrategyitem.html#cfn-ecs-service-capacityproviderstrategyitem-capacityprovider"
+          }
+        }
+      }
+    }
+  }
+}

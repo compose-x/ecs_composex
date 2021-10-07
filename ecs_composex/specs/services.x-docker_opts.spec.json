@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "id": "services.x-docker_opts",
+  "$id": "services.x-docker_opts.spec.json",
+  "type": "object",
+  "title": "services.x-docker_opts specification",
+  "description": "The services.x-docker_opts specification for ComposeX",
+  "additionalProperties": false,
+  "properties": {
+    "InterpolateWithDigest": {
+      "type": "boolean",
+      "description": "When true, replaces the image tag with the image digest"
+    }
+  },
+  "definitions": {}
+}

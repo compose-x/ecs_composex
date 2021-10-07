@@ -27,6 +27,9 @@ Syntax
     You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/ssm>`__ to use
     as reference for your use-case.
 
+.. seealso::
+
+    For more structural details, see `JSON Schema`_
 
 Properties
 ===========
@@ -146,6 +149,14 @@ Services
         access: RW
       - name: serviceB
         access: RO
+
+JSON Schema
+============
+
+.. jsonschema:: ../../../ecs_composex/specs/x-ssm_parameter.spec.json
+
+.. literalinclude:: ../../../ecs_composex/specs/x-ssm_parameter.spec.json
+
 
 .. _AWS CFN SSM Parameter Documentation: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ssm-parameter.html
 .. _SSMParameterReadPolicy: https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-policy-template-list.html#ssm-parameter-read-policy

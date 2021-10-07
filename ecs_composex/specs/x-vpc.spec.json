@@ -1,0 +1,173 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "id": "x-vpc.spec.json",
+  "$id": "x-vpc.spec.json",
+  "title": "x-vpc",
+  "description": "x-vpc specification",
+  "type": "object",
+  "definitions": {
+    "VpcLookup": {
+      "type": "object",
+      "required": [
+        "VpcId",
+        "AppSubnets",
+        "PublicSubnets",
+        "StorageSubnets"
+      ],
+      "properties": {
+        "VpcId": {
+          "$ref": "x-resources.common.spec.json#/definitions/Lookup"
+        },
+        "AppSubnets": {
+          "$ref": "x-resources.common.spec.json#/definitions/Lookup"
+        },
+        "StorageSubnets": {
+          "$ref": "x-resources.common.spec.json#/definitions/Lookup"
+        },
+        "PublicSubnets": {
+          "$ref": "x-resources.common.spec.json#/definitions/Lookup"
+        },
+        "RoleArn": {
+          "type": "string"
+        }
+      },
+      "patternProperties": {
+        "\\b(?!RoleArn\\b)\\w+": {
+          "$ref": "x-resources.common.spec.json#/definitions/Lookup"
+        }
+      }
+    },
+    "VpcUse": {
+      "type": "object",
+      "required": [
+        "VpcId",
+        "AppSubnets",
+        "PublicSubnets",
+        "StorageSubnets"
+      ],
+      "properties": {
+        "VpcId": {
+          "type": "string"
+        },
+        "StorageSubnets": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "PublicSubnets": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "AppSubnets": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "patternProperties": {
+          "[a-zA-Z0-9]+": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ]
+          },
+          "^x-": {}
+        }
+      }
+    },
+    "VpcCreate": {
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "VpcCidr": {
+          "format": "ipv4"
+        },
+        "SingleNat": {
+          "type": "boolean"
+        },
+        "Endpoints": {
+          "type": "object",
+          "properties": {
+            "AwsServices": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "EnableFlowLogs": {
+          "type": "boolean"
+        },
+        "FlowLogsRoleBoundary": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "properties": {
+    "Lookup": {
+      "type": "object",
+      "$ref": "#/definitions/VpcLookup"
+    },
+    "Use": {
+      "type": "object",
+      "$ref": "#/definitions/VpcUse"
+    },
+    "Create": {
+      "type": "object",
+      "$ref": "#/definitions/VpcCreate"
+    }
+  },
+  "oneOf": [
+    {
+      "type": "object",
+      "required": [
+        "Lookup"
+      ]
+    },
+    {
+      "type": "object",
+      "required": [
+        "Use"
+      ]
+    },
+    {
+      "type": "object",
+      "required": [
+        "Create"
+      ]
+    }
+  ]
+}

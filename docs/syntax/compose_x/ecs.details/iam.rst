@@ -12,7 +12,18 @@ services.x-iam
 
 This section is the entrypoint to further extension of IAM definition for the IAM roles created throughout.
 
-`JSON Schema Definition <https://github.com/compose-x/ecs_composex_specs/blob/main/ecs_composex_specs/services.x-iam.spec.json>`_
+Syntax
+=======
+
+x-iam:
+  Policies: []
+  PermissionsBoundary: str
+  ManagedPolicyArns: []
+
+.. seealso::
+
+    For more structural details, see `JSON Schema`_
+
 
 PermissionsBoundary
 ====================
@@ -74,8 +85,8 @@ Follows the same pattern as CFN IAM Policies
 
     If you used the ECS Plugin from docker before, this is equivalent to *x-aws-role*
 
-ManagedPolicies
-================
+ManagedPolicyArns
+==================
 
 Allows you to add additional managed policies. You can specify the full ARN or just a string for the name / path of the
 policy. If will resolve into the same regexp as for `PermissionsBoundary`_
@@ -94,6 +105,14 @@ policy. If will resolve into the same regexp as for `PermissionsBoundary`_
     services:
       serviceA:
         x-iam:
-          ManagedPolicies:
+          ManagedPolicyArns:
             - arn:aws:iam::aws:policy/Administrator # AWS Managed Policy
             - developer                             # User Managed Policy
+
+JSON Schema
+=============
+
+.. jsonschema:: ../../../../ecs_composex/specs/services.x-iam.spec.json
+
+.. literalinclude:: ../../../../ecs_composex/specs/services.x-iam.spec.json
+    :language: json

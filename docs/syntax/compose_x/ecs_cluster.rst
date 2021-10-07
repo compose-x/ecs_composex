@@ -11,7 +11,9 @@ x-cluster
 .. contents::
     :depth: 2
 
-`JSON Schema Definition <https://github.com/compose-x/ecs_composex_specs/blob/main/ecs_composex_specs/x-cluster.spec.json>`_
+.. seealso::
+
+    For more structural details, see `JSON Schema`_
 
 Properties
 ==========
@@ -59,3 +61,10 @@ This key allows you to set a cluster to use, that you do not wish to lookup, you
 
 
 .. _AWS CFN reference for ECS Cluster: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ecs-cluster.html
+
+JSON Schema
+=============
+
+.. jsonschema:: ../../../ecs_composex/specs/x-cluster.spec.json
+
+.. literalinclude:: ../../../ecs_composex/specs/x-cluster.spec.json

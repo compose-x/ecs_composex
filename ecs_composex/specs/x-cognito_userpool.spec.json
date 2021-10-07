@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "id": "x-cognito_userpool.spec.json",
+  "$id": "x-cognito_userpool.spec.json",
+  "title": "x-cognito_userpool",
+  "description": "x-cognito_userpool",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "Lookup": {
+      "$ref": "x-resources.common.spec.json#/definitions/Lookup"
+    }
+  },
+  "definitions": {}
+}

@@ -1,0 +1,47 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "id": "x-events.spec.json",
+  "$id": "x-events.spec.json",
+  "title": "x-events",
+  "description": "x-events specification",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "Properties": {
+      "type": "object",
+      "description": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-events-rule.html"
+    },
+    "Settings": {
+      "$ref": "x-resources.common.spec.json#/definitions/Settings"
+    },
+    "Services": {
+      "$ref": "#/definitions/ServicesDef"
+    },
+    "MacroParameters": {
+      "type": "object"
+    }
+  },
+  "definitions": {
+    "ServicesDef": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Name of the service defined in services"
+          },
+          "TaskCount": {
+            "type": "number",
+            "minimum": 1,
+            "description": "Number of containers to start on event"
+          },
+          "DeleteDefaultService": {
+            "type": "boolean",
+            "description": "Whether or also create the ECS Service"
+          }
+        }
+      }
+    }
+  }
+}

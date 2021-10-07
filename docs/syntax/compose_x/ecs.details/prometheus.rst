@@ -10,8 +10,6 @@ services.x-prometheus
 
 .. contents::
 
-`JSON Schema Definition <https://ecs-composex-specs.compose-x.io/schemas_docs/services/x_prometheus.html>`_
-
 This section allows to define some settings to make ECS integration to Prometheus easy.
 
 At the moment, the integration focuses primarily in integration with ECS Insights integration and future version will
@@ -26,6 +24,10 @@ Syntax
       serviceA:
         x-prometheus:
           ContainersInsights: ContainersInsights
+
+.. seealso::
+
+    For more structural details, see `JSON Schema`_
 
 ContainersInsights
 ===================
@@ -220,5 +222,14 @@ Examples
 .. seealso::
 
     `Full Kafdrop configuration walkthrough`_
+
+JSON Schema
+============
+
+.. jsonschema:: ../../../../ecs_composex/specs/services.x-prometheus.spec.json
+
+.. literalinclude:: ../../../../ecs_composex/specs/services.x-prometheus.spec.json
+    :language: json
+
 
 .. _Full Kafdrop configuration walkthrough: https://labs.compose-x.io/kafka/kafdrop.html

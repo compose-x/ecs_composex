@@ -1,0 +1,58 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "id": "x-dashboards",
+  "$id": "x-dashboards.spec.json",
+  "type": "object",
+  "title": "x-dashboards specification",
+  "description": "x-dashboards specification for ComposeX",
+  "additionalProperties": false,
+  "properties": {
+    "Type": {
+      "type": "string",
+      "enum": [
+        "cloudwatch"
+      ]
+    },
+    "Settings": {
+      "type": "object",
+      "properties": {
+        "start": {
+          "type": "string",
+          "default": "-PT12H"
+        }
+      }
+    },
+    "Services": {
+      "type": "object",
+      "patternProperties": {
+        "^([a-zA-Z0-9._-]+.)$": {
+          "type": "object",
+          "$ref": "#/definitions/MetricsDef"
+        }
+      }
+    },
+    "Resources": {
+      "type": "object",
+      "patternProperties": {
+        "^(x-[a-z0-9-_]+)::([a-zA-Z0-9._-]+.)$": {
+          "type": "object",
+          "$ref": "#/definitions/MetricsDef"
+        }
+      }
+    }
+  },
+  "definitions": {
+    "MetricsDef": {
+      "Metrics": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "UsePredefinedMetrics": {
+        "type": "boolean",
+        "default": true
+      }
+    }
+  }
+}
