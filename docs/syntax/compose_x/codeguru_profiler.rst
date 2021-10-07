@@ -36,6 +36,11 @@ Syntax
     You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/codeguru>`__ to use
     as reference for your use-case.
 
+.. seealso::
+
+    For more structural details, see `JSON Schema`_
+
+
 Properties
 ===========
 
@@ -90,3 +95,11 @@ Code Example
 -------------
 
 Full Applications code used for this sort of testing can be found `here <https://github.com/compose-x/composex-testing-apps/tree/main/app02>`__
+
+JSON Schema
+============
+
+.. jsonschema:: ../../../ecs_composex/specs/services.x-codeguru_profiler.spec.json
+
+.. literalinclude:: ../../../ecs_composex/specs/services.x-codeguru_profiler.spec.json
+    :language: json

@@ -1,0 +1,31 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "id": "x-dynamodb.spec.json",
+  "$id": "x-dynamodb.spec.json",
+  "title": "x-dynamodb",
+  "description": "x-dynamodb specification",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "Lookup": {
+      "$ref": "x-resources.common.spec.json#/definitions/Lookup"
+    },
+    "Use": {
+      "type": "string"
+    },
+    "Properties": {
+      "type": "object",
+      "description": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-dynamodb-table.html"
+    },
+    "Settings": {
+      "$ref": "x-resources.common.spec.json#/definitions/Settings"
+    },
+    "Services": {
+      "$ref": "x-resources.common.spec.json#/definitions/Services"
+    },
+    "MacroParameters": {
+      "type": "object"
+    }
+  },
+  "definitions": {}
+}

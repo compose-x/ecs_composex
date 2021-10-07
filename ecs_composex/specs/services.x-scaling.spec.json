@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "id": "services.x-scaling",
+  "$id": "services.x-scaling.spec.json",
+  "type": "object",
+  "title": "services.x-iam specification",
+  "description": "The services.x-scaling specification for ComposeX",
+  "properties": {
+    "Range": {
+      "type": "string"
+    },
+    "TargetScaling": {
+      "$ref": "#/definitions/TargetScalingDef"
+    }
+  },
+  "definitions": {
+    "TargetScalingDef": {
+      "type": "object",
+      "properties": {
+        "CpuTarget": {
+          "type": "integer"
+        },
+        "MemoryTarget": {
+          "type": "integer"
+        },
+        "ScaleInCooldown": {
+          "type": "integer"
+        },
+        "ScaleOutCooldown": {
+          "type": "integer"
+        },
+        "DisableScaleIn": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

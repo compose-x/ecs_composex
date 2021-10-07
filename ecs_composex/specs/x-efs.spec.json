@@ -1,0 +1,37 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "x-efs.spec.json",
+  "type": "object",
+  "title": "x-efs",
+  "description": "The common definitions for specifications of x-efs in ComposeX",
+  "properties": {
+    "Lookup": {
+      "type": "object",
+      "$ref": "x-resources.common.spec.json#/definitions/Lookup"
+    },
+    "Properties": {
+      "type": "object"
+    },
+    "MacroParameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "EnforceIamAuth": {
+          "type": "boolean"
+        }
+      }
+    },
+    "Use": {
+      "type": "string"
+    },
+    "Settings": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "Subnets": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

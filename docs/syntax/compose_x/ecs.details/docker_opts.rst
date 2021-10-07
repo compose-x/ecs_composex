@@ -20,6 +20,11 @@ Syntax Reference
         x-docker_opts:
           InterpolateWithDigest: bool
 
+.. seealso::
+
+    For more structural details, see `JSON Schema`_
+
+
 
 InterpolateWithDigest
 =====================
@@ -38,3 +43,10 @@ However not as human user friendly, this allows to always point to the same imag
 +----------+---------+
 | Required | False   |
 +----------+---------+
+
+JSON Schema
+============
+
+.. jsonschema:: ../../../../ecs_composex/specs/services.x-docker_opts.spec.json
+
+.. literalinclude:: ../../../../ecs_composex/specs/services.x-docker_opts.spec.json

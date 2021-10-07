@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "services.x-logging.spec.json",
+  "id": "services.x-codeguru_profiler",
+  "title": "services.x-codeguru_profiler specification",
+  "description": "The services.x-codeguru_profiler specification for ComposeX",
+  "oneOf": [
+    {
+      "type": "string"
+    },
+    {
+      "type": "boolean"
+    },
+    {
+      "type": "object"
+    }
+  ]
+}

@@ -15,6 +15,11 @@ Define an AWS EventBride rule to stop start services.
     You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/events>`__ to use
     as reference for your use-case.
 
+
+.. seealso::
+
+    For more structural details, see `JSON Schema`_
+
 Properties
 ==========
 
@@ -76,6 +81,14 @@ DeleteDefaultService
 
 Custom setting, this allows you to NOT define a ECS Service along with the task, therefore you will only get the TaskDefinition
 created.
+
+JSON Schema
+============
+
+.. jsonschema:: ../../../ecs_composex/specs/x-events.spec.json
+
+.. literalinclude:: ../../../ecs_composex/specs/x-events.spec.json
+
 
 .. _AWS CFN Events Rules definitions: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-events-rule.html
 .. _Task Rule target definition: https://docs.aws.amazon.com/eventbridge/latest/APIReference/API_PutTargets.html

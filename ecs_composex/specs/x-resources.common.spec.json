@@ -1,0 +1,106 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "x-resources.common.spec.json",
+  "type": "object",
+  "title": "x-resources common specification",
+  "description": "The common definitions for specifications of x-resources in ComposeX",
+  "properties": {},
+  "definitions": {
+    "Properties": {
+      "type": "object"
+    },
+    "Lookup": {
+      "type": "object",
+      "properties": {
+        "Tags": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "RoleArn": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "Tags"
+      ]
+    },
+    "Use": {
+      "type": [
+        "string",
+        "array",
+        "object"
+      ]
+    },
+    "MacroParameters": {
+      "type": "object"
+    },
+    "Settings": {
+      "type": "object",
+      "properties": {
+        "EnvNames": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "Services": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/serviceDef"
+      }
+    },
+    "serviceDef": {
+      "$id": "#/definitions/serviceDef",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "access": {
+          "type": [
+            "string",
+            "object"
+          ]
+        },
+        "scaling": {
+          "$ref": "#/definitions/ScalingDefinition"
+        }
+      }
+    },
+    "ScalingDefinition": {
+      "type": "object",
+      "properties": {
+        "Steps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/StepDefinition"
+          }
+        },
+        "ScaleInCooldown": {
+          "type": "integer"
+        },
+        "ScaleOutCooldown": {
+          "type": "integer"
+        }
+      }
+    },
+    "StepDefinition": {
+      "type": "object",
+      "properties": {
+        "LowerBound": {
+          "type": "integer"
+        },
+        "UpperBound": {
+          "type": "integer"
+        },
+        "Count": {
+          "type": "integer"
+        }
+      }
+    }
+  }
+}

@@ -30,6 +30,10 @@ Syntax
     You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/alarms>`__ to use
     as reference for your use-case.
 
+.. seealso::
+
+    For more structural details, see `JSON Schema`_
+
 Properties
 ==============
 
@@ -155,6 +159,16 @@ Examples
 .. hint::
 
     When defining a composite alarm, the actions defined in `Services`_ or `Topics`_ are ignored.
+
+JSON Schema
+============
+
+.. jsonschema:: ../../../ecs_composex/specs/x-alarms.spec.json
+
+.. literalinclude:: ../../../ecs_composex/specs/x-alarms.spec.json
+
+.. _x-alarms Documentation: https://docs.compose-x.io/syntax/compose_x/alarms.html
+
 
 .. _AWS CW Alarms definition: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-cw-alarm.html
 .. _AWS CW Composite Alarms definition: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-cloudwatch-compositealarm.html

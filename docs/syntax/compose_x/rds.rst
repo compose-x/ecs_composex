@@ -26,6 +26,10 @@ Syntax
         Services: []
         Lookup: {}
 
+.. seealso::
+
+    For more structural details, see `JSON Schema`_
+
 Properties
 ===========
 
@@ -299,6 +303,14 @@ Examples
 
     The DB Family group will be found automatically and the setting will allow creation of a
     new RDS Parameter group for the Cluster / DB Instance.
+
+
+JSON Schema
+============
+
+.. jsonschema:: ../../../ecs_composex/specs/x-rds.spec.json
+
+.. literalinclude:: ../../../ecs_composex/specs/x-rds.spec.json
 
 
 .. _Engine: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-rds-dbcluster.html#cfn-rds-dbcluster-engine

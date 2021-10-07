@@ -1,0 +1,67 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "id": "services.x-ecr",
+  "$id": "services.x-ecr.spec.json",
+  "type": "object",
+  "title": "services.x-ecr specification",
+  "description": "The services.x-ecr specification for ComposeX",
+  "additionalProperties": false,
+  "properties": {
+    "VulnerabilitiesScan": {
+      "$ref": "#/definitions/ScanDef"
+    },
+    "RoleArn": {
+      "type": "string",
+      "description": "A role ARN to use for assume role for subsequent API calls to ECR"
+    },
+    "InterpolateWithDigest": {
+      "type": "boolean",
+      "description": "When true, replaces the image tag with the image digest"
+    }
+  },
+  "definitions": {
+    "ScanDef": {
+      "type": "object",
+      "properties": {
+        "IgnoreFailure": {
+          "type": "boolean",
+          "description": "Whether or not the execution should fail if the scan is unsuccessful",
+          "default": false
+        },
+        "TreatFailedAs": {
+          "type": "string",
+          "enum": [
+            "Success",
+            "Failure"
+          ],
+          "description": "For images where scan was failed, ignore failure?"
+        },
+        "Thresholds": {
+          "type": "object",
+          "properties": {
+            "CRITICAL": {
+              "$ref": "#/definitions/ThresholdDef"
+            },
+            "HIGH": {
+              "$ref": "#/definitions/ThresholdDef"
+            },
+            "MEDIUM": {
+              "$ref": "#/definitions/ThresholdDef"
+            },
+            "LOW": {
+              "$ref": "#/definitions/ThresholdDef"
+            }
+          }
+        },
+        "RoleArn": {
+          "type": "string",
+          "description": "A role ARN to use for assume role for subsequent API calls to ECR"
+        }
+      }
+    },
+    "ThresholdDef": {
+      "type": "number",
+      "minimum": 0
+    }
+  }
+}
