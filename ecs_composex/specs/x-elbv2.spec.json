@@ -74,7 +74,7 @@
               "type": "object",
               "additionalProperties": false,
               "patternProperties": {
-                "^[a-zA-ZONEREDACTED123-9._]+$": {
+                "^[a-zA-Z0-9._]+$": {
                   "type": "string"
                 }
               }

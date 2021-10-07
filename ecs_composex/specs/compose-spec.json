@@ -23,14 +23,14 @@
     },
     "x-acm": {
       "patternProperties": {
-        "^[a-zA-ZONEREDACTED123-9._-]+$": {
+        "^[a-zA-Z0-9._-]+$": {
           "$ref": "x-acm.spec.json"
         }
       }
     },
     "x-elbv2": {
       "patternProperties": {
-        "^[a-zA-ZONEREDACTED123-9._-]+$": {
+        "^[a-zA-Z0-9._-]+$": {
           "$ref": "x-elbv2.spec.json"
         }
       }
@@ -38,7 +38,7 @@
     "x-s3": {
       "type": "object",
       "patternProperties": {
-        "^[a-zA-ZONEREDACTED123-9._-]+$": {
+        "^[a-zA-Z0-9._-]+$": {
           "$ref": "x-s3.spec.json"
         }
       }
@@ -46,7 +46,7 @@
     "x-alarms": {
       "type": "object",
       "patternProperties": {
-        "^[a-zA-ZONEREDACTED123-9._-]+$": {
+        "^[a-zA-Z0-9._-]+$": {
           "$ref": "x-alarms.spec.json"
         }
       }
@@ -54,7 +54,7 @@
     "x-dashboards": {
       "type": "object",
       "patternProperties": {
-        "^[a-zA-ZONEREDACTED123-9._-]+$": {
+        "^[a-zA-Z0-9._-]+$": {
           "$ref": "x-dashboards.spec.json"
         }
       }
@@ -63,7 +63,7 @@
       "type": "object",
       "description": "Allows definition of AWS Cognito Userpool (Lookup only)",
       "patternProperties": {
-        "^[a-zA-ZONEREDACTED123-9._-]+$": {
+        "^[a-zA-Z0-9._-]+$": {
           "$ref": "x-cognito_userpool.spec.json"
         }
       }
@@ -71,7 +71,7 @@
     "x-ssm_parameter": {
       "type": "object",
       "patternProperties": {
-        "^[a-zA-ZONEREDACTED123-9._-]+$": {
+        "^[a-zA-Z0-9._-]+$": {
           "$ref": "x-ssm_parameter.spec.json"
         }
       }
@@ -79,7 +79,7 @@
     "x-dynamodb": {
       "type": "object",
       "patternProperties": {
-        "^[a-zA-ZONEREDACTED123-9._-]+$": {
+        "^[a-zA-Z0-9._-]+$": {
           "$ref": "x-dynamodb.spec.json"
         }
       }
@@ -87,7 +87,7 @@
     "x-kinesis": {
       "type": "object",
       "patternProperties": {
-        "^[a-zA-ZONEREDACTED123-9._-]+$": {
+        "^[a-zA-Z0-9._-]+$": {
           "$ref": "x-kinesis.spec.json"
         }
       }
@@ -95,7 +95,7 @@
     "x-sqs": {
       "type": "object",
       "patternProperties": {
-        "^[a-zA-ZONEREDACTED123-9._-]+$": {
+        "^[a-zA-Z0-9._-]+$": {
           "$ref": "x-sqs.spec.json"
         }
       }
@@ -103,7 +103,7 @@
     "x-kms": {
       "type": "object",
       "patternProperties": {
-        "^[a-zA-ZONEREDACTED123-9._-]+$": {
+        "^[a-zA-Z0-9._-]+$": {
           "$ref": "x-kms.spec.json"
         }
       }
@@ -111,7 +111,7 @@
     "x-rds": {
       "type": "object",
       "patternProperties": {
-        "^[a-zA-ZONEREDACTED123-9._-]+$": {
+        "^[a-zA-Z0-9._-]+$": {
           "$ref": "x-rds.spec.json"
         }
       }
@@ -119,7 +119,7 @@
     "x-docdb": {
       "type": "object",
       "patternProperties": {
-        "^[a-zA-ZONEREDACTED123-9._-]+$": {
+        "^[a-zA-Z0-9._-]+$": {
           "$ref": "x-docdb.spec.json"
         }
       }
@@ -127,7 +127,7 @@
     "x-events": {
       "type": "object",
       "patternProperties": {
-        "^[a-zA-ZONEREDACTED123-9._-]+$": {
+        "^[a-zA-Z0-9._-]+$": {
           "$ref": "x-events.spec.json"
         }
       }
@@ -140,7 +140,7 @@
       "id": "#/properties/services",
       "type": "object",
       "patternProperties": {
-        "^[a-zA-ZONEREDACTED123-9._-]+$": {
+        "^[a-zA-Z0-9._-]+$": {
           "$ref": "#/definitions/service"
         }
       },
@@ -150,7 +150,7 @@
       "id": "#/properties/networks",
       "type": "object",
       "patternProperties": {
-        "^[a-zA-ZONEREDACTED123-9._-]+$": {
+        "^[a-zA-Z0-9._-]+$": {
           "$ref": "#/definitions/network"
         }
       }
@@ -159,7 +159,7 @@
       "id": "#/properties/volumes",
       "type": "object",
       "patternProperties": {
-        "^[a-zA-ZONEREDACTED123-9._-]+$": {
+        "^[a-zA-Z0-9._-]+$": {
           "$ref": "#/definitions/volume"
         }
       },
@@ -169,7 +169,7 @@
       "id": "#/properties/secrets",
       "type": "object",
       "patternProperties": {
-        "^[a-zA-ZONEREDACTED123-9._-]+$": {
+        "^[a-zA-Z0-9._-]+$": {
           "$ref": "#/definitions/secret"
         }
       },
@@ -179,7 +179,7 @@
       "id": "#/properties/configs",
       "type": "object",
       "patternProperties": {
-        "^[a-zA-ZONEREDACTED123-9._-]+$": {
+        "^[a-zA-Z0-9._-]+$": {
           "$ref": "#/definitions/config"
         }
       },
@@ -464,7 +464,7 @@
               "type": "object",
               "additionalProperties": false,
               "patternProperties": {
-                "^[a-zA-ZONEREDACTED123-9._-]+$": {
+                "^[a-zA-Z0-9._-]+$": {
                   "type": "object",
                   "additionalProperties": false,
                   "properties": {
@@ -670,7 +670,7 @@
             {
               "type": "object",
               "patternProperties": {
-                "^[a-zA-ZONEREDACTED123-9._-]+$": {
+                "^[a-zA-Z0-9._-]+$": {
                   "oneOf": [
                     {
                       "type": "object",

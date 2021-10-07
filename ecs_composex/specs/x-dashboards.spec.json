@@ -25,7 +25,7 @@
     "Services": {
       "type": "object",
       "patternProperties": {
-        "^([a-zA-ZONEREDACTED123-9._-]+.)$": {
+        "^([a-zA-Z0-9._-]+.)$": {
           "type": "object",
           "$ref": "#/definitions/MetricsDef"
         }
@@ -34,7 +34,7 @@
     "Resources": {
       "type": "object",
       "patternProperties": {
-        "^(x-[a-z0-9-_]+)::([a-zA-ZONEREDACTED123-9._-]+.)$": {
+        "^(x-[a-z0-9-_]+)::([a-zA-Z0-9._-]+.)$": {
           "type": "object",
           "$ref": "#/definitions/MetricsDef"
         }

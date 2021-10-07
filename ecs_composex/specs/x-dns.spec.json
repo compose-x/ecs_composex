@@ -48,7 +48,7 @@
         },
         "Use": {
           "type": "string",
-          "pattern": "Z[A-ZONEREDACTED123-9]+$"
+          "pattern": "Z[A-Z0-9]+$"
         }
       }
     },

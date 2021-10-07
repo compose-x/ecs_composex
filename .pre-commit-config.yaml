@@ -15,7 +15,7 @@ repos:
         language: script
         entry: .scripts/cleanup_placebo.sh
         require_serial: true
-        files: ".json$"
+        files: "tests/*.json$"
   - repo: https://github.com/pycqa/isort
     rev: 5.9.3
     hooks:

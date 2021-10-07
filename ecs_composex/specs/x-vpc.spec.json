@@ -89,7 +89,7 @@
           ]
         },
         "patternProperties": {
-          "[a-zA-ZONEREDACTED123-9]+": {
+          "[a-zA-Z0-9]+": {
             "oneOf": [
               {
                 "type": "string"
