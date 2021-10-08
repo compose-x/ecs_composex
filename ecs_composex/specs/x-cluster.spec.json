@@ -44,6 +44,10 @@
             "string"
           ]
         },
+        "LogGroupRetentionInDays": {
+          "type": "number",
+          "default": 120
+        },
         "CreateExecLoggingBucket": {
           "description": "Define whether Compose-X should create a new S3 bucket to log exec commands",
           "type": [

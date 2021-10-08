@@ -1,4 +1,4 @@
-﻿#   -*- coding: utf-8 -*-
+#   -*- coding: utf-8 -*-
 #  SPDX-License-Identifier: MPL-2.0
 #  Copyright 2020-2021 John Mille <john@compose-x.io>
 
@@ -219,7 +219,9 @@ class XStack(ComposeXStack):
         stack_template = build_template("Root stack for IAM Roles")
         add_parameters(stack_template, [CLUSTER_NAME])
         super().__init__(name, stack_template, **kwargs)
-        self.Parameters.update({CLUSTER_NAME.title: settings.ecs_cluster})
+        self.Parameters.update(
+            {CLUSTER_NAME.title: settings.ecs_cluster.cluster_identifier}
+        )
         new_roles = create_new_roles(settings)
         for role in new_roles:
             self.stack_template.add_resource(role.cfn_resource)

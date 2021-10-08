@@ -1,4 +1,4 @@
-#  -*- coding: utf-8 -*-
+#   -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
@@ -2289,13 +2289,13 @@ class ComposeFamily(object):
         Function to perform a final validation of compute before rendering.
         :param ecs_composex.common.settings.ComposeXSettings settings:
         """
-        if settings.ecs_cluster_platform_override:
-            self.launch_type = settings.ecs_cluster_platform_override
+        if settings.ecs_cluster.platform_override:
+            self.launch_type = settings.ecs_cluster.platform_override
             if hasattr(
                 self.service_definition, "CapacityProviderStrategy"
             ) and isinstance(self.service_definition.CapacityProviderStrategy, list):
                 LOG.warning(
-                    f"{self.name} - Due to Launch Type override to {settings.ecs_cluster_platform_override}"
+                    f"{self.name} - Due to Launch Type override to {settings.ecs_cluster.platform_override}"
                     ", ignoring CapacityProviders"
                     f"{[cap.CapacityProvider for cap in self.service_definition.CapacityProviderStrategy]}"
                 )
@@ -2310,7 +2310,7 @@ class ComposeFamily(object):
                     )
         else:
             self.merge_capacity_providers()
-            self.validate_capacity_providers(settings.ecs_cluster_providers)
+            self.validate_capacity_providers(settings.ecs_cluster.capacity_providers)
             if self.stack:
                 LOG.info(
                     f"{self.name} - Updated {ecs_params.LAUNCH_TYPE.title} to"
