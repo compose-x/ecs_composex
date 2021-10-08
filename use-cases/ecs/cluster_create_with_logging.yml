@@ -1,0 +1,35 @@
+
+x-cluster:
+  Properties:
+    CapacityProviders:
+      - FARGATE_SPOT
+      - FARGATE
+    ClusterName: ANewCluster
+    ClusterSettings:
+      - Name: containerInsights
+        Value: enabled
+    DefaultCapacityProviderStrategy:
+      - Base: 2
+        Weight: 2
+        CapacityProvider: FARGATE_SPOT
+      - Weight: 1
+        CapacityProvider: FARGATE
+  MacroParameters:
+    CreateExecLoggingLogGroup: true
+    CreateExecLoggingBucket: true
+    CreateExecLoggingKmsKey: true
+
+
+version: "3.8"
+services:
+  app03:
+    image: nginx
+    x-ecs:
+      CapacityProviderStrategy:
+        - CapacityProvider: FARGATE
+          Base: 0
+          Weight: 1
+        - CapacityProvider: FARGATE_SPOT
+          Base: 1
+          Weight: 2
+    working_dir: /tmp

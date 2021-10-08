@@ -7,7 +7,18 @@ import re
 from botocore.exceptions import ClientError
 from compose_x_common.aws import get_assume_role_session
 from compose_x_common.compose_x_common import keyisset
-from troposphere import AWS_NO_VALUE, AWS_STACK_NAME, FindInMap, Ref, Sub
+from troposphere import (
+    AWS_ACCOUNT_ID,
+    AWS_NO_VALUE,
+    AWS_PARTITION,
+    AWS_REGION,
+    AWS_STACK_NAME,
+    AWS_URL_SUFFIX,
+    FindInMap,
+    GetAtt,
+    Ref,
+    Sub,
+)
 from troposphere.ecs import (
     CapacityProviderStrategyItem,
     Cluster,
@@ -18,10 +29,13 @@ from troposphere.ecs import (
 )
 from troposphere.logs import LogGroup
 
-from ecs_composex.common import LOG
+from ecs_composex.common import LOG, NONALPHANUM
 from ecs_composex.ecs import metadata
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME, CLUSTER_T
+from ecs_composex.kms.kms_stack import KmsKey
 from ecs_composex.resources_import import import_record_properties
+from ecs_composex.s3.s3_stack import Bucket
+from ecs_composex.s3.s3_template import generate_bucket
 
 RES_KEY = "x-cluster"
 FARGATE_PROVIDER = "FARGATE"
@@ -78,7 +92,7 @@ class EcsCluster(object):
                 else {}
             )
 
-    def set_from_definition(self, root_stack, session):
+    def set_from_definition(self, root_stack, session, settings):
         if self.definition and self.use:
             self.mappings = {CLUSTER_NAME.title: {"Name": self.use}}
             root_stack.stack_template.add_mapping(self.mappings_key, self.mappings)
@@ -86,7 +100,7 @@ class EcsCluster(object):
             self.lookup_cluster(session)
             root_stack.stack_template.add_mapping(self.mappings_key, self.mappings)
         elif self.properties:
-            self.define_cluster(root_stack)
+            self.define_cluster(root_stack, settings)
 
     def set_default_cluster_config(self, root_stack):
         """
@@ -173,7 +187,173 @@ class EcsCluster(object):
             LOG.error(error)
             raise
 
-    def define_cluster(self, root_stack):
+    def update_props_from_parameters(self, root_stack, settings):
+        """
+        Method to adapt cluster config to settings
+
+        :param settings:
+        :return:
+        """
+        cluster_name = (
+            f"${{{AWS_STACK_NAME}}}"
+            if isinstance(self.cfn_resource.ClusterName, (Ref, Sub, FindInMap))
+            else self.cfn_resource.ClusterName
+        )
+        self.log_group = Ref(AWS_NO_VALUE)
+        self.log_bucket = Ref(AWS_NO_VALUE)
+
+        log_settings = {}
+        log_configuration = {}
+        if keyisset("CreateExecLoggingKmsKey", self.parameters):
+            key_config = {
+                "Properties": {
+                    "EnableKeyRotationg": True,
+                    "Enabled": True,
+                    "Description": Sub(
+                        f"ECS Cluster {cluster_name} execute logging encryption key"
+                    ),
+                    "KeyPolicy": {
+                        "Version": "2012-10-17",
+                        "Id": "auto-secretsmanager-1",
+                        "Statement": [
+                            {
+                                "Sid": "Allow direct access to key metadata to the account",
+                                "Effect": "Allow",
+                                "Principal": {
+                                    "AWS": Sub(
+                                        f"arn:${{{AWS_PARTITION}}}:iam::${{{AWS_ACCOUNT_ID}}}:root"
+                                    )
+                                },
+                                "Action": ["kms:*"],
+                                "Resource": "*",
+                                "Condition": {
+                                    "StringEquals": {
+                                        "kms:CallerAccount": Ref(AWS_ACCOUNT_ID)
+                                    }
+                                },
+                            },
+                            {
+                                "Effect": "Allow",
+                                "Principal": {
+                                    "Service": Sub(
+                                        f"logs.${{{AWS_REGION}}}.${{{AWS_URL_SUFFIX}}}"
+                                    )
+                                },
+                                "Action": [
+                                    "kms:Encrypt*",
+                                    "kms:Decrypt*",
+                                    "kms:ReEncrypt*",
+                                    "kms:GenerateDataKey*",
+                                    "kms:Describe*",
+                                ],
+                                "Resource": "*",
+                                "Condition": {
+                                    "ArnLike": {
+                                        "kms:EncryptionContext:aws:logs:arn": Sub(
+                                            f"arn:${{{AWS_PARTITION}}}:logs:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:log-group:/ecs/execute-logs/{cluster_name}"
+                                        )
+                                    }
+                                },
+                            },
+                            {
+                                "Effect": "Allow",
+                                "Principal": {
+                                    "Service": Sub(f"ssm.${{{AWS_URL_SUFFIX}}}")
+                                },
+                                "Action": [
+                                    "kms:Encrypt*",
+                                    "kms:Decrypt*",
+                                    "kms:ReEncrypt*",
+                                    "kms:GenerateDataKey*",
+                                    "kms:Describe*",
+                                ],
+                                "Resource": "*",
+                            },
+                        ],
+                    },
+                },
+                "Settings": {"Alias": Sub(f"alias/ecs/execute-logs/{cluster_name}")},
+            }
+            self.log_key = KmsKey(
+                "ECSClusterLoggingKmsKey", key_config, "cluster", settings
+            )
+            self.log_key.stack = root_stack
+            self.log_key.define_kms_key()
+            root_stack.stack_template.add_resource(self.log_key.cfn_resource)
+            log_settings["KmsKeyId"] = GetAtt(self.log_key.cfn_resource, "KeyId")
+            log_configuration["CloudWatchEncryptionEnabled"] = True
+
+        if keyisset("CreateExecLoggingLogGroup", self.parameters):
+            self.log_group = LogGroup(
+                "EcsExecLogGroup",
+                LogGroupName=Sub(f"/ecs/execute-logs/{cluster_name}"),
+                RetentionInDays=120,
+                KmsKeyId=GetAtt(self.log_key.cfn_resource, "Arn")
+                if isinstance(self.log_key, KmsKey)
+                else Ref(AWS_NO_VALUE),
+                DependsOn=[self.log_key.cfn_resource.title]
+                if isinstance(self.log_key, KmsKey)
+                else [],
+            )
+            root_stack.stack_template.add_resource(self.log_group)
+            log_configuration["CloudWatchLogGroupName"] = Ref(self.log_group)
+            if isinstance(self.log_key, KmsKey):
+                log_configuration["CloudWatchEncryptionEnabled"] = True
+        if keyisset("CreateExecLoggingBucket", self.parameters):
+            bucket_config = {
+                "Properties": {
+                    "AccessControl": "BucketOwnerFullControl",
+                    "PublicAccessBlockConfiguration": {
+                        "BlockPublicAcls": True,
+                        "BlockPublicPolicy": True,
+                        "IgnorePublicAcls": True,
+                        "RestrictPublicBuckets": False,
+                    },
+                },
+                "MacroParameters": {
+                    "ExpandRegionToBucket": True,
+                    "ExpandAccountIdToBucket": True,
+                },
+            }
+            print(type(self.log_key), isinstance(self.log_key, KmsKey))
+            if isinstance(self.log_key, KmsKey):
+                bucket_config["Properties"]["BucketEncryption"] = {
+                    "ServerSideEncryptionConfiguration": [
+                        {
+                            "ServerSideEncryptionByDefault": {
+                                "SSEAlgorithm": "aws:kms",
+                                "KMSMasterKeyID": GetAtt(
+                                    self.log_key.cfn_resource, "Arn"
+                                ).data,
+                            }
+                        }
+                    ]
+                }
+                log_configuration["S3EncryptionEnabled"] = True
+            print("CONFIG", bucket_config)
+            self.log_bucket = Bucket(
+                "ECSClusterLoggingBucket",
+                bucket_config,
+                "cluster",
+                settings,
+            )
+            self.log_bucket.stack = root_stack
+            generate_bucket(self.log_bucket)
+            print(self.log_bucket.cfn_resource.to_dict())
+            root_stack.stack_template.add_resource(self.log_bucket.cfn_resource)
+            log_configuration["S3BucketName"] = Ref(self.log_bucket.cfn_resource)
+            log_configuration["S3KeyPrefix"] = Sub(f"ecs/execute-logs/{cluster_name}/")
+        log_settings["LogConfiguration"] = ExecuteCommandLogConfiguration(
+            **log_configuration
+        )
+        log_settings["Logging"] = "OVERRIDE"
+        configuration = ClusterConfiguration(
+            ExecuteCommandConfiguration=ExecuteCommandConfiguration(**log_settings)
+        )
+        if not hasattr(self.cfn_resource, "Configuration"):
+            setattr(self.cfn_resource, "Configuration", configuration)
+
+    def define_cluster(self, root_stack, settings):
         """
         Function to create the cluster from provided properties.
 
@@ -191,6 +371,8 @@ class EcsCluster(object):
             )
         self.cfn_resource = Cluster(CLUSTER_T, **props)
         root_stack.stack_template.add_resource(self.cfn_resource)
+        if self.parameters:
+            self.update_props_from_parameters(root_stack, settings)
         self.cluster_identifier = Ref(self.cfn_resource)
 
 
@@ -282,7 +464,7 @@ def add_ecs_cluster(root_stack, settings):
         cluster = EcsCluster(root_stack)
     elif isinstance(settings.compose_content[RES_KEY], dict):
         cluster = EcsCluster(root_stack, settings.compose_content[EcsCluster.res_key])
-        cluster.set_from_definition(root_stack, settings.session)
+        cluster.set_from_definition(root_stack, settings.session, settings)
     else:
         raise LookupError("Unable to determine what to do for x-cluster")
     settings.ecs_cluster = cluster
