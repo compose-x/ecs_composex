@@ -30,6 +30,7 @@ from troposphere.ecs import (
 from troposphere.logs import LogGroup
 
 from ecs_composex.common import LOG, NONALPHANUM
+from ecs_composex.common.services_helpers import get_closest_valid_log_retention_period
 from ecs_composex.ecs import metadata
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME, CLUSTER_T
 from ecs_composex.kms.kms_stack import KmsKey
@@ -296,7 +297,11 @@ class EcsCluster(object):
         self.log_group = LogGroup(
             "EcsExecLogGroup",
             LogGroupName=Sub(f"/ecs/execute-logs/{cluster_name}"),
-            RetentionInDays=120,
+            RetentionInDays=120
+            if not keyisset("LogGroupRetentionInDays", self.parameters)
+            else get_closest_valid_log_retention_period(
+                self.parameters["LogGroupRetentionInDays"]
+            ),
             KmsKeyId=GetAtt(self.log_key.cfn_resource, "Arn")
             if isinstance(self.log_key, KmsKey)
             else Ref(AWS_NO_VALUE),
