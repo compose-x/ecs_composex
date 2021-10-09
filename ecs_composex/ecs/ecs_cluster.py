@@ -290,7 +290,7 @@ class EcsCluster(object):
         self.log_key.stack = root_stack
         self.log_key.define_kms_key()
         root_stack.stack_template.add_resource(self.log_key.cfn_resource)
-        log_settings["KmsKeyId"] = GetAtt(self.log_key.cfn_resource, "KeyId")
+        log_settings["KmsKeyId"] = GetAtt(self.log_key.cfn_resource, "Arn")
         log_configuration["CloudWatchEncryptionEnabled"] = True
 
     def set_log_group(self, cluster_name, root_stack, log_configuration):

@@ -1,4 +1,3 @@
-
 x-cluster:
   Properties:
     CapacityProviders:
@@ -27,6 +26,7 @@ services:
   app03:
     image: nginx
     x-ecs:
+      EnableExecuteCommand: true
       CapacityProviderStrategy:
         - CapacityProvider: FARGATE
           Base: 0
@@ -35,3 +35,7 @@ services:
           Base: 1
           Weight: 2
     working_dir: /tmp
+
+  app01:
+    x-ecs:
+      EnableExecuteCommand: true

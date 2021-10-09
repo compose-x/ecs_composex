@@ -43,7 +43,7 @@ from troposphere.ecs import SystemControl, TaskDefinition, Tmpfs, Ulimit, Volume
 from troposphere.iam import Policy, PolicyType
 from troposphere.logs import LogGroup
 
-from ecs_composex.common import FILE_PREFIX, LOG, NONALPHANUM
+from ecs_composex.common import FILE_PREFIX, LOG, NONALPHANUM, add_parameters
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME, Parameter
 from ecs_composex.common.compose_volumes import (
     ComposeVolume,
@@ -134,6 +134,7 @@ class ComposeService(object):
         self.env_files = []
         self.tmpfses = []
         self.ephemeral_storage = 0
+        self.x_ecs = set_else_none("x-ecs", self.definition, {})
         self.user = None
         self.group = None
         self.user_group = None
@@ -1307,6 +1308,7 @@ class ComposeFamily(object):
         self.task_ephemeral_storage = 0
         self.exec_role = None
         self.task_role = None
+        self.enable_execute_command = False
         self.scalable_target = None
         self.ecs_service = None
         self.launch_type = self.default_launch_type
@@ -1392,6 +1394,129 @@ class ComposeFamily(object):
                         self.stack.Parameters.update(
                             {ecs_params.LAUNCH_TYPE.title: self.launch_type}
                         )
+
+    def set_enable_execute_command(self):
+        for svc in self.services:
+            if svc.is_aws_sidecar:
+                continue
+            if svc.x_ecs and keyisset("EnableExecuteCommand", svc.x_ecs):
+                self.enable_execute_command = True
+        if self.enable_execute_command:
+            if self.task_definition and self.task_definition.ContainerDefinitions:
+                for container in self.task_definition.ContainerDefinitions:
+                    if hasattr(container, "LinuxParameters"):
+                        params = getattr(container, "LinuxParameters")
+                        setattr(params, "InitProcessEnabled", True)
+                    else:
+                        setattr(
+                            container,
+                            "LinuxParameters",
+                            LinuxParameters(InitProcessEnabled=True),
+                        )
+
+    def apply_ecs_execute_command_permissions(self, settings, iam_stack):
+        """
+        Method to set the IAM Policies in place to allow ECS Execute SSM and Logging
+
+        :param settings:
+        :param iam_stack:
+        :return:
+        """
+        policy_title = "EnableEcsExecuteCommand"
+        role_stack = self.task_role.stack
+        task_role = Ref(self.task_role.cfn_resource)
+        exec_role = Ref(self.exec_role.cfn_resource)
+        if policy_title not in role_stack.stack_template.resources:
+            policy = role_stack.stack_template.add_resource(
+                PolicyType(
+                    policy_title,
+                    PolicyName="EnableExecuteCommand",
+                    PolicyDocument={
+                        "Version": "2012-10-17",
+                        "Statement": [
+                            {
+                                "Effect": "Allow",
+                                "Action": [
+                                    "ssmmessages:CreateControlChannel",
+                                    "ssmmessages:CreateDataChannel",
+                                    "ssmmessages:OpenControlChannel",
+                                    "ssmmessages:OpenDataChannel",
+                                ],
+                                "Resource": "*",
+                            }
+                        ],
+                    },
+                    Roles=[task_role, exec_role],
+                )
+            )
+            if settings.ecs_cluster.log_key:
+                parameter = Parameter("LoggingEncryptionKey", Type="String")
+                add_parameters(role_stack.stack_template, [parameter])
+                role_stack.Parameters.update(
+                    {
+                        parameter.title: GetAtt(
+                            settings.ecs_cluster.log_key.cfn_resource, "Arn"
+                        )
+                    }
+                )
+                policy.PolicyDocument["Statement"].append(
+                    {
+                        "Action": [
+                            "kms:Encrypt*",
+                            "kms:Decrypt*",
+                            "kms:ReEncrypt*",
+                            "kms:GenerateDataKey*",
+                            "kms:Describe*",
+                        ],
+                        "Resource": [Ref(parameter)],
+                        "Effect": "Allow",
+                    }
+                )
+            if settings.ecs_cluster.log_group:
+                parameter = Parameter("EcsExecuteLoggingGroup", Type="String")
+                add_parameters(role_stack.stack_template, [parameter])
+                role_stack.Parameters.update(
+                    {parameter.title: GetAtt(settings.ecs_cluster.log_group, "Arn")}
+                )
+                policy.PolicyDocument["Statement"].append(
+                    {
+                        "Sid": "AllowDescribingAllCWLogGroupsForSSMClient",
+                        "Action": ["logs:DescribeLogGroups"],
+                        "Resource": ["*"],
+                        "Effect": "Allow",
+                    }
+                )
+                policy.PolicyDocument["Statement"].append(
+                    {
+                        "Action": [
+                            "logs:CreateLogStream",
+                            "logs:DescribeLogStreams",
+                            "logs:PutLogEvents",
+                        ],
+                        "Resource": [Ref(parameter)],
+                        "Effect": "Allow",
+                    }
+                )
+
+        elif policy_title in self.task_role.stack.stack_template.resources:
+            policy = role_stack.stack_template.resources[policy_title]
+            if hasattr(policy, "Roles"):
+                roles = getattr(policy, "Roles")
+                if roles:
+                    for role in roles:
+                        for srole in [task_role, exec_role]:
+                            if (
+                                isinstance(role, Ref)
+                                and role.data["Ref"] != srole.data["Ref"]
+                            ):
+                                roles.append(srole)
+            else:
+                setattr(policy, "Roles", [task_role])
+        setattr(
+            self.ecs_service.ecs_service,
+            "EnableExecuteCommand",
+            self.enable_execute_command,
+        )
 
     def set_xray(self):
         """
