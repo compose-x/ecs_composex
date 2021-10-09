@@ -50,7 +50,6 @@ DEFAULT_STRATEGY = [
 
 
 def get_kms_key_config(cluster_name, allow_kms_reuse=False):
-
     return
 
 
@@ -195,6 +194,13 @@ class EcsCluster(object):
     def set_kms_key(
         self, cluster_name, root_stack, settings, log_settings, log_configuration
     ):
+        action = [
+            "kms:Encrypt*",
+            "kms:Decrypt*",
+            "kms:ReEncrypt*",
+            "kms:GenerateDataKey*",
+            "kms:Describe*",
+        ]
         statement = [
             {
                 "Sid": "Allow direct access to key metadata to the account",
@@ -214,13 +220,7 @@ class EcsCluster(object):
                 "Sid": "Allows SSM to use the KMS key to encrypt/decrypt messages",
                 "Effect": "Allow",
                 "Principal": {"Service": Sub(f"ssm.${{{AWS_URL_SUFFIX}}}")},
-                "Action": [
-                    "kms:Encrypt*",
-                    "kms:Decrypt*",
-                    "kms:ReEncrypt*",
-                    "kms:GenerateDataKey*",
-                    "kms:Describe*",
-                ],
+                "Action": action,
                 "Resource": "*",
             },
         ]
@@ -232,13 +232,7 @@ class EcsCluster(object):
                     "Principal": {
                         "Service": Sub(f"logs.${{{AWS_REGION}}}.${{{AWS_URL_SUFFIX}}}")
                     },
-                    "Action": [
-                        "kms:Encrypt*",
-                        "kms:Decrypt*",
-                        "kms:ReEncrypt*",
-                        "kms:GenerateDataKey*",
-                        "kms:Describe*",
-                    ],
+                    "Action": action,
                     "Resource": "*",
                     "Condition": {
                         "ArnLike": {
@@ -261,13 +255,7 @@ class EcsCluster(object):
                     "Principal": {
                         "Service": Sub(f"logs.${{{AWS_REGION}}}.${{{AWS_URL_SUFFIX}}}")
                     },
-                    "Action": [
-                        "kms:Encrypt*",
-                        "kms:Decrypt*",
-                        "kms:ReEncrypt*",
-                        "kms:GenerateDataKey*",
-                        "kms:Describe*",
-                    ],
+                    "Action": action,
                     "Resource": "*",
                     "Condition": {
                         "ArnLike": {
