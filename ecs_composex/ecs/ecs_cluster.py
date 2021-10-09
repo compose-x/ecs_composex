@@ -35,7 +35,7 @@ from ecs_composex.ecs.ecs_params import CLUSTER_NAME, CLUSTER_T
 from ecs_composex.kms.kms_stack import KmsKey
 from ecs_composex.resources_import import import_record_properties
 from ecs_composex.s3.s3_stack import Bucket
-from ecs_composex.s3.s3_template import generate_bucket
+from ecs_composex.s3.s3_template import evaluate_parameters, generate_bucket
 
 RES_KEY = "x-cluster"
 FARGATE_PROVIDER = "FARGATE"
@@ -47,6 +47,11 @@ DEFAULT_STRATEGY = [
     ),
     CapacityProviderStrategyItem(Weight=1, CapacityProvider=FARGATE_PROVIDER),
 ]
+
+
+def get_kms_key_config(cluster_name, allow_kms_reuse=False):
+
+    return
 
 
 class EcsCluster(object):
@@ -187,6 +192,180 @@ class EcsCluster(object):
             LOG.error(error)
             raise
 
+    def set_kms_key(
+        self, cluster_name, root_stack, settings, log_settings, log_configuration
+    ):
+        statement = [
+            {
+                "Sid": "Allow direct access to key metadata to the account",
+                "Effect": "Allow",
+                "Principal": {
+                    "AWS": Sub(
+                        f"arn:${{{AWS_PARTITION}}}:iam::${{{AWS_ACCOUNT_ID}}}:root"
+                    )
+                },
+                "Action": ["kms:*"],
+                "Resource": "*",
+                "Condition": {
+                    "StringEquals": {"kms:CallerAccount": Ref(AWS_ACCOUNT_ID)}
+                },
+            },
+            {
+                "Sid": "Allows SSM to use the KMS key to encrypt/decrypt messages",
+                "Effect": "Allow",
+                "Principal": {"Service": Sub(f"ssm.${{{AWS_URL_SUFFIX}}}")},
+                "Action": [
+                    "kms:Encrypt*",
+                    "kms:Decrypt*",
+                    "kms:ReEncrypt*",
+                    "kms:GenerateDataKey*",
+                    "kms:Describe*",
+                ],
+                "Resource": "*",
+            },
+        ]
+        if keyisset("CreateExecLoggingLogGroup", self.parameters):
+            statement.append(
+                {
+                    "Sid": "Allow aws logs to encrypt decrypt messages",
+                    "Effect": "Allow",
+                    "Principal": {
+                        "Service": Sub(f"logs.${{{AWS_REGION}}}.${{{AWS_URL_SUFFIX}}}")
+                    },
+                    "Action": [
+                        "kms:Encrypt*",
+                        "kms:Decrypt*",
+                        "kms:ReEncrypt*",
+                        "kms:GenerateDataKey*",
+                        "kms:Describe*",
+                    ],
+                    "Resource": "*",
+                    "Condition": {
+                        "ArnLike": {
+                            "kms:EncryptionContext:aws:logs:arn": Sub(
+                                f"arn:${{{AWS_PARTITION}}}:logs:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:"
+                                "log-group:*"
+                                if keyisset("AllowKmsKeyReuse", self.parameters)
+                                else f"arn:${{{AWS_PARTITION}}}:logs:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:"
+                                f"log-group:/ecs/execute-logs/{cluster_name}"
+                            )
+                        }
+                    },
+                }
+            )
+        elif keyisset("AllowKmsKeyReuse", self.parameters):
+            statement.append(
+                {
+                    "Sid": "Allow aws logs to encrypt decrypt messages",
+                    "Effect": "Allow",
+                    "Principal": {
+                        "Service": Sub(f"logs.${{{AWS_REGION}}}.${{{AWS_URL_SUFFIX}}}")
+                    },
+                    "Action": [
+                        "kms:Encrypt*",
+                        "kms:Decrypt*",
+                        "kms:ReEncrypt*",
+                        "kms:GenerateDataKey*",
+                        "kms:Describe*",
+                    ],
+                    "Resource": "*",
+                    "Condition": {
+                        "ArnLike": {
+                            "kms:EncryptionContext:aws:logs:arn": Sub(
+                                f"arn:${{{AWS_PARTITION}}}:logs:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:"
+                                "log-group:*"
+                            )
+                        }
+                    },
+                }
+            )
+        key_config = {
+            "Properties": {
+                "EnableKeyRotationg": True,
+                "Enabled": True,
+                "Description": Sub(
+                    f"ECS Cluster {cluster_name} execute logging encryption key"
+                ),
+                "KeyPolicy": {
+                    "Version": "2012-10-17",
+                    "Id": "ecscluster-logging",
+                    "Statement": statement,
+                },
+            },
+            "Settings": {"Alias": Sub(f"alias/ecs/execute-logs/{cluster_name}")},
+        }
+
+        self.log_key = KmsKey(
+            "ECSClusterLoggingKmsKey", key_config, "cluster", settings
+        )
+        self.log_key.stack = root_stack
+        self.log_key.define_kms_key()
+        root_stack.stack_template.add_resource(self.log_key.cfn_resource)
+        log_settings["KmsKeyId"] = GetAtt(self.log_key.cfn_resource, "KeyId")
+        log_configuration["CloudWatchEncryptionEnabled"] = True
+
+    def set_log_group(self, cluster_name, root_stack, log_configuration):
+        self.log_group = LogGroup(
+            "EcsExecLogGroup",
+            LogGroupName=Sub(f"/ecs/execute-logs/{cluster_name}"),
+            RetentionInDays=120,
+            KmsKeyId=GetAtt(self.log_key.cfn_resource, "Arn")
+            if isinstance(self.log_key, KmsKey)
+            else Ref(AWS_NO_VALUE),
+            DependsOn=[self.log_key.cfn_resource.title]
+            if isinstance(self.log_key, KmsKey)
+            else [],
+        )
+        root_stack.stack_template.add_resource(self.log_group)
+        log_configuration["CloudWatchLogGroupName"] = Ref(self.log_group)
+        if isinstance(self.log_key, KmsKey):
+            log_configuration["CloudWatchEncryptionEnabled"] = True
+
+    def set_log_bucket(self, cluster_name, root_stack, settings, log_configuration):
+        bucket_config = {
+            "Properties": {
+                "AccessControl": "BucketOwnerFullControl",
+                "PublicAccessBlockConfiguration": {
+                    "BlockPublicAcls": True,
+                    "BlockPublicPolicy": True,
+                    "IgnorePublicAcls": True,
+                    "RestrictPublicBuckets": True,
+                },
+            },
+            "MacroParameters": {
+                "ExpandRegionToBucket": True,
+                "ExpandAccountIdToBucket": True,
+                "BucketPolicy": {
+                    "PredefinedBucketPolicies": ["enforceSecureConnection"]
+                },
+            },
+        }
+        if isinstance(self.log_key, KmsKey):
+            bucket_config["Properties"]["BucketEncryption"] = {
+                "ServerSideEncryptionConfiguration": [
+                    {
+                        "BucketKeyEnabled": True,
+                        "ServerSideEncryptionByDefault": {
+                            "SSEAlgorithm": "aws:kms",
+                            "KMSMasterKeyID": GetAtt(self.log_key.cfn_resource, "Arn"),
+                        },
+                    }
+                ]
+            }
+            log_configuration["S3EncryptionEnabled"] = True
+        self.log_bucket = Bucket(
+            "ECSClusterLoggingBucket",
+            bucket_config,
+            "cluster",
+            settings,
+        )
+        self.log_bucket.stack = root_stack
+        generate_bucket(self.log_bucket)
+        evaluate_parameters(self.log_bucket, root_stack.stack_template)
+        root_stack.stack_template.add_resource(self.log_bucket.cfn_resource)
+        log_configuration["S3BucketName"] = Ref(self.log_bucket.cfn_resource)
+        log_configuration["S3KeyPrefix"] = Sub(f"ecs/execute-logs/{cluster_name}/")
+
     def update_props_from_parameters(self, root_stack, settings):
         """
         Method to adapt cluster config to settings
@@ -205,144 +384,15 @@ class EcsCluster(object):
         log_settings = {}
         log_configuration = {}
         if keyisset("CreateExecLoggingKmsKey", self.parameters):
-            key_config = {
-                "Properties": {
-                    "EnableKeyRotationg": True,
-                    "Enabled": True,
-                    "Description": Sub(
-                        f"ECS Cluster {cluster_name} execute logging encryption key"
-                    ),
-                    "KeyPolicy": {
-                        "Version": "2012-10-17",
-                        "Id": "auto-secretsmanager-1",
-                        "Statement": [
-                            {
-                                "Sid": "Allow direct access to key metadata to the account",
-                                "Effect": "Allow",
-                                "Principal": {
-                                    "AWS": Sub(
-                                        f"arn:${{{AWS_PARTITION}}}:iam::${{{AWS_ACCOUNT_ID}}}:root"
-                                    )
-                                },
-                                "Action": ["kms:*"],
-                                "Resource": "*",
-                                "Condition": {
-                                    "StringEquals": {
-                                        "kms:CallerAccount": Ref(AWS_ACCOUNT_ID)
-                                    }
-                                },
-                            },
-                            {
-                                "Effect": "Allow",
-                                "Principal": {
-                                    "Service": Sub(
-                                        f"logs.${{{AWS_REGION}}}.${{{AWS_URL_SUFFIX}}}"
-                                    )
-                                },
-                                "Action": [
-                                    "kms:Encrypt*",
-                                    "kms:Decrypt*",
-                                    "kms:ReEncrypt*",
-                                    "kms:GenerateDataKey*",
-                                    "kms:Describe*",
-                                ],
-                                "Resource": "*",
-                                "Condition": {
-                                    "ArnLike": {
-                                        "kms:EncryptionContext:aws:logs:arn": Sub(
-                                            f"arn:${{{AWS_PARTITION}}}:logs:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:log-group:/ecs/execute-logs/{cluster_name}"
-                                        )
-                                    }
-                                },
-                            },
-                            {
-                                "Effect": "Allow",
-                                "Principal": {
-                                    "Service": Sub(f"ssm.${{{AWS_URL_SUFFIX}}}")
-                                },
-                                "Action": [
-                                    "kms:Encrypt*",
-                                    "kms:Decrypt*",
-                                    "kms:ReEncrypt*",
-                                    "kms:GenerateDataKey*",
-                                    "kms:Describe*",
-                                ],
-                                "Resource": "*",
-                            },
-                        ],
-                    },
-                },
-                "Settings": {"Alias": Sub(f"alias/ecs/execute-logs/{cluster_name}")},
-            }
-            self.log_key = KmsKey(
-                "ECSClusterLoggingKmsKey", key_config, "cluster", settings
+            self.set_kms_key(
+                cluster_name, root_stack, settings, log_settings, log_configuration
             )
-            self.log_key.stack = root_stack
-            self.log_key.define_kms_key()
-            root_stack.stack_template.add_resource(self.log_key.cfn_resource)
-            log_settings["KmsKeyId"] = GetAtt(self.log_key.cfn_resource, "KeyId")
-            log_configuration["CloudWatchEncryptionEnabled"] = True
-
         if keyisset("CreateExecLoggingLogGroup", self.parameters):
-            self.log_group = LogGroup(
-                "EcsExecLogGroup",
-                LogGroupName=Sub(f"/ecs/execute-logs/{cluster_name}"),
-                RetentionInDays=120,
-                KmsKeyId=GetAtt(self.log_key.cfn_resource, "Arn")
-                if isinstance(self.log_key, KmsKey)
-                else Ref(AWS_NO_VALUE),
-                DependsOn=[self.log_key.cfn_resource.title]
-                if isinstance(self.log_key, KmsKey)
-                else [],
-            )
-            root_stack.stack_template.add_resource(self.log_group)
-            log_configuration["CloudWatchLogGroupName"] = Ref(self.log_group)
-            if isinstance(self.log_key, KmsKey):
-                log_configuration["CloudWatchEncryptionEnabled"] = True
+            self.set_log_group(cluster_name, root_stack, log_configuration)
+
         if keyisset("CreateExecLoggingBucket", self.parameters):
-            bucket_config = {
-                "Properties": {
-                    "AccessControl": "BucketOwnerFullControl",
-                    "PublicAccessBlockConfiguration": {
-                        "BlockPublicAcls": True,
-                        "BlockPublicPolicy": True,
-                        "IgnorePublicAcls": True,
-                        "RestrictPublicBuckets": False,
-                    },
-                },
-                "MacroParameters": {
-                    "ExpandRegionToBucket": True,
-                    "ExpandAccountIdToBucket": True,
-                },
-            }
-            print(type(self.log_key), isinstance(self.log_key, KmsKey))
-            if isinstance(self.log_key, KmsKey):
-                bucket_config["Properties"]["BucketEncryption"] = {
-                    "ServerSideEncryptionConfiguration": [
-                        {
-                            "ServerSideEncryptionByDefault": {
-                                "SSEAlgorithm": "aws:kms",
-                                "KMSMasterKeyID": GetAtt(
-                                    self.log_key.cfn_resource, "Arn"
-                                ).data,
-                            }
-                        }
-                    ]
-                }
-                log_configuration["S3EncryptionEnabled"] = True
-            print("CONFIG", bucket_config)
-            self.log_bucket = Bucket(
-                "ECSClusterLoggingBucket",
-                bucket_config,
-                "cluster",
-                settings,
-            )
-            self.log_bucket.stack = root_stack
-            generate_bucket(self.log_bucket)
-            print(self.log_bucket.cfn_resource.to_dict())
-            root_stack.stack_template.add_resource(self.log_bucket.cfn_resource)
-            log_configuration["S3BucketName"] = Ref(self.log_bucket.cfn_resource)
-            log_configuration["S3KeyPrefix"] = Sub(f"ecs/execute-logs/{cluster_name}/")
+            self.set_log_bucket(cluster_name, root_stack, settings, log_configuration)
+
         log_settings["LogConfiguration"] = ExecuteCommandLogConfiguration(
             **log_configuration
         )

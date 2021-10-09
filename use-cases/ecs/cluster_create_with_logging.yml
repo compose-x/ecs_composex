@@ -17,7 +17,8 @@ x-cluster:
   MacroParameters:
     CreateExecLoggingLogGroup: true
     CreateExecLoggingBucket: true
-    CreateExecLoggingKmsKey: true
+    CreateExecLoggingKmsKey: false
+    AllowKmsKeyReuse: true
 
 
 version: "3.8"
