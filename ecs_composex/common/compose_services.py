@@ -1,4 +1,4 @@
-#  -*- coding: utf-8 -*-
+#   -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
@@ -12,6 +12,7 @@ import requests
 import urllib3
 from compose_x_common.compose_x_common import keyisset, keypresent
 from troposphere import (
+    AWS_ACCOUNT_ID,
     AWS_NO_VALUE,
     AWS_PARTITION,
     AWS_REGION,
@@ -43,7 +44,7 @@ from troposphere.ecs import SystemControl, TaskDefinition, Tmpfs, Ulimit, Volume
 from troposphere.iam import Policy, PolicyType
 from troposphere.logs import LogGroup
 
-from ecs_composex.common import FILE_PREFIX, LOG, NONALPHANUM
+from ecs_composex.common import FILE_PREFIX, LOG, NONALPHANUM, add_parameters
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME, Parameter
 from ecs_composex.common.compose_volumes import (
     ComposeVolume,
@@ -134,6 +135,7 @@ class ComposeService(object):
         self.env_files = []
         self.tmpfses = []
         self.ephemeral_storage = 0
+        self.x_ecs = set_else_none("x-ecs", self.definition, {})
         self.user = None
         self.group = None
         self.user_group = None
@@ -1278,6 +1280,115 @@ def identify_repo_credentials_secret(settings, task, secret_name):
     return None
 
 
+def set_ecs_cluster_logging_s3_access(settings, policy, role_stack):
+    if settings.ecs_cluster.log_bucket:
+        parameter = Parameter("EcsExecuteLoggingBucket", Type="String")
+        add_parameters(role_stack.stack_template, [parameter])
+        if isinstance(settings.ecs_cluster.log_bucket, FindInMap):
+            role_stack.Parameters.update(
+                {parameter.title: settings.ecs_cluster.log_bucket}
+            )
+        else:
+            role_stack.Parameters.update(
+                {parameter.title: Ref(settings.ecs_cluster.log_bucket.cfn_resource)}
+            )
+        policy.PolicyDocument["Statement"].append(
+            {
+                "Sid": "AllowDescribeS3Bucket",
+                "Action": ["s3:GetEncryptionConfiguration"],
+                "Resource": [
+                    Sub(f"arn:${{{AWS_PARTITION}}}:s3:::${{{parameter.title}}}")
+                ],
+                "Effect": "Allow",
+            }
+        )
+        policy.PolicyDocument["Statement"].append(
+            {
+                "Sid": "AllowS3BucketObjectWrite",
+                "Action": ["s3:PutObject"],
+                "Resource": [
+                    Sub(f"arn:${{{AWS_PARTITION}}}:s3:::${{{parameter.title}}}/*")
+                ],
+                "Effect": "Allow",
+            }
+        )
+
+
+def set_ecs_cluster_logging_kms_access(settings, policy, role_stack):
+    if settings.ecs_cluster.log_key:
+        parameter = Parameter("EcsExecuteLoggingEncryptionKey", Type="String")
+        add_parameters(role_stack.stack_template, [parameter])
+        if isinstance(settings.ecs_cluster.log_key, FindInMap):
+            role_stack.Parameters.update(
+                {parameter.title: settings.ecs_cluster.log_key}
+            )
+        else:
+            role_stack.Parameters.update(
+                {
+                    parameter.title: GetAtt(
+                        settings.ecs_cluster.log_key.cfn_resource, "Arn"
+                    )
+                }
+            )
+        policy.PolicyDocument["Statement"].append(
+            {
+                "Action": [
+                    "kms:Encrypt*",
+                    "kms:Decrypt*",
+                    "kms:ReEncrypt*",
+                    "kms:GenerateDataKey*",
+                    "kms:Describe*",
+                ],
+                "Resource": [Ref(parameter)],
+                "Effect": "Allow",
+            }
+        )
+
+
+def set_ecs_cluster_logging_cw_access(settings, policy, role_stack):
+    if settings.ecs_cluster.log_group:
+        parameter = Parameter("EcsExecuteLoggingGroup", Type="String")
+        add_parameters(role_stack.stack_template, [parameter])
+        if isinstance(settings.ecs_cluster.log_group, FindInMap):
+            role_stack.Parameters.update(
+                {parameter.title: settings.ecs_cluster.log_group}
+            )
+            arn_value = Sub(
+                f"arn:${{{AWS_PARTITION}}}:logs:${{{AWS_REGION}}}:"
+                f"${{{AWS_ACCOUNT_ID}}}:${{{parameter.title}}}:*"
+            )
+        else:
+            role_stack.Parameters.update(
+                {parameter.title: GetAtt(settings.ecs_cluster.log_group, "Arn")}
+            )
+            arn_value = Ref(parameter)
+        policy.PolicyDocument["Statement"].append(
+            {
+                "Sid": "AllowDescribingAllCWLogGroupsForSSMClient",
+                "Action": ["logs:DescribeLogGroups"],
+                "Resource": ["*"],
+                "Effect": "Allow",
+            }
+        )
+        policy.PolicyDocument["Statement"].append(
+            {
+                "Action": [
+                    "logs:CreateLogStream",
+                    "logs:DescribeLogStreams",
+                    "logs:PutLogEvents",
+                ],
+                "Resource": [arn_value],
+                "Effect": "Allow",
+            }
+        )
+
+
+def set_ecs_cluster_logging_access(settings, policy, role_stack):
+    set_ecs_cluster_logging_kms_access(settings, policy, role_stack)
+    set_ecs_cluster_logging_cw_access(settings, policy, role_stack)
+    set_ecs_cluster_logging_s3_access(settings, policy, role_stack)
+
+
 class ComposeFamily(object):
     """
     Class to group services logically to create the final ECS Service
@@ -1307,6 +1418,7 @@ class ComposeFamily(object):
         self.task_ephemeral_storage = 0
         self.exec_role = None
         self.task_role = None
+        self.enable_execute_command = False
         self.scalable_target = None
         self.ecs_service = None
         self.launch_type = self.default_launch_type
@@ -1392,6 +1504,81 @@ class ComposeFamily(object):
                         self.stack.Parameters.update(
                             {ecs_params.LAUNCH_TYPE.title: self.launch_type}
                         )
+
+    def set_enable_execute_command(self):
+        for svc in self.services:
+            if svc.is_aws_sidecar:
+                continue
+            if svc.x_ecs and keyisset("EnableExecuteCommand", svc.x_ecs):
+                self.enable_execute_command = True
+        if (
+            self.enable_execute_command
+            and self.task_definition
+            and self.task_definition.ContainerDefinitions
+        ):
+            for container in self.task_definition.ContainerDefinitions:
+                if hasattr(container, "LinuxParameters"):
+                    params = getattr(container, "LinuxParameters")
+                    setattr(params, "InitProcessEnabled", True)
+                else:
+                    setattr(
+                        container,
+                        "LinuxParameters",
+                        LinuxParameters(InitProcessEnabled=True),
+                    )
+
+    def apply_ecs_execute_command_permissions(self, settings):
+        """
+        Method to set the IAM Policies in place to allow ECS Execute SSM and Logging
+
+        :param settings:
+        :return:
+        """
+        policy_title = "EnableEcsExecuteCommand"
+        role_stack = self.task_role.stack
+        task_role = Ref(self.task_role.cfn_resource)
+        if policy_title not in role_stack.stack_template.resources:
+            policy = role_stack.stack_template.add_resource(
+                PolicyType(
+                    policy_title,
+                    PolicyName="EnableExecuteCommand",
+                    PolicyDocument={
+                        "Version": "2012-10-17",
+                        "Statement": [
+                            {
+                                "Effect": "Allow",
+                                "Action": [
+                                    "ssmmessages:CreateControlChannel",
+                                    "ssmmessages:CreateDataChannel",
+                                    "ssmmessages:OpenControlChannel",
+                                    "ssmmessages:OpenDataChannel",
+                                ],
+                                "Resource": "*",
+                            }
+                        ],
+                    },
+                    Roles=[task_role],
+                )
+            )
+            set_ecs_cluster_logging_access(settings, policy, role_stack)
+        elif policy_title in role_stack.stack_template.resources:
+            policy = role_stack.stack_template.resources[policy_title]
+            if hasattr(policy, "Roles"):
+                roles = getattr(policy, "Roles")
+                if roles:
+                    for role in roles:
+                        if (
+                            isinstance(role, Ref)
+                            and role.data["Ref"] != task_role.data["Ref"]
+                        ):
+                            roles.append(task_role)
+            else:
+                setattr(policy, "Roles", [task_role])
+        setattr(
+            self.ecs_service.ecs_service,
+            "EnableExecuteCommand",
+            self.enable_execute_command,
+        )
 
     def set_xray(self):
         """
@@ -2289,13 +2476,13 @@ class ComposeFamily(object):
         Function to perform a final validation of compute before rendering.
         :param ecs_composex.common.settings.ComposeXSettings settings:
         """
-        if settings.ecs_cluster_platform_override:
-            self.launch_type = settings.ecs_cluster_platform_override
+        if settings.ecs_cluster.platform_override:
+            self.launch_type = settings.ecs_cluster.platform_override
             if hasattr(
                 self.service_definition, "CapacityProviderStrategy"
             ) and isinstance(self.service_definition.CapacityProviderStrategy, list):
                 LOG.warning(
-                    f"{self.name} - Due to Launch Type override to {settings.ecs_cluster_platform_override}"
+                    f"{self.name} - Due to Launch Type override to {settings.ecs_cluster.platform_override}"
                     ", ignoring CapacityProviders"
                     f"{[cap.CapacityProvider for cap in self.service_definition.CapacityProviderStrategy]}"
                 )
@@ -2310,7 +2497,7 @@ class ComposeFamily(object):
                     )
         else:
             self.merge_capacity_providers()
-            self.validate_capacity_providers(settings.ecs_cluster_providers)
+            self.validate_capacity_providers(settings.ecs_cluster.capacity_providers)
             if self.stack:
                 LOG.info(
                     f"{self.name} - Updated {ecs_params.LAUNCH_TYPE.title} to"

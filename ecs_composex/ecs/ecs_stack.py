@@ -1,4 +1,4 @@
-﻿#  -*- coding: utf-8 -*-
+#   -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
@@ -66,7 +66,7 @@ def associate_services_to_root_stack(root_stack, settings, vpc_stack=None):
         )
         family.stack.Parameters.update(
             {
-                ecs_params.CLUSTER_NAME.title: settings.ecs_cluster,
+                ecs_params.CLUSTER_NAME.title: settings.ecs_cluster.cluster_identifier,
                 ecs_params.FARGATE_VERSION.title: FindInMap(
                     "ComposeXDefaults", "ECS", "PlatformVersion"
                 ),
@@ -84,10 +84,10 @@ def associate_services_to_root_stack(root_stack, settings, vpc_stack=None):
                 ],
             }
         )
-        if settings.ecs_cluster_platform_override:
-            family.launch_type = settings.ecs_cluster_platform_override
+        if settings.ecs_cluster.platform_override:
+            family.launch_type = settings.ecs_cluster.platform_override
             family.stack.Parameters.update(
-                {ecs_params.LAUNCH_TYPE.title: settings.ecs_cluster_platform_override}
+                {ecs_params.LAUNCH_TYPE.title: settings.ecs_cluster.platform_override}
             )
         if not vpc_stack:
             family.stack.no_vpc_parameters(settings)

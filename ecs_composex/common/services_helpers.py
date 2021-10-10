@@ -1,4 +1,4 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
@@ -180,6 +180,13 @@ def set_else_none(key, props, alt_value=None, eval_bool=False):
         return alt_value if not keypresent(key, props) else props[key]
 
 
+def get_closest_valid_log_retention_period(set_expiry):
+    return min(
+        LOG_GROUP_RETENTION.AllowedValues,
+        key=lambda x: abs(x - max([set_expiry])),
+    )
+
+
 def set_logging_expiry(service):
     """
     Method to reset the logging retention period to the closest valid value.
@@ -191,9 +198,7 @@ def set_logging_expiry(service):
     if service.x_logging and keyisset("RetentionInDays", service.x_logging):
         set_expiry = int(service.x_logging["RetentionInDays"])
         if set_expiry not in LOG_GROUP_RETENTION.AllowedValues:
-            closest_valid = min(
-                LOG_GROUP_RETENTION.AllowedValues,
-                key=lambda x: abs(x - max([set_expiry])),
-            )
+            closest_valid = get_closest_valid_log_retention_period(set_expiry)
+
     service.x_logging.update({"RetentionInDays": closest_valid})
     return closest_valid

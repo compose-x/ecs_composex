@@ -1,4 +1,3 @@
-
 x-cluster:
   Properties:
     CapacityProviders:
@@ -12,14 +11,22 @@ x-cluster:
       - Base: 2
         Weight: 2
         CapacityProvider: FARGATE_SPOT
-      - Base: 1
-        Weight: 1
+      - Weight: 1
         CapacityProvider: FARGATE
+  MacroParameters:
+    CreateExecLoggingLogGroup: true
+    CreateExecLoggingBucket: true
+    CreateExecLoggingKmsKey: true
+    AllowKmsKeyReuse: true
+    LogGroupRetentionInDays: 21
+
 
 version: "3.8"
 services:
   app03:
+    image: nginx
     x-ecs:
+      EnableExecuteCommand: true
       CapacityProviderStrategy:
         - CapacityProvider: FARGATE
           Base: 0
@@ -28,3 +35,7 @@ services:
           Base: 1
           Weight: 2
     working_dir: /tmp
+
+  app01:
+    x-ecs:
+      EnableExecuteCommand: true

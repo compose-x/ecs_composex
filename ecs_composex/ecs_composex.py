@@ -1,4 +1,4 @@
-#  -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
@@ -27,6 +27,7 @@ from ecs_composex.dashboards.dashboards_stack import XStack as DashboardsStack
 from ecs_composex.dns import DnsSettings
 from ecs_composex.dns.dns_records import DnsRecords
 from ecs_composex.ecs.ecs_cluster import add_ecs_cluster
+from ecs_composex.ecs.ecs_params import CLUSTER_NAME
 from ecs_composex.ecs.ecs_stack import associate_services_to_root_stack
 from ecs_composex.iam.iam_stack import XStack as IamStack
 from ecs_composex.vpc import vpc_params
@@ -182,6 +183,9 @@ def apply_x_configs_to_ecs(settings, root_stack):
             and not resource.is_void
         ):
             invoke_x_to_ecs(None, settings, root_stack, resource)
+    for resource in settings.x_resources_void:
+        res_type = list(resource.keys())[-1]
+        invoke_x_to_ecs(res_type, settings, root_stack, resource[res_type])
 
 
 def apply_x_to_x_configs(root_stack, settings):
@@ -251,7 +255,7 @@ def handle_new_xstack(
 
     LOG.debug(xstack, xstack.is_void)
     if xstack.is_void:
-        invoke_x_to_ecs(res_type, settings, services_stack, xstack)
+        settings.x_resources_void.append({res_type: xstack})
     elif (
         hasattr(xstack, "title")
         and hasattr(xstack, "stack_template")
@@ -392,6 +396,23 @@ def evaluate_ecr_configs(settings):
     return result
 
 
+def set_container_cluster_identifier(root_stack, settings):
+    """
+    Final pass at the top stacks parameters to set the ECS cluster parameter
+
+    :param ecs_composex.common.stacks.ComposeXStack root_stack:
+    :param ecs_composex.common.settings.ComposeXSettings settings:
+    """
+    for name, resource in root_stack.stack_template.resources.items():
+        if issubclass(type(resource), ComposeXStack):
+            if CLUSTER_NAME.title in [
+                param.title for param in resource.stack_template.parameters.values()
+            ]:
+                resource.Parameters.update(
+                    {CLUSTER_NAME.title: settings.ecs_cluster.cluster_identifier}
+                )
+
+
 def generate_full_template(settings):
     """
     Function to generate the root root_template
@@ -408,21 +429,22 @@ def generate_full_template(settings):
         stack_template=init_root_template(settings),
         file_name=settings.name,
     )
-    add_ecs_cluster(root_stack, settings)
-    iam_stack = IamStack("iam", settings)
+
     vpc_stack = add_vpc_to_root(root_stack, settings)
-    root_stack.stack_template.add_resource(iam_stack)
     settings.set_networks(vpc_stack, root_stack)
     dns_settings = DnsSettings(root_stack, settings, get_vpc_id(vpc_stack))
-    associate_services_to_root_stack(root_stack, settings, vpc_stack)
-    if keyisset(ACM_KEY, settings.compose_content):
-        init_acm_certs(settings, dns_settings, root_stack)
     add_x_resources(
         root_stack.stack_template,
         settings,
         root_stack,
         vpc_stack=vpc_stack,
     )
+    add_ecs_cluster(root_stack, settings)
+    iam_stack = IamStack("iam", settings)
+    root_stack.stack_template.add_resource(iam_stack)
+    associate_services_to_root_stack(root_stack, settings, vpc_stack)
+    if keyisset(ACM_KEY, settings.compose_content):
+        init_acm_certs(settings, dns_settings, root_stack)
     apply_x_configs_to_ecs(
         settings,
         root_stack,
@@ -445,5 +467,9 @@ def generate_full_template(settings):
     add_all_tags(root_stack.stack_template, settings)
     for family in settings.families.values():
         family.validate_compute_configuration_for_task(settings)
+        family.set_enable_execute_command()
+        if family.enable_execute_command:
+            family.apply_ecs_execute_command_permissions(settings)
         family.wait_for_all_policies()
+    set_container_cluster_identifier(root_stack, settings)
     return root_stack
