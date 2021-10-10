@@ -3,7 +3,7 @@ x-cluster:
     CapacityProviders:
       - FARGATE_SPOT
       - FARGATE
-    ClusterName: ANewCluster
+    ClusterName: ANewCluster1
     ClusterSettings:
       - Name: containerInsights
         Value: enabled
