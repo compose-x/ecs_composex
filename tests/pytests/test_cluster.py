@@ -1,4 +1,4 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille<john@compose-x.io>
 
@@ -12,7 +12,7 @@ from troposphere import Template
 from ecs_composex.common import keyisset
 from ecs_composex.common.settings import ComposeXSettings
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.ecs.ecs_cluster import add_ecs_cluster
+from ecs_composex.ecs.ecs_cluster import EcsCluster, add_ecs_cluster
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME
 
 
@@ -60,8 +60,10 @@ def test_ecs_cluster_lookup(existing_cluster):
         },
     )
     add_ecs_cluster(stack, settings)
-    assert keyisset(CLUSTER_NAME.title, stack.stack_template.mappings["Ecs"])
-    assert settings.ecs_cluster_platform_override is None
+    assert keyisset(
+        CLUSTER_NAME.title, stack.stack_template.mappings[EcsCluster.mappings_key]
+    )
+    assert settings.ecs_cluster.platform_override is None
 
 
 def test_nonexisting_cluster(nonexisting_cluster):
@@ -103,4 +105,4 @@ def test_existing_cluster_no_fargate(existing_cluster_no_fargate):
         },
     )
     add_ecs_cluster(stack, settings)
-    assert settings.ecs_cluster_platform_override == "EC2"
+    assert settings.ecs_cluster.platform_override == "EC2"
