@@ -1,4 +1,4 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
@@ -45,8 +45,8 @@ def create_s3_template(new_buckets, template):
         mono_template = True
 
     for bucket in new_buckets:
-        bucket = generate_bucket(bucket)
-        if bucket and bucket.cfn_resource:
+        generate_bucket(bucket)
+        if bucket.cfn_resource:
             bucket.init_outputs()
             bucket.generate_outputs()
             bucket_template = template
