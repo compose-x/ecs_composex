@@ -139,6 +139,42 @@ class EcsCluster(object):
         self.capacity_providers = DEFAULT_PROVIDERS
         self.cluster_identifier = Ref(self.cfn_resource)
 
+    def set_cluster_mappings(self, cluster_api_def):
+        """
+
+        :param cluster_api_def:
+        :return:
+        """
+        if keyisset("configuration", cluster_api_def):
+            config = cluster_api_def["configuration"]
+            if keyisset("executeCommandConfiguration", config):
+                exec_config = config["executeCommandConfiguration"]
+                if keyisset("kmsKeyId", exec_config):
+                    self.mappings[CLUSTER_NAME.title]["kmsKeyId"] = exec_config[
+                        "kmsKeyId"
+                    ]
+                    self.log_key = FindInMap(
+                        self.mappings_key, CLUSTER_NAME.title, "kmsKeyId"
+                    )
+                if keyisset("logConfiguration", exec_config):
+                    log_config = exec_config["logConfiguration"]
+                    if keyisset("cloudWatchLogGroupName", log_config):
+                        self.mappings[CLUSTER_NAME.title][
+                            "cloudWatchLogGroupName"
+                        ] = log_config["cloudWatchLogGroupName"]
+                        self.log_group = FindInMap(
+                            self.mappings_key,
+                            CLUSTER_NAME.title,
+                            "cloudWatchLogGroupName",
+                        )
+                    if keyisset("s3BucketName", log_config):
+                        self.mappings[CLUSTER_NAME.title]["s3BucketName"] = log_config[
+                            "s3BucketName"
+                        ]
+                        self.log_bucket = FindInMap(
+                            self.mappings_key, CLUSTER_NAME.title, "s3BucketName"
+                        )
+
     def lookup_cluster(self, session):
         """
         Function to find the ECS Cluster.
@@ -164,7 +200,16 @@ class EcsCluster(object):
         else:
             cluster_name = self.lookup
         try:
-            cluster_r = client.describe_clusters(clusters=[cluster_name])
+            cluster_r = client.describe_clusters(
+                clusters=[cluster_name],
+                include=[
+                    "SETTINGS",
+                    "CONFIGURATIONS",
+                    "ATTACHMENTS",
+                    "TAGS",
+                    "STATISTICS",
+                ],
+            )
             if not keyisset("clusters", cluster_r):
                 LOG.warning(
                     f"No cluster named {cluster_name} found. Creating one with default settings"
@@ -181,10 +226,12 @@ class EcsCluster(object):
                 self.mappings = {
                     CLUSTER_NAME.title: {"Name": the_cluster["clusterName"]}
                 }
+                self.set_cluster_mappings(the_cluster)
                 self.capacity_providers = evaluate_capacity_providers(the_cluster)
                 self.platform_override = evaluate_fargate_is_set(
                     self.capacity_providers, the_cluster
                 )
+
                 self.cluster_identifier = FindInMap(
                     self.mappings_key, CLUSTER_NAME.title, "Name"
                 )
@@ -345,7 +392,6 @@ class EcsCluster(object):
                     }
                 ]
             }
-            log_configuration["S3EncryptionEnabled"] = True
         self.log_bucket = Bucket(
             "ECSClusterLoggingBucket",
             bucket_config,
@@ -358,6 +404,7 @@ class EcsCluster(object):
         root_stack.stack_template.add_resource(self.log_bucket.cfn_resource)
         log_configuration["S3BucketName"] = Ref(self.log_bucket.cfn_resource)
         log_configuration["S3KeyPrefix"] = Sub(f"ecs/execute-logs/{cluster_name}/")
+        log_configuration["S3EncryptionEnabled"] = True
 
     def update_props_from_parameters(self, root_stack, settings):
         """

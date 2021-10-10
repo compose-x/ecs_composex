@@ -448,6 +448,6 @@ def generate_full_template(settings):
         family.validate_compute_configuration_for_task(settings)
         family.set_enable_execute_command()
         if family.enable_execute_command:
-            family.apply_ecs_execute_command_permissions(settings, iam_stack)
+            family.apply_ecs_execute_command_permissions(settings)
         family.wait_for_all_policies()
     return root_stack
