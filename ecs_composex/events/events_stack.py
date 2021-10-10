@@ -1,4 +1,4 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
@@ -109,14 +109,11 @@ class XStack(ComposeXStack):
         lookup_resources = set_lookup_resources(x_resources, RES_KEY)
         use_resources = set_use_resources(x_resources, RES_KEY, False)
         if new_resources or use_resources:
-            params = {
-                CLUSTER_NAME.title: settings.ecs_cluster,
-            }
             stack_template = build_template(
                 "Events rules for ComposeX",
                 [CLUSTER_NAME, FARGATE_VERSION],
             )
-            super().__init__(title, stack_template, stack_parameters=params, **kwargs)
+            super().__init__(title, stack_template, **kwargs)
             create_events_template(self, settings, new_resources)
         else:
             self.is_void = True

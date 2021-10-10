@@ -27,6 +27,7 @@ from ecs_composex.dashboards.dashboards_stack import XStack as DashboardsStack
 from ecs_composex.dns import DnsSettings
 from ecs_composex.dns.dns_records import DnsRecords
 from ecs_composex.ecs.ecs_cluster import add_ecs_cluster
+from ecs_composex.ecs.ecs_params import CLUSTER_NAME
 from ecs_composex.ecs.ecs_stack import associate_services_to_root_stack
 from ecs_composex.iam.iam_stack import XStack as IamStack
 from ecs_composex.vpc import vpc_params
@@ -392,6 +393,23 @@ def evaluate_ecr_configs(settings):
     return result
 
 
+def set_container_cluster_identifier(root_stack, settings):
+    """
+    Final pass at the top stacks parameters to set the ECS cluster parameter
+
+    :param ecs_composex.common.stacks.ComposeXStack root_stack:
+    :param ecs_composex.common.settings.ComposeXSettings settings:
+    """
+    for name, resource in root_stack.stack_template.resources.items():
+        if issubclass(type(resource), ComposeXStack):
+            if CLUSTER_NAME.title in [
+                param.title for param in resource.stack_template.parameters.values()
+            ]:
+                resource.Parameters.update(
+                    {CLUSTER_NAME.title: settings.ecs_cluster.cluster_identifier}
+                )
+
+
 def generate_full_template(settings):
     """
     Function to generate the root root_template
@@ -450,4 +468,5 @@ def generate_full_template(settings):
         if family.enable_execute_command:
             family.apply_ecs_execute_command_permissions(settings)
         family.wait_for_all_policies()
+    set_container_cluster_identifier(root_stack, settings)
     return root_stack
