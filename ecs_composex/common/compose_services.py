@@ -1511,18 +1511,21 @@ class ComposeFamily(object):
                 continue
             if svc.x_ecs and keyisset("EnableExecuteCommand", svc.x_ecs):
                 self.enable_execute_command = True
-        if self.enable_execute_command:
-            if self.task_definition and self.task_definition.ContainerDefinitions:
-                for container in self.task_definition.ContainerDefinitions:
-                    if hasattr(container, "LinuxParameters"):
-                        params = getattr(container, "LinuxParameters")
-                        setattr(params, "InitProcessEnabled", True)
-                    else:
-                        setattr(
-                            container,
-                            "LinuxParameters",
-                            LinuxParameters(InitProcessEnabled=True),
-                        )
+        if (
+            self.enable_execute_command
+            and self.task_definition
+            and self.task_definition.ContainerDefinitions
+        ):
+            for container in self.task_definition.ContainerDefinitions:
+                if hasattr(container, "LinuxParameters"):
+                    params = getattr(container, "LinuxParameters")
+                    setattr(params, "InitProcessEnabled", True)
+                else:
+                    setattr(
+                        container,
+                        "LinuxParameters",
+                        LinuxParameters(InitProcessEnabled=True),
+                    )
 
     def apply_ecs_execute_command_permissions(self, settings):
         """
@@ -1564,12 +1567,11 @@ class ComposeFamily(object):
                 roles = getattr(policy, "Roles")
                 if roles:
                     for role in roles:
-                        for srole in [task_role]:
-                            if (
-                                isinstance(role, Ref)
-                                and role.data["Ref"] != srole.data["Ref"]
-                            ):
-                                roles.append(srole)
+                        if (
+                            isinstance(role, Ref)
+                            and role.data["Ref"] != task_role.data["Ref"]
+                        ):
+                            roles.append(task_role)
             else:
                 setattr(policy, "Roles", [task_role])
         setattr(

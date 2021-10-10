@@ -139,11 +139,38 @@ class EcsCluster(object):
         self.capacity_providers = DEFAULT_PROVIDERS
         self.cluster_identifier = Ref(self.cfn_resource)
 
+    def import_log_config(self, exec_config):
+        """
+        Sets the properties for bucket and cw log group to use for ECS Execute
+
+        :param dict exec_config:
+        :return:
+        """
+        if keyisset("logConfiguration", exec_config):
+            log_config = exec_config["logConfiguration"]
+            if keyisset("cloudWatchLogGroupName", log_config):
+                self.mappings[CLUSTER_NAME.title][
+                    "cloudWatchLogGroupName"
+                ] = log_config["cloudWatchLogGroupName"]
+                self.log_group = FindInMap(
+                    self.mappings_key,
+                    CLUSTER_NAME.title,
+                    "cloudWatchLogGroupName",
+                )
+            if keyisset("s3BucketName", log_config):
+                self.mappings[CLUSTER_NAME.title]["s3BucketName"] = log_config[
+                    "s3BucketName"
+                ]
+                self.log_bucket = FindInMap(
+                    self.mappings_key, CLUSTER_NAME.title, "s3BucketName"
+                )
+
     def set_cluster_mappings(self, cluster_api_def):
         """
+        From the API info on the cluster, evaluate whether config is needed to enable
+        ECS Execution
 
-        :param cluster_api_def:
-        :return:
+        :param dict cluster_api_def:
         """
         if keyisset("configuration", cluster_api_def):
             config = cluster_api_def["configuration"]
@@ -156,28 +183,11 @@ class EcsCluster(object):
                     self.log_key = FindInMap(
                         self.mappings_key, CLUSTER_NAME.title, "kmsKeyId"
                     )
-                if keyisset("logConfiguration", exec_config):
-                    log_config = exec_config["logConfiguration"]
-                    if keyisset("cloudWatchLogGroupName", log_config):
-                        self.mappings[CLUSTER_NAME.title][
-                            "cloudWatchLogGroupName"
-                        ] = log_config["cloudWatchLogGroupName"]
-                        self.log_group = FindInMap(
-                            self.mappings_key,
-                            CLUSTER_NAME.title,
-                            "cloudWatchLogGroupName",
-                        )
-                    if keyisset("s3BucketName", log_config):
-                        self.mappings[CLUSTER_NAME.title]["s3BucketName"] = log_config[
-                            "s3BucketName"
-                        ]
-                        self.log_bucket = FindInMap(
-                            self.mappings_key, CLUSTER_NAME.title, "s3BucketName"
-                        )
+                self.import_log_config(exec_config)
 
     def lookup_cluster(self, session):
         """
-        Function to find the ECS Cluster.
+        Define the ECS Cluster properties and definitions from ECS API.
 
         :param boto3.session.Session session: Boto3 session to make API calls.
         :return: The cluster details
@@ -242,6 +252,15 @@ class EcsCluster(object):
     def set_kms_key(
         self, cluster_name, root_stack, settings, log_settings, log_configuration
     ):
+        """
+        Defines the KMS Key created to encrypt ECS Execute commands
+
+        :param str cluster_name:
+        :param ecs_composex.common.stacks.ComposeXStack root_stack:
+        :param ecs_composex.common.settings.ComposeXSettings settings:
+        :param dict log_settings:
+        :param dict log_configuration:
+        """
         action = [
             "kms:Encrypt*",
             "kms:Decrypt*",
@@ -362,6 +381,15 @@ class EcsCluster(object):
             log_configuration["CloudWatchEncryptionEnabled"] = True
 
     def set_log_bucket(self, cluster_name, root_stack, settings, log_configuration):
+        """
+        Defines the S3 bucket and settings to log ECS Execution commands
+
+        :param str cluster_name:
+        :param ecs_composex.common.stacks.ComposeXStack root_stack:
+        :param ecs_composex.common.settings.ComposeXSettings settings:
+        :param dict log_configuration:
+        :return:
+        """
         bucket_config = {
             "Properties": {
                 "AccessControl": "BucketOwnerFullControl",
@@ -408,10 +436,10 @@ class EcsCluster(object):
 
     def update_props_from_parameters(self, root_stack, settings):
         """
-        Method to adapt cluster config to settings
+        Aadapt cluster config to settings
 
-        :param settings:
-        :return:
+        :param ecs_composex.common.stacks.ComposeXStack root_stack:
+        :param ecs_composex.common.settings.ComposeXSettings settings:
         """
         cluster_name = (
             f"${{{AWS_STACK_NAME}}}"
@@ -447,6 +475,8 @@ class EcsCluster(object):
         """
         Function to create the cluster from provided properties.
 
+        :param ecs_composex.common.stacks.ComposeXStack root_stack:
+        :param ecs_composex.common.settings.ComposeXSettings settings:
         """
         props = import_record_properties(self.properties, Cluster)
         props["Metadata"] = metadata
