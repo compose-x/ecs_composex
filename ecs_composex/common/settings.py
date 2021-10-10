@@ -175,6 +175,7 @@ class ComposeXSettings(object):
         self.ecs_cluster_platform_override = None
         self.ecs_cluster_providers = []
         self.ignore_ecr_findings = keyisset(self.ecr_arg, kwargs)
+        self.x_resources_void = []
 
     def evaluate_private_namespace(self):
         """

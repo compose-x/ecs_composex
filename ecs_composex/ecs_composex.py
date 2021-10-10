@@ -183,6 +183,9 @@ def apply_x_configs_to_ecs(settings, root_stack):
             and not resource.is_void
         ):
             invoke_x_to_ecs(None, settings, root_stack, resource)
+    for resource in settings.x_resources_void:
+        res_type = list(resource.keys())[-1]
+        invoke_x_to_ecs(res_type, settings, root_stack, resource[res_type])
 
 
 def apply_x_to_x_configs(root_stack, settings):
@@ -252,7 +255,7 @@ def handle_new_xstack(
 
     LOG.debug(xstack, xstack.is_void)
     if xstack.is_void:
-        invoke_x_to_ecs(res_type, settings, services_stack, xstack)
+        settings.x_resources_void.append({res_type: xstack})
     elif (
         hasattr(xstack, "title")
         and hasattr(xstack, "stack_template")

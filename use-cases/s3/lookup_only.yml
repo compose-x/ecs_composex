@@ -1,4 +1,4 @@
-﻿version: "3.8"
+version: "3.8"
 
 x-s3:
   bucket-07:
@@ -25,4 +25,4 @@ x-s3:
         access:
           bucket: PowerUser
           objects: RW
-          s3-bucket-ssl-requests-only: true
+          enforceSecureConnection: true
