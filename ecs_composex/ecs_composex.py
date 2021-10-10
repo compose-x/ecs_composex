@@ -1,4 +1,4 @@
-#  -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
@@ -408,21 +408,22 @@ def generate_full_template(settings):
         stack_template=init_root_template(settings),
         file_name=settings.name,
     )
-    add_ecs_cluster(root_stack, settings)
-    iam_stack = IamStack("iam", settings)
+
     vpc_stack = add_vpc_to_root(root_stack, settings)
-    root_stack.stack_template.add_resource(iam_stack)
     settings.set_networks(vpc_stack, root_stack)
     dns_settings = DnsSettings(root_stack, settings, get_vpc_id(vpc_stack))
-    associate_services_to_root_stack(root_stack, settings, vpc_stack)
-    if keyisset(ACM_KEY, settings.compose_content):
-        init_acm_certs(settings, dns_settings, root_stack)
     add_x_resources(
         root_stack.stack_template,
         settings,
         root_stack,
         vpc_stack=vpc_stack,
     )
+    add_ecs_cluster(root_stack, settings)
+    iam_stack = IamStack("iam", settings)
+    root_stack.stack_template.add_resource(iam_stack)
+    associate_services_to_root_stack(root_stack, settings, vpc_stack)
+    if keyisset(ACM_KEY, settings.compose_content):
+        init_acm_certs(settings, dns_settings, root_stack)
     apply_x_configs_to_ecs(
         settings,
         root_stack,
@@ -445,5 +446,8 @@ def generate_full_template(settings):
     add_all_tags(root_stack.stack_template, settings)
     for family in settings.families.values():
         family.validate_compute_configuration_for_task(settings)
+        family.set_enable_execute_command()
+        if family.enable_execute_command:
+            family.apply_ecs_execute_command_permissions(settings)
         family.wait_for_all_policies()
     return root_stack

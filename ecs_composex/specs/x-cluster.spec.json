@@ -36,28 +36,33 @@
     },
     "MacroParameters": {
       "type": "object",
+      "dependencies": {
+        "AllowKmsKeyReuse": [
+          "CreateExecLoggingKmsKey"
+        ]
+      },
       "properties": {
         "CreateExecLoggingLogGroup": {
           "description": "Define whether Compose-X should create a CW LogGroup to log exec commands",
-          "type": [
-            "boolean",
-            "string"
-          ]
+          "type": "boolean"
+        },
+        "LogGroupRetentionInDays": {
+          "type": "number",
+          "default": 120
         },
         "CreateExecLoggingBucket": {
           "description": "Define whether Compose-X should create a new S3 bucket to log exec commands",
-          "type": [
-            "boolean",
-            "string"
-          ]
+          "type": "boolean"
+        },
+        "CreateExecLoggingKmsKey": {
+          "description": "Define whether Compose-X should create a new KMS Key to encrypt log exec commands",
+          "type": "boolean"
+        },
+        "AllowKmsKeyReuse": {
+          "type": "boolean",
+          "description": "Whether the KMS Key should by default allow AWS Logs use the key for any log group",
+          "default": false
         }
-      },
-      "CreateExecLoggingKmsKey": {
-        "description": "Define whether Compose-X should create a new KMS Key to encrypt log exec commands",
-        "type": [
-          "boolean",
-          "string"
-        ]
       }
     }
   },

@@ -1,4 +1,4 @@
-﻿#  -*- coding: utf-8 -*-
+#   -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
@@ -7,13 +7,36 @@ import re
 from botocore.exceptions import ClientError
 from compose_x_common.aws import get_assume_role_session
 from compose_x_common.compose_x_common import keyisset
-from troposphere import AWS_STACK_NAME, FindInMap, Ref
-from troposphere.ecs import CapacityProviderStrategyItem, Cluster
+from troposphere import (
+    AWS_ACCOUNT_ID,
+    AWS_NO_VALUE,
+    AWS_PARTITION,
+    AWS_REGION,
+    AWS_STACK_NAME,
+    AWS_URL_SUFFIX,
+    FindInMap,
+    GetAtt,
+    Ref,
+    Sub,
+)
+from troposphere.ecs import (
+    CapacityProviderStrategyItem,
+    Cluster,
+    ClusterConfiguration,
+    ExecuteCommandConfiguration,
+    ExecuteCommandLogConfiguration,
+    LogConfiguration,
+)
+from troposphere.logs import LogGroup
 
-from ecs_composex.common import LOG
+from ecs_composex.common import LOG, NONALPHANUM
+from ecs_composex.common.services_helpers import get_closest_valid_log_retention_period
 from ecs_composex.ecs import metadata
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME, CLUSTER_T
+from ecs_composex.kms.kms_stack import KmsKey
 from ecs_composex.resources_import import import_record_properties
+from ecs_composex.s3.s3_stack import Bucket
+from ecs_composex.s3.s3_template import evaluate_parameters, generate_bucket
 
 RES_KEY = "x-cluster"
 FARGATE_PROVIDER = "FARGATE"
@@ -27,21 +50,450 @@ DEFAULT_STRATEGY = [
 ]
 
 
-def get_default_cluster_config():
-    """
-    Function to get the default defined ECS Cluster configuration
+def get_kms_key_config(cluster_name, allow_kms_reuse=False):
+    return
 
-    :return: cluster
-    :rtype: troposphere.ecs.Cluster
+
+class EcsCluster(object):
+    """
+    Class to make it easier to manipulate the ECS Cluster to use and its various properties
     """
 
-    return Cluster(
-        CLUSTER_T,
-        ClusterName=Ref(AWS_STACK_NAME),
-        CapacityProviders=DEFAULT_PROVIDERS,
-        DefaultCapacityProviderStrategy=DEFAULT_STRATEGY,
-        Metadata=metadata,
-    )
+    mappings_key = "ecs"
+    res_key = "x-cluster"
+
+    def __init__(self, root_stack, definition=None, **kwargs):
+        self.cfn_resource = None
+        self.mappings = {}
+        self.log_group = None
+        self.log_bucket = None
+        self.log_prefix = None
+        self.log_key = None
+        self.stack = None
+        self.template = None
+        self.platform_override = None
+        self.capacity_providers = []
+        self.cluster_identifier = Ref(AWS_STACK_NAME)
+        if definition is None:
+            self.set_default_cluster_config(root_stack)
+            self.parameters = {}
+            self.platform_override = None
+        else:
+            self.definition = definition
+            self.use = (
+                self.definition["Use"] if keyisset("Use", self.definition) else {}
+            )
+            self.lookup = (
+                self.definition["Lookup"] if keyisset("Lookup", self.definition) else {}
+            )
+            self.properties = (
+                self.definition["Properties"]
+                if keyisset("Properties", self.definition)
+                else {}
+            )
+            self.parameters = (
+                self.definition["MacroParameters"]
+                if keyisset("MacroParameters", self.definition)
+                else {}
+            )
+
+    def set_from_definition(self, root_stack, session, settings):
+        if self.definition and self.use:
+            self.mappings = {CLUSTER_NAME.title: {"Name": self.use}}
+            root_stack.stack_template.add_mapping(self.mappings_key, self.mappings)
+        elif self.lookup:
+            self.lookup_cluster(session)
+            root_stack.stack_template.add_mapping(self.mappings_key, self.mappings)
+        elif self.properties:
+            self.define_cluster(root_stack, settings)
+
+    def set_default_cluster_config(self, root_stack):
+        """
+        Function to get the default defined ECS Cluster configuration
+
+        :return: cluster
+        :rtype: troposphere.ecs.Cluster
+        """
+        self.log_group = LogGroup(
+            "EcsExecLogGroup",
+            LogGroupName=Sub(f"ecs/execute-logs/${{{AWS_STACK_NAME}}}"),
+            RetentionInDays=120,
+        )
+        self.cfn_resource = Cluster(
+            CLUSTER_T,
+            ClusterName=Ref(AWS_STACK_NAME),
+            CapacityProviders=DEFAULT_PROVIDERS,
+            DefaultCapacityProviderStrategy=DEFAULT_STRATEGY,
+            Configuration=ClusterConfiguration(
+                ExecuteCommandConfiguration=ExecuteCommandConfiguration(
+                    Logging="DEFAULT",
+                    LogConfiguration=ExecuteCommandLogConfiguration(
+                        CloudWatchLogGroupName=Ref(self.log_group),
+                    ),
+                )
+            ),
+            Metadata=metadata,
+        )
+        root_stack.stack_template.add_resource(self.log_group)
+        root_stack.stack_template.add_resource(self.cfn_resource)
+        self.capacity_providers = DEFAULT_PROVIDERS
+        self.cluster_identifier = Ref(self.cfn_resource)
+
+    def import_log_config(self, exec_config):
+        """
+        Sets the properties for bucket and cw log group to use for ECS Execute
+
+        :param dict exec_config:
+        :return:
+        """
+        if keyisset("logConfiguration", exec_config):
+            log_config = exec_config["logConfiguration"]
+            if keyisset("cloudWatchLogGroupName", log_config):
+                self.mappings[CLUSTER_NAME.title][
+                    "cloudWatchLogGroupName"
+                ] = log_config["cloudWatchLogGroupName"]
+                self.log_group = FindInMap(
+                    self.mappings_key,
+                    CLUSTER_NAME.title,
+                    "cloudWatchLogGroupName",
+                )
+            if keyisset("s3BucketName", log_config):
+                self.mappings[CLUSTER_NAME.title]["s3BucketName"] = log_config[
+                    "s3BucketName"
+                ]
+                self.log_bucket = FindInMap(
+                    self.mappings_key, CLUSTER_NAME.title, "s3BucketName"
+                )
+
+    def set_cluster_mappings(self, cluster_api_def):
+        """
+        From the API info on the cluster, evaluate whether config is needed to enable
+        ECS Execution
+
+        :param dict cluster_api_def:
+        """
+        if keyisset("configuration", cluster_api_def):
+            config = cluster_api_def["configuration"]
+            if keyisset("executeCommandConfiguration", config):
+                exec_config = config["executeCommandConfiguration"]
+                if keyisset("kmsKeyId", exec_config):
+                    self.mappings[CLUSTER_NAME.title]["kmsKeyId"] = exec_config[
+                        "kmsKeyId"
+                    ]
+                    self.log_key = FindInMap(
+                        self.mappings_key, CLUSTER_NAME.title, "kmsKeyId"
+                    )
+                self.import_log_config(exec_config)
+
+    def lookup_cluster(self, session):
+        """
+        Define the ECS Cluster properties and definitions from ECS API.
+
+        :param boto3.session.Session session: Boto3 session to make API calls.
+        :return: The cluster details
+        :rtype: dict
+        """
+        if not isinstance(self.lookup, (str, dict)):
+            raise TypeError(
+                "The value for Lookup must be", str, dict, "Got", type(self.lookup)
+            )
+        client = session.client("ecs")
+        if isinstance(self.lookup, dict):
+            if keyisset("RoleArn", self.lookup):
+                ecs_session = get_assume_role_session(
+                    session,
+                    self.lookup["RoleArn"],
+                    session_name="EcsClusterLookup@ComposeX",
+                )
+                client = ecs_session.client("ecs")
+            cluster_name = self.lookup["ClusterName"]
+        else:
+            cluster_name = self.lookup
+        try:
+            cluster_r = client.describe_clusters(
+                clusters=[cluster_name],
+                include=[
+                    "SETTINGS",
+                    "CONFIGURATIONS",
+                    "ATTACHMENTS",
+                    "TAGS",
+                    "STATISTICS",
+                ],
+            )
+            if not keyisset("clusters", cluster_r):
+                LOG.warning(
+                    f"No cluster named {cluster_name} found. Creating one with default settings"
+                )
+                return None
+            elif (
+                keyisset("clusters", cluster_r)
+                and cluster_r["clusters"][0]["clusterName"] == cluster_name
+            ):
+                LOG.info(
+                    f"Found ECS Cluster {cluster_name}. Setting {CLUSTER_NAME.title} accordingly."
+                )
+                the_cluster = cluster_r["clusters"][0]
+                self.mappings = {
+                    CLUSTER_NAME.title: {"Name": the_cluster["clusterName"]}
+                }
+                self.set_cluster_mappings(the_cluster)
+                self.capacity_providers = evaluate_capacity_providers(the_cluster)
+                self.platform_override = evaluate_fargate_is_set(
+                    self.capacity_providers, the_cluster
+                )
+
+                self.cluster_identifier = FindInMap(
+                    self.mappings_key, CLUSTER_NAME.title, "Name"
+                )
+        except ClientError as error:
+            LOG.error(error)
+            raise
+
+    def set_kms_key(
+        self, cluster_name, root_stack, settings, log_settings, log_configuration
+    ):
+        """
+        Defines the KMS Key created to encrypt ECS Execute commands
+
+        :param str cluster_name:
+        :param ecs_composex.common.stacks.ComposeXStack root_stack:
+        :param ecs_composex.common.settings.ComposeXSettings settings:
+        :param dict log_settings:
+        :param dict log_configuration:
+        """
+        action = [
+            "kms:Encrypt*",
+            "kms:Decrypt*",
+            "kms:ReEncrypt*",
+            "kms:GenerateDataKey*",
+            "kms:Describe*",
+        ]
+        statement = [
+            {
+                "Sid": "Allow direct access to key metadata to the account",
+                "Effect": "Allow",
+                "Principal": {
+                    "AWS": Sub(
+                        f"arn:${{{AWS_PARTITION}}}:iam::${{{AWS_ACCOUNT_ID}}}:root"
+                    )
+                },
+                "Action": ["kms:*"],
+                "Resource": "*",
+                "Condition": {
+                    "StringEquals": {"kms:CallerAccount": Ref(AWS_ACCOUNT_ID)}
+                },
+            },
+            {
+                "Sid": "Allows SSM to use the KMS key to encrypt/decrypt messages",
+                "Effect": "Allow",
+                "Principal": {"Service": Sub(f"ssm.${{{AWS_URL_SUFFIX}}}")},
+                "Action": action,
+                "Resource": "*",
+            },
+        ]
+        if keyisset("CreateExecLoggingLogGroup", self.parameters):
+            statement.append(
+                {
+                    "Sid": "Allow aws logs to encrypt decrypt messages",
+                    "Effect": "Allow",
+                    "Principal": {
+                        "Service": Sub(f"logs.${{{AWS_REGION}}}.${{{AWS_URL_SUFFIX}}}")
+                    },
+                    "Action": action,
+                    "Resource": "*",
+                    "Condition": {
+                        "ArnLike": {
+                            "kms:EncryptionContext:aws:logs:arn": Sub(
+                                f"arn:${{{AWS_PARTITION}}}:logs:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:"
+                                "log-group:*"
+                                if keyisset("AllowKmsKeyReuse", self.parameters)
+                                else f"arn:${{{AWS_PARTITION}}}:logs:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:"
+                                f"log-group:/ecs/execute-logs/{cluster_name}"
+                            )
+                        }
+                    },
+                }
+            )
+        elif keyisset("AllowKmsKeyReuse", self.parameters):
+            statement.append(
+                {
+                    "Sid": "Allow aws logs to encrypt decrypt messages",
+                    "Effect": "Allow",
+                    "Principal": {
+                        "Service": Sub(f"logs.${{{AWS_REGION}}}.${{{AWS_URL_SUFFIX}}}")
+                    },
+                    "Action": action,
+                    "Resource": "*",
+                    "Condition": {
+                        "ArnLike": {
+                            "kms:EncryptionContext:aws:logs:arn": Sub(
+                                f"arn:${{{AWS_PARTITION}}}:logs:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:"
+                                "log-group:*"
+                            )
+                        }
+                    },
+                }
+            )
+        key_config = {
+            "Properties": {
+                "EnableKeyRotationg": True,
+                "Enabled": True,
+                "Description": Sub(
+                    f"ECS Cluster {cluster_name} execute logging encryption key"
+                ),
+                "KeyPolicy": {
+                    "Version": "2012-10-17",
+                    "Id": "ecscluster-logging",
+                    "Statement": statement,
+                },
+            },
+            "Settings": {"Alias": Sub(f"alias/ecs/execute-logs/{cluster_name}")},
+        }
+
+        self.log_key = KmsKey(
+            "ECSClusterLoggingKmsKey", key_config, "cluster", settings
+        )
+        self.log_key.stack = root_stack
+        self.log_key.define_kms_key()
+        root_stack.stack_template.add_resource(self.log_key.cfn_resource)
+        log_settings["KmsKeyId"] = GetAtt(self.log_key.cfn_resource, "Arn")
+        log_configuration["CloudWatchEncryptionEnabled"] = True
+
+    def set_log_group(self, cluster_name, root_stack, log_configuration):
+        self.log_group = LogGroup(
+            "EcsExecLogGroup",
+            LogGroupName=Sub(f"/ecs/execute-logs/{cluster_name}"),
+            RetentionInDays=120
+            if not keyisset("LogGroupRetentionInDays", self.parameters)
+            else get_closest_valid_log_retention_period(
+                self.parameters["LogGroupRetentionInDays"]
+            ),
+            KmsKeyId=GetAtt(self.log_key.cfn_resource, "Arn")
+            if isinstance(self.log_key, KmsKey)
+            else Ref(AWS_NO_VALUE),
+            DependsOn=[self.log_key.cfn_resource.title]
+            if isinstance(self.log_key, KmsKey)
+            else [],
+        )
+        root_stack.stack_template.add_resource(self.log_group)
+        log_configuration["CloudWatchLogGroupName"] = Ref(self.log_group)
+        if isinstance(self.log_key, KmsKey):
+            log_configuration["CloudWatchEncryptionEnabled"] = True
+
+    def set_log_bucket(self, cluster_name, root_stack, settings, log_configuration):
+        """
+        Defines the S3 bucket and settings to log ECS Execution commands
+
+        :param str cluster_name:
+        :param ecs_composex.common.stacks.ComposeXStack root_stack:
+        :param ecs_composex.common.settings.ComposeXSettings settings:
+        :param dict log_configuration:
+        :return:
+        """
+        bucket_config = {
+            "Properties": {
+                "AccessControl": "BucketOwnerFullControl",
+                "PublicAccessBlockConfiguration": {
+                    "BlockPublicAcls": True,
+                    "BlockPublicPolicy": True,
+                    "IgnorePublicAcls": True,
+                    "RestrictPublicBuckets": True,
+                },
+            },
+            "MacroParameters": {
+                "ExpandRegionToBucket": True,
+                "ExpandAccountIdToBucket": True,
+                "BucketPolicy": {
+                    "PredefinedBucketPolicies": ["enforceSecureConnection"]
+                },
+            },
+        }
+        if isinstance(self.log_key, KmsKey):
+            bucket_config["Properties"]["BucketEncryption"] = {
+                "ServerSideEncryptionConfiguration": [
+                    {
+                        "BucketKeyEnabled": True,
+                        "ServerSideEncryptionByDefault": {
+                            "SSEAlgorithm": "aws:kms",
+                            "KMSMasterKeyID": GetAtt(self.log_key.cfn_resource, "Arn"),
+                        },
+                    }
+                ]
+            }
+        self.log_bucket = Bucket(
+            "ECSClusterLoggingBucket",
+            bucket_config,
+            "cluster",
+            settings,
+        )
+        self.log_bucket.stack = root_stack
+        generate_bucket(self.log_bucket)
+        evaluate_parameters(self.log_bucket, root_stack.stack_template)
+        root_stack.stack_template.add_resource(self.log_bucket.cfn_resource)
+        log_configuration["S3BucketName"] = Ref(self.log_bucket.cfn_resource)
+        log_configuration["S3KeyPrefix"] = Sub(f"ecs/execute-logs/{cluster_name}/")
+        log_configuration["S3EncryptionEnabled"] = True
+
+    def update_props_from_parameters(self, root_stack, settings):
+        """
+        Aadapt cluster config to settings
+
+        :param ecs_composex.common.stacks.ComposeXStack root_stack:
+        :param ecs_composex.common.settings.ComposeXSettings settings:
+        """
+        cluster_name = (
+            f"${{{AWS_STACK_NAME}}}"
+            if isinstance(self.cfn_resource.ClusterName, (Ref, Sub, FindInMap))
+            else self.cfn_resource.ClusterName
+        )
+        self.log_group = Ref(AWS_NO_VALUE)
+        self.log_bucket = Ref(AWS_NO_VALUE)
+
+        log_settings = {}
+        log_configuration = {}
+        if keyisset("CreateExecLoggingKmsKey", self.parameters):
+            self.set_kms_key(
+                cluster_name, root_stack, settings, log_settings, log_configuration
+            )
+        if keyisset("CreateExecLoggingLogGroup", self.parameters):
+            self.set_log_group(cluster_name, root_stack, log_configuration)
+
+        if keyisset("CreateExecLoggingBucket", self.parameters):
+            self.set_log_bucket(cluster_name, root_stack, settings, log_configuration)
+
+        log_settings["LogConfiguration"] = ExecuteCommandLogConfiguration(
+            **log_configuration
+        )
+        log_settings["Logging"] = "OVERRIDE"
+        configuration = ClusterConfiguration(
+            ExecuteCommandConfiguration=ExecuteCommandConfiguration(**log_settings)
+        )
+        if not hasattr(self.cfn_resource, "Configuration"):
+            setattr(self.cfn_resource, "Configuration", configuration)
+
+    def define_cluster(self, root_stack, settings):
+        """
+        Function to create the cluster from provided properties.
+
+        :param ecs_composex.common.stacks.ComposeXStack root_stack:
+        :param ecs_composex.common.settings.ComposeXSettings settings:
+        """
+        props = import_record_properties(self.properties, Cluster)
+        props["Metadata"] = metadata
+        if not keyisset("ClusterName", props):
+            props["ClusterName"] = Ref(AWS_STACK_NAME)
+        if keyisset("DefaultCapacityProviderStrategy", props) and not keyisset(
+            "CapacityProviders", props
+        ):
+            raise KeyError(
+                "When specifying DefaultCapacityProviderStrategy"
+                " you must specify CapacityProviders"
+            )
+        self.cfn_resource = Cluster(CLUSTER_T, **props)
+        root_stack.stack_template.add_resource(self.cfn_resource)
+        if self.parameters:
+            self.update_props_from_parameters(root_stack, settings)
+        self.cluster_identifier = Ref(self.cfn_resource)
 
 
 def evaluate_fargate_is_set(providers, cluster_def):
@@ -96,88 +548,6 @@ def evaluate_capacity_providers(cluster_def):
     return providers
 
 
-def define_cluster_lookup_props(cluster_r, settings):
-    cluster_mapping = {}
-    if not cluster_r:
-        return cluster_mapping
-
-    cluster_mapping = {CLUSTER_NAME.title: {"Name": cluster_r["clusterName"]}}
-    settings.ecs_cluster_providers = evaluate_capacity_providers(cluster_r)
-    settings.ecs_cluster_platform_override = evaluate_fargate_is_set(
-        settings.ecs_cluster_providers, cluster_r
-    )
-    return cluster_mapping
-
-
-def lookup_ecs_cluster(session, cluster_lookup):
-    """
-    Function to find the ECS Cluster.
-
-    :param boto3.session.Session session: Boto3 session to make API calls.
-    :param str|dict cluster_lookup: Cluster lookup definition.
-    :return: The cluster details
-    :rtype: dict
-    """
-    if not isinstance(cluster_lookup, (str, dict)):
-        raise TypeError(
-            "The value for Lookup must be", str, dict, "Got", type(cluster_lookup)
-        )
-    client = session.client("ecs")
-    if isinstance(cluster_lookup, dict):
-        if keyisset("RoleArn", cluster_lookup):
-            ecs_session = get_assume_role_session(
-                session,
-                cluster_lookup["RoleArn"],
-                session_name="EcsClusterLookup@ComposeX",
-            )
-            client = ecs_session.client("ecs")
-        cluster_name = cluster_lookup["ClusterName"]
-    else:
-        cluster_name = cluster_lookup
-    try:
-        cluster_r = client.describe_clusters(clusters=[cluster_name])
-        if not keyisset("clusters", cluster_r):
-            LOG.warning(
-                f"No cluster named {cluster_name} found. Creating one with default settings"
-            )
-            return None
-        elif (
-            keyisset("clusters", cluster_r)
-            and cluster_r["clusters"][0]["clusterName"] == cluster_name
-        ):
-            LOG.info(
-                f"Found ECS Cluster {cluster_name}. Setting {CLUSTER_NAME.title} accordingly."
-            )
-            return cluster_r["clusters"][0]
-    except ClientError as error:
-        LOG.error(error)
-        raise
-
-
-def define_cluster(cluster_def):
-    """
-    Function to create the cluster from provided properties.
-
-    :param dict cluster_def:
-    :return: cluster
-    :rtype: troposphere.ecs.Cluster
-    """
-    compose_props = cluster_def["Properties"]
-    props = import_record_properties(compose_props, Cluster)
-    props["Metadata"] = metadata
-    if not keyisset("ClusterName", props):
-        props["ClusterName"] = Ref(AWS_STACK_NAME)
-    if keyisset("DefaultCapacityProviderStrategy", props) and not keyisset(
-        "CapacityProviders", props
-    ):
-        raise KeyError(
-            "When specifying DefaultCapacityProviderStrategy"
-            " you must specify CapacityProviders"
-        )
-    cluster = Cluster(CLUSTER_T, **props)
-    return cluster
-
-
 def import_from_x_aws_cluster(compose_content):
     """
     Function to handle and override settings if x-aws-cluster is defined.
@@ -199,21 +569,6 @@ def import_from_x_aws_cluster(compose_content):
     compose_content[RES_KEY] = {"Use": cluster_name}
 
 
-def new_cluster_settings_config(cluster_identifier, settings):
-    """
-    When creating a new cluster, define additional ComposeXSettings values.
-
-    :param troposphere.ecs.Cluster cluster_identifier:
-    :param ecs_composex.common.settings.ComposeXSettings settings:
-    """
-    settings.ecs_cluster = Ref(cluster_identifier)
-    settings.ecs_cluster_providers = (
-        cluster_identifier.CapacityProviders
-        if hasattr(cluster_identifier, "CapacityProviders")
-        else []
-    )
-
-
 def add_ecs_cluster(root_stack, settings):
     """
     Function to create the ECS Cluster.
@@ -221,36 +576,15 @@ def add_ecs_cluster(root_stack, settings):
     :param ecs_composex.common.stacks.ComposeXStack root_stack:
     :param ecs_composex.common.settings.ComposeXSettings settings:
     """
-    cluster_identifier = Ref(AWS_STACK_NAME)
-    cluster_mapping = {}
     if keyisset("x-aws-cluster", settings.compose_content):
         import_from_x_aws_cluster(settings.compose_content)
         LOG.info("x-aws-cluster was set. Overriding any defined x-cluster settings")
-    if not keyisset(RES_KEY, settings.compose_content):
+    if not keyisset(EcsCluster.res_key, settings.compose_content):
         LOG.info("No cluster information provided. Creating a new one")
-        cluster_identifier = root_stack.stack_template.add_resource(
-            get_default_cluster_config()
-        )
+        cluster = EcsCluster(root_stack)
     elif isinstance(settings.compose_content[RES_KEY], dict):
-        if keyisset("Use", settings.compose_content[RES_KEY]):
-            LOG.info(f"Using cluster {settings.compose_content[RES_KEY]['Use']}")
-            cluster_mapping = {
-                CLUSTER_NAME.title: {"Name": settings.compose_content[RES_KEY]["Use"]}
-            }
-        elif keyisset("Lookup", settings.compose_content[RES_KEY]):
-            cluster_r = lookup_ecs_cluster(
-                settings.session,
-                settings.compose_content[RES_KEY]["Lookup"],
-            )
-            cluster_mapping = define_cluster_lookup_props(cluster_r, settings)
-        elif keyisset("Properties", settings.compose_content[RES_KEY]):
-            cluster_identifier = define_cluster(settings.compose_content[RES_KEY])
-            root_stack.stack_template.add_resource(cluster_identifier)
-    if cluster_mapping:
-        root_stack.stack_template.add_mapping("Ecs", cluster_mapping)
-        cluster_identifier = FindInMap("Ecs", CLUSTER_NAME.title, "Name")
-
-    if isinstance(cluster_identifier, Cluster):
-        new_cluster_settings_config(cluster_identifier, settings)
+        cluster = EcsCluster(root_stack, settings.compose_content[EcsCluster.res_key])
+        cluster.set_from_definition(root_stack, settings.session, settings)
     else:
-        settings.ecs_cluster = cluster_identifier
+        raise LookupError("Unable to determine what to do for x-cluster")
+    settings.ecs_cluster = cluster

@@ -1,4 +1,4 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
@@ -84,7 +84,6 @@ def generate_bucket(bucket):
     props = import_record_properties(bucket.properties, s3.Bucket)
     props["BucketName"] = final_bucket_name
     bucket.cfn_resource = s3.Bucket(bucket.logical_name, **props)
-    return bucket
 
 
 def handle_predefined_policies(bucket, param_key, managed_policies_key, statement):

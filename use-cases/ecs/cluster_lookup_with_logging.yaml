@@ -1,0 +1,18 @@
+x-cluster:
+  Lookup:
+    ClusterName: ANewCluster
+
+version: "3.8"
+services:
+  app03:
+    image: nginx
+    x-ecs:
+      EnableExecuteCommand: true
+      CapacityProviderStrategy:
+        - CapacityProvider: FARGATE
+          Base: 0
+          Weight: 1
+        - CapacityProvider: FARGATE_SPOT
+          Base: 1
+          Weight: 2
+    working_dir: /tmp
