@@ -1,4 +1,4 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
@@ -48,4 +48,13 @@ TGT_GROUP_ARN = Parameter(TGT_GROUP_ARN_T, Type="String")
 TGT_GROUP_NAME_T = "TargetGroupName"
 TGT_GROUP_NAME = Parameter(
     TGT_GROUP_NAME_T, return_value="TargetGroupName", Type="String"
+)
+
+TGT_FULL_NAME_T = "TargetGroupFullName"
+TGT_FULL_NAME = Parameter(
+    TGT_FULL_NAME_T, return_value="TargetGroupFullName", Type="String"
+)
+
+TGT_LB_ARNS = Parameter(
+    "LoadBalancerArns", return_value="LoadBalancerArns", Type="CommaDelimitedList"
 )

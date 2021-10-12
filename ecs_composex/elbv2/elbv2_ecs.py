@@ -1,4 +1,4 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
@@ -7,17 +7,13 @@ import re
 from compose_x_common.compose_x_common import keyisset
 from troposphere import AWS_NO_VALUE, GetAtt, Ref
 from troposphere.ecs import LoadBalancer as EcsLb
-from troposphere.elasticloadbalancingv2 import (
-    Matcher,
-    TargetGroup,
-    TargetGroupAttribute,
-)
+from troposphere.elasticloadbalancingv2 import Matcher, TargetGroupAttribute
 
 from ecs_composex.common import LOG, add_parameters
 from ecs_composex.common.cfn_params import Parameter
-from ecs_composex.common.outputs import ComposeXOutput
 from ecs_composex.ecs.ecs_params import ELB_GRACE_PERIOD
-from ecs_composex.elbv2.elbv2_params import TGT_GROUP_ARN
+from ecs_composex.elbv2.elbv2_params import LB_SG_ID, TGT_GROUP_ARN
+from ecs_composex.elbv2.elbv2_stack import ComposeTargetGroup
 from ecs_composex.vpc.vpc_params import SG_ID_TYPE, VPC_ID
 
 
@@ -223,19 +219,16 @@ def handle_sg_lb_ingress_to_service(resource, family, resources_stack):
     """
     if resource.is_nlb():
         return
-    lb_sg_param = Parameter(f"{resource.lb_sg.title}", Type=SG_ID_TYPE)
+    lb_sg_param = resource.attributes_outputs[LB_SG_ID]["ImportParameter"]
     add_parameters(family.template, [lb_sg_param])
     family.service_config.network.add_lb_ingress(
         family, lb_name=resource.logical_name, lb_sg_ref=Ref(lb_sg_param)
     )
     family.stack_parameters.update(
-        {
-            f"{resource.lb_sg.title}": GetAtt(
-                resources_stack.title,
-                f"Outputs.{resource.lb_sg.title}",
-            )
-        }
+        {lb_sg_param.title: resource.attributes_outputs[LB_SG_ID]["ImportValue"]}
     )
+    if resources_stack.title not in family.stack.DependsOn:
+        family.stack.DependsOn.append(resources_stack.title)
 
 
 def validate_target_group_attributes(target_attributes, validation, lb_type):
@@ -355,28 +348,26 @@ def define_service_target_group(
     props["TargetType"] = "ip"
     import_target_group_attributes(props, target_definition, resource, service)
     validate_props_and_service_definition(props, service)
-    target_group = TargetGroup(
+    target_group = ComposeTargetGroup(
         f"Tgt{resource.logical_name}{family.logical_name}{service.logical_name}{props['Port']}",
+        elbv2=resource,
+        family=family,
+        stack=resource.stack,
         VpcId=Ref(VPC_ID),
         **props,
     )
+    target_group.init_outputs()
+    target_group.generate_outputs()
     resources_root_stack.stack_template.add_resource(target_group)
-    resources_root_stack.stack_template.add_output(
-        ComposeXOutput(
-            target_group,
-            [("", TGT_GROUP_ARN.title, Ref(target_group))],
-            export=False,
-        ).outputs
-    )
-    tgt_parameter = Parameter(
-        f"{target_group.title}Arn", Type="String", template=family.template
-    )
+    resources_root_stack.stack_template.add_output(target_group.outputs)
+    family.target_groups.append(target_group)
+    tgt_parameter = target_group.attributes_outputs[TGT_GROUP_ARN]["ImportParameter"]
+    add_parameters(family.template, [tgt_parameter])
     family.stack_parameters.update(
         {
-            tgt_parameter.title: GetAtt(
-                resources_root_stack.title,
-                f"Outputs.{target_group.title}{TGT_GROUP_ARN.title}",
-            )
+            tgt_parameter.title: target_group.attributes_outputs[TGT_GROUP_ARN][
+                "ImportValue"
+            ],
         }
     )
     service_lb = EcsLb(

@@ -1,4 +1,4 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
@@ -157,6 +157,6 @@ def init_acm_certs(settings, dns_settings, root_stack):
         mappings = create_acm_mappings(lookup_resources, settings)
         if mappings:
             root_stack.stack_template.add_mapping(MOD_KEY, mappings)
-            settings.mappings = mappings
+            settings.mappings[RES_KEY] = mappings
     if use_resources:
         warnings.warn("x-acm.Use is not yet supported.")

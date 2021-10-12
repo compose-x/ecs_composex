@@ -1423,6 +1423,7 @@ class ComposeFamily(object):
         self.ecs_service = None
         self.launch_type = self.default_launch_type
         self.ecs_capacity_providers = []
+        self.target_groups = []
         self.set_compute_platform()
         self.task_logging_options = {}
         self.stack_parameters = {}

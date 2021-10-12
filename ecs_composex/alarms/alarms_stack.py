@@ -1,4 +1,4 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
@@ -14,8 +14,12 @@ from troposphere import AWS_REGION, AWS_STACK_ID, Join, Ref, Select, Split, Sub
 from troposphere.cloudwatch import Alarm as CWAlarm
 from troposphere.cloudwatch import CompositeAlarm
 
+from ecs_composex.alarms.alarms_elbv2 import (
+    handle_elbv2_dimension_mapping,
+    handle_elbv2_target_group_dimensions,
+)
 from ecs_composex.alarms.alarms_params import RES_KEY
-from ecs_composex.common import build_template
+from ecs_composex.common import build_template, setup_logging
 from ecs_composex.common.compose_resources import (
     XResource,
     set_lookup_resources,
@@ -25,6 +29,8 @@ from ecs_composex.common.compose_resources import (
 )
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.resources_import import import_record_properties
+
+LOG = setup_logging()
 
 
 def map_expression_to_alarms(expression, alarms):
@@ -224,3 +230,44 @@ class XStack(ComposeXStack):
                 f"{RES_KEY} - Lookup and Use are not supported. "
                 "You can only create new resources"
             )
+
+    def handle_dimensions(self, resource, root_stack, settings):
+        """
+        Handles the dimensions settings and tries to resolve
+
+        :param Alarm resource:
+        :param ecs_composex.common.stacks.ComposeXStacks root_stack:
+        :param ecs_composex.common.settings.ComposeXSettings settings:
+        """
+        if not hasattr(resource.cfn_resource, "Dimensions"):
+            print(f"{self.title} - {resource.name} - No Dimensions defined")
+        dimensions = getattr(resource.cfn_resource, "Dimensions")
+        namespace = resource.cfn_resource.Namespace
+        if namespace == "AWS/ApplicationELB" or namespace == "AWS/NetworkELB":
+            for dimension in dimensions:
+                if dimension.Name == "LoadBalancer" and dimension.Value.startswith(
+                    "x-elbv2::"
+                ):
+                    handle_elbv2_dimension_mapping(self, dimension, resource, settings)
+                elif dimension.Name == "TargetGroup":
+                    handle_elbv2_target_group_dimensions(
+                        self, dimension, resource, settings
+                    )
+
+    def add_xdependencies(self, root_stack, settings):
+        """
+        Function to cross reference alarm settings with other resources
+
+        :param ecs_composex.common.stacks.ComposeXStacks root_stack:
+        :param ecs_composex.common.settings.ComposeXSettings settings:
+        """
+        x_resources = settings.compose_content[RES_KEY].values()
+        new_resources = set_new_resources(x_resources, RES_KEY, False)
+        for resource in new_resources:
+            if isinstance(resource, Alarm) and isinstance(
+                resource.cfn_resource, CompositeAlarm
+            ):
+                continue
+            if not resource.cfn_resource:
+                continue
+            self.handle_dimensions(resource, root_stack, settings)
