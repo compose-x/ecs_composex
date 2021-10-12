@@ -1,4 +1,4 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
@@ -373,11 +373,19 @@ def s3_to_ecs(resources, services_stack, res_root_stack, settings):
     :param ecs_composex.common.settings.ComposeXSettings settings: ComposeX Settings for execution
     :return:
     """
-    new_resources = [
-        resources[res_name]
-        for res_name in resources
-        if resources[res_name].cfn_resource
-    ]
+    if hasattr(res_root_stack, "is_void") and not res_root_stack.is_void:
+        new_resources = [
+            resources[res_name]
+            for res_name in resources
+            if resources[res_name].cfn_resource
+        ]
+        for res in new_resources:
+            LOG.info(f"Creating {res.name} as {res.logical_name}")
+            handle_new_resources(
+                res,
+                services_stack,
+                res_root_stack,
+            )
     lookup_resources = [
         resources[res_name]
         for res_name in resources
@@ -388,13 +396,6 @@ def s3_to_ecs(resources, services_stack, res_root_stack, settings):
         for name in resources
         if resources[name].use and resources[name].mappings
     ]
-    for res in new_resources:
-        LOG.info(f"Creating {res.name} as {res.logical_name}")
-        handle_new_resources(
-            res,
-            services_stack,
-            res_root_stack,
-        )
     for res in lookup_resources:
         assign_lookup_buckets(res, settings.mappings[RES_KEY])
     for res in use_resources:

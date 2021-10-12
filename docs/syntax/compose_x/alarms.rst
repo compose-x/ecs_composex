@@ -1,4 +1,4 @@
-﻿.. meta::
+.. meta::
     :description: ECS Compose-X ACM syntax reference
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, autoscaling, cloudwatch, alarms, sns, topics
 
@@ -49,6 +49,42 @@ See `AWS CW Alarms definition`_ and `AWS CW Composite Alarms definition`_
 
     You can only create new alarms. To use existing alarms with new services would required to modify
     the actions of that alarm, which would be an external change to any IaC.
+
+
+Linking to x-resources properties
+===================================
+
+.. hint::
+
+    This feature only works for **Dimensions** and **Namespace** at the moment. Future versions will add support
+    for alarms defined using **Metrics** (mutually exclusive to **Namespace**)
+
+When defining new alarms, you probably want to create these alarms for resources in the compose file, i.e, x-elbv2.
+
+So from the Namespace, x-alarms will then scan resources which were defined in the compose definitions and for the
+dimensions you wish to import the value from, interpolate and modify the final CloudFormation template to link automatically
+to that resource.
+
+Supported x-resources
+-------------------------
+
+* `x-elbv2`_ (requires AWS/ApplicationELB or AWS/NetworkELB as value for Namespace)
+
+x-elbv2
+^^^^^^^^^^^
+
+Marker for LB: **x-elbv2::<lb_name>**
+Marker for Target Group: **x-elbv2::<lb_name>::<service>::<port>**
+
+.. hint::
+
+    The port is required as you might have multiple targets for the same given service family.
+
+
+.. literalinclude:: ../../../use-cases/elbv2/create_only_with_alarms.yml
+    :language: yaml
+    :caption: Example test file (truncated) use-cases/elbv2/create_only_with_alarms.yml
+    :lines: 22-25,86-89,106-110,123-
 
 
 MacroParameters

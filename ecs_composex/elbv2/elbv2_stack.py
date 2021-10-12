@@ -17,6 +17,7 @@ from troposphere import (
     AWS_STACK_NAME,
     FindInMap,
     GetAtt,
+    Output,
     Ref,
     Select,
     Sub,
@@ -41,6 +42,7 @@ from troposphere.elasticloadbalancingv2 import (
     PathPatternConfig,
     RedirectConfig,
     SubnetMapping,
+    TargetGroup,
     TargetGroupTuple,
 )
 
@@ -62,14 +64,17 @@ from ecs_composex.common.compose_resources import (
     set_resources,
     set_use_resources,
 )
-from ecs_composex.common.outputs import ComposeXOutput
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.elbv2.elbv2_params import (
     LB_DNS_NAME,
     LB_DNS_ZONE_ID,
+    LB_NAME,
     LB_SG_ID,
     MOD_KEY,
     RES_KEY,
+    TGT_FULL_NAME,
+    TGT_GROUP_ARN,
+    TGT_GROUP_NAME,
 )
 from ecs_composex.ingress_settings import Ingress, set_service_ports
 from ecs_composex.resources_import import import_record_properties
@@ -594,6 +599,84 @@ def map_service_target(lb, name, l_service_def):
             break
 
 
+class ComposeTargetGroup(TargetGroup):
+    """
+    Class to manage Target Groups
+    """
+
+    def __init__(self, title, elbv2, family, stack, **kwargs):
+        self.family = family
+        self.stack = stack
+        self.outputs = []
+        self.elbv2 = elbv2
+        self.output_properties = {}
+        self.attributes_outputs = {}
+        super().__init__(title, **kwargs)
+
+    def init_outputs(self):
+        self.output_properties = {
+            TGT_GROUP_ARN: (self.title, self, Ref, None),
+            TGT_GROUP_NAME: (
+                f"{self.title}{TGT_GROUP_NAME.return_value}",
+                self,
+                GetAtt,
+                TGT_GROUP_NAME.return_value,
+                None,
+            ),
+            TGT_FULL_NAME: (
+                f"{self.title}{TGT_FULL_NAME.return_value}",
+                self,
+                GetAtt,
+                TGT_FULL_NAME.return_value,
+                None,
+            ),
+        }
+
+    def generate_outputs(self):
+        for (
+            attribute_parameter,
+            output_definition,
+        ) in self.output_properties.items():
+            output_name = f"{self.title}{attribute_parameter.title}"
+            value = self.set_new_resource_outputs(output_definition)
+            self.attributes_outputs[attribute_parameter] = {
+                "Name": output_name,
+                "Output": Output(output_name, Value=value),
+                "ImportParameter": Parameter(
+                    output_name,
+                    return_value=attribute_parameter.return_value,
+                    Type=attribute_parameter.Type,
+                ),
+                "ImportValue": GetAtt(
+                    self.stack,
+                    f"Outputs.{output_name}",
+                ),
+                "Original": attribute_parameter,
+            }
+        for attr in self.attributes_outputs.values():
+            if keyisset("Output", attr):
+                self.outputs.append(attr["Output"])
+
+    def set_new_resource_outputs(self, output_definition):
+        """
+        Method to define the outputs for the resource when new
+        """
+        if output_definition[2] is Ref:
+            value = Ref(output_definition[1])
+        elif output_definition[2] is GetAtt:
+            value = GetAtt(output_definition[1], output_definition[3])
+        elif output_definition[2] is Sub:
+            value = Sub(output_definition[3])
+        else:
+            raise TypeError(
+                f"3rd argument for {output_definition[0]} must be one of",
+                (Ref, GetAtt, Sub),
+                "Got",
+                output_definition[2],
+            )
+        return value
+
+
 class ComposeListener(Listener):
     attributes = [
         "Condition",
@@ -832,6 +915,12 @@ class Elbv2(XResource):
                 self.cfn_resource,
                 GetAtt,
                 LB_DNS_ZONE_ID.return_value,
+            ),
+            LB_NAME: (
+                f"{self.logical_name}{LB_NAME.return_value}",
+                self.cfn_resource,
+                GetAtt,
+                LB_NAME.return_value,
             ),
         }
 
@@ -1174,17 +1263,23 @@ class Elbv2(XResource):
         :return:
         """
         template.add_resource(self.lb)
+        self.init_outputs()
         if self.lb_sg and isinstance(self.lb_sg, SecurityGroup):
-            template.add_resource(self.lb_sg)
-            template.add_output(
-                ComposeXOutput(
-                    self.lb_sg,
-                    [(LB_SG_ID, "", GetAtt(self.lb_sg, "GroupId"))],
-                    export=False,
-                ).outputs
+            self.output_properties.update(
+                {
+                    LB_SG_ID: (
+                        f"{self.logical_name}{LB_SG_ID.return_value}",
+                        self.lb_sg,
+                        GetAtt,
+                        LB_SG_ID.return_value,
+                        None,
+                    )
+                }
             )
+            template.add_resource(self.lb_sg)
         for eip in self.lb_eips:
             template.add_resource(eip)
+        self.generate_outputs()
 
 
 def init_elbv2_template():
@@ -1225,3 +1320,5 @@ class XStack(ComposeXStack):
             resource.set_lb_definition(settings)
             resource.sort_alb_ingress(settings, stack_template)
         super().__init__(title, stack_template, stack_parameters=lb_input, **kwargs)
+        for resource in new_resources:
+            resource.stack = self

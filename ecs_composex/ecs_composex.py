@@ -141,13 +141,14 @@ def get_mod_class(module_name):
     return the_class
 
 
-def invoke_x_to_ecs(module_name, settings, services_stack, resource):
+def invoke_x_to_ecs(module_name, services_stack, resource, settings):
     """
     Function to associate X resources to Services
 
+    :param None,str module_name: The name of the module managing the resource type
     :param ecs_composex.common.settings.ComposeXSettings settings: The compose file content
     :param ecs_composex.ecs.ServicesStack services_stack: root stack for services.
-    :param resource: The XStack resource
+    :param ecs_composex.common.stacks.ComposeXStack resource: The XStack resource of the module
     :return:
     """
     if module_name is None:
@@ -169,23 +170,25 @@ def invoke_x_to_ecs(module_name, settings, services_stack, resource):
 def apply_x_configs_to_ecs(settings, root_stack):
     """
     Function that evaluates only the x- resources of the root template and iterates over the resources.
-    If there is an implemented module in ECS ComposeX for that resource to map to the ECS Services, it will
+    If there is an implemented module in ECS ComposeX for that resource_stack to map to the ECS Services, it will
     execute the function available in the module to apply defined settings to the services stack.
+
+    The root_stack is used as the parent stack to the services.
 
     :param ecs_composex.common.settings.ComposeXSettings settings: The compose file content
     :param ecs_composex.ecs.ServicesStack root_stack: root stack for services.
     """
     for resource_name in root_stack.stack_template.resources:
-        resource = root_stack.stack_template.resources[resource_name]
+        resource_stack = root_stack.stack_template.resources[resource_name]
         if (
-            issubclass(type(resource), ComposeXStack)
-            and resource.name in SUPPORTED_X_MODULE_NAMES
-            and not resource.is_void
+            issubclass(type(resource_stack), ComposeXStack)
+            and resource_stack.name in SUPPORTED_X_MODULE_NAMES
+            and not resource_stack.is_void
         ):
-            invoke_x_to_ecs(None, settings, root_stack, resource)
-    for resource in settings.x_resources_void:
-        res_type = list(resource.keys())[-1]
-        invoke_x_to_ecs(res_type, settings, root_stack, resource[res_type])
+            invoke_x_to_ecs(None, root_stack, resource_stack, settings)
+    for resource_stack in settings.x_resources_void:
+        res_type = list(resource_stack.keys())[-1]
+        invoke_x_to_ecs(res_type, root_stack, resource_stack[res_type], settings)
 
 
 def apply_x_to_x_configs(root_stack, settings):
@@ -429,7 +432,6 @@ def generate_full_template(settings):
         stack_template=init_root_template(settings),
         file_name=settings.name,
     )
-
     vpc_stack = add_vpc_to_root(root_stack, settings)
     settings.set_networks(vpc_stack, root_stack)
     dns_settings = DnsSettings(root_stack, settings, get_vpc_id(vpc_stack))
@@ -443,13 +445,13 @@ def generate_full_template(settings):
     iam_stack = IamStack("iam", settings)
     root_stack.stack_template.add_resource(iam_stack)
     associate_services_to_root_stack(root_stack, settings, vpc_stack)
+    set_services_alarms(settings)
     if keyisset(ACM_KEY, settings.compose_content):
         init_acm_certs(settings, dns_settings, root_stack)
     apply_x_configs_to_ecs(
         settings,
         root_stack,
     )
-    apply_x_to_x_configs(root_stack, settings)
     if settings.use_appmesh:
         mesh = Mesh(
             settings.compose_content["x-appmesh"],
@@ -461,7 +463,6 @@ def generate_full_template(settings):
     dns_records = DnsRecords(settings)
     dns_records.associate_records_to_resources(settings, root_stack, dns_settings)
     dns_settings.associate_settings_to_nested_stacks(root_stack)
-    set_services_alarms(settings)
     if keyisset("x-dashboards", settings.compose_content):
         DashboardsStack("dashboards", settings)
     add_all_tags(root_stack.stack_template, settings)
@@ -471,5 +472,6 @@ def generate_full_template(settings):
         if family.enable_execute_command:
             family.apply_ecs_execute_command_permissions(settings)
         family.wait_for_all_policies()
+    apply_x_to_x_configs(root_stack, settings)
     set_container_cluster_identifier(root_stack, settings)
     return root_stack
