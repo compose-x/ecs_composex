@@ -6,7 +6,6 @@
 Functions to pass permissions to Services to access S3 buckets.
 """
 import re
-import warnings
 
 from compose_x_common.aws.kms import (
     KMS_ALIAS_ARN_RE,

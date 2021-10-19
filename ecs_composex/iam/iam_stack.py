@@ -5,7 +5,7 @@
 
 from compose_x_common.compose_x_common import keyisset
 from troposphere import GetAtt, Output, Ref, Sub
-from troposphere.iam import Policy, PolicyType
+from troposphere.iam import Policy
 from troposphere.iam import Role as IamRole
 
 from ecs_composex.common import add_outputs, add_parameters, build_template

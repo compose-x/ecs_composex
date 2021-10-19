@@ -5,16 +5,15 @@
 import re
 
 from compose_x_common.compose_x_common import keyisset
-from troposphere import AWS_NO_VALUE, GetAtt, Ref
+from troposphere import AWS_NO_VALUE, Ref
 from troposphere.ecs import LoadBalancer as EcsLb
 from troposphere.elasticloadbalancingv2 import Matcher, TargetGroupAttribute
 
 from ecs_composex.common import LOG, add_parameters
-from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.ecs.ecs_params import ELB_GRACE_PERIOD
 from ecs_composex.elbv2.elbv2_params import LB_SG_ID, TGT_GROUP_ARN
 from ecs_composex.elbv2.elbv2_stack import ComposeTargetGroup
-from ecs_composex.vpc.vpc_params import SG_ID_TYPE, VPC_ID
+from ecs_composex.vpc.vpc_params import VPC_ID
 
 
 def validate_tcp_health_counts(props):

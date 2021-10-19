@@ -6,9 +6,8 @@
 Core ECS Template building
 """
 
-from troposphere import GetAtt, Ref, Sub, Tags
-from troposphere.ec2 import SecurityGroup
-from troposphere.iam import Policy, PolicyType
+from troposphere import GetAtt, Ref, Sub
+from troposphere.iam import PolicyType
 from troposphere.logs import LogGroup
 
 from ecs_composex.common import build_template

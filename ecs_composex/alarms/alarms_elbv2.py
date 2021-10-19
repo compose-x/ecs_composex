@@ -10,7 +10,7 @@ https://docs.aws.amazon.com/elasticloadbalancing/latest/network/load-balancer-cl
 
 import re
 
-from troposphere import GetAtt, Ref, Sub
+from troposphere import Ref
 
 from ecs_composex.common import add_parameters, setup_logging
 from ecs_composex.elbv2.elbv2_params import LB_NAME, TGT_FULL_NAME

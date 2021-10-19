@@ -25,11 +25,10 @@ from troposphere.ecs import (
     ClusterConfiguration,
     ExecuteCommandConfiguration,
     ExecuteCommandLogConfiguration,
-    LogConfiguration,
 )
 from troposphere.logs import LogGroup
 
-from ecs_composex.common import LOG, NONALPHANUM
+from ecs_composex.common import LOG
 from ecs_composex.common.services_helpers import get_closest_valid_log_retention_period
 from ecs_composex.ecs import metadata
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME, CLUSTER_T
