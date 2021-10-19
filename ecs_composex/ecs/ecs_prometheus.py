@@ -1,4 +1,4 @@
-﻿#   -*- coding: utf-8 -*-
+#   -*- coding: utf-8 -*-
 #  SPDX-License-Identifier: MPL-2.0
 #  Copyright 2020-2021 John Mille <john@compose-x.io>
 
@@ -24,7 +24,7 @@ from troposphere import (
     Sub,
 )
 from troposphere.ecs import Secret
-from troposphere.iam import Policy, PolicyType
+from troposphere.iam import PolicyType
 from troposphere.ssm import Parameter as SSMParameter
 
 from ecs_composex.common import keyisset
