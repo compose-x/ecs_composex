@@ -217,6 +217,7 @@ This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypack
 
     requisites
     installation
+    lexicon
     macro_usage
     contributing
 

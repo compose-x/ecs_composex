@@ -1,4 +1,4 @@
-﻿.. _common_syntax_reference:
+.. _common_syntax_reference:
 
 ==============================
 Common syntax for x-resources
@@ -51,6 +51,10 @@ This is accomplished by using **AWS Resources Group Tags API** which means, you 
         - Key: Value
         - Key: Value
       RoleArn: <str|optional>
+
+.. hint::
+
+    Future versions will add AWS Control API support for lookup.
 
 Tags
 ------
@@ -122,11 +126,7 @@ resources that do not have this override.
 
 .. note::
 
-    This only applies to services using TCP, so
-    * x-rds
-    * x-docdb
-    * x-elasticache
-    * x-elbv2
+    This only applies to services that require to be deployed and communicated with in the AWS VPC.
 
 
 .. note::
