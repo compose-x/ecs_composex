@@ -1,4 +1,4 @@
-﻿.. meta::
+.. meta::
     :description: ECS Compose-X docker-compose secrets syntax support
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, ecs-composex, secrets
 
@@ -23,7 +23,8 @@ to your container, using the same name as in the compose file.
 
 .. hint::
 
-    For security purposes, the containers **envoy** and **xray-daemon** are not getting assigned the secrets.
+    For security purposes, the containers **envoy** / **CloudWatch** / **xray-daemon** are not getting
+    assigned the secrets when part of the same service family.
 
 
 Syntax

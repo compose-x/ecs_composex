@@ -1,4 +1,4 @@
-﻿.. meta::
+.. meta::
     :description: ECS Compose-X docker-compose services syntax support
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, ecs-composex, services
 
@@ -11,7 +11,7 @@ services
 We try to re-use as much as possible the docker compose (v3) reference as much as possible.
 
 For the definition of the services, you can simply use the already existing Docker compose definition for your services.
-Most of the docker-compose services keys are functional, to get a full breakdown, check the :ref:`docker_compose_compat_matrix` compatibily matrix.
+Most of the docker-compose services keys are functional, to get a full breakdown, check the :ref:`docker_compose_compat_matrix` compatibility matrix.
 
 
 .. seealso::
