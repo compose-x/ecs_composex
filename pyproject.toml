@@ -36,16 +36,16 @@ exclude = ["*.pyc", "*~", "*pycache*"]
 [tool.poetry.dependencies]
 python = "^3.7"
 boto3 = "^1.18"
-troposphere = "3.0.2"
+troposphere = "^3.0.2"
 ecr-scan-reporter = { version = "^0.4", optional = true }
-compose-x-render = "^0.3.1"
+compose-x-render = "^0.4"
 compose-x-common = "^0.2.0"
 jsonschema = "^3.2.0"
 requests = "^2.26.0"
 tabulate = "^0.8.9"
 importlib-resources = "^5.2.2"
-aws-sam-translator = "^1.38.0"
-PyYAML = "^5.4.1"
+aws-sam-translator = "^1.39.0"
+PyYAML = "^5.4"
 docker = "^5.0.0"
 urllib3 = "^1.26.6"
 awacs = "^2.0.1"
@@ -60,10 +60,9 @@ behave = "^1.2.6"
 coverage = { extras = ["toml"], version = "^5.5" }
 flake8 = "^3.9.2"
 pytest = "^6.2.4"
-Sphinx = "4.2.0"
-docker-compose = "^1.29.2"
+Sphinx = "^4.2.0"
 tox = "^3.24.1"
-tbump = "6.4.0"
+tbump = "6.5.0"
 sphinx-jsonschema = "^1.16.11"
 
 [tool.poetry.scripts]
