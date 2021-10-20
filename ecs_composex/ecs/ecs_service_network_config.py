@@ -1,4 +1,4 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
@@ -243,6 +243,11 @@ class ServiceNetworking(Ingress):
         self.use_cloudmap = self.configuration["UseCloudmap"]
         self.is_public = self.configuration["IsPublic"]
         self.ingress_from_self = False
+        if any([svc.expose_ports for svc in family.services]):
+            self.ingress_from_self = True
+            LOG.info(
+                f"{family.name} - services have export ports, allowing internal ingress"
+            )
         super().__init__(self.configuration[self.master_key], self.ports)
         self.ingress_from_self = keyisset(self.self_key, self.definition)
 
