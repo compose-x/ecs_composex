@@ -2,6 +2,106 @@
 History
 =======
 
+0.17.0 (2021-10-20)
+====================
+
+This new release comes with a lot of changes and fixes that aim to both give more CFN native support and equally
+allow for future features to be integrated in a better way.
+
+A lot of changes on the modules one want to implement to support new AWS resources is greatly simplified.
+
+
+Breaking changes
+-----------------
+
+Compute platform options
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In this new version we have deprecated the --spot-fleet (#501) option. Users who want to use EC2 for the deployment
+of their services will be in charge of settings it all up on their own to fit their requirements.
+
+This was then done after implementing (#500) which will allow through Lookup to detect the ECS Cluster compute
+settings and automatically set the Launch Platform for the services appropriately. Users can, if they have
+a cluster with multiple capacity providers override and set what capacity provider to use for the service.
+Again, if that is not available in the cluster (using Lookup) then it will either fail or fallback to a working
+capacity provider.
+
+
+IAM stack created at the root
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This change **should not** be incurring any change to existing stacks **if the IAM permissions were stricly managed under Compose-X**.
+A new *iam* stack is created with all the IAM roles of the services (Task and Execution Role) which is then passed on to the other
+nested stacks that will need it.
+
+This change is necessary for upcoming features support and changes.
+
+That change also helps with a simpler way to manage IAM policies for the roles and a more flexible way to set permissions that does
+not require to wait for the service nested stack to complete to possibly set IAM permissions or get the roles names/arns.
+
+
+New features
+-------------
+
+* 2fcd1ba Added x-alarms and x-elbv2 cross-support Updated x-alarms docs (John Preston)
+* 65d4123 Feature x-ecs enable exec (#539) (John Preston)
+* 51a4628 Allow to add custom and predefined bucket policies (John Preston)
+* 599b5ad Refactor IAM to set roles in their own stack (#532) (John Preston)
+* c9564ee Added support for Conditions in Listener target to cover native CFN implementation (John Preston)
+* 8bdf95d Allowing for resource to have an ARN extension from policy definition (#535) (John Preston)
+* b39859c Added option to store SSM parameter as Base64 to avoid invalid characters (#527) (John Preston)
+* 3cc0908 x-elbv2 Target Group Attributes support (#518) (John Preston)
+* 41d393f Feature - docker working_dir (#509) (John Preston)
+* ee82fef Feature services.x-ecs to enable services level capacity providers (#507) (John Preston)
+* 5ec5c1f Option to enforce secure connection to S3 bucket for IAM role (#504) (John Preston)
+* f5ca17d Added ecs.ephemeral.storage label to extend Fargate local storage (#503) (John Preston)
+* 6fe4880 JSON validation for more x-resources (#502) (John Preston)
+* a399344 Deprecating --spot-fleet (#501) (John Preston)
+* 0141544 Adds deploy label ecs.compute.platform to override from FARGATE (#500) (John Preston)
+
+
+Fixes
+-------
+
+* 7202741 Fix release 0.16.10 (#530) (John Preston)
+* 84c3716 Fix ACM and Rules conditions (#529) (John Preston)
+* 8c20f82 Fix SSM ARN and volumes path (#528) (John Preston)
+* aac5811 Fix release/0.16.9 (#526) (John Preston)
+* 5cd37a5 Fixing IAM issues (#525) (John Preston)
+* 455b3d4 Fix release/0.16.8 (#524) (John Preston)
+* 84cd54d Fix missing lookup mappings (#523) (John Preston)
+* 760e804 Fix release - v0.16.7 (#522) (John Preston)
+* c8e8882 Fix for kms key alias in x-s3 Lookup (#521) (John Preston)
+* f223bb5 Fix for x-kms Lookup (John Preston)
+* 900b03e Fix release 0.16.4 (#517) (John Preston)
+* b9c4ac5 Fix settings typo (John Preston)
+* 79012d7 [FIX] ecs placements condition (#514) (John Preston)
+* 898ec07 Fix release to 0.16.3 (#511) (John Preston)
+* 88ce644 Fixes for ECS and Cognito (#510) (John Preston)
+* 197bf3b Fixing docker-compose commands for any env (John Preston)
+
+
+Improvements
+--------------
+
+* 84f7216 Update deps (John Preston)
+* f8bdd6c When services have an expose set of ports, allowing self-ingress (John Preston)
+* 403a652 Updated docs (John Preston)
+* decd5c2 Flake8'd the code (John Preston)
+* 2fcd1ba Added x-alarms and x-elbv2 cross-support Updated x-alarms docs (John Preston)
+* 22cbd5a Import ecs_composex_specs schemas in main application (#538) (John Preston)
+* ea510b4 Policies Uniqueness (John Preston)
+* 6a6409d Working pre-defined bucket policies (John Preston)
+* 1820fc3 Ensures the IAM policies are created before the service is (#534) (John Preston)
+* 887d31b Reworked docs and added to docs (#519) (John Preston)
+* bfed008 Refactor the services input (#516) (John Preston)
+* 66e2733 Update issue templates (John Preston)
+* dc7b713 Refactor - perform x-resources.Lookup early (#508) (John Preston)
+* 8dfa8a3 Adding non-docker command (John Preston)
+* 40153f7 Using poetry to manage dependencies (John Preston)
+
+
+
 0.16.0 (2021-08-19)
 ======================
 
