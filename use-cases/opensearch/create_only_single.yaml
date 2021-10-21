@@ -1,0 +1,25 @@
+---
+# Simple OS Domains creation
+
+version: "3.8"
+
+x-opensearch:
+  domain-01: # Simple example to test singularly
+    Properties:
+      DomainName: 'test'
+      EngineVersion: 'OpenSearch_1.0'
+      ClusterConfig:
+        DedicatedMasterEnabled: true
+        InstanceCount: '2'
+        ZoneAwarenessEnabled: true
+        InstanceType: 'm3.medium.search'
+        DedicatedMasterType: 'm3.medium.search'
+        DedicatedMasterCount: '3'
+      EBSOptions:
+        EBSEnabled: true
+        Iops: '0'
+        VolumeSize: '20'
+        VolumeType: 'gp2'
+      AdvancedOptions:
+        rest.action.multi.allow_explicit_index: true
+        override_main_response_version: true
