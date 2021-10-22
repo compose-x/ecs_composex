@@ -9,7 +9,7 @@ from troposphere import AWS_NO_VALUE, Ref
 from troposphere.ecs import LoadBalancer as EcsLb
 from troposphere.elasticloadbalancingv2 import Matcher, TargetGroupAttribute
 
-from ecs_composex.common import LOG, add_parameters
+from ecs_composex.common import LOG, add_outputs, add_parameters
 from ecs_composex.ecs.ecs_params import ELB_GRACE_PERIOD
 from ecs_composex.elbv2.elbv2_params import LB_SG_ID, TGT_GROUP_ARN
 from ecs_composex.elbv2.elbv2_stack import ComposeTargetGroup
@@ -427,6 +427,7 @@ def handle_services_association(resource, res_root_stack, settings):
     stack = res_root_stack
     resource.set_listeners(template)
     resource.associate_to_template(template)
+    add_outputs(template, resource.outputs)
     identified = []
     for target in resource.families_targets:
         tgt_arn = define_service_target_group_definition(
