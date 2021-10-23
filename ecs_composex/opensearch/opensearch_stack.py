@@ -63,6 +63,7 @@ class OpenSearchDomain(XResource):
     def __init__(self, name, definition, module_name, settings, mapping_key):
         self.security_group = None
         self.subnets_param = STORAGE_SUBNETS
+        self.db_secret = None
         super().__init__(
             name, definition, module_name, settings, mapping_key=mapping_key
         )

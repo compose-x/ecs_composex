@@ -153,5 +153,5 @@ x-opensearch:
           Value: bar
     MacroParameters:
       GenerateMasterUserSecret: true
-#      CreateMasterUserRole: true
+      CreateMasterUserRole: true
       CreateLogGroups: true

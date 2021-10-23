@@ -133,7 +133,7 @@ x-opensearch:
 
   domain-05:
     Properties: # Domain using Settings for Subnets
-      EngineVersion: 'OpenSearch_1.0'
+      EngineVersion: 'OpenSearch_0.1'
       ClusterConfig:
         InstanceCount: '1'
         InstanceType: 'r6gd.large.search'

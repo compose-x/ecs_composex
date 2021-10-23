@@ -10,3 +10,14 @@ Feature: ecs_composex.opensearch
             | file_path                   | override_file                                |
             | use-cases/blog.features.yml | use-cases/opensearch/create_only.yaml        |
             | use-cases/blog.features.yml | use-cases/opensearch/create_only_single.yaml |
+
+    @opensearch @errors
+    Scenario Outline: Simple RDS with services
+        Given I use <file_path> as my docker-compose file and <override_file> as override file
+        Then I render the docker-compose expecting an error
+
+        Examples:
+            | file_path                   | override_file                                                      |
+            | use-cases/blog.features.yml | use-cases/opensearch/negative_testing/incompatible_parameters.yaml |
+            | use-cases/blog.features.yml | use-cases/opensearch/negative_testing/unsupported_config.yaml      |
+            | use-cases/blog.features.yml | use-cases/opensearch/negative_testing/unsupported_version.yaml     |

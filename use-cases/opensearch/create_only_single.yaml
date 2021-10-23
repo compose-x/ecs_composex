@@ -5,21 +5,27 @@ version: "3.8"
 
 x-opensearch:
   domain-01: # Simple example to test singularly
-    Properties:
-      DomainName: 'test'
+    Properties: # Domain using Settings for Subnets
       EngineVersion: 'OpenSearch_1.0'
       ClusterConfig:
-        DedicatedMasterEnabled: true
-        InstanceCount: '2'
-        ZoneAwarenessEnabled: true
-        InstanceType: 'm3.medium.search'
-        DedicatedMasterType: 'm3.medium.search'
-        DedicatedMasterCount: '3'
+        InstanceCount: '1'
+        InstanceType: i3.large.search
       EBSOptions:
-        EBSEnabled: true
+        EBSEnabled: false
         Iops: '0'
-        VolumeSize: '20'
+        VolumeSize: '10'
         VolumeType: 'gp2'
+      AdvancedSecurityOptions:
+        InternalUserDatabaseEnabled: false
       AdvancedOptions:
         rest.action.multi.allow_explicit_index: true
         override_main_response_version: true
+      Tags:
+        - Key: foo
+          Value: bar
+    MacroParameters:
+#      GenerateMasterUserSecret: true
+      CreateMasterUserRole: true
+      CreateLogGroups: true
+      MasterUserRolePermissionsBoundary: ccoe/js-developer
+      CreateLogGroupsResourcePolicy: true

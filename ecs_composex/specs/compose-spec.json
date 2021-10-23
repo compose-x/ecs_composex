@@ -132,6 +132,14 @@
         }
       }
     },
+    "x-opensearch": {
+      "type": "object",
+      "patternProperties": {
+        "^[a-zA-Z0-9._-]+$": {
+          "$ref": "x-opensearch.spec.json"
+        }
+      }
+    },
     "version": {
       "type": "string",
       "description": "Version of the Compose specification used. Tools not implementing required version MUST reject the configuration file."

@@ -139,7 +139,7 @@ x-opensearch:
         InstanceType: 'r6gd.large.search'
         DedicatedMasterType: 'm6g.large.search'
       EBSOptions:
-        EBSEnabled: false
+        EBSEnabled: true
         Iops: '0'
         VolumeSize: '10'
         VolumeType: 'standard'
