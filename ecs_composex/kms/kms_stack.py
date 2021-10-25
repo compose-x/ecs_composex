@@ -85,7 +85,8 @@ class KmsKey(XResource):
         if not self.properties:
             props = {
                 "Description": Sub(
-                    f"{self.name} created in ${{{ROOT_STACK_NAME.title}}}"
+                    f"{self.name} created in ${{STACK_NAME}}",
+                    STACK_NAME=define_stack_name(),
                 ),
                 "Enabled": True,
                 "EnableKeyRotation": True,
@@ -109,11 +110,9 @@ class KmsKey(XResource):
         if self.settings and keyisset("Alias", self.settings):
             alias_name = self.settings["Alias"]
             if not (alias_name.startswith("alias/") or alias_name.startswith("aws")):
-                alias_name = (
-                    Sub(
-                        f"alias/${{STACK_NAME}}/{alias_name}",
-                        STACK_NAME=define_stack_name(template),
-                    ),
+                alias_name = Sub(
+                    f"alias/${{STACK_NAME}}/{alias_name}",
+                    STACK_NAME=define_stack_name(template),
                 )
             elif alias_name.startswith("alias/aws") or alias_name.startswith("aws"):
                 raise ValueError(f"Alias {alias_name} cannot start with alias/aws.")
