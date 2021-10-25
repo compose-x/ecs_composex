@@ -39,8 +39,7 @@ from troposphere.servicediscovery import (
 from troposphere.servicediscovery import Service as SdService
 
 from ecs_composex.common import LOG
-from ecs_composex.common.cfn_conditions import USE_STACK_NAME_CON_T
-from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
+from ecs_composex.common.cfn_conditions import define_stack_name
 from ecs_composex.common.outputs import ComposeXOutput
 from ecs_composex.dns.dns_conditions import PRIVATE_NAMESPACE_CON_T
 from ecs_composex.dns.dns_params import PRIVATE_NAMESPACE_ID
@@ -103,17 +102,15 @@ def add_service_default_sg(template):
     sg = template.add_resource(
         SecurityGroup(
             SG_T,
-            GroupDescription=If(
-                USE_STACK_NAME_CON_T,
-                Sub(f"SG for ${{{SERVICE_NAME_T}}} - ${{AWS::StackName}}"),
-                Sub(f"SG for ${{{SERVICE_NAME_T}}} - ${{{ROOT_STACK_NAME_T}}}"),
+            GroupDescription=Sub(
+                f"SG for ${{{SERVICE_NAME_T}}} - ${{STACK_NAME}}",
+                STACK_NAME=define_stack_name(template),
             ),
             Tags=Tags(
                 {
-                    "Name": If(
-                        USE_STACK_NAME_CON_T,
-                        Sub(f"${{{SERVICE_NAME_T}}}-${{AWS::StackName}}"),
-                        Sub(f"${{{SERVICE_NAME_T}}}-${{{ROOT_STACK_NAME_T}}}"),
+                    "Name": Sub(
+                        f"${{{SERVICE_NAME_T}}}-${{STACK_NAME}}",
+                        STACK_NAME=define_stack_name(template),
                     ),
                     "StackName": Ref(AWS_STACK_NAME),
                     "MicroserviceName": Ref(SERVICE_NAME),

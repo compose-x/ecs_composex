@@ -10,12 +10,12 @@ from copy import deepcopy
 from re import sub
 
 from compose_x_common.compose_x_common import keyisset, keypresent
-from troposphere import AWS_STACK_NAME, Export, FindInMap, GetAtt, If, Output, Ref, Sub
+from troposphere import Export, FindInMap, GetAtt, Output, Ref, Sub
 from troposphere.ecs import Environment
 
 from ecs_composex.common import LOG, NONALPHANUM
-from ecs_composex.common.cfn_conditions import USE_STACK_NAME_CON_T
-from ecs_composex.common.cfn_params import ROOT_STACK_NAME, Parameter
+from ecs_composex.common.cfn_conditions import define_stack_name
+from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.common.ecs_composex import CFN_EXPORT_DELIMITER as DELIM
 from ecs_composex.common.ecs_composex import X_KEY
 
@@ -444,27 +444,17 @@ class XResource(object):
         if len(output_definition) == 5 and output_definition[4]:
             LOG.debug(f"Adding portback output for {self.name}")
             export = Export(
-                If(
-                    USE_STACK_NAME_CON_T,
-                    Sub(
-                        f"${{{AWS_STACK_NAME}}}{DELIM}{self.name}{DELIM}{output_definition[4]}"
-                    ),
-                    Sub(
-                        f"${{{ROOT_STACK_NAME.title}}}{DELIM}{self.name}{DELIM}{output_definition[4]}"
-                    ),
+                Sub(
+                    f"${{STACK_NAME}}{DELIM}{self.name}{DELIM}{output_definition[4]}",
+                    STACK_NAME=define_stack_name(),
                 )
             )
         else:
             export = Export(
-                If(
-                    USE_STACK_NAME_CON_T,
-                    Sub(
-                        f"${{{AWS_STACK_NAME}}}{DELIM}{self.logical_name}{DELIM}{attribute_parameter.title}"
-                    ),
-                    Sub(
-                        f"${{{ROOT_STACK_NAME.title}}}{DELIM}{self.logical_name}{DELIM}{attribute_parameter.title}"
-                    ),
-                )
+                Sub(
+                    f"${{STACK_NAME}}{DELIM}{self.logical_name}{DELIM}{attribute_parameter.title}",
+                    STACK_NAME=define_stack_name(),
+                ),
             )
         return export
 

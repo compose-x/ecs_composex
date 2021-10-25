@@ -37,7 +37,7 @@ from troposphere.ec2 import (
 )
 
 from ecs_composex.common import NONALPHANUM
-from ecs_composex.common.cfn_conditions import USE_STACK_NAME_CON_T
+from ecs_composex.common.cfn_conditions import USE_STACK_NAME_CON_T, define_stack_name
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.ecs_composex import CFN_EXPORT_DELIMITER as DELIM
 from ecs_composex.vpc import metadata
@@ -77,10 +77,9 @@ def add_storage_subnets(template, vpc, az_index, layers):
             VpcId=Ref(vpc),
             AvailabilityZone=Sub(f"${{AWS::Region}}{index}"),
             Tags=Tags(
-                Name=If(
-                    USE_STACK_NAME_CON_T,
-                    Sub(f"${{AWS::StackName}}-Storage-{index}"),
-                    Sub(f"${{{ROOT_STACK_NAME_T}}}-Storage-{index}"),
+                Name=Sub(
+                    f"${{STACK_NAME}}-Storage-{index}",
+                    STACK_NAME=define_stack_name(template),
                 ),
             )
             + Tags({f"vpc{DELIM}usage": "storage", f"vpc{DELIM}vpc-id": Ref(vpc)}),
@@ -157,10 +156,9 @@ def add_public_subnets(template, vpc, az_index, layers, igw, single_nat):
             AvailabilityZone=Sub(f"${{AWS::Region}}{index}"),
             MapPublicIpOnLaunch=True,
             Tags=Tags(
-                Name=If(
-                    USE_STACK_NAME_CON_T,
-                    Sub(f"${{AWS::StackName}}-Public-{index}"),
-                    Sub(f"${{{ROOT_STACK_NAME_T}}}-Public-{index}"),
+                Name=Sub(
+                    f"${{STACK_NAME}}-Public-{index}",
+                    STACK_NAME=define_stack_name(template),
                 ),
             )
             + Tags({f"vpc{DELIM}usage": "public", f"vpc{DELIM}vpc-id": Ref(vpc)}),
@@ -259,10 +257,9 @@ def add_apps_subnets(template, vpc, az_index, layers, nats, endpoints=None):
             VpcId=Ref(vpc),
             AvailabilityZone=Sub(f"${{AWS::Region}}{index}"),
             Tags=Tags(
-                Name=If(
-                    USE_STACK_NAME_CON_T,
-                    Sub(f"${{AWS::StackName}}-App-{index}"),
-                    Sub(f"${{{ROOT_STACK_NAME_T}}}-App-{index}"),
+                Name=Sub(
+                    f"${{STACK_NAME}}-App-{index}",
+                    STACK_NAME=define_stack_name(template),
                 ),
             )
             + Tags(
