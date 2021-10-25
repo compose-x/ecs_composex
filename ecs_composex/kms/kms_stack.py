@@ -1,13 +1,13 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
 from compose_x_common.compose_x_common import keyisset
-from troposphere import AWS_ACCOUNT_ID, AWS_PARTITION, GetAtt, If, Ref, Sub
+from troposphere import AWS_ACCOUNT_ID, AWS_PARTITION, GetAtt, Ref, Sub
 from troposphere.kms import Alias, Key
 
 from ecs_composex.common import LOG, build_template
-from ecs_composex.common.cfn_conditions import USE_STACK_NAME_CON_T
+from ecs_composex.common.cfn_conditions import define_stack_name
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME
 from ecs_composex.common.compose_resources import (
     XResource,
@@ -85,7 +85,8 @@ class KmsKey(XResource):
         if not self.properties:
             props = {
                 "Description": Sub(
-                    f"{self.name} created in ${{{ROOT_STACK_NAME.title}}}"
+                    f"{self.name} created in ${{STACK_NAME}}",
+                    STACK_NAME=define_stack_name(),
                 ),
                 "Enabled": True,
                 "EnableKeyRotation": True,
@@ -109,10 +110,9 @@ class KmsKey(XResource):
         if self.settings and keyisset("Alias", self.settings):
             alias_name = self.settings["Alias"]
             if not (alias_name.startswith("alias/") or alias_name.startswith("aws")):
-                alias_name = If(
-                    USE_STACK_NAME_CON_T,
-                    Sub(f"alias/${{AWS::StackName}}/{alias_name}"),
-                    Sub(f"alias/${{{ROOT_STACK_NAME.title}}}/{alias_name}"),
+                alias_name = Sub(
+                    f"alias/${{STACK_NAME}}/{alias_name}",
+                    STACK_NAME=define_stack_name(template),
                 )
             elif alias_name.startswith("alias/aws") or alias_name.startswith("aws"):
                 raise ValueError(f"Alias {alias_name} cannot start with alias/aws.")
