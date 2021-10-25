@@ -522,15 +522,14 @@ def create_new_domains(new_domains, stack):
         domain.init_outputs()
         stack.stack_template.add_resource(domain.cfn_resource)
         if domain.security_group:
-            domain.output_properties.update(
-                {
-                    OS_DOMAIN_SG: (
-                        f"{domain.logical_name}{OS_DOMAIN_SG.return_value}",
-                        domain.security_group,
-                        GetAtt,
-                        OS_DOMAIN_SG.return_value,
-                    )
-                }
+            domain.add_new_output_attribute(
+                OS_DOMAIN_SG,
+                (
+                    f"{domain.logical_name}{OS_DOMAIN_SG.return_value}",
+                    domain.security_group,
+                    GetAtt,
+                    OS_DOMAIN_SG.return_value,
+                ),
             )
         domain.generate_outputs()
         domain.generate_resource_envvars()

@@ -478,6 +478,19 @@ class XResource(object):
         export = self.define_export_name(output_definition, attribute_parameter)
         return value, export
 
+    def add_new_output_attribute(self, attribute_id, attribute_config):
+        """
+        Adds a new output to attributes and re-generates all outputs
+
+        :param attribute_id:
+        :param tuple attribute_config:
+        """
+        if not self.output_properties:
+            self.output_properties = {attribute_id: attribute_config}
+        else:
+            self.output_properties.update({attribute_id: attribute_config})
+        self.generate_outputs()
+
     def generate_outputs(self):
         """
         Method to create the outputs for XResources
