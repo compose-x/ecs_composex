@@ -14,6 +14,8 @@ from ecs_composex.common.compose_resources import (
     set_use_resources,
 )
 from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.iam.import_sam_policies import get_access_types
+from ecs_composex.opensearch.opensearch_aws import create_opensearch_mappings
 from ecs_composex.opensearch.opensearch_params import (
     MAPPINGS_KEY,
     MOD_KEY,
@@ -60,6 +62,8 @@ class OpenSearchDomain(XResource):
     Class to represent the OpenSearch domain
     """
 
+    policies_scaffolds = get_access_types(MOD_KEY)
+
     def __init__(self, name, definition, module_name, settings, mapping_key):
         self.security_group = None
         self.subnets_param = STORAGE_SUBNETS
@@ -72,7 +76,7 @@ class OpenSearchDomain(XResource):
         self.output_properties = {
             OS_DOMAIN_ID: (self.logical_name, self.cfn_resource, Ref, None),
             OS_DOMAIN_ARN: (
-                f"{self.logical_name}{OS_DOMAIN_ID.return_value}",
+                f"{self.logical_name}{OS_DOMAIN_ARN.return_value}",
                 self.cfn_resource,
                 GetAtt,
                 OS_DOMAIN_ARN.return_value,
@@ -108,10 +112,10 @@ class XStack(ComposeXStack):
         else:
             self.is_void = True
         if lookup_resources or use_resources:
-            if not keyisset(RES_KEY, settings.mappings):
-                settings.mappings[RES_KEY] = {}
-            # create_opensearch_mappings(
-            #     settings.mappings[RES_KEY], lookup_resources, settings
-            # )
+            if not keyisset(MAPPINGS_KEY, settings.mappings):
+                settings.mappings[MAPPINGS_KEY] = {}
+            create_opensearch_mappings(
+                settings.mappings[MAPPINGS_KEY], lookup_resources, settings
+            )
         for resource in settings.compose_content[RES_KEY].values():
             resource.stack = self

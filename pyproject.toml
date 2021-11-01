@@ -52,7 +52,7 @@ awacs = "^2.0.1"
 
 [tool.poetry.dev-dependencies]
 isort = "^5.9.3"
-placebo = "^0.9.0"
+placebo = "^0.10"
 pre-commit = "^2.13.0"
 black = "^21.9b0"
 sphinx-material = "^0.0.34"

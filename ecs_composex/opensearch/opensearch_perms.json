@@ -1,0 +1,51 @@
+{
+  "Http": {
+    "RW": {
+      "Effect": "Allow",
+      "Action": [
+        "es:ESHttpDelete",
+        "es:ESHttpGet",
+        "es:ESHttpHead",
+        "es:ESHttpPost",
+        "es:ESHttpPut",
+        "es:ESHttpPatch"
+      ],
+      "Resource": [
+        "${ARN}/*"
+      ]
+    },
+    "RO": {
+      "Effect": "Allow",
+      "Action": [
+        "es:ESHttpGet",
+        "es:ESHttpHead",
+        "es:ESHttpPost",
+        "es:ESHttpPut",
+        "es:ESHttpPatch"
+      ],
+      "Resource": [
+        "${ARN}/*"
+      ]
+    }
+  },
+  "IAM": {
+    "RO": {
+      "Effect": "Allow",
+      "Action": [
+        "es:DeleteDomain",
+        "es:DescribeDomain",
+        "es:DescribeDomainAutoTunes",
+        "es:DescribeDomainConfig",
+        "es:ESCrossClusterGet",
+        "es:GetCompatibleVersions",
+        "es:GetUpgradeHistory",
+        "es:GetUpgradeStatus",
+        "es:ListPackagesForDomain",
+        "es:ListTags"
+      ],
+      "Resource": [
+        "${ARN}"
+      ]
+    }
+  }
+}

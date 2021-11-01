@@ -9,9 +9,9 @@ x-opensearch:
       EngineVersion: 'OpenSearch_1.0'
       ClusterConfig:
         InstanceCount: '1'
-        InstanceType: i3.large.search
+        InstanceType: c6g.large.search
       EBSOptions:
-        EBSEnabled: false
+        EBSEnabled: true
         Iops: '0'
         VolumeSize: '10'
         VolumeType: 'gp2'
@@ -28,4 +28,32 @@ x-opensearch:
       CreateMasterUserRole: true
       CreateLogGroups: true
       MasterUserRolePermissionsBoundary: ccoe/js-developer
-      CreateLogGroupsResourcePolicy: true
+      CreateLogGroupsResourcePolicy: false
+
+  domain-02: # Simple example to test singularly
+    Properties: # Domain using Settings for Subnets
+      EngineVersion: 'OpenSearch_1.0'
+      ClusterConfig:
+        InstanceCount: '1'
+        InstanceType: c6g.large.search
+      EBSOptions:
+        EBSEnabled: true
+        Iops: '0'
+        VolumeSize: '10'
+        VolumeType: 'gp2'
+      AdvancedSecurityOptions:
+        InternalUserDatabaseEnabled: false
+      AdvancedOptions:
+        rest.action.multi.allow_explicit_index: true
+        override_main_response_version: true
+      Tags:
+        - Key: foo
+          Value: bar
+    MacroParameters:
+#      GenerateMasterUserSecret: true
+      CreateMasterUserRole: true
+      CreateLogGroups: true
+      MasterUserRolePermissionsBoundary: ccoe/js-developer
+      CreateLogGroupsResourcePolicy: false
+    Settings:
+      Subnets: StorageSubnets

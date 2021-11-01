@@ -13,10 +13,15 @@
       "type": "object",
       "properties": {
         "Tags": {
+          "description": "List of resource tags to identify the resource we are looking for",
           "type": "array",
           "items": {
             "type": "object"
           }
+        },
+        "Identifier": {
+          "type": "string",
+          "description": "The Cloud Control API identifier. It can be the full ARN or just the resource name"
         },
         "RoleArn": {
           "type": "string"

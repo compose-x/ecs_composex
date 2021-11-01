@@ -21,7 +21,7 @@
       "$ref": "x-resources.common.spec.json#/definitions/Settings"
     },
     "Services": {
-      "$ref": "x-rds.spec.json#/definitions/ServicesDef"
+      "$ref": "#/definitions/ServicesDef"
     },
     "MacroParameters": {
       "$ref": "#/definitions/MacroParameters"
@@ -107,6 +107,77 @@
           "CreateLogGroups"
         ]
       }
+    },
+    "ServicesDef": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "access": {
+            "type": "object",
+            "properties": {
+              "Http": {
+                "$ref": "#/definitions/AccessDef"
+              },
+              "IAM": {
+                "$ref": "#/definitions/AccessDef"
+              }
+            }
+          }
+        }
+      }
+    },
+    "AccessDef": {
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "additionalItems": false,
+          "properties": {
+            "Effect": {
+              "type": "string",
+              "enum": [
+                "Allow",
+                "Deny"
+              ]
+            },
+            "Action": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "uniqueItems": true,
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              ]
+            },
+            "Resource": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "uniqueItems": true,
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ]
     }
   }
 }

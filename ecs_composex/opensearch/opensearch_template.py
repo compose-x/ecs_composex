@@ -28,10 +28,9 @@ from troposphere.logs import LogGroup, ResourcePolicy
 
 from ecs_composex.common import NONALPHANUM, add_outputs, add_parameters, setup_logging
 from ecs_composex.common.cfn_conditions import define_stack_name
-from ecs_composex.common.cfn_params import STACK_ID_SHORT
 from ecs_composex.common.services_helpers import get_closest_valid_log_retention_period
 from ecs_composex.iam import define_iam_policy
-from ecs_composex.opensearch.opensearch_params import OS_DOMAIN_SG
+from ecs_composex.opensearch.opensearch_params import OS_DOMAIN_PORT, OS_DOMAIN_SG
 from ecs_composex.resources_import import import_record_properties
 from ecs_composex.secrets import add_db_secret
 from ecs_composex.vpc.vpc_params import STORAGE_SUBNETS, VPC_ID
@@ -161,7 +160,7 @@ def create_log_groups(domain, stack, props):
         }
     if keyisset("CreateLogGroupsResourcePolicy", domain.parameters):
         logs_policy = ResourcePolicy(
-            f"OpenSearchLogGroupResourcePolicy",
+            "OpenSearchLogGroupResourcePolicy",
             DeletionPolicy="Retain",
             PolicyName="ComposeXOpenSearchAccessToCWLogs",
             PolicyDocument=Sub(
@@ -345,16 +344,32 @@ def validate_instance_types_config(domain, props, instance_type, config):
     :param dict config:
     :raises: ValueError if features are not compatible withe the instance type
     """
-
+    must_be_null = ["EBSOptions"]
     if keyisset("not_supported", config):
         unsupported = config["not_supported"]
         for top_config, false_prop in unsupported.items():
             if keyisset(top_config, props) and hasattr(props[top_config], false_prop):
                 value = getattr(props[top_config], false_prop)
+                print(domain.name, top_config, false_prop, value)
                 if value is not False:
                     raise ValueError(
                         f"{domain.name} - Property {top_config}.{false_prop} is enabled, but is "
                         f"incompatible with {instance_type} instances type"
+                    )
+                elif value is False and top_config in must_be_null:
+                    LOG.warn(
+                        f"{domain.name} - {top_config}.{false_prop} is False but the property must be null. "
+                        "Overriding to AWS::NoValue"
+                    )
+                    props[top_config] = Ref(AWS_NO_VALUE)
+    if keyisset("must_have", config):
+        must_have = config["must_have"]
+        for top_config, req_prop in must_have.items():
+            if keyisset(top_config, props) and hasattr(props[top_config], req_prop):
+                value = getattr(props[top_config], req_prop)
+                if value is not True:
+                    raise ValueError(
+                        f"{domain.name} - {instance_type} requires {top_config}.{req_prop} to be True"
                     )
 
 
@@ -409,6 +424,21 @@ def validate_no_architecture_mix(domain, types):
         )
 
 
+def correct_properties(domain, props):
+    """
+    Function to rectify settings in case invalid options were set with each other.
+
+    :param ecs_composex.opensearch.opensearch_stack.OpenSearchDomain domain:
+    :param dict props:
+    """
+    if (
+        keyisset("EBSOptions", props)
+        and hasattr(props["EBSOptions"], "EBSEnabled")
+        and props["EBSOptions"].EBSEnabled is False
+    ):
+        props["EBSOptions"] = Ref(AWS_NO_VALUE)
+
+
 def validate_instance_types(domain, props):
     """
     Validates that the settings set are compatible with one another
@@ -419,7 +449,10 @@ def validate_instance_types(domain, props):
     instance_types = {
         "c4": {},
         "c5": {"EngineVersion": {"Elasticsearch": 5.1, "OpenSearch": 1.0}},
-        "c6g": {"EngineVersion": {"Elasticsearch": 7.9, "OpenSearch": 1.0}},
+        "c6g": {
+            "EngineVersion": {"Elasticsearch": 7.9, "OpenSearch": 1.0},
+            "must_have": {"EBSOptions": "EBSEnabled"},
+        },
         "i2": {},
         "i3": {
             "EngineVersion": {
@@ -441,7 +474,8 @@ def validate_instance_types(domain, props):
             "EngineVersion": {
                 "Elasticsearch": 7.9,
                 "OpenSearch": 1.0,
-            }
+            },
+            "must_have": {"EBSOptions": "EBSEnabled"},
         },
         "r3": {
             "EngineVersion": {"OpenSearch": 1.0, "Elasticsearch": 6.5},
@@ -456,7 +490,8 @@ def validate_instance_types(domain, props):
             "EngineVersion": {
                 "OpenSearch": 1.0,
                 "Elasticsearch": 7.9,
-            }
+            },
+            "must_have": {"EBSOptions": "EBSEnabled"},
         },
         "r6gd": {
             "EngineVersion": {"OpenSearch": 1.0, "Elasticsearch": 7.9},
@@ -499,6 +534,7 @@ def validate_instance_types(domain, props):
         validate_version_support(domain, props, defined_type, config)
         validate_instance_types_config(domain, props, defined_type, config)
     validate_no_architecture_mix(domain, instance_types_logged)
+    correct_properties(domain, props)
 
 
 def create_new_domains(new_domains, stack):
@@ -521,6 +557,7 @@ def create_new_domains(new_domains, stack):
         domain.cfn_resource = opensearchservice.Domain(domain.logical_name, **props)
         domain.init_outputs()
         stack.stack_template.add_resource(domain.cfn_resource)
+        domain.generate_outputs()
         if domain.security_group:
             domain.add_new_output_attribute(
                 OS_DOMAIN_SG,
@@ -531,6 +568,15 @@ def create_new_domains(new_domains, stack):
                     OS_DOMAIN_SG.return_value,
                 ),
             )
-        domain.generate_outputs()
+            domain.add_new_output_attribute(
+                OS_DOMAIN_PORT,
+                (
+                    f"{domain.logical_name}{OS_DOMAIN_PORT.return_value}",
+                    OS_DOMAIN_PORT,
+                    Ref,
+                    None,
+                ),
+            )
+            add_parameters(stack.stack_template, [OS_DOMAIN_PORT])
         domain.generate_resource_envvars()
         add_outputs(stack.stack_template, domain.outputs)

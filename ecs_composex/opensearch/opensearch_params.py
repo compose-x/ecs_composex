@@ -5,7 +5,7 @@
 """
 OpenSearch parameters
 """
-
+import re
 from os import path
 
 from ecs_composex.common import NONALPHANUM
@@ -30,3 +30,12 @@ OS_DOMAIN_ENDPOINT = Parameter(
 
 OS_DOMAIN_SG_T = "DomainSg"
 OS_DOMAIN_SG = Parameter(OS_DOMAIN_SG_T, return_value="GroupId", Type=SG_ID_TYPE)
+
+OS_DOMAIN_PORT_T = "DomainPort"
+OS_DOMAIN_PORT = Parameter(
+    OS_DOMAIN_PORT_T, Type="Number", Default=443, MinValue=0, MaxValue=(pow(2, 16) - 1)
+)
+
+OS_DOMAIN_ARN_RE = re.compile(
+    r"(?:^arn:aws(?:-[a-z]+)?:es:[\w-]+:[0-9]{12}:domain/)(?P<domain>[\S]+)$"
+)

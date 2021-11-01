@@ -103,6 +103,11 @@ x-opensearch:
           Value: bar
     Settings:
       Subnets: StorageSubnets
+    Services:
+      - name: app03
+        access:
+          Http: RW
+          IAM: RO
 
   domain-04:
     Properties: # Domain using Settings for Subnets
@@ -138,11 +143,6 @@ x-opensearch:
         InstanceCount: '1'
         InstanceType: 'r6gd.large.search'
         DedicatedMasterType: 'm6g.large.search'
-      EBSOptions:
-        EBSEnabled: false
-        Iops: '0'
-        VolumeSize: '10'
-        VolumeType: 'standard'
       AdvancedSecurityOptions:
         InternalUserDatabaseEnabled: true
       AdvancedOptions:
@@ -155,3 +155,8 @@ x-opensearch:
       GenerateMasterUserSecret: true
 #      CreateMasterUserRole: true
       CreateLogGroups: true
+    Services:
+      - name: app03
+        access:
+          Http: RW
+          IAM: RO
