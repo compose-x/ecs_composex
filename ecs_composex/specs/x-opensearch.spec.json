@@ -1,0 +1,183 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "id": "x-opensearch.spec.json",
+  "$id": "x-opensearch.spec.json",
+  "title": "x-opensearch",
+  "description": "x-opensearch specification",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "Lookup": {
+      "$ref": "x-resources.common.spec.json#/definitions/Lookup"
+    },
+    "Use": {
+      "type": "string"
+    },
+    "Properties": {
+      "type": "object",
+      "description": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-opensearch-dbcluster.html"
+    },
+    "Settings": {
+      "$ref": "x-resources.common.spec.json#/definitions/Settings"
+    },
+    "Services": {
+      "$ref": "#/definitions/ServicesDef"
+    },
+    "MacroParameters": {
+      "$ref": "#/definitions/MacroParameters"
+    }
+  },
+  "definitions": {
+    "MacroParameters": {
+      "type": "object",
+      "additionalItems": false,
+      "properties": {
+        "CreateLogGroupsResourcePolicy": {
+          "type": "boolean",
+          "description": "Whether you want ComposeX to created a Log Group Resource Policy. Only 10 per AWS Account",
+          "default": false
+        },
+        "CreateLogGroups": {
+          "oneOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "description": "Creates the CW Log Groups for AWS::OpenSearchService::Domain LogPublishingOption.",
+                "enum": [
+                  "SEARCH_SLOW_LOGS",
+                  "ES_APPLICATION_LOGS",
+                  "INDEX_SLOW_LOGS",
+                  "AUDIT_LOGS"
+                ]
+              }
+            },
+            {
+              "type": "boolean",
+              "description": "Automatically creates a new CW Log group for each option"
+            }
+          ]
+        },
+        "RetentionInDays": {
+          "type": "number",
+          "enum": [
+            1,
+            3,
+            5,
+            7,
+            14,
+            30,
+            60,
+            90,
+            120,
+            150,
+            180,
+            365,
+            400,
+            545,
+            731,
+            1827,
+            3653
+          ],
+          "description": "RetentionInDays for the new CW Log Groups"
+        },
+        "GenerateMasterUserSecret": {
+          "type": "boolean",
+          "description": "Automatically create a AWS Secret to use for the MasterUser AWS::OpenSearchService::Domain MasterUserOptions",
+          "default": false
+        },
+        "CreateMasterUserRole": {
+          "type": "boolean",
+          "description": "Automatically creates a new IAM Role that you can later assume",
+          "default": false
+        },
+        "MasterUserRolePermissionsBoundary": {
+          "type": "string",
+          "description": "IAM Policy to use as the Permissions Boundary for the MasterUser Role"
+        }
+      },
+      "dependencies": {
+        "MasterUserRolePermissionsBoundary": [
+          "CreateMasterUserRole"
+        ],
+        "RetentionInDays": [
+          "CreateLogGroups"
+        ],
+        "CreateLogGroupsResourcePolicy": [
+          "CreateLogGroups"
+        ]
+      }
+    },
+    "ServicesDef": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "access": {
+            "type": "object",
+            "properties": {
+              "Http": {
+                "$ref": "#/definitions/AccessDef"
+              },
+              "IAM": {
+                "$ref": "#/definitions/AccessDef"
+              }
+            }
+          }
+        }
+      }
+    },
+    "AccessDef": {
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "additionalItems": false,
+          "properties": {
+            "Effect": {
+              "type": "string",
+              "enum": [
+                "Allow",
+                "Deny"
+              ]
+            },
+            "Action": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "uniqueItems": true,
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              ]
+            },
+            "Resource": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "uniqueItems": true,
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  }
+}

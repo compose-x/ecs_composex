@@ -8,7 +8,6 @@ from troposphere.kms import Alias, Key
 
 from ecs_composex.common import LOG, build_template
 from ecs_composex.common.cfn_conditions import define_stack_name
-from ecs_composex.common.cfn_params import ROOT_STACK_NAME
 from ecs_composex.common.compose_resources import (
     XResource,
     set_lookup_resources,

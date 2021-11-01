@@ -21,7 +21,7 @@ respective AZ
 from math import ceil, log
 
 from compose_x_common.compose_x_common import keyisset
-from troposphere import GetAtt, If, Ref, Sub, Tags
+from troposphere import GetAtt, Ref, Sub, Tags
 from troposphere.ec2 import (
     EIP,
     Entry,
@@ -37,8 +37,7 @@ from troposphere.ec2 import (
 )
 
 from ecs_composex.common import NONALPHANUM
-from ecs_composex.common.cfn_conditions import USE_STACK_NAME_CON_T, define_stack_name
-from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
+from ecs_composex.common.cfn_conditions import define_stack_name
 from ecs_composex.common.ecs_composex import CFN_EXPORT_DELIMITER as DELIM
 from ecs_composex.vpc import metadata
 from ecs_composex.vpc.vpc_params import VPC_T

@@ -1,0 +1,29 @@
+---
+# Simple OS Domains creation
+
+version: "3.8"
+
+x-opensearch:
+  domain-01: # Simple example to test singularly
+    Lookup:
+      Tags:
+        - CreatedByComposeX: "true"
+        - ComposeXName: domain-01
+      RoleArn: "${RO_ROLE_ARN}"
+    Services:
+      - name: app03
+        access:
+          Http: RO
+          IAM: RO
+
+  domain-02: # Simple example to test singularly
+    Lookup:
+      Tags:
+        - CreatedByComposeX: "true"
+        - ComposeXName: domain-02
+      RoleArn: "${RO_ROLE_ARN}"
+    Services:
+      - name: app03
+        access:
+          Http: RO
+          IAM: RO

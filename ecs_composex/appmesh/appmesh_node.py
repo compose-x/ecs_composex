@@ -1,4 +1,4 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
@@ -13,7 +13,7 @@ from troposphere.ecs import (
     ProxyConfiguration,
     Ulimit,
 )
-from troposphere.iam import Policy, PolicyType
+from troposphere.iam import PolicyType
 
 from ecs_composex.appmesh import appmesh_conditions, appmesh_params, metadata
 from ecs_composex.appmesh.appmesh_params import BACKENDS_KEY, NAME_KEY

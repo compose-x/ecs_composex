@@ -1,0 +1,21 @@
+{
+    "status_code": 200,
+    "data": {
+        "TypeName": "AWS::OpenSearchService::Domain",
+        "ResourceDescription": {
+            "Identifier": "domain01-kprriuy6jsfr",
+            "Properties": "{\"EngineVersion\":\"OpenSearch_1.0\",\"DomainName\":\"domain01-kprriuy6jsfr\",\"LogPublishingOptions\":{\"SEARCH_SLOW_LOGS\":{\"CloudWatchLogsLogGroupArn\":\"arn:aws:logs:eu-west-1:000000000000:log-group:opensearch/os-testing/domain01/SEARCH_SLOW_LOGS\",\"Enabled\":true},\"ES_APPLICATION_LOGS\":{\"CloudWatchLogsLogGroupArn\":\"arn:aws:logs:eu-west-1:000000000000:log-group:opensearch/os-testing/domain01/ES_APPLICATION_LOGS\",\"Enabled\":true},\"AUDIT_LOGS\":{\"CloudWatchLogsLogGroupArn\":\"arn:aws:logs:eu-west-1:000000000000:log-group:opensearch/os-testing/domain01/AUDIT_LOGS\",\"Enabled\":true},\"INDEX_SLOW_LOGS\":{\"CloudWatchLogsLogGroupArn\":\"arn:aws:logs:eu-west-1:000000000000:log-group:opensearch/os-testing/domain01/INDEX_SLOW_LOGS\",\"Enabled\":true}},\"SnapshotOptions\":{\"AutomatedSnapshotStartHour\":0},\"NodeToNodeEncryptionOptions\":{\"Enabled\":true},\"DomainEndpoints\":{},\"DomainEndpointOptions\":{\"CustomEndpointEnabled\":false,\"EnforceHTTPS\":true,\"TLSSecurityPolicy\":\"Policy-Min-TLS-1-0-2019-07\"},\"DomainArn\":\"arn:aws:es:eu-west-1:000000000000:domain/domain01-kprriuy6jsfr\",\"CognitoOptions\":{\"Enabled\":false},\"AdvancedOptions\":{\"override_main_response_version\":\"true\",\"rest.action.multi.allow_explicit_index\":\"true\"},\"AdvancedSecurityOptions\":{\"InternalUserDatabaseEnabled\":false,\"Enabled\":true},\"DomainEndpoint\":\"search-domain01-kprriuy6jsfr-gya5abbkhueagcxdx4szvrya5q.eu-west-1.es.amazonaws.com\",\"ServiceSoftwareOptions\":{\"NewVersion\":\"\",\"UpdateStatus\":\"COMPLETED\",\"Description\":\"There is no software update available for this domain.\",\"Cancellable\":false,\"CurrentVersion\":\"R20210816-P3\",\"AutomatedUpdateDate\":\"2021-07-08T07:24:26Z\",\"UpdateAvailable\":false,\"OptionalDeployment\":false},\"EBSOptions\":{\"EBSEnabled\":true,\"VolumeType\":\"gp2\",\"Iops\":0,\"VolumeSize\":10},\"Id\":\"000000000000/domain01-kprriuy6jsfr\",\"Arn\":\"arn:aws:es:eu-west-1:000000000000:domain/domain01-kprriuy6jsfr\",\"EncryptionAtRestOptions\":{\"KmsKeyId\":\"arn:aws:kms:eu-west-1:000000000000:key/64f2f9a7-e728-4075-9096-a4e73e55b3b2\",\"Enabled\":true},\"Tags\":[{\"Value\":\"true\",\"Key\":\"CreatedByComposeX\"},{\"Value\":\"domain-01\",\"Key\":\"ComposeXName\"},{\"Value\":\"lambda\",\"Key\":\"costcentre\"}],\"ClusterConfig\":{\"InstanceCount\":1,\"WarmEnabled\":false,\"DedicatedMasterEnabled\":false,\"InstanceType\":\"c6g.large.search\",\"ZoneAwarenessEnabled\":false}}"
+        },
+        "ResponseMetadata": {
+            "RequestId": "b509ae1e-e10a-4986-a210-fe5b7c6c0431",
+            "HTTPStatusCode": 200,
+            "HTTPHeaders": {
+                "x-amzn-requestid": "b509ae1e-e10a-4986-a210-fe5b7c6c0431",
+                "date": "Wed, 27 Oct 2021 04:35:07 GMT",
+                "content-type": "application/x-amz-json-1.0",
+                "content-length": "2575"
+            },
+            "RetryAttempts": 0
+        }
+    }
+}

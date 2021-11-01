@@ -1,0 +1,32 @@
+{
+    "status_code": 200,
+    "data": {
+        "PaginationToken": "",
+        "ResourceTagMappingList": [
+            {
+                "ResourceARN": "arn:aws:es:eu-west-1:000000000000:domain/domain02-eu8uizae6fko",
+                "Tags": [
+                    {
+                        "Key": "ComposeXName",
+                        "Value": "domain-02"
+                    },
+                    {
+                        "Key": "CreatedByComposeX",
+                        "Value": "true"
+                    }
+                ]
+            }
+        ],
+        "ResponseMetadata": {
+            "RequestId": "f87170c6-8158-49b8-a7e6-4eeac8d11cb4",
+            "HTTPStatusCode": 200,
+            "HTTPHeaders": {
+                "x-amzn-requestid": "f87170c6-8158-49b8-a7e6-4eeac8d11cb4",
+                "content-type": "application/x-amz-json-1.1",
+                "content-length": "263",
+                "date": "Wed, 27 Oct 2021 04:35:07 GMT"
+            },
+            "RetryAttempts": 0
+        }
+    }
+}

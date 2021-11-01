@@ -89,6 +89,33 @@ def generate_resource_permissions(
     return resource_policies
 
 
+def generate_resource_permissions_statements(
+    resource_name, policies, arn, ignore_missing_primary=False
+):
+    """
+    Function to generate IAM permissions for a given x-resource. Returns the mapping of these for the given resource.
+    Suffix takes the values and reduces to the first 118 characters to ensure policy length is below 128
+    Short prefix ensures the uniqueness of the policy name but allows to be a constant throughout the life
+    of the CFN Stack. It is 8 chars long, leaving a 2 chars margin
+
+    :param str resource_name: The name of the resource
+    :param dict policies: the policies associated with the x-resource type.
+    :param str,AWSHelper arn: The ARN of the resource if already looked up.
+    :param bool ignore_missing_primary: Whether the policy should contain ${ARN} at least
+    :return: dict of the IAM policies associated with the resource.
+    :rtype dict:
+    """
+    resource_policies = {}
+    for a_type in policies:
+        LOG.debug(a_type)
+        policy_doc = policies[a_type].copy()
+        resources = determine_arns(arn, policy_doc, ignore_missing_primary)
+        policy_doc["Sid"] = f"{a_type}To{resource_name}"
+        policy_doc["Resource"] = resources
+        resource_policies[a_type] = policy_doc
+    return resource_policies
+
+
 def add_iam_policy_to_service_task_role(family, resource, perms, access_type, services):
     """
     Function to expand the ECS Task Role policy with the permissions for the resource

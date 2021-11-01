@@ -125,7 +125,7 @@ dist: clean ## builds source and wheel package
 	ls -l dist
 
 install: clean conform ## install the package to the active Python's site-packages
-	pip install . --use-pep517 --use-feature=in-tree-build
+	pip install . --use-pep517 #--use-feature=in-tree-build
 
 conform	: ## Conform to a standard of coding syntax
 	isort --profile black ecs_composex
