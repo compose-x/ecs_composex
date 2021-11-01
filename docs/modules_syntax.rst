@@ -16,6 +16,7 @@
     syntax/compose_x/rds
     syntax/compose_x/docdb
     syntax/compose_x/elasticache
+    syntax/compose_x/opensearch
     syntax/compose_x/s3
     syntax/compose_x/efs
     syntax/compose_x/appmesh
