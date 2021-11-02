@@ -1,4 +1,4 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
@@ -26,8 +26,8 @@ from ecs_composex.dynamodb.dynamodb_params import (
     TABLE_ARN,
     TABLE_NAME,
 )
-from ecs_composex.dynamodb.dynamodb_perms import get_access_types
 from ecs_composex.dynamodb.dynamodb_template import create_dynamodb_template
+from ecs_composex.iam.import_sam_policies import get_access_types
 
 
 class Table(XResource):
@@ -35,7 +35,7 @@ class Table(XResource):
     Class to represent a DynamoDB Table
     """
 
-    policies_scaffolds = get_access_types()
+    policies_scaffolds = get_access_types(MOD_KEY)
 
     def init_outputs(self):
         self.output_properties = {

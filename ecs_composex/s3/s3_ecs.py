@@ -19,15 +19,18 @@ from ecs_composex.common import LOG, add_parameters
 from ecs_composex.common.aws import define_lookup_role_from_info
 from ecs_composex.common.compose_resources import get_parameter_settings
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.kms.kms_perms import ACCESS_TYPES as KMS_ACCESS_TYPES
+from ecs_composex.iam.import_sam_policies import get_access_types
+from ecs_composex.kms.kms_params import MOD_KEY as KMS_MOD
 from ecs_composex.resource_settings import (
     add_iam_policy_to_service_task_role,
     generate_resource_permissions,
     get_selected_services,
 )
 from ecs_composex.s3.s3_aws import lookup_bucket_config
+from ecs_composex.s3.s3_params import MOD_KEY as S3_MOD
 from ecs_composex.s3.s3_params import RES_KEY, S3_BUCKET_ARN, S3_BUCKET_NAME
-from ecs_composex.s3.s3_perms import ACCESS_TYPES
+
+ACCESS_TYPES = get_access_types(S3_MOD)
 
 
 def assign_service_permissions_to_bucket(bucket, family, services, access, value, arn):
@@ -349,7 +352,7 @@ def assign_lookup_buckets(bucket, mappings):
             if keyisset("KmsKey", mappings[bucket.logical_name]):
                 kms_perms = generate_resource_permissions(
                     f"{bucket.logical_name}KmsKey",
-                    KMS_ACCESS_TYPES,
+                    get_access_types(KMS_MOD),
                     arn=FindInMap("s3", bucket.logical_name, "KmsKey"),
                 )
                 add_iam_policy_to_service_task_role(

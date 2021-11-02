@@ -1,4 +1,4 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
@@ -13,7 +13,10 @@ from ecs_composex.common.aws import (
     define_lookup_role_from_info,
     find_aws_resource_arn_from_tags_api,
 )
-from ecs_composex.ssm_parameter.ssm_params import SSM_PARAM_ARN, SSM_PARAM_NAME
+from ecs_composex.ssm_parameter.ssm_parameter_params import (
+    SSM_PARAM_ARN,
+    SSM_PARAM_NAME,
+)
 
 
 def lookup_param_config(lookup, session):

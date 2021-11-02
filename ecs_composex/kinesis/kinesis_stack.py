@@ -1,4 +1,4 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
@@ -14,6 +14,7 @@ from ecs_composex.common.compose_resources import (
     set_use_resources,
 )
 from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.iam.import_sam_policies import get_access_types
 from ecs_composex.kinesis.kinesis_ecs import create_kinesis_mappings
 from ecs_composex.kinesis.kinesis_params import (
     MAPPINGS_KEY,
@@ -22,7 +23,6 @@ from ecs_composex.kinesis.kinesis_params import (
     STREAM_ARN,
     STREAM_ID,
 )
-from ecs_composex.kinesis.kinesis_perms import ACCESS_TYPES
 from ecs_composex.kinesis.kinesis_template import create_streams_template
 
 
@@ -31,7 +31,7 @@ class Stream(XResource):
     Class to represent a Kinesis Stream
     """
 
-    policies_scaffolds = ACCESS_TYPES
+    policies_scaffolds = get_access_types(MOD_KEY)
 
     def init_outputs(self):
         self.output_properties = {

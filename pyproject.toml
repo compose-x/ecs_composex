@@ -36,7 +36,7 @@ exclude = ["*.pyc", "*~", "*pycache*"]
 [tool.poetry.dependencies]
 python = "^3.7"
 boto3 = ">=1.18,<1.20"
-troposphere = "^3.0.2"
+troposphere = "^3.1"
 ecr-scan-reporter = { version = "^0.4", optional = true }
 compose-x-render = "^0.4"
 compose-x-common = "^0.2.0"
@@ -45,8 +45,8 @@ requests = "^2.26.0"
 tabulate = "^0.8.9"
 importlib-resources = "^5.2.2"
 aws-sam-translator = "^1.39.0"
-PyYAML = "^5.4"
-docker = "^5.0.0"
+PyYAML = "^6.0"
+docker = "^5"
 urllib3 = "^1.26.6"
 awacs = "^2.0.1"
 

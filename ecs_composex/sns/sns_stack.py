@@ -1,4 +1,4 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
@@ -8,9 +8,9 @@ from troposphere import GetAtt, Ref
 from ecs_composex.common import build_template
 from ecs_composex.common.compose_resources import XResource
 from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.iam.import_sam_policies import get_access_types
 from ecs_composex.sns.sns_aws import lookup_topic_config
 from ecs_composex.sns.sns_params import MOD_KEY, RES_KEY, TOPIC_ARN, TOPIC_NAME
-from ecs_composex.sns.sns_perms import ACCESS_TYPES
 from ecs_composex.sns.sns_templates import generate_sns_templates
 from ecs_composex.sqs.sqs_params import RES_KEY as SQS_KEY
 
@@ -34,7 +34,7 @@ class Topic(XResource):
     Class for SNS Topics
     """
 
-    policies_scaffolds = ACCESS_TYPES
+    policies_scaffolds = get_access_types(MOD_KEY)
     keyword = "Topics"
 
     def init_outputs(self):

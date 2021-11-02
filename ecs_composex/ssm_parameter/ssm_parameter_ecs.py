@@ -1,4 +1,4 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
@@ -11,7 +11,11 @@ from ecs_composex.resource_settings import (
     handle_resource_to_services,
 )
 from ecs_composex.ssm_parameter.ssm_parameter_aws import lookup_param_config
-from ecs_composex.ssm_parameter.ssm_params import RES_KEY, SSM_PARAM_ARN, SSM_PARAM_NAME
+from ecs_composex.ssm_parameter.ssm_parameter_params import (
+    RES_KEY,
+    SSM_PARAM_ARN,
+    SSM_PARAM_NAME,
+)
 
 
 def create_ssm_param_mappings(mapping, resources, settings):

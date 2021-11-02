@@ -23,16 +23,16 @@ from ecs_composex.common.compose_resources import (
     set_use_resources,
 )
 from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.iam.import_sam_policies import get_access_types
 from ecs_composex.resources_import import import_record_properties
 from ecs_composex.ssm_parameter.ssm_parameter_ecs import create_ssm_param_mappings
-from ecs_composex.ssm_parameter.ssm_params import (
+from ecs_composex.ssm_parameter.ssm_parameter_params import (
     MAPPINGS_KEY,
     MOD_KEY,
     RES_KEY,
     SSM_PARAM_ARN,
     SSM_PARAM_NAME,
 )
-from ecs_composex.ssm_parameter.ssm_perms import get_access_types
 
 
 def handle_yaml_validation(resource, value, file_path):
@@ -152,7 +152,7 @@ class SsmParameter(XResource):
     Class to represent a SQS Queue
     """
 
-    policies_scaffolds = get_access_types()
+    policies_scaffolds = get_access_types(MOD_KEY)
 
     def init_outputs(self):
         spacer = ""

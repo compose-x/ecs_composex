@@ -1,4 +1,4 @@
-﻿#   -*- coding: utf-8 -*-
+#   -*- coding: utf-8 -*-
 #  SPDX-License-Identifier: MPL-2.0
 #  Copyright 2020-2021 John Mille <john@compose-x.io>
 
@@ -20,7 +20,6 @@ from ecs_composex.codeguru_profiler.codeguru_profiler_params import (
     PROFILER_NAME,
     RES_KEY,
 )
-from ecs_composex.codeguru_profiler.codeguru_profiler_perms import ACCESS_TYPES
 from ecs_composex.common import build_template
 from ecs_composex.common.cfn_params import STACK_ID_SHORT
 from ecs_composex.common.compose_resources import (
@@ -31,6 +30,7 @@ from ecs_composex.common.compose_resources import (
     set_use_resources,
 )
 from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.iam.import_sam_policies import get_access_types
 from ecs_composex.resources_import import import_record_properties
 
 
@@ -68,7 +68,7 @@ class CodeProfiler(XResource):
     Class to manage AWS Code Guru profiles
     """
 
-    policies_scaffolds = ACCESS_TYPES
+    policies_scaffolds = get_access_types(MOD_KEY)
 
     def __init__(self, name, definition, module_name, settings, mapping_key=None):
         super().__init__(

@@ -14,9 +14,12 @@ from troposphere import (
 )
 
 from ecs_composex.common import LOG
+from ecs_composex.iam.import_sam_policies import get_access_types
 from ecs_composex.resource_settings import generate_resource_permissions
 from ecs_composex.resources_import import import_record_properties
-from ecs_composex.s3.s3_perms import ACCESS_TYPES
+from ecs_composex.s3.s3_params import MOD_KEY
+
+ACCESS_TYPES = get_access_types(MOD_KEY)
 
 
 def define_bucket_name(bucket):
