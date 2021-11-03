@@ -1,4 +1,4 @@
-﻿#   -*- coding: utf-8 -*-
+#   -*- coding: utf-8 -*-
 #  SPDX-License-Identifier: MPL-2.0
 #  Copyright 2020-2021 John Mille <john@compose-x.io>
 
@@ -9,7 +9,6 @@ Module to manage top level AWS CodeGuru profiles
 from compose_x_common.compose_x_common import keyisset
 from troposphere import GetAtt, Ref
 
-from ecs_composex.codeguru_profiler.codeguru_profiler_perms import ACCESS_TYPES
 from ecs_composex.cognito_userpool.cognito_aws import lookup_userpool_config
 from ecs_composex.cognito_userpool.cognito_params import (
     MAPPINGS_KEY,
@@ -43,8 +42,6 @@ class UserPool(XResource):
     """
     Class to manage AWS Code Guru profiles
     """
-
-    policies_scaffolds = ACCESS_TYPES
 
     def init_outputs(self):
         self.output_properties = {

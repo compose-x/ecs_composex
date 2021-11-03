@@ -17,7 +17,8 @@ from ecs_composex.common.compose_resources import get_parameter_settings
 from ecs_composex.common.services_helpers import extend_container_envvars
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.ecs.ecs_iam import define_service_containers
-from ecs_composex.kms.kms_perms import ACCESS_TYPES as KMS_ACCESS_TYPES
+from ecs_composex.iam.import_sam_policies import get_access_types
+from ecs_composex.kms.kms_params import MOD_KEY as KMS_MOD
 
 
 def determine_arns(arn, policy_doc, ignore_missing_primary=False):
@@ -218,7 +219,7 @@ def handle_kms_access(mapping_family, resource, target, selected_services):
         mapping_family, resource.logical_name, resource.kms_arn_attr.title
     )
     kms_perms = generate_resource_permissions(
-        f"{resource.logical_name}KmsKey", KMS_ACCESS_TYPES, arn=key_arn
+        f"{resource.logical_name}KmsKey", get_access_types(KMS_MOD), arn=key_arn
     )
     add_iam_policy_to_service_task_role(
         target[0].template,

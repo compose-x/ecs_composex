@@ -1,4 +1,4 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
@@ -19,6 +19,7 @@ from ecs_composex.common.compose_resources import (
     set_use_resources,
 )
 from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.iam.import_sam_policies import get_access_types
 from ecs_composex.sqs.sqs_ecs import create_sqs_mappings
 from ecs_composex.sqs.sqs_params import (
     MAPPINGS_KEY,
@@ -28,7 +29,6 @@ from ecs_composex.sqs.sqs_params import (
     SQS_NAME,
     SQS_URL,
 )
-from ecs_composex.sqs.sqs_perms import get_access_types
 from ecs_composex.sqs.sqs_template import render_new_queues
 
 
@@ -37,7 +37,7 @@ class Queue(XResource):
     Class to represent a SQS Queue
     """
 
-    policies_scaffolds = get_access_types()
+    policies_scaffolds = get_access_types(MOD_KEY)
 
     def init_outputs(self):
         self.output_properties = {

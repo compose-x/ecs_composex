@@ -1,0 +1,8 @@
+{
+  "Publish": {
+    "Action": [
+      "sns:Publish"
+    ],
+    "Effect": "Allow"
+  }
+}
