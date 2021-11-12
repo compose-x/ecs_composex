@@ -460,12 +460,7 @@ class Service(object):
                 Ref(ecs_params.LAUNCH_TYPE),
                 Ref(AWS_NO_VALUE),
             ),
-            Tags=Tags(
-                {
-                    "Name": Ref(ecs_params.SERVICE_NAME),
-                    "StackName": Ref(AWS_STACK_NAME),
-                }
-            ),
+            Tags=family.service_tags,
             PropagateTags="SERVICE",
             PlatformVersion=If(
                 ecs_conditions.USE_FARGATE_CON_T,
