@@ -239,9 +239,7 @@ class ComposeService(object):
 
         :param list[troposphere.ecs.PortMapping] aws_vpc_mappings: List of ECS Port Mappings defined from ports[]
         """
-        expose_port_re = re.compile(
-            r"^(?P<target>\d{1,5})(?=/(?P<protocol>(udp$|tcp$)))?"
-        )
+        expose_port_re = re.compile(r"^(?P<target>\d{2,5})(?=/(?P<protocol>udp|tcp))")
         for expose_port in self.expose_ports:
             if isinstance(expose_port, str):
                 parts = expose_port_re.match(expose_port)
