@@ -119,6 +119,7 @@ class ComposeService(object):
         self.container_name = name
         self.service_name = Sub(f"${{{ROOT_STACK_NAME.title}}}-{self.name}")
 
+        self.deploy_labels = {}
         self.x_configs = set_else_none("x-configs", self.definition)
         self.x_scaling = set_else_none("x-scaling", self.definition, None, False)
         self.x_network = set_else_none("x-network", self.definition, None, False)
@@ -1087,6 +1088,17 @@ class ComposeService(object):
             )
         self.update_config = deployment[key]
 
+    def set_service_labels(self, deployments):
+        labels = "labels"
+        if not keyisset(labels, deployments):
+            return
+        self.deploy_labels = deployments[labels]
+        custom_keys = re.compile(r"^ecs\.[\S]+$")
+        keys = [name for name in self.deploy_labels.keys()]
+        for key in keys:
+            if custom_keys.match(key):
+                del self.deploy_labels[key]
+
     def set_service_deploy(self):
         """
         Function to setup the service configuration from the deploy section of the service in compose file.
@@ -1101,6 +1113,7 @@ class ComposeService(object):
         self.define_essential(self.definition[deploy])
         self.set_update_config(self.definition[deploy])
         self.define_ephemeral_storage_condition(self.definition[deploy])
+        self.set_service_labels(self.definition[deploy])
 
 
 def handle_same_task_services_dependencies(services_config):
@@ -1415,6 +1428,7 @@ class ComposeFamily(object):
         self.task_definition = None
         self.service_definition = None
         self.service_config = None
+        self.service_tags = None
         self.task_ephemeral_storage = 0
         self.exec_role = None
         self.task_role = None
@@ -1424,6 +1438,7 @@ class ComposeFamily(object):
         self.launch_type = self.default_launch_type
         self.ecs_capacity_providers = []
         self.target_groups = []
+        self.set_service_labels()
         self.set_compute_platform()
         self.task_logging_options = {}
         self.stack_parameters = {}
@@ -1466,6 +1481,22 @@ class ComposeFamily(object):
                 for service_depends_on in service.depends_on:
                     if service_depends_on not in self.services_depends_on:
                         self.services_depends_on.append(service_depends_on)
+
+    def set_service_labels(self):
+        default_tags = Tags(
+            {
+                "Name": Ref(ecs_params.SERVICE_NAME),
+                "StackName": Ref(AWS_STACK_NAME),
+            }
+        )
+        if not self.service_tags:
+            self.service_tags = default_tags
+        for svc in self.services:
+            if not svc.deploy_labels:
+                continue
+            if isinstance(svc.deploy_labels, list):
+                continue
+            self.service_tags += Tags(**svc.deploy_labels)
 
     def set_task_ephemeral_storage(self):
         """

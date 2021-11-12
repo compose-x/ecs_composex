@@ -151,6 +151,7 @@ services:
     deploy:
       labels:
         ecs.ephemeral.storage: 20
+        testing: value
       resources:
         reservations:
           cpus: '0.25'
