@@ -4,23 +4,27 @@
         "PaginationToken": "",
         "ResourceTagMappingList": [
             {
-                "ResourceARN": "arn:aws:acm:eu-west-1:000000000000:certificate/20e4d2f9-e638-473f-bbdf-5409620f9634",
+                "ResourceARN": "arn:aws:acm:eu-west-1:000000000000:certificate/19852ab2-538d-4e2e-b8b3-fcd0fa61d275",
                 "Tags": [
                     {
+                        "Key": "HasWildCard",
+                        "Value": "true"
+                    },
+                    {
                         "Key": "Name",
-                        "Value": "docs.ecs-composex.lambda-my-aws.io"
+                        "Value": "traefik.compose-x.io"
                     }
                 ]
             }
         ],
         "ResponseMetadata": {
-            "RequestId": "eeab6807-7a9f-45cd-83e4-f285f65a9ce7",
+            "RequestId": "9d7bff6f-2bb3-4527-bf55-ccc1320b95c1",
             "HTTPStatusCode": 200,
             "HTTPHeaders": {
-                "x-amzn-requestid": "eeab6807-7a9f-45cd-83e4-f285f65a9ce7",
+                "x-amzn-requestid": "9d7bff6f-2bb3-4527-bf55-ccc1320b95c1",
                 "content-type": "application/x-amz-json-1.1",
-                "content-length": "220",
-                "date": "Sat, 14 Nov 2020 15:43:18 GMT"
+                "content-length": "243",
+                "date": "Sat, 13 Nov 2021 11:24:23 GMT"
             },
             "RetryAttempts": 0
         }
