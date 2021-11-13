@@ -1,4 +1,4 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
@@ -45,11 +45,15 @@ def get_cert_config(logical_name, cert_arn, session):
     client = session.client("acm")
     try:
         cert_r = client.describe_certificate(CertificateArn=cert_arn)
+        client.get_certificate(CertificateArn=cert_r["Certificate"]["CertificateArn"])
         cert_config.update(
             {logical_name: {logical_name: cert_r["Certificate"]["CertificateArn"]}}
         )
         validate_certificate_status(cert_r["Certificate"])
         return cert_config
+    except client.exceptions.RequestInProgressException:
+        LOG.error(f"Certificate {cert_arn} has not yet been issued.")
+        raise
     except client.exceptions.ResourceNotFoundException:
         return None
     except client.exceptions.InvalidArnException:
