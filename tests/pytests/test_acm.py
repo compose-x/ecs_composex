@@ -18,7 +18,7 @@ def test_lookup_acm():
     :return:
     """
     here = path.abspath(path.dirname(__file__))
-    session = boto3.session.Session(profile_name="composex")
+    session = boto3.session.Session()
     pill = placebo.attach(session, data_path=f"{here}/x_acm_lookup")
     # pill.record()
     pill.playback()
