@@ -223,7 +223,7 @@ def handle_string_condition_format(access_string):
     domain_re = re.compile(
         r"^(?=.{1,255}$)(?!-)[A-Za-z0-9\-]{1,63}(\.[A-Za-z0-9\-]{1,63})*\.?(?<!-)$"
     )
-    path_re = re.compile(r"(?:.*)^[/][\S]+$")
+    path_re = re.compile(r"(^/[\S]+$)")
     if (
         domain_path_re.match(access_string)
         and len(domain_path_re.match(access_string).groups()) == 2
