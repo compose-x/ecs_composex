@@ -1,4 +1,4 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
@@ -79,6 +79,46 @@ def define_protocol(port_string):
     return protocol
 
 
+def set_port_from_str(port: str):
+    """
+    Function to filter out port string and define published port, target port and protocol
+
+    :param str port:
+    :return: the ports parameters
+    :rtype: tuple
+    """
+    if r"/" in port:
+        protocol = port.split(r"/")[-1]
+        if protocol not in ["udp", "tcp"]:
+            raise ValueError(
+                "Protocol", protocol, "is not valid. Must be one of", ["udp", "tcp"]
+            )
+        port = port.split(r"/")[0]
+    else:
+        protocol = "tcp"
+    if r":" in port:
+        published = port.split(r":")[0]
+        target = port.split(r":")[1]
+    else:
+        target = port
+        published = port
+    if r"-" in target or r"-" in published:
+        raise ValueError(
+            "Range ports not supported for exposure in AWS ECS with AWSVPC mode"
+        )
+    numbers_only = re.compile(r"^\d+$")
+    if not numbers_only.match(target):
+        raise ValueError("target port is not valid", numbers_only.pattern)
+    if not numbers_only.match(published):
+        raise ValueError("published port is not valid", numbers_only.pattern)
+    if not (1 <= int(target) < (2 ** 16)):
+        raise ValueError(f"target port {target} is not between 1 and 65535")
+    if not (1 <= int(published) < (2 ** 16)):
+        raise ValueError(f"published port {published} is not between 1 and 65535")
+
+    return published, target, protocol
+
+
 def set_service_ports(ports):
     """Function to define common structure to ports
 
@@ -92,21 +132,12 @@ def set_service_ports(ports):
                 "ports must be of types", dict, "or", list, "got", type(port)
             )
         if isinstance(port, str):
-            ports_str_re = re.compile(
-                r"(?:(?P<published>\d{1,5})?(?::))?(?P<target>\d{1,5})(?:(?=/(?P<protocol>udp|tcp)))?"
-            )
-            if not ports_str_re.match(port):
-                raise ValueError(
-                    f"Port {port} is not valid. Must match", ports_str_re.pattern
-                )
-            parts = ports_str_re.match(port)
-            print("PROTOCOL VALUE IS ", parts.group("protocol"))
+            parts = set_port_from_str(port)
             service_ports.append(
                 {
-                    "protocol": parts.group("protocol") or "tcp",
-                    "published": int(parts.group("published"))
-                    or int(parts.group("target")),
-                    "target": int(parts.group("target")),
+                    "protocol": parts[2],
+                    "published": int(parts[0]),
+                    "target": int(parts[1]),
                     "mode": "awsvpc",
                 }
             )
