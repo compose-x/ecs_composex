@@ -7,13 +7,15 @@ Module to add Prometheus scraper for ECS tasks.
 """
 import json
 import re
+from os import path
 
 import yaml
 
 try:
     from yaml import CDumper as Dumper
+    from yaml import CLoader as Loader
 except ImportError:
-    from yaml import Dumper
+    from yaml import Dumper, Loader
 
 from troposphere import (
     AWS_ACCOUNT_ID,
@@ -47,26 +49,39 @@ NGINX_EXPORTER_IMAGE_PARAMETER = Parameter(
 METRICS_DEFAULT_PATH = r"/metrics"
 
 
-def set_cw_prometheus_config_parameter(family):
+def set_cw_prometheus_config_parameter(family, options):
     """
     Function to add the SSM Parameter representing the Prometheus scrapper config
     :param ecs_composex.common.compose_services.ComposeFamily family:
     :return: parameter
     :rtype: troposphere.ssm.Parameter
     """
-    value_py = {
-        "global": {
-            "scrape_interval": "1m",
-            "scrape_timeout": "10s",
-        },
-        "scrape_configs": [
-            {
-                "job_name": "cwagent-ecs-file-sd-config",
-                "sample_limit": 10000,
-                "file_sd_configs": [{"files": ["/tmp/cwagent_ecs_auto_sd.yaml"]}],
-            }
-        ],
-    }
+    scrape_config = {}
+    if keyisset("ScrapingConfiguration", options):
+        scrape_config = options["ScrapingConfiguration"]
+    if keyisset("ScrapingConfigurationFile", scrape_config):
+        with open(
+            path.abspath(scrape_config["ScrapingConfigurationFile"]), "r"
+        ) as config_fd:
+            value_py = yaml.load(config_fd.read(), Loader=Loader)
+    else:
+        value_py = {
+            "global": {
+                "scrape_interval": "1m"
+                if not keyisset("Interval", scrape_config)
+                else scrape_config["Interval"],
+                "scrape_timeout": "10s"
+                if not keyisset("Timeout", scrape_config)
+                else scrape_config["Timeout"],
+            },
+            "scrape_configs": [
+                {
+                    "job_name": "cwagent-ecs-file-sd-config",
+                    "sample_limit": 10000,
+                    "file_sd_configs": [{"files": ["/tmp/cwagent_ecs_auto_sd.yaml"]}],
+                }
+            ],
+        }
 
     parameter = SSMParameter(
         f"{family.logical_name}SSMPrometheusConfig",
@@ -545,7 +560,7 @@ def add_cw_agent_to_family(family, **options):
     Function to add the CW Agent to the task family for additional monitoring
     :param ecs_composex.common.compose_services.ComposeFamily family:
     """
-    prometheus_config = set_cw_prometheus_config_parameter(family)
+    prometheus_config = set_cw_prometheus_config_parameter(family, options)
     cw_agent_config = set_cw_config_parameter(family, **options)
     family.add_service(
         define_cloudwatch_agent(family, prometheus_config, cw_agent_config)

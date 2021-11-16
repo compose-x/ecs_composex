@@ -1,0 +1,9 @@
+services:
+  dummy:
+    image: nginx
+
+x-acm:
+  invalid:
+    Lookup:
+      Tags:
+        - Name: negativetesting.compose-x.io

@@ -15,6 +15,9 @@
           "description": "Whether or not enable debug mode for the CloudWatch agent",
           "default": false
         },
+        "ScrapingConfiguration": {
+          "$ref": "#/definitions/ScrapeConfigDef"
+        },
         "CollectForAppmesh": {
           "type": "boolean",
           "description": "Automatically adds envoy EMF Processor"
@@ -55,6 +58,23 @@
     }
   },
   "definitions": {
+    "ScrapeConfigDef": {
+      "type": "object",
+      "properties": {
+        "Interval": {
+          "type": "string",
+          "pattern": "((([0-9]+)y)?(([0-9]+)w)?(([0-9]+)d)?(([0-9]+)h)?(([0-9]+)m)?(([0-9]+)s)?(([0-9]+)ms)?|0)"
+        },
+        "Timeout": {
+          "type": "string",
+          "pattern": "((([0-9]+)y)?(([0-9]+)w)?(([0-9]+)d)?(([0-9]+)h)?(([0-9]+)m)?(([0-9]+)s)?(([0-9]+)ms)?|0)"
+        },
+        "ScrapingConfigurationFile": {
+          "type": "string",
+          "description": "Path to a prometheus scraping configuration file."
+        }
+      }
+    },
     "ExporterConfig": {
       "type": "object",
       "additionalProperties": false,

@@ -9,5 +9,8 @@ Feature: ecs_composex.prometheus
 
 
         Examples:
-            | file_path                              | override_file                               |
-            | use-cases/prometheus/blog.features.yml | use-cases/prometheus/prometheus_enabled.yml |
+            | file_path                              | override_file                                      |
+            | use-cases/prometheus/blog.features.yml | use-cases/prometheus/prometheus_enabled.yml        |
+            | use-cases/prometheus/blog.features.yml | use-cases/prometheus/prometheus_custom_options.yml |
+            | use-cases/prometheus/blog.features.yml | use-cases/prometheus/prometheus_config_file.yml    |
+            | use-cases/prometheus/blog.features.yml | use-cases/prometheus/prometheus_enabled.yml        |
