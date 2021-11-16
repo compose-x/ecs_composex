@@ -2397,6 +2397,7 @@ class ComposeFamily(object):
             "EnableTasksDiscovery": False,
             "EnableCWAgentDebug": False,
             "AutoAddNginxPrometheusExporter": False,
+            "ScrapingConfiguration": False,
         }
         for service in self.services:
             if keyisset("x-prometheus", service.definition):
