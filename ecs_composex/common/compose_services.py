@@ -65,7 +65,7 @@ from ecs_composex.ecs.docker_tools import (
     import_time_values_to_seconds,
     set_memory_to_mb,
 )
-from ecs_composex.ecs.ecs_conditions import USE_FARGATE_CON_T
+from ecs_composex.ecs.ecs_conditions import USE_EC2_CON_T
 from ecs_composex.ecs.ecs_params import (
     AWS_XRAY_IMAGE,
     EXEC_ROLE_T,
@@ -332,9 +332,9 @@ class ComposeService(object):
                 Tmpfs=self.define_tmpfs(),
             ),
             Privileged=If(
-                USE_FARGATE_CON_T,
-                Ref(AWS_NO_VALUE),
+                USE_EC2_CON_T,
                 keyisset("Privileged", self.definition),
+                Ref(AWS_NO_VALUE),
             ),
             WorkingDirectory=self.working_dir,
             DockerLabels=self.import_docker_labels(),
@@ -440,7 +440,7 @@ class ComposeService(object):
                 for pathes in self.definition[tmpfs_key]:
                     self.tmpfses.append({"ContainerPath": pathes})
         rendered_fs = [Tmpfs(**args) for args in self.tmpfses]
-        return If(USE_FARGATE_CON_T, Ref(AWS_NO_VALUE), rendered_fs)
+        return If(USE_EC2_CON_T, rendered_fs, Ref(AWS_NO_VALUE))
 
     def define_sysctls(self):
         """
@@ -461,7 +461,7 @@ class ComposeService(object):
         controls = []
         for name, value in def_dict.items():
             controls.append(SystemControl(Namespace=name, Value=str(value)))
-        return If(USE_FARGATE_CON_T, Ref(AWS_NO_VALUE), controls)
+        return If(USE_EC2_CON_T, controls, Ref(AWS_NO_VALUE))
 
     def define_shm_size(self):
         """
@@ -470,7 +470,7 @@ class ComposeService(object):
         if not keyisset("shm_size", self.definition):
             return Ref(AWS_NO_VALUE)
         memory_value = set_memory_to_mb(self.definition["shm_size"])
-        return If(USE_FARGATE_CON_T, Ref(AWS_NO_VALUE), memory_value)
+        return If(USE_EC2_CON_T, memory_value, Ref(AWS_NO_VALUE))
 
     def set_add_capacities(self, add_key, valid, cap_adds, all_adds, fargate):
         """
@@ -588,9 +588,9 @@ class ComposeService(object):
             "Drop": cap_drops or Ref(AWS_NO_VALUE),
         }
         if all_adds:
-            cap_adds.append(If(USE_FARGATE_CON_T, Ref(AWS_NO_VALUE), all_adds))
+            cap_adds.append(If(USE_EC2_CON_T, all_adds, Ref(AWS_NO_VALUE)))
         if all_drops:
-            cap_drops.append(If(USE_FARGATE_CON_T, Ref(AWS_NO_VALUE), all_drops))
+            cap_drops.append(If(USE_EC2_CON_T, all_drops, Ref(AWS_NO_VALUE)))
         return KernelCapabilities(**kwargs)
 
     def define_ulimits(self):
@@ -650,7 +650,7 @@ class ComposeService(object):
             else:
                 raise TypeError("ulimit is not of the proper definition")
             if limit_name not in fargate_supported:
-                rendered_limits.append(If(USE_FARGATE_CON_T, Ref(AWS_NO_VALUE), ulimit))
+                rendered_limits.append(If(USE_EC2_CON_T, ulimit, Ref(AWS_NO_VALUE)))
             else:
                 rendered_limits.append(ulimit)
         if rendered_limits:
@@ -2088,9 +2088,9 @@ class ComposeFamily(object):
             Memory=ecs_params.FARGATE_RAM,
             NetworkMode=NETWORK_MODE,
             EphemeralStorage=If(
-                USE_FARGATE_CON_T,
-                EphemeralStorage(SizeInGiB=self.task_ephemeral_storage),
+                USE_EC2_CON_T,
                 Ref(AWS_NO_VALUE),
+                EphemeralStorage(SizeInGiB=self.task_ephemeral_storage),
             )
             if 0 < self.task_ephemeral_storage >= 21
             else Ref(AWS_NO_VALUE),
@@ -2320,14 +2320,14 @@ class ComposeFamily(object):
                     Host=Ref(AWS_NO_VALUE),
                     Name=volume.volume_name,
                     DockerVolumeConfiguration=If(
-                        USE_FARGATE_CON_T,
-                        Ref(AWS_NO_VALUE),
+                        USE_EC2_CON_T,
                         DockerVolumeConfiguration(
                             Scope="task" if not volume.is_shared else "shared",
                             Autoprovision=Ref(AWS_NO_VALUE)
                             if not volume.is_shared
                             else True,
                         ),
+                        Ref(AWS_NO_VALUE),
                     ),
                 )
             if volume.cfn_volume:
