@@ -2445,6 +2445,8 @@ class ComposeFamily(object):
                 )
             provider["Weight"] = int(max(provider["Weight"]))
         self.ecs_capacity_providers = list(task_config.values())
+
+    def set_service_launch_type(self, cluster_providers):
         if self.ecs_capacity_providers:
             if all(
                 provider["CapacityProvider"] in ["FARGATE", "FARGATE_SPOT"]
@@ -2463,6 +2465,22 @@ class ComposeFamily(object):
                     "CapacityProviderStrategy",
                     cfn_capacity_providers,
                 )
+        elif not self.ecs_capacity_providers and cluster_providers:
+            if isinstance(self.service_definition, EcsService):
+                setattr(
+                    self.service_definition,
+                    "CapacityProviderStrategy",
+                    Ref(AWS_NO_VALUE),
+                )
+            LOG.info(f"{self.name} - Using Cluster defined Capacity Providers")
+            if all(
+                provider in ["FARGATE", "FARGATE_SPOT"]
+                for provider in cluster_providers
+            ):
+                self.launch_type = "FARGATE_PROVIDERS"
+            else:
+                self.launch_type = "CAPACITY_PROVIDERS"
+
         else:
             if isinstance(self.service_definition, EcsService):
                 setattr(
@@ -2470,10 +2488,10 @@ class ComposeFamily(object):
                     "CapacityProviderStrategy",
                     Ref(AWS_NO_VALUE),
                 )
-            if self.launch_type and self.stack:
-                self.stack.Parameters.update(
-                    {ecs_params.LAUNCH_TYPE.title: self.launch_type}
-                )
+        if self.launch_type and self.stack:
+            self.stack.Parameters.update(
+                {ecs_params.LAUNCH_TYPE.title: self.launch_type}
+            )
 
     def validate_capacity_providers(self, cluster_providers):
         """
@@ -2486,9 +2504,9 @@ class ComposeFamily(object):
         cap_names = [cap["CapacityProvider"] for cap in self.ecs_capacity_providers]
         if not isinstance(cluster_providers, list):
             raise TypeError("clusters_providers must be a list")
-        if not self.ecs_capacity_providers:
+        if not self.ecs_capacity_providers and not cluster_providers:
             LOG.info(
-                f"{self.name} - No capacity providers specified in task definition"
+                f"{self.name} - No capacity providers specified in task definition nor cluster"
             )
             return True
         elif not cluster_providers:
@@ -2529,6 +2547,7 @@ class ComposeFamily(object):
         else:
             self.merge_capacity_providers()
             self.validate_capacity_providers(settings.ecs_cluster.capacity_providers)
+            self.set_service_launch_type(settings.ecs_cluster.capacity_providers)
             if self.stack:
                 LOG.info(
                     f"{self.name} - Updated {ecs_params.LAUNCH_TYPE.title} to"
