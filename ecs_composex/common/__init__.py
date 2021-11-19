@@ -204,11 +204,11 @@ def setup_logging():
     default_level = True
     formats = {
         "INFO": logthings.Formatter(
-            "%(asctime)s [%(levelname)s], %(message)s",
+            "%(asctime)s [%(levelname)8s] %(message)s",
             "%Y-%m-%d %H:%M:%S",
         ),
         "DEBUG": logthings.Formatter(
-            "%(asctime)s [%(levelname)s], %(filename)s.%(lineno)d , %(funcName)s, %(message)s",
+            "%(asctime)s [%(levelname)8s] %(filename)s.%(lineno)d , %(funcName)s, %(message)s",
             "%Y-%m-%d %H:%M:%S",
         ),
     }
