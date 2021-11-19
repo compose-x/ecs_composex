@@ -30,14 +30,18 @@ SERVICE_COUNT_ZERO_CON = Equals(Ref(ecs_params.SERVICE_COUNT), "0")
 USE_EC2_CON_T = "UseBasicLaunchTypeCondition"
 USE_EC2_CON = Equals(Ref(ecs_params.LAUNCH_TYPE), "EC2")
 
+USE_FARGATE_PROVIDERS_CON_T = "UseFargateProvidersCondition"
+USE_FARGATE_PROVIDERS_CON = Equals(Ref(ecs_params.LAUNCH_TYPE), "FARGATE_PROVIDERS")
+
 USE_FARGATE_CON_T = "UseFargateLaunchTypeCondition"
-USE_FARGATE_CON = Equals(Ref(ecs_params.LAUNCH_TYPE), "FARGATE")
+USE_FARGATE_CON = Or(
+    Condition(USE_FARGATE_PROVIDERS_CON_T),
+    Equals(Ref(ecs_params.LAUNCH_TYPE), "FARGATE"),
+)
 
 USE_NORMAL_LAUNCH_TYPES_CON_T = "UseNormalLaunchType"
 USE_NORMAL_LAUNCH_TYPES_CON = Or(Condition(USE_EC2_CON_T), Condition(USE_FARGATE_CON_T))
 
-USE_FARGATE_PROVIDERS_CON_T = "UseFargateProvidersCondition"
-USE_FARGATE_PROVIDERS_CON = Equals(Ref(ecs_params.LAUNCH_TYPE), "FARGATE_PROVIDERS")
 
 USE_MIXED_CAPACITY_PROVIDERS_CON_T = "UseMixedProvidersCondition"
 USE_MIXED_CAPACITY_PROVIDERS_CON = Equals(
