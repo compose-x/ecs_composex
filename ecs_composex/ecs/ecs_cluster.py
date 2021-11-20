@@ -530,23 +530,13 @@ def evaluate_capacity_providers(cluster_def):
     :rtype: list
     """
     providers = []
-    providers_strategies = []
     if keyisset("capacityProviders", cluster_def):
         providers = cluster_def["capacityProviders"]
-    if keyisset("defaultCapacityProviderStrategy", cluster_def):
-        providers_strategies = [
-            provider["capacityProvider"]
-            for provider in cluster_def["defaultCapacityProviderStrategy"]
-        ]
-    if not providers and not providers_strategies:
+    if not providers:
         LOG.warning(
-            f"{cluster_def['clusterName']} - No capacityProvider nor defaultCapacityProviderStrategy defined."
+            f"{cluster_def['clusterName']} - No capacityProvider defined. Fallback to ECS Default"
             "Overriding to EC2"
         )
-    elif providers and providers_strategies:
-        for name in providers_strategies:
-            if name not in providers:
-                providers.append(name)
     return providers
 
 

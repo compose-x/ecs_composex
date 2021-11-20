@@ -82,28 +82,27 @@ def initialize_service_template(service_name):
         ecs_conditions.USE_CLUSTER_SG_CON_T, ecs_conditions.USE_CLUSTER_SG_CON
     )
     service_tpl.add_condition(
-        ecs_conditions.USE_EC2_CON_T,
-        ecs_conditions.USE_EC2_CON,
+        ecs_conditions.USE_FARGATE_PROVIDERS_CON_T,
+        ecs_conditions.USE_FARGATE_PROVIDERS_CON,
     )
     service_tpl.add_condition(
         ecs_conditions.USE_FARGATE_CON_T,
         ecs_conditions.USE_FARGATE_CON,
     )
     service_tpl.add_condition(
-        ecs_conditions.USE_NORMAL_LAUNCH_TYPES_CON_T,
-        ecs_conditions.USE_NORMAL_LAUNCH_TYPES_CON,
+        ecs_conditions.NOT_FARGATE_CON_T, ecs_conditions.NOT_FARGATE_CON
     )
     service_tpl.add_condition(
-        ecs_conditions.USE_FARGATE_PROVIDERS_CON_T,
-        ecs_conditions.USE_FARGATE_PROVIDERS_CON,
+        ecs_conditions.USE_LAUNCH_TYPE_CON_T, ecs_conditions.USE_LAUNCH_TYPE_CON
+    )
+
+    service_tpl.add_condition(
+        ecs_conditions.USE_EC2_CON_T,
+        ecs_conditions.USE_EC2_CON,
     )
     service_tpl.add_condition(
-        ecs_conditions.USE_MIXED_CAPACITY_PROVIDERS_CON_T,
-        ecs_conditions.USE_MIXED_CAPACITY_PROVIDERS_CON,
-    )
-    service_tpl.add_condition(
-        ecs_conditions.USE_SOME_CAPACITY_PROVIDER_CON_T,
-        ecs_conditions.USE_SOME_CAPACITY_PROVIDER_CON,
+        ecs_conditions.USE_CAPACITY_PROVIDERS_CON_T,
+        ecs_conditions.USE_CAPACITY_PROVIDERS_CON,
     )
     service_tpl.add_condition(
         CREATE_PUBLIC_NAMESPACE_CON_T, CREATE_PUBLIC_NAMESPACE_CON
@@ -204,13 +203,12 @@ def initialize_family_services(settings, family):
     family.service_config.network.associate_ext_igress_rules(family.template)
     family.service_config.network.add_self_ingress(family)
     family.merge_capacity_providers()
-    family.validate_capacity_providers(settings.ecs_cluster_providers)
+    family.validate_capacity_providers(settings.ecs_cluster)
     family.stack.Parameters.update(
         {
             ecs_params.SERVICE_NAME_T: family.logical_name,
             CLUSTER_NAME_T: Ref(CLUSTER_NAME),
             ROOT_STACK_NAME_T: Ref(ROOT_STACK_NAME),
-            ecs_params.LAUNCH_TYPE.title: family.launch_type,
         }
     )
     family.upload_services_env_files(settings)

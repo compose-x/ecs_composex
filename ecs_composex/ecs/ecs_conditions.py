@@ -27,32 +27,37 @@ USE_CLUSTER_SG_CON = Not(Condition(NOT_USE_CLUSTER_SG_CON_T))
 SERVICE_COUNT_ZERO_CON_T = "ServiceCountIsZeroCondition"
 SERVICE_COUNT_ZERO_CON = Equals(Ref(ecs_params.SERVICE_COUNT), "0")
 
-USE_EC2_CON_T = "UseBasicLaunchTypeCondition"
+USE_EC2_CON_T = "UseEC2LaunchType"
 USE_EC2_CON = Equals(Ref(ecs_params.LAUNCH_TYPE), "EC2")
+
 
 USE_FARGATE_PROVIDERS_CON_T = "UseFargateProvidersCondition"
 USE_FARGATE_PROVIDERS_CON = Equals(Ref(ecs_params.LAUNCH_TYPE), "FARGATE_PROVIDERS")
 
+USE_FARGATE_LT_CON_T = "UseFargateLaunchType"
+USE_FARGATE_LT_CON = Equals(Ref(ecs_params.LAUNCH_TYPE), "FARGATE")
+
+USE_CLUSTER_MODE_CON_T = "UseClusterDefaultProviders"
+USE_CLUSTER_MODE_CON = Equals(Ref(ecs_params.LAUNCH_TYPE), "CLUSTER_MODE")
+
+USE_SERVICE_MODE_CON_T = "UseServiceProviders"
+USE_SERVICE_MODE_CON = Equals(Ref(ecs_params.LAUNCH_TYPE), "SERVICE_MODE")
+
 USE_FARGATE_CON_T = "UseFargateLaunchTypeCondition"
 USE_FARGATE_CON = Or(
-    Condition(USE_FARGATE_PROVIDERS_CON_T),
-    Equals(Ref(ecs_params.LAUNCH_TYPE), "FARGATE"),
+    Condition(USE_FARGATE_PROVIDERS_CON_T), Condition(USE_FARGATE_LT_CON_T)
 )
 
-USE_NORMAL_LAUNCH_TYPES_CON_T = "UseNormalLaunchType"
-USE_NORMAL_LAUNCH_TYPES_CON = Or(Condition(USE_EC2_CON_T), Condition(USE_FARGATE_CON_T))
+NOT_FARGATE_CON_T = "NotUsingFargateCondition"
+NOT_FARGATE_CON = Not(Condition(USE_FARGATE_CON_T))
 
 
-USE_MIXED_CAPACITY_PROVIDERS_CON_T = "UseMixedProvidersCondition"
-USE_MIXED_CAPACITY_PROVIDERS_CON = Equals(
-    Ref(ecs_params.LAUNCH_TYPE), "CAPACITY_PROVIDERS"
-)
+USE_LAUNCH_TYPE_CON_T = "UseLaunchType"
+USE_LAUNCH_TYPE_CON = Or(Condition(USE_EC2_CON_T), Condition(USE_FARGATE_LT_CON_T))
 
-USE_SOME_CAPACITY_PROVIDER_CON_T = "UseSomeCapacityProviderCondition"
-USE_SOME_CAPACITY_PROVIDER_CON = Or(
-    Condition(USE_FARGATE_PROVIDERS_CON_T),
-    Condition(USE_MIXED_CAPACITY_PROVIDERS_CON_T),
-)
+USE_CAPACITY_PROVIDERS_CON_T = "UseCapacityProviders"
+USE_CAPACITY_PROVIDERS_CON = Not(Condition(USE_LAUNCH_TYPE_CON_T))
+
 
 SERVICE_COUNT_ZERO_AND_FARGATE_CON_T = "ServiceCountZeroAndFargate"
 SERVICE_COUNT_ZERO_AND_FARGATE_CON = And(
