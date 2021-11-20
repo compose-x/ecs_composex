@@ -2442,11 +2442,9 @@ class ComposeFamily(object):
             provider["Weight"] = int(max(provider["Weight"]))
         self.ecs_capacity_providers = list(task_config.values())
 
-    def set_service_launch_type(self, cluster_providers):
-        """
-        :param list[str] cluster_providers:
-        """
-        if self.ecs_capacity_providers and cluster_providers:
+    def set_service_launch_type(self, cluster):
+        """ """
+        if self.ecs_capacity_providers and cluster.capacity_providers:
             if all(
                 provider["CapacityProvider"] in ["FARGATE", "FARGATE_SPOT"]
                 for provider in self.ecs_capacity_providers
@@ -2464,14 +2462,14 @@ class ComposeFamily(object):
                         for provider in self.ecs_capacity_providers
                     ],
                 )
-        elif not self.ecs_capacity_providers and cluster_providers:
+        elif not self.ecs_capacity_providers and cluster.capacity_providers:
             if any(
                 provider in ["FARGATE", "FARGATE_SPOT"]
-                for provider in cluster_providers
+                for provider in cluster.default_strategy_providers
             ):
-                self.launch_type = "CLUSTER_MODE"
+                self.launch_type = "FARGATE_PROVIDERS"
                 LOG.info(
-                    f"{self.name} - Defaulting to CLUSTER_MODE Launch Type given providers are present in Cluster"
+                    f"{self.name} - Defaulting to FARGATE_PROVIDERS as FARGATE[_SPOT] is found in the cluster default strategy"
                 )
             else:
                 self.launch_type = "CLUSTER_MODE"
@@ -2565,7 +2563,7 @@ class ComposeFamily(object):
         else:
             self.merge_capacity_providers()
             self.validate_capacity_providers(settings.ecs_cluster)
-            self.set_service_launch_type(settings.ecs_cluster.capacity_providers)
+            self.set_service_launch_type(settings.ecs_cluster)
             LOG.info(
                 f"{self.name} - Updated {ecs_params.LAUNCH_TYPE.title} to"
                 f" {self.launch_type}"
