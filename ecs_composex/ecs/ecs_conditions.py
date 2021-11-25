@@ -48,7 +48,7 @@ USE_FARGATE_CON = Or(
     Condition(USE_FARGATE_PROVIDERS_CON_T), Condition(USE_FARGATE_LT_CON_T)
 )
 
-NOT_FARGATE_CON_T = "NotUsingFargateCondition"
+NOT_FARGATE_CON_T = "NotUsingFargate"
 NOT_FARGATE_CON = Not(Condition(USE_FARGATE_CON_T))
 
 
