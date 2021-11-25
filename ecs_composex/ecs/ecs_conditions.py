@@ -43,7 +43,7 @@ USE_CLUSTER_MODE_CON = Equals(Ref(ecs_params.LAUNCH_TYPE), "CLUSTER_MODE")
 USE_SERVICE_MODE_CON_T = "UseServiceProviders"
 USE_SERVICE_MODE_CON = Equals(Ref(ecs_params.LAUNCH_TYPE), "SERVICE_MODE")
 
-USE_FARGATE_CON_T = "UseFargateLaunchTypeCondition"
+USE_FARGATE_CON_T = "UseFargate"
 USE_FARGATE_CON = Or(
     Condition(USE_FARGATE_PROVIDERS_CON_T), Condition(USE_FARGATE_LT_CON_T)
 )
