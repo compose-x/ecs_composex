@@ -136,6 +136,7 @@ class ComposeService(object):
         self.env_files = []
         self.tmpfses = []
         self.ephemeral_storage = 0
+        self.family_hostname = None
         self.x_ecs = set_else_none("x-ecs", self.definition, {})
         self.user = None
         self.group = None
@@ -1097,6 +1098,20 @@ class ComposeService(object):
             if custom_keys.match(key):
                 del self.deploy_labels[key]
 
+    def set_family_hostname(self, deployments):
+        """
+        Function to override family_hostname based on label
+        :param dict deployments:
+        """
+        labels = "labels"
+        hostname = "ecs.task.family.hostname"
+        if not keyisset(labels, deployments):
+            return
+        labels = deployments[labels]
+        if not keyisset(hostname, labels):
+            return
+        self.family_hostname = labels[hostname]
+
     def set_service_deploy(self):
         """
         Function to setup the service configuration from the deploy section of the service in compose file.
@@ -1112,6 +1127,7 @@ class ComposeService(object):
         self.set_update_config(self.definition[deploy])
         self.define_ephemeral_storage_condition(self.definition[deploy])
         self.set_service_labels(self.definition[deploy])
+        self.set_family_hostname(self.definition[deploy])
 
 
 def handle_same_task_services_dependencies(services_config):
@@ -1418,6 +1434,7 @@ class ComposeFamily(object):
             "ManagedPolicyArns": [],
             "Policies": [],
         }
+        self.family_hostname = self.name.replace("_", "-").lower()
         self.services_depends_on = []
         self.deployment_config = {}
         self.template = None
@@ -1467,6 +1484,7 @@ class ComposeFamily(object):
         self.handle_logging()
         self.apply_services_params()
         self.set_task_compute_parameter()
+        self.set_family_hostname()
 
     def set_initial_services_dependencies(self):
         """
@@ -2128,6 +2146,32 @@ class ComposeFamily(object):
         self.set_task_compute_parameter()
         self.set_task_definition()
         self.refresh_container_logging_definition()
+
+    def set_family_hostname(self):
+        svcs_hostnames = all(svc.family_hostname for svc in self.services)
+        if not svcs_hostnames:
+            LOG.warning(
+                f"No ecs.task.family.hostname defined on any of the services. Using default {self.family_hostname}"
+            )
+            return
+        potential_svcs = []
+        for svc in self.services:
+            if (
+                svc.family_hostname
+                and hasattr(svc, "container_definition")
+                and svc.container_definition.Essential
+            ):
+                potential_svcs.append(svc)
+        uniq = []
+        for svc in potential_svcs:
+            if svc.family_hostname not in uniq:
+                uniq.append(svc.family_hostname)
+        self.family_hostname = uniq[0].lower().replace("_", "-")
+        if len(uniq) > 0:
+            LOG.warning(
+                f"{self.name} more than one essential container has ecs.task.family.hostname set. "
+                f"Using thes first one {uniq[0]}"
+            )
 
     def update_family_subnets(self, settings):
         """
