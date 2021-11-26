@@ -1126,8 +1126,8 @@ class ComposeService(object):
         self.define_essential(self.definition[deploy])
         self.set_update_config(self.definition[deploy])
         self.define_ephemeral_storage_condition(self.definition[deploy])
-        self.set_service_labels(self.definition[deploy])
         self.set_family_hostname(self.definition[deploy])
+        # self.set_service_labels(self.definition[deploy])
 
 
 def handle_same_task_services_dependencies(services_config):
@@ -2148,7 +2148,7 @@ class ComposeFamily(object):
         self.refresh_container_logging_definition()
 
     def set_family_hostname(self):
-        svcs_hostnames = all(svc.family_hostname for svc in self.services)
+        svcs_hostnames = any(svc.family_hostname for svc in self.services)
         if not svcs_hostnames:
             LOG.warning(
                 f"No ecs.task.family.hostname defined on any of the services. Using default {self.family_hostname}"
@@ -2167,7 +2167,7 @@ class ComposeFamily(object):
             if svc.family_hostname not in uniq:
                 uniq.append(svc.family_hostname)
         self.family_hostname = uniq[0].lower().replace("_", "-")
-        if len(uniq) > 0:
+        if len(uniq) > 1:
             LOG.warning(
                 f"{self.name} more than one essential container has ecs.task.family.hostname set. "
                 f"Using thes first one {uniq[0]}"
