@@ -30,7 +30,7 @@ from troposphere.iam import PolicyType
 from troposphere.ssm import Parameter as SSMParameter
 
 from ecs_composex.common import keyisset
-from ecs_composex.common.cfn_params import Parameter
+from ecs_composex.common.cfn_params import STACK_ID_SHORT, Parameter
 from ecs_composex.common.compose_services import ComposeService
 from ecs_composex.ecs import ecs_params
 
@@ -88,7 +88,9 @@ def set_cw_prometheus_config_parameter(family, options):
         Tier="Standard",
         Type="String",
         Name=Sub(
-            f"/ecs/config/prometheus/${{{ecs_params.CLUSTER_NAME.title}}}/${{{ecs_params.SERVICE_NAME_T}}}"
+            f"/ecs/config/prometheus/${{{ecs_params.CLUSTER_NAME.title}}}/${{STACK_SHORT_ID}}"
+            f"/${{{ecs_params.SERVICE_NAME_T}}}",
+            STACK_SHORT_ID=STACK_ID_SHORT,
         ),
         Description=Sub(
             f"Prometheus Scraping SSM Parameter for ECS Cluster: ${{{ecs_params.CLUSTER_NAME.title}}}"
@@ -406,7 +408,9 @@ def set_cw_config_parameter(family, **options):
         Tier="Intelligent-Tiering",
         Type="String",
         Name=Sub(
-            f"/ecs/config/cw_agent_config/${{{ecs_params.CLUSTER_NAME.title}}}/${{{ecs_params.SERVICE_NAME_T}}}"
+            f"/ecs/config/cw_agent_config/${{{ecs_params.CLUSTER_NAME.title}}}/${{STACK_SHORT_ID}}"
+            f"/${{{ecs_params.SERVICE_NAME_T}}}",
+            STACK_SHORT_ID=STACK_ID_SHORT,
         ),
         Description=Sub(
             f"Prometheus Scraping SSM Parameter for ECS Cluster: ${{{ecs_params.CLUSTER_NAME.title}}}"
