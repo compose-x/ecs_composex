@@ -2486,45 +2486,53 @@ class ComposeFamily(object):
             provider["Weight"] = int(max(provider["Weight"]))
         self.ecs_capacity_providers = list(task_config.values())
 
+    def set_launch_type_from_cluster_and_service(self):
+        if all(
+            provider["CapacityProvider"] in ["FARGATE", "FARGATE_SPOT"]
+            for provider in self.ecs_capacity_providers
+        ):
+            LOG.info(
+                f"{self.name} - Cluster and Service use Fargate only. Setting to FARGATE_PROVIDERS"
+            )
+            self.launch_type = "FARGATE_PROVIDERS"
+        else:
+            self.launch_type = "SERVICE_MODE"
+            LOG.info(
+                f"{self.name} - Using AutoScaling Based Providers",
+                [
+                    provider["CapacityProvider"]
+                    for provider in self.ecs_capacity_providers
+                ],
+            )
+
+    def set_launch_type_from_cluster_only(self, cluster):
+        if any(
+            provider in ["FARGATE", "FARGATE_SPOT"]
+            for provider in cluster.default_strategy_providers
+        ):
+            self.launch_type = "FARGATE_PROVIDERS"
+            LOG.info(
+                f"{self.name} - Defaulting to FARGATE_PROVIDERS as "
+                "FARGATE[_SPOT] is found in the cluster default strategy"
+            )
+        else:
+            self.launch_type = "CLUSTER_MODE"
+            LOG.info(
+                f"{self.name} - Cluster uses non Fargate Capacity Providers. Setting to Cluster default"
+            )
+            self.launch_type = "CLUSTER_MODE"
+
     def set_service_launch_type(self, cluster):
         """ """
         if self.ecs_capacity_providers and cluster.capacity_providers:
-            if all(
-                provider["CapacityProvider"] in ["FARGATE", "FARGATE_SPOT"]
-                for provider in self.ecs_capacity_providers
-            ):
-                LOG.info(
-                    f"{self.name} - Cluster and Service use Fargate only. Setting to FARGATE_PROVIDERS"
-                )
-                self.launch_type = "FARGATE_PROVIDERS"
-            else:
-                self.launch_type = "SERVICE_MODE"
-                LOG.info(
-                    f"{self.name} - Using AutoScaling Based Providers",
-                    [
-                        provider["CapacityProvider"]
-                        for provider in self.ecs_capacity_providers
-                    ],
-                )
+            self.set_launch_type_from_cluster_and_service()
         elif not self.ecs_capacity_providers and cluster.capacity_providers:
-            if any(
-                provider in ["FARGATE", "FARGATE_SPOT"]
-                for provider in cluster.default_strategy_providers
-            ):
-                self.launch_type = "FARGATE_PROVIDERS"
-                LOG.info(
-                    f"{self.name} - Defaulting to FARGATE_PROVIDERS as FARGATE[_SPOT] is found in the cluster default strategy"
-                )
-            else:
-                self.launch_type = "CLUSTER_MODE"
-                LOG.info(
-                    f"{self.name} - Cluster uses non Fargate Capacity Providers. Setting to Cluster default"
-                )
-                self.launch_type = "CLUSTER_MODE"
+            self.set_launch_type_from_cluster_only(cluster)
+        self.set_family_lt()
 
+    def set_family_lt(self):
         if not self.service_definition:
             LOG.warning(f"{self.name} - ECS Service not yet defined. Skipping")
-            return
         else:
             if (
                 self.launch_type == "FARGATE_PROVIDERS"
