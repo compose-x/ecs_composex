@@ -76,7 +76,7 @@ def set_cw_prometheus_config_parameter(family, options):
             },
             "scrape_configs": [
                 {
-                    "job_name": "{{STACK_SHORT_ID}}-cwagent-ecs-file-sd-config",
+                    "job_name": "${STACK_SHORT_ID}-cwagent-ecs-file-sd-config",
                     "sample_limit": 10000,
                     "file_sd_configs": [{"files": ["/tmp/cwagent_ecs_auto_sd.yaml"]}],
                 }
@@ -222,7 +222,7 @@ def get_ngnix_processor(
     ]
     ecs_sd_config["task_definition_list"].append(
         {
-            "sd_job_name": "${{STACK_SHORT_ID}}-nginx-prometheus-exporter",
+            "sd_job_name": "${STACK_SHORT_ID}-nginx-prometheus-exporter",
             "sd_metrics_path": METRICS_DEFAULT_PATH
             if not keyisset("ExporterPath", nginx_config)
             else nginx_config["ExporterPath"],
@@ -236,7 +236,7 @@ def get_ngnix_processor(
     )
     ecs_sd_config["service_name_list_for_tasks"].append(
         {
-            "sd_job_name": "${{STACK_SHORT_ID}}-nginx-prometheus-exporter",
+            "sd_job_name": "${STACK_SHORT_ID}-nginx-prometheus-exporter",
             "sd_metrics_path": METRICS_DEFAULT_PATH
             if not keyisset("ExporterPath", nginx_config)
             else nginx_config["ExporterPath"],
@@ -290,7 +290,7 @@ def get_jmx_processor(family, ecs_sd_config, jmx_config):
     ]
     ecs_sd_config["task_definition_list"].append(
         {
-            "sd_job_name": "${{STACK_SHORT_ID}}-javajmx-prometheus-exporter",
+            "sd_job_name": "${STACK_SHORT_ID}-javajmx-prometheus-exporter",
             "sd_metrics_path": METRICS_DEFAULT_PATH
             if not keyisset("ExporterPath", jmx_config)
             else jmx_config["ExporterPath"],
@@ -329,7 +329,7 @@ def process_custom_rules(family, ecs_sd_config, options, emf_processors):
         )
         ecs_sd_config["task_definition_list"].append(
             {
-                "sd_job_name": f"{{STACK_SHORT_ID}}-task-def-{family.logical_name}-custom-sd-{count}",
+                "sd_job_name": f"${{STACK_SHORT_ID}}-task-def-{family.logical_name}-custom-sd-{count}",
                 "sd_metrics_path": METRICS_DEFAULT_PATH
                 if not keyisset("ExporterPath", rule)
                 else rule["ExporterPath"],
