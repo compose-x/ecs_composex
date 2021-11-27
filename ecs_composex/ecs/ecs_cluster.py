@@ -72,6 +72,7 @@ class EcsCluster(object):
         self.template = None
         self.platform_override = None
         self.capacity_providers = []
+        self.default_strategy_providers = []
         self.cluster_identifier = Ref(AWS_STACK_NAME)
         if definition is None:
             self.set_default_cluster_config(root_stack)
@@ -240,6 +241,10 @@ class EcsCluster(object):
                 }
                 self.set_cluster_mappings(the_cluster)
                 self.capacity_providers = evaluate_capacity_providers(the_cluster)
+                if self.capacity_providers:
+                    self.default_strategy_providers = get_default_capacity_strategy(
+                        the_cluster
+                    )
                 self.platform_override = evaluate_fargate_is_set(
                     self.capacity_providers, the_cluster
                 )
@@ -530,24 +535,26 @@ def evaluate_capacity_providers(cluster_def):
     :rtype: list
     """
     providers = []
-    providers_strategies = []
     if keyisset("capacityProviders", cluster_def):
         providers = cluster_def["capacityProviders"]
-    if keyisset("defaultCapacityProviderStrategy", cluster_def):
-        providers_strategies = [
-            provider["capacityProvider"]
-            for provider in cluster_def["defaultCapacityProviderStrategy"]
-        ]
-    if not providers and not providers_strategies:
+    if not providers:
         LOG.warning(
-            f"{cluster_def['clusterName']} - No capacityProvider nor defaultCapacityProviderStrategy defined."
+            f"{cluster_def['clusterName']} - No capacityProvider defined. Fallback to ECS Default"
             "Overriding to EC2"
         )
-    elif providers and providers_strategies:
-        for name in providers_strategies:
-            if name not in providers:
-                providers.append(name)
     return providers
+
+
+def get_default_capacity_strategy(cluster_def):
+    strategy_providers = (
+        [
+            cap["capacityProvider"]
+            for cap in cluster_def["defaultCapacityProviderStrategy"]
+        ]
+        if keyisset("defaultCapacityProviderStrategy", cluster_def)
+        else []
+    )
+    return strategy_providers
 
 
 def import_from_x_aws_cluster(compose_content):

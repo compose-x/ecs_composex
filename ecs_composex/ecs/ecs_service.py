@@ -430,24 +430,8 @@ class Service(object):
                     ),
                 ),
             ),
-            SchedulingStrategy=If(
-                ecs_conditions.USE_SOME_CAPACITY_PROVIDER_CON_T,
-                Ref(AWS_NO_VALUE),
-                If(
-                    ecs_conditions.USE_FARGATE_CON_T,
-                    "REPLICA",
-                    If(ecs_conditions.USE_EC2_CON_T, "DAEMON", "REPLICA"),
-                ),
-            ),
-            PlacementStrategies=If(
-                ecs_conditions.USE_SOME_CAPACITY_PROVIDER_CON_T,
-                Ref(AWS_NO_VALUE),
-                If(
-                    ecs_conditions.USE_FARGATE_CON_T,
-                    Ref(AWS_NO_VALUE),
-                    define_placement_strategies(),
-                ),
-            ),
+            SchedulingStrategy=Ref(AWS_NO_VALUE),
+            PlacementStrategies=Ref(AWS_NO_VALUE),
             NetworkConfiguration=NetworkConfiguration(
                 AwsvpcConfiguration=AwsvpcConfiguration(
                     Subnets=Ref(vpc_params.APP_SUBNETS),
@@ -456,7 +440,7 @@ class Service(object):
             ),
             TaskDefinition=Ref(family.task_definition),
             LaunchType=If(
-                ecs_conditions.USE_NORMAL_LAUNCH_TYPES_CON_T,
+                ecs_conditions.USE_LAUNCH_TYPE_CON_T,
                 Ref(ecs_params.LAUNCH_TYPE),
                 Ref(AWS_NO_VALUE),
             ),

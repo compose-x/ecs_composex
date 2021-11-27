@@ -49,7 +49,7 @@ typing-extensions = {version = ">=3.7.4.3", markers = "python_version < \"3.8\""
 
 [[package]]
 name = "aws-sam-translator"
-version = "1.41.0"
+version = "1.40.0"
 description = "AWS SAM Translator is a library that transform SAM templates into AWS CloudFormation templates"
 category = "main"
 optional = false
@@ -582,7 +582,7 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 
 [[package]]
 name = "compose-x-common"
-version = "0.2.3"
+version = "0.3.0"
 description = "Common Library for Compose-X Projects"
 category = "main"
 optional = false
@@ -596,7 +596,7 @@ aws = ["boto3 (>=1.18,<2.0)"]
 
 [[package]]
 name = "compose-x-render"
-version = "0.4.2"
+version = "0.4.3"
 description = "Library & Tool to compile/merge compose files with top level extension fields"
 category = "main"
 optional = false
@@ -604,7 +604,7 @@ python-versions = ">=3.7,<4.0"
 
 [package.dependencies]
 argparse = ">=1.4.0,<2.0.0"
-compose-x-common = ">=0.2.2,<0.3.0"
+compose-x-common = ">=0.3.0,<0.4.0"
 importlib-resources = ">=5.4.0,<6.0.0"
 jsonschema = ">=3.2.0,<5.0"
 PyYAML = ">=5.4.1.0,<7.0"
@@ -682,16 +682,16 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 
 [[package]]
 name = "ecr-scan-reporter"
-version = "0.4.1"
+version = "0.4.2"
 description = "Stay on top of your docker images security vulnerabilities in AWS ECR"
 category = "main"
 optional = true
 python-versions = ">=3.7,<4.0"
 
 [package.dependencies]
-boto3 = ">=1.18,<2.0"
-compose-x-common = {version = ">=0.2.0,<0.3.0", extras = ["aws"]}
-pytz = ">=2021.1,<2022.0"
+boto3 = ">=1.20.10,<2.0.0"
+compose-x-common = {version = ">=0.3,<0.4", extras = ["aws"]}
+pytz = ">=2021.3,<2022.0"
 
 [[package]]
 name = "filelock"
@@ -1603,7 +1603,7 @@ ecrscan = ["ecr-scan-reporter"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "894c2c77d1c2f5aad91bcdaef97f373a5b9fae6f3d08c1c759855d1bbee47313"
+content-hash = "cc02e21fbf10b5acdbe61864366be9e687e22ee9bbd6c7778332c020999616c1"
 
 [metadata.files]
 alabaster = [
@@ -1627,9 +1627,9 @@ awacs = [
     {file = "awacs-2.0.2.tar.gz", hash = "sha256:018138c10f82e11734aee7f9e7fff5dbfe1245ddaf15d5927f60f3b16e01ad7e"},
 ]
 aws-sam-translator = [
-    {file = "aws-sam-translator-1.41.0.tar.gz", hash = "sha256:67d4facbb66cc6d20c8a22476b611c91814778427a90ff74a4dbf724bace8a4d"},
-    {file = "aws_sam_translator-1.41.0-py2-none-any.whl", hash = "sha256:05ab5c2b5f1943ac99eb5a26d06cf2020741c6bc4d20ac23dde8e6a456688fe7"},
-    {file = "aws_sam_translator-1.41.0-py3-none-any.whl", hash = "sha256:fd2210630296d1976a8e91f3a0bb7581016b638afa0bda41320ad1d6fc304de5"},
+    {file = "aws-sam-translator-1.40.0.tar.gz", hash = "sha256:ae52c5941048ea7e4a2fd268dbd5d34a133e128913a641f41c9360f6d77b05c3"},
+    {file = "aws_sam_translator-1.40.0-py2-none-any.whl", hash = "sha256:bc7dbda72526763049a156a9bfdda9a2529d0a0a4ac670c1158980f6aee33dfd"},
+    {file = "aws_sam_translator-1.40.0-py3-none-any.whl", hash = "sha256:99e3b80c2ca4f6f67c9bcfa757ba9f30eee9716a4a93d698a581476dc9945307"},
 ]
 babel = [
     {file = "Babel-2.9.1-py2.py3-none-any.whl", hash = "sha256:ab49e12b91d937cd11f0b67cb259a57ab4ad2b59ac7a3b41d6c06c0ac5b0def9"},
@@ -1696,12 +1696,12 @@ colorama = [
     {file = "colorama-0.4.4.tar.gz", hash = "sha256:5941b2b48a20143d2267e95b1c2a7603ce057ee39fd88e7329b0c292aa16869b"},
 ]
 compose-x-common = [
-    {file = "compose_x_common-0.2.3-py3-none-any.whl", hash = "sha256:553d8da9f9bf6c232478c896e7c8c5bb3410107a9f442666bf133ff63b20f34a"},
-    {file = "compose_x_common-0.2.3.tar.gz", hash = "sha256:35965d891696a26bc3ff97dfad3d74e4de09aeb3554899309138a7f7e64623de"},
+    {file = "compose_x_common-0.3.0-py3-none-any.whl", hash = "sha256:80b224641a0420c13554846a746e864d7a464c8dd7082f181c92be7be502301e"},
+    {file = "compose_x_common-0.3.0.tar.gz", hash = "sha256:278694ccae490e17bfab81bd02a25a303466989c27f711859c1c2a4646da4741"},
 ]
 compose-x-render = [
-    {file = "compose_x_render-0.4.2-py3-none-any.whl", hash = "sha256:5c88edc6204ce8adf860e28eef71420cebae981429a4f17362c6a166f0e4fef5"},
-    {file = "compose_x_render-0.4.2.tar.gz", hash = "sha256:6247cd73153e7cbf428909fbcd5faa6fb45d6d28654e9278ce7c2c524e2c7747"},
+    {file = "compose_x_render-0.4.3-py3-none-any.whl", hash = "sha256:cde9c6c896757af59066af6a8c41b6b16aa2054730c8fefaaf0b59be2444b42d"},
+    {file = "compose_x_render-0.4.3.tar.gz", hash = "sha256:6b1af2d980a9a83274cfdc0753de82a9c34f68938695a627a3c789173684fe04"},
 ]
 contextlib2 = [
     {file = "contextlib2-21.6.0-py2.py3-none-any.whl", hash = "sha256:3fbdb64466afd23abaf6c977627b75b6139a5a3e8ce38405c5b413aed7a0471f"},
@@ -1782,8 +1782,8 @@ docutils = [
     {file = "docutils-0.17.1.tar.gz", hash = "sha256:686577d2e4c32380bb50cbb22f575ed742d58168cee37e99117a854bcd88f125"},
 ]
 ecr-scan-reporter = [
-    {file = "ecr_scan_reporter-0.4.1-py3-none-any.whl", hash = "sha256:965dadd138e1be32a835b1159a4a700a0778bff1ed79b4be749fe7be9a4a558b"},
-    {file = "ecr_scan_reporter-0.4.1.tar.gz", hash = "sha256:f0e1517e485eefbe5ed47347f54d9edf8324b27da5cb14a81b7cba05a864efb4"},
+    {file = "ecr_scan_reporter-0.4.2-py3-none-any.whl", hash = "sha256:ac3c74e7d8bc7c200153fc426d9fe9faaca90382b13b8c4f72e377b938f190b0"},
+    {file = "ecr_scan_reporter-0.4.2.tar.gz", hash = "sha256:1125bb2fed697f308484010c1809cdc3710bb4315aaee94a2612d270db249e5b"},
 ]
 filelock = [
     {file = "filelock-3.4.0-py3-none-any.whl", hash = "sha256:2e139a228bcf56dd8b2274a65174d005c4a6b68540ee0bdbb92c76f43f29f7e8"},

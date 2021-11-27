@@ -65,7 +65,7 @@ from ecs_composex.ecs.docker_tools import (
     import_time_values_to_seconds,
     set_memory_to_mb,
 )
-from ecs_composex.ecs.ecs_conditions import USE_EC2_CON_T
+from ecs_composex.ecs.ecs_conditions import USE_FARGATE_CON_T
 from ecs_composex.ecs.ecs_params import (
     AWS_XRAY_IMAGE,
     EXEC_ROLE_T,
@@ -136,6 +136,7 @@ class ComposeService(object):
         self.env_files = []
         self.tmpfses = []
         self.ephemeral_storage = 0
+        self.family_hostname = None
         self.x_ecs = set_else_none("x-ecs", self.definition, {})
         self.user = None
         self.group = None
@@ -332,9 +333,9 @@ class ComposeService(object):
                 Tmpfs=self.define_tmpfs(),
             ),
             Privileged=If(
-                USE_EC2_CON_T,
-                keyisset("Privileged", self.definition),
+                USE_FARGATE_CON_T,
                 Ref(AWS_NO_VALUE),
+                keyisset("Privileged", self.definition),
             ),
             WorkingDirectory=self.working_dir,
             DockerLabels=self.import_docker_labels(),
@@ -440,7 +441,7 @@ class ComposeService(object):
                 for pathes in self.definition[tmpfs_key]:
                     self.tmpfses.append({"ContainerPath": pathes})
         rendered_fs = [Tmpfs(**args) for args in self.tmpfses]
-        return If(USE_EC2_CON_T, rendered_fs, Ref(AWS_NO_VALUE))
+        return If(USE_FARGATE_CON_T, Ref(AWS_NO_VALUE), rendered_fs)
 
     def define_sysctls(self):
         """
@@ -461,7 +462,7 @@ class ComposeService(object):
         controls = []
         for name, value in def_dict.items():
             controls.append(SystemControl(Namespace=name, Value=str(value)))
-        return If(USE_EC2_CON_T, controls, Ref(AWS_NO_VALUE))
+        return If(USE_FARGATE_CON_T, Ref(AWS_NO_VALUE), controls)
 
     def define_shm_size(self):
         """
@@ -470,7 +471,7 @@ class ComposeService(object):
         if not keyisset("shm_size", self.definition):
             return Ref(AWS_NO_VALUE)
         memory_value = set_memory_to_mb(self.definition["shm_size"])
-        return If(USE_EC2_CON_T, memory_value, Ref(AWS_NO_VALUE))
+        return If(USE_FARGATE_CON_T, Ref(AWS_NO_VALUE), memory_value)
 
     def set_add_capacities(self, add_key, valid, cap_adds, all_adds, fargate):
         """
@@ -588,9 +589,9 @@ class ComposeService(object):
             "Drop": cap_drops or Ref(AWS_NO_VALUE),
         }
         if all_adds:
-            cap_adds.append(If(USE_EC2_CON_T, all_adds, Ref(AWS_NO_VALUE)))
+            cap_adds.append(If(USE_FARGATE_CON_T, Ref(AWS_NO_VALUE), all_adds))
         if all_drops:
-            cap_drops.append(If(USE_EC2_CON_T, all_drops, Ref(AWS_NO_VALUE)))
+            cap_drops.append(If(USE_FARGATE_CON_T, Ref(AWS_NO_VALUE), all_drops))
         return KernelCapabilities(**kwargs)
 
     def define_ulimits(self):
@@ -650,7 +651,7 @@ class ComposeService(object):
             else:
                 raise TypeError("ulimit is not of the proper definition")
             if limit_name not in fargate_supported:
-                rendered_limits.append(If(USE_EC2_CON_T, ulimit, Ref(AWS_NO_VALUE)))
+                rendered_limits.append(If(USE_FARGATE_CON_T, Ref(AWS_NO_VALUE), ulimit))
             else:
                 rendered_limits.append(ulimit)
         if rendered_limits:
@@ -1097,6 +1098,20 @@ class ComposeService(object):
             if custom_keys.match(key):
                 del self.deploy_labels[key]
 
+    def set_family_hostname(self, deployments):
+        """
+        Function to override family_hostname based on label
+        :param dict deployments:
+        """
+        labels = "labels"
+        hostname = "ecs.task.family.hostname"
+        if not keyisset(labels, deployments):
+            return
+        labels = deployments[labels]
+        if not keyisset(hostname, labels):
+            return
+        self.family_hostname = labels[hostname]
+
     def set_service_deploy(self):
         """
         Function to setup the service configuration from the deploy section of the service in compose file.
@@ -1111,7 +1126,8 @@ class ComposeService(object):
         self.define_essential(self.definition[deploy])
         self.set_update_config(self.definition[deploy])
         self.define_ephemeral_storage_condition(self.definition[deploy])
-        self.set_service_labels(self.definition[deploy])
+        self.set_family_hostname(self.definition[deploy])
+        # self.set_service_labels(self.definition[deploy])
 
 
 def handle_same_task_services_dependencies(services_config):
@@ -1405,7 +1421,7 @@ class ComposeFamily(object):
     Class to group services logically to create the final ECS Service
     """
 
-    default_launch_type = "FARGATE"
+    default_launch_type = "EC2"
 
     def __init__(self, services, family_name):
         self.services = services
@@ -1418,6 +1434,7 @@ class ComposeFamily(object):
             "ManagedPolicyArns": [],
             "Policies": [],
         }
+        self.family_hostname = self.name.replace("_", "-").lower()
         self.services_depends_on = []
         self.deployment_config = {}
         self.template = None
@@ -1467,6 +1484,7 @@ class ComposeFamily(object):
         self.handle_logging()
         self.apply_services_params()
         self.set_task_compute_parameter()
+        self.set_family_hostname()
 
     def set_initial_services_dependencies(self):
         """
@@ -1513,10 +1531,6 @@ class ComposeFamily(object):
             LOG.warning(
                 f"{self.name} - The compute platform is already overridden to {self.launch_type}"
             )
-            if self.stack:
-                self.stack.Parameters.update(
-                    {ecs_params.LAUNCH_TYPE.title: self.launch_type}
-                )
             for service in self.services:
                 setattr(service, "compute_platform", self.launch_type)
         elif not all(
@@ -1530,10 +1544,10 @@ class ComposeFamily(object):
                         f" Overriding to {platform}"
                     )
                     self.launch_type = platform
-                    if self.stack:
-                        self.stack.Parameters.update(
-                            {ecs_params.LAUNCH_TYPE.title: self.launch_type}
-                        )
+        if self.stack:
+            self.stack.Parameters.update(
+                {ecs_params.LAUNCH_TYPE.title: self.launch_type}
+            )
 
     def set_enable_execute_command(self):
         for svc in self.services:
@@ -2088,9 +2102,9 @@ class ComposeFamily(object):
             Memory=ecs_params.FARGATE_RAM,
             NetworkMode=NETWORK_MODE,
             EphemeralStorage=If(
-                USE_EC2_CON_T,
-                Ref(AWS_NO_VALUE),
+                USE_FARGATE_CON_T,
                 EphemeralStorage(SizeInGiB=self.task_ephemeral_storage),
+                Ref(AWS_NO_VALUE),
             )
             if 0 < self.task_ephemeral_storage >= 21
             else Ref(AWS_NO_VALUE),
@@ -2132,6 +2146,32 @@ class ComposeFamily(object):
         self.set_task_compute_parameter()
         self.set_task_definition()
         self.refresh_container_logging_definition()
+
+    def set_family_hostname(self):
+        svcs_hostnames = any(svc.family_hostname for svc in self.services)
+        if not svcs_hostnames:
+            LOG.warning(
+                f"No ecs.task.family.hostname defined on any of the services. Using default {self.family_hostname}"
+            )
+            return
+        potential_svcs = []
+        for svc in self.services:
+            if (
+                svc.family_hostname
+                and hasattr(svc, "container_definition")
+                and svc.container_definition.Essential
+            ):
+                potential_svcs.append(svc)
+        uniq = []
+        for svc in potential_svcs:
+            if svc.family_hostname not in uniq:
+                uniq.append(svc.family_hostname)
+        self.family_hostname = uniq[0].lower().replace("_", "-")
+        if len(uniq) > 1:
+            LOG.warning(
+                f"{self.name} more than one essential container has ecs.task.family.hostname set. "
+                f"Using thes first one {uniq[0]}"
+            )
 
     def update_family_subnets(self, settings):
         """
@@ -2320,14 +2360,14 @@ class ComposeFamily(object):
                     Host=Ref(AWS_NO_VALUE),
                     Name=volume.volume_name,
                     DockerVolumeConfiguration=If(
-                        USE_EC2_CON_T,
+                        USE_FARGATE_CON_T,
+                        Ref(AWS_NO_VALUE),
                         DockerVolumeConfiguration(
                             Scope="task" if not volume.is_shared else "shared",
                             Autoprovision=Ref(AWS_NO_VALUE)
                             if not volume.is_shared
                             else True,
                         ),
-                        Ref(AWS_NO_VALUE),
                     ),
                 )
             if volume.cfn_volume:
@@ -2446,78 +2486,110 @@ class ComposeFamily(object):
             provider["Weight"] = int(max(provider["Weight"]))
         self.ecs_capacity_providers = list(task_config.values())
 
-    def set_service_launch_type(self, cluster_providers):
-        if self.ecs_capacity_providers:
-            if all(
-                provider["CapacityProvider"] in ["FARGATE", "FARGATE_SPOT"]
-                for provider in self.ecs_capacity_providers
-            ):
-                self.launch_type = "FARGATE_PROVIDERS"
-            else:
-                self.launch_type = "CAPACITY_PROVIDERS"
-            cfn_capacity_providers = [
-                CapacityProviderStrategyItem(**props)
-                for props in self.ecs_capacity_providers
-            ]
-            if isinstance(self.service_definition, EcsService):
-                setattr(
-                    self.service_definition,
-                    "CapacityProviderStrategy",
-                    cfn_capacity_providers,
-                )
-        elif not self.ecs_capacity_providers and cluster_providers:
-            if isinstance(self.service_definition, EcsService):
-                setattr(
-                    self.service_definition,
-                    "CapacityProviderStrategy",
-                    Ref(AWS_NO_VALUE),
-                )
-            LOG.info(f"{self.name} - Using Cluster defined Capacity Providers")
-            if all(
-                provider in ["FARGATE", "FARGATE_SPOT"]
-                for provider in cluster_providers
-            ):
-                self.launch_type = "FARGATE_PROVIDERS"
-            else:
-                self.launch_type = "CAPACITY_PROVIDERS"
-
+    def set_launch_type_from_cluster_and_service(self):
+        if all(
+            provider["CapacityProvider"] in ["FARGATE", "FARGATE_SPOT"]
+            for provider in self.ecs_capacity_providers
+        ):
+            LOG.info(
+                f"{self.name} - Cluster and Service use Fargate only. Setting to FARGATE_PROVIDERS"
+            )
+            self.launch_type = "FARGATE_PROVIDERS"
         else:
-            if isinstance(self.service_definition, EcsService):
-                setattr(
-                    self.service_definition,
-                    "CapacityProviderStrategy",
-                    Ref(AWS_NO_VALUE),
-                )
-        if self.launch_type and self.stack:
-            self.stack.Parameters.update(
-                {ecs_params.LAUNCH_TYPE.title: self.launch_type}
+            self.launch_type = "SERVICE_MODE"
+            LOG.info(
+                f"{self.name} - Using AutoScaling Based Providers",
+                [
+                    provider["CapacityProvider"]
+                    for provider in self.ecs_capacity_providers
+                ],
             )
 
-    def validate_capacity_providers(self, cluster_providers):
+    def set_launch_type_from_cluster_only(self, cluster):
+        if any(
+            provider in ["FARGATE", "FARGATE_SPOT"]
+            for provider in cluster.default_strategy_providers
+        ):
+            self.launch_type = "FARGATE_PROVIDERS"
+            LOG.info(
+                f"{self.name} - Defaulting to FARGATE_PROVIDERS as "
+                "FARGATE[_SPOT] is found in the cluster default strategy"
+            )
+        else:
+            self.launch_type = "CLUSTER_MODE"
+            LOG.info(
+                f"{self.name} - Cluster uses non Fargate Capacity Providers. Setting to Cluster default"
+            )
+            self.launch_type = "CLUSTER_MODE"
+
+    def set_service_launch_type(self, cluster):
+        """ """
+        if self.ecs_capacity_providers and cluster.capacity_providers:
+            self.set_launch_type_from_cluster_and_service()
+        elif not self.ecs_capacity_providers and cluster.capacity_providers:
+            self.set_launch_type_from_cluster_only(cluster)
+        self.set_family_lt()
+
+    def set_family_lt(self):
+        if not self.service_definition:
+            LOG.warning(f"{self.name} - ECS Service not yet defined. Skipping")
+        else:
+            if (
+                self.launch_type == "FARGATE_PROVIDERS"
+                or self.launch_type == "SERVICE_MODE"
+            ):
+                cfn_capacity_providers = [
+                    CapacityProviderStrategyItem(**props)
+                    for props in self.ecs_capacity_providers
+                ]
+                if isinstance(self.service_definition, EcsService):
+                    setattr(
+                        self.service_definition,
+                        "CapacityProviderStrategy",
+                        cfn_capacity_providers,
+                    )
+            elif (
+                self.launch_type == "FARGATE"
+                or self.launch_type == "CLUSTER_MODE"
+                or self.launch_type == "EC2"
+            ):
+                setattr(
+                    self.service_definition,
+                    "CapacityProviderStrategy",
+                    Ref(AWS_NO_VALUE),
+                )
+
+    def validate_capacity_providers(self, cluster):
         """
         Validates that the defined ecs_capacity_providers are all available in the ECS Cluster Providers
 
-        :param list[str] cluster_providers:
+        :param cluster: The cluster object
         :raises: ValueError if not all task family providers in the cluster providers
         :raises: TypeError if cluster_providers not a list
         """
-        cap_names = [cap["CapacityProvider"] for cap in self.ecs_capacity_providers]
-        if not isinstance(cluster_providers, list):
-            raise TypeError("clusters_providers must be a list")
-        if not self.ecs_capacity_providers and not cluster_providers:
+        if not self.ecs_capacity_providers and not cluster.capacity_providers:
             LOG.info(
                 f"{self.name} - No capacity providers specified in task definition nor cluster"
             )
             return True
-        elif not cluster_providers:
+        elif not cluster.capacity_providers:
             LOG.info(f"{self.name} - No capacity provider set for cluster")
             return True
-        elif not all(provider in cluster_providers for provider in cap_names):
+        cap_names = [cap["CapacityProvider"] for cap in self.ecs_capacity_providers]
+        if not all(cap_name in ["FARGATE", "FARGATE_SPOT"] for cap_name in cap_names):
+            raise ValueError(
+                f"{self.name} - You cannot mix FARGATE capacity provider with AutoScaling Capacity Providers",
+                cap_names,
+            )
+        if not isinstance(cluster.capacity_providers, list):
+            raise TypeError("clusters_providers must be a list")
+
+        elif not all(provider in cluster.capacity_providers for provider in cap_names):
             raise ValueError(
                 "Providers",
                 cap_names,
                 "not defined in ECS Cluster providers. Valid values are",
-                cluster_providers,
+                cluster.capacity_providers,
             )
 
     def validate_compute_configuration_for_task(self, settings):
@@ -2540,19 +2612,18 @@ class ComposeFamily(object):
                     "CapacityProviderStrategy",
                     Ref(AWS_NO_VALUE),
                 )
-                if self.stack:
-                    self.stack.Parameters.update(
-                        {ecs_params.LAUNCH_TYPE.title: self.launch_type}
-                    )
         else:
             self.merge_capacity_providers()
-            self.validate_capacity_providers(settings.ecs_cluster.capacity_providers)
-            self.set_service_launch_type(settings.ecs_cluster.capacity_providers)
-            if self.stack:
-                LOG.info(
-                    f"{self.name} - Updated {ecs_params.LAUNCH_TYPE.title} to"
-                    f" {self.stack.Parameters[ecs_params.LAUNCH_TYPE.title]}"
-                )
+            self.validate_capacity_providers(settings.ecs_cluster)
+            self.set_service_launch_type(settings.ecs_cluster)
+            LOG.info(
+                f"{self.name} - Updated {ecs_params.LAUNCH_TYPE.title} to"
+                f" {self.launch_type}"
+            )
+        if self.stack:
+            self.stack.Parameters.update(
+                {ecs_params.LAUNCH_TYPE.title: self.launch_type}
+            )
 
     def wait_for_all_policies(self):
         """

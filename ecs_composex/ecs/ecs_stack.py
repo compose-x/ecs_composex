@@ -82,6 +82,7 @@ def associate_services_to_root_stack(root_stack, settings, vpc_stack=None):
                 family.exec_role.name["ImportParameter"].title: family.exec_role.name[
                     "ImportValue"
                 ],
+                ecs_params.SERVICE_HOSTNAME.title: family.family_hostname,
             }
         )
         if settings.ecs_cluster.platform_override:
