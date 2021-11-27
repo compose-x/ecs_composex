@@ -76,7 +76,7 @@ def set_cw_prometheus_config_parameter(family, options):
             },
             "scrape_configs": [
                 {
-                    "job_name": "cwagent-ecs-file-sd-config",
+                    "job_name": "{{STACK_SHORT_ID}}-cwagent-ecs-file-sd-config",
                     "sample_limit": 10000,
                     "file_sd_configs": [{"files": ["/tmp/cwagent_ecs_auto_sd.yaml"]}],
                 }
@@ -95,7 +95,7 @@ def set_cw_prometheus_config_parameter(family, options):
         Description=Sub(
             f"Prometheus Scraping SSM Parameter for ECS Cluster: ${{{ecs_params.CLUSTER_NAME.title}}}"
         ),
-        Value=yaml.dump(value_py, Dumper=Dumper),
+        Value=Sub(yaml.dump(value_py, Dumper=Dumper), STACK_SHORT_ID=STACK_ID_SHORT),
     )
     family.template.add_resource(parameter)
     return parameter
@@ -222,7 +222,7 @@ def get_ngnix_processor(
     ]
     ecs_sd_config["task_definition_list"].append(
         {
-            "sd_job_name": "nginx-prometheus-exporter",
+            "sd_job_name": "${{STACK_SHORT_ID}}-nginx-prometheus-exporter",
             "sd_metrics_path": METRICS_DEFAULT_PATH
             if not keyisset("ExporterPath", nginx_config)
             else nginx_config["ExporterPath"],
@@ -236,7 +236,7 @@ def get_ngnix_processor(
     )
     ecs_sd_config["service_name_list_for_tasks"].append(
         {
-            "sd_job_name": "nginx-prometheus-exporter",
+            "sd_job_name": "${{STACK_SHORT_ID}}-nginx-prometheus-exporter",
             "sd_metrics_path": METRICS_DEFAULT_PATH
             if not keyisset("ExporterPath", nginx_config)
             else nginx_config["ExporterPath"],
@@ -290,7 +290,7 @@ def get_jmx_processor(family, ecs_sd_config, jmx_config):
     ]
     ecs_sd_config["task_definition_list"].append(
         {
-            "sd_job_name": "javajmx-prometheus-exporter",
+            "sd_job_name": "${{STACK_SHORT_ID}}-javajmx-prometheus-exporter",
             "sd_metrics_path": METRICS_DEFAULT_PATH
             if not keyisset("ExporterPath", jmx_config)
             else jmx_config["ExporterPath"],
@@ -319,7 +319,7 @@ def process_custom_rules(family, ecs_sd_config, options, emf_processors):
         emf_processors["metric_declaration"] += rule["EmfProcessors"]
         ecs_sd_config["service_name_list_for_tasks"].append(
             {
-                "sd_job_name": f"service-def-{family.logical_name}-custom-sd-{count}",
+                "sd_job_name": f"${{STACK_SHORT_ID}}-service-def-{family.logical_name}-custom-sd-{count}",
                 "sd_metrics_path": METRICS_DEFAULT_PATH
                 if not keyisset("ExporterPath", rule)
                 else rule["ExporterPath"],
@@ -329,7 +329,7 @@ def process_custom_rules(family, ecs_sd_config, options, emf_processors):
         )
         ecs_sd_config["task_definition_list"].append(
             {
-                "sd_job_name": f"task-def-{family.logical_name}-custom-sd-{count}",
+                "sd_job_name": f"{{STACK_SHORT_ID}}-task-def-{family.logical_name}-custom-sd-{count}",
                 "sd_metrics_path": METRICS_DEFAULT_PATH
                 if not keyisset("ExporterPath", rule)
                 else rule["ExporterPath"],
@@ -415,7 +415,10 @@ def set_cw_config_parameter(family, **options):
         Description=Sub(
             f"Prometheus Scraping SSM Parameter for ECS Cluster: ${{{ecs_params.CLUSTER_NAME.title}}}"
         ),
-        Value=Sub(json.dumps(value_py, ensure_ascii=True, sort_keys=True, indent=2)),
+        Value=Sub(
+            json.dumps(value_py, ensure_ascii=True, sort_keys=True, indent=2),
+            STACK_SHORT_ID=STACK_ID_SHORT,
+        ),
     )
     family.template.add_resource(parameter)
     return parameter
