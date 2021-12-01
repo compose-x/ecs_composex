@@ -5,15 +5,18 @@
 """
 Module to define the ComposeX Resources into a simple object to make it easier to navigate through.
 """
+
 import warnings
 from copy import deepcopy
 from re import sub
 
+from boto3.session import Session
 from compose_x_common.compose_x_common import keyisset, keypresent
 from troposphere import Export, FindInMap, GetAtt, Output, Ref, Sub
 from troposphere.ecs import Environment
 
 from ecs_composex.common import LOG, NONALPHANUM
+from ecs_composex.common.aws import define_lookup_role_from_info
 from ecs_composex.common.cfn_conditions import define_stack_name
 from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.common.ecs_composex import CFN_EXPORT_DELIMITER as DELIM
@@ -147,8 +150,12 @@ class XResource(object):
         Init the class
         :param str name: Name of the resource in the template
         :param dict definition: The definition of the resource as-is
+        :param ecs_composex.common.settings.ComposeXSettings settings:
         """
         self.name = name
+        self.arn = None
+        self.cloud_control_attributes_mapping = {}
+        self.native_attributes_mapping = {}
         self.module_name = module_name
         self.mapping_key = mapping_key
         if self.mapping_key is None:
@@ -170,6 +177,12 @@ class XResource(object):
             if not keyisset("Lookup", self.definition)
             else self.definition["Lookup"]
         )
+        if self.lookup:
+            self.lookup_session = define_lookup_role_from_info(
+                self.lookup, settings.session
+            )
+        else:
+            self.lookup_session = settings.session
         if keyisset("Properties", self.definition) and not self.lookup:
             self.properties = self.definition["Properties"]
         elif not keyisset("Properties", self.definition) and keypresent(

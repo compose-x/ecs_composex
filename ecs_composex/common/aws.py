@@ -7,11 +7,13 @@ Common functions and variables fetched from AWS.
 """
 import re
 import secrets
+from copy import deepcopy
 from string import ascii_lowercase
 from time import sleep
 
 from botocore.exceptions import ClientError
 from compose_x_common.aws import get_assume_role_session, validate_iam_role_arn
+from compose_x_common.aws.arns import ARNS_PER_TAGGINGAPI_TYPE
 from compose_x_common.compose_x_common import keyisset
 from tabulate import tabulate
 
@@ -203,11 +205,7 @@ def find_aws_resource_arn_from_tags_api(
     :param dict types: Additional types to match.
     :return:
     """
-    res_types = {
-        "secretsmanager:secret": {
-            "regexp": r"(?:^arn:aws(?:-[a-z]+)?:secretsmanager:[\w-]+:[0-9]{12}:secret:)([\S]+)(?:-[A-Za-z0-9]{1,6})$"
-        },
-    }
+    res_types = deepcopy(ARNS_PER_TAGGINGAPI_TYPE)
     if types is not None and isinstance(types, dict):
         res_types.update(types)
     validate_search_input(res_types, aws_resource_search)
@@ -225,29 +223,6 @@ def find_aws_resource_arn_from_tags_api(
     return handle_search_results(
         arns, name, res_types, aws_resource_search, allow_multi=allow_multi
     )
-
-
-def get_region_azs(session):
-    """Function to return the AZ from a given region. Uses default region for this
-
-    :param boto3.session.Session session: Boto3 session
-
-    :return: list of AZs in the given region
-    :rtype: list
-    """
-    return session.client("ec2").describe_availability_zones()["AvailabilityZones"]
-
-
-def get_account_id(session):
-    """
-    Function to get the current session account ID
-
-    :param boto3.session.Session session: Boto3 Session to make the API call.
-
-    :return: account ID
-    :rtype: str
-    """
-    return session.client("sts").get_caller_identity()["Account"]
 
 
 def assert_can_create_stack(client, name):

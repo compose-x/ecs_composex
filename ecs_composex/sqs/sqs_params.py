@@ -13,6 +13,7 @@ MOD_KEY = path.basename(path.dirname(path.abspath(__file__)))
 RES_KEY = f"{X_KEY}{MOD_KEY}"
 SQS_SSM_PREFIX = f"/{RES_KEY}/"
 MAPPINGS_KEY = NONALPHANUM.sub("", MOD_KEY)
+TAGGING_API_ID = "sqs"
 
 SQS_URL_T = "Url"
 SQS_URL = Parameter(SQS_URL_T, Type="String")
@@ -31,3 +32,9 @@ DLQ_ARN = Parameter(DLQ_ARN_T, Type="String")
 
 SQS_KMS_KEY_T = "QueueKmsKey"
 SQS_KMS_KEY = Parameter(SQS_KMS_KEY_T, Type="String")
+
+
+BOTO_PARAMETERS_MAPPING = {
+    "QueueUrl": "QueueUrl",
+    SQS_KMS_KEY.return_value: "KmsMasterKeyId",
+}
