@@ -304,7 +304,8 @@ class XStack(ComposeXStack):
                 )
             else:
                 LOG.info(
-                    f"{bucket.module_name}.{bucket.name} - CMK identified {bucket.mappings[S3_BUCKET_KMS_KEY.return_value]}."
+                    f"{bucket.module_name}.{bucket.name} - "
+                    "CMK identified {bucket.mappings[S3_BUCKET_KMS_KEY.return_value]}."
                 )
         # for bucket in use_buckets:
         #     if bucket.use.startswith("arn:aws"):

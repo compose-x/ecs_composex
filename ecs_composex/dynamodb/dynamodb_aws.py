@@ -1,4 +1,4 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
@@ -32,7 +32,7 @@ def get_table_config(table_arn, session):
     table_config = {TABLE_NAME.title: table_name, TABLE_ARN.title: table_arn}
     client = session.client("dynamodb")
     try:
-        table_r = client.describe_table(TableName=table_name)
+        table_r = client.describe_table(TableName=table_name)["Table"]
         table_config.update(
             {
                 TABLE_NAME.title: table_r["Table"]["TableName"],
