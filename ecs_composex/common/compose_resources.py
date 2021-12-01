@@ -6,17 +6,26 @@
 Module to define the ComposeX Resources into a simple object to make it easier to navigate through.
 """
 
+import json
 import warnings
 from copy import deepcopy
 from re import sub
 
 from boto3.session import Session
-from compose_x_common.compose_x_common import keyisset, keypresent
+from compose_x_common.aws import get_account_id
+from compose_x_common.compose_x_common import (
+    attributes_to_mapping,
+    keyisset,
+    keypresent,
+)
 from troposphere import Export, FindInMap, GetAtt, Output, Ref, Sub
 from troposphere.ecs import Environment
 
 from ecs_composex.common import LOG, NONALPHANUM
-from ecs_composex.common.aws import define_lookup_role_from_info
+from ecs_composex.common.aws import (
+    define_lookup_role_from_info,
+    find_aws_resource_arn_from_tags_api,
+)
 from ecs_composex.common.cfn_conditions import define_stack_name
 from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.common.ecs_composex import CFN_EXPORT_DELIMITER as DELIM
@@ -221,6 +230,80 @@ class XResource(object):
 
     def __repr__(self):
         return self.logical_name
+
+    def cloud_control_attributes_mapping_lookup(
+        self, resource_type, resource_id, **kwargs
+    ):
+        """
+        Method to map the resource properties to the CCAPI description
+        :return:
+        """
+        client = self.lookup_session.client("cloudcontrol")
+        try:
+            props_r = client.get_resource(
+                TypeName=resource_type, Identifier=resource_id, **kwargs
+            )
+            properties = json.loads(props_r["ResourceDescription"]["Properties"])
+            props = attributes_to_mapping(
+                properties, self.cloud_control_attributes_mapping
+            )
+            return props
+        except client.exceptions.UnsupportedActionException:
+            LOG.warning("Resource not yet supported by Cloud Control API")
+            return {}
+
+    def native_attributes_mapping_lookup(self, account_id, resource_id, function):
+        properties = function(self, account_id, resource_id)
+        if self.native_attributes_mapping:
+            conform_mapping = attributes_to_mapping(
+                properties, self.native_attributes_mapping
+            )
+            return conform_mapping
+        return properties
+
+    def lookup_resource(
+        self, arn_re, native_lookup_function, cfn_resource_type, tagging_api_id
+    ):
+        """
+        Method to self-identify properties
+        :return:
+        """
+        if keyisset("Arn", self.lookup):
+            arn_parts = arn_re.match(self.lookup["Arn"])
+            if not arn_parts:
+                raise KeyError(
+                    f"{self.module_name}.{self.name} - ARN {self.lookup['Arn']} is not valid. Must match",
+                    arn_re.pattern,
+                )
+            self.arn = self.lookup["Arn"]
+            resource_id = arn_parts.group("id")
+            account_id = arn_parts.group("accountid")
+        elif keyisset("Tags", self.lookup):
+            self.arn = find_aws_resource_arn_from_tags_api(
+                self.lookup, self.lookup_session, tagging_api_id
+            )
+            arn_parts = arn_re.match(self.arn)
+            resource_id = arn_parts.group("id")
+            account_id = arn_parts.group("accountid")
+        else:
+            raise KeyError(
+                f"{self.module_name}.{self.name} - You must specify Arn or Tags to identify existing resource"
+            )
+        if not self.arn:
+            raise LookupError(
+                f"{self.module_name}.{self.name} - Failed to find the AWS Resource with given tags"
+            )
+        props = {}
+        _account_id = get_account_id(self.lookup_session)
+        if _account_id == account_id and self.cloud_control_attributes_mapping:
+            props = self.cloud_control_attributes_mapping_lookup(
+                cfn_resource_type, resource_id
+            )
+        if not props:
+            props = self.native_attributes_mapping_lookup(
+                account_id, resource_id, native_lookup_function
+            )
+        self.mappings = props
 
     def debug_families_targets(self):
         """

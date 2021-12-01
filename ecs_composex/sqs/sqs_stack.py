@@ -5,18 +5,15 @@
 """
 Module for the XStack SQS
 """
-import json
 import warnings
 
 from botocore.exceptions import ClientError
-from compose_x_common.aws import get_account_id
 from compose_x_common.aws.sqs import SQS_QUEUE_ARN_RE
-from compose_x_common.compose_x_common import attributes_to_mapping, keyisset
+from compose_x_common.compose_x_common import keyisset
 from troposphere import GetAtt, Ref
 from troposphere.sqs import Queue as CfnQueue
 
 from ecs_composex.common import build_template, setup_logging
-from ecs_composex.common.aws import find_aws_resource_arn_from_tags_api
 from ecs_composex.common.compose_resources import (
     XResource,
     set_lookup_resources,
@@ -114,76 +111,6 @@ class Queue(XResource):
             ),
         }
 
-    def cloud_control_attributes_mapping_lookup(
-        self, resource_type, resource_id, **kwargs
-    ):
-        """
-        Method to map the resource properties to the CCAPI description
-        :return:
-        """
-        client = self.lookup_session.client("cloudcontrol")
-        try:
-            props_r = client.get_resource(
-                TypeName=resource_type, Identifier=resource_id, **kwargs
-            )
-            properties = json.loads(props_r["ResourceDescription"]["Properties"])
-            return properties
-        except client.exceptions.UnsupportedActionException:
-            print("Resource not yet supported by Cloud Control")
-            return {}
-
-    def native_attributes_mapping_lookup(self, account_id, resource_id, function):
-        properties = function(self, account_id, resource_id)
-        if self.native_attributes_mapping:
-            conform_mapping = attributes_to_mapping(
-                properties, self.native_attributes_mapping
-            )
-            return conform_mapping
-        return properties
-
-    def lookup_resource(self, settings):
-        """
-        Method to self-identify properties
-        :return:
-        """
-        if keyisset("Arn", self.lookup):
-            arn_parts = SQS_QUEUE_ARN_RE.match(self.lookup["Arn"])
-            if not arn_parts:
-                raise KeyError(
-                    f"{RES_KEY}.{self.name} - ARN {self.lookup['Arn']} is not valid. Must match",
-                    SQS_QUEUE_ARN_RE.pattern,
-                )
-            self.arn = self.lookup["Arn"]
-            resource_id = arn_parts.group("id")
-            account_id = arn_parts.group("accountid")
-        elif keyisset("Tags", self.lookup):
-            self.arn = find_aws_resource_arn_from_tags_api(
-                self.lookup, self.lookup_session, TAGGING_API_ID
-            )
-            arn_parts = SQS_QUEUE_ARN_RE.match(self.arn)
-            resource_id = arn_parts.group("id")
-            account_id = arn_parts.group("accountid")
-        else:
-            raise KeyError(
-                f"{RES_KEY}.{self.name} - You must specify Arn or Tags to identify existing resource"
-            )
-        if not self.arn:
-            raise LookupError(
-                f"{RES_KEY}.{self.name} - Failed to find the AWS Resource with given tags"
-            )
-
-        _account_id = get_account_id(self.lookup_session)
-        if _account_id == account_id and self.cloud_control_attributes_mapping:
-            print("Same account resource")
-            props = self.cloud_control_attributes_mapping_lookup(
-                CfnQueue.resource_type, resource_id
-            )
-        else:
-            props = self.native_attributes_mapping_lookup(
-                account_id, resource_id, get_queue_config
-            )
-        self.mappings = props
-
 
 class XStack(ComposeXStack):
     """
@@ -206,7 +133,12 @@ class XStack(ComposeXStack):
             if not keyisset(RES_KEY, settings.mappings):
                 settings.mappings[RES_KEY] = {}
             for resource in lookup_resources:
-                resource.lookup_resource(settings)
+                resource.lookup_resource(
+                    SQS_QUEUE_ARN_RE,
+                    get_queue_config,
+                    CfnQueue.resource_type,
+                    TAGGING_API_ID,
+                )
                 settings.mappings[RES_KEY].update(
                     {resource.logical_name: resource.mappings}
                 )

@@ -1,4 +1,4 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
@@ -36,3 +36,20 @@ S3_BUCKET_REGION_DOMAIN_NAME = Parameter(
     return_value="RegionalDomainName",
     Type="String",
 )
+
+S3_BUCKET_KMS_KEY_T = "BucketKmsKey"
+S3_BUCKET_KMS_KEY = Parameter(
+    S3_BUCKET_KMS_KEY_T,
+    return_value="KMSMasterKeyID",
+    Type="String",
+    Description="S3 Bucket KMS Key",
+)
+
+CONTROL_CLOUD_ATTR_MAPPING = {
+    S3_BUCKET_NAME.title: "BucketName",
+    S3_BUCKET_REGION_DOMAIN_NAME.return_value: "RegionalDomainName",
+    S3_BUCKET_DOMAIN_NAME.return_value: "DomainName",
+    S3_BUCKET_KMS_KEY.return_value: "BucketEncryption::ServerSideEncryptionConfiguration::"
+    "0::ServerSideEncryptionByDefault::KMSMasterKeyID",
+    S3_BUCKET_ARN.return_value: "Arn",
+}

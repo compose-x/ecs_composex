@@ -19,17 +19,14 @@
             "type": "object"
           }
         },
-        "Identifier": {
+        "Arn": {
           "type": "string",
           "description": "The Cloud Control API identifier. It can be the full ARN or just the resource name"
         },
         "RoleArn": {
           "type": "string"
         }
-      },
-      "required": [
-        "Tags"
-      ]
+      }
     },
     "Use": {
       "type": [
