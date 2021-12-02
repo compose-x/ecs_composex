@@ -6,18 +6,22 @@
 Module to manage top level AWS CodeGuru profiles
 """
 
-from compose_x_common.compose_x_common import keyisset
+from compose_x_common.aws.cognito_userpool import USER_POOL_RE
+from compose_x_common.compose_x_common import attributes_to_mapping, keyisset
 from troposphere import GetAtt, Ref
+from troposphere.cognito import UserPool as CfnUserPool
 
-from ecs_composex.cognito_userpool.cognito_aws import lookup_userpool_config
 from ecs_composex.cognito_userpool.cognito_params import (
     MAPPINGS_KEY,
     MOD_KEY,
     RES_KEY,
     USERPOOL_ARN,
+    USERPOOL_CUSTOM_DOMAIN,
+    USERPOOL_DOMAIN,
     USERPOOL_ID,
+    USERPOOL_NAME,
 )
-from ecs_composex.common import build_template
+from ecs_composex.common import build_template, setup_logging
 from ecs_composex.common.compose_resources import (
     XResource,
     set_lookup_resources,
@@ -26,6 +30,26 @@ from ecs_composex.common.compose_resources import (
     set_use_resources,
 )
 from ecs_composex.common.stacks import ComposeXStack
+
+LOG = setup_logging()
+
+
+def get_userpool_config(userpool, account_id, resource_id):
+    client = userpool.lookup_session.client("cognito-idp")
+    userpool_attributes_mapping = {
+        USERPOOL_ARN.return_value: "UserPool::Arn",
+        USERPOOL_ID.title: "UserPool::Id",
+        USERPOOL_DOMAIN.title: "UserPool::Domain",
+        USERPOOL_CUSTOM_DOMAIN.title: "UserPool::CustomDomain",
+        USERPOOL_NAME.title: "UserPool::Name",
+    }
+    try:
+        userpool_r = client.describe_user_pool(UserPoolId=resource_id)
+        attributes = attributes_to_mapping(userpool_r, userpool_attributes_mapping)
+        return attributes
+    except client.exceptions:
+        LOG.error("Failed to retrieve the Pool Domain. Moving on.")
+    return {}
 
 
 def create_root_template(new_resources):
@@ -81,5 +105,11 @@ class XStack(ComposeXStack):
         for res in lookup_resources:
             if not keyisset(RES_KEY, settings.mappings):
                 settings.mappings[RES_KEY] = {}
-            res.mappings = lookup_userpool_config(res.lookup, settings.session)
-            settings.mappings[RES_KEY].update({res.logical_name: res.mappings})
+            for resource in lookup_resources:
+                resource.lookup_resource(
+                    USER_POOL_RE,
+                    get_userpool_config,
+                    CfnUserPool.resource_type,
+                    "cognito-idp",
+                )
+                settings.mappings[RES_KEY].update({resource.logical_name: res.mappings})

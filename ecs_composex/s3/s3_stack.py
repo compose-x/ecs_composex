@@ -305,36 +305,33 @@ class XStack(ComposeXStack):
             else:
                 LOG.info(
                     f"{bucket.module_name}.{bucket.name} - "
-                    "CMK identified {bucket.mappings[S3_BUCKET_KMS_KEY.return_value]}."
+                    f"CMK identified {bucket.mappings[S3_BUCKET_KMS_KEY.return_value]}."
                 )
-        # for bucket in use_buckets:
-        #     if bucket.use.startswith("arn:aws"):
-        #         bucket_arn = bucket.use
-        #         try:
-        #             bucket_name = re.match(
-        #                 r"(?:arn:aws(?:[a-z-]+)?:s3:{3})(?P<bucketname>[a-z0-9-.]+.$)",
-        #                 bucket_arn,
-        #             ).group("bucketname")
-        #         except AttributeError:
-        #             raise ValueError(
-        #                 "Could not determine the bucket name from the give ARN",
-        #                 bucket.use,
-        #             )
-        #         LOG.info(
-        #             f"Determined bucket name is {bucket_name} from arn {bucket_arn}"
-        #         )
-        #     else:
-        #         bucket_name = bucket.use
-        #         bucket_arn = f"arn:aws:s3:::{bucket_name}"
-        #         LOG.warning(
-        #             "In the absence of a full ARN, assuming partition to be `aws`. Set full ARN to rectify"
-        #         )
-        #         LOG.warning(f"ARN for {bucket_name} is set to {bucket_arn}")
-        #     buckets_mappings.update(
-        #         {
-        #             bucket.logical_name: {
-        #                 bucket.logical_name: bucket_name,
-        #                 "Arn": bucket_arn,
-        #             }
-        #         }
-        #     )
+        for bucket in use_buckets:
+            if bucket.use.startswith("arn:aws"):
+                bucket_arn = bucket.use
+                try:
+                    bucket_name = S3_BUCKET_ARN_RE.match(bucket_arn).group("id")
+                except AttributeError:
+                    raise ValueError(
+                        "Could not determine the bucket name from the give ARN",
+                        bucket.use,
+                    )
+                LOG.info(
+                    f"Determined bucket name is {bucket_name} from arn {bucket_arn}"
+                )
+            else:
+                bucket_name = bucket.use
+                bucket_arn = f"arn:aws:s3:::{bucket_name}"
+                LOG.warning(
+                    "In the absence of a full ARN, assuming partition to be `aws`. Set full ARN to rectify"
+                )
+                LOG.warning(f"ARN for {bucket_name} is set to {bucket_arn}")
+            settings.mappings[RES_KEY].update(
+                {
+                    bucket.logical_name: {
+                        bucket.logical_name: bucket_name,
+                        "Arn": bucket_arn,
+                    }
+                }
+            )
