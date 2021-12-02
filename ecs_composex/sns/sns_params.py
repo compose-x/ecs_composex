@@ -1,4 +1,4 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
@@ -20,4 +20,4 @@ TOPIC_KMS_KEY_T = "TopicKmsKey"
 
 TOPIC_ARN = Parameter(TOPIC_ARN_T, Type="String")
 TOPIC_NAME = Parameter(TOPIC_NAME_T, return_value="TopicName", Type="String")
-TOPIC_KMS_KEY = Parameter(TOPIC_KMS_KEY_T, Type="String")
+TOPIC_KMS_KEY = Parameter(TOPIC_KMS_KEY_T, return_value="KmsMasterKeyId", Type="String")
