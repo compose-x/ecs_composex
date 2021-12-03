@@ -1,4 +1,4 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
@@ -6,9 +6,14 @@
 AWS DocumentDB entrypoint for ECS ComposeX
 """
 
-from compose_x_common.compose_x_common import keyisset
+from botocore.exceptions import ClientError
+from compose_x_common.aws.rds import RDS_DB_CLUSTER_ARN_RE
+from compose_x_common.compose_x_common import attributes_to_mapping, keyisset
 from troposphere import GetAtt, Ref
+from troposphere.docdb import DBCluster as CfnDBCluster
 
+from ecs_composex.common import setup_logging
+from ecs_composex.common.aws import find_aws_resource_arn_from_tags_api
 from ecs_composex.common.compose_resources import (
     XResource,
     set_lookup_resources,
@@ -17,7 +22,6 @@ from ecs_composex.common.compose_resources import (
     set_use_resources,
 )
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.docdb.docdb_ecs import create_lookup_mappings
 from ecs_composex.docdb.docdb_params import (
     DOCDB_NAME,
     DOCDB_PORT,
@@ -32,6 +36,43 @@ from ecs_composex.docdb.docdb_template import (
     init_doc_db_template,
 )
 from ecs_composex.vpc.vpc_params import STORAGE_SUBNETS
+
+LOG = setup_logging()
+
+
+def get_db_cluster_config(db, account_id, resource_id):
+    client = db.lookup_session.client("docdb")
+    try:
+        db_config_r = client.describe_db_clusters(
+            DBClusterIdentifier=db.arn,
+            Filters=[
+                {
+                    "Name": "engine",
+                    "Values": [
+                        "docdb",
+                    ],
+                },
+            ],
+        )["DBClusters"]
+        db_cluster = db_config_r[0]
+    except (client.exceptions.DBClusterNotFoundFault,) as error:
+        LOG.error(f"{db.module_name}.{db.name} - Failed to retrieve configuration")
+        LOG.error(error)
+        raise
+    if keyisset("VpcSecurityGroups", db_config_r):
+        db_config_r["VpcSecurityGroups"] = [
+            sg
+            for sg in db_config_r["VpcSecurityGroups"]
+            if keyisset("Status", sg) and sg["Status"] == "active"
+        ]
+
+    attributes_mappings = {
+        DOCDB_NAME.title: "DatabaseName",
+        DOCDB_PORT.title: "Port",
+        DOCDB_SG.return_value: "VpcSecurityGroups::0::VpcSecurityGroupId",
+    }
+    config = attributes_to_mapping(db_cluster, attributes_mappings)
+    return config
 
 
 class DocDb(XResource):
@@ -83,6 +124,33 @@ class DocDb(XResource):
             ),
         }
 
+    def lookup_secret(self, secret_lookup):
+
+        if keyisset("Arn", secret_lookup):
+            client = self.lookup_session.client("secretsmanager")
+            try:
+                secret_arn = client.describe_secret(SecretId=secret_lookup["Arn"])[
+                    "ARN"
+                ]
+            except client.exceptions.ResourceNotFoundException:
+                LOG.error(
+                    f"{self.module_name}.{self.name} - Secret {secret_lookup['Arn']} not found"
+                )
+                raise
+            except ClientError as error:
+                LOG.error(error)
+                raise
+        elif keyisset("Tags", secret_lookup):
+            secret_arn = find_aws_resource_arn_from_tags_api(
+                self.lookup["secret"], self.lookup_session, "secretsmanager:secret"
+            )
+        else:
+            raise LookupError(
+                f"{self.module_name}.{self.name} - Failed to find the DB Secret"
+            )
+        if secret_arn:
+            self.mappings[DOCDB_SECRET.title] = secret_arn
+
 
 class XStack(ComposeXStack):
     """
@@ -104,8 +172,15 @@ class XStack(ComposeXStack):
         if lookup_resources or use_resources:
             if not keyisset(RES_KEY, settings.mappings):
                 settings.mappings[RES_KEY] = {}
-            create_lookup_mappings(
-                settings.mappings[RES_KEY], lookup_resources, settings
-            )
+            for resource in lookup_resources:
+                resource.lookup_resource(
+                    RDS_DB_CLUSTER_ARN_RE,
+                    None,
+                    CfnDBCluster.resource_type,
+                    "rds:cluster",
+                    "cluster",
+                )
+                if keyisset("secret", resource.lookup):
+                    resource.lookup_secret(resource.lookup["secret"])
         for resource in settings.compose_content[RES_KEY].values():
             resource.stack = self

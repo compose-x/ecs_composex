@@ -154,18 +154,18 @@ def handle_search_results(
             name,
             aws_resource_search,
         )
-    if arns and isinstance(name, str):
-        return handle_multi_results(
-            arns,
-            name,
-            aws_resource_search,
-            res_types[aws_resource_search]["regexp"],
-            allow_multi=allow_multi,
-        )
-    elif not name and len(arns) == 1:
-        LOG.info(f"Matched {aws_resource_search} to AWS Resource")
-        return arns[0]
-    elif not allow_multi and not name and len(arns) > 1:
+    # if arns and isinstance(name, str):
+    #     return handle_multi_results(
+    #         arns,
+    #         name,
+    #         aws_resource_search,
+    #         res_types[aws_resource_search],
+    #         allow_multi=allow_multi,
+    #     )
+    # elif not name and len(arns) == 1:
+    #     LOG.info(f"Matched {aws_resource_search} to AWS Resource")
+    #     return arns[0]
+    elif not allow_multi and len(arns) > 1:
         raise LookupError(
             f"More than one resource {name}:{aws_resource_search} was found with the current tags."
             "Found",
@@ -173,6 +173,8 @@ def handle_search_results(
         )
     elif allow_multi and len(arns) > 1:
         return arns
+    else:
+        return arns[0]
 
 
 def validate_search_input(res_types, res_type):
@@ -208,7 +210,6 @@ def find_aws_resource_arn_from_tags_api(
     res_types = deepcopy(ARNS_PER_TAGGINGAPI_TYPE)
     if types is not None and isinstance(types, dict):
         res_types.update(types)
-    validate_search_input(res_types, aws_resource_search)
     search_tags = (
         define_tagsgroups_filter_tags(info["Tags"]) if keyisset("Tags", info) else ()
     )

@@ -10,9 +10,6 @@
     "Lookup": {
       "$ref": "x-resources.common.spec.json#/definitions/Lookup"
     },
-    "Use": {
-      "type": "string"
-    },
     "Properties": {
       "type": "object",
       "description": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-docdb-dbcluster.html"
@@ -27,7 +24,37 @@
       "$ref": "#/definitions/MacroParameters"
     }
   },
+  "oneOf": [
+    {
+      "required": ["Properties"]
+    },
+    {
+      "required": ["Lookup"]
+    }
+  ],
   "definitions": {
+    "Lookup": {
+      "type": "object",
+      "properties": {
+        "RoleArn": {
+          "$ref": "x-resources.common.spec.json#/definitions/Lookup/properties/RoleArn"
+        },
+        "cluster": {
+          "type": "object",
+          "properties": {
+            "Arn": {
+              "$ref": "x-resources.common.spec.json#/definitions/Lookup/properties/Arn"
+            },
+            "Identifier": {
+              "$ref": "x-resources.common.spec.json#/definitions/Lookup/properties/Identifier"
+            },
+            "Tags": {
+              "$ref": "x-resources.common.spec.json#/definitions/Lookup/properties/Tags"
+            }
+          }
+        }
+      }
+    },
     "MacroParameters": {
       "type": "object",
       "properties": {

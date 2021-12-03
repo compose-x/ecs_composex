@@ -64,12 +64,18 @@ def set_lookup_resources(x_resources, res_key):
     :return: list of resources to import from Lookup
     :rtype: list[XResource] x_resources:
     """
-    lookup_resources = [
-        resource
-        for resource in x_resources
-        if resource.lookup
-        and not (resource.properties or resource.parameters or resource.use)
-    ]
+    lookup_resources = []
+    for resource in x_resources:
+        if resource.lookup:
+            if resource.properties or resource.parameters or resource.use:
+                LOG.warning(
+                    f"{resource.module_name}.{resource.name} is set for Lookup"
+                    " but has other properties set. Voiding them"
+                )
+                resource.properties = {}
+                resource.parameters = {}
+                resource.use = {}
+            lookup_resources.append(resource)
     return lookup_resources
 
 
@@ -262,25 +268,33 @@ class XResource(object):
         return properties
 
     def lookup_resource(
-        self, arn_re, native_lookup_function, cfn_resource_type, tagging_api_id
+        self,
+        arn_re,
+        native_lookup_function,
+        cfn_resource_type,
+        tagging_api_id,
+        subattribute_key=None,
     ):
         """
         Method to self-identify properties
         :return:
         """
-        if keyisset("Arn", self.lookup):
-            arn_parts = arn_re.match(self.lookup["Arn"])
+        lookup_attributes = self.lookup
+        if subattribute_key is not None:
+            lookup_attributes = self.lookup[subattribute_key]
+        if keyisset("Arn", lookup_attributes):
+            arn_parts = arn_re.match(lookup_attributes["Arn"])
             if not arn_parts:
                 raise KeyError(
-                    f"{self.module_name}.{self.name} - ARN {self.lookup['Arn']} is not valid. Must match",
+                    f"{self.module_name}.{self.name} - ARN {lookup_attributes['Arn']} is not valid. Must match",
                     arn_re.pattern,
                 )
-            self.arn = self.lookup["Arn"]
+            self.arn = lookup_attributes["Arn"]
             resource_id = arn_parts.group("id")
             account_id = arn_parts.group("accountid")
-        elif keyisset("Tags", self.lookup):
+        elif keyisset("Tags", lookup_attributes):
             self.arn = find_aws_resource_arn_from_tags_api(
-                self.lookup, self.lookup_session, tagging_api_id
+                lookup_attributes, self.lookup_session, tagging_api_id
             )
             arn_parts = arn_re.match(self.arn)
             resource_id = arn_parts.group("id")

@@ -100,6 +100,14 @@
     },
     "Lookup": {
       "type": "object",
+      "oneOf": [
+        {
+          "required": ["cluster"]
+        },
+        {
+          "required": ["instance"]
+        }
+      ],
       "properties": {
         "RoleArn": {
           "$ref": "x-resources.common.spec.json#/definitions/Lookup/properties/RoleArn"
