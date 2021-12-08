@@ -2635,7 +2635,7 @@ class ComposeFamily(object):
             if isinstance(p, PolicyType)
         ]
         if hasattr(self.ecs_service.ecs_service, "DependsOn"):
-            depends_on = getattr(self.ecs_service, "DependsOn")
+            depends_on = getattr(self.ecs_service.ecs_service, "DependsOn")
             for policy in policies:
                 if policy not in depends_on:
                     depends_on.append(policy)
