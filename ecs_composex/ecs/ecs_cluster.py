@@ -6,6 +6,11 @@ import re
 
 from botocore.exceptions import ClientError
 from compose_x_common.aws import get_assume_role_session
+from compose_x_common.aws.ecs import (
+    CLUSTER_NAME_FROM_ARN,
+    describe_all_ecs_clusters_from_ccapi,
+    list_all_ecs_clusters,
+)
 from compose_x_common.compose_x_common import keyisset
 from troposphere import (
     AWS_ACCOUNT_ID,
@@ -149,23 +154,23 @@ class EcsCluster(object):
         :param dict exec_config:
         :return:
         """
-        if keyisset("logConfiguration", exec_config):
-            log_config = exec_config["logConfiguration"]
-            if keyisset("cloudWatchLogGroupName", log_config):
+        if keyisset("LogConfiguration", exec_config):
+            log_config = exec_config["LogConfiguration"]
+            if keyisset("CloudWatchLogGroupName", log_config):
                 self.mappings[CLUSTER_NAME.title][
-                    "cloudWatchLogGroupName"
-                ] = log_config["cloudWatchLogGroupName"]
+                    "CloudWatchLogGroupName"
+                ] = log_config["CloudWatchLogGroupName"]
                 self.log_group = FindInMap(
                     self.mappings_key,
                     CLUSTER_NAME.title,
-                    "cloudWatchLogGroupName",
+                    "CloudWatchLogGroupName",
                 )
-            if keyisset("s3BucketName", log_config):
-                self.mappings[CLUSTER_NAME.title]["s3BucketName"] = log_config[
-                    "s3BucketName"
+            if keyisset("S3BucketName", log_config):
+                self.mappings[CLUSTER_NAME.title]["S3BucketName"] = log_config[
+                    "S3BucketName"
                 ]
                 self.log_bucket = FindInMap(
-                    self.mappings_key, CLUSTER_NAME.title, "s3BucketName"
+                    self.mappings_key, CLUSTER_NAME.title, "S3BucketName"
                 )
 
     def set_cluster_mappings(self, cluster_api_def):
@@ -175,16 +180,16 @@ class EcsCluster(object):
 
         :param dict cluster_api_def:
         """
-        if keyisset("configuration", cluster_api_def):
-            config = cluster_api_def["configuration"]
-            if keyisset("executeCommandConfiguration", config):
-                exec_config = config["executeCommandConfiguration"]
-                if keyisset("kmsKeyId", exec_config):
-                    self.mappings[CLUSTER_NAME.title]["kmsKeyId"] = exec_config[
-                        "kmsKeyId"
+        if keyisset("Configuration", cluster_api_def):
+            config = cluster_api_def["Configuration"]
+            if keyisset("ExecuteCommandConfiguration", config):
+                exec_config = config["ExecuteCommandConfiguration"]
+                if keyisset("KmsKeyId", exec_config):
+                    self.mappings[CLUSTER_NAME.title]["KmsKeyId"] = exec_config[
+                        "KmsKeyId"
                     ]
                     self.log_key = FindInMap(
-                        self.mappings_key, CLUSTER_NAME.title, "kmsKeyId"
+                        self.mappings_key, CLUSTER_NAME.title, "KmsKeyId"
                     )
                 self.import_log_config(exec_config)
 
@@ -200,7 +205,7 @@ class EcsCluster(object):
             raise TypeError(
                 "The value for Lookup must be", str, dict, "Got", type(self.lookup)
             )
-        client = session.client("ecs")
+        ecs_session = session
         if isinstance(self.lookup, dict):
             if keyisset("RoleArn", self.lookup):
                 ecs_session = get_assume_role_session(
@@ -208,50 +213,39 @@ class EcsCluster(object):
                     self.lookup["RoleArn"],
                     session_name="EcsClusterLookup@ComposeX",
                 )
-                client = ecs_session.client("ecs")
             cluster_name = self.lookup["ClusterName"]
         else:
             cluster_name = self.lookup
         try:
-            cluster_r = client.describe_clusters(
-                clusters=[cluster_name],
-                include=[
-                    "SETTINGS",
-                    "CONFIGURATIONS",
-                    "ATTACHMENTS",
-                    "TAGS",
-                    "STATISTICS",
-                ],
+            clusters = list_all_ecs_clusters(session=ecs_session)
+            cluster_names = [
+                CLUSTER_NAME_FROM_ARN.match(c_name).group("name") for c_name in clusters
+            ]
+            clusters_config = describe_all_ecs_clusters_from_ccapi(
+                clusters, return_as_map=True, use_cluster_name=True, session=ecs_session
             )
-            if not keyisset("clusters", cluster_r):
-                LOG.warning(
-                    f"No cluster named {cluster_name} found. Creating one with default settings"
+            if cluster_name not in clusters_config.keys():
+                raise LookupError(
+                    f"Failed to find {cluster_name}. Available clusters are",
+                    cluster_names,
                 )
-                return None
-            elif (
-                keyisset("clusters", cluster_r)
-                and cluster_r["clusters"][0]["clusterName"] == cluster_name
-            ):
-                LOG.info(
-                    f"Found ECS Cluster {cluster_name}. Setting {CLUSTER_NAME.title} accordingly."
+            the_cluster = clusters_config[cluster_name]
+            LOG.info(
+                f"Found ECS Cluster {cluster_name}. Setting {CLUSTER_NAME.title} accordingly."
+            )
+            self.mappings = {CLUSTER_NAME.title: {"Name": the_cluster["ClusterName"]}}
+            self.set_cluster_mappings(the_cluster)
+            self.capacity_providers = evaluate_capacity_providers(the_cluster)
+            if self.capacity_providers:
+                self.default_strategy_providers = get_default_capacity_strategy(
+                    the_cluster
                 )
-                the_cluster = cluster_r["clusters"][0]
-                self.mappings = {
-                    CLUSTER_NAME.title: {"Name": the_cluster["clusterName"]}
-                }
-                self.set_cluster_mappings(the_cluster)
-                self.capacity_providers = evaluate_capacity_providers(the_cluster)
-                if self.capacity_providers:
-                    self.default_strategy_providers = get_default_capacity_strategy(
-                        the_cluster
-                    )
-                self.platform_override = evaluate_fargate_is_set(
-                    self.capacity_providers, the_cluster
-                )
-
-                self.cluster_identifier = FindInMap(
-                    self.mappings_key, CLUSTER_NAME.title, "Name"
-                )
+            self.platform_override = evaluate_fargate_is_set(
+                self.capacity_providers, the_cluster
+            )
+            self.cluster_identifier = FindInMap(
+                self.mappings_key, CLUSTER_NAME.title, "Name"
+            )
         except ClientError as error:
             LOG.error(error)
             raise
@@ -517,7 +511,7 @@ def evaluate_fargate_is_set(providers, cluster_def):
     fargate_spot_present = FARGATE_SPOT_PROVIDER in providers
     if not fargate_present and not fargate_spot_present:
         LOG.warning(
-            f"{cluster_def['clusterName']} - "
+            f"{cluster_def['ClusterName']} - "
             f"No {FARGATE_PROVIDER} nor {FARGATE_SPOT_PROVIDER} listed in Capacity Providers."
             "Overriding to EC2 Launch Type"
         )
@@ -535,11 +529,11 @@ def evaluate_capacity_providers(cluster_def):
     :rtype: list
     """
     providers = []
-    if keyisset("capacityProviders", cluster_def):
-        providers = cluster_def["capacityProviders"]
+    if keyisset("CapacityProviders", cluster_def):
+        providers = cluster_def["CapacityProviders"]
     if not providers:
         LOG.warning(
-            f"{cluster_def['clusterName']} - No capacityProvider defined. Fallback to ECS Default"
+            f"{cluster_def['ClusterName']} - No capacityProvider defined. Fallback to ECS Default"
             "Overriding to EC2"
         )
     return providers
@@ -548,10 +542,10 @@ def evaluate_capacity_providers(cluster_def):
 def get_default_capacity_strategy(cluster_def):
     strategy_providers = (
         [
-            cap["capacityProvider"]
-            for cap in cluster_def["defaultCapacityProviderStrategy"]
+            cap["CapacityProvider"]
+            for cap in cluster_def["DefaultCapacityProviderStrategy"]
         ]
-        if keyisset("defaultCapacityProviderStrategy", cluster_def)
+        if keyisset("DefaultCapacityProviderStrategy", cluster_def)
         else []
     )
     return strategy_providers

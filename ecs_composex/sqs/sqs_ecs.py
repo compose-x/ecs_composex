@@ -6,7 +6,6 @@
 Module to apply SQS settings onto ECS Services
 """
 
-from compose_x_common.compose_x_common import keyisset
 from troposphere import FindInMap, GetAtt, Ref
 from troposphere.cloudwatch import Alarm, MetricDimension
 
@@ -21,13 +20,11 @@ from ecs_composex.resource_settings import (
     handle_lookup_resource,
     handle_resource_to_services,
 )
-from ecs_composex.sqs.sqs_aws import lookup_queue_config
 from ecs_composex.sqs.sqs_params import (
     MAPPINGS_KEY,
     MOD_KEY,
     RES_KEY,
     SQS_ARN,
-    SQS_KMS_KEY_T,
     SQS_NAME,
     SQS_URL,
 )
@@ -132,23 +129,6 @@ def add_alarm_for_resource(
             ].MetricIntervalLowerBound
         ),
     )
-
-
-def create_sqs_mappings(mapping, resources, settings):
-    """
-    Function to create the resource mapping for SQS Queues.
-
-    :param dict mapping:
-    :param list resources:
-    :param ecs_composex.common.settings.ComposeXSettings settings:
-    :return:
-    """
-    for res in resources:
-        res_config = lookup_queue_config(res.lookup, settings.session)
-        res.mappings = res_config
-        mapping.update({res.logical_name: res_config})
-        if keyisset(SQS_KMS_KEY_T, res_config):
-            LOG.info(f"Identified CMK {res_config[SQS_KMS_KEY_T]} for {res.name}")
 
 
 def sqs_to_ecs(resources, services_stack, res_root_stack, settings):

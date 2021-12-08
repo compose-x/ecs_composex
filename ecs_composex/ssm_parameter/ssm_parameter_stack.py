@@ -9,6 +9,7 @@ import json
 from os import path
 
 import yaml
+from compose_x_common.aws.ssm_parameter import SSM_PARAMETER_ARN_RE
 from compose_x_common.compose_x_common import keyisset
 from troposphere import AWS_ACCOUNT_ID, AWS_PARTITION, AWS_REGION, Base64, Ref, Sub
 from troposphere.ssm import Parameter as CfnSsmParameter
@@ -25,7 +26,6 @@ from ecs_composex.common.compose_resources import (
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.iam.import_sam_policies import get_access_types
 from ecs_composex.resources_import import import_record_properties
-from ecs_composex.ssm_parameter.ssm_parameter_ecs import create_ssm_param_mappings
 from ecs_composex.ssm_parameter.ssm_parameter_params import (
     MAPPINGS_KEY,
     MOD_KEY,
@@ -33,6 +33,17 @@ from ecs_composex.ssm_parameter.ssm_parameter_params import (
     SSM_PARAM_ARN,
     SSM_PARAM_NAME,
 )
+
+
+def get_parameter_config(parameter, account_id, resource_id):
+    """
+
+    :param parameter:
+    :param account_id:
+    :param resource_id:
+    :return:
+    """
+    return {SSM_PARAM_NAME.title: resource_id, SSM_PARAM_ARN.title: parameter.arn}
 
 
 def handle_yaml_validation(resource, value, file_path):
@@ -169,7 +180,9 @@ class SsmParameter(XResource):
                 self.cfn_resource,
                 Sub,
                 f"arn:${{{AWS_PARTITION}}}:ssm:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:parameter{spacer}"
-                f"${{{self.cfn_resource.title}}}",
+                f"${{{self.cfn_resource.title}}}"
+                if self.cfn_resource
+                else self.cfn_resource,
             ),
         }
 
@@ -198,6 +211,13 @@ class XStack(ComposeXStack):
         if lookup_resources or use_resources:
             if not keyisset(RES_KEY, settings.mappings):
                 settings.mappings[RES_KEY] = {}
-            create_ssm_param_mappings(
-                settings.mappings[RES_KEY], lookup_resources, settings
-            )
+            for resource in lookup_resources:
+                resource.lookup_resource(
+                    SSM_PARAMETER_ARN_RE,
+                    get_parameter_config,
+                    CfnSsmParameter.resource_type,
+                    "ssm:parameter",
+                )
+                settings.mappings[RES_KEY].update(
+                    {resource.logical_name: resource.mappings}
+                )

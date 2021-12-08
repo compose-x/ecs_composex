@@ -6,6 +6,9 @@
 Module of functions factorizing common patterns for TCP based access such as RDS, DocumentDB
 """
 
+from botocore.exceptions import ClientError
+from compose_x_common.aws import get_account_id
+from compose_x_common.aws.rds import RDS_DB_ID_CLUSTER_ARN_RE
 from compose_x_common.compose_x_common import keyisset, keypresent
 from troposphere import FindInMap, GetAtt, Ref, Sub
 from troposphere.ec2 import SecurityGroupIngress
@@ -13,10 +16,135 @@ from troposphere.ecs import Secret as EcsSecret
 from troposphere.iam import PolicyType
 
 from ecs_composex.common import LOG, add_parameters
+from ecs_composex.common.aws import find_aws_resource_arn_from_tags_api
 from ecs_composex.common.compose_resources import get_parameter_settings
 from ecs_composex.common.services_helpers import extend_container_secrets
 from ecs_composex.ecs.ecs_params import SG_T
-from ecs_composex.rds.rds_params import DB_SECRET_POLICY_NAME
+from ecs_composex.rds.rds_params import DB_SECRET_POLICY_NAME, DB_SECRET_T
+
+
+def filter_out_tag_resources(lookup_attributes, rds_resource, tagging_api_id):
+    """
+    Function to return the ClusterARN to use out of multiple found when using GroupTaggingAPI
+    :param dict lookup_attributes:
+    :param rds_resource:
+    :param str tagging_api_id:
+    :return: The cluster ARN to use
+    :rtype: str
+    :raises: LookupError
+    """
+    clusters = find_aws_resource_arn_from_tags_api(
+        lookup_attributes, rds_resource.lookup_session, tagging_api_id, allow_multi=True
+    )
+    if isinstance(clusters, str):
+        return clusters
+    elif isinstance(clusters, list):
+        if len(clusters) == 1:
+            rds_resource.arn = clusters[0]
+        if len(clusters) >= 2:
+            cluster_arns = [
+                arn for arn in clusters if RDS_DB_ID_CLUSTER_ARN_RE.match(arn)
+            ]
+            if len(cluster_arns) > 1:
+                raise LookupError(
+                    "There is more than one RDS cluster found with the given Lookup details",
+                    cluster_arns,
+                )
+            return cluster_arns[0]
+
+
+def lookup_rds_secret(rds_resource, secret_lookup):
+    """
+    Lookup RDS DB Secret specified
+
+    :param rds_resource:
+    :param secret_lookup:
+    :return:
+    """
+    if keyisset("Arn", secret_lookup):
+        client = rds_resource.lookup_session.client("secretsmanager")
+        try:
+            secret_arn = client.describe_secret(SecretId=secret_lookup["Arn"])["ARN"]
+        except client.exceptions.ResourceNotFoundException:
+            LOG.error(
+                f"{rds_resource.module_name}.{rds_resource.name} - Secret {secret_lookup['Arn']} not found"
+            )
+            raise
+        except ClientError as error:
+            LOG.error(error)
+            raise
+    elif keyisset("Tags", secret_lookup):
+        secret_arn = find_aws_resource_arn_from_tags_api(
+            rds_resource.lookup["secret"],
+            rds_resource.lookup_session,
+            "secretsmanager:secret",
+        )
+    else:
+        raise LookupError(
+            f"{rds_resource.module_name}.{rds_resource.name} - Failed to find the DB Secret"
+        )
+    if secret_arn:
+        rds_resource.mappings[DB_SECRET_T] = secret_arn
+
+
+def lookup_rds_resource(
+    rds_resource,
+    arn_re,
+    native_lookup_function,
+    cfn_resource_type,
+    tagging_api_id,
+    subattribute_key=None,
+):
+    """
+
+    :param rds_resource:
+    :param arn_re:
+    :param native_lookup_function:
+    :param cfn_resource_type:
+    :param tagging_api_id:
+    :param subattribute_key:
+    :return:
+    """
+    lookup_attributes = rds_resource.lookup
+    if subattribute_key is not None:
+        lookup_attributes = rds_resource.lookup[subattribute_key]
+    if keyisset("Arn", lookup_attributes):
+        arn_parts = arn_re.match(lookup_attributes["Arn"])
+        if not arn_parts:
+            raise KeyError(
+                f"{rds_resource.module_name}.{rds_resource.name} - ARN {lookup_attributes['Arn']} is not valid. Must match",
+                arn_re.pattern,
+            )
+        rds_resource.arn = lookup_attributes["Arn"]
+        resource_id = arn_parts.group("id")
+        account_id = arn_parts.group("accountid")
+    elif keyisset("Tags", lookup_attributes):
+        rds_resource.arn = filter_out_tag_resources(
+            lookup_attributes, rds_resource, tagging_api_id
+        )
+
+        arn_parts = arn_re.match(rds_resource.arn)
+        resource_id = arn_parts.group("id")
+        account_id = arn_parts.group("accountid")
+    else:
+        raise KeyError(
+            f"{rds_resource.module_name}.{rds_resource.name} - You must specify Arn or Tags to identify existing resource"
+        )
+    if not rds_resource.arn:
+        raise LookupError(
+            f"{rds_resource.module_name}.{rds_resource.name} - Failed to find the AWS Resource with given tags"
+        )
+    props = {}
+    _account_id = get_account_id(rds_resource.lookup_session)
+    if _account_id == account_id and rds_resource.cloud_control_attributes_mapping:
+        props = rds_resource.cloud_control_attributes_mapping_lookup(
+            cfn_resource_type, resource_id
+        )
+    if not props:
+        props = rds_resource.native_attributes_mapping_lookup(
+            account_id, resource_id, native_lookup_function
+        )
+    rds_resource.mappings = props
 
 
 def define_db_prefix(db, mappings_definition):

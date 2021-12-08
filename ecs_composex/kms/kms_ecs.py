@@ -1,4 +1,4 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
@@ -7,7 +7,6 @@ Module to manage IAM policies to grant access to ECS Services to KMS Keys
 """
 
 from ecs_composex.common import LOG
-from ecs_composex.kms.kms_aws import lookup_key_config
 from ecs_composex.kms.kms_params import KMS_KEY_ARN, KMS_KEY_ID, MAPPINGS_KEY, RES_KEY
 from ecs_composex.resource_settings import (
     handle_lookup_resource,

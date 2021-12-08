@@ -1,4 +1,4 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
@@ -11,7 +11,7 @@ from troposphere.iam import PolicyType
 from ecs_composex.common import add_parameters
 from ecs_composex.ecs.ecs_params import SERVICE_T, TASK_T
 from ecs_composex.efs.efs_params import FS_ARN, FS_ID, FS_MNT_PT_SG_ID, FS_PORT
-from ecs_composex.tcp_resources_settings import handle_new_tcp_resource
+from ecs_composex.rds_resources_settings import handle_new_tcp_resource
 
 
 def get_volumes(task_definition):

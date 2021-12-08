@@ -2,9 +2,8 @@
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
-import re
-
 from boto3.session import Session
+from compose_x_common.aws.arns import ARNS_PER_TAGGINGAPI_TYPE
 from compose_x_common.compose_x_common import keyisset
 
 from ecs_composex.common import LOG
@@ -114,24 +113,15 @@ def lookup_x_vpc_settings(lookup, session):
             required_keys,
         )
     lookup_session = define_lookup_role_from_info(lookup, session)
-    vpc_types = {
-        vpc_type: {
-            "regexp": r"(?:^arn:aws(?:-[a-z]+)?:ec2:[a-z0-9-]+:[0-9]{12}:vpc/)(vpc-[a-z0-9]+)$"
-        },
-        subnet_type: {
-            "regexp": r"(?:^arn:aws(?:-[a-z]+)?:ec2:[a-z0-9-]+:[0-9]{12}:subnet/)(subnet-[a-z0-9]+)$"
-        },
-    }
     vpc_arn = find_aws_resource_arn_from_tags_api(
         lookup[VPC_ID.title],
         lookup_session,
         vpc_type,
-        types=vpc_types,
         allow_multi=False,
     )
-    vpc_re = re.compile(vpc_types[vpc_type]["regexp"])
+    vpc_re = ARNS_PER_TAGGINGAPI_TYPE[vpc_type]
     vpc_settings = {
-        VPC_ID.title: vpc_re.match(vpc_arn).groups()[0],
+        VPC_ID.title: vpc_re.match(vpc_arn).group("id"),
         APP_SUBNETS.title: [],
         STORAGE_SUBNETS.title: [],
         PUBLIC_SUBNETS.title: [],
@@ -142,12 +132,12 @@ def lookup_x_vpc_settings(lookup, session):
             lookup[subnet_key],
             lookup_session,
             subnet_type,
-            types=vpc_types,
             allow_multi=True,
         )
         vpc_settings[subnet_key] = [
-            re.match(vpc_types[subnet_type]["regexp"], subnet_arn).groups()[0]
+            ARNS_PER_TAGGINGAPI_TYPE[subnet_type].match(subnet_arn).group("id")
             for subnet_arn in subnet_arns
+            if ARNS_PER_TAGGINGAPI_TYPE[subnet_type].match(subnet_arn)
         ]
     extra_subnets = [
         key
@@ -159,12 +149,12 @@ def lookup_x_vpc_settings(lookup, session):
             lookup[subnet_name],
             lookup_session,
             subnet_type,
-            types=vpc_types,
             allow_multi=True,
         )
         vpc_settings[subnet_name] = [
-            re.match(vpc_types[subnet_type]["regexp"], subnet_arn).groups()[0]
+            ARNS_PER_TAGGINGAPI_TYPE[subnet_type].match(subnet_arn).group("id")
             for subnet_arn in subnet_arns
+            if ARNS_PER_TAGGINGAPI_TYPE[subnet_type].match(subnet_arn)
         ]
     vpc_settings["session"] = lookup_session
     total_subnets_keys = subnets_keys + extra_subnets

@@ -526,7 +526,7 @@ def handle_import_cognito_pool(the_pool, listener_stack, settings):
             )
         return (
             FindInMap(COGNITO_MAP, the_pool.logical_name, USERPOOL_ID.title),
-            FindInMap(COGNITO_MAP, the_pool.logical_name, USERPOOL_ARN.title),
+            FindInMap(COGNITO_MAP, the_pool.logical_name, USERPOOL_ARN.return_value),
             FindInMap(COGNITO_MAP, the_pool.logical_name, USERPOOL_DOMAIN.title),
         )
 

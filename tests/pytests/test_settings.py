@@ -1,4 +1,4 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille<john@compose-x.io>
 
@@ -6,16 +6,16 @@
 Module to test ecs_composex generic oneliner raise functions.
 """
 
-import placebo
-import boto3
-from os import path
 from copy import deepcopy
-from pytest import raises, fixture
-from botocore.exceptions import ClientError
+from os import path
 
-from troposphere import ImportValue
-from ecs_composex.common.settings import ComposeXSettings
+import boto3
+import placebo
+from botocore.exceptions import ClientError
+from pytest import fixture, raises
+
 from ecs_composex.common import load_composex_file
+from ecs_composex.common.settings import ComposeXSettings
 
 
 @fixture(autouse=False)

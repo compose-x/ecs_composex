@@ -54,7 +54,7 @@ FARGATE_VERSION = Parameter(
 IS_PUBLIC_T = "ExposeServicePublicly"
 IS_PUBLIC = Parameter(IS_PUBLIC_T, AllowedValues=["True", "False"], Type="String")
 
-CLUSTER_NAME_T = "EcsClusterName"
+CLUSTER_NAME_T = "EcsCluster"
 CLUSTER_NAME = Parameter(
     CLUSTER_NAME_T,
     Type="String",

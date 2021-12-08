@@ -6,10 +6,13 @@
 Module to create the root stack for DynamoDB tables
 """
 
-from compose_x_common.compose_x_common import keyisset
+from botocore.exceptions import ClientError
+from compose_x_common.aws.dynamodb import TABLE_ARN_RE
+from compose_x_common.compose_x_common import attributes_to_mapping, keyisset
 from troposphere import GetAtt, Ref
+from troposphere.dynamodb import Table as CfnTable
 
-from ecs_composex.common import build_template
+from ecs_composex.common import build_template, setup_logging
 from ecs_composex.common.compose_resources import (
     XResource,
     set_lookup_resources,
@@ -18,7 +21,6 @@ from ecs_composex.common.compose_resources import (
     set_use_resources,
 )
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.dynamodb.dynamodb_ecs import create_dyndb_mappings
 from ecs_composex.dynamodb.dynamodb_params import (
     MAPPINGS_KEY,
     MOD_KEY,
@@ -28,6 +30,33 @@ from ecs_composex.dynamodb.dynamodb_params import (
 )
 from ecs_composex.dynamodb.dynamodb_template import create_dynamodb_template
 from ecs_composex.iam.import_sam_policies import get_access_types
+
+LOG = setup_logging()
+
+
+def get_dynamodb_table_config(table, account_id, resource_id):
+    """
+
+    :param Table table:
+    :param str account_id:
+    :param str resource_id:
+    :return:
+    """
+
+    table_attributes_mapping = {
+        TABLE_NAME.title: "TableName",
+        TABLE_ARN.return_value: "TableArn",
+    }
+    client = table.lookup_session.client("dynamodb")
+    try:
+        table_r = client.describe_table(TableName=resource_id)["Table"]
+        table_config = attributes_to_mapping(table_r, table_attributes_mapping)
+        return table_config
+    except client.exceptions.ResourceNotFoundException:
+        return None
+    except ClientError as error:
+        LOG.error(error)
+        raise
 
 
 class Table(XResource):
@@ -69,9 +98,14 @@ class XStack(ComposeXStack):
         if lookup_resources or use_resources:
             if not keyisset(RES_KEY, settings.mappings):
                 settings.mappings[RES_KEY] = {}
-            create_dyndb_mappings(
-                settings.mappings[RES_KEY], lookup_resources, settings
-            )
+            for res in lookup_resources:
+                res.lookup_resource(
+                    TABLE_ARN_RE,
+                    get_dynamodb_table_config,
+                    CfnTable.resource_type,
+                    "dynamodb:table",
+                )
+                settings.mappings[RES_KEY].update({res.logical_name: res.mappings})
         for resource in x_resources:
             if resource.lookup:
                 resource.stack = self

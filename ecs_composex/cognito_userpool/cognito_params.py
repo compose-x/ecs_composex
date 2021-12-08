@@ -1,4 +1,4 @@
-﻿#   -*- coding: utf-8 -*-
+#   -*- coding: utf-8 -*-
 #  SPDX-License-Identifier: MPL-2.0
 #  Copyright 2020-2021 John Mille <john@compose-x.io>
 
@@ -17,7 +17,9 @@ USERPOOL_ARN = Parameter("UserPoolArn", return_value="Arn", Type="String")
 USERPOOL_PROVIDER_NAME = Parameter(
     "UserPoolProviderName", return_value="ProviderName", Type="String"
 )
+USERPOOL_NAME = Parameter("UserPoolName", Type="String")
 USERPOOL_PROVIDER_URL = Parameter(
     "UserPoolProviderUrl", return_value="ProviderURL", Type="String"
 )
 USERPOOL_DOMAIN = Parameter("UserPoolDomain", Type="String")
+USERPOOL_CUSTOM_DOMAIN = Parameter("UserPoolCustomDomain", Type="String")

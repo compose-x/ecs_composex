@@ -2,17 +2,69 @@
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
-from compose_x_common.compose_x_common import keyisset
-from troposphere import GetAtt, Ref
+import re
 
-from ecs_composex.common import build_template
+from botocore.exceptions import ClientError
+from compose_x_common.aws.sns import SNS_TOPIC_ARN_RE
+from compose_x_common.compose_x_common import attributes_to_mapping, keyisset
+from troposphere import GetAtt, Ref
+from troposphere.sns import Topic as CfnTopic
+
+from ecs_composex.common import build_template, setup_logging
 from ecs_composex.common.compose_resources import XResource
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.iam.import_sam_policies import get_access_types
-from ecs_composex.sns.sns_aws import lookup_topic_config
-from ecs_composex.sns.sns_params import MOD_KEY, RES_KEY, TOPIC_ARN, TOPIC_NAME
+from ecs_composex.sns.sns_params import (
+    MOD_KEY,
+    RES_KEY,
+    TOPIC_ARN,
+    TOPIC_KMS_KEY,
+    TOPIC_NAME,
+)
 from ecs_composex.sns.sns_templates import generate_sns_templates
 from ecs_composex.sqs.sqs_params import RES_KEY as SQS_KEY
+
+LOG = setup_logging()
+
+
+def get_topic_config(topic, account_id, resource_id):
+    """
+    Function to create the mapping definition for SNS topics
+
+    :param Topic topic:
+    :param str account_id: the 12 digits account ID
+    :param str resource_id: the topic name
+    :return:
+    """
+
+    topic_config = {TOPIC_NAME.return_value: resource_id}
+    client = topic.lookup_session.client("sns")
+    attributes_mapping = {
+        TOPIC_ARN.title: "Attributes::TopicArn",
+        TOPIC_KMS_KEY.return_value: "Attributes::KmsMasterKeyId",
+    }
+    try:
+        topic_r = client.get_topic_attributes(TopicArn=topic.arn)
+        attributes = attributes_to_mapping(topic_r, attributes_mapping)
+        if keyisset(TOPIC_KMS_KEY.return_value, attributes) and not attributes[
+            TOPIC_KMS_KEY.return_value
+        ].startswith("arn:aws"):
+            if attributes[TOPIC_KMS_KEY.return_value].startswith("alias/aws"):
+                LOG.warning(
+                    f"{topic.module_name}.{topic.name} - Topic uses the default AWS CMK."
+                )
+            else:
+                LOG.warning(
+                    f"{topic.module_name}.{topic.name} - KMS Key provided is not a valid ARN."
+                )
+            del attributes[TOPIC_KMS_KEY.return_value]
+        topic_config.update(attributes)
+        return topic_config
+    except client.exceptions.QueueDoesNotExist:
+        return None
+    except ClientError as error:
+        LOG.error(error)
+        raise
 
 
 def create_sns_mappings(resources, settings):
@@ -22,11 +74,10 @@ def create_sns_mappings(resources, settings):
     else:
         mappings = settings.mappings[RES_KEY]
     for resource in resources:
-        resource_config = lookup_topic_config(
-            resource.logical_name, resource.lookup, settings.session
+        resource.lookup_resource(
+            SNS_TOPIC_ARN_RE, get_topic_config, CfnTopic.resource_type, "sns"
         )
-        if resource_config:
-            mappings.update({resource.logical_name: resource_config})
+        mappings.update({resource.logical_name: resource.mappings})
 
 
 class Topic(XResource):

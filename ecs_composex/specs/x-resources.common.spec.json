@@ -13,23 +13,39 @@
       "type": "object",
       "properties": {
         "Tags": {
-          "description": "List of resource tags to identify the resource we are looking for",
-          "type": "array",
-          "items": {
-            "type": "object"
-          }
+          "oneOf": [
+            {
+              "type": "object",
+              "patternProperties": {
+                "[\\x20-\\x7E]+": {
+                  "type": "string",
+                  "minLength": 0,
+                  "maxLength": 256
+                }
+              }
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "object"
+              }
+            }
+          ]
+        },
+        "Arn": {
+          "type": "string",
+          "description": "The ARN identifier.",
+          "format": "^arn:(aws|aws-cn|aws-us-gov):([a-z0-9-]+):([a-z0-9-]+)?:(\\d{12})?:(.*$)"
         },
         "Identifier": {
           "type": "string",
-          "description": "The Cloud Control API identifier. It can be the full ARN or just the resource name"
+          "description": "The Service resource ID (i.e. vpc-abcd1234)"
         },
         "RoleArn": {
-          "type": "string"
+          "type": "string",
+          "format": "^arn:(aws|aws-cn|aws-us-gov):iam::(\\d{12}):role/(.*$)"
         }
-      },
-      "required": [
-        "Tags"
-      ]
+      }
     },
     "Use": {
       "type": [

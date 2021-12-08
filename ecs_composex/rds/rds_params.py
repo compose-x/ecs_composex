@@ -20,17 +20,15 @@ from ecs_composex.vpc.vpc_params import SG_ID_TYPE
 
 MOD_KEY = path.basename(path.dirname(path.abspath(__file__)))
 RES_KEY = f"{X_KEY}{MOD_KEY}"
+MAPPINGS_KEY = MOD_KEY
 
 DB_SECRET_POLICY_NAME = "RdsDbPolicy"
-CLUSTER_SUBNET_GROUP = "RdsSubnetGroup"
-DB_SECRET_T = "RdsDbSecret"
-CLUSTER_T = "AuroraCluster"
-DATABASE_T = "RdsDatabase"
-PARAMETER_GROUP_T = "RdsParametersGroup"
-CLUSTER_PARAMETER_GROUP_T = "RdsClusterParameterGroup"
+DB_SECRET_T = "DBSecret"
+PARAMETER_GROUP_T = "DBParametersGroup"
+CLUSTER_PARAMETER_GROUP_T = "DBClusterParametersGroup"
 
 
-DB_SG_T = "RdsSg"
+DB_SG_T = "DBSecurityGroup"
 DB_SG = Parameter(DB_SG_T, return_value="GroupId", Type=SG_ID_TYPE)
 
 DB_ENGINE_NAME_T = "Engine"
@@ -85,9 +83,9 @@ DB_EXPORT_PORT_T = "Endpoint.Port"
 
 DB_EXPORT_SG_ID_T = "RdsSecurityGroup"
 
-DB_ENDPOINT_PORT_T = "RDSClusterEndpointPort"
-DB_ENDPOINT_ADDRESS_T = "RDSClusterEndpointAddress"
-DB_RO_ENDPOINT_ADDRESS_T = "RDSClusterReadEndpointAddress"
+DB_ENDPOINT_PORT_T = "EndpointPort"
+DB_ENDPOINT_ADDRESS_T = "EndpointAddress"
+DB_RO_ENDPOINT_ADDRESS_T = "ReadEndpointAddress"
 
 DB_ENDPOINT_ADDRESS = Parameter(
     DB_ENDPOINT_ADDRESS_T, return_value="Endpoint.Address", Type="String"

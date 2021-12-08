@@ -28,7 +28,12 @@ from ecs_composex.resource_settings import (
 )
 from ecs_composex.s3.s3_aws import lookup_bucket_config
 from ecs_composex.s3.s3_params import MOD_KEY as S3_MOD
-from ecs_composex.s3.s3_params import RES_KEY, S3_BUCKET_ARN, S3_BUCKET_NAME
+from ecs_composex.s3.s3_params import (
+    RES_KEY,
+    S3_BUCKET_ARN,
+    S3_BUCKET_KMS_KEY,
+    S3_BUCKET_NAME,
+)
 
 ACCESS_TYPES = get_access_types(S3_MOD)
 
@@ -145,122 +150,6 @@ def handle_new_resources(
     assign_new_bucket_to_services(resource, res_root_stack, nested)
 
 
-def validate_bucket_kms_key(bucket, kms_key, session):
-    """
-    Function to evaluate the KMS Key ID and ensure we return a KMS Key ARN
-
-    :param ecs_composex.s3.s3_stack.Bucket bucket: The S3 bucket looked'up
-    :param str kms_key:
-    :param boto3.session.Session session: Settings session
-    :return: The KMS Key ARN or None
-    :rtype: str
-    """
-    lookup_session = define_lookup_role_from_info(bucket.lookup, session)
-    if KMS_KEY_ARN_RE.match(kms_key):
-        return kms_key
-    elif KMS_ALIAS_ARN_RE.match(kms_key):
-        key_alias = KMS_ALIAS_ARN_RE.match(kms_key).group("key_alias")
-        key = get_key_from_alias(key_alias, kms_session=lookup_session)
-        if key and keyisset("KeyArn", key):
-            return key["KeyArn"]
-    elif kms_key == "aws/s3":
-        LOG.warn("KMS Key used the aws/s3 default key.")
-        key = get_key_from_alias("alias/aws/s3", kms_session=lookup_session)
-        if key and keyisset("KeyArn", key):
-            return key["KeyArn"]
-    return None
-
-
-def get_bucket_kms_key_from_config(bucket, bucket_config, session):
-    """
-    Function to get the KMS Encryption key if defined.
-
-    :param ecs_composex.s3.s3_stack.Bucket bucket:
-    :param dict bucket_config:
-    :param boto3.session.Session session: Settings session
-    :return: The KMS Key ARN or None
-    :rtype: str
-    """
-    rules = (
-        []
-        if not (
-            keyisset("ServerSideEncryptionConfiguration", bucket_config)
-            and keyisset("Rules", bucket_config["ServerSideEncryptionConfiguration"])
-        )
-        else bucket_config["ServerSideEncryptionConfiguration"]["Rules"]
-    )
-    for rule in rules:
-        if keyisset("ApplyServerSideEncryptionByDefault", rule):
-            settings = rule["ApplyServerSideEncryptionByDefault"]
-            if (
-                keyisset("SSEAlgorithm", settings)
-                and settings["SSEAlgorithm"] == "aws:kms"
-                and keyisset("KMSMasterKeyID", settings)
-            ):
-                return validate_bucket_kms_key(
-                    bucket, settings["KMSMasterKeyID"], session
-                )
-    return None
-
-
-def define_bucket_mappings(buckets_mappings, lookup_buckets, use_buckets, settings):
-    """
-    Function to populate bucket mapping
-
-    :param buckets_mappings:
-    :return:
-    """
-    for bucket in lookup_buckets:
-        bucket_config = lookup_bucket_config(bucket.lookup, settings.session)
-        bucket.mappings.update(
-            {
-                bucket.logical_name: bucket_config["Name"],
-                "Arn": bucket_config["Arn"],
-            }
-        )
-        buckets_mappings.update({bucket.logical_name: bucket.mappings})
-        bucket_key = get_bucket_kms_key_from_config(
-            bucket, bucket_config, settings.session
-        )
-        if bucket_key:
-            LOG.info(f"Identified CMK {bucket_key} to be default key for encryption")
-            buckets_mappings[bucket.logical_name]["KmsKey"] = bucket_key
-        else:
-            LOG.info(
-                "No KMS Key has been identified to encrypt the bucket. Won't grant service access."
-            )
-    settings.mappings[RES_KEY] = buckets_mappings
-    for bucket in use_buckets:
-        if bucket.use.startswith("arn:aws"):
-            bucket_arn = bucket.use
-            try:
-                bucket_name = re.match(
-                    r"(?:arn:aws(?:[a-z-]+)?:s3:{3})(?P<bucketname>[a-z0-9-.]+.$)",
-                    bucket_arn,
-                ).group("bucketname")
-            except AttributeError:
-                raise ValueError(
-                    "Could not determine the bucket name from the give ARN",
-                    bucket.use,
-                )
-            LOG.info(f"Determined bucket name is {bucket_name} from arn {bucket_arn}")
-        else:
-            bucket_name = bucket.use
-            bucket_arn = f"arn:aws:s3:::{bucket_name}"
-            LOG.warning(
-                "In the absence of a full ARN, assuming partition to be `aws`. Set full ARN to rectify"
-            )
-            LOG.warning(f"ARN for {bucket_name} is set to {bucket_arn}")
-        buckets_mappings.update(
-            {
-                bucket.logical_name: {
-                    bucket.logical_name: bucket_name,
-                    "Arn": bucket_arn,
-                }
-            }
-        )
-
-
 def define_lookup_buckets_access(bucket, target, services):
     """
     Function to create the IAM policy for the service access to bucket
@@ -349,11 +238,13 @@ def assign_lookup_buckets(bucket, mappings):
         select_services = get_selected_services(bucket, target)
         if select_services:
             target[0].template.add_mapping("s3", mappings)
-            if keyisset("KmsKey", mappings[bucket.logical_name]):
+            if keyisset(S3_BUCKET_KMS_KEY.return_value, mappings[bucket.logical_name]):
                 kms_perms = generate_resource_permissions(
                     f"{bucket.logical_name}KmsKey",
                     get_access_types(KMS_MOD),
-                    arn=FindInMap("s3", bucket.logical_name, "KmsKey"),
+                    arn=FindInMap(
+                        "s3", bucket.logical_name, S3_BUCKET_KMS_KEY.return_value
+                    ),
                 )
                 add_iam_policy_to_service_task_role(
                     target[0],
