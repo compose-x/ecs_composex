@@ -26,7 +26,6 @@ from ecs_composex.resource_settings import (
     generate_resource_permissions,
     get_selected_services,
 )
-from ecs_composex.s3.s3_aws import lookup_bucket_config
 from ecs_composex.s3.s3_params import MOD_KEY as S3_MOD
 from ecs_composex.s3.s3_params import (
     RES_KEY,
