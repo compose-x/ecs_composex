@@ -17,7 +17,7 @@ from ecs_composex.rds.rds_params import (
     DB_SG,
     RES_KEY,
 )
-from ecs_composex.tcp_resources_settings import (
+from ecs_composex.rds_resources_settings import (
     add_secret_to_container,
     add_secrets_access_policy,
     add_security_group_ingress,

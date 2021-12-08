@@ -16,7 +16,7 @@ from ecs_composex.docdb.docdb_params import (
     RES_KEY,
 )
 from ecs_composex.rds.rds_ecs import import_dbs
-from ecs_composex.tcp_resources_settings import handle_new_tcp_resource
+from ecs_composex.rds_resources_settings import handle_new_tcp_resource
 
 
 def docdb_to_ecs(resources, services_stack, res_root_stack, settings):

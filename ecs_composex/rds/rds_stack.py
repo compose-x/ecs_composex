@@ -39,6 +39,7 @@ from ecs_composex.rds.rds_params import (
     RES_KEY,
 )
 from ecs_composex.rds.rds_template import generate_rds_templates
+from ecs_composex.rds_resources_settings import lookup_rds_resource, lookup_rds_secret
 from ecs_composex.vpc.vpc_params import STORAGE_SUBNETS, VPC_ID
 
 LOG = setup_logging()
@@ -149,33 +150,6 @@ class Rds(XResource):
             ),
         }
 
-    def lookup_secret(self, secret_lookup):
-
-        if keyisset("Arn", secret_lookup):
-            client = self.lookup_session.client("secretsmanager")
-            try:
-                secret_arn = client.describe_secret(SecretId=secret_lookup["Arn"])[
-                    "ARN"
-                ]
-            except client.exceptions.ResourceNotFoundException:
-                LOG.error(
-                    f"{self.module_name}.{self.name} - Secret {secret_lookup['Arn']} not found"
-                )
-                raise
-            except ClientError as error:
-                LOG.error(error)
-                raise
-        elif keyisset("Tags", secret_lookup):
-            secret_arn = find_aws_resource_arn_from_tags_api(
-                self.lookup["secret"], self.lookup_session, "secretsmanager:secret"
-            )
-        else:
-            raise LookupError(
-                f"{self.module_name}.{self.name} - Failed to find the DB Secret"
-            )
-        if secret_arn:
-            self.mappings[DB_SECRET_ARN.title] = secret_arn
-
     def lookup_resource(
         self,
         arn_re,
@@ -188,61 +162,14 @@ class Rds(XResource):
         Method to self-identify properties
         :return:
         """
-        lookup_attributes = self.lookup
-        if subattribute_key is not None:
-            lookup_attributes = self.lookup[subattribute_key]
-        if keyisset("Arn", lookup_attributes):
-            arn_parts = arn_re.match(lookup_attributes["Arn"])
-            if not arn_parts:
-                raise KeyError(
-                    f"{self.module_name}.{self.name} - ARN {lookup_attributes['Arn']} is not valid. Must match",
-                    arn_re.pattern,
-                )
-            self.arn = lookup_attributes["Arn"]
-            resource_id = arn_parts.group("id")
-            account_id = arn_parts.group("accountid")
-        elif keyisset("Tags", lookup_attributes):
-            clusters = find_aws_resource_arn_from_tags_api(
-                lookup_attributes, self.lookup_session, tagging_api_id, allow_multi=True
-            )
-            if isinstance(clusters, str):
-                self.arn = clusters
-            elif isinstance(clusters, list):
-                if len(clusters) == 1:
-                    self.arn = clusters[0]
-                if len(clusters) >= 2:
-                    cluster_arns = [
-                        arn for arn in clusters if RDS_DB_ID_CLUSTER_ARN_RE.match(arn)
-                    ]
-                    if len(cluster_arns) > 1:
-                        raise LookupError(
-                            "There is more than one RDS cluster found with the given Lookup details",
-                            cluster_arns,
-                        )
-                    self.arn = cluster_arns[0]
-
-            arn_parts = arn_re.match(self.arn)
-            resource_id = arn_parts.group("id")
-            account_id = arn_parts.group("accountid")
-        else:
-            raise KeyError(
-                f"{self.module_name}.{self.name} - You must specify Arn or Tags to identify existing resource"
-            )
-        if not self.arn:
-            raise LookupError(
-                f"{self.module_name}.{self.name} - Failed to find the AWS Resource with given tags"
-            )
-        props = {}
-        _account_id = get_account_id(self.lookup_session)
-        if _account_id == account_id and self.cloud_control_attributes_mapping:
-            props = self.cloud_control_attributes_mapping_lookup(
-                cfn_resource_type, resource_id
-            )
-        if not props:
-            props = self.native_attributes_mapping_lookup(
-                account_id, resource_id, native_lookup_function
-            )
-        self.mappings = props
+        lookup_rds_resource(
+            self,
+            arn_re,
+            native_lookup_function,
+            cfn_resource_type,
+            tagging_api_id,
+            subattribute_key,
+        )
 
 
 class XStack(ComposeXStack):
@@ -304,7 +231,7 @@ class XStack(ComposeXStack):
                     "You must specify the cluster or instance to lookup"
                 )
             if keyisset("secret", resource.lookup):
-                resource.lookup_secret(resource.lookup["secret"])
+                lookup_rds_secret(resource, resource.lookup["secret"])
             settings.mappings[RES_KEY].update(
                 {resource.logical_name: resource.mappings}
             )

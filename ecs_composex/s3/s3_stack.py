@@ -210,7 +210,12 @@ class Bucket(XResource):
         return properties
 
     def lookup_resource(
-        self, arn_re, native_lookup_function, cfn_resource_type, tagging_api_id
+        self,
+        arn_re,
+        native_lookup_function,
+        cfn_resource_type,
+        tagging_api_id,
+        subattribute_key=None,
     ):
         """
         Method to self-identify properties

@@ -22,13 +22,13 @@ from ecs_composex.opensearch.opensearch_params import (
     OS_DOMAIN_SG,
     RES_KEY,
 )
+from ecs_composex.rds_resources_settings import handle_new_tcp_resource
 from ecs_composex.resource_settings import (
     generate_resource_permissions_statements,
     get_parameter_settings,
     get_selected_services,
     handle_resource_to_services,
 )
-from ecs_composex.tcp_resources_settings import handle_new_tcp_resource
 
 LOG = setup_logging()
 

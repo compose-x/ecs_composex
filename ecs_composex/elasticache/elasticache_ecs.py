@@ -1,4 +1,4 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
@@ -15,7 +15,7 @@ from ecs_composex.elasticache.elasticache_params import (
     MAPPINGS_KEY,
     RES_KEY,
 )
-from ecs_composex.tcp_resources_settings import (
+from ecs_composex.rds_resources_settings import (
     add_security_group_ingress,
     handle_new_tcp_resource,
 )

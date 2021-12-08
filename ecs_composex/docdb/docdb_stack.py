@@ -35,6 +35,7 @@ from ecs_composex.docdb.docdb_template import (
     create_docdb_template,
     init_doc_db_template,
 )
+from ecs_composex.rds_resources_settings import lookup_rds_resource, lookup_rds_secret
 from ecs_composex.vpc.vpc_params import STORAGE_SUBNETS
 
 LOG = setup_logging()
@@ -67,9 +68,8 @@ def get_db_cluster_config(db, account_id, resource_id):
         ]
 
     attributes_mappings = {
-        DOCDB_NAME.title: "DatabaseName",
         DOCDB_PORT.title: "Port",
-        DOCDB_SG.return_value: "VpcSecurityGroups::0::VpcSecurityGroupId",
+        "VpcSecurityGroupId": "VpcSecurityGroups::0::VpcSecurityGroupId",
     }
     config = attributes_to_mapping(db_cluster, attributes_mappings)
     return config
@@ -151,6 +151,27 @@ class DocDb(XResource):
         if secret_arn:
             self.mappings[DOCDB_SECRET.title] = secret_arn
 
+    def lookup_resource(
+        self,
+        arn_re,
+        native_lookup_function,
+        cfn_resource_type,
+        tagging_api_id,
+        subattribute_key=None,
+    ):
+        """
+        Method to self-identify properties
+        :return:
+        """
+        lookup_rds_resource(
+            self,
+            arn_re,
+            native_lookup_function,
+            cfn_resource_type,
+            tagging_api_id,
+            subattribute_key,
+        )
+
 
 class XStack(ComposeXStack):
     """
@@ -175,12 +196,15 @@ class XStack(ComposeXStack):
             for resource in lookup_resources:
                 resource.lookup_resource(
                     RDS_DB_CLUSTER_ARN_RE,
-                    None,
+                    get_db_cluster_config,
                     CfnDBCluster.resource_type,
                     "rds:cluster",
                     "cluster",
                 )
                 if keyisset("secret", resource.lookup):
-                    resource.lookup_secret(resource.lookup["secret"])
+                    lookup_rds_secret(resource, resource.lookup["secret"])
+                settings.mappings[RES_KEY].update(
+                    {resource.logical_name: resource.mappings}
+                )
         for resource in settings.compose_content[RES_KEY].values():
             resource.stack = self
