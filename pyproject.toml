@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ecs_composex"
-version = "0.17.2"
+version = "0.17.3"
 description = "Manage, Configure and Deploy your services and AWS services and applications from your docker-compose definition"
 authors = ["John Preston <john@compose-x.io>"]
 maintainers = ["John Preston <john@compose-x.io>"]
@@ -39,7 +39,7 @@ boto3 = ">=1.18,<1.21"
 troposphere = "^3.1.1"
 ecr-scan-reporter = { version = "^0.4", optional = true }
 compose-x-render = "^0.4.3"
-compose-x-common = "^0.3.3"
+compose-x-common = "^0.3.4"
 jsonschema = "^3.2.0"
 requests = "^2.26.0"
 tabulate = "^0.8.9"
@@ -78,7 +78,7 @@ ecrscan = ["ecr-scan-reporter"]
 github_url = "https://github.com/compose-x/ecs_composex"
 
 [tool.tbump.version]
-current = "0.17.2"
+current = "0.17.3"
 
 regex = '''
   (?P<major>\d+)
