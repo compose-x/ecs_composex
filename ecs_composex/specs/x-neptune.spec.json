@@ -1,0 +1,85 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "id": "x-neptune.spec.json",
+  "$id": "x-neptune.spec.json",
+  "title": "x-neptune",
+  "description": "x-neptune specification",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "Lookup": {
+      "$ref": "x-resources.common.spec.json#/definitions/Lookup"
+    },
+    "Properties": {
+      "type": "object",
+      "description": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-neptune-dbcluster.html"
+    },
+    "Settings": {
+      "$ref": "x-resources.common.spec.json#/definitions/Settings"
+    },
+    "Services": {
+      "$ref": "#/definitions/Services"
+    },
+    "MacroParameters": {
+      "$ref": "#/definitions/MacroParameters"
+    }
+  },
+  "oneOf": [
+    {
+      "required": ["Properties"]
+    },
+    {
+      "required": ["Lookup"]
+    }
+  ],
+  "definitions": {
+    "Services": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalItems": false,
+        "required": [
+          "name",
+          "access"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "access": {
+            "type": "object",
+            "additionalItems": false,
+            "required": [
+              "NeptuneDB",
+              "DBCluster"
+            ],
+            "properties": {
+              "NeptuneDB": {
+                "type": "string"
+              },
+              "DBCluster": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "MacroParameters": {
+      "type": "object",
+      "properties": {
+        "Instances": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "description": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-neptune-dbinstance.html"
+          }
+        },
+        "DBClusterParameterGroup": {
+          "type": "object",
+          "description": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-neptune-dbclusterparametergroup.html"
+        }
+      }
+    }
+  }
+}

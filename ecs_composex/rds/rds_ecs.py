@@ -54,10 +54,6 @@ def handle_import_dbs_to_services(db, rds_mapping, target, mapping_name):
             FindInMap(mapping_name, db.logical_name, DB_SECRET_T),
             db.logical_name,
         )
-    else:
-        LOG.warning(
-            f"Don't forget, we did not assigned access to a secret from SecretsManager for {db.logical_name}"
-        )
     add_security_group_ingress(
         target[0].stack,
         db.logical_name,

@@ -167,7 +167,14 @@ def get_selected_services(resource, target):
 
 
 def map_service_perms_to_resource(
-    resource, family, services, access_type, arn_value, attributes=None
+    resource,
+    family,
+    services,
+    access_type,
+    arn_value,
+    attributes=None,
+    policies_override=None,
+    access_subkey=None,
 ):
     """
     Function to
@@ -183,12 +190,20 @@ def map_service_perms_to_resource(
         attributes = []
     res_perms = generate_resource_permissions(
         resource.logical_name,
-        resource.policies_scaffolds,
+        resource.policies_scaffolds if not policies_override else policies_override,
         arn=arn_value,
     )
-    resource.generate_resource_envvars()
     containers = define_service_containers(family.template)
-    policy = res_perms[access_type]
+    if isinstance(access_type, str):
+        policy = res_perms[access_type]
+    elif isinstance(access_type, dict):
+        try:
+            policy = res_perms[access_type[access_subkey]]
+        except KeyError:
+            LOG.error(
+                f"{resource.module_name}.{resource.name} - Access type {access_subkey}.{access_type} does not exist."
+            )
+            raise
     policy_title = (
         f"{family.logical_name}To{resource.mapping_key}{resource.logical_name}"
     )
@@ -200,6 +215,10 @@ def map_service_perms_to_resource(
             Roles=[Ref(family.task_role.name["ImportParameter"])],
         )
         family.template.add_resource(res_policy)
+    else:
+        res_policy = family.template.resources[policy_title]
+        res_policy.PolicyDocument["Statement"] += policy.PolicyDocument["Statement"]
+
     for container in containers:
         for service in services:
             if container.Name == service.name:
@@ -231,7 +250,13 @@ def handle_kms_access(mapping_family, resource, target, selected_services):
 
 
 def handle_lookup_resource(
-    mapping, mapping_family, resource, arn_parameter, parameters=None
+    mapping,
+    mapping_family,
+    resource,
+    arn_parameter,
+    parameters=None,
+    policies_override=None,
+    access_subkey=None,
 ):
     """
     :param dict mapping:
@@ -263,6 +288,8 @@ def handle_lookup_resource(
                 selected_services,
                 target[3],
                 arn_value=arn_attr_value,
+                policies_override=policies_override,
+                access_subkey=access_subkey,
             )
             if (
                 hasattr(resource, "kms_arn_attr")
