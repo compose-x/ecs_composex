@@ -39,7 +39,7 @@ boto3 = ">=1.18,<1.21"
 troposphere = "^3.1.1"
 ecr-scan-reporter = { version = "^0.4", optional = true }
 compose-x-render = "^0.4.3"
-compose-x-common = "^0.3.4"
+compose-x-common = "^0.3.5"
 jsonschema = "^3.2.0"
 requests = "^2.26.0"
 tabulate = "^0.8.9"
