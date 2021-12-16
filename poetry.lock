@@ -52,7 +52,7 @@ name = "aws-sam-translator"
 version = "1.42.0"
 description = "AWS SAM Translator is a library that transform SAM templates into AWS CloudFormation templates"
 category = "main"
-optional = false
+optional = true
 python-versions = "*"
 
 [package.dependencies]
@@ -590,22 +590,21 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 
 [[package]]
 name = "compose-x-common"
-version = "0.3.5"
+version = "0.3.6"
 description = "Common Library for Compose-X Projects"
 category = "main"
 optional = false
 python-versions = ">=3.7,<4.0"
 
 [package.dependencies]
-boto3 = {version = ">=1.20.22,<2.0.0", optional = true, markers = "extra == \"aws\""}
+boto3 = ">=1.20.24,<2.0.0"
 flatdict = ">=4.0.1,<5.0.0"
-
-[package.extras]
-aws = ["boto3 (>=1.20.22,<2.0.0)"]
+install = ">=1.3.5,<2.0.0"
+python-dateutil = ">=2.8.2,<3.0.0"
 
 [[package]]
 name = "compose-x-render"
-version = "0.4.3"
+version = "0.5.0"
 description = "Library & Tool to compile/merge compose files with top level extension fields"
 category = "main"
 optional = false
@@ -613,7 +612,7 @@ python-versions = ">=3.7,<4.0"
 
 [package.dependencies]
 argparse = ">=1.4.0,<2.0.0"
-compose-x-common = ">=0.3.0,<0.4.0"
+compose-x-common = ">=0.3.6,<0.4.0"
 importlib-resources = ">=5.4.0,<6.0.0"
 jsonschema = ">=3.2.0,<5.0"
 PyYAML = ">=5.4.1.0,<7.0"
@@ -802,6 +801,14 @@ description = "iniconfig: brain-dead simple config-ini parsing"
 category = "dev"
 optional = false
 python-versions = "*"
+
+[[package]]
+name = "install"
+version = "1.3.5"
+description = "Install packages from within code"
+category = "main"
+optional = false
+python-versions = ">=2.7, >=3.5"
 
 [[package]]
 name = "isort"
@@ -1609,11 +1616,12 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytes
 
 [extras]
 ecrscan = ["ecr-scan-reporter"]
+sampolicies = ["aws-sam-translator"]
 
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "018e1d36a7a2bc99f7c6169be6bf6ca124abdbbf69929697f90ec8dd402f1e6d"
+content-hash = "225567cdd4a4a3cc3622a18ea50c1634baf05052eeb5dd2498f5ac544f87830b"
 
 [metadata.files]
 alabaster = [
@@ -1706,12 +1714,12 @@ colorama = [
     {file = "colorama-0.4.4.tar.gz", hash = "sha256:5941b2b48a20143d2267e95b1c2a7603ce057ee39fd88e7329b0c292aa16869b"},
 ]
 compose-x-common = [
-    {file = "compose_x_common-0.3.5-py3-none-any.whl", hash = "sha256:91f186179970889d9ef634e8f4a2f32049f980a15007b5ef1f5c089455fe17ff"},
-    {file = "compose_x_common-0.3.5.tar.gz", hash = "sha256:63b6ea5904021a9f0263ad97a84de4b42b258fc4535c9c84c46c71bde9bb4671"},
+    {file = "compose_x_common-0.3.6-py3-none-any.whl", hash = "sha256:18a51c96f39abc3aade94f783a9cb7901b2eb423ef84567b9c8042fa963651e5"},
+    {file = "compose_x_common-0.3.6.tar.gz", hash = "sha256:66a952f2d4cf1c071a6eafee6506a15a3466b29aa8f271c78c77db53b0c9d04a"},
 ]
 compose-x-render = [
-    {file = "compose_x_render-0.4.3-py3-none-any.whl", hash = "sha256:cde9c6c896757af59066af6a8c41b6b16aa2054730c8fefaaf0b59be2444b42d"},
-    {file = "compose_x_render-0.4.3.tar.gz", hash = "sha256:6b1af2d980a9a83274cfdc0753de82a9c34f68938695a627a3c789173684fe04"},
+    {file = "compose_x_render-0.5.0-py3-none-any.whl", hash = "sha256:1b594051576262f3c7f12b6f06f7ffd11bc57de0ce53da6c03915397a29f445c"},
+    {file = "compose_x_render-0.5.0.tar.gz", hash = "sha256:294f77eac4e6cca9430ad11f9960876fbe628cdf713e650ea043c45843af5926"},
 ]
 contextlib2 = [
     {file = "contextlib2-21.6.0-py2.py3-none-any.whl", hash = "sha256:3fbdb64466afd23abaf6c977627b75b6139a5a3e8ce38405c5b413aed7a0471f"},
@@ -1824,6 +1832,10 @@ importlib-resources = [
 iniconfig = [
     {file = "iniconfig-1.1.1-py2.py3-none-any.whl", hash = "sha256:011e24c64b7f47f6ebd835bb12a743f2fbe9a26d4cecaa7f53bc4f35ee9da8b3"},
     {file = "iniconfig-1.1.1.tar.gz", hash = "sha256:bc3af051d7d14b2ee5ef9969666def0cd1a000e121eaea580d4a313df4b37f32"},
+]
+install = [
+    {file = "install-1.3.5-py3-none-any.whl", hash = "sha256:0d3fadf4aa62c95efe8d34757c8507eb46177f86c016c21c6551eafc6a53d5a9"},
+    {file = "install-1.3.5.tar.gz", hash = "sha256:e67c8a0be5ccf8cb4ffa17d090f3a61b6e820e6a7e21cd1d2c0f7bc59b18e647"},
 ]
 isort = [
     {file = "isort-5.10.1-py3-none-any.whl", hash = "sha256:6f62d78e2f89b4500b080fe3a81690850cd254227f27f75c3a0c491a1f351ba7"},
