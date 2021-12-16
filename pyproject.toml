@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ecs_composex"
-version = "0.17.3"
+version = "0.17.4"
 description = "Manage, Configure and Deploy your services and AWS services and applications from your docker-compose definition"
 authors = ["John Preston <john@compose-x.io>"]
 maintainers = ["John Preston <john@compose-x.io>"]
@@ -79,7 +79,7 @@ sampolicies = ["aws-sam-translator"]
 github_url = "https://github.com/compose-x/ecs_composex"
 
 [tool.tbump.version]
-current = "0.17.3"
+current = "0.17.4"
 
 regex = '''
   (?P<major>\d+)
