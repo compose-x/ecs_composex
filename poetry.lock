@@ -590,7 +590,7 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 
 [[package]]
 name = "compose-x-common"
-version = "0.3.6"
+version = "0.3.7"
 description = "Common Library for Compose-X Projects"
 category = "main"
 optional = false
@@ -764,11 +764,11 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 
 [[package]]
 name = "importlib-metadata"
-version = "4.8.2"
+version = "4.9.0"
 description = "Read metadata from Python packages"
 category = "main"
 optional = false
-python-versions = ">=3.6"
+python-versions = ">=3.7"
 
 [package.dependencies]
 typing-extensions = {version = ">=3.6.4", markers = "python_version < \"3.8\""}
@@ -1621,7 +1621,7 @@ sampolicies = ["aws-sam-translator"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "225567cdd4a4a3cc3622a18ea50c1634baf05052eeb5dd2498f5ac544f87830b"
+content-hash = "00caa9464aa0b211af188d5c444c384721541242e132875060dc6d1b2259c8f8"
 
 [metadata.files]
 alabaster = [
@@ -1714,8 +1714,8 @@ colorama = [
     {file = "colorama-0.4.4.tar.gz", hash = "sha256:5941b2b48a20143d2267e95b1c2a7603ce057ee39fd88e7329b0c292aa16869b"},
 ]
 compose-x-common = [
-    {file = "compose_x_common-0.3.6-py3-none-any.whl", hash = "sha256:18a51c96f39abc3aade94f783a9cb7901b2eb423ef84567b9c8042fa963651e5"},
-    {file = "compose_x_common-0.3.6.tar.gz", hash = "sha256:66a952f2d4cf1c071a6eafee6506a15a3466b29aa8f271c78c77db53b0c9d04a"},
+    {file = "compose_x_common-0.3.7-py3-none-any.whl", hash = "sha256:669e482b070475a5461629f572b45d2822520c52c26bca4ccc3065c6a1cf1e03"},
+    {file = "compose_x_common-0.3.7.tar.gz", hash = "sha256:e5c7f08eac0dea37e1ed21e331eb1b206b7f791eff5fa4e001c921dd379bf9bc"},
 ]
 compose-x-render = [
     {file = "compose_x_render-0.5.0-py3-none-any.whl", hash = "sha256:1b594051576262f3c7f12b6f06f7ffd11bc57de0ce53da6c03915397a29f445c"},
@@ -1822,8 +1822,8 @@ imagesize = [
     {file = "imagesize-1.3.0.tar.gz", hash = "sha256:cd1750d452385ca327479d45b64d9c7729ecf0b3969a58148298c77092261f9d"},
 ]
 importlib-metadata = [
-    {file = "importlib_metadata-4.8.2-py3-none-any.whl", hash = "sha256:53ccfd5c134223e497627b9815d5030edf77d2ed573922f7a0b8f8bb81a1c100"},
-    {file = "importlib_metadata-4.8.2.tar.gz", hash = "sha256:75bdec14c397f528724c1bfd9709d660b33a4d2e77387a3358f20b848bb5e5fb"},
+    {file = "importlib_metadata-4.9.0-py3-none-any.whl", hash = "sha256:e8b45564028bc25f8c99f546616112a6df5de6655893d7eb74c9a99680dc9751"},
+    {file = "importlib_metadata-4.9.0.tar.gz", hash = "sha256:ee50794eccb0ec340adbc838344ebb9a6ff2bcba78f752d31fc716497e2149d6"},
 ]
 importlib-resources = [
     {file = "importlib_resources-5.4.0-py3-none-any.whl", hash = "sha256:33a95faed5fc19b4bc16b29a6eeae248a3fe69dd55d4d229d2b480e23eeaad45"},
