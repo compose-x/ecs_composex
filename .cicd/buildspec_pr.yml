@@ -20,6 +20,7 @@ phases:
       - poetry env info
       - poetry install
       - poetry install -E ecrscan
+      - poetry install -E sampolicies
       - POETRY_ENV=`poetry env info --path`
       - echo $POETRY_ENV
       - PATH=$POETRY_ENV/bin:$PATH

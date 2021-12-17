@@ -195,6 +195,12 @@ def map_service_perms_to_resource(
     )
     containers = define_service_containers(family.template)
     if isinstance(access_type, str):
+        if not keyisset(access_type, res_perms):
+            raise KeyError(
+                f"{resource.module_name}.{resource.name} - policy {access_type} "
+                "is not a valid policy. Available policies",
+                res_perms.keys(),
+            )
         policy = res_perms[access_type]
     elif isinstance(access_type, dict):
         try:
