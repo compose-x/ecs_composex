@@ -8,7 +8,7 @@
   "additionalProperties": false,
   "properties": {
     "Lookup": {
-      "$ref": "x-resources.common.spec.json#/definitions/Lookup"
+      "$ref": "#/definitions/Lookup"
     },
     "Properties": {
       "type": "object",

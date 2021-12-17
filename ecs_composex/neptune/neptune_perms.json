@@ -1,0 +1,25 @@
+{
+  "DBCluster": {
+    "RO": {
+      "Effect": "Allow",
+      "Action": [
+        "rds:Describe*"
+      ],
+      "Resource": [
+        "${ARN}"
+      ]
+    }
+  },
+  "NeptuneDB": {
+    "connect": {
+      "Effect": "Allow",
+      "Action": [
+        "neptune-db:connect"
+      ],
+      "Resource": [
+        "${ARN}",
+        "${ARN}/*"
+      ]
+    }
+  }
+}

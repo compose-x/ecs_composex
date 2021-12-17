@@ -124,6 +124,14 @@
         }
       }
     },
+    "x-neptune": {
+      "type": "object",
+      "patternProperties": {
+        "^[a-zA-Z0-9._-]+$": {
+          "$ref": "x-neptune.spec.json"
+        }
+      }
+    },
     "x-events": {
       "type": "object",
       "patternProperties": {

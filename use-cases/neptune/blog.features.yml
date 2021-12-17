@@ -1,0 +1,68 @@
+---
+# base file for services with the x-keys for BDD
+version: '3.8'
+services:
+  app03:
+    tmpfs:
+      - /run
+      - /tmp
+    sysctls:
+      net.core.somaxconn: 1024
+      net.ipv4.tcp_syncookies: 0
+    cap_add:
+      - NET_ADMIN
+      - SYS_PTRACE
+    cap_drop:
+      - SYS_ADMIN
+    ulimits:
+      nofile:
+        soft: 1024
+        hard: 2048
+      nproc: 512
+    x-aws-min_percent: 50
+    x-aws-max_percent: 150
+    deploy:
+      resources:
+        reservations:
+          cpus: '0.25'
+          memory: 134217728b
+    environment:
+      LOGLEVEL: DEBUG
+    image: nginx
+    ports:
+      - mode: awsvpc
+        protocol: tcp
+        published: 5000
+        target: 5000
+    secrets:
+      - abcd
+      - zyx
+      - john
+    volumes:
+      - /generated/volume/from/path
+      - shared-images:/app/images
+      - some-volume:/app/data:ro
+    x-network:
+      Ingress:
+        Myself: False
+        ExtSources:
+          - IPv4: 0.0.0.0/0
+            Name: ANYWHERE
+
+    x-logging:
+        RetentionInDays: 30
+    x-scaling:
+      Range: 1-10
+
+volumes:
+  shared-images: {}
+  some-volume: {}
+  normal-vol: {}
+
+
+x-dns:
+  PrivateNamespace:
+    Name: lambda.internal
+
+x-tags:
+  costcentre: lambda
