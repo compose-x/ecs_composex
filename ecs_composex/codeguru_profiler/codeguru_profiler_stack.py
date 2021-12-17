@@ -22,14 +22,14 @@ from ecs_composex.codeguru_profiler.codeguru_profiler_params import (
 )
 from ecs_composex.common import build_template
 from ecs_composex.common.cfn_params import STACK_ID_SHORT
-from ecs_composex.common.compose_resources import (
+from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.compose.x_resources import (
     XResource,
     set_lookup_resources,
     set_new_resources,
     set_resources,
     set_use_resources,
 )
-from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.iam.import_sam_policies import get_access_types
 from ecs_composex.resources_import import import_record_properties
 

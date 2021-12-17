@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
-from compose_x_common.compose_x_common import keyisset, keypresent
+from compose_x_common.compose_x_common import keyisset
 from troposphere import FindInMap, GetAtt, ImportValue, Ref, Sub
 from troposphere.ecs import ContainerDefinition, Environment
 
@@ -12,7 +12,7 @@ from ecs_composex.ecs.ecs_params import LOG_GROUP_RETENTION
 
 def import_secrets(template, service, container, settings):
     """
-    Function to import secrets from composex mapping to AWS Secrets in Secrets Manager
+    Function to import secrets from compose-x mapping to AWS Secrets in Secrets Manager
 
     :param troposphere.Template template:
     :param troposhere.ecs.ContainerDefinition container:
@@ -162,22 +162,6 @@ def validate_healthcheck(healthcheck, valid_keys, required_keys):
         raise AttributeError(
             f"Expected at least {required_keys}. Got", healthcheck.keys()
         )
-
-
-def set_else_none(key, props, alt_value=None, eval_bool=False):
-    """
-    Function to serialize if not keyisset () set other value
-
-    :param str key:
-    :param dict props:
-    :param alt_value:
-    :param bool eval_bool: Allows to gets booleans properties
-    :return:
-    """
-    if not eval_bool:
-        return alt_value if not keyisset(key, props) else props[key]
-    elif eval_bool:
-        return alt_value if not keypresent(key, props) else props[key]
 
 
 def get_closest_valid_log_retention_period(set_expiry):

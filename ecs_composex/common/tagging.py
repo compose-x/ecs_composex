@@ -28,6 +28,7 @@ from troposphere import Ref, Tags
 from troposphere.ec2 import LaunchTemplate, TagSpecifications
 from troposphere.ssm import Parameter as SSMParameter
 
+from ecs_composex import __version__ as version
 from ecs_composex.common import LOG, NONALPHANUM, add_parameters
 from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.common.stacks import ComposeXStack
@@ -163,7 +164,12 @@ def add_object_tags(obj, tags):
 
 
 def default_tags():
-    return Tags(CreatedByComposeX=True)
+    """
+    Function to return default tags to set on resource
+    :return: default compose-x tags
+    :rtype: troposphere.Tags
+    """
+    return Tags(CreatedByComposeX=True, **{"compose-x::version": version})
 
 
 def apply_tags_to_resources(settings, resource, params, xtags):
@@ -187,8 +193,8 @@ def apply_tags_to_resources(settings, resource, params, xtags):
             or not resource.stack_template
         ):
             return
-        for stack_resname in resource.stack_template.resources:
-            add_object_tags(resource.stack_template.resources[stack_resname], xtags)
+        for stack_resource in resource.stack_template.resources.values():
+            add_object_tags(stack_resource, xtags)
 
 
 def add_all_tags(root_template, settings, params=None, xtags=None):

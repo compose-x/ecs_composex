@@ -45,7 +45,7 @@ def map_service_perms_to_resource(
     """
     Function to
     :param resource:
-    :param ecs_composex.common.compose_services.ComposeFamily family:
+    :param ecs_composex.ecs.ecs_family.ComposeFamily family:
     :param services:
     :param str access_type:
     :param arn_value: The value for main attribute, used for env vars
@@ -68,7 +68,7 @@ def add_security_group_ingress(target_family, resource, sg_id, port):
     """
     Function to add a SecurityGroupIngress rule into the ECS Service template
 
-    :param ecs_composex.common.compose_services.ComposeFamily target_family:
+    :param ecs_composex.ecs.ecs_family.ComposeFamily target_family:
     :param ecs_composex.ecs.ServicesStack service_stack: The root stack for the services
     :param str db_name: the name of the database to use for imports
     :param sg_id: The security group Id to use for ingress. DB Security group, not service's

@@ -5,29 +5,21 @@
 """
 Module to handle AWS RDS CFN Templates creation
 """
-import re
 
-from botocore.exceptions import ClientError
-from compose_x_common.aws import get_account_id
-from compose_x_common.aws.rds import (
-    RDS_DB_CLUSTER_ARN_RE,
-    RDS_DB_ID_CLUSTER_ARN_RE,
-    RDS_DB_INSTANCE_ARN_RE,
-)
+from compose_x_common.aws.rds import RDS_DB_CLUSTER_ARN_RE, RDS_DB_INSTANCE_ARN_RE
 from compose_x_common.compose_x_common import attributes_to_mapping, keyisset
 from troposphere import GetAtt, Ref
 from troposphere.rds import DBCluster as CfnDBCluster
 from troposphere.rds import DBInstance as CfnDBInstance
 
 from ecs_composex.common import build_template, setup_logging
-from ecs_composex.common.aws import find_aws_resource_arn_from_tags_api
-from ecs_composex.common.compose_resources import (
+from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.compose.x_resources import (
     XResource,
     set_lookup_resources,
     set_new_resources,
     set_resources,
 )
-from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.rds.rds_features import apply_extra_parameters
 from ecs_composex.rds.rds_params import (
     DB_ENDPOINT_PORT,

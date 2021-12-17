@@ -31,7 +31,7 @@ from troposphere.ssm import Parameter as SSMParameter
 
 from ecs_composex.common import keyisset
 from ecs_composex.common.cfn_params import STACK_ID_SHORT, Parameter
-from ecs_composex.common.compose_services import ComposeService
+from ecs_composex.compose.compose_services import ComposeService
 from ecs_composex.ecs import ecs_params
 
 CW_IMAGE_PARAMETER = Parameter(
@@ -52,7 +52,7 @@ METRICS_DEFAULT_PATH = r"/metrics"
 def set_cw_prometheus_config_parameter(family, options):
     """
     Function to add the SSM Parameter representing the Prometheus scrapper config
-    :param ecs_composex.common.compose_services.ComposeFamily family:
+    :param ecs_composex.ecs.ecs_family.ComposeFamily family:
     :return: parameter
     :rtype: troposphere.ssm.Parameter
     """
@@ -168,7 +168,7 @@ def define_nginx_exporter_sidecar(family):
     """
     Function to define the NGINX Exporter sidecar
 
-    :param ecs_composex.common.compose_services.ComposeFamily family:
+    :param ecs_composex.ecs.ecs_family.ComposeFamily family:
 
     :return:
     """
@@ -308,7 +308,7 @@ def get_jmx_processor(family, ecs_sd_config, jmx_config):
 def process_custom_rules(family, ecs_sd_config, options, emf_processors):
     """
     Func
-    :param ecs_composex.common.compose_services.ComposeFamily family:
+    :param ecs_composex.ecs.ecs_family.ComposeFamily family:
     :param dict ecs_sd_config:
     :param dict options:
     :param dict emf_processors:
@@ -368,7 +368,7 @@ def set_cw_config_parameter(family, **options):
     """
     Function to add the SSM Parameter representing the Prometheus scrapper config
 
-    :param ecs_composex.common.compose_services.ComposeFamily family:
+    :param ecs_composex.ecs.ecs_family.ComposeFamily family:
     :return: parameter
     :rtype: troposphere.ssm.Parameter
     """
@@ -428,7 +428,7 @@ def define_cloudwatch_agent(family, cw_prometheus_config, cw_agent_config):
     """
     Function to define the CW Agent image task definition
 
-    :param ecs_composex.common.compose_services.ComposeFamily family:
+    :param ecs_composex.ecs.ecs_family.ComposeFamily family:
     :param cw_prometheus_config:
     :param cw_agent_config:
     :return:
@@ -565,7 +565,7 @@ def set_ecs_cw_policy(family, prometheus_parameter, cw_config_parameter):
 def add_cw_agent_to_family(family, **options):
     """
     Function to add the CW Agent to the task family for additional monitoring
-    :param ecs_composex.common.compose_services.ComposeFamily family:
+    :param ecs_composex.ecs.ecs_family.ComposeFamily family:
     """
     prometheus_config = set_cw_prometheus_config_parameter(family, options)
     cw_agent_config = set_cw_config_parameter(family, **options)

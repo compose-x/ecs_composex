@@ -13,9 +13,9 @@ from troposphere.iam import PolicyType
 
 from ecs_composex.common import LOG, add_parameters
 from ecs_composex.common.cfn_params import STACK_ID_SHORT
-from ecs_composex.common.compose_resources import get_parameter_settings
 from ecs_composex.common.services_helpers import extend_container_envvars
 from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.compose.x_resources import get_parameter_settings
 from ecs_composex.ecs.ecs_iam import define_service_containers
 from ecs_composex.iam.import_sam_policies import get_access_types
 from ecs_composex.kms.kms_params import MOD_KEY as KMS_MOD
@@ -120,7 +120,7 @@ def generate_resource_permissions_statements(
 def add_iam_policy_to_service_task_role(family, resource, perms, access_type, services):
     """
     Function to expand the ECS Task Role policy with the permissions for the resource
-    :param ecs_composex.common.compose_services.ComposeFamily family:
+    :param ecs_composex.ecs.ecs_family.ComposeFamily family:
     :param resource:
     :param perms:
     :param access_type:
@@ -179,7 +179,7 @@ def map_service_perms_to_resource(
     """
     Function to
     :param resource:
-    :param ecs_composex.common.compose_services.ComposeFamily family:
+    :param ecs_composex.ecs.ecs_family.ComposeFamily family:
     :param services:
     :param str access_type:
     :param value: The value for main attribute, used for env vars

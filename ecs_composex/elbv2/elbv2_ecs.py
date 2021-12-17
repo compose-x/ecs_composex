@@ -329,7 +329,7 @@ def define_service_target_group(
     Function to create the elbv2 target group
     :param ecs_composex.elbv2.elbv2_stack.Elbv2 resource: the ELBv2 to attach to
     :param ecs_composex.common.compose_services.ComposeService service: the service target
-    :param ecs_composex.common.compose_services.ComposeFamily family: the family owning the service
+    :param ecs_composex.ecs.ecs_family.ComposeFamily family: the family owning the service
     :param ecs_composex.common.stacks.ComposeXStack resources_root_stack:
     :param dict target_definition: the Service definition
     :return: the target group
@@ -393,7 +393,7 @@ def define_service_target_group_definition(
 
     :param ecs_composex.elbv2.elbv2_stack.Elbv2 resource:
     :param service:
-    :param ecs_composex.common.compose_services.ComposeFamily family:
+    :param ecs_composex.ecs.ecs_family.ComposeFamily family:
     :param dict target_def:
     :param ecs_composex.common.stacks.ComposeXStack resources_root_stack:
     :return:

@@ -17,9 +17,6 @@ USE_STACK_NAME_CON = Equals(
 USE_SPOT_CON_T = "UseSpotFleetHostsCondition"
 USE_SPOT_CON = Equals(Ref(cfn_params.USE_FLEET), "True")
 
-NOT_USE_SPOT_CON_T = "NotUseSpotFleetHostsCondition"
-NOT_USE_SPOT_CON = Not(Condition(USE_SPOT_CON_T))
-
 
 def pass_root_stack_name():
     """
@@ -38,7 +35,7 @@ def pass_root_stack_name():
 
 def define_stack_name(template=None):
     """
-    Function to return Stack name contstruct.
+    Function to return Stack name construct.
     Adds the conditions and parameters if template is given.
 
     :param troposphere.Template template: the template to add it to.

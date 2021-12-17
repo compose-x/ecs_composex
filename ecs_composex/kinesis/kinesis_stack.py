@@ -9,14 +9,14 @@ from troposphere import GetAtt, Ref
 from troposphere.kinesis import Stream as CfnStream
 
 from ecs_composex.common import setup_logging
-from ecs_composex.common.compose_resources import (
+from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.compose.x_resources import (
     XResource,
     set_lookup_resources,
     set_new_resources,
     set_resources,
     set_use_resources,
 )
-from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.iam.import_sam_policies import get_access_types
 from ecs_composex.kinesis.kinesis_params import (
     MAPPINGS_KEY,

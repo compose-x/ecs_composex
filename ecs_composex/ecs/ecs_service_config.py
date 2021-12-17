@@ -1,4 +1,4 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
@@ -30,7 +30,7 @@ class ServiceConfig(object):
         """
         Function to initialize the ecs_service configuration
 
-        :param ecs_composex.common.compose_services.ComposeFamily family:
+        :param ecs_composex.ecs.ecs_family.ComposeFamily family:
         :param ecs_composex.common.settings.ComposeXSettings settings:
         """
         self.network = ServiceNetworking(family)
