@@ -1,9 +1,8 @@
-﻿#   -*- coding: utf-8 -*-
+#   -*- coding: utf-8 -*-
 #  SPDX-License-Identifier: MPL-2.0
 #  Copyright 2020-2021 John Mille <john@compose-x.io>
 
 
-from ecs_composex.codeguru_profiler.codeguru_profiler_aws import lookup_profile_config
 from ecs_composex.codeguru_profiler.codeguru_profiler_params import (
     MAPPINGS_KEY,
     PROFILER_ARN,
@@ -14,22 +13,6 @@ from ecs_composex.resource_settings import (
     assign_new_resource_to_service,
     handle_lookup_resource,
 )
-
-
-def define_lookup_profile_mappings(mappings, resources, settings):
-    """
-    Function to update the mappings of CodeGuru profile identified via Lookup
-    :param dict mappings:
-    :param list resources:
-    :param ecs_composex.common.settings.ComposeXSettings settings:
-    :return:
-    """
-    for res in resources:
-        mapping = lookup_profile_config(res.lookup, settings.session)
-        if mapping:
-            res.mappings = mapping
-            res.mappings.update({res.logical_name: mapping[PROFILER_NAME.title]})
-            mappings.update({res.logical_name: mapping})
 
 
 def codeguru_profiler_to_ecs(resources, services_stack, res_root_stack, settings):

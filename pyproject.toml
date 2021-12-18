@@ -44,7 +44,6 @@ jsonschema = "^3.2.0"
 requests = "^2.26.0"
 tabulate = "^0.8.9"
 importlib-resources = "^5.4.0"
-aws-sam-translator = { version = "^1.42.0", optional = true }
 PyYAML = "^6.0"
 docker = "^5.0.3"
 urllib3 = "^1.26.7"
@@ -73,7 +72,6 @@ compose-x = "ecs_composex.cli:main"
 
 [tool.poetry.extras]
 ecrscan = ["ecr-scan-reporter"]
-sampolicies = ["aws-sam-translator"]
 
 [tool.tbump]
 github_url = "https://github.com/compose-x/ecs_composex"
@@ -103,6 +101,10 @@ src = "ecs_composex/__init__.py"
 [[tool.tbump.before_commit]]
 name = "Files format"
 cmd = "make conform"
+
+[[tool.tbump.before_commit]]
+name = "Update SAM Policies templates"
+cmd = "python .scripts/import_sam_policies_template.py"
 
 [tool.black]
 line-length = 88

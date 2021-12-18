@@ -260,6 +260,57 @@ class Bucket(XResource):
         self.mappings = props
 
 
+def define_bucket_mappings(lookup_buckets, use_buckets, settings):
+    """
+    Method to define CFN Mappings for the lookup buckets
+
+    :param list[Bucket] lookup_buckets:
+    :param use_buckets:
+    :param settings:
+    :return:
+    """
+    for bucket in lookup_buckets:
+        bucket.lookup_resource(
+            S3_BUCKET_ARN_RE, get_bucket_config, CfnBucket.resource_type, "s3"
+        )
+        settings.mappings[RES_KEY].update({bucket.logical_name: bucket.mappings})
+        if not keyisset(S3_BUCKET_KMS_KEY.return_value, bucket.mappings):
+            LOG.info(
+                f"{RES_KEY}.{bucket.name} - No CMK Key identified. Not KMS permissions to set."
+            )
+        else:
+            LOG.info(
+                f"{RES_KEY}.{bucket.name} - "
+                f"CMK identified {bucket.mappings[S3_BUCKET_KMS_KEY.return_value]}."
+            )
+    for bucket in use_buckets:
+        if bucket.use.startswith("arn:aws"):
+            bucket_arn = bucket.use
+            try:
+                bucket_name = S3_BUCKET_ARN_RE.match(bucket_arn).group("id")
+            except AttributeError:
+                raise ValueError(
+                    "Could not determine the bucket name from the give ARN",
+                    bucket.use,
+                )
+            LOG.info(
+                f"{RES_KEY}.{bucket.name} - Determined bucket name is {bucket_name} from arn {bucket_arn}"
+            )
+        else:
+            bucket_name = bucket.use
+            bucket_arn = f"arn:aws:s3:::{bucket_name}"
+
+            LOG.warning(f"{RES_KEY}.{bucket.name} - ARN set to {bucket_arn}")
+        settings.mappings[RES_KEY].update(
+            {
+                bucket.logical_name: {
+                    bucket.logical_name: bucket_name,
+                    "Arn": bucket_arn,
+                }
+            }
+        )
+
+
 class XStack(ComposeXStack):
     """
     Class to handle S3 buckets
@@ -268,72 +319,18 @@ class XStack(ComposeXStack):
     def __init__(self, title, settings, **kwargs):
         set_resources(settings, Bucket, RES_KEY, MOD_KEY, mapping_key=MAPPINGS_KEY)
         x_resources = settings.compose_content[RES_KEY].values()
-        new_resources = set_new_resources(x_resources, RES_KEY, True)
-        lookup_resources = set_lookup_resources(x_resources, RES_KEY)
         use_resources = set_use_resources(x_resources, RES_KEY, True)
+        lookup_resources = set_lookup_resources(x_resources, RES_KEY)
+        if lookup_resources or use_resources:
+            if not keyisset(RES_KEY, settings.mappings):
+                settings.mappings[RES_KEY] = {}
+            define_bucket_mappings(lookup_resources, use_resources, settings)
+        new_resources = set_new_resources(x_resources, RES_KEY, True)
         if new_resources:
-            stack_template = build_template(
-                f"S3 root by ECS ComposeX for {settings.name}"
-            )
+            stack_template = build_template(f"Root template for {settings.name}.s3")
             super().__init__(title, stack_template, **kwargs)
             create_s3_template(new_resources, stack_template)
         else:
             self.is_void = True
-        if lookup_resources or use_resources:
-            if not keyisset(RES_KEY, settings.mappings):
-                settings.mappings[RES_KEY] = {}
-            self.define_bucket_mappings(lookup_resources, use_resources, settings)
         for resource in settings.compose_content[RES_KEY].values():
             resource.stack = self
-
-    def define_bucket_mappings(self, lookup_buckets, use_buckets, settings):
-        """
-        Method to define CFN Mappings for the lookup buckets
-
-        :param list[Bucket] lookup_buckets:
-        :param use_buckets:
-        :param settings:
-        :return:
-        """
-        for bucket in lookup_buckets:
-            bucket.lookup_resource(
-                S3_BUCKET_ARN_RE, get_bucket_config, CfnBucket.resource_type, "s3"
-            )
-            settings.mappings[RES_KEY].update({bucket.logical_name: bucket.mappings})
-            if not keyisset(S3_BUCKET_KMS_KEY.return_value, bucket.mappings):
-                LOG.info(
-                    f"{bucket.module_name}.{bucket.name} - No CMK Key identified. Not KMS permissions to set."
-                )
-            else:
-                LOG.info(
-                    f"{bucket.module_name}.{bucket.name} - "
-                    f"CMK identified {bucket.mappings[S3_BUCKET_KMS_KEY.return_value]}."
-                )
-        for bucket in use_buckets:
-            if bucket.use.startswith("arn:aws"):
-                bucket_arn = bucket.use
-                try:
-                    bucket_name = S3_BUCKET_ARN_RE.match(bucket_arn).group("id")
-                except AttributeError:
-                    raise ValueError(
-                        "Could not determine the bucket name from the give ARN",
-                        bucket.use,
-                    )
-                LOG.info(
-                    f"Determined bucket name is {bucket_name} from arn {bucket_arn}"
-                )
-            else:
-                bucket_name = bucket.use
-                bucket_arn = f"arn:aws:s3:::{bucket_name}"
-                LOG.warning(
-                    "In the absence of a full ARN, assuming partition to be `aws`. Set full ARN to rectify"
-                )
-                LOG.warning(f"ARN for {bucket_name} is set to {bucket_arn}")
-            settings.mappings[RES_KEY].update(
-                {
-                    bucket.logical_name: {
-                        bucket.logical_name: bucket_name,
-                        "Arn": bucket_arn,
-                    }
-                }
-            )

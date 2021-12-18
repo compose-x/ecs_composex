@@ -6,6 +6,7 @@
 Module for the XStack SSM
 """
 import json
+import warnings
 from os import path
 
 import yaml
@@ -187,6 +188,26 @@ class SsmParameter(XResource):
         }
 
 
+def resolve_lookup(lookup_resources, settings):
+    """
+    Lookup of the AWS resources and setting the mappings for the resource type
+
+    :param list lookup_resources:
+    :param ecs_composex.common.settings.ComposeXSettings settings:
+    """
+    if not keyisset(RES_KEY, settings.mappings):
+        settings.mappings[RES_KEY] = {}
+    for resource in lookup_resources:
+        resource.lookup_resource(
+            SSM_PARAMETER_ARN_RE,
+            get_parameter_config,
+            CfnSsmParameter.resource_type,
+            "ssm:parameter",
+        )
+        LOG.info(f"{RES_KEY}.{resource.name} - Matched to {resource.arn}")
+        settings.mappings[RES_KEY].update({resource.logical_name: resource.mappings})
+
+
 class XStack(ComposeXStack):
     """
     Class to handle SQS Root stack related actions
@@ -197,9 +218,14 @@ class XStack(ComposeXStack):
             settings, SsmParameter, RES_KEY, MOD_KEY, mapping_key=MAPPINGS_KEY
         )
         x_resources = settings.compose_content[RES_KEY].values()
-        new_resources = set_new_resources(x_resources, RES_KEY, False)
-        lookup_resources = set_lookup_resources(x_resources, RES_KEY)
         use_resources = set_use_resources(x_resources, RES_KEY, False)
+        if use_resources:
+            warnings.warn(f"Use not supported for {RES_KEY}")
+        lookup_resources = set_lookup_resources(x_resources, RES_KEY)
+        if lookup_resources or use_resources:
+            resolve_lookup(lookup_resources, settings)
+        new_resources = set_new_resources(x_resources, RES_KEY, False)
+
         if new_resources:
             template = build_template("Parent template for SSM in ECS Compose-X")
             super().__init__(title, stack_template=template, **kwargs)
@@ -208,16 +234,3 @@ class XStack(ComposeXStack):
             self.is_void = True
         for resource in settings.compose_content[RES_KEY].values():
             resource.stack = self
-        if lookup_resources or use_resources:
-            if not keyisset(RES_KEY, settings.mappings):
-                settings.mappings[RES_KEY] = {}
-            for resource in lookup_resources:
-                resource.lookup_resource(
-                    SSM_PARAMETER_ARN_RE,
-                    get_parameter_config,
-                    CfnSsmParameter.resource_type,
-                    "ssm:parameter",
-                )
-                settings.mappings[RES_KEY].update(
-                    {resource.logical_name: resource.mappings}
-                )

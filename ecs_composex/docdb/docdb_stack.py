@@ -6,6 +6,8 @@
 AWS DocumentDB entrypoint for ECS ComposeX
 """
 
+import warnings
+
 from botocore.exceptions import ClientError
 from compose_x_common.aws.rds import RDS_DB_CLUSTER_ARN_RE
 from compose_x_common.compose_x_common import attributes_to_mapping, keyisset
@@ -173,6 +175,28 @@ class DocDb(XResource):
         )
 
 
+def resolve_lookup(lookup_resources, settings):
+    """
+    Lookup AWS Resources
+
+    :param list[Stream] lookup_resources:
+    :param ecs_composex.common.settings.ComposeXSettings settings:
+    """
+    if not keyisset(RES_KEY, settings.mappings):
+        settings.mappings[RES_KEY] = {}
+    for resource in lookup_resources:
+        resource.lookup_resource(
+            RDS_DB_CLUSTER_ARN_RE,
+            get_db_cluster_config,
+            CfnDBCluster.resource_type,
+            "rds:cluster",
+            "cluster",
+        )
+        if keyisset("secret", resource.lookup):
+            lookup_rds_secret(resource, resource.lookup["secret"])
+        settings.mappings[RES_KEY].update({resource.logical_name: resource.mappings})
+
+
 class XStack(ComposeXStack):
     """
     Class for the Stack of DocDB
@@ -181,30 +205,20 @@ class XStack(ComposeXStack):
     def __init__(self, title, settings, **kwargs):
         set_resources(settings, DocDb, RES_KEY, MOD_KEY, mapping_key=MAPPINGS_KEY)
         x_resources = settings.compose_content[RES_KEY].values()
-        new_resources = set_new_resources(x_resources, RES_KEY, True)
-        lookup_resources = set_lookup_resources(x_resources, RES_KEY)
         use_resources = set_use_resources(x_resources, RES_KEY, False)
+        if use_resources:
+            warnings.warn(f"{RES_KEY} does not yet support Use.")
+        lookup_resources = set_lookup_resources(x_resources, RES_KEY)
+        if lookup_resources or use_resources:
+            resolve_lookup(lookup_resources, settings)
+        new_resources = set_new_resources(x_resources, RES_KEY, True)
+
         if new_resources:
             stack_template = init_doc_db_template()
             super().__init__(title, stack_template, **kwargs)
             create_docdb_template(stack_template, new_resources, settings, self)
         else:
             self.is_void = True
-        if lookup_resources or use_resources:
-            if not keyisset(RES_KEY, settings.mappings):
-                settings.mappings[RES_KEY] = {}
-            for resource in lookup_resources:
-                resource.lookup_resource(
-                    RDS_DB_CLUSTER_ARN_RE,
-                    get_db_cluster_config,
-                    CfnDBCluster.resource_type,
-                    "rds:cluster",
-                    "cluster",
-                )
-                if keyisset("secret", resource.lookup):
-                    lookup_rds_secret(resource, resource.lookup["secret"])
-                settings.mappings[RES_KEY].update(
-                    {resource.logical_name: resource.mappings}
-                )
+
         for resource in settings.compose_content[RES_KEY].values():
             resource.stack = self

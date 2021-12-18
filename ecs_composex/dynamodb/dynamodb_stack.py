@@ -5,6 +5,7 @@
 """
 Module to create the root stack for DynamoDB tables
 """
+import warnings
 
 from botocore.exceptions import ClientError
 from compose_x_common.aws.dynamodb import TABLE_ARN_RE
@@ -78,6 +79,26 @@ class Table(XResource):
         }
 
 
+def resolve_lookup(lookup_resources, settings):
+    """
+    Lookup AWS Resource
+
+    :param list[Table] lookup_resources:
+    :param ecs_composex.common.settings.ComposeXSettings settings:
+    """
+    if not keyisset(RES_KEY, settings.mappings):
+        settings.mappings[RES_KEY] = {}
+    for resource in lookup_resources:
+        resource.lookup_resource(
+            TABLE_ARN_RE,
+            get_dynamodb_table_config,
+            CfnTable.resource_type,
+            "dynamodb:table",
+        )
+        LOG.info(f"{RES_KEY}.{resource.name} - Matched to {resource.arn}")
+        settings.mappings[RES_KEY].update({resource.logical_name: resource.mappings})
+
+
 class XStack(ComposeXStack):
     """
     Class for Dynamodb
@@ -86,26 +107,19 @@ class XStack(ComposeXStack):
     def __init__(self, title, settings, **kwargs):
         set_resources(settings, Table, RES_KEY, MOD_KEY, mapping_key=MAPPINGS_KEY)
         x_resources = settings.compose_content[RES_KEY].values()
-        new_resources = set_new_resources(x_resources, RES_KEY, False)
-        lookup_resources = set_lookup_resources(x_resources, RES_KEY)
         use_resources = set_use_resources(x_resources, RES_KEY, False)
+        if use_resources:
+            warnings.warn(f"{RES_KEY} does not yet support Use.")
+        lookup_resources = set_lookup_resources(x_resources, RES_KEY)
+        if lookup_resources:
+            resolve_lookup(lookup_resources, settings)
+        new_resources = set_new_resources(x_resources, RES_KEY, False)
         if new_resources:
             stack_template = build_template("Root template for DynamoDB tables")
             super().__init__(title, stack_template, **kwargs)
             create_dynamodb_template(new_resources, stack_template, self)
         else:
             self.is_void = True
-        if lookup_resources or use_resources:
-            if not keyisset(RES_KEY, settings.mappings):
-                settings.mappings[RES_KEY] = {}
-            for res in lookup_resources:
-                res.lookup_resource(
-                    TABLE_ARN_RE,
-                    get_dynamodb_table_config,
-                    CfnTable.resource_type,
-                    "dynamodb:table",
-                )
-                settings.mappings[RES_KEY].update({res.logical_name: res.mappings})
         for resource in x_resources:
             if resource.lookup:
                 resource.stack = self

@@ -168,6 +168,14 @@ def assign_secrets_to_roles(secrets, exec_role, task_role):
 
 
 def add_policies(config, key, new_policies):
+    """
+    Add IAM Policies from x-iam.Policies to the IAM TaskRole
+
+    :param config:
+    :param key:
+    :param new_policies:
+    :return:
+    """
     existing_policies = config[key]
     existing_policy_names = [policy.PolicyName for policy in existing_policies]
     for count, policy in enumerate(new_policies):
@@ -201,6 +209,7 @@ def handle_iam_boundary(config, key, new_value):
 def identify_repo_credentials_secret(settings, task, secret_name):
     """
     Function to identify the secret_arn
+
     :param settings:
     :param ComposeFamily task:
     :param secret_name:
@@ -241,6 +250,14 @@ def identify_repo_credentials_secret(settings, task, secret_name):
 
 
 def set_ecs_cluster_logging_s3_access(settings, policy, role_stack):
+    """
+    Based on ECS Cluster settings / configurations, grant permissions to put logs to S3 Bucket for logs defined to log
+    ECS Execute command feature
+
+    :param ecs_composex.common.settings.ComposeXSettings settings:
+    :param policy:
+    :param ecs_composex.common.stacks.ComposeXStack role_stack:
+    """
     if settings.ecs_cluster.log_bucket:
         parameter = Parameter("EcsExecuteLoggingBucket", Type="String")
         add_parameters(role_stack.stack_template, [parameter])
@@ -275,6 +292,14 @@ def set_ecs_cluster_logging_s3_access(settings, policy, role_stack):
 
 
 def set_ecs_cluster_logging_kms_access(settings, policy, role_stack):
+    """
+    Based on ECS Cluster settings / configurations, grant permissions to KMS key encrypting Log defined to log
+    ECS Execute command feature
+
+    :param ecs_composex.common.settings.ComposeXSettings settings:
+    :param policy:
+    :param ecs_composex.common.stacks.ComposeXStack role_stack:
+    """
     if settings.ecs_cluster.log_key:
         parameter = Parameter("EcsExecuteLoggingEncryptionKey", Type="String")
         add_parameters(role_stack.stack_template, [parameter])
@@ -306,6 +331,14 @@ def set_ecs_cluster_logging_kms_access(settings, policy, role_stack):
 
 
 def set_ecs_cluster_logging_cw_access(settings, policy, role_stack):
+    """
+    Based on ECS Cluster settings / configurations, grant permissions to CW Log defined to log
+    ECS Execute command feature
+
+    :param ecs_composex.common.settings.ComposeXSettings settings:
+    :param policy:
+    :param ecs_composex.common.stacks.ComposeXStack role_stack:
+    """
     if settings.ecs_cluster.log_group:
         parameter = Parameter("EcsExecuteLoggingGroup", Type="String")
         add_parameters(role_stack.stack_template, [parameter])
@@ -344,6 +377,14 @@ def set_ecs_cluster_logging_cw_access(settings, policy, role_stack):
 
 
 def set_ecs_cluster_logging_access(settings, policy, role_stack):
+    """
+    Based on ECS Cluster settings / configurations, grant permissions to specific resources
+    for all functionalities to work.
+
+    :param ecs_composex.common.settings.ComposeXSettings settings:
+    :param policy:
+    :param ecs_composex.common.stacks.ComposeXStack role_stack:
+    """
     set_ecs_cluster_logging_kms_access(settings, policy, role_stack)
     set_ecs_cluster_logging_cw_access(settings, policy, role_stack)
     set_ecs_cluster_logging_s3_access(settings, policy, role_stack)
@@ -367,6 +408,7 @@ class ComposeFamily(object):
             "ManagedPolicyArns": [],
             "Policies": [],
         }
+        self.iam_modules_policies = {}
         self.family_hostname = self.name.replace("_", "-").lower()
         self.services_depends_on = []
         self.deployment_config = {}

@@ -212,7 +212,6 @@ def setup_logging():
     }
 
     if level is not None and isinstance(level, str):
-        print("SETTING TO", level.upper())
         logthings.basicConfig(level=level.upper())
         default_level = False
     else:
