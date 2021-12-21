@@ -43,7 +43,7 @@ CW_IMAGE_PARAMETER = Parameter(
 NGINX_EXPORTER_IMAGE_PARAMETER = Parameter(
     "NginxPrometheusExporterImage",
     Type="String",
-    Default="public.ecr.aws/compose-x/nginx-prometheus-exporter:0.9.0",
+    Default="public.ecr.aws/nginx/nginx-prometheus-exporter:latest",
 )
 
 METRICS_DEFAULT_PATH = r"/metrics"
