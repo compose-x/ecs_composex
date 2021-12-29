@@ -59,8 +59,8 @@ behave = "^1.2.6"
 coverage = { extras = ["toml"], version = "^6.2" }
 flake8 = "^3.9.2"
 pytest = "^6.2.5"
-Sphinx = "^4.3.1"
-tox = "^3.24.4"
+Sphinx = "^4.3.2"
+tox = "^3.24.5"
 tbump = "6.5.0"
 sphinx-jsonschema = "^1.17.1"
 boto3-stubs = {extras = ["acm", "ecs", "cloudformation", "essential"], version = "^1.20.5"}
