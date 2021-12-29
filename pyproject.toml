@@ -40,7 +40,7 @@ troposphere = "^3.1.1"
 ecr-scan-reporter = { version = "^0.4", optional = true }
 compose-x-render = "^0.5.0"
 compose-x-common = "^0.3.7"
-jsonschema = "^3.2.0"
+jsonschema = "^4.3.2"
 requests = "^2.26.0"
 tabulate = "^0.8.9"
 importlib-resources = "^5.4.0"
