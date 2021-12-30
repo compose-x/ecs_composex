@@ -5,20 +5,13 @@
 """
 Functions to pass permissions to Services to access S3 buckets.
 """
-import re
 
-from compose_x_common.aws.kms import (
-    KMS_ALIAS_ARN_RE,
-    KMS_KEY_ARN_RE,
-    get_key_from_alias,
-)
 from compose_x_common.compose_x_common import keyisset
 from troposphere import FindInMap, Ref, Sub
 
 from ecs_composex.common import LOG, add_parameters
-from ecs_composex.common.aws import define_lookup_role_from_info
-from ecs_composex.common.compose_resources import get_parameter_settings
 from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.compose.x_resources import get_parameter_settings
 from ecs_composex.iam.import_sam_policies import get_access_types
 from ecs_composex.kms.kms_params import MOD_KEY as KMS_MOD
 from ecs_composex.resource_settings import (

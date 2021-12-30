@@ -8,14 +8,14 @@ Module to define the entry point for AWS Event Rules
 import warnings
 
 from ecs_composex.common import LOG, NONALPHANUM, build_template
-from ecs_composex.common.compose_resources import (
+from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.compose.x_resources import (
     XResource,
     set_lookup_resources,
     set_new_resources,
     set_resources,
     set_use_resources,
 )
-from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME, FARGATE_VERSION
 from ecs_composex.events.events_params import MOD_KEY, RES_KEY
 from ecs_composex.events.events_template import create_events_template

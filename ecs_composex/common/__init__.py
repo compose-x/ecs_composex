@@ -31,8 +31,6 @@ DATE = dt.utcnow().isoformat()
 FILE_PREFIX = f'{dt.utcnow().strftime("%Y/%m/%d/%H%M")}/{str(uuid4().hex)[:6]}'
 NONALPHANUM = re.compile(r"([^a-zA-Z0-9]+)")
 
-EXIT_CODES = {"MODULE_NOT_FOUND": 8, "MISSING_RESOURCE_DEFINITION": 9}
-
 
 def no_value_if_not_set(props, key, is_bool=False):
     """
@@ -214,7 +212,6 @@ def setup_logging():
     }
 
     if level is not None and isinstance(level, str):
-        print("SETTING TO", level.upper())
         logthings.basicConfig(level=level.upper())
         default_level = False
     else:
@@ -288,3 +285,19 @@ def load_composex_file(file_path):
 
 
 LOG = setup_logging()
+
+
+def set_else_none(key, props, alt_value=None, eval_bool=False):
+    """
+    Function to serialize if not keyisset () set other value
+
+    :param str key:
+    :param dict props:
+    :param alt_value:
+    :param bool eval_bool: Allows to gets booleans properties
+    :return:
+    """
+    if not eval_bool:
+        return alt_value if not keyisset(key, props) else props[key]
+    elif eval_bool:
+        return alt_value if not keypresent(key, props) else props[key]

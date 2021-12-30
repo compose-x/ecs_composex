@@ -233,6 +233,11 @@ class XResource(object):
         self.set_services_targets(settings)
         self.set_services_scaling(settings)
         self.mappings = {}
+        self.default_tags = {
+            "compose-x::module": self.module_name,
+            "compose-x::resource_name": self.name,
+            "compose-x::logical_name": self.logical_name,
+        }
 
     def __repr__(self):
         return self.logical_name

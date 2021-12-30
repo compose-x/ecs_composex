@@ -171,7 +171,7 @@ def set_compose_services_ingress(root_stack, dst_family, families, settings):
     Presently, the ingress rules are set after all services have been created
 
     :param ecs_composex.common.stacks.ComposeXStack root_stack:
-    :param ecs_composex.common.compose_services.ComposeFamily dst_family:
+    :param ecs_composex.ecs.ecs_family.ComposeFamily dst_family:
     :param list families: The list of family names.
     :return:
     """
@@ -233,7 +233,7 @@ class ServiceNetworking(Ingress):
         """
         Initialize network settings for the family ServiceConfig
 
-        :param ecs_composex.common.compose_services.ComposeFamily family:
+        :param ecs_composex.ecs.ecs_family.ComposeFamily family:
         """
         self.ports = []
         self.networks = {}
@@ -263,7 +263,7 @@ class ServiceNetworking(Ingress):
         """
         Function to merge two sections of ports
 
-        :param ecs_composex.common.compose_services.ComposeFamily family:
+        :param ecs_composex.ecs.ecs_family.ComposeFamily family:
         :return:
         """
         source_ports = [
@@ -284,7 +284,7 @@ class ServiceNetworking(Ingress):
         """
         Method to allow communications internally to the group on set ports
 
-        :param ecs_composex.common.compose_services.ComposeFamily family:
+        :param ecs_composex.ecs.ecs_family.ComposeFamily family:
         :return:
         """
         if not family.template or not family.ecs_service or not self.ingress_from_self:
@@ -310,7 +310,7 @@ class ServiceNetworking(Ingress):
         """
         Method to add ingress rules from other AWS Sources
 
-        :param ecs_composex.common.compose_services.ComposeFamily family:
+        :param ecs_composex.ecs.ecs_family.ComposeFamily family:
         :param str lb_name:
         :param lb_sg_ref:
         :return:

@@ -1,4 +1,9 @@
 #  -*- coding: utf-8 -*-
+
+#   -*- coding: utf-8 -*-
+#  SPDX-License-Identifier: MPL-2.0
+#  Copyright 2020-2021 John Mille <john@compose-x.io>
+
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
@@ -46,7 +51,7 @@ def handle_volume_str_config(service, config, volumes):
     """
     volume_config = {"read_only": False}
     path_finder = re.compile(
-        r"(?P<path>^/[\S][^:\n]+$)|^(?P<source>.+?(?=:)):(?P<dest>/.*(?=(:|$)))(?::(?P<mode>ro|rw))?"
+        r"(?P<path>^/[\S][^:\n]+$)|^(?P<source>.+?(?=:)):(?P<dest>/[\w/\-.][^:]+($|(:(?P<mode>ro|rw)$)))"
     )
     path_match = path_finder.match(config)
     if not path_match:

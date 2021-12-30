@@ -2,8 +2,6 @@
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
-import re
-
 from botocore.exceptions import ClientError
 from compose_x_common.aws.sns import SNS_TOPIC_ARN_RE
 from compose_x_common.compose_x_common import attributes_to_mapping, keyisset
@@ -11,8 +9,8 @@ from troposphere import GetAtt, Ref
 from troposphere.sns import Topic as CfnTopic
 
 from ecs_composex.common import build_template, setup_logging
-from ecs_composex.common.compose_resources import XResource
 from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.compose.x_resources import XResource
 from ecs_composex.iam.import_sam_policies import get_access_types
 from ecs_composex.sns.sns_params import (
     MOD_KEY,

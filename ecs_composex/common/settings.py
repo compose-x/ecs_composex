@@ -26,11 +26,12 @@ from ecs_composex import __version__
 from ecs_composex.common import LOG, NONALPHANUM
 from ecs_composex.common.aws import get_cross_role_session
 from ecs_composex.common.cfn_params import USE_FLEET_T
-from ecs_composex.common.compose_networks import ComposeNetwork
-from ecs_composex.common.compose_services import ComposeFamily, ComposeService
-from ecs_composex.common.compose_volumes import ComposeVolume
+from ecs_composex.compose.compose_networks import ComposeNetwork
+from ecs_composex.compose.compose_secrets import ComposeSecret
+from ecs_composex.compose.compose_services import ComposeService
+from ecs_composex.compose.compose_volumes import ComposeVolume
+from ecs_composex.ecs.ecs_family import ComposeFamily
 from ecs_composex.iam import ROLE_ARN_ARG
-from ecs_composex.secrets.compose_secrets import ComposeSecret
 from ecs_composex.utils.init_ecs import set_ecs_settings
 from ecs_composex.utils.init_s3 import create_bucket
 

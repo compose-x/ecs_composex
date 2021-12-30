@@ -19,7 +19,7 @@ from troposphere.certificatemanager import DomainValidationOption
 from ecs_composex.acm.acm_aws import lookup_cert_config
 from ecs_composex.acm.acm_params import MAPPINGS_KEY, MOD_KEY, RES_KEY
 from ecs_composex.common import NONALPHANUM
-from ecs_composex.common.compose_resources import (
+from ecs_composex.compose.x_resources import (
     set_lookup_resources,
     set_new_resources,
     set_resources,

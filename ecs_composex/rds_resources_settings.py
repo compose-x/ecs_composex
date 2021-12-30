@@ -17,8 +17,8 @@ from troposphere.iam import PolicyType
 
 from ecs_composex.common import LOG, add_parameters
 from ecs_composex.common.aws import find_aws_resource_arn_from_tags_api
-from ecs_composex.common.compose_resources import get_parameter_settings
 from ecs_composex.common.services_helpers import extend_container_secrets
+from ecs_composex.compose.x_resources import get_parameter_settings
 from ecs_composex.ecs.ecs_params import SG_T
 from ecs_composex.rds.rds_params import DB_SECRET_POLICY_NAME, DB_SECRET_T
 

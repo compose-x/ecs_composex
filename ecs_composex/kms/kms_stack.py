@@ -10,14 +10,14 @@ from troposphere.kms import Alias, Key
 
 from ecs_composex.common import LOG, build_template
 from ecs_composex.common.cfn_conditions import define_stack_name
-from ecs_composex.common.compose_resources import (
+from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.compose.x_resources import (
     XResource,
     set_lookup_resources,
     set_new_resources,
     set_resources,
     set_use_resources,
 )
-from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.iam.import_sam_policies import get_access_types
 from ecs_composex.kms import metadata
 from ecs_composex.kms.kms_params import (

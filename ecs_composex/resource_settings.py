@@ -6,6 +6,8 @@
 Module to handle resource settings definition to containers.
 """
 
+from copy import deepcopy
+
 from compose_x_common.compose_x_common import keyisset
 from troposphere import AWSHelperFn, FindInMap, Ref, Sub
 from troposphere.iam import Policy as IamPolicy
@@ -13,9 +15,9 @@ from troposphere.iam import PolicyType
 
 from ecs_composex.common import LOG, add_parameters
 from ecs_composex.common.cfn_params import STACK_ID_SHORT
-from ecs_composex.common.compose_resources import get_parameter_settings
 from ecs_composex.common.services_helpers import extend_container_envvars
 from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.compose.x_resources import get_parameter_settings
 from ecs_composex.ecs.ecs_iam import define_service_containers
 from ecs_composex.iam.import_sam_policies import get_access_types
 from ecs_composex.kms.kms_params import MOD_KEY as KMS_MOD
@@ -32,6 +34,7 @@ def determine_arns(arn, policy_doc, ignore_missing_primary=False):
     :param dict policy_doc: The policy document content
     :param bool ignore_missing_primary: Whether the policy should contain ${ARN} at least
     :return: The list or Resource to put in to the IAM policy
+    :rtype: list
     """
     resources = []
     base_arn = r"${ARN}"
@@ -84,7 +87,7 @@ def generate_resource_permissions(
         clean_policy["Statement"].append(policy_doc)
         suffix = f"{a_type}{resource_name}"[:(118)]
         resource_policies[a_type] = IamPolicy(
-            PolicyName=Sub(f"${{ID}}{suffix}", ID=STACK_ID_SHORT),
+            PolicyName=Sub(f"${{ID}}-{suffix}", ID=STACK_ID_SHORT),
             PolicyDocument=clean_policy,
         )
     return resource_policies
@@ -120,7 +123,7 @@ def generate_resource_permissions_statements(
 def add_iam_policy_to_service_task_role(family, resource, perms, access_type, services):
     """
     Function to expand the ECS Task Role policy with the permissions for the resource
-    :param ecs_composex.common.compose_services.ComposeFamily family:
+    :param ecs_composex.ecs.ecs_family.ComposeFamily family:
     :param resource:
     :param perms:
     :param access_type:
@@ -166,6 +169,33 @@ def get_selected_services(resource, target):
     return selected_services
 
 
+def get_access_type_policy_model(
+    access_type, policies_models, resource, access_subkey=None
+):
+    """
+
+    :param str|dict access_type:
+    :param dict policies_models:
+    :param ecs_composex.compose.x_resources.XResource resource:
+    :return:
+    """
+    if isinstance(access_type, str):
+        try:
+            access_type_policy_model = policies_models[access_type]
+        except KeyError:
+            LOG.error(f"{resource.module_name}.{resource.name} - policy {access_type}")
+
+    elif isinstance(access_type, dict):
+        try:
+            access_type_policy_model = policies_models[access_type[access_subkey]]
+        except KeyError:
+            LOG.error(
+                f"{resource.module_name}.{resource.name} - Access type {access_subkey}.{access_type} does not exist."
+            )
+            raise
+    return access_type_policy_model
+
+
 def map_service_perms_to_resource(
     resource,
     family,
@@ -175,11 +205,12 @@ def map_service_perms_to_resource(
     attributes=None,
     policies_override=None,
     access_subkey=None,
+    ignore_missing_primary=False,
 ):
     """
     Function to
-    :param resource:
-    :param ecs_composex.common.compose_services.ComposeFamily family:
+    :param ecs_composex.compose.x_resources.XResource resource:
+    :param ecs_composex.ecs.ecs_family.ComposeFamily family:
     :param services:
     :param str access_type:
     :param value: The value for main attribute, used for env vars
@@ -188,37 +219,48 @@ def map_service_perms_to_resource(
     """
     if attributes is None:
         attributes = []
-    res_perms = generate_resource_permissions(
-        resource.logical_name,
-        resource.policies_scaffolds if not policies_override else policies_override,
-        arn=arn_value,
+    policies_models = (
+        resource.policies_scaffolds if not policies_override else policies_override
     )
-    containers = define_service_containers(family.template)
-    if isinstance(access_type, str):
-        policy = res_perms[access_type]
-    elif isinstance(access_type, dict):
-        try:
-            policy = res_perms[access_type[access_subkey]]
-        except KeyError:
-            LOG.error(
-                f"{resource.module_name}.{resource.name} - Access type {access_subkey}.{access_type} does not exist."
-            )
-            raise
-    policy_title = (
-        f"{family.logical_name}To{resource.mapping_key}{resource.logical_name}"
+    access_type_policy_model = get_access_type_policy_model(
+        access_type, policies_models, resource, access_subkey
     )
-    if policy_title not in family.template.resources:
-        res_policy = PolicyType(
+    resource_arns = determine_arns(
+        arn_value, access_type_policy_model, ignore_missing_primary
+    )
+    policy_title = f"{family.logical_name}To{resource.mapping_key}"
+    if resource.mapping_key not in family.iam_modules_policies.keys():
+        family.iam_modules_policies[resource.mapping_key] = PolicyType(
             policy_title,
-            PolicyName=policy.PolicyName,
-            PolicyDocument=policy.PolicyDocument,
+            PolicyName=policy_title,
+            PolicyDocument={"Version": "2012-10-17", "Statement": []},
             Roles=[Ref(family.task_role.name["ImportParameter"])],
         )
-        family.template.add_resource(res_policy)
+        res_policy = family.template.add_resource(
+            family.iam_modules_policies[resource.mapping_key]
+        )
     else:
-        res_policy = family.template.resources[policy_title]
-        res_policy.PolicyDocument["Statement"] += policy.PolicyDocument["Statement"]
+        res_policy = family.iam_modules_policies[resource.mapping_key]
 
+    policy_statement = deepcopy(access_type_policy_model)
+    policy_statement["Sid"] = access_type
+    existing_sids = [
+        statement["Sid"]
+        for statement in res_policy.PolicyDocument["Statement"]
+        if keyisset("Sid", statement)
+    ]
+    if not access_type in existing_sids:
+        policy_statement["Resource"] = resource_arns
+        res_policy.PolicyDocument["Statement"].append(policy_statement)
+    else:
+        for statement in res_policy.PolicyDocument["Statement"]:
+            if keyisset("Sid", statement) and statement["Sid"] == access_type:
+                break
+        if isinstance(statement["Resource"], str):
+            statement["Resource"] = [statement["Resource"]]
+        statement["Resource"] += resource_arns
+
+    containers = define_service_containers(family.template)
     for container in containers:
         for service in services:
             if container.Name == service.name:

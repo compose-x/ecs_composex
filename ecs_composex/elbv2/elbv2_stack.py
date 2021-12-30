@@ -57,14 +57,14 @@ from ecs_composex.cognito_userpool.cognito_params import (
 )
 from ecs_composex.common import LOG, NONALPHANUM, add_parameters, build_template
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME, Parameter
-from ecs_composex.common.compose_resources import (
+from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.compose.x_resources import (
     XResource,
     set_lookup_resources,
     set_new_resources,
     set_resources,
     set_use_resources,
 )
-from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.elbv2.elbv2_params import (
     LB_DNS_NAME,
     LB_DNS_ZONE_ID,

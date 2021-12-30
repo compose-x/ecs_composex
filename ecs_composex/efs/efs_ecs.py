@@ -52,7 +52,7 @@ def add_task_iam_access_to_access_point(family, access_points, efs):
     """
     Function to add IAM Permissions to mount to EFS via AccessPoint for ECS Task
 
-    :param ecs_composex.common.compose_services.ComposeFamily family:
+    :param ecs_composex.ecs.ecs_family.ComposeFamily family:
     :param list<troposphere.efs.AccessPoint> access_points:
     :param ecs_composex.efs.efs_stack.Efs efs:
     """

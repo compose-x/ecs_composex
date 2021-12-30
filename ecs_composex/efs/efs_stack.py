@@ -1,4 +1,4 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
@@ -12,14 +12,14 @@ from troposphere.ec2 import SecurityGroup
 from troposphere.efs import FileSystem, MountTarget
 
 from ecs_composex.common import build_template
-from ecs_composex.common.compose_resources import (
+from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.compose.x_resources import (
     XResource,
     set_lookup_resources,
     set_new_resources,
     set_resources,
     set_use_resources,
 )
-from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.efs.efs_params import (
     FS_ARN,
     FS_ID,

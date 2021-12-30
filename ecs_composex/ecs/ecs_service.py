@@ -330,7 +330,7 @@ def define_deployment_options(family, settings, kwargs):
     """
     Function to define the DeploymentConfiguration
 
-    :param ecs_composex.common.compose_services.ComposeFamily family:
+    :param ecs_composex.ecs.ecs_family.ComposeFamily family:
     :param ecs_composex.common.settings.ComposeXSettings settings:
     :param dict kwargs:
     :return:
@@ -399,7 +399,7 @@ class Service(object):
         Function to generate the Service definition.
         This is the last step in defining the service, after all other settings have been prepared.
 
-        :param ecs_composex.common.compose_services.ComposeFamily family:
+        :param ecs_composex.ecs.ecs_family.ComposeFamily family:
         :param ecs_composex.common.settings.ComposeXSettings settings:
         """
         service_sgs = [

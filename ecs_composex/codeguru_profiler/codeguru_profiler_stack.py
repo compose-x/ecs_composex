@@ -5,14 +5,13 @@
 """
 Module to manage top level AWS CodeGuru profiles
 """
+import warnings
 
 from compose_x_common.compose_x_common import keyisset
 from troposphere import GetAtt, Ref, Sub
 from troposphere.codeguruprofiler import ProfilingGroup
 
-from ecs_composex.codeguru_profiler.codeguru_profiler_ecs import (
-    define_lookup_profile_mappings,
-)
+from ecs_composex.codeguru_profiler.codeguru_profiler_aws import lookup_profile_config
 from ecs_composex.codeguru_profiler.codeguru_profiler_params import (
     MAPPINGS_KEY,
     MOD_KEY,
@@ -22,14 +21,14 @@ from ecs_composex.codeguru_profiler.codeguru_profiler_params import (
 )
 from ecs_composex.common import build_template
 from ecs_composex.common.cfn_params import STACK_ID_SHORT
-from ecs_composex.common.compose_resources import (
+from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.compose.x_resources import (
     XResource,
     set_lookup_resources,
     set_new_resources,
     set_resources,
     set_use_resources,
 )
-from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.iam.import_sam_policies import get_access_types
 from ecs_composex.resources_import import import_record_properties
 
@@ -93,6 +92,22 @@ class CodeProfiler(XResource):
         }
 
 
+def define_lookup_profile_mappings(mappings, resources, settings):
+    """
+    Function to update the mappings of CodeGuru profile identified via Lookup
+    :param dict mappings:
+    :param list resources:
+    :param ecs_composex.common.settings.ComposeXSettings settings:
+    :return:
+    """
+    for res in resources:
+        mapping = lookup_profile_config(res.lookup, settings.session)
+        if mapping:
+            res.mappings = mapping
+            res.mappings.update({res.logical_name: mapping[PROFILER_NAME.title]})
+            mappings.update({res.logical_name: mapping})
+
+
 class XStack(ComposeXStack):
     """
     Method to manage the elastic cache resources and root stack
@@ -108,19 +123,23 @@ class XStack(ComposeXStack):
         """
         set_resources(settings, CodeProfiler, RES_KEY, MAPPINGS_KEY)
         x_resources = settings.compose_content[RES_KEY].values()
-        new_resources = set_new_resources(x_resources, RES_KEY, False)
-        lookup_resources = set_lookup_resources(x_resources, RES_KEY)
         use_resources = set_use_resources(x_resources, RES_KEY, False)
-        if new_resources:
-            stack_template = create_root_template(new_resources)
-            super().__init__(title, stack_template, **kwargs)
-        else:
-            self.is_void = True
-        if lookup_resources or use_resources:
+        if use_resources:
+            warnings.warn(f"{RES_KEY} does not yet support Use.")
+        lookup_resources = set_lookup_resources(x_resources, RES_KEY)
+        if lookup_resources:
             if not keyisset(RES_KEY, settings.mappings):
                 settings.mappings[RES_KEY] = {}
             define_lookup_profile_mappings(
                 settings.mappings[RES_KEY], lookup_resources, settings
             )
+        new_resources = set_new_resources(x_resources, RES_KEY, False)
+
+        if new_resources:
+            stack_template = create_root_template(new_resources)
+            super().__init__(title, stack_template, **kwargs)
+        else:
+            self.is_void = True
+
         for resource in settings.compose_content[RES_KEY].values():
             resource.stack = self
