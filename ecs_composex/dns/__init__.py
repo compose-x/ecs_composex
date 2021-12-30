@@ -1,4 +1,4 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
@@ -238,13 +238,8 @@ class DnsSettings(object):
         )
 
         if not dns_settings and not settings.requires_private_namespace:
-            LOG.warning(
-                f"No {self.main_key} defined and no mesh nor service registry defined. Skipping"
-            )
-            return
-        elif not dns_settings and settings.requires_private_namespace:
             LOG.info(
-                f"No {self.main_key} defined but a private namespace is required. Using default"
+                f"No x-dns.PrivateNamespace defined. Adding default one for AppMesh and other DNS based features."
             )
             dns_settings = {PrivateNamespace.key: {"Name": self.default_private_name}}
 

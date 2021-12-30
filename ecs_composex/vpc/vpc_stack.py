@@ -1,4 +1,4 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
@@ -201,15 +201,6 @@ def import_vpc_settings(vpc_settings):
     set_subnets_from_use(extra_subnets, vpc_settings, settings)
 
     return settings
-
-
-def create_vpc_mapping(settings_params):
-    """
-    Function to create a CFN Mapping to use and assign subnets to substacks
-
-    :param settings_params:
-    :return:
-    """
 
 
 def apply_vpc_settings(x_settings, root_stack, settings):
