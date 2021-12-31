@@ -8,6 +8,7 @@ from troposphere import AWS_ACCOUNT_ID, AWS_PARTITION, GetAtt, Ref, Sub
 from ecs_composex.common import build_template
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources import (
+    NetworkXResource,
     XResource,
     set_lookup_resources,
     set_new_resources,
@@ -57,7 +58,7 @@ def define_default_key_policy():
     return policy
 
 
-class OpenSearchDomain(XResource):
+class OpenSearchDomain(NetworkXResource):
     """
     Class to represent the OpenSearch domain
     """

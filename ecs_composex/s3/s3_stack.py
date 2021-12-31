@@ -22,6 +22,7 @@ from ecs_composex.common import build_template, setup_logging
 from ecs_composex.common.aws import find_aws_resource_arn_from_tags_api
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources import (
+    ApiXResource,
     XResource,
     set_lookup_resources,
     set_new_resources,
@@ -168,7 +169,7 @@ def get_bucket_config(bucket, resource_id):
     return bucket_config
 
 
-class Bucket(XResource):
+class Bucket(ApiXResource):
     """
     Class for S3 bucket.
     """

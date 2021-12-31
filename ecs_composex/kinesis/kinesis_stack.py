@@ -13,6 +13,7 @@ from troposphere.kinesis import Stream as CfnStream
 from ecs_composex.common import setup_logging
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources import (
+    ApiXResource,
     XResource,
     set_lookup_resources,
     set_new_resources,
@@ -58,7 +59,7 @@ def get_stream_config(stream, account_id, resource_id):
         LOG.error(error)
 
 
-class Stream(XResource):
+class Stream(ApiXResource):
     """
     Class to represent a Kinesis Stream
     """

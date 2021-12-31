@@ -24,6 +24,7 @@ from ecs_composex.cognito_userpool.cognito_params import (
 from ecs_composex.common import build_template, setup_logging
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources import (
+    ApiXResource,
     XResource,
     set_lookup_resources,
     set_new_resources,
@@ -62,7 +63,7 @@ def create_root_template(new_resources):
     return root_tpl
 
 
-class UserPool(XResource):
+class UserPool(ApiXResource):
     """
     Class to manage AWS Code Guru profiles
     """

@@ -16,6 +16,7 @@ from troposphere.sqs import Queue as CfnQueue
 from ecs_composex.common import build_template, setup_logging
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources import (
+    ApiXResource,
     XResource,
     set_lookup_resources,
     set_new_resources,
@@ -85,7 +86,7 @@ def get_queue_config(queue, account_id, resource_id):
         raise
 
 
-class Queue(XResource):
+class Queue(ApiXResource):
     """
     Class to represent a SQS Queue
     """

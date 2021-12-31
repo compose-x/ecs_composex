@@ -16,6 +16,7 @@ from troposphere.dynamodb import Table as CfnTable
 from ecs_composex.common import build_template, setup_logging
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources import (
+    ApiXResource,
     XResource,
     set_lookup_resources,
     set_new_resources,
@@ -60,7 +61,7 @@ def get_dynamodb_table_config(table, account_id, resource_id):
         raise
 
 
-class Table(XResource):
+class Table(ApiXResource):
     """
     Class to represent a DynamoDB Table
     """

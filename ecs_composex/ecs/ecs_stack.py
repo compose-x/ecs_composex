@@ -91,7 +91,7 @@ def associate_services_to_root_stack(root_stack, settings, vpc_stack=None):
                 {ecs_params.LAUNCH_TYPE.title: settings.ecs_cluster.platform_override}
             )
         if not vpc_stack:
-            family.stack.no_vpc_parameters(settings)
+            family.stack.no_vpc_stack_parameters(settings)
         else:
             family.stack.get_from_vpc_stack(vpc_stack)
         family.template.set_metadata(metadata)

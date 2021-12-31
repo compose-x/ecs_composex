@@ -277,7 +277,7 @@ class ComposeXStack(Stack, object):
         elif hasattr(self, "DependsOn") and vpc not in getattr(self, "DependsOn"):
             self.DependsOn.append(vpc)
 
-    def no_vpc_parameters(self, settings):
+    def no_vpc_stack_parameters(self, settings):
         """
         Method to set the stack parameters when we are not creating a VPC.
         """

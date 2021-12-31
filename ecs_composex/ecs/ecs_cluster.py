@@ -85,33 +85,35 @@ class EcsCluster(object):
             self.platform_override = None
         else:
             self.definition = definition
-            self.use = (
-                self.definition["Use"] if keyisset("Use", self.definition) else {}
-            )
             self.lookup = (
                 self.definition["Lookup"] if keyisset("Lookup", self.definition) else {}
             )
+            self.use = (
+                self.definition["Use"]
+                if keyisset("Use", self.definition) and not self.lookup
+                else {}
+            )
             self.properties = (
                 self.definition["Properties"]
-                if keyisset("Properties", self.definition)
+                if keyisset("Properties", self.definition) and not self.lookup
                 else {}
             )
             self.parameters = (
                 self.definition["MacroParameters"]
-                if keyisset("MacroParameters", self.definition)
+                if keyisset("MacroParameters", self.definition) and not self.lookup
                 else {}
             )
 
     def set_from_definition(self, root_stack, session, settings):
-        if self.definition and self.use:
+        if self.lookup:
+            self.lookup_cluster(session)
+            root_stack.stack_template.add_mapping(self.mappings_key, self.mappings)
+        elif self.definition and self.use:
             self.mappings = {CLUSTER_NAME.title: {"Name": self.use}}
             root_stack.stack_template.add_mapping(self.mappings_key, self.mappings)
             self.cluster_identifier = FindInMap(
                 self.mappings_key, CLUSTER_NAME.title, "Name"
             )
-        elif self.lookup:
-            self.lookup_cluster(session)
-            root_stack.stack_template.add_mapping(self.mappings_key, self.mappings)
         elif self.properties:
             self.define_cluster(root_stack, settings)
 

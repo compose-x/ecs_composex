@@ -12,6 +12,7 @@ from ecs_composex.common import LOG, build_template
 from ecs_composex.common.cfn_conditions import define_stack_name
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources import (
+    ApiXResource,
     XResource,
     set_lookup_resources,
     set_new_resources,
@@ -92,7 +93,7 @@ def define_default_key_policy():
     return policy
 
 
-class KmsKey(XResource):
+class KmsKey(ApiXResource):
     """
     Class to represent a KMS Key
     """

@@ -59,6 +59,7 @@ from ecs_composex.common import LOG, NONALPHANUM, add_parameters, build_template
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME, Parameter
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources import (
+    NetworkXResource,
     XResource,
     set_lookup_resources,
     set_new_resources,
@@ -878,7 +879,7 @@ class ComposeListener(Listener):
             map_service_target(lb, name, l_service_def)
 
 
-class Elbv2(XResource):
+class Elbv2(NetworkXResource):
     """
     Class to handle ELBv2 creation and mapping to ECS Services
     """
