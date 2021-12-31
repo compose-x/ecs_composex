@@ -10,6 +10,7 @@ import warnings
 from ecs_composex.common import LOG, NONALPHANUM, build_template
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources import (
+    ServicesXResource,
     XResource,
     set_lookup_resources,
     set_new_resources,
@@ -32,7 +33,7 @@ def validate_service_definition(service):
         )
 
 
-class Rule(XResource):
+class Rule(ServicesXResource):
     """
     Class to define an Event Rule
     """

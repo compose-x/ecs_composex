@@ -12,7 +12,7 @@ which it heavily relies onto.
 You can change the names *values* so you like so long as you keep it Alphanumerical [a-zA-Z0-9]
 """
 
-from troposphere import And, Condition, Equals, Not, Or, Ref
+from troposphere import And, Condition, Equals, If, Not, Or, Ref
 
 from ecs_composex.ecs import ecs_params
 
@@ -51,9 +51,16 @@ USE_FARGATE_CON = Or(
 NOT_FARGATE_CON_T = "NotUsingFargate"
 NOT_FARGATE_CON = Not(Condition(USE_FARGATE_CON_T))
 
+USE_EXTERNAL_LT_T = "UseExternalLaunchType"
+USE_EXTERNAL_LT = Equals(Ref(ecs_params.LAUNCH_TYPE), "EXTERNAL")
+
 
 USE_LAUNCH_TYPE_CON_T = "UseLaunchType"
-USE_LAUNCH_TYPE_CON = Or(Condition(USE_EC2_CON_T), Condition(USE_FARGATE_LT_CON_T))
+USE_LAUNCH_TYPE_CON = Or(
+    Condition(USE_EC2_CON_T),
+    Condition(USE_FARGATE_LT_CON_T),
+    Condition(USE_EXTERNAL_LT_T),
+)
 
 
 SERVICE_COUNT_ZERO_AND_FARGATE_CON_T = "ServiceCountZeroAndFargate"
@@ -82,3 +89,13 @@ GENERATED_LOG_GROUP_NAME_CON_T = "GenerateLogGroupName"
 GENERATED_LOG_GROUP_NAME_CON = Equals(
     Ref(ecs_params.LOG_GROUP_NAME), ecs_params.LOG_GROUP_NAME.Default
 )
+
+
+def use_external_lt_con(if_true, if_false) -> If:
+    """
+    Function to return the If() to simplify !If USE_EXTERNAL_LT_T
+
+    :return: If(USE_EXTERNAL_LT_T, if_true, if_false)
+    :rtype: If
+    """
+    return If(USE_EXTERNAL_LT_T, if_true, if_false)

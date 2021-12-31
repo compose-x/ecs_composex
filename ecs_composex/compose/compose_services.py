@@ -1026,8 +1026,6 @@ class ComposeService(object):
     def define_families(self):
         """
         Function to assign the service to a family / families
-        :param deployment:
-        :return:
         """
         deploy = "deploy"
         labels = "labels"
@@ -1082,7 +1080,8 @@ class ComposeService(object):
 
     def set_family_hostname(self, deployments):
         """
-        Function to override family_hostname based on label
+        Override family_hostname based on label
+
         :param dict deployments:
         """
         labels = "labels"

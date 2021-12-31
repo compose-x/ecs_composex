@@ -14,6 +14,7 @@ from troposphere.neptune import DBCluster as CfnDBCluster
 from ecs_composex.common import setup_logging
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources import (
+    NetworkXResource,
     XResource,
     set_lookup_resources,
     set_new_resources,
@@ -81,9 +82,9 @@ def get_db_cluster_config(db, account_id, resource_id):
     return config
 
 
-class NeptuneDBCluster(XResource):
+class NeptuneDBCluster(NetworkXResource):
     """
-    Class to manage DocDB
+    Class to manage Neptune Cluster
     """
 
     subnets_param = STORAGE_SUBNETS

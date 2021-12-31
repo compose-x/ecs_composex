@@ -48,7 +48,7 @@ from ecs_composex.common.services_helpers import set_logging_expiry
 from ecs_composex.compose.compose_services import ComposeService
 from ecs_composex.ecs import ecs_params
 from ecs_composex.ecs.docker_tools import find_closest_fargate_configuration
-from ecs_composex.ecs.ecs_conditions import USE_FARGATE_CON_T
+from ecs_composex.ecs.ecs_conditions import USE_FARGATE_CON_T, use_external_lt_con
 from ecs_composex.ecs.ecs_params import (
     AWS_XRAY_IMAGE,
     EXEC_ROLE_T,
@@ -420,6 +420,7 @@ class ComposeFamily(object):
         self.service_config = None
         self.service_tags = None
         self.task_ephemeral_storage = 0
+        self.family_network_mode = None
         self.exec_role = None
         self.task_role = None
         self.enable_execute_command = False
@@ -509,7 +510,6 @@ class ComposeFamily(object):
     def set_compute_platform(self):
         """
         Iterates over all services and if ecs.compute.platform
-        :return:
         """
         if self.launch_type != self.default_launch_type:
             LOG.warning(
@@ -1087,7 +1087,13 @@ class ComposeFamily(object):
             template=self.template,
             Cpu=ecs_params.FARGATE_CPU,
             Memory=ecs_params.FARGATE_RAM,
-            NetworkMode=NETWORK_MODE,
+            NetworkMode=If(
+                USE_FARGATE_CON_T,
+                "awsvpc",
+                Ref(AWS_NO_VALUE)
+                if not self.family_network_mode
+                else self.family_network_mode,
+            ),
             EphemeralStorage=If(
                 USE_FARGATE_CON_T,
                 EphemeralStorage(SizeInGiB=self.task_ephemeral_storage),
@@ -1095,11 +1101,13 @@ class ComposeFamily(object):
             )
             if 0 < self.task_ephemeral_storage >= 21
             else Ref(AWS_NO_VALUE),
+            InferenceAccelerators=Ref(AWS_NO_VALUE),
+            IpcMode=Ref(AWS_NO_VALUE),
             Family=Ref(ecs_params.SERVICE_NAME),
             TaskRoleArn=Ref(self.task_role.arn["ImportParameter"]),
             ExecutionRoleArn=Ref(self.exec_role.arn["ImportParameter"]),
             ContainerDefinitions=[s.container_definition for s in self.services],
-            RequiresCompatibilities=["EC2", "FARGATE"],
+            RequiresCompatibilities=["EC2", "FARGATE", "EXTERNAL"],
             Tags=Tags(
                 {
                     "Name": Ref(ecs_params.SERVICE_NAME),
@@ -1515,7 +1523,8 @@ class ComposeFamily(object):
             self.launch_type = "CLUSTER_MODE"
 
     def set_service_launch_type(self, cluster):
-        """ """
+        if self.launch_type == "EXTERNAL":
+            return
         if self.ecs_capacity_providers and cluster.capacity_providers:
             self.set_launch_type_from_cluster_and_service()
         elif not self.ecs_capacity_providers and cluster.capacity_providers:
@@ -1525,31 +1534,32 @@ class ComposeFamily(object):
     def set_family_lt(self):
         if not self.service_definition:
             LOG.warning(f"{self.name} - ECS Service not yet defined. Skipping")
-        else:
-            if (
-                self.launch_type == "FARGATE_PROVIDERS"
-                or self.launch_type == "SERVICE_MODE"
-            ):
-                cfn_capacity_providers = [
-                    CapacityProviderStrategyItem(**props)
-                    for props in self.ecs_capacity_providers
-                ]
-                if isinstance(self.service_definition, EcsService):
-                    setattr(
-                        self.service_definition,
-                        "CapacityProviderStrategy",
-                        cfn_capacity_providers,
-                    )
-            elif (
-                self.launch_type == "FARGATE"
-                or self.launch_type == "CLUSTER_MODE"
-                or self.launch_type == "EC2"
-            ):
+            return
+        if (
+            self.launch_type == "FARGATE_PROVIDERS"
+            or self.launch_type == "SERVICE_MODE"
+        ):
+            cfn_capacity_providers = [
+                CapacityProviderStrategyItem(**props)
+                for props in self.ecs_capacity_providers
+            ]
+            if isinstance(self.service_definition, EcsService):
                 setattr(
                     self.service_definition,
                     "CapacityProviderStrategy",
-                    Ref(AWS_NO_VALUE),
+                    cfn_capacity_providers,
                 )
+        elif (
+            self.launch_type == "FARGATE"
+            or self.launch_type == "CLUSTER_MODE"
+            or self.launch_type == "EC2"
+            or self.launch_type == "EXTERNAL"
+        ):
+            setattr(
+                self.service_definition,
+                "CapacityProviderStrategy",
+                Ref(AWS_NO_VALUE),
+            )
 
     def validate_capacity_providers(self, cluster):
         """

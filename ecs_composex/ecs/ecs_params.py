@@ -36,6 +36,7 @@ LAUNCH_TYPE = Parameter(
     AllowedValues=[
         "EC2",
         "FARGATE",
+        "EXTERNAL",
         "FARGATE_PROVIDERS",
         "CLUSTER_MODE",
         "SERVICE_MODE",

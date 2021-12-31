@@ -18,6 +18,7 @@ from ecs_composex.common import setup_logging
 from ecs_composex.common.aws import find_aws_resource_arn_from_tags_api
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources import (
+    NetworkXResource,
     XResource,
     set_lookup_resources,
     set_new_resources,
@@ -77,7 +78,7 @@ def get_db_cluster_config(db, account_id, resource_id):
     return config
 
 
-class DocDb(XResource):
+class DocDb(NetworkXResource):
     """
     Class to manage DocDB
     """

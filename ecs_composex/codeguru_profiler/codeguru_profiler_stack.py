@@ -23,6 +23,7 @@ from ecs_composex.common import build_template
 from ecs_composex.common.cfn_params import STACK_ID_SHORT
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources import (
+    ApiXResource,
     XResource,
     set_lookup_resources,
     set_new_resources,
@@ -62,7 +63,7 @@ def create_root_template(new_resources):
     return root_tpl
 
 
-class CodeProfiler(XResource):
+class CodeProfiler(ApiXResource):
     """
     Class to manage AWS Code Guru profiles
     """

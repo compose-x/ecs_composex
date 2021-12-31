@@ -10,7 +10,7 @@ from troposphere.sns import Topic as CfnTopic
 
 from ecs_composex.common import build_template, setup_logging
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.compose.x_resources import XResource
+from ecs_composex.compose.x_resources import ApiXResource, XResource
 from ecs_composex.iam.import_sam_policies import get_access_types
 from ecs_composex.sns.sns_params import (
     MOD_KEY,
@@ -78,7 +78,7 @@ def create_sns_mappings(resources, settings):
         mappings.update({resource.logical_name: resource.mappings})
 
 
-class Topic(XResource):
+class Topic(ApiXResource):
     """
     Class for SNS Topics
     """
@@ -98,7 +98,7 @@ class Topic(XResource):
         }
 
 
-class Subscription(XResource):
+class Subscription(ApiXResource):
     """
     Class for SNS Subscriptions
     """

@@ -242,7 +242,7 @@ def add_compute(root_template, settings, vpc_stack):
     if vpc_stack is not None:
         compute_stack.get_from_vpc_stack(vpc_stack)
     else:
-        compute_stack.no_vpc_parameters(settings)
+        compute_stack.no_vpc_stack_parameters(settings)
     return root_template.add_resource(compute_stack)
 
 
@@ -279,7 +279,7 @@ def handle_new_xstack(
         if vpc_stack and key in TCP_SERVICES:
             xstack.get_from_vpc_stack(vpc_stack)
         elif not vpc_stack and key in TCP_SERVICES:
-            xstack.no_vpc_parameters(settings)
+            xstack.no_vpc_stack_parameters(settings)
 
 
 def add_x_resources(root_template, settings, services_stack, vpc_stack=None):
@@ -427,22 +427,39 @@ def set_container_cluster_identifier(root_stack, settings):
                 )
 
 
-def generate_full_template(settings):
+def create_root_stack(settings) -> ComposeXStack:
     """
-    Function to generate the root root_template
+    Initializes the root stack template and ComposeXStack
 
     :param ecs_composex.common.settings.ComposeXSettings settings: The settings for the execution
-    :return root_template: Template, params
-    :rtype: root_template, list
     """
-    LOG.debug(settings)
-    evaluate_docker_configs(settings)
     root_stack_title = NONALPHANUM.sub("", settings.name.title())
     root_stack = ComposeXStack(
         root_stack_title,
         stack_template=init_root_template(settings),
         file_name=settings.name,
     )
+    return root_stack
+
+
+def generate_full_template(settings):
+    """
+    Function to generate the root template and associate services, x-resources to each other.
+
+    * Create the root template / stack
+    * Create/Find ECS Cluster
+    * Create IAM Stack (services Roles and some policies)
+    * Create/Find x-resources
+
+    :param ecs_composex.common.settings.ComposeXSettings settings: The settings for the execution
+    :return root_template: Template, params
+    :rtype: root_template, list
+    """
+    evaluate_docker_configs(settings)
+    root_stack = create_root_stack(settings)
+    add_ecs_cluster(root_stack, settings)
+    iam_stack = root_stack.stack_template.add_resource(IamStack("iam", settings))
+
     vpc_stack = add_vpc_to_root(root_stack, settings)
     settings.set_networks(vpc_stack, root_stack)
     dns_settings = DnsSettings(root_stack, settings, get_vpc_id(vpc_stack))
@@ -452,9 +469,7 @@ def generate_full_template(settings):
         root_stack,
         vpc_stack=vpc_stack,
     )
-    add_ecs_cluster(root_stack, settings)
-    iam_stack = IamStack("iam", settings)
-    root_stack.stack_template.add_resource(iam_stack)
+
     associate_services_to_root_stack(root_stack, settings, vpc_stack)
     set_services_alarms(settings)
     if keyisset(ACM_KEY, settings.compose_content):
