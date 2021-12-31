@@ -374,7 +374,7 @@ def define_service_target_group(
         ContainerName=service.name,
         TargetGroupArn=Ref(tgt_parameter),
     )
-    family.ecs_service.ecs_service.LoadBalancers.append(service_lb)
+    family.ecs_service.lbs.append(service_lb)
     add_parameters(family.template, [ELB_GRACE_PERIOD])
     family.ecs_service.ecs_service.HealthCheckGracePeriodSeconds = Ref(ELB_GRACE_PERIOD)
     handle_sg_lb_ingress_to_service(resource, family, resources_root_stack)

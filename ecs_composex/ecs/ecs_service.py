@@ -320,7 +320,7 @@ def define_service_ingress(family, settings):
     if not registries:
         registries = Ref(AWS_NO_VALUE)
     service_attrs = {
-        "LoadBalancers": use_external_lt_con(Ref(AWS_NO_VALUE), service_lbs),
+        "LoadBalancers": service_lbs,
         "ServiceRegistries": If(PRIVATE_NAMESPACE_CON_T, registries, Ref(AWS_NO_VALUE)),
     }
     return service_attrs
@@ -390,7 +390,12 @@ class Service(object):
         self.sgs = []
         self.sg = add_service_default_sg(family.template)
         self.sgs.append(Ref(self.sg))
+
+        ingress_props = define_service_ingress(family, settings)
+        self.lbs = ingress_props["LoadBalancers"]
+        self.registries = ingress_props["ServiceRegistries"]
         self.generate_service_definition(family, settings)
+
         create_scalable_target(family)
         generate_service_template_outputs(family)
 
@@ -406,8 +411,8 @@ class Service(object):
             Ref(sg) for sg in self.sgs if not isinstance(sg, (Ref, Sub, If, GetAtt))
         ]
         service_sgs += [sg for sg in self.sgs if isinstance(sg, (Ref, Sub, If, GetAtt))]
-        attrs = define_service_ingress(family, settings)
-        define_deployment_options(family, settings, attrs)
+        props = {}
+        define_deployment_options(family, settings, props)
         self.ecs_service = EcsService(
             ecs_params.SERVICE_T,
             template=family.template,
@@ -454,6 +459,8 @@ class Service(object):
                 Ref(ecs_params.FARGATE_VERSION),
                 Ref(AWS_NO_VALUE),
             ),
-            **attrs,
+            LoadBalancers=use_external_lt_con(Ref(AWS_NO_VALUE), self.lbs),
+            ServiceRegistries=use_external_lt_con(Ref(AWS_NO_VALUE), self.registries),
+            **props,
         )
         family.service_definition = self.ecs_service

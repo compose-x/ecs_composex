@@ -537,13 +537,13 @@ class ServicesXResource(XResource):
         self.families_targets = []
         self.families_scaling = []
         super().__init__(name, definition, module_name, settings, mapping_key)
-        self.set_services_targets(settings)
-        self.set_services_scaling(settings)
         self.services = (
             []
             if not keyisset("Services", self.definition)
             else self.definition["Services"]
         )
+        self.set_services_targets(settings)
+        self.set_services_scaling(settings)
 
     def debug_families_targets(self):
         """

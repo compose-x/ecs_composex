@@ -1,4 +1,4 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
@@ -23,7 +23,7 @@ from troposphere.events import (
 )
 from troposphere.iam import Policy, PolicyType, Role
 
-from ecs_composex.common import LOG, add_parameters
+from ecs_composex.common import add_parameters, setup_logging
 from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.ecs.ecs_params import (
     CLUSTER_NAME,
@@ -33,6 +33,8 @@ from ecs_composex.ecs.ecs_params import (
     TASK_T,
 )
 from ecs_composex.vpc.vpc_params import APP_SUBNETS, SG_ID_TYPE, SUBNETS_TYPE
+
+LOG = setup_logging()
 
 
 def delete_service_from_template(service):

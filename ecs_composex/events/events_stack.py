@@ -7,6 +7,9 @@ Module to define the entry point for AWS Event Rules
 """
 import warnings
 
+from compose_x_common.compose_x_common import keyisset
+from troposphere.events import Rule as CfnRule
+
 from ecs_composex.common import LOG, NONALPHANUM, build_template
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources import (
@@ -19,18 +22,39 @@ from ecs_composex.compose.x_resources import (
 )
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME, FARGATE_VERSION
 from ecs_composex.events.events_params import MOD_KEY, RES_KEY
-from ecs_composex.events.events_template import create_events_template
+from ecs_composex.resources_import import import_record_properties
 
 
-def validate_service_definition(service):
-    required_keys = ["name", "TaskCount"]
-    if not set(required_keys).issubset(service):
-        raise KeyError(
-            "Services definition must contain at least",
-            required_keys,
-            "Got",
-            service.keys(),
-        )
+def define_event_rule(stack, rule):
+    """
+    Function to define the EventRule properties
+
+    :param ecs_composex.common.stacks.ComposeXStack stack:
+    :param ecs_composex.events.events_stack.Rule rule:
+    """
+    rule_props = import_record_properties(rule.properties, CfnRule)
+    if not keyisset("Targets", rule_props):
+        rule_props["Targets"] = []
+    rule.cfn_resource = CfnRule(rule.logical_name, **rule_props)
+    stack.stack_template.add_resource(rule.cfn_resource)
+
+
+def create_events_template(stack, settings, new_resources):
+    """
+    Function to create the CFN root template for Events Rules
+
+    :param ecs_composex.events.events_stack.XStack stack:
+    :param ecs_composex.common.settings.ComposeXSettings settings:
+    :param list[Rule] new_resources:
+    """
+    for resource in new_resources:
+        print(resource.families_targets)
+        if not resource.families_targets:
+            LOG.error(
+                f"The rule {resource.logical_name} does not have any families_targets defined"
+            )
+            continue
+        define_event_rule(stack, resource)
 
 
 class Rule(ServicesXResource):
@@ -67,7 +91,6 @@ class Rule(ServicesXResource):
             LOG.info(f"No services defined for {self.name}")
             return
         for service in self.services:
-            validate_service_definition(service)
             service_name = service["name"]
             if service_name in settings.families and service_name not in [
                 f[0].name for f in self.families_targets
@@ -106,10 +129,10 @@ class XStack(ComposeXStack):
         """
         set_resources(settings, Rule, RES_KEY, MOD_KEY)
         x_resources = settings.compose_content[RES_KEY].values()
-        new_resources = set_new_resources(x_resources, RES_KEY, False)
         lookup_resources = set_lookup_resources(x_resources, RES_KEY)
         use_resources = set_use_resources(x_resources, RES_KEY, False)
-        if new_resources or use_resources:
+        new_resources = set_new_resources(x_resources, RES_KEY, False)
+        if new_resources:
             stack_template = build_template(
                 "Events rules for ComposeX",
                 [CLUSTER_NAME, FARGATE_VERSION],
@@ -120,5 +143,5 @@ class XStack(ComposeXStack):
             self.is_void = True
         if lookup_resources or use_resources:
             warnings.warn(
-                f"{RES_KEY} does not support Lookup. You can only create new resources"
+                f"{RES_KEY} does not support Lookup/Use. You can only create new resources"
             )
