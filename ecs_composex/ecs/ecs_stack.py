@@ -38,13 +38,13 @@ def handle_families_dependencies(settings, families_post):
                 )
 
 
-def associate_services_to_root_stack(root_stack, settings, vpc_stack=None):
+def associate_services_to_root_stack(root_stack, settings):
     """
     Function to generate all services and associate their stack to the root stack
 
     :param ecs_composex.common.stacks.ComposeXStack root_stack:
     :param ecs_composex.common.settings.ComposeXSettings settings:
-    :param ecs_composex.common.stacks.ComposeXStack vpc_stack:
+
     :return:
     """
     for family_name, family in settings.families.items():
@@ -90,10 +90,10 @@ def associate_services_to_root_stack(root_stack, settings, vpc_stack=None):
             family.stack.Parameters.update(
                 {ecs_params.LAUNCH_TYPE.title: settings.ecs_cluster.platform_override}
             )
-        if not vpc_stack:
-            family.stack.no_vpc_stack_parameters(settings)
-        else:
-            family.stack.get_from_vpc_stack(vpc_stack)
+        # if vpc_stack and not vpc_stack.is_void:
+        #     family.stack.no_vpc_stack_parameters(settings)
+        # elif vpc_stack and vpc_stack.is_void:
+        #     family.stack.get_from_vpc_stack(vpc_stack)
         family.template.set_metadata(metadata)
         root_stack.stack_template.add_resource(family.stack)
         if settings.networks and family.service_config.network.networks:

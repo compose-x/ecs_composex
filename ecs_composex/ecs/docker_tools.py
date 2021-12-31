@@ -1,4 +1,4 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
@@ -44,7 +44,7 @@ def import_time_values_to_seconds(time_string, as_tuple=False):
     if seconds:
         seconds = int(re.sub(r"[^\d]", "", seconds))
     if as_tuple:
-        return (hours, minutes, seconds)
+        return hours, minutes, seconds
     seconds += (60 * minutes) + (60 * 60 * hours)
     return seconds
 
@@ -139,9 +139,7 @@ def find_closest_fargate_configuration(cpu, ram, as_param_string=False):
     if fargate_cpu < cpu:
         fargate_cpu = nxtpow2(cpu)
     if fargate_cpu not in fargate_cpus:
-        LOG.warning(
-            f"Value {cpu} is not valid for Fargate. Valid modes: {fargate_cpus}"
-        )
+        LOG.debug(f"Value {cpu} is not valid for Fargate. Valid modes: {fargate_cpus}")
         if fargate_cpu < fargate_cpus[0]:
             fargate_cpu = fargate_cpus[0]
         elif fargate_cpu > fargate_cpus[-1]:

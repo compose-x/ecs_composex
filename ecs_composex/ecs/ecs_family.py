@@ -22,6 +22,7 @@ from troposphere import (
     Sub,
     Tags,
 )
+from troposphere.ec2 import SecurityGroup
 from troposphere.ecs import (
     CapacityProviderStrategyItem,
     DockerVolumeConfiguration,
@@ -42,6 +43,7 @@ from ecs_composex.common import (
     set_else_none,
     setup_logging,
 )
+from ecs_composex.common.cfn_conditions import define_stack_name
 from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.common.files import upload_file
 from ecs_composex.common.services_helpers import set_logging_expiry
@@ -53,12 +55,14 @@ from ecs_composex.ecs.ecs_params import (
     AWS_XRAY_IMAGE,
     EXEC_ROLE_T,
     NETWORK_MODE,
+    SERVICE_NAME,
+    SG_T,
     TASK_ROLE_T,
     TASK_T,
 )
 from ecs_composex.ecs.ecs_predefined_alarms import PREDEFINED_SERVICE_ALARMS_DEFINITION
 from ecs_composex.iam import add_role_boundaries, define_iam_policy
-from ecs_composex.vpc.vpc_params import APP_SUBNETS
+from ecs_composex.vpc.vpc_params import APP_SUBNETS, VPC_ID
 
 LOG = setup_logging()
 
@@ -393,6 +397,10 @@ def set_ecs_cluster_logging_access(settings, policy, role_stack):
 class ComposeFamily(object):
     """
     Class to group services logically to create the final ECS Service
+
+    :type service_config: ecs_composex.ecs.ecs_service_config.ServiceConfig
+    :ivar list[ecs_composex.compose.compose_services.ComposeService] services: List of the Services part of the family
+    :ivar ecs_composex.ecs.ecs_service_config.ServiceConfig service_config: ECS Service settings
     """
 
     default_launch_type = "EC2"
@@ -427,6 +435,7 @@ class ComposeFamily(object):
         self.scalable_target = None
         self.ecs_service = None
         self.launch_type = self.default_launch_type
+        self.set_family_launch_type()
         self.ecs_capacity_providers = []
         self.target_groups = []
         self.set_service_labels()
@@ -437,15 +446,77 @@ class ComposeFamily(object):
         self.predefined_alarms = {}
         self.set_initial_services_dependencies()
         self.set_xray()
+        self.set_prometheus()
         self.sort_container_configs()
         self.handle_iam()
         self.add_containers_images_cfn_parameters()
+
+    def state_facts(self):
+        """
+        Function to display facts about the family.
+        """
+        LOG.info(f"{self.name} - Hostname set to {self.family_hostname}")
+        LOG.info(f"{self.name} - Ephemeral storage: {self.task_ephemeral_storage}")
+        LOG.info(f"{self.name} - LaunchType set to {self.launch_type}")
+        LOG.info(
+            f"{self.name} - TaskDefinition containers: {[svc.name for svc in self.services]}"
+        )
+
+    def set_family_launch_type(self):
+        """
+        Goes over all the services and verifies if one of them is set to use EXTERNAL mode.
+        If so, overrides for all
+        """
+        if self.launch_type == "EXTERNAL":
+            LOG.debug(f"{self.name} is already set to EXTERNAL")
+        for service in self.services:
+            if service.launch_type == "EXTERNAL":
+                LOG.info(
+                    f"{self.name} - service {service.name} is set to EXTERNAL. Overriding for all"
+                )
+                self.launch_type = "EXTERNAL"
+                break
+
+    def add_security_group(self):
+        """
+        Creates a new EC2 SecurityGroup and assigns to ecs_service.network_settings
+        Adds the security group to the family template resources.
+        """
+        self.service_config.network.security_group = SecurityGroup(
+            SG_T,
+            GroupDescription=Sub(
+                f"SG for ${{{SERVICE_NAME.title}}} - ${{STACK_NAME}}",
+                STACK_NAME=define_stack_name(),
+            ),
+            Tags=Tags(
+                {
+                    "Name": Sub(
+                        f"${{{SERVICE_NAME.title}}}-${{STACK_NAME}}",
+                        STACK_NAME=define_stack_name(),
+                    ),
+                    "StackName": Ref(AWS_STACK_NAME),
+                    "MicroserviceName": Ref(SERVICE_NAME),
+                }
+            ),
+            VpcId=Ref(VPC_ID),
+        )
+        if (
+            self.template
+            and self.service_config.network.security_group.title
+            not in self.template.resources
+        ):
+            self.template.add_resource(self.service_config.network.security_group)
 
     def add_service(self, service):
         """
         Adds a new container/service to the Task Family and validates all settings that go along with the change.
         :param service:
         """
+        if service in self.services:
+            LOG.debug(
+                f"{self.name} - container service {service.name} is already set. Skipping"
+            )
+            return
         self.services.append(service)
         if self.task_definition and service.container_definition:
             self.task_definition.ContainerDefinitions.append(
@@ -453,6 +524,7 @@ class ComposeFamily(object):
             )
             self.set_secrets_access()
         self.set_xray()
+        self.set_prometheus()
         self.set_task_ephemeral_storage()
         self.refresh()
 
@@ -482,6 +554,9 @@ class ComposeFamily(object):
                         self.services_depends_on.append(service_depends_on)
 
     def set_service_labels(self):
+        """
+        Sets default service tags and labels
+        """
         default_tags = Tags(
             {
                 "Name": Ref(ecs_params.SERVICE_NAME),
@@ -512,7 +587,7 @@ class ComposeFamily(object):
         Iterates over all services and if ecs.compute.platform
         """
         if self.launch_type != self.default_launch_type:
-            LOG.warning(
+            LOG.debug(
                 f"{self.name} - The compute platform is already overridden to {self.launch_type}"
             )
             for service in self.services:
@@ -523,7 +598,7 @@ class ComposeFamily(object):
             for service in self.services:
                 if service.launch_type != self.launch_type:
                     platform = service.launch_type
-                    LOG.info(
+                    LOG.debug(
                         f"{self.name} - At least one service is defined not to be on FARGATE."
                         f" Overriding to {platform}"
                     )
@@ -614,13 +689,15 @@ class ComposeFamily(object):
     def set_xray(self):
         """
         Automatically adds the xray-daemon sidecar to the task definition.
+
+        Evaluates if any of the services x_ray is True to add.
+        If any(True) then checks whether the xray-daemon container is already in the services.
         """
-        self.use_xray = any(
-            [keyisset("use_xray", service.x_configs) for service in self.services]
-        )
-        if self.use_xray is True and "xray-daemon" not in [
-            service.name for service in self.services
-        ]:
+        self.use_xray = any([service.x_ray for service in self.services])
+        if self.use_xray is False:
+            return
+        xray_service = None
+        if "xray-daemon" not in [service.name for service in self.services]:
             xray_service = ComposeService(
                 "xray-daemon",
                 {
@@ -636,12 +713,26 @@ class ComposeFamily(object):
                 },
             )
             xray_service.is_aws_sidecar = True
-            for service in self.services:
-                service.depends_on.append(xray_service.name)
-                LOG.debug(f"Adding xray-daemon as dependency to {service.name}")
             self.add_service(xray_service)
             if xray_service.name not in self.ignored_services:
                 self.ignored_services.append(xray_service)
+        else:
+            for service in self.services:
+                if not service.name == "xray-daemon":
+                    continue
+                else:
+                    xray_service = service
+                    break
+        if not xray_service:
+            raise ValueError("xray_service is not set ?!")
+        for service in self.services:
+            if service.is_aws_sidecar:
+                continue
+            if xray_service.name not in service.depends_on:
+                service.depends_on.append(xray_service.name)
+                LOG.info(
+                    f"{self.name} - Adding xray-daemon as dependency to {service.name}"
+                )
 
     def define_predefined_alarm_settings(self, new_settings):
         """
@@ -678,8 +769,8 @@ class ComposeFamily(object):
                 keyisset("requires_scaling", settings)
                 and not self.service_config.scaling.defined
             ):
-                LOG.error(
-                    f"No scaling range was defined for the service and rule {name} requires it. Skipping"
+                LOG.debug(
+                    f"{self.name} - No x-scaling.Range defined for the service and rule {name} requires it. Skipping"
                 )
                 continue
             new_settings = deepcopy(settings)
@@ -688,6 +779,11 @@ class ComposeFamily(object):
         return finalized_alarms
 
     def validate_service_predefined_alarms(self, valid_predefined, service_predefined):
+        """
+        Validates that the alarms set to use exist
+
+        :raises: KeyError if the name for Predefined alarm is not found in services alarms
+        """
         if not all(
             name in valid_predefined.keys() for name in service_predefined.keys()
         ):
@@ -727,7 +823,7 @@ class ComposeFamily(object):
                 set_value = self.predefined_alarms[key][settings_key][subkey]
                 new_value = subvalue
                 LOG.warning(
-                    f"Value for {key}.Settings.{subkey} override from {set_value} to {new_value}."
+                    f"{self.name} - Value for {key}.Settings.{subkey} override from {set_value} to {new_value}."
                 )
                 self.predefined_alarms[key]["Settings"][subkey] = new_value
 
@@ -850,7 +946,7 @@ class ComposeFamily(object):
                 service.logging.Options["awslogs-region"], Ref
             ):
                 LOG.warning(
-                    "When defining awslogs-region, Compose-X does not create the CW Log Group"
+                    f"{self.name}.logging - When defining awslogs-region, Compose-X does not create the CW Log Group"
                 )
                 self.exec_role.cfn_resource.Policies.append(
                     Policy(
@@ -1065,7 +1161,7 @@ class ComposeFamily(object):
             ):
                 tasks_ram += container.Memory
             else:
-                LOG.warning(
+                LOG.debug(
                     f"{service.name} does not have RAM settings."
                     "Based on CPU, it will pick the smaller RAM Fargate supports"
                 )
@@ -1143,15 +1239,23 @@ class ComposeFamily(object):
             logging_def.Options.update(self.task_logging_options)
 
     def init_task_definition(self):
+        """
+        Initialize the ECS TaskDefinition
+
+        * Sets Compute settings
+        * Sets the TaskDefinition using current services/ContainerDefinitions
+        * Update the logging configuration for the containers.
+        """
         self.set_task_compute_parameter()
         self.set_task_definition()
         self.refresh_container_logging_definition()
 
     def set_family_hostname(self):
         svcs_hostnames = any(svc.family_hostname for svc in self.services)
-        if not svcs_hostnames:
-            LOG.warning(
-                f"No ecs.task.family.hostname defined on any of the services. Using default {self.family_hostname}"
+        if not svcs_hostnames or not self.family_hostname:
+            LOG.debug(
+                f"{self.name} - No ecs.task.family.hostname defined on any of the services. "
+                f"Setting to {self.family_hostname}"
             )
             return
         potential_svcs = []
@@ -1170,7 +1274,7 @@ class ComposeFamily(object):
         if len(uniq) > 1:
             LOG.warning(
                 f"{self.name} more than one essential container has ecs.task.family.hostname set. "
-                f"Using thes first one {uniq[0]}"
+                f"Using the first one {uniq[0]}"
             )
 
     def update_family_subnets(self, settings):
@@ -1191,7 +1295,7 @@ class ComposeFamily(object):
                     }
                 )
                 LOG.info(
-                    f"Set {network.subnet_name} as {APP_SUBNETS.title} for {self.name}"
+                    f"{self.name} - {APP_SUBNETS.title} set to {network.subnet_name}"
                 )
 
     def upload_services_env_files(self, settings):
@@ -1205,7 +1309,9 @@ class ComposeFamily(object):
         if settings.no_upload:
             return
         elif settings.for_cfn_macro:
-            LOG.warning("When running as a Macro, you cannot upload environment files.")
+            LOG.warning(
+                f"{self.name} When running as a Macro, you cannot upload environment files."
+            )
             return
         for service in self.services:
             env_files = []
@@ -1222,7 +1328,9 @@ class ComposeFamily(object):
                         file_name=object_name,
                         settings=settings,
                     )
-                    LOG.info(f"Successfully uploaded {env_file} to S3")
+                    LOG.info(
+                        f"{self.name}.env_files - Successfully uploaded {env_file} to S3"
+                    )
                 except Exception:
                     LOG.error(f"Failed to upload env file {object_name}")
                     raise
@@ -1423,7 +1531,24 @@ class ComposeFamily(object):
             }
         )
 
-    def handle_prometheus(self):
+    def set_prometheus_containers_insights(
+        self, service: ComposeService, prometheus_config: dict, insights_options: dict
+    ):
+        """
+        Sets prometheus configuration to export to ECS Containers Insights
+        """
+        if keyisset("ContainersInsights", prometheus_config):
+            config = service.definition["x-prometheus"]["ContainersInsights"]
+            for key in insights_options.keys():
+                if keyisset(key, config):
+                    insights_options[key] = config[key]
+            if keyisset("CustomRules", config):
+                insights_options["CustomRules"] = config["CustomRules"]
+                LOG.info(
+                    f"{self.name} - Prometheus CustomRules options set for {service.name}"
+                )
+
+    def set_prometheus(self):
         """
         Reviews services config
         :return:
@@ -1442,13 +1567,9 @@ class ComposeFamily(object):
         for service in self.services:
             if keyisset("x-prometheus", service.definition):
                 prometheus_config = service.definition["x-prometheus"]
-                if keyisset("ContainersInsights", prometheus_config):
-                    config = service.definition["x-prometheus"]["ContainersInsights"]
-                    for key in insights_options.keys():
-                        if keyisset(key, config):
-                            insights_options[key] = config[key]
-                    if keyisset("CustomRules", config):
-                        insights_options["CustomRules"] = config["CustomRules"]
+                self.set_prometheus_containers_insights(
+                    service, prometheus_config, insights_options
+                )
         if any(insights_options.values()):
             add_cw_agent_to_family(self, **insights_options)
 
@@ -1480,7 +1601,7 @@ class ComposeFamily(object):
             elif count > 0 and keypresent("Base", provider):
                 del provider["Base"]
                 LOG.warning(
-                    "Only one capacity provider can have a base value. "
+                    f"{self.name}.x-ecs Only one capacity provider can have a base value. "
                     f"Deleting for {provider['CapacityProvider']}"
                 )
             provider["Weight"] = int(max(provider["Weight"]))
@@ -1491,13 +1612,13 @@ class ComposeFamily(object):
             provider["CapacityProvider"] in ["FARGATE", "FARGATE_SPOT"]
             for provider in self.ecs_capacity_providers
         ):
-            LOG.info(
+            LOG.debug(
                 f"{self.name} - Cluster and Service use Fargate only. Setting to FARGATE_PROVIDERS"
             )
             self.launch_type = "FARGATE_PROVIDERS"
         else:
             self.launch_type = "SERVICE_MODE"
-            LOG.info(
+            LOG.debug(
                 f"{self.name} - Using AutoScaling Based Providers",
                 [
                     provider["CapacityProvider"]
@@ -1511,27 +1632,33 @@ class ComposeFamily(object):
             for provider in cluster.default_strategy_providers
         ):
             self.launch_type = "FARGATE_PROVIDERS"
-            LOG.info(
+            LOG.debug(
                 f"{self.name} - Defaulting to FARGATE_PROVIDERS as "
                 "FARGATE[_SPOT] is found in the cluster default strategy"
             )
         else:
             self.launch_type = "CLUSTER_MODE"
-            LOG.info(
+            LOG.debug(
                 f"{self.name} - Cluster uses non Fargate Capacity Providers. Setting to Cluster default"
             )
             self.launch_type = "CLUSTER_MODE"
 
     def set_service_launch_type(self, cluster):
+        """
+        Sets the LaunchType value for the ECS Service
+        """
         if self.launch_type == "EXTERNAL":
             return
         if self.ecs_capacity_providers and cluster.capacity_providers:
             self.set_launch_type_from_cluster_and_service()
         elif not self.ecs_capacity_providers and cluster.capacity_providers:
             self.set_launch_type_from_cluster_only(cluster)
-        self.set_family_lt()
+        self.set_family_ecs_service_lt()
 
-    def set_family_lt(self):
+    def set_family_ecs_service_lt(self):
+        """
+        Sets Launch Type for family
+        """
         if not self.service_definition:
             LOG.warning(f"{self.name} - ECS Service not yet defined. Skipping")
             return
@@ -1570,12 +1697,12 @@ class ComposeFamily(object):
         :raises: TypeError if cluster_providers not a list
         """
         if not self.ecs_capacity_providers and not cluster.capacity_providers:
-            LOG.info(
+            LOG.debug(
                 f"{self.name} - No capacity providers specified in task definition nor cluster"
             )
             return True
         elif not cluster.capacity_providers:
-            LOG.info(f"{self.name} - No capacity provider set for cluster")
+            LOG.debug(f"{self.name} - No capacity provider set for cluster")
             return True
         cap_names = [cap["CapacityProvider"] for cap in self.ecs_capacity_providers]
         if not all(cap_name in ["FARGATE", "FARGATE_SPOT"] for cap_name in cap_names):
@@ -1599,6 +1726,9 @@ class ComposeFamily(object):
         Function to perform a final validation of compute before rendering.
         :param ecs_composex.common.settings.ComposeXSettings settings:
         """
+        if self.launch_type and self.launch_type == "EXTERNAL":
+            LOG.debug(f"{self.name} - Already set to EXTERNAL")
+            return
         if settings.ecs_cluster.platform_override:
             self.launch_type = settings.ecs_cluster.platform_override
             if hasattr(
@@ -1618,7 +1748,7 @@ class ComposeFamily(object):
             self.merge_capacity_providers()
             self.validate_capacity_providers(settings.ecs_cluster)
             self.set_service_launch_type(settings.ecs_cluster)
-            LOG.info(
+            LOG.debug(
                 f"{self.name} - Updated {ecs_params.LAUNCH_TYPE.title} to"
                 f" {self.launch_type}"
             )
@@ -1631,6 +1761,8 @@ class ComposeFamily(object):
         """
         Function to ensure the Service does not get created/updated before all policies were set completely
         """
+        if not self.ecs_service.ecs_service:
+            return
         policies = [
             p.title
             for p in self.template.resources.values()

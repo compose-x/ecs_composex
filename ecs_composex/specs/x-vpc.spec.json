@@ -145,7 +145,7 @@
       "type": "object",
       "$ref": "#/definitions/VpcUse"
     },
-    "Create": {
+    "Properties": {
       "type": "object",
       "$ref": "#/definitions/VpcCreate"
     }
@@ -166,7 +166,7 @@
     {
       "type": "object",
       "required": [
-        "Create"
+        "Properties"
       ]
     }
   ]

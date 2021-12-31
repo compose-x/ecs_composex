@@ -17,7 +17,7 @@ from ecs_composex.acm.acm_params import RES_KEY as ACM_KEY
 from ecs_composex.acm.acm_stack import init_acm_certs
 from ecs_composex.alarms.alarms_ecs import set_services_alarms
 from ecs_composex.appmesh.appmesh_mesh import Mesh
-from ecs_composex.common import LOG, NONALPHANUM, init_template
+from ecs_composex.common import LOG, NONALPHANUM, add_parameters, init_template
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.ecs_composex import X_AWS_KEY, X_KEY
 from ecs_composex.common.stacks import ComposeXStack
@@ -31,7 +31,7 @@ from ecs_composex.ecs.ecs_params import CLUSTER_NAME
 from ecs_composex.ecs.ecs_stack import associate_services_to_root_stack
 from ecs_composex.iam.iam_stack import XStack as IamStack
 from ecs_composex.vpc import vpc_params
-from ecs_composex.vpc.vpc_stack import add_vpc_to_root
+from ecs_composex.vpc.vpc_stack import VpcStack
 
 try:
     from ecs_composex.ecr.ecr_scans_eval import (
@@ -246,43 +246,7 @@ def add_compute(root_template, settings, vpc_stack):
     return root_template.add_resource(compute_stack)
 
 
-def handle_new_xstack(
-    key,
-    res_type,
-    settings,
-    services_stack,
-    vpc_stack,
-    root_template,
-    xstack,
-):
-    """
-    Function to create the root stack of the x-resource and assign it to its root stack
-
-    :param str key:
-    :param str res_type:
-    :param ecs_composex.common.settings.ComposeXSettings settings:
-    :param ecs_composex.ecs.ServicesStack services_stack:
-    :param ecs_composex.common.stacks ComposeXStack vpc_stack:
-    :param troposphere.Template root_template:
-    :param ecs_composex.common.stacks ComposeXStack xstack:
-    """
-
-    LOG.debug(xstack, xstack.is_void)
-    if xstack.is_void:
-        settings.x_resources_void.append({res_type: xstack})
-    elif (
-        hasattr(xstack, "title")
-        and hasattr(xstack, "stack_template")
-        and not xstack.is_void
-    ):
-        root_template.add_resource(xstack)
-        if vpc_stack and key in TCP_SERVICES:
-            xstack.get_from_vpc_stack(vpc_stack)
-        elif not vpc_stack and key in TCP_SERVICES:
-            xstack.no_vpc_stack_parameters(settings)
-
-
-def add_x_resources(root_template, settings, services_stack, vpc_stack=None):
+def add_x_resources(root_template, settings):
     """
     Function to add each X resource from the compose file
     """
@@ -305,26 +269,29 @@ def add_x_resources(root_template, settings, services_stack, vpc_stack=None):
                     settings=settings,
                     Parameters=parameters,
                 )
-            handle_new_xstack(
-                key,
-                res_type,
-                settings,
-                services_stack,
-                vpc_stack,
-                root_template,
-                xstack,
-            )
+            if xstack.is_void:
+                settings.x_resources_void.append({res_type: xstack})
+            elif (
+                hasattr(xstack, "title")
+                and hasattr(xstack, "stack_template")
+                and not xstack.is_void
+            ):
+                root_template.add_resource(xstack)
+                # if vpc_stack and key in TCP_SERVICES:
+                #     xstack.get_from_vpc_stack(vpc_stack)
+                # elif not vpc_stack and key in TCP_SERVICES:
+                #     xstack.no_vpc_stack_parameters(settings)
 
 
 def get_vpc_id(vpc_stack):
     """
     Function to add CloudMap to VPC
 
-    :param ComposeXStack vpc_stack: VpcStack
+    :param ecs_composex.vpc.vpc_stack.VpcStack vpc_stack: The VPC Stack used in this execution
     """
-    if vpc_stack:
+    if not vpc_stack.is_void and vpc_stack.vpc_resource:
         return GetAtt(VPC_STACK_NAME, f"Outputs.{vpc_params.VPC_ID_T}")
-    else:
+    elif vpc_stack.is_void and vpc_stack.vpc_resource.mappings:
         return FindInMap("Network", vpc_params.VPC_ID.title, vpc_params.VPC_ID.title)
 
 
@@ -441,6 +408,86 @@ def create_root_stack(settings) -> ComposeXStack:
     return root_stack
 
 
+def add_iam_dependency(iam_stack: ComposeXStack, family):
+    """
+    Adds the IAM Stack as dependency to the family one if not set already
+
+    :param ecs_composex.common.stacks.ComposeXStack iam_stack:
+    :param ecs_composex.ecs.ecs_family.ComposeFamily family:
+    """
+    if iam_stack.title not in family.stack.DependsOn:
+        family.stack.DependsOn.append(iam_stack.title)
+
+
+def update_families_networking_settings(settings, vpc_stack):
+    """
+    Function to update the families network settings prior to rendering the ECS Service settings
+
+    :param settings: Runtime Execution setting
+    :type settings: ecs_composex.common.settings.ComposeXSettings
+    :param vpc_stack: The VPC stack and details
+    :type vpc_stack: ecs_composex.vpc.vpc_stack.VpcStack
+    """
+    for family in settings.families.values():
+        if family.launch_type == "EXTERNAL":
+            LOG.info(f"{family.name} Ingress cannot be set (EXTERNAL mode). Skipping")
+            continue
+        if vpc_stack.vpc_resource.mappings:
+            family.stack.no_vpc_stack_parameters(settings)
+        else:
+            family.stack.get_from_vpc_stack(vpc_stack)
+        family.add_security_group()
+        family.service_config.network.set_aws_sources_ingress(
+            settings,
+            family.logical_name,
+            GetAtt(family.service_config.network.security_group, "GroupId"),
+        )
+        family.service_config.network.set_ext_sources_ingress(
+            family.logical_name,
+            GetAtt(family.service_config.network.security_group, "GroupId"),
+        )
+        family.service_config.network.associate_aws_igress_rules(family.template)
+        family.service_config.network.associate_ext_igress_rules(family.template)
+        family.service_config.network.add_self_ingress(family)
+
+
+def handle_nested_stacks():
+    pass
+
+
+def update_network_resources_vpc_config(settings, root_stack, vpc_stack):
+    """
+    Iterate over the settings.x_resources, over the root stack nested stacks.
+    If the nested stack has x_resources that depend on VPC, update the stack parameters with the vpc stack settings
+
+    :param settings: Runtime Execution setting
+    :type settings: ecs_composex.common.settings.ComposeXSettingsngs
+    :param root_stack:
+    :param vpc_stack: The VPC stack and details
+    :type vpc_stack: ecs_composex.vpc.vpc_stack.VpcStack
+    """
+    for resource in settings.new_x_resources:
+        if resource.mappings:
+            LOG.info(
+                f"{resource.module_name}.{resource.name} - Lookup resource need no VPC Settings."
+            )
+            continue
+        if not resource.requires_vpc:
+            LOG.info(
+                f"{resource.module_name}.{resource.name} - Resource is not bound to VPC."
+            )
+            continue
+        if (
+            resource.stack.parent_stack is None
+            or resource.stack == resource.stack.get_top_root_stack()
+        ):
+            LOG.info(f"{resource.stack.title} has no nested stacks")
+            if vpc_stack.vpc_resource.mappings:
+                resource.stack.no_vpc_stack_parameters(settings)
+            else:
+                resource.stack.get_from_vpc_stack(vpc_stack)
+
+
 def generate_full_template(settings):
     """
     Function to generate the root template and associate services, x-resources to each other.
@@ -449,54 +496,74 @@ def generate_full_template(settings):
     * Create/Find ECS Cluster
     * Create IAM Stack (services Roles and some policies)
     * Create/Find x-resources
+    * Link services and x-resources
+    * Associates services/family to root stack
 
     :param ecs_composex.common.settings.ComposeXSettings settings: The settings for the execution
     :return root_template: Template, params
     :rtype: root_template, list
     """
+    LOG.info(
+        f"Service families to process {[family.name for family in settings.families.values()]}"
+    )
     evaluate_docker_configs(settings)
     root_stack = create_root_stack(settings)
     add_ecs_cluster(root_stack, settings)
     iam_stack = root_stack.stack_template.add_resource(IamStack("iam", settings))
+    add_x_resources(root_stack.stack_template, settings)
+    apply_x_to_x_configs(root_stack, settings)
+    associate_services_to_root_stack(root_stack, settings)
+    vpc_stack = VpcStack("vpc", settings)
+    if not vpc_stack.vpc_resource and settings.requires_vpc():
+        LOG.info(
+            f"{settings.name} - Services or x-Resources need a VPC to function. Creating default one"
+        )
+        vpc_stack.create_new_vpc("vpc", settings)
+        root_stack.stack_template.add_resource(vpc_stack)
+    elif (
+        vpc_stack.is_void and vpc_stack.vpc_resource and vpc_stack.vpc_resource.mappings
+    ):
+        root_stack.stack_template.add_mapping(
+            "Network", vpc_stack.vpc_resource.mappings
+        )
+    else:
+        LOG.warn(f"{settings.name} - no VPC required or designated.")
 
-    vpc_stack = add_vpc_to_root(root_stack, settings)
-    settings.set_networks(vpc_stack, root_stack)
-    dns_settings = DnsSettings(root_stack, settings, get_vpc_id(vpc_stack))
-    add_x_resources(
-        root_stack.stack_template,
-        settings,
-        root_stack,
-        vpc_stack=vpc_stack,
-    )
+    if (not vpc_stack.is_void) or vpc_stack.vpc_resource.mappings:
+        settings.set_networks(vpc_stack)
+        dns_settings = DnsSettings(root_stack, settings, get_vpc_id(vpc_stack))
+        if settings.use_appmesh:
+            mesh = Mesh(
+                settings.compose_content["x-appmesh"],
+                root_stack,
+                settings,
+                dns_settings,
+            )
+            mesh.render_mesh_template(root_stack, settings, dns_settings)
 
-    associate_services_to_root_stack(root_stack, settings, vpc_stack)
+    update_families_networking_settings(settings, vpc_stack)
+    update_network_resources_vpc_config(settings, root_stack, vpc_stack)
+
     set_services_alarms(settings)
-    if keyisset(ACM_KEY, settings.compose_content):
-        init_acm_certs(settings, dns_settings, root_stack)
+    # if keyisset(ACM_KEY, settings.compose_content):
+    #     init_acm_certs(settings, dns_settings, root_stack)
     apply_x_configs_to_ecs(
         settings,
         root_stack,
     )
-    if settings.use_appmesh:
-        mesh = Mesh(
-            settings.compose_content["x-appmesh"],
-            root_stack,
-            settings,
-            dns_settings,
-        )
-        mesh.render_mesh_template(root_stack, settings, dns_settings)
-    dns_records = DnsRecords(settings)
-    dns_records.associate_records_to_resources(settings, root_stack, dns_settings)
-    dns_settings.associate_settings_to_nested_stacks(root_stack)
-    if keyisset("x-dashboards", settings.compose_content):
-        DashboardsStack("dashboards", settings)
-    add_all_tags(root_stack.stack_template, settings)
+    # dns_records = DnsRecords(settings)
+    # dns_records.associate_records_to_resources(settings, root_stack, dns_settings)
+    # dns_settings.associate_settings_to_nested_stacks(root_stack)
+    # if keyisset("x-dashboards", settings.compose_content):
+    #     DashboardsStack("dashboards", settings)
     for family in settings.families.values():
+        add_iam_dependency(iam_stack, family)
         family.validate_compute_configuration_for_task(settings)
         family.set_enable_execute_command()
         if family.enable_execute_command:
             family.apply_ecs_execute_command_permissions(settings)
         family.wait_for_all_policies()
-    apply_x_to_x_configs(root_stack, settings)
+        family.state_facts()
     set_ecs_cluster_identifier(root_stack, settings)
+    add_all_tags(root_stack.stack_template, settings)
     return root_stack

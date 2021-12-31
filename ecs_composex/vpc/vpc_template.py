@@ -15,7 +15,6 @@ from troposphere import (
     AWS_REGION,
     GetAtt,
     If,
-    Join,
     Ref,
     Sub,
     Tags,
@@ -35,84 +34,13 @@ from troposphere.logs import LogGroup
 
 from ecs_composex.common.cfn_conditions import USE_STACK_NAME_CON_T
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME, ROOT_STACK_NAME_T
-from ecs_composex.common.outputs import ComposeXOutput
 from ecs_composex.dns.dns_params import PRIVATE_DNS_ZONE_NAME
 from ecs_composex.iam import service_role_trust_policy
-from ecs_composex.vpc import metadata, vpc_params
+from ecs_composex.vpc import metadata
 from ecs_composex.vpc.vpc_params import IGW_T, VPC_T
 
 AZ_INDEX_PATTERN = r"(([a-z0-9-]+)([a-z]{1}$))"
 AZ_INDEX_RE = re.compile(AZ_INDEX_PATTERN)
-
-
-def add_template_outputs(template, vpc, storage_subnets, public_subnets, app_subnets):
-    """
-    Function to add outputs / exports to the template
-
-    :param template: VPC Template()
-    :param vpc: Vpc() for Ref()
-    :param storage_subnets: List of Subnet()
-    :param public_subnets: List of Subnet()
-    :param app_subnets: List of Subnet()
-    """
-    template.add_output(
-        ComposeXOutput(
-            vpc,
-            [
-                (vpc_params.VPC_ID_T, vpc_params.VPC_ID_T, Ref(vpc)),
-                (
-                    vpc_params.STORAGE_SUBNETS_T,
-                    vpc_params.STORAGE_SUBNETS_T,
-                    Join(",", [Ref(subnet) for subnet in storage_subnets]),
-                ),
-                (
-                    vpc_params.PUBLIC_SUBNETS_T,
-                    vpc_params.PUBLIC_SUBNETS_T,
-                    Join(",", [Ref(subnet) for subnet in public_subnets]),
-                ),
-                (
-                    vpc_params.APP_SUBNETS_T,
-                    vpc_params.APP_SUBNETS_T,
-                    Join(",", [Ref(subnet) for subnet in app_subnets]),
-                ),
-            ],
-            duplicate_attr=True,
-        ).outputs
-    )
-
-
-def add_vpc_cidrs_outputs(template, vpc, layers):
-    """
-    Function to add outputs / exports to the template
-
-    :param template: VPC Template()
-    :type template: troposphere.Template
-    :param layers: dict of layers CIDRs to export
-    :type layers: dict
-    """
-    template.add_output(
-        ComposeXOutput(
-            vpc,
-            [
-                (
-                    vpc_params.STORAGE_SUBNETS_CIDR_T,
-                    vpc_params.STORAGE_SUBNETS_CIDR_T,
-                    Join(",", [cidr for cidr in layers["stor"]]),
-                ),
-                (
-                    vpc_params.PUBLIC_SUBNETS_CIDR_T,
-                    vpc_params.PUBLIC_SUBNETS_CIDR_T,
-                    Join(",", [cidr for cidr in layers["pub"]]),
-                ),
-                (
-                    vpc_params.APP_SUBNETS_CIDR_T,
-                    vpc_params.APP_SUBNETS_CIDR_T,
-                    Join(",", [cidr for cidr in layers["app"]]),
-                ),
-            ],
-            duplicate_attr=True,
-        ).outputs
-    )
 
 
 def add_vpc_core(template, vpc_cidr):

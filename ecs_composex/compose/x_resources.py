@@ -18,7 +18,7 @@ from compose_x_common.compose_x_common import (
     keyisset,
     keypresent,
 )
-from troposphere import Export, FindInMap, GetAtt, Output, Ref, Sub
+from troposphere import Export, FindInMap, GetAtt, Join, Output, Ref, Sub
 from troposphere.ecs import Environment
 
 from ecs_composex.common import LOG, NONALPHANUM
@@ -456,10 +456,14 @@ class XResource(object):
             value = GetAtt(output_definition[1], output_definition[3])
         elif output_definition[2] is Sub:
             value = Sub(output_definition[3])
+        elif output_definition[2] is Join:
+            if not isinstance(output_definition, list):
+                raise ValueError("For Join, the parameter must be a list")
+            value = Join(*output_definition[3])
         else:
             raise TypeError(
                 f"3rd argument for {output_definition[0]} must be one of",
-                (Ref, GetAtt, Sub),
+                (Ref, GetAtt, Sub, Join),
                 "Got",
                 output_definition[2],
             )
@@ -611,8 +615,8 @@ class ServicesXResource(XResource):
             elif service_name in settings.families and service_name in [
                 f[0].name for f in self.families_targets
             ]:
-                LOG.warning(
-                    f"The family {service_name} has already been added. Skipping"
+                LOG.debug(
+                    f"{self.module_name}.{self.name} - Family {service_name} has already been added. Skipping"
                 )
             elif service_name in [s.name for s in settings.services]:
                 self.handle_families_targets_expansion(service, settings)
@@ -663,7 +667,9 @@ class ServicesXResource(XResource):
             elif service_name in settings.families and service_name in [
                 f[0].name for f in self.families_scaling
             ]:
-                LOG.debug(f"The family {service_name} has already been added. Skipping")
+                LOG.debug(
+                    f"{self.module_name}.{self.name} - Family {service_name} has already been added. Skipping"
+                )
             elif service_name in [s.name for s in settings.services]:
                 self.handle_family_scaling_expansion(service, settings)
 
