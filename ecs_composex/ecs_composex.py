@@ -410,7 +410,7 @@ def evaluate_ecr_configs(settings):
     return result
 
 
-def set_container_cluster_identifier(root_stack, settings):
+def set_ecs_cluster_identifier(root_stack, settings):
     """
     Final pass at the top stacks parameters to set the ECS cluster parameter
 
@@ -418,13 +418,12 @@ def set_container_cluster_identifier(root_stack, settings):
     :param ecs_composex.common.settings.ComposeXSettings settings:
     """
     for name, resource in root_stack.stack_template.resources.items():
-        if issubclass(type(resource), ComposeXStack):
-            if CLUSTER_NAME.title in [
-                param.title for param in resource.stack_template.parameters.values()
-            ]:
-                resource.Parameters.update(
-                    {CLUSTER_NAME.title: settings.ecs_cluster.cluster_identifier}
-                )
+        if issubclass(type(resource), ComposeXStack) and CLUSTER_NAME.title in [
+            param.title for param in resource.stack_template.parameters.values()
+        ]:
+            resource.Parameters.update(
+                {CLUSTER_NAME.title: settings.ecs_cluster.cluster_identifier}
+            )
 
 
 def create_root_stack(settings) -> ComposeXStack:
@@ -499,5 +498,5 @@ def generate_full_template(settings):
             family.apply_ecs_execute_command_permissions(settings)
         family.wait_for_all_policies()
     apply_x_to_x_configs(root_stack, settings)
-    set_container_cluster_identifier(root_stack, settings)
+    set_ecs_cluster_identifier(root_stack, settings)
     return root_stack
