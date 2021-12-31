@@ -17,8 +17,10 @@ from copy import deepcopy
 from compose_x_common.compose_x_common import keyisset
 from troposphere import AWS_NO_VALUE, Ref
 
-from ecs_composex.common import LOG
+from ecs_composex.common import setup_logging
 from ecs_composex.efs.efs_params import FS_REGEXP, RES_KEY
+
+LOG = setup_logging()
 
 
 def match_volumes_services_config(service, vol_config, volumes):
@@ -35,7 +37,7 @@ def match_volumes_services_config(service, vol_config, volumes):
             volume.services.append(service)
             vol_config["volume"] = volume
             service.volumes.append(vol_config)
-            LOG.info(f"Mapped {volume.name} to {service.name}")
+            LOG.info(f"volumes.{volume.name} - Mapped to {service.name}")
             return
     raise LookupError(
         f"Volume {vol_config['source']} was not found in {[vol.name for vol in volumes]}"
@@ -66,7 +68,9 @@ def handle_volume_str_config(service, config, volumes):
             volume_config["source"], {"type": "volume", "driver": "local"}
         )
         volumes.append(volume)
-        LOG.info(f"Added self generated volume from path {volume_config['target']}")
+        LOG.info(
+            f"volumes - Added self generated volume from path {volume_config['target']}"
+        )
     elif path_match.group("source") and path_match.group("dest"):
         volume_config["source"] = path_match.group("source")
         volume_config["target"] = path_match.group("dest")
@@ -188,7 +192,9 @@ class ComposeVolume(object):
         self.external = False
         self.efs_definition = evaluate_plugin_efs_properties(self.definition)
         if self.efs_definition:
-            LOG.info("Identified properties as defined by Docker Plugin")
+            LOG.info(
+                f"volumes.{self.name} - Identified properties as defined by Docker Plugin"
+            )
             self.type = "bind"
             self.driver = "nfs"
         elif (
@@ -196,7 +202,7 @@ class ComposeVolume(object):
             and keyisset("name", self.definition)
             and FS_REGEXP.match(self.definition["name"])
         ):
-            LOG.warning("Identified a EFS to use")
+            LOG.warning(f"volumes.{self.name} - Identified a EFS to use")
             self.efs_definition = {"Use": self.definition["name"]}
             self.use = self.definition["name"]
         else:

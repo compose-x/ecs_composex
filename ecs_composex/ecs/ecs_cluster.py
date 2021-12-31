@@ -233,7 +233,7 @@ class EcsCluster(object):
                 )
             the_cluster = clusters_config[cluster_name]
             LOG.info(
-                f"Found ECS Cluster {cluster_name}. Setting {CLUSTER_NAME.title} accordingly."
+                f"x-cluster.{cluster_name} found. Setting {CLUSTER_NAME.title} accordingly."
             )
             self.mappings = {CLUSTER_NAME.title: {"Name": the_cluster["ClusterName"]}}
             self.set_cluster_mappings(the_cluster)

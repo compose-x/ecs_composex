@@ -18,11 +18,13 @@ from compose_x_common.compose_x_common import keyisset
 from troposphere import AWS_ACCOUNT_ID, AWS_PARTITION, AWS_REGION, FindInMap, Sub
 from troposphere.ecs import Secret as EcsSecret
 
-from ecs_composex.common import LOG, NONALPHANUM
+from ecs_composex.common import NONALPHANUM, setup_logging
 from ecs_composex.ecs.ecs_params import EXEC_ROLE_T
 from ecs_composex.kms.kms_params import KMS_KEY_ARN_RE
 from ecs_composex.secrets.secrets_aws import lookup_secret_config
 from ecs_composex.secrets.secrets_params import RES_KEY, XRES_KEY
+
+LOG = setup_logging()
 
 
 def match_secrets_services_config(service, s_secret, secrets):
@@ -41,7 +43,7 @@ def match_secrets_services_config(service, s_secret, secrets):
         raise LookupError("Could not identify the secret source", s_secret)
     for gl_secret in secrets:
         if gl_secret.name == secret_name:
-            LOG.info(f"Matched secret {gl_secret.name} with {service.name}")
+            LOG.info(f"secrets.{gl_secret.name} - Mapped to {service.name}")
             service.secrets.append(gl_secret)
             gl_secret.services.append(service)
 
@@ -259,7 +261,7 @@ class ComposeSecret(object):
                 "arn:"
             ) or not KMS_KEY_ARN_RE.match(self.definition[self.map_kms_name]):
                 LOG.error(
-                    f"When specifying {self.map_kms_name} you must specify the full VALID ARN"
+                    f"secrets.{self.name} - When specifying {self.map_kms_name} you must specify the full ARN"
                 )
             else:
                 self.mapping[self.map_kms_name] = self.definition[self.map_kms_name]
@@ -285,7 +287,9 @@ class ComposeSecret(object):
         elif keyisset("KmsKeyId", secret_config) and secret_config[
             "KmsKeyId"
         ].startswith("alias"):
-            LOG.warning("The KMS Key retrieved is a KMS Key Alias, not importing.")
+            LOG.warning(
+                f"secrets.{self.name} - The KMS Key retrieved is a KMS Key Alias, not importing."
+            )
 
         self.mapping = {
             self.map_arn_name: secret_config[self.logical_name],

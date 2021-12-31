@@ -1053,7 +1053,7 @@ class Elbv2(NetworkXResource):
         ports = set_service_ports(ports)
         self.ingress = Ingress(self.parameters["Ingress"], ports)
         if self.ingress and self.is_alb():
-            self.ingress.set_aws_sources(
+            self.ingress.set_aws_sources_ingress(
                 settings, self.logical_name, GetAtt(self.lb_sg, "GroupId")
             )
             self.ingress.set_ext_sources_ingress(

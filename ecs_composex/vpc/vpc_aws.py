@@ -83,12 +83,11 @@ def validate_subnets_belong_with_vpc(vpc_settings, subnet_keys, session=None):
             )
 
 
-def lookup_x_vpc_settings(lookup, session):
+def lookup_x_vpc_settings(vpc_resource):
     """
     Method to set VPC settings from x-vpc
 
-    :param boto3.session.Session session:
-    :param dict lookup:
+    :param ecs_composex.vpc.vpc_stack.Vpc vpc_resource:
     :return: vpc_settings
     :rtype: dict
     """
@@ -105,16 +104,12 @@ def lookup_x_vpc_settings(lookup, session):
         APP_SUBNETS.title,
         STORAGE_SUBNETS.title,
     ]
-    if not all(key in lookup.keys() for key in required_keys):
-        raise KeyError(
-            "Missing keys for x-vpc Lookup. Got",
-            lookup.keys(),
-            "Expected",
-            required_keys,
-        )
-    lookup_session = define_lookup_role_from_info(lookup, session)
+
+    lookup_session = define_lookup_role_from_info(
+        vpc_resource.lookup, vpc_resource.lookup_session
+    )
     vpc_arn = find_aws_resource_arn_from_tags_api(
-        lookup[VPC_ID.title],
+        vpc_resource.lookup[VPC_ID.title],
         lookup_session,
         vpc_type,
         allow_multi=False,
@@ -129,7 +124,7 @@ def lookup_x_vpc_settings(lookup, session):
 
     for subnet_key in subnets_keys:
         subnet_arns = find_aws_resource_arn_from_tags_api(
-            lookup[subnet_key],
+            vpc_resource.lookup[subnet_key],
             lookup_session,
             subnet_type,
             allow_multi=True,
@@ -141,12 +136,12 @@ def lookup_x_vpc_settings(lookup, session):
         ]
     extra_subnets = [
         key
-        for key in lookup.keys()
+        for key in vpc_resource.lookup.keys()
         if key not in required_keys and not key == "RoleArn"
     ]
     for subnet_name in extra_subnets:
         subnet_arns = find_aws_resource_arn_from_tags_api(
-            lookup[subnet_name],
+            vpc_resource.lookup[subnet_name],
             lookup_session,
             subnet_type,
             allow_multi=True,

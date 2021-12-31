@@ -54,9 +54,6 @@ def initialize_service_template(service_name):
             ecs_params.ELB_GRACE_PERIOD,
             ecs_params.FARGATE_VERSION,
             ecs_params.LOG_GROUP_RETENTION,
-            vpc_params.VPC_ID,
-            vpc_params.APP_SUBNETS,
-            vpc_params.PUBLIC_SUBNETS,
         ],
     )
     service_tpl.add_condition(
@@ -193,21 +190,9 @@ def initialize_family_services(settings, family):
     family.set_secrets_access()
     family.refresh()
     family.assign_policies()
-    family.service_config = ServiceConfig(family, settings)
-    family.ecs_service = Service(family, settings)
-    family.service_config.network.set_aws_sources(
-        settings,
-        family.logical_name,
-        GetAtt(family.ecs_service.sg, "GroupId"),
-    )
-    family.service_config.network.set_ext_sources_ingress(
-        family.logical_name, GetAtt(family.ecs_service.sg, "GroupId")
-    )
-    family.service_config.network.associate_aws_igress_rules(family.template)
-    family.service_config.network.associate_ext_igress_rules(family.template)
-    family.service_config.network.add_self_ingress(family)
     family.merge_capacity_providers()
     family.validate_capacity_providers(settings.ecs_cluster)
+    family.service_config = ServiceConfig(family, settings)
     family.stack.Parameters.update(
         {
             ecs_params.SERVICE_NAME_T: family.logical_name,
@@ -221,5 +206,5 @@ def initialize_family_services(settings, family):
     create_log_group(family)
     family.handle_logging()
     family.handle_alarms()
-    family.handle_prometheus()
     family.validate_compute_configuration_for_task(settings)
+    family.ecs_service = Service(family, settings)

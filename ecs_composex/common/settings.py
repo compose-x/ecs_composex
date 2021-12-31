@@ -137,6 +137,7 @@ class ComposeXSettings(object):
         self.services = []
         self.secrets = []
         self.networks = []
+        self.new_x_resources = []
         self.vpc_imported = False
         self.subnets_parameters = []
         self.subnets_mappings = {}
@@ -169,8 +170,6 @@ class ComposeXSettings(object):
         self.evaluate_private_namespace()
         self.name = kwargs[self.name_arg]
         self.ecs_cluster = None
-        self.ecs_cluster_platform_override = None
-        self.ecs_cluster_providers = []
         self.ignore_ecr_findings = keyisset(self.ecr_arg, kwargs)
         self.x_resources_void = []
 
@@ -186,6 +185,19 @@ class ComposeXSettings(object):
             LOG.warning(
                 "At least one service requires cloudmap or AppMesh is used. Enabling private namespace"
             )
+
+    def requires_vpc(self):
+        x_resources_require_vpc = any(
+            [res.requires_vpc for res in self.new_x_resources]
+        )
+        services_require_vpc = any(
+            [
+                family.service_config.network.network_mode == "awsvpc"
+                for family in self.families.values()
+                if (family and family.service_config)
+            ]
+        )
+        return any([x_resources_require_vpc, services_require_vpc])
 
     def set_secrets(self):
         """
@@ -263,7 +275,7 @@ class ComposeXSettings(object):
             self.compose_content[ComposeVolume.main_key][volume_name] = volume
             self.volumes.append(volume)
 
-    def set_networks(self, vpc_stack, root_stack):
+    def set_networks(self, vpc_stack):
         """
         Method configuring the networks defined at root level
         :return:
@@ -271,7 +283,7 @@ class ComposeXSettings(object):
         if not keyisset(ComposeNetwork.main_key, self.compose_content):
             LOG.debug("No networks detected at the root level of compose file")
             return
-        elif vpc_stack:
+        elif vpc_stack and vpc_stack.vpc_resource:
             LOG.info(
                 "ComposeX will be creating the VPC, therefore networks are ignored!"
             )
@@ -490,6 +502,7 @@ class ComposeXSettings(object):
     def set_azs_from_vpc_import(self, subnets, session=None):
         """
         Function to get the list of AZs for a given set of subnets
+
         :param dict subnets:
         :param session: The Session used to find the EC2 subnets (useful for lookup).
         :return:
@@ -513,6 +526,9 @@ class ComposeXSettings(object):
         self.vpc_imported = True
 
     def set_bucket_name_from_account_id(self):
+        """
+        Defines the default bucket name to use from the AWS Account ID
+        """
         if self.bucket_name and isinstance(self.bucket_name, str):
             return
         if self.account_id is None:
