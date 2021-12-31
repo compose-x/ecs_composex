@@ -19,7 +19,7 @@ from yaml import Loader
 from ecs_composex.common import LOG, add_outputs, build_template
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources import (
-    XResource,
+    ApiXResource,
     set_lookup_resources,
     set_new_resources,
     set_resources,
@@ -159,7 +159,7 @@ def render_new_parameters(new_resources, root_stack):
         add_outputs(root_stack.stack_template, new_res.outputs)
 
 
-class SsmParameter(XResource):
+class SsmParameter(ApiXResource):
     """
     Class to represent a SQS Queue
     """
