@@ -117,6 +117,8 @@ class ComposeXStack(Stack, object):
         """
         if not self.stack_template:
             return
+        if self.is_void:
+            return
         for resource in self.stack_template.resources.values():
             if issubclass(type(resource), ComposeXStack) or isinstance(
                 resource, ComposeXStack
@@ -244,8 +246,7 @@ class ComposeXStack(Stack, object):
         else:
             raise TypeError(
                 "vpc_stack must be of type",
-                ComposeXStack,
-                str,
+                [ComposeXStack, str],
                 "got",
                 type(vpc_stack),
             )

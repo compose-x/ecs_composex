@@ -18,12 +18,8 @@ class ServiceConfig(object):
     Class specifically dealing with the configuration and settings of the ecs_service from how it was defined in
     the compose file
 
-    :cvar list keys: List of valid settings for a service in Docker compose syntax reference
-    :cvar list service_config_keys: list of extra configuration that apply to services.
-    :cvar bool UseCloudmap: Indicates whether or not the service will be added to the VPC CloudMap
-    :cvar bool use_alb: Indicates to use an AWS Application LoadBalancer (ELBv2, type application)
-    :cvar bool use_nlb: Indicates to use an AWS Application LoadBalancer (ELBv2, type network)
-    :cvar bool is_public: Indicates whether the service should be accessible publicly
+    :ivar ServiceNetworking network: The network config for the service
+    :ivar ecs_composex.ecs.ecs_scaling.ServiceScaling scaling: The scaling configuration for the service
     """
 
     def __init__(self, family, settings):

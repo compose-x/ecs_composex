@@ -93,6 +93,7 @@ class ComposeService(object):
         self.x_configs = set_else_none("x-configs", self.definition)
         self.x_scaling = set_else_none("x-scaling", self.definition, None, False)
         self.x_network = set_else_none("x-network", self.definition, None, False)
+        self.x_ray = set_else_none("x-xray", self.definition, False, True)
         self.x_iam = set_else_none("x-iam", self.definition)
         self.x_logging = {"RetentionInDays": 14}
         self.x_repo_credentials = None

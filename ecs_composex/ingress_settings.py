@@ -248,7 +248,7 @@ class Ingress(object):
                     allowed_types,
                 )
 
-    def set_aws_sources(self, settings, destination_title, sg_ref):
+    def set_aws_sources_ingress(self, settings, destination_title, sg_ref):
         """
         Method to define AWS Sources ingresses
 
@@ -343,7 +343,7 @@ class Ingress(object):
         :type security_group: str or troposphere.ec2.SecurityGroup or troposphere.Ref or Troposphere.GetAtt
         """
         if not self.ext_sources:
-            LOG.info("No external rules defined. Skipping.")
+            LOG.debug("No external rules defined. Skipping.")
             return
 
         for allowed_source in self.ext_sources:

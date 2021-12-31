@@ -95,33 +95,6 @@ def define_public_mapping(eips, azs):
     return public_mappings
 
 
-def add_service_default_sg(template):
-    """
-    Adds a default security group for the microservice.
-    """
-    sg = template.add_resource(
-        SecurityGroup(
-            SG_T,
-            GroupDescription=Sub(
-                f"SG for ${{{SERVICE_NAME_T}}} - ${{STACK_NAME}}",
-                STACK_NAME=define_stack_name(template),
-            ),
-            Tags=Tags(
-                {
-                    "Name": Sub(
-                        f"${{{SERVICE_NAME_T}}}-${{STACK_NAME}}",
-                        STACK_NAME=define_stack_name(template),
-                    ),
-                    "StackName": Ref(AWS_STACK_NAME),
-                    "MicroserviceName": Ref(SERVICE_NAME),
-                }
-            ),
-            VpcId=Ref(VPC_ID),
-        )
-    )
-    return sg
-
-
 def add_service_to_map(family, settings):
     """
     Method to create a new Service into CloudMap to represent the current service and add entry into the registry
@@ -222,7 +195,7 @@ def create_scalable_target(family):
                 "AWSServiceRoleForApplicationAutoScaling_ECSService"
             ),
             ResourceId=Sub(
-                f"service/${{{ecs_params.CLUSTER_NAME.title}}}/${{{family.service_definition.title}.Name}}"
+                f"service/${{{ecs_params.CLUSTER_NAME.title}}}/${{{family.ecs_service.ecs_service.title}.Name}}"
             ),
             SuspendedState=applicationautoscaling.SuspendedState(
                 DynamicScalingInSuspended=False
@@ -242,7 +215,7 @@ def create_scalable_target(family):
                 "AWSServiceRoleForApplicationAutoScaling_ECSService"
             ),
             ResourceId=Sub(
-                f"service/${{{ecs_params.CLUSTER_NAME.title}}}/${{{family.service_definition.title}.Name}}"
+                f"service/${{{ecs_params.CLUSTER_NAME.title}}}/${{{family.ecs_service.ecs_service.title}.Name}}"
             ),
             SuspendedState=applicationautoscaling.SuspendedState(
                 DynamicScalingInSuspended=False
@@ -380,24 +353,20 @@ class Service(object):
         self.links = []
         self.service_attrs = {}
         self.dependencies = []
-        self.network_settings = None
         self.ecs_service = None
         self.scalable_target = None
         self.scaling_out_policies = {}
         self.scaling_in_policies = {}
         self.alarms = {}
         family.stack_parameters.update({ecs_params.SERVICE_NAME_T: family.name})
-        self.sgs = []
-        self.sg = add_service_default_sg(family.template)
-        self.sgs.append(Ref(self.sg))
 
         ingress_props = define_service_ingress(family, settings)
         self.lbs = ingress_props["LoadBalancers"]
         self.registries = ingress_props["ServiceRegistries"]
-        self.generate_service_definition(family, settings)
+        # self.generate_service_definition(family, settings)
 
-        create_scalable_target(family)
-        generate_service_template_outputs(family)
+        # create_scalable_target(family)
+        # generate_service_template_outputs(family)
 
     def generate_service_definition(self, family, settings):
         """
@@ -407,10 +376,6 @@ class Service(object):
         :param ecs_composex.ecs.ecs_family.ComposeFamily family:
         :param ecs_composex.common.settings.ComposeXSettings settings:
         """
-        service_sgs = [
-            Ref(sg) for sg in self.sgs if not isinstance(sg, (Ref, Sub, If, GetAtt))
-        ]
-        service_sgs += [sg for sg in self.sgs if isinstance(sg, (Ref, Sub, If, GetAtt))]
         props = {}
         define_deployment_options(family, settings, props)
         self.ecs_service = EcsService(
@@ -441,8 +406,8 @@ class Service(object):
                 Ref(AWS_NO_VALUE),
                 NetworkConfiguration(
                     AwsvpcConfiguration=AwsvpcConfiguration(
-                        Subnets=Ref(vpc_params.APP_SUBNETS),
-                        SecurityGroups=service_sgs,
+                        Subnets=Ref(AWS_NO_VALUE),
+                        SecurityGroups=Ref(AWS_NO_VALUE),
                     )
                 ),
             ),
@@ -463,4 +428,3 @@ class Service(object):
             ServiceRegistries=use_external_lt_con(Ref(AWS_NO_VALUE), self.registries),
             **props,
         )
-        family.service_definition = self.ecs_service

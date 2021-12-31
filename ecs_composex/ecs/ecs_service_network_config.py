@@ -225,6 +225,9 @@ def set_compose_services_ingress(root_stack, dst_family, families, settings):
 class ServiceNetworking(Ingress):
     """
     Class to group the configuration for Service network settings
+
+    :ivar list[dict] ports: List of the ports used by te service
+    :ivar dict networks: Mapping of the networks to use for service
     """
 
     self_key = "Myself"
@@ -235,21 +238,40 @@ class ServiceNetworking(Ingress):
 
         :param ecs_composex.ecs.ecs_family.ComposeFamily family:
         """
+        self._network_mode = "awsvpc"
+        if family.launch_type == "EXTERNAL":
+            LOG.warning(
+                f"{family.name} - External mode cannot use awsvpc mode. Falling back to bridge"
+            )
+            self.network_mode = "bridge"
         self.ports = []
         self.networks = {}
         self.merge_services_ports(family)
         self.merge_networks(family)
         self.configuration = merge_services_network(family)
-        self.use_cloudmap = self.configuration["UseCloudmap"]
-        self.is_public = self.configuration["IsPublic"]
+        self.use_cloudmap = keypresent("UseCloudmap", self.configuration)
+        self.is_public = keypresent("IsPublic", self.configuration)
         self.ingress_from_self = False
         if any([svc.expose_ports for svc in family.services]):
             self.ingress_from_self = True
             LOG.info(
                 f"{family.name} - services have export ports, allowing internal ingress"
             )
+        self.security_group = None
         super().__init__(self.configuration[self.master_key], self.ports)
         self.ingress_from_self = keyisset(self.self_key, self.definition)
+
+    @property
+    def network_mode(self):
+        """
+        The network mode used for the Task/Service. valid are host/bridge/awsvpc.
+        Defaults to awsvpc. Only override is to bridge/host based on the Launch Type
+        """
+        return self._network_mode
+
+    @network_mode.setter
+    def network_mode(self, mode: str):
+        self._network_mode = mode
 
     def merge_networks(self, family):
         """

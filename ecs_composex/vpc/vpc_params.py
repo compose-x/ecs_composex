@@ -24,7 +24,8 @@ DEFAULT_SINGLE_NAT = True
 VPC_T = "Vpc"
 IGW_T = "InternetGatewayV4"
 
-RES_KEY = "vpc"
+RES_KEY = "x-vpc"
+MOD_KEY = "vpc"
 VPC_ID_T = "VpcId"
 VPC_ID = Parameter(VPC_ID_T, Type=VPC_TYPE)
 

@@ -181,19 +181,20 @@ def get_access_type_policy_model(
     """
     if isinstance(access_type, str):
         try:
-            access_type_policy_model = policies_models[access_type]
+            return policies_models[access_type]
         except KeyError:
-            LOG.error(f"{resource.module_name}.{resource.name} - policy {access_type}")
-
+            LOG.error(
+                f"{resource.module_name}.{resource.name} - policy {access_type} does not exist."
+            )
+            raise
     elif isinstance(access_type, dict):
         try:
-            access_type_policy_model = policies_models[access_type[access_subkey]]
+            return policies_models[access_type[access_subkey]]
         except KeyError:
             LOG.error(
                 f"{resource.module_name}.{resource.name} - Access type {access_subkey}.{access_type} does not exist."
             )
             raise
-    return access_type_policy_model
 
 
 def map_service_perms_to_resource(
