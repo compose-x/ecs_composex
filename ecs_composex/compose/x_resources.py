@@ -153,21 +153,25 @@ class XResource(object):
     """
     Class to represent each defined resource in the template
 
-    :cvar str name: The name of the resource as defined in compose file
-    :cvar dict definition: The definition of the resource as defined in compose file
-    :cvar str logical_name: Name of the resource to use in CFN template as for export/import
+    :cvar dict policies_scaffolds: IAM policies template to use to generate IAM policies for the given resource
+    :ivar str name: The name of the resource as defined in compose file
+    :ivar dict definition: The definition of the resource as defined in compose file
+    :ivar str logical_name: Name of the resource to use in CFN template as for export/import
+    :ivar bool requires_vpc: Whether or not the resource requires a VPC to function (i.e. RDS)
     """
 
     policies_scaffolds = {}
 
-    def __init__(self, name, definition, module_name, settings, mapping_key=None):
+    def __init__(
+        self, name: str, definition: dict, module_name: str, settings, mapping_key=None
+    ):
         """
-        Init the class
         :param str name: Name of the resource in the template
         :param dict definition: The definition of the resource as-is
         :param ecs_composex.common.settings.ComposeXSettings settings:
         """
         self.name = name
+        self.requires_vpc = False
         self.arn = None
         self.cloud_control_attributes_mapping = {}
         self.native_attributes_mapping = {}
@@ -206,11 +210,6 @@ class XResource(object):
             self.properties = {}
         else:
             self.properties = None
-        self.services = (
-            []
-            if not keyisset("Services", self.definition)
-            else self.definition["Services"]
-        )
         self.parameters = (
             {}
             if not keyisset("MacroParameters", self.definition)
@@ -223,15 +222,11 @@ class XResource(object):
         self.output_properties = {}
         self.outputs = []
         self.attributes_outputs = {}
-        self.families_targets = []
-        self.families_scaling = []
-        self.subnets_override = None
+
         self.is_nested = False
         self.stack = None
         self.init_env_names()
         self.ref_parameter = Parameter(self.logical_name, Type="String")
-        self.set_services_targets(settings)
-        self.set_services_scaling(settings)
         self.mappings = {}
         self.default_tags = {
             "compose-x::module": self.module_name,
@@ -323,128 +318,6 @@ class XResource(object):
                 account_id, resource_id, native_lookup_function
             )
         self.mappings = props
-
-    def debug_families_targets(self):
-        """
-        Method to troubleshoot family and service mapping
-        """
-        for family in self.families_targets:
-            LOG.debug(f"Mapped {family[0].name} to {self.name}.")
-            if not family[1] and family[2]:
-                LOG.debug(f"Applies to service {family[2]}")
-            else:
-                LOG.debug(f"Applies to all services of {family[0].name}")
-
-    def handle_families_targets_expansion(self, service, settings):
-        """
-        Method to list all families and services that are targets of the resource.
-        Allows to implement family and service level association to resource
-
-        :param dict service: Service definition in compose file
-        :param ecs_composex.common.settings.ComposeXSettings settings: Execution settings
-        """
-        name_key = get_setting_key("name", service)
-        access_key = get_setting_key("access", service)
-        the_service = [s for s in settings.services if s.name == service[name_key]][0]
-        for family_name in the_service.families:
-            family_name = NONALPHANUM.sub("", family_name)
-            if family_name not in [f[0].name for f in self.families_targets]:
-                self.families_targets.append(
-                    (
-                        settings.families[family_name],
-                        False,
-                        [the_service],
-                        service[access_key],
-                        service,
-                    )
-                )
-
-    def set_services_targets(self, settings):
-        """
-        Method to map services and families targets of the services defined.
-        TargetStructure:
-        (family, family_wide, services[], access)
-
-        :param ecs_composex.common.settings.ComposeXSettings settings:
-        :return:
-        """
-        if not self.services:
-            LOG.debug(f"No services defined for {self.name}")
-            return
-        for service in self.services:
-            name_key = get_setting_key("name", service)
-            access_key = get_setting_key("access", service)
-            service_name = service[name_key]
-            if service_name in settings.families and service_name not in [
-                f[0].name for f in self.families_targets
-            ]:
-                self.families_targets.append(
-                    (
-                        settings.families[service_name],
-                        True,
-                        settings.families[service_name].services,
-                        service[access_key],
-                        service,
-                    )
-                )
-            elif service_name in settings.families and service_name in [
-                f[0].name for f in self.families_targets
-            ]:
-                LOG.warning(
-                    f"The family {service_name} has already been added. Skipping"
-                )
-            elif service_name in [s.name for s in settings.services]:
-                self.handle_families_targets_expansion(service, settings)
-        self.debug_families_targets()
-
-    def handle_family_scaling_expansion(self, service, settings):
-        """
-        Method to search for the families of given service and add it if not already present
-
-        :param dict service:
-        :param ecs_composex.common.settings.ComposeXSettings settings:
-        :return:
-        """
-        name_key = get_setting_key("name", service)
-        scaling_key = get_setting_key("scaling", service)
-        the_service = [s for s in settings.services if s.name == service[name_key]][0]
-        for family_name in the_service.families:
-            family_name = NONALPHANUM.sub("", family_name)
-            if family_name not in [f[0].name for f in self.families_scaling]:
-                self.families_scaling.append(
-                    (settings.families[family_name], service[scaling_key])
-                )
-
-    def set_services_scaling(self, settings):
-        """
-        Method to map services and families targets of the services defined.
-
-        :param ecs_composex.common.settings.ComposeXSettings settings:
-        :return:
-        """
-        if not self.services:
-            return
-        for service in self.services:
-            name_key = get_setting_key("name", service)
-            scaling_key = get_setting_key("scaling", service)
-            if not keyisset(scaling_key, service):
-                LOG.debug(
-                    f"No scaling for {service[name_key]} defined based on {self.name}"
-                )
-                continue
-            service_name = service[name_key]
-            if service_name in settings.families and service_name not in [
-                f[0].name for f in self.families_scaling
-            ]:
-                self.families_scaling.append(
-                    (settings.families[service_name], service[scaling_key])
-                )
-            elif service_name in settings.families and service_name in [
-                f[0].name for f in self.families_scaling
-            ]:
-                LOG.debug(f"The family {service_name} has already been added. Skipping")
-            elif service_name in [s.name for s in settings.services]:
-                self.handle_family_scaling_expansion(service, settings)
 
     def init_env_names(self, add_self_default=True):
         """
@@ -651,7 +524,177 @@ class XResource(object):
             if keyisset("Output", attr):
                 self.outputs.append(attr["Output"])
 
+
+class ServicesXResource(XResource):
+    """
+    Class for XResource that would be linked to services for IAM / Ingress
+    """
+
+    def __init__(
+        self, name: str, definition: dict, module_name: str, settings, mapping_key=None
+    ):
+        self.services = []
+        self.families_targets = []
+        self.families_scaling = []
+        super().__init__(name, definition, module_name, settings, mapping_key)
+        self.set_services_targets(settings)
+        self.set_services_scaling(settings)
+        self.services = (
+            []
+            if not keyisset("Services", self.definition)
+            else self.definition["Services"]
+        )
+
+    def debug_families_targets(self):
+        """
+        Method to troubleshoot family and service mapping
+        """
+        for family in self.families_targets:
+            LOG.debug(f"Mapped {family[0].name} to {self.name}.")
+            if not family[1] and family[2]:
+                LOG.debug(f"Applies to service {family[2]}")
+            else:
+                LOG.debug(f"Applies to all services of {family[0].name}")
+
+    def handle_families_targets_expansion(self, service, settings):
+        """
+        Method to list all families and services that are targets of the resource.
+        Allows to implement family and service level association to resource
+
+        :param dict service: Service definition in compose file
+        :param ecs_composex.common.settings.ComposeXSettings settings: Execution settings
+        """
+        name_key = get_setting_key("name", service)
+        access_key = get_setting_key("access", service)
+        the_service = [s for s in settings.services if s.name == service[name_key]][0]
+        for family_name in the_service.families:
+            family_name = NONALPHANUM.sub("", family_name)
+            if family_name not in [f[0].name for f in self.families_targets]:
+                self.families_targets.append(
+                    (
+                        settings.families[family_name],
+                        False,
+                        [the_service],
+                        service[access_key],
+                        service,
+                    )
+                )
+
+    def set_services_targets(self, settings):
+        """
+        Method to map services and families targets of the services defined.
+        TargetStructure:
+        (family, family_wide, services[], access)
+
+        :param ecs_composex.common.settings.ComposeXSettings settings:
+        :return:
+        """
+        if not self.services:
+            LOG.debug(f"No services defined for {self.name}")
+            return
+        for service in self.services:
+            name_key = get_setting_key("name", service)
+            access_key = get_setting_key("access", service)
+            service_name = service[name_key]
+            if service_name in settings.families and service_name not in [
+                f[0].name for f in self.families_targets
+            ]:
+                self.families_targets.append(
+                    (
+                        settings.families[service_name],
+                        True,
+                        settings.families[service_name].services,
+                        service[access_key],
+                        service,
+                    )
+                )
+            elif service_name in settings.families and service_name in [
+                f[0].name for f in self.families_targets
+            ]:
+                LOG.warning(
+                    f"The family {service_name} has already been added. Skipping"
+                )
+            elif service_name in [s.name for s in settings.services]:
+                self.handle_families_targets_expansion(service, settings)
+        self.debug_families_targets()
+
+    def handle_family_scaling_expansion(self, service, settings):
+        """
+        Method to search for the families of given service and add it if not already present
+
+        :param dict service:
+        :param ecs_composex.common.settings.ComposeXSettings settings:
+        :return:
+        """
+        name_key = get_setting_key("name", service)
+        scaling_key = get_setting_key("scaling", service)
+        the_service = [s for s in settings.services if s.name == service[name_key]][0]
+        for family_name in the_service.families:
+            family_name = NONALPHANUM.sub("", family_name)
+            if family_name not in [f[0].name for f in self.families_scaling]:
+                self.families_scaling.append(
+                    (settings.families[family_name], service[scaling_key])
+                )
+
+    def set_services_scaling(self, settings):
+        """
+        Method to map services and families targets of the services defined.
+
+        :param ecs_composex.common.settings.ComposeXSettings settings:
+        :return:
+        """
+        if not self.services:
+            return
+        for service in self.services:
+            name_key = get_setting_key("name", service)
+            scaling_key = get_setting_key("scaling", service)
+            if not keyisset(scaling_key, service):
+                LOG.debug(
+                    f"No scaling for {service[name_key]} defined based on {self.name}"
+                )
+                continue
+            service_name = service[name_key]
+            if service_name in settings.families and service_name not in [
+                f[0].name for f in self.families_scaling
+            ]:
+                self.families_scaling.append(
+                    (settings.families[service_name], service[scaling_key])
+                )
+            elif service_name in settings.families and service_name in [
+                f[0].name for f in self.families_scaling
+            ]:
+                LOG.debug(f"The family {service_name} has already been added. Skipping")
+            elif service_name in [s.name for s in settings.services]:
+                self.handle_family_scaling_expansion(service, settings)
+
+
+class ApiXResource(ServicesXResource):
+    """
+    Class for Resources that only require API / IAM access to be defined
+    """
+
+    def __init__(
+        self, name: str, definition: dict, module_name: str, settings, mapping_key=None
+    ):
+        super().__init__(name, definition, module_name, settings, mapping_key)
+
+
+class NetworkXResource(ServicesXResource):
+    """
+    Class for resources that need VPC and SecurityGroups to be managed for Ingress
+    """
+
+    def __init__(
+        self, name: str, definition: dict, module_name: str, settings, mapping_key=None
+    ):
+        self.subnets_override = None
+        super().__init__(name, definition, module_name, settings, mapping_key)
+        self.requires_vpc = True
+
     def set_override_subnets(self):
+        """
+        Updates the subnets to use from default for the given resource
+        """
         if (
             self.settings
             and keyisset("Subnets", self.settings)

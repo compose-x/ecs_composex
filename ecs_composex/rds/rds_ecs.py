@@ -7,9 +7,8 @@ Module to provide services with access to the RDS databases.
 """
 
 from compose_x_common.compose_x_common import keyisset
-from troposphere import FindInMap, Select
+from troposphere import FindInMap
 
-from ecs_composex.common import LOG
 from ecs_composex.rds.rds_params import (
     DB_ENDPOINT_PORT,
     DB_SECRET_ARN,
@@ -86,7 +85,6 @@ def rds_to_ecs(rds_dbs, services_stack, res_root_stack, settings):
     :param ecs_composex.common.settings.ComposeXSettings settings: The settings for ComposeX Execution
     :return:
     """
-    print("SETTINGS", settings.mappings.keys())
     new_resources = [
         rds_dbs[db_name]
         for db_name in rds_dbs

@@ -138,14 +138,12 @@ def set_service_ports(ports):
                     "protocol": parts[2],
                     "published": int(parts[0]),
                     "target": int(parts[1]),
-                    "mode": "awsvpc",
                 }
             )
         elif isinstance(port, dict):
             valid_keys = ["published", "target", "protocol", "mode"]
             if not set(port).issubset(valid_keys):
                 raise KeyError("Valid keys are", valid_keys, "got", port.keys())
-            port["mode"] = "awsvpc"
             service_ports.append(port)
         elif isinstance(port, int):
             service_ports.append(
@@ -153,7 +151,6 @@ def set_service_ports(ports):
                     "protocol": "tcp",
                     "published": port,
                     "target": port,
-                    "mode": "awsvpc",
                 }
             )
     return service_ports
@@ -168,7 +165,7 @@ def lookup_security_group(settings, lookup):
     :return:
     """
     sg_re = re.compile(
-        r"(?:^arn:aws(?:-[a-z]+)?:ec2:[a-z0-9-]+:\d{12}:security-group/)([\S]+)$"
+        r"^arn:aws(?:-[a-z]+)?:ec2:[a-z0-9-]+:\d{12}:security-group/([\S]+)$"
     )
     ec2_types = {
         "ec2:security-group": {"regexp": sg_re.pattern},

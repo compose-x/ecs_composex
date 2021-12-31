@@ -6,7 +6,7 @@
 Core module for ECS ComposeX.
 
 This module is going to parse each ecs_service and each x-resource key from the compose file
-(hence ComposeX) and determine its
+(hence Compose-X) and determine its
 
 * ServiceDefinition
 * TaskDefinition
@@ -17,6 +17,27 @@ It is going to also, based on the labels set in the compose file
 
 * Add the ecs_service to Service Discovery via AWS CloudMap
 * Add load-balancers to dispatch traffic to the microservice
+
+Services logic
+
+* Define Container Definitions
+** Compute
+** Storage
+** Docker Settings
+** Logging Settings
+** Env Vars
+** Secrets
+
+* Define Task Definition
+** IAM Roles
+** Containers
+** Volumes (Docker volumes / EFS)
+** AppMesh/Proxy Settings
+
+* Define Service Definition
+** Network settings (VPC/SG)
+** Ingress settings (ALB/NLB/CloudMap)
+
 
 """
 

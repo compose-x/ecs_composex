@@ -44,7 +44,7 @@ from ecs_composex.common.outputs import ComposeXOutput
 from ecs_composex.dns.dns_conditions import PRIVATE_NAMESPACE_CON_T
 from ecs_composex.dns.dns_params import PRIVATE_NAMESPACE_ID
 from ecs_composex.ecs import ecs_conditions, ecs_params
-from ecs_composex.ecs.ecs_conditions import USE_HOSTNAME_CON_T
+from ecs_composex.ecs.ecs_conditions import USE_HOSTNAME_CON_T, use_external_lt_con
 from ecs_composex.ecs.ecs_params import (
     SERVICE_HOSTNAME,
     SERVICE_NAME,
@@ -320,7 +320,7 @@ def define_service_ingress(family, settings):
     if not registries:
         registries = Ref(AWS_NO_VALUE)
     service_attrs = {
-        "LoadBalancers": service_lbs,
+        "LoadBalancers": use_external_lt_con(Ref(AWS_NO_VALUE), service_lbs),
         "ServiceRegistries": If(PRIVATE_NAMESPACE_CON_T, registries, Ref(AWS_NO_VALUE)),
     }
     return service_attrs
@@ -432,11 +432,14 @@ class Service(object):
             ),
             SchedulingStrategy=Ref(AWS_NO_VALUE),
             PlacementStrategies=Ref(AWS_NO_VALUE),
-            NetworkConfiguration=NetworkConfiguration(
-                AwsvpcConfiguration=AwsvpcConfiguration(
-                    Subnets=Ref(vpc_params.APP_SUBNETS),
-                    SecurityGroups=service_sgs,
-                )
+            NetworkConfiguration=use_external_lt_con(
+                Ref(AWS_NO_VALUE),
+                NetworkConfiguration(
+                    AwsvpcConfiguration=AwsvpcConfiguration(
+                        Subnets=Ref(vpc_params.APP_SUBNETS),
+                        SecurityGroups=service_sgs,
+                    )
+                ),
             ),
             TaskDefinition=Ref(family.task_definition),
             LaunchType=If(

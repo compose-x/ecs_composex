@@ -14,6 +14,7 @@ from troposphere.ssm import Parameter as SSMParameter
 
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources import (
+    NetworkXResource,
     XResource,
     set_lookup_resources,
     set_new_resources,
@@ -41,7 +42,7 @@ from ecs_composex.elasticache.elasticache_template import create_root_template
 from ecs_composex.vpc.vpc_params import STORAGE_SUBNETS
 
 
-class CacheCluster(XResource):
+class CacheCluster(NetworkXResource):
     """
     Class to represent an AWS Elastic CacheCluster
     """

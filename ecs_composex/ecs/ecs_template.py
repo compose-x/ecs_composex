@@ -103,6 +103,9 @@ def initialize_service_template(service_name):
         ecs_conditions.USE_CLUSTER_MODE_CON_T, ecs_conditions.USE_CLUSTER_MODE_CON
     )
     service_tpl.add_condition(
+        ecs_conditions.USE_EXTERNAL_LT_T, ecs_conditions.USE_EXTERNAL_LT
+    )
+    service_tpl.add_condition(
         ecs_conditions.USE_LAUNCH_TYPE_CON_T, ecs_conditions.USE_LAUNCH_TYPE_CON
     )
     service_tpl.add_condition(
