@@ -10,112 +10,12 @@ from troposphere import GetAtt, Ref, Sub
 from troposphere.iam import PolicyType
 from troposphere.logs import LogGroup
 
-from ecs_composex.common import build_template
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME, ROOT_STACK_NAME_T
-from ecs_composex.dns import dns_conditions, dns_params
-from ecs_composex.dns.dns_conditions import (
-    CREATE_PUBLIC_NAMESPACE_CON,
-    CREATE_PUBLIC_NAMESPACE_CON_T,
-)
-from ecs_composex.ecs import ecs_conditions, ecs_params
+from ecs_composex.ecs import ecs_params
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME, CLUSTER_NAME_T
 from ecs_composex.ecs.ecs_service import Service
 from ecs_composex.ecs.ecs_service_config import ServiceConfig
 from ecs_composex.secrets.secrets_params import RES_KEY as SECRETS_KEY
-from ecs_composex.vpc import vpc_params
-
-
-def initialize_service_template(service_name):
-    """Function to initialize the base template for ECS Services with all
-    parameters and conditions necessary for CFN to work properly
-
-    :param service_name: Name of the ecs_service as defined in ComposeX File
-    :type service_name: str
-
-    :return: service_template
-    :rtype: troposphere.Template
-    """
-    service_tpl = build_template(
-        f"Template for {service_name}",
-        [
-            dns_params.PUBLIC_DNS_ZONE_NAME,
-            dns_params.PRIVATE_DNS_ZONE_NAME,
-            dns_params.PUBLIC_DNS_ZONE_ID,
-            dns_params.PRIVATE_DNS_ZONE_ID,
-            dns_params.PRIVATE_NAMESPACE_ID,
-            ecs_params.CLUSTER_NAME,
-            ecs_params.LAUNCH_TYPE,
-            ecs_params.ECS_CONTROLLER,
-            ecs_params.SERVICE_COUNT,
-            ecs_params.CLUSTER_SG_ID,
-            ecs_params.SERVICE_HOSTNAME,
-            ecs_params.FARGATE_CPU_RAM_CONFIG,
-            ecs_params.SERVICE_NAME,
-            ecs_params.ELB_GRACE_PERIOD,
-            ecs_params.FARGATE_VERSION,
-            ecs_params.LOG_GROUP_RETENTION,
-        ],
-    )
-    service_tpl.add_condition(
-        ecs_conditions.SERVICE_COUNT_ZERO_CON_T,
-        ecs_conditions.SERVICE_COUNT_ZERO_CON,
-    )
-    service_tpl.add_condition(
-        ecs_conditions.SERVICE_COUNT_ZERO_AND_FARGATE_CON_T,
-        ecs_conditions.SERVICE_COUNT_ZERO_AND_FARGATE_CON,
-    )
-    service_tpl.add_condition(
-        ecs_conditions.USE_HOSTNAME_CON_T, ecs_conditions.USE_HOSTNAME_CON
-    )
-    service_tpl.add_condition(
-        ecs_conditions.NOT_USE_HOSTNAME_CON_T,
-        ecs_conditions.NOT_USE_HOSTNAME_CON,
-    )
-    service_tpl.add_condition(
-        ecs_conditions.NOT_USE_CLUSTER_SG_CON_T,
-        ecs_conditions.NOT_USE_CLUSTER_SG_CON,
-    )
-    service_tpl.add_condition(
-        ecs_conditions.USE_CLUSTER_SG_CON_T, ecs_conditions.USE_CLUSTER_SG_CON
-    )
-    service_tpl.add_condition(
-        ecs_conditions.USE_FARGATE_PROVIDERS_CON_T,
-        ecs_conditions.USE_FARGATE_PROVIDERS_CON,
-    )
-    service_tpl.add_condition(
-        ecs_conditions.USE_FARGATE_LT_CON_T, ecs_conditions.USE_FARGATE_LT_CON
-    )
-    service_tpl.add_condition(
-        ecs_conditions.USE_FARGATE_CON_T,
-        ecs_conditions.USE_FARGATE_CON,
-    )
-    service_tpl.add_condition(
-        ecs_conditions.NOT_FARGATE_CON_T, ecs_conditions.NOT_FARGATE_CON
-    )
-    service_tpl.add_condition(ecs_conditions.USE_EC2_CON_T, ecs_conditions.USE_EC2_CON)
-    service_tpl.add_condition(
-        ecs_conditions.USE_SERVICE_MODE_CON_T, ecs_conditions.USE_SERVICE_MODE_CON
-    )
-    service_tpl.add_condition(
-        ecs_conditions.USE_CLUSTER_MODE_CON_T, ecs_conditions.USE_CLUSTER_MODE_CON
-    )
-    service_tpl.add_condition(
-        ecs_conditions.USE_EXTERNAL_LT_T, ecs_conditions.USE_EXTERNAL_LT
-    )
-    service_tpl.add_condition(
-        ecs_conditions.USE_LAUNCH_TYPE_CON_T, ecs_conditions.USE_LAUNCH_TYPE_CON
-    )
-    service_tpl.add_condition(
-        CREATE_PUBLIC_NAMESPACE_CON_T, CREATE_PUBLIC_NAMESPACE_CON
-    )
-    service_tpl.add_condition(
-        dns_conditions.PRIVATE_ZONE_ID_CON_T, dns_conditions.PRIVATE_ZONE_ID_CON
-    )
-    service_tpl.add_condition(
-        dns_conditions.PRIVATE_NAMESPACE_CON_T,
-        dns_conditions.PRIVATE_NAMESPACE_CON,
-    )
-    return service_tpl
 
 
 def create_log_group(family):
@@ -147,7 +47,7 @@ def create_log_group(family):
                 }
             ],
         },
-        Roles=[Ref(family.exec_role.name["ImportParameter"])],
+        Roles=[family.exec_role.name],
     )
     if (
         family.template

@@ -38,7 +38,7 @@ x-dynamodb:
         access: RO
 
 x-vpc:
-  Create:
+  Properties:
     VpcCidr: 172.23.0.0/24
     SingleNat: False
     Endpoints:

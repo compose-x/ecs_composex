@@ -97,8 +97,11 @@ def set_cw_prometheus_config_parameter(family, options):
         ),
         Value=Sub(yaml.dump(value_py, Dumper=Dumper), STACK_SHORT_ID=STACK_ID_SHORT),
     )
-    family.template.add_resource(parameter)
-    return parameter
+    if parameter.title not in family.template.resources:
+        family.template.add_resource(parameter)
+        return parameter
+    else:
+        return family.template.resources[parameter.title]
 
 
 def generate_ecs_sd_service_name_pattern(family_name):
@@ -194,7 +197,6 @@ def define_nginx_exporter_sidecar(family):
     nginx_prom_exporter_service.is_aws_sidecar = True
 
     family.add_service(nginx_prom_exporter_service)
-    family.refresh()
 
 
 def get_ngnix_processor(
@@ -420,8 +422,11 @@ def set_cw_config_parameter(family, **options):
             STACK_SHORT_ID=STACK_ID_SHORT,
         ),
     )
-    family.template.add_resource(parameter)
-    return parameter
+    if parameter.title not in family.template.resources:
+        family.template.add_resource(parameter)
+        return parameter
+    else:
+        return family.template.resources[parameter.title]
 
 
 def define_cloudwatch_agent(family, cw_prometheus_config, cw_agent_config):
@@ -554,8 +559,8 @@ def set_ecs_cw_policy(family, prometheus_parameter, cw_config_parameter):
             ],
         },
         Roles=[
-            Ref(family.exec_role.name["ImportParameter"]),
-            Ref(family.task_role.name["ImportParameter"]),
+            family.exec_role.name,
+            family.task_role.name,
         ],
     )
     if ecs_sd_policy.title not in family.template.resources:
@@ -572,5 +577,4 @@ def add_cw_agent_to_family(family, **options):
     family.add_service(
         define_cloudwatch_agent(family, prometheus_config, cw_agent_config)
     )
-    family.refresh()
     set_ecs_cw_policy(family, prometheus_config, cw_agent_config)

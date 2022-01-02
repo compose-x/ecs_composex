@@ -8,10 +8,12 @@ from troposphere.ecs import AuthorizationConfig, EFSVolumeConfiguration, Volume
 from troposphere.efs import AccessPoint, CreationInfo, PosixUser, RootDirectory
 from troposphere.iam import PolicyType
 
-from ecs_composex.common import add_parameters
+from ecs_composex.common import add_parameters, setup_logging
 from ecs_composex.ecs.ecs_params import SERVICE_T, TASK_T
 from ecs_composex.efs.efs_params import FS_ARN, FS_ID, FS_MNT_PT_SG_ID, FS_PORT
 from ecs_composex.rds_resources_settings import handle_new_tcp_resource
+
+LOG = setup_logging()
 
 
 def get_volumes(task_definition):
@@ -92,7 +94,7 @@ def add_task_iam_access_to_access_point(family, access_points, efs):
                 }
             ],
         },
-        Roles=[Ref(family.task_role.name["ImportParameter"])],
+        Roles=[family.task_role.name],
     )
     service_depends_on.append(policy.title)
     family.template.add_resource(policy)
@@ -233,6 +235,11 @@ def expand_family_with_efs_volumes(efs_root_stack_title, new_efs, settings):
     fs_id_parameter = new_efs.attributes_outputs[FS_ID]["ImportParameter"]
     fs_id_getatt = new_efs.attributes_outputs[FS_ID]["ImportValue"]
     for target in new_efs.families_targets:
+        if target[0].launch_type == "EXTERNAL":
+            LOG.warning(
+                f"x-efs - {target[0].name} - When using EXTERNAL Launch Type, networking settings cannot be set."
+            )
+            return
         access_points = []
         target[0].stack.Parameters.update({fs_id_parameter.title: fs_id_getatt})
         add_parameters(target[0].template, [fs_id_parameter])
@@ -281,7 +288,9 @@ def efs_to_ecs(resources, services_stack, res_root_stack, settings):
     """
 
     new_resources = [
-        resources[res_name] for res_name in resources if not resources[res_name].lookup
+        resources[res_name]
+        for res_name in resources
+        if not resources[res_name].mappings
     ]
     for new_res in new_resources:
         handle_new_tcp_resource(

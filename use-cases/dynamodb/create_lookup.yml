@@ -14,7 +14,6 @@ x-dynamodb:
         - AttributeName: "Sales"
           AttributeType: "N"
         - AttributeName: "NumberOfSongs"
-          AttributeType: "N"
       KeySchema:
         - AttributeName: "Album"
           KeyType: "HASH"

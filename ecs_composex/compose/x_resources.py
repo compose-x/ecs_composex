@@ -694,6 +694,7 @@ class NetworkXResource(ServicesXResource):
         self, name: str, definition: dict, module_name: str, settings, mapping_key=None
     ):
         self.subnets_override = None
+        self.security_group = None
         super().__init__(name, definition, module_name, settings, mapping_key)
         self.requires_vpc = True
 
@@ -707,3 +708,9 @@ class NetworkXResource(ServicesXResource):
             and hasattr(self, "subnets_param")
         ):
             self.subnets_override = self.settings["Subnets"]
+
+    def update_from_vpc(self, vpc_stack, settings=None):
+        """
+        Allows to make adjustments after the VPC Settings have been set
+        """
+        pass

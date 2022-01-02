@@ -40,6 +40,7 @@ from troposphere.logs import LogGroup
 from ecs_composex.common import (
     FILE_PREFIX,
     add_parameters,
+    build_template,
     set_else_none,
     setup_logging,
 )
@@ -48,9 +49,10 @@ from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.common.files import upload_file
 from ecs_composex.common.services_helpers import set_logging_expiry
 from ecs_composex.compose.compose_services import ComposeService
-from ecs_composex.ecs import ecs_params
+from ecs_composex.dns import dns_conditions, dns_params
+from ecs_composex.ecs import ecs_conditions, ecs_params
 from ecs_composex.ecs.docker_tools import find_closest_fargate_configuration
-from ecs_composex.ecs.ecs_conditions import USE_FARGATE_CON_T, use_external_lt_con
+from ecs_composex.ecs.ecs_iam import EcsRole
 from ecs_composex.ecs.ecs_params import (
     AWS_XRAY_IMAGE,
     EXEC_ROLE_T,
@@ -246,7 +248,7 @@ def identify_repo_credentials_secret(settings, task, secret_name):
                                 }
                             ],
                         },
-                        Roles=[Ref(task.exec_role.name["ImportParameter"])],
+                        Roles=[task.exec_role.name],
                     )
                 )
             return secret_arn
@@ -429,12 +431,14 @@ class ComposeFamily(object):
         self.service_tags = None
         self.task_ephemeral_storage = 0
         self.family_network_mode = None
-        self.exec_role = None
-        self.task_role = None
+        self.exec_role = EcsRole(self, ecs_params.EXEC_ROLE_T)
+        self.task_role = EcsRole(self, ecs_params.TASK_ROLE_T)
         self.enable_execute_command = False
         self.scalable_target = None
         self.ecs_service = None
         self.launch_type = self.default_launch_type
+
+        self.set_template()
         self.set_family_launch_type()
         self.ecs_capacity_providers = []
         self.target_groups = []
@@ -445,11 +449,97 @@ class ComposeFamily(object):
         self.alarms = {}
         self.predefined_alarms = {}
         self.set_initial_services_dependencies()
-        self.set_xray()
-        self.set_prometheus()
         self.sort_container_configs()
         self.handle_iam()
         self.add_containers_images_cfn_parameters()
+
+    def set_template(self):
+        """
+        Function to set the tropopshere.Template associated with the ECS Service Family
+        """
+        self.template = build_template(
+            f"Template for {self.name}",
+            [
+                dns_params.PUBLIC_DNS_ZONE_NAME,
+                dns_params.PRIVATE_DNS_ZONE_NAME,
+                dns_params.PUBLIC_DNS_ZONE_ID,
+                dns_params.PRIVATE_DNS_ZONE_ID,
+                dns_params.PRIVATE_NAMESPACE_ID,
+                ecs_params.CLUSTER_NAME,
+                ecs_params.LAUNCH_TYPE,
+                ecs_params.ECS_CONTROLLER,
+                ecs_params.SERVICE_COUNT,
+                ecs_params.CLUSTER_SG_ID,
+                ecs_params.SERVICE_HOSTNAME,
+                ecs_params.FARGATE_CPU_RAM_CONFIG,
+                ecs_params.SERVICE_NAME,
+                ecs_params.ELB_GRACE_PERIOD,
+                ecs_params.FARGATE_VERSION,
+                ecs_params.LOG_GROUP_RETENTION,
+            ],
+        )
+        self.template.add_condition(
+            ecs_conditions.SERVICE_COUNT_ZERO_CON_T,
+            ecs_conditions.SERVICE_COUNT_ZERO_CON,
+        )
+        self.template.add_condition(
+            ecs_conditions.SERVICE_COUNT_ZERO_AND_FARGATE_CON_T,
+            ecs_conditions.SERVICE_COUNT_ZERO_AND_FARGATE_CON,
+        )
+        self.template.add_condition(
+            ecs_conditions.USE_HOSTNAME_CON_T, ecs_conditions.USE_HOSTNAME_CON
+        )
+        self.template.add_condition(
+            ecs_conditions.NOT_USE_HOSTNAME_CON_T,
+            ecs_conditions.NOT_USE_HOSTNAME_CON,
+        )
+        self.template.add_condition(
+            ecs_conditions.NOT_USE_CLUSTER_SG_CON_T,
+            ecs_conditions.NOT_USE_CLUSTER_SG_CON,
+        )
+        self.template.add_condition(
+            ecs_conditions.USE_CLUSTER_SG_CON_T, ecs_conditions.USE_CLUSTER_SG_CON
+        )
+        self.template.add_condition(
+            ecs_conditions.USE_FARGATE_PROVIDERS_CON_T,
+            ecs_conditions.USE_FARGATE_PROVIDERS_CON,
+        )
+        self.template.add_condition(
+            ecs_conditions.USE_FARGATE_LT_CON_T, ecs_conditions.USE_FARGATE_LT_CON
+        )
+        self.template.add_condition(
+            ecs_conditions.USE_FARGATE_CON_T,
+            ecs_conditions.USE_FARGATE_CON,
+        )
+        self.template.add_condition(
+            ecs_conditions.NOT_FARGATE_CON_T, ecs_conditions.NOT_FARGATE_CON
+        )
+        self.template.add_condition(
+            ecs_conditions.USE_EC2_CON_T, ecs_conditions.USE_EC2_CON
+        )
+        self.template.add_condition(
+            ecs_conditions.USE_SERVICE_MODE_CON_T, ecs_conditions.USE_SERVICE_MODE_CON
+        )
+        self.template.add_condition(
+            ecs_conditions.USE_CLUSTER_MODE_CON_T, ecs_conditions.USE_CLUSTER_MODE_CON
+        )
+        self.template.add_condition(
+            ecs_conditions.USE_EXTERNAL_LT_T, ecs_conditions.USE_EXTERNAL_LT
+        )
+        self.template.add_condition(
+            ecs_conditions.USE_LAUNCH_TYPE_CON_T, ecs_conditions.USE_LAUNCH_TYPE_CON
+        )
+        self.template.add_condition(
+            dns_conditions.CREATE_PUBLIC_NAMESPACE_CON_T,
+            dns_conditions.CREATE_PUBLIC_NAMESPACE_CON,
+        )
+        self.template.add_condition(
+            dns_conditions.PRIVATE_ZONE_ID_CON_T, dns_conditions.PRIVATE_ZONE_ID_CON
+        )
+        self.template.add_condition(
+            dns_conditions.PRIVATE_NAMESPACE_CON_T,
+            dns_conditions.PRIVATE_NAMESPACE_CON,
+        )
 
     def state_facts(self):
         """
@@ -512,7 +602,7 @@ class ComposeFamily(object):
         Adds a new container/service to the Task Family and validates all settings that go along with the change.
         :param service:
         """
-        if service in self.services:
+        if service.name in [svc.name for svc in self.services]:
             LOG.debug(
                 f"{self.name} - container service {service.name} is already set. Skipping"
             )
@@ -523,8 +613,6 @@ class ComposeFamily(object):
                 service.container_definition
             )
             self.set_secrets_access()
-        self.set_xray()
-        self.set_prometheus()
         self.set_task_ephemeral_storage()
         self.refresh()
 
@@ -540,6 +628,27 @@ class ComposeFamily(object):
         self.add_containers_images_cfn_parameters()
         self.set_task_compute_parameter()
         self.set_family_hostname()
+
+    def finalize_family_settings(self):
+        """
+        Once all services have been added, we add the sidecars and deal with appropriate permissions and settings
+        Will add xray / prometheus sidecars
+        """
+        self.set_xray()
+        self.set_prometheus()
+        if self.launch_type == "EXTERNAL":
+            if hasattr(self.ecs_service.ecs_service, "LoadBalancers"):
+                setattr(
+                    self.ecs_service.ecs_service, "LoadBalancers", Ref(AWS_NO_VALUE)
+                )
+            if hasattr(self.ecs_service.ecs_service, "ServiceRegistries"):
+                setattr(
+                    self.ecs_service.ecs_service, "ServiceRegistries", Ref(AWS_NO_VALUE)
+                )
+            for container in self.task_definition.ContainerDefinitions:
+                if hasattr(container, "LinuxParameters"):
+                    parameters = getattr(container, "LinuxParameters")
+                    setattr(parameters, "InitProcessEnabled", False)
 
     def set_initial_services_dependencies(self):
         """
@@ -612,6 +721,11 @@ class ComposeFamily(object):
         """
         Sets necessary settings to enable ECS Execute Command
         """
+        if self.launch_type == "EXTERNAL":
+            LOG.warning(
+                f"{self} - ECS Execute Command is not supported for services running on ECS Anywhere"
+            )
+            return
         for svc in self.services:
             if svc.is_aws_sidecar:
                 continue
@@ -924,7 +1038,7 @@ class ComposeFamily(object):
                         }
                     ],
                 },
-                Roles=[Ref(self.exec_role.name["ImportParameter"])],
+                Roles=[self.exec_role.name],
             )
             if self.template and policy.title not in self.template.resources:
                 self.template.add_resource(policy)
@@ -1184,14 +1298,14 @@ class ComposeFamily(object):
             Cpu=ecs_params.FARGATE_CPU,
             Memory=ecs_params.FARGATE_RAM,
             NetworkMode=If(
-                USE_FARGATE_CON_T,
+                ecs_conditions.USE_FARGATE_CON_T,
                 "awsvpc",
                 Ref(AWS_NO_VALUE)
                 if not self.family_network_mode
                 else self.family_network_mode,
             ),
             EphemeralStorage=If(
-                USE_FARGATE_CON_T,
+                ecs_conditions.USE_FARGATE_CON_T,
                 EphemeralStorage(SizeInGiB=self.task_ephemeral_storage),
                 Ref(AWS_NO_VALUE),
             )
@@ -1200,8 +1314,8 @@ class ComposeFamily(object):
             InferenceAccelerators=Ref(AWS_NO_VALUE),
             IpcMode=Ref(AWS_NO_VALUE),
             Family=Ref(ecs_params.SERVICE_NAME),
-            TaskRoleArn=Ref(self.task_role.arn["ImportParameter"]),
-            ExecutionRoleArn=Ref(self.exec_role.arn["ImportParameter"]),
+            TaskRoleArn=self.task_role.arn,
+            ExecutionRoleArn=self.exec_role.arn,
             ContainerDefinitions=[s.container_definition for s in self.services],
             RequiresCompatibilities=["EC2", "FARGATE", "EXTERNAL"],
             Tags=Tags(
@@ -1364,8 +1478,8 @@ class ComposeFamily(object):
                             ],
                         },
                         Roles=[
-                            Ref(self.exec_role.name["ImportParameter"]),
-                            Ref(self.task_role.name["ImportParameter"]),
+                            self.exec_role.name,
+                            self.task_role.name,
                         ],
                     )
                 )
@@ -1411,7 +1525,7 @@ class ComposeFamily(object):
                         }
                     ],
                 },
-                Roles=[Ref(self.exec_role.name["ImportParameter"])],
+                Roles=[self.exec_role.name],
             )
             if self.template and policy.title not in self.template.resources:
                 self.template.add_resource(policy)
@@ -1468,7 +1582,7 @@ class ComposeFamily(object):
                     Host=Ref(AWS_NO_VALUE),
                     Name=volume.volume_name,
                     DockerVolumeConfiguration=If(
-                        USE_FARGATE_CON_T,
+                        ecs_conditions.USE_FARGATE_CON_T,
                         Ref(AWS_NO_VALUE),
                         DockerVolumeConfiguration(
                             Scope="task" if not volume.is_shared else "shared",
@@ -1757,9 +1871,9 @@ class ComposeFamily(object):
                 {ecs_params.LAUNCH_TYPE.title: self.launch_type}
             )
 
-    def wait_for_all_policies(self):
+    def set_service_dependency_on_all_iam_policies(self):
         """
-        Function to ensure the Service does not get created/updated before all policies were set completely
+        Function to ensure the Service does not get created/updated before all IAM policies were set completely
         """
         if not self.ecs_service.ecs_service:
             return

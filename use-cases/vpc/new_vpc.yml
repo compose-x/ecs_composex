@@ -4,7 +4,7 @@
 version: '3.8'
 
 x-vpc:
-  Create:
+  Properties:
     VpcCidr: 172.23.240.0/24
 
 x-tags:

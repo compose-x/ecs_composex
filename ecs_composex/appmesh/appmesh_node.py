@@ -243,7 +243,7 @@ class MeshNode(object):
                     },
                 ],
             },
-            Roles=[Ref(family.task_role.name["ImportParameter"])],
+            Roles=[family.task_role.name],
         )
         if policy.title not in family.template.resources:
             family.template.add_resource(policy)

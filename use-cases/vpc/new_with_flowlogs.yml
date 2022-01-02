@@ -4,13 +4,14 @@
 version: '3.8'
 
 x-vpc:
-  Create:
+  Properties:
     VpcCidr: 172.23.0.0/24
     EnableFlowLogs: True
     FlowLogsRoleBoundary: arn:aws:iam::aws:policy/AmazonVPCReadOnlyAccess
 
 services:
   app03:
+    image: app03
     networks:
       - custom01
 

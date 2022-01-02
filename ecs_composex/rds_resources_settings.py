@@ -322,18 +322,18 @@ def add_secrets_access_policy(
     :return:
     """
     db_policy_statement = generate_rds_secrets_permissions(secret_import, db_name)
-    task_role = service_family.task_role.name["ImportParameter"]
-    exec_role = service_family.exec_role.name["ImportParameter"]
+    task_role = service_family.task_role.name
+    exec_role = service_family.exec_role.name
     if keyisset(DB_SECRET_POLICY_NAME, service_family.template.resources):
         db_policy = service_family.template.resources[DB_SECRET_POLICY_NAME]
         db_policy.PolicyDocument["Statement"].append(db_policy_statement)
         if use_task_role:
-            db_policy.Roles.append(Ref(task_role))
+            db_policy.Roles.append(task_role)
     else:
         policy = PolicyType(
             DB_SECRET_POLICY_NAME,
             template=service_family.template,
-            Roles=[Ref(exec_role)],
+            Roles=[exec_role],
             PolicyName=DB_SECRET_POLICY_NAME,
             PolicyDocument={
                 "Version": "2012-10-17",
@@ -341,7 +341,7 @@ def add_secrets_access_policy(
             },
         )
         if use_task_role:
-            policy.Roles.append(Ref(task_role))
+            policy.Roles.append(task_role)
 
 
 def handle_db_secret_to_services(db, secret_import, target):
@@ -393,6 +393,13 @@ def handle_new_tcp_resource(
     parameters_values[sg_settings[0]] = sg_settings[2]
 
     for target in resource.families_targets:
+        if target[0].launch_type == "EXTERNAL":
+            LOG.warning(
+                f"{res_root_stack.title} - {target[0].name} - "
+                "When using EXTERNAL Launch Type, networking settings cannot be set."
+            )
+            continue
+        LOG.info(f"{res_root_stack.title} - Linking to {target[0].name}")
         add_parameters(target[0].template, parameters_to_add)
         target[0].stack.Parameters.update(parameters_values)
         handle_new_dbs_to_services(
