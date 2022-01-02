@@ -788,7 +788,7 @@ class ComposeService(object):
                     tmpfs_def = {}
                     if not keyisset("target", s_volume):
                         raise KeyError(
-                            "When defining tmpfs as volume, you must define a target"
+                            f"{self.name}.volumes - When defining tmpfs as volume, you must define a target"
                         )
                     tmpfs_def["ContainerPath"] = s_volume["target"]
                     if (

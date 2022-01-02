@@ -31,7 +31,7 @@ from ecs_composex.ecs.ecs_params import CLUSTER_NAME
 from ecs_composex.ecs.ecs_stack import associate_services_to_root_stack
 from ecs_composex.iam.iam_stack import XStack as IamStack
 from ecs_composex.vpc import vpc_params
-from ecs_composex.vpc.vpc_stack import VpcStack
+from ecs_composex.vpc.vpc_stack import XStack as VpcStack
 
 try:
     from ecs_composex.ecr.ecr_scans_eval import (
@@ -189,8 +189,7 @@ def apply_x_configs_to_ecs(settings, root_stack):
     :param ecs_composex.common.settings.ComposeXSettings settings: The compose file content
     :param ecs_composex.ecs.ServicesStack root_stack: root stack for services.
     """
-    for resource_name in root_stack.stack_template.resources:
-        resource_stack = root_stack.stack_template.resources[resource_name]
+    for resource_stack in root_stack.stack_template.resources.values():
         if (
             issubclass(type(resource_stack), ComposeXStack)
             and resource_stack.name in SUPPORTED_X_MODULE_NAMES
@@ -451,29 +450,26 @@ def update_families_networking_settings(settings, vpc_stack):
         family.service_config.network.add_self_ingress(family)
 
 
-def handle_nested_stacks():
-    pass
-
-
-def update_network_resources_vpc_config(settings, root_stack, vpc_stack):
+def update_network_resources_vpc_config(settings, vpc_stack):
     """
     Iterate over the settings.x_resources, over the root stack nested stacks.
     If the nested stack has x_resources that depend on VPC, update the stack parameters with the vpc stack settings
 
+    Although the first if should never be true, setting condition in case for safety.
+
     :param settings: Runtime Execution setting
     :type settings: ecs_composex.common.settings.ComposeXSettingsngs
-    :param root_stack:
     :param vpc_stack: The VPC stack and details
     :type vpc_stack: ecs_composex.vpc.vpc_stack.VpcStack
     """
-    for resource in settings.new_x_resources:
+    for resource in settings.x_resources:
         if resource.mappings:
-            LOG.info(
+            LOG.debug(
                 f"{resource.module_name}.{resource.name} - Lookup resource need no VPC Settings."
             )
             continue
         if not resource.requires_vpc:
-            LOG.info(
+            LOG.debug(
                 f"{resource.module_name}.{resource.name} - Resource is not bound to VPC."
             )
             continue
@@ -481,11 +477,23 @@ def update_network_resources_vpc_config(settings, root_stack, vpc_stack):
             resource.stack.parent_stack is None
             or resource.stack == resource.stack.get_top_root_stack()
         ):
-            LOG.info(f"{resource.stack.title} has no nested stacks")
+            LOG.debug(f"{resource.stack.title} is not a nested stacks")
             if vpc_stack.vpc_resource.mappings:
                 resource.stack.no_vpc_stack_parameters(settings)
             else:
                 resource.stack.get_from_vpc_stack(vpc_stack)
+        if resource.requires_vpc and hasattr(resource, "update_from_vpc"):
+            resource.update_from_vpc(vpc_stack, settings)
+
+
+def set_families_ecs_service(settings):
+    """
+    Sets the ECS Service in the family.ecs_service from ServiceConfig and family settings
+    """
+    for family in settings.families.values():
+        family.ecs_service.generate_service_definition(family, settings)
+        family.service_config.scaling.create_scalable_target(family)
+        # family.ecs_service.generate_service_template_outputs(family)
 
 
 def generate_full_template(settings):
@@ -514,7 +522,7 @@ def generate_full_template(settings):
     apply_x_to_x_configs(root_stack, settings)
     associate_services_to_root_stack(root_stack, settings)
     vpc_stack = VpcStack("vpc", settings)
-    if not vpc_stack.vpc_resource and settings.requires_vpc():
+    if settings.requires_vpc() and not vpc_stack.vpc_resource:
         LOG.info(
             f"{settings.name} - Services or x-Resources need a VPC to function. Creating default one"
         )
@@ -526,10 +534,17 @@ def generate_full_template(settings):
         root_stack.stack_template.add_mapping(
             "Network", vpc_stack.vpc_resource.mappings
         )
-    else:
-        LOG.warn(f"{settings.name} - no VPC required or designated.")
+    elif (
+        vpc_stack.vpc_resource
+        and vpc_stack.vpc_resource.cfn_resource
+        and vpc_stack.title not in root_stack.stack_template.resources.keys()
+    ):
+        root_stack.stack_template.add_resource(vpc_stack)
+        LOG.info(f"{settings.name}.x-vpc - VPC stack added. A new VPC will be created.")
 
-    if (not vpc_stack.is_void) or vpc_stack.vpc_resource.mappings:
+    if vpc_stack.vpc_resource and (
+        vpc_stack.vpc_resource.cfn_resource or vpc_stack.vpc_resource.mappings
+    ):
         settings.set_networks(vpc_stack)
         dns_settings = DnsSettings(root_stack, settings, get_vpc_id(vpc_stack))
         if settings.use_appmesh:
@@ -542,9 +557,10 @@ def generate_full_template(settings):
             mesh.render_mesh_template(root_stack, settings, dns_settings)
 
     update_families_networking_settings(settings, vpc_stack)
-    update_network_resources_vpc_config(settings, root_stack, vpc_stack)
+    update_network_resources_vpc_config(settings, vpc_stack)
+    set_families_ecs_service(settings)
 
-    set_services_alarms(settings)
+    # set_services_alarms(settings)
     # if keyisset(ACM_KEY, settings.compose_content):
     #     init_acm_certs(settings, dns_settings, root_stack)
     apply_x_configs_to_ecs(
@@ -562,7 +578,8 @@ def generate_full_template(settings):
         family.set_enable_execute_command()
         if family.enable_execute_command:
             family.apply_ecs_execute_command_permissions(settings)
-        family.wait_for_all_policies()
+        family.finalize_family_settings()
+        family.set_service_dependency_on_all_iam_policies()
         family.state_facts()
     set_ecs_cluster_identifier(root_stack, settings)
     add_all_tags(root_stack.stack_template, settings)

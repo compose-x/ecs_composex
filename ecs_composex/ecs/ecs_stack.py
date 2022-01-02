@@ -8,10 +8,7 @@ from ecs_composex.common import LOG, add_parameters
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.ecs import ecs_params, metadata
 from ecs_composex.ecs.ecs_service_network_config import set_compose_services_ingress
-from ecs_composex.ecs.ecs_template import (
-    initialize_family_services,
-    initialize_service_template,
-)
+from ecs_composex.ecs.ecs_template import initialize_family_services
 
 
 class ServiceStack(ComposeXStack):
@@ -48,7 +45,6 @@ def associate_services_to_root_stack(root_stack, settings):
     :return:
     """
     for family_name, family in settings.families.items():
-        family.template = initialize_service_template(family.logical_name)
         family.stack = ServiceStack(
             family.logical_name,
             stack_template=family.template,
@@ -58,10 +54,10 @@ def associate_services_to_root_stack(root_stack, settings):
         add_parameters(
             family.template,
             [
-                family.task_role.arn["ImportParameter"],
-                family.task_role.name["ImportParameter"],
-                family.exec_role.arn["ImportParameter"],
-                family.exec_role.name["ImportParameter"],
+                family.task_role.arn_param,
+                family.task_role.name_param,
+                family.exec_role.arn_param,
+                family.exec_role.name_param,
             ],
         )
         family.stack.Parameters.update(
@@ -70,18 +66,10 @@ def associate_services_to_root_stack(root_stack, settings):
                 ecs_params.FARGATE_VERSION.title: FindInMap(
                     "ComposeXDefaults", "ECS", "PlatformVersion"
                 ),
-                family.task_role.arn["ImportParameter"].title: family.task_role.arn[
-                    "ImportValue"
-                ],
-                family.task_role.name["ImportParameter"].title: family.task_role.name[
-                    "ImportValue"
-                ],
-                family.exec_role.arn["ImportParameter"].title: family.exec_role.arn[
-                    "ImportValue"
-                ],
-                family.exec_role.name["ImportParameter"].title: family.exec_role.name[
-                    "ImportValue"
-                ],
+                family.task_role.arn_param.title: family.task_role.output_arn,
+                family.task_role.name_param.title: family.task_role.output_name,
+                family.exec_role.arn_param.title: family.exec_role.output_arn,
+                family.exec_role.name_param.title: family.exec_role.output_name,
                 ecs_params.SERVICE_HOSTNAME.title: family.family_hostname,
             }
         )

@@ -137,115 +137,6 @@ def add_service_to_map(family, settings):
     return registries
 
 
-def define_tracking_target_configuration(target_scaling_config, config_key):
-    """
-    Function to create the configuration for target tracking scaling
-
-    :param dict target_scaling_config:
-    :param str config_key:
-    :return:
-    """
-    settings = {
-        "cpu": {
-            "key": "CpuTarget",
-            "property": "ECSServiceAverageCPUUtilization",
-        },
-        "memory": {
-            "key": "MemoryTarget",
-            "property": "ECSServiceAverageMemoryUtilization",
-        },
-        "targets": {
-            "key": "TgtTargetsCount",
-            "property": "ALBRequestCountPerTarget",
-        },
-    }
-    if config_key not in settings.keys():
-        raise KeyError(config_key, "Is invalid. Expected one of", settings.keys())
-    specification = applicationautoscaling.PredefinedMetricSpecification(
-        PredefinedMetricType=settings[config_key]["property"]
-    )
-
-    return applicationautoscaling.TargetTrackingScalingPolicyConfiguration(
-        DisableScaleIn=target_scaling_config["DisableScaleIn"],
-        ScaleInCooldown=target_scaling_config["ScaleInCooldown"],
-        ScaleOutCooldown=target_scaling_config["ScaleOutCooldown"],
-        TargetValue=float(target_scaling_config[settings[config_key]["key"]]),
-        PredefinedMetricSpecification=specification,
-    )
-
-
-def create_scalable_target(family):
-    """
-    Method to automatically create a scalable target
-    """
-    LOG.debug(family.service_config.scaling.scaling_range)
-    if ecs_params.SERVICE_SCALING_TARGET in family.template.resources:
-        return
-    if family.service_config.scaling.scaling_range:
-        family.scalable_target = applicationautoscaling.ScalableTarget(
-            ecs_params.SERVICE_SCALING_TARGET,
-            template=family.template,
-            MaxCapacity=family.service_config.scaling.scaling_range["max"],
-            MinCapacity=family.service_config.scaling.scaling_range["min"],
-            ScalableDimension="ecs:service:DesiredCount",
-            ServiceNamespace="ecs",
-            RoleARN=Sub(
-                "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/"
-                "ecs.application-autoscaling.${AWS::URLSuffix}/"
-                "AWSServiceRoleForApplicationAutoScaling_ECSService"
-            ),
-            ResourceId=Sub(
-                f"service/${{{ecs_params.CLUSTER_NAME.title}}}/${{{family.ecs_service.ecs_service.title}.Name}}"
-            ),
-            SuspendedState=applicationautoscaling.SuspendedState(
-                DynamicScalingInSuspended=False
-            ),
-        )
-    else:
-        family.scalable_target = applicationautoscaling.ScalableTarget(
-            ecs_params.SERVICE_SCALING_TARGET,
-            template=family.template,
-            MaxCapacity=family.service_config.replicas,
-            MinCapacity=family.service_config.replicas,
-            ScalableDimension="ecs:service:DesiredCount",
-            ServiceNamespace="ecs",
-            RoleARN=Sub(
-                "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/"
-                "ecs.application-autoscaling.${AWS::URLSuffix}/"
-                "AWSServiceRoleForApplicationAutoScaling_ECSService"
-            ),
-            ResourceId=Sub(
-                f"service/${{{ecs_params.CLUSTER_NAME.title}}}/${{{family.ecs_service.ecs_service.title}.Name}}"
-            ),
-            SuspendedState=applicationautoscaling.SuspendedState(
-                DynamicScalingInSuspended=False
-            ),
-        )
-    if family.scalable_target and family.service_config.scaling.target_scaling:
-        if keyisset("CpuTarget", family.service_config.scaling.target_scaling):
-            applicationautoscaling.ScalingPolicy(
-                "ServiceCpuTrackingPolicy",
-                template=family.template,
-                ScalingTargetId=Ref(family.scalable_target),
-                PolicyName="CpuTrackingScalingPolicy",
-                PolicyType="TargetTrackingScaling",
-                TargetTrackingScalingPolicyConfiguration=define_tracking_target_configuration(
-                    family.service_config.scaling.target_scaling, "cpu"
-                ),
-            )
-        if keyisset("MemoryTarget", family.service_config.scaling.target_scaling):
-            applicationautoscaling.ScalingPolicy(
-                "ServiceMemoryTrackingPolicy",
-                template=family.template,
-                ScalingTargetId=Ref(family.scalable_target),
-                PolicyName="MemoryTrackingScalingPolicy",
-                PolicyType="TargetTrackingScaling",
-                TargetTrackingScalingPolicyConfiguration=define_tracking_target_configuration(
-                    family.service_config.scaling.target_scaling, "memory"
-                ),
-            )
-
-
 def generate_service_template_outputs(family):
     """
     Function to generate the Service template outputs
@@ -363,10 +254,6 @@ class Service(object):
         ingress_props = define_service_ingress(family, settings)
         self.lbs = ingress_props["LoadBalancers"]
         self.registries = ingress_props["ServiceRegistries"]
-        # self.generate_service_definition(family, settings)
-
-        # create_scalable_target(family)
-        # generate_service_template_outputs(family)
 
     def generate_service_definition(self, family, settings):
         """

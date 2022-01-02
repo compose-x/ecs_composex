@@ -98,5 +98,5 @@ x-vpc:
     PublicSubnets:
       tags:
         - vpc::usage: public
-  Create:
+  Properties:
     VpcCidr: 172.23.240.0/24
