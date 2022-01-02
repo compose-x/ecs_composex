@@ -1144,6 +1144,10 @@ class Elbv2(NetworkXResource):
         return subnets
 
     def set_subnet_mappings(self, settings):
+        """
+        For NLB, defines the EC2 EIP and Subnets Mappings to use.
+        Determines the number of EIP to produce from the VPC Settings.
+        """
         if not (self.is_nlb() and self.lb_is_public):
             return Ref(AWS_NO_VALUE)
         if not self.lb_eips and self.lb_is_public:
@@ -1229,7 +1233,6 @@ class Elbv2(NetworkXResource):
         """
         Function to parse the LB settings and properties and build the LB object
 
-        :param ecs_composex.elbv2.elbv2_stack.Elbv2 self:
         :param ecs_composex.common.settings.ComposeXSettings settings:
         """
         attrs = {
@@ -1242,7 +1245,7 @@ class Elbv2(NetworkXResource):
             if isinstance(self.lb_sg, SecurityGroup)
             else self.lb_sg,
             "Subnets": self.set_subnets(settings),
-            "SubnetMappings": self.set_subnet_mappings(settings),
+            "SubnetMappings": Ref(AWS_NO_VALUE),
             "LoadBalancerAttributes": self.set_lb_attributes(),
             "Tags": Tags(Name=Sub(f"${{{ROOT_STACK_NAME.title}}}{self.logical_name}")),
             "Name": Ref(AWS_NO_VALUE),
@@ -1282,6 +1285,12 @@ class Elbv2(NetworkXResource):
             template.add_resource(eip)
         self.generate_outputs()
 
+    def update_from_vpc(self, vpc_stack, settings=None):
+        """
+        Override to set the specific resources right once we have a VPC Definition
+        """
+        pass
+
 
 def init_elbv2_template():
     """
@@ -1317,6 +1326,7 @@ class XStack(ComposeXStack):
             APP_SUBNETS.title: Ref(APP_SUBNETS),
             PUBLIC_SUBNETS.title: Ref(PUBLIC_SUBNETS),
         }
+        settings.x_resources += new_resources
         for resource in new_resources:
             resource.set_lb_definition(settings)
             resource.sort_alb_ingress(settings, stack_template)

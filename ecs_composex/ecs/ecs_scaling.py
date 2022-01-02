@@ -1,4 +1,4 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
@@ -11,7 +11,7 @@ import string
 from json import dumps
 
 from compose_x_common.compose_x_common import keyisset, keypresent
-from troposphere import AWS_NO_VALUE, Ref
+from troposphere import AWS_NO_VALUE, GetAtt, Ref, Sub, applicationautoscaling
 from troposphere.applicationautoscaling import (
     ScalingPolicy,
     StepAdjustment,
@@ -19,6 +19,7 @@ from troposphere.applicationautoscaling import (
 )
 
 from ecs_composex.common import LOG
+from ecs_composex.ecs import ecs_params
 from ecs_composex.ecs.ecs_params import SERVICE_SCALING_TARGET
 
 
@@ -313,6 +314,43 @@ def merge_family_services_scaling(services):
     return x_scaling
 
 
+def define_tracking_target_configuration(target_scaling_config, config_key):
+    """
+    Function to create the configuration for target tracking scaling
+
+    :param dict target_scaling_config:
+    :param str config_key:
+    :return:
+    """
+    settings = {
+        "cpu": {
+            "key": "CpuTarget",
+            "property": "ECSServiceAverageCPUUtilization",
+        },
+        "memory": {
+            "key": "MemoryTarget",
+            "property": "ECSServiceAverageMemoryUtilization",
+        },
+        "targets": {
+            "key": "TgtTargetsCount",
+            "property": "ALBRequestCountPerTarget",
+        },
+    }
+    if config_key not in settings.keys():
+        raise KeyError(config_key, "Is invalid. Expected one of", settings.keys())
+    specification = applicationautoscaling.PredefinedMetricSpecification(
+        PredefinedMetricType=settings[config_key]["property"]
+    )
+
+    return applicationautoscaling.TargetTrackingScalingPolicyConfiguration(
+        DisableScaleIn=target_scaling_config["DisableScaleIn"],
+        ScaleInCooldown=target_scaling_config["ScaleInCooldown"],
+        ScaleOutCooldown=target_scaling_config["ScaleOutCooldown"],
+        TargetValue=float(target_scaling_config[settings[config_key]["key"]]),
+        PredefinedMetricSpecification=specification,
+    )
+
+
 class ServiceScaling(object):
     """
     Class to group the configuration for Service scaling
@@ -341,3 +379,74 @@ class ServiceScaling(object):
             {"Range": self.scaling_range, "TargetScaling": self.target_scaling},
             indent=4,
         )
+
+    def create_scalable_target(self, family):
+        """
+        Method to automatically create a scalable target
+        """
+        LOG.debug(family.service_config.scaling.scaling_range)
+        if ecs_params.SERVICE_SCALING_TARGET in family.template.resources:
+            return
+        if family.service_config.scaling.scaling_range:
+            family.scalable_target = applicationautoscaling.ScalableTarget(
+                ecs_params.SERVICE_SCALING_TARGET,
+                template=family.template,
+                MaxCapacity=family.service_config.scaling.scaling_range["max"],
+                MinCapacity=family.service_config.scaling.scaling_range["min"],
+                ScalableDimension="ecs:service:DesiredCount",
+                ServiceNamespace="ecs",
+                RoleARN=Sub(
+                    "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/"
+                    "ecs.application-autoscaling.${AWS::URLSuffix}/"
+                    "AWSServiceRoleForApplicationAutoScaling_ECSService"
+                ),
+                ResourceId=Sub(
+                    f"service/${{{ecs_params.CLUSTER_NAME.title}}}/${{{family.ecs_service.ecs_service.title}.Name}}"
+                ),
+                SuspendedState=applicationautoscaling.SuspendedState(
+                    DynamicScalingInSuspended=False
+                ),
+            )
+        else:
+            family.scalable_target = applicationautoscaling.ScalableTarget(
+                ecs_params.SERVICE_SCALING_TARGET,
+                template=family.template,
+                MaxCapacity=family.service_config.replicas,
+                MinCapacity=family.service_config.replicas,
+                ScalableDimension="ecs:service:DesiredCount",
+                ServiceNamespace="ecs",
+                RoleARN=Sub(
+                    "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/"
+                    "ecs.application-autoscaling.${AWS::URLSuffix}/"
+                    "AWSServiceRoleForApplicationAutoScaling_ECSService"
+                ),
+                ResourceId=Sub(
+                    f"service/${{{ecs_params.CLUSTER_NAME.title}}}/${{{family.ecs_service.ecs_service.title}.Name}}"
+                ),
+                SuspendedState=applicationautoscaling.SuspendedState(
+                    DynamicScalingInSuspended=False
+                ),
+            )
+        if family.scalable_target and family.service_config.scaling.target_scaling:
+            if keyisset("CpuTarget", family.service_config.scaling.target_scaling):
+                applicationautoscaling.ScalingPolicy(
+                    "ServiceCpuTrackingPolicy",
+                    template=family.template,
+                    ScalingTargetId=Ref(family.scalable_target),
+                    PolicyName="CpuTrackingScalingPolicy",
+                    PolicyType="TargetTrackingScaling",
+                    TargetTrackingScalingPolicyConfiguration=define_tracking_target_configuration(
+                        family.service_config.scaling.target_scaling, "cpu"
+                    ),
+                )
+            if keyisset("MemoryTarget", family.service_config.scaling.target_scaling):
+                applicationautoscaling.ScalingPolicy(
+                    "ServiceMemoryTrackingPolicy",
+                    template=family.template,
+                    ScalingTargetId=Ref(family.scalable_target),
+                    PolicyName="MemoryTrackingScalingPolicy",
+                    PolicyType="TargetTrackingScaling",
+                    TargetTrackingScalingPolicyConfiguration=define_tracking_target_configuration(
+                        family.service_config.scaling.target_scaling, "memory"
+                    ),
+                )

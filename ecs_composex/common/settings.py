@@ -137,7 +137,7 @@ class ComposeXSettings(object):
         self.services = []
         self.secrets = []
         self.networks = []
-        self.new_x_resources = []
+        self.x_resources = []
         self.vpc_imported = False
         self.subnets_parameters = []
         self.subnets_mappings = {}
@@ -187,9 +187,7 @@ class ComposeXSettings(object):
             )
 
     def requires_vpc(self):
-        x_resources_require_vpc = any(
-            [res.requires_vpc for res in self.new_x_resources]
-        )
+        x_resources_require_vpc = any([res.requires_vpc for res in self.x_resources])
         services_require_vpc = any(
             [
                 family.service_config.network.network_mode == "awsvpc"

@@ -199,7 +199,7 @@ def handle_lookup_to_service_mapping(res_name, resource, settings):
         statement = []
         iam_policy = PolicyType(
             MAPPINGS_KEY,
-            Roles=[Ref(target[0].task_role.name["ImportParameter"])],
+            Roles=[target[0].task_role.name],
             PolicyName=MAPPINGS_KEY,
             PolicyDocument={"Version": "2012-10-17", "Statement": statement},
         )
@@ -244,7 +244,7 @@ def assign_new_resource_to_service(
         statement = []
         iam_policy = PolicyType(
             MAPPINGS_KEY,
-            Roles=[Ref(target[0].task_role.name["ImportParameter"])],
+            Roles=[target[0].task_role.name],
             PolicyName=MAPPINGS_KEY,
             PolicyDocument={"Version": "2012-10-17", "Statement": statement},
         )

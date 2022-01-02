@@ -129,8 +129,8 @@ def define_service_targets(settings, stack, rule, cluster_arn):
                 PolicyName="EventsAccess",
                 PolicyDocument=task_events_policy_doc,
                 Roles=[
-                    Ref(service[0].task_role.name["ImportParameter"]),
-                    Ref(service[0].exec_role.name["ImportParameter"]),
+                    service[0].task_role.name,
+                    service[0].exec_role.name,
                 ],
             )
         )

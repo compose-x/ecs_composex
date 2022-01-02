@@ -138,7 +138,7 @@ def add_iam_policy_to_service_task_role(family, resource, perms, access_type, se
             policy_title,
             PolicyName=policy.PolicyName,
             PolicyDocument=policy.PolicyDocument,
-            Roles=[Ref(family.task_role.name["ImportParameter"])],
+            Roles=[family.task_role.name],
         )
         family.template.add_resource(res_policy)
     for container in containers:
@@ -235,7 +235,7 @@ def map_service_perms_to_resource(
             policy_title,
             PolicyName=policy_title,
             PolicyDocument={"Version": "2012-10-17", "Statement": []},
-            Roles=[Ref(family.task_role.name["ImportParameter"])],
+            Roles=[family.task_role.name],
         )
         res_policy = family.template.add_resource(
             family.iam_modules_policies[resource.mapping_key]

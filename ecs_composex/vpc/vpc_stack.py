@@ -141,6 +141,7 @@ class Vpc(XResource):
                 self.vpc,
                 boundary=set_else_none("FlowLogsRoleBoundary", self.properties, None),
             )
+        self.cfn_resource = self.vpc
 
     def lookup_vpc(self, settings):
         """
@@ -275,7 +276,7 @@ def init_vpc_template() -> troposphere.Template:
     return template
 
 
-class VpcStack(ComposeXStack):
+class XStack(ComposeXStack):
     """
     Class to create the VPC Stack
     """
