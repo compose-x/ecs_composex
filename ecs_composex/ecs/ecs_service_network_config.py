@@ -214,7 +214,7 @@ def set_compose_services_ingress(root_stack, dst_family, families, settings):
                     SecurityGroupIngress(
                         f"From{src_family.logical_name}To{dst_family.stack.title}On{port['published']}",
                         SourceSecurityGroupId=GetAtt(
-                            src_family.ecs_service.sg, "GroupId"
+                            src_family.service_config.network.security_group, "GroupId"
                         ),
                         GroupId=Ref(dst_family_sg_param),
                         **common_args,
@@ -319,8 +319,12 @@ class ServiceNetworking(Ingress):
                     FromPort=port["published"],
                     ToPort=port["published"],
                     IpProtocol=port["protocol"],
-                    GroupId=GetAtt(family.ecs_service.sg, "GroupId"),
-                    SourceSecurityGroupId=GetAtt(family.ecs_service.sg, "GroupId"),
+                    GroupId=GetAtt(
+                        family.service_config.network.security_group, "GroupId"
+                    ),
+                    SourceSecurityGroupId=GetAtt(
+                        family.service_config.network.security_group, "GroupId"
+                    ),
                     SourceSecurityGroupOwnerId=Ref(AWS_ACCOUNT_ID),
                     Description=Sub(
                         f"Allowing traffic internally on port {port['published']}"
@@ -345,7 +349,9 @@ class ServiceNetworking(Ingress):
                 "FromPort": port["target"],
                 "ToPort": port["target"],
                 "IpProtocol": port["protocol"],
-                "GroupId": GetAtt(family.ecs_service.sg, "GroupId"),
+                "GroupId": GetAtt(
+                    family.service_config.network.security_group, "GroupId"
+                ),
                 "SourceSecurityGroupOwnerId": Ref(AWS_ACCOUNT_ID),
                 "Description": Sub(
                     f"From ELB {lb_name} to ${{{SERVICE_NAME_T}}} on port {port['target']}"

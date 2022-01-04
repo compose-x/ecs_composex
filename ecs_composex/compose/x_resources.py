@@ -11,7 +11,6 @@ import warnings
 from copy import deepcopy
 from re import sub
 
-from boto3.session import Session
 from compose_x_common.aws import get_account_id
 from compose_x_common.compose_x_common import (
     attributes_to_mapping,
@@ -283,6 +282,10 @@ class XResource(object):
         if subattribute_key is not None:
             lookup_attributes = self.lookup[subattribute_key]
         if keyisset("Arn", lookup_attributes):
+            LOG.info(f"{self.module_name}.{self.name} - Lookup via ARN")
+            LOG.debug(
+                f"{self.module_name}.{self.name} - ARN is {lookup_attributes['Arn']}"
+            )
             arn_parts = arn_re.match(lookup_attributes["Arn"])
             if not arn_parts:
                 raise KeyError(
@@ -293,6 +296,10 @@ class XResource(object):
             resource_id = arn_parts.group("id")
             account_id = arn_parts.group("accountid")
         elif keyisset("Tags", lookup_attributes):
+            LOG.info(f"{self.module_name}.{self.name} - Lookup via Tags")
+            LOG.debug(
+                f"{self.module_name}.{self.name} - Lookup tags -> {lookup_attributes}"
+            )
             self.arn = find_aws_resource_arn_from_tags_api(
                 lookup_attributes, self.lookup_session, tagging_api_id
             )
@@ -594,7 +601,7 @@ class ServicesXResource(XResource):
         :return:
         """
         if not self.services:
-            LOG.debug(f"No services defined for {self.name}")
+            LOG.debug(f"{self.module_name}.{self.name} No Services defined.")
             return
         for service in self.services:
             name_key = get_setting_key("name", service)
@@ -674,6 +681,21 @@ class ServicesXResource(XResource):
                 self.handle_family_scaling_expansion(service, settings)
 
 
+class AwsEnvironmentResource(XResource):
+    """
+    Class for AWS Resources that are used by other AWS Resources. The services do not use these resources directly
+
+    :ivar bool lookup_only: Whether the XResource should only be looked up.
+    """
+
+    def __init__(
+        self, name: str, definition: dict, module_name: str, settings, mapping_key=None
+    ):
+        self.lookup_only = False
+        super().__init__(name, definition, module_name, settings, mapping_key)
+        self.requires_vpc = False
+
+
 class ApiXResource(ServicesXResource):
     """
     Class for Resources that only require API / IAM access to be defined
@@ -697,6 +719,40 @@ class NetworkXResource(ServicesXResource):
         self.security_group = None
         super().__init__(name, definition, module_name, settings, mapping_key)
         self.requires_vpc = True
+        self.cleanse_external_targets()
+        self.set_override_subnets()
+
+    def cleanse_external_targets(self):
+        """
+        Will automatically remove the target families which are set as external
+        """
+        for target in self.families_targets:
+            if target[0].launch_type and target[0].launch_type == "EXTERNAL":
+                LOG.info(
+                    f"{self.module_name}.{self.name} - Target {target[0].name} - Launch Type not supported (EXTERNAL)"
+                )
+                self.families_targets.remove(target)
+        for target in self.families_scaling:
+            if target[0].launch_type and target[0].launch_type == "EXTERNAL":
+                LOG.info(
+                    f"{self.module_name}.{self.name} - Target {target[0].name} - Launch Type not supported (EXTERNAL)"
+                )
+                self.families_scaling.remove(target)
+        print("SELF SERVICES", self.services)
+        for service in self.services:
+            family_name = (
+                service["name"].split(":")[0]
+                if r":" in service["name"]
+                else service["name"]
+            )
+            print("FAMILY NAME IS", family_name)
+            print(
+                "FAMILIES ADDED SO FAR",
+                [target[0].name for target in self.families_targets],
+            )
+            if family_name not in [target[0].name for target in self.families_targets]:
+                self.services.remove(service)
+        print("AFTER CLEANSE", self.services)
 
     def set_override_subnets(self):
         """
@@ -708,6 +764,12 @@ class NetworkXResource(ServicesXResource):
             and hasattr(self, "subnets_param")
         ):
             self.subnets_override = self.settings["Subnets"]
+        elif (
+            self.parameters
+            and keyisset("Subnets", self.parameters)
+            and hasattr(self, "subnets_param")
+        ):
+            self.subnets_override = self.parameters["Subnets"]
 
     def update_from_vpc(self, vpc_stack, settings=None):
         """

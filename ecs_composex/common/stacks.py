@@ -238,8 +238,18 @@ class ComposeXStack(Stack, object):
         template_file.validate(settings)
         self.write_config_file(settings)
 
-    def get_from_vpc_stack(self, vpc_stack, *parameters):
-        if isinstance(vpc_stack, ComposeXStack):
+    def set_vpc_parameters_from_vpc_stack(self, vpc_stack, *parameters):
+        """
+        When a new VPC is created (vpc comes from nested stack), adds the subnets parameters
+        and updates the stack parameters in the root stack.
+
+        :param vpc_stack:
+        :param list parameters:
+
+        """
+        if isinstance(vpc_stack, ComposeXStack) or issubclass(
+            type(vpc_stack), ComposeXStack
+        ):
             vpc = vpc_stack.title
         elif isinstance(vpc_stack, str):
             vpc = vpc_stack
@@ -278,16 +288,16 @@ class ComposeXStack(Stack, object):
         elif hasattr(self, "DependsOn") and vpc not in getattr(self, "DependsOn"):
             self.DependsOn.append(vpc)
 
-    def no_vpc_stack_parameters(self, settings):
+    def set_vpc_params_from_vpc_stack_import(self, vpc_stack):
         """
         Method to set the stack parameters when we are not creating a VPC.
         """
-        add_parameters(self.stack_template, settings.subnets_parameters)
+        add_parameters(self.stack_template, vpc_stack.vpc_resource.subnets_parameters)
         add_parameters(self.stack_template, [VPC_ID])
         self.Parameters.update(
             {VPC_ID_T: FindInMap("Network", VPC_ID.title, VPC_ID.title)}
         )
-        for subnet_param in settings.subnets_parameters:
+        for subnet_param in vpc_stack.vpc_resource.subnets_parameters:
             self.Parameters.update(
                 {
                     subnet_param.title: Join(
@@ -306,6 +316,7 @@ def process_stacks(root_stack, settings, is_root=True):
     :type root_stack: ecs_composex.common.stacks.ComposeXStack
     :param settings: The settings for execution
     :type settings: ecs_composex.common.settings.ComposeXSettings
+    :param bool is_root: Allows to know whether the stack is parent stack
     """
     resources = root_stack.stack_template.resources
     for resource_name in resources:

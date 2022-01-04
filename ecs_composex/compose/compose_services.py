@@ -410,10 +410,12 @@ class ComposeService(object):
             return Ref(AWS_NO_VALUE)
         elif keyisset(tmpfs_key, self.definition):
             if isinstance(self.definition[tmpfs_key], str):
-                self.tmpfses.append({"ContainerPath": self.definition[tmpfs_key]})
+                self.tmpfses.append(
+                    {"ContainerPath": self.definition[tmpfs_key], "Size": 0}
+                )
             elif isinstance(self.definition[tmpfs_key], list):
-                for pathes in self.definition[tmpfs_key]:
-                    self.tmpfses.append({"ContainerPath": pathes})
+                for container_path in self.definition[tmpfs_key]:
+                    self.tmpfses.append({"ContainerPath": container_path, "Size": 0})
         rendered_fs = [Tmpfs(**args) for args in self.tmpfses]
         return If(USE_FARGATE_CON_T, Ref(AWS_NO_VALUE), rendered_fs)
 

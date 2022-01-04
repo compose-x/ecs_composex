@@ -356,7 +356,6 @@ def define_listener_rules_actions(listener, left_services):
     """
     Function to identify the Target definition and create the resulting rule appropriately.
 
-    :param dict service_def:
     :param listener:
     :param list left_services:
     :return: The action to add or action list for default target
@@ -424,18 +423,18 @@ def add_extra_certificate(listener_stack, listener, cert_arn):
         setattr(listener, "Certificates", [Certificate(CertificateArn=cert_arn)])
 
 
-def rectify_listener_protocol(listener):
+def upgrade_listener_to_use_tls(listener):
     """
     Function to rectify the listener type when adding cert
 
-    :param troposphere.elasticloadbalancingv2.Listener listener:
+    :param ComposeListener listener:
     :raises: ValueError if trying to set TLS for UDP
     """
     alb_protocols = ["HTTP", "HTTPS"]
     nlb_protocols = ["TCP", "UDP", "TCP_UDP", "TLS"]
     if listener.Protocol in alb_protocols and listener.Protocol == "HTTP":
         LOG.warning(
-            "Listener protocol is HTTP but certificate defined. Changing to HTTPS"
+            f"{RES_KEY}.{listener.name} - Protocol is HTTP but certificate(s) defined. Updating to to HTTPS"
         )
         listener.Protocol = "HTTPS"
     elif listener.Protocol in nlb_protocols and listener.Protocol == "TCP":
@@ -459,39 +458,39 @@ def import_new_acm_certs(listener, src_name, settings, listener_stack):
     """
     if not keyisset(ACM_KEY, settings.compose_content):
         raise LookupError(f"There is no {ACM_KEY} defined in your docker-compose files")
-    new_acm_certs = [
-        settings.compose_content[ACM_KEY][name]
-        for name in settings.compose_content[ACM_KEY]
-        if settings.compose_content[ACM_KEY][name].cfn_resource
-    ]
-    lookup_acm_certs = [
-        settings.compose_content[ACM_KEY][name]
-        for name in settings.compose_content[ACM_KEY]
-        if settings.compose_content[ACM_KEY][name].lookup
-    ]
-    the_cert = None
-    for cert in new_acm_certs:
-        if cert.name == src_name:
-            the_cert = cert
-    if not the_cert:
-        for cert in lookup_acm_certs:
-            if cert.name == src_name:
-                the_cert = cert
-                break
-    cert_param = Parameter(f"{the_cert.logical_name}Arn", Type="String")
-    add_parameters(listener_stack.stack_template, [cert_param])
-    if the_cert.cfn_resource and not the_cert.lookup:
-        listener_stack.Parameters.update({cert_param.title: Ref(the_cert.cfn_resource)})
-    elif the_cert.lookup and not the_cert.cfn_resource:
-        listener_stack.Parameters.update(
-            {
-                cert_param.title: FindInMap(
-                    ACM_MOD_KEY, the_cert.logical_name, the_cert.logical_name
-                )
-            }
-        )
-    add_extra_certificate(listener_stack, listener, Ref(cert_param))
-    rectify_listener_protocol(listener)
+    # new_acm_certs = [
+    #     settings.compose_content[ACM_KEY][name]
+    #     for name in settings.compose_content[ACM_KEY]
+    #     if settings.compose_content[ACM_KEY][name].cfn_resource
+    # ]
+    # lookup_acm_certs = [
+    #     settings.compose_content[ACM_KEY][name]
+    #     for name in settings.compose_content[ACM_KEY]
+    #     if settings.compose_content[ACM_KEY][name].lookup
+    # ]
+    # the_cert = None
+    # for cert in new_acm_certs:
+    #     if cert.name == src_name:
+    #         the_cert = cert
+    # if not the_cert:
+    #     for cert in lookup_acm_certs:
+    #         if cert.name == src_name:
+    #             the_cert = cert
+    #             break
+    # cert_param = Parameter(f"{the_cert.logical_name}Arn", Type="String")
+    # add_parameters(listener_stack.stack_template, [cert_param])
+    # if the_cert.cfn_resource and not the_cert.lookup:
+    #     listener_stack.Parameters.update({cert_param.title: Ref(the_cert.cfn_resource)})
+    # elif the_cert.lookup and not the_cert.cfn_resource:
+    #     listener_stack.Parameters.update(
+    #         {
+    #             cert_param.title: FindInMap(
+    #                 ACM_MOD_KEY, the_cert.logical_name, the_cert.logical_name
+    #             )
+    #         }
+    #     )
+    # add_extra_certificate(listener_stack, listener, Ref(cert_param))
+    upgrade_listener_to_use_tls(listener)
 
 
 def handle_import_cognito_pool(the_pool, listener_stack, settings):
@@ -574,9 +573,11 @@ def add_acm_certs_arn(listener, src_value, settings, listener_stack):
             "Expected",
             cert_arn_re.pattern,
         )
-    LOG.info("Adding new cert from defined ARN")
+    LOG.debug(
+        f"{RES_KEY}.{listener.name} - Adding new ACM Certificate from defined ARN {src_value}"
+    )
     add_extra_certificate(listener_stack, listener, src_value)
-    rectify_listener_protocol(listener)
+    upgrade_listener_to_use_tls(listener)
 
 
 def map_service_target(lb, name, l_service_def):
@@ -589,8 +590,8 @@ def map_service_target(lb, name, l_service_def):
     :return:
     """
     for target in lb.families_targets:
-        t_family = target[1].name
-        t_service = target[0].name
+        t_family = target[0].name
+        t_service = target[1].name
         target_name = f"{t_family}:{t_service}"
         if target_name == name:
             for service in lb.services:
@@ -733,9 +734,10 @@ class ComposeListener(Listener):
         If not defined and there is only one service defined, it will skip
         """
         if not self.default_actions and not self.services:
-            raise ValueError(
-                f"There are no actions defined or services for listener {self.title}."
+            warnings.warn(
+                f"{self.name} - There are no actions defined or services for listener {self.title}. Skipping"
             )
+            return
         if self.default_actions:
             handle_default_actions(self)
         elif not self.default_actions and self.services and len(self.services) == 1:
@@ -813,28 +815,22 @@ class ComposeListener(Listener):
         Method to handle certificates
 
         :param ecs_composex.common.settings.ComposeXSettings settings:
+        :param listener_stack: The stack that has the listener as resource
 
         :return:
         """
+        if not keyisset("Certificates", self.definition):
+            LOG.warning(f"No certificates defined for Listener {self.name}")
+            return
         valid_sources = [
             ("x-acm", str, import_new_acm_certs),
             ("Arn", str, add_acm_certs_arn),
             ("CertificateArn", str, add_acm_certs_arn),
         ]
-        if not keyisset("Certificates", self.definition):
-            LOG.warning(f"No certificates defined for Listener {self.name}")
-            return
         for cert_def in self.definition["Certificates"]:
             if isinstance(cert_def, dict):
                 cert_source = list(cert_def.keys())[0]
                 source_value = cert_def[cert_source]
-                if cert_source not in [source[0] for source in valid_sources]:
-                    raise KeyError(
-                        "The certificate source can only defined from",
-                        [source[0] for source in valid_sources],
-                        "Got",
-                        cert_source,
-                    )
                 for src_type in valid_sources:
                     if (
                         src_type[0] == cert_source
@@ -863,7 +859,7 @@ class ComposeListener(Listener):
                 f" in {lb.logical_name} Services for listener {self.title}",
             )
 
-    def map_services(self, lb):
+    def map_lb_services_to_listener_targets(self, lb):
         """
         Map Services defined in LB definition to Targets
 
@@ -935,8 +931,21 @@ class Elbv2(NetworkXResource):
         ports = [listener["Port"] for listener in self.definition["Listeners"]]
         validate_listeners_duplicates(self.name, ports)
         for listener_def in self.definition["Listeners"]:
-            new_listener = template.add_resource(ComposeListener(self, listener_def))
-            self.listeners.append(new_listener)
+            if keyisset("Targets", listener_def):
+                for target in listener_def["Targets"]:
+                    if target["name"] not in [svc["name"] for svc in self.services]:
+                        listener_def["Targets"].remove(target)
+            if keyisset("Targets", listener_def) or keyisset(
+                "DefaultActions", listener_def
+            ):
+                new_listener = template.add_resource(
+                    ComposeListener(self, listener_def)
+                )
+                self.listeners.append(new_listener)
+            else:
+                LOG.warning(
+                    f"{self.module_name}.{self.name} - Listener {listener_def['Port']} has no action or service. Not used."
+                )
 
     def set_services_targets(self, settings):
         """
@@ -949,16 +958,18 @@ class Elbv2(NetworkXResource):
         """
         the_right_service = None
         if not self.services:
-            LOG.info(f"No services defined for {self.name}")
+            LOG.debug(f"{self.module_name}.{self.name} No Services defined.")
             return
         for service_def in self.services:
             family_combo_name = service_def["name"]
             service_name = family_combo_name.split(":")[-1]
             family_name = NONALPHANUM.sub("", family_combo_name.split(":")[0])
-            LOG.info(f"Family {family_name} - Service {service_name}")
+            LOG.info(
+                f"{self.module_name}.{self.name} - Adding target {family_name}:{service_name}"
+            )
             if family_name not in settings.families:
                 raise ValueError(
-                    f"FamilyName {family_name} is invalid. Defined families",
+                    f"{self.module_name}.{self.name} - Service family {family_name} is invalid. Defined families",
                     settings.families.keys(),
                 )
             for f_service in settings.families[family_name].services:
@@ -967,7 +978,7 @@ class Elbv2(NetworkXResource):
                     break
             if not the_right_service:
                 raise ValueError(
-                    f"Could not find {service_name} in family {family_name}"
+                    f"{self.module_name}.{self.name} - Could not find {service_name} in family {family_name}"
                 )
             if (
                 the_right_service in settings.services
@@ -975,15 +986,15 @@ class Elbv2(NetworkXResource):
             ):
                 self.families_targets.append(
                     (
-                        the_right_service,
                         the_right_service.my_family,
+                        the_right_service,
                         service_def,
                         f"{service_def['name']}{service_def['port']}",
                     )
                 )
             elif the_right_service not in settings.services:
                 raise ValueError(
-                    "For elbv2, please, use only the services names."
+                    f"{self.module_name}.{self.name} Please, use only the services names."
                     "You cannot use the family name defined by deploy labels"
                     f"Found {the_right_service}",
                     [s for s in settings.services],
@@ -1062,45 +1073,44 @@ class Elbv2(NetworkXResource):
             self.ingress.associate_aws_igress_rules(stack_template)
             self.ingress.associate_ext_igress_rules(stack_template)
 
-    def define_override_subnets(self, subnets, settings):
+    def define_override_subnets(self, subnets, vpc_stack):
         """
         Method to define the subnets overrides to use for the LB
 
         :param subnets: The original subnets to replace
-        :param ecs_composex.common.settings.ComposeXSettings settings:
+        :param ecs_composex.vpc.vpc_stack.VpcStack vpc_stack:
         :return: the subnet name to use
         :rtype: str
         """
-
-        if isinstance(subnets, Ref):
-            subnets = subnets.data["Ref"]
-        if self.parameters and keyisset("Subnets", self.parameters):
-            if not self.parameters["Subnets"] in settings.subnets_mappings.keys():
+        if self.subnets_override:
+            if not self.parameters["Subnets"] in vpc_stack.vpc_resource.mappings.keys():
                 raise KeyError(
                     f"The subnets indicated for {self.name} is not valid. Valid ones are",
-                    settings.subnets_mappings.keys(),
+                    vpc_stack.vpc_resource.mappings.keys(),
                 )
-            subnets = self.parameters["Subnets"]
+            return self.subnets_override
+        if isinstance(subnets, Ref):
+            return subnets.data["Ref"]
         return subnets
 
-    def set_eips(self, settings):
+    def set_eips(self, vpc_stack):
         """
 
-        :param ecs_composex.common.settings.ComposeXSettings settings:
+        :param ecs_composex.vpc.vpc_stack.VpcStack vpc_stack:
         :return:
         """
         if self.is_nlb() and self.lb_is_public:
-            if settings.create_vpc:
-                for public_az in settings.aws_azs:
+            if vpc_stack.vpc_resource.cfn_resource:
+                for public_subnet in vpc_stack.vpc_resource.public_subnets[1]:
                     self.lb_eips.append(
                         EIP(
-                            f"{self.logical_name}Eip{public_az['ZoneName'].title().split('-')[-1]}",
+                            f"{self.logical_name}Eip{public_subnet.title}",
                             Domain="vpc",
                         )
                     )
-            else:
-                subnets = self.define_override_subnets(PUBLIC_SUBNETS.title, settings)
-                for public_az in settings.subnets_mappings[subnets]["Azs"]:
+            elif vpc_stack.vpc_resource.mappings:
+                subnets = self.define_override_subnets(PUBLIC_SUBNETS.title, vpc_stack)
+                for public_az in vpc_stack.vpc_resource.mappings[subnets]["Azs"]:
                     self.lb_eips.append(
                         EIP(
                             f"{self.logical_name}Eip{public_az.title().split('-')[-1]}",
@@ -1108,22 +1118,17 @@ class Elbv2(NetworkXResource):
                         )
                     )
 
-    def set_subnets(self, settings):
+    def set_subnets(self, vpc_stack):
         """
         Method to define which subnets to use for the
-        :param ecs_composex.common.settings.ComposeXSettings settings:
+
+        :param ecs_composex.vpc.vpc_stack.VpcStack vpc_stack:
         :return:
         """
-        subnets = APP_SUBNETS.title
-        if self.is_nlb() and self.lb_is_public:
-            subnets = Ref(AWS_NO_VALUE)
-        elif (
-            not self.lb_is_public
-            and self.parameters
-            and keyisset("Subnets", self.parameters)
-        ):
-            override_name = self.define_override_subnets(subnets, settings)
-            if settings.create_vpc and override_name not in [
+        if self.is_nlb():
+            return Ref(AWS_NO_VALUE)
+        elif not self.lb_is_public and self.subnets_override:
+            if vpc_stack.vpc_resource.cfn_resource and self.subnets_override not in [
                 PUBLIC_SUBNETS.title,
                 APP_SUBNETS.title,
             ]:
@@ -1132,28 +1137,29 @@ class Elbv2(NetworkXResource):
                     [PUBLIC_SUBNETS.title, APP_SUBNETS.title],
                 )
             elif (
-                not settings.create_vpc
-                and override_name in settings.subnets_mappings.keys()
+                not vpc_stack.vpc_resource.cfn_resource
+                and vpc_stack.vpc_resource.mappings
+                and self.subnets_override in vpc_stack.vpc_resource.mappings.keys()
             ):
-                subnets = Ref(override_name)
+                return Ref(self.subnets_override)
         else:
             if self.is_alb() and self.lb_is_public:
-                subnets = Ref(PUBLIC_SUBNETS)
+                return Ref(PUBLIC_SUBNETS)
             elif not self.lb_is_public:
-                subnets = Ref(APP_SUBNETS)
-        return subnets
+                return Ref(APP_SUBNETS)
+        return APP_SUBNETS.title
 
-    def set_subnet_mappings(self, settings):
+    def set_subnet_mappings(self, vpc_stack):
         """
         For NLB, defines the EC2 EIP and Subnets Mappings to use.
         Determines the number of EIP to produce from the VPC Settings.
         """
-        if not (self.is_nlb() and self.lb_is_public):
+        if self.is_alb():
             return Ref(AWS_NO_VALUE)
         if not self.lb_eips and self.lb_is_public:
-            self.set_eips(settings)
+            self.set_eips(vpc_stack)
         mappings = []
-        subnets = self.define_override_subnets(PUBLIC_SUBNETS.title, settings)
+        subnets = self.define_override_subnets(PUBLIC_SUBNETS.title, vpc_stack)
         for count, eip in enumerate(self.lb_eips):
             mappings.append(
                 SubnetMapping(
@@ -1244,7 +1250,7 @@ class Elbv2(NetworkXResource):
             "SecurityGroups": [Ref(self.lb_sg)]
             if isinstance(self.lb_sg, SecurityGroup)
             else self.lb_sg,
-            "Subnets": self.set_subnets(settings),
+            "Subnets": Ref(AWS_NO_VALUE),
             "SubnetMappings": Ref(AWS_NO_VALUE),
             "LoadBalancerAttributes": self.set_lb_attributes(),
             "Tags": Tags(Name=Sub(f"${{{ROOT_STACK_NAME.title}}}{self.logical_name}")),
@@ -1288,8 +1294,15 @@ class Elbv2(NetworkXResource):
     def update_from_vpc(self, vpc_stack, settings=None):
         """
         Override to set the specific resources right once we have a VPC Definition
+
+        :param ecs_composex.vpc.vpc_stack.VpcStack vpc_stack:
+        :param ecs_composex.common.settings.ComposeXSettings settings:
         """
-        pass
+        if vpc_stack and vpc_stack.vpc_resource:
+            if self.is_alb():
+                self.cfn_resource.Subnets = self.set_subnets(vpc_stack)
+            elif self.is_nlb():
+                self.cfn_resource.SubnetMappings = self.set_subnet_mappings(vpc_stack)
 
 
 def init_elbv2_template():
@@ -1326,7 +1339,6 @@ class XStack(ComposeXStack):
             APP_SUBNETS.title: Ref(APP_SUBNETS),
             PUBLIC_SUBNETS.title: Ref(PUBLIC_SUBNETS),
         }
-        settings.x_resources += new_resources
         for resource in new_resources:
             resource.set_lb_definition(settings)
             resource.sort_alb_ingress(settings, stack_template)
