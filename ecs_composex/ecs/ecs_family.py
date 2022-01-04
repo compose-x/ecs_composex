@@ -723,7 +723,7 @@ class ComposeFamily(object):
         """
         if self.launch_type == "EXTERNAL":
             LOG.warning(
-                f"{self} - ECS Execute Command is not supported for services running on ECS Anywhere"
+                f"{self.name} - ECS Execute Command is not supported for services running on ECS Anywhere"
             )
             return
         for svc in self.services:

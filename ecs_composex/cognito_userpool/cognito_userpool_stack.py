@@ -5,6 +5,7 @@
 """
 Module to manage top level AWS CodeGuru profiles
 """
+import warnings
 
 from compose_x_common.aws.cognito_userpool import USER_POOL_RE
 from compose_x_common.compose_x_common import attributes_to_mapping, keyisset
@@ -80,6 +81,25 @@ class UserPool(ApiXResource):
         }
 
 
+def resolve_lookup(lookup_resources, settings):
+    """
+    Iterates over the lookup resources and performs the lookup to create the resource mapping used in the template.
+
+    :param list[UserPool] lookup_resources: the lookup resources to process
+    :param ecs_composex.common.settings.ComposeXSettings settings: the ComposeX Execution settings.
+    """
+    if not keyisset(RES_KEY, settings.mappings):
+        settings.mappings[RES_KEY] = {}
+    for resource in lookup_resources:
+        resource.lookup_resource(
+            USER_POOL_RE,
+            get_userpool_config,
+            CfnUserPool.resource_type,
+            "cognito-idp",
+        )
+        settings.mappings[RES_KEY].update({resource.logical_name: resource.mappings})
+
+
 class XStack(ComposeXStack):
     """
     Method to manage the elastic cache resources and root stack
@@ -101,16 +121,9 @@ class XStack(ComposeXStack):
             super().__init__(title, stack_template, **kwargs)
         else:
             self.is_void = True
-        for resource in settings.compose_content[RES_KEY].values():
+        for resource in x_resources:
             resource.stack = self
-        for res in lookup_resources:
-            if not keyisset(RES_KEY, settings.mappings):
-                settings.mappings[RES_KEY] = {}
-            for resource in lookup_resources:
-                resource.lookup_resource(
-                    USER_POOL_RE,
-                    get_userpool_config,
-                    CfnUserPool.resource_type,
-                    "cognito-idp",
-                )
-                settings.mappings[RES_KEY].update({resource.logical_name: res.mappings})
+        if lookup_resources:
+            resolve_lookup(lookup_resources, settings)
+        if use_resources:
+            warnings.warn(f"{RES_KEY} does not support .Use")

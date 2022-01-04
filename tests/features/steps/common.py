@@ -39,7 +39,6 @@ def step_impl(context, file_path):
             ComposeXSettings.format_arg: "yaml",
         },
     )
-    context.settings.set_azs_from_api()
     context.settings.set_bucket_name_from_account_id()
 
 
@@ -68,7 +67,6 @@ def step_impl(context, file_path, override_file):
             ComposeXSettings.format_arg: "yaml",
         },
     )
-    context.settings.set_azs_from_api()
     context.settings.set_bucket_name_from_account_id()
 
 

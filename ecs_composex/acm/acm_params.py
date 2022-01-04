@@ -1,4 +1,4 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
@@ -16,6 +16,7 @@ from ecs_composex.common.ecs_composex import X_KEY
 MOD_KEY = f"{path.basename(path.dirname(path.abspath(__file__)))}"
 RES_KEY = f"{X_KEY}{MOD_KEY}"
 MAPPINGS_KEY = NONALPHANUM.sub("", MOD_KEY)
+
 
 VALIDATION_DOMAIN_NAME_T = "ValidationDomainName"
 VALIDATION_DOMAIN_NAME = Parameter(

@@ -69,10 +69,34 @@
       }
     },
     "Services": {
-      "type": "array",
-      "items": {
-        "$ref": "#/definitions/serviceDef"
-      }
+      "oneOf": [
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/serviceDef"
+          }
+        },
+        {
+          "type": "object",
+          "patternProperties": {
+            "[\\x20-\\x7E]+": {
+              "description": "Object representation of the service to use.",
+              "properties": {
+                "Access": {
+                  "oneOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ]
     },
     "serviceDef": {
       "$id": "#/definitions/serviceDef",

@@ -181,11 +181,40 @@
         },
         "Certificates": {
           "type": "array",
+          "uniqueItems": true,
+          "description": "List of pointers to an ACM Certificate.",
           "items": {
-            "type": [
-              "string",
-              "object"
-            ]
+            "type": "object",
+            "description": "The Certificate pointer. Can use (only one) either x-acm, Arn or CertificateArn",
+            "additionalProperties": false,
+            "oneOf": [
+              {
+                "required": [
+                  "x-acm"
+                ]
+              },
+              {
+                "required": [
+                  "Arn"
+                ]
+              },
+              {
+                "required": [
+                  "CertificateArn"
+                ]
+              }
+            ],
+            "properties": {
+              "x-acm": {
+                "type": "string"
+              },
+              "Arn": {
+                "type": "string"
+              },
+              "CertificateArn": {
+                "type": "string"
+              }
+            }
           }
         },
         "DefaultActions": {
