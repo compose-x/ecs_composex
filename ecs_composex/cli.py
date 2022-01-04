@@ -157,7 +157,6 @@ def main():
     LOG.debug(args)
     settings = ComposeXSettings(**vars(args))
     settings.set_bucket_name_from_account_id()
-    settings.set_azs_from_api()
     LOG.debug(settings)
 
     if settings.deploy and not settings.upload:

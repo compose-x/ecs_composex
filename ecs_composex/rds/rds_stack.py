@@ -189,7 +189,6 @@ class XStack(ComposeXStack):
         new_resources = set_new_resources(x_resources, RES_KEY, True)
         lookup_resources = set_lookup_resources(x_resources, RES_KEY)
         if new_resources:
-            settings.x_resources += new_resources
             stack_template = build_template(
                 "Root stack for RDS DBs", [VPC_ID, STORAGE_SUBNETS]
             )

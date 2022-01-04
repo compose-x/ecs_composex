@@ -8,18 +8,20 @@ Main module for ACM
 
 import re
 import warnings
-from copy import deepcopy
-from warnings import warn
 
+from botocore.exceptions import ClientError
+
+# from compose_x_common.aws.acm import ACM_ARN_RE
 from compose_x_common.compose_x_common import keyisset
-from troposphere import Tags
-from troposphere.certificatemanager import Certificate as AcmCert
+from troposphere import Ref, Tags
+from troposphere.certificatemanager import Certificate as CfnAcmCertificate
 from troposphere.certificatemanager import DomainValidationOption
 
-from ecs_composex.acm.acm_aws import lookup_cert_config
-from ecs_composex.acm.acm_params import MAPPINGS_KEY, MOD_KEY, RES_KEY
-from ecs_composex.common import NONALPHANUM
+from ecs_composex.acm.acm_params import CERT_ARN, MAPPINGS_KEY, MOD_KEY, RES_KEY
+from ecs_composex.common import build_template, setup_logging
+from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources import (
+    AwsEnvironmentResource,
     set_lookup_resources,
     set_new_resources,
     set_resources,
@@ -27,45 +29,69 @@ from ecs_composex.compose.x_resources import (
 )
 from ecs_composex.resources_import import import_record_properties
 
+ACM_ARN_RE = re.compile(
+    r"^arn:aws(?:-[a-z]+)?:acm:(?P<region>[\S]+):(?P<accountid>[\d]{12}):certificate/(?P<id>[\S]+)$"
+)
 
-class Certificate(object):
+
+LOG = setup_logging()
+
+
+def validate_certificate_status(certificate_definition):
+    """
+    Function to verify a few things for the ACM Certificate
+
+    :param dict certificate_definition:
+    :return:
+    """
+    validations = certificate_definition["DomainValidationOptions"]
+    for validation in validations:
+        if (
+            keyisset("ValidationStatus", validation)
+            and validation["ValidationStatus"] != "SUCCESS"
+        ):
+            raise ValueError(
+                f"The certificate {certificate_definition['CertificateArn']} is not valid."
+            )
+
+
+def get_cert_config(certificate, account_id, resource_id):
+    """
+    Retrieves the AWS ACM Certificate details using AWS API
+    """
+    client = certificate.lookup_session.client("acm")
+    cert_config = {}
+    try:
+        cert_r = client.describe_certificate(CertificateArn=certificate.arn)
+        client.get_certificate(CertificateArn=cert_r["Certificate"]["CertificateArn"])
+        cert_config[certificate.logical_name] = cert_r["Certificate"]["CertificateArn"]
+        validate_certificate_status(cert_r["Certificate"])
+
+    except client.exceptions.RequestInProgressException:
+        LOG.error(f"Certificate {certificate.arn} has not yet been issued.")
+        raise
+    except client.exceptions.ResourceNotFoundException:
+        return None
+    except client.exceptions.InvalidArnException:
+        LOG.error(f"CertARN {certificate.arn} is invalid?!?")
+        raise
+    except ClientError as error:
+        LOG.error(error)
+        raise
+
+
+class Certificate(AwsEnvironmentResource):
     """
     Class specifically for ACM Certificate
     """
 
-    def __init__(self, name, definition, module_name, settings, mapping_key=None):
-        self.name = name
-        self.logical_name = NONALPHANUM.sub("", name)
-        self.module_name = module_name
-        self.mapping_key = mapping_key
-        if self.mapping_key is None:
-            self.mapping_key = self.module_name
-        self.definition = deepcopy(definition)
-        self.cfn_resource = None
-        self.settings = (
-            {}
-            if not keyisset("Settings", self.definition)
-            else self.definition["Settings"]
-        )
-        self.properties = {}
-        self.lookup = (
-            None
-            if not keyisset("Lookup", self.definition)
-            else self.definition["Lookup"]
-        )
-        self.use = (
-            None if not keyisset("Use", self.definition) else self.definition["Use"]
-        )
-        if not self.lookup and not self.use and keyisset("Properties", self.definition):
-            self.properties = self.definition["Properties"]
-        self.parameters = (
-            {}
-            if not keyisset("MacroParameters", self.definition)
-            else self.definition["MacroParameters"]
-        )
-        self.uses_default = not any(
-            [self.lookup, self.parameters, self.use, self.properties]
-        )
+    def init_outputs(self):
+        """
+        Returns the properties from the ACM Certificate
+        """
+        self.output_properties = {
+            CERT_ARN: (f"{self.logical_name}", self.cfn_resource, Ref, None)
+        }
 
     def define_parameters_props(self, dns_settings):
         tag_filter = re.compile(r"(^\*.)")
@@ -92,71 +118,83 @@ class Certificate(object):
         }
         return props
 
-    def create_acm_cert(self, dns_settings):
+    def create_acm_cert(self):
         """
         Method to set the ACM Certificate definition
         """
         if self.properties:
-            props = import_record_properties(self.properties, AcmCert)
+            props = import_record_properties(self.properties, CfnAcmCertificate)
         elif self.parameters:
-            props = self.define_parameters_props(dns_settings)
+            return
+            # props = self.define_parameters_props(dns_settings)
         else:
             raise ValueError(
                 "Failed to determine how to create the ACM certificate",
                 self.logical_name,
             )
 
-        self.cfn_resource = AcmCert(f"{self.logical_name}AcmCert", **props)
+        self.cfn_resource = CfnAcmCertificate(f"{self.logical_name}AcmCert", **props)
+        self.generate_outputs()
 
 
-def define_acm_certs(new_resources, dns_settings, root_stack):
+def define_acm_certs(new_resources, settings, acm_stack):
     """
     Function to create the certificates
 
-    :param list<Certificate> new_resources:
-    :param dns_settings:
-    :param ecs_composex.common.stacks.ComposeXStack root_stack:
+    :param list[Certificate] new_resources:
+    :param settings:
+    :param ecs_composex.common.stacks.ComposeXStack acm_stack:
     """
     for resource in new_resources:
-        resource.create_acm_cert(dns_settings)
-        root_stack.stack_template.add_resource(resource.cfn_resource)
+        resource.create_acm_cert()
+        acm_stack.stack_template.add_resource(resource.cfn_resource)
+        if resource.outputs:
+            acm_stack.stack_template.add_output(resource.outputs)
 
 
-def create_acm_mappings(resources, settings):
+def resolve_lookup(lookup_resources, settings):
     """
-    Function
+    Lookup the ACM certificates in AWS and creates the CFN mappings for them
 
-    :param list resources:
+    :param list[Certificate] lookup_resources: List of resources to lookup
     :param ecs_composex.common.settings.ComposeXSettings settings:
-    :return:
     """
-    mappings = {}
-    for res in resources:
-        cert_config = lookup_cert_config(res.logical_name, res.lookup, settings.session)
-        if cert_config:
-            mappings.update(cert_config)
-    return mappings
-
-
-def init_acm_certs(settings, dns_settings, root_stack):
-    set_resources(settings, Certificate, RES_KEY, MOD_KEY, mapping_key=MAPPINGS_KEY)
-    x_resources = settings.compose_content[RES_KEY].values()
-    new_resources = set_new_resources(x_resources, RES_KEY, False)
-    lookup_resources = set_lookup_resources(x_resources, RES_KEY)
-    use_resources = set_use_resources(x_resources, RES_KEY, False)
-    if new_resources:
-        define_acm_certs(new_resources, dns_settings, root_stack)
-    if new_resources and dns_settings.public_zone.create_zone:
-        warn(
-            "Validation via DNS can only work if the zone is functional and you cannot associate a pending cert."
-            "CFN Will fail if the ACM cert validation is not complete."
+    if not keyisset(RES_KEY, settings.mappings):
+        settings.mappings[RES_KEY] = {}
+    for resource in lookup_resources:
+        resource.lookup_resource(
+            ACM_ARN_RE,
+            get_cert_config,
+            CfnAcmCertificate.resource_type,
+            "acm:certificate",
         )
-    if lookup_resources:
-        if not keyisset(RES_KEY, settings.mappings):
-            settings.mappings[RES_KEY] = {}
-        mappings = create_acm_mappings(lookup_resources, settings)
-        if mappings:
-            root_stack.stack_template.add_mapping(MOD_KEY, mappings)
-            settings.mappings[RES_KEY] = mappings
-    if use_resources:
-        warnings.warn("x-acm.Use is not yet supported.")
+
+
+class XStack(ComposeXStack):
+    """
+    Root stack for x-acm new certificates
+
+    :param ecs_composex.common.settings.ComposeXSettings settings:
+    """
+
+    def __init__(self, name: str, settings, **kwargs):
+        """
+        :param str name:
+        :param ecs_composex.common.settings.ComposeXSettings settings:
+        :param dict kwargs:
+        """
+        set_resources(settings, Certificate, RES_KEY, MOD_KEY, mapping_key=MAPPINGS_KEY)
+        x_resources = settings.compose_content[RES_KEY].values()
+        use_resources = set_use_resources(x_resources, RES_KEY, False)
+        lookup_resources = set_lookup_resources(x_resources, RES_KEY)
+        new_resources = set_new_resources(x_resources, RES_KEY, False)
+        if new_resources:
+            stack_template = build_template("ACM Certificates created from x-acm")
+            super().__init__(name, stack_template, **kwargs)
+            define_acm_certs(new_resources, settings, self)
+        else:
+            self.is_void = True
+        if lookup_resources:
+            resolve_lookup(lookup_resources, settings)
+        if use_resources:
+            warnings.warn("x-acm.Use is not yet supported.")

@@ -17,10 +17,11 @@ import jsonschema
 import yaml
 from botocore.exceptions import ClientError
 from cfn_flip.yaml_dumper import LongCleanDumper
-from compose_x_common.aws import get_account_id, get_region_azs, validate_iam_role_arn
+from compose_x_common.aws import get_account_id, validate_iam_role_arn
 from compose_x_common.compose_x_common import keyisset
 from compose_x_render.compose_x_render import ComposeDefinition
 from importlib_resources import files as pkg_files
+from troposphere import AWSObject
 
 from ecs_composex import __version__
 from ecs_composex.common import LOG, NONALPHANUM
@@ -30,6 +31,13 @@ from ecs_composex.compose.compose_networks import ComposeNetwork
 from ecs_composex.compose.compose_secrets import ComposeSecret
 from ecs_composex.compose.compose_services import ComposeService
 from ecs_composex.compose.compose_volumes import ComposeVolume
+from ecs_composex.compose.x_resources import (
+    ApiXResource,
+    AwsEnvironmentResource,
+    NetworkXResource,
+    ServicesXResource,
+    XResource,
+)
 from ecs_composex.ecs.ecs_family import ComposeFamily
 from ecs_composex.iam import ROLE_ARN_ARG
 from ecs_composex.utils.init_ecs import set_ecs_settings
@@ -137,10 +145,8 @@ class ComposeXSettings(object):
         self.services = []
         self.secrets = []
         self.networks = []
-        self.x_resources = []
         self.vpc_imported = False
         self.subnets_parameters = []
-        self.subnets_mappings = {}
         self.secrets_mappings = {}
         self.mappings = {}
         self.families = {}
@@ -148,7 +154,6 @@ class ComposeXSettings(object):
         self.output_dir = self.default_output_dir
         self.format = self.default_format
 
-        self.create_vpc = False
         self.requires_private_namespace = False
         self.vpc_cidr = None
         self.single_nat = None
@@ -173,6 +178,64 @@ class ComposeXSettings(object):
         self.ignore_ecr_findings = keyisset(self.ecr_arg, kwargs)
         self.x_resources_void = []
 
+    @property
+    def x_resources(self, include_new=True, include_mappings=True):
+        """
+        Iterates over all resources defined and returns the list of them
+        Only resources that are created from XResource(and children classes) are considered.
+        Avoids having to go through stacks down to resources and work backwards
+
+        Returns: the list of XResource in the execution.
+
+        :param include_new: Whether or not to add the new resources in the list
+        :param include_mappings: Whether or not to add the new resources in the listF
+        """
+        all_keys = self.compose_content.keys()
+        all_resources = []
+        for res_key in all_keys:
+            # print(
+            #     res_key,
+            #     type(self.compose_content[res_key]),
+            #     self.compose_content[res_key],
+            # )
+            if not isinstance(self.compose_content[res_key], dict):
+                continue
+            for resource in self.compose_content[res_key].values():
+                # print(
+                #     resource,
+                #     type(resource),
+                #     issubclass(
+                #         type(resource),
+                #         (
+                #             XResource,
+                #             ServicesXResource,
+                #             NetworkXResource,
+                #             ApiXResource,
+                #             AwsEnvironmentResource,
+                #         ),
+                #     ),
+                # )
+                if not issubclass(
+                    type(resource),
+                    (
+                        XResource,
+                        ServicesXResource,
+                        NetworkXResource,
+                        ApiXResource,
+                        AwsEnvironmentResource,
+                    ),
+                ):
+                    continue
+                if not include_new and (
+                    resource.cfn_resource
+                    and issubclass(type(resource.cfn_resource), AWSObject)
+                ):
+                    continue
+                if not include_mappings and resource.mappings:
+                    continue
+                all_resources.append(resource)
+        return all_resources
+
     def evaluate_private_namespace(self):
         """
         Method to go over all services and figure out if any of them requires cloudmap.
@@ -187,6 +250,9 @@ class ComposeXSettings(object):
             )
 
     def requires_vpc(self):
+        """
+        Determines whether the execution will require a VPC.
+        """
         x_resources_require_vpc = any([res.requires_vpc for res in self.x_resources])
         services_require_vpc = any(
             [
@@ -479,49 +545,6 @@ class ComposeXSettings(object):
             if keyisset(self.output_dir_arg, kwargs)
             else self.default_output_dir
         )
-
-    def set_azs_from_api(self):
-        """
-        Method to set the AWS Azs based on DescribeAvailabilityZones
-        :return:
-        """
-        try:
-            self.aws_azs = get_region_azs(self.session)
-        except ClientError as error:
-            code = error.response["Error"]["Code"]
-            message = error.response["Error"]["Message"]
-            if code == "RequestExpired":
-                LOG.error(message)
-                LOG.warning(f"Due to error, using default values {self.aws_azs}")
-
-            else:
-                LOG.error(error)
-
-    def set_azs_from_vpc_import(self, subnets, session=None):
-        """
-        Function to get the list of AZs for a given set of subnets
-
-        :param dict subnets:
-        :param session: The Session used to find the EC2 subnets (useful for lookup).
-        :return:
-        """
-        if session is None:
-            client = self.session.client("ec2")
-        else:
-            client = session.client("ec2")
-        for subnet_name, subnet_definition in subnets.items():
-            if not isinstance(subnet_definition, list):
-                continue
-            try:
-                subnets_r = client.describe_subnets(SubnetIds=subnet_definition)[
-                    "Subnets"
-                ]
-                self.subnets_mappings[subnet_name]["Azs"] = [
-                    subnet["AvailabilityZone"] for subnet in subnets_r
-                ]
-            except ClientError:
-                LOG.warning("Could not define the AZs based on the imported subnets")
-        self.vpc_imported = True
 
     def set_bucket_name_from_account_id(self):
         """

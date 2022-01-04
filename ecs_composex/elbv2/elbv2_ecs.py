@@ -320,8 +320,8 @@ def import_target_group_attributes(props, target_def, elbv2, service):
 
 def define_service_target_group(
     resource,
-    service,
     family,
+    service,
     resources_root_stack,
     target_definition,
 ):
@@ -383,8 +383,8 @@ def define_service_target_group(
 
 def define_service_target_group_definition(
     resource,
-    service,
     family,
+    service,
     target_def,
     resources_root_stack,
 ):
@@ -401,13 +401,13 @@ def define_service_target_group_definition(
     if resource.logical_name not in family.stack.DependsOn:
         family.stack.DependsOn.append(resources_root_stack.title)
         LOG.info(
-            f"Added dependency between service family {family.logical_name} and {resources_root_stack.title}"
+            f"{resource.module_name}.{resource.name} - Added {family.logical_name} {service.name}"
         )
 
     service_tgt_group = define_service_target_group(
         resource,
-        service,
         family,
+        service,
         resources_root_stack,
         target_def,
     )
@@ -424,33 +424,35 @@ def handle_services_association(resource, res_root_stack, settings):
     :return:
     """
     template = res_root_stack.stack_template
-    stack = res_root_stack
     resource.set_listeners(template)
     resource.associate_to_template(template)
     add_outputs(template, resource.outputs)
     identified = []
-    for target in resource.families_targets:
+    for count, target in enumerate(resource.families_targets):
+        if target[1].launch_type == "EXTERNAL":
+            LOG.error(
+                f"x-elbv2.{resource.name} - Target family {target[0].name} uses EXTERNAL launch type. Ignoring"
+            )
+            continue
         tgt_arn = define_service_target_group_definition(
             resource, target[0], target[1], target[2], res_root_stack
         )
         for service in resource.services:
-            target_name = f"{target[1].name}:{target[0].name}"
+            target_name = f"{target[0].name}:{target[1].name}"
             if target_name == service["name"]:
                 service["target_arn"] = tgt_arn
                 identified.append(True)
-    if not identified or not (identified and all(identified)):
-        raise LookupError(
-            "Failed to define a TGT Group for any of",
-            [target[0].name for target in resource.families_targets],
-            "and map it for LB",
-            resource.name,
+    if not identified:
+        LOG.error(
+            f"{resource.module_name}.{resource.name} - No services found as targets. Skipping association"
         )
+        return
 
     for listener in resource.listeners:
-        listener.map_services(resource)
+        listener.map_lb_services_to_listener_targets(resource)
     for listener in resource.listeners:
-        listener.handle_certificates(settings, stack)
-        listener.handle_cognito_pools(settings, stack)
+        listener.handle_certificates(settings, res_root_stack)
+        listener.handle_cognito_pools(settings, res_root_stack)
         listener.define_default_actions(template)
 
 

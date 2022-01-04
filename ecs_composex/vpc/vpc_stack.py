@@ -10,13 +10,15 @@ import re
 from copy import deepcopy
 
 import troposphere
+from botocore.exceptions import ClientError
+from compose_x_common.aws import get_region_azs
 from compose_x_common.compose_x_common import keyisset
 from troposphere import Join, Ref
 
 from ecs_composex.common import LOG, build_template, set_else_none
 from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.compose.x_resources import XResource
+from ecs_composex.compose.x_resources import AwsEnvironmentResource, XResource
 from ecs_composex.dns import dns_params
 from ecs_composex.vpc import aws_mappings
 from ecs_composex.vpc.vpc_aws import lookup_x_vpc_settings
@@ -68,7 +70,7 @@ def set_subnets_from_use(subnets_list, vpc_settings, subnets_def):
         subnets_def[subnet_name] = subnets
 
 
-class Vpc(XResource):
+class Vpc(AwsEnvironmentResource):
     """
     Class to represent the VPC
     """
@@ -89,6 +91,7 @@ class Vpc(XResource):
         self.public_subnets = []
         self.storage_subnets = []
         self.subnets = []
+        self.subnets_parameters = []
         self.endpoints = []
         self.endpoints_sg = None
         self.logging = None
@@ -188,34 +191,75 @@ class Vpc(XResource):
         :param ecs_composex.common.settings.ComposeXSettings settings:
         :return:
         """
-        settings.subnets_mappings = {
+        self.mappings = {
             VPC_ID.title: {VPC_ID.title: vpc_settings[VPC_ID.title]},
             APP_SUBNETS.title: {"Ids": vpc_settings[APP_SUBNETS.title]},
             STORAGE_SUBNETS.title: {"Ids": vpc_settings[STORAGE_SUBNETS.title]},
             PUBLIC_SUBNETS.title: {"Ids": vpc_settings[PUBLIC_SUBNETS.title]},
         }
         ignored_keys = ["RoleArn", "session"]
-        settings.subnets_parameters.append(APP_SUBNETS)
-        settings.subnets_parameters.append(PUBLIC_SUBNETS)
-        settings.subnets_parameters.append(STORAGE_SUBNETS)
+        self.subnets_parameters.append(APP_SUBNETS)
+        self.subnets_parameters.append(PUBLIC_SUBNETS)
+        self.subnets_parameters.append(STORAGE_SUBNETS)
         for setting_name in vpc_settings:
             if (
-                setting_name not in settings.subnets_mappings.keys()
+                setting_name not in self.mappings.keys()
                 and setting_name not in ignored_keys
             ):
-                settings.subnets_mappings[setting_name] = {
-                    "Ids": vpc_settings[setting_name]
-                }
+                self.mappings[setting_name] = {"Ids": vpc_settings[setting_name]}
                 param = Parameter(setting_name, Type=SUBNETS_TYPE)
-                settings.subnets_parameters.append(param)
+                self.subnets_parameters.append(param)
 
-        settings.set_azs_from_vpc_import(
+        self.set_azs_from_vpc_import(
             vpc_settings,
             session=vpc_settings["session"]
             if keyisset("session", vpc_settings)
             else None,
         )
-        self.mappings = deepcopy(settings.subnets_mappings)
+
+    def set_azs_from_api(self):
+        """
+        Method to set the AWS Azs based on DescribeAvailabilityZones
+        :return:
+        """
+        try:
+            self.aws_azs = get_region_azs(self.lookup_session)
+        except ClientError as error:
+            code = error.response["Error"]["Code"]
+            message = error.response["Error"]["Message"]
+            if code == "RequestExpired":
+                LOG.error(message)
+                LOG.warning(f"Due to error, using default values {self.aws_azs}")
+
+            else:
+                LOG.error(error)
+
+    def set_azs_from_vpc_import(self, subnets, session=None):
+        """
+        Function to get the list of AZs for a given set of subnets
+
+        :param dict subnets:
+        :param session: The Session used to find the EC2 subnets (useful for lookup).
+        :return:
+        """
+        if session is None:
+            client = self.lookup_session.client("ec2")
+        else:
+            client = session.client("ec2")
+        print("CHECKING ON THE SUBNETS", subnets.items())
+        for subnet_name, subnet_definition in subnets.items():
+            if not isinstance(subnet_definition, list):
+                continue
+            try:
+                subnets_r = client.describe_subnets(SubnetIds=subnet_definition)[
+                    "Subnets"
+                ]
+
+                self.mappings[subnet_name]["Azs"] = [
+                    subnet["AvailabilityZone"] for subnet in subnets_r
+                ]
+            except ClientError:
+                LOG.warning("Could not define the AZs based on the imported subnets")
 
     def init_outputs(self):
         """
