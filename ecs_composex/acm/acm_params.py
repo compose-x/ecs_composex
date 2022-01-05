@@ -8,9 +8,8 @@ Parameters specific to AWS ACM
 
 from os import path
 
-from troposphere import Parameter
-
 from ecs_composex.common import NONALPHANUM
+from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.common.ecs_composex import X_KEY
 
 MOD_KEY = f"{path.basename(path.dirname(path.abspath(__file__)))}"

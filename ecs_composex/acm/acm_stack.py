@@ -13,12 +13,14 @@ from botocore.exceptions import ClientError
 
 # from compose_x_common.aws.acm import ACM_ARN_RE
 from compose_x_common.compose_x_common import keyisset
-from troposphere import Ref, Tags
+from troposphere import FindInMap, Ref, Tags
 from troposphere.certificatemanager import Certificate as CfnAcmCertificate
 from troposphere.certificatemanager import DomainValidationOption
+from troposphere.elasticloadbalancingv2 import Certificate as ElbCertificate
+from troposphere.elasticloadbalancingv2 import Listener, ListenerCertificate
 
 from ecs_composex.acm.acm_params import CERT_ARN, MAPPINGS_KEY, MOD_KEY, RES_KEY
-from ecs_composex.common import build_template, setup_logging
+from ecs_composex.common import add_parameters, build_template, setup_logging
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources import (
     AwsEnvironmentResource,
@@ -27,7 +29,11 @@ from ecs_composex.compose.x_resources import (
     set_resources,
     set_use_resources,
 )
-from ecs_composex.resources_import import import_record_properties
+from ecs_composex.resources_import import (
+    find_aws_properties_in_aws_resource,
+    find_aws_resources_in_template_resources,
+    import_record_properties,
+)
 
 ACM_ARN_RE = re.compile(
     r"^arn:aws(?:-[a-z]+)?:acm:(?P<region>[\S]+):(?P<accountid>[\d]{12}):certificate/(?P<id>[\S]+)$"
@@ -66,7 +72,7 @@ def get_cert_config(certificate, account_id, resource_id):
         client.get_certificate(CertificateArn=cert_r["Certificate"]["CertificateArn"])
         cert_config[certificate.logical_name] = cert_r["Certificate"]["CertificateArn"]
         validate_certificate_status(cert_r["Certificate"])
-
+        return cert_config
     except client.exceptions.RequestInProgressException:
         LOG.error(f"Certificate {certificate.arn} has not yet been issued.")
         raise
@@ -134,6 +140,7 @@ class Certificate(AwsEnvironmentResource):
             )
 
         self.cfn_resource = CfnAcmCertificate(f"{self.logical_name}AcmCert", **props)
+        self.init_outputs()
         self.generate_outputs()
 
 
@@ -148,6 +155,8 @@ def define_acm_certs(new_resources, settings, acm_stack):
     for resource in new_resources:
         resource.create_acm_cert()
         acm_stack.stack_template.add_resource(resource.cfn_resource)
+        if not resource.outputs:
+            resource.generate_outputs()
         if resource.outputs:
             acm_stack.stack_template.add_output(resource.outputs)
 
@@ -168,6 +177,32 @@ def resolve_lookup(lookup_resources, settings):
             CfnAcmCertificate.resource_type,
             "acm:certificate",
         )
+        settings.mappings[RES_KEY].update({resource.logical_name: resource.mappings})
+
+
+def get_supported_resources(root_stack, res_key, classes):
+    """
+
+    :param root_stack:
+    :param res_key:
+    :param classes:
+    :return:
+    """
+    resources = []
+    for nested_stack in root_stack.stack_template.resources.values():
+        if not issubclass(type(nested_stack), ComposeXStack):
+            continue
+        if nested_stack.name == res_key or f"x-{nested_stack.name}" == res_key:
+
+            for resource in nested_stack.stack_template.resources.values():
+
+                if issubclass(type(resource), ComposeXStack):
+                    resources += get_supported_resources(resource, res_key, classes)
+                elif isinstance(resource, classes) or issubclass(
+                    type(resource), classes
+                ):
+                    resources.append((nested_stack, resource))
+    return resources
 
 
 class XStack(ComposeXStack):
@@ -183,6 +218,15 @@ class XStack(ComposeXStack):
         :param ecs_composex.common.settings.ComposeXSettings settings:
         :param dict kwargs:
         """
+        self.x_to_x_mappings = x_to_x_settings = [
+            (
+                update_property_stack_with_resource,
+                (Listener, ListenerCertificate),
+                ElbCertificate,
+                "CertificateArn",
+            )
+        ]
+        self.x_resource_class = Certificate
         set_resources(settings, Certificate, RES_KEY, MOD_KEY, mapping_key=MAPPINGS_KEY)
         x_resources = settings.compose_content[RES_KEY].values()
         use_resources = set_use_resources(x_resources, RES_KEY, False)
@@ -198,3 +242,101 @@ class XStack(ComposeXStack):
             resolve_lookup(lookup_resources, settings)
         if use_resources:
             warnings.warn("x-acm.Use is not yet supported.")
+        self.module_name = MOD_KEY
+        for resource in x_resources:
+            resource.stack = self
+
+
+def update_property_stack_with_resource(
+    x_resources, property_stack, properties_to_update, property_name, settings
+):
+    """
+    Function to associate the resource
+
+    :param list[Certificate] x_resources:
+    :param ecs_composex.common.stacks.ComposeXStack property_stack:
+    :param list properties_to_update:
+    :param str property_name:
+    :param ecs_composex.common.settings.ComposeXSettings settings:
+    """
+    for prop_to_update in properties_to_update:
+        if not hasattr(prop_to_update, property_name):
+            raise AttributeError(
+                f"{prop_to_update} does not have {property_name} set !?"
+            )
+        property_value = getattr(prop_to_update, property_name)
+        if not isinstance(property_value, str):
+            continue
+        if not property_value.startswith(RES_KEY):
+            continue
+        if not property_value.find(RES_KEY) >= 0:
+            LOG.info(
+                f"{RES_KEY} - {property_value} is not a pointer to x-acm. {property_value}"
+            )
+            continue
+        else:
+            cert_name = property_value.split(r"::")[-1]
+            the_cert = None
+            for cert in x_resources:
+                if cert.name == cert_name:
+                    the_cert = cert
+                    break
+            if not the_cert:
+                raise LookupError(
+                    f"Cannot find {cert_name} in {RES_KEY} resources",
+                    [res.name for res in x_resources],
+                )
+            update_stack_with_resource_settings(
+                property_stack, the_cert, prop_to_update, property_name, settings
+            )
+
+
+def update_stack_with_resource_settings(
+    property_stack, the_resource, the_property, property_name, settings
+):
+    """
+    Assigns the CFN pointer to the value to replace.
+    If it is a new certificate, it will add the parameter to get the cert ARN and set the parameter stack value
+    If it is a Lookup certificate, it will add the mapping to the stack and set FindInMap to the certificate ARN
+
+    :param ComposeXStack property_stack:
+    :param Certificate the_resource:
+    :param the_property:
+    :param property_name:
+    :param ecs_composex.common.settings.ComposeXSettings settings:
+    """
+    if the_resource.cfn_resource:
+        add_parameters(
+            property_stack.stack_template,
+            [the_resource.attributes_outputs[CERT_ARN]["ImportParameter"]],
+        )
+        property_stack.Parameters.update(
+            {
+                the_resource.attributes_outputs[CERT_ARN][
+                    "ImportParameter"
+                ].title: the_resource.attributes_outputs[CERT_ARN]["ImportValue"]
+            }
+        )
+        setattr(
+            the_property,
+            property_name,
+            Ref(the_resource.attributes_outputs[CERT_ARN]["ImportParameter"]),
+        )
+    elif the_resource.mappings:
+        if keyisset(the_resource.mapping_key, property_stack.stack_template.mappings):
+            property_stack.stack_template.mappings[the_resource.mapping_key].update(
+                the_resource.mappings
+            )
+        else:
+            property_stack.stack_template.add_mapping(
+                MOD_KEY, settings.mappings[RES_KEY]
+            )
+        setattr(
+            the_property,
+            property_name,
+            FindInMap(
+                the_resource.mapping_key,
+                the_resource.logical_name,
+                the_resource.logical_name,
+            ),
+        )

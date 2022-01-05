@@ -217,10 +217,13 @@ def apply_x_to_x_configs(root_stack, settings):
     :param ComposeXSettings settings: The execution settings
     :return:
     """
-    for resource_name, resource in root_stack.stack_template.resources.items():
+    for resource in root_stack.stack_template.resources.values():
         if (
             issubclass(type(resource), ComposeXStack)
-            and resource.name in SUPPORTED_X_MODULE_NAMES
+            and (
+                resource.name in SUPPORTED_X_MODULE_NAMES
+                or resource.name in ENV_RESOURCE_MODULES
+            )
             and hasattr(resource, "add_xdependencies")
             and not resource.is_void
         ):
@@ -579,7 +582,6 @@ def generate_full_template(settings):
     iam_stack = root_stack.stack_template.add_resource(IamStack("iam", settings))
     add_x_env_resources(root_stack, settings)
     add_x_resources(root_stack, settings)
-    apply_x_to_x_configs(root_stack, settings)
     associate_services_to_root_stack(root_stack, settings)
     vpc_stack = VpcStack("vpc", settings)
     handle_vpc_settings(settings, vpc_stack, root_stack)
@@ -607,6 +609,7 @@ def generate_full_template(settings):
         settings,
         root_stack,
     )
+    apply_x_to_x_configs(root_stack, settings)
     # dns_records = DnsRecords(settings)
     # dns_records.associate_records_to_resources(settings, root_stack, dns_settings)
     # dns_settings.associate_settings_to_nested_stacks(root_stack)
