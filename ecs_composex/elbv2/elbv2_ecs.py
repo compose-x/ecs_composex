@@ -34,6 +34,11 @@ def validate_tcp_health_counts(props):
 
 
 def fix_nlb_settings(props):
+    """
+    Function to automatically adjust/correct settings for NLB to avoid users cringe on fails
+
+    :param dict props:
+    """
     network_modes = ["TCP", "UDP", "TCP_UDP"]
     if (
         keyisset("HealthCheckProtocol", props)

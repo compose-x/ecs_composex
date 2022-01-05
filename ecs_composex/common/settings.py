@@ -178,8 +178,29 @@ class ComposeXSettings(object):
         self.ignore_ecr_findings = keyisset(self.ecr_arg, kwargs)
         self.x_resources_void = []
 
+    def get_x_resources(self, include_new=True, include_mappings=True):
+        """
+        Returns the x_resources with filters
+
+        :param include_new: Whether or not to add the new resources in the list
+        :param include_mappings: Whether or not to add the new resources in the listF
+        """
+        if not include_new and not include_mappings:
+            return self.x_resources
+        x_resources = []
+        for resource in self.x_resources:
+            if not include_new and (
+                resource.cfn_resource
+                and issubclass(type(resource.cfn_resource), AWSObject)
+            ):
+                continue
+            if not include_mappings and resource.mappings:
+                continue
+            x_resources.append(resource)
+        return x_resources
+
     @property
-    def x_resources(self, include_new=True, include_mappings=True):
+    def x_resources(self):
         """
         Iterates over all resources defined and returns the list of them
         Only resources that are created from XResource(and children classes) are considered.
@@ -187,34 +208,14 @@ class ComposeXSettings(object):
 
         Returns: the list of XResource in the execution.
 
-        :param include_new: Whether or not to add the new resources in the list
-        :param include_mappings: Whether or not to add the new resources in the listF
         """
         all_keys = self.compose_content.keys()
         all_resources = []
         for res_key in all_keys:
-            # print(
-            #     res_key,
-            #     type(self.compose_content[res_key]),
-            #     self.compose_content[res_key],
-            # )
+
             if not isinstance(self.compose_content[res_key], dict):
                 continue
             for resource in self.compose_content[res_key].values():
-                # print(
-                #     resource,
-                #     type(resource),
-                #     issubclass(
-                #         type(resource),
-                #         (
-                #             XResource,
-                #             ServicesXResource,
-                #             NetworkXResource,
-                #             ApiXResource,
-                #             AwsEnvironmentResource,
-                #         ),
-                #     ),
-                # )
                 if not issubclass(
                     type(resource),
                     (
@@ -225,13 +226,6 @@ class ComposeXSettings(object):
                         AwsEnvironmentResource,
                     ),
                 ):
-                    continue
-                if not include_new and (
-                    resource.cfn_resource
-                    and issubclass(type(resource.cfn_resource), AWSObject)
-                ):
-                    continue
-                if not include_mappings and resource.mappings:
                     continue
                 all_resources.append(resource)
         return all_resources

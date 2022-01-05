@@ -7,6 +7,8 @@ Module to handle Root stacks and substacks in ECS composeX. Allows to treat ever
 files into S3 and on disk.
 """
 
+from os import path
+
 from compose_x_common.compose_x_common import keyisset
 from troposphere import (
     AWS_STACK_NAME,
@@ -23,6 +25,10 @@ from troposphere.cloudformation import Stack
 from ecs_composex.common import LOG, NONALPHANUM, add_parameters, cfn_conditions
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.files import FileArtifact
+from ecs_composex.resources_import import (
+    find_aws_properties_in_aws_resource,
+    find_aws_resources_in_template_resources,
+)
 from ecs_composex.vpc.vpc_params import (
     APP_SUBNETS,
     APP_SUBNETS_T,
@@ -75,6 +81,7 @@ class ComposeXStack(Stack, object):
         stack_template,
         stack_parameters=None,
         file_name=None,
+        module_name=None,
         **kwargs,
     ):
         """
@@ -87,6 +94,10 @@ class ComposeXStack(Stack, object):
         """
         self.name = name
         self.parent_stack = None
+        if module_name is None:
+            self.module_name = path.basename(path.dirname(path.abspath(__file__)))
+        else:
+            self.module_name = module_name
         title = NONALPHANUM.sub("", self.name)
         self.file_name = file_name if file_name else title
         self.lookup_resources = []
@@ -305,6 +316,50 @@ class ComposeXStack(Stack, object):
                     )
                 }
             )
+
+    def add_xdependencies(self, root_stack, settings):
+        """
+        x-acm resources will go over other resources defined and if these have `x-acm` defined in properties,
+        will update with the appropriate values / CFN parameters
+
+        :param ecs_composex.common.stacks.ComposeXStack root_stack:
+        :param ecs_composex.common.settings.ComposeXSettings settings:
+        """
+        if not hasattr(self, "x_to_x_mappings") or not hasattr(
+            self, "x_resource_class"
+        ):
+            LOG.info(f"{self.name} - Nothing to apply to other x-resources")
+            return
+        mod_x_resources = [
+            resource
+            for resource in settings.x_resources
+            if isinstance(resource, self.x_resource_class)
+        ]
+
+        for resource in settings.get_x_resources(include_mappings=False):
+            if not resource.cfn_resource:
+                continue
+            resource_stack = resource.stack
+            if not resource_stack:
+                LOG.error(
+                    f"resource {resource.name} has no `stack` attribute defined. Skipping"
+                )
+                continue
+            for update_settings in self.x_to_x_mappings:
+                aws_resources_to_update = find_aws_resources_in_template_resources(
+                    resource_stack, update_settings[1]
+                )
+                for stack_resource in aws_resources_to_update:
+                    properties_to_update = find_aws_properties_in_aws_resource(
+                        update_settings[2], stack_resource
+                    )
+                    update_settings[0](
+                        mod_x_resources,
+                        resource_stack,
+                        properties_to_update,
+                        update_settings[3],
+                        settings,
+                    )
 
 
 def process_stacks(root_stack, settings, is_root=True):
