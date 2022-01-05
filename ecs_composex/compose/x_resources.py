@@ -738,21 +738,15 @@ class NetworkXResource(ServicesXResource):
                     f"{self.module_name}.{self.name} - Target {target[0].name} - Launch Type not supported (EXTERNAL)"
                 )
                 self.families_scaling.remove(target)
-        print("SELF SERVICES", self.services)
+
         for service in self.services:
             family_name = (
                 service["name"].split(":")[0]
                 if r":" in service["name"]
                 else service["name"]
             )
-            print("FAMILY NAME IS", family_name)
-            print(
-                "FAMILIES ADDED SO FAR",
-                [target[0].name for target in self.families_targets],
-            )
             if family_name not in [target[0].name for target in self.families_targets]:
                 self.services.remove(service)
-        print("AFTER CLEANSE", self.services)
 
     def set_override_subnets(self):
         """

@@ -9,7 +9,7 @@ Module to import CFN Resources defined by their properties
 from inspect import isfunction
 
 from compose_x_common.compose_x_common import keyisset, keypresent
-from troposphere import AWSHelperFn, AWSProperty
+from troposphere import AWSHelperFn, AWSObject, AWSProperty
 
 
 def handle_list(properties, property_class):
@@ -115,3 +115,60 @@ def import_record_properties(
         elif keypresent(prop_name, properties):
             props[prop_name] = properties[prop_name]
     return props
+
+
+def find_aws_resources_in_template_resources(root_stack, resource_types) -> list:
+    """
+    Function looking for resources in the stack template that are of the type we are looking for.
+
+    :param ComposeXStack root_stack:
+    :param tuple(AWSObject) resource_types: the AWSObject resources types we are looking for.
+    :return: List of resources of the given type
+    :rtype: list
+    """
+    resources = []
+    if not root_stack or not hasattr(root_stack, "stack_template"):
+        return resources
+    for r_name, resource in root_stack.stack_template.resources.items():
+        if not issubclass(type(resource), AWSObject):
+            continue
+        if issubclass(type(resource), AWSObject) and isinstance(
+            resource, resource_types
+        ):
+            resources.append(resource)
+    return resources
+
+
+def find_aws_properties_in_aws_resource(
+    property_type_to_find, resource_properties, found_properties=None
+) -> list:
+    """
+
+    :param property_type_to_find:
+    :param dict resource_properties:
+    :param list found_properties:
+    :return:
+    """
+    if isinstance(resource_properties, AWSObject):
+        return find_aws_properties_in_aws_resource(
+            property_type_to_find, resource_properties.properties
+        )
+    if found_properties is None:
+        found_properties = []
+    if isinstance(resource_properties, property_type_to_find):
+        found_properties.append(resource_properties)
+    elif isinstance(resource_properties, dict):
+        for r_property in resource_properties.values():
+            if isinstance(r_property, property_type_to_find):
+                found_properties.append(r_property)
+            elif isinstance(r_property, list):
+                for sub_property in r_property:
+                    find_aws_properties_in_aws_resource(
+                        property_type_to_find, sub_property, found_properties
+                    )
+
+            elif issubclass(type(r_property), AWSProperty):
+                find_aws_properties_in_aws_resource(
+                    property_type_to_find, r_property.properties
+                )
+    return found_properties

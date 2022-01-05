@@ -131,17 +131,24 @@ def validate_listeners_duplicates(name, ports):
         )
 
 
-def add_listener_certificate_via_arn(listener_stack, listener, certificates_arn):
+def add_listener_certificate_via_arn(
+    listener_stack, listener, certificate_arn_id, cert_name
+):
     """
+    Adds a new ListenerCertificate for a given listener.
 
+    ListenerCertificate can only take 1 certificate in the list !!
+
+    :param ecs_composex.common.stacks.ComposeXStack listener_stack:
     :param ecs_composex.elbv2.elbv2_stack.ComposeListener listener:
-    :param list certificates_arn: list of str or other defined ARN
-    :return:
+    :param str certificate_arn_id: the ID to point to the certificate
+    :param str cert_name:
+
     """
     listener_stack.stack_template.add_resource(
         ListenerCertificate(
-            f"AcmCert{listener.title}",
-            Certificates=[Certificate(CertificateArn=arn) for arn in certificates_arn],
+            f"AcmCert{listener.title}{NONALPHANUM.sub('', cert_name)}",
+            Certificates=[Certificate(CertificateArn=certificate_arn_id)],
             ListenerArn=Ref(listener),
         )
     )
@@ -417,10 +424,26 @@ def add_extra_certificate(listener_stack, listener, cert_arn):
     :param listener: The listener to add the certificate to
     :param cert_arn: The identifier of the certificate
     """
-    if hasattr(listener, "Certificates") and listener.Certificates:
-        add_listener_certificate_via_arn(listener_stack, listener, [cert_arn])
+    cert_arn_re = re.compile(
+        r"((?:^arn:aws(?:-[a-z]+)?:acm:[\S]+:[0-9]+:certificate/)"
+        r"([a-z0-9]{8}(?:-[a-z0-9]{4}){3}-[a-z0-9]{12})$)"
+    )
+    if cert_arn_re.match(cert_arn):
+        cert_arn_id = cert_arn
+    elif isinstance(cert_arn, str) and cert_arn.find(ACM_KEY) < 0:
+        cert_arn_id = f"{ACM_KEY}::{cert_arn}"
+    elif isinstance(cert_arn, str) and cert_arn.find(ACM_KEY):
+        cert_arn_id = cert_arn
     else:
-        setattr(listener, "Certificates", [Certificate(CertificateArn=cert_arn)])
+        raise ValueError(
+            f"{listener_stack.title} - Certificate value is not valid", cert_arn
+        )
+    if hasattr(listener, "Certificates") and listener.Certificates:
+        add_listener_certificate_via_arn(
+            listener_stack, listener, cert_arn_id, cert_arn
+        )
+    else:
+        setattr(listener, "Certificates", [Certificate(CertificateArn=cert_arn_id)])
 
 
 def upgrade_listener_to_use_tls(listener):
@@ -458,38 +481,11 @@ def import_new_acm_certs(listener, src_name, settings, listener_stack):
     """
     if not keyisset(ACM_KEY, settings.compose_content):
         raise LookupError(f"There is no {ACM_KEY} defined in your docker-compose files")
-    # new_acm_certs = [
-    #     settings.compose_content[ACM_KEY][name]
-    #     for name in settings.compose_content[ACM_KEY]
-    #     if settings.compose_content[ACM_KEY][name].cfn_resource
-    # ]
-    # lookup_acm_certs = [
-    #     settings.compose_content[ACM_KEY][name]
-    #     for name in settings.compose_content[ACM_KEY]
-    #     if settings.compose_content[ACM_KEY][name].lookup
-    # ]
-    # the_cert = None
-    # for cert in new_acm_certs:
-    #     if cert.name == src_name:
-    #         the_cert = cert
-    # if not the_cert:
-    #     for cert in lookup_acm_certs:
-    #         if cert.name == src_name:
-    #             the_cert = cert
-    #             break
-    # cert_param = Parameter(f"{the_cert.logical_name}Arn", Type="String")
-    # add_parameters(listener_stack.stack_template, [cert_param])
-    # if the_cert.cfn_resource and not the_cert.lookup:
-    #     listener_stack.Parameters.update({cert_param.title: Ref(the_cert.cfn_resource)})
-    # elif the_cert.lookup and not the_cert.cfn_resource:
-    #     listener_stack.Parameters.update(
-    #         {
-    #             cert_param.title: FindInMap(
-    #                 ACM_MOD_KEY, the_cert.logical_name, the_cert.logical_name
-    #             )
-    #         }
-    #     )
-    # add_extra_certificate(listener_stack, listener, Ref(cert_param))
+    if not keyisset(src_name, settings.compose_content[ACM_KEY]):
+        raise ValueError(
+            f"{listener_stack.title} - {ACM_KEY} - no certificate {src_name} found"
+        )
+    add_extra_certificate(listener_stack, listener, src_name)
     upgrade_listener_to_use_tls(listener)
 
 
@@ -898,6 +894,7 @@ class Elbv2(NetworkXResource):
         )
         self.validate_services()
         self.sort_props()
+        self.module_name = MOD_KEY
 
     def init_outputs(self):
         self.output_properties = {
