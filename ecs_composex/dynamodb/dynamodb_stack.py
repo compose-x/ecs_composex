@@ -17,7 +17,6 @@ from ecs_composex.common import build_template, setup_logging
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources import (
     ApiXResource,
-    XResource,
     set_lookup_resources,
     set_new_resources,
     set_resources,
@@ -87,8 +86,8 @@ def resolve_lookup(lookup_resources, settings):
     :param list[Table] lookup_resources:
     :param ecs_composex.common.settings.ComposeXSettings settings:
     """
-    if not keyisset(RES_KEY, settings.mappings):
-        settings.mappings[RES_KEY] = {}
+    if not keyisset(MAPPINGS_KEY, settings.mappings):
+        settings.mappings[MAPPINGS_KEY] = {}
     for resource in lookup_resources:
         resource.lookup_resource(
             TABLE_ARN_RE,
@@ -97,7 +96,9 @@ def resolve_lookup(lookup_resources, settings):
             "dynamodb:table",
         )
         LOG.info(f"{RES_KEY}.{resource.name} - Matched to {resource.arn}")
-        settings.mappings[RES_KEY].update({resource.logical_name: resource.mappings})
+        settings.mappings[MAPPINGS_KEY].update(
+            {resource.logical_name: resource.mappings}
+        )
 
 
 class XStack(ComposeXStack):

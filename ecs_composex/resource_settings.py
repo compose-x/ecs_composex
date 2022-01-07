@@ -13,7 +13,7 @@ from troposphere import AWSHelperFn, FindInMap, Ref, Sub
 from troposphere.iam import Policy as IamPolicy
 from troposphere.iam import PolicyType
 
-from ecs_composex.common import LOG, add_parameters
+from ecs_composex.common import LOG, add_parameters, add_update_mapping
 from ecs_composex.common.cfn_params import STACK_ID_SHORT
 from ecs_composex.common.services_helpers import extend_container_envvars
 from ecs_composex.common.stacks import ComposeXStack
@@ -322,7 +322,7 @@ def handle_lookup_resource(
     for target in resource.families_targets:
         selected_services = get_selected_services(resource, target)
         if selected_services:
-            target[0].template.add_mapping(mapping_family, mapping)
+            add_update_mapping(target[0].template, mapping_family, mapping)
             arn_attr_value = resource.attributes_outputs[arn_parameter]["ImportValue"]
             resource.generate_resource_envvars()
             map_service_perms_to_resource(

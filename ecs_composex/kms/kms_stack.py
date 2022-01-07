@@ -166,8 +166,8 @@ class XStack(ComposeXStack):
     def __init__(self, title, settings, **kwargs):
         set_resources(settings, KmsKey, RES_KEY, MOD_KEY, mapping_key=MAPPINGS_KEY)
         x_resources = settings.compose_content[RES_KEY].values()
-        new_resources = set_new_resources(x_resources, RES_KEY, True)
         lookup_resources = set_lookup_resources(x_resources, RES_KEY)
+        new_resources = set_new_resources(x_resources, RES_KEY, True)
         use_resources = set_use_resources(x_resources, RES_KEY, False)
         if new_resources:
             stack_template = build_template("Root template for KMS")
@@ -176,11 +176,14 @@ class XStack(ComposeXStack):
         else:
             self.is_void = True
         if lookup_resources or use_resources:
-            if not keyisset(RES_KEY, settings.mappings):
-                settings.mappings[RES_KEY] = {}
+            if not keyisset(MAPPINGS_KEY, settings.mappings):
+                settings.mappings[MAPPINGS_KEY] = {}
             for resource in lookup_resources:
                 resource.lookup_resource(
                     KMS_KEY_ARN_RE, get_key_config, Key.resource_type, "kms:key"
+                )
+                settings[MAPPINGS_KEY].update(
+                    {resource.logical_name: resource.mappings}
                 )
         for resource in settings.compose_content[RES_KEY].values():
             resource.stack = self

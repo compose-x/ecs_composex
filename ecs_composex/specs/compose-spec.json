@@ -12,9 +12,6 @@
     "x-tags": {
       "$ref": "x-tags.spec.json"
     },
-    "x-dns": {
-      "$ref": "x-dns.spec.json"
-    },
     "x-appmesh": {
       "$ref": "x-appmesh.spec.json"
     },
@@ -145,6 +142,22 @@
       "patternProperties": {
         "^[a-zA-Z0-9._-]+$": {
           "$ref": "x-opensearch.spec.json"
+        }
+      }
+    },
+    "x-route53": {
+      "type": "object",
+      "patternProperties": {
+        "^[a-zA-Z0-9._-]+$": {
+          "$ref": "x-route53.spec.json"
+        }
+      }
+    },
+    "x-cloudmap": {
+      "type": "object",
+      "patternProperties": {
+        "^[a-zA-Z0-9._-]+$": {
+          "$ref": "x-cloudmap.spec.json"
         }
       }
     },

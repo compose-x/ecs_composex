@@ -128,10 +128,10 @@ class XStack(ComposeXStack):
             warnings.warn(f"{RES_KEY} does not yet support Use.")
         lookup_resources = set_lookup_resources(x_resources, RES_KEY)
         if lookup_resources:
-            if not keyisset(RES_KEY, settings.mappings):
-                settings.mappings[RES_KEY] = {}
+            if not keyisset(MAPPINGS_KEY, settings.mappings):
+                settings.mappings[MAPPINGS_KEY] = {}
             define_lookup_profile_mappings(
-                settings.mappings[RES_KEY], lookup_resources, settings
+                settings.mappings[MAPPINGS_KEY], lookup_resources, settings
             )
         new_resources = set_new_resources(x_resources, RES_KEY, False)
 

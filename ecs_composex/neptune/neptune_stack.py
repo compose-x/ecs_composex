@@ -192,8 +192,8 @@ class XStack(ComposeXStack):
         else:
             self.is_void = True
         if lookup_resources or use_resources:
-            if not keyisset(RES_KEY, settings.mappings):
-                settings.mappings[RES_KEY] = {}
+            if not keyisset(MAPPINGS_KEY, settings.mappings):
+                settings.mappings[MAPPINGS_KEY] = {}
             for resource in lookup_resources:
                 resource.lookup_resource(
                     NEPTUNE_DB_CLUSTER_ARN_RE,
@@ -201,7 +201,7 @@ class XStack(ComposeXStack):
                     CfnDBCluster.resource_type,
                     "rds:cluster",
                 )
-                settings.mappings[RES_KEY].update(
+                settings.mappings[MAPPINGS_KEY].update(
                     {resource.logical_name: resource.mappings}
                 )
         for resource in settings.compose_content[RES_KEY].values():

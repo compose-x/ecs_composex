@@ -46,7 +46,6 @@ from troposphere.elasticloadbalancingv2 import (
     TargetGroupTuple,
 )
 
-from ecs_composex.acm.acm_params import MOD_KEY as ACM_MOD_KEY
 from ecs_composex.acm.acm_params import RES_KEY as ACM_KEY
 from ecs_composex.cognito_userpool.cognito_params import MAPPINGS_KEY as COGNITO_MAP
 from ecs_composex.cognito_userpool.cognito_params import RES_KEY as COGNITO_KEY
@@ -60,7 +59,6 @@ from ecs_composex.common.cfn_params import ROOT_STACK_NAME, Parameter
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources import (
     NetworkXResource,
-    XResource,
     set_lookup_resources,
     set_new_resources,
     set_resources,

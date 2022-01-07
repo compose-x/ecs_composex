@@ -9,7 +9,7 @@ Functions to pass permissions to Services to access S3 buckets.
 from compose_x_common.compose_x_common import keyisset
 from troposphere import FindInMap, Ref, Sub
 
-from ecs_composex.common import LOG, add_parameters
+from ecs_composex.common import LOG, add_parameters, add_update_mapping
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources import get_parameter_settings
 from ecs_composex.iam.import_sam_policies import get_access_types
@@ -173,7 +173,7 @@ def define_lookup_buckets_access(bucket, target, services):
         bucket_perms = generate_resource_permissions(
             f"BucketAccess{bucket.logical_name}",
             ACCESS_TYPES[bucket_key],
-            arn=FindInMap("s3", bucket.logical_name, "Arn"),
+            arn=bucket.attributes_outputs[S3_BUCKET_ARN]["ImportValue"],
         )
         add_iam_policy_to_service_task_role(
             target[0],
@@ -188,7 +188,7 @@ def define_lookup_buckets_access(bucket, target, services):
             ACCESS_TYPES[objects_key],
             arn=Sub(
                 "${BucketArn}/*",
-                BucketArn=FindInMap("s3", bucket.logical_name, "Arn"),
+                BucketArn=bucket.attributes_outputs[S3_BUCKET_ARN]["ImportValue"],
             ),
         )
         add_iam_policy_to_service_task_role(
@@ -202,7 +202,7 @@ def define_lookup_buckets_access(bucket, target, services):
         ssl_perms = generate_resource_permissions(
             f"SslBucketObjefsAccess{bucket.logical_name}",
             ACCESS_TYPES[ssl_key],
-            arn=FindInMap("s3", bucket.logical_name, "Arn"),
+            arn=bucket.attributes_outputs[S3_BUCKET_ARN]["ImportValue"],
         )
         add_iam_policy_to_service_task_role(
             target[0],
@@ -229,14 +229,12 @@ def assign_lookup_buckets(bucket, mappings):
     for target in bucket.families_targets:
         select_services = get_selected_services(bucket, target)
         if select_services:
-            target[0].template.add_mapping("s3", mappings)
+            add_update_mapping(target[0].template, "s3", mappings)
             if keyisset(S3_BUCKET_KMS_KEY.return_value, mappings[bucket.logical_name]):
                 kms_perms = generate_resource_permissions(
                     f"{bucket.logical_name}KmsKey",
                     get_access_types(KMS_MOD),
-                    arn=FindInMap(
-                        "s3", bucket.logical_name, S3_BUCKET_KMS_KEY.return_value
-                    ),
+                    arn=bucket.attributes_outputs[S3_BUCKET_KMS_KEY]["ImportValue"],
                 )
                 add_iam_policy_to_service_task_role(
                     target[0],

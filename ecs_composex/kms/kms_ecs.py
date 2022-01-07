@@ -14,21 +14,6 @@ from ecs_composex.resource_settings import (
 )
 
 
-def create_kms_mappings(mapping, resources, settings):
-    """
-    Function to create the resource mapping for SQS Queues.
-
-    :param dict mapping:
-    :param list resources:
-    :param ecs_composex.common.settings.ComposeXSettings settings:
-    :return:
-    """
-    for res in resources:
-        res_config = lookup_key_config(res.logical_name, res.lookup, settings.session)
-        res.mappings = res_config
-        mapping.update({res.logical_name: res_config})
-
-
 def kms_to_ecs(resources, services_stack, res_root_stack, settings):
     """
     Function to apply SQS settings to ECS Services

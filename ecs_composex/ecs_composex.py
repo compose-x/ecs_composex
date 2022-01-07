@@ -11,26 +11,19 @@ import warnings
 from importlib import import_module
 
 from compose_x_common.compose_x_common import keyisset
-from troposphere import AWS_STACK_NAME, FindInMap, GetAtt, Ref
+from troposphere import AWS_STACK_NAME, GetAtt, Ref
 
-from ecs_composex.acm.acm_params import RES_KEY as ACM_KEY
-from ecs_composex.acm.acm_stack import XStack as AcmStack
-from ecs_composex.alarms.alarms_ecs import set_services_alarms
 from ecs_composex.appmesh.appmesh_mesh import Mesh
-from ecs_composex.common import LOG, NONALPHANUM, add_parameters, init_template
+from ecs_composex.common import LOG, NONALPHANUM, init_template
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.ecs_composex import X_AWS_KEY, X_KEY
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common.tagging import add_all_tags
 from ecs_composex.compute.compute_stack import ComputeStack
-from ecs_composex.dashboards.dashboards_stack import XStack as DashboardsStack
-from ecs_composex.dns import DnsSettings
-from ecs_composex.dns.dns_records import DnsRecords
 from ecs_composex.ecs.ecs_cluster import add_ecs_cluster
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME
 from ecs_composex.ecs.ecs_stack import associate_services_to_root_stack
 from ecs_composex.iam.iam_stack import XStack as IamStack
-from ecs_composex.vpc import vpc_params
 from ecs_composex.vpc.vpc_stack import XStack as VpcStack
 
 try:
@@ -58,7 +51,7 @@ SUPPORTED_X_MODULE_NAMES = [
     "sqs",
     "sns",
     "acm",
-    "dynamodb",
+    "route53" "dynamodb",
     "kms",
     "s3",
     "elbv2",
@@ -75,11 +68,10 @@ SUPPORTED_X_MODULE_NAMES = [
 ]
 
 SUPPORTED_X_MODULES = [f"{X_KEY}{mod_name}" for mod_name in SUPPORTED_X_MODULE_NAMES]
-EXCLUDED_X_KEYS = [
+IGNORED_X_KEYS = [
     f"{X_KEY}configs",
     f"{X_KEY}tags",
     f"{X_KEY}appmesh",
-    # f"{X_KEY}acm"
     f"{X_KEY}vpc",
     f"{X_KEY}dns",
     f"{X_KEY}cluster",
@@ -97,11 +89,7 @@ TCP_MODES = [
 ]
 TCP_SERVICES = [f"{X_KEY}{mode}" for mode in TCP_MODES]
 
-ENV_RESOURCE_MODULES = [
-    # "vpc",
-    # "dns",
-    "acm",
-]
+ENV_RESOURCE_MODULES = ["acm", "route53", "cloudmap"]
 ENV_RESOURCES = [f"{X_KEY}{mode}" for mode in ENV_RESOURCE_MODULES]
 
 
@@ -219,15 +207,23 @@ def apply_x_to_x_configs(root_stack, settings):
     """
     for resource in root_stack.stack_template.resources.values():
         if (
-            issubclass(type(resource), ComposeXStack)
-            and (
-                resource.name in SUPPORTED_X_MODULE_NAMES
-                or resource.name in ENV_RESOURCE_MODULES
+            (
+                issubclass(type(resource), ComposeXStack)
+                or isinstance(resource, ComposeXStack)
             )
+            # and (
+            #     resource.name in SUPPORTED_X_MODULE_NAMES
+            #     or resource.name in ENV_RESOURCE_MODULES
+            # )
             and hasattr(resource, "add_xdependencies")
-            and not resource.is_void
         ):
             resource.add_xdependencies(root_stack, settings)
+
+
+def apply_x_resource_to_x(settings):
+    for resource in settings.x_resources:
+        if hasattr(resource, "handle_x_dependencies"):
+            resource.handle_x_dependencies(settings)
 
 
 def add_compute(root_template, settings, vpc_stack):
@@ -293,6 +289,7 @@ def add_x_env_resources(root_stack, settings):
             and key in ENV_RESOURCES
             and not re.match(X_AWS_KEY, key)
         ):
+            LOG.info(f"{settings.name} -Processing {key}")
             process_x_class(root_stack, settings, key)
 
 
@@ -303,7 +300,7 @@ def add_x_resources(root_stack, settings):
     for key in settings.compose_content:
         if (
             key.startswith(X_KEY)
-            and key not in EXCLUDED_X_KEYS
+            and key not in IGNORED_X_KEYS
             and key not in ENV_RESOURCES
             and not re.match(X_AWS_KEY, key)
         ):
@@ -312,18 +309,6 @@ def add_x_resources(root_stack, settings):
             #     xstack.get_from_vpc_stack(vpc_stack)
             # elif not vpc_stack and key in TCP_SERVICES:
             #     xstack.no_vpc_stack_parameters(settings)
-
-
-def get_vpc_id(vpc_stack):
-    """
-    Function to add CloudMap to VPC
-
-    :param ecs_composex.vpc.vpc_stack.VpcStack vpc_stack: The VPC Stack used in this execution
-    """
-    if not vpc_stack.is_void and vpc_stack.vpc_resource:
-        return GetAtt(VPC_STACK_NAME, f"Outputs.{vpc_params.VPC_ID_T}")
-    elif vpc_stack.is_void and vpc_stack.vpc_resource.mappings:
-        return FindInMap("Network", vpc_params.VPC_ID.title, vpc_params.VPC_ID.title)
 
 
 def init_root_template():
@@ -590,15 +575,13 @@ def generate_full_template(settings):
         vpc_stack.vpc_resource.cfn_resource or vpc_stack.vpc_resource.mappings
     ):
         settings.set_networks(vpc_stack)
-        dns_settings = DnsSettings(root_stack, settings, get_vpc_id(vpc_stack))
-        if settings.use_appmesh:
-            mesh = Mesh(
-                settings.compose_content["x-appmesh"],
-                root_stack,
-                settings,
-                dns_settings,
-            )
-            mesh.render_mesh_template(root_stack, settings, dns_settings)
+    # if settings.use_appmesh:
+    #     mesh = Mesh(
+    #         settings.compose_content["x-appmesh"],
+    #         root_stack,
+    #         settings,
+    #     )
+    #     mesh.render_mesh_template(root_stack, settings)
 
     update_families_networking_settings(settings, vpc_stack)
     update_network_resources_vpc_config(settings, vpc_stack)
@@ -610,6 +593,7 @@ def generate_full_template(settings):
         root_stack,
     )
     apply_x_to_x_configs(root_stack, settings)
+    apply_x_resource_to_x(settings)
     # dns_records = DnsRecords(settings)
     # dns_records.associate_records_to_resources(settings, root_stack, dns_settings)
     # dns_settings.associate_settings_to_nested_stacks(root_stack)

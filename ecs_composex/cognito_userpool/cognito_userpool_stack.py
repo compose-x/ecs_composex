@@ -88,8 +88,8 @@ def resolve_lookup(lookup_resources, settings):
     :param list[UserPool] lookup_resources: the lookup resources to process
     :param ecs_composex.common.settings.ComposeXSettings settings: the ComposeX Execution settings.
     """
-    if not keyisset(RES_KEY, settings.mappings):
-        settings.mappings[RES_KEY] = {}
+    if not keyisset(MAPPINGS_KEY, settings.mappings):
+        settings.mappings[MAPPINGS_KEY] = {}
     for resource in lookup_resources:
         resource.lookup_resource(
             USER_POOL_RE,
@@ -97,7 +97,10 @@ def resolve_lookup(lookup_resources, settings):
             CfnUserPool.resource_type,
             "cognito-idp",
         )
-        settings.mappings[RES_KEY].update({resource.logical_name: resource.mappings})
+        settings.mappings[MAPPINGS_KEY].update(
+            {resource.logical_name: resource.mappings}
+        )
+        LOG.info(f"{resource.module_name}.{resource.name} Found in AWS Account")
 
 
 class XStack(ComposeXStack):

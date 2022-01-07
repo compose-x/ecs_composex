@@ -101,9 +101,8 @@ class XStack(ComposeXStack):
             settings, OpenSearchDomain, RES_KEY, MOD_KEY, mapping_key=MAPPINGS_KEY
         )
         x_resources = settings.compose_content[RES_KEY].values()
-        new_resources = set_new_resources(x_resources, RES_KEY, True)
         lookup_resources = set_lookup_resources(x_resources, RES_KEY)
-        use_resources = set_use_resources(x_resources, RES_KEY, False)
+        new_resources = set_new_resources(x_resources, RES_KEY, True)
         if new_resources:
             stack_template = build_template(
                 "Root template for OpenSearch", [VPC_ID, STORAGE_SUBNETS]
@@ -112,7 +111,7 @@ class XStack(ComposeXStack):
             create_new_domains(new_resources, self)
         else:
             self.is_void = True
-        if lookup_resources or use_resources:
+        if lookup_resources:
             if not keyisset(MAPPINGS_KEY, settings.mappings):
                 settings.mappings[MAPPINGS_KEY] = {}
             create_opensearch_mappings(

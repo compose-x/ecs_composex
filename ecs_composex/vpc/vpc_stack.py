@@ -13,13 +13,12 @@ import troposphere
 from botocore.exceptions import ClientError
 from compose_x_common.aws import get_region_azs
 from compose_x_common.compose_x_common import keyisset
-from troposphere import Join, Ref
+from troposphere import FindInMap, GetAtt, Join, Ref, Sub
 
 from ecs_composex.common import LOG, build_template, set_else_none
 from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources import AwsEnvironmentResource, XResource
-from ecs_composex.dns import dns_params
 from ecs_composex.vpc import aws_mappings
 from ecs_composex.vpc.vpc_aws import lookup_x_vpc_settings
 from ecs_composex.vpc.vpc_maths import get_subnet_layers
@@ -314,7 +313,6 @@ def init_vpc_template() -> troposphere.Template:
     """
     template = build_template(
         "Vpc Template generated via ECS Compose-X",
-        [dns_params.PRIVATE_DNS_ZONE_NAME],
     )
     template.add_mapping("AwsLbAccounts", aws_mappings.AWS_LB_ACCOUNTS)
     return template
@@ -362,3 +360,16 @@ class XStack(ComposeXStack):
         self.is_void = False
         self.vpc_resource.init_outputs()
         super().__init__(title, stack_template=template)
+
+    @property
+    def vpc_id(self):
+        """
+        Gives the VPC ID
+        :return:
+        """
+        if not self.is_void and self.vpc_resource:
+            return GetAtt(self.title, f"Outputs.{VPC_ID.title}")
+        elif self.is_void and self.vpc_resource.mappings:
+            return FindInMap("Network", VPC_ID.title, VPC_ID.title)
+        else:
+            return None

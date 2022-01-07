@@ -46,10 +46,10 @@ S3_BUCKET_KMS_KEY = Parameter(
 )
 
 CONTROL_CLOUD_ATTR_MAPPING = {
-    S3_BUCKET_NAME.title: "BucketName",
-    S3_BUCKET_REGION_DOMAIN_NAME.return_value: "RegionalDomainName",
-    S3_BUCKET_DOMAIN_NAME.return_value: "DomainName",
-    S3_BUCKET_KMS_KEY.return_value: "BucketEncryption::ServerSideEncryptionConfiguration::"
+    S3_BUCKET_NAME: "BucketName",
+    S3_BUCKET_REGION_DOMAIN_NAME: "RegionalDomainName",
+    S3_BUCKET_DOMAIN_NAME: "DomainName",
+    S3_BUCKET_KMS_KEY: "BucketEncryption::ServerSideEncryptionConfiguration::"
     "0::ServerSideEncryptionByDefault::KMSMasterKeyID",
-    S3_BUCKET_ARN.return_value: "Arn",
+    S3_BUCKET_ARN: "Arn",
 }

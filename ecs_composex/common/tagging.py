@@ -148,7 +148,7 @@ def add_object_tags(obj, tags):
     elif isinstance(obj, excluded_types):
         return
     if hasattr(obj, "props") and "Tags" not in obj.props:
-        LOG.debug(f"Item {obj.title} - {obj.resource_type} does not support tags")
+        LOG.debug(f"Item {obj} does not support tags")
         return
     if hasattr(obj, "Tags") and isinstance(getattr(obj, "Tags"), Tags):
         LOG.debug(f"Adding the new tags {clean_tags} to {obj}")
