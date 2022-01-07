@@ -41,8 +41,6 @@ from troposphere.servicediscovery import Service as SdService
 from ecs_composex.common import LOG
 from ecs_composex.common.cfn_conditions import define_stack_name
 from ecs_composex.common.outputs import ComposeXOutput
-from ecs_composex.dns.dns_conditions import PRIVATE_NAMESPACE_CON_T
-from ecs_composex.dns.dns_params import PRIVATE_NAMESPACE_ID
 from ecs_composex.ecs import ecs_conditions, ecs_params
 from ecs_composex.ecs.ecs_conditions import USE_HOSTNAME_CON_T, use_external_lt_con
 from ecs_composex.ecs.ecs_params import (
@@ -68,73 +66,46 @@ def define_placement_strategies():
     ]
 
 
-def define_public_mapping(eips, azs):
-    """Function to get the public mapping for NLB
-
-    :param eips: list of EIPSs
-    :type eips: list(troposphere.ec2.EIP)
-    :param azs: list of AZs to created EIPs into
-    :type azs: list
-
-    :return: list
-    """
-    public_mappings = []
-    if eips:
-        public_mappings = [
-            SubnetMapping(
-                AllocationId=GetAtt(eip, "AllocationId"),
-                SubnetId=Select(count, Ref(PUBLIC_SUBNETS)),
-            )
-            for count, eip in enumerate(eips)
-        ]
-    elif azs:
-        public_mappings = [
-            SubnetMapping(SubnetId=Select(count, Ref(PUBLIC_SUBNETS)))
-            for count in range(len(azs))
-        ]
-    return public_mappings
-
-
-def add_service_to_map(family, settings):
-    """
-    Method to create a new Service into CloudMap to represent the current service and add entry into the registry
-    """
-    registries = []
-    if not family.service_config.network.ports:
-        LOG.warning(
-            f"No ports were defined for the services in {family.logical_name}."
-            " Not creating a service in CloudMap"
-        )
-        return registries
-    elif not family.service_config.network.use_cloudmap and not settings.use_appmesh:
-        return registries
-    sd_service = SdService(
-        f"{family.logical_name}DiscoveryService",
-        template=family.template,
-        Condition=PRIVATE_NAMESPACE_CON_T,
-        Description=Ref(SERVICE_NAME),
-        NamespaceId=Ref(PRIVATE_NAMESPACE_ID),
-        HealthCheckCustomConfig=SdHealthCheckCustomConfig(FailureThreshold=1.0),
-        DnsConfig=SdDnsConfig(
-            RoutingPolicy="MULTIVALUE",
-            NamespaceId=Ref(AWS_NO_VALUE),
-            DnsRecords=[
-                SdDnsRecord(TTL="15", Type="A"),
-                SdDnsRecord(TTL="15", Type="SRV"),
-            ],
-        ),
-        Name=If(USE_HOSTNAME_CON_T, Ref(SERVICE_HOSTNAME), Ref(SERVICE_NAME)),
-    )
-    for port in family.service_config.network.ports:
-        used_port = port["published"]
-        registry = ServiceRegistry(
-            f"ServiceRegistry{used_port}",
-            RegistryArn=GetAtt(sd_service, "Arn"),
-            Port=used_port,
-        )
-        registries.append(registry)
-        break
-    return registries
+# def add_service_to_map(family, settings):
+#     """
+#     Method to create a new Service into CloudMap to represent the current service and add entry into the registry
+#     """
+#     registries = []
+#     if not family.service_config.network.ports:
+#         LOG.warning(
+#             f"No ports were defined for the services in {family.logical_name}."
+#             " Not creating a service in CloudMap"
+#         )
+#         return registries
+#     elif not family.service_config.network.use_cloudmap and not settings.use_appmesh:
+#         return registries
+#     sd_service = SdService(
+#         f"{family.logical_name}DiscoveryService",
+#         template=family.template,
+#         Condition=PRIVATE_NAMESPACE_CON_T,
+#         Description=Ref(SERVICE_NAME),
+#         NamespaceId=Ref(PRIVATE_NAMESPACE_ID),
+#         HealthCheckCustomConfig=SdHealthCheckCustomConfig(FailureThreshold=1.0),
+#         DnsConfig=SdDnsConfig(
+#             RoutingPolicy="MULTIVALUE",
+#             NamespaceId=Ref(AWS_NO_VALUE),
+#             DnsRecords=[
+#                 SdDnsRecord(TTL="15", Type="A"),
+#                 SdDnsRecord(TTL="15", Type="SRV"),
+#             ],
+#         ),
+#         Name=If(USE_HOSTNAME_CON_T, Ref(SERVICE_HOSTNAME), Ref(SERVICE_NAME)),
+#     )
+#     for port in family.service_config.network.ports:
+#         used_port = port["published"]
+#         registry = ServiceRegistry(
+#             f"ServiceRegistry{used_port}",
+#             RegistryArn=GetAtt(sd_service, "Arn"),
+#             Port=used_port,
+#         )
+#         registries.append(registry)
+#         break
+#     return registries
 
 
 def generate_service_template_outputs(family):
@@ -180,12 +151,12 @@ def define_service_ingress(family, settings):
     :param family:
     """
     service_lbs = []
-    registries = add_service_to_map(family, settings)
-    if not registries:
-        registries = Ref(AWS_NO_VALUE)
+    # registries = add_service_to_map(family, settings)
+    # if not registries:
+    #     registries = Ref(AWS_NO_VALUE)
     service_attrs = {
         "LoadBalancers": service_lbs,
-        "ServiceRegistries": If(PRIVATE_NAMESPACE_CON_T, registries, Ref(AWS_NO_VALUE)),
+        "ServiceRegistries": Ref(AWS_NO_VALUE),
     }
     return service_attrs
 

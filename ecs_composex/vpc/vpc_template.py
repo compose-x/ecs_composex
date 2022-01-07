@@ -34,7 +34,6 @@ from troposphere.logs import LogGroup
 
 from ecs_composex.common.cfn_conditions import USE_STACK_NAME_CON_T
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME, ROOT_STACK_NAME_T
-from ecs_composex.dns.dns_params import PRIVATE_DNS_ZONE_NAME
 from ecs_composex.iam import service_role_trust_policy
 from ecs_composex.vpc import metadata
 from ecs_composex.vpc.vpc_params import IGW_T, VPC_T
@@ -98,17 +97,17 @@ def add_vpc_core(template, vpc_cidr):
     dhcp_opts = DHCPOptions(
         "VpcDhcpOptions",
         template=template,
-        DomainName=If(
-            USE_STACK_NAME_CON_T,
-            Sub(
-                f"svc.${{AWS::StackName}}.${{{PRIVATE_DNS_ZONE_NAME.title}}} "
-                f"${{AWS::StackName}}.${{{PRIVATE_DNS_ZONE_NAME.title}}}"
-            ),
-            Sub(
-                f"svc.${{{ROOT_STACK_NAME_T}}}.${{{PRIVATE_DNS_ZONE_NAME.title}}} "
-                f"${{{ROOT_STACK_NAME_T}}}.${{{PRIVATE_DNS_ZONE_NAME.title}}}"
-            ),
-        ),
+        # DomainName=If(
+        #     USE_STACK_NAME_CON_T,
+        #     Sub(
+        #         f"svc.${{AWS::StackName}}.${{{PRIVATE_DNS_ZONE_NAME.title}}} "
+        #         f"${{AWS::StackName}}.${{{PRIVATE_DNS_ZONE_NAME.title}}}"
+        #     ),
+        #     Sub(
+        #         f"svc.${{{ROOT_STACK_NAME_T}}}.${{{PRIVATE_DNS_ZONE_NAME.title}}} "
+        #         f"${{{ROOT_STACK_NAME_T}}}.${{{PRIVATE_DNS_ZONE_NAME.title}}}"
+        #     ),
+        # ),
         DomainNameServers=["AmazonProvidedDNS"],
         Tags=Tags(Name=Sub(f"dhcp-${{{vpc.title}}}")),
         Metadata=metadata,

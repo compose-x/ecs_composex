@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
-from troposphere import GetAtt, Parameter, Ref, Sub, appmesh
+from troposphere import AWS_NO_VALUE, GetAtt, Parameter, Ref, Sub, appmesh
 from troposphere.ec2 import SecurityGroupIngress
 from troposphere.ecs import (
     ContainerDefinition,
@@ -20,7 +20,6 @@ from ecs_composex.appmesh.appmesh_params import BACKENDS_KEY, NAME_KEY
 from ecs_composex.common import LOG, add_parameters
 from ecs_composex.common.outputs import ComposeXOutput
 from ecs_composex.common.services_helpers import extend_container_envvars
-from ecs_composex.dns.dns_params import PRIVATE_DNS_ZONE_NAME
 from ecs_composex.ecs import ecs_params
 
 
@@ -91,7 +90,7 @@ class MeshNode(object):
             Spec=appmesh.VirtualNodeSpec(
                 ServiceDiscovery=appmesh.ServiceDiscovery(
                     AWSCloudMap=appmesh.AwsCloudMapServiceDiscovery(
-                        NamespaceName=Ref(PRIVATE_DNS_ZONE_NAME),
+                        NamespaceName=Ref(AWS_NO_VALUE),
                         ServiceName=GetAtt(sd_service, NAME_KEY),
                     )
                 ),

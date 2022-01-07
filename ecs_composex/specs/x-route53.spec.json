@@ -1,0 +1,45 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "id": "x-route53.spec.json",
+  "$id": "x-route53.spec.json",
+  "title": "x-route53",
+  "description": "x-route53 specification",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "ZoneName"
+  ],
+  "properties": {
+    "ZoneName": {
+      "type": "string",
+      "format": "idn-hostname"
+    },
+    "Lookup": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "RoleArn": {
+              "$ref": "x-resources.common.spec.json#/definitions/Lookup/properties/RoleArn"
+            },
+            "HostedZoneId": {
+              "$ref": "#/definitions/HostedZoneId",
+              "description": "If set, will retrieve the zone details from the Zone ID directly."
+            }
+          }
+        },
+        {
+          "type": "boolean",
+          "description": "When set to true, finds the zone based on ZoneName alone."
+        }
+      ]
+    }
+  },
+  "definitions": {
+    "HostedZoneId": {
+      "type": "string",
+      "pattern": "Z[A-Z0-9]+$",
+      "description": "The Route53 ZoneID"
+    }
+  }
+}

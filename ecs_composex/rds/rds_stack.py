@@ -67,6 +67,15 @@ def get_db_instance_config(db, account_id, resource_id):
 
 
 def get_db_cluster_config(db, account_id, resource_id):
+    """
+    Creates the DB configuration to use then in Mappings
+
+    :param Rds db:
+    :param str account_id:
+    :param str resource_id:
+    :return: The config
+    :rtype: dict
+    """
     client = db.lookup_session.client("rds")
     try:
         db_config_r = client.describe_db_clusters(DBClusterIdentifier=db.arn)[
@@ -84,9 +93,9 @@ def get_db_cluster_config(db, account_id, resource_id):
         ]
 
     attributes_mappings = {
-        DB_NAME.title: "DatabaseName",
-        DB_ENDPOINT_PORT.return_value.replace(r".", ""): "Port",
-        "VpcSecurityGroupId": "VpcSecurityGroups::0::VpcSecurityGroupId",
+        DB_NAME: "DatabaseName",
+        DB_ENDPOINT_PORT: "Port",
+        DB_SG: "VpcSecurityGroups::0::VpcSecurityGroupId",
     }
     config = attributes_to_mapping(db_config_r, attributes_mappings)
     return config
