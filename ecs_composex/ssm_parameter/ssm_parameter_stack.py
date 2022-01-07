@@ -195,8 +195,8 @@ def resolve_lookup(lookup_resources, settings):
     :param list lookup_resources:
     :param ecs_composex.common.settings.ComposeXSettings settings:
     """
-    if not keyisset(RES_KEY, settings.mappings):
-        settings.mappings[RES_KEY] = {}
+    if not keyisset(MAPPINGS_KEY, settings.mappings):
+        settings.mappings[MAPPINGS_KEY] = {}
     for resource in lookup_resources:
         resource.lookup_resource(
             SSM_PARAMETER_ARN_RE,
@@ -205,7 +205,9 @@ def resolve_lookup(lookup_resources, settings):
             "ssm:parameter",
         )
         LOG.info(f"{RES_KEY}.{resource.name} - Matched to {resource.arn}")
-        settings.mappings[RES_KEY].update({resource.logical_name: resource.mappings})
+        settings.mappings[MAPPINGS_KEY].update(
+            {resource.logical_name: resource.mappings}
+        )
 
 
 class XStack(ComposeXStack):

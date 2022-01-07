@@ -14,7 +14,6 @@ from ecs_composex.common import setup_logging
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources import (
     ApiXResource,
-    XResource,
     set_lookup_resources,
     set_new_resources,
     set_resources,
@@ -95,8 +94,8 @@ def resolve_lookup(lookup_resources, settings):
     :param list[Stream] lookup_resources:
     :param ecs_composex.common.settings.ComposeXSettings settings:
     """
-    if not keyisset(RES_KEY, settings.mappings):
-        settings.mappings[RES_KEY] = {}
+    if not keyisset(MAPPINGS_KEY, settings.mappings):
+        settings.mappings[MAPPINGS_KEY] = {}
     for resource in lookup_resources:
         LOG.info(
             f"{resource.module_name}.{resource.logical_name} - Looking up AWS Resource"

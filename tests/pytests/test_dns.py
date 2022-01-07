@@ -1,4 +1,4 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille<john@compose-x.io>
 
@@ -7,15 +7,13 @@ from os import path
 import boto3
 import placebo
 import pytest
-from botocore.errorfactory import ClientExceptionsFactory
-from botocore.exceptions import ClientError
 from troposphere import Ref
 
 from ecs_composex.common import build_template, load_composex_file
 from ecs_composex.common.settings import ComposeXSettings
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.dns import DnsSettings
-from ecs_composex.dns.dns_records import Record
+from ecs_composex.route53.route53_records import Record
 
 
 @pytest.fixture

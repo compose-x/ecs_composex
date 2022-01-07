@@ -317,50 +317,6 @@ class ComposeXStack(Stack, object):
                 }
             )
 
-    def add_xdependencies(self, root_stack, settings):
-        """
-        x-acm resources will go over other resources defined and if these have `x-acm` defined in properties,
-        will update with the appropriate values / CFN parameters
-
-        :param ecs_composex.common.stacks.ComposeXStack root_stack:
-        :param ecs_composex.common.settings.ComposeXSettings settings:
-        """
-        if not hasattr(self, "x_to_x_mappings") or not hasattr(
-            self, "x_resource_class"
-        ):
-            LOG.info(f"{self.name} - Nothing to apply to other x-resources")
-            return
-        mod_x_resources = [
-            resource
-            for resource in settings.x_resources
-            if isinstance(resource, self.x_resource_class)
-        ]
-
-        for resource in settings.get_x_resources(include_mappings=False):
-            if not resource.cfn_resource:
-                continue
-            resource_stack = resource.stack
-            if not resource_stack:
-                LOG.error(
-                    f"resource {resource.name} has no `stack` attribute defined. Skipping"
-                )
-                continue
-            for update_settings in self.x_to_x_mappings:
-                aws_resources_to_update = find_aws_resources_in_template_resources(
-                    resource_stack, update_settings[1]
-                )
-                for stack_resource in aws_resources_to_update:
-                    properties_to_update = find_aws_properties_in_aws_resource(
-                        update_settings[2], stack_resource
-                    )
-                    update_settings[0](
-                        mod_x_resources,
-                        resource_stack,
-                        properties_to_update,
-                        update_settings[3],
-                        settings,
-                    )
-
 
 def process_stacks(root_stack, settings, is_root=True):
     """

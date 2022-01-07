@@ -17,7 +17,6 @@ from ecs_composex.common import build_template, setup_logging
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources import (
     ApiXResource,
-    XResource,
     set_lookup_resources,
     set_new_resources,
     set_resources,
@@ -50,23 +49,21 @@ def get_queue_config(queue, account_id, resource_id):
     queue_config = {SQS_NAME.return_value: resource_id}
     client = queue.lookup_session.client("sqs")
     try:
-        queue_config[SQS_URL.title] = client.get_queue_url(
+        queue_config[SQS_URL] = client.get_queue_url(
             QueueName=resource_id, QueueOwnerAWSAccountId=account_id
         )["QueueUrl"]
         try:
             encryption_config_r = client.get_queue_attributes(
-                QueueUrl=queue_config[SQS_URL.title],
+                QueueUrl=queue_config[SQS_URL],
                 AttributeNames=["KmsMasterKeyId", "QueueArn"],
             )
-            queue_config[SQS_ARN.return_value] = encryption_config_r["Attributes"][
-                "QueueArn"
-            ]
+            queue_config[SQS_ARN] = encryption_config_r["Attributes"]["QueueArn"]
             if keyisset("Attributes", encryption_config_r) and keyisset(
                 "KmsMasterKeyId", encryption_config_r["Attributes"]
             ):
                 kms_key_id = encryption_config_r["Attributes"]["KmsMasterKeyId"]
                 if kms_key_id.startswith("arn:aws"):
-                    queue_config[SQS_KMS_KEY.title] = encryption_config_r["Attributes"][
+                    queue_config[SQS_KMS_KEY] = encryption_config_r["Attributes"][
                         "KmsMasterKeyId"
                     ]
                 else:
@@ -120,8 +117,8 @@ def resolve_lookup(lookup_resources, settings):
     :param lookup_resources:
     :param ecs_composex.common.settings.ComposeXSettings settings:
     """
-    if not keyisset(RES_KEY, settings.mappings):
-        settings.mappings[RES_KEY] = {}
+    if not keyisset(MAPPINGS_KEY, settings.mappings):
+        settings.mappings[MAPPINGS_KEY] = {}
     for resource in lookup_resources:
         resource.lookup_resource(
             SQS_QUEUE_ARN_RE,
@@ -129,11 +126,13 @@ def resolve_lookup(lookup_resources, settings):
             CfnQueue.resource_type,
             TAGGING_API_ID,
         )
-        settings.mappings[RES_KEY].update({resource.logical_name: resource.mappings})
+        settings.mappings[MAPPINGS_KEY].update(
+            {resource.logical_name: resource.mappings}
+        )
         LOG.info(f"{RES_KEY}.{resource.name} - Matched AWS Resource {resource.arn}")
-        if keyisset(SQS_KMS_KEY.return_value, resource.mappings):
+        if keyisset(SQS_KMS_KEY, resource.mappings):
             LOG.info(
-                f"{RES_KEY}.{resource.name} - Identified CMK - {resource.mappings[SQS_KMS_KEY.return_value]}"
+                f"{RES_KEY}.{resource.name} - Identified CMK - {resource.mappings[SQS_KMS_KEY]}"
             )
 
 

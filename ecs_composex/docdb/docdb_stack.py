@@ -19,7 +19,6 @@ from ecs_composex.common.aws import find_aws_resource_arn_from_tags_api
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources import (
     NetworkXResource,
-    XResource,
     set_lookup_resources,
     set_new_resources,
     set_resources,
@@ -183,8 +182,8 @@ def resolve_lookup(lookup_resources, settings):
     :param list[Stream] lookup_resources:
     :param ecs_composex.common.settings.ComposeXSettings settings:
     """
-    if not keyisset(RES_KEY, settings.mappings):
-        settings.mappings[RES_KEY] = {}
+    if not keyisset(MAPPINGS_KEY, settings.mappings):
+        settings.mappings[MAPPINGS_KEY] = {}
     for resource in lookup_resources:
         resource.lookup_resource(
             RDS_DB_CLUSTER_ARN_RE,
@@ -195,7 +194,9 @@ def resolve_lookup(lookup_resources, settings):
         )
         if keyisset("secret", resource.lookup):
             lookup_rds_secret(resource, resource.lookup["secret"])
-        settings.mappings[RES_KEY].update({resource.logical_name: resource.mappings})
+        settings.mappings[MAPPINGS_KEY].update(
+            {resource.logical_name: resource.mappings}
+        )
 
 
 class XStack(ComposeXStack):

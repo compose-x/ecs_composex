@@ -49,7 +49,6 @@ from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.common.files import upload_file
 from ecs_composex.common.services_helpers import set_logging_expiry
 from ecs_composex.compose.compose_services import ComposeService
-from ecs_composex.dns import dns_conditions, dns_params
 from ecs_composex.ecs import ecs_conditions, ecs_params
 from ecs_composex.ecs.docker_tools import find_closest_fargate_configuration
 from ecs_composex.ecs.ecs_iam import EcsRole
@@ -460,11 +459,6 @@ class ComposeFamily(object):
         self.template = build_template(
             f"Template for {self.name}",
             [
-                dns_params.PUBLIC_DNS_ZONE_NAME,
-                dns_params.PRIVATE_DNS_ZONE_NAME,
-                dns_params.PUBLIC_DNS_ZONE_ID,
-                dns_params.PRIVATE_DNS_ZONE_ID,
-                dns_params.PRIVATE_NAMESPACE_ID,
                 ecs_params.CLUSTER_NAME,
                 ecs_params.LAUNCH_TYPE,
                 ecs_params.ECS_CONTROLLER,
@@ -528,17 +522,6 @@ class ComposeFamily(object):
         )
         self.template.add_condition(
             ecs_conditions.USE_LAUNCH_TYPE_CON_T, ecs_conditions.USE_LAUNCH_TYPE_CON
-        )
-        self.template.add_condition(
-            dns_conditions.CREATE_PUBLIC_NAMESPACE_CON_T,
-            dns_conditions.CREATE_PUBLIC_NAMESPACE_CON,
-        )
-        self.template.add_condition(
-            dns_conditions.PRIVATE_ZONE_ID_CON_T, dns_conditions.PRIVATE_ZONE_ID_CON
-        )
-        self.template.add_condition(
-            dns_conditions.PRIVATE_NAMESPACE_CON_T,
-            dns_conditions.PRIVATE_NAMESPACE_CON,
         )
 
     def state_facts(self):

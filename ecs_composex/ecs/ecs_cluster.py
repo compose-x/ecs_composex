@@ -136,7 +136,7 @@ class EcsCluster(object):
             DefaultCapacityProviderStrategy=DEFAULT_STRATEGY,
             Configuration=ClusterConfiguration(
                 ExecuteCommandConfiguration=ExecuteCommandConfiguration(
-                    Logging="DEFAULT",
+                    Logging="OVERRIDE",
                     LogConfiguration=ExecuteCommandLogConfiguration(
                         CloudWatchLogGroupName=Ref(self.log_group),
                     ),

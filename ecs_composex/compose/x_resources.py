@@ -17,10 +17,10 @@ from compose_x_common.compose_x_common import (
     keyisset,
     keypresent,
 )
-from troposphere import Export, FindInMap, GetAtt, Join, Output, Ref, Sub
+from troposphere import AWSObject, Export, FindInMap, GetAtt, Join, Output, Ref, Sub
 from troposphere.ecs import Environment
 
-from ecs_composex.common import LOG, NONALPHANUM
+from ecs_composex.common import LOG, NONALPHANUM, add_parameters
 from ecs_composex.common.aws import (
     define_lookup_role_from_info,
     find_aws_resource_arn_from_tags_api,
@@ -457,7 +457,9 @@ class XResource(object):
         """
         Method to define the outputs for the resource when new
         """
-        if output_definition[2] is Ref:
+        if output_definition[2] is Ref and issubclass(
+            type(output_definition[1]), AWSObject
+        ):
             value = Ref(output_definition[1])
         elif output_definition[2] is GetAtt:
             value = GetAtt(output_definition[1], output_definition[3])

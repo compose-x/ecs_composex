@@ -10,6 +10,34 @@
     "UseCloudmap": {
       "type": "boolean"
     },
+    "x-cloudmap": {
+      "oneOf": [
+        {
+          "type": "string",
+          "description": "When you want to register the service into CloudMap. First port listed in ports[] used."
+        },
+        {
+          "type": "object",
+          "description": "Allows you to register the service to multiple registries, and/or use a specific port.",
+          "additionalProperties": false,
+          "patternProperties": {
+            "[a-zA-Z0-9-_.]+$": {
+              "type": "object",
+              "description": "The name of the object is the name of the x-cloudmap::<map>.",
+              "additionalProperties": false,
+              "properties": {
+                "Port": {
+                  "description": "The port to register in SRV record",
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 65535
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
     "IsPublic": {
       "type": "boolean"
     },

@@ -13,6 +13,7 @@ from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources import ApiXResource, XResource
 from ecs_composex.iam.import_sam_policies import get_access_types
 from ecs_composex.sns.sns_params import (
+    MAPPINGS_KEY,
     MOD_KEY,
     RES_KEY,
     TOPIC_ARN,
@@ -35,19 +36,19 @@ def get_topic_config(topic, account_id, resource_id):
     :return:
     """
 
-    topic_config = {TOPIC_NAME.return_value: resource_id}
+    topic_config = {TOPIC_NAME: resource_id}
     client = topic.lookup_session.client("sns")
     attributes_mapping = {
-        TOPIC_ARN.title: "Attributes::TopicArn",
-        TOPIC_KMS_KEY.return_value: "Attributes::KmsMasterKeyId",
+        TOPIC_ARN: "Attributes::TopicArn",
+        TOPIC_KMS_KEY: "Attributes::KmsMasterKeyId",
     }
     try:
         topic_r = client.get_topic_attributes(TopicArn=topic.arn)
         attributes = attributes_to_mapping(topic_r, attributes_mapping)
-        if keyisset(TOPIC_KMS_KEY.return_value, attributes) and not attributes[
-            TOPIC_KMS_KEY.return_value
+        if keyisset(TOPIC_KMS_KEY, attributes) and not attributes[
+            TOPIC_KMS_KEY
         ].startswith("arn:aws"):
-            if attributes[TOPIC_KMS_KEY.return_value].startswith("alias/aws"):
+            if attributes[TOPIC_KMS_KEY].startswith("alias/aws"):
                 LOG.warning(
                     f"{topic.module_name}.{topic.name} - Topic uses the default AWS CMK."
                 )
@@ -66,16 +67,22 @@ def get_topic_config(topic, account_id, resource_id):
 
 
 def create_sns_mappings(resources, settings):
-    if not keyisset(RES_KEY, settings.mappings):
-        mappings = {}
-        settings.mappings[RES_KEY] = mappings
-    else:
-        mappings = settings.mappings[RES_KEY]
+    """
+    Creates the Mappings for x-sns
+
+    :param list[Topic] resources:
+    :param settings:
+    :return:
+    """
+    if not keyisset(MAPPINGS_KEY, settings.mappings):
+        settings.mappings[MAPPINGS_KEY] = {}
     for resource in resources:
         resource.lookup_resource(
             SNS_TOPIC_ARN_RE, get_topic_config, CfnTopic.resource_type, "sns"
         )
-        mappings.update({resource.logical_name: resource.mappings})
+        settings.mappings[MAPPINGS_KEY].update(
+            {resource.logical_name: resource.mappings}
+        )
 
 
 class Topic(ApiXResource):
@@ -167,20 +174,3 @@ class XStack(ComposeXStack):
         ]
         if lookup_topics:
             create_sns_mappings(lookup_topics, settings)
-
-    def handle_sqs(self, root_template, sqs_root_stack):
-        """
-        Function to handle the SQS configuration to allow SNS to send messages to queues.
-        """
-
-    def add_xdependencies(self, root_stack, settings):
-        """
-        Method to add a dependencies from other X-Resources
-        :param ComposeXStack root_stack: The ComposeX Root template
-        :param ecs_composex.common.ComposeXSettings settings:
-        """
-        resources = root_stack.stack_template.resources
-        sqs_res = SQS_KEY.strip("x-") if SQS_KEY.startswith("x-") else SQS_KEY
-        if SQS_KEY in settings.compose_content and sqs_res in resources:
-            self.DependsOn.append(sqs_res)
-            self.handle_sqs(root_stack.stack_template, resources[sqs_res])

@@ -65,6 +65,17 @@
           "items": {
             "type": "string"
           }
+        },
+        "EnvNamesToProperty": {
+          "type": "object",
+          "description": "Maps an environment variable name to the attribute of a resource",
+          "patternProperties": {
+            "[A-Z0-9_]+$": {
+              "type": "string",
+              "description": "The name of the attribute to use for the given env var",
+              "pattern": "^[a-zA-Z0-9-_.]+$"
+            }
+          }
         }
       }
     },

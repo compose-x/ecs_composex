@@ -23,7 +23,6 @@ from ecs_composex.common.aws import find_aws_resource_arn_from_tags_api
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources import (
     ApiXResource,
-    XResource,
     set_lookup_resources,
     set_new_resources,
     set_resources,
@@ -141,8 +140,8 @@ def get_bucket_config(bucket, resource_id):
     :return:
     """
     bucket_config = {
-        S3_BUCKET_NAME.title: resource_id,
-        S3_BUCKET_ARN.return_value: bucket.arn,
+        S3_BUCKET_NAME: resource_id,
+        S3_BUCKET_ARN: bucket.arn,
     }
     client = bucket.lookup_session.client("s3")
 
@@ -274,16 +273,18 @@ def define_bucket_mappings(lookup_buckets, use_buckets, settings):
         bucket.lookup_resource(
             S3_BUCKET_ARN_RE, get_bucket_config, CfnBucket.resource_type, "s3"
         )
-        settings.mappings[RES_KEY].update({bucket.logical_name: bucket.mappings})
-        if not keyisset(S3_BUCKET_KMS_KEY.return_value, bucket.mappings):
+        settings.mappings[MAPPINGS_KEY].update({bucket.logical_name: bucket.mappings})
+        if not keyisset(S3_BUCKET_KMS_KEY, bucket.mappings):
             LOG.info(
                 f"{RES_KEY}.{bucket.name} - No CMK Key identified. Not KMS permissions to set."
             )
         else:
             LOG.info(
                 f"{RES_KEY}.{bucket.name} - "
-                f"CMK identified {bucket.mappings[S3_BUCKET_KMS_KEY.return_value]}."
+                f"CMK identified {bucket.mappings[S3_BUCKET_KMS_KEY]}."
             )
+        bucket.init_outputs()
+        bucket.generate_outputs()
     for bucket in use_buckets:
         if bucket.use.startswith("arn:aws"):
             bucket_arn = bucket.use
@@ -302,7 +303,7 @@ def define_bucket_mappings(lookup_buckets, use_buckets, settings):
             bucket_arn = f"arn:aws:s3:::{bucket_name}"
 
             LOG.warning(f"{RES_KEY}.{bucket.name} - ARN set to {bucket_arn}")
-        settings.mappings[RES_KEY].update(
+        settings.mappings[MAPPINGS_KEY].update(
             {
                 bucket.logical_name: {
                     bucket.logical_name: bucket_name,
@@ -323,8 +324,8 @@ class XStack(ComposeXStack):
         use_resources = set_use_resources(x_resources, RES_KEY, True)
         lookup_resources = set_lookup_resources(x_resources, RES_KEY)
         if lookup_resources or use_resources:
-            if not keyisset(RES_KEY, settings.mappings):
-                settings.mappings[RES_KEY] = {}
+            if not keyisset(MAPPINGS_KEY, settings.mappings):
+                settings.mappings[MAPPINGS_KEY] = {}
             define_bucket_mappings(lookup_resources, use_resources, settings)
         new_resources = set_new_resources(x_resources, RES_KEY, True)
         if new_resources:

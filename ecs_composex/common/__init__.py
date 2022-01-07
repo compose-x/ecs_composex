@@ -100,6 +100,28 @@ def add_outputs(template, outputs):
             template.add_output(output)
 
 
+def add_update_mapping(template, mapping_key, mapping_value, mapping_subkey=None):
+    """
+
+    :param troposphere.Template template:
+    :param str mapping_key:
+    :param dict mapping_value:
+    :param str mapping_subkey: If set, applies the value to a sub-key of the mapping on update
+    :return:
+    """
+    if mapping_key not in template.mappings:
+        template.add_mapping(mapping_key, mapping_value)
+    else:
+        if mapping_subkey and keyisset(mapping_subkey, template.mappings[mapping_key]):
+            template.mappings[mapping_key][mapping_subkey].update(mapping_value)
+        elif mapping_key and not keyisset(
+            mapping_subkey, template.mappings[mapping_key]
+        ):
+            template.mappings[mapping_key][mapping_subkey] = mapping_value
+        elif not mapping_subkey:
+            template.mappings[mapping_key].update(mapping_value)
+
+
 def add_defaults(template):
     """Function to CFN parameters and conditions to the template whhich are used
     across ECS ComposeX
