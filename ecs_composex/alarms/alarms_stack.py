@@ -255,7 +255,7 @@ class XStack(ComposeXStack):
                         self, dimension, resource, settings
                     )
 
-    def add_xdependencies(self, root_stack, settings):
+    def handle_x_dependencies(self, root_stack, settings):
         """
         Function to cross reference alarm settings with other resources
 

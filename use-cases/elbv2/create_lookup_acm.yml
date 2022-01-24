@@ -4,14 +4,14 @@
 
 x-dns:
   PublicZone:
-    Name: lambda-my-aws.io
+    Name: bdd-testing.compose-x.io
     Use: ZABCDEFGHIS0123
 
 x-acm:
   public-acm-01:
     Lookup:
       Tags:
-        - Name: docs.ecs-composex.lambda-my-aws.io
+        - Name: docs.ecs-composex.bdd-testing.compose-x.io
 
 x-elbv2:
   lbA:

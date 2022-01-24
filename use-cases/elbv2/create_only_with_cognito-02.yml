@@ -4,19 +4,19 @@
 
 x-dns:
   PublicZone:
-    Name: lambda-my-aws.io
+    Name: bdd-testing.compose-x.io
     Use: ZABCDEFGHIS0123
 
 x-acm:
   public-acm-01:
     Properties:
-      DomainName: test.lambda-my-aws.io
+      DomainName: test.bdd-testing.compose-x.io
       DomainValidationOptions:
         - HostedZoneId: ZABCDEFGHIS0123
-          DomainName: test.lambda-my-aws.io
+          DomainName: test.bdd-testing.compose-x.io
       SubjectAlternativeNames:
-        - anothertest.lambda-my-aws.io
-        - yet.another.test.lambda-my-aws.io
+        - anothertest.bdd-testing.compose-x.io
+        - yet.another.test.bdd-testing.compose-x.io
       ValidationMethod: DNS
 
 x-cognito_userpool:

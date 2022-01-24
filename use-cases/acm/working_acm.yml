@@ -63,9 +63,9 @@ services:
 x-acm:
   blogdemo:
     Properties:
-      DomainName: blog-demo.lambda-my-aws.io
+      DomainName: blog-demo.bdd-testing.compose-x.io
       DomainValidationOptions:
-        - DomainName: lambda-my-aws.io
+        - DomainName: bdd-testing.compose-x.io
           HostedZoneId: ZREDACTED111
     Settings: {}
     Services:
@@ -76,8 +76,8 @@ x-acm:
 
   unused:
     Properties:
-      DomainName: blog-demo.lambda-my-aws.io
+      DomainName: blog-demo.bdd-testing.compose-x.io
       DomainValidationOptions:
-        - DomainName: lambda-my-aws.io
+        - DomainName: bdd-testing.compose-x.io
           HostedZoneId: ZREDACTED111
     Services: []
