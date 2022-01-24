@@ -120,7 +120,7 @@ x-dns:
   PrivateNamespace:
     Name: mycluster.lan
   PublicNamespace:
-    Name: lambda-my-aws.io
+    Name: bdd-testing.compose-x.io
 
 x-vpc:
   Create:

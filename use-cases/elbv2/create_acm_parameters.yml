@@ -1,18 +1,19 @@
 ---
 # ELBv2 creation for services
 
+x-route53:
+  public-domain-01:
+    Lookup: true
+    ZoneName: bdd-testing.compose-x.io
 
-x-dns:
-  PublicZone:
-    Name: lambda-my-aws.io
-    Use: ZABCDEFGHIS0123
 
 x-acm:
   public-acm-01:
     MacroParameters:
       DomainNames:
-        - test.lambda-my-aws.io
-        - someother.test.lambda-my-aws.io
+        - test.bdd-testing.compose-x.io
+        - someother.test.bdd-testing.compose-x.io
+      HostedZoneId: x-route53::public-domain-01
 
 x-elbv2:
   lbA:

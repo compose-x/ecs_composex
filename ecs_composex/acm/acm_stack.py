@@ -106,14 +106,10 @@ class Certificate(AwsEnvironmentResource):
 
     def define_parameters_props(self, dns_settings):
         tag_filter = re.compile(r"(^\*.)")
-        if not keyisset("DomainNames", self.parameters):
-            raise KeyError(
-                "For MacroParameters, you need to define at least DomainNames"
-            )
         validations = [
             DomainValidationOption(
                 DomainName=domain_name,
-                HostedZoneId=dns_settings.public_zone.id_value,
+                HostedZoneId=self.parameters["HostedZoneId"],
             )
             for domain_name in self.parameters["DomainNames"]
         ]
@@ -123,7 +119,7 @@ class Certificate(AwsEnvironmentResource):
             "ValidationMethod": "DNS",
             "Tags": Tags(
                 Name=tag_filter.sub("wildcard.", self.parameters["DomainNames"][0]),
-                ZoneId=dns_settings.public_zone.id_value,
+                ZoneId=self.parameters["HostedZoneId"],
             ),
             "SubjectAlternativeNames": self.parameters["DomainNames"][1:],
         }
@@ -323,7 +319,7 @@ class XStack(ComposeXStack):
         for resource in x_resources:
             resource.stack = self
 
-    def add_xdependencies(self, root_stack, settings):
+    def handle_x_dependencies(self, root_stack, settings):
         """
         x-acm resources will go over other resources defined and if these have `x-acm` defined in properties,
         will update with the appropriate values / CFN parameters

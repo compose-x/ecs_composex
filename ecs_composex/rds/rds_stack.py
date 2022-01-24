@@ -179,7 +179,7 @@ class XStack(ComposeXStack):
     Class to handle ECS root stack specific settings
     """
 
-    def add_xdependencies(self, root_stack, settings):
+    def handle_x_dependencies(self, root_stack, settings):
         """
         Method to handle RDS to other x- resources links.
 
