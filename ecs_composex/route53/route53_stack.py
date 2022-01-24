@@ -14,6 +14,7 @@ from troposphere import Ref
 from troposphere.route53 import HostedZone as CfnHostedZone
 
 from ecs_composex.acm.acm_params import MAPPINGS_KEY, MOD_KEY, RES_KEY
+from ecs_composex.acm.acm_stack import Certificate
 from ecs_composex.common import build_template, setup_logging
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources import (
@@ -25,6 +26,7 @@ from ecs_composex.compose.x_resources import (
 )
 from ecs_composex.elbv2.elbv2_stack import Elbv2
 
+from .route53_acm import handle_acm_records
 from .route53_elbv2 import handle_elbv2_records
 from .route53_params import (
     LAST_DOT_RE,
@@ -184,7 +186,10 @@ class HostedZone(AwsEnvironmentResource):
                     f"resource {resource.name} has no `stack` attribute defined. Skipping"
                 )
                 continue
-            mappings = [(Elbv2, handle_elbv2_records)]
+            mappings = [
+                (Elbv2, handle_elbv2_records),
+                (Certificate, handle_acm_records),
+            ]
             for target in mappings:
                 if isinstance(resource, target[0]) or issubclass(
                     type(resource), target[0]
@@ -254,37 +259,3 @@ class XStack(ComposeXStack):
         if use_resources:
             warnings.warn(f"{RES_KEY}. - Use is not yet supported.")
         self.module_name = MOD_KEY
-
-    def add_xdependencies(self, root_stack, settings):
-        """
-        Override
-        :param root_stack:
-        :param ecs_composex.common.settings.ComposeXSettings settings:
-        :return:
-        """
-        x_resources = [
-            resource
-            for resource in settings.x_resources
-            if isinstance(resource, HostedZone)
-        ]
-        for resource in settings.get_x_resources(include_mappings=False):
-            if not resource.cfn_resource:
-                continue
-            resource_stack = resource.stack
-            if not resource_stack:
-                LOG.error(
-                    f"resource {resource.name} has no `stack` attribute defined. Skipping"
-                )
-                continue
-            mappings = [(Elbv2, handle_elbv2_records)]
-            for target in mappings:
-                if isinstance(resource, target[0]) or issubclass(
-                    type(resource), target[0]
-                ):
-                    target[1](
-                        x_resources,
-                        self,
-                        resource,
-                        resource_stack,
-                        settings,
-                    )

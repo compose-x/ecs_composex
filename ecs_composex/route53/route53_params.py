@@ -31,3 +31,17 @@ PUBLIC_DNS_ZONE_ARN = Parameter(
     PUBLIC_DNS_ZONE_ARN_T,
     Type="String",
 )
+
+
+def validate_domain_name(new_record, base_domain):
+    """
+    Validates that the new alias DNS Name matches the domain basename
+
+    :param str new_record:
+    :param str base_domain:
+    :raises: ValueError if there is no match
+    """
+    if not re.findall(base_domain, new_record):
+        raise ValueError(
+            f"New record {new_record} does not seem to belong to {base_domain}"
+        )

@@ -1,4 +1,4 @@
-﻿version: "3.8"
+version: "3.8"
 services:
   nginx:
     image: nginx
@@ -61,7 +61,7 @@ x-dns:
     Lookup: True
   Records:
     - Properties:
-        Name: wordpress.demos.lambda-my-aws.io
+        Name: wordpress.demos.bdd-testing.compose-x.io
         Type: A
       Target: x-elbv2::app-alb
 

@@ -51,7 +51,8 @@ SUPPORTED_X_MODULE_NAMES = [
     "sqs",
     "sns",
     "acm",
-    "route53" "dynamodb",
+    "route53",
+    "dynamodb",
     "kms",
     "s3",
     "elbv2",
@@ -215,12 +216,17 @@ def apply_x_to_x_configs(root_stack, settings):
             #     resource.name in SUPPORTED_X_MODULE_NAMES
             #     or resource.name in ENV_RESOURCE_MODULES
             # )
-            and hasattr(resource, "add_xdependencies")
+            and hasattr(resource, "handle_x_dependencies")
         ):
-            resource.add_xdependencies(root_stack, settings)
+            resource.handle_x_dependencies(root_stack, settings)
 
 
 def apply_x_resource_to_x(settings):
+    """
+    Goes over each x resource in the execution and execute logical association between the resources.
+
+    :param ecs_composex.common.settings.ComposeXSettings settings: The settings for the execution
+    """
     for resource in settings.x_resources:
         if hasattr(resource, "handle_x_dependencies"):
             resource.handle_x_dependencies(settings)
@@ -289,7 +295,7 @@ def add_x_env_resources(root_stack, settings):
             and key in ENV_RESOURCES
             and not re.match(X_AWS_KEY, key)
         ):
-            LOG.info(f"{settings.name} -Processing {key}")
+            LOG.info(f"{settings.name} - Processing {key}")
             process_x_class(root_stack, settings, key)
 
 
