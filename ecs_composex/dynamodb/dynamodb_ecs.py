@@ -43,5 +43,9 @@ def dynamodb_to_ecs(resources, services_stack, res_root_stack, settings):
         )
     for resource in lookup_resources:
         handle_lookup_resource(
-            settings.mappings[RES_KEY], MAPPINGS_KEY, resource, TABLE_ARN, [TABLE_NAME]
+            settings.mappings[resource.mapping_key],
+            resource.mapping_key,
+            resource,
+            TABLE_ARN,
+            [TABLE_NAME],
         )

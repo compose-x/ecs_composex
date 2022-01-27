@@ -9,6 +9,7 @@ from ecs_composex.common import build_template
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources import (
     NetworkXResource,
+    RdsXResource,
     XResource,
     set_lookup_resources,
     set_new_resources,
@@ -23,9 +24,11 @@ from ecs_composex.opensearch.opensearch_params import (
     OS_DOMAIN_ARN,
     OS_DOMAIN_ENDPOINT,
     OS_DOMAIN_ID,
+    OS_DOMAIN_SG,
     RES_KEY,
 )
 from ecs_composex.opensearch.opensearch_template import create_new_domains
+from ecs_composex.rds.rds_params import DB_SECRET_ARN
 from ecs_composex.vpc.vpc_params import STORAGE_SUBNETS, VPC_ID
 
 
@@ -58,7 +61,7 @@ def define_default_key_policy():
     return policy
 
 
-class OpenSearchDomain(NetworkXResource):
+class OpenSearchDomain(RdsXResource):
     """
     Class to represent the OpenSearch domain
     """
@@ -66,14 +69,19 @@ class OpenSearchDomain(NetworkXResource):
     policies_scaffolds = get_access_types(MOD_KEY)
 
     def __init__(self, name, definition, module_name, settings, mapping_key):
-        self.security_group = None
         self.subnets_param = STORAGE_SUBNETS
-        self.db_secret = None
+        self.db_sg_parameter = OS_DOMAIN_SG
+        self.db_secret_arn_parameter = DB_SECRET_ARN
+        self.db_cluster_endpoint_param = OS_DOMAIN_ENDPOINT
+        self.db_cluster_arn_parameter = OS_DOMAIN_ARN
         super().__init__(
             name, definition, module_name, settings, mapping_key=mapping_key
         )
 
     def init_outputs(self):
+        """
+        Initializes the output properties
+        """
         self.output_properties = {
             OS_DOMAIN_ID: (self.logical_name, self.cfn_resource, Ref, None),
             OS_DOMAIN_ARN: (
@@ -114,8 +122,6 @@ class XStack(ComposeXStack):
         if lookup_resources:
             if not keyisset(MAPPINGS_KEY, settings.mappings):
                 settings.mappings[MAPPINGS_KEY] = {}
-            create_opensearch_mappings(
-                settings.mappings[MAPPINGS_KEY], lookup_resources, settings
-            )
+            create_opensearch_mappings(lookup_resources, settings)
         for resource in settings.compose_content[RES_KEY].values():
             resource.stack = self

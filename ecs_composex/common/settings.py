@@ -146,7 +146,6 @@ class ComposeXSettings(object):
         self.secrets = []
         self.networks = []
         self.vpc_imported = False
-        self.subnets_parameters = []
         self.secrets_mappings = {}
         self.mappings = {}
         self.families = {}
@@ -341,7 +340,7 @@ class ComposeXSettings(object):
         if not keyisset(ComposeNetwork.main_key, self.compose_content):
             LOG.debug("No networks detected at the root level of compose file")
             return
-        elif vpc_stack and vpc_stack.vpc_resource:
+        elif vpc_stack and vpc_stack.vpc_resource and vpc_stack.vpc_resource.vpc:
             LOG.info(
                 "ComposeX will be creating the VPC, therefore networks are ignored!"
             )
@@ -350,7 +349,7 @@ class ComposeXSettings(object):
             network = ComposeNetwork(
                 network_name,
                 self.compose_content[ComposeNetwork.main_key][network_name],
-                self.subnets_parameters,
+                vpc_stack.vpc_resource.subnets_parameters,
             )
             self.compose_content[ComposeNetwork.main_key][network_name] = network
             self.networks.append(network)
@@ -444,7 +443,7 @@ class ComposeXSettings(object):
         content_def = ComposeDefinition(files, content)
         self.compose_content = content_def.definition
         source = pkg_files("ecs_composex").joinpath("specs/compose-spec.json")
-        print(source)
+        LOG.info(f"Validating against input schema {source}")
         resolver = jsonschema.RefResolver(
             f"file://{path.abspath(path.dirname(source))}/", None
         )

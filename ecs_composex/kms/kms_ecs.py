@@ -41,7 +41,7 @@ def kms_to_ecs(resources, services_stack, res_root_stack, settings):
         )
     for lookup_res in lookup_resources:
         handle_lookup_resource(
-            settings.mappings[RES_KEY],
+            settings.mappings[MAPPINGS_KEY],
             MAPPINGS_KEY,
             lookup_res,
             KMS_KEY_ARN,

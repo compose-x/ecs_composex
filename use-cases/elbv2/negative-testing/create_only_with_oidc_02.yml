@@ -2,10 +2,6 @@
 # ELBv2 creation for services
 
 
-x-dns:
-  PublicZone:
-    Use: ZABCDEFGHIS0123
-
 x-acm:
   public-acm-01:
     Properties:

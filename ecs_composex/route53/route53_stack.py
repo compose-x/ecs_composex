@@ -33,6 +33,7 @@ from .route53_params import (
     MAPPINGS_KEY,
     MOD_KEY,
     PUBLIC_DNS_ZONE_ID,
+    PUBLIC_DNS_ZONE_NAME,
     RES_KEY,
     ZONES_PATTERN,
 )
@@ -71,8 +72,8 @@ def lookup_hosted_zone(zone, session, private, zone_id=None) -> dict:
         if zone_r["Config"]["PrivateZone"] != private:
             raise ValueError(f"The zone {zone.zone_name} is not a private zone.")
         return {
-            PUBLIC_DNS_ZONE_ID.title: zone_r["Id"].split(r"/")[-1],
-            "ZoneName": LAST_DOT_RE.sub("", zone_r["Name"]),
+            PUBLIC_DNS_ZONE_ID: zone_r["Id"].split(r"/")[-1],
+            PUBLIC_DNS_ZONE_NAME: LAST_DOT_RE.sub("", zone_r["Name"]),
         }
     except client.exceptions.InvalidDomainName:
         LOG.warning(f"Zone {zone.zone_name} is invalid or malformed.")
@@ -129,7 +130,13 @@ class HostedZone(AwsEnvironmentResource):
         Returns the properties from the ACM Certificate
         """
         self.output_properties = {
-            PUBLIC_DNS_ZONE_ID: (f"{self.logical_name}", self.cfn_resource, Ref, None)
+            PUBLIC_DNS_ZONE_ID: (f"{self.logical_name}", self.cfn_resource, Ref, None),
+            PUBLIC_DNS_ZONE_NAME: (
+                f"{self.logical_name}{PUBLIC_DNS_ZONE_NAME.title}",
+                None,
+                self.zone_name,
+                False,
+            ),
         }
 
     def lookup_resource(
@@ -158,24 +165,30 @@ class HostedZone(AwsEnvironmentResource):
                 )
             lookup_attributes = self.lookup[subattribute_key]
         if isinstance(lookup_attributes, bool):
-            self.mappings = lookup_hosted_zone(self, self.lookup_session, False)
+            self.lookup_properties = lookup_hosted_zone(
+                self, self.lookup_session, False
+            )
         elif isinstance(lookup_attributes, dict):
             if not keyisset("HostedZoneId", lookup_attributes):
-                lookup_hosted_zone(self, self.lookup_session, False)
+                self.lookup_properties = lookup_hosted_zone(
+                    self, self.lookup_session, False
+                )
             else:
-                lookup_hosted_zone(
+                self.lookup_properties = lookup_hosted_zone(
                     self,
                     self.lookup_session,
                     False,
                     zone_id=lookup_attributes["HostedZoneId"],
                 )
+        self.generate_cfn_mappings_from_lookup_properties()
 
-    def handle_x_dependencies(self, settings):
+    def handle_x_dependencies(self, settings, root_stack=None):
         """
         WIll go over all the new resources to create in the execution and search for properties that can be updated
         with itself
 
         :param ecs_composex.common.settings.ComposeXSettings settings:
+        :param ComposeXStack root_stack: Not used. Present for general compatibility
         """
         for resource in settings.get_x_resources(include_mappings=False):
             if not resource.cfn_resource:

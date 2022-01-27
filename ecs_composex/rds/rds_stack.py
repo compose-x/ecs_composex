@@ -16,13 +16,14 @@ from ecs_composex.common import build_template, setup_logging
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources import (
     NetworkXResource,
-    XResource,
+    RdsXResource,
     set_lookup_resources,
     set_new_resources,
     set_resources,
 )
 from ecs_composex.rds.rds_features import apply_extra_parameters
 from ecs_composex.rds.rds_params import (
+    DB_CLUSTER_ARN,
     DB_ENDPOINT_PORT,
     DB_NAME,
     DB_SECRET_ARN,
@@ -94,14 +95,15 @@ def get_db_cluster_config(db, account_id, resource_id):
 
     attributes_mappings = {
         DB_NAME: "DatabaseName",
-        DB_ENDPOINT_PORT: "Port",
-        DB_SG: "VpcSecurityGroups::0::VpcSecurityGroupId",
+        db.db_port_parameter: "Port",
+        db.db_sg_parameter: "VpcSecurityGroups::0::VpcSecurityGroupId",
+        db.db_cluster_arn_parameter: "DBClusterArn",
     }
     config = attributes_to_mapping(db_config_r, attributes_mappings)
     return config
 
 
-class Rds(NetworkXResource):
+class Rds(RdsXResource):
     """
     Class to represent a RDS DB
     """
@@ -116,6 +118,10 @@ class Rds(NetworkXResource):
             name, definition, module_name, settings, mapping_key=mapping_key
         )
         self.set_override_subnets()
+        self.db_port_parameter = DB_ENDPOINT_PORT
+        self.db_secret_arn_parameter = DB_SECRET_ARN
+        self.db_sg_parameter = DB_SG
+        self.db_cluster_arn_parameter = DB_CLUSTER_ARN
 
     def init_outputs(self):
         """
@@ -129,25 +135,25 @@ class Rds(NetworkXResource):
                 None,
                 "DbName",
             ),
-            DB_ENDPOINT_PORT: (
+            self.db_port_parameter: (
                 f"{self.logical_name}{DB_ENDPOINT_PORT}",
                 self.cfn_resource,
                 GetAtt,
-                DB_ENDPOINT_PORT.return_value,
-                DB_ENDPOINT_PORT.return_value.replace(r".", ""),
+                self.db_port_parameter.return_value,
+                self.db_port_parameter.return_value.replace(r".", ""),
             ),
-            DB_SECRET_ARN: (
+            self.db_secret_arn_parameter: (
                 self.db_secret.title,
                 self.db_secret,
                 Ref,
                 None,
                 "SecretArn",
             ),
-            DB_SG: (
+            self.db_sg_parameter: (
                 self.db_sg.title,
                 self.db_sg,
                 GetAtt,
-                DB_SG.return_value,
+                self.db_sg_parameter.return_value,
                 "VpcSecurityGroupId",
             ),
         }
@@ -208,8 +214,8 @@ class XStack(ComposeXStack):
             self.is_void = True
         for resource in settings.compose_content[RES_KEY].values():
             resource.stack = self
-        if lookup_resources and RES_KEY not in settings.mappings:
-            settings.mappings[RES_KEY] = {}
+        if lookup_resources and MAPPINGS_KEY not in settings.mappings:
+            settings.mappings[MAPPINGS_KEY] = {}
         for resource in lookup_resources:
             if keyisset("cluster", resource.lookup):
                 resource.lookup_resource(
@@ -234,6 +240,9 @@ class XStack(ComposeXStack):
                 )
             if keyisset("secret", resource.lookup):
                 lookup_rds_secret(resource, resource.lookup["secret"])
-            settings.mappings[RES_KEY].update(
+
+            resource.generate_cfn_mappings_from_lookup_properties()
+            resource.generate_outputs()
+            settings.mappings[MAPPINGS_KEY].update(
                 {resource.logical_name: resource.mappings}
             )

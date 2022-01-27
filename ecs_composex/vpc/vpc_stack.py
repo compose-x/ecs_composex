@@ -7,18 +7,17 @@ Module for VpcStack
 """
 
 import re
-from copy import deepcopy
 
 import troposphere
 from botocore.exceptions import ClientError
 from compose_x_common.aws import get_region_azs
 from compose_x_common.compose_x_common import keyisset
-from troposphere import FindInMap, GetAtt, Join, Ref, Sub
+from troposphere import FindInMap, GetAtt, Join, Ref
 
 from ecs_composex.common import LOG, build_template, set_else_none
 from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.compose.x_resources import AwsEnvironmentResource, XResource
+from ecs_composex.compose.x_resources import AwsEnvironmentResource
 from ecs_composex.vpc import aws_mappings
 from ecs_composex.vpc.vpc_aws import lookup_x_vpc_settings
 from ecs_composex.vpc.vpc_maths import get_subnet_layers
@@ -26,7 +25,6 @@ from ecs_composex.vpc.vpc_params import (
     APP_SUBNETS,
     APP_SUBNETS_CIDR,
     DEFAULT_VPC_CIDR,
-    MOD_KEY,
     PUBLIC_SUBNETS,
     PUBLIC_SUBNETS_CIDR,
     RES_KEY,
@@ -245,7 +243,6 @@ class Vpc(AwsEnvironmentResource):
             client = self.lookup_session.client("ec2")
         else:
             client = session.client("ec2")
-        print("CHECKING ON THE SUBNETS", subnets.items())
         for subnet_name, subnet_definition in subnets.items():
             if not isinstance(subnet_definition, list):
                 continue

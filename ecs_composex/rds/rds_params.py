@@ -98,3 +98,6 @@ DB_ENDPOINT_PORT = Parameter(
 )
 
 DB_SECRET_ARN = Parameter(DB_SECRET_T, Type="String")
+
+DB_CLUSTER_ARN_T = "DBClusterArn"
+DB_CLUSTER_ARN = Parameter(DB_CLUSTER_ARN_T, Type="String")

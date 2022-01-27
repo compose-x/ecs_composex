@@ -6,16 +6,8 @@
 Module to link DocDB cluster to ECS Services.
 """
 
-from compose_x_common.compose_x_common import keyisset
-
-from ecs_composex.docdb.docdb_params import (
-    DOCDB_PORT,
-    DOCDB_SECRET,
-    DOCDB_SG,
-    MAPPINGS_KEY,
-    RES_KEY,
-)
 from ecs_composex.rds.rds_ecs import import_dbs
+from ecs_composex.rds.rds_params import DB_ENDPOINT_PORT, DB_SECRET_ARN, DB_SG
 from ecs_composex.rds_resources_settings import handle_new_tcp_resource
 
 
@@ -38,12 +30,9 @@ def docdb_to_ecs(resources, services_stack, res_root_stack, settings):
         handle_new_tcp_resource(
             new_res,
             res_root_stack,
-            port_parameter=DOCDB_PORT,
-            sg_parameter=DOCDB_SG,
-            secret_parameter=DOCDB_SECRET,
+            port_parameter=new_res.db_port_parameter,
+            sg_parameter=new_res.db_sg_parameter,
+            secret_parameter=new_res.db_secret_arn_parameter,
         )
     for lookup_res in lookup_resources:
-        if keyisset(lookup_res.logical_name, settings.mappings[RES_KEY]):
-            import_dbs(
-                lookup_res, settings.mappings[RES_KEY], mapping_name=MAPPINGS_KEY
-            )
+        import_dbs(lookup_res, settings, mapping_name=lookup_res.mapping_key)

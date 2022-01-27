@@ -79,7 +79,7 @@ def add_dns_records_for_elbv2(
     :param ecs_composex.route53.route53_stack.HostedZone x_hosted_zone: List of HostedZones defined
     :param dict record:
     :param XStack route53_stack:
-    :param AliasTarget elbv2_alias:
+    :param ecs_composex.elbv2.elbv2_stack.Elbv2 target_elbv2:
     :param ComposeXStack elbv2_stack:
     :param ecs_composex.common.settings.ComposeXSettings settings:
     """
@@ -91,7 +91,8 @@ def add_dns_records_for_elbv2(
         validate_domain_name(name, x_hosted_zone.zone_name)
         create_record(name, x_hosted_zone, target_elbv2, elbv2_stack, settings)
         LOG.info(
-            f"{x_hosted_zone.module_name}{x_hosted_zone.name} - Created {name} for elbv2"
+            f"{x_hosted_zone.module_name}.{x_hosted_zone.name} - "
+            f"Created {name} for {target_elbv2.module_name}.{target_elbv2.name}"
         )
 
 

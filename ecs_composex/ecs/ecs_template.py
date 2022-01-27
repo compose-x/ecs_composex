@@ -10,6 +10,7 @@ from troposphere import GetAtt, Ref, Sub
 from troposphere.iam import PolicyType
 from troposphere.logs import LogGroup
 
+from ecs_composex.common import add_update_mapping
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME, ROOT_STACK_NAME_T
 from ecs_composex.ecs import ecs_params
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME, CLUSTER_NAME_T
@@ -81,11 +82,12 @@ def initialize_family_services(settings, family):
     :return:
     """
     if settings.secrets_mappings:
-        family.template.add_mapping(SECRETS_KEY, settings.secrets_mappings)
-        if SECRETS_KEY not in family.exec_role.stack.stack_template.resources:
-            family.exec_role.stack.stack_template.add_mapping(
-                SECRETS_KEY, settings.secrets_mappings
-            )
+        add_update_mapping(family.template, SECRETS_KEY, settings.secrets_mappings)
+        add_update_mapping(
+            family.exec_role.stack.stack_template,
+            SECRETS_KEY,
+            settings.secrets_mappings,
+        )
     family.init_task_definition()
     family.set_secrets_access()
     family.refresh()

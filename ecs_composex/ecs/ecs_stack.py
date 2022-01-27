@@ -87,7 +87,7 @@ def associate_services_to_root_stack(root_stack, settings):
         if settings.networks and family.service_config.network.networks:
             family.update_family_subnets(settings)
 
-    families_post = [
+    families_stacks = [
         family
         for family in root_stack.stack_template.resources
         if (
@@ -95,8 +95,4 @@ def associate_services_to_root_stack(root_stack, settings):
             and isinstance(settings.families[family].stack, ServiceStack)
         )
     ]
-    handle_families_dependencies(settings, families_post)
-    for family in families_post:
-        set_compose_services_ingress(
-            root_stack, settings.families[family], families_post, settings
-        )
+    handle_families_dependencies(settings, families_stacks)

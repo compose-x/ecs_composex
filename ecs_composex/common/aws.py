@@ -36,7 +36,7 @@ def get_cross_role_session(session, arn, region_name=None, session_name=None):
         session_name = "ComposeX@Lookup"
     try:
         return get_assume_role_session(
-            session, arn, region=region_name, session_name=session_name
+            session, arn, session_name=session_name, region=region_name
         )
     except ClientError:
         LOG.error(f"Failed to use the Role ARN {arn}")

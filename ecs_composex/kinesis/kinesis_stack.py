@@ -44,9 +44,9 @@ def get_stream_config(stream, account_id, resource_id):
     """
     client = stream.lookup_session.client("kinesis")
     stream_mapping = {
-        STREAM_ARN.title: "StreamDescription::StreamARN",
-        STREAM_ID.title: "StreamDescription::StreamName",
-        STREAM_KMS_KEY_ID.title: "StreamDescription::KeyId",
+        STREAM_ARN: "StreamDescription::StreamARN",
+        STREAM_ID: "StreamDescription::StreamName",
+        STREAM_KMS_KEY_ID: "StreamDescription::KeyId",
     }
     try:
         stream_r = client.describe_stream(StreamName=resource_id)

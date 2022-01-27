@@ -129,17 +129,27 @@ def get_parameter_settings(resource, parameter):
     """
     Function to define a set of values for the purpose of exposing resources settings from their stack to another.
 
-    :param resource: The XResource we want to extract the outputs from
+    :param ecs_composex.compose.x_resources.XResource resource: The XResource we want to extract the outputs from
     :param parameter: The parameter we want to extract the outputs for
     :return: Ordered combination of settings
     :rtype: tuple
     """
-    return (
-        resource.attributes_outputs[parameter]["Name"],
-        resource.attributes_outputs[parameter]["ImportParameter"],
-        resource.attributes_outputs[parameter]["ImportValue"],
-        parameter,
-    )
+    try:
+        data = (
+            resource.attributes_outputs[parameter]["Name"],
+            resource.attributes_outputs[parameter]["ImportParameter"],
+            resource.attributes_outputs[parameter]["ImportValue"],
+            parameter,
+        )
+        return data
+    except KeyError as error:
+        print(error)
+        print([r.title for r in resource.output_properties.keys()])
+        print(resource.attributes_outputs.items())
+        if isinstance(parameter, Parameter):
+            print(parameter, parameter.title)
+        print(f"{resource.module_name}.{resource.name}")
+        raise
 
 
 def get_setting_key(name, settings_dict):
@@ -226,6 +236,7 @@ class XResource(object):
         self.stack = None
         self.init_env_names()
         self.ref_parameter = Parameter(self.logical_name, Type="String")
+        self.lookup_properties = {}
         self.mappings = {}
         self.default_tags = {
             "compose-x::module": self.module_name,
@@ -266,6 +277,12 @@ class XResource(object):
             return conform_mapping
         return properties
 
+    def init_outputs(self):
+        """
+        Placeholder method
+        """
+        self.output_properties = {}
+
     def lookup_resource(
         self,
         arn_re,
@@ -275,9 +292,10 @@ class XResource(object):
         subattribute_key=None,
     ):
         """
-        Method to self-identify properties
-        :return:
+        Method to self-identify properties. It will try to use AWS Cloud Control API if possible, otherwise fallback
+        to using boto3 descriptions functions to create a mapping of the attributes.
         """
+        self.init_outputs()
         lookup_attributes = self.lookup
         if subattribute_key is not None:
             lookup_attributes = self.lookup[subattribute_key]
@@ -324,7 +342,26 @@ class XResource(object):
             props = self.native_attributes_mapping_lookup(
                 account_id, resource_id, native_lookup_function
             )
-        self.mappings = props
+        self.lookup_properties = props
+        self.generate_cfn_mappings_from_lookup_properties()
+        self.generate_outputs()
+
+    def generate_cfn_mappings_from_lookup_properties(self):
+        """
+        Sets the .mappings attribute based on the lookup_attributes for CFN purposes
+        """
+        for parameter, value in self.lookup_properties.items():
+            if not isinstance(parameter, Parameter):
+                raise TypeError(
+                    f"{self.module_name}.{self.name} - lookup attribute {parameter} is",
+                    type(parameter),
+                    "Expected",
+                    Parameter,
+                )
+            if parameter.return_value:
+                self.mappings[NONALPHANUM.sub("", parameter.return_value)] = value
+            else:
+                self.mappings[parameter.title] = value
 
     def init_env_names(self, add_self_default=True):
         """
@@ -424,7 +461,7 @@ class XResource(object):
             return FindInMap(
                 self.mapping_key,
                 self.logical_name,
-                attribute_parameter.return_value,
+                NONALPHANUM.sub("", attribute_parameter.return_value),
             )
         else:
             return FindInMap(
@@ -469,8 +506,18 @@ class XResource(object):
             if not isinstance(output_definition, list):
                 raise ValueError("For Join, the parameter must be a list")
             value = Join(*output_definition[3])
+        elif (
+            isinstance(output_definition[2], (str, int))
+            and output_definition[3] is False
+        ):
+            value = (
+                output_definition[2]
+                if isinstance(output_definition[2], str)
+                else str(output_definition[2])
+            )
         else:
             raise TypeError(
+                output_definition,
                 f"3rd argument for {output_definition[0]} must be one of",
                 (Ref, GetAtt, Sub, Join),
                 "Got",
@@ -500,12 +547,9 @@ class XResource(object):
             root_stack = self.stack.title
         else:
             root_stack = self.mapping_key
-        for (
-            attribute_parameter,
-            output_definition,
-        ) in self.output_properties.items():
-            output_name = f"{self.logical_name}{attribute_parameter.title}"
-            if self.lookup:
+        if self.lookup_properties:
+            for attribute_parameter, value in self.lookup_properties.items():
+                output_name = f"{self.logical_name}{attribute_parameter.title}"
                 self.attributes_outputs[attribute_parameter] = {
                     "Name": output_name,
                     "ImportValue": self.set_attributes_from_mapping(
@@ -513,7 +557,12 @@ class XResource(object):
                     ),
                     "ImportParameter": None,
                 }
-            else:
+        elif self.output_properties and not self.lookup_properties:
+            for (
+                attribute_parameter,
+                output_definition,
+            ) in self.output_properties.items():
+                output_name = f"{self.logical_name}{attribute_parameter.title}"
                 settings = self.set_new_resource_outputs(
                     output_definition, attribute_parameter
                 )
@@ -772,3 +821,22 @@ class NetworkXResource(ServicesXResource):
         Allows to make adjustments after the VPC Settings have been set
         """
         pass
+
+
+class RdsXResource(NetworkXResource):
+    """
+    Class for network resources that share common properties
+    """
+
+    def __init__(
+        self, name: str, definition: dict, module_name: str, settings, mapping_key=None
+    ):
+        self.db_secret = None
+        self.db_sg_parameter = None
+        self.db_secret_arn_parameter = None
+        self.db_port_parameter = None
+        self.db_cluster_arn_parameter = None
+        self.db_cluster_arn = None
+        self.db_cluster_endpoint_param = None
+        self.db_cluster_ro_endpoint_param = None
+        super().__init__(name, definition, module_name, settings, mapping_key)

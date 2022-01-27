@@ -70,17 +70,6 @@ def step_impl(context, file_path, override_file):
     context.settings.set_bucket_name_from_account_id()
 
 
-@given("I want to create a VPC")
-def step_impl(context):
-    context.settings.create_vpc = True
-    context.settings.vpc_cidr = ComposeXSettings.default_vpc_cidr
-
-
-@given("I want to create a Cluster")
-def step_impl(context):
-    context.settings.create_cluster = True
-
-
 @then("I render all files to verify execution")
 def set_impl(context):
     process_stacks(context.root_stack, context.settings)

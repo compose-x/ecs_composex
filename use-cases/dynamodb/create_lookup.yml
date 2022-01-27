@@ -2,7 +2,6 @@
 # Blog applications
 
 version: '3.8'
-
 x-dynamodb:
   tableA:
     Properties:
@@ -14,6 +13,7 @@ x-dynamodb:
         - AttributeName: "Sales"
           AttributeType: "N"
         - AttributeName: "NumberOfSongs"
+          AttributeType: "N"
       KeySchema:
         - AttributeName: "Album"
           KeyType: "HASH"

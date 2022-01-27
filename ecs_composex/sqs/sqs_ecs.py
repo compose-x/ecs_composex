@@ -167,8 +167,8 @@ def sqs_to_ecs(resources, services_stack, res_root_stack, settings):
         handle_service_scaling(new_res, res_root_stack)
     for lookup_res in lookup_resources:
         handle_lookup_resource(
-            settings.mappings[RES_KEY],
-            MAPPINGS_KEY,
+            settings.mappings[lookup_res.mapping_key],
+            lookup_res.mapping_key,
             lookup_res,
             SQS_ARN,
             [SQS_URL, SQS_NAME],
