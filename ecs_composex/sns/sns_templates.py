@@ -1,4 +1,4 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
@@ -105,7 +105,6 @@ def define_topic(topic, content):
         for key in topic.properties.keys():
             if type(topic.properties[key]) != list:
                 setattr(topic.cfn_resource, key, topic.properties[key])
-    topic.generate_outputs()
 
 
 def add_topics_to_template(template, topics, content):
@@ -129,6 +128,7 @@ def add_sns_topics(root_template, new_topics, content):
     Function to add SNS topics to the root template
 
     :param troposphere.Template root_template:
+    :param new_topics:
     :param dict content:
     :return:
     """

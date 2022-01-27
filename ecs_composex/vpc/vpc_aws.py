@@ -104,13 +104,9 @@ def lookup_x_vpc_settings(vpc_resource):
         APP_SUBNETS.title,
         STORAGE_SUBNETS.title,
     ]
-
-    lookup_session = define_lookup_role_from_info(
-        vpc_resource.lookup, vpc_resource.lookup_session
-    )
     vpc_arn = find_aws_resource_arn_from_tags_api(
         vpc_resource.lookup[VPC_ID.title],
-        lookup_session,
+        vpc_resource.lookup_session,
         vpc_type,
         allow_multi=False,
     )
@@ -125,7 +121,7 @@ def lookup_x_vpc_settings(vpc_resource):
     for subnet_key in subnets_keys:
         subnet_arns = find_aws_resource_arn_from_tags_api(
             vpc_resource.lookup[subnet_key],
-            lookup_session,
+            vpc_resource.lookup_session,
             subnet_type,
             allow_multi=True,
         )
@@ -142,7 +138,7 @@ def lookup_x_vpc_settings(vpc_resource):
     for subnet_name in extra_subnets:
         subnet_arns = find_aws_resource_arn_from_tags_api(
             vpc_resource.lookup[subnet_name],
-            lookup_session,
+            vpc_resource.lookup_session,
             subnet_type,
             allow_multi=True,
         )
@@ -151,11 +147,11 @@ def lookup_x_vpc_settings(vpc_resource):
             for subnet_arn in subnet_arns
             if ARNS_PER_TAGGINGAPI_TYPE[subnet_type].match(subnet_arn)
         ]
-    vpc_settings["session"] = lookup_session
+    vpc_settings["session"] = vpc_resource.lookup_session
     total_subnets_keys = subnets_keys + extra_subnets
     validate_subnets_belong_with_vpc(
         vpc_settings=vpc_settings,
         subnet_keys=total_subnets_keys,
-        session=lookup_session,
+        session=vpc_resource.lookup_session,
     )
     return vpc_settings

@@ -151,12 +151,10 @@ def get_bucket_config(bucket, resource_id):
             encryption_r, CONTROL_CLOUD_ATTR_MAPPING
         )
         if keyisset(
-            CONTROL_CLOUD_ATTR_MAPPING[S3_BUCKET_KMS_KEY.return_value],
+            CONTROL_CLOUD_ATTR_MAPPING[S3_BUCKET_KMS_KEY],
             encryption_attributes,
         ):
-            bucket_config[S3_BUCKET_KMS_KEY.return_value] = encryption_attributes[
-                S3_BUCKET_KMS_KEY.return_value
-            ]
+            bucket_config[S3_BUCKET_KMS_KEY] = encryption_attributes[S3_BUCKET_KMS_KEY]
 
     except ClientError as error:
         if (
@@ -257,7 +255,8 @@ class Bucket(ApiXResource):
             props = self.native_attributes_mapping_lookup(
                 get_account_id(self.lookup_session), resource_id, native_lookup_function
             )
-        self.mappings = props
+        self.lookup_properties = props
+        self.generate_cfn_mappings_from_lookup_properties()
 
 
 def define_bucket_mappings(lookup_buckets, use_buckets, settings):
@@ -270,20 +269,29 @@ def define_bucket_mappings(lookup_buckets, use_buckets, settings):
     :return:
     """
     for bucket in lookup_buckets:
+        bucket.init_outputs()
         bucket.lookup_resource(
             S3_BUCKET_ARN_RE, get_bucket_config, CfnBucket.resource_type, "s3"
         )
         settings.mappings[MAPPINGS_KEY].update({bucket.logical_name: bucket.mappings})
-        if not keyisset(S3_BUCKET_KMS_KEY, bucket.mappings):
+        if not keyisset(S3_BUCKET_KMS_KEY, bucket.lookup_properties):
             LOG.info(
                 f"{RES_KEY}.{bucket.name} - No CMK Key identified. Not KMS permissions to set."
             )
         else:
             LOG.info(
                 f"{RES_KEY}.{bucket.name} - "
-                f"CMK identified {bucket.mappings[S3_BUCKET_KMS_KEY]}."
+                f"CMK identified {bucket.lookup_properties[S3_BUCKET_KMS_KEY]}."
             )
-        bucket.init_outputs()
+            bucket.add_new_output_attribute(
+                S3_BUCKET_KMS_KEY,
+                (
+                    f"{bucket.logical_name}{S3_BUCKET_KMS_KEY.return_value}",
+                    None,
+                    None,
+                    S3_BUCKET_KMS_KEY.return_value,
+                ),
+            )
         bucket.generate_outputs()
     for bucket in use_buckets:
         if bucket.use.startswith("arn:aws"):

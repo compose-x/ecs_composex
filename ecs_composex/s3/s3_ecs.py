@@ -7,7 +7,7 @@ Functions to pass permissions to Services to access S3 buckets.
 """
 
 from compose_x_common.compose_x_common import keyisset
-from troposphere import FindInMap, Ref, Sub
+from troposphere import Ref, Sub
 
 from ecs_composex.common import LOG, add_parameters, add_update_mapping
 from ecs_composex.common.stacks import ComposeXStack
@@ -20,12 +20,7 @@ from ecs_composex.resource_settings import (
     get_selected_services,
 )
 from ecs_composex.s3.s3_params import MOD_KEY as S3_MOD
-from ecs_composex.s3.s3_params import (
-    RES_KEY,
-    S3_BUCKET_ARN,
-    S3_BUCKET_KMS_KEY,
-    S3_BUCKET_NAME,
-)
+from ecs_composex.s3.s3_params import S3_BUCKET_ARN, S3_BUCKET_KMS_KEY, S3_BUCKET_NAME
 
 ACCESS_TYPES = get_access_types(S3_MOD)
 
@@ -168,7 +163,6 @@ def define_lookup_buckets_access(bucket, target, services):
         not keyisset(objects_key, target[3]) or not keyisset(bucket_key, target[3])
     ):
         raise KeyError("You must define at least bucket or object access")
-    bucket.generate_resource_envvars()
     if keyisset(bucket_key, access):
         bucket_perms = generate_resource_permissions(
             f"BucketAccess{bucket.logical_name}",
@@ -223,14 +217,11 @@ def assign_lookup_buckets(bucket, mappings):
     if not keyisset(bucket.logical_name, mappings):
         LOG.warning(f"Bucket {bucket.logical_name} was not found in mappings. Skipping")
         return
-    bucket.init_outputs()
-    bucket.generate_outputs()
-    bucket.generate_resource_envvars()
     for target in bucket.families_targets:
         select_services = get_selected_services(bucket, target)
         if select_services:
-            add_update_mapping(target[0].template, "s3", mappings)
-            if keyisset(S3_BUCKET_KMS_KEY.return_value, mappings[bucket.logical_name]):
+            add_update_mapping(target[0].template, bucket.mapping_key, mappings)
+            if keyisset(S3_BUCKET_KMS_KEY, bucket.lookup_properties):
                 kms_perms = generate_resource_permissions(
                     f"{bucket.logical_name}KmsKey",
                     get_access_types(KMS_MOD),
@@ -263,7 +254,9 @@ def s3_to_ecs(resources, services_stack, res_root_stack, settings):
             if resources[res_name].cfn_resource
         ]
         for res in new_resources:
-            LOG.info(f"Creating {res.name} as {res.logical_name}")
+            LOG.info(
+                f"{res.module_name}.{res.name} - Creating {res.name} as {res.logical_name}"
+            )
             handle_new_resources(
                 res,
                 services_stack,
@@ -280,6 +273,6 @@ def s3_to_ecs(resources, services_stack, res_root_stack, settings):
         if resources[name].use and resources[name].mappings
     ]
     for res in lookup_resources:
-        assign_lookup_buckets(res, settings.mappings[RES_KEY])
+        assign_lookup_buckets(res, settings.mappings[res.mapping_key])
     for res in use_resources:
-        assign_lookup_buckets(res, settings.mappings[RES_KEY])
+        assign_lookup_buckets(res, settings.mappings[res.mapping_key])

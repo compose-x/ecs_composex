@@ -20,7 +20,7 @@ from ecs_composex.common.aws import find_aws_resource_arn_from_tags_api
 from ecs_composex.common.services_helpers import extend_container_secrets
 from ecs_composex.compose.x_resources import get_parameter_settings
 from ecs_composex.ecs.ecs_params import SG_T
-from ecs_composex.rds.rds_params import DB_SECRET_POLICY_NAME, DB_SECRET_T
+from ecs_composex.rds.rds_params import DB_SECRET_ARN, DB_SECRET_POLICY_NAME
 
 
 def filter_out_tag_resources(lookup_attributes, rds_resource, tagging_api_id):
@@ -57,7 +57,7 @@ def lookup_rds_secret(rds_resource, secret_lookup):
     """
     Lookup RDS DB Secret specified
 
-    :param rds_resource:
+    :param ecs_composex.compose.x_resources.RdsXResource rds_resource:
     :param secret_lookup:
     :return:
     """
@@ -65,6 +65,7 @@ def lookup_rds_secret(rds_resource, secret_lookup):
         client = rds_resource.lookup_session.client("secretsmanager")
         try:
             secret_arn = client.describe_secret(SecretId=secret_lookup["Arn"])["ARN"]
+
         except client.exceptions.ResourceNotFoundException:
             LOG.error(
                 f"{rds_resource.module_name}.{rds_resource.name} - Secret {secret_lookup['Arn']} not found"
@@ -84,7 +85,9 @@ def lookup_rds_secret(rds_resource, secret_lookup):
             f"{rds_resource.module_name}.{rds_resource.name} - Failed to find the DB Secret"
         )
     if secret_arn:
-        rds_resource.mappings[DB_SECRET_T] = secret_arn
+        rds_resource.lookup_properties[
+            rds_resource.db_secret_arn_parameter
+        ] = secret_arn
 
 
 def lookup_rds_resource(
@@ -144,7 +147,8 @@ def lookup_rds_resource(
         props = rds_resource.native_attributes_mapping_lookup(
             account_id, resource_id, native_lookup_function
         )
-    rds_resource.mappings = props
+    rds_resource.lookup_properties = props
+    rds_resource.generate_cfn_mappings_from_lookup_properties()
 
 
 def define_db_prefix(db, mappings_definition):

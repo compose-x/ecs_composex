@@ -92,6 +92,7 @@ TCP_SERVICES = [f"{X_KEY}{mode}" for mode in TCP_MODES]
 
 ENV_RESOURCE_MODULES = ["acm", "route53", "cloudmap"]
 ENV_RESOURCES = [f"{X_KEY}{mode}" for mode in ENV_RESOURCE_MODULES]
+DEPRECATED_RESOURCES = [(f"{X_KEY}dns", "0.17", ["x-route53", "x-cloudmap"])]
 
 
 def get_mod_function(module_name, function_name):
@@ -221,15 +222,16 @@ def apply_x_to_x_configs(root_stack, settings):
             resource.handle_x_dependencies(root_stack, settings)
 
 
-def apply_x_resource_to_x(settings):
+def apply_x_resource_to_x(settings, root_stack):
     """
     Goes over each x resource in the execution and execute logical association between the resources.
 
     :param ecs_composex.common.settings.ComposeXSettings settings: The settings for the execution
+    :param ComposeXStack root_stack:
     """
     for resource in settings.x_resources:
         if hasattr(resource, "handle_x_dependencies"):
-            resource.handle_x_dependencies(settings)
+            resource.handle_x_dependencies(settings, root_stack)
 
 
 def add_compute(root_template, settings, vpc_stack):
@@ -459,6 +461,20 @@ def update_families_networking_settings(settings, vpc_stack):
         else:
             family.stack.set_vpc_parameters_from_vpc_stack(vpc_stack)
         family.add_security_group()
+
+
+def update_families_network_ingress(settings):
+    """
+    Now that the network settings have been figured out, we can deal with ingress rules
+
+    :param settings:
+    :type settings: ecs_composex.common.settings.ComposeXSettings
+    :return:
+    """
+
+    for family in settings.families.values():
+        if not family.service_config.network.security_group:
+            continue
         family.service_config.network.set_aws_sources_ingress(
             settings,
             family.logical_name,
@@ -471,6 +487,24 @@ def update_families_networking_settings(settings, vpc_stack):
         family.service_config.network.associate_aws_igress_rules(family.template)
         family.service_config.network.associate_ext_igress_rules(family.template)
         family.service_config.network.add_self_ingress(family)
+
+
+def handle_families_cross_dependencies(settings, root_stack):
+    from ecs_composex.ecs.ecs_service_network_config import set_compose_services_ingress
+    from ecs_composex.ecs.ecs_stack import ServiceStack
+
+    families_stacks = [
+        family
+        for family in root_stack.stack_template.resources
+        if (
+            family in settings.families
+            and isinstance(settings.families[family].stack, ServiceStack)
+        )
+    ]
+    for family in families_stacks:
+        set_compose_services_ingress(
+            root_stack, settings.families[family], families_stacks, settings
+        )
 
 
 def update_network_resources_vpc_config(settings, vpc_stack):
@@ -497,9 +531,9 @@ def update_network_resources_vpc_config(settings, vpc_stack):
             )
             continue
         if (
-            resource.stack.parent_stack is None
-            or resource.stack == resource.stack.get_top_root_stack()
-        ):
+            hasattr(resource.stack, "stack_parent")
+            and resource.stack.parent_stack is None
+        ) or resource.stack == resource.stack.get_top_root_stack():
             LOG.debug(f"{resource.stack.title} is not a nested stacks")
             if vpc_stack.vpc_resource.mappings:
                 resource.stack.set_vpc_params_from_vpc_stack_import(vpc_stack)
@@ -548,6 +582,19 @@ def handle_vpc_settings(settings, vpc_stack, root_stack):
         LOG.info(f"{settings.name}.x-vpc - VPC stack added. A new VPC will be created.")
 
 
+def deprecation_warning(settings):
+    """
+    Simple function to warn about deprecation of compose-x modules / x-resources
+    :param ecs_composex.common.settings.ComposeXSettings settings: The settings for the execution
+    """
+    for mod in DEPRECATED_RESOURCES:
+        if mod[0] in settings.compose_content.keys():
+            warnings.warn(
+                f"{mod[0]} is deprecated since {mod[1]}. See {mod[2]} as alternatives",
+                DeprecationWarning,
+            )
+
+
 def generate_full_template(settings):
     """
     Function to generate the root template and associate services, x-resources to each other.
@@ -564,6 +611,7 @@ def generate_full_template(settings):
     :return root_template: Template, params
     :rtype: root_template, list
     """
+    deprecation_warning(settings)
     LOG.info(
         f"Service families to process {[family.name for family in settings.families.values()]}"
     )
@@ -590,6 +638,8 @@ def generate_full_template(settings):
     #     mesh.render_mesh_template(root_stack, settings)
 
     update_families_networking_settings(settings, vpc_stack)
+    update_families_network_ingress(settings)
+    handle_families_cross_dependencies(settings, root_stack)
     update_network_resources_vpc_config(settings, vpc_stack)
     set_families_ecs_service(settings)
 
@@ -599,10 +649,8 @@ def generate_full_template(settings):
         root_stack,
     )
     apply_x_to_x_configs(root_stack, settings)
-    apply_x_resource_to_x(settings)
-    # dns_records = DnsRecords(settings)
-    # dns_records.associate_records_to_resources(settings, root_stack, dns_settings)
-    # dns_settings.associate_settings_to_nested_stacks(root_stack)
+    apply_x_resource_to_x(settings, root_stack)
+
     # if keyisset("x-dashboards", settings.compose_content):
     #     DashboardsStack("dashboards", settings)
     for family in settings.families.values():

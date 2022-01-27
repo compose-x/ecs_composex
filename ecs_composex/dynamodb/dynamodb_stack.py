@@ -45,16 +45,16 @@ def get_dynamodb_table_config(table, account_id, resource_id):
     """
 
     table_attributes_mapping = {
-        TABLE_NAME.title: "TableName",
-        TABLE_ARN.return_value: "TableArn",
+        TABLE_NAME: "TableName",
+        TABLE_ARN: "TableArn",
     }
     client = table.lookup_session.client("dynamodb")
     try:
         table_r = client.describe_table(TableName=resource_id)["Table"]
         table_config = attributes_to_mapping(table_r, table_attributes_mapping)
         return table_config
-    except client.exceptions.ResourceNotFoundException:
-        return None
+    # except client.exceptions.ResourceNotFoundException:
+    #     raise
     except ClientError as error:
         LOG.error(error)
         raise

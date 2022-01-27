@@ -571,10 +571,10 @@ def create_new_domains(new_domains, stack):
             domain.add_new_output_attribute(
                 OS_DOMAIN_PORT,
                 (
-                    f"{domain.logical_name}{OS_DOMAIN_PORT.return_value}",
-                    OS_DOMAIN_PORT,
-                    Ref,
-                    None,
+                    f"{domain.logical_name}{OS_DOMAIN_PORT.title}",
+                    OS_DOMAIN_PORT.Default,
+                    OS_DOMAIN_PORT.Default,
+                    False,
                 ),
             )
             add_parameters(stack.stack_template, [OS_DOMAIN_PORT])

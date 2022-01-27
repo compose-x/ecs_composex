@@ -1,4 +1,4 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
@@ -12,7 +12,7 @@ from compose_x_common.compose_x_common import keyisset
 from troposphere import AWS_NO_VALUE, AWS_PARTITION, FindInMap, GetAtt, Ref, Sub
 from troposphere.iam import Policy as IamPolicy
 
-from ecs_composex.common import LOG, add_parameters
+from ecs_composex.common import LOG, add_parameters, add_update_mapping
 from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.s3.s3_params import S3_BUCKET_ARN
 
@@ -67,8 +67,7 @@ def set_from_x_s3(settings, stack, db, db_template, bucket_name):
     if resource.cfn_resource:
         return get_s3_bucket_arn_from_resource(db_template, stack, resource)
     elif resource.lookup and keyisset("s3", settings.mappings):
-        if not db_template.mappings or "s3" not in db_template.mappings:
-            db_template.add_mapping("s3", settings.mappings["s3"])
+        add_update_mapping(db_template, "s3", settings.mappings["s3"])
         return FindInMap("s3", resource.logical_name, "Arn")
 
 
