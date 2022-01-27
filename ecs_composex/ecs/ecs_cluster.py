@@ -33,7 +33,7 @@ from troposphere.ecs import (
 )
 from troposphere.logs import LogGroup
 
-from ecs_composex.common import LOG
+from ecs_composex.common import LOG, add_update_mapping
 from ecs_composex.common.services_helpers import get_closest_valid_log_retention_period
 from ecs_composex.ecs import metadata
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME, CLUSTER_T
@@ -107,10 +107,14 @@ class EcsCluster(object):
     def set_from_definition(self, root_stack, session, settings):
         if self.lookup:
             self.lookup_cluster(session)
-            root_stack.stack_template.add_mapping(self.mappings_key, self.mappings)
+            add_update_mapping(
+                root_stack.stack_template, self.mappings_key, self.mappings
+            )
         elif self.definition and self.use:
             self.mappings = {CLUSTER_NAME.title: {"Name": self.use}}
-            root_stack.stack_template.add_mapping(self.mappings_key, self.mappings)
+            add_update_mapping(
+                root_stack.stack_template, self.mappings_key, self.mappings
+            )
             self.cluster_identifier = FindInMap(
                 self.mappings_key, CLUSTER_NAME.title, "Name"
             )

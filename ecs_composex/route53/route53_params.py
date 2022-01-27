@@ -32,6 +32,9 @@ PUBLIC_DNS_ZONE_ARN = Parameter(
     Type="String",
 )
 
+PUBLIC_DNS_ZONE_NAME_T = "HostedZoneName"
+PUBLIC_DNS_ZONE_NAME = Parameter(PUBLIC_DNS_ZONE_NAME_T, Type="String")
+
 
 def validate_domain_name(new_record, base_domain):
     """

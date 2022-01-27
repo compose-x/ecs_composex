@@ -37,25 +37,23 @@ def get_key_config(key, account_id, resource_id):
     """
 
     :param Key key:
+    :param str account_id: unused
+    :param str resource_id: unused
     :return:
     """
     key_attributes_mappings = {
-        KMS_KEY_ARN.return_value: "KeyMetadata::Arn",
-        KMS_KEY_ID.title: "KeyMetadata::KeyId",
+        KMS_KEY_ARN: "KeyMetadata::Arn",
+        KMS_KEY_ID: "KeyMetadata::KeyId",
     }
     client = key.lookup_session.client("kms")
     try:
         key_desc = client.describe_key(KeyId=key.arn)
         key_attributes = attributes_to_mapping(key_desc, key_attributes_mappings)
         try:
-            aliases_r = client.list_aliases(KeyId=key_attributes[KMS_KEY_ID.title])
-            key_attributes[KMS_KEY_ALIAS_NAME.title] = aliases_r["Aliases"][0][
-                "AliasName"
-            ]
+            aliases_r = client.list_aliases(KeyId=key_attributes[KMS_KEY_ID])
+            key_attributes[KMS_KEY_ALIAS_NAME] = aliases_r["Aliases"][0]["AliasName"]
         except client.exceptions.NotFoundException:
-            LOG.debug(
-                f"No alias was found for KMS Key {key_attributes[KMS_KEY_ID.title]}"
-            )
+            LOG.debug(f"{key.module_name}.{key.name} - No KMS Key Alias.")
         return key_attributes
     except client.exceptions.QueueDoesNotExist:
         return None
@@ -182,7 +180,7 @@ class XStack(ComposeXStack):
                 resource.lookup_resource(
                     KMS_KEY_ARN_RE, get_key_config, Key.resource_type, "kms:key"
                 )
-                settings[MAPPINGS_KEY].update(
+                settings.mappings[MAPPINGS_KEY].update(
                     {resource.logical_name: resource.mappings}
                 )
         for resource in settings.compose_content[RES_KEY].values():

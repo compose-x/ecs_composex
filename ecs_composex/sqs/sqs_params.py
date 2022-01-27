@@ -32,9 +32,3 @@ DLQ_ARN = Parameter(DLQ_ARN_T, Type="String")
 
 SQS_KMS_KEY_T = "QueueKmsKey"
 SQS_KMS_KEY = Parameter(SQS_KMS_KEY_T, Type="String")
-
-
-BOTO_PARAMETERS_MAPPING = {
-    "QueueUrl": "QueueUrl",
-    SQS_KMS_KEY.return_value: "KmsMasterKeyId",
-}

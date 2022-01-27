@@ -46,7 +46,7 @@ def get_queue_config(queue, account_id, resource_id):
     :param resource_id:
     :return:
     """
-    queue_config = {SQS_NAME.return_value: resource_id}
+    queue_config = {SQS_NAME: resource_id}
     client = queue.lookup_session.client("sqs")
     try:
         queue_config[SQS_URL] = client.get_queue_url(
@@ -71,7 +71,7 @@ def get_queue_config(queue, account_id, resource_id):
                         "The KMS Key provided is not an ARN. Implementation requires full ARN today"
                     )
             else:
-                LOG.info(f"No KMS Key associated with {queue.name}")
+                LOG.info(f"{queue.module_name}.{queue.name} - No KMS encryption.")
         except client.exceptions.InvalidAttributeName as error:
             LOG.error("Failed to retrieve the Queue attributes")
             LOG.error(error)
@@ -91,6 +91,9 @@ class Queue(ApiXResource):
     policies_scaffolds = get_access_types(MOD_KEY)
 
     def init_outputs(self):
+        """
+        Init output properties for a new resource
+        """
         self.output_properties = {
             SQS_URL: (self.logical_name, self.cfn_resource, Ref, None, "Url"),
             SQS_ARN: (
@@ -114,7 +117,7 @@ def resolve_lookup(lookup_resources, settings):
     """
     Lookup AWS Resource
 
-    :param lookup_resources:
+    :param list[Queue] lookup_resources:
     :param ecs_composex.common.settings.ComposeXSettings settings:
     """
     if not keyisset(MAPPINGS_KEY, settings.mappings):
@@ -130,9 +133,9 @@ def resolve_lookup(lookup_resources, settings):
             {resource.logical_name: resource.mappings}
         )
         LOG.info(f"{RES_KEY}.{resource.name} - Matched AWS Resource {resource.arn}")
-        if keyisset(SQS_KMS_KEY, resource.mappings):
+        if keyisset(SQS_KMS_KEY, resource.lookup_properties):
             LOG.info(
-                f"{RES_KEY}.{resource.name} - Identified CMK - {resource.mappings[SQS_KMS_KEY]}"
+                f"{RES_KEY}.{resource.name} - Identified CMK - {resource.lookup_properties[SQS_KMS_KEY]}"
             )
 
 

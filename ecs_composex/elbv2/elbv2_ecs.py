@@ -223,6 +223,9 @@ def handle_sg_lb_ingress_to_service(resource, family, resources_stack):
     """
     if resource.is_nlb():
         return
+    if resource.cfn_resource and not resource.attributes_outputs:
+        resource.init_outputs()
+        resource.generate_outputs()
     lb_sg_param = resource.attributes_outputs[LB_SG_ID]["ImportParameter"]
     add_parameters(family.template, [lb_sg_param])
     family.service_config.network.add_lb_ingress(

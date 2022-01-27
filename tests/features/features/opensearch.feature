@@ -1,7 +1,7 @@
 Feature: ecs_composex.opensearch
 
     @opensearch @create
-    Scenario Outline: Simple RDS with services
+    Scenario Outline: Simple OS Domain with services
         Given I use <file_path> as my docker-compose file and <override_file> as override file
         And I render the docker-compose to composex
         Then I render all files to verify execution
@@ -12,7 +12,7 @@ Feature: ecs_composex.opensearch
             | use-cases/blog.features.yml | use-cases/opensearch/create_only_single.yaml |
 
     @opensearch @errors
-    Scenario Outline: Simple RDS with services
+    Scenario Outline: Negative tests for simple OS Domain with services
         Given I use <file_path> as my docker-compose file and <override_file> as override file
         Then I render the docker-compose expecting an error
 

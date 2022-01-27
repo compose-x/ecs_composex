@@ -15,7 +15,7 @@ from ecs_composex.common import setup_logging
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources import (
     NetworkXResource,
-    XResource,
+    RdsXResource,
     set_lookup_resources,
     set_new_resources,
     set_resources,
@@ -27,17 +27,16 @@ from ecs_composex.docdb.docdb_template import (
 )
 from ecs_composex.iam.import_sam_policies import get_access_types
 from ecs_composex.neptune.neptune_params import (
-    DB_CLUSTER_ARN,
     DB_CLUSTER_NAME,
     DB_CLUSTER_RESOURCES_ARN,
     DB_ENDPOINT,
     DB_PORT,
     DB_READ_ENDPOINT,
-    DB_SG,
     MAPPINGS_KEY,
     MOD_KEY,
     RES_KEY,
 )
+from ecs_composex.rds.rds_params import DB_CLUSTER_ARN, DB_SECRET_ARN, DB_SG
 from ecs_composex.rds_resources_settings import lookup_rds_resource
 from ecs_composex.vpc.vpc_params import STORAGE_SUBNETS
 
@@ -71,18 +70,18 @@ def get_db_cluster_config(db, account_id, resource_id):
         ]
 
     attributes_mappings = {
-        DB_PORT.title: "Port",
-        "VpcSecurityGroupId": "VpcSecurityGroups::0::VpcSecurityGroupId",
-        DB_CLUSTER_ARN.title: DB_CLUSTER_ARN.title,
+        db.db_port_parameter: "Port",
+        db.db_sg_parameter: "VpcSecurityGroups::0::VpcSecurityGroupId",
+        db.db_cluster_arn_parameter: DB_CLUSTER_ARN.title,
     }
     config = attributes_to_mapping(db_cluster, attributes_mappings)
     config[
-        DB_CLUSTER_RESOURCES_ARN.title
-    ] = f"{config[DB_CLUSTER_ARN.title].replace('rds', 'neptune-db', 1)}/*"
+        DB_CLUSTER_RESOURCES_ARN
+    ] = f"{config[DB_CLUSTER_ARN].replace('rds', 'neptune-db', 1)}/*"
     return config
 
 
-class NeptuneDBCluster(NetworkXResource):
+class NeptuneDBCluster(RdsXResource):
     """
     Class to manage Neptune Cluster
     """
@@ -104,6 +103,9 @@ class NeptuneDBCluster(NetworkXResource):
             name, definition, module_name, settings, mapping_key=mapping_key
         )
         self.set_override_subnets()
+        self.db_sg_parameter = DB_SG
+        self.db_cluster_arn_parameter = DB_CLUSTER_ARN
+        self.db_port_parameter = DB_PORT
 
     def init_outputs(self):
         """
@@ -111,8 +113,8 @@ class NeptuneDBCluster(NetworkXResource):
         """
         self.output_properties = {
             DB_CLUSTER_NAME: (self.logical_name, self.cfn_resource, Ref, None),
-            DB_CLUSTER_ARN: (
-                f"{self.logical_name}{DB_CLUSTER_ARN.title}",
+            self.db_cluster_arn_parameter: (
+                f"{self.logical_name}{self.db_cluster_arn_parameter.title}",
                 self.cfn_resource,
                 Ref,
                 None,
@@ -135,17 +137,17 @@ class NeptuneDBCluster(NetworkXResource):
                 GetAtt,
                 DB_READ_ENDPOINT.return_value,
             ),
-            DB_PORT: (
+            self.db_port_parameter: (
                 f"{self.logical_name}{DB_PORT.return_value}",
                 self.cfn_resource,
                 GetAtt,
-                DB_PORT.return_value,
+                self.db_port_parameter.return_value,
             ),
-            DB_SG: (
+            self.db_sg_parameter: (
                 f"{self.logical_name}{DB_SG.return_value}",
                 self.db_sg,
                 GetAtt,
-                DB_SG.return_value,
+                self.db_sg_parameter.return_value,
                 "VpcSecurityGroupId",
             ),
         }
@@ -201,6 +203,8 @@ class XStack(ComposeXStack):
                     CfnDBCluster.resource_type,
                     "rds:cluster",
                 )
+                resource.generate_cfn_mappings_from_lookup_properties()
+                resource.generate_outputs()
                 settings.mappings[MAPPINGS_KEY].update(
                     {resource.logical_name: resource.mappings}
                 )

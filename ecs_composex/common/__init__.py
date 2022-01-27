@@ -112,11 +112,7 @@ def add_update_mapping(template, mapping_key, mapping_value, mapping_subkey=None
     if mapping_key not in template.mappings:
         template.add_mapping(mapping_key, mapping_value)
     else:
-        if (
-            mapping_subkey
-            and mapping_subkey
-            and keyisset(mapping_subkey, template.mappings[mapping_key])
-        ):
+        if mapping_subkey and keyisset(mapping_subkey, template.mappings[mapping_key]):
             template.mappings[mapping_key][mapping_subkey].update(mapping_value)
         elif (
             mapping_key

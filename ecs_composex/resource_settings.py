@@ -316,7 +316,6 @@ def handle_lookup_resource(
 
     if not hasattr(resource, "init_outputs"):
         raise AttributeError(f"Not init_outputs defined for {resource.module_name}")
-    resource.init_outputs()
     resource.generate_outputs()
 
     for target in resource.families_targets:

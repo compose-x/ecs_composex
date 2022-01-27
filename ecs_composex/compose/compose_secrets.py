@@ -13,6 +13,7 @@ Represent a service from the docker-compose services
 
 from copy import deepcopy
 
+from compose_x_common.aws.kms import KMS_KEY_ARN_RE
 from compose_x_common.aws.secrets_manager import get_secret_name_from_arn
 from compose_x_common.compose_x_common import keyisset
 from troposphere import AWS_ACCOUNT_ID, AWS_PARTITION, AWS_REGION, FindInMap, Sub
@@ -20,7 +21,6 @@ from troposphere.ecs import Secret as EcsSecret
 
 from ecs_composex.common import NONALPHANUM, setup_logging
 from ecs_composex.ecs.ecs_params import EXEC_ROLE_T
-from ecs_composex.kms.kms_params import KMS_KEY_ARN_RE
 from ecs_composex.secrets.secrets_aws import lookup_secret_config
 from ecs_composex.secrets.secrets_params import RES_KEY, XRES_KEY
 

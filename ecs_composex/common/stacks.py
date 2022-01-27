@@ -138,6 +138,8 @@ class ComposeXStack(Stack, object):
                 resource.mark_nested_stacks()
 
     def get_top_root_stack(self):
+        if self.is_void:
+            return None
         if self.parent_stack:
             return self.parent_stack.get_top_root_stack()
         else:

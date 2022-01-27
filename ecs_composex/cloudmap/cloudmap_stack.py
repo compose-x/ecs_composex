@@ -75,7 +75,6 @@ def lookup_service_discovery_namespace(zone, session, ns_id=None):
     client = session.client("servicediscovery")
     try:
         namespaces = get_all_dns_namespaces(session)
-        print("ALL NAMES", namespaces)
         if zone.zone_name not in [z["Name"] for z in namespaces]:
             raise LookupError(
                 "No private namespace found for zone", zone.name, zone.zone_name
@@ -175,14 +174,16 @@ class PrivateNamespace(AwsEnvironmentResource):
                 )
             lookup_attributes = self.lookup[subattribute_key]
         if isinstance(lookup_attributes, bool):
-            self.mappings = lookup_service_discovery_namespace(
+            self.lookup_properties = lookup_service_discovery_namespace(
                 self, self.lookup_session
             )
         elif isinstance(lookup_attributes, dict):
             if not keyisset("NamespaceId", lookup_attributes):
-                lookup_service_discovery_namespace(self, self.lookup_session)
+                self.lookup_properties = lookup_service_discovery_namespace(
+                    self, self.lookup_session
+                )
             else:
-                lookup_service_discovery_namespace(
+                self.lookup_properties = lookup_service_discovery_namespace(
                     self,
                     self.lookup_session,
                     ns_id=lookup_attributes["NamespaceId"],
@@ -205,11 +206,12 @@ def resolve_lookup(lookup_resources, settings):
             PrivateDnsNamespace.resource_type,
             "",
         )
+        resource.init_outputs()
+        resource.generate_cfn_mappings_from_lookup_properties()
+        resource.generate_outputs()
         settings.mappings[MAPPINGS_KEY].update(
             {resource.logical_name: resource.mappings}
         )
-        resource.init_outputs()
-        resource.generate_outputs()
     LOG.debug(settings.mappings[MAPPINGS_KEY])
 
 

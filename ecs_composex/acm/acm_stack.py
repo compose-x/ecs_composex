@@ -10,8 +10,7 @@ import re
 import warnings
 
 from botocore.exceptions import ClientError
-
-# from compose_x_common.aws.acm import ACM_ARN_RE
+from compose_x_common.aws.acm import ACM_ARN_RE
 from compose_x_common.compose_x_common import keyisset
 from troposphere import FindInMap, Ref, Tags
 from troposphere.certificatemanager import Certificate as CfnAcmCertificate
@@ -39,11 +38,6 @@ from ecs_composex.resources_import import (
     find_aws_resources_in_template_resources,
     import_record_properties,
 )
-
-ACM_ARN_RE = re.compile(
-    r"^arn:aws(?:-[a-z]+)?:acm:(?P<region>[\S]+):(?P<accountid>[\d]{12}):certificate/(?P<id>[\S]+)$"
-)
-
 
 LOG = setup_logging()
 
@@ -75,7 +69,7 @@ def get_cert_config(certificate, account_id, resource_id):
     try:
         cert_r = client.describe_certificate(CertificateArn=certificate.arn)
         client.get_certificate(CertificateArn=cert_r["Certificate"]["CertificateArn"])
-        cert_config[CERT_ARN.title] = cert_r["Certificate"]["CertificateArn"]
+        cert_config[CERT_ARN] = cert_r["Certificate"]["CertificateArn"]
         validate_certificate_status(cert_r["Certificate"])
         return cert_config
     except client.exceptions.RequestInProgressException:
@@ -143,6 +137,45 @@ class Certificate(AwsEnvironmentResource):
         self.init_outputs()
         self.generate_outputs()
 
+    def handle_x_dependencies(self, settings, root_stack):
+        """
+
+        :param ecs_composex.common.settings.ComposeXSettings settings:
+        :param ComposeXStack root_stack:
+        """
+        for resource in settings.get_x_resources(include_mappings=False):
+            if not resource.cfn_resource:
+                continue
+            resource_stack = resource.stack
+            if not resource_stack:
+                LOG.error(
+                    f"resource {resource.name} has no `stack` attribute defined. Skipping"
+                )
+                continue
+            x_to_x_mappings = [
+                (
+                    update_property_stack_with_resource,
+                    (Listener, ListenerCertificate),
+                    ElbCertificate,
+                    "CertificateArn",
+                )
+            ]
+            for update_settings in x_to_x_mappings:
+                aws_resources_to_update = find_aws_resources_in_template_resources(
+                    resource_stack, update_settings[1]
+                )
+                for stack_resource in aws_resources_to_update:
+                    properties_to_update = find_aws_properties_in_aws_resource(
+                        update_settings[2], stack_resource
+                    )
+                    update_settings[0](
+                        self,
+                        resource_stack,
+                        properties_to_update,
+                        update_settings[3],
+                        settings,
+                    )
+
 
 def define_acm_certs(new_resources, settings, acm_stack):
     """
@@ -178,6 +211,7 @@ def resolve_lookup(lookup_resources, settings):
             "acm:certificate",
         )
         resource.init_outputs()
+        resource.generate_cfn_mappings_from_lookup_properties()
         resource.generate_outputs()
         LOG.info(
             f"{resource.module_name}.{resource.name} - Matched certificate {resource.arn}"
@@ -188,12 +222,12 @@ def resolve_lookup(lookup_resources, settings):
 
 
 def update_property_stack_with_resource(
-    x_resources, property_stack, properties_to_update, property_name, settings
+    x_resource, property_stack, properties_to_update, property_name, settings
 ):
     """
     Function to associate the resource
 
-    :param list[Certificate] x_resources:
+    :param Certificate x_resource:
     :param ecs_composex.common.stacks.ComposeXStack property_stack:
     :param list properties_to_update:
     :param str property_name:
@@ -216,19 +250,10 @@ def update_property_stack_with_resource(
             continue
         else:
             cert_name = property_value.split(r"::")[-1]
-            the_cert = None
-            for cert in x_resources:
-                if cert.name == cert_name:
-                    the_cert = cert
-                    break
-            if not the_cert:
-                raise LookupError(
-                    f"{RES_KEY}.{cert_name} - Cannot find in resources",
-                    [res.name for res in x_resources],
+            if x_resource.name == cert_name:
+                update_stack_with_resource_settings(
+                    property_stack, x_resource, prop_to_update, property_name, settings
                 )
-            update_stack_with_resource_settings(
-                property_stack, the_cert, prop_to_update, property_name, settings
-            )
 
 
 def update_stack_with_resource_settings(
@@ -268,8 +293,10 @@ def update_stack_with_resource_settings(
                 the_resource.logical_name
             ].update(the_resource.mappings)
         else:
-            property_stack.stack_template.add_mapping(
-                the_resource.mapping_key, settings.mappings[the_resource.mapping_key]
+            add_update_mapping(
+                property_stack.stack_template,
+                the_resource.mapping_key,
+                settings.mappings[the_resource.mapping_key],
             )
         setattr(
             the_property,
@@ -291,15 +318,6 @@ class XStack(ComposeXStack):
         :param ecs_composex.common.settings.ComposeXSettings settings:
         :param dict kwargs:
         """
-        self.x_to_x_mappings = [
-            (
-                update_property_stack_with_resource,
-                (Listener, ListenerCertificate),
-                ElbCertificate,
-                "CertificateArn",
-            )
-        ]
-        self.x_resource_class = Certificate
         set_resources(settings, Certificate, RES_KEY, MOD_KEY, mapping_key=MAPPINGS_KEY)
         x_resources = settings.compose_content[RES_KEY].values()
         use_resources = set_use_resources(x_resources, RES_KEY, False)
@@ -318,47 +336,3 @@ class XStack(ComposeXStack):
         self.module_name = MOD_KEY
         for resource in x_resources:
             resource.stack = self
-
-    def handle_x_dependencies(self, root_stack, settings):
-        """
-        x-acm resources will go over other resources defined and if these have `x-acm` defined in properties,
-        will update with the appropriate values / CFN parameters
-
-        :param ecs_composex.common.stacks.ComposeXStack root_stack:
-        :param ecs_composex.common.settings.ComposeXSettings settings:
-        """
-        if not hasattr(self, "x_to_x_mappings") or not hasattr(
-            self, "x_resource_class"
-        ):
-            LOG.info(f"{self.name} - Nothing to apply to other x-resources")
-            return
-        mod_x_resources = [
-            resource
-            for resource in settings.x_resources
-            if isinstance(resource, self.x_resource_class)
-        ]
-
-        for resource in settings.get_x_resources(include_mappings=False):
-            if not resource.cfn_resource:
-                continue
-            resource_stack = resource.stack
-            if not resource_stack:
-                LOG.error(
-                    f"resource {resource.name} has no `stack` attribute defined. Skipping"
-                )
-                continue
-            for update_settings in self.x_to_x_mappings:
-                aws_resources_to_update = find_aws_resources_in_template_resources(
-                    resource_stack, update_settings[1]
-                )
-                for stack_resource in aws_resources_to_update:
-                    properties_to_update = find_aws_properties_in_aws_resource(
-                        update_settings[2], stack_resource
-                    )
-                    update_settings[0](
-                        mod_x_resources,
-                        resource_stack,
-                        properties_to_update,
-                        update_settings[3],
-                        settings,
-                    )

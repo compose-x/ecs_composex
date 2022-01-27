@@ -56,7 +56,7 @@ def get_topic_config(topic, account_id, resource_id):
                 LOG.warning(
                     f"{topic.module_name}.{topic.name} - KMS Key provided is not a valid ARN."
                 )
-            del attributes[TOPIC_KMS_KEY.return_value]
+            del attributes[TOPIC_KMS_KEY]
         topic_config.update(attributes)
         return topic_config
     except client.exceptions.QueueDoesNotExist:
@@ -80,6 +80,8 @@ def create_sns_mappings(resources, settings):
         resource.lookup_resource(
             SNS_TOPIC_ARN_RE, get_topic_config, CfnTopic.resource_type, "sns"
         )
+        resource.generate_cfn_mappings_from_lookup_properties()
+        resource.generate_outputs()
         settings.mappings[MAPPINGS_KEY].update(
             {resource.logical_name: resource.mappings}
         )
