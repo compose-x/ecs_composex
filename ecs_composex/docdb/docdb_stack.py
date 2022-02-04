@@ -8,17 +8,14 @@ AWS DocumentDB entrypoint for ECS ComposeX
 
 import warnings
 
-from botocore.exceptions import ClientError
 from compose_x_common.aws.rds import RDS_DB_CLUSTER_ARN_RE
 from compose_x_common.compose_x_common import attributes_to_mapping, keyisset
 from troposphere import GetAtt, Ref
 from troposphere.docdb import DBCluster as CfnDBCluster
 
 from ecs_composex.common import setup_logging
-from ecs_composex.common.aws import find_aws_resource_arn_from_tags_api
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources import (
-    NetworkXResource,
     RdsXResource,
     set_lookup_resources,
     set_new_resources,
@@ -36,7 +33,7 @@ from ecs_composex.docdb.docdb_template import (
     create_docdb_template,
     init_doc_db_template,
 )
-from ecs_composex.rds.rds_params import DB_CLUSTER_ARN, DB_NAME, DB_SECRET_ARN, DB_SG
+from ecs_composex.rds.rds_params import DB_CLUSTER_ARN, DB_SECRET_ARN, DB_SG
 from ecs_composex.rds_resources_settings import lookup_rds_resource, lookup_rds_secret
 from ecs_composex.vpc.vpc_params import STORAGE_SUBNETS
 

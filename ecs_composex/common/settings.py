@@ -47,6 +47,8 @@ from ecs_composex.utils.init_s3 import create_bucket
 class ComposeXSettings(object):
     """
     Class to handle the settings to use for ECS ComposeX.
+
+    :ivar dict of {str: ComposeFamily} families: Map of families and services
     """
 
     name_arg = "Name"
@@ -249,9 +251,9 @@ class ComposeXSettings(object):
         x_resources_require_vpc = any([res.requires_vpc for res in self.x_resources])
         services_require_vpc = any(
             [
-                family.service_config.network.network_mode == "awsvpc"
+                family.ecs_service.network.network_mode == "awsvpc"
                 for family in self.families.values()
-                if (family and family.service_config)
+                if (family and family.ecs_service)
             ]
         )
         return any([x_resources_require_vpc, services_require_vpc])

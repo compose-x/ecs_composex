@@ -124,6 +124,21 @@ def add_update_mapping(template, mapping_key, mapping_value, mapping_subkey=None
             template.mappings[mapping_key].update(mapping_value)
 
 
+def add_resource(template, resource, replace=False):
+    """
+    Function to add resource to template if the resource does not already exists
+
+    :param troposphere.Template template:
+    :param troposphere.AWSObject resource:
+    :param bool replace:
+    :return:
+    """
+    if resource.title not in template.resources.keys():
+        template.add_resource(resource)
+    elif resource.title in template.resources.keys() and replace:
+        template.resources[resource.title] = resource
+
+
 def add_defaults(template):
     """Function to CFN parameters and conditions to the template whhich are used
     across ECS ComposeX
@@ -309,19 +324,3 @@ def load_composex_file(file_path):
 
 
 LOG = setup_logging()
-
-
-def set_else_none(key, props, alt_value=None, eval_bool=False):
-    """
-    Function to serialize if not keyisset () set other value
-
-    :param str key:
-    :param dict props:
-    :param alt_value:
-    :param bool eval_bool: Allows to gets booleans properties
-    :return:
-    """
-    if not eval_bool:
-        return alt_value if not keyisset(key, props) else props[key]
-    elif eval_bool:
-        return alt_value if not keypresent(key, props) else props[key]

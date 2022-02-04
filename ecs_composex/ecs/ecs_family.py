@@ -7,7 +7,7 @@ from copy import deepcopy
 from json import dumps
 from os import path
 
-from compose_x_common.compose_x_common import keyisset, keypresent
+from compose_x_common.compose_x_common import keyisset, keypresent, set_else_none
 from troposphere import (
     AWS_ACCOUNT_ID,
     AWS_NO_VALUE,
@@ -18,10 +18,9 @@ from troposphere import (
     GetAtt,
     If,
     Join,
-    Ref,
-    Sub,
-    Tags,
 )
+from troposphere import Output as CfnOutput
+from troposphere import Ref, Sub, Tags
 from troposphere.ec2 import SecurityGroup
 from troposphere.ecs import (
     CapacityProviderStrategyItem,
@@ -39,9 +38,9 @@ from troposphere.logs import LogGroup
 
 from ecs_composex.common import (
     FILE_PREFIX,
+    add_outputs,
     add_parameters,
     build_template,
-    set_else_none,
     setup_logging,
 )
 from ecs_composex.common.cfn_conditions import define_stack_name
@@ -55,7 +54,6 @@ from ecs_composex.ecs.ecs_iam import EcsRole
 from ecs_composex.ecs.ecs_params import (
     AWS_XRAY_IMAGE,
     EXEC_ROLE_T,
-    NETWORK_MODE,
     SERVICE_NAME,
     SG_T,
     TASK_ROLE_T,
@@ -399,9 +397,8 @@ class ComposeFamily(object):
     """
     Class to group services logically to create the final ECS Service
 
-    :type service_config: ecs_composex.ecs.ecs_service_config.ServiceConfig
     :ivar list[ecs_composex.compose.compose_services.ComposeService] services: List of the Services part of the family
-    :ivar ecs_composex.ecs.ecs_service_config.ServiceConfig service_config: ECS Service settings
+    :ivar ecs_composex.ecs.ecs_service.Service ecs_service: ECS Service settings
     """
 
     default_launch_type = "EC2"
@@ -426,7 +423,6 @@ class ComposeFamily(object):
         self.stack = None
         self.task_definition = None
         self.service_definition = None
-        self.service_config = None
         self.service_tags = None
         self.task_ephemeral_storage = 0
         self.family_network_mode = None
@@ -436,6 +432,7 @@ class ComposeFamily(object):
         self.scalable_target = None
         self.ecs_service = None
         self.launch_type = self.default_launch_type
+        self.outputs = []
 
         self.set_template()
         self.set_family_launch_type()
@@ -451,6 +448,30 @@ class ComposeFamily(object):
         self.sort_container_configs()
         self.handle_iam()
         self.add_containers_images_cfn_parameters()
+
+    def generate_outputs(self):
+        """
+        Generates a list of CFN outputs for the ECS Service and Task Definition
+        """
+        self.outputs.append(
+            CfnOutput(
+                f"{self.logical_name}GroupId",
+                Value=GetAtt(self.ecs_service.network.security_group, "GroupId"),
+            )
+        )
+        self.outputs.append(
+            CfnOutput(ecs_params.TASK_T, Value=Ref(self.task_definition))
+        )
+        self.outputs.append(
+            CfnOutput(
+                APP_SUBNETS.title,
+                Value=Join(",", Ref(APP_SUBNETS)),
+            )
+        )
+        self.outputs.append(
+            CfnOutput(self.scalable_target.title, Value=Ref(self.scalable_target))
+        )
+        add_outputs(self.template, self.outputs)
 
     def set_template(self):
         """
@@ -555,7 +576,7 @@ class ComposeFamily(object):
         Creates a new EC2 SecurityGroup and assigns to ecs_service.network_settings
         Adds the security group to the family template resources.
         """
-        self.service_config.network.security_group = SecurityGroup(
+        self.ecs_service.network.security_group = SecurityGroup(
             SG_T,
             GroupDescription=Sub(
                 f"SG for ${{{SERVICE_NAME.title}}} - ${{STACK_NAME}}",
@@ -575,10 +596,17 @@ class ComposeFamily(object):
         )
         if (
             self.template
-            and self.service_config.network.security_group.title
+            and self.ecs_service.network.security_group.title
             not in self.template.resources
         ):
-            self.template.add_resource(self.service_config.network.security_group)
+            self.template.add_resource(self.ecs_service.network.security_group)
+        if (
+            self.ecs_service.network.security_group
+            not in self.ecs_service.security_groups
+        ):
+            self.ecs_service.security_groups.append(
+                Ref(self.ecs_service.network.security_group)
+            )
 
     def add_service(self, service):
         """
@@ -632,6 +660,7 @@ class ComposeFamily(object):
                 if hasattr(container, "LinuxParameters"):
                     parameters = getattr(container, "LinuxParameters")
                     setattr(parameters, "InitProcessEnabled", False)
+        self.generate_outputs()
 
     def set_initial_services_dependencies(self):
         """
@@ -851,7 +880,7 @@ class ComposeFamily(object):
                     range_key = new_settings["range_key"]
                 new_settings["Settings"][
                     metric_name
-                ] = self.service_config.scaling.scaling_range[range_key]
+                ] = self.ecs_service.scaling.scaling_range[range_key]
 
     def define_predefined_alarms(self):
         """
@@ -864,7 +893,7 @@ class ComposeFamily(object):
         for name, settings in PREDEFINED_SERVICE_ALARMS_DEFINITION.items():
             if (
                 keyisset("requires_scaling", settings)
-                and not self.service_config.scaling.defined
+                and not self.ecs_service.scaling.defined
             ):
                 LOG.debug(
                     f"{self.name} - No x-scaling.Range defined for the service and rule {name} requires it. Skipping"
@@ -1300,7 +1329,9 @@ class ComposeFamily(object):
             TaskRoleArn=self.task_role.arn,
             ExecutionRoleArn=self.exec_role.arn,
             ContainerDefinitions=[s.container_definition for s in self.services],
-            RequiresCompatibilities=["EC2", "FARGATE", "EXTERNAL"],
+            RequiresCompatibilities=ecs_conditions.use_external_lt_con(
+                ["EXTERNAL"], ["EC2", "FARGATE"]
+            ),
             Tags=Tags(
                 {
                     "Name": Ref(ecs_params.SERVICE_NAME),
@@ -1380,7 +1411,7 @@ class ComposeFamily(object):
 
         :param ecs_composex.common.settings.ComposeXSettings settings:
         """
-        network_names = list(self.service_config.network.networks.keys())
+        network_names = list(self.ecs_service.network.networks.keys())
         for network in settings.networks:
             if network.name in network_names:
                 self.stack_parameters.update(

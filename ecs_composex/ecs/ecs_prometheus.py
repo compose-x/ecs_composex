@@ -17,14 +17,7 @@ try:
 except ImportError:
     from yaml import Dumper, Loader
 
-from troposphere import (
-    AWS_ACCOUNT_ID,
-    AWS_PARTITION,
-    AWS_REGION,
-    AWS_STACK_NAME,
-    Ref,
-    Sub,
-)
+from troposphere import AWS_ACCOUNT_ID, AWS_PARTITION, AWS_REGION, AWS_STACK_NAME, Sub
 from troposphere.ecs import Secret
 from troposphere.iam import PolicyType
 from troposphere.ssm import Parameter as SSMParameter

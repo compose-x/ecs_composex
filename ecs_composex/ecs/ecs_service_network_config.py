@@ -137,9 +137,52 @@ def merge_services_network(family):
     return network_config
 
 
+def merge_cloudmap_settings(family, ports):
+    """
+    Function to merge the x_cloudmap from the service
+
+    :param ecs_composex.ecs.ecs_family.ComposeFamily family:
+    :param list[dict] ports:
+    :return: The cloudmap config for the given family
+    :rtype: dict
+    """
+    cloudmap_configs = [
+        svc.x_cloudmap for svc in family.ordered_services if svc.x_cloudmap
+    ]
+    if not cloudmap_configs:
+        return {}
+    family_mappings = {}
+    for cloudmap_config in cloudmap_configs:
+        if isinstance(cloudmap_config, str):
+            if cloudmap_config not in family_mappings.keys():
+                family_mappings[cloudmap_config] = ports[0]
+            else:
+                LOG.warning(
+                    f"{family.name}.x-network.x-cloudmap - {cloudmap_config} is set multiple times. "
+                    f"Preserving {family_mappings[cloudmap_config]}"
+                )
+        elif isinstance(cloudmap_config, dict):
+            for map_name, config in cloudmap_config.items():
+                if map_name in family_mappings.keys():
+                    LOG.warning(
+                        f"{family.name}.x-network.x-cloudmap - {cloudmap_config} is set multiple times. "
+                        f"Preserving {family_mappings[map_name]}"
+                    )
+                    continue
+                else:
+                    if keyisset("Port", config):
+                        for port in ports:
+                            if port["target"] == config["Port"]:
+                                family_mappings[map_name] = port
+                                break
+                    else:
+                        family_mappings[map_name] = ports[0]
+    return family_mappings
+
+
 def add_independant_rules(dst_family, service_name, root_stack):
     src_service_stack = root_stack.stack_template.resources[service_name]
-    for port in dst_family.service_config.network.ports:
+    for port in dst_family.ecs_service.network.ports:
         ingress_rule = SecurityGroupIngress(
             f"From{src_service_stack.title}To{dst_family.logical_name}On{port['published']}",
             FromPort=port["published"],
@@ -173,7 +216,7 @@ def set_compose_services_ingress(root_stack, dst_family, families, settings):
     :param list families: The list of family names.
     :return:
     """
-    for service in dst_family.service_config.network.services:
+    for service in dst_family.ecs_service.network.services:
         service_name = service["Name"]
         if service_name not in families:
             raise KeyError(
@@ -198,7 +241,7 @@ def set_compose_services_ingress(root_stack, dst_family, families, settings):
                     ),
                 }
             )
-            for port in dst_family.service_config.network.ports:
+            for port in dst_family.ecs_service.network.ports:
                 common_args = {
                     "FromPort": port["published"],
                     "ToPort": port["published"],
@@ -212,7 +255,7 @@ def set_compose_services_ingress(root_stack, dst_family, families, settings):
                     SecurityGroupIngress(
                         f"From{src_family.logical_name}To{dst_family.stack.title}On{port['published']}",
                         SourceSecurityGroupId=GetAtt(
-                            src_family.service_config.network.security_group, "GroupId"
+                            src_family.ecs_service.network.security_group, "GroupId"
                         ),
                         GroupId=Ref(dst_family_sg_param),
                         **common_args,
@@ -255,6 +298,7 @@ class ServiceNetworking(Ingress):
                 f"{family.name} - services have export ports, allowing internal ingress"
             )
         self.security_group = None
+        self.cloudmap_config = merge_cloudmap_settings(family, self.ports)
         super().__init__(self.configuration[self.master_key], self.ports)
         self.ingress_from_self = keyisset(self.self_key, self.definition)
 
@@ -317,10 +361,10 @@ class ServiceNetworking(Ingress):
                     ToPort=port["published"],
                     IpProtocol=port["protocol"],
                     GroupId=GetAtt(
-                        family.service_config.network.security_group, "GroupId"
+                        family.ecs_service.network.security_group, "GroupId"
                     ),
                     SourceSecurityGroupId=GetAtt(
-                        family.service_config.network.security_group, "GroupId"
+                        family.ecs_service.network.security_group, "GroupId"
                     ),
                     SourceSecurityGroupOwnerId=Ref(AWS_ACCOUNT_ID),
                     Description=Sub(
@@ -346,9 +390,7 @@ class ServiceNetworking(Ingress):
                 "FromPort": port["target"],
                 "ToPort": port["target"],
                 "IpProtocol": port["protocol"],
-                "GroupId": GetAtt(
-                    family.service_config.network.security_group, "GroupId"
-                ),
+                "GroupId": GetAtt(family.ecs_service.network.security_group, "GroupId"),
                 "SourceSecurityGroupOwnerId": Ref(AWS_ACCOUNT_ID),
                 "Description": Sub(
                     f"From ELB {lb_name} to ${{{SERVICE_NAME_T}}} on port {port['target']}"

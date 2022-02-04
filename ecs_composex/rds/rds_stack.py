@@ -15,7 +15,6 @@ from troposphere.rds import DBInstance as CfnDBInstance
 from ecs_composex.common import build_template, setup_logging
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources import (
-    NetworkXResource,
     RdsXResource,
     set_lookup_resources,
     set_new_resources,

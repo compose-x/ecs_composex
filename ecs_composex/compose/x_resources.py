@@ -20,7 +20,7 @@ from compose_x_common.compose_x_common import (
 from troposphere import AWSObject, Export, FindInMap, GetAtt, Join, Output, Ref, Sub
 from troposphere.ecs import Environment
 
-from ecs_composex.common import LOG, NONALPHANUM, add_parameters
+from ecs_composex.common import LOG, NONALPHANUM
 from ecs_composex.common.aws import (
     define_lookup_role_from_info,
     find_aws_resource_arn_from_tags_api,
@@ -503,8 +503,13 @@ class XResource(object):
         elif output_definition[2] is Sub:
             value = Sub(output_definition[3])
         elif output_definition[2] is Join:
-            if not isinstance(output_definition, list):
-                raise ValueError("For Join, the parameter must be a list")
+            if not isinstance(output_definition[3], list):
+                raise ValueError(
+                    "For Join, the parameter must be",
+                    list,
+                    "Got",
+                    type(output_definition[3]),
+                )
             value = Join(*output_definition[3])
         elif (
             isinstance(output_definition[2], (str, int))
@@ -562,7 +567,7 @@ class XResource(object):
                 attribute_parameter,
                 output_definition,
             ) in self.output_properties.items():
-                output_name = f"{self.logical_name}{attribute_parameter.title}"
+                output_name = NONALPHANUM.sub("", output_definition[0])
                 settings = self.set_new_resource_outputs(
                     output_definition, attribute_parameter
                 )

@@ -7,7 +7,6 @@ from troposphere import FindInMap
 from ecs_composex.common import LOG, add_parameters
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.ecs import ecs_params, metadata
-from ecs_composex.ecs.ecs_service_network_config import set_compose_services_ingress
 from ecs_composex.ecs.ecs_template import initialize_family_services
 
 

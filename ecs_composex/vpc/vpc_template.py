@@ -33,7 +33,7 @@ from troposphere.iam import Policy, Role
 from troposphere.logs import LogGroup
 
 from ecs_composex.common.cfn_conditions import USE_STACK_NAME_CON_T
-from ecs_composex.common.cfn_params import ROOT_STACK_NAME, ROOT_STACK_NAME_T
+from ecs_composex.common.cfn_params import ROOT_STACK_NAME
 from ecs_composex.iam import service_role_trust_policy
 from ecs_composex.vpc import metadata
 from ecs_composex.vpc.vpc_params import IGW_T, VPC_T

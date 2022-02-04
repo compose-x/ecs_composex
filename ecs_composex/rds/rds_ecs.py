@@ -7,16 +7,9 @@ Module to provide services with access to the RDS databases.
 """
 
 from compose_x_common.compose_x_common import keyisset
-from troposphere import FindInMap
 
 from ecs_composex.common import add_update_mapping
-from ecs_composex.rds.rds_params import (
-    DB_ENDPOINT_PORT,
-    DB_SECRET_ARN,
-    DB_SECRET_T,
-    DB_SG,
-    RES_KEY,
-)
+from ecs_composex.rds.rds_params import DB_ENDPOINT_PORT, DB_SECRET_ARN, DB_SG
 from ecs_composex.rds_resources_settings import (
     add_secret_to_container,
     add_secrets_access_policy,
