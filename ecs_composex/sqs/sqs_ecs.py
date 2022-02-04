@@ -20,14 +20,7 @@ from ecs_composex.resource_settings import (
     handle_lookup_resource,
     handle_resource_to_services,
 )
-from ecs_composex.sqs.sqs_params import (
-    MAPPINGS_KEY,
-    MOD_KEY,
-    RES_KEY,
-    SQS_ARN,
-    SQS_NAME,
-    SQS_URL,
-)
+from ecs_composex.sqs.sqs_params import MOD_KEY, SQS_ARN, SQS_NAME, SQS_URL
 
 
 def handle_service_scaling(resource, res_root_stack):

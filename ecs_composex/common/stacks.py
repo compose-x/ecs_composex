@@ -25,10 +25,6 @@ from troposphere.cloudformation import Stack
 from ecs_composex.common import LOG, NONALPHANUM, add_parameters, cfn_conditions
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.files import FileArtifact
-from ecs_composex.resources_import import (
-    find_aws_properties_in_aws_resource,
-    find_aws_resources_in_template_resources,
-)
 from ecs_composex.vpc.vpc_params import (
     APP_SUBNETS,
     APP_SUBNETS_T,

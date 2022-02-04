@@ -939,7 +939,8 @@ class Elbv2(NetworkXResource):
                 self.listeners.append(new_listener)
             else:
                 LOG.warning(
-                    f"{self.module_name}.{self.name} - Listener {listener_def['Port']} has no action or service. Not used."
+                    f"{self.module_name}.{self.name} - "
+                    f"Listener {listener_def['Port']} has no action or service. Not used."
                 )
 
     def set_services_targets(self, settings):

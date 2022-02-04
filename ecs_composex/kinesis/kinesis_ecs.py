@@ -6,15 +6,12 @@
 Module to add permissions etc. for services to kinesis streams
 """
 
-from compose_x_common.compose_x_common import keyisset
-
 from ecs_composex.common import LOG
 from ecs_composex.kinesis.kinesis_params import (
     MAPPINGS_KEY,
     RES_KEY,
     STREAM_ARN,
     STREAM_ID,
-    STREAM_KMS_KEY_ID,
 )
 from ecs_composex.resource_settings import (
     handle_lookup_resource,

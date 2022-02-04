@@ -25,6 +25,9 @@
               "type": "object",
               "description": "The name of the object is the name of the x-cloudmap::<map>.",
               "additionalProperties": false,
+              "required": [
+                "Port"
+              ],
               "properties": {
                 "Port": {
                   "description": "The port to register in SRV record",

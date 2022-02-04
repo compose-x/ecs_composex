@@ -7,7 +7,6 @@ Module to link DocDB cluster to ECS Services.
 """
 
 from ecs_composex.rds.rds_ecs import import_dbs
-from ecs_composex.rds.rds_params import DB_ENDPOINT_PORT, DB_SECRET_ARN, DB_SG
 from ecs_composex.rds_resources_settings import handle_new_tcp_resource
 
 

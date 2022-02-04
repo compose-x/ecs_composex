@@ -4,7 +4,7 @@
 
 """Common Conditions across the templates"""
 
-from troposphere import Condition, Equals, If, Not, Ref
+from troposphere import Equals, If, Ref
 
 from ecs_composex.common import cfn_params
 

@@ -11,7 +11,7 @@ import string
 from json import dumps
 
 from compose_x_common.compose_x_common import keyisset, keypresent
-from troposphere import AWS_NO_VALUE, GetAtt, Ref, Sub, applicationautoscaling
+from troposphere import AWS_NO_VALUE, Ref, Sub, applicationautoscaling
 from troposphere.applicationautoscaling import (
     ScalingPolicy,
     StepAdjustment,
@@ -384,15 +384,15 @@ class ServiceScaling(object):
         """
         Method to automatically create a scalable target
         """
-        LOG.debug(family.service_config.scaling.scaling_range)
+        LOG.debug(family.ecs_service.scaling.scaling_range)
         if ecs_params.SERVICE_SCALING_TARGET in family.template.resources:
             return
-        if family.service_config.scaling.scaling_range:
+        if family.ecs_service.scaling.scaling_range:
             family.scalable_target = applicationautoscaling.ScalableTarget(
                 ecs_params.SERVICE_SCALING_TARGET,
                 template=family.template,
-                MaxCapacity=family.service_config.scaling.scaling_range["max"],
-                MinCapacity=family.service_config.scaling.scaling_range["min"],
+                MaxCapacity=family.ecs_service.scaling.scaling_range["max"],
+                MinCapacity=family.ecs_service.scaling.scaling_range["min"],
                 ScalableDimension="ecs:service:DesiredCount",
                 ServiceNamespace="ecs",
                 RoleARN=Sub(
@@ -411,8 +411,8 @@ class ServiceScaling(object):
             family.scalable_target = applicationautoscaling.ScalableTarget(
                 ecs_params.SERVICE_SCALING_TARGET,
                 template=family.template,
-                MaxCapacity=family.service_config.replicas,
-                MinCapacity=family.service_config.replicas,
+                MaxCapacity=family.ecs_service.replicas,
+                MinCapacity=family.ecs_service.replicas,
                 ScalableDimension="ecs:service:DesiredCount",
                 ServiceNamespace="ecs",
                 RoleARN=Sub(
@@ -427,8 +427,8 @@ class ServiceScaling(object):
                     DynamicScalingInSuspended=False
                 ),
             )
-        if family.scalable_target and family.service_config.scaling.target_scaling:
-            if keyisset("CpuTarget", family.service_config.scaling.target_scaling):
+        if family.scalable_target and family.ecs_service.scaling.target_scaling:
+            if keyisset("CpuTarget", family.ecs_service.scaling.target_scaling):
                 applicationautoscaling.ScalingPolicy(
                     "ServiceCpuTrackingPolicy",
                     template=family.template,
@@ -436,10 +436,10 @@ class ServiceScaling(object):
                     PolicyName="CpuTrackingScalingPolicy",
                     PolicyType="TargetTrackingScaling",
                     TargetTrackingScalingPolicyConfiguration=define_tracking_target_configuration(
-                        family.service_config.scaling.target_scaling, "cpu"
+                        family.ecs_service.scaling.target_scaling, "cpu"
                     ),
                 )
-            if keyisset("MemoryTarget", family.service_config.scaling.target_scaling):
+            if keyisset("MemoryTarget", family.ecs_service.scaling.target_scaling):
                 applicationautoscaling.ScalingPolicy(
                     "ServiceMemoryTrackingPolicy",
                     template=family.template,
@@ -447,6 +447,6 @@ class ServiceScaling(object):
                     PolicyName="MemoryTrackingScalingPolicy",
                     PolicyType="TargetTrackingScaling",
                     TargetTrackingScalingPolicyConfiguration=define_tracking_target_configuration(
-                        family.service_config.scaling.target_scaling, "memory"
+                        family.ecs_service.scaling.target_scaling, "memory"
                     ),
                 )

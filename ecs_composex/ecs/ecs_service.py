@@ -7,19 +7,7 @@ Functions to build the ECS Service Definition
 """
 
 from compose_x_common.compose_x_common import keyisset
-from troposphere import (
-    AWS_NO_VALUE,
-    AWS_STACK_NAME,
-    GetAtt,
-    If,
-    Join,
-    Ref,
-    Select,
-    Sub,
-    Tags,
-    applicationautoscaling,
-)
-from troposphere.ec2 import SecurityGroup
+from troposphere import AWS_NO_VALUE, GetAtt, If, Join, Ref
 from troposphere.ecs import AwsvpcConfiguration
 from troposphere.ecs import DeploymentCircuitBreaker as EcsDeploymentCircuitBreaker
 from troposphere.ecs import (
@@ -29,28 +17,14 @@ from troposphere.ecs import (
     PlacementStrategy,
 )
 from troposphere.ecs import Service as EcsService
-from troposphere.ecs import ServiceRegistry
-from troposphere.elasticloadbalancingv2 import SubnetMapping
-from troposphere.servicediscovery import DnsConfig as SdDnsConfig
-from troposphere.servicediscovery import DnsRecord as SdDnsRecord
-from troposphere.servicediscovery import (
-    HealthCheckCustomConfig as SdHealthCheckCustomConfig,
-)
-from troposphere.servicediscovery import Service as SdService
 
-from ecs_composex.common import LOG
-from ecs_composex.common.cfn_conditions import define_stack_name
 from ecs_composex.common.outputs import ComposeXOutput
 from ecs_composex.ecs import ecs_conditions, ecs_params
-from ecs_composex.ecs.ecs_conditions import USE_HOSTNAME_CON_T, use_external_lt_con
-from ecs_composex.ecs.ecs_params import (
-    SERVICE_HOSTNAME,
-    SERVICE_NAME,
-    SERVICE_NAME_T,
-    SG_T,
-)
+from ecs_composex.ecs.ecs_conditions import use_external_lt_con
 from ecs_composex.vpc import vpc_params
-from ecs_composex.vpc.vpc_params import PUBLIC_SUBNETS, VPC_ID
+
+from .ecs_scaling import ServiceScaling
+from .ecs_service_network_config import ServiceNetworking
 
 
 def define_placement_strategies():
@@ -66,48 +40,6 @@ def define_placement_strategies():
     ]
 
 
-# def add_service_to_map(family, settings):
-#     """
-#     Method to create a new Service into CloudMap to represent the current service and add entry into the registry
-#     """
-#     registries = []
-#     if not family.service_config.network.ports:
-#         LOG.warning(
-#             f"No ports were defined for the services in {family.logical_name}."
-#             " Not creating a service in CloudMap"
-#         )
-#         return registries
-#     elif not family.service_config.network.use_cloudmap and not settings.use_appmesh:
-#         return registries
-#     sd_service = SdService(
-#         f"{family.logical_name}DiscoveryService",
-#         template=family.template,
-#         Condition=PRIVATE_NAMESPACE_CON_T,
-#         Description=Ref(SERVICE_NAME),
-#         NamespaceId=Ref(PRIVATE_NAMESPACE_ID),
-#         HealthCheckCustomConfig=SdHealthCheckCustomConfig(FailureThreshold=1.0),
-#         DnsConfig=SdDnsConfig(
-#             RoutingPolicy="MULTIVALUE",
-#             NamespaceId=Ref(AWS_NO_VALUE),
-#             DnsRecords=[
-#                 SdDnsRecord(TTL="15", Type="A"),
-#                 SdDnsRecord(TTL="15", Type="SRV"),
-#             ],
-#         ),
-#         Name=If(USE_HOSTNAME_CON_T, Ref(SERVICE_HOSTNAME), Ref(SERVICE_NAME)),
-#     )
-#     for port in family.service_config.network.ports:
-#         used_port = port["published"]
-#         registry = ServiceRegistry(
-#             f"ServiceRegistry{used_port}",
-#             RegistryArn=GetAtt(sd_service, "Arn"),
-#             Port=used_port,
-#         )
-#         registries.append(registry)
-#         break
-#     return registries
-
-
 def generate_service_template_outputs(family):
     """
     Function to generate the Service template outputs
@@ -119,7 +51,7 @@ def generate_service_template_outputs(family):
                 (
                     ecs_params.SERVICE_GROUP_ID_T,
                     "GroupId",
-                    GetAtt(ecs_params.SG_T, "GroupId"),
+                    GetAtt(family.service_config.network.security_group, "GroupId"),
                 ),
                 (
                     ecs_params.TASK_T,
@@ -141,24 +73,6 @@ def generate_service_template_outputs(family):
             export=False,
         ).outputs
     )
-
-
-def define_service_ingress(family, settings):
-    """
-    Function to define microservice ingress.
-
-    :param ecs_composex.common.settings.ComposeXSettings settings: Execution settings
-    :param family:
-    """
-    service_lbs = []
-    # registries = add_service_to_map(family, settings)
-    # if not registries:
-    #     registries = Ref(AWS_NO_VALUE)
-    service_attrs = {
-        "LoadBalancers": service_lbs,
-        "ServiceRegistries": Ref(AWS_NO_VALUE),
-    }
-    return service_attrs
 
 
 def define_deployment_options(family, settings, kwargs):
@@ -197,12 +111,15 @@ class Service(object):
     Class representing the service from the Docker compose file and translate it into
     AWS ECS Task Definition and Service.
 
-    :cvar list links: the links used for DependsOn of the service stack
-    :cvar list dependencies: list of services used for the DependsOn of the service stack
-    :cvar ServiceConfig config: The service configuration
-    :cvar troposphere.ecs.TaskDefinition task_definition: The service task definition for ECS
-    :cvar list<troposphere.ec2.EIP> eips: list of AWS EC2 EIPs which are used for the public NLB
-    :cvar dict service_attrs: Attributes defined to expand the troposphere.ecs.ServiceDefinition from prior settings.
+    :ivar list links: the links used for DependsOn of the service stack
+    :ivar list dependencies: list of services used for the DependsOn of the service stack
+    :ivar ServiceConfig config: The service configuration
+    :ivar troposphere.ecs.TaskDefinition task_definition: The service task definition for ECS
+    :ivar list<troposphere.ec2.EIP> eips: list of AWS EC2 EIPs which are used for the public NLB
+    :ivar dict service_attrs: Attributes defined to expand the troposphere.ecs.ServiceDefinition from prior settings.
+    :ivar ServiceNetwork network:
+    :ivar replicas:
+    :ivar ServiceScaling scaling:
     """
 
     def __init__(self, family, settings):
@@ -222,9 +139,19 @@ class Service(object):
         self.alarms = {}
         family.stack_parameters.update({ecs_params.SERVICE_NAME_T: family.name})
 
-        ingress_props = define_service_ingress(family, settings)
-        self.lbs = ingress_props["LoadBalancers"]
-        self.registries = ingress_props["ServiceRegistries"]
+        self.network = ServiceNetworking(family)
+        self.scaling = ServiceScaling(family.ordered_services)
+        self.use_appmesh = (
+            False if not keyisset("x-appmesh", settings.compose_content) else True
+        )
+        self.replicas = max([service.replicas for service in family.services])
+        if self.replicas != ecs_params.SERVICE_COUNT.Default:
+            family.stack_parameters[ecs_params.SERVICE_COUNT.title] = self.replicas
+
+        self.lbs = []
+        self.registries = []
+        self.security_groups = []
+        self.subnets = []
 
     def generate_service_definition(self, family, settings):
         """
@@ -264,8 +191,8 @@ class Service(object):
                 Ref(AWS_NO_VALUE),
                 NetworkConfiguration(
                     AwsvpcConfiguration=AwsvpcConfiguration(
-                        Subnets=Ref(AWS_NO_VALUE),
-                        SecurityGroups=Ref(AWS_NO_VALUE),
+                        Subnets=self.subnets,
+                        SecurityGroups=self.security_groups,
                     )
                 ),
             ),

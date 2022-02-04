@@ -15,7 +15,6 @@ from ecs_composex.common.cfn_params import ROOT_STACK_NAME, ROOT_STACK_NAME_T
 from ecs_composex.ecs import ecs_params
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME, CLUSTER_NAME_T
 from ecs_composex.ecs.ecs_service import Service
-from ecs_composex.ecs.ecs_service_config import ServiceConfig
 from ecs_composex.secrets.secrets_params import RES_KEY as SECRETS_KEY
 
 
@@ -94,7 +93,7 @@ def initialize_family_services(settings, family):
     family.assign_policies()
     family.merge_capacity_providers()
     family.validate_capacity_providers(settings.ecs_cluster)
-    family.service_config = ServiceConfig(family, settings)
+    family.ecs_service = Service(family, settings)
     family.stack.Parameters.update(
         {
             ecs_params.SERVICE_NAME_T: family.logical_name,
@@ -109,4 +108,3 @@ def initialize_family_services(settings, family):
     family.handle_logging()
     family.handle_alarms()
     family.validate_compute_configuration_for_task(settings)
-    family.ecs_service = Service(family, settings)

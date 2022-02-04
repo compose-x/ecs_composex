@@ -38,17 +38,7 @@
     },
     "MacroParameters": {
       "type": "object",
-      "description": "When creating a new Namespace, allows to take shortcuts",
-      "additionalProperties": false,
-      "properties": {
-        "AsPublicNamespace": {
-          "type": "boolean"
-        },
-        "CreateDefault": {
-          "type": "boolean",
-          "description": "When set to true, creates a default namespace"
-        }
-      }
+      "description": "When creating a new Namespace, allows to take shortcuts"
     }
   },
   "definitions": {
@@ -57,17 +47,5 @@
       "pattern": "ns-[a-zA-Z0-9]+$",
       "description": "The AWS CloudMap (servicediscovery) Namespace ID"
     }
-  },
-  "oneOf": [
-    {
-      "required": [
-        "Lookup"
-      ]
-    },
-    {
-      "required": [
-        "Properties"
-      ]
-    }
-  ]
+  }
 }

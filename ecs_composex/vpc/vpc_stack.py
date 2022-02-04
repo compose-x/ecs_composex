@@ -11,13 +11,18 @@ import re
 import troposphere
 from botocore.exceptions import ClientError
 from compose_x_common.aws import get_region_azs
-from compose_x_common.compose_x_common import keyisset
+from compose_x_common.compose_x_common import keyisset, set_else_none
 from troposphere import FindInMap, GetAtt, Join, Ref
+from troposphere.servicediscovery import PrivateDnsNamespace
 
-from ecs_composex.common import LOG, build_template, set_else_none
+from ecs_composex.common import LOG, add_outputs, build_template
 from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources import AwsEnvironmentResource
+from ecs_composex.resources_import import (
+    find_aws_properties_in_aws_resource,
+    find_aws_resources_in_template_resources,
+)
 from ecs_composex.vpc import aws_mappings
 from ecs_composex.vpc.vpc_aws import lookup_x_vpc_settings
 from ecs_composex.vpc.vpc_maths import get_subnet_layers
@@ -41,6 +46,8 @@ from ecs_composex.vpc.vpc_subnets import (
     add_storage_subnets,
 )
 from ecs_composex.vpc.vpc_template import add_vpc_core, add_vpc_flow
+
+from .vpc_cloudmap import x_vpc_to_x_cloudmap
 
 AZ_INDEX_PATTERN = r"(([a-z0-9-]+)([a-z]{1}$))"
 AZ_INDEX_RE = re.compile(AZ_INDEX_PATTERN)
@@ -265,21 +272,21 @@ class Vpc(AwsEnvironmentResource):
             VPC_ID: (VPC_ID.title, self.vpc, Ref, None),
             APP_SUBNETS: (
                 APP_SUBNETS.title,
-                self.app_subnets,
+                self.app_subnets[1],
                 Join,
-                [",", [Ref(subnet) for subnet in self.app_subnets]],
+                [",", [Ref(subnet) for subnet in self.app_subnets[1]]],
             ),
             PUBLIC_SUBNETS: (
                 PUBLIC_SUBNETS.title,
-                self.public_subnets,
+                self.public_subnets[1],
                 Join,
-                [",", [Ref(subnet) for subnet in self.public_subnets]],
+                [",", [Ref(subnet) for subnet in self.public_subnets[1]]],
             ),
             STORAGE_SUBNETS: (
                 STORAGE_SUBNETS.title,
-                self.storage_subnets,
+                self.storage_subnets[1],
                 Join,
-                [",", [Ref(subnet) for subnet in self.storage_subnets]],
+                [",", [Ref(subnet) for subnet in self.storage_subnets[1]]],
             ),
             STORAGE_SUBNETS_CIDR: (
                 STORAGE_SUBNETS_CIDR.title,
@@ -300,6 +307,47 @@ class Vpc(AwsEnvironmentResource):
                 [",", [cidr for cidr in self.layers["pub"]]],
             ),
         }
+
+    def handle_x_dependencies(self, settings, root_stack):
+        """
+        Function to have x-vpc update resources that have the x-vpc value where VpcID should be.
+
+        :param ecs_composex.common.settings.ComposeXSettings settings: the execution settings
+        :param ecs_composex.common.stacks.ComposeXStack root_stack: unused today
+        """
+        for resource in settings.get_x_resources(include_mappings=False):
+            if not resource.cfn_resource:
+                continue
+            resource_stack = resource.stack
+            if not resource_stack:
+                LOG.error(
+                    f"resource {resource.name} has no `stack` attribute defined. Skipping"
+                )
+                continue
+            x_to_x_mappings = [
+                (
+                    x_vpc_to_x_cloudmap,
+                    (PrivateDnsNamespace,),
+                    str,
+                    "Vpc",
+                )
+            ]
+            for update_settings in x_to_x_mappings:
+                aws_resources_to_update = find_aws_resources_in_template_resources(
+                    resource_stack, update_settings[1]
+                )
+                for stack_resource in aws_resources_to_update:
+                    properties_to_update = find_aws_properties_in_aws_resource(
+                        update_settings[2], stack_resource
+                    )
+                    update_settings[0](
+                        self,
+                        stack_resource,
+                        resource_stack,
+                        properties_to_update,
+                        update_settings[3],
+                        settings,
+                    )
 
 
 def init_vpc_template() -> troposphere.Template:
@@ -340,8 +388,10 @@ class XStack(ComposeXStack):
                 self.is_void = False
                 self.vpc_resource.init_outputs()
                 super().__init__(title, stack_template=template, **kwargs)
+                self.vpc_resource.generate_outputs()
+                add_outputs(template, self.vpc_resource.outputs)
 
-    def create_new_vpc(self, title, settings):
+    def create_new_default_vpc(self, title, settings):
         """
         In case no x-vpc was specified but the deployment settings require a new VPC, allows for an easy way to set one.
         """
@@ -357,6 +407,8 @@ class XStack(ComposeXStack):
         self.is_void = False
         self.vpc_resource.init_outputs()
         super().__init__(title, stack_template=template)
+        self.vpc_resource.generate_outputs()
+        add_outputs(template, self.vpc_resource.outputs)
 
     @property
     def vpc_id(self):
