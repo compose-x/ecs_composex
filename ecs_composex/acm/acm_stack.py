@@ -12,7 +12,7 @@ import warnings
 from botocore.exceptions import ClientError
 from compose_x_common.aws.acm import ACM_ARN_RE
 from compose_x_common.compose_x_common import keyisset
-from troposphere import FindInMap, Ref, Tags
+from troposphere import Ref, Tags
 from troposphere.certificatemanager import Certificate as CfnAcmCertificate
 from troposphere.certificatemanager import DomainValidationOption
 from troposphere.elasticloadbalancingv2 import Certificate as ElbCertificate
@@ -98,7 +98,13 @@ class Certificate(AwsEnvironmentResource):
             CERT_ARN: (f"{self.logical_name}", self.cfn_resource, Ref, None)
         }
 
-    def define_parameters_props(self, dns_settings):
+    def define_parameters_props(self) -> dict:
+        """
+        Determines the Properties to use for new ACM Certificate
+
+        :return: properties dict
+        :rtype: dict
+        """
         tag_filter = re.compile(r"(^\*.)")
         validations = [
             DomainValidationOption(
@@ -119,14 +125,14 @@ class Certificate(AwsEnvironmentResource):
         }
         return props
 
-    def create_acm_cert(self, dns_settings):
+    def create_acm_cert(self):
         """
         Method to set the ACM Certificate definition
         """
         if self.properties:
             props = import_record_properties(self.properties, CfnAcmCertificate)
         elif self.parameters:
-            props = self.define_parameters_props(dns_settings)
+            props = self.define_parameters_props()
         else:
             raise ValueError(
                 "Failed to determine how to create the ACM certificate",
@@ -177,7 +183,7 @@ class Certificate(AwsEnvironmentResource):
                     )
 
 
-def define_acm_certs(new_resources, settings, acm_stack):
+def define_acm_certs(new_resources, acm_stack):
     """
     Function to create the certificates
 
@@ -186,7 +192,7 @@ def define_acm_certs(new_resources, settings, acm_stack):
     :param ecs_composex.common.stacks.ComposeXStack acm_stack:
     """
     for resource in new_resources:
-        resource.create_acm_cert(settings)
+        resource.create_acm_cert()
         acm_stack.stack_template.add_resource(resource.cfn_resource)
         if not resource.outputs:
             resource.generate_outputs()
@@ -222,12 +228,12 @@ def resolve_lookup(lookup_resources, settings):
 
 
 def update_property_stack_with_resource(
-    x_resource, property_stack, properties_to_update, property_name, settings
+    x_certificate, property_stack, properties_to_update, property_name, settings
 ):
     """
     Function to associate the resource
 
-    :param Certificate x_resource:
+    :param Certificate x_certificate:
     :param ecs_composex.common.stacks.ComposeXStack property_stack:
     :param list properties_to_update:
     :param str property_name:
@@ -250,9 +256,13 @@ def update_property_stack_with_resource(
             continue
         else:
             cert_name = property_value.split(r"::")[-1]
-            if x_resource.name == cert_name:
+            if x_certificate.name == cert_name:
                 update_stack_with_resource_settings(
-                    property_stack, x_resource, prop_to_update, property_name, settings
+                    property_stack,
+                    x_certificate,
+                    prop_to_update,
+                    property_name,
+                    settings,
                 )
 
 
@@ -326,7 +336,7 @@ class XStack(ComposeXStack):
         if new_resources:
             stack_template = build_template("ACM Certificates created from x-acm")
             super().__init__(name, stack_template, **kwargs)
-            define_acm_certs(new_resources, settings, self)
+            define_acm_certs(new_resources, self)
         else:
             self.is_void = True
         if lookup_resources:

@@ -6,14 +6,13 @@
 Main module for ACM
 """
 
-import re
 import warnings
 
+from compose_x_common.aws.cloudmap import get_all_dns_namespaces
 from compose_x_common.compose_x_common import keyisset
 from troposphere import GetAtt, Ref
-from troposphere.servicediscovery import PrivateDnsNamespace, PublicDnsNamespace
+from troposphere.servicediscovery import PrivateDnsNamespace
 
-from ecs_composex.acm.acm_params import MAPPINGS_KEY, MOD_KEY, RES_KEY
 from ecs_composex.common import build_template, setup_logging
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources import (
@@ -24,6 +23,7 @@ from ecs_composex.compose.x_resources import (
     set_use_resources,
 )
 from ecs_composex.resources_import import import_record_properties
+from ecs_composex.vpc.vpc_params import VPC_ID
 
 from .cloudmap_params import (
     LAST_DOT_RE,
@@ -37,29 +37,6 @@ from .cloudmap_params import (
 )
 
 LOG = setup_logging()
-
-
-def get_all_dns_namespaces(session, namespaces=None, next_token=None):
-    """
-    Function to recursively fetch all namespaces in account
-
-    :param list namespaces:
-    :param boto3.session.Session session:
-    :param str next_token:
-    :return:
-    """
-    if namespaces is None:
-        namespaces = []
-    filters = [{"Name": "TYPE", "Values": ["DNS_PRIVATE"], "Condition": "EQ"}]
-    client = session.client("servicediscovery")
-    if not next_token:
-        namespaces_r = client.list_namespaces(Filters=filters)
-    else:
-        namespaces_r = client.list_namespaces(Filters=filters, NextToken=next_token)
-    namespaces += namespaces_r["Namespaces"]
-    if "NextToken" in namespaces_r:
-        return get_all_dns_namespaces(session, namespaces, namespaces_r["NextToken"])
-    return namespaces
 
 
 def lookup_service_discovery_namespace(zone, session, ns_id=None):
@@ -223,29 +200,70 @@ def define_new_namespace(new_namespaces, stack_template):
     :param troposphere.Template stack_template: The template to add the new resources to
     """
     for namespace in new_namespaces:
-        if namespace.parameters and keyisset("AsPublicNamespace", namespace.parameters):
-            namespace_props = import_record_properties(
-                namespace.properties, PublicDnsNamespace
-            )
-            namespace.cfn_resource = PublicDnsNamespace(
-                namespace.logical_name, **namespace_props
-            )
-        else:
+        if namespace.properties:
+            if (
+                keyisset("Name", namespace.properties)
+                and namespace.zone_name != namespace.properties["Name"]
+            ):
+                raise ValueError(
+                    f"{namespace.module_name}.{namespace.name} - "
+                    "ZoneName and Properties.Name must be the same value when set."
+                )
+            elif not keyisset("Name", namespace.properties):
+                namespace.properties["Name"] = namespace.zone_name
+
             namespace_props = import_record_properties(
                 namespace.properties, PrivateNamespace
             )
-            if not keyisset("Vpc", namespace_props):
-                LOG.warning(
-                    f"{namespace.module_name}.{namespace.name} "
-                    "Properties do not have Vpc. Will use x-vpc if defined"
+            if keyisset("Vpc", namespace_props):
+                LOG.warn(
+                    f"{namespace.module_name}.{namespace.name} - "
+                    "Vpc property was set. Overriding to compose-x x-vpc defined for execution."
                 )
-                namespace_props["Vpc"] = "x-vpc"
+            namespace_props["Vpc"] = f"x-vpc::{VPC_ID.title}"
             namespace.cfn_resource = PrivateNamespace(
                 namespace.logical_name, **namespace_props
+            )
+        elif namespace.uses_default:
+            namespace_props = import_record_properties(
+                {"Name": namespace.zone_name, "Vpc": f"x-vpc::{VPC_ID.title}"},
+                PrivateDnsNamespace,
+            )
+            namespace.cfn_resource = PrivateDnsNamespace(
+                namespace.logical_name, **namespace_props
+            )
+        if not namespace.cfn_resource:
+            raise AttributeError(
+                f"{namespace.module_name}.{namespace.name} - "
+                "Failed to create PrivateNamespace from Properties/MacroParameters"
             )
         stack_template.add_resource(namespace.cfn_resource)
         namespace.init_outputs()
         namespace.generate_outputs()
+
+
+def detect_duplicas(x_resources: list):
+    """
+    Function to ensure there is no multiple resources with the same zone name
+
+    :param list[PrivateNamespace] x_resources:
+    """
+
+    class DuplicateZoneName(Exception):
+        """
+        :exception:
+        """
+
+        pass
+
+    names = [res.zone_name for res in x_resources]
+    if len(names) > len(set(names)):
+        raise DuplicateZoneName(
+            "There is a duplicate of zone names. All names",
+            names,
+            "unique names",
+            set(names),
+        )
 
 
 class XStack(ComposeXStack):
@@ -263,15 +281,16 @@ class XStack(ComposeXStack):
         :param ecs_composex.common.settings.ComposeXSettings settings:
         :param dict kwargs:
         """
-        self.x_to_x_mappings = []
-        self.x_resource_class = PrivateNamespace
         set_resources(
             settings, PrivateNamespace, RES_KEY, MOD_KEY, mapping_key=MAPPINGS_KEY
         )
         x_resources = settings.compose_content[RES_KEY].values()
+        detect_duplicas(x_resources)
         use_resources = set_use_resources(x_resources, RES_KEY, False)
         lookup_resources = set_lookup_resources(x_resources, RES_KEY)
-        new_resources = set_new_resources(x_resources, RES_KEY, False)
+        new_resources = set_new_resources(
+            x_resources, RES_KEY, supports_uses_default=True
+        )
         for resource in x_resources:
             resource.stack = self
         if new_resources:

@@ -7,7 +7,7 @@ Module to manage IAM policies to grant access to ECS Services to KMS Keys
 """
 
 from ecs_composex.common import LOG
-from ecs_composex.kms.kms_params import KMS_KEY_ARN, KMS_KEY_ID, MAPPINGS_KEY, RES_KEY
+from ecs_composex.kms.kms_params import KMS_KEY_ARN, KMS_KEY_ID, MAPPINGS_KEY
 from ecs_composex.resource_settings import (
     handle_lookup_resource,
     handle_resource_to_services,

@@ -250,7 +250,7 @@ def map_service_perms_to_resource(
         for statement in res_policy.PolicyDocument["Statement"]
         if keyisset("Sid", statement)
     ]
-    if not access_type in existing_sids:
+    if access_type not in existing_sids:
         policy_statement["Resource"] = resource_arns
         res_policy.PolicyDocument["Statement"].append(policy_statement)
     else:

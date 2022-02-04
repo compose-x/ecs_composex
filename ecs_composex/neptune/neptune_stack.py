@@ -14,7 +14,6 @@ from troposphere.neptune import DBCluster as CfnDBCluster
 from ecs_composex.common import setup_logging
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources import (
-    NetworkXResource,
     RdsXResource,
     set_lookup_resources,
     set_new_resources,
@@ -36,7 +35,7 @@ from ecs_composex.neptune.neptune_params import (
     MOD_KEY,
     RES_KEY,
 )
-from ecs_composex.rds.rds_params import DB_CLUSTER_ARN, DB_SECRET_ARN, DB_SG
+from ecs_composex.rds.rds_params import DB_CLUSTER_ARN, DB_SG
 from ecs_composex.rds_resources_settings import lookup_rds_resource
 from ecs_composex.vpc.vpc_params import STORAGE_SUBNETS
 

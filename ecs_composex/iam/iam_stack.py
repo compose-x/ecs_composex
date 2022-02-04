@@ -6,7 +6,6 @@
 from ecs_composex.common import add_outputs, add_parameters, build_template
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME
-from ecs_composex.iam.iam_params import IAM_ROLE, IAM_ROLE_ARN
 
 
 def import_family_roles(settings):

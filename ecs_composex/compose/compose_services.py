@@ -14,7 +14,7 @@ from os import path
 import docker
 import requests
 import urllib3
-from compose_x_common.compose_x_common import keyisset, keypresent
+from compose_x_common.compose_x_common import keyisset, keypresent, set_else_none
 from troposphere import AWS_NO_VALUE, AWS_REGION, If, Ref, Sub
 from troposphere.ecs import (
     ContainerDefinition,
@@ -28,7 +28,7 @@ from troposphere.ecs import (
     Ulimit,
 )
 
-from ecs_composex.common import LOG, NONALPHANUM, set_else_none
+from ecs_composex.common import LOG, NONALPHANUM
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME, Parameter
 from ecs_composex.common.services_helpers import (
     define_ingress_mappings,
@@ -93,6 +93,7 @@ class ComposeService(object):
         self.x_configs = set_else_none("x-configs", self.definition)
         self.x_scaling = set_else_none("x-scaling", self.definition, None, False)
         self.x_network = set_else_none("x-network", self.definition, None, False)
+        self.x_cloudmap = set_else_none("x-cloudmap", self.x_network, None, False)
         self.x_ray = set_else_none("x-xray", self.definition, False, True)
         self.x_iam = set_else_none("x-iam", self.definition)
         self.x_logging = {"RetentionInDays": 14}

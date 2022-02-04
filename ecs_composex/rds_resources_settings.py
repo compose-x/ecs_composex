@@ -20,7 +20,7 @@ from ecs_composex.common.aws import find_aws_resource_arn_from_tags_api
 from ecs_composex.common.services_helpers import extend_container_secrets
 from ecs_composex.compose.x_resources import get_parameter_settings
 from ecs_composex.ecs.ecs_params import SG_T
-from ecs_composex.rds.rds_params import DB_SECRET_ARN, DB_SECRET_POLICY_NAME
+from ecs_composex.rds.rds_params import DB_SECRET_POLICY_NAME
 
 
 def filter_out_tag_resources(lookup_attributes, rds_resource, tagging_api_id):
@@ -115,7 +115,8 @@ def lookup_rds_resource(
         arn_parts = arn_re.match(lookup_attributes["Arn"])
         if not arn_parts:
             raise KeyError(
-                f"{rds_resource.module_name}.{rds_resource.name} - ARN {lookup_attributes['Arn']} is not valid. Must match",
+                f"{rds_resource.module_name}.{rds_resource.name} - "
+                f"ARN {lookup_attributes['Arn']} is not valid. Must match",
                 arn_re.pattern,
             )
         rds_resource.arn = lookup_attributes["Arn"]
@@ -131,7 +132,8 @@ def lookup_rds_resource(
         account_id = arn_parts.group("accountid")
     else:
         raise KeyError(
-            f"{rds_resource.module_name}.{rds_resource.name} - You must specify Arn or Tags to identify existing resource"
+            f"{rds_resource.module_name}.{rds_resource.name} - "
+            "You must specify Arn or Tags to identify existing resource"
         )
     if not rds_resource.arn:
         raise LookupError(

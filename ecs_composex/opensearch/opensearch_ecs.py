@@ -27,7 +27,6 @@ from ecs_composex.resource_settings import (
     generate_resource_permissions_statements,
     get_parameter_settings,
     get_selected_services,
-    handle_resource_to_services,
 )
 
 LOG = setup_logging()
@@ -273,7 +272,7 @@ def opensearch_to_ecs(resources, services_stack, res_root_stack, settings):
     """
     Function to associate permissions from the IAM service to OpenSearch domain
 
-    :param dict resources: The resources to associate
+    :param dict[str] ecs_composex.opensearch.opensearch_stack.Domain resources: The resources to associate
     :param ecs_composex.common.stacks.ComposeXStack services_stack:
     :param ecs_composex.common.stacks.ComposeXStack res_root_stack:
     :param ecs_composex.common.settings.ComposeXSettings settings:
@@ -300,5 +299,5 @@ def opensearch_to_ecs(resources, services_stack, res_root_stack, settings):
                 arn_parameter=OS_DOMAIN_ARN,
                 parameters=[OS_DOMAIN_ENDPOINT, OS_DOMAIN_ID],
             )
-        elif resource.mappings:
+        elif resource.mappings and resource.lookup_properties:
             handle_lookup_to_service_mapping(res_name, resource, settings)

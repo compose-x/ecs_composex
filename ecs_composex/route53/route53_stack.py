@@ -3,17 +3,15 @@
 # Copyright 2020-2021 John Mille <john@compose-x.io>
 
 """
-Main module for ACM
+Main module for x-route53
 """
 
-import re
 import warnings
 
 from compose_x_common.compose_x_common import keyisset
 from troposphere import Ref
 from troposphere.route53 import HostedZone as CfnHostedZone
 
-from ecs_composex.acm.acm_params import MAPPINGS_KEY, MOD_KEY, RES_KEY
 from ecs_composex.acm.acm_stack import Certificate
 from ecs_composex.common import build_template, setup_logging
 from ecs_composex.common.stacks import ComposeXStack
@@ -111,7 +109,7 @@ def filter_out_cloudmap_zones(zones, zone_name):
 
 class HostedZone(AwsEnvironmentResource):
     """
-    Class specifically for ACM Certificate
+    Class specifically for Route53 Hosted Zone
 
     :ivar list[Record] records: List of DNS Records to create with the DNS Zone
     """
@@ -127,7 +125,7 @@ class HostedZone(AwsEnvironmentResource):
 
     def init_outputs(self):
         """
-        Returns the properties from the ACM Certificate
+        Returns the properties for the Route53 zone
         """
         self.output_properties = {
             PUBLIC_DNS_ZONE_ID: (f"{self.logical_name}", self.cfn_resource, Ref, None),

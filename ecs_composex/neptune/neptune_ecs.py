@@ -6,18 +6,10 @@
 Module to link DocDB cluster to ECS Services.
 """
 
-from compose_x_common.compose_x_common import keyisset
-
 from ecs_composex.neptune.neptune_params import (
-    DB_CLUSTER_ARN,
-    DB_CLUSTER_NAME,
     DB_CLUSTER_RESOURCES_ARN,
-    DB_ENDPOINT,
     DB_PORT,
-    DB_READ_ENDPOINT,
     MAPPINGS_KEY,
-    MOD_KEY,
-    RES_KEY,
 )
 from ecs_composex.rds.rds_ecs import import_dbs
 from ecs_composex.rds.rds_params import DB_SG

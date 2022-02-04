@@ -15,7 +15,6 @@ from ecs_composex.common import build_template
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources import (
     NetworkXResource,
-    XResource,
     set_lookup_resources,
     set_new_resources,
     set_resources,

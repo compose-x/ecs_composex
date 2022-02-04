@@ -13,8 +13,7 @@ from importlib import import_module
 from compose_x_common.compose_x_common import keyisset
 from troposphere import AWS_STACK_NAME, GetAtt, Ref
 
-from ecs_composex.appmesh.appmesh_mesh import Mesh
-from ecs_composex.common import LOG, NONALPHANUM, init_template
+from ecs_composex.common import LOG, NONALPHANUM, add_update_mapping, init_template
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.ecs_composex import X_AWS_KEY, X_KEY
 from ecs_composex.common.stacks import ComposeXStack
@@ -24,7 +23,10 @@ from ecs_composex.ecs.ecs_cluster import add_ecs_cluster
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME
 from ecs_composex.ecs.ecs_stack import associate_services_to_root_stack
 from ecs_composex.iam.iam_stack import XStack as IamStack
+from ecs_composex.vpc.vpc_params import APP_SUBNETS
 from ecs_composex.vpc.vpc_stack import XStack as VpcStack
+
+from .exceptions import x_cloud_lookup_and_new_vpc
 
 try:
     from ecs_composex.ecr.ecr_scans_eval import (
@@ -66,6 +68,7 @@ SUPPORTED_X_MODULE_NAMES = [
     "ssm_parameter",
     "opensearch",
     "neptune",
+    "cloudmap",
 ]
 
 SUPPORTED_X_MODULES = [f"{X_KEY}{mod_name}" for mod_name in SUPPORTED_X_MODULE_NAMES]
@@ -222,7 +225,7 @@ def apply_x_to_x_configs(root_stack, settings):
             resource.handle_x_dependencies(root_stack, settings)
 
 
-def apply_x_resource_to_x(settings, root_stack):
+def apply_x_resource_to_x(settings, root_stack, vpc_stack):
     """
     Goes over each x resource in the execution and execute logical association between the resources.
 
@@ -232,6 +235,7 @@ def apply_x_resource_to_x(settings, root_stack):
     for resource in settings.x_resources:
         if hasattr(resource, "handle_x_dependencies"):
             resource.handle_x_dependencies(settings, root_stack)
+    vpc_stack.vpc_resource.handle_x_dependencies(settings, root_stack)
 
 
 def add_compute(root_template, settings, vpc_stack):
@@ -461,6 +465,7 @@ def update_families_networking_settings(settings, vpc_stack):
         else:
             family.stack.set_vpc_parameters_from_vpc_stack(vpc_stack)
         family.add_security_group()
+        family.ecs_service.subnets = Ref(APP_SUBNETS)
 
 
 def update_families_network_ingress(settings):
@@ -473,20 +478,20 @@ def update_families_network_ingress(settings):
     """
 
     for family in settings.families.values():
-        if not family.service_config.network.security_group:
+        if not family.ecs_service.network.security_group:
             continue
-        family.service_config.network.set_aws_sources_ingress(
+        family.ecs_service.network.set_aws_sources_ingress(
             settings,
             family.logical_name,
-            GetAtt(family.service_config.network.security_group, "GroupId"),
+            GetAtt(family.ecs_service.network.security_group, "GroupId"),
         )
-        family.service_config.network.set_ext_sources_ingress(
+        family.ecs_service.network.set_ext_sources_ingress(
             family.logical_name,
-            GetAtt(family.service_config.network.security_group, "GroupId"),
+            GetAtt(family.ecs_service.network.security_group, "GroupId"),
         )
-        family.service_config.network.associate_aws_igress_rules(family.template)
-        family.service_config.network.associate_ext_igress_rules(family.template)
-        family.service_config.network.add_self_ingress(family)
+        family.ecs_service.network.associate_aws_igress_rules(family.template)
+        family.ecs_service.network.associate_ext_igress_rules(family.template)
+        family.ecs_service.network.add_self_ingress(family)
 
 
 def handle_families_cross_dependencies(settings, root_stack):
@@ -549,7 +554,7 @@ def set_families_ecs_service(settings):
     """
     for family in settings.families.values():
         family.ecs_service.generate_service_definition(family, settings)
-        family.service_config.scaling.create_scalable_target(family)
+        family.ecs_service.scaling.create_scalable_target(family)
         # family.ecs_service.generate_service_template_outputs(family)
 
 
@@ -565,13 +570,15 @@ def handle_vpc_settings(settings, vpc_stack, root_stack):
         LOG.info(
             f"{settings.name} - Services or x-Resources need a VPC to function. Creating default one"
         )
-        vpc_stack.create_new_vpc("vpc", settings)
+        vpc_stack.create_new_default_vpc("vpc", settings)
         root_stack.stack_template.add_resource(vpc_stack)
+        vpc_stack.vpc_resource.generate_outputs()
     elif (
         vpc_stack.is_void and vpc_stack.vpc_resource and vpc_stack.vpc_resource.mappings
     ):
-        root_stack.stack_template.add_mapping(
-            "Network", vpc_stack.vpc_resource.mappings
+        vpc_stack.vpc_resource.generate_outputs()
+        add_update_mapping(
+            root_stack.stack_template, "Network", vpc_stack.vpc_resource.mappings
         )
     elif (
         vpc_stack.vpc_resource
@@ -580,6 +587,7 @@ def handle_vpc_settings(settings, vpc_stack, root_stack):
     ):
         root_stack.stack_template.add_resource(vpc_stack)
         LOG.info(f"{settings.name}.x-vpc - VPC stack added. A new VPC will be created.")
+        vpc_stack.vpc_resource.generate_outputs()
 
 
 def deprecation_warning(settings):
@@ -637,6 +645,8 @@ def generate_full_template(settings):
     #     )
     #     mesh.render_mesh_template(root_stack, settings)
 
+    x_cloud_lookup_and_new_vpc(settings, vpc_stack)
+
     update_families_networking_settings(settings, vpc_stack)
     update_families_network_ingress(settings)
     handle_families_cross_dependencies(settings, root_stack)
@@ -649,7 +659,7 @@ def generate_full_template(settings):
         root_stack,
     )
     apply_x_to_x_configs(root_stack, settings)
-    apply_x_resource_to_x(settings, root_stack)
+    apply_x_resource_to_x(settings, root_stack, vpc_stack)
 
     # if keyisset("x-dashboards", settings.compose_content):
     #     DashboardsStack("dashboards", settings)
