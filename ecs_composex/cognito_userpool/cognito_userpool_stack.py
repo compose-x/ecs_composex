@@ -36,13 +36,21 @@ LOG = setup_logging()
 
 
 def get_userpool_config(userpool, account_id, resource_id):
+    """
+    Retrieves the UserPool properties from AWS
+
+    :param UserPool userpool:
+    :param str account_id: unused
+    :param str resource_id: The Userpool ARN
+    :return:
+    """
     client = userpool.lookup_session.client("cognito-idp")
     userpool_attributes_mapping = {
-        USERPOOL_ARN.return_value: "UserPool::Arn",
-        USERPOOL_ID.title: "UserPool::Id",
-        USERPOOL_DOMAIN.title: "UserPool::Domain",
-        USERPOOL_CUSTOM_DOMAIN.title: "UserPool::CustomDomain",
-        USERPOOL_NAME.title: "UserPool::Name",
+        USERPOOL_ARN: "UserPool::Arn",
+        USERPOOL_ID: "UserPool::Id",
+        USERPOOL_DOMAIN: "UserPool::Domain",
+        USERPOOL_CUSTOM_DOMAIN: "UserPool::CustomDomain",
+        USERPOOL_NAME: "UserPool::Name",
     }
     try:
         userpool_r = client.describe_user_pool(UserPoolId=resource_id)
@@ -51,16 +59,6 @@ def get_userpool_config(userpool, account_id, resource_id):
     except client.exceptions:
         LOG.error("Failed to retrieve the Pool Domain. Moving on.")
     return {}
-
-
-def create_root_template(new_resources):
-    """
-    Function to create the root stack template for profiles
-    :param new_resources:
-    :return:
-    """
-    root_tpl = build_template(f"Root stack to manage {MOD_KEY}")
-    return root_tpl
 
 
 class UserPool(ApiXResource):
@@ -96,6 +94,9 @@ def resolve_lookup(lookup_resources, settings):
             CfnUserPool.resource_type,
             "cognito-idp",
         )
+        resource.init_outputs()
+        resource.generate_cfn_mappings_from_lookup_properties()
+        resource.generate_outputs()
         settings.mappings[MAPPINGS_KEY].update(
             {resource.logical_name: resource.mappings}
         )
@@ -119,8 +120,10 @@ class XStack(ComposeXStack):
         lookup_resources = set_lookup_resources(x_resources, RES_KEY)
         use_resources = set_use_resources(x_resources, RES_KEY, False)
         if new_resources:
-            stack_template = create_root_template(new_resources)
+            LOG.error(f"{RES_KEY} does not support new resources creation yet.")
+            stack_template = build_template(f"Root stack to manage {MOD_KEY}")
             super().__init__(title, stack_template, **kwargs)
+            self.is_void = True
         else:
             self.is_void = True
         for resource in x_resources:
