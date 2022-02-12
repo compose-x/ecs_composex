@@ -2,6 +2,10 @@
 # ComposeX env file with ElasticCache definitions
 
 
+services:
+  nginx:
+    image: nginx
+
 x-elasticache:
   cache01:
     Properties:

@@ -45,7 +45,6 @@ requests = "^2.27.1"
 tabulate = "^0.8.9"
 importlib-resources = "^5.4.0"
 PyYAML = "^6.0"
-docker = "^5.0.3"
 urllib3 = "^1.26.8"
 awacs = "^2.1.0"
 
