@@ -1,6 +1,6 @@
 #   -*- coding: utf-8 -*-
 #  SPDX-License-Identifier: MPL-2.0
-#  Copyright 2020-2021 John Mille <john@compose-x.io>
+#  Copyright 2020-2022 John Mille <john@compose-x.io>
 
 """
 Module to import the services defined in compose files and import / transform the settings into
@@ -11,7 +11,15 @@ import re
 from copy import deepcopy
 from os import path
 
-import docker
+try:
+    import docker
+
+    USE_DOCKER = True
+except ImportError:
+    USE_DOCKER = False
+    DeprecationWarning(
+        "Due to security issues not addressed by docker python, this is temporarily disabled."
+    )
 import requests
 import urllib3
 from compose_x_common.compose_x_common import keyisset, keypresent, set_else_none
@@ -180,6 +188,8 @@ class ComposeService(object):
             "application/vnd.docker.distribution.manifest.v1+prettyjws",
             "application/vnd.docker.distribution.manifest.list.v2+json",
         ]
+        if not USE_DOCKER:
+            return
         try:
             dkr_client = docker.APIClient()
             image_details = dkr_client.inspect_distribution(self.image)
