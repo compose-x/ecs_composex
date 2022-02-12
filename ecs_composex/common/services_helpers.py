@@ -1,6 +1,6 @@
 #  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
-# Copyright 2020-2021 John Mille <john@compose-x.io>
+# Copyright 2020-2022 John Mille <john@compose-x.io>
 
 from compose_x_common.compose_x_common import keyisset
 from troposphere import FindInMap, GetAtt, ImportValue, Ref, Sub

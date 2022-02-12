@@ -1,15 +1,6 @@
 Feature: common
 
     @common
-    Scenario Outline: Test docker images digest
-        Given I use <file_path> as my docker-compose file
-        Then I render the docker-compose to composex to validate
-
-        Examples:
-            | file_path                          |
-            | use-cases/docker-images-dummy.yaml |
-
-    @common
     Scenario Outline: Create services stack
         Given I use <file_path> as my docker-compose file
         And I want to upload files to S3 bucket <bucket_name>
