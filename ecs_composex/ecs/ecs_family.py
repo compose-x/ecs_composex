@@ -468,9 +468,13 @@ class ComposeFamily(object):
                 Value=Join(",", Ref(APP_SUBNETS)),
             )
         )
-        self.outputs.append(
-            CfnOutput(self.scalable_target.title, Value=Ref(self.scalable_target))
-        )
+        if (
+            self.scalable_target
+            and self.scalable_target.title in self.template.resources
+        ):
+            self.outputs.append(
+                CfnOutput(self.scalable_target.title, Value=Ref(self.scalable_target))
+            )
         add_outputs(self.template, self.outputs)
 
     def set_template(self):
@@ -660,6 +664,14 @@ class ComposeFamily(object):
                 if hasattr(container, "LinuxParameters"):
                     parameters = getattr(container, "LinuxParameters")
                     setattr(parameters, "InitProcessEnabled", False)
+        if (
+            self.ecs_service.ecs_service
+            and self.ecs_service.ecs_service.title in self.template.resources
+        ) and (
+            self.scalable_target
+            and self.scalable_target.title not in self.template.resources
+        ):
+            self.template.add_resource(self.scalable_target)
         self.generate_outputs()
 
     def set_initial_services_dependencies(self):
