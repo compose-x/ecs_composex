@@ -1,0 +1,29 @@
+---
+# Test for x-cloudmap
+
+version: "3.8"
+services:
+  app01:
+    x-network:
+      x-cloudmap: map-01
+    ports:
+      - 8000:80/tcp
+      - 8081:81/udp
+    expose:
+      - 9000
+      - 9001/udp
+
+  app03:
+    x-network:
+      x-cloudmap:
+        map-01:
+          Port: 5000
+        map-02:
+          Port: 5000
+
+x-cloudmap:
+  map-01:
+    ZoneName: testing.cluster.lan
+
+  map-02:
+    ZoneName: testing1.cluster.lan

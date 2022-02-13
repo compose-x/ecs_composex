@@ -377,7 +377,7 @@ class ServiceScaling(object):
     def __repr__(self):
         return dumps(
             {"Range": self.scaling_range, "TargetScaling": self.target_scaling},
-            indent=4,
+            indent=2,
         )
 
     def create_scalable_target(self, family):
@@ -390,7 +390,6 @@ class ServiceScaling(object):
         if family.ecs_service.scaling.scaling_range:
             family.scalable_target = applicationautoscaling.ScalableTarget(
                 ecs_params.SERVICE_SCALING_TARGET,
-                template=family.template,
                 MaxCapacity=family.ecs_service.scaling.scaling_range["max"],
                 MinCapacity=family.ecs_service.scaling.scaling_range["min"],
                 ScalableDimension="ecs:service:DesiredCount",
@@ -410,7 +409,6 @@ class ServiceScaling(object):
         else:
             family.scalable_target = applicationautoscaling.ScalableTarget(
                 ecs_params.SERVICE_SCALING_TARGET,
-                template=family.template,
                 MaxCapacity=family.ecs_service.replicas,
                 MinCapacity=family.ecs_service.replicas,
                 ScalableDimension="ecs:service:DesiredCount",
@@ -431,7 +429,6 @@ class ServiceScaling(object):
             if keyisset("CpuTarget", family.ecs_service.scaling.target_scaling):
                 applicationautoscaling.ScalingPolicy(
                     "ServiceCpuTrackingPolicy",
-                    template=family.template,
                     ScalingTargetId=Ref(family.scalable_target),
                     PolicyName="CpuTrackingScalingPolicy",
                     PolicyType="TargetTrackingScaling",
@@ -442,7 +439,6 @@ class ServiceScaling(object):
             if keyisset("MemoryTarget", family.ecs_service.scaling.target_scaling):
                 applicationautoscaling.ScalingPolicy(
                     "ServiceMemoryTrackingPolicy",
-                    template=family.template,
                     ScalingTargetId=Ref(family.scalable_target),
                     PolicyName="MemoryTrackingScalingPolicy",
                     PolicyType="TargetTrackingScaling",
