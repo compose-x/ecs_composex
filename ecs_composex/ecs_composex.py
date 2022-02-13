@@ -603,6 +603,17 @@ def deprecation_warning(settings):
             )
 
 
+def set_all_mappings_to_root_stack(root_stack, settings):
+    """
+    Adds all of the mappings to the root stack
+
+    :param ComposeXStack root_stack:
+    :param ecs_composex.common.settings.ComposeXSettings settings: The settings for the execution
+    """
+    for mapping_key, mapping in settings.mappings.items():
+        add_update_mapping(root_stack.stack_template, mapping_key, mapping)
+
+
 def generate_full_template(settings):
     """
     Function to generate the root template and associate services, x-resources to each other.
@@ -654,12 +665,12 @@ def generate_full_template(settings):
     set_families_ecs_service(settings)
 
     # set_services_alarms(settings)
+    apply_x_resource_to_x(settings, root_stack, vpc_stack)
     apply_x_configs_to_ecs(
         settings,
         root_stack,
     )
     apply_x_to_x_configs(root_stack, settings)
-    apply_x_resource_to_x(settings, root_stack, vpc_stack)
 
     # if keyisset("x-dashboards", settings.compose_content):
     #     DashboardsStack("dashboards", settings)
@@ -674,4 +685,5 @@ def generate_full_template(settings):
         family.state_facts()
     set_ecs_cluster_identifier(root_stack, settings)
     add_all_tags(root_stack.stack_template, settings)
+    set_all_mappings_to_root_stack(root_stack, settings)
     return root_stack

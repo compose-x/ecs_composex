@@ -40,41 +40,6 @@ def define_placement_strategies():
     ]
 
 
-def generate_service_template_outputs(family):
-    """
-    Function to generate the Service template outputs
-    """
-    family.template.add_output(
-        ComposeXOutput(
-            family.logical_name,
-            [
-                (
-                    ecs_params.SERVICE_GROUP_ID_T,
-                    "GroupId",
-                    GetAtt(family.service_config.network.security_group, "GroupId"),
-                ),
-                (
-                    ecs_params.TASK_T,
-                    ecs_params.TASK_T,
-                    Ref(family.task_definition),
-                ),
-                (
-                    vpc_params.APP_SUBNETS,
-                    vpc_params.APP_SUBNETS.title,
-                    Join(",", Ref(vpc_params.APP_SUBNETS)),
-                ),
-                (
-                    family.scalable_target.title,
-                    ecs_params.SERVICE_SCALING_TARGET,
-                    Ref(family.scalable_target),
-                ),
-            ],
-            duplicate_attr=False,
-            export=False,
-        ).outputs
-    )
-
-
 def define_deployment_options(family, settings, kwargs):
     """
     Function to define the DeploymentConfiguration

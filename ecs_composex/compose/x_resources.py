@@ -560,7 +560,11 @@ class XResource(object):
                     "ImportValue": self.set_attributes_from_mapping(
                         attribute_parameter
                     ),
-                    "ImportParameter": None,
+                    "ImportParameter": Parameter(
+                        output_name,
+                        return_value=attribute_parameter.return_value,
+                        Type=attribute_parameter.Type,
+                    ),
                 }
         elif self.output_properties and not self.lookup_properties:
             for (

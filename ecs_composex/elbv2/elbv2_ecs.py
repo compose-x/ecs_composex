@@ -217,7 +217,7 @@ def handle_sg_lb_ingress_to_service(resource, family, resources_stack):
     """
     Function to add ingress from the LB to Target if using ALB
     :param resource:
-    :param family:
+    :param ecs_composex.ecs.ecs_family.ComposeFamily family:
     :param resources_stack:
     :return:
     """
@@ -228,7 +228,7 @@ def handle_sg_lb_ingress_to_service(resource, family, resources_stack):
         resource.generate_outputs()
     lb_sg_param = resource.attributes_outputs[LB_SG_ID]["ImportParameter"]
     add_parameters(family.template, [lb_sg_param])
-    family.service_config.network.add_lb_ingress(
+    family.ecs_service.network.add_lb_ingress(
         family, lb_name=resource.logical_name, lb_sg_ref=Ref(lb_sg_param)
     )
     family.stack_parameters.update(

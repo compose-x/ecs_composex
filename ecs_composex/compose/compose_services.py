@@ -8,6 +8,7 @@ Compose-X usable properties
 """
 
 import re
+import warnings
 from copy import deepcopy
 from os import path
 
@@ -17,8 +18,9 @@ try:
     USE_DOCKER = True
 except ImportError:
     USE_DOCKER = False
-    DeprecationWarning(
-        "Due to security issues not addressed by docker python, this is temporarily disabled."
+    warnings.warn(
+        "Due to security issues not addressed by docker python, this is temporarily disabled.",
+        DeprecationWarning,
     )
 import requests
 import urllib3
