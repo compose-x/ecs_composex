@@ -1,4 +1,4 @@
-﻿.. highlight:: shell
+.. highlight:: shell
 
 ============
 Credits

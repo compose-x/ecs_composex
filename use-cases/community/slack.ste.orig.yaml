@@ -1,4 +1,4 @@
-﻿version: "3.1"
+version: "3.1"
 services:
   nginx:
     container_name: nginx-${SITE_NAME}

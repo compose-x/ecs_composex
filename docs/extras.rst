@@ -1,4 +1,4 @@
-﻿.. meta::
+.. meta::
     :description: ECS Compose-X extra features
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS AppMesh, AWS Autoscaling, ecs-plugin, AWS Fargate
 

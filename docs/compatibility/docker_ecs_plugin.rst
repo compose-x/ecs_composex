@@ -1,4 +1,4 @@
-﻿.. _docker_ecs_plugin_compat_matrix:
+.. _docker_ecs_plugin_compat_matrix:
 
 Docker AWS ECS Plugin
 =======================

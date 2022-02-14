@@ -24,4 +24,3 @@ Feature: ecs_composex.alarms
     Examples:
       | file_path                   | override_file                 |
       | use-cases/blog.features.yml | use-cases/alarms/services.yml |
-

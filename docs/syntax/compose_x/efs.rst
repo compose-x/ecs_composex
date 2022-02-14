@@ -1,4 +1,4 @@
-﻿.. _x_efs_syntax_reference:
+.. _x_efs_syntax_reference:
 
 =================
 x-efs

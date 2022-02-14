@@ -11,4 +11,3 @@ x-codeguru_profiler:
     Services:
       - name: app03
         access: RW
-

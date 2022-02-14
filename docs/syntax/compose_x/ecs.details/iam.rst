@@ -1,4 +1,4 @@
-﻿.. meta::
+.. meta::
     :description: ECS Compose-X AWS IAM syntax reference
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS IAM, least-privileges, permissions, iam
 

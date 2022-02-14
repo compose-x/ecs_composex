@@ -1,4 +1,4 @@
-﻿.. meta::
+.. meta::
     :description: ECS Compose-X deploy syntax reference
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, deploy, resources, replicas, scaling
 
