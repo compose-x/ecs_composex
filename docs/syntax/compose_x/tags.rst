@@ -1,4 +1,4 @@
-﻿x-tags
+x-tags
 =======
 
 This module allows you to define tags that you want to applied to all the resources that you are creating.

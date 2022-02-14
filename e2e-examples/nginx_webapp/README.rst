@@ -1,4 +1,4 @@
-﻿
+
 .. meta::
     :description: ECS Compose-X to deploy NGINX simple application
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, nginx

@@ -1,4 +1,4 @@
-﻿.. meta::
+.. meta::
     :description: ECS Compose-X AWS VPC syntax reference
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS VPC, networking, private network
 

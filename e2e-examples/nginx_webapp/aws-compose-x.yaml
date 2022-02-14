@@ -1,4 +1,4 @@
-﻿---
+---
 # Compose-X config file for Networking, where we define DNS Settings and an ALB to send traffic to our application
 
 services:

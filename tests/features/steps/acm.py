@@ -5,8 +5,8 @@
 from behave import then
 from pytest import raises
 
-from tests.features.steps.common import *
 from ecs_composex.common.stacks import ComposeXStack
+from tests.features.steps.common import *
 
 
 @then("I should have an ACM root stack")

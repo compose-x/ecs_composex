@@ -1,9 +1,10 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille<john@compose-x.io>
 
-import pytest
 from os import path
+
+import pytest
 from troposphere.rds import DBCluster, DBInstance
 
 from ecs_composex.common import load_composex_file

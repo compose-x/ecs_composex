@@ -1,4 +1,4 @@
-﻿---
+---
 # BUILDSPEC to merge the .zip of different runtimes for the final layer
 version: 0.2
 env:

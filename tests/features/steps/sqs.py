@@ -2,14 +2,12 @@
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille<john@compose-x.io>
 
-from tests.features.steps.common import *
 from behave import then
 from pytest import raises
 
-
-from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.common.stacks import ComposeXStack, process_stacks
 from ecs_composex.sqs.sqs_stack import XStack
-from ecs_composex.common.stacks import process_stacks
+from tests.features.steps.common import *
 
 
 @given("I process and render the queues")

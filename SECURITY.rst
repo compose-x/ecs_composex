@@ -13,4 +13,3 @@ Reporting a Vulnerability
 
 If there is anything you notice that requires security patch, please raise it immediately
 and changes will be implemented ASAP.
-

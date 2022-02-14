@@ -1,8 +1,9 @@
-﻿#  -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille<john@compose-x.io>
 
-from pytest import raises, fixture
+from pytest import fixture, raises
+
 from ecs_composex.common.aws import (
     handle_multi_results,
     handle_search_results,

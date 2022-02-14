@@ -1,4 +1,4 @@
-﻿.. meta::
+.. meta::
     :description: ECS Compose-X Docker ecs-plugin support syntax reference
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, ecs-plugin, x-aws
 

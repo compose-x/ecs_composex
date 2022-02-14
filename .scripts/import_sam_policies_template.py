@@ -67,3 +67,4 @@ if __name__ == "__main__":
     print("Outputting to", DEST_FILE_PATH)
     with open(DEST_FILE_PATH, "w") as file_fd:
         file_fd.write(json.dumps(original_content, indent=2))
+        file_fd.write("\n")
