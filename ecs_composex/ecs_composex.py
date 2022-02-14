@@ -19,6 +19,7 @@ from ecs_composex.common.ecs_composex import X_AWS_KEY, X_KEY
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common.tagging import add_all_tags
 from ecs_composex.compute.compute_stack import ComputeStack
+from ecs_composex.dashboards.dashboards_stack import XStack as DashboardsStack
 from ecs_composex.ecs.ecs_cluster import add_ecs_cluster
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME
 from ecs_composex.ecs.ecs_stack import associate_services_to_root_stack
@@ -673,8 +674,8 @@ def generate_full_template(settings):
     )
     apply_x_to_x_configs(root_stack, settings)
 
-    # if keyisset("x-dashboards", settings.compose_content):
-    #     DashboardsStack("dashboards", settings)
+    if keyisset("x-dashboards", settings.compose_content):
+        root_stack.stack_template.add_resource(DashboardsStack("dashboards", settings))
     for family in settings.families.values():
         add_iam_dependency(iam_stack, family)
         family.validate_compute_configuration_for_task(settings)

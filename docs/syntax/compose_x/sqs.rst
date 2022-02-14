@@ -14,7 +14,7 @@ Syntax
 .. code-block:: yaml
     :caption: SNS Syntax Reference
 
-    x-sns:
+    x-sqs:
       QueueA:
         Properties: {}
         Settings: {}

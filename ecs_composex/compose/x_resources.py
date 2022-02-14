@@ -391,13 +391,22 @@ class XResource(object):
         :rtype: dict
         """
         container_env_name = env_name
-        if self.lookup:
-            container_env_value = self.attributes_outputs[parameter]["ImportValue"]
-        else:
-            container_env_value = Ref(
-                self.attributes_outputs[parameter]["ImportParameter"]
+        try:
+            if self.lookup:
+                container_env_value = self.attributes_outputs[parameter]["ImportValue"]
+            else:
+                container_env_value = Ref(
+                    self.attributes_outputs[parameter]["ImportParameter"]
+                )
+            return {"Name": container_env_name, "Value": container_env_value}
+        except KeyError as error:
+            print(
+                "Parameter",
+                parameter.title,
+                "not in ",
+                [p.title for p in self.attributes_outputs],
             )
-        return {"Name": container_env_name, "Value": container_env_value}
+            raise
 
     def define_return_value_env_vars(self, env_name, parameter):
         """

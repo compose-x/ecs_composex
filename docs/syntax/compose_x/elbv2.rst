@@ -19,6 +19,8 @@ Syntax
         MacroParameters: {}
         Listeners: []
         Services: []
+        DnsAliases: []
+        Settings: {}
 
 .. tip::
 
@@ -51,6 +53,10 @@ Subnets associations can be overridden in the Settings.Subnets section. See :ref
     If selected a public NLB, the EIP addressed will automatically be provisioned too.
 
 
+DnsAliases
+===========
+
+To create DNS records in Route53 pointing to your ELBv2, see :ref:`_x_route53-x_elbv2`
 
 MacroParameters
 ================

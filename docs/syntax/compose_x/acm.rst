@@ -4,9 +4,9 @@
 
 .. _acm_syntax_reference:
 
-=====
-x-acm
-=====
+=================
+x-acm - AWS ACM
+=================
 
 .. contents::
     :depth: 2
