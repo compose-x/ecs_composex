@@ -137,6 +137,50 @@ def merge_services_network(family):
     return network_config
 
 
+def handle_str_cloudmap_config(family, family_mappings, cloudmap_config, ports):
+    """
+    Handle cloudmap config when config is set as str
+
+    :param ecs_composex.ecs.ecs_family.ComposeFamily family:
+    :param dict family_mappings:
+    :param str cloudmap_config:
+    :param list ports:
+    """
+    if cloudmap_config not in family_mappings.keys():
+        family_mappings[cloudmap_config] = ports[0]
+    else:
+        LOG.warning(
+            f"{family.name}.x-network.x-cloudmap - {cloudmap_config} is set multiple times. "
+            f"Preserving {family_mappings[cloudmap_config]}"
+        )
+
+
+def handle_dict_cloudmap_config(family, family_mappings, cloudmap_config, ports):
+    """
+    Handles cloudmap config settings when set as a mapping/dict
+
+    :param ecs_composex.ecs.ecs_family.ComposeFamily family:
+    :param dict family_mappings:
+    :param dict cloudmap_config:
+    :param list ports:
+    """
+    for map_name, config in cloudmap_config.items():
+        if map_name in family_mappings.keys():
+            LOG.warning(
+                f"{family.name}.x-network.x-cloudmap - {cloudmap_config} is set multiple times. "
+                f"Preserving {family_mappings[map_name]}"
+            )
+            continue
+        else:
+            if keyisset("Port", config):
+                for port in ports:
+                    if port["target"] == config["Port"]:
+                        family_mappings[map_name] = port
+                        break
+            else:
+                family_mappings[map_name] = ports[0]
+
+
 def merge_cloudmap_settings(family, ports):
     """
     Function to merge the x_cloudmap from the service
@@ -154,33 +198,22 @@ def merge_cloudmap_settings(family, ports):
     family_mappings = {}
     for cloudmap_config in cloudmap_configs:
         if isinstance(cloudmap_config, str):
-            if cloudmap_config not in family_mappings.keys():
-                family_mappings[cloudmap_config] = ports[0]
-            else:
-                LOG.warning(
-                    f"{family.name}.x-network.x-cloudmap - {cloudmap_config} is set multiple times. "
-                    f"Preserving {family_mappings[cloudmap_config]}"
-                )
+            handle_str_cloudmap_config(family, family_mappings, cloudmap_config, ports)
         elif isinstance(cloudmap_config, dict):
-            for map_name, config in cloudmap_config.items():
-                if map_name in family_mappings.keys():
-                    LOG.warning(
-                        f"{family.name}.x-network.x-cloudmap - {cloudmap_config} is set multiple times. "
-                        f"Preserving {family_mappings[map_name]}"
-                    )
-                    continue
-                else:
-                    if keyisset("Port", config):
-                        for port in ports:
-                            if port["target"] == config["Port"]:
-                                family_mappings[map_name] = port
-                                break
-                    else:
-                        family_mappings[map_name] = ports[0]
+            handle_dict_cloudmap_config(family, family_mappings, cloudmap_config, ports)
     return family_mappings
 
 
-def add_independant_rules(dst_family, service_name, root_stack):
+def add_independent_rules(dst_family, service_name, root_stack):
+    """
+    Adds security groups rules in the root stack as both services need to be created (with their SG)
+    before the ingress rule can be defined.
+
+    :param dst_family:
+    :param service_name:
+    :param root_stack:
+    :return:
+    """
     src_service_stack = root_stack.stack_template.resources[service_name]
     for port in dst_family.ecs_service.network.ports:
         ingress_rule = SecurityGroupIngress(
@@ -224,7 +257,7 @@ def set_compose_services_ingress(root_stack, dst_family, families, settings):
                 families,
             )
         if not keypresent("DependsOn", service):
-            add_independant_rules(dst_family, service_name, root_stack)
+            add_independent_rules(dst_family, service_name, root_stack)
         else:
             src_family = settings.families[service_name]
             if dst_family.stack.title not in src_family.stack.DependsOn:

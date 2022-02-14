@@ -235,7 +235,8 @@ def apply_x_resource_to_x(settings, root_stack, vpc_stack):
     for resource in settings.x_resources:
         if hasattr(resource, "handle_x_dependencies"):
             resource.handle_x_dependencies(settings, root_stack)
-    vpc_stack.vpc_resource.handle_x_dependencies(settings, root_stack)
+    if vpc_stack and vpc_stack.vpc_resource:
+        vpc_stack.vpc_resource.handle_x_dependencies(settings, root_stack)
 
 
 def add_compute(root_template, settings, vpc_stack):

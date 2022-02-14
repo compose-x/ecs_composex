@@ -27,6 +27,7 @@ from troposphere.ecs import (
     DockerVolumeConfiguration,
     EnvironmentFile,
     EphemeralStorage,
+    Host,
     LinuxParameters,
     MountPoint,
     RepositoryCredentials,
@@ -38,6 +39,7 @@ from troposphere.logs import LogGroup
 
 from ecs_composex.common import (
     FILE_PREFIX,
+    NONALPHANUM,
     add_outputs,
     add_parameters,
     build_template,
@@ -453,20 +455,22 @@ class ComposeFamily(object):
         """
         Generates a list of CFN outputs for the ECS Service and Task Definition
         """
-        self.outputs.append(
-            CfnOutput(
-                f"{self.logical_name}GroupId",
-                Value=GetAtt(self.ecs_service.network.security_group, "GroupId"),
+        if self.ecs_service.network.security_group:
+            self.outputs.append(
+                CfnOutput(
+                    f"{self.logical_name}GroupId",
+                    Value=GetAtt(self.ecs_service.network.security_group, "GroupId"),
+                )
             )
-        )
+            self.outputs.append(
+                CfnOutput(
+                    APP_SUBNETS.title,
+                    Value=Join(",", Ref(APP_SUBNETS)),
+                )
+            )
+
         self.outputs.append(
             CfnOutput(ecs_params.TASK_T, Value=Ref(self.task_definition))
-        )
-        self.outputs.append(
-            CfnOutput(
-                APP_SUBNETS.title,
-                Value=Join(",", Ref(APP_SUBNETS)),
-            )
         )
         if (
             self.scalable_target
@@ -1559,6 +1563,9 @@ class ComposeFamily(object):
     def set_services_mount_points(self):
         """
         Method to set the mount points to the Container Definition of the defined service
+
+        if the volume["volume"] is none, this is not a shared volume, which then works only
+        when not using Fargate (i.e. EC2 host/ ECS Anywhere)
         """
         for service in self.services:
             mount_points = []
@@ -1567,11 +1574,22 @@ class ComposeFamily(object):
             else:
                 mount_points = getattr(service.container_definition, "MountPoints")
             for volume in service.volumes:
-                mnt_point = MountPoint(
-                    ContainerPath=volume["target"],
-                    ReadOnly=volume["read_only"],
-                    SourceVolume=volume["volume"].volume_name,
-                )
+                if keyisset("volume", volume):
+                    mnt_point = MountPoint(
+                        ContainerPath=volume["target"],
+                        ReadOnly=volume["read_only"],
+                        SourceVolume=volume["volume"].volume_name,
+                    )
+                else:
+                    mnt_point = If(
+                        ecs_conditions.USE_FARGATE_CON_T,
+                        Ref(AWS_NO_VALUE),
+                        MountPoint(
+                            ContainerPath=volume["target"],
+                            ReadOnly=volume["read_only"],
+                            SourceVolume=NONALPHANUM.sub("", volume["target"]),
+                        ),
+                    )
                 mount_points.append(mnt_point)
 
     def define_shared_volumes(self):
@@ -1584,11 +1602,34 @@ class ComposeFamily(object):
         family_task_volumes = []
         for service in self.services:
             for volume in service.volumes:
+                if not keyisset("volume", volume):
+                    continue
                 if volume["volume"] and volume["volume"] not in family_task_volumes:
                     family_task_volumes.append(volume["volume"])
                 else:
                     volume["volume"].is_shared = True
         return family_task_volumes
+
+    def define_host_volumes(self):
+        """
+        Goes over all volumes of all services and if the volume is None, source starts with /
+        then this is a host volume
+        :return: list of volumes
+        :rtype: list[dict]
+        """
+        host_volumes = []
+        for service in self.services:
+            for volume in service.volumes:
+                if (
+                    (
+                        (keypresent("volume", volume) and volume["volume"] is None)
+                        or not keyisset("volume", volume)
+                    )
+                    and keyisset("source", volume)
+                    and volume["source"].startswith(r"/")
+                ):
+                    host_volumes.append(volume)
+        return host_volumes
 
     def set_volumes(self):
         """
@@ -1597,6 +1638,7 @@ class ComposeFamily(object):
         :return:
         """
         family_task_volumes = self.define_shared_volumes()
+        host_volumes = self.define_host_volumes()
         family_definition_volumes = []
         if not hasattr(self.task_definition, "Volumes"):
             setattr(self.task_definition, "Volumes", family_definition_volumes)
@@ -1620,6 +1662,17 @@ class ComposeFamily(object):
                 )
             if volume.cfn_volume:
                 family_definition_volumes.append(volume.cfn_volume)
+        for volume_config in host_volumes:
+            cfn_volume = If(
+                ecs_conditions.USE_FARGATE_CON_T,
+                Ref(AWS_NO_VALUE),
+                Volume(
+                    Host=Host(SourcePath=volume_config["source"]),
+                    DockerVolumeConfiguration=Ref(AWS_NO_VALUE),
+                    Name=NONALPHANUM.sub("", volume_config["target"]),
+                ),
+            )
+            family_definition_volumes.append(cfn_volume)
         self.set_services_mount_points()
 
     def set_service_update_config(self):
