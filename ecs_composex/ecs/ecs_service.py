@@ -7,7 +7,7 @@ Functions to build the ECS Service Definition
 """
 
 from compose_x_common.compose_x_common import keyisset
-from troposphere import AWS_NO_VALUE, GetAtt, If, Join, Ref
+from troposphere import AWS_NO_VALUE, If, Ref
 from troposphere.ecs import AwsvpcConfiguration
 from troposphere.ecs import DeploymentCircuitBreaker as EcsDeploymentCircuitBreaker
 from troposphere.ecs import (
@@ -18,10 +18,8 @@ from troposphere.ecs import (
 )
 from troposphere.ecs import Service as EcsService
 
-from ecs_composex.common.outputs import ComposeXOutput
 from ecs_composex.ecs import ecs_conditions, ecs_params
 from ecs_composex.ecs.ecs_conditions import use_external_lt_con
-from ecs_composex.vpc import vpc_params
 
 from .ecs_scaling import ServiceScaling
 from .ecs_service_network_config import ServiceNetworking
