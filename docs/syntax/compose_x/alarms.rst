@@ -1,12 +1,12 @@
 .. meta::
-    :description: ECS Compose-X ACM syntax reference
+    :description: ECS Compose-X x-alarms
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, autoscaling, cloudwatch, alarms, sns, topics
 
 .. _cw_alarms_syntax_reference:
 
-===========
-x-alarms
-===========
+===============================
+x-alarms - CloudWatch Alarms
+===============================
 
 Syntax
 =======

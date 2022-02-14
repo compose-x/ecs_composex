@@ -214,8 +214,6 @@ def map_service_perms_to_resource(
     :param ecs_composex.ecs.ecs_family.ComposeFamily family:
     :param services:
     :param str access_type:
-    :param value: The value for main attribute, used for env vars
-    :param arn: The ARN to use for permissions, allows remote override
     :return:
     """
     if attributes is None:
@@ -256,10 +254,10 @@ def map_service_perms_to_resource(
     else:
         for statement in res_policy.PolicyDocument["Statement"]:
             if keyisset("Sid", statement) and statement["Sid"] == access_type:
-                break
-        if isinstance(statement["Resource"], str):
-            statement["Resource"] = [statement["Resource"]]
-        statement["Resource"] += resource_arns
+                if isinstance(statement["Resource"], str):
+                    statement["Resource"] = [statement["Resource"]]
+            statement["Resource"] += resource_arns
+            break
 
     containers = define_service_containers(family.template)
     for container in containers:
@@ -323,7 +321,6 @@ def handle_lookup_resource(
         if selected_services:
             add_update_mapping(target[0].template, mapping_family, mapping)
             arn_attr_value = resource.attributes_outputs[arn_parameter]["ImportValue"]
-            resource.generate_resource_envvars()
             map_service_perms_to_resource(
                 resource,
                 target[0],
@@ -362,6 +359,8 @@ def assign_new_resource_to_service(
     extra_settings = [get_parameter_settings(resource, param) for param in parameters]
     params_to_add = [arn_settings[1]]
     params_values = {arn_settings[0]: arn_settings[2]}
+    if resource.attributes_outputs:
+        resource.generate_resource_envvars()
     for setting in extra_settings:
         params_to_add.append(setting[1])
         params_values[setting[0]] = setting[2]

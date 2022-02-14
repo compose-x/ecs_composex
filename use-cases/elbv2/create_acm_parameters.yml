@@ -18,6 +18,11 @@ x-acm:
 x-elbv2:
   lbA:
     Properties: {}
+    DnsAliases:
+      - Route53Zone: x-route53::public-domain-01
+        Names:
+          - test.bdd-testing.compose-x.io
+          - someother.test.bdd-testing.compose-x.io
     Settings:
      S3Logs: bucket:/prefix
      timeout_seconds: 60

@@ -20,7 +20,6 @@
     syntax/compose_x/s3
     syntax/compose_x/efs
     syntax/compose_x/appmesh
-    syntax/compose_x/dns
     syntax/compose_x/elbv2
     syntax/compose_x/acm
     syntax/compose_x/kinesis
@@ -30,6 +29,8 @@
     syntax/compose_x/events
     syntax/compose_x/kms
     syntax/compose_x/vpc
+    syntax/compose_x/route53
+    syntax/compose_x/cloudmap
     syntax/compose_x/ecs_cluster
     syntax/compose_x/alarms
     syntax/compose_x/codeguru_profiler

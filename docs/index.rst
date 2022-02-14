@@ -75,8 +75,8 @@ CLI Usage
       {up,render,create,plan,config,init,version}
                             Command to execute.
         up                  Generates & Validates the CFN templates, Creates/Updates stack in CFN
-        render              Generates & Validates the CFN templates locally. No upload to S3
-        create              Generates & Validates the CFN templates locally. Uploads files to S3
+        render              Generates & Validates the CFN templates locally.
+        create              Generates & Validates the CFN templates to S3 (there is still a local copy).
         plan                Creates a recursive change-set to show the diff prior to an update
         config              Merges docker-compose files to provide with the final compose content version
         init                Initializes your AWS Account with prerequisites settings for ECS
@@ -123,6 +123,20 @@ is now implemented to work on AWS Fargate First (2020-06-06).
 
 That said, all features that can be supported with EC2 instances are available to you with ECS Compose-X, which, will
 simply disable such settings when deployed on top of AWS Fargate.
+
+
+Supports AWS ECS Anywhere
+--------------------------------
+
+For entreprises, as much as for enthusiasts homelabbers out there, ECS Anywhere allows us to manage our services
+definitions and deployment using AWS ECS as the control plane, and on-premise hardware or VMs to run the linux containers.
+
+Adding since 0.18, you can now get ECS Compose-X to generate all the resources and configuration necessary to provision
+your infrastructure (in AWS) and services.
+
+.. seealso::
+
+    See how to enable ECS Anywhere with :ref:`ecs_anywhere_compute_platform`
 
 Attributes auto-correct
 -------------------------

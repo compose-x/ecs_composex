@@ -4,13 +4,12 @@
 
 .. _codeguru_profiler_syntax_reference:
 
-==============================
-x-codeguru_profiler
-==============================
+=============================================
+x-codeguru_profiler - AWS CodeGuru Profiler
+=============================================
 
 .. contents::
     :depth: 2
-
 
 Syntax
 =======

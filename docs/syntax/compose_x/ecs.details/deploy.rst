@@ -106,11 +106,14 @@ beyond the free 20GB coming by default.
 .. hint::
 
     The minimum valid value is 21, maximum is 200. If below 21, it is ignored, if above 200, set to 200.
+    This feature is only valid when using Fargate.
 
 .. warning::
 
     This parameter only when using Fargate. This will be ignored when using EC2 or EXTERNAL deployment modes.
     For more storage using EC2, provide more local storage for your EC2 nodes.
+
+.. _ecs_anywhere_compute_platform:
 
 ecs.compute.platform
 ^^^^^^^^^^^^^^^^^^^^^^

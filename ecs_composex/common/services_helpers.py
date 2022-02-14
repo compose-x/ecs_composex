@@ -66,16 +66,26 @@ def import_env_variables(environment):
     :rtype: list<troposphere.ecs.Environment>
     """
     env_vars = []
-    for key in environment:
-        if not isinstance(environment[key], str):
-            env_vars.append(Environment(Name=key, Value=str(environment[key])))
-        else:
-            env_vars.append(
-                Environment(
-                    Name=key,
-                    Value=define_string_interpolation(environment[key]),
+    if isinstance(environment, list):
+        for key in environment:
+            if not isinstance(key, str) or key.find(r"=") < 0:
+                raise TypeError(
+                    f"Environment variable {key} must be a string in the Key=Value format"
                 )
-            )
+            splits = key.split(r"=")
+            env_vars.append(Environment(Name=splits[0], Value=str(splits[1])))
+
+    elif isinstance(environment, dict):
+        for key, value in environment.items():
+            if not isinstance(value, str):
+                env_vars.append(Environment(Name=key, Value=str(environment[key])))
+            else:
+                env_vars.append(
+                    Environment(
+                        Name=key,
+                        Value=define_string_interpolation(value),
+                    )
+                )
     return env_vars
 
 

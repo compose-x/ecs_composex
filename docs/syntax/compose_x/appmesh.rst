@@ -4,9 +4,9 @@
 
 .. _appmesh_syntax_reference:
 
-==========
-x-appmesh
-==========
+=======================
+x-appmesh - AWS AppMesh
+=======================
 
 .. contents::
     :depth: 2
