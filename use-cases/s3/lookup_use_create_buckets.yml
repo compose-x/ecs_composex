@@ -28,7 +28,7 @@ x-s3:
       EnvNames:
         - BUCKET03
     Lookup:
-      Name: sacrificial-lamb
+      Identifier: sacrificial-lamb
       Tags:
         - composex: "True"
     Services:
