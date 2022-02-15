@@ -11,6 +11,7 @@
     },
     "Lookup": {
       "type": "object",
+      "additionalProperties": false,
       "properties": {
         "Tags": {
           "oneOf": [
@@ -27,7 +28,15 @@
             {
               "type": "array",
               "items": {
-                "type": "object"
+                "type": "object",
+                "additionalProperties": false,
+                "patternProperties": {
+                  "[\\S]+$": {
+                    "type": "string",
+                    "minLength": 0,
+                    "maxLength": 256
+                  }
+                }
               }
             }
           ]
