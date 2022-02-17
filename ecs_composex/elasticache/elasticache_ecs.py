@@ -6,9 +6,9 @@
 Module to handle Linking ECS tasks and the elastic cache clusters
 """
 
-from compose_x_common.compose_x_common import keyisset
 from troposphere import FindInMap, Select
 
+from ecs_composex.common import LOG
 from ecs_composex.elasticache.elasticache_aws import lookup_cluster_resource
 from ecs_composex.elasticache.elasticache_params import (
     CLUSTER_SG,
@@ -64,28 +64,21 @@ def elasticache_to_ecs(resources, services_stack, res_root_stack, settings):
     """
     Entrypoint function to map new and lookup resources to ECS Services
 
-    :param list resources:
+    :param dict resources:
     :param ecs_composex.common.stacks.ComposeXStack services_stack:
     :param ecs_composex.common.stacks.ComposeXStack res_root_stack:
     :param ecs_composex.common.settings.ComposeXSettings settings:
     """
-    new_resources = [
-        resources[res_name]
-        for res_name in resources
-        if resources[res_name].cfn_resource
-    ]
-    lookup_resources = [
-        resources[res_name] for res_name in resources if resources[res_name].mappings
-    ]
-    for new_res in new_resources:
-        handle_new_tcp_resource(
-            new_res,
-            res_root_stack,
-            port_parameter=new_res.port_attr,
-            sg_parameter=CLUSTER_SG,
-        )
-    for lookup_res in lookup_resources:
-        if keyisset(lookup_res.logical_name, settings.mappings[RES_KEY]):
+    for resource_name, resource in resources.items():
+        LOG.info(f"{resource.module_name}.{resource_name} - Linking to services")
+        if not resource.mappings and resource.cfn_resource:
+            handle_new_tcp_resource(
+                resource,
+                res_root_stack,
+                port_parameter=resource.port_attr,
+                sg_parameter=CLUSTER_SG,
+            )
+        elif resource.mappings and not resource.cfn_resource:
             link_cluster_to_service(
-                lookup_res, settings.mappings[RES_KEY], mapping_name=MAPPINGS_KEY
+                resource, settings.mappings[RES_KEY], mapping_name=MAPPINGS_KEY
             )

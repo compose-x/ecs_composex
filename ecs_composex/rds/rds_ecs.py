@@ -8,7 +8,7 @@ Module to provide services with access to the RDS databases.
 
 from compose_x_common.compose_x_common import keyisset
 
-from ecs_composex.common import add_update_mapping
+from ecs_composex.common import LOG, add_update_mapping
 from ecs_composex.rds.rds_params import DB_ENDPOINT_PORT, DB_SECRET_ARN, DB_SG
 from ecs_composex.rds_resources_settings import (
     add_secret_to_container,
@@ -71,33 +71,25 @@ def import_dbs(db, settings, mapping_name):
         handle_import_dbs_to_services(db, settings, target, mapping_name)
 
 
-def rds_to_ecs(rds_dbs, services_stack, res_root_stack, settings):
+def rds_to_ecs(resources, services_stack, res_root_stack, settings):
     """
     Function to apply onto existing ECS Templates the various settings
 
+    :param dict resources:
     :param res_root_stack:
-    :param rds_dbs:
     :param services_stack:
     :param ecs_composex.common.settings.ComposeXSettings settings: The settings for ComposeX Execution
     :return:
     """
-    new_resources = [
-        rds_dbs[db_name]
-        for db_name in rds_dbs
-        if not rds_dbs[db_name].lookup and rds_dbs[db_name].services
-    ]
-    lookup_resources = [
-        rds_dbs[db_name]
-        for db_name in rds_dbs
-        if rds_dbs[db_name].lookup and rds_dbs[db_name].services
-    ]
-    for new_res in new_resources:
-        handle_new_tcp_resource(
-            new_res,
-            res_root_stack,
-            port_parameter=DB_ENDPOINT_PORT,
-            secret_parameter=DB_SECRET_ARN,
-            sg_parameter=DB_SG,
-        )
-    for lookup_res in lookup_resources:
-        import_dbs(lookup_res, settings, mapping_name=lookup_res.mapping_key)
+    for resource_name, resource in resources.items():
+        LOG.info(f"{resource.module_name}.{resource_name} - Linking to services")
+        if not resource.mappings and resource.cfn_resource:
+            handle_new_tcp_resource(
+                resource,
+                res_root_stack,
+                port_parameter=DB_ENDPOINT_PORT,
+                secret_parameter=DB_SECRET_ARN,
+                sg_parameter=DB_SG,
+            )
+        elif not resource.cfn_resource and resource.mappings:
+            import_dbs(resource, settings, mapping_name=resource.mapping_key)

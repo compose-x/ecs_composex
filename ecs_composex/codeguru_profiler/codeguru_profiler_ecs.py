@@ -4,11 +4,10 @@
 
 
 from ecs_composex.codeguru_profiler.codeguru_profiler_params import (
-    MAPPINGS_KEY,
     PROFILER_ARN,
     PROFILER_NAME,
 )
-from ecs_composex.common import add_outputs
+from ecs_composex.common import LOG, add_outputs
 from ecs_composex.resource_settings import (
     assign_new_resource_to_service,
     handle_lookup_resource,
@@ -19,28 +18,19 @@ def codeguru_profiler_to_ecs(resources, services_stack, res_root_stack, settings
     """
     Entrypoint function to map new and lookup resources to ECS Services
 
-    :param list resources:
+    :param dict resources:
     :param ecs_composex.common.stacks.ComposeXStack services_stack:
     :param ecs_composex.common.stacks.ComposeXStack res_root_stack:
     :param ecs_composex.common.settings.ComposeXSettings settings:
     """
-    resource_mappings = {}
-    new_resources = [
-        resources[res_name]
-        for res_name in resources
-        if resources[res_name].cfn_resource
-    ]
-    lookup_resources = [
-        resources[res_name] for res_name in resources if resources[res_name].mappings
-    ]
-    for res in new_resources:
-        res.init_outputs()
-        res.generate_outputs()
-        add_outputs(res_root_stack.stack_template, res.outputs)
-        assign_new_resource_to_service(
-            res, res_root_stack, PROFILER_ARN, [PROFILER_NAME]
-        )
-    for res in lookup_resources:
-        handle_lookup_resource(
-            resource_mappings, MAPPINGS_KEY, res, PROFILER_ARN, [PROFILER_NAME]
-        )
+    for resource_name, resource in resources.items():
+        LOG.info(f"{resource.module_name}.{resource_name} - Linking to services")
+        if not resource.mappings and resource.cfn_resource:
+            resource.init_outputs()
+            resource.generate_outputs()
+            add_outputs(res_root_stack.stack_template, resource.outputs)
+            assign_new_resource_to_service(
+                resource, res_root_stack, PROFILER_ARN, [PROFILER_NAME]
+            )
+        elif resource.mappings and not resource.cfn_resource:
+            handle_lookup_resource(settings, resource, PROFILER_ARN)

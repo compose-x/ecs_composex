@@ -474,8 +474,7 @@ def elbv2_to_ecs(resources, services_stack, res_root_stack, settings):
     :param ecs_composex.common.settings.ComposeXSettings settings:
     :return:
     """
-    new_resources = [
-        resources[res_name] for res_name in resources if not resources[res_name].lookup
-    ]
-    for resource in new_resources:
-        handle_services_association(resource, res_root_stack, settings)
+    for resource_name, resource in resources.items():
+        LOG.info(f"{resource.module_name}.{resource_name} - Linking to services")
+        if resource.cfn_resource and not resource.mappings:
+            handle_services_association(resource, res_root_stack, settings)

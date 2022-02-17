@@ -6,6 +6,7 @@
 Module to link DocDB cluster to ECS Services.
 """
 
+from ecs_composex.common import LOG
 from ecs_composex.neptune.neptune_params import (
     DB_CLUSTER_RESOURCES_ARN,
     DB_PORT,
@@ -19,41 +20,36 @@ from ecs_composex.resource_settings import handle_lookup_resource
 
 def neptune_to_ecs(resources, services_stack, res_root_stack, settings):
     """
-    Entrypoint function to map new and lookup resources to ECS Services
+    Entrypoint function to neptune resources to ECS Services
+    Neptune needs network access, but also IAM for API calls authN and authZ,
+    but the ARN for the one is different from the other, so we have to do the
+    IAM mapping twice
 
-    :param list resources:
+    :param dict resources:
     :param ecs_composex.common.stacks.ComposeXStack services_stack:
     :param ecs_composex.common.stacks.ComposeXStack res_root_stack:
     :param ecs_composex.common.settings.ComposeXSettings settings:
     """
-    new_resources = [
-        resources[res_name]
-        for res_name in resources
-        if not resources[res_name].mappings
-    ]
-    lookup_resources = [
-        resources[res_name] for res_name in resources if resources[res_name].mappings
-    ]
-    for new_res in new_resources:
-        handle_new_tcp_resource(
-            new_res,
-            res_root_stack,
-            port_parameter=DB_PORT,
-            sg_parameter=DB_SG,
-        )
-    for lookup_res in lookup_resources:
-        import_dbs(lookup_res, settings, mapping_name=MAPPINGS_KEY)
-        handle_lookup_resource(
-            settings.mappings[MAPPINGS_KEY],
-            MAPPINGS_KEY,
-            lookup_res,
-            arn_parameter=lookup_res.db_cluster_arn_parameter,
-            access_subkeys=["DBCluster"],
-        )
-        handle_lookup_resource(
-            settings.mappings[MAPPINGS_KEY],
-            MAPPINGS_KEY,
-            lookup_res,
-            arn_parameter=DB_CLUSTER_RESOURCES_ARN,
-            access_subkeys=["NeptuneDB"],
-        )
+    for resource_name, resource in resources.items():
+        LOG.info(f"{resource.module_name}.{resource_name} - Linking to services")
+        if not resource.mappings and resource.cfn_resource:
+            handle_new_tcp_resource(
+                resource,
+                res_root_stack,
+                port_parameter=DB_PORT,
+                sg_parameter=DB_SG,
+            )
+        elif not resource.cfn_resource and resource.mappings:
+            import_dbs(resource, settings, mapping_name=MAPPINGS_KEY)
+            handle_lookup_resource(
+                settings,
+                resource,
+                arn_parameter=resource.db_cluster_arn_parameter,
+                access_subkeys=["DBCluster"],
+            )
+            handle_lookup_resource(
+                settings,
+                resource,
+                arn_parameter=DB_CLUSTER_RESOURCES_ARN,
+                access_subkeys=["NeptuneDB"],
+            )

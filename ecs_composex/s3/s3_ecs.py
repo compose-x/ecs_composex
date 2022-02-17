@@ -47,8 +47,7 @@ def s3_to_ecs(resources, services_stack, res_root_stack, settings):
             and not resource.cfn_resource
         ):
             handle_lookup_resource(
-                settings.mappings[resource.mapping_key],
-                resource.mapping_key,
+                settings,
                 resource,
                 arn_parameter=S3_BUCKET_ARN,
                 access_subkeys=["objects", "bucket", "enforceSecureConnection"],
