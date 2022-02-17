@@ -401,6 +401,7 @@ class XResource(object):
             return {"Name": container_env_name, "Value": container_env_value}
         except KeyError as error:
             print(
+                error,
                 "Parameter",
                 parameter.title,
                 "not in ",

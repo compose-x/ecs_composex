@@ -319,10 +319,6 @@ def add_x_resources(root_stack, settings):
             and not re.match(X_AWS_KEY, key)
         ):
             process_x_class(root_stack, settings, key)
-            # if vpc_stack and key in TCP_SERVICES:
-            #     xstack.get_from_vpc_stack(vpc_stack)
-            # elif not vpc_stack and key in TCP_SERVICES:
-            #     xstack.no_vpc_stack_parameters(settings)
 
 
 def init_root_template():
@@ -666,7 +662,6 @@ def generate_full_template(settings):
     update_network_resources_vpc_config(settings, vpc_stack)
     set_families_ecs_service(settings)
 
-    # set_services_alarms(settings)
     apply_x_resource_to_x(settings, root_stack, vpc_stack)
     apply_x_configs_to_ecs(
         settings,

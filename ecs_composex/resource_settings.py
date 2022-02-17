@@ -20,6 +20,7 @@ from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources import get_parameter_settings
 from ecs_composex.ecs.ecs_iam import define_service_containers
 from ecs_composex.iam.import_sam_policies import get_access_types
+from ecs_composex.kms.kms_params import MAPPINGS_KEY as KMS_MAPPING_KEY
 from ecs_composex.kms.kms_params import MOD_KEY as KMS_MOD
 
 
@@ -182,7 +183,7 @@ def get_selected_services(resource, target):
 
 
 def get_access_type_policy_model(
-    access_type, policies_models, resource, access_subkey: str = None
+    access_type, policies_models, access_subkey: str = None
 ):
     """
 
@@ -193,25 +194,13 @@ def get_access_type_policy_model(
     :return:
     """
     if isinstance(access_type, str):
-        try:
-            return policies_models[access_type]
-        except KeyError:
-            LOG.error(
-                f"{resource.module_name}.{resource.name} - policy {access_type} does not exist."
-            )
-            raise
-    elif isinstance(access_type, dict):
-        try:
+        return policies_models[access_type]
 
-            if isinstance(access_type[access_subkey], bool):
-                return policies_models[access_subkey]
-            else:
-                return policies_models[access_type[access_subkey]]
-        except KeyError:
-            LOG.error(
-                f"{resource.module_name}.{resource.name} - Access type {access_subkey}.{access_type} does not exist."
-            )
-            raise
+    elif isinstance(access_type, dict):
+        if isinstance(access_type[access_subkey], bool):
+            return policies_models[access_subkey]
+        else:
+            return policies_models[access_type[access_subkey]]
 
 
 def set_sid_name(access_definition, access_subkey: str) -> str:
@@ -244,7 +233,7 @@ def set_sid_name(access_definition, access_subkey: str) -> str:
 
 
 def define_iam_permissions(
-    resource,
+    resource_mapping_key,
     family,
     policy_title,
     access_type_policy_model,
@@ -258,7 +247,7 @@ def define_iam_permissions(
     statement policy, reducing the policy length (later, might allow for managed policies).
     If there were no SID set already in a statement, adds it.
 
-    :param resource:
+    :param resource_mapping_key:
     :param family:
     :param str policy_title:
     :param dict access_type_policy_model:
@@ -267,18 +256,18 @@ def define_iam_permissions(
     :param str access_subkey:
     """
     access_type = set_sid_name(access_definition, access_subkey)
-    if resource.mapping_key not in family.iam_modules_policies.keys():
-        family.iam_modules_policies[resource.mapping_key] = PolicyType(
+    if resource_mapping_key not in family.iam_modules_policies.keys():
+        family.iam_modules_policies[resource_mapping_key] = PolicyType(
             policy_title,
             PolicyName=policy_title,
             PolicyDocument={"Version": "2012-10-17", "Statement": []},
             Roles=[family.task_role.name],
         )
         res_policy = family.template.add_resource(
-            family.iam_modules_policies[resource.mapping_key]
+            family.iam_modules_policies[resource_mapping_key]
         )
     else:
-        res_policy = family.iam_modules_policies[resource.mapping_key]
+        res_policy = family.iam_modules_policies[resource_mapping_key]
 
     for statement in res_policy.PolicyDocument["Statement"]:
         if keyisset("Sid", statement) and statement["Sid"] == access_type:
@@ -292,33 +281,39 @@ def define_iam_permissions(
 
 
 def map_service_perms_to_resource(
-    resource,
     family,
     services,
     target,
     arn_value,
-    attributes=None,
+    resource=None,
+    resource_policies=None,
+    resource_mapping_key=None,
+    access_definition=None,
     access_subkey=None,
     ignore_missing_primary=False,
 ):
 
-    if attributes is None:
-        attributes = []
+    if not resource and not resource_policies and not resource_mapping_key:
+        raise ValueError(
+            "You must specify either resource or resource_policies and resources_mappings"
+        )
+    resource_policies = resource.policies_scaffolds if resource else resource_policies
+    resource_mapping_key = resource.mapping_key if resource else resource_mapping_key
     policies_models = (
-        deepcopy(resource.policies_scaffolds)
+        deepcopy(resource_policies)
         if not access_subkey
-        else deepcopy(resource.policies_scaffolds[access_subkey])
+        else deepcopy(resource_policies[access_subkey])
     )
-    access_definition = target[3]
+    access_definition = target[3] if not access_definition else access_definition
     access_type_policy_model = get_access_type_policy_model(
-        access_definition, policies_models, resource, access_subkey
+        access_definition, policies_models, access_subkey
     )
     resource_arns = determine_arns(
         arn_value, access_type_policy_model, ignore_missing_primary
     )
-    policy_title = f"{family.logical_name}To{resource.mapping_key}"
+    policy_title = f"{family.logical_name}To{resource_mapping_key}"
     define_iam_permissions(
-        resource,
+        resource_mapping_key,
         family,
         policy_title,
         access_type_policy_model,
@@ -327,6 +322,8 @@ def map_service_perms_to_resource(
         access_subkey=access_subkey,
     )
 
+    if not resource:
+        return
     containers = define_service_containers(family.template)
     for container in containers:
         for service in services:
@@ -341,29 +338,27 @@ def map_service_perms_to_resource(
                         ),
                     )
                 else:
+                    resource.generate_resource_envvars()
                     extend_container_envvars(container, resource.env_vars)
 
 
-def handle_kms_access(mapping_family, resource, target, selected_services):
+def handle_kms_access(settings, resource, target, selected_services):
     """
     Function to map KMS permissions for the services which need access to a resource using a KMS Key
-    :param str mapping_family:
-    :param resource:
+    :param ecs_composex.common.settings.ComposeXSettings settings:
+    :param ecs_composex.common.compose_resources.XResource resource: The lookup resource
     :param tuple target:
     :param list selected_services:
     """
-    key_arn = FindInMap(
-        mapping_family, resource.logical_name, resource.kms_arn_attr.title
-    )
-    kms_perms = generate_resource_permissions(
-        f"{resource.logical_name}KmsKey", get_access_types(KMS_MOD), arn=key_arn
-    )
-    add_iam_policy_to_service_task_role(
-        target[0].template,
-        resource,
-        kms_perms,
-        "EncryptDecrypt",
+    key_arn = resource.attributes_outputs[resource.kms_arn_attr]["ImportValue"]
+    map_service_perms_to_resource(
+        target[0],
         selected_services,
+        target,
+        access_definition="EncryptDecrypt",
+        arn_value=key_arn,
+        resource_policies=get_access_types(KMS_MOD),
+        resource_mapping_key=KMS_MAPPING_KEY,
     )
 
 
@@ -386,36 +381,33 @@ def handle_lookup_resource(settings, resource, arn_parameter, access_subkeys=Non
                 settings.mappings[resource.mapping_key],
             )
             arn_attr_value = resource.attributes_outputs[arn_parameter]["ImportValue"]
-            print(resource.name, "TARGET 3", target[3], type(target[3]))
             if access_subkeys:
                 for access_subkey in access_subkeys:
                     if access_subkey not in target[3]:
                         continue
                     map_service_perms_to_resource(
-                        resource,
                         target[0],
                         selected_services,
                         target,
+                        resource=resource,
                         arn_value=arn_attr_value,
                         access_subkey=access_subkey,
                     )
             else:
                 map_service_perms_to_resource(
-                    resource,
                     target[0],
                     selected_services,
                     target,
+                    resource=resource,
                     arn_value=arn_attr_value,
                     access_subkey=None,
                 )
-            # if (
-            #     hasattr(resource, "kms_arn_attr")
-            #     and resource.kms_arn_attr
-            #     and keyisset(
-            #         resource.kms_arn_attr.title, settings.mappings[resource.mapping_key][resource.logical_name]
-            #     )
-            # ):
-            #     handle_kms_access(mapping_family, resource, target, selected_services)
+            if (
+                hasattr(resource, "kms_arn_attr")
+                and resource.kms_arn_attr
+                and keyisset(resource.kms_arn_attr, resource.lookup_properties)
+            ):
+                handle_kms_access(settings, resource, target, selected_services)
 
 
 def assign_new_resource_to_service(
@@ -454,22 +446,20 @@ def assign_new_resource_to_service(
                     if access_subkey not in target[3]:
                         continue
                     map_service_perms_to_resource(
-                        resource,
                         target[0],
                         selected_services,
                         target,
                         arn_value=Ref(arn_settings[1]),
-                        attributes=parameters,
+                        resource=resource,
                         access_subkey=access_subkey,
                     )
             else:
                 map_service_perms_to_resource(
-                    resource,
                     target[0],
                     selected_services,
                     target,
+                    resource=resource,
                     arn_value=Ref(arn_settings[1]),
-                    attributes=parameters,
                     access_subkey=None,
                 )
             if res_root_stack.title not in target[0].stack.DependsOn:

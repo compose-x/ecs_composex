@@ -170,7 +170,6 @@ def handle_dict_cloudmap_config(family, family_mappings, cloudmap_config, ports)
                 f"{family.name}.x-network.x-cloudmap - {cloudmap_config} is set multiple times. "
                 f"Preserving {family_mappings[map_name]}"
             )
-            continue
         else:
             if keyisset("Port", config):
                 for port in ports:

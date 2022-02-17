@@ -179,6 +179,7 @@ class Bucket(ApiXResource):
             name, definition, module_name, settings, mapping_key=mapping_key
         )
         self.cloud_control_attributes_mapping = CONTROL_CLOUD_ATTR_MAPPING
+        self.kms_arn_attr = S3_BUCKET_KMS_KEY
 
     def init_outputs(self):
         self.output_properties = {

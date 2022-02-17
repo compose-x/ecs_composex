@@ -90,6 +90,12 @@ class Queue(ApiXResource):
 
     policies_scaffolds = get_access_types(MOD_KEY)
 
+    def __init__(
+        self, name: str, definition: dict, module_name: str, settings, mapping_key=None
+    ):
+        super().__init__(name, definition, module_name, settings, mapping_key)
+        self.kms_arn_attr = SQS_KMS_KEY
+
     def init_outputs(self):
         """
         Init output properties for a new resource

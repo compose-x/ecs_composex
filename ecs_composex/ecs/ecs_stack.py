@@ -77,10 +77,6 @@ def associate_services_to_root_stack(root_stack, settings):
             family.stack.Parameters.update(
                 {ecs_params.LAUNCH_TYPE.title: settings.ecs_cluster.platform_override}
             )
-        # if vpc_stack and not vpc_stack.is_void:
-        #     family.stack.no_vpc_stack_parameters(settings)
-        # elif vpc_stack and vpc_stack.is_void:
-        #     family.stack.get_from_vpc_stack(vpc_stack)
         family.template.set_metadata(metadata)
         root_stack.stack_template.add_resource(family.stack)
         if settings.networks and family.ecs_service.network.networks:
