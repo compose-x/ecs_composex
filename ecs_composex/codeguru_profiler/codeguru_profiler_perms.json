@@ -4,6 +4,9 @@
     "Action": [
       "codeguru-profiler:ConfigureAgent",
       "codeguru-profiler:PostAgentProfile"
+    ],
+    "Resource": [
+      "${ARN}"
     ]
   }
 }

@@ -28,6 +28,7 @@ from ecs_composex.compose.x_resources import (
     set_resources,
     set_use_resources,
 )
+from ecs_composex.iam.import_sam_policies import get_access_types
 from ecs_composex.s3.s3_params import (
     CONTROL_CLOUD_ATTR_MAPPING,
     MAPPINGS_KEY,
@@ -170,6 +171,8 @@ class Bucket(ApiXResource):
     """
     Class for S3 bucket.
     """
+
+    policies_scaffolds = get_access_types(MOD_KEY)
 
     def __init__(self, name, definition, module_name, settings, mapping_key=None):
         super().__init__(

@@ -1,22 +1,31 @@
 {
-    "Consumer": {
-        "Effect": "Allow",
-        "Action": [
-            "kinesis:Get*",
-            "kinesis:DescribeStreamSummary"
-        ]
-    },
-    "Producer": {
-        "Effect": "Allow",
-        "Action": [
-            "kinesis:PutRecord"
-        ]
-    },
-    "PowerUser": {
-        "Effect": "Allow",
-        "NotAction": [
-            "kinesis:CreateStream",
-            "kinesis:DeleteStream"
-        ]
-    }
+  "Consumer": {
+    "Effect": "Allow",
+    "Action": [
+      "kinesis:Get*",
+      "kinesis:DescribeStreamSummary"
+    ],
+    "Resource": [
+      "${ARN}"
+    ]
+  },
+  "Producer": {
+    "Effect": "Allow",
+    "Action": [
+      "kinesis:PutRecord"
+    ],
+    "Resource": [
+      "${ARN}"
+    ]
+  },
+  "PowerUser": {
+    "Effect": "Allow",
+    "NotAction": [
+      "kinesis:CreateStream",
+      "kinesis:DeleteStream"
+    ],
+    "Resource": [
+      "${ARN}"
+    ]
+  }
 }

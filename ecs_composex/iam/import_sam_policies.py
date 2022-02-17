@@ -31,6 +31,7 @@ def import_and_cleanse_policies():
         import_policies[name] = {
             "Action": value["Definition"]["Statement"][0]["Action"],
             "Effect": "Allow",
+            "Resource": ["${ARN}"],
         }
     return import_policies
 

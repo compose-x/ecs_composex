@@ -48,14 +48,12 @@ def neptune_to_ecs(resources, services_stack, res_root_stack, settings):
             MAPPINGS_KEY,
             lookup_res,
             arn_parameter=lookup_res.db_cluster_arn_parameter,
-            policies_override=lookup_res.policies_scaffolds["DBCluster"],
-            access_subkey="DBCluster",
+            access_subkeys=["DBCluster"],
         )
         handle_lookup_resource(
             settings.mappings[MAPPINGS_KEY],
             MAPPINGS_KEY,
             lookup_res,
             arn_parameter=DB_CLUSTER_RESOURCES_ARN,
-            policies_override=lookup_res.policies_scaffolds["NeptuneDB"],
-            access_subkey="NeptuneDB",
+            access_subkeys=["NeptuneDB"],
         )

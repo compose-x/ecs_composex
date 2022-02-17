@@ -15,21 +15,30 @@
         "s3:AbortMultipartUpload",
         "s3:CreateMultipartUpload"
       ],
-      "Effect": "Allow"
+      "Effect": "Allow",
+      "Resource": [
+        "${ARN}/*"
+      ]
     },
     "RW": {
       "Action": [
         "s3:GetObject*",
         "s3:PutObject*"
       ],
-      "Effect": "Allow"
+      "Effect": "Allow",
+      "Resource": [
+        "${ARN}/*"
+      ]
     },
     "StrictRW": {
       "Action": [
         "s3:GetObject",
         "s3:PutObject"
       ],
-      "Effect": "Allow"
+      "Effect": "Allow",
+      "Resource": [
+        "${ARN}/*"
+      ]
     },
     "StrictRWDelete": {
       "Action": [
@@ -37,7 +46,10 @@
         "s3:PutObject",
         "s3:DeleteObject"
       ],
-      "Effect": "Allow"
+      "Effect": "Allow",
+      "Resource": [
+        "${ARN}/*"
+      ]
     },
     "RWDelete": {
       "Action": [
@@ -45,31 +57,46 @@
         "s3:PutObject*",
         "s3:DeleteObject*"
       ],
-      "Effect": "Allow"
+      "Effect": "Allow",
+      "Resource": [
+        "${ARN}/*"
+      ]
     },
     "ReadOnly": {
       "Action": [
         "s3:GetObject*"
       ],
-      "Effect": "Allow"
+      "Effect": "Allow",
+      "Resource": [
+        "${ARN}/*"
+      ]
     },
     "StrictReadOnly": {
       "Action": [
         "s3:GetObject"
       ],
-      "Effect": "Allow"
+      "Effect": "Allow",
+      "Resource": [
+        "${ARN}/*"
+      ]
     },
     "WriteOnly": {
       "Action": [
         "s3:PutObject*"
       ],
-      "Effect": "Allow"
+      "Effect": "Allow",
+      "Resource": [
+        "${ARN}/*"
+      ]
     },
     "StrictWriteOnly": {
       "Action": [
         "s3:PutObject"
       ],
-      "Effect": "Allow"
+      "Effect": "Allow",
+      "Resource": [
+        "${ARN}/*"
+      ]
     }
   },
   "bucket": {
@@ -79,6 +106,9 @@
         "s3:ListBucket",
         "s3:GetBucketLocation",
         "s3:GetBucketPublicAccessBlock"
+      ],
+      "Resource": [
+        "${ARN}"
       ]
     },
     "PowerUser": {
@@ -87,6 +117,9 @@
         "s3:ListBucket",
         "s3:GetBucket*",
         "s3:SetBucket*"
+      ],
+      "Resource": [
+        "${ARN}"
       ]
     }
   },

@@ -8,6 +8,9 @@
       "ssm:GetParametersByPath",
       "ssm:GetParameters",
       "ssm:GetParameter"
+    ],
+    "Resource": [
+      "${ARN}"
     ]
   },
   "RWStrict": {
@@ -26,6 +29,9 @@
       "ssm:GetParameterHistory",
       "ssm:GetParametersByPath",
       "ssm:GetParameter"
+    ],
+    "Resource": [
+      "${ARN}"
     ]
   },
   "ROStrict": {
@@ -34,6 +40,9 @@
     "Action": [
       "ssm:GetParameterHistory",
       "ssm:GetParameter"
+    ],
+    "Resource": [
+      "${ARN}"
     ]
   }
 }

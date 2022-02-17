@@ -3,7 +3,7 @@
 # Copyright 2020-2022 John Mille <john@compose-x.io>
 
 from compose_x_common.compose_x_common import keyisset
-from troposphere import FindInMap, GetAtt, ImportValue, Ref, Sub
+from troposphere import AWS_NO_VALUE, FindInMap, GetAtt, ImportValue, Ref, Sub
 from troposphere.ecs import ContainerDefinition, Environment
 
 from ecs_composex.common import LOG
@@ -110,7 +110,14 @@ def extend_container_secrets(container, secret):
         setattr(container, "Secrets", [secret])
 
 
-def extend_container_envvars(container, env_vars):
+def extend_container_envvars(container: ContainerDefinition, env_vars: list) -> None:
+    """
+    Extends the container environment variables with new ones to add. If not already set, defines.
+
+    :param troposphere.ecs.ContainerDefinition container:
+    :param list[troposphere.ecs.Environment] env_vars:
+    :return:
+    """
     ignored_containers = ["xray-daemon", "envoy", "cw_agent"]
     if (
         isinstance(container, ContainerDefinition)
@@ -119,21 +126,29 @@ def extend_container_envvars(container, env_vars):
     ):
         LOG.debug(f"Ignoring AWS Container {container.Name}")
         return
-    environment = (
-        getattr(container, "Environment")
-        if hasattr(container, "Environment")
-        and not isinstance(getattr(container, "Environment"), Ref)
-        else []
-    )
-    if environment:
-        existing = [var.Name for var in environment]
-        for var in env_vars:
-            if var.Name not in existing:
-                LOG.debug(f"Adding {var.Name} to {existing}")
-                environment.append(var)
-
+    if hasattr(container, "Environment"):
+        environment = getattr(container, "Environment")
+        if isinstance(environment, Ref) and environment.data["Ref"] == AWS_NO_VALUE:
+            environment = []
+            setattr(container, "Environment", environment)
+        elif not isinstance(environment, list):
+            raise TypeError(
+                f"container def Environment {environment} is not list or Ref(AWS_NO_VALUE).",
+                type(environment),
+            )
     else:
-        setattr(container, "Environment", env_vars)
+        environment = []
+        setattr(container, "Environment", environment)
+    existing = [
+        var.Name
+        for var in environment
+        if isinstance(var, Environment) and isinstance(var.Name, str)
+    ]
+    for var in env_vars:
+        if var.Name not in existing:
+            LOG.debug(f"Adding {var.Name} to {existing}")
+            environment.append(var)
+
     LOG.debug(f"{container.Name}, {[env.Name for env in environment]}")
 
 

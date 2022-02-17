@@ -74,17 +74,6 @@
           "items": {
             "type": "string"
           }
-        },
-        "EnvNamesToProperty": {
-          "type": "object",
-          "description": "Maps an environment variable name to the attribute of a resource",
-          "patternProperties": {
-            "[A-Z0-9_]+$": {
-              "type": "string",
-              "description": "The name of the attribute to use for the given env var",
-              "pattern": "^[a-zA-Z0-9-_.]+$"
-            }
-          }
         }
       }
     },
@@ -99,7 +88,7 @@
         {
           "type": "object",
           "patternProperties": {
-            "[\\x20-\\x7E]+": {
+            "[\\x20-\\x7E]+$": {
               "description": "Object representation of the service to use.",
               "properties": {
                 "Access": {
@@ -111,12 +100,43 @@
                       "type": "object"
                     }
                   ]
+                },
+                "Scaling": {
+                  "$ref": "#/definitions/ScalingDefinition"
+                },
+                "ReturnValues": {
+                  "type": "object",
+                  "description": "Set the CFN Return Value and the environment variable name you want to expose to the service",
+                  "additionalProperties": false,
+                  "patternProperties": {
+                    "[\\x20-\\x7E]+$": {
+                      "oneOf": [
+                        {
+                          "$ref": "#/definitions/varNameDef"
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "EnvVarName": {
+                              "$ref": "#/definitions/varNameDef"
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
                 }
               }
             }
           }
         }
       ]
+    },
+    "varNameDef": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9_]+$",
+      "description": "The environment variable name for the property value"
     },
     "serviceDef": {
       "$id": "#/definitions/serviceDef",
