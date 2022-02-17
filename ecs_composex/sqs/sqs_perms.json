@@ -1,23 +1,29 @@
 {
-    "RWMessages": {
-        "Sid": "RWAccessMessages",
-        "NotAction": [
-            "sqs:TagQueue",
-            "sqs:RemovePermission",
-            "sqs:AddPermission",
-            "sqs:UntagQueue",
-            "sqs:PurgeQueue",
-            "sqs:DeleteQueue",
-            "sqs:CreateQueue",
-            "sqs:SetQueueAttributes"
-        ],
-        "Effect": "Allow"
-    },
-    "Publish": {
-        "Sid": "PublishMessages",
-        "NotAction": [
-            "sqs:SendMessage"
-        ],
-        "Effect": "Allow"
-    }
+  "RWMessages": {
+    "Sid": "RWAccessMessages",
+    "NotAction": [
+      "sqs:TagQueue",
+      "sqs:RemovePermission",
+      "sqs:AddPermission",
+      "sqs:UntagQueue",
+      "sqs:PurgeQueue",
+      "sqs:DeleteQueue",
+      "sqs:CreateQueue",
+      "sqs:SetQueueAttributes"
+    ],
+    "Effect": "Allow",
+    "Resource": [
+      "${ARN}"
+    ]
+  },
+  "Publish": {
+    "Sid": "PublishMessages",
+    "NotAction": [
+      "sqs:SendMessage"
+    ],
+    "Effect": "Allow",
+    "Resource": [
+      "${ARN}"
+    ]
+  }
 }

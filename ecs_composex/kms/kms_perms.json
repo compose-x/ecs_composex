@@ -1,34 +1,46 @@
 {
-    "SQS": {
-        "Action": [
-            "kms:GenerateDataKey",
-            "kms:Decrypt"
-        ],
-        "Effect": "Allow"
-    },
-    "DecryptOnly": {
-        "Action": [
-            "kms:Decrypt"
-        ],
-        "Effect": "Allow"
-    },
-    "EncryptOnly": {
-        "Action": [
-            "kms:Encrypt",
-            "kms:GenerateDataKey*",
-            "kms:ReEncrypt*"
-        ],
-        "Effect": "Allow"
-    },
-    "EncryptDecrypt": {
-        "Action": [
-            "kms:Encrypt",
-            "kms:Decrypt",
-            "kms:ReEncrypt*",
-            "kms:GenerateDataKey*",
-            "kms:CreateGrant",
-            "kms:DescribeKey"
-        ],
-        "Effect": "Allow"
-    }
+  "SQS": {
+    "Action": [
+      "kms:GenerateDataKey",
+      "kms:Decrypt"
+    ],
+    "Effect": "Allow",
+    "Resource": [
+      "${ARN}"
+    ]
+  },
+  "DecryptOnly": {
+    "Action": [
+      "kms:Decrypt"
+    ],
+    "Effect": "Allow",
+    "Resource": [
+      "${ARN}"
+    ]
+  },
+  "EncryptOnly": {
+    "Action": [
+      "kms:Encrypt",
+      "kms:GenerateDataKey*",
+      "kms:ReEncrypt*"
+    ],
+    "Effect": "Allow",
+    "Resource": [
+      "${ARN}"
+    ]
+  },
+  "EncryptDecrypt": {
+    "Action": [
+      "kms:Encrypt",
+      "kms:Decrypt",
+      "kms:ReEncrypt*",
+      "kms:GenerateDataKey*",
+      "kms:CreateGrant",
+      "kms:DescribeKey"
+    ],
+    "Effect": "Allow",
+    "Resource": [
+      "${ARN}"
+    ]
+  }
 }

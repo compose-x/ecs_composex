@@ -429,6 +429,42 @@ class XResource(object):
             )
         return {"Name": container_env_name, "Value": container_env_value}
 
+    def generate_resource_service_env_vars(self, target_definition: dict) -> list:
+        """
+
+        :param dict target_definition:
+        """
+        res_return_names = {}
+        for prop_param in self.attributes_outputs.keys():
+            if prop_param.return_value:
+                res_return_names[prop_param.return_value] = prop_param
+            else:
+                res_return_names[prop_param.title] = prop_param
+        env_vars = []
+        for prop_name, prop_config in target_definition.items():
+            if prop_name in res_return_names:
+                if self.cfn_resource:
+                    env_vars.append(
+                        Environment(
+                            Name=prop_config,
+                            Value=Ref(
+                                self.attributes_outputs[res_return_names[prop_name]][
+                                    "ImportParameter"
+                                ]
+                            ),
+                        )
+                    )
+                elif self.lookup_properties:
+                    env_vars.append(
+                        Environment(
+                            Name=prop_config,
+                            Value=self.attributes_outputs[res_return_names[prop_name]][
+                                "ImportValue"
+                            ],
+                        )
+                    )
+        return env_vars
+
     def generate_resource_envvars(self):
         """
         Method to define all the env var of a resource based on its own defined output attributes
@@ -660,18 +696,37 @@ class ServicesXResource(XResource):
                     )
                 )
 
-    def set_services_targets(self, settings):
+    def handle_families_targets_expansion_dict(self, service_name, service, settings):
         """
-        Method to map services and families targets of the services defined.
-        TargetStructure:
-        (family, family_wide, services[], access)
+        Method to list all families and services that are targets of the resource.
+        Allows to implement family and service level association to resource
 
-        :param ecs_composex.common.settings.ComposeXSettings settings:
+        :param str service_name:
+        :param dict service: Service definition in compose file
+        :param ecs_composex.common.settings.ComposeXSettings settings: Execution settings
+        """
+        access_key = get_setting_key("Access", service)
+        the_service = [s for s in settings.services if s.name == service_name][0]
+        for family_name in the_service.families:
+            family_name = NONALPHANUM.sub("", family_name)
+            if family_name not in [f[0].name for f in self.families_targets]:
+                self.families_targets.append(
+                    (
+                        settings.families[family_name],
+                        False,
+                        [the_service],
+                        service[access_key],
+                        service,
+                    )
+                )
+
+    def set_services_targets_from_list(self, settings):
+        """
+        Deals with services set as a list
+
+        :param settings:
         :return:
         """
-        if not self.services:
-            LOG.debug(f"{self.module_name}.{self.name} No Services defined.")
-            return
         for service in self.services:
             name_key = get_setting_key("name", service)
             access_key = get_setting_key("access", service)
@@ -696,6 +751,54 @@ class ServicesXResource(XResource):
                 )
             elif service_name in [s.name for s in settings.services]:
                 self.handle_families_targets_expansion(service, settings)
+
+    def set_services_targets_from_dict(self, settings):
+        """
+        Deals with services set as a dict
+
+        :param settings:
+        :return:
+        """
+        for service_name, service_def in self.services.items():
+            if service_name in settings.families and service_name not in [
+                f[0].name for f in self.families_targets
+            ]:
+                self.families_targets.append(
+                    (
+                        settings.families[service_name],
+                        True,
+                        settings.families[service_name].services,
+                        service_def["Access"],
+                        service_def,
+                    )
+                )
+            elif service_name in settings.families and service_name in [
+                f[0].name for f in self.families_targets
+            ]:
+                LOG.debug(
+                    f"{self.module_name}.{self.name} - Family {service_name} has already been added. Skipping"
+                )
+            elif service_name in [s.name for s in settings.services]:
+                self.handle_families_targets_expansion_dict(
+                    service_name, service_def, settings
+                )
+
+    def set_services_targets(self, settings):
+        """
+        Method to map services and families targets of the services defined.
+        TargetStructure:
+        (family, family_wide, services[], access)
+
+        :param ecs_composex.common.settings.ComposeXSettings settings:
+        :return:
+        """
+        if not self.services:
+            LOG.debug(f"{self.module_name}.{self.name} No Services defined.")
+            return
+        if isinstance(self.services, list):
+            self.set_services_targets_from_list(settings)
+        elif isinstance(self.services, dict):
+            self.set_services_targets_from_dict(settings)
         self.debug_families_targets()
 
     def handle_family_scaling_expansion(self, service, settings):
@@ -723,7 +826,7 @@ class ServicesXResource(XResource):
         :param ecs_composex.common.settings.ComposeXSettings settings:
         :return:
         """
-        if not self.services:
+        if not self.services or isinstance(self.services, dict):
             return
         for service in self.services:
             name_key = get_setting_key("name", service)
