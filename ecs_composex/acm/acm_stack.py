@@ -253,7 +253,6 @@ def update_property_stack_with_resource(
             LOG.info(
                 f"{RES_KEY} - {property_value} is not a pointer to x-acm. {property_value}"
             )
-            continue
         else:
             cert_name = property_value.split(r"::")[-1]
             if x_certificate.name == cert_name:
