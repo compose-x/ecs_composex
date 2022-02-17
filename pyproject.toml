@@ -46,7 +46,6 @@ tabulate = "^0.8.9"
 importlib-resources = "^5.4.0"
 PyYAML = "^6.0"
 urllib3 = "^1.26.8"
-awacs = "^2.1.0"
 
 [tool.poetry.dev-dependencies]
 isort = "^5.10.1"

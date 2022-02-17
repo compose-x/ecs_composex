@@ -152,7 +152,10 @@ def get_parameter_settings(resource, parameter):
         raise
 
 
-def get_setting_key(name, settings_dict):
+def get_setting_key(name: str, settings_dict: dict) -> str:
+    """
+    Allows for flexibility in the syntax, i.e. to make access/Access both valid
+    """
     if keyisset(name.title(), settings_dict):
         return name.title()
     return name

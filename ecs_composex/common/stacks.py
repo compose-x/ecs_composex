@@ -327,9 +327,7 @@ def process_stacks(root_stack, settings, is_root=True):
     :type settings: ecs_composex.common.settings.ComposeXSettings
     :param bool is_root: Allows to know whether the stack is parent stack
     """
-    resources = root_stack.stack_template.resources
-    for resource_name in resources:
-        resource = resources[resource_name]
+    for resource_name, resource in root_stack.stack_template.resources.items():
         if isinstance(resource, ComposeXStack) or issubclass(
             type(resource), ComposeXStack
         ):

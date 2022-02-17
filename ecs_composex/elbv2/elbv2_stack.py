@@ -80,24 +80,36 @@ from ecs_composex.resources_import import import_record_properties
 from ecs_composex.vpc.vpc_params import APP_SUBNETS, PUBLIC_SUBNETS, VPC_ID
 
 
-def handle_cross_zone(value):
+def handle_cross_zone(value: str) -> LoadBalancerAttributes:
+    """
+    Handles MacroParamters for cross-zone.
+    """
     return LoadBalancerAttributes(
         Key="load_balancing.cross_zone.enabled", Value=str(value).lower()
     )
 
 
-def handle_http2(value):
+def handle_http2(value: str) -> LoadBalancerAttributes:
+    """
+    Handles MacroParamters for HTTP2.
+    """
     return LoadBalancerAttributes(Key="routing.http2.enabled", Value=str(value).lower())
 
 
-def handle_drop_invalid_headers(value):
+def handle_drop_invalid_headers(value) -> LoadBalancerAttributes:
+    """
+    Handles MacroParamters for drop invalid headers.
+    """
     return LoadBalancerAttributes(
         Key="routing.http.drop_invalid_header_fields.enabled",
         Value=str(value).lower(),
     )
 
 
-def handle_desync_mitigation_mode(value):
+def handle_desync_mitigation_mode(value) -> LoadBalancerAttributes:
+    """
+    Handles MacroParamters for desync mitigation.
+    """
     if value not in ["defensive", "strictest", "monitor"]:
         raise ValueError(
             "desync_mitigation_mode must be one of",
@@ -108,7 +120,10 @@ def handle_desync_mitigation_mode(value):
     )
 
 
-def handle_timeout_seconds(timeout_seconds):
+def handle_timeout_seconds(timeout_seconds) -> LoadBalancerAttributes:
+    """
+    Handles MacroParamters for timeout.
+    """
     if 1 < int(timeout_seconds) < 4000:
         return LoadBalancerAttributes(
             Key="idle_timeout.timeout_seconds",
@@ -121,7 +136,14 @@ def handle_timeout_seconds(timeout_seconds):
         )
 
 
-def validate_listeners_duplicates(name, ports):
+def validate_listeners_duplicates(name, ports) -> None:
+    """
+    Ensures values are correct for ports used in Listeners
+
+    :param name:
+    :param ports:
+    :return:
+    """
     if len(ports) != len(set(ports)):
         s = set()
         raise ValueError(
@@ -131,7 +153,7 @@ def validate_listeners_duplicates(name, ports):
 
 def add_listener_certificate_via_arn(
     listener_stack, listener, certificate_arn_id, cert_name
-):
+) -> None:
     """
     Adds a new ListenerCertificate for a given listener.
 
@@ -152,7 +174,10 @@ def add_listener_certificate_via_arn(
     )
 
 
-def http_to_https_default(default_of_all=False):
+def http_to_https_default(default_of_all=False) -> Action:
+    """
+    Predefined rule to redirect HTTP to HTTPS
+    """
     return Action(
         RedirectConfig=RedirectConfig(
             Protocol="HTTPS",
@@ -167,7 +192,10 @@ def http_to_https_default(default_of_all=False):
     )
 
 
-def tea_pot(default_of_all=False):
+def tea_pot(default_of_all=False) -> Action:
+    """
+    Predefined reply for ALB config rule, returning HTTP Tea Pot
+    """
     return Action(
         FixedResponseConfig=FixedResponseConfig(
             ContentType="application/json",
@@ -179,10 +207,9 @@ def tea_pot(default_of_all=False):
     )
 
 
-def handle_predefined_redirects(listener, action_name):
+def handle_predefined_redirects(listener, action_name) -> None:
     """
     Function to handle predefined redirects
-    :return:
     """
     predefined_redirects = [
         ("HTTP_TO_HTTPS", http_to_https_default),
@@ -198,7 +225,10 @@ def handle_predefined_redirects(listener, action_name):
             listener.DefaultActions.insert(0, action)
 
 
-def handle_default_actions(listener):
+def handle_default_actions(listener) -> None:
+    """
+    Handles default actions set on the listener
+    """
     action_sources = [("Redirect", handle_predefined_redirects)]
     for action_def in listener.default_actions:
         action_source = list(action_def.keys())[0]
@@ -213,9 +243,10 @@ def handle_default_actions(listener):
                 action[1](listener, source_value)
 
 
-def handle_string_condition_format(access_string):
+def handle_string_condition_format(access_string) -> list:
     """
     Function to parse and understand what type of condition that is.
+    Uses the *Access* parameter of the Target inside a Listener
     Supported :
     * path based
     * domain name
@@ -266,9 +297,10 @@ def handle_string_condition_format(access_string):
         raise ValueError(f"Could not understand what the access is for {access_string}")
 
 
-def define_target_conditions(definition):
+def define_target_conditions(definition) -> list:
     """
     Function to create the conditions for forward to target
+
     :param definition:
     :return: list of conditions
     :rtype: list
@@ -288,7 +320,7 @@ def define_target_conditions(definition):
     return conditions
 
 
-def define_actions(listener, target_def):
+def define_actions(listener, target_def) -> list:
     """
     Function to identify the Target definition and create the resulting rule appropriately.
 
@@ -357,7 +389,7 @@ def define_actions(listener, target_def):
     return actions
 
 
-def define_listener_rules_actions(listener, left_services):
+def define_listener_rules_actions(listener, left_services) -> list:
     """
     Function to identify the Target definition and create the resulting rule appropriately.
 
@@ -378,7 +410,7 @@ def define_listener_rules_actions(listener, left_services):
     return rules
 
 
-def handle_non_default_services(listener, services_def):
+def handle_non_default_services(listener, services_def) -> list:
     """
     Function to handle define the listener rule and identify
     :param listener:
@@ -399,19 +431,6 @@ def handle_non_default_services(listener, services_def):
         listener.DefaultActions += define_actions(listener, default_target)
     rules = define_listener_rules_actions(listener, left_services)
     return rules
-
-
-def validate_new_or_lookup_cert_matches(src_name, new_acm_certs, lookup_acm_certs):
-    if src_name not in [
-        new_cert.name for new_cert in new_acm_certs
-    ] and src_name not in [new_cert.name for new_cert in lookup_acm_certs]:
-        raise ValueError(
-            "No new or looked up ACM certificate found.",
-            src_name,
-            "Expected one of ",
-            [new_cert.name for new_cert in new_acm_certs],
-            [new_cert.name for new_cert in lookup_acm_certs],
-        )
 
 
 def add_extra_certificate(listener_stack, listener, cert_arn):

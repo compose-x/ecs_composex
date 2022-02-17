@@ -13,14 +13,12 @@ from ecs_composex.common import LOG
 ROLE_ARN_ARG = "RoleArn"
 
 
-def service_role_trust_policy(service_name):
+def service_role_trust_policy(service_name: str) -> dict:
     """
     Simple function to format the trust relationship for a Role and an AWS Service
     used from lambda-my-aws/ozone
 
-    :param service_name: name of the ecs_service
-    :type service_name: str
-
+    :param str service_name: name of the ecs_service
     :return: policy document
     :rtype: dict
     """
@@ -34,7 +32,15 @@ def service_role_trust_policy(service_name):
     return policy_doc
 
 
-def define_iam_policy(policy):
+def define_iam_policy(policy: str) -> str:
+    """
+    From input, determines if the policy string is the full ARN or just the name of the policy.
+    If just the name, assumes it is from the account itself, and adds the necessary ARN prefix.
+
+    :param str policy:
+    :return: the policy
+    :rtype: str
+    """
     policy_def = policy
     policy_re = re.compile(
         r"((^([a-zA-Z0-9-_./]+)$)|(^(arn:aws:iam::(aws|\d{12}):policy/)[a-zA-Z0-9-_./]+$))"
@@ -54,7 +60,7 @@ def define_iam_policy(policy):
     return policy_def
 
 
-def add_role_boundaries(iam_role, policy):
+def add_role_boundaries(iam_role: Role, policy: str) -> None:
     """
     Function to set permission boundary onto an IAM role
 
