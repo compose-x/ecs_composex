@@ -7,12 +7,7 @@ Module to add permissions etc. for services to kinesis streams
 """
 
 from ecs_composex.common import LOG
-from ecs_composex.kinesis.kinesis_params import (
-    MAPPINGS_KEY,
-    RES_KEY,
-    STREAM_ARN,
-    STREAM_ID,
-)
+from ecs_composex.kinesis.kinesis_params import STREAM_ARN, STREAM_ID
 from ecs_composex.resource_settings import (
     handle_lookup_resource,
     handle_resource_to_services,
@@ -24,31 +19,20 @@ def kinesis_to_ecs(resources, services_stack, res_root_stack, settings):
     Function to apply Kinesis settings to ECS Services
     :return:
     """
-    new_resources = [
-        resources[res_name]
-        for res_name in resources
-        if resources[res_name].cfn_resource
-    ]
-    lookup_resources = [
-        resources[res_name] for res_name in resources if resources[res_name].mappings
-    ]
-    if new_resources and new_resources not in services_stack.DependsOn:
-        services_stack.DependsOn.append(res_root_stack.title)
-        LOG.info(f"Added dependency between services and {res_root_stack.title}")
-    for new_res in new_resources:
-        handle_resource_to_services(
-            new_res,
-            services_stack,
-            res_root_stack,
-            settings,
-            STREAM_ARN,
-            [STREAM_ID],
-        )
-    for lookup_res in lookup_resources:
-        handle_lookup_resource(
-            settings.mappings[RES_KEY],
-            MAPPINGS_KEY,
-            lookup_res,
-            STREAM_ARN,
-            [STREAM_ID],
-        )
+    for resource_name, resource in resources.items():
+        LOG.info(f"{resource.module_name}.{resource_name} - Linking to services")
+        if not resource.mappings and resource.cfn_resource:
+            handle_resource_to_services(
+                resource,
+                services_stack,
+                res_root_stack,
+                settings,
+                STREAM_ARN,
+                [STREAM_ID],
+            )
+        elif resource.mappings and not resource.cfn_resource:
+            handle_lookup_resource(
+                settings,
+                resource,
+                STREAM_ARN,
+            )

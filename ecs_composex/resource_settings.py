@@ -192,7 +192,6 @@ def get_access_type_policy_model(
     :param str access_subkey:
     :return:
     """
-    print("HEEELLLOO atype", access_type, "SUB KEY", access_subkey)
     if isinstance(access_type, str):
         try:
             return policies_models[access_type]
@@ -368,25 +367,26 @@ def handle_kms_access(mapping_family, resource, target, selected_services):
     )
 
 
-def handle_lookup_resource(
-    mapping, mapping_family, resource, arn_parameter, access_subkeys=None
-):
+def handle_lookup_resource(settings, resource, arn_parameter, access_subkeys=None):
     """
-    :param dict mapping:
-    :param str mapping_family:
-    :param resource: The lookup resource
-    :type resource: ecs_composex.common.compose_resources.XResource
-    :return:
+    Maps resource to designated services for IAM and networking purposes
+
+    :param ecs_composex.common.settings.ComposeXSettings settings:
+    :param ecs_composex.common.compose_resources.XResource resource: The lookup resource
+    :param ecs_composex.common.cfn_params.Parameter arn_parameter:
+    :param list access_subkeys:
     """
-    if not keyisset(resource.logical_name, mapping):
-        LOG.error(f"No mapping existing for {resource.name}. Skipping")
-        return
 
     for target in resource.families_targets:
         selected_services = get_selected_services(resource, target)
         if selected_services:
-            add_update_mapping(target[0].template, mapping_family, mapping)
+            add_update_mapping(
+                target[0].template,
+                resource.mapping_key,
+                settings.mappings[resource.mapping_key],
+            )
             arn_attr_value = resource.attributes_outputs[arn_parameter]["ImportValue"]
+            print(resource.name, "TARGET 3", target[3], type(target[3]))
             if access_subkeys:
                 for access_subkey in access_subkeys:
                     if access_subkey not in target[3]:
@@ -408,14 +408,14 @@ def handle_lookup_resource(
                     arn_value=arn_attr_value,
                     access_subkey=None,
                 )
-            if (
-                hasattr(resource, "kms_arn_attr")
-                and resource.kms_arn_attr
-                and keyisset(
-                    resource.kms_arn_attr.title, mapping[resource.logical_name]
-                )
-            ):
-                handle_kms_access(mapping_family, resource, target, selected_services)
+            # if (
+            #     hasattr(resource, "kms_arn_attr")
+            #     and resource.kms_arn_attr
+            #     and keyisset(
+            #         resource.kms_arn_attr.title, settings.mappings[resource.mapping_key][resource.logical_name]
+            #     )
+            # ):
+            #     handle_kms_access(mapping_family, resource, target, selected_services)
 
 
 def assign_new_resource_to_service(

@@ -20,7 +20,7 @@ from ecs_composex.resource_settings import (
     handle_lookup_resource,
     handle_resource_to_services,
 )
-from ecs_composex.sqs.sqs_params import MOD_KEY, SQS_ARN, SQS_NAME, SQS_URL
+from ecs_composex.sqs.sqs_params import MOD_KEY, SQS_ARN, SQS_NAME
 
 
 def handle_service_scaling(resource, res_root_stack):
@@ -129,41 +129,22 @@ def sqs_to_ecs(resources, services_stack, res_root_stack, settings):
     Function to apply SQS settings to ECS Services
     :return:
     """
-    new_resources = [
-        resources[res_name]
-        for res_name in resources
-        if resources[res_name].cfn_resource
-    ]
-    lookup_resources = [
-        resources[res_name]
-        for res_name in resources
-        if resources[res_name].mappings and resources[res_name].lookup
-    ]
-    use_resources = [
-        resources[name]
-        for name in resources
-        if resources[name].use and resources[name].mappings
-    ]
-    LOG.debug(use_resources)
-    if new_resources and res_root_stack.title not in services_stack.DependsOn:
-        services_stack.DependsOn.append(res_root_stack.title)
-        LOG.info(f"Added dependency between services and {res_root_stack.title}")
-    for new_res in new_resources:
-        handle_resource_to_services(
-            new_res,
-            services_stack,
-            res_root_stack,
-            settings,
-            SQS_ARN,
-            [SQS_URL, SQS_NAME],
-        )
-        handle_service_scaling(new_res, res_root_stack)
-    for lookup_res in lookup_resources:
-        handle_lookup_resource(
-            settings.mappings[lookup_res.mapping_key],
-            lookup_res.mapping_key,
-            lookup_res,
-            SQS_ARN,
-            [SQS_URL, SQS_NAME],
-        )
-        handle_service_scaling(lookup_res, None)
+    for resource_name, resource in resources.items():
+        LOG.info(f"{resource.module_name}.{resource_name} - Linking to services")
+        if not resource.mappings and resource.cfn_resource:
+            handle_resource_to_services(
+                resource,
+                services_stack,
+                res_root_stack,
+                settings,
+                SQS_ARN,
+                parameters=list(resource.attributes_outputs.keys()),
+            )
+            handle_service_scaling(resource, res_root_stack)
+        elif not resource.cfn_resource and resource.mappings:
+            handle_lookup_resource(
+                settings,
+                resource,
+                SQS_ARN,
+            )
+            handle_service_scaling(resource, None)

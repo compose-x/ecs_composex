@@ -3,6 +3,9 @@
     "Action": [
       "sns:Publish"
     ],
-    "Effect": "Allow"
+    "Effect": "Allow",
+    "Resource": [
+      "${ARN}"
+    ]
   }
 }

@@ -7,7 +7,7 @@ Module to manage IAM policies to grant access to ECS Services to KMS Keys
 """
 
 from ecs_composex.common import LOG
-from ecs_composex.kms.kms_params import KMS_KEY_ARN, KMS_KEY_ID, MAPPINGS_KEY
+from ecs_composex.kms.kms_params import KMS_KEY_ARN, KMS_KEY_ID
 from ecs_composex.resource_settings import (
     handle_lookup_resource,
     handle_resource_to_services,
@@ -19,31 +19,20 @@ def kms_to_ecs(resources, services_stack, res_root_stack, settings):
     Function to apply SQS settings to ECS Services
     :return:
     """
-    new_resources = [
-        resources[res_name]
-        for res_name in resources
-        if resources[res_name].cfn_resource
-    ]
-    lookup_resources = [
-        resources[res_name] for res_name in resources if resources[res_name].mappings
-    ]
-    if new_resources and res_root_stack.title not in services_stack.DependsOn:
-        services_stack.DependsOn.append(res_root_stack.title)
-        LOG.info(f"Added dependency between services and {res_root_stack.title}")
-    for new_res in new_resources:
-        handle_resource_to_services(
-            new_res,
-            services_stack,
-            res_root_stack,
-            settings,
-            KMS_KEY_ARN,
-            [KMS_KEY_ID],
-        )
-    for lookup_res in lookup_resources:
-        handle_lookup_resource(
-            settings.mappings[MAPPINGS_KEY],
-            MAPPINGS_KEY,
-            lookup_res,
-            KMS_KEY_ARN,
-            [KMS_KEY_ID],
-        )
+    for resource_name, resource in resources.items():
+        LOG.info(f"{resource.module_name}.{resource_name} - Linking to services")
+        if not resource.mappings and resource.cfn_resource:
+            handle_resource_to_services(
+                resource,
+                services_stack,
+                res_root_stack,
+                settings,
+                KMS_KEY_ARN,
+                [KMS_KEY_ID],
+            )
+        elif not resource.cfn_resource and resource.mappings:
+            handle_lookup_resource(
+                settings,
+                resource,
+                KMS_KEY_ARN,
+            )
