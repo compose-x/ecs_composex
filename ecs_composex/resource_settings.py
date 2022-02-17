@@ -9,7 +9,7 @@ import re
 from copy import deepcopy
 
 from compose_x_common.compose_x_common import keyisset
-from troposphere import AWSHelperFn, FindInMap, Ref, Sub
+from troposphere import AWSHelperFn, Ref, Sub
 from troposphere.iam import Policy as IamPolicy
 from troposphere.iam import PolicyType
 
@@ -374,40 +374,41 @@ def handle_lookup_resource(settings, resource, arn_parameter, access_subkeys=Non
 
     for target in resource.families_targets:
         selected_services = get_selected_services(resource, target)
-        if selected_services:
-            add_update_mapping(
-                target[0].template,
-                resource.mapping_key,
-                settings.mappings[resource.mapping_key],
-            )
-            arn_attr_value = resource.attributes_outputs[arn_parameter]["ImportValue"]
-            if access_subkeys:
-                for access_subkey in access_subkeys:
-                    if access_subkey not in target[3]:
-                        continue
-                    map_service_perms_to_resource(
-                        target[0],
-                        selected_services,
-                        target,
-                        resource=resource,
-                        arn_value=arn_attr_value,
-                        access_subkey=access_subkey,
-                    )
-            else:
+        if not selected_services:
+            continue
+        add_update_mapping(
+            target[0].template,
+            resource.mapping_key,
+            settings.mappings[resource.mapping_key],
+        )
+        arn_attr_value = resource.attributes_outputs[arn_parameter]["ImportValue"]
+        if access_subkeys:
+            for access_subkey in access_subkeys:
+                if access_subkey not in target[3]:
+                    continue
                 map_service_perms_to_resource(
                     target[0],
                     selected_services,
                     target,
                     resource=resource,
                     arn_value=arn_attr_value,
-                    access_subkey=None,
+                    access_subkey=access_subkey,
                 )
-            if (
-                hasattr(resource, "kms_arn_attr")
-                and resource.kms_arn_attr
-                and keyisset(resource.kms_arn_attr, resource.lookup_properties)
-            ):
-                handle_kms_access(settings, resource, target, selected_services)
+        else:
+            map_service_perms_to_resource(
+                target[0],
+                selected_services,
+                target,
+                resource=resource,
+                arn_value=arn_attr_value,
+                access_subkey=None,
+            )
+        if (
+            hasattr(resource, "kms_arn_attr")
+            and resource.kms_arn_attr
+            and keyisset(resource.kms_arn_attr, resource.lookup_properties)
+        ):
+            handle_kms_access(settings, resource, target, selected_services)
 
 
 def assign_new_resource_to_service(
@@ -438,32 +439,33 @@ def assign_new_resource_to_service(
         params_values[setting[0]] = setting[2]
     for target in resource.families_targets:
         selected_services = get_selected_services(resource, target)
-        if selected_services:
-            add_parameters(target[0].template, params_to_add)
-            target[0].stack.Parameters.update(params_values)
-            if access_subkeys:
-                for access_subkey in access_subkeys:
-                    if access_subkey not in target[3]:
-                        continue
-                    map_service_perms_to_resource(
-                        target[0],
-                        selected_services,
-                        target,
-                        arn_value=Ref(arn_settings[1]),
-                        resource=resource,
-                        access_subkey=access_subkey,
-                    )
-            else:
+        if not selected_services:
+            continue
+        add_parameters(target[0].template, params_to_add)
+        target[0].stack.Parameters.update(params_values)
+        if access_subkeys:
+            for access_subkey in access_subkeys:
+                if access_subkey not in target[3]:
+                    continue
                 map_service_perms_to_resource(
                     target[0],
                     selected_services,
                     target,
-                    resource=resource,
                     arn_value=Ref(arn_settings[1]),
-                    access_subkey=None,
+                    resource=resource,
+                    access_subkey=access_subkey,
                 )
-            if res_root_stack.title not in target[0].stack.DependsOn:
-                target[0].stack.DependsOn.append(res_root_stack.title)
+        else:
+            map_service_perms_to_resource(
+                target[0],
+                selected_services,
+                target,
+                resource=resource,
+                arn_value=Ref(arn_settings[1]),
+                access_subkey=None,
+            )
+        if res_root_stack.title not in target[0].stack.DependsOn:
+            target[0].stack.DependsOn.append(res_root_stack.title)
 
 
 def handle_resource_to_services(

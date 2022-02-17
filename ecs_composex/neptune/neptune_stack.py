@@ -11,7 +11,7 @@ from compose_x_common.compose_x_common import attributes_to_mapping, keyisset
 from troposphere import GetAtt, Ref
 from troposphere.neptune import DBCluster as CfnDBCluster
 
-from ecs_composex.common import setup_logging
+from ecs_composex.common import build_template, setup_logging
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources import (
     RdsXResource,
@@ -19,10 +19,6 @@ from ecs_composex.compose.x_resources import (
     set_new_resources,
     set_resources,
     set_use_resources,
-)
-from ecs_composex.docdb.docdb_template import (
-    create_docdb_template,
-    init_doc_db_template,
 )
 from ecs_composex.iam.import_sam_policies import get_access_types
 from ecs_composex.neptune.neptune_params import (
@@ -37,7 +33,9 @@ from ecs_composex.neptune.neptune_params import (
 )
 from ecs_composex.rds.rds_params import DB_CLUSTER_ARN, DB_SG
 from ecs_composex.rds_resources_settings import lookup_rds_resource
-from ecs_composex.vpc.vpc_params import STORAGE_SUBNETS
+from ecs_composex.vpc.vpc_params import STORAGE_SUBNETS, VPC_ID
+
+from .neptune_template import create_neptune_template
 
 LOG = setup_logging()
 
@@ -175,7 +173,7 @@ class NeptuneDBCluster(RdsXResource):
 
 class XStack(ComposeXStack):
     """
-    Class for the Stack of DocDB
+    Class for the Stack of x-neptune
     """
 
     def __init__(self, title, settings, **kwargs):
@@ -187,9 +185,11 @@ class XStack(ComposeXStack):
         lookup_resources = set_lookup_resources(x_resources, RES_KEY)
         use_resources = set_use_resources(x_resources, RES_KEY, False)
         if new_resources:
-            stack_template = init_doc_db_template()
+            stack_template = build_template(
+                "Root template for Neptune by ComposeX", [VPC_ID, STORAGE_SUBNETS]
+            )
             super().__init__(title, stack_template, **kwargs)
-            create_docdb_template(stack_template, new_resources, settings, self)
+            create_neptune_template(stack_template, new_resources, settings, self)
         else:
             self.is_void = True
         if lookup_resources or use_resources:

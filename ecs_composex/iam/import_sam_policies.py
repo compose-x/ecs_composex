@@ -36,7 +36,14 @@ def import_and_cleanse_policies():
     return import_policies
 
 
-def get_access_types(module_name):
+def get_access_types(module_name: str) -> dict:
+    """
+    Retrieves the Permissions definitions for a given module
+
+    :param str module_name:
+    :return: the policies
+    :rtype: dict
+    """
     sam_policies = import_and_cleanse_policies()
     source = pkg_files("ecs_composex").joinpath(
         f"{module_name}/{module_name}_perms.json"

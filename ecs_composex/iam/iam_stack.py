@@ -2,6 +2,9 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  Copyright 2020-2022 John Mille <john@compose-x.io>
 
+"""
+IAM Stack
+"""
 
 from ecs_composex.common import add_outputs, add_parameters, build_template
 from ecs_composex.common.stacks import ComposeXStack
