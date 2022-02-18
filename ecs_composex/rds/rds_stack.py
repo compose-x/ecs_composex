@@ -135,7 +135,7 @@ class Rds(RdsXResource):
                 "DbName",
             ),
             self.db_port_parameter: (
-                f"{self.logical_name}{DB_ENDPOINT_PORT}",
+                f"{self.logical_name}{self.db_port_parameter.return_value}",
                 self.cfn_resource,
                 GetAtt,
                 self.db_port_parameter.return_value,
@@ -178,24 +178,23 @@ class Rds(RdsXResource):
             subattribute_key,
         )
 
+    def handle_x_dependencies(self, settings, root_stack=None):
+        """
+        Handles x-rds to other x-resource dependencies and features
+        :param settings:
+        :param root_stack:
+        :return:
+        """
+        if self.parameters:
+            apply_extra_parameters(
+                settings, self, self.stack.stack_template.resources[self.name]
+            )
+
 
 class XStack(ComposeXStack):
     """
     Class to handle ECS root stack specific settings
     """
-
-    def handle_x_dependencies(self, root_stack, settings):
-        """
-        Method to handle RDS to other x- resources links.
-
-        :param ComposeXStack root_stack:
-        :param ecs_composex.common.settings.ComposeXSettings settings:
-        :return:
-        """
-        for name, stack in self.stack_template.resources.items():
-            db = stack.db
-            if db.parameters:
-                apply_extra_parameters(settings, stack, db, stack.stack_template)
 
     def __init__(self, title, settings, **kwargs):
         set_resources(settings, Rds, RES_KEY, MOD_KEY, mapping_key=MAPPINGS_KEY)

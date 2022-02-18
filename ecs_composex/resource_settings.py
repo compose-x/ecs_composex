@@ -329,7 +329,6 @@ def map_service_perms_to_resource(
         for service in services:
             if container.Name == service.name:
                 LOG.debug(f"Extended env vars for {container.Name} -> {service.name}")
-                print(family.name, target[-1])
                 if keyisset("ReturnValues", target[-1]):
                     extend_container_envvars(
                         container,

@@ -72,7 +72,7 @@ def define_associated_roles(db):
     return roles
 
 
-def add_rds_features(settings, stack, db, features, db_template, boundary):
+def add_rds_features(settings, db, db_stack, features, boundary):
     """
     Function to add AssociatedRoles and Features if not already defined in the DB properties for that feature.
     """
@@ -124,24 +124,24 @@ def add_rds_features(settings, stack, db, features, db_template, boundary):
             )
         policies.append(
             features_settings[feature["Name"]](
-                settings, stack, db, feature["Resources"], db_template
+                settings, db, db_stack, feature["Resources"]
             )
         )
         features_definition.append(
             DBClusterRole(FeatureName=feature["Name"], RoleArn=GetAtt(iam_role, "Arn"))
         )
-    db_template.add_resource(iam_role)
+    db_stack.stack_template.add_resource(iam_role)
     if policies and not hasattr(db.cfn_resource, "AssociatedRoles"):
         setattr(db.cfn_resource, "AssociatedRoles", features_definition)
 
 
-def apply_extra_parameters(settings, stack, db, db_template):
+def apply_extra_parameters(settings, db, db_stack) -> None:
     """
     Function to add extra parameters set in MacroParameters post creation of the DB resource from properties
 
-    :param ecs_composex.rds.rds_stack.Rds db db:
-    :param troposphere.Template db_template:
-    :return:
+    :param ecs_composex.common.settings.ComposeXSettings settings:
+    :param ecs_composex.rds.rds_stack.Rds db:
+    :param ecs_composex.rds.rds_template.RdsDbStack db_stack:
     """
     if not db.parameters:
         return
@@ -161,10 +161,9 @@ def apply_extra_parameters(settings, stack, db, db_template):
         ):
             config[1](
                 settings,
-                stack,
                 db,
+                db_stack,
                 db.parameters[name],
-                db_template,
                 permissions_boundary,
             )
         elif keyisset(name, db.parameters) and not isinstance(

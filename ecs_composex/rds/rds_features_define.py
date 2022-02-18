@@ -9,22 +9,21 @@ Module to define and match RDS Features to other AWS resources.
 import re
 
 from compose_x_common.compose_x_common import keyisset
-from troposphere import AWS_NO_VALUE, AWS_PARTITION, FindInMap, GetAtt, Ref, Sub
+from troposphere import AWS_NO_VALUE, AWS_PARTITION, GetAtt, Ref, Sub
 from troposphere.iam import Policy as IamPolicy
 
 from ecs_composex.common import LOG, add_parameters, add_update_mapping
-from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.s3.s3_params import S3_BUCKET_ARN
 
 S3_KEY = "x-s3"
 
 
-def get_s3_bucket_arn_from_resource(db_template, stack, resource):
-    param = Parameter(f"{resource.logical_name}{S3_BUCKET_ARN.title}", Type="String")
-    add_parameters(db_template, [param])
-    if stack.parent_stack:
-        add_parameters(stack.parent_stack.stack_template, [param])
-        stack.parent_stack.Parameters.update(
+def get_s3_bucket_arn_from_resource(db_stack, resource):
+    param = resource.attributes_outputs[S3_BUCKET_ARN]["ImportParameter"]
+    add_parameters(db_stack.stack_template, [param])
+    if db_stack.parent_stack:
+        add_parameters(db_stack.parent_stack.stack_template, [param])
+        db_stack.parent_stack.Parameters.update(
             {
                 param.title: GetAtt(
                     "s3",
@@ -32,17 +31,16 @@ def get_s3_bucket_arn_from_resource(db_template, stack, resource):
                 )
             }
         )
-    stack.Parameters.update({param.title: Ref(param.title)})
+    db_stack.Parameters.update({param.title: Ref(param.title)})
     return Sub(f"${{{param.title}}}/*")
 
 
-def set_from_x_s3(settings, stack, db, db_template, bucket_name):
+def set_from_x_s3(settings, db, db_stack, bucket_name):
     """
     Function to link the RDS DB to a Bucket defined in x-s3
 
     :param settings:
     :param db:
-    :param db_template:
     :param str bucket_name:
     :return:
     """
@@ -65,10 +63,10 @@ def set_from_x_s3(settings, stack, db, db_template, bucket_name):
     if not resource:
         return
     if resource.cfn_resource:
-        return get_s3_bucket_arn_from_resource(db_template, stack, resource)
+        return get_s3_bucket_arn_from_resource(db_stack, resource)
     elif resource.lookup and keyisset("s3", settings.mappings):
-        add_update_mapping(db_template, "s3", settings.mappings["s3"])
-        return FindInMap("s3", resource.logical_name, "Arn")
+        add_update_mapping(db_stack.stack_template, "s3", settings.mappings["s3"])
+        return resource.lookup_properties[S3_BUCKET_ARN]
 
 
 def import_bucket_from_arn(bucket):
@@ -95,7 +93,7 @@ def import_bucket_from_arn(bucket):
     return bucket_arn
 
 
-def import_raw_bucket_name(bucket):
+def import_raw_bucket_name(bucket) -> Sub:
     """
     Function to import and define a bucket ARN from bucket name alone and support for path to be defined
     :param str bucket:
@@ -122,15 +120,14 @@ def import_raw_bucket_name(bucket):
     return bucket_arn
 
 
-def define_s3_bucket_arns(settings, stack, db, config, db_template):
+def define_s3_bucket_arns(settings, db, db_stack, config) -> list:
     """
     Function to define the IAM Policy for S3Import access
 
     :param settings:
     :param db:
+    :param db_stack:
     :param config:
-    :param db_template:
-    :param subconfig:
     :return:
     """
     bucket_arns = []
@@ -144,7 +141,7 @@ def define_s3_bucket_arns(settings, stack, db, config, db_template):
                 type(bucket),
             )
         if bucket.startswith("x-s3"):
-            bucket_arn = set_from_x_s3(settings, stack, db, db_template, bucket)
+            bucket_arn = set_from_x_s3(settings, db, db_stack, bucket)
         elif bucket.startswith("arn:aws"):
             bucket_arn = import_bucket_from_arn(bucket)
         elif not bucket.startswith("arn:aws"):
@@ -155,18 +152,16 @@ def define_s3_bucket_arns(settings, stack, db, config, db_template):
     return bucket_arns
 
 
-def define_s3_export_feature_policy(settings, stack, db, config, db_template):
+def define_s3_export_feature_policy(settings, db, db_stack, config) -> IamPolicy:
     """
     Function to define the IAM Policy for S3Import access
 
     :param settings:
     :param db:
     :param config:
-    :param db_template:
-    :param subconfig:
     :return:
     """
-    bucket_arns = define_s3_bucket_arns(settings, stack, db, config, db_template)
+    bucket_arns = define_s3_bucket_arns(settings, db, db_stack, config)
     policy = IamPolicy(
         PolicyName=f"S3AccessFor{db.logical_name}",
         PolicyDocument={
@@ -184,18 +179,17 @@ def define_s3_export_feature_policy(settings, stack, db, config, db_template):
     return policy
 
 
-def define_s3_import_feature_policy(settings, stack, db, config, db_template):
+def define_s3_import_feature_policy(settings, db, db_stack, config) -> IamPolicy:
     """
     Function to define the IAM Policy for S3Import access
 
     :param settings:
     :param db:
+    :param db_stack:
     :param config:
-    :param db_template:
-    :param subconfig:
     :return:
     """
-    bucket_arns = define_s3_bucket_arns(settings, stack, db, config, db_template)
+    bucket_arns = define_s3_bucket_arns(settings, db, db_stack, config)
     policy = IamPolicy(
         PolicyName=f"S3AccessFor{db.logical_name}",
         PolicyDocument={
