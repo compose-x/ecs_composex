@@ -350,7 +350,6 @@ def validate_instance_types_config(domain, props, instance_type, config):
         for top_config, false_prop in unsupported.items():
             if keyisset(top_config, props) and hasattr(props[top_config], false_prop):
                 value = getattr(props[top_config], false_prop)
-                print(domain.name, top_config, false_prop, value)
                 if value is not False:
                     raise ValueError(
                         f"{domain.name} - Property {top_config}.{false_prop} is enabled, but is "

@@ -14,14 +14,40 @@ from troposphere.iam import Policy as IamPolicy
 from troposphere.iam import PolicyType
 
 from ecs_composex.common import LOG, add_parameters, add_update_mapping
-from ecs_composex.common.cfn_params import STACK_ID_SHORT
+from ecs_composex.common.cfn_params import STACK_ID_SHORT, Parameter
 from ecs_composex.common.services_helpers import extend_container_envvars
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.compose.x_resources import get_parameter_settings
 from ecs_composex.ecs.ecs_iam import define_service_containers
 from ecs_composex.iam.import_sam_policies import get_access_types
 from ecs_composex.kms.kms_params import MAPPINGS_KEY as KMS_MAPPING_KEY
 from ecs_composex.kms.kms_params import MOD_KEY as KMS_MOD
+
+
+def get_parameter_settings(resource, parameter):
+    """
+    Function to define a set of values for the purpose of exposing resources settings from their stack to another.
+
+    :param ecs_composex.compose.x_resources.XResource resource: The XResource we want to extract the outputs from
+    :param parameter: The parameter we want to extract the outputs for
+    :return: Ordered combination of settings
+    :rtype: tuple
+    """
+    try:
+        data = (
+            resource.attributes_outputs[parameter]["Name"],
+            resource.attributes_outputs[parameter]["ImportParameter"],
+            resource.attributes_outputs[parameter]["ImportValue"],
+            parameter,
+        )
+        return data
+    except KeyError as error:
+        print(error)
+        print([r.title for r in resource.output_properties.keys()])
+        print(resource.attributes_outputs.items())
+        if isinstance(parameter, Parameter):
+            print(parameter, parameter.title)
+        print(f"{resource.module_name}.{resource.name}")
+        raise
 
 
 def determine_arns(arn, policy_doc, ignore_missing_primary=False):
@@ -412,7 +438,6 @@ def handle_lookup_resource(settings, resource, arn_parameter, access_subkeys=Non
 
 def assign_new_resource_to_service(
     resource,
-    res_root_stack,
     arn_parameter,
     parameters=None,
     access_subkeys: list = None,
@@ -422,8 +447,6 @@ def assign_new_resource_to_service(
 
     :param resource: The resource
     :type resource: ecs_composex.common.compose_resources.XResource
-    :param res_root_stack: The root stack of the resource type
-    :type res_root_stack: ecs_composex.common.stacks.ComposeXStack
     :param: The parameter mapping to the ARN attribute of the resource
     :type arn_parameter: ecs_composex.common.cfn_parameter.Parameter arn_parameter
     """
@@ -463,14 +486,12 @@ def assign_new_resource_to_service(
                 arn_value=Ref(arn_settings[1]),
                 access_subkey=None,
             )
-        if res_root_stack.title not in target[0].stack.DependsOn:
-            target[0].stack.DependsOn.append(res_root_stack.title)
+        if resource.stack.title not in target[0].stack.DependsOn:
+            target[0].stack.DependsOn.append(resource.stack.title)
 
 
 def handle_resource_to_services(
-    xresource,
-    services_stack,
-    res_root_stack,
+    x_resource,
     settings,
     arn_parameter,
     parameters=None,
@@ -481,9 +502,7 @@ def handle_resource_to_services(
     Function to evaluate the type of resource coming in and pass on the settings and parameters for
     IAM and otherwise assignment
 
-    :param ecs_composex.common.compose_resource.XResource xresource:
-    :param ecs_composex.common.stacks.ComposeXStack services_stack:
-    :param ecs_composex.common.stacks.ComposeXStack res_root_stack:
+    :param ecs_composex.common.compose_resource.XResource x_resource:
     :param ecs_composex.common.settings.ComposeXSettings settings:
     :param arn_parameter:
     :param bool nested:
@@ -492,13 +511,11 @@ def handle_resource_to_services(
     """
     if not parameters:
         parameters = []
-    s_resources = res_root_stack.stack_template.resources
-    for resource_name in s_resources:
-        if issubclass(type(s_resources[resource_name]), ComposeXStack):
+    s_resources = x_resource.stack.stack_template.resources
+    for resource_name, s_resource in s_resources.items():
+        if issubclass(type(s_resource), ComposeXStack):
             handle_resource_to_services(
                 s_resources[resource_name],
-                services_stack,
-                res_root_stack,
                 settings,
                 arn_parameter,
                 parameters,
@@ -506,8 +523,7 @@ def handle_resource_to_services(
                 access_subkeys=access_subkeys,
             )
     assign_new_resource_to_service(
-        xresource,
-        res_root_stack,
+        x_resource,
         arn_parameter,
         parameters,
         access_subkeys=access_subkeys,

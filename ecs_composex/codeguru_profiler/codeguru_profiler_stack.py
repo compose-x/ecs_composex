@@ -8,7 +8,7 @@ Module to manage top level AWS CodeGuru profiles
 import warnings
 
 from compose_x_common.compose_x_common import keyisset
-from troposphere import GetAtt, Ref, Sub
+from troposphere import GetAtt, Ref, Sub, Template
 from troposphere.codeguruprofiler import ProfilingGroup
 
 from ecs_composex.codeguru_profiler.codeguru_profiler_aws import lookup_profile_config
@@ -19,7 +19,7 @@ from ecs_composex.codeguru_profiler.codeguru_profiler_params import (
     PROFILER_NAME,
     RES_KEY,
 )
-from ecs_composex.common import build_template
+from ecs_composex.common import add_outputs, build_template
 from ecs_composex.common.cfn_params import STACK_ID_SHORT
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources import (
@@ -33,11 +33,13 @@ from ecs_composex.iam.import_sam_policies import get_access_types
 from ecs_composex.resources_import import import_record_properties
 
 
-def create_root_template(new_resources):
+def create_root_template(new_resources: list) -> Template:
     """
     Function to create the root stack template for profiles
-    :param new_resources:
-    :return:
+
+    :param list[CodeProfiler] new_resources:
+    :return: The template wit the profiles
+    :rtype: troposphere.Template
     """
     root_tpl = build_template(f"Root stack to manage {MOD_KEY}")
     for res in new_resources:
@@ -58,6 +60,9 @@ def create_root_template(new_resources):
                 f"{res.logical_name}-${{StackId}}", StackId=STACK_ID_SHORT
             )
         res.cfn_resource = ProfilingGroup(res.logical_name, **props)
+        res.init_outputs()
+        res.generate_outputs()
+        add_outputs(root_tpl, res.outputs)
         root_tpl.add_resource(res.cfn_resource)
     return root_tpl
 
@@ -79,6 +84,7 @@ class CodeProfiler(ApiXResource):
                 break
         self.env_names.append("AWS_CODEGURU_PROFILER_GROUP_NAME")
         self.init_env_names(add_self_default=False)
+        self.arn_parameter = PROFILER_ARN
 
     def init_outputs(self):
         self.output_properties = {

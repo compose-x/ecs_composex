@@ -47,7 +47,6 @@ def create_events_template(stack, settings, new_resources):
     :param list[Rule] new_resources:
     """
     for resource in new_resources:
-        print(resource.families_targets)
         if not resource.families_targets:
             LOG.error(
                 f"The rule {resource.logical_name} does not have any families_targets defined"

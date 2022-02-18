@@ -31,6 +31,10 @@ from ecs_composex.dynamodb.dynamodb_params import (
 )
 from ecs_composex.dynamodb.dynamodb_template import create_dynamodb_template
 from ecs_composex.iam.import_sam_policies import get_access_types
+from ecs_composex.resource_settings import (
+    handle_lookup_resource,
+    handle_resource_to_services,
+)
 
 LOG = setup_logging()
 
@@ -66,6 +70,17 @@ class Table(ApiXResource):
     """
 
     policies_scaffolds = get_access_types(MOD_KEY)
+
+    def __init__(
+        self,
+        name: str,
+        definition: dict,
+        module_name: str,
+        settings,
+        mapping_key: str = None,
+    ):
+        super().__init__(name, definition, module_name, settings, mapping_key)
+        self.arn_parameter = TABLE_ARN
 
     def init_outputs(self):
         self.output_properties = {

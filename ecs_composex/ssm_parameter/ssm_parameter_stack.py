@@ -26,6 +26,10 @@ from ecs_composex.compose.x_resources import (
     set_use_resources,
 )
 from ecs_composex.iam.import_sam_policies import get_access_types
+from ecs_composex.resource_settings import (
+    handle_lookup_resource,
+    handle_resource_to_services,
+)
 from ecs_composex.resources_import import import_record_properties
 from ecs_composex.ssm_parameter.ssm_parameter_params import (
     MAPPINGS_KEY,
@@ -165,6 +169,17 @@ class SsmParameter(ApiXResource):
     """
 
     policies_scaffolds = get_access_types(MOD_KEY)
+
+    def __init__(
+        self,
+        name: str,
+        definition: dict,
+        module_name: str,
+        settings,
+        mapping_key: str = None,
+    ):
+        super().__init__(name, definition, module_name, settings, mapping_key)
+        self.arn_parameter = SSM_PARAM_ARN
 
     def init_outputs(self):
         spacer = ""

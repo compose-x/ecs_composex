@@ -16,26 +16,21 @@ from ecs_composex.ecs.ecs_scaling import (
     generate_alarm_scaling_out_policy,
     reset_to_zero_policy,
 )
-from ecs_composex.resource_settings import (
-    handle_lookup_resource,
-    handle_resource_to_services,
-)
-from ecs_composex.sqs.sqs_params import MOD_KEY, SQS_ARN, SQS_NAME
+from ecs_composex.sqs.sqs_params import MOD_KEY, SQS_NAME
 
 
-def handle_service_scaling(resource, res_root_stack):
+def handle_service_scaling(resource):
     """
     Function to define and prepare settings for scaling rules based for SQS Queues discovered through lookup
 
     :param ecs_composex.common.compose_resources.XResource resource:
-    :param ecs_composex.common.stacks.ComposeXStack res_root_stack:
     :raises KeyError: if the service name is not a listed service in docker-compose.
     :return:
     """
     resource_attribute = SQS_NAME.title
     if not resource.lookup:
         resource_value = GetAtt(
-            res_root_stack.title,
+            resource.stack.title,
             f"Outputs.{resource.logical_name}{SQS_NAME.title}",
         )
     else:
@@ -122,29 +117,3 @@ def add_alarm_for_resource(
             ].MetricIntervalLowerBound
         ),
     )
-
-
-def sqs_to_ecs(resources, services_stack, res_root_stack, settings):
-    """
-    Function to apply SQS settings to ECS Services
-    :return:
-    """
-    for resource_name, resource in resources.items():
-        LOG.info(f"{resource.module_name}.{resource_name} - Linking to services")
-        if not resource.mappings and resource.cfn_resource:
-            handle_resource_to_services(
-                resource,
-                services_stack,
-                res_root_stack,
-                settings,
-                SQS_ARN,
-                parameters=list(resource.attributes_outputs.keys()),
-            )
-            handle_service_scaling(resource, res_root_stack)
-        elif not resource.cfn_resource and resource.mappings:
-            handle_lookup_resource(
-                settings,
-                resource,
-                SQS_ARN,
-            )
-            handle_service_scaling(resource, None)

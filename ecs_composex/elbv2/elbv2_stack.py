@@ -69,6 +69,7 @@ from ecs_composex.elbv2.elbv2_params import (
     LB_DNS_ZONE_ID,
     LB_NAME,
     LB_SG_ID,
+    MAPPINGS_KEY,
     MOD_KEY,
     RES_KEY,
     TGT_FULL_NAME,
@@ -78,6 +79,8 @@ from ecs_composex.elbv2.elbv2_params import (
 from ecs_composex.ingress_settings import Ingress, set_service_ports
 from ecs_composex.resources_import import import_record_properties
 from ecs_composex.vpc.vpc_params import APP_SUBNETS, PUBLIC_SUBNETS, VPC_ID
+
+from .elbv2_ecs import handle_services_association
 
 
 def handle_cross_zone(value: str) -> LoadBalancerAttributes:
@@ -612,84 +615,6 @@ def map_service_target(lb, name, l_service_def):
                     l_service_def["target_arn"] = service["target_arn"]
                     break
             break
-
-
-class ComposeTargetGroup(TargetGroup):
-    """
-    Class to manage Target Groups
-    """
-
-    def __init__(self, title, elbv2, family, stack, **kwargs):
-        self.family = family
-        self.stack = stack
-        self.outputs = []
-        self.elbv2 = elbv2
-        self.output_properties = {}
-        self.attributes_outputs = {}
-        super().__init__(title, **kwargs)
-
-    def init_outputs(self):
-        self.output_properties = {
-            TGT_GROUP_ARN: (self.title, self, Ref, None),
-            TGT_GROUP_NAME: (
-                f"{self.title}{TGT_GROUP_NAME.return_value}",
-                self,
-                GetAtt,
-                TGT_GROUP_NAME.return_value,
-                None,
-            ),
-            TGT_FULL_NAME: (
-                f"{self.title}{TGT_FULL_NAME.return_value}",
-                self,
-                GetAtt,
-                TGT_FULL_NAME.return_value,
-                None,
-            ),
-        }
-
-    def generate_outputs(self):
-        for (
-            attribute_parameter,
-            output_definition,
-        ) in self.output_properties.items():
-            output_name = f"{self.title}{attribute_parameter.title}"
-            value = self.set_new_resource_outputs(output_definition)
-            self.attributes_outputs[attribute_parameter] = {
-                "Name": output_name,
-                "Output": Output(output_name, Value=value),
-                "ImportParameter": Parameter(
-                    output_name,
-                    return_value=attribute_parameter.return_value,
-                    Type=attribute_parameter.Type,
-                ),
-                "ImportValue": GetAtt(
-                    self.stack,
-                    f"Outputs.{output_name}",
-                ),
-                "Original": attribute_parameter,
-            }
-        for attr in self.attributes_outputs.values():
-            if keyisset("Output", attr):
-                self.outputs.append(attr["Output"])
-
-    def set_new_resource_outputs(self, output_definition):
-        """
-        Method to define the outputs for the resource when new
-        """
-        if output_definition[2] is Ref:
-            value = Ref(output_definition[1])
-        elif output_definition[2] is GetAtt:
-            value = GetAtt(output_definition[1], output_definition[3])
-        elif output_definition[2] is Sub:
-            value = Sub(output_definition[3])
-        else:
-            raise TypeError(
-                f"3rd argument for {output_definition[0]} must be one of",
-                (Ref, GetAtt, Sub),
-                "Got",
-                output_definition[2],
-            )
-        return value
 
 
 class ComposeListener(Listener):
@@ -1336,7 +1261,7 @@ class XStack(ComposeXStack):
     """
 
     def __init__(self, title, settings, **kwargs):
-        set_resources(settings, Elbv2, RES_KEY, MOD_KEY)
+        set_resources(settings, Elbv2, RES_KEY, MOD_KEY, mapping_key=MAPPINGS_KEY)
         x_resources = settings.compose_content[RES_KEY].values()
         new_resources = set_new_resources(x_resources, RES_KEY, True)
         lookup_resources = set_lookup_resources(x_resources, RES_KEY)
@@ -1357,6 +1282,7 @@ class XStack(ComposeXStack):
         for resource in new_resources:
             resource.set_lb_definition(settings)
             resource.sort_alb_ingress(settings, stack_template)
+
         super().__init__(title, stack_template, stack_parameters=lb_input, **kwargs)
         for resource in new_resources:
             resource.stack = self
