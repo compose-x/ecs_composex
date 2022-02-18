@@ -62,7 +62,6 @@ def get_db_cluster_config(db, account_id, resource_id):
             ],
         )["DBClusters"]
         db_cluster = db_config_r[0]
-        print(db_cluster)
     except (client.exceptions.DBClusterNotFoundFault,) as error:
         LOG.error(f"{db.module_name}.{db.name} - Failed to retrieve configuration")
         LOG.error(error)

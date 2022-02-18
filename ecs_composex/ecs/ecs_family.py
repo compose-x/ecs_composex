@@ -3,6 +3,7 @@
 # Copyright 2020-2022 John Mille <john@compose-x.io>
 
 import re
+from collections import OrderedDict
 from copy import deepcopy
 from json import dumps
 from os import path
@@ -416,7 +417,7 @@ class ComposeFamily(object):
             "ManagedPolicyArns": [],
             "Policies": [],
         }
-        self.iam_modules_policies = {}
+        self.iam_modules_policies = OrderedDict()
         self.family_hostname = self.name.replace("_", "-").lower()
         self.services_depends_on = []
         self.deployment_config = {}

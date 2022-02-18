@@ -222,6 +222,7 @@ def apply_x_to_x_configs(root_stack, settings):
             # )
             and hasattr(resource, "handle_x_dependencies")
         ):
+            print("apply_x_to_x_configs INVOKED", resource)
             resource.handle_x_dependencies(root_stack, settings)
 
 
