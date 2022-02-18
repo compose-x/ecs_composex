@@ -23,11 +23,10 @@ from ecs_composex.dashboards.dashboards_stack import XStack as DashboardsStack
 from ecs_composex.ecs.ecs_cluster import add_ecs_cluster
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME
 from ecs_composex.ecs.ecs_stack import associate_services_to_root_stack
+from ecs_composex.exceptions import x_cloud_lookup_and_new_vpc
 from ecs_composex.iam.iam_stack import XStack as IamStack
 from ecs_composex.vpc.vpc_params import APP_SUBNETS
 from ecs_composex.vpc.vpc_stack import XStack as VpcStack
-
-from .exceptions import x_cloud_lookup_and_new_vpc
 
 try:
     from ecs_composex.ecr.ecr_scans_eval import (
@@ -661,7 +660,6 @@ def generate_full_template(settings):
     handle_families_cross_dependencies(settings, root_stack)
     update_network_resources_vpc_config(settings, vpc_stack)
     set_families_ecs_service(settings)
-
     apply_x_resource_to_x(settings, root_stack, vpc_stack)
     apply_x_configs_to_ecs(
         settings,
