@@ -9,6 +9,7 @@ import pprint
 from os.path import abspath
 
 import yaml
+from retry import retry
 
 try:
     from yaml import CDumper as Dumper
@@ -64,6 +65,31 @@ def upload_file(
         ServerSideEncryption="AES256",
     )
     return f"https://s3.amazonaws.com/{bucket_name}/{key}"
+
+
+class RetryThis(Exception):
+    pass
+
+
+@retry(RetryThis, tries=2, delay=5)
+def validate_wrapper(session, body: str = None, url: str = None):
+    """
+
+    :param session:
+    :param body:
+    :param url:
+    :return:
+    """
+    client = session.client("cloudformation")
+    try:
+        if url:
+            client.validate_template(TemplateURL=url)
+        elif body:
+            client.validate_template(TemplateBody=body)
+    except ClientError as error:
+        if error.response["Error"]["Code"] == "Throttling":
+            raise RetryThis(error)
+        raise
 
 
 class FileArtifact(object):
@@ -169,9 +195,7 @@ class FileArtifact(object):
         """
         try:
             if not settings.no_upload and self.url:
-                settings.session.client("cloudformation").validate_template(
-                    TemplateURL=self.url
-                )
+                validate_wrapper(settings.session, url=self.url)
             elif settings.no_upload or not self.url:
                 if not self.file_path:
                     self.write(settings)
@@ -182,9 +206,7 @@ class FileArtifact(object):
                         " No upload is True, so skipping."
                     )
                 else:
-                    settings.session.client("cloudformation").validate_template(
-                        TemplateBody=self.body
-                    )
+                    validate_wrapper(settings.session, body=self.body)
             LOG.debug(f"Template {self.file_name} was validated successfully by CFN")
         except ClientError as error:
             LOG.error(error)
