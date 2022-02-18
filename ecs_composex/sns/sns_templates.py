@@ -6,58 +6,17 @@
 Module to add topics and subscriptions to the SNS stack
 """
 
-from compose_x_common.compose_x_common import keyisset, keypresent
-from troposphere.sns import Subscription, Topic
+from compose_x_common.compose_x_common import keyisset
+from troposphere.sns import Topic
 
 from ecs_composex.common import LOG
-from ecs_composex.common.outputs import get_import_value
 from ecs_composex.sns import metadata
-from ecs_composex.sqs.sqs_params import RES_KEY as SQS_KEY
-from ecs_composex.sqs.sqs_params import SQS_ARN_T
 
 TOPICS_KEY = "Topics"
 SUBSCRIPTIONS_KEY = "Subscription"
 TOPICS_STACK_NAME = "topics"
 ENDPOINT_KEY = "Endpoint"
 PROTOCOL_KEY = "Protocol"
-
-
-def check_queue_exists(queue_name, content):
-    """
-    Function to check
-
-    :param str queue_name: Name of the queue defined in the subscription
-    :param dict content: docker compose file content
-    :return:
-    """
-    if keyisset(SQS_KEY, content):
-        if not queue_name.startswith("arn:") and keyisset(queue_name, content[SQS_KEY]):
-            return True
-        elif queue_name.startswith("arn"):
-            LOG.warning(
-                f"Queue {queue_name} added as target, but not validated whether it exists"
-            )
-            return True
-        else:
-            LOG.error(f"Queue {queue_name} not defined in the {SQS_KEY} section")
-            return False
-
-
-def set_sqs_topic(subscription, content):
-    """
-    Function to set permissions and import for SQS subscription
-    :return:
-    """
-    if keypresent(ENDPOINT_KEY, subscription) and not subscription[
-        ENDPOINT_KEY
-    ].startswith("arn:"):
-        assert check_queue_exists(subscription[ENDPOINT_KEY], content)
-    endpoint = (
-        get_import_value(subscription[ENDPOINT_KEY], SQS_ARN_T)
-        if not subscription[ENDPOINT_KEY].startswith("arn:")
-        else subscription[ENDPOINT_KEY]
-    )
-    return Subscription(Protocol="sqs", Endpoint=endpoint)
 
 
 def define_topic_subscriptions(subscriptions, content):
@@ -82,7 +41,7 @@ def define_topic_subscriptions(subscriptions, content):
         if keyisset(PROTOCOL_KEY, sub) and (
             sub[PROTOCOL_KEY] == "sqs" or sub[PROTOCOL_KEY] == "SQS"
         ):
-            subscriptions_objs.append(set_sqs_topic(sub, content))
+            pass
         else:
             subscriptions_objs.append(sub)
     return subscriptions_objs

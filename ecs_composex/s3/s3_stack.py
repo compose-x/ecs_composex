@@ -29,6 +29,10 @@ from ecs_composex.compose.x_resources import (
     set_use_resources,
 )
 from ecs_composex.iam.import_sam_policies import get_access_types
+from ecs_composex.resource_settings import (
+    handle_lookup_resource,
+    handle_resource_to_services,
+)
 from ecs_composex.s3.s3_params import (
     CONTROL_CLOUD_ATTR_MAPPING,
     MAPPINGS_KEY,
@@ -261,6 +265,27 @@ class Bucket(ApiXResource):
             )
         self.lookup_properties = props
         self.generate_cfn_mappings_from_lookup_properties()
+
+    def to_ecs(self, settings, root_stack=None):
+        """
+        Handles mapping the S3 bucket to ECS services
+        """
+        LOG.info(f"{self.module_name}.{self.name} - Linking to services")
+        if self.cfn_resource and not self.lookup_properties and not self.mappings:
+            handle_resource_to_services(
+                self,
+                settings,
+                arn_parameter=S3_BUCKET_ARN,
+                parameters=list(self.attributes_outputs.keys()),
+                access_subkeys=["objects", "bucket", "enforceSecureConnection"],
+            )
+        elif self.lookup_properties and self.mappings and not self.cfn_resource:
+            handle_lookup_resource(
+                settings,
+                self,
+                arn_parameter=S3_BUCKET_ARN,
+                access_subkeys=["objects", "bucket", "enforceSecureConnection"],
+            )
 
 
 def define_bucket_mappings(lookup_buckets, use_buckets, settings):

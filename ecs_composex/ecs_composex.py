@@ -18,6 +18,11 @@ from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.ecs_composex import X_AWS_KEY, X_KEY
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common.tagging import add_all_tags
+from ecs_composex.compose.x_resources import (
+    ApiXResource,
+    AwsEnvironmentResource,
+    ServicesXResource,
+)
 from ecs_composex.compute.compute_stack import ComputeStack
 from ecs_composex.dashboards.dashboards_stack import XStack as DashboardsStack
 from ecs_composex.ecs.ecs_cluster import add_ecs_cluster
@@ -71,9 +76,7 @@ SUPPORTED_X_MODULE_NAMES = [
     "cloudmap",
 ]
 
-SUPPORTED_X_MODULES = [f"{X_KEY}{mod_name}" for mod_name in SUPPORTED_X_MODULE_NAMES]
 IGNORED_X_KEYS = [
-    f"{X_KEY}configs",
     f"{X_KEY}tags",
     f"{X_KEY}appmesh",
     f"{X_KEY}vpc",
@@ -189,11 +192,16 @@ def apply_x_configs_to_ecs(settings, root_stack):
     :param ecs_composex.common.settings.ComposeXSettings settings: The compose file content
     :param ecs_composex.ecs.ServicesStack root_stack: root stack for services.
     """
+    for resource in settings.x_resources:
+        if (
+            isinstance(resource, ServicesXResource)
+            or issubclass(type(resource), (ServicesXResource, AwsEnvironmentResource))
+        ) and hasattr(resource, "to_ecs"):
+            resource.to_ecs(settings, root_stack)
+
     for resource_stack in root_stack.stack_template.resources.values():
         if (
             issubclass(type(resource_stack), ComposeXStack)
-            and resource_stack.name in SUPPORTED_X_MODULE_NAMES
-            # and resource_stack.name not in ENV_RESOURCE_MODULES
             and not resource_stack.is_void
         ):
             invoke_x_to_ecs(None, root_stack, resource_stack, settings)
@@ -202,36 +210,13 @@ def apply_x_configs_to_ecs(settings, root_stack):
         invoke_x_to_ecs(res_type, root_stack, resource_stack[res_type], settings)
 
 
-def apply_x_to_x_configs(root_stack, settings):
-    """
-    Function to iterate over each XStack and trigger cross-x resources configurations functions
-
-    :param ComposeXStack root_stack: the ECS ComposeX root template
-    :param ComposeXSettings settings: The execution settings
-    :return:
-    """
-    for resource in root_stack.stack_template.resources.values():
-        if (
-            (
-                issubclass(type(resource), ComposeXStack)
-                or isinstance(resource, ComposeXStack)
-            )
-            # and (
-            #     resource.name in SUPPORTED_X_MODULE_NAMES
-            #     or resource.name in ENV_RESOURCE_MODULES
-            # )
-            and hasattr(resource, "handle_x_dependencies")
-        ):
-            print("apply_x_to_x_configs INVOKED", resource)
-            resource.handle_x_dependencies(root_stack, settings)
-
-
 def apply_x_resource_to_x(settings, root_stack, vpc_stack):
     """
     Goes over each x resource in the execution and execute logical association between the resources.
 
     :param ecs_composex.common.settings.ComposeXSettings settings: The settings for the execution
     :param ComposeXStack root_stack:
+    :param ComposeXStack vpc_stack:
     """
     for resource in settings.x_resources:
         if hasattr(resource, "handle_x_dependencies"):
@@ -283,10 +268,11 @@ def process_x_class(root_stack, settings, key):
             settings=settings,
             Parameters=parameters,
         )
-    if xstack.is_void:
+    if xstack and xstack.is_void:
         settings.x_resources_void.append({res_type: xstack})
     elif (
-        hasattr(xstack, "title")
+        xstack
+        and hasattr(xstack, "title")
         and hasattr(xstack, "stack_template")
         and not xstack.is_void
     ):
@@ -661,12 +647,12 @@ def generate_full_template(settings):
     handle_families_cross_dependencies(settings, root_stack)
     update_network_resources_vpc_config(settings, vpc_stack)
     set_families_ecs_service(settings)
-    apply_x_resource_to_x(settings, root_stack, vpc_stack)
+
     apply_x_configs_to_ecs(
         settings,
         root_stack,
     )
-    apply_x_to_x_configs(root_stack, settings)
+    apply_x_resource_to_x(settings, root_stack, vpc_stack)
 
     if keyisset("x-dashboards", settings.compose_content):
         root_stack.stack_template.add_resource(DashboardsStack("dashboards", settings))

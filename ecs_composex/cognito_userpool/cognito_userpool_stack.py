@@ -26,6 +26,7 @@ from ecs_composex.common import build_template, setup_logging
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources import (
     ApiXResource,
+    AwsEnvironmentResource,
     set_lookup_resources,
     set_new_resources,
     set_resources,
@@ -61,10 +62,21 @@ def get_userpool_config(userpool, account_id, resource_id):
     return {}
 
 
-class UserPool(ApiXResource):
+class UserPool(AwsEnvironmentResource):
     """
-    Class to manage AWS Code Guru profiles
+    Class to manage AWS UserPool
     """
+
+    def __init__(
+        self,
+        name: str,
+        definition: dict,
+        module_name: str,
+        settings,
+        mapping_key: str = None,
+    ):
+        super().__init__(name, definition, module_name, settings, mapping_key)
+        self.arn_parameter = USERPOOL_ARN
 
     def init_outputs(self):
         self.output_properties = {

@@ -206,10 +206,50 @@ class Alarm(ServicesXResource):
             else []
         )
 
+    def handle_dimensions(self, settings, root_stack):
+        """
+        Handles the dimensions settings and tries to resolve
+
+        :param ecs_composex.common.stacks.ComposeXStacks root_stack:
+        :param ecs_composex.common.settings.ComposeXSettings settings:
+        """
+        if not hasattr(self.cfn_resource, "Dimensions"):
+            LOG.debug(f"{self.module_name}.{self.name} - No Dimensions defined")
+        dimensions = getattr(self.cfn_resource, "Dimensions")
+        namespace = self.cfn_resource.Namespace
+        if namespace == "AWS/ApplicationELB" or namespace == "AWS/NetworkELB":
+            for dimension in dimensions:
+                if dimension.Name == "LoadBalancer" and dimension.Value.startswith(
+                    "x-elbv2::"
+                ):
+                    handle_elbv2_dimension_mapping(
+                        self.stack, dimension, self, settings
+                    )
+                elif dimension.Name == "TargetGroup":
+                    handle_elbv2_target_group_dimensions(
+                        self.stack, dimension, self, settings
+                    )
+
+    def handle_x_dependencies(self, settings, root_stack=None) -> None:
+        """
+        Function to cross reference alarm settings with other resources
+
+        :param ecs_composex.common.stacks.ComposeXStacks root_stack:
+        :param ecs_composex.common.settings.ComposeXSettings settings:
+        """
+
+        if (
+            isinstance(self, Alarm)
+            and isinstance(self.cfn_resource, CompositeAlarm)
+            or not self.cfn_resource
+        ):
+            return
+        self.handle_dimensions(settings, root_stack)
+
 
 class XStack(ComposeXStack):
     """
-    Class to represent the Rootstack for alarms
+    Class to represent the root stack for alarms
     """
 
     def __init__(self, name, settings, **kwargs):
@@ -222,7 +262,6 @@ class XStack(ComposeXStack):
             template = build_template("Root stack for Alarms created via Compose-X")
             super().__init__(name, stack_template=template, **kwargs)
             create_alarms(template, settings, new_resources)
-            self.mark_nested_stacks()
         else:
             self.is_void = True
         if lookup_resources or use_resources:
@@ -230,44 +269,5 @@ class XStack(ComposeXStack):
                 f"{RES_KEY} - Lookup and Use are not supported. "
                 "You can only create new resources"
             )
-
-    def handle_dimensions(self, resource, root_stack, settings):
-        """
-        Handles the dimensions settings and tries to resolve
-
-        :param Alarm resource:
-        :param ecs_composex.common.stacks.ComposeXStacks root_stack:
-        :param ecs_composex.common.settings.ComposeXSettings settings:
-        """
-        if not hasattr(resource.cfn_resource, "Dimensions"):
-            print(f"{self.title} - {resource.name} - No Dimensions defined")
-        dimensions = getattr(resource.cfn_resource, "Dimensions")
-        namespace = resource.cfn_resource.Namespace
-        if namespace == "AWS/ApplicationELB" or namespace == "AWS/NetworkELB":
-            for dimension in dimensions:
-                if dimension.Name == "LoadBalancer" and dimension.Value.startswith(
-                    "x-elbv2::"
-                ):
-                    handle_elbv2_dimension_mapping(self, dimension, resource, settings)
-                elif dimension.Name == "TargetGroup":
-                    handle_elbv2_target_group_dimensions(
-                        self, dimension, resource, settings
-                    )
-
-    def handle_x_dependencies(self, root_stack, settings):
-        """
-        Function to cross reference alarm settings with other resources
-
-        :param ecs_composex.common.stacks.ComposeXStacks root_stack:
-        :param ecs_composex.common.settings.ComposeXSettings settings:
-        """
-        x_resources = settings.compose_content[RES_KEY].values()
-        new_resources = set_new_resources(x_resources, RES_KEY, False)
-        for resource in new_resources:
-            if isinstance(resource, Alarm) and isinstance(
-                resource.cfn_resource, CompositeAlarm
-            ):
-                continue
-            if not resource.cfn_resource:
-                continue
-            self.handle_dimensions(resource, root_stack, settings)
+        for resource in x_resources:
+            resource.stack = self

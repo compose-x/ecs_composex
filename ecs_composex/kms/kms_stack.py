@@ -28,11 +28,14 @@ from ecs_composex.kms.kms_params import (
     MOD_KEY,
     RES_KEY,
 )
+from ecs_composex.kms.kms_s3 import handle_bucket_kms
 from ecs_composex.kms.kms_template import create_kms_template
+from ecs_composex.resource_settings import (
+    handle_lookup_resource,
+    handle_resource_to_services,
+)
 from ecs_composex.resources_import import import_record_properties
 from ecs_composex.s3.s3_stack import Bucket
-
-from .kms_s3 import handle_bucket_kms
 
 
 def get_key_config(key, account_id, resource_id):
@@ -99,6 +102,17 @@ class KmsKey(ApiXResource):
     """
 
     policies_scaffolds = get_access_types(MOD_KEY)
+
+    def __init__(
+        self,
+        name: str,
+        definition: dict,
+        module_name: str,
+        settings,
+        mapping_key: str = None,
+    ):
+        super().__init__(name, definition, module_name, settings, mapping_key)
+        self.arn_parameter = KMS_KEY_ARN
 
     def init_outputs(self):
         self.output_properties = {

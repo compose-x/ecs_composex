@@ -29,6 +29,10 @@ from ecs_composex.common.cfn_conditions import define_stack_name
 from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.common.ecs_composex import CFN_EXPORT_DELIMITER as DELIM
 from ecs_composex.common.ecs_composex import X_KEY
+from ecs_composex.resource_settings import (
+    handle_lookup_resource,
+    handle_resource_to_services,
+)
 
 
 def set_new_resources(x_resources, res_key, supports_uses_default=False):
@@ -123,33 +127,6 @@ def set_resources(settings, resource_class, res_key, mod_key=None, mapping_key=N
         LOG.debug(type(new_definition))
         LOG.debug(new_definition.__dict__)
         settings.compose_content[res_key][resource_name] = new_definition
-
-
-def get_parameter_settings(resource, parameter):
-    """
-    Function to define a set of values for the purpose of exposing resources settings from their stack to another.
-
-    :param ecs_composex.compose.x_resources.XResource resource: The XResource we want to extract the outputs from
-    :param parameter: The parameter we want to extract the outputs for
-    :return: Ordered combination of settings
-    :rtype: tuple
-    """
-    try:
-        data = (
-            resource.attributes_outputs[parameter]["Name"],
-            resource.attributes_outputs[parameter]["ImportParameter"],
-            resource.attributes_outputs[parameter]["ImportValue"],
-            parameter,
-        )
-        return data
-    except KeyError as error:
-        print(error)
-        print([r.title for r in resource.output_properties.keys()])
-        print(resource.attributes_outputs.items())
-        if isinstance(parameter, Parameter):
-            print(parameter, parameter.title)
-        print(f"{resource.module_name}.{resource.name}")
-        raise
 
 
 def get_setting_key(name: str, settings_dict: dict) -> str:
@@ -870,6 +847,7 @@ class AwsEnvironmentResource(XResource):
         self.lookup_only = False
         super().__init__(name, definition, module_name, settings, mapping_key)
         self.requires_vpc = False
+        self.arn_parameter = None
 
 
 class ApiXResource(ServicesXResource):
@@ -881,6 +859,27 @@ class ApiXResource(ServicesXResource):
         self, name: str, definition: dict, module_name: str, settings, mapping_key=None
     ):
         super().__init__(name, definition, module_name, settings, mapping_key)
+        self.arn_parameter = None
+
+    def to_ecs(self, settings, root_stack=None) -> None:
+        """
+        Maps SSM Parameter to ECS Services
+        """
+        LOG.info(f"{self.module_name}.{self.name} - Linking to services")
+        if not self.mappings and self.cfn_resource:
+            handle_resource_to_services(
+                self,
+                settings,
+                self.arn_parameter,
+                list(self.attributes_outputs.keys()),
+                nested=False,
+            )
+        elif not self.cfn_resource and self.mappings:
+            handle_lookup_resource(
+                settings,
+                self,
+                self.arn_parameter,
+            )
 
 
 class NetworkXResource(ServicesXResource):

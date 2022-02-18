@@ -29,6 +29,10 @@ from ecs_composex.kinesis.kinesis_params import (
     STREAM_KMS_KEY_ID,
 )
 from ecs_composex.kinesis.kinesis_template import create_streams_template
+from ecs_composex.resource_settings import (
+    handle_lookup_resource,
+    handle_resource_to_services,
+)
 
 LOG = setup_logging()
 
@@ -69,6 +73,7 @@ class Stream(ApiXResource):
         super().__init__(
             name, definition, module_name, settings, mapping_key=mapping_key
         )
+        self.arn_parameter = STREAM_ARN
         self.cloud_control_attributes_mapping = {
             STREAM_ARN.title: "Arn",
             STREAM_ID.title: "Name",

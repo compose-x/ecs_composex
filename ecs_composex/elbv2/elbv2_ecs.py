@@ -5,15 +5,113 @@
 import re
 
 from compose_x_common.compose_x_common import keyisset
-from troposphere import AWS_NO_VALUE, Ref
+from troposphere import (
+    AWS_NO_VALUE,
+    AWS_PARTITION,
+    AWS_REGION,
+    AWS_STACK_ID,
+    AWS_STACK_NAME,
+    FindInMap,
+    GetAtt,
+    Output,
+    Ref,
+    Sub,
+)
 from troposphere.ecs import LoadBalancer as EcsLb
-from troposphere.elasticloadbalancingv2 import Matcher, TargetGroupAttribute
+from troposphere.elasticloadbalancingv2 import (
+    Matcher,
+    TargetGroup,
+    TargetGroupAttribute,
+)
 
 from ecs_composex.common import LOG, add_outputs, add_parameters
+from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.ecs.ecs_params import ELB_GRACE_PERIOD
-from ecs_composex.elbv2.elbv2_params import LB_SG_ID, TGT_GROUP_ARN
-from ecs_composex.elbv2.elbv2_stack import ComposeTargetGroup
+from ecs_composex.elbv2.elbv2_params import (
+    LB_SG_ID,
+    TGT_FULL_NAME,
+    TGT_GROUP_ARN,
+    TGT_GROUP_NAME,
+)
 from ecs_composex.vpc.vpc_params import VPC_ID
+
+
+class ComposeTargetGroup(TargetGroup):
+    """
+    Class to manage Target Groups
+    """
+
+    def __init__(self, title, elbv2, family, stack, **kwargs):
+        self.family = family
+        self.stack = stack
+        self.outputs = []
+        self.elbv2 = elbv2
+        self.output_properties = {}
+        self.attributes_outputs = {}
+        super().__init__(title, **kwargs)
+
+    def init_outputs(self):
+        self.output_properties = {
+            TGT_GROUP_ARN: (self.title, self, Ref, None),
+            TGT_GROUP_NAME: (
+                f"{self.title}{TGT_GROUP_NAME.return_value}",
+                self,
+                GetAtt,
+                TGT_GROUP_NAME.return_value,
+                None,
+            ),
+            TGT_FULL_NAME: (
+                f"{self.title}{TGT_FULL_NAME.return_value}",
+                self,
+                GetAtt,
+                TGT_FULL_NAME.return_value,
+                None,
+            ),
+        }
+
+    def generate_outputs(self):
+        for (
+            attribute_parameter,
+            output_definition,
+        ) in self.output_properties.items():
+            output_name = f"{self.title}{attribute_parameter.title}"
+            value = self.set_new_resource_outputs(output_definition)
+            self.attributes_outputs[attribute_parameter] = {
+                "Name": output_name,
+                "Output": Output(output_name, Value=value),
+                "ImportParameter": Parameter(
+                    output_name,
+                    return_value=attribute_parameter.return_value,
+                    Type=attribute_parameter.Type,
+                ),
+                "ImportValue": GetAtt(
+                    self.stack,
+                    f"Outputs.{output_name}",
+                ),
+                "Original": attribute_parameter,
+            }
+        for attr in self.attributes_outputs.values():
+            if keyisset("Output", attr):
+                self.outputs.append(attr["Output"])
+
+    def set_new_resource_outputs(self, output_definition):
+        """
+        Method to define the outputs for the resource when new
+        """
+        if output_definition[2] is Ref:
+            value = Ref(output_definition[1])
+        elif output_definition[2] is GetAtt:
+            value = GetAtt(output_definition[1], output_definition[3])
+        elif output_definition[2] is Sub:
+            value = Sub(output_definition[3])
+        else:
+            raise TypeError(
+                f"3rd argument for {output_definition[0]} must be one of",
+                (Ref, GetAtt, Sub),
+                "Got",
+                output_definition[2],
+            )
+        return value
 
 
 def validate_tcp_health_counts(props):
@@ -436,7 +534,7 @@ def handle_services_association(resource, res_root_stack, settings):
     resource.associate_to_template(template)
     add_outputs(template, resource.outputs)
     identified = []
-    for count, target in enumerate(resource.families_targets):
+    for target in resource.families_targets:
         if target[1].launch_type == "EXTERNAL":
             LOG.error(
                 f"x-elbv2.{resource.name} - Target family {target[0].name} uses EXTERNAL launch type. Ignoring"

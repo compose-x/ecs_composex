@@ -18,7 +18,6 @@ from troposphere.iam import PolicyType
 from ecs_composex.appmesh import appmesh_conditions, appmesh_params, metadata
 from ecs_composex.appmesh.appmesh_params import BACKENDS_KEY, NAME_KEY
 from ecs_composex.common import LOG, add_parameters
-from ecs_composex.common.outputs import ComposeXOutput
 from ecs_composex.common.services_helpers import extend_container_envvars
 from ecs_composex.ecs import ecs_params
 
@@ -115,14 +114,7 @@ class MeshNode(object):
             }
         )
         appmesh_conditions.add_appmesh_conditions(self.stack.stack_template)
-        self.stack.stack_template.add_output(
-            ComposeXOutput(
-                self.node,
-                [("VirtualNode", "", GetAtt(self.node, "VirtualNodeName"))],
-                duplicate_attr=True,
-                export=False,
-            ).outputs
-        )
+        # todo: add output to stack for the node
 
     def set_node_weight(self, weight):
         """
