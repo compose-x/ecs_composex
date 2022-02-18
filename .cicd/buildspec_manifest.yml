@@ -32,15 +32,6 @@ batch:
           VERSION: 3.7
       buildspec: .cicd/buildspec_image.yml
 
-    - identifier: macro
-      env:
-        compute-type: BUILD_GENERAL1_SMALL
-        privileged-mode: true
-        variables:
-          VERSION: 3.7
-          ARCH: amd64
-      buildspec: .cicd/buildspec_macro_image.yml
-
     - identifier: manifest
       env:
         compute-type: BUILD_GENERAL1_SMALL
@@ -48,7 +39,6 @@ batch:
       depend-on:
         - amd64
         - arm64v8
-        - macro
 
 phases:
   install:
@@ -73,7 +63,7 @@ phases:
   build:
     commands:
       - |
-          for VERSION in py37 py38; do
+          for VERSION in py37 py38 py39 py310; do
             for ARCH in "amd64" "arm64v8"; do
               TAG=${SUFFIX}-${VERSION}-${ARCH}
               echo TAG is $TAG
@@ -90,6 +80,10 @@ phases:
           --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py37-arm64v8
           --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py38-amd64
           --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py38-arm64v8
+          --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py39-amd64
+          --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py39-arm64v8
+          --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py310-amd64
+          --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py310-arm64v8
       - docker manifest push ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}
 
       - |
@@ -98,34 +92,26 @@ phases:
                   --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py37-amd64    \
                   --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py37-arm64v8  \
                   --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py38-amd64    \
-                  --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py38-arm64v8 ;
+                  --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py38-arm64v8  \
+                  --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py39-amd64    \
+                  --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py39-arm64v8  \
+                  --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py310-amd64   \
+                  --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py310-arm64v8 ;
+
             docker manifest push ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:nightly
           else
             docker manifest create ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:latest         \
                   --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py37-amd64    \
                   --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py37-arm64v8  \
                   --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py38-amd64    \
-                  --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py38-arm64v8 ;
+                  --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py38-arm64v8  \
+                  --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py39-amd64    \
+                  --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py39-arm64v8  \
+                  --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py310-amd64   \
+                  --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py310-arm64v8 ;
+
             docker manifest push ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:latest
           fi
-
-      - docker pull ${REGISTRY_URI}/${MACRO_REPO_NAME}:${SUFFIX}
-      - docker tag ${REGISTRY_URI}/${MACRO_REPO_NAME}:${SUFFIX} ${PUBLIC_REGISTRY}/${MACRO_REPO_NAME}:${SUFFIX}
-      - docker push ${PUBLIC_REGISTRY}/${MACRO_REPO_NAME}:${SUFFIX}
-      - |
-          if ! [ $TAG_RELEASE -eq 1 ]; then
-            docker manifest create ${PUBLIC_REGISTRY}/${MACRO_REPO_NAME}:nightly   \
-                  --amend ${PUBLIC_REGISTRY}/${MACRO_REPO_NAME}:${SUFFIX}
-            docker manifest push ${PUBLIC_REGISTRY}/${MACRO_REPO_NAME}:nightly
-          else
-            docker manifest create ${PUBLIC_REGISTRY}/${MACRO_REPO_NAME}:latest   \
-                  --amend ${PUBLIC_REGISTRY}/${MACRO_REPO_NAME}:${SUFFIX}
-            docker manifest push ${PUBLIC_REGISTRY}/${MACRO_REPO_NAME}:latest
-          fi
-
-  post_build:
-    commands:
-      - aws s3 cp .install/docker-macro.yaml s3://${PUBLIC_FILES_BUCKET}/ --sse AES256 --acl public-read --storage-class STANDARD_IA
 
     finally:
       - rm -rfv ~/.docker

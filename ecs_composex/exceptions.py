@@ -1,4 +1,5 @@
 #   -*- coding: utf-8 -*-
+#   -*- coding: utf-8 -*-
 #  SPDX-License-Identifier: MPL-2.0
 #  Copyright 2020-2022 John Mille <john@compose-x.io>
 
@@ -9,25 +10,18 @@ Custom exceptions for compose-x
 from .cloudmap.cloudmap_stack import PrivateNamespace
 
 
-class ComposeXceptions(Exception):
+class ComposeBaseException(Exception):
     """
     Top class for Compose-X Exceptions
     """
 
-    pass
+    def __init__(self, msg, *args):
+        super().__init__(msg, *args)
 
 
-class IncompatibleOptions(ComposeXceptions):
+class IncompatibleOptions(ComposeBaseException):
     """
     Exception when two x-resources conflict, i.e. when you try to use Lookup on x-cloudmap and create a new VPC
-    """
-
-    pass
-
-
-class ConflictingSettings(ComposeXceptions):
-    """
-    Exception for conflicting settings for a service family or x-resource properties
     """
 
 

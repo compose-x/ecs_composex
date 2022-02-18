@@ -29,6 +29,15 @@ batch:
       buildspec: .cicd/buildspec_layer.yml
       ignore-failure: false
 
+    - identifier: py39
+      env:
+        compute-type: BUILD_GENERAL1_SMALL
+        privileged-mode: false
+        variables:
+          PY_VERSION: 3.9
+      buildspec: .cicd/buildspec_layer.yml
+      ignore-failure: false
+
     - identifier: merge
       depend-on:
         - py37
