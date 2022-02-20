@@ -29,7 +29,9 @@ from ecs_composex.common.cfn_conditions import define_stack_name
 from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.common.ecs_composex import CFN_EXPORT_DELIMITER as DELIM
 from ecs_composex.common.ecs_composex import X_KEY
+from ecs_composex.rds_resources_settings import handle_new_tcp_resource, import_dbs
 from ecs_composex.resource_settings import (
+    assign_new_resource_to_service,
     handle_lookup_resource,
     handle_resource_to_services,
 )
@@ -633,6 +635,7 @@ class ServicesXResource(XResource):
         self.services = []
         self.families_targets = []
         self.families_scaling = []
+        self.arn_parameter = None
         super().__init__(name, definition, module_name, settings, mapping_key)
         self.services = (
             []
@@ -859,7 +862,6 @@ class ApiXResource(ServicesXResource):
         self, name: str, definition: dict, module_name: str, settings, mapping_key=None
     ):
         super().__init__(name, definition, module_name, settings, mapping_key)
-        self.arn_parameter = None
 
     def to_ecs(self, settings, root_stack=None) -> None:
         """
@@ -947,7 +949,7 @@ class NetworkXResource(ServicesXResource):
         pass
 
 
-class RdsXResource(NetworkXResource):
+class DatabaseXResource(NetworkXResource):
     """
     Class for network resources that share common properties
     """
@@ -964,3 +966,26 @@ class RdsXResource(NetworkXResource):
         self.db_cluster_endpoint_param = None
         self.db_cluster_ro_endpoint_param = None
         super().__init__(name, definition, module_name, settings, mapping_key)
+
+    def to_ecs(self, settings, root_stack=None) -> None:
+        """
+        Maps a database service to ECS services
+
+        :param ecs_composex.common.settings.ComposeXSettings settings:
+        :param ecs_composex.common.stacks.ComposeXStack root_stack:
+        """
+        if not self.mappings and self.cfn_resource:
+            handle_new_tcp_resource(
+                self,
+                port_parameter=self.db_port_parameter,
+                sg_parameter=self.db_sg_parameter,
+                secret_parameter=self.db_secret_arn_parameter,
+            )
+            if self.db_cluster_arn_parameter:
+                assign_new_resource_to_service(
+                    self,
+                    arn_parameter=self.db_cluster_arn_parameter,
+                    access_subkeys=["DBCluster"],
+                )
+        elif self.mappings and not self.cfn_resource:
+            import_dbs(self, settings)

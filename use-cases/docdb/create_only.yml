@@ -38,7 +38,8 @@ x-docdb:
           Value: docdb_C
     Services:
       - name: app03
-        access: RW
+        access:
+          DBCluster: RO
         SecretsMappings:
           Mappings:
             - SecretKey: host

@@ -16,13 +16,9 @@ from ecs_composex.ecs.ecs_params import SG_T
 from ecs_composex.opensearch.opensearch_params import (
     MAPPINGS_KEY,
     OS_DOMAIN_ARN,
-    OS_DOMAIN_ENDPOINT,
-    OS_DOMAIN_ID,
     OS_DOMAIN_PORT,
     OS_DOMAIN_SG,
-    RES_KEY,
 )
-from ecs_composex.rds_resources_settings import handle_new_tcp_resource
 from ecs_composex.resource_settings import (
     generate_resource_permissions_statements,
     get_parameter_settings,
@@ -182,10 +178,9 @@ def map_resource_to_service_family(
         )
 
 
-def handle_lookup_to_service_mapping(res_name, resource, settings):
+def handle_lookup_to_service_mapping(resource, settings):
     """
 
-    :param str res_name:
     :param ecs_composex.opensearch.opensearch_stack.OpenSearchDomain resource:
     :param ecs_composex.common.settings.ComposeXSettings settings:
     """
@@ -216,16 +211,11 @@ def handle_lookup_to_service_mapping(res_name, resource, settings):
             )
 
 
-def assign_new_resource_to_service(
-    resource, res_root_stack, settings, arn_parameter, parameters=None
-):
+def assign_new_resource_to_service(resource, settings, arn_parameter, parameters=None):
     """
     Function to assign the new resource to the service/family using it.
 
-    :param resource: The resource
-    :type resource: ecs_composex.common.compose_resources.XResource
-    :param res_root_stack: The root stack of the resource type
-    :type res_root_stack: ecs_composex.common.stacks.ComposeXStack
+    :param ecs_composex.opensearch.opensearch_stack.OpenSearchDomain resource: The resource
     :param: The parameter mapping to the ARN attribute of the resource
     :type arn_parameter: ecs_composex.common.cfn_parameter.Parameter arn_parameter
     """
@@ -264,40 +254,5 @@ def assign_new_resource_to_service(
                 selected_services,
                 settings,
             )
-            if res_root_stack.title not in target[0].stack.DependsOn:
-                target[0].stack.DependsOn.append(res_root_stack.title)
-
-
-def opensearch_to_ecs(resources, services_stack, res_root_stack, settings):
-    """
-    Function to associate permissions from the IAM service to OpenSearch domain
-
-    :param dict[str] ecs_composex.opensearch.opensearch_stack.Domain resources: The resources to associate
-    :param ecs_composex.common.stacks.ComposeXStack services_stack:
-    :param ecs_composex.common.stacks.ComposeXStack res_root_stack:
-    :param ecs_composex.common.settings.ComposeXSettings settings:
-    """
-    if res_root_stack.is_void:
-        LOG.info(f"{RES_KEY} - No new resources to create")
-    for res_name, resource in resources.items():
-        if (
-            not res_root_stack.is_void
-            and resource.cfn_resource
-            and not resource.mappings
-        ):
-            if resource.security_group:
-                handle_new_tcp_resource(
-                    resource,
-                    res_root_stack,
-                    port_parameter=OS_DOMAIN_PORT,
-                    sg_parameter=OS_DOMAIN_SG,
-                )
-            assign_new_resource_to_service(
-                resource,
-                res_root_stack,
-                settings,
-                arn_parameter=OS_DOMAIN_ARN,
-                parameters=[OS_DOMAIN_ENDPOINT, OS_DOMAIN_ID],
-            )
-        elif resource.mappings and resource.lookup_properties:
-            handle_lookup_to_service_mapping(res_name, resource, settings)
+            if resource.stack.title not in target[0].stack.DependsOn:
+                target[0].stack.DependsOn.append(resource.stack.title)

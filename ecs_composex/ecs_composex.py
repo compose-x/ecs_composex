@@ -125,8 +125,8 @@ def get_mod_function(module_name, function_name):
         except AttributeError:
             LOG.info(f"No {function_name} function found - skipping")
     except ImportError as error:
-        LOG.error(f"Failure to process the module {composex_module_name}")
-        LOG.error(error)
+        LOG.debug(f"Failure to process the module {composex_module_name}")
+        LOG.debug(error)
     return function
 
 

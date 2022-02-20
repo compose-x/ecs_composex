@@ -21,7 +21,7 @@ DOCDB_NAME_T = "DocDBName"
 DOCDB_ID_T = "ClusterResourceId"
 
 DOCDB_NAME = Parameter(DOCDB_NAME_T, Type="String")
-DOCDB_ID_T = Parameter(DOCDB_ID_T, return_value="ClusterResourceId", Type="String")
+DOCDB_ID = Parameter(DOCDB_ID_T, return_value="ClusterResourceId", Type="String")
 DOCDBC_ENDPOINT = Parameter(
     DB_ENDPOINT_ADDRESS_T, return_value="Endpoint", Type="String"
 )
