@@ -27,13 +27,12 @@ from ecs_composex.opensearch.opensearch_params import (
 )
 from ecs_composex.opensearch.opensearch_template import create_new_domains
 from ecs_composex.rds.rds_params import DB_SECRET_ARN
-from ecs_composex.rds_resources_settings import handle_new_tcp_resource
-from ecs_composex.vpc.vpc_params import STORAGE_SUBNETS, VPC_ID
-
-from .opensearch_ecs import (
+from ecs_composex.rds_resources_settings import handle_new_tcp_resource, import_dbs
+from ecs_composex.resource_settings import (
     assign_new_resource_to_service,
-    handle_lookup_to_service_mapping,
+    handle_lookup_resource,
 )
+from ecs_composex.vpc.vpc_params import STORAGE_SUBNETS, VPC_ID
 
 
 def define_default_key_policy():
@@ -73,14 +72,17 @@ class OpenSearchDomain(DatabaseXResource):
     policies_scaffolds = get_access_types(MOD_KEY)
 
     def __init__(self, name, definition, module_name, settings, mapping_key):
-        self.subnets_param = STORAGE_SUBNETS
-        self.db_sg_parameter = OS_DOMAIN_SG
-        self.db_secret_arn_parameter = DB_SECRET_ARN
-        self.db_cluster_endpoint_param = OS_DOMAIN_ENDPOINT
-        self.db_cluster_arn_parameter = OS_DOMAIN_ARN
+
         super().__init__(
             name, definition, module_name, settings, mapping_key=mapping_key
         )
+        self.subnets_param = STORAGE_SUBNETS
+        self.security_group_param = OS_DOMAIN_SG
+        self.db_secret_arn_parameter = DB_SECRET_ARN
+        self.db_cluster_endpoint_param = OS_DOMAIN_ENDPOINT
+        self.db_cluster_arn_parameter = OS_DOMAIN_ARN
+        self.arn_parameter = OS_DOMAIN_ARN
+        self.ref_parameter = OS_DOMAIN_ID
 
     def init_outputs(self):
         """
@@ -114,13 +116,36 @@ class OpenSearchDomain(DatabaseXResource):
                     sg_parameter=OS_DOMAIN_SG,
                 )
             assign_new_resource_to_service(
-                self,
-                settings,
-                arn_parameter=OS_DOMAIN_ARN,
-                parameters=[OS_DOMAIN_ENDPOINT, OS_DOMAIN_ID],
+                self, arn_parameter=OS_DOMAIN_ARN, access_subkeys=["Http", "DBCluster"]
             )
         elif self.mappings and self.lookup_properties:
-            handle_lookup_to_service_mapping(self, settings)
+            if keyisset(OS_DOMAIN_SG.return_value, self.mappings):
+                self.add_new_output_attribute(
+                    OS_DOMAIN_SG,
+                    (
+                        f"{self.logical_name}{OS_DOMAIN_SG.return_value}",
+                        self.security_group,
+                        GetAtt,
+                        OS_DOMAIN_SG.return_value,
+                    ),
+                )
+                self.add_new_output_attribute(
+                    OS_DOMAIN_PORT,
+                    (
+                        f"{self.logical_name}{OS_DOMAIN_PORT.title}",
+                        OS_DOMAIN_PORT.Default,
+                        OS_DOMAIN_PORT.Default,
+                        False,
+                    ),
+                )
+                self.generate_outputs()
+            handle_lookup_resource(
+                settings,
+                self,
+                arn_parameter=self.arn_parameter,
+                access_subkeys=["Http", "DBCluster"],
+            )
+            import_dbs(self, settings)
 
 
 class XStack(ComposeXStack):

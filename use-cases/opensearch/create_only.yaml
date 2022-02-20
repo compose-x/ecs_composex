@@ -107,7 +107,7 @@ x-opensearch:
       - name: app03
         access:
           Http: RW
-          IAM: RO
+          DBCluster: RO
 
   domain-04:
     Properties: # Domain using Settings for Subnets
@@ -159,4 +159,4 @@ x-opensearch:
       - name: app03
         access:
           Http: RW
-          IAM: RO
+          DBCluster: RO

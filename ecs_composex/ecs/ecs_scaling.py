@@ -385,8 +385,6 @@ class ServiceScaling(object):
         Method to automatically create a scalable target
         """
         LOG.debug(family.ecs_service.scaling.scaling_range)
-        if ecs_params.SERVICE_SCALING_TARGET in family.template.resources:
-            return
         if family.ecs_service.scaling.scaling_range:
             family.scalable_target = applicationautoscaling.ScalableTarget(
                 ecs_params.SERVICE_SCALING_TARGET,
@@ -425,6 +423,8 @@ class ServiceScaling(object):
                     DynamicScalingInSuspended=False
                 ),
             )
+        if family.scalable_target.title not in family.template.resources:
+            family.template.add_resource(family.scalable_target)
         if family.scalable_target and family.ecs_service.scaling.target_scaling:
             if keyisset("CpuTarget", family.ecs_service.scaling.target_scaling):
                 applicationautoscaling.ScalingPolicy(

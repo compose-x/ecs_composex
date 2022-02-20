@@ -18,11 +18,7 @@ from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.ecs_composex import X_AWS_KEY, X_KEY
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common.tagging import add_all_tags
-from ecs_composex.compose.x_resources import (
-    ApiXResource,
-    AwsEnvironmentResource,
-    ServicesXResource,
-)
+from ecs_composex.compose.x_resources import AwsEnvironmentResource, ServicesXResource
 from ecs_composex.compute.compute_stack import ComputeStack
 from ecs_composex.dashboards.dashboards_stack import XStack as DashboardsStack
 from ecs_composex.ecs.ecs_cluster import add_ecs_cluster
@@ -195,7 +191,7 @@ def apply_x_configs_to_ecs(settings, root_stack):
     for resource in settings.x_resources:
         if (
             isinstance(resource, ServicesXResource)
-            or issubclass(type(resource), (ServicesXResource, AwsEnvironmentResource))
+            or issubclass(type(resource), ServicesXResource)
         ) and hasattr(resource, "to_ecs"):
             resource.to_ecs(settings, root_stack)
 
@@ -210,15 +206,25 @@ def apply_x_configs_to_ecs(settings, root_stack):
         invoke_x_to_ecs(res_type, root_stack, resource_stack[res_type], settings)
 
 
-def apply_x_resource_to_x(settings, root_stack, vpc_stack):
+def apply_x_resource_to_x(
+    settings, root_stack, vpc_stack, env_resources_only: bool = False
+):
     """
     Goes over each x resource in the execution and execute logical association between the resources.
+    If env_resources_only is true, only invokes handle_x_dependencies only for the AwsEnvironmentResource resources
+    defined.
 
     :param ecs_composex.common.settings.ComposeXSettings settings: The settings for the execution
     :param ComposeXStack root_stack:
     :param ComposeXStack vpc_stack:
+    :param bool env_resources_only: Whether to process the AwsEnvironmentResource first and link to other services.
     """
     for resource in settings.x_resources:
+        if env_resources_only and not (
+            issubclass(type(resource), AwsEnvironmentResource)
+            or isinstance(resource, AwsEnvironmentResource)
+        ):
+            continue
         if hasattr(resource, "handle_x_dependencies"):
             resource.handle_x_dependencies(settings, root_stack)
     if vpc_stack and vpc_stack.vpc_resource:
@@ -648,6 +654,7 @@ def generate_full_template(settings):
     update_network_resources_vpc_config(settings, vpc_stack)
     set_families_ecs_service(settings)
 
+    apply_x_resource_to_x(settings, root_stack, vpc_stack, env_resources_only=True)
     apply_x_configs_to_ecs(
         settings,
         root_stack,

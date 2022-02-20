@@ -3,7 +3,7 @@
 
 version: '3.8'
 x-dynamodb:
-  tableA:
+  tableA-A:
     Properties:
       AttributeDefinitions:
         - AttributeName: "Album"
@@ -68,7 +68,6 @@ x-dynamodb:
       app03:
         Access: RW
         ReturnValues:
-          TableName: TABLE_A
           Arn: tableA_ARN
       app02:
         Access: RW
@@ -80,6 +79,12 @@ x-dynamodb:
       Tags:
         - name: tableC
         - createdbycomposex: "True"
+    Services:
+      app03:
+        Access: RW
+        ReturnValues:
+          TableName: TABLE_CCC
+          Arn: TABLE_cccc_Arn
 
   tableD:
     Lookup:

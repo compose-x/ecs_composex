@@ -7,6 +7,7 @@ Module to define the ComposeX Resources into a simple object to make it easier t
 """
 
 import json
+import re
 import warnings
 from copy import deepcopy
 from re import sub
@@ -20,7 +21,7 @@ from compose_x_common.compose_x_common import (
 from troposphere import AWSObject, Export, FindInMap, GetAtt, Join, Output, Ref, Sub
 from troposphere.ecs import Environment
 
-from ecs_composex.common import LOG, NONALPHANUM
+from ecs_composex.common import LOG, NONALPHANUM, add_parameters
 from ecs_composex.common.aws import (
     define_lookup_role_from_info,
     find_aws_resource_arn_from_tags_api,
@@ -32,9 +33,12 @@ from ecs_composex.common.ecs_composex import X_KEY
 from ecs_composex.rds_resources_settings import handle_new_tcp_resource, import_dbs
 from ecs_composex.resource_settings import (
     assign_new_resource_to_service,
+    get_parameter_settings,
     handle_lookup_resource,
     handle_resource_to_services,
 )
+
+ENV_VAR_NAME = re.compile(r"([^a-zA-Z0-9_]+)")
 
 
 def set_new_resources(x_resources, res_key, supports_uses_default=False):
@@ -216,8 +220,7 @@ class XResource(object):
 
         self.is_nested = False
         self.stack = None
-        self.init_env_names()
-        self.ref_parameter = Parameter(self.logical_name, Type="String")
+        self.ref_parameter = None
         self.lookup_properties = {}
         self.mappings = {}
         self.default_tags = {
@@ -391,31 +394,12 @@ class XResource(object):
             )
             raise
 
-    def define_return_value_env_vars(self, env_name, parameter):
+    def generate_resource_service_env_vars(
+        self, target: tuple, target_definition: dict
+    ) -> list:
         """
-        Method to define construct parameters for Environment Variable for parameters with specific return_value
-
-        :param str env_name:
-        :param ecs_composex.common.cfn_params.Parameter parameter:
-        :return: dict with the Name and Value for environment variable
-        :rtype: dict
-        """
-        container_env_name = f"{env_name}_{parameter.return_value}"
-        if self.lookup:
-            container_env_value = Sub(
-                f"${{ResourceName}}_{parameter.return_value}",
-                ResourceName=self.attributes_outputs[parameter]["ImportValue"],
-            )
-        else:
-            container_env_value = Ref(
-                self.attributes_outputs[parameter]["ImportParameter"]
-            )
-        return {"Name": container_env_name, "Value": container_env_value}
-
-    def generate_resource_service_env_vars(self, target_definition: dict) -> list:
-        """
-
-        :param dict target_definition:
+        Generates env vars based on ReturnValues set for a give service. When the resource is new, adds the
+        parameter to the services stack appropriately.
         """
         res_return_names = {}
         for prop_param in self.attributes_outputs.keys():
@@ -424,12 +408,20 @@ class XResource(object):
             else:
                 res_return_names[prop_param.title] = prop_param
         env_vars = []
-        for prop_name, prop_config in target_definition.items():
+        params_to_add = []
+        if (
+            self.ref_parameter
+            and self.ref_parameter.title not in target_definition.keys()
+        ):
+            target_definition[self.ref_parameter.title] = ENV_VAR_NAME.sub(
+                "", self.name.replace("-", "_").upper()
+            )
+        for prop_name, env_var_name in target_definition.items():
             if prop_name in res_return_names:
                 if self.cfn_resource:
                     env_vars.append(
                         Environment(
-                            Name=prop_config,
+                            Name=env_var_name,
                             Value=Ref(
                                 self.attributes_outputs[res_return_names[prop_name]][
                                     "ImportParameter"
@@ -437,45 +429,60 @@ class XResource(object):
                             ),
                         )
                     )
+                    params_to_add.append(res_return_names[prop_name])
                 elif self.lookup_properties:
                     env_vars.append(
                         Environment(
-                            Name=prop_config,
+                            Name=env_var_name,
                             Value=self.attributes_outputs[res_return_names[prop_name]][
                                 "ImportValue"
                             ],
                         )
                     )
+        if params_to_add:
+            params_values = {}
+            extra_settings = [
+                get_parameter_settings(self, param) for param in params_to_add
+            ]
+            for setting in extra_settings:
+                params_to_add.append(setting[1])
+                params_values[setting[0]] = setting[2]
+                add_parameters(target[0].template, params_to_add)
+                target[0].stack.Parameters.update(params_values)
         return env_vars
 
-    def generate_resource_envvars(self):
+    def generate_ref_env_var(self, target) -> list:
         """
         Method to define all the env var of a resource based on its own defined output attributes
         """
-        for env_name in self.env_names:
-            if env_name in [var.Name for var in self.env_vars]:
-                continue
-            if self.cfn_resource:
-                for parameter in self.output_properties.keys():
-                    if parameter.return_value:
-                        env_var = Environment(
-                            **self.define_return_value_env_vars(env_name, parameter)
-                        )
-                    else:
-                        env_var = Environment(
-                            **self.define_ref_env_vars(env_name, parameter)
-                        )
-                    self.env_vars.append(env_var)
-            elif not self.cfn_resource and self.mappings:
-                for key in self.mappings.keys():
-                    env_var = Environment(
-                        Name=env_name
-                        if key == self.logical_name
-                        else f"{env_name}_{key}",
-                        Value=FindInMap(self.mapping_key, self.logical_name, key),
-                    )
-                    self.env_vars.append(env_var)
-        self.env_vars = list({v.Name: v for v in self.env_vars}.values())
+        if not self.ref_parameter:
+            LOG.error(
+                f"{self.module_name}.{self.name}. Default ref_parameter not set. Skipping env_vars"
+            )
+            return []
+        env_var_name = ENV_VAR_NAME.sub("", self.name.upper().replace("-", "_"))
+        if self.cfn_resource and self.attributes_outputs and self.ref_parameter:
+            ref_env_var = Environment(
+                Name=env_var_name,
+                Value=Ref(
+                    self.attributes_outputs[self.ref_parameter]["ImportParameter"]
+                ),
+            )
+            ref_param_settings = get_parameter_settings(self, self.ref_parameter)
+            add_parameters(target[0].template, [ref_param_settings[1]])
+            target[0].stack.Parameters.update(
+                {ref_param_settings[0]: ref_param_settings[2]}
+            )
+        elif self.lookup_properties and self.ref_parameter:
+            ref_env_var = Environment(
+                Name=env_var_name,
+                Value=self.attributes_outputs[self.ref_parameter]["ImportValue"],
+            )
+        else:
+            raise ValueError(
+                f"{self.module_name}.{self.name} - Unable to set the default env var"
+            )
+        return [ref_env_var]
 
     def set_attributes_from_mapping(self, attribute_parameter):
         """
@@ -862,26 +869,30 @@ class ApiXResource(ServicesXResource):
         self, name: str, definition: dict, module_name: str, settings, mapping_key=None
     ):
         super().__init__(name, definition, module_name, settings, mapping_key)
+        self.predefined_resource_service_scaling_function = None
 
     def to_ecs(self, settings, root_stack=None) -> None:
         """
-        Maps SSM Parameter to ECS Services
+        Maps API only based resource to ECS Services
         """
         LOG.info(f"{self.module_name}.{self.name} - Linking to services")
         if not self.mappings and self.cfn_resource:
             handle_resource_to_services(
                 self,
                 settings,
-                self.arn_parameter,
-                list(self.attributes_outputs.keys()),
+                arn_parameter=self.arn_parameter,
                 nested=False,
             )
+            if self.predefined_resource_service_scaling_function:
+                self.predefined_resource_service_scaling_function(self, settings)
         elif not self.cfn_resource and self.mappings:
             handle_lookup_resource(
                 settings,
                 self,
-                self.arn_parameter,
+                arn_parameter=self.arn_parameter,
             )
+            if self.predefined_resource_service_scaling_function:
+                self.predefined_resource_service_scaling_function(self, settings)
 
 
 class NetworkXResource(ServicesXResource):
@@ -894,6 +905,8 @@ class NetworkXResource(ServicesXResource):
     ):
         self.subnets_override = None
         self.security_group = None
+        self.security_group_param = None
+        self.port_param = None
         super().__init__(name, definition, module_name, settings, mapping_key)
         self.requires_vpc = True
         self.cleanse_external_targets()
@@ -958,9 +971,7 @@ class DatabaseXResource(NetworkXResource):
         self, name: str, definition: dict, module_name: str, settings, mapping_key=None
     ):
         self.db_secret = None
-        self.db_sg_parameter = None
         self.db_secret_arn_parameter = None
-        self.db_port_parameter = None
         self.db_cluster_arn_parameter = None
         self.db_cluster_arn = None
         self.db_cluster_endpoint_param = None
@@ -977,8 +988,8 @@ class DatabaseXResource(NetworkXResource):
         if not self.mappings and self.cfn_resource:
             handle_new_tcp_resource(
                 self,
-                port_parameter=self.db_port_parameter,
-                sg_parameter=self.db_sg_parameter,
+                port_parameter=self.port_param,
+                sg_parameter=self.security_group_param,
                 secret_parameter=self.db_secret_arn_parameter,
             )
             if self.db_cluster_arn_parameter:

@@ -20,8 +20,6 @@ MAPPINGS_KEY = NONALPHANUM.sub("", MOD_KEY)
 DB_CLUSTER_RESOURCES_ARN_T = "DBClusterResources"
 DB_CLUSTER_RESOURCES_ARN = Parameter(DB_CLUSTER_RESOURCES_ARN_T, Type="String")
 
-DB_CLUSTER_NAME = Parameter("DBClusterName", Type="String")
-
 DB_RESOURCE_ID_T = "ClusterResourceId"
 DB_RESOURCE_ID = Parameter(
     DB_RESOURCE_ID_T, return_value=DB_RESOURCE_ID_T, Type="String"

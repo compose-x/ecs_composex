@@ -184,6 +184,8 @@ class Bucket(ApiXResource):
         )
         self.cloud_control_attributes_mapping = CONTROL_CLOUD_ATTR_MAPPING
         self.kms_arn_attr = S3_BUCKET_KMS_KEY
+        self.arn_parameter = S3_BUCKET_ARN
+        self.ref_parameter = S3_BUCKET_NAME
 
     def init_outputs(self):
         self.output_properties = {
@@ -276,7 +278,6 @@ class Bucket(ApiXResource):
                 self,
                 settings,
                 arn_parameter=S3_BUCKET_ARN,
-                parameters=list(self.attributes_outputs.keys()),
                 access_subkeys=["objects", "bucket", "enforceSecureConnection"],
             )
         elif self.lookup_properties and self.mappings and not self.cfn_resource:

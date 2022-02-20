@@ -62,7 +62,7 @@ def get_userpool_config(userpool, account_id, resource_id):
     return {}
 
 
-class UserPool(AwsEnvironmentResource):
+class UserPool(AwsEnvironmentResource, ApiXResource):
     """
     Class to manage AWS UserPool
     """

@@ -5,18 +5,7 @@
 import re
 
 from compose_x_common.compose_x_common import keyisset
-from troposphere import (
-    AWS_NO_VALUE,
-    AWS_PARTITION,
-    AWS_REGION,
-    AWS_STACK_ID,
-    AWS_STACK_NAME,
-    FindInMap,
-    GetAtt,
-    Output,
-    Ref,
-    Sub,
-)
+from troposphere import AWS_NO_VALUE, GetAtt, Output, Ref, Sub
 from troposphere.ecs import LoadBalancer as EcsLb
 from troposphere.elasticloadbalancingv2 import (
     Matcher,

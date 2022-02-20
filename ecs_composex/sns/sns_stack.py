@@ -12,10 +12,6 @@ from ecs_composex.common import build_template, setup_logging
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources import ApiXResource
 from ecs_composex.iam.import_sam_policies import get_access_types
-from ecs_composex.resource_settings import (
-    handle_lookup_resource,
-    handle_resource_to_services,
-)
 from ecs_composex.sns.sns_params import (
     MAPPINGS_KEY,
     MOD_KEY,
@@ -108,6 +104,7 @@ class Topic(ApiXResource):
     ):
         super().__init__(name, definition, module_name, settings, mapping_key)
         self.arn_parameter = TOPIC_ARN
+        self.ref_parameter = TOPIC_ARN
 
     def init_outputs(self):
         self.output_properties = {

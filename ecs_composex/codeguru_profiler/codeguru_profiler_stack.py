@@ -78,13 +78,8 @@ class CodeProfiler(ApiXResource):
         super().__init__(
             name, definition, module_name, settings, mapping_key=mapping_key
         )
-        for count, env_name in enumerate(self.env_names):
-            if env_name == self.name.replace("-", "_"):
-                self.env_names.pop(count)
-                break
-        self.env_names.append("AWS_CODEGURU_PROFILER_GROUP_NAME")
-        self.init_env_names(add_self_default=False)
         self.arn_parameter = PROFILER_ARN
+        self.ref_parameter = PROFILER_NAME
 
     def init_outputs(self):
         self.output_properties = {

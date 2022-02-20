@@ -306,6 +306,37 @@ def define_iam_permissions(
     res_policy.PolicyDocument["Statement"].append(access_type_policy_model)
 
 
+def map_resource_env_vars_to_family_services(
+    family, services, target, resource
+) -> None:
+    """
+    Function to deal with the env vars to add to the family stack based on the resource
+    Services definition
+
+    :param ecs_composex.ecs.ecs_family.ComposeFamily family:
+    :param list services:
+    :param tuple target:
+    :param ecs_composex.compose.x_resources.XResource resource:
+    :return:
+    """
+    containers = define_service_containers(family.template)
+    for container in containers:
+        for service in services:
+            if container.Name == service.name:
+                LOG.debug(f"Extended env vars for {container.Name} -> {service.name}")
+                if keyisset("ReturnValues", target[-1]):
+                    extend_container_envvars(
+                        container,
+                        resource.generate_resource_service_env_vars(
+                            target, target[-1]["ReturnValues"]
+                        ),
+                    )
+                else:
+                    extend_container_envvars(
+                        container, resource.generate_ref_env_var(target)
+                    )
+
+
 def map_service_perms_to_resource(
     family,
     services,
@@ -317,7 +348,21 @@ def map_service_perms_to_resource(
     access_definition=None,
     access_subkey=None,
     ignore_missing_primary=False,
-):
+) -> None:
+    """
+    Maps the resource to the services / target family. Sets up IAM and environment variables
+
+    :param ecs_composex.ecs.ecs_family.ComposeFamily family:
+    :param list services:
+    :param tuple target:
+    :param arn_value:
+    :param ecs_composex.compose.x_resources.XResource resource:
+    :param dict resource_policies:
+    :param str resource_mapping_key:
+    :param str,dict access_definition:
+    :param str access_subkey:
+    :param bool ignore_missing_primary:
+    """
 
     if not resource and not resource_policies and not resource_mapping_key:
         raise ValueError(
@@ -348,23 +393,8 @@ def map_service_perms_to_resource(
         access_subkey=access_subkey,
     )
 
-    if not resource:
-        return
-    containers = define_service_containers(family.template)
-    for container in containers:
-        for service in services:
-            if container.Name == service.name:
-                LOG.debug(f"Extended env vars for {container.Name} -> {service.name}")
-                if keyisset("ReturnValues", target[-1]):
-                    extend_container_envvars(
-                        container,
-                        resource.generate_resource_service_env_vars(
-                            target[-1]["ReturnValues"]
-                        ),
-                    )
-                else:
-                    resource.generate_resource_envvars()
-                    extend_container_envvars(container, resource.env_vars)
+    if resource:
+        map_resource_env_vars_to_family_services(family, services, target, resource)
 
 
 def handle_kms_access(settings, resource, target, selected_services):
@@ -426,7 +456,6 @@ def handle_lookup_resource(settings, resource, arn_parameter, access_subkeys=Non
                 target,
                 resource=resource,
                 arn_value=arn_attr_value,
-                access_subkey=None,
             )
         if (
             hasattr(resource, "kms_arn_attr")
@@ -439,7 +468,6 @@ def handle_lookup_resource(settings, resource, arn_parameter, access_subkeys=Non
 def assign_new_resource_to_service(
     resource,
     arn_parameter,
-    parameters=None,
     access_subkeys: list = None,
 ):
     """
@@ -449,16 +477,12 @@ def assign_new_resource_to_service(
     :type resource: ecs_composex.common.compose_resources.XResource
     :param: The parameter mapping to the ARN attribute of the resource
     :type arn_parameter: ecs_composex.common.cfn_parameter.Parameter arn_parameter
+    :param list[str] access_subkeys: Allows to access subkeys from the resource policies
     """
-    if parameters is None:
-        parameters = []
     arn_settings = get_parameter_settings(resource, arn_parameter)
-    extra_settings = [get_parameter_settings(resource, param) for param in parameters]
     params_to_add = [arn_settings[1]]
     params_values = {arn_settings[0]: arn_settings[2]}
-    for setting in extra_settings:
-        params_to_add.append(setting[1])
-        params_values[setting[0]] = setting[2]
+
     for target in resource.families_targets:
         selected_services = get_selected_services(resource, target)
         if not selected_services:
@@ -484,7 +508,6 @@ def assign_new_resource_to_service(
                 target,
                 resource=resource,
                 arn_value=Ref(arn_settings[1]),
-                access_subkey=None,
             )
         if resource.stack.title not in target[0].stack.DependsOn:
             target[0].stack.DependsOn.append(resource.stack.title)
@@ -494,7 +517,6 @@ def handle_resource_to_services(
     x_resource,
     settings,
     arn_parameter,
-    parameters=None,
     nested=False,
     access_subkeys=None,
 ):
@@ -509,8 +531,6 @@ def handle_resource_to_services(
     :param list parameters:
     :return:
     """
-    if not parameters:
-        parameters = []
     s_resources = x_resource.stack.stack_template.resources
     for resource_name, s_resource in s_resources.items():
         if issubclass(type(s_resource), ComposeXStack):
@@ -518,13 +538,11 @@ def handle_resource_to_services(
                 s_resources[resource_name],
                 settings,
                 arn_parameter,
-                parameters,
                 nested=True,
                 access_subkeys=access_subkeys,
             )
     assign_new_resource_to_service(
         x_resource,
         arn_parameter,
-        parameters,
         access_subkeys=access_subkeys,
     )

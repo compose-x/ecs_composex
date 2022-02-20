@@ -24,6 +24,7 @@ from ecs_composex.iam.import_sam_policies import get_access_types
 from ecs_composex.rds.rds_features import apply_extra_parameters
 from ecs_composex.rds.rds_params import (
     DB_CLUSTER_ARN,
+    DB_CLUSTER_NAME,
     DB_ENDPOINT_PORT,
     DB_NAME,
     DB_SECRET_ARN,
@@ -95,8 +96,8 @@ def get_db_cluster_config(db, account_id, resource_id):
 
     attributes_mappings = {
         DB_NAME: "DatabaseName",
-        db.db_port_parameter: "Port",
-        db.db_sg_parameter: "VpcSecurityGroups::0::VpcSecurityGroupId",
+        db.port_param: "Port",
+        db.security_group_param: "VpcSecurityGroups::0::VpcSecurityGroupId",
         db.db_cluster_arn_parameter: "DBClusterArn",
     }
     config = attributes_to_mapping(db_config_r, attributes_mappings)
@@ -119,17 +120,18 @@ class Rds(DatabaseXResource):
             name, definition, module_name, settings, mapping_key=mapping_key
         )
         self.set_override_subnets()
-        self.db_port_parameter = DB_ENDPOINT_PORT
+        self.port_param = DB_ENDPOINT_PORT
         self.db_secret_arn_parameter = DB_SECRET_ARN
-        self.db_sg_parameter = DB_SG
+        self.security_group_param = DB_SG
         self.db_cluster_arn_parameter = DB_CLUSTER_ARN
+        self.ref_parameter = DB_CLUSTER_NAME
 
     def init_outputs(self):
         """
         Method to init the RDS Output attributes
         """
         self.output_properties = {
-            DB_NAME: (
+            DB_CLUSTER_NAME: (
                 self.logical_name,
                 self.cfn_resource,
                 Ref,
@@ -143,12 +145,12 @@ class Rds(DatabaseXResource):
                 f"arn:${{{AWS_PARTITION}}}:rds:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:"
                 f"${{{self.cfn_resource.title}}}",
             ),
-            self.db_port_parameter: (
-                f"{self.logical_name}{self.db_port_parameter.return_value}",
+            self.port_param: (
+                f"{self.logical_name}{self.port_param.return_value}",
                 self.cfn_resource,
                 GetAtt,
-                self.db_port_parameter.return_value,
-                self.db_port_parameter.return_value.replace(r".", ""),
+                self.port_param.return_value,
+                self.port_param.return_value.replace(r".", ""),
             ),
             self.db_secret_arn_parameter: (
                 self.db_secret.title,
@@ -157,11 +159,11 @@ class Rds(DatabaseXResource):
                 None,
                 "SecretArn",
             ),
-            self.db_sg_parameter: (
+            self.security_group_param: (
                 self.db_sg.title,
                 self.db_sg,
                 GetAtt,
-                self.db_sg_parameter.return_value,
+                self.security_group_param.return_value,
                 "VpcSecurityGroupId",
             ),
         }
