@@ -23,7 +23,9 @@ DB_CLUSTER_RESOURCES_ARN = Parameter(DB_CLUSTER_RESOURCES_ARN_T, Type="String")
 DB_CLUSTER_NAME = Parameter("DBClusterName", Type="String")
 
 DB_RESOURCE_ID_T = "ClusterResourceId"
-DB_ID_T = Parameter(DB_RESOURCE_ID_T, return_value=DB_RESOURCE_ID_T, Type="String")
+DB_RESOURCE_ID = Parameter(
+    DB_RESOURCE_ID_T, return_value=DB_RESOURCE_ID_T, Type="String"
+)
 
 DB_ENDPOINT = Parameter(DB_ENDPOINT_ADDRESS_T, return_value="Endpoint", Type="String")
 DB_READ_ENDPOINT = Parameter(

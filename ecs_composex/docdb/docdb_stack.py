@@ -10,19 +10,20 @@ import warnings
 
 from compose_x_common.aws.rds import RDS_DB_CLUSTER_ARN_RE
 from compose_x_common.compose_x_common import attributes_to_mapping, keyisset
-from troposphere import GetAtt, Ref
+from troposphere import AWS_ACCOUNT_ID, AWS_PARTITION, AWS_REGION, GetAtt, Ref, Sub
 from troposphere.docdb import DBCluster as CfnDBCluster
 
 from ecs_composex.common import setup_logging
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources import (
-    RdsXResource,
+    DatabaseXResource,
     set_lookup_resources,
     set_new_resources,
     set_resources,
     set_use_resources,
 )
 from ecs_composex.docdb.docdb_params import (
+    DOCDB_ID,
     DOCDB_NAME,
     DOCDB_PORT,
     MAPPINGS_KEY,
@@ -33,6 +34,7 @@ from ecs_composex.docdb.docdb_template import (
     create_docdb_template,
     init_doc_db_template,
 )
+from ecs_composex.iam.import_sam_policies import get_access_types
 from ecs_composex.rds.rds_params import DB_CLUSTER_ARN, DB_SECRET_ARN, DB_SG
 from ecs_composex.rds_resources_settings import lookup_rds_resource, lookup_rds_secret
 from ecs_composex.vpc.vpc_params import STORAGE_SUBNETS
@@ -82,12 +84,13 @@ def get_db_cluster_config(db, account_id, resource_id):
     return config
 
 
-class DocDb(RdsXResource):
+class DocDb(DatabaseXResource):
     """
     Class to manage DocDB
     """
 
     subnets_param = STORAGE_SUBNETS
+    policies_scaffolds = get_access_types(MOD_KEY)
 
     def __init__(self, name, definition, module_name, settings, mapping_key=None):
         """
@@ -132,6 +135,19 @@ class DocDb(RdsXResource):
                 self.db_sg,
                 GetAtt,
                 self.db_sg_parameter.return_value,
+            ),
+            self.db_cluster_arn_parameter: (
+                f"{self.logical_name}{self.db_cluster_arn_parameter.title}",
+                self.cfn_resource,
+                Sub,
+                f"arn:${{{AWS_PARTITION}}}:rds:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:"
+                f"${{{self.cfn_resource.title}}}",
+            ),
+            DOCDB_ID: (
+                f"{self.logical_name}{DOCDB_ID.return_value}",
+                self.cfn_resource,
+                GetAtt,
+                DOCDB_ID.return_value,
             ),
         }
 

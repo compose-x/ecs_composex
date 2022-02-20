@@ -8,18 +8,19 @@ Module to handle AWS RDS CFN Templates creation
 
 from compose_x_common.aws.rds import RDS_DB_CLUSTER_ARN_RE, RDS_DB_INSTANCE_ARN_RE
 from compose_x_common.compose_x_common import attributes_to_mapping, keyisset
-from troposphere import GetAtt, Ref
+from troposphere import AWS_ACCOUNT_ID, AWS_PARTITION, AWS_REGION, GetAtt, Ref, Sub
 from troposphere.rds import DBCluster as CfnDBCluster
 from troposphere.rds import DBInstance as CfnDBInstance
 
 from ecs_composex.common import build_template, setup_logging
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources import (
-    RdsXResource,
+    DatabaseXResource,
     set_lookup_resources,
     set_new_resources,
     set_resources,
 )
+from ecs_composex.iam.import_sam_policies import get_access_types
 from ecs_composex.rds.rds_features import apply_extra_parameters
 from ecs_composex.rds.rds_params import (
     DB_CLUSTER_ARN,
@@ -102,12 +103,13 @@ def get_db_cluster_config(db, account_id, resource_id):
     return config
 
 
-class Rds(RdsXResource):
+class Rds(DatabaseXResource):
     """
     Class to represent a RDS DB
     """
 
     subnets_param = STORAGE_SUBNETS
+    policies_scaffolds = get_access_types(MOD_KEY)
 
     def __init__(self, name, definition, module_name, settings, mapping_key=None):
         self.db_secret = None
@@ -133,6 +135,13 @@ class Rds(RdsXResource):
                 Ref,
                 None,
                 "DbName",
+            ),
+            self.db_cluster_arn_parameter: (
+                f"{self.logical_name}{self.db_cluster_arn_parameter.title}",
+                self.cfn_resource,
+                Sub,
+                f"arn:${{{AWS_PARTITION}}}:rds:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:"
+                f"${{{self.cfn_resource.title}}}",
             ),
             self.db_port_parameter: (
                 f"{self.logical_name}{self.db_port_parameter.return_value}",

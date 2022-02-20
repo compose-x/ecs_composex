@@ -36,7 +36,23 @@
             "type": "string"
           },
           "access": {
-            "type": "string"
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "object",
+                "additionalProperties": true,
+                "required": [
+                  "DBCluster"
+                ],
+                "properties": {
+                  "DBCluster": {
+                    "type": "string"
+                  }
+                }
+              }
+            ]
           },
           "SecretsMappings": {
             "$ref": "#/definitions/SecretsMappingsDef"
@@ -63,7 +79,10 @@
       "additionalProperties": false,
       "properties": {
         "PrefixWithDbName": {
-          "type": ["string", "boolean"]
+          "type": [
+            "string",
+            "boolean"
+          ]
         },
         "Mappings": {
           "oneOf": [
@@ -102,10 +121,14 @@
       "type": "object",
       "oneOf": [
         {
-          "required": ["cluster"]
+          "required": [
+            "cluster"
+          ]
         },
         {
-          "required": ["instance"]
+          "required": [
+            "instance"
+          ]
         }
       ],
       "properties": {

@@ -1,0 +1,13 @@
+{
+  "DBCluster": {
+    "RO": {
+      "Effect": "Allow",
+      "Action": [
+        "rds:Describe*"
+      ],
+      "Resource": [
+        "${ARN}"
+      ]
+    }
+  }
+}

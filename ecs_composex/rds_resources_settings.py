@@ -15,7 +15,7 @@ from troposphere.ec2 import SecurityGroupIngress
 from troposphere.ecs import Secret as EcsSecret
 from troposphere.iam import PolicyType
 
-from ecs_composex.common import LOG, add_parameters
+from ecs_composex.common import LOG, add_outputs, add_parameters, add_update_mapping
 from ecs_composex.common.aws import find_aws_resource_arn_from_tags_api
 from ecs_composex.common.services_helpers import extend_container_secrets
 from ecs_composex.ecs.ecs_params import SG_T
@@ -57,7 +57,7 @@ def lookup_rds_secret(rds_resource, secret_lookup):
     """
     Lookup RDS DB Secret specified
 
-    :param ecs_composex.compose.x_resources.RdsXResource rds_resource:
+    :param ecs_composex.compose.x_resources.DatabaseXResource rds_resource:
     :param secret_lookup:
     :return:
     """
@@ -365,9 +365,54 @@ def handle_new_dbs_to_services(db, sg_import, target, port=None):
     )
 
 
+def handle_import_dbs_to_services(db, target) -> None:
+    """
+    Function to map the Looked up DBs (DocDB and RDS) to the services.
+
+    :param ecs_composex.rds.rds_stack.Rds db:
+    :param tuple target:
+    """
+    if db.db_secret_arn_parameter and keyisset(
+        db.db_secret_arn_parameter, db.attributes_outputs
+    ):
+        valid_ones = [
+            service
+            for service in target[2]
+            if service not in target[0].ignored_services
+        ]
+        for service in valid_ones:
+            add_secret_to_container(
+                db,
+                db.attributes_outputs[db.db_secret_arn_parameter]["ImportValue"],
+                service,
+                target,
+            )
+        add_secrets_access_policy(
+            target[0],
+            db.attributes_outputs[db.db_secret_arn_parameter]["ImportValue"],
+            db.logical_name,
+        )
+    add_security_group_ingress(
+        target[0].stack,
+        db.logical_name,
+        sg_id=db.attributes_outputs[db.db_sg_parameter]["ImportValue"],
+        port=db.attributes_outputs[db.db_port_parameter]["ImportValue"],
+    )
+
+
+def import_dbs(db, settings) -> None:
+    """
+    Function to go over each service defined in the DB and assign found DB settings to service
+    """
+    for target in db.families_targets:
+        add_update_mapping(
+            target[0].template, db.mapping_key, settings.mappings[db.mapping_key]
+        )
+        handle_import_dbs_to_services(db, target)
+
+
 def handle_new_tcp_resource(
     resource,
-    res_root_stack,
     port_parameter,
     sg_parameter,
     secret_parameter=None,
@@ -382,9 +427,9 @@ def handle_new_tcp_resource(
     :param secret_parameter:
     :return:
     """
-    if resource.logical_name not in res_root_stack.stack_template.resources:
+    if resource.logical_name not in resource.stack.stack_template.resources:
         raise KeyError(
-            f"DB {resource.logical_name} not defined in {res_root_stack.title} root template"
+            f"DB {resource.logical_name} not defined in {resource.stack.title} root template"
         )
 
     parameters_to_add = []
@@ -401,11 +446,11 @@ def handle_new_tcp_resource(
     for target in resource.families_targets:
         if target[0].launch_type == "EXTERNAL":
             LOG.warning(
-                f"{res_root_stack.title} - {target[0].name} - "
+                f"{resource.stack.title} - {target[0].name} - "
                 "When using EXTERNAL Launch Type, networking settings cannot be set."
             )
             continue
-        LOG.info(f"{res_root_stack.title} - Linking to {target[0].name}")
+        LOG.info(f"{resource.stack.title} - Linking to {target[0].name}")
         add_parameters(target[0].template, parameters_to_add)
         target[0].stack.Parameters.update(parameters_values)
         handle_new_dbs_to_services(
@@ -416,5 +461,5 @@ def handle_new_tcp_resource(
             add_parameters(target[0].template, [secret_settings[1]])
             target[0].stack.Parameters.update({secret_settings[0]: secret_settings[2]})
             handle_db_secret_to_services(resource, Ref(secret_settings[1]), target)
-        if res_root_stack.title not in target[0].stack.DependsOn:
-            target[0].stack.DependsOn.append(res_root_stack.title)
+        if resource.stack.title not in target[0].stack.DependsOn:
+            target[0].stack.DependsOn.append(resource.stack.title)

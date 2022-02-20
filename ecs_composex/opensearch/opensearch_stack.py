@@ -8,7 +8,7 @@ from troposphere import AWS_ACCOUNT_ID, AWS_PARTITION, GetAtt, Ref, Sub
 from ecs_composex.common import build_template
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources import (
-    RdsXResource,
+    DatabaseXResource,
     set_lookup_resources,
     set_new_resources,
     set_resources,
@@ -21,12 +21,19 @@ from ecs_composex.opensearch.opensearch_params import (
     OS_DOMAIN_ARN,
     OS_DOMAIN_ENDPOINT,
     OS_DOMAIN_ID,
+    OS_DOMAIN_PORT,
     OS_DOMAIN_SG,
     RES_KEY,
 )
 from ecs_composex.opensearch.opensearch_template import create_new_domains
 from ecs_composex.rds.rds_params import DB_SECRET_ARN
+from ecs_composex.rds_resources_settings import handle_new_tcp_resource
 from ecs_composex.vpc.vpc_params import STORAGE_SUBNETS, VPC_ID
+
+from .opensearch_ecs import (
+    assign_new_resource_to_service,
+    handle_lookup_to_service_mapping,
+)
 
 
 def define_default_key_policy():
@@ -58,7 +65,7 @@ def define_default_key_policy():
     return policy
 
 
-class OpenSearchDomain(RdsXResource):
+class OpenSearchDomain(DatabaseXResource):
     """
     Class to represent the OpenSearch domain
     """
@@ -94,6 +101,26 @@ class OpenSearchDomain(RdsXResource):
                 OS_DOMAIN_ENDPOINT.return_value,
             ),
         }
+
+    def to_ecs(self, settings, root_stack=None) -> None:
+        """
+        Mapping for OpenSearch domains override from default RDS DB access
+        """
+        if not self.stack.is_void and self.cfn_resource and not self.mappings:
+            if self.security_group:
+                handle_new_tcp_resource(
+                    self,
+                    port_parameter=OS_DOMAIN_PORT,
+                    sg_parameter=OS_DOMAIN_SG,
+                )
+            assign_new_resource_to_service(
+                self,
+                settings,
+                arn_parameter=OS_DOMAIN_ARN,
+                parameters=[OS_DOMAIN_ENDPOINT, OS_DOMAIN_ID],
+            )
+        elif self.mappings and self.lookup_properties:
+            handle_lookup_to_service_mapping(self, settings)
 
 
 class XStack(ComposeXStack):

@@ -8,13 +8,13 @@ AWS DocumentDB entrypoint for ECS ComposeX
 
 from compose_x_common.aws.neptune import NEPTUNE_DB_CLUSTER_ARN_RE
 from compose_x_common.compose_x_common import attributes_to_mapping, keyisset
-from troposphere import GetAtt, Ref
+from troposphere import AWS_ACCOUNT_ID, AWS_PARTITION, AWS_REGION, GetAtt, Ref, Sub
 from troposphere.neptune import DBCluster as CfnDBCluster
 
 from ecs_composex.common import build_template, setup_logging
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources import (
-    RdsXResource,
+    DatabaseXResource,
     set_lookup_resources,
     set_new_resources,
     set_resources,
@@ -27,12 +27,21 @@ from ecs_composex.neptune.neptune_params import (
     DB_ENDPOINT,
     DB_PORT,
     DB_READ_ENDPOINT,
+    DB_RESOURCE_ID,
     MAPPINGS_KEY,
     MOD_KEY,
     RES_KEY,
 )
 from ecs_composex.rds.rds_params import DB_CLUSTER_ARN, DB_SG
-from ecs_composex.rds_resources_settings import lookup_rds_resource
+from ecs_composex.rds_resources_settings import (
+    handle_new_tcp_resource,
+    import_dbs,
+    lookup_rds_resource,
+)
+from ecs_composex.resource_settings import (
+    assign_new_resource_to_service,
+    handle_lookup_resource,
+)
 from ecs_composex.vpc.vpc_params import STORAGE_SUBNETS, VPC_ID
 
 from .neptune_template import create_neptune_template
@@ -78,7 +87,7 @@ def get_db_cluster_config(db, account_id, resource_id):
     return config
 
 
-class NeptuneDBCluster(RdsXResource):
+class NeptuneDBCluster(DatabaseXResource):
     """
     Class to manage Neptune Cluster
     """
@@ -110,17 +119,25 @@ class NeptuneDBCluster(RdsXResource):
         """
         self.output_properties = {
             DB_CLUSTER_NAME: (self.logical_name, self.cfn_resource, Ref, None),
+            DB_RESOURCE_ID: (
+                f"{self.logical_name}{DB_RESOURCE_ID.return_value}",
+                self.cfn_resource,
+                GetAtt,
+                DB_RESOURCE_ID.return_value,
+            ),
             self.db_cluster_arn_parameter: (
                 f"{self.logical_name}{self.db_cluster_arn_parameter.title}",
                 self.cfn_resource,
-                Ref,
-                None,
+                Sub,
+                f"arn:${{{AWS_PARTITION}}}:rds:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:"
+                f"${{{self.cfn_resource.title}}}",
             ),
             DB_CLUSTER_RESOURCES_ARN: (
                 f"{self.logical_name}{DB_CLUSTER_RESOURCES_ARN.title}",
                 self.cfn_resource,
-                Ref,
-                None,
+                Sub,
+                f"arn:${{{AWS_PARTITION}}}:neptune-db:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:"
+                f"${{{self.cfn_resource.title}.{DB_RESOURCE_ID.return_value}}}",
             ),
             DB_ENDPOINT: (
                 f"{self.logical_name}{DB_ENDPOINT.return_value}",
@@ -169,6 +186,39 @@ class NeptuneDBCluster(RdsXResource):
             tagging_api_id,
             subattribute_key,
         )
+
+    def to_ecs(self, settings, root_stack=None) -> None:
+        LOG.info(f"{self.module_name}.{self.name} - Linking to services")
+        if not self.mappings and self.cfn_resource:
+            handle_new_tcp_resource(
+                self,
+                port_parameter=DB_PORT,
+                sg_parameter=DB_SG,
+            )
+            assign_new_resource_to_service(
+                self,
+                arn_parameter=DB_CLUSTER_RESOURCES_ARN,
+                access_subkeys=["NeptuneDB"],
+            )
+            assign_new_resource_to_service(
+                self,
+                arn_parameter=self.db_cluster_arn_parameter,
+                access_subkeys=["DBCluster"],
+            )
+        elif not self.cfn_resource and self.mappings:
+            import_dbs(self, settings)
+            handle_lookup_resource(
+                settings,
+                self,
+                arn_parameter=self.db_cluster_arn_parameter,
+                access_subkeys=["DBCluster"],
+            )
+            handle_lookup_resource(
+                settings,
+                self,
+                arn_parameter=DB_CLUSTER_RESOURCES_ARN,
+                access_subkeys=["NeptuneDB"],
+            )
 
 
 class XStack(ComposeXStack):
