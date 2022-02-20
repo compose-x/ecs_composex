@@ -28,7 +28,7 @@
       ]
     }
   },
-  "IAM": {
+  "DBCluster": {
     "RO": {
       "Effect": "Allow",
       "Action": [

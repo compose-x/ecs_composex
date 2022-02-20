@@ -11,7 +11,6 @@ from troposphere.cloudwatch import Alarm, MetricDimension
 
 from ecs_composex.common import LOG, add_parameters
 from ecs_composex.common.cfn_params import Parameter
-from ecs_composex.ecs.ecs_params import SERVICE_SCALING_TARGET
 from ecs_composex.ecs.ecs_scaling import (
     generate_alarm_scaling_out_policy,
     reset_to_zero_policy,
@@ -19,11 +18,12 @@ from ecs_composex.ecs.ecs_scaling import (
 from ecs_composex.sqs.sqs_params import MOD_KEY, SQS_NAME
 
 
-def handle_service_scaling(resource):
+def handle_service_scaling(resource, settings=None) -> None:
     """
     Function to define and prepare settings for scaling rules based for SQS Queues discovered through lookup
 
-    :param ecs_composex.common.compose_resources.XResource resource:
+    :param ecs_composex.compose.x_resources.ServicesXResource resource:
+    :param ecs_composex.common. settings:
     :raises KeyError: if the service name is not a listed service in docker-compose.
     :return:
     """
@@ -36,7 +36,10 @@ def handle_service_scaling(resource):
     else:
         resource_value = FindInMap(MOD_KEY, resource.logical_name, resource_attribute)
     for target in resource.families_scaling:
-        if SERVICE_SCALING_TARGET not in target[0].template.resources:
+        if (
+            not target[0].scalable_target
+            or target[0].scalable_target not in target[0].template.resources.values()
+        ):
             LOG.warning(
                 f"No Scalable target defined for {target[0].name}."
                 " You need to define `scaling.scaling_range` in x-configs first. No scaling applied"

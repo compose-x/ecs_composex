@@ -15,7 +15,7 @@ from troposphere.ec2 import SecurityGroupIngress
 from troposphere.ecs import Secret as EcsSecret
 from troposphere.iam import PolicyType
 
-from ecs_composex.common import LOG, add_outputs, add_parameters, add_update_mapping
+from ecs_composex.common import LOG, add_parameters, add_update_mapping
 from ecs_composex.common.aws import find_aws_resource_arn_from_tags_api
 from ecs_composex.common.services_helpers import extend_container_secrets
 from ecs_composex.ecs.ecs_params import SG_T
@@ -395,8 +395,8 @@ def handle_import_dbs_to_services(db, target) -> None:
     add_security_group_ingress(
         target[0].stack,
         db.logical_name,
-        sg_id=db.attributes_outputs[db.db_sg_parameter]["ImportValue"],
-        port=db.attributes_outputs[db.db_port_parameter]["ImportValue"],
+        sg_id=db.attributes_outputs[db.security_group_param]["ImportValue"],
+        port=db.attributes_outputs[db.port_param]["ImportValue"],
     )
 
 
@@ -421,7 +421,6 @@ def handle_new_tcp_resource(
     Funnction to standardize TCP services access from services.
 
     :param resource:
-    :param res_root_stack:
     :param port_parameter:
     :param sg_parameter:
     :param secret_parameter:

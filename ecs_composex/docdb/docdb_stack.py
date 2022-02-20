@@ -76,8 +76,8 @@ def get_db_cluster_config(db, account_id, resource_id):
         ]
 
     attributes_mappings = {
-        db.db_port_parameter: "Port",
-        db.db_sg_parameter: "VpcSecurityGroups::0::VpcSecurityGroupId",
+        db.port_param: "Port",
+        db.security_group_param: "VpcSecurityGroups::0::VpcSecurityGroupId",
         db.db_cluster_arn_parameter: "DBClusterArn",
     }
     config = attributes_to_mapping(db_cluster, attributes_mappings)
@@ -107,10 +107,12 @@ class DocDb(DatabaseXResource):
             name, definition, module_name, settings, mapping_key=mapping_key
         )
         self.set_override_subnets()
-        self.db_sg_parameter = DB_SG
+        self.security_group_param = DB_SG
         self.db_secret_arn_parameter = DB_SECRET_ARN
-        self.db_port_parameter = DOCDB_PORT
+        self.port_param = DOCDB_PORT
         self.db_cluster_arn_parameter = DB_CLUSTER_ARN
+        self.ref_parameter = DOCDB_NAME
+        self.arn_parameter = DB_CLUSTER_ARN
 
     def init_outputs(self):
         """
@@ -118,11 +120,11 @@ class DocDb(DatabaseXResource):
         """
         self.output_properties = {
             DOCDB_NAME: (self.logical_name, self.cfn_resource, Ref, None),
-            self.db_port_parameter: (
-                f"{self.logical_name}{self.db_port_parameter.return_value}",
+            self.port_param: (
+                f"{self.logical_name}{self.port_param.return_value}",
                 self.cfn_resource,
                 GetAtt,
-                self.db_port_parameter.return_value,
+                self.port_param.return_value,
             ),
             self.db_secret_arn_parameter: (
                 self.db_secret.title,
@@ -130,11 +132,11 @@ class DocDb(DatabaseXResource):
                 Ref,
                 None,
             ),
-            self.db_sg_parameter: (
+            self.security_group_param: (
                 self.db_sg.title,
                 self.db_sg,
                 GetAtt,
-                self.db_sg_parameter.return_value,
+                self.security_group_param.return_value,
             ),
             self.db_cluster_arn_parameter: (
                 f"{self.logical_name}{self.db_cluster_arn_parameter.title}",

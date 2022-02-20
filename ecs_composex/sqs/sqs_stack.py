@@ -101,6 +101,8 @@ class Queue(ApiXResource):
         super().__init__(name, definition, module_name, settings, mapping_key)
         self.kms_arn_attr = SQS_KMS_KEY
         self.arn_parameter = SQS_ARN
+        self.ref_parameter = SQS_URL
+        self.predefined_resource_service_scaling_function = handle_service_scaling
 
     def init_outputs(self):
         """

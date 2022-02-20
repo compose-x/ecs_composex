@@ -291,7 +291,6 @@ def efs_to_ecs(resources, services_stack, res_root_stack, settings):
         if not resource.mappings and resource.cfn_resource:
             handle_new_tcp_resource(
                 resource,
-                res_root_stack,
                 port_parameter=FS_PORT,
                 sg_parameter=FS_MNT_PT_SG_ID,
             )

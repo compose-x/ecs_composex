@@ -17,7 +17,6 @@ from troposphere import (
     AWS_STACK_NAME,
     FindInMap,
     GetAtt,
-    Output,
     Ref,
     Select,
     Sub,
@@ -37,12 +36,12 @@ from troposphere.elasticloadbalancingv2 import (
     Listener,
     ListenerCertificate,
     ListenerRule,
+    ListenerRuleAction,
     LoadBalancer,
     LoadBalancerAttributes,
     PathPatternConfig,
     RedirectConfig,
     SubnetMapping,
-    TargetGroup,
     TargetGroupTuple,
 )
 
@@ -72,15 +71,10 @@ from ecs_composex.elbv2.elbv2_params import (
     MAPPINGS_KEY,
     MOD_KEY,
     RES_KEY,
-    TGT_FULL_NAME,
-    TGT_GROUP_ARN,
-    TGT_GROUP_NAME,
 )
 from ecs_composex.ingress_settings import Ingress, set_service_ports
 from ecs_composex.resources_import import import_record_properties
 from ecs_composex.vpc.vpc_params import APP_SUBNETS, PUBLIC_SUBNETS, VPC_ID
-
-from .elbv2_ecs import handle_services_association
 
 
 def handle_cross_zone(value: str) -> LoadBalancerAttributes:
@@ -323,14 +317,16 @@ def define_target_conditions(definition) -> list:
     return conditions
 
 
-def define_actions(listener, target_def) -> list:
+def define_actions(listener, target_def, rule_actions: bool = False) -> list:
     """
     Function to identify the Target definition and create the resulting rule appropriately.
 
     :param dict target_def:
     :param ecs_composex.elbv2.elbv2_stack.ComposeListener listener:
+    :param rule_actions: Whether to use Action or ListenerRuleAction
     :return: The action to add or action list for default target
     """
+    action_class = Action if not rule_actions else ListenerRuleAction
     if not keyisset("target_arn", target_def):
         raise KeyError("No target ARN defined in the target definition")
     auth_action = None
@@ -341,7 +337,7 @@ def define_actions(listener, target_def) -> list:
             target_def["AuthenticateCognitoConfig"], AuthenticateCognitoConfig
         )
         auth_rule = AuthenticateCognitoConfig(**props)
-        auth_action = Action(
+        auth_action = action_class(
             Type=auth_action_type, AuthenticateCognitoConfig=auth_rule, Order=1
         )
     elif keyisset("AuthenticateOidcConfig", target_def):
@@ -350,7 +346,7 @@ def define_actions(listener, target_def) -> list:
             target_def["AuthenticateOidcConfig"], AuthenticateOidcConfig
         )
         auth_rule = AuthenticateOidcConfig(**props)
-        auth_action = Action(
+        auth_action = action_class(
             Type=auth_action_type, AuthenticateOidcConfig=auth_rule, Order=1
         )
     if auth_action:
@@ -367,7 +363,7 @@ def define_actions(listener, target_def) -> list:
             )
         actions.append(auth_action)
         actions.append(
-            Action(
+            action_class(
                 Type="forward",
                 ForwardConfig=ForwardConfig(
                     TargetGroups=[
@@ -379,7 +375,7 @@ def define_actions(listener, target_def) -> list:
         )
     else:
         actions.append(
-            Action(
+            action_class(
                 Type="forward",
                 ForwardConfig=ForwardConfig(
                     TargetGroups=[
@@ -405,7 +401,7 @@ def define_listener_rules_actions(listener, left_services) -> list:
         rule = ListenerRule(
             f"{listener.title}{NONALPHANUM.sub('', service_def['name'])}Rule",
             ListenerArn=Ref(listener),
-            Actions=define_actions(listener, service_def),
+            Actions=define_actions(listener, service_def, True),
             Priority=(count + 1),
             Conditions=define_target_conditions(service_def),
         )

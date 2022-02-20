@@ -577,5 +577,4 @@ def create_new_domains(new_domains, stack):
                 ),
             )
             add_parameters(stack.stack_template, [OS_DOMAIN_PORT])
-        domain.generate_resource_envvars()
         add_outputs(stack.stack_template, domain.outputs)

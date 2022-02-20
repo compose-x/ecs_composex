@@ -98,6 +98,10 @@ class Efs(NetworkXResource):
             name, definition, module_name, settings, mapping_key=mapping_key
         )
         self.set_override_subnets()
+        self.ref_parameter = FS_ID
+        self.arn_parameter = FS_ARN
+        self.security_group_param = FS_MNT_PT_SG_ID
+        self.port_param = FS_PORT
 
     def init_outputs(self):
         """

@@ -13,6 +13,7 @@ from ecs_composex.common.cfn_conditions import define_stack_name
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources import (
     ApiXResource,
+    AwsEnvironmentResource,
     set_lookup_resources,
     set_new_resources,
     set_resources,
@@ -30,10 +31,6 @@ from ecs_composex.kms.kms_params import (
 )
 from ecs_composex.kms.kms_s3 import handle_bucket_kms
 from ecs_composex.kms.kms_template import create_kms_template
-from ecs_composex.resource_settings import (
-    handle_lookup_resource,
-    handle_resource_to_services,
-)
 from ecs_composex.resources_import import import_record_properties
 from ecs_composex.s3.s3_stack import Bucket
 
@@ -96,7 +93,7 @@ def define_default_key_policy():
     return policy
 
 
-class KmsKey(ApiXResource):
+class KmsKey(AwsEnvironmentResource, ApiXResource):
     """
     Class to represent a KMS Key
     """
@@ -113,6 +110,7 @@ class KmsKey(ApiXResource):
     ):
         super().__init__(name, definition, module_name, settings, mapping_key)
         self.arn_parameter = KMS_KEY_ARN
+        self.ref_parameter = KMS_KEY_ID
 
     def init_outputs(self):
         self.output_properties = {
