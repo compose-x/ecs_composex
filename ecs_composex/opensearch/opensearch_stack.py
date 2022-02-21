@@ -28,10 +28,7 @@ from ecs_composex.opensearch.opensearch_params import (
 from ecs_composex.opensearch.opensearch_template import create_new_domains
 from ecs_composex.rds.rds_params import DB_SECRET_ARN
 from ecs_composex.rds_resources_settings import handle_new_tcp_resource, import_dbs
-from ecs_composex.resource_settings import (
-    assign_new_resource_to_service,
-    handle_lookup_resource,
-)
+from ecs_composex.resource_settings import link_resource_to_services
 from ecs_composex.vpc.vpc_params import STORAGE_SUBNETS, VPC_ID
 
 
@@ -115,8 +112,11 @@ class OpenSearchDomain(DatabaseXResource):
                     port_parameter=OS_DOMAIN_PORT,
                     sg_parameter=OS_DOMAIN_SG,
                 )
-            assign_new_resource_to_service(
-                self, arn_parameter=OS_DOMAIN_ARN, access_subkeys=["Http", "DBCluster"]
+            link_resource_to_services(
+                settings,
+                self,
+                arn_parameter=OS_DOMAIN_ARN,
+                access_subkeys=["Http", "DBCluster"],
             )
         elif self.mappings and self.lookup_properties:
             if keyisset(OS_DOMAIN_SG.return_value, self.mappings):
@@ -139,7 +139,7 @@ class OpenSearchDomain(DatabaseXResource):
                     ),
                 )
                 self.generate_outputs()
-            handle_lookup_resource(
+            link_resource_to_services(
                 settings,
                 self,
                 arn_parameter=self.arn_parameter,

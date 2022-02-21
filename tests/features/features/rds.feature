@@ -22,3 +22,4 @@ Feature: ecs_composex.rds
     Examples:
       | file_path                   | override_file                |
       | use-cases/blog.features.yml | use-cases/rds/rds_import.yml |
+      | use-cases/blog.features.yml | use-cases/rds/rds_import_with_return_values.yml |

@@ -18,7 +18,7 @@ x-rds:
         access: RW
       - name: app03
         access: RW
-      - name: you-too
+      - name: youtoo
         access: RW
 
   dbC:
@@ -40,7 +40,7 @@ x-rds:
         access: RW
       - name: app03
         access: RW
-      - name: you-too
+      - name: youtoo
         access: RW
 
   dbB:
@@ -71,5 +71,5 @@ x-rds:
         access: RW
       - name: app03
         access: RW
-      - name: you-too
+      - name: youtoo
         access: RW

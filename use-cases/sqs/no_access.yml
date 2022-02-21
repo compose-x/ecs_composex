@@ -1,0 +1,91 @@
+---
+# Blog applications
+
+version: '3.8'
+
+x-sqs:
+  queueA:
+    Settings:
+      EnvNames:
+        - QUEUEA
+
+  queueB:
+    Properties:
+      RedrivePolicy:
+        deadLetterTargetArn: queueA
+        maxReceiveCount: 10
+    Settings:
+      EnvNames:
+        - queueb
+    Services:
+      bignicefamily:
+        Access: RWMessages
+      app03:
+        ReturnValues:
+          QueueName: QUEUE_B_NAME
+
+  queueC:
+    Properties:
+      FifoQueue: True
+    Services:
+      - name: rproxy
+        access: RWMessages
+      - name: youtoo
+        access: RWMessages
+    Settings:
+      EnvNames:
+        - FIFO_QUEUE
+
+  queueD:
+    Properties: {}
+    Services:
+      - name: app01
+        access: RWMessages
+      - name: app03
+        access: RWMessages
+
+  queueE:
+    Properties: {}
+    Services:
+      - name: bignicefamily
+        access: RWMessages
+        scaling:
+          ScaleInCooldown: 120
+          ScaleOutCooldown: 60
+          steps:
+            - lower_bound: 0
+              upper_bound: 10
+              count: 1
+            - lower_bound: 10
+              upper_bound: 20
+              count: 2
+            - lower_bound: 20
+              count: 5
+
+
+
+  queueF:
+    Properties: {}
+    Lookup:
+      Tags:
+        - useless: "yes"
+        - costcentre: lambda
+    Services:
+      bignicefamily:
+        ReturnValues:
+          QueueName: QUEUE_F_NAME
+      app03:
+        ReturnValues:
+          QueueName: QUEUE_F_NAME
+        Scaling:
+          ScaleInCooldown: 120
+          ScaleOutCooldown: 60
+          steps:
+            - lower_bound: 0
+              upper_bound: 10
+              count: 1
+            - lower_bound: 10
+              upper_bound: 20
+              count: 2
+            - lower_bound: 20
+              count: 5
