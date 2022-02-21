@@ -1,0 +1,25 @@
+---
+# RDS Use-case.
+
+version: '3.8'
+x-rds:
+  dbA:
+    Services:
+      app03:
+        ReturnValues:
+          Endpoint.Address: DBA_HOSTNAME
+    Lookup:
+      cluster:
+        Name: database-1
+        Tags:
+          - serverless: "True"
+      secret:
+        Name: GHToken
+        Tags:
+          - useless: "yes"
+    Settings:
+      SecretsMappings:
+        PrefixWithDbName: DBA
+        Mappings:
+          - SecretKey: host
+            VarName: DB_HOST

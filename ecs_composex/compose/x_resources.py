@@ -32,10 +32,9 @@ from ecs_composex.common.ecs_composex import CFN_EXPORT_DELIMITER as DELIM
 from ecs_composex.common.ecs_composex import X_KEY
 from ecs_composex.rds_resources_settings import handle_new_tcp_resource, import_dbs
 from ecs_composex.resource_settings import (
-    assign_new_resource_to_service,
     get_parameter_settings,
-    handle_lookup_resource,
     handle_resource_to_services,
+    link_resource_to_services,
 )
 
 ENV_VAR_NAME = re.compile(r"([^a-zA-Z0-9_]+)")
@@ -348,52 +347,6 @@ class XResource(object):
             else:
                 self.mappings[parameter.title] = value
 
-    def init_env_names(self, add_self_default=True):
-        """
-        Method to define the environment variables for the resource
-
-        :return: list of environment variable names
-        :rtype: list
-        """
-        if add_self_default:
-            self.env_names.append(self.name.replace("-", "_"))
-        if (
-            self.settings
-            and keyisset("EnvNames", self.settings)
-            and isinstance(self.settings["EnvNames"], list)
-        ):
-            for env_name in self.settings["EnvNames"]:
-                if isinstance(env_name, str) and env_name not in self.env_names:
-                    self.env_names.append(env_name)
-
-    def define_ref_env_vars(self, env_name, parameter):
-        """
-        Method to define construct parameters for Environment Variable for default Ref value of resource
-
-        :param str env_name:
-        :param ecs_composex.common.cfn_params.Parameter parameter:
-        :return: dict with the Name and Value for environment variable
-        :rtype: dict
-        """
-        container_env_name = env_name
-        try:
-            if self.lookup:
-                container_env_value = self.attributes_outputs[parameter]["ImportValue"]
-            else:
-                container_env_value = Ref(
-                    self.attributes_outputs[parameter]["ImportParameter"]
-                )
-            return {"Name": container_env_name, "Value": container_env_value}
-        except KeyError as error:
-            print(
-                error,
-                "Parameter",
-                parameter.title,
-                "not in ",
-                [p.title for p in self.attributes_outputs],
-            )
-            raise
-
     def generate_resource_service_env_vars(
         self, target: tuple, target_definition: dict
     ) -> list:
@@ -409,10 +362,7 @@ class XResource(object):
                 res_return_names[prop_param.title] = prop_param
         env_vars = []
         params_to_add = []
-        if (
-            self.ref_parameter
-            and self.ref_parameter.title not in target_definition.keys()
-        ):
+        if self.ref_parameter and self.ref_parameter not in target_definition.values():
             target_definition[self.ref_parameter.title] = ENV_VAR_NAME.sub(
                 "", self.name.replace("-", "_").upper()
             )
@@ -441,14 +391,13 @@ class XResource(object):
                     )
         if params_to_add:
             params_values = {}
-            extra_settings = [
-                get_parameter_settings(self, param) for param in params_to_add
-            ]
-            for setting in extra_settings:
-                params_to_add.append(setting[1])
+            settings = [get_parameter_settings(self, param) for param in params_to_add]
+            resource_params_to_add = []
+            for setting in settings:
+                resource_params_to_add.append(setting[1])
                 params_values[setting[0]] = setting[2]
-                add_parameters(target[0].template, params_to_add)
-                target[0].stack.Parameters.update(params_values)
+            add_parameters(target[0].template, resource_params_to_add)
+            target[0].stack.Parameters.update(params_values)
         return env_vars
 
     def generate_ref_env_var(self, target) -> list:
@@ -696,7 +645,6 @@ class ServicesXResource(XResource):
         :param dict service: Service definition in compose file
         :param ecs_composex.common.settings.ComposeXSettings settings: Execution settings
         """
-        access_key = get_setting_key("Access", service)
         the_service = [s for s in settings.services if s.name == service_name][0]
         for family_name in the_service.families:
             family_name = NONALPHANUM.sub("", family_name)
@@ -706,7 +654,7 @@ class ServicesXResource(XResource):
                         settings.families[family_name],
                         False,
                         [the_service],
-                        service[access_key],
+                        service["Access"] if keyisset("Access", service) else {},
                         service,
                     )
                 )
@@ -759,7 +707,9 @@ class ServicesXResource(XResource):
                         settings.families[service_name],
                         True,
                         settings.families[service_name].services,
-                        service_def["Access"],
+                        service_def["Access"]
+                        if keyisset("Access", service_def)
+                        else {},
                         service_def,
                     )
                 )
@@ -810,7 +760,7 @@ class ServicesXResource(XResource):
                     (settings.families[family_name], service[scaling_key])
                 )
 
-    def set_services_scaling(self, settings):
+    def set_services_scaling_list(self, settings):
         """
         Method to map services and families targets of the services defined.
 
@@ -824,7 +774,7 @@ class ServicesXResource(XResource):
             scaling_key = get_setting_key("scaling", service)
             if not keyisset(scaling_key, service):
                 LOG.debug(
-                    f"No scaling for {service[name_key]} defined based on {self.name}"
+                    f"{self.module_name}.{self.name} - No Scaling set for {service[name_key]}"
                 )
                 continue
             service_name = service[name_key]
@@ -842,6 +792,75 @@ class ServicesXResource(XResource):
                 )
             elif service_name in [s.name for s in settings.services]:
                 self.handle_family_scaling_expansion(service, settings)
+
+    def handle_families_scaling_expansion_dict(self, service_name, service, settings):
+        """
+        Method to list all families and services that are targets of the resource.
+        Allows to implement family and service level association to resource
+
+        :param str service_name:
+        :param dict service: Service definition in compose file
+        :param ecs_composex.common.settings.ComposeXSettings settings: Execution settings
+        """
+        the_service = [s for s in settings.services if s.name == service_name][0]
+        for family_name in the_service.families:
+            family_name = NONALPHANUM.sub("", family_name)
+            if family_name not in [f[0].name for f in self.families_scaling]:
+                self.families_scaling.append(
+                    (
+                        settings.families[family_name],
+                        service["Scaling"],
+                    )
+                )
+
+    def set_services_targets_scaling_from_dict(self, settings) -> None:
+        """
+        Deals with services set as a dict
+
+        :param settings:
+        """
+        for service_name, service_def in self.services.items():
+            if not keyisset("Scaling", service_def):
+                LOG.info(
+                    f"{self.module_name}.{self.name} - No Scaling set for {service_name}"
+                )
+                continue
+            if service_name in settings.families and service_name not in [
+                f[0].name for f in self.families_scaling
+            ]:
+                self.families_scaling.append(
+                    (
+                        settings.families[service_name],
+                        service_def["Scaling"],
+                    )
+                )
+            elif service_name in settings.families and service_name in [
+                f[0].name for f in self.families_scaling
+            ]:
+                LOG.debug(
+                    f"{self.module_name}.{self.name} - Family {service_name} has already been added. Skipping"
+                )
+            elif service_name in [s.name for s in settings.services]:
+                self.handle_families_scaling_expansion_dict(
+                    service_name, service_def, settings
+                )
+
+    def set_services_scaling(self, settings):
+        """
+        Method to map services and families targets of the services defined.
+        TargetStructure:
+        (family, family_wide, services[], access)
+
+        :param ecs_composex.common.settings.ComposeXSettings settings:
+        :return:
+        """
+        if not self.services:
+            LOG.debug(f"{self.module_name}.{self.name} No Services defined.")
+            return
+        if isinstance(self.services, list):
+            self.set_services_scaling_list(settings)
+        elif isinstance(self.services, dict):
+            self.set_services_targets_scaling_from_dict(settings)
 
 
 class AwsEnvironmentResource(XResource):
@@ -876,26 +895,18 @@ class ApiXResource(ServicesXResource):
         Maps API only based resource to ECS Services
         """
         LOG.info(f"{self.module_name}.{self.name} - Linking to services")
-        if not self.mappings and self.cfn_resource:
-            handle_resource_to_services(
-                self,
-                settings,
-                arn_parameter=self.arn_parameter,
-                nested=False,
-            )
-            if self.predefined_resource_service_scaling_function:
-                self.predefined_resource_service_scaling_function(self, settings)
-        elif not self.cfn_resource and self.mappings:
-            handle_lookup_resource(
-                settings,
-                self,
-                arn_parameter=self.arn_parameter,
-            )
-            if self.predefined_resource_service_scaling_function:
-                self.predefined_resource_service_scaling_function(self, settings)
+        handle_resource_to_services(
+            settings,
+            self,
+            arn_parameter=self.arn_parameter,
+            nested=False,
+        )
+        if self.predefined_resource_service_scaling_function:
+            self.predefined_resource_service_scaling_function(self, settings)
 
 
 class NetworkXResource(ServicesXResource):
+
     """
     Class for resources that need VPC and SecurityGroups to be managed for Ingress
     """
@@ -912,7 +923,44 @@ class NetworkXResource(ServicesXResource):
         self.cleanse_external_targets()
         self.set_override_subnets()
 
-    def cleanse_external_targets(self):
+    def remove_services_after_family_cleanups(self) -> None:
+        """
+        After the family services have been removed from the target, we ensure that we deal with the services
+        which may or may not be in the targets already
+        """
+        if isinstance(self.services, list):
+            for service in self.services:
+                family_name = (
+                    service["name"].split(":")[0]
+                    if r":" in service["name"]
+                    else service["name"]
+                )
+                for family in self.families_targets:
+                    if family[0].name == family_name or family_name in [
+                        svc.name for svc in family[0].services
+                    ]:
+                        break
+                else:
+                    self.services.remove(service)
+
+        elif isinstance(self.services, dict):
+            to_del = []
+            for service_name, service in self.services.items():
+                family_name = (
+                    service_name.split(":")[0] if r":" in service_name else service_name
+                )
+                for family in self.families_targets:
+                    if family[0].name == family_name or family_name in [
+                        svc.name for svc in family[0].services
+                    ]:
+                        break
+                else:
+                    to_del.append(service_name)
+            for key in to_del:
+                print(f"{self.module_name}.{self.name} - Removing service {key}")
+                del self.services[key]
+
+    def cleanse_external_targets(self) -> None:
         """
         Will automatically remove the target families which are set as external
         """
@@ -928,17 +976,9 @@ class NetworkXResource(ServicesXResource):
                     f"{self.module_name}.{self.name} - Target {target[0].name} - Launch Type not supported (EXTERNAL)"
                 )
                 self.families_scaling.remove(target)
+        self.remove_services_after_family_cleanups()
 
-        for service in self.services:
-            family_name = (
-                service["name"].split(":")[0]
-                if r":" in service["name"]
-                else service["name"]
-            )
-            if family_name not in [target[0].name for target in self.families_targets]:
-                self.services.remove(service)
-
-    def set_override_subnets(self):
+    def set_override_subnets(self) -> None:
         """
         Updates the subnets to use from default for the given resource
         """
@@ -993,7 +1033,8 @@ class DatabaseXResource(NetworkXResource):
                 secret_parameter=self.db_secret_arn_parameter,
             )
             if self.db_cluster_arn_parameter:
-                assign_new_resource_to_service(
+                link_resource_to_services(
+                    settings,
                     self,
                     arn_parameter=self.db_cluster_arn_parameter,
                     access_subkeys=["DBCluster"],

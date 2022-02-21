@@ -6,5 +6,5 @@ x-sns:
       Services:
         - name: app01
           access: Publish
-        - name: you-too
+        - name: youtoo
           access: Publish

@@ -23,10 +23,6 @@ from ecs_composex.compose.x_resources import (
     set_use_resources,
 )
 from ecs_composex.iam.import_sam_policies import get_access_types
-from ecs_composex.resource_settings import (
-    handle_lookup_resource,
-    handle_resource_to_services,
-)
 from ecs_composex.sqs.sqs_ecs_scaling import handle_service_scaling
 from ecs_composex.sqs.sqs_params import (
     MAPPINGS_KEY,

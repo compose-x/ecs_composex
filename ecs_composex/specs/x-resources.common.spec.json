@@ -70,6 +70,7 @@
       "type": "object",
       "properties": {
         "EnvNames": {
+          "description": "WARNING - This is now deprecated. It will be removed in future versions",
           "type": "array",
           "items": {
             "type": "string"

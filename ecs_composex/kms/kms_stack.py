@@ -157,8 +157,8 @@ class KmsKey(AwsEnvironmentResource, ApiXResource):
 
         :param troposphere.Template template:
         """
-        if self.settings and keyisset("Alias", self.settings):
-            alias_name = self.settings["Alias"]
+        if self.parameters and keyisset("Alias", self.parameters):
+            alias_name = self.parameters["Alias"]
             if not (alias_name.startswith("alias/") or alias_name.startswith("aws")):
                 alias_name = Sub(
                     f"alias/${{STACK_NAME}}/{alias_name}",

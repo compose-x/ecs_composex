@@ -15,7 +15,7 @@ x-rds:
         access: RW
       - name: app03
         access: RW
-      - name: you-too
+      - name: youtoo
         access: RW
 
 
@@ -60,7 +60,7 @@ x-rds:
         access: RW
       - name: app03
         access: RW
-      - name: you-too
+      - name: youtoo
         access: RW
 
 x-s3:

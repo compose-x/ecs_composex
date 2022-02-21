@@ -5,8 +5,15 @@
 """
 Module to handle resource settings definition to containers.
 """
+from __future__ import annotations
+
 import re
 from copy import deepcopy
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ecs_composex.common.settings import ComposeXSettings
+    from ecs_composex.ecs.ecs_family import ComposeFamily
 
 from compose_x_common.compose_x_common import keyisset
 from troposphere import AWSHelperFn, Ref, Sub
@@ -23,7 +30,7 @@ from ecs_composex.kms.kms_params import MAPPINGS_KEY as KMS_MAPPING_KEY
 from ecs_composex.kms.kms_params import MOD_KEY as KMS_MOD
 
 
-def get_parameter_settings(resource, parameter):
+def get_parameter_settings(resource, parameter: Parameter) -> tuple:
     """
     Function to define a set of values for the purpose of exposing resources settings from their stack to another.
 
@@ -50,7 +57,7 @@ def get_parameter_settings(resource, parameter):
         raise
 
 
-def determine_arns(arn, policy_doc, ignore_missing_primary=False):
+def determine_arns(arn, policy_doc, ignore_missing_primary=False) -> list:
     """
     Function allowing to detect whether the resource permissions has a defined override for
     resources ARN. This allows to extend the ARN syntax.
@@ -132,42 +139,17 @@ def generate_resource_permissions(
     return resource_policies
 
 
-def generate_resource_permissions_statements(
-    resource_name, policies, arn, ignore_missing_primary=False
-):
-    """
-    Function to generate IAM permissions for a given x-resource. Returns the mapping of these for the given resource.
-    Suffix takes the values and reduces to the first 118 characters to ensure policy length is below 128
-    Short prefix ensures the uniqueness of the policy name but allows to be a constant throughout the life
-    of the CFN Stack. It is 8 chars long, leaving a 2 chars margin
-
-    :param str resource_name: The name of the resource
-    :param dict policies: the policies associated with the x-resource type.
-    :param str,AWSHelper arn: The ARN of the resource if already looked up.
-    :param bool ignore_missing_primary: Whether the policy should contain ${ARN} at least
-    :return: dict of the IAM policies associated with the resource.
-    :rtype dict:
-    """
-    resource_policies = {}
-    for a_type in policies:
-        LOG.debug(a_type)
-        policy_doc = policies[a_type].copy()
-        resources = determine_arns(arn, policy_doc, ignore_missing_primary)
-        policy_doc["Sid"] = f"{a_type}To{resource_name}"
-        policy_doc["Resource"] = resources
-        resource_policies[a_type] = policy_doc
-    return resource_policies
-
-
-def add_iam_policy_to_service_task_role(family, resource, perms, access_type, services):
+def add_iam_policy_to_service_task_role(
+    family: ComposeFamily, resource, perms, access_type, services
+) -> None:
     """
     Function to expand the ECS Task Role policy with the permissions for the resource
+
     :param ecs_composex.ecs.ecs_family.ComposeFamily family:
     :param resource:
     :param perms:
     :param access_type:
     :param list services:
-    :return:
     """
     containers = define_service_containers(family.template)
     policy = perms[access_type]
@@ -187,13 +169,14 @@ def add_iam_policy_to_service_task_role(family, resource, perms, access_type, se
                 extend_container_envvars(container, resource.env_vars)
 
 
-def get_selected_services(resource, target):
+def get_selected_services(resource, target) -> list:
     """
-    Function to get the selected services
+    Function to get the selected services from the resource *Services* definition.
+    If when setting the value, the family name is used, applies to all services
+    If set to a specific service of the given family, singles out that service.
 
     :param resource: The resource linking to services
     :param target: the service/family target definition
-    :return:
     """
     if not target[1] and target[2]:
         selected_services = target[2]
@@ -210,7 +193,7 @@ def get_selected_services(resource, target):
 
 def get_access_type_policy_model(
     access_type, policies_models, access_subkey: str = None
-):
+) -> dict:
     """
 
     :param str|dict access_type:
@@ -266,7 +249,7 @@ def define_iam_permissions(
     access_definition,
     resource_arns,
     access_subkey: str = None,
-):
+) -> None:
     """
     If a policy already exists to manage resources of the same AWS Service, imports the policy, else, creates one.
     The SID of the policy allows grouping resources that have a similar access pattern together in the same
@@ -307,7 +290,7 @@ def define_iam_permissions(
 
 
 def map_resource_env_vars_to_family_services(
-    family, services, target, resource
+    family: ComposeFamily, services, target, resource, settings
 ) -> None:
     """
     Function to deal with the env vars to add to the family stack based on the resource
@@ -338,8 +321,7 @@ def map_resource_env_vars_to_family_services(
 
 
 def map_service_perms_to_resource(
-    family,
-    services,
+    family: ComposeFamily,
     target,
     arn_value,
     resource=None,
@@ -353,7 +335,6 @@ def map_service_perms_to_resource(
     Maps the resource to the services / target family. Sets up IAM and environment variables
 
     :param ecs_composex.ecs.ecs_family.ComposeFamily family:
-    :param list services:
     :param tuple target:
     :param arn_value:
     :param ecs_composex.compose.x_resources.XResource resource:
@@ -393,22 +374,18 @@ def map_service_perms_to_resource(
         access_subkey=access_subkey,
     )
 
-    if resource:
-        map_resource_env_vars_to_family_services(family, services, target, resource)
 
-
-def handle_kms_access(settings, resource, target, selected_services):
+def handle_kms_access(settings: ComposeXSettings, resource, target):
     """
     Function to map KMS permissions for the services which need access to a resource using a KMS Key
-    :param ecs_composex.common.settings.ComposeXSettings settings:
+
+    :param ecs_composex.common.settings.ComposeXSettings settings: Here for future work
     :param ecs_composex.common.compose_resources.XResource resource: The lookup resource
     :param tuple target:
-    :param list selected_services:
     """
     key_arn = resource.attributes_outputs[resource.kms_arn_attr]["ImportValue"]
     map_service_perms_to_resource(
         target[0],
-        selected_services,
         target,
         access_definition="EncryptDecrypt",
         arn_value=key_arn,
@@ -417,105 +394,159 @@ def handle_kms_access(settings, resource, target, selected_services):
     )
 
 
-def handle_lookup_resource(settings, resource, arn_parameter, access_subkeys=None):
+def set_arn_att_value(resource, arn_settings, arn_parameter) -> AWSHelperFn:
     """
-    Maps resource to designated services for IAM and networking purposes
+
+    :param ecs_composex.common.compose_resources.ServicesXResource resource: The resource
+    :param tuple arn_settings:
+    :param ecs_composex.common.cfn_params.Parameter arn_parameter:
+    :return:
+    """
+    if resource.cfn_resource:
+        arn_attr_value = Ref(arn_settings[1])
+    elif resource.mappings:
+        arn_attr_value = resource.attributes_outputs[arn_parameter]["ImportValue"]
+    else:
+        raise AttributeError(
+            f"{resource.module_name}.{resource.name} - Unable to define ARN Attribute"
+        )
+    return arn_attr_value
+
+
+def import_resource_into_service_stack(
+    settings: ComposeXSettings,
+    resource,
+    family: ComposeFamily,
+    params_to_add,
+    params_values,
+) -> None:
+    """
+    Function to either add parameters to the services stack or mapping for a given resource
 
     :param ecs_composex.common.settings.ComposeXSettings settings:
-    :param ecs_composex.common.compose_resources.XResource resource: The lookup resource
-    :param ecs_composex.common.cfn_params.Parameter arn_parameter:
-    :param list access_subkeys:
+    :param ecs_composex.common.compose_resources.ServicesXResource resource: The resource
+    :param ecs_composex.ecs.ecs_family.ComposeFamily family:
+    :param list[ecs_composex.common.cfn_params.Parameter] params_to_add:
+    :param dict params_values:
     """
-
-    for target in resource.families_targets:
-        selected_services = get_selected_services(resource, target)
-        if not selected_services:
-            continue
+    if resource.cfn_resource:
+        add_parameters(family.template, params_to_add)
+        family.stack.Parameters.update(params_values)
+    elif resource.mappings:
         add_update_mapping(
-            target[0].template,
+            family.template,
             resource.mapping_key,
             settings.mappings[resource.mapping_key],
         )
-        arn_attr_value = resource.attributes_outputs[arn_parameter]["ImportValue"]
-        if access_subkeys:
-            for access_subkey in access_subkeys:
-                if access_subkey not in target[3]:
-                    continue
-                map_service_perms_to_resource(
-                    target[0],
-                    selected_services,
-                    target,
-                    resource=resource,
-                    arn_value=arn_attr_value,
-                    access_subkey=access_subkey,
-                )
-        else:
+
+
+def add_dependency(resource, family: ComposeFamily) -> None:
+    """
+    Add dependency across the resource stack and the ECS Service stack
+
+    :param ecs_composex.common.compose_resources.ServicesXResource resource: The resource
+    :param ecs_composex.ecs.ecs_family.ComposeFamily family:
+    """
+    if (
+        resource.stack
+        and not resource.stack.is_void
+        and resource.stack.title not in family.stack.DependsOn
+    ):
+        family.stack.DependsOn.append(resource.stack.title)
+
+
+def link_resource_kms_to_service(settings: ComposeXSettings, resource, target) -> None:
+    """
+    Links the KMS key of a given resource (if necessary) to the service in order to use that key
+    Avoids having to do x-kms.Lookup to a service
+
+    :param ecs_composex.common.settings.ComposeXSettings settings:
+    :param ecs_composex.common.compose_resources.ServicesXResource resource: The resource
+    :param tuple target:
+    :return:
+    """
+    if (
+        hasattr(resource, "kms_arn_attr")
+        and resource.kms_arn_attr
+        and keyisset(resource.kms_arn_attr, resource.lookup_properties)
+    ):
+        handle_kms_access(settings, resource, target)
+
+
+def set_iam_link_resource_to_services(
+    resource, target, arn_attr_value: AWSHelperFn, access_subkeys: list = None
+) -> None:
+    """
+    Sets IAM Permissions to the ECS Service to access the resource
+
+    :param resource:
+    :param target:
+    :param arn_attr_value:
+    :param access_subkeys:
+    :return:
+    """
+    if access_subkeys:
+        for access_subkey in access_subkeys:
+            if access_subkey not in target[3]:
+                continue
             map_service_perms_to_resource(
                 target[0],
-                selected_services,
                 target,
-                resource=resource,
                 arn_value=arn_attr_value,
+                resource=resource,
+                access_subkey=access_subkey,
             )
-        if (
-            hasattr(resource, "kms_arn_attr")
-            and resource.kms_arn_attr
-            and keyisset(resource.kms_arn_attr, resource.lookup_properties)
-        ):
-            handle_kms_access(settings, resource, target, selected_services)
+    else:
+        map_service_perms_to_resource(
+            target[0], target, resource=resource, arn_value=arn_attr_value
+        )
 
 
-def assign_new_resource_to_service(
+def link_resource_to_services(
+    settings: ComposeXSettings,
     resource,
     arn_parameter,
     access_subkeys: list = None,
-):
+) -> None:
     """
     Function to assign the new resource to the service/family using it.
 
-    :param resource: The resource
-    :type resource: ecs_composex.common.compose_resources.XResource
-    :param: The parameter mapping to the ARN attribute of the resource
-    :type arn_parameter: ecs_composex.common.cfn_parameter.Parameter arn_parameter
+    :param ecs_composex.common.settings.ComposeXSettings settings:
+    :param ecs_composex.common.compose_resources.ServicesXResource resource: The resource
+    :param ecs_composex.common.cfn_parameter.Parameter arn_parameter: The parameter mapping to the ARN attribute
     :param list[str] access_subkeys: Allows to access subkeys from the resource policies
     """
     arn_settings = get_parameter_settings(resource, arn_parameter)
     params_to_add = [arn_settings[1]]
     params_values = {arn_settings[0]: arn_settings[2]}
 
+    arn_attr_value = set_arn_att_value(resource, arn_settings, arn_parameter)
+
     for target in resource.families_targets:
+        import_resource_into_service_stack(
+            settings, resource, target[0], params_to_add, params_values
+        )
         selected_services = get_selected_services(resource, target)
         if not selected_services:
             continue
-        add_parameters(target[0].template, params_to_add)
-        target[0].stack.Parameters.update(params_values)
-        if access_subkeys:
-            for access_subkey in access_subkeys:
-                if access_subkey not in target[3]:
-                    continue
-                map_service_perms_to_resource(
-                    target[0],
-                    selected_services,
-                    target,
-                    arn_value=Ref(arn_settings[1]),
-                    resource=resource,
-                    access_subkey=access_subkey,
-                )
-        else:
-            map_service_perms_to_resource(
-                target[0],
-                selected_services,
-                target,
-                resource=resource,
-                arn_value=Ref(arn_settings[1]),
+        map_resource_env_vars_to_family_services(
+            target[0], selected_services, target, resource, settings
+        )
+        if not target[3]:
+            LOG.warning(
+                f"{resource.module_name}.{resource.name} - Access not defined for {target[0].name}"
             )
-        if resource.stack.title not in target[0].stack.DependsOn:
-            target[0].stack.DependsOn.append(resource.stack.title)
+            continue
+        set_iam_link_resource_to_services(
+            resource, target, arn_attr_value, access_subkeys
+        )
+        add_dependency(resource, target[0])
+        link_resource_kms_to_service(settings, resource, target)
 
 
 def handle_resource_to_services(
+    settings: ComposeXSettings,
     x_resource,
-    settings,
     arn_parameter,
     nested=False,
     access_subkeys=None,
@@ -528,20 +559,20 @@ def handle_resource_to_services(
     :param ecs_composex.common.settings.ComposeXSettings settings:
     :param arn_parameter:
     :param bool nested:
-    :param list parameters:
     :return:
     """
     s_resources = x_resource.stack.stack_template.resources
     for resource_name, s_resource in s_resources.items():
         if issubclass(type(s_resource), ComposeXStack):
             handle_resource_to_services(
-                s_resources[resource_name],
                 settings,
+                s_resource,
                 arn_parameter,
                 nested=True,
                 access_subkeys=access_subkeys,
             )
-    assign_new_resource_to_service(
+    link_resource_to_services(
+        settings,
         x_resource,
         arn_parameter,
         access_subkeys=access_subkeys,

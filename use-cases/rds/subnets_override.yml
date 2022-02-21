@@ -22,7 +22,7 @@ x-rds:
               VarName: DB_HOST
             - SecretKey: username
               VarName: DB_USERNAME
-      - name: you-too
+      - name: youtoo
         access: RW
 
 
@@ -61,5 +61,5 @@ x-rds:
         access: RW
       - name: app03
         access: RW
-      - name: you-too
+      - name: youtoo
         access: RW

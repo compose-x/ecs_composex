@@ -37,10 +37,7 @@ from ecs_composex.rds_resources_settings import (
     import_dbs,
     lookup_rds_resource,
 )
-from ecs_composex.resource_settings import (
-    assign_new_resource_to_service,
-    handle_lookup_resource,
-)
+from ecs_composex.resource_settings import link_resource_to_services
 from ecs_composex.vpc.vpc_params import STORAGE_SUBNETS, VPC_ID
 
 from .neptune_template import create_neptune_template
@@ -194,25 +191,27 @@ class NeptuneDBCluster(DatabaseXResource):
                 port_parameter=DB_PORT,
                 sg_parameter=DB_SG,
             )
-            assign_new_resource_to_service(
+            link_resource_to_services(
+                settings,
                 self,
                 arn_parameter=DB_CLUSTER_RESOURCES_ARN,
                 access_subkeys=["NeptuneDB"],
             )
-            assign_new_resource_to_service(
+            link_resource_to_services(
+                settings,
                 self,
                 arn_parameter=self.db_cluster_arn_parameter,
                 access_subkeys=["DBCluster"],
             )
         elif not self.cfn_resource and self.mappings:
             import_dbs(self, settings)
-            handle_lookup_resource(
+            link_resource_to_services(
                 settings,
                 self,
                 arn_parameter=self.db_cluster_arn_parameter,
                 access_subkeys=["DBCluster"],
             )
-            handle_lookup_resource(
+            link_resource_to_services(
                 settings,
                 self,
                 arn_parameter=DB_CLUSTER_RESOURCES_ARN,
