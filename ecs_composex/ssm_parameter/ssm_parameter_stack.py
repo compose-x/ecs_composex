@@ -175,8 +175,8 @@ class SsmParameter(ApiXResource):
         mapping_key: str = None,
     ):
         super().__init__(name, definition, module_name, settings, mapping_key)
-        self.arn_parameter = SSM_PARAM_ARN
         self.ref_parameter = SSM_PARAM_NAME
+        self.arn_parameter = SSM_PARAM_ARN
 
     def init_outputs(self):
         spacer = ""
@@ -189,13 +189,11 @@ class SsmParameter(ApiXResource):
         self.output_properties = {
             SSM_PARAM_NAME: (self.logical_name, self.cfn_resource, Ref, None),
             SSM_PARAM_ARN: (
-                self.logical_name,
+                f"{self.logical_name}{SSM_PARAM_ARN.title}",
                 self.cfn_resource,
                 Sub,
                 f"arn:${{{AWS_PARTITION}}}:ssm:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:parameter{spacer}"
-                f"${{{self.cfn_resource.title}}}"
-                if self.cfn_resource
-                else self.cfn_resource,
+                f"${{{self.cfn_resource.title}}}",
             ),
         }
 
