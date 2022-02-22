@@ -83,7 +83,7 @@
         {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/serviceDef"
+            "$ref": "#/definitions/legacyServiceDef"
           }
         },
         {
@@ -139,8 +139,7 @@
       "pattern": "^[a-zA-Z0-9_]+$",
       "description": "The environment variable name for the property value"
     },
-    "serviceDef": {
-      "$id": "#/definitions/serviceDef",
+    "legacyServiceDef": {
       "type": "object",
       "properties": {
         "name": {

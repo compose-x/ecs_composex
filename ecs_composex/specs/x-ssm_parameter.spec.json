@@ -63,27 +63,7 @@
       }
     },
     "Services": {
-      "type": "array",
-      "items": {
-        "$ref": "#/definitions/ServicesDef"
-      }
-    }
-  },
-  "definitions": {
-    "ServicesDef": {
-      "type": "object",
-      "properties": {
-        "name": {
-          "type": "string"
-        },
-        "access": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "name",
-        "access"
-      ]
+      "$ref": "x-resources.common.spec.json#/definitions/Services"
     }
   }
 }

@@ -10,6 +10,5 @@
     "Lookup": {
       "$ref": "x-resources.common.spec.json#/definitions/Lookup"
     }
-  },
-  "definitions": {}
+  }
 }
