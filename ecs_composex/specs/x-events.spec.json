@@ -23,6 +23,16 @@
   },
   "definitions": {
     "ServicesDef": {
+      "oneOf": [
+        {
+          "$ref": "#/definitions/ServicesMappingDef"
+        },
+        {
+          "$ref": "#/definitions/ServicesListDef"
+        }
+      ]
+    },
+    "ServicesListDef": {
       "type": "array",
       "items": {
         "type": "object",
@@ -43,6 +53,25 @@
           "DeleteDefaultService": {
             "type": "boolean",
             "description": "Whether or also create the ECS Service"
+          }
+        }
+      }
+    },
+    "ServicesMappingDef": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "[\\x20-\\x7E]+$": {
+          "properties": {
+            "TaskCount": {
+              "type": "number",
+              "minimum": 1,
+              "description": "Number of containers to start on event"
+            },
+            "DeleteDefaultService": {
+              "type": "boolean",
+              "description": "Whether or also create the ECS Service"
+            }
           }
         }
       }

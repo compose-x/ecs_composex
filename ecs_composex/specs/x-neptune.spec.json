@@ -18,54 +18,26 @@
       "$ref": "x-resources.common.spec.json#/definitions/Settings"
     },
     "Services": {
-      "$ref": "#/definitions/Services"
+      "$ref": "x-resources.common.spec.json#/definitions/Services"
     },
     "MacroParameters": {
-      "$ref": "#/definitions/MacroParameters"
+      "$ref": "#/definitions/MacroParametersDef"
     }
   },
   "oneOf": [
     {
-      "required": ["Properties"]
+      "required": [
+        "Properties"
+      ]
     },
     {
-      "required": ["Lookup"]
+      "required": [
+        "Lookup"
+      ]
     }
   ],
   "definitions": {
-    "Services": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "additionalItems": false,
-        "required": [
-          "name",
-          "access"
-        ],
-        "properties": {
-          "name": {
-            "type": "string"
-          },
-          "access": {
-            "type": "object",
-            "additionalItems": false,
-            "required": [
-              "NeptuneDB",
-              "DBCluster"
-            ],
-            "properties": {
-              "NeptuneDB": {
-                "type": "string"
-              },
-              "DBCluster": {
-                "type": "string"
-              }
-            }
-          }
-        }
-      }
-    },
-    "MacroParameters": {
+    "MacroParametersDef": {
       "type": "object",
       "properties": {
         "Instances": {

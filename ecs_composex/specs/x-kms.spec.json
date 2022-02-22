@@ -26,6 +26,5 @@
     "MacroParameters": {
       "type": "object"
     }
-  },
-  "definitions": {}
+  }
 }
