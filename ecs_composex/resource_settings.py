@@ -505,7 +505,7 @@ def set_iam_link_resource_to_services(
 def link_resource_to_services(
     settings: ComposeXSettings,
     resource,
-    arn_parameter,
+    arn_parameter: Parameter,
     access_subkeys: list = None,
 ) -> None:
     """
@@ -572,8 +572,8 @@ def handle_resource_to_services(
                 access_subkeys=access_subkeys,
             )
     link_resource_to_services(
-        settings,
-        x_resource,
-        arn_parameter,
+        settings=settings,
+        resource=x_resource,
+        arn_parameter=arn_parameter,
         access_subkeys=access_subkeys,
     )
