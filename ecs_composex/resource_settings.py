@@ -24,7 +24,6 @@ from ecs_composex.common import LOG, add_parameters, add_update_mapping
 from ecs_composex.common.cfn_params import STACK_ID_SHORT, Parameter
 from ecs_composex.common.services_helpers import extend_container_envvars
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.ecs.ecs_iam import define_service_containers
 from ecs_composex.iam.import_sam_policies import get_access_types
 from ecs_composex.kms.kms_params import MAPPINGS_KEY as KMS_MAPPING_KEY
 from ecs_composex.kms.kms_params import MOD_KEY as KMS_MOD
@@ -139,58 +138,6 @@ def generate_resource_permissions(
     return resource_policies
 
 
-def add_iam_policy_to_service_task_role(
-    family: ComposeFamily, resource, perms, access_type, services
-) -> None:
-    """
-    Function to expand the ECS Task Role policy with the permissions for the resource
-
-    :param ecs_composex.ecs.ecs_family.ComposeFamily family:
-    :param resource:
-    :param perms:
-    :param access_type:
-    :param list services:
-    """
-    containers = define_service_containers(family.template)
-    policy = perms[access_type]
-    policy_title = f"{family.logical_name}{access_type}To{resource.mapping_key}{resource.logical_name}"
-    if policy_title not in family.template.resources:
-        res_policy = PolicyType(
-            policy_title,
-            PolicyName=policy.PolicyName,
-            PolicyDocument=policy.PolicyDocument,
-            Roles=[family.task_role.name],
-        )
-        family.template.add_resource(res_policy)
-    for container in containers:
-        for service in services:
-            if container.Name == service.name:
-                LOG.debug(f"Extended env vars for {container.Name} -> {service.name}")
-                extend_container_envvars(container, resource.env_vars)
-
-
-def get_selected_services(resource, target) -> list:
-    """
-    Function to get the selected services from the resource *Services* definition.
-    If when setting the value, the family name is used, applies to all services
-    If set to a specific service of the given family, singles out that service.
-
-    :param resource: The resource linking to services
-    :param target: the service/family target definition
-    """
-    if not target[1] and target[2]:
-        selected_services = target[2]
-        LOG.debug(
-            f"Resource {resource.name} only applies to {target[2]} in family {target[0].name}"
-        )
-    elif target[1]:
-        selected_services = target[0].services
-        LOG.debug(f"Resource {resource.name} applies to family {target[0].name}")
-    else:
-        selected_services = []
-    return selected_services
-
-
 def get_access_type_policy_model(
     access_type, policies_models, access_subkey: str = None
 ) -> dict:
@@ -290,34 +237,31 @@ def define_iam_permissions(
 
 
 def map_resource_env_vars_to_family_services(
-    family: ComposeFamily, services, target, resource, settings
+    target,
+    resource,
 ) -> None:
     """
     Function to deal with the env vars to add to the family stack based on the resource
     Services definition
 
-    :param ecs_composex.ecs.ecs_family.ComposeFamily family:
-    :param list services:
     :param tuple target:
     :param ecs_composex.compose.x_resources.XResource resource:
-    :return:
     """
-    containers = define_service_containers(family.template)
-    for container in containers:
-        for service in services:
-            if container.Name == service.name:
-                LOG.debug(f"Extended env vars for {container.Name} -> {service.name}")
-                if keyisset("ReturnValues", target[-1]):
-                    extend_container_envvars(
-                        container,
-                        resource.generate_resource_service_env_vars(
-                            target, target[-1]["ReturnValues"]
-                        ),
-                    )
-                else:
-                    extend_container_envvars(
-                        container, resource.generate_ref_env_var(target)
-                    )
+    return_values = (
+        {} if not keyisset("ReturnValues", target[-1]) else target[-1]["ReturnValues"]
+    )
+    for svc in target[2]:
+        if svc in target[0].ignored_services:
+            continue
+        if return_values:
+            extend_container_envvars(
+                svc.container_definition,
+                resource.generate_resource_service_env_vars(target, return_values),
+            )
+        else:
+            extend_container_envvars(
+                svc.container_definition, resource.generate_ref_env_var(target)
+            )
 
 
 def map_service_perms_to_resource(
@@ -526,12 +470,7 @@ def link_resource_to_services(
         import_resource_into_service_stack(
             settings, resource, target[0], params_to_add, params_values
         )
-        selected_services = get_selected_services(resource, target)
-        if not selected_services:
-            continue
-        map_resource_env_vars_to_family_services(
-            target[0], selected_services, target, resource, settings
-        )
+        map_resource_env_vars_to_family_services(target, resource)
         if not target[3]:
             LOG.warning(
                 f"{resource.module_name}.{resource.name} - Access not defined for {target[0].name}"
