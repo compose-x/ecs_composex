@@ -362,9 +362,16 @@ class XResource(object):
                 res_return_names[prop_param.title] = prop_param
         env_vars = []
         params_to_add = []
-        if self.ref_parameter and self.ref_parameter not in target_definition.values():
+        if (
+            self.ref_parameter
+            and self.ref_parameter.title not in target_definition.keys()
+        ):
             target_definition[self.ref_parameter.title] = ENV_VAR_NAME.sub(
                 "", self.name.replace("-", "_").upper()
+            )
+        else:
+            LOG.info(
+                f"{self.module_name}.{self.module_name} - Ref parameter {self.ref_parameter.title} override."
             )
         for prop_name, env_var_name in target_definition.items():
             if prop_name in res_return_names:
@@ -636,29 +643,6 @@ class ServicesXResource(XResource):
                     )
                 )
 
-    def handle_families_targets_expansion_dict(self, service_name, service, settings):
-        """
-        Method to list all families and services that are targets of the resource.
-        Allows to implement family and service level association to resource
-
-        :param str service_name:
-        :param dict service: Service definition in compose file
-        :param ecs_composex.common.settings.ComposeXSettings settings: Execution settings
-        """
-        the_service = [s for s in settings.services if s.name == service_name][0]
-        for family_name in the_service.families:
-            family_name = NONALPHANUM.sub("", family_name)
-            if family_name not in [f[0].name for f in self.families_targets]:
-                self.families_targets.append(
-                    (
-                        settings.families[family_name],
-                        False,
-                        [the_service],
-                        service["Access"] if keyisset("Access", service) else {},
-                        service,
-                    )
-                )
-
     def set_services_targets_from_list(self, settings):
         """
         Deals with services set as a list
@@ -690,6 +674,29 @@ class ServicesXResource(XResource):
                 )
             elif service_name in [s.name for s in settings.services]:
                 self.handle_families_targets_expansion(service, settings)
+
+    def handle_families_targets_expansion_dict(self, service_name, service, settings):
+        """
+        Method to list all families and services that are targets of the resource.
+        Allows to implement family and service level association to resource
+
+        :param str service_name:
+        :param dict service: Service definition in compose file
+        :param ecs_composex.common.settings.ComposeXSettings settings: Execution settings
+        """
+        the_service = [s for s in settings.services if s.name == service_name][0]
+        for family_name in the_service.families:
+            family_name = NONALPHANUM.sub("", family_name)
+            if family_name not in [f[0].name for f in self.families_targets]:
+                self.families_targets.append(
+                    (
+                        settings.families[family_name],
+                        False,
+                        [the_service],
+                        service["Access"] if keyisset("Access", service) else {},
+                        service,
+                    )
+                )
 
     def set_services_targets_from_dict(self, settings):
         """

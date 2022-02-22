@@ -15,30 +15,6 @@ from ecs_composex.iam.iam_params import IAM_ROLE, IAM_ROLE_ARN, IAM_ROLE_ID
 from ecs_composex.iam.iam_params import MAPPINGS_KEY as IAM_MAPPINGS_KEY
 
 
-def define_service_containers(service_template):
-    """Function to set the containers list from the service_task definition object
-
-    :param service_template: the task definition
-    :type service_template: troposphere.Template
-
-    :return: list of containers
-    :rtype: list
-    """
-    service_task = None
-    if TASK_T in service_template.resources:
-        service_task = service_template.resources[TASK_T]
-    try:
-        if service_task:
-            containers = getattr(service_task, "ContainerDefinitions")
-        else:
-            containers = []
-    except AttributeError:
-        raise ValueError(
-            "Service Task definition defined but no ContainerDefinitions found"
-        )
-    return containers
-
-
 class EcsRole(object):
     """
     Class to wrap around the AWS IAM Role
