@@ -8,6 +8,6 @@ x-events:
       Name: "demo"
       ScheduleExpression: "rate(2 minutes)"
     Services:
-      app03:
+      - name: app03
         TaskCount: 1
         DeleteDefaultService: False

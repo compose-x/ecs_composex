@@ -11,7 +11,7 @@ x-elasticache:
       CacheNodeType: cache.t3.small
       NumCacheNodes: 1
     Services:
-      app03:
+      - name: app03
         access: RW
 
   cache-02:
@@ -19,7 +19,7 @@ x-elasticache:
       Engine: redis
       EngineVersion: 6.x
     Services:
-      app03:
+      - name: app03
         access: RW
     Settings:
       Subnets: AppSubnets
@@ -38,5 +38,5 @@ x-elasticache:
         SnapshotRetentionLimit: '4'
         SnapshotWindow: '03:30-05:30'
     Services:
-      app02:
+      - name: app02
         access: RW

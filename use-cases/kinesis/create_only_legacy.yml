@@ -5,14 +5,14 @@ x-kinesis:
   stream-01:
     Properties: {}
     Services:
-      app03:
-        Access: Consumer
+      - name: app03
+        access: Consumer
   stream-02:
     Properties:
       Name: stream-02
     Services:
-      app03:
-        Access: Producer
+      - name: app03
+        access: Producer
 
   stream-03:
     Properties:
@@ -22,5 +22,5 @@ x-kinesis:
         EncryptionType: KMS
         KeyId: alias/aws/kinesis
     Services:
-      app03:
-        Access: Producer
+      - name: app03
+        access: Producer

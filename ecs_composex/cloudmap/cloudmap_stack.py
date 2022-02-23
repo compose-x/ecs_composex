@@ -22,6 +22,7 @@ from ecs_composex.compose.x_resources import (
     set_resources,
     set_use_resources,
 )
+from ecs_composex.exceptions import ComposeBaseException, IncompatibleOptions
 from ecs_composex.resources_import import import_record_properties
 from ecs_composex.vpc.vpc_params import VPC_ID
 
@@ -242,6 +243,28 @@ def define_new_namespace(new_namespaces, stack_template):
         namespace.generate_outputs()
 
 
+def x_cloud_lookup_and_new_vpc(settings, vpc_stack):
+    """
+    Function to ensure there is no x-cloudmap.Lookup resource and Compose-X is creating a new VPC.
+    The Namespace (CloudMap PrivateNamespace) cannot span across multiple VPC
+
+    :param ecs_composex.common.settings.ComposeXSettings settings:
+    :param vpc_stack: The VPC Stack
+    :raises: IncompatibleOptions
+    """
+    lookup_namespaces = [
+        namespace
+        for namespace in settings.x_resources
+        if isinstance(namespace, PrivateNamespace) and namespace.lookup_properties
+    ]
+    if lookup_namespaces and not vpc_stack.is_void:
+        raise IncompatibleOptions(
+            "You cannot have Compose-X Create a new VPC and use x-cloudmap.Lookup."
+            " Use x-vpc to re-use the VPC the PrivateNamespace is attached to",
+            lookup_namespaces,
+        )
+
+
 def detect_duplicas(x_resources: list):
     """
     Function to ensure there is no multiple resources with the same zone name
@@ -249,11 +272,7 @@ def detect_duplicas(x_resources: list):
     :param list[PrivateNamespace] x_resources:
     """
 
-    class DuplicateZoneName(Exception):
-        """
-        :exception:
-        """
-
+    class DuplicateZoneName(ComposeBaseException):
         pass
 
     names = [res.zone_name for res in x_resources]

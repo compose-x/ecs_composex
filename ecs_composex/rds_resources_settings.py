@@ -241,7 +241,7 @@ def generate_secrets_from_secrets_mappings(
         )
 
 
-def define_db_secrets(db, secret_import, target_definition):
+def define_db_secrets(db, secret_import, target) -> list:
     """
     Function to return the list of env vars set for the DB to use as env vars for the Secret.
 
@@ -249,34 +249,34 @@ def define_db_secrets(db, secret_import, target_definition):
     :rtype: list
     """
     secrets = []
-    if keyisset("SecretsMappings", target_definition[-1]):
-        LOG.info(f"{target_definition[-1]['name']} expects specific name for {db.name}")
+    if keyisset("SecretsMappings", target[-1]):
+        LOG.info(f"{target[0].name} expects specific name for {db.name}")
         generate_secrets_from_secrets_mappings(
-            db, secrets, secret_import, target_definition[-1]["SecretsMappings"]
+            db, secrets, secret_import, target[-1]["SecretsMappings"]
         )
     elif keyisset("SecretsMappings", db.settings):
-        LOG.info(f"{db.name} has specific secrets mappings settings")
+        LOG.info(f"{db.module_name}.{db.name} has secrets mappings settings.")
         generate_secrets_from_secrets_mappings(
             db, secrets, secret_import, db.settings["SecretsMappings"]
         )
-    elif keyisset("EnvNames", db.settings):
-        for name in db.settings["EnvNames"]:
-            secrets.append(EcsSecret(Name=name, ValueFrom=secret_import))
-    if db.name not in [s.Name for s in secrets]:
+    else:
+        LOG.info(
+            f"{db.module_name}.{db.name} - No SecretsMappings set. Exposing the secrets content as-is."
+        )
         secrets.append(EcsSecret(Name=db.name, ValueFrom=secret_import))
     return secrets
 
 
-def add_secret_to_container(db, secret_import, service, target_definition):
+def add_secret_to_container(db, secret_import, service, target):
     """
     Function to add DB secret to container
 
     :param ecs_composex.common.compose_resources.Rds db: the RDS DB object
     :param service: The target service definition
     :param str,AWSHelper secret_import: secret arn
-    :param target_definition:
+    :param tuple target:
     """
-    db_secrets = define_db_secrets(db, secret_import, target_definition)
+    db_secrets = define_db_secrets(db, secret_import, target)
     for db_secret in db_secrets:
         extend_container_secrets(service.container_definition, db_secret)
 
@@ -350,19 +350,19 @@ def add_secrets_access_policy(
             policy.Roles.append(task_role)
 
 
-def handle_db_secret_to_services(db, secret_import, target):
-    valid_ones = [
-        service for service in target[2] if service not in target[0].ignored_services
-    ]
-    for service in valid_ones:
+def handle_db_secret_to_services(db, secret_import, target) -> None:
+    """
+    Maps DB Secret to ECS Service containers. It however won't expose the secret to an AWS SideCar (i.e. x-ray).
+
+    :param ecs_composex.compose.x_resources.DatabaseXResource db: The DB we want to expose the secret for.
+    :param troposphere.AWSHelperFn secret_import: The pointer to the Secret
+    :param tuple target: The family target
+    """
+    for service in target[2]:
+        if service in target[0].ignored_services or service.is_aws_sidecar:
+            continue
         add_secret_to_container(db, secret_import, service, target)
     add_secrets_access_policy(target[0], secret_import, db.logical_name)
-
-
-def handle_new_dbs_to_services(db, sg_import, target, port=None):
-    add_security_group_ingress(
-        target[0].stack, db.logical_name, sg_id=sg_import, port=port
-    )
 
 
 def handle_import_dbs_to_services(db, target) -> None:
@@ -452,8 +452,11 @@ def handle_new_tcp_resource(
         LOG.info(f"{resource.stack.title} - Linking to {target[0].name}")
         add_parameters(target[0].template, parameters_to_add)
         target[0].stack.Parameters.update(parameters_values)
-        handle_new_dbs_to_services(
-            resource, Ref(sg_settings[1]), target, port=Ref(port_settings[1])
+        add_security_group_ingress(
+            target[0].stack,
+            resource.logical_name,
+            sg_id=Ref(sg_settings[1]),
+            port=Ref(port_settings[1]),
         )
         if secret_parameter:
             secret_settings = get_parameter_settings(resource, secret_parameter)

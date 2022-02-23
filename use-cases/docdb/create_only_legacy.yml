@@ -9,16 +9,17 @@ x-docdb:
       EnvNames:
         - DOCDB_A
     Services:
-      app03:
+      - name: app03
+        access: RW
 
   docdbB:
     Properties: {}
     Settings:
-      Subnets: AppSubnets
+      EnvNames:
+        - DOCDB_B
     Services:
-      app03:
-        ReturnValues:
-          DBClusterName: DOcdb_CLUSTER_dbb
+      - name: app03
+        access: RW
     MacroParameters:
       Instances:
         - DBInstanceClass: db.r5.large
@@ -36,9 +37,13 @@ x-docdb:
         - Key: Name
           Value: docdb_C
     Services:
-      app03:
-        Access:
+      - name: app03
+        access:
           DBCluster: RO
+        SecretsMappings:
+          Mappings:
+            - SecretKey: host
+              VarName: DB_HOST
     MacroParameters:
       Instances:
         - DBInstanceClass: db.r5.large

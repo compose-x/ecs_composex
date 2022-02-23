@@ -22,14 +22,21 @@
     },
     "MacroParameters": {
       "$ref": "#/definitions/MacroParameters"
+    },
+    "SecretsMappings": {
+      "$ref": "x-rds.spec.json#/definitions/SecretsMappingsDef"
     }
   },
   "oneOf": [
     {
-      "required": ["Properties"]
+      "required": [
+        "Properties"
+      ]
     },
     {
-      "required": ["Lookup"]
+      "required": [
+        "Lookup"
+      ]
     }
   ],
   "definitions": {

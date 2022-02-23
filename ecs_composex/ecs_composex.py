@@ -13,6 +13,7 @@ from importlib import import_module
 from compose_x_common.compose_x_common import keyisset
 from troposphere import AWS_STACK_NAME, GetAtt, Ref
 
+from ecs_composex.cloudmap.cloudmap_stack import x_cloud_lookup_and_new_vpc
 from ecs_composex.common import LOG, NONALPHANUM, add_update_mapping, init_template
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.ecs_composex import X_AWS_KEY, X_KEY
@@ -24,7 +25,6 @@ from ecs_composex.dashboards.dashboards_stack import XStack as DashboardsStack
 from ecs_composex.ecs.ecs_cluster import add_ecs_cluster
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME
 from ecs_composex.ecs.ecs_stack import associate_services_to_root_stack
-from ecs_composex.exceptions import x_cloud_lookup_and_new_vpc
 from ecs_composex.iam.iam_stack import XStack as IamStack
 from ecs_composex.vpc.vpc_params import APP_SUBNETS
 from ecs_composex.vpc.vpc_stack import XStack as VpcStack

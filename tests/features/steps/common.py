@@ -12,6 +12,7 @@ from ecs_composex.common.aws import deploy
 from ecs_composex.common.settings import ComposeXSettings
 from ecs_composex.common.stacks import process_stacks
 from ecs_composex.ecs_composex import generate_full_template
+from ecs_composex.exceptions import ComposeBaseException
 
 
 def here():
@@ -161,7 +162,7 @@ def step_impl(context):
 
 @then("I render the docker-compose expecting an error")
 def step_impl(context):
-    with raises((ValueError, KeyError)):
+    with raises((ValueError, KeyError, ComposeBaseException)):
         context.root_stack = generate_full_template(context.settings)
 
 

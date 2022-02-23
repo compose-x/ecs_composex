@@ -51,16 +51,17 @@ def validate_subnets_belong_with_vpc(vpc_settings, subnet_keys, session=None):
     if session is None:
         session = Session()
     client = session.client("ec2")
+    filters = [
+        {
+            "Name": "vpc-id",
+            "Values": [
+                vpc_settings[VPC_ID.title],
+            ],
+        },
+    ]
     for subnet_key in subnet_keys:
         subnets_r = client.describe_subnets(
-            Filters=[
-                {
-                    "Name": "vpc-id",
-                    "Values": [
-                        vpc_settings[VPC_ID.title],
-                    ],
-                },
-            ],
+            Filters=filters,
             SubnetIds=vpc_settings[subnet_key],
         )
         if keyisset("Subnets", subnets_r):
@@ -122,6 +123,8 @@ def lookup_x_vpc_settings(vpc_resource):
             subnet_type,
             allow_multi=True,
         )
+        if not isinstance(subnet_arns, list):
+            subnet_arns = [subnet_arns]
         vpc_settings[subnet_key] = [
             ARNS_PER_TAGGINGAPI_TYPE[subnet_type].match(subnet_arn).group("id")
             for subnet_arn in subnet_arns
@@ -139,6 +142,8 @@ def lookup_x_vpc_settings(vpc_resource):
             subnet_type,
             allow_multi=True,
         )
+        if not isinstance(subnet_arns, list):
+            subnet_arns = [subnet_arns]
         vpc_settings[subnet_name] = [
             ARNS_PER_TAGGINGAPI_TYPE[subnet_type].match(subnet_arn).group("id")
             for subnet_arn in subnet_arns
