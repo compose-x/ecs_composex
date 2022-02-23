@@ -7,8 +7,8 @@ x-kms:
     Settings:
       Alias: alias/keyA
     Services:
-      bignicefamily:
-        Access: EncryptDecrypt
+      - name: bignicefamily
+        access: EncryptDecrypt
 
   keyB:
     Properties:
@@ -16,12 +16,12 @@ x-kms:
     Settings:
       Alias: keyB
     Services:
-      app02:
-        Access: SQS
-      app03:
-        Access: EncryptOnly
-      bignicefamily:
-        Access: DecryptOnly
+      - name: app02
+        access: SQS
+      - name: app03
+        access: EncryptOnly
+      - name: bignicefamily
+        access: DecryptOnly
 
   keyC:
     Properties:

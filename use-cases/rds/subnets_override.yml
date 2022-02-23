@@ -1,6 +1,22 @@
 ---
 # RDS Use-case.
 
+x-vpc:
+  Lookup:
+    VpcId:
+      Tags:
+        - Name: testing
+    AppSubnets:
+      Tags:
+        - Name: a
+        - Name: b
+    PublicSubnets:
+      Tags:
+        - Name: b
+    StorageSubnets:
+      Tags:
+        - Name: b
+
 version: '3.8'
 x-rds:
   dbA:

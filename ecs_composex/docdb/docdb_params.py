@@ -17,7 +17,7 @@ MOD_KEY = path.basename(path.dirname(path.abspath(__file__)))
 RES_KEY = f"{X_KEY}{MOD_KEY}"
 MAPPINGS_KEY = NONALPHANUM.sub("", MOD_KEY)
 
-DOCDB_NAME_T = "DocDBName"
+DOCDB_NAME_T = "DBClusterName"
 DOCDB_ID_T = "ClusterResourceId"
 
 DOCDB_NAME = Parameter(DOCDB_NAME_T, Type="String")

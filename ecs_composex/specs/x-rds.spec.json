@@ -162,13 +162,19 @@
             "type": "string"
           },
           "VarName": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9_]+$"
           }
         }
       }
     },
     "SecretsMappingsObject": {
-      "type": "object"
+      "type": "object",
+      "patternProperties": {
+        "^[a-zA-Z0-9_]+$": {
+          "type": "string"
+        }
+      }
     },
     "Lookup": {
       "type": "object",

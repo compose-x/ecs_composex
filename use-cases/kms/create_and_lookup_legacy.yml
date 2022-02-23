@@ -16,12 +16,12 @@ x-kms:
     Settings:
       Alias: keyB
     Services:
-      app02:
-        Access: SQS
-      app03:
-        Access: EncryptOnly
-      bignicefamily:
-        Access: DecryptOnly
+      - name: app02
+        access: SQS
+      - name: app03
+        access: EncryptOnly
+      - name: bignicefamily
+        access: DecryptOnly
 
   keyC:
     Lookup:
@@ -29,7 +29,7 @@ x-kms:
         - name: cicd
         - costcentre: lambda
     Services:
-      app03:
-        Access: EncryptDecrypt
-      bignicefamily:
-        Access: DecryptOnly
+      - name: app03
+        access: EncryptDecrypt
+      - name: bignicefamily
+        access: DecryptOnly

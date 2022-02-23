@@ -10,9 +10,6 @@
     "Lookup": {
       "$ref": "x-resources.common.spec.json#/definitions/Lookup"
     },
-    "Use": {
-      "type": "string"
-    },
     "Properties": {
       "type": "object",
       "description": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-kms-key.html"
@@ -24,7 +21,12 @@
       "$ref": "x-resources.common.spec.json#/definitions/Services"
     },
     "MacroParameters": {
-      "type": "object"
+      "type": "object",
+      "properties": {
+        "Alias": {
+          "type": "string"
+        }
+      }
     }
   }
 }

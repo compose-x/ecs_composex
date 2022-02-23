@@ -28,19 +28,3 @@ x-cloudmap:
   map-02:
     ZoneName: testing.internal
     Lookup: true
-
-x-vpc:
-  Lookup:
-    VpcId:
-      Tags:
-        - Name: testing
-    AppSubnets:
-      Tags:
-        - Name: a
-        - Name: b
-    PublicSubnets:
-      Tags:
-        - Name: b
-    StorageSubnets:
-      Tags:
-        - Name: b

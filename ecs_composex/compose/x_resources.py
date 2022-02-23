@@ -176,6 +176,7 @@ class XResource(object):
         self.definition = deepcopy(definition)
         self.env_names = []
         self.env_vars = []
+        self.validators = []
         self.logical_name = NONALPHANUM.sub("", self.name)
         self.settings = (
             None
@@ -230,6 +231,16 @@ class XResource(object):
 
     def __repr__(self):
         return self.logical_name
+
+    def validate(self, settings, root_stack=None, *args, **kwargs) -> None:
+        """
+        Function to implement self-validation for the resource and the execution settings.
+
+        :param settings:
+        :param root_stack:
+        :param args:
+        :param kwargs:
+        """
 
     def cloud_control_attributes_mapping_lookup(
         self, resource_type, resource_id, **kwargs
@@ -675,7 +686,9 @@ class ServicesXResource(XResource):
             elif service_name in [s.name for s in settings.services]:
                 self.handle_families_targets_expansion(service, settings)
 
-    def handle_families_targets_expansion_dict(self, service_name, service, settings):
+    def handle_families_targets_expansion_dict(
+        self, service_name, service, settings
+    ) -> None:
         """
         Method to list all families and services that are targets of the resource.
         Allows to implement family and service level association to resource

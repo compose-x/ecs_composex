@@ -58,7 +58,27 @@ def define_lookup_role_from_info(info, session):
     return get_cross_role_session(session, info[ROLE_ARN_ARG])
 
 
-def define_tagsgroups_filter_tags(tags):
+def set_filters_from_tags_list(tags: list) -> list:
+    """
+    Simple function to define the tags filters to use
+    """
+    filters = []
+    filters_mapping = {}
+    for tag in tags:
+        for key, value in tag.items():
+            if key not in filters_mapping.keys():
+                if not isinstance(value, list):
+                    filters_mapping[key] = [value]
+                else:
+                    filters_mapping[key] += value
+            else:
+                filters_mapping[key].append(value)
+    for key, values in filters_mapping.items():
+        filters.append({"Key": key, "Values": tuple(values)})
+    return filters
+
+
+def define_tagsgroups_filter_tags(tags) -> list:
     """
     Function to create the filters out of tags list
 
@@ -66,13 +86,15 @@ def define_tagsgroups_filter_tags(tags):
     :return: filters
     :rtype: list
     """
-    filters = []
-    for tag in tags:
-        key = list(tag.keys())[0]
-        filter_name = key
-        filter_value = tag[key]
-        filters.append({"Key": filter_name, "Values": (filter_value,)})
-    return filters
+    if isinstance(tags, list):
+        return set_filters_from_tags_list(tags)
+    elif isinstance(tags, dict):
+        return [
+            {"Key": key, "Values": tuple(values)}
+            for key, values in tags.items()
+            if isinstance(values, (list, str, int)) and isinstance(key, str)
+        ]
+    raise TypeError("Tags must be one of", [list, dict], "Got", type(tags))
 
 
 def get_resources_from_tags(session, aws_resource_search, search_tags):
@@ -154,17 +176,6 @@ def handle_search_results(
             name,
             aws_resource_search,
         )
-    # if arns and isinstance(name, str):
-    #     return handle_multi_results(
-    #         arns,
-    #         name,
-    #         aws_resource_search,
-    #         res_types[aws_resource_search],
-    #         allow_multi=allow_multi,
-    #     )
-    # elif not name and len(arns) == 1:
-    #     LOG.info(f"Matched {aws_resource_search} to AWS Resource")
-    #     return arns[0]
     elif not allow_multi and len(arns) > 1:
         raise LookupError(
             f"More than one resource {name}:{aws_resource_search} was found with the current tags."
