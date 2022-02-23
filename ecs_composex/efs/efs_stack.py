@@ -12,6 +12,7 @@ from troposphere.ec2 import SecurityGroup
 from troposphere.efs import FileSystem, MountTarget
 
 from ecs_composex.common import build_template
+from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources import (
     NetworkXResource,
@@ -51,28 +52,6 @@ def create_efs_stack(settings, new_resources):
             GroupDescription=Sub(f"SG for EFS {res.cfn_resource.title}"),
             VpcId=Ref(VPC_ID),
         )
-        if settings.vpc_imported:
-            for count, az in enumerate(
-                settings.subnets_mappings[STORAGE_SUBNETS.title]["Azs"]
-            ):
-                template.add_resource(
-                    MountTarget(
-                        f"{res.logical_name}MountPoint{az.title().strip().split('-')[-1]}",
-                        FileSystemId=Ref(res.cfn_resource),
-                        SecurityGroups=[GetAtt(res.db_sg, "GroupId")],
-                        SubnetId=Select(count, Ref(STORAGE_SUBNETS)),
-                    )
-                )
-        else:
-            for count, az in enumerate(settings.aws_azs):
-                template.add_resource(
-                    MountTarget(
-                        f"{res.logical_name}MountPoint{az['ZoneName'].title().strip().split('-')[-1]}",
-                        FileSystemId=Ref(res.cfn_resource),
-                        SecurityGroups=[GetAtt(res.db_sg, "GroupId")],
-                        SubnetId=Select(count, Ref(STORAGE_SUBNETS)),
-                    )
-                )
         template.add_resource(res.cfn_resource)
         template.add_resource(res.db_sg)
         res.init_outputs()
@@ -110,16 +89,16 @@ class Efs(NetworkXResource):
         self.output_properties = {
             FS_ID: (self.logical_name, self.cfn_resource, Ref, None),
             FS_ARN: (
-                self.logical_name,
+                f"{self.logical_name}{FS_ARN.return_value}",
                 self.cfn_resource,
                 GetAtt,
                 FS_ARN.return_value,
             ),
             FS_PORT: (
                 f"{self.logical_name}{FS_PORT.title}",
-                FS_PORT,
-                Ref,
                 None,
+                FS_PORT.Default,
+                False,
             ),
             FS_MNT_PT_SG_ID: (
                 f"{self.logical_name}{FS_MNT_PT_SG_ID.return_value}",
@@ -128,6 +107,37 @@ class Efs(NetworkXResource):
                 FS_MNT_PT_SG_ID.return_value,
             ),
         }
+
+    def update_from_vpc(self, vpc_stack, settings=None):
+        """
+        Override for EFS to update settings from VPC Stack
+
+        :param ecs_composex.vpc.vpc_stack.XStack vpc_stack:
+        :param ecs_composex.common.settings.ComposeXSettings settings:
+        :return:
+        """
+        print("EFS FROM VPC UPDATE", self, self.cfn_resource, self.stack.stack_template)
+        subnets_params = self.subnets_param
+        if self.subnets_override:
+            for subnet_az in vpc_stack.vpc_resource.azs:
+                if subnet_az.title == self.subnets_override:
+                    subnets_params = subnet_az
+                    break
+            else:
+                raise KeyError(
+                    f"{self.module_name}.{self.name} - "
+                    f"Override subnet name {self.subnets_override} is not defined in x-vpc",
+                    list(vpc_stack.vpc_resource.azs.keys()),
+                )
+        for count, az in enumerate(vpc_stack.vpc_resource.azs[subnets_params]):
+            self.stack.stack_template.add_resource(
+                MountTarget(
+                    f"{self.logical_name}MountPoint{az.title().strip().split('-')[-1]}",
+                    FileSystemId=Ref(self.cfn_resource),
+                    SecurityGroups=[GetAtt(self.db_sg, "GroupId")],
+                    SubnetId=Select(count, Ref(STORAGE_SUBNETS)),
+                )
+            )
 
 
 class XStack(ComposeXStack):
