@@ -100,23 +100,35 @@ class Vpc(AwsEnvironmentResource):
         self.endpoints_sg = None
         self.logging = None
         self.layers = None
+        self.azs = {}
         super().__init__(name, definition, module_name, settings, mapping_key)
 
     def create_vpc(self, template, settings, default=False):
         """
         Creates a new VPC from Properties (or from defaults)
+
+        :param ecs_composex.common.settings.ComposeXSettings settings:
         """
         self.endpoints = set_else_none("Endpoints", self.properties, [])
         self.vpc_cidr = set_else_none(
             VPC_CIDR.title, self.properties, self.default_ipv4_cidr
         )
         curated_azs = []
-        for az in settings.aws_azs:
+        current_region_azs = [
+            zone["ZoneName"]
+            for zone in settings.session.client("ec2").describe_availability_zones()[
+                "AvailabilityZones"
+            ][:2]
+        ]
+        for az in current_region_azs:
             if isinstance(az, dict):
                 curated_azs.append(az["ZoneName"])
             elif isinstance(az, str):
                 curated_azs.append(az)
         azs_index = [AZ_INDEX_RE.match(az).groups()[-1] for az in curated_azs]
+        self.azs[PUBLIC_SUBNETS] = current_region_azs
+        self.azs[STORAGE_SUBNETS] = current_region_azs
+        self.azs[APP_SUBNETS] = current_region_azs
 
         self.layers = get_subnet_layers(self.vpc_cidr, len(curated_azs))
         vpc_core = add_vpc_core(template, self.vpc_cidr)
@@ -253,14 +265,21 @@ class Vpc(AwsEnvironmentResource):
         for subnet_name, subnet_definition in subnets.items():
             if not isinstance(subnet_definition, list):
                 continue
+            for subnet_param in self.subnets_parameters:
+                if subnet_param.title == subnet_name:
+                    subnets_param = subnet_param
+                    break
+            else:
+                raise KeyError(
+                    f"x-vpc.set_azs_from_vpc_import - No parameter defined for {subnet_name}"
+                )
             try:
                 subnets_r = client.describe_subnets(SubnetIds=subnet_definition)[
                     "Subnets"
                 ]
-
-                self.mappings[subnet_name]["Azs"] = [
-                    subnet["AvailabilityZone"] for subnet in subnets_r
-                ]
+                azs = [subnet["AvailabilityZone"] for subnet in subnets_r]
+                self.mappings[subnet_name]["Azs"] = azs
+                self.azs[subnets_param] = azs
             except ClientError:
                 LOG.warning("Could not define the AZs based on the imported subnets")
 

@@ -80,7 +80,6 @@ class ComposeXSettings(object):
     single_nat_arg = "SingleNat"
 
     default_vpc_cidr = "100.127.254.0/24"
-    default_azs = ["eu-west-1a", "eu-west-1b"]
     default_output_dir = f"/tmp/{dt.utcnow().strftime('%s')}"
 
     active_commands = [
@@ -135,10 +134,6 @@ class ComposeXSettings(object):
             if keyisset(self.region_arg, kwargs)
             else self.session.region_name
         )
-        self.aws_azs = self.default_azs
-        self.public_azs = self.default_azs
-        self.app_azs = self.default_azs
-        self.storage_azs = self.default_azs
 
         self.bucket_name = (
             None if not keyisset(self.bucket_arg, kwargs) else kwargs[self.bucket_arg]
@@ -147,7 +142,6 @@ class ComposeXSettings(object):
         self.services = []
         self.secrets = []
         self.networks = []
-        self.vpc_imported = False
         self.secrets_mappings = {}
         self.mappings = {}
         self.families = {}

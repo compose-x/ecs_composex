@@ -19,7 +19,11 @@ from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.ecs_composex import X_AWS_KEY, X_KEY
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common.tagging import add_all_tags
-from ecs_composex.compose.x_resources import AwsEnvironmentResource, ServicesXResource
+from ecs_composex.compose.x_resources import (
+    AwsEnvironmentResource,
+    NetworkXResource,
+    ServicesXResource,
+)
 from ecs_composex.compute.compute_stack import ComputeStack
 from ecs_composex.dashboards.dashboards_stack import XStack as DashboardsStack
 from ecs_composex.ecs.ecs_cluster import add_ecs_cluster
@@ -48,29 +52,6 @@ RES_REGX = re.compile(r"(^([x-]+))")
 COMPUTE_STACK_NAME = "Ec2Compute"
 VPC_STACK_NAME = "vpc"
 MESH_TITLE = "RootMesh"
-
-SUPPORTED_X_MODULE_NAMES = [
-    "rds",
-    "sqs",
-    "sns",
-    "acm",
-    "route53",
-    "dynamodb",
-    "kms",
-    "s3",
-    "elbv2",
-    "docdb",
-    "events",
-    "kinesis",
-    "elasticache",
-    "efs",
-    "alarms",
-    "codeguru_profiler",
-    "ssm_parameter",
-    "opensearch",
-    "neptune",
-    "cloudmap",
-]
 
 IGNORED_X_KEYS = [
     f"{X_KEY}tags",
@@ -525,6 +506,10 @@ def update_network_resources_vpc_config(settings, vpc_stack):
                 f"{resource.module_name}.{resource.name} - Resource is not bound to VPC."
             )
             continue
+        if not issubclass(type(resource), NetworkXResource):
+            LOG.debug(
+                f"{resource.module_name}.{resource.name} - Not a NetworkXResource"
+            )
         if (
             hasattr(resource.stack, "stack_parent")
             and resource.stack.parent_stack is None
