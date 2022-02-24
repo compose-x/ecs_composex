@@ -4,25 +4,28 @@
 
 .. _s3_syntax_reference:
 
-=====
+=====================
 x-s3
-=====
+=====================
+
+This module allows you to create new S3 Buckets, Lookup existing ones, and link them to your services or other AWS Resources,
+when supported
 
 .. contents::
     :depth: 2
 
 Syntax
-=======
+=========
 
 .. code-block:: yaml
 
     x-s3:
-      bucket-name:
+      bucket:
         Properties: {}
-        Lookup: {}
-        Services: []
         MacroParameters: {}
-
+        Lookup: {}
+        Settings: {}
+        Services: {}
 
 .. tip::
 
@@ -33,10 +36,70 @@ Syntax
 
     For more structural details, see `JSON Schema`_
 
+Services
+========
+
+Model
+--------
+
+.. code-block:: yaml
+
+    Services:
+      service01:
+        Access:
+          bucket: <>
+          objects: <>
+        ReturnValues: {}
+
+
+As for all other resource types, you can define the type of access you want based to the S3 buckets.
+However, for buckets, this means distinguish the bucket and the objects resource.
+
+.. code-block:: yaml
+    :caption: Short example
+
+    x-s3:
+      bucketA:
+        Properties: {}
+        Settings: {}
+        Services:
+          service-01:
+            Access:
+              objects: RW
+              bucket: ListOnly
+
+    services:
+      service-01: {}
+
+IAM Permissions
+----------------
+
+For S3 buckets, the access types is expecting a object with **objects** and **bucket** to distinguish permissions for each.
+If you indicate a string, the default permissions (bucket: ListOnly and objects: RW) will be applied.
+
+.. literalinclude:: ../../../ecs_composex/s3/s3_perms.json
+    :caption: Full access types policies definitions
+    :language: json
+
+ReturnValues
+--------------
+
+For full details, see `AWS S3 Return Values`_ for available options.
+
+The return value **BucketName** can be used to return the value of the **Ref** Function.
+
+.. warning::
+
+    If you return values that rely on features you have not enabled, i.e. **WebsiteURL**, the stack creation / update
+    will fail.
+
+
 Properties
 ===========
 
 For the properties, go to to `AWS CFN S3 Definition`_
+We highly encourage not to set the bucket name there. If you did, we recommend to use the `ExpandRegionToBucket`_ and
+`ExpandAccountIdToBucket`_ to make the bucket unique.
 
 MacroParameters
 =================
@@ -111,25 +174,6 @@ Results into
         !Sub 'abcd-01-${AWS::Region}-${AWS::AccountId}'
 
 
-Services
-========
-
-As for all other resource types, you can define the type of access you want based to the S3 buckets.
-However, for buckets, this means distinguish the bucket and the objects resource.
-
-.. code-block:: yaml
-    :caption: permissions example
-
-    x-s3:
-      bucketA:
-        Properties: {}
-        Settings: {}
-        Services:
-          - name: service-01
-            access:
-              objects: RW
-              bucket: ListOnly
-
 Lookup
 =======
 
@@ -139,16 +183,6 @@ Lookup is currently implemented for S3 buckets!
 
     For S3, if the S3 bucket has a default KMS key encryption, the services will automatically be granted KMS default
     **EncryptDecrypt** permissions in order to allow using the KMS key for objects manipulation.
-
-IAM Permissions
-================
-
-For S3 buckets, the access types is expecting a object with **objects** and **bucket** to distinguish permissions for each.
-If you indicate a string, the default permissions (bucket: ListOnly and objects: RW) will be applied.
-
-.. literalinclude:: ../../../ecs_composex/s3/s3_perms.json
-    :caption: Full access types policies definitions
-    :language: json
 
 
 Examples
@@ -169,10 +203,17 @@ Examples
 JSON Schema
 ============
 
+Representation
+----------------
+
 .. jsonschema:: ../../../ecs_composex/specs/x-s3.spec.json
+
+Definition
+------------
 
 .. literalinclude:: ../../../ecs_composex/specs/x-s3.spec.json
     :language: json
 
 
 .. _AWS CFN S3 Definition: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-s3-bucket.html
+.. _AWS S3 Return Values: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-s3-bucket.html#aws-properties-s3-bucket-return-values

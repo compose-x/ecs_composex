@@ -2,9 +2,9 @@
     :description: ECS Compose-X Labs
     :keywords: AWS, AWS ECS, Docker, Containers, Compose, docker-compose, install, setup, examples
 
-=================
+====================
 Compose-X Labs
-=================
+====================
 
 There are tons of use-cases out there to use docker-compose, and a lot of various applications that can be deployed
 to AWS very easily

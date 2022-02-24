@@ -11,23 +11,16 @@ x-docdb
 .. contents::
     :depth: 2
 
-Syntax
-=======
+Definition
+================
 
-.. code-block:: yaml
-
-    x-docdb:
-      docdb-01:
-        Properties: {}
-        Settings: {}
-        Services: []
-        Lookup: {}
-        MacroParameters: {}
+.. jsonschema:: ../../../ecs_composex/specs/x-docdb.spec.json
 
 .. tip::
 
-    For production workloads, to avoid any CFN deadlock situations, I recommend you generate the CFN templates for docdb,
-    and deploy the stacks separately. Using Lookup you can use existing DocDB clusters with your new services.
+    For production workloads, to avoid any CFN deadlock situations, it is recommended that
+    you generate the CFN templates for docdb, and deploy the stacks separately.
+    Using Lookup you can use existing DocDB clusters with your new services.
 
 .. tip::
 
@@ -116,41 +109,40 @@ for more details.
 Services
 ========
 
-The syntax for listing the services remains the same as the other x- resources.
+Refer to :ref:`services_ref` for in-depth details.
 
-.. code-block:: yaml
+Access
+--------
 
-    Services:
-      - name: <service/family name>
-        access: <str>
+For this resource, you can leave **Access** empty, the necessary Security Groups and IAM access to the DB Secret
+will be done for you.
 
-Access types
-------------
+Available options
+^^^^^^^^^^^^^^^^^^^
 
-.. warning::
+.. code-block::
 
-    The access key value do not have an effect at this stage.
+    Access:
+      DBCluster: RO # Grants Read/Describe access only to the DB Cluster.
+
+ReturnValues
+-------------
+
+The available return Values are as per the `CFN return values for AWS DocDb Cluster`_
+To access the *Ref* value, use **DBCluster**.
 
 Settings
 ========
 
-The only setting for DocumentDB is **EnvNames** as for every other resources.
-
-.. hint::
-
-    Given that the DB Secret attachment populates host, port etc., we expose as env vars the **Secret** associated to the DB,
-    not the DB itself.
+See :ref:`settings_syntax_reference`. Subnets supported for this resource.
 
 Lookup
 ========
 
-Lookup for Document DB is available!
+Lookup for this resource will accept 2 key elements
 
-.. warning::
-
-    For some reason the group resource tag API returns two different clusters even though they are the same one.
-    Make sure to specify the *Name* along with Tags until we figure an alternative solution.
-    Sorry for the inconvenience.
+* cluster # required, allows to define how to lookup the cluster
+* secret # optional, allows do point to the secret in AWS Secrets Manager that contains connection details to the Cluster.
 
 
 Credentials
@@ -186,11 +178,10 @@ Examples
 JSON Schema
 ============
 
-.. jsonschema:: ../../../ecs_composex/specs/x-docdb.spec.json
-
 .. literalinclude:: ../../../ecs_composex/specs/x-docdb.spec.json
 
 
 .. _DocDB Cluster properties: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-docdb-dbcluster.html
 .. _DocDB Instance: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-docdb-dbinstance.html
 .. _DocDB DBClusterParameterGroup: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-docdb-dbclusterparametergroup.html
+.. _CFN return values for AWS DocDb Cluster: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-docdb-dbcluster.html#aws-resource-docdb-dbcluster-return-values

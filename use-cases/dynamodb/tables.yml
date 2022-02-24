@@ -3,11 +3,6 @@
 
 version: '3.8'
 
-x-configs:
-  app:
-    network:
-      use_cloudmap: True
-
 x-tags:
   owner: johnpreston
   contact: john@compose-x.io
@@ -41,20 +36,13 @@ x-dynamodb:
         ReadCapacityUnits: 5
         WriteCapacityUnits: 5
     Services:
-      - name: app03
-        access: RW
-      - name: bignicefamily
-        access: RO
-    Settings:
-      EnvNames:
-        - TABLEA
-        - tablea
-        - tableA
+      app03:
+        Access: RW
+      bignicefamily:
+        ReturnValues:
+          TableName: TABLE_A
 
   tableB:
-    Settings:
-      EnvNames:
-        - TABLEB
     Properties:
       AttributeDefinitions:
         - AttributeName: "Album"

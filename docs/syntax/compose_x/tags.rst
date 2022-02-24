@@ -1,3 +1,11 @@
+
+.. meta::
+    :description: ECS Compose-X AWS Tagging
+    :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, tagging
+
+.. _tagging_syntax_reference:
+
+=======
 x-tags
 =======
 
@@ -7,17 +15,19 @@ Syntax Reference
 ==================
 
 .. code-block:: yaml
+    :caption: Key/Value structure
 
-x-tags:
-  str: value
+    x-tags:
+      str: value
 
-Alternatively
+Alternatively, you can use the default AWS CFN implementation
 
 .. code-block:: yaml
+    :caption: List of Key/Value tags
 
-x-tags:
-  - Key: sts
-    Value: <value>
+    x-tags:
+      - Key: sts
+        Value: <value>
 
 Default tags
 =============
@@ -27,7 +37,13 @@ CreatedByComposeX: true # Allows you to identify quickly if that resource was cr
 JSON Schema
 ============
 
+Representation
+---------------
+
 .. jsonschema:: ../../../ecs_composex/specs/x-tags.spec.json
+
+Definition
+-------------
 
 .. literalinclude:: ../../../ecs_composex/specs/x-tags.spec.json
     :language: json

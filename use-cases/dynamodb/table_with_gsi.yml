@@ -66,9 +66,12 @@ x-dynamodb:
             ProjectionType: "INCLUDE"
 
     Services:
-      - name: app03
+      app03:
         access: RW
-      - name: app02
-        access: RW
-      - name: bignicefamily
-        access: RO
+      app02:
+        Access: RW
+        ReturnValues:
+          Arn: TABLE_A_ARN
+      bignicefamily:
+        ReturnValues:
+          Arn: TABLE_A_arn

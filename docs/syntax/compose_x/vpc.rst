@@ -4,9 +4,9 @@
 
 .. _vpc_syntax_reference:
 
-======
+============================
 x-vpc
-======
+============================
 
 Syntax Reference
 ================
@@ -16,7 +16,6 @@ Syntax Reference
     x-vpc:
       Create: {}
       Lookup: {}
-      Use: {}
 
 .. tip::
 
@@ -139,27 +138,6 @@ Lookup
             networks:
               - custom01
 
-.. attention::::
-
-    If you specify both **Create** and **Lookup** in x-vpc, then the default behaviour is applied, and creates a new VPC
-
-Use
-===
-
-.. code-block:: yaml
-
-    x-vpc:
-      Use:
-        VpcId: vpc-id
-        AppSubnets:
-          - subnet-id
-          - subnet-id
-        StorageSubnets:
-          - subnet-id
-          - subnet-id
-        PublicSubnets:
-          - subnet-id
-          - subnet-id
 
 .. _vpc_network_design:
 
@@ -187,7 +165,13 @@ This leaves a just under 120 IP address for the EC2 hosts and/or Docker containe
 JSON Schema
 ============
 
+Representation
+---------------
+
 .. jsonschema:: ../../../ecs_composex/specs/x-vpc.spec.json
+
+Definition
+------------
 
 .. literalinclude:: ../../../ecs_composex/specs/x-vpc.spec.json
     :language: json

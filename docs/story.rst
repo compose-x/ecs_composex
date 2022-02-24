@@ -13,7 +13,7 @@ Philosophy
 =============
 
 CloudFormation is awesome, the documentation is excellent and the format easy. So ECS Compose-X wants to keep the format
-of resources Properties as close to the orignal as possible as well as making it easier as well, just alike resources
+of resources Properties as close to the original as possible as well as making it easier as well, just alike resources
 like **AWS::Serverless::Function** which will create all the resources around your Lambda Function as well as the function.
 
 Trying to implement DevOps starting with developers

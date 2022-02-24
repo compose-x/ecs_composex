@@ -6,9 +6,6 @@
 Installation
 ============
 
-.. include:: macro_install.rst
-
-
 Stable release
 ==============
 
@@ -87,10 +84,10 @@ Using pip
     python -m venv venv
     source venv/bin/activate
     pip install pip -U
-    pip install . --use-pep517 --use-feature=in-tree-build
+    pip install .
 
-Using poetry
--------------------
+Using poetry (recommended for development purposes)
+------------------------------------------------------------
 
 .. code-block:: console
 

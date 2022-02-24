@@ -8,50 +8,25 @@
 x-kinesis
 ===========
 
+This module allows you to define Kinesis Data Streams, new or existing ones, that you wish your services to consume/produce
+from/to.
+
 Syntax reference
 ==================
 
 .. code-block:: yaml
-    :caption: x-kinesis Syntax reference
 
     x-kinesis:
       stream:
         Properties: {} # AWS Kinesis CFN definition
         Settings: {}
         MacroParameters: {}
-        Services: []
+        Services: {}
 
 .. tip::
 
     You can find the test files for Kinesis `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/kinesis>`__ to use
     as reference for your use-case.
-
-.. seealso::
-
-    For more structural details, see `JSON Schema`_
-
-Properties
-===========
-
-The Properties are the `AWS CFN definition for AWS Kinesis streams`_.
-
-
-MacroParameters
-================
-
-No specific MacroParameters for Kinesis data streams. Given the AWS definition is very straightforward, just define the properties.
-The only truly required property is the `ShardCount`_
-
-Settings
-=========
-
-The settings are as usual, allow you to define `EnvNames`_
-
-EnvNames
----------
-
-List of String that allow you to define multiple environment names for the stream to be exposed to your service.
-Value for these is the **AWS Kinesis Stream name** (Default value returned by Fn::Ref
 
 
 Services
@@ -61,9 +36,42 @@ As per the generic Services definition, we have a list of object, name and acces
 
 For AWS Kinesis streams, we have the following permissions.
 
+
+IAM permissions
+-----------------
+
+The following predefined permissions are available (see JSON definition of the IAM policy statement below).
+
 * Producer
 * Consumer
 * PowerUser
+
+
+.. literalinclude:: ../../../ecs_composex/kinesis/kinesis_perms.json
+    :language: JSON
+    :caption: IAM permissions pre-defined for your services.
+
+ReturnValues
+-------------
+
+To access the **Ref** value, use *StreamId*
+
+See `AWS CFN Kinesis Return Values`_ for available values.
+
+Properties
+===========
+
+The Properties are the `AWS CFN definition for AWS Kinesis streams`_.
+
+.. hint::
+
+    If you leave the Properties empty, default values are used and ShardCount is set to 1.
+
+MacroParameters
+================
+
+No specific MacroParameters for Kinesis data streams. Given the AWS definition is very straightforward, just define the properties.
+The only truly required property is the `ShardCount`_
 
 
 Examples
@@ -85,13 +93,6 @@ Examples
             access: Consumer
 
 
-IAM permissions
-================
-
-.. literalinclude:: ../../../ecs_composex/kinesis/kinesis_perms.json
-    :language: JSON
-    :caption: IAM permissions pre-defined for your services.
-
 JSON Schema
 ============
 
@@ -102,4 +103,5 @@ JSON Schema
 
 .. _AWS Kinesis page: https://aws.amazon.com/kinesis/
 .. _AWS CFN definition for AWS Kinesis streams: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-kinesis-stream.html
+.. _AWS CFN Kinesis Return Values: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-kinesis-stream.html#aws-resource-kinesis-stream-return-values
 .. _ShardCount: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-kinesis-stream.html#cfn-kinesis-stream-shardcount

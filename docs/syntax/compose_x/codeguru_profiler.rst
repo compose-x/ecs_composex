@@ -5,21 +5,11 @@
 .. _codeguru_profiler_syntax_reference:
 
 =============================================
-x-codeguru_profiler - AWS CodeGuru Profiler
+x-codeguru_profiler
 =============================================
 
-.. contents::
-    :depth: 2
-
-Syntax
-=======
-
-.. code-block:: yaml
-
-    Properties: {}
-    MacroParameters: {}
-    Lookup: {}
-    Services: []
+Definition
+============
 
 .. hint::
 
@@ -39,7 +29,6 @@ Syntax
 
     For more structural details, see `JSON Schema`_
 
-
 Properties
 ===========
 
@@ -47,7 +36,7 @@ Ths properties allow to use the same definition as in AWS Syntax Reference.
 
 .. seealso::
 
-    `AWS CFN definition for CodeGuru profiling group <https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-codeguruprofiler-profilinggroup.html>`__
+    `AWS CFN definition for CodeGuru profiling group`_
 
 MacroParameters
 ================
@@ -83,12 +72,13 @@ Example
         Profiler01:
           Properties: {}
         Services:
-            - name: service01
-              access: RW
+          service01
+            Access: RW
 
 .. attention::
 
     The only valid access mode is **RW**
+    You cannot use ReturnValues for this module.
 
 Code Example
 -------------
@@ -98,7 +88,15 @@ Full Applications code used for this sort of testing can be found `here <https:/
 JSON Schema
 ============
 
+Representation
+---------------
+
 .. jsonschema:: ../../../ecs_composex/specs/services.x-codeguru_profiler.spec.json
+
+Definition
+------------
 
 .. literalinclude:: ../../../ecs_composex/specs/services.x-codeguru_profiler.spec.json
     :language: json
+
+.. _AWS CFN definition for CodeGuru profiling group: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-codeguruprofiler-profilinggroup.html

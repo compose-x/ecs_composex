@@ -1,3 +1,4 @@
+
 .. meta::
     :description: ECS Compose-X - README
     :keywords: AWS, AWS ECS, Docker, Containers, Compose, docker-compose
@@ -34,35 +35,20 @@ It automatically takes care of network access requirements and IAM permissions, 
 Installation
 ============
 
-ECS Compose-X can be used as a CLI ran locally, in CICD pipelines, or as an AWS CloudFormation macro, allowing you
-to use your Docker Compose files directly in CloudFormation!
-
-Run in AWS using AWS CloudFormation Macro
--------------------------------------------
-
-You can now deploy the CloudFormation macro to your AWS Account using AWS Serverless Application Repository (SAR).
-
-Deploy it in your account today |AWS_SAR|
-
-.. |AWS_SAR| image:: https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png
-    :target: https://serverlessrepo.aws.amazon.com/applications/eu-west-1/518078317392/compose-x
-
-
-`Find out how to use ECS Compose-X in AWS here`_
-
-Via docker
------------
-
-.. code-block:: bash
-
-    docker run --rm -v ~/.aws:/root/.aws public.ecr.aws/compose-x/compose-x:latest
-
 Via pip
 --------
 
 .. code-block:: bash
 
     pip install ecs_composex
+
+
+Using docker
+--------------
+
+.. code-block:: bash
+
+    docker run --rm -v ~/.aws:/root/.aws public.ecr.aws/compose-x/compose-x:latest
 
 CLI Usage
 ==========
@@ -128,7 +114,7 @@ simply disable such settings when deployed on top of AWS Fargate.
 Supports AWS ECS Anywhere
 --------------------------------
 
-For entreprises, as much as for enthusiasts homelabbers out there, ECS Anywhere allows us to manage our services
+For enterprises, as much as for enthusiasts home-labbers out there, ECS Anywhere allows us to manage our services
 definitions and deployment using AWS ECS as the control plane, and on-premise hardware or VMs to run the linux containers.
 
 Adding since 0.18, you can now get ECS Compose-X to generate all the resources and configuration necessary to provision
@@ -232,7 +218,6 @@ This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypack
     requisites
     installation
     lexicon
-    macro_usage
     contributing
 
 .. include:: examples.rst
@@ -241,6 +226,7 @@ This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypack
 
 
 .. toctree::
+    :titlesonly:
     :caption: Additional content
 
     changelog
@@ -248,6 +234,7 @@ This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypack
     story
 
 .. toctree::
+    :titlesonly:
     :maxdepth: 1
     :caption: Thanks & Credits
 
@@ -255,6 +242,7 @@ This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypack
     credits
 
 .. toctree::
+    :titlesonly:
     :maxdepth: 1
     :caption: Library Modules
 
