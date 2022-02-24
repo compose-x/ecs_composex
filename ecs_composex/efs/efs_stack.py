@@ -12,7 +12,6 @@ from troposphere.ec2 import SecurityGroup
 from troposphere.efs import FileSystem, MountTarget
 
 from ecs_composex.common import build_template
-from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources import (
     NetworkXResource,

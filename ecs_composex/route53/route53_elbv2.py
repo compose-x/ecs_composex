@@ -6,7 +6,7 @@ from compose_x_common.compose_x_common import keyisset
 from troposphere import AWS_REGION, AWS_STACK_NAME, GetAtt, Ref
 from troposphere.route53 import AliasTarget, RecordSetType
 
-from ecs_composex.common import NONALPHANUM, add_parameters, setup_logging
+from ecs_composex.common import NONALPHANUM, add_outputs, add_parameters, setup_logging
 from ecs_composex.elbv2.elbv2_params import LB_DNS_NAME, LB_DNS_ZONE_ID
 
 from .route53_params import PUBLIC_DNS_ZONE_ID, validate_domain_name
@@ -14,19 +14,35 @@ from .route53_params import PUBLIC_DNS_ZONE_ID, validate_domain_name
 LOG = setup_logging()
 
 
-def create_record(name, route53_zone, target_elbv2, elbv2_stack, settings):
+def create_record(name, route53_zone, route53_stack, target_elbv2, elbv2_stack) -> None:
     """
     Create a new RecordResource with the given DNS Name pointing to the ELB
 
-    :param HostedZone route53_zone:
+    :param str name:
+    :param ecs_composex.route53.route53_stack.HostedZone route53_zone:
+    :param ecs_composex.route53.route53_stack.XStack route53_stack:
     :param ecs_composex.elbv2.elbv2_stack.Elbv2 target_elbv2:
     :param ComposeXStack elbv2_stack:
-    :return: The RecordSetType pointing to the ELB
-    :rtype: RecordSetType
     """
+    if not target_elbv2.attributes_outputs:
+        target_elbv2.init_outputs()
+        target_elbv2.generate_outputs()
+        add_outputs(elbv2_stack.stack_template, target_elbv2.outputs)
+    lb_zone_id = target_elbv2.attributes_outputs[LB_DNS_ZONE_ID]
+    lb_dns_name = target_elbv2.attributes_outputs[LB_DNS_NAME]
+    add_parameters(
+        route53_stack.stack_template,
+        [lb_zone_id["ImportParameter"], lb_dns_name["ImportParameter"]],
+    )
+    route53_stack.Parameters.update(
+        {
+            lb_zone_id["ImportParameter"].title: lb_zone_id["ImportValue"],
+            lb_dns_name["ImportParameter"].title: lb_dns_name["ImportValue"],
+        }
+    )
     elbv2_alias = AliasTarget(
-        HostedZoneId=GetAtt(target_elbv2.cfn_resource, LB_DNS_ZONE_ID.return_value),
-        DNSName=GetAtt(target_elbv2.cfn_resource, LB_DNS_NAME.return_value),
+        HostedZoneId=Ref(lb_zone_id["ImportParameter"]),
+        DNSName=Ref(lb_dns_name["ImportParameter"]),
     )
     record_props = {
         "AliasTarget": elbv2_alias,
@@ -37,23 +53,11 @@ def create_record(name, route53_zone, target_elbv2, elbv2_stack, settings):
     if not keyisset("SetIdentifier", record_props):
         record_props["SetIdentifier"] = Ref(AWS_STACK_NAME)
     if route53_zone.cfn_resource:
-        zone_id_attribute = route53_zone.attributes_outputs[PUBLIC_DNS_ZONE_ID]
-        add_parameters(
-            elbv2_stack.stack_template, [zone_id_attribute["ImportParameter"]]
+        zone_id_attribute = GetAtt(
+            route53_zone.cfn_resource, PUBLIC_DNS_ZONE_ID.return_value
         )
-        elbv2_stack.Parameters.update(
-            {
-                zone_id_attribute["ImportParameter"].title: zone_id_attribute[
-                    "ImportValue"
-                ]
-            }
-        )
-        record_props["HostedZoneId"] = Ref(zone_id_attribute["ImportParameter"])
+        record_props["HostedZoneId"] = zone_id_attribute
     elif route53_zone.mappings:
-        if route53_zone.mapping_key not in elbv2_stack.stack_template.mappings:
-            elbv2_stack.stack_template.add_mapping(
-                route53_zone.mapping_key, settings.mappings[route53_zone.mapping_key]
-            )
         zone_id_attribute = route53_zone.attributes_outputs[PUBLIC_DNS_ZONE_ID]
         record_props["HostedZoneId"] = zone_id_attribute["ImportValue"]
     cfn_resource = RecordSetType(
@@ -62,8 +66,10 @@ def create_record(name, route53_zone, target_elbv2, elbv2_stack, settings):
         ],
         **record_props,
     )
-    if cfn_resource.title not in elbv2_stack.stack_template.resources:
-        elbv2_stack.stack_template.add_resource(cfn_resource)
+    if cfn_resource.title not in route53_stack.stack_template.resources:
+        route53_stack.stack_template.add_resource(cfn_resource)
+    if elbv2_stack.title not in route53_stack.DependsOn:
+        route53_stack.DependsOn.append(elbv2_stack.title)
 
 
 def add_dns_records_for_elbv2(
@@ -72,8 +78,7 @@ def add_dns_records_for_elbv2(
     route53_stack,
     target_elbv2,
     elbv2_stack,
-    settings,
-):
+) -> None:
     """
     Iterates over each HostedZone and upon finding the right one
     :param ecs_composex.route53.route53_stack.HostedZone x_hosted_zone: List of HostedZones defined
@@ -81,7 +86,6 @@ def add_dns_records_for_elbv2(
     :param XStack route53_stack:
     :param ecs_composex.elbv2.elbv2_stack.Elbv2 target_elbv2:
     :param ComposeXStack elbv2_stack:
-    :param ecs_composex.common.settings.ComposeXSettings settings:
     """
 
     if x_hosted_zone.cfn_resource and route53_stack.title not in elbv2_stack.DependsOn:
@@ -89,7 +93,7 @@ def add_dns_records_for_elbv2(
     dns_names = record["Names"]
     for name in dns_names:
         validate_domain_name(name, x_hosted_zone.zone_name)
-        create_record(name, x_hosted_zone, target_elbv2, elbv2_stack, settings)
+        create_record(name, x_hosted_zone, route53_stack, target_elbv2, elbv2_stack)
         LOG.info(
             f"{x_hosted_zone.module_name}.{x_hosted_zone.name} - "
             f"Created {name} for {target_elbv2.module_name}.{target_elbv2.name}"
@@ -97,8 +101,8 @@ def add_dns_records_for_elbv2(
 
 
 def handle_elbv2_records(
-    x_hosted_zone, route53_stack, target_elbv2, elbv2_stack, settings
-):
+    x_hosted_zone, route53_stack, target_elbv2, elbv2_stack, settings=None
+) -> None:
     """
     Function to add DNS Records for ELBv2
 
@@ -106,7 +110,7 @@ def handle_elbv2_records(
     :param XStack route53_stack:
     :param Elbv2 target_elbv2:
     :param ComposeXStack elbv2_stack:
-    :param ecs_composex.common.settings.ComposeXSettings settings:
+    :param ecs_composex.common.settings.ComposeXSettings settings: unused. Present for compatibility.
     """
     if not keyisset("DnsAliases", target_elbv2.definition):
         return
@@ -123,5 +127,4 @@ def handle_elbv2_records(
             route53_stack,
             target_elbv2,
             elbv2_stack,
-            settings,
         )

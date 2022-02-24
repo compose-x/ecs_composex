@@ -22,6 +22,7 @@ LAST_DOT_RE = re.compile(r"(\.{1}$)")
 PUBLIC_DNS_ZONE_ID_T = "PublicDnsZoneId"
 PUBLIC_DNS_ZONE_ID = Parameter(
     PUBLIC_DNS_ZONE_ID_T,
+    return_value="Id",
     Type="String",
     AllowedPattern=ZONES_PATTERN.pattern,
 )

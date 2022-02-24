@@ -9,7 +9,7 @@ from troposphere.iam import Policy
 from troposphere.iam import Role as IamRole
 
 from ecs_composex.common.cfn_params import Parameter
-from ecs_composex.ecs.ecs_params import CLUSTER_NAME, EXEC_ROLE_T, TASK_ROLE_T, TASK_T
+from ecs_composex.ecs.ecs_params import CLUSTER_NAME, EXEC_ROLE_T, TASK_ROLE_T
 from ecs_composex.iam import service_role_trust_policy
 from ecs_composex.iam.iam_params import IAM_ROLE, IAM_ROLE_ARN, IAM_ROLE_ID
 from ecs_composex.iam.iam_params import MAPPINGS_KEY as IAM_MAPPINGS_KEY

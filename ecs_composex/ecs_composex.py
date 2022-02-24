@@ -624,6 +624,8 @@ def generate_full_template(settings):
     ):
         settings.set_networks(vpc_stack)
     # if settings.use_appmesh:
+    #     from ecs_composex.appmesh.appmesh_mesh import Mesh
+    #
     #     mesh = Mesh(
     #         settings.compose_content["x-appmesh"],
     #         root_stack,
