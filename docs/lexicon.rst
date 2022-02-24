@@ -120,14 +120,14 @@ For example, here x-s3 is a top level feature of ECS Compose-X, whereas x-scalin
 .
 .. code-block:: yaml
 
-    x-s3:       # x-s3 is a top level definition
+    x-s3:               # x-s3 is a top level definition
       bucket-01: {}
 
     services:
       nginx:
         image: nginx
         x-scaling:      # This is a service.x- extension
-          Range: 1-10
+            Range: 1-10
 
 
 JSON Schema

@@ -5,20 +5,14 @@
 x-docdb:
   docdbA:
     Properties: {}
-    Settings:
-      EnvNames:
-        - DOCDB_A
     Services:
-      - name: app03
+      app03:
         access: RW
 
   docdbB:
-    Settings:
-      EnvNames:
-        - DOCDB_A
     Services:
-      - name: app03
-        access: RW
+      app03:
+        Access: RW
     Lookup:
       cluster:
         Name: docdbb-purmjgtgvyqr

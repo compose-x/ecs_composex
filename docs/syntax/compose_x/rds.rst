@@ -4,31 +4,19 @@
 
 .. _rds_syntax_reference:
 
-=====
+===================
 x-rds
-=====
+===================
 
 .. tip::
 
     You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/rds>`__ to use
     as reference for your use-case.
 
-Syntax
-=======
+Definition
+=============
 
-.. code-block:: yaml
-
-    x-rds:
-      psql-dbA:
-        Properties: {}
-        MacroParameters: {}
-        Settings: {}
-        Services: []
-        Lookup: {}
-
-.. seealso::
-
-    For more structural details, see `JSON Schema`_
+.. jsonschema:: ../../../ecs_composex/specs/x-rds.spec.json
 
 Properties
 ===========
@@ -91,7 +79,7 @@ MacroParameters for RDS allow you to set only very little settings / properties 
 
 
 PermissionsBoundary
--------------------
+-----------------------
 
 Allows to define whether an IAM Policy boundary is required for the IAM roles that will be created around the RDS Cluster/Instance.
 
@@ -149,29 +137,20 @@ might re-define in **RdsFeatures** will be skipped. If you wish to use **RdsFeat
     You can reference a S3 bucket defined in **x-s3**. This supports S3 buckets created and referenced via Lookup
 
 
+ReturnValues
+=================
 
-Services
-========
+Use the `AWS RDS DBCluster Return Values`_ to expose the value for these properties to your service as an environment variable.
+If you are creating a RDS DB Instance, see `AWS RDS DB Instance Return Values`_.
 
-List of the services that we want to provide access to the database.
+The value `DBCluster` can be used to expose the value for **Ref**
 
-name
-------
-
-The name of the service we want to grant the access to.
-
-access
-------------
-
-.. warning::
-
-    The access key value won't be respected at this stage. This is required to keep compatibility with other modules.
-    Any string value will work at this time.
+.. _rds_db_secrets_mappings:
 
 SecretsMapping
 ---------------
 
-This is an optional feature that allows you to map the secret key stored into Secrets Manager (see `Credentials`_) to a different
+This is an optional feature that allows you to map the secret key stored into Secrets Manager (see `Database Credentials`_) to a different
 environment variable.
 
 .. code-block:: yaml
@@ -199,21 +178,28 @@ environment variable.
                 password: WORDPRESS_DATABASE_PASSWORD
                 dbname: WORDPRESS_DATABASE_NAME
 
+.. hint::
+
+    Using a mapping/dict format avoids duplicates. If you need the same value more than once, use the list syntax,
+    as shown in the previous example.
+
+    If you combine the mappings for all services to specific mappings for one service, the specific ones take precedence.
+
 Settings
 ========
 
-.. code-block:: yaml
-    :caption: Supported Settings
-
-    EnvNames: [<str>] # List of Environment Variable names to use for exposure to container
+Refer to :ref:`settings_syntax_reference`
 
 Lookup
 ======
 
-The lookup allows you to find your cluster or db instance and also the Secret associated with them to allow ECS Services
-to get access to these.
+For x-rds, Lookup will 2 sub-arguments (cluster and instance are mutually exclusive). **cluser** or **instance** allow
+you to identify the RDS DB Cluster or DB Instance you wish your services to connect to.
 
-It will also find the DB security group and add an ingress rule.
+Optionally (highly recommended), you can also set **secret** which indicates which secret in AWS Secrets Manager the
+service should be allowed to retrieve to connect to said Cluster / Instance.
+
+It will also automatically identify the DB security group and add an ingress rule.
 
 .. code-block:: yaml
 
@@ -233,13 +219,10 @@ It will also find the DB security group and add an ingress rule.
               - sometag: value
             Name: secret/in/secretsmanager
 
-When using AWS RDS Aurora, you should be specifying the cluster, otherwise the instance for "traditional" RDS instances.
+.. _rds_db_credentials:
 
-Defaults
-===========
-
-Credentials
------------
+Database Credentials
+=====================
 
 Aurora and traditional RDS Databases support both Username/Password generic authentication. Due to the wide adoption of
 that authentication mechanism, all RDS Dbs will come with a username/password, auto generated and stored in AWS Secrets Manager.
@@ -281,8 +264,9 @@ Examples
           Engine: aurora-mysql
           EngineVersion: 5.7.12
         Services:
-          - name: app01
-            access: RW
+          app01
+            Access:
+              DBCluster: RO
 
 
 .. code-block:: yaml
@@ -308,8 +292,6 @@ Examples
 JSON Schema
 ============
 
-.. jsonschema:: ../../../ecs_composex/specs/x-rds.spec.json
-
 .. literalinclude:: ../../../ecs_composex/specs/x-rds.spec.json
 
 
@@ -317,3 +299,5 @@ JSON Schema
 .. _EngineVersion: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-rds-dbcluster.html#cfn-rds-dbcluster-engineversion
 .. _RDS Aurora Cluster: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-rds-dbcluster.html
 .. _RDS Instances: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-rds-database-instance.html
+.. _AWS RDS DBCluster Return Values: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-rds-dbcluster.html#aws-resource-rds-dbcluster-return-values
+.. _AWS RDS DB Instance Return Values: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-rds-database-instance.html#aws-properties-rds-database-instance-return-values

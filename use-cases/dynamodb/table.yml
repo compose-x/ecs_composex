@@ -32,10 +32,10 @@ x-dynamodb:
         ReadCapacityUnits: 5
         WriteCapacityUnits: 5
     Services:
-      - name: app03
-        access: RW
-      - name: bignicefamily
-        access: RO
+      app03:
+        Access: RW
+      bignicefamily:
+        Access: RO
 
 x-vpc:
   Properties:

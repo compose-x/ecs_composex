@@ -4,21 +4,15 @@
 
 .. _sqs_syntax_reference:
 
-======
+=================
 x-sqs
-======
+=================
 
-Syntax
-=======
+Definition
+================
 
-.. code-block:: yaml
-    :caption: SNS Syntax Reference
+.. jsonschema:: ../../../ecs_composex/specs/x-sqs.spec.json
 
-    x-sqs:
-      QueueA:
-        Properties: {}
-        Settings: {}
-        Services: []
 
 .. tip::
 
@@ -39,7 +33,6 @@ SQS does not require any properties to be set in order to create the queue. No s
 will be automatically generated for you.
 
 
-
 Special properties
 ------------------
 
@@ -52,11 +45,12 @@ simply by referring to the name of the queue, deployed in this same deployment.
 Services
 ========
 
-Similar to all other modules, we have a list of dictionaries, with two keys of interest:
+For IAM Access, refer to :ref:`services_ref`
 
-* name: the name of the service as defined in services
-* access: the type of access to the resource.
-* scaling: Allow to define the scaling behaviour of the service based on SQS Approximate Messages Visible.
+In addition to **Access** and **ReturnValues**, x-sqs also supports **Scaling** which allows you to automatically generate
+Scaling Step policy to scale your ECS Service based on the Number of messages in the queue.
+
+See `Scaling`_ for more details.
 
 IAM Permissions
 ----------------
@@ -84,6 +78,14 @@ IAM Permissions
               - name: serviceA
                 access: SQSPollerPolicy
 
+Return Values
+================
+
+Refer to `AWS SQS Return Values`_ from the AWS CFN documentation.
+
+By default, the value for **Ref** is automatically set on the service. Use *QueueUrl* as return value to map to a custom
+environment variable.
+
 Lookup
 ======
 
@@ -106,7 +108,7 @@ You can now defined StepScaling on the ECS Service based on the number of messag
 .. code-block:: yaml
     :caption: Scaling Syntax
 
-    scaling:
+    Scaling:
       steps:
         - lower_bound: int
           upper_bound: int
@@ -114,20 +116,21 @@ You can now defined StepScaling on the ECS Service based on the number of messag
       scaling_in_cooldown: int
       scaling_out_cooldown: int
 
-
 .. tip::
 
     You can define scaling rules on SQS Queues that you are importing via `Lookup`_
 
 .. attention::
 
-    If you already setup other Scaling policies for the service, beware of race conditions!
+    If you already setup other Scaling policies for the service, you might run into race conditions.
+    As a rule of thumb, AWS Application Autoscaling will set the desired count to the highest of value
+    among conflicting policies.
 
 Special Features
 =================
 
 Redrive policy
---------------
+---------------
 
 The redrive policy works exactly as you would expect it and is defined in the exact same way as for within
 the SQS proprties. Only, here, you only need to put the queue name of the DLQ. The generated ARN etc. will be
@@ -157,6 +160,10 @@ Settings
 ===========
 
 Refer to :ref:`settings_syntax_reference`
+
+.. note::
+
+    This service does not support the *Subnets* setting.
 
 Examples
 ========
@@ -223,10 +230,9 @@ Examples
 JSON Schema
 =============
 
-.. jsonschema:: ../../../ecs_composex/specs/x-sqs.spec.json
-
 .. literalinclude:: ../../../ecs_composex/specs/x-sqs.spec.json
 
 
 .. _Engine: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-rds-dbcluster.html#cfn-rds-dbcluster-engine
 .. _EngineVersion: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-rds-dbcluster.html#cfn-rds-dbcluster-engineversion
+.. _AWS SQS Return Values: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-sqs-queue.html#aws-resource-sqs-queue-return-values

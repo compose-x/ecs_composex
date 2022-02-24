@@ -5,14 +5,15 @@
 .. _cw_alarms_syntax_reference:
 
 ===============================
-x-alarms - CloudWatch Alarms
+x-alarms
 ===============================
+
+This module allows you to define AWS CloudWatch alarms on the different resources, services, and define actions.
+You can only create new alarms.
 
 Syntax
 =======
 
-.. contents::
-    :depth: 2
 
 .. code-block:: yaml
     :caption: Syntax reference
@@ -199,7 +200,13 @@ Examples
 JSON Schema
 ============
 
+Representation
+----------------
+
 .. jsonschema:: ../../../ecs_composex/specs/x-alarms.spec.json
+
+Definition
+-----------
 
 .. literalinclude:: ../../../ecs_composex/specs/x-alarms.spec.json
 

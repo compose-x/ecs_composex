@@ -8,8 +8,11 @@
 x-dynamodb
 ===========
 
-Syntax
-=======
+This module allows you to create / use existing DynamoDB tables and link them logically to the services (and other
+AWS resources, where applicable).
+
+Syntax Reference
+=================
 
 .. code-block:: yaml
     :caption: Syntax reference
@@ -18,9 +21,8 @@ Syntax
       table-A:
         Properties: {}
         MacroParameters: {}
+        Services: {}
         Settings: {}
-        Services: []
-
 
 .. tip::
 
@@ -37,15 +39,10 @@ Refer to `AWS CFN Dynamodb Documentation`_. We support all of the definition and
     :language: yaml
     :caption: Tables with GSI
 
+.. note::
 
-Settings
-========
-
-See the :ref:`settings_syntax_reference` for more details.
-
-.. hint::
-
-    Given DynamoDB is serverless (unless using DAX), there is no **Subnets** override.
+    You may set the `TableName`_ property yourselves, or let AWS CloudFormation set one for you. If you set it yourselves,
+    as per the documentation, that table will be replaced with a new table using the new name. Set it at your own risks.
 
 
 Lookup
@@ -64,8 +61,38 @@ For more details, see the :ref:`lookup_syntax_reference`.
             - owner: myself
             - costallocation: 123
         Services:
-          - name: serviceA
-            access: DynamoDBCrudPolicy
+          serviceA:
+            Access: DynamoDBCrudPolicy
+
+Services
+========
+
+.. code-block:: yaml
+    :caption: Example with 2 services
+
+    x-dynamodb:
+      table01:
+        Properties: {}
+        Services:
+          app01:
+            Access: RW
+          app02:
+            Access: RO
+            ReturnValues: {}
+
+ReturnValues
+-------------
+
+Refer to `AWS CFN DynamoDB Return Values`_ for these settings.
+
+.. warning::
+
+    If you try to retrieve ``StreamArn`` but did not set the properties for it, it will fail.
+
+To get the table name, use ``TableName`` to get the value returned by ``Ref`` function.
+
+Access
+--------
 
 ECS Compose-X defined access names:
 
@@ -78,19 +105,35 @@ Some of the AWS SAM access:
 * `DynamoDBReadPolicy`_
 * `DynamoDBWritePolicy`_
 
-Services
+Settings
 ========
 
-.. code-block:: yaml
-    :caption: Define services
+See the :ref:`settings_syntax_reference` for more details.
 
-    Services:
-      - name: serviceA
-        access: RW
-      - name: serviceB
-        access: RO
+.. hint::
+
+    Given DynamoDB is serverless (unless using DAX), there is no **Subnets** override.
+
+
+JSON Schema
+============
+
+Representation
+----------------
+
+.. jsonschema:: ../../../ecs_composex/specs/x-dynamodb.spec.json
+
+Definition
+------------
+
+.. literalinclude:: ../../../ecs_composex/specs/x-dynamodb.spec.json
+    :language: json
+
+
 
 .. _AWS CFN Dynamodb Documentation: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-dynamodb-table.html
 .. _DynamoDBCrudPolicy: https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-policy-template-list.html#dynamo-db-crud-policy
 .. _DynamoDBReadPolicy: https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-policy-template-list.html#dynamo-db-read-policy
 .. _DynamoDBWritePolicy:  https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-policy-template-list.html#dynamo-db-write-policy
+.. _AWS CFN DynamoDB Return Values: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-dynamodb-table.html#aws-resource-dynamodb-table-return-values
+.. _TableName: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-dynamodb-table.html#cfn-dynamodb-table-tablename

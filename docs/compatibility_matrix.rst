@@ -1,6 +1,7 @@
 .. _compatibility_matrix:
 
 .. toctree::
+    :titlesonly:
     :caption: Compatibility Matrix
     :maxdepth: 1
 

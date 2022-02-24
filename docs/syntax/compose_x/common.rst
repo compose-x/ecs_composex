@@ -18,6 +18,140 @@ In general for each x- section of the docker compose document, we will find thre
 
     For more structural details, see `JSON Schema`_
 
+
+.. _services_ref:
+
+Services
+========
+
+This section of the resource declaration allows to designate which services will be allowed access, and how.
+We divided resources in different categories:
+
+* API based Resources: AWS service resource that you only require IAM policies in place to access.
+* Network based Resources: AWS Services you require network access to, via Security Group rules
+
+To see what IAM Policies are available for these resources, refer to the specific services documentation.
+
+Syntax
+---------
+
+.. code-block:: yaml
+
+    services:
+      frontend: {}
+      backend: {}
+      etl: {}
+
+    x-dynamodb: # DynamoDB only requires IAM permissions for access. We provide the name of the policy
+      tableA:
+        Properties: {}
+        Services:
+          backend:
+            Access: RW # Read / Write access to the table and indexes
+          etl:
+            Access: RO # Read Only access to the table and indexes
+            ReturnValues:
+              Arn: TABLE_A_ARN # Here we also expose to the containers the Arn value of the table into a variable TABLE_A_ARN
+
+    x-docdb: # To access DocumentDB, we need to grant network access and IAM permissions to the secret, done automatically
+      db-01:
+        Services:
+          backend:
+            Access:
+              DBCluster: RO # Here, we grant additional IAM permissions to the service to allow describe of the cluster.
+            ReturnValues:
+              ClusterResourceId: DB01_CLUSTER_ID # We expose the ClusterResourceId value into a variable DB01_CLUSTER_ID to the service.
+
+
+.. warning::
+
+    For retro-compatibilty (at the time of 0.18 release) the previous syntax is maintained, but won't support `ReturnValues`_
+
+    .. code-block:: yaml
+
+        services:
+          frontend: {}
+          backend: {}
+          etl: {}
+
+        x-dynamodb:
+          tableA:
+            Properties: {}
+            Services:
+              - name: backend:
+                access: RW
+              - name: etl:
+                access: RO
+
+Access
+^^^^^^^^
+
+The API based Resources only require the name of the IAM Policy you want to assign to the role.
+However, for network related resources, we also need to grant network access via Security Group ingress rules.
+ECS Compose-X takes care of that for you, by detecting the Security Group in use by the targeted service, and
+creating an Ingress rule.
+
+Furthermore, in order to allow deeper automation on the service side, additional IAM permissions can be granted to the
+service, to describe and retrieve properties of the target: this can be very handy to have the service use AWS APIs to
+discover endpoints (i.e. Write vs Read-Only endpoints of a RDS Cluster) or simply to monitor the target.
+
+.. tip::
+
+    The security ingress rules to services, such as EFS, RDS etc, are created in the same stack as the ECS Service is.
+    The ECS Service depends on permissions before being created / updated.
+
+
+ReturnValues
+^^^^^^^^^^^^^^^
+
+The ReturnValues property allow you to retrieve specific properties and expose the value as an environment variable
+to your service. The return value structure is a key/value argument, where the *key* represents the property you want
+the value of, i.e. RDS Read Endpoint, DocumentDB/Neptune ClusterResourceId etc. The *value* represents the environment
+variable name that will be exposed to your container.
+
+
+For example, if we take these three resources
+
+.. code-block:: yaml
+
+    x-sqs:
+      queue01: # We only set the access, no return values
+        Services:
+          backend:
+            Access: RW
+
+    x-neptune:
+      cluster-01:
+        Services:
+          backend:
+            Access:
+              Http: RW
+              DBCluster: RO
+            ReturnValues:
+              ClusterResourceId: CLUSTER_ID
+
+      cluster-0002:
+        Services:
+          backend:
+            Access:
+              Http: RW
+              DBCluster: RO
+            ReturnValues:
+              DBClusterArn: CLUSTER_ID # Here when specifying the env var to CLUSTER_ID, this will conflict with cluster-01 value.
+
+.. hint::
+
+    There is always one default value returned and exposed to the container, which represents the `Ref` value for the resource.
+    In the example above, the SQS Queue URL will be the value exposed to the service, with env variable named **QUEUE01**
+
+.. warning::
+
+    Ensure not to give the same environment variable name to different properties twice: the last one to be processed
+    will be the one used for that environment variable.
+    In the example above, although we want two different properties from the different resources, the environment variable
+    is the same, therefore the value will be wrong for one of them. To avoid that, simply change the environment variable name.
+
+
 Properties
 ==========
 
@@ -94,20 +228,8 @@ for the x-rds resources, we will allow to define the latest RDS engine and versi
 
 There is a set of settings which are going to be generic to all modules.
 
-EnvNames
---------
-Multiple teams who would want to adopt ECS ComposeX might already have their own environment variable keys (or names)
-for a common resource. For example, team A and team B can use the same SQS queue but they did not define a common name
-for it, so team A calls it *QueueA* and team B calls it *QUEUE_A*.
-
-With EnvNames, you can define a list of environment variables that will all share the same value, simply have a different
-name.
-
-.. hint::
-
-    No need to add the name of the resource as defined in the docker compose file, this will always be added by default.
-
 .. _common_settings_subnets:
+
 
 Subnets
 -------
@@ -133,22 +255,6 @@ resources that do not have this override.
 
     For ECS services to be deployed into different subnets, refer to :ref:`compose_networks_syntax_reference`
 
-Services
-========
-
-This is a list of object, with two keys: name, access. The name points to the service as defined in the docker compose
-file.
-
-.. warning::
-
-    This is case sensitive and so the name of the service in the list must be the same name as the service defined.
-
-.. note::
-
-    At this point in time, each x- section has its own pre-defined IAM permissions for services that support IAM access
-    to the resources. In a future version, I might add a configuration file to override that behaviour.
-
-Refer to each x- resource syntax to see which access types are available.
 
 
 JSON Schema

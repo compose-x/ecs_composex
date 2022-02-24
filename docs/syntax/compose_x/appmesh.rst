@@ -1,3 +1,4 @@
+
 .. meta::
     :description: ECS Compose-X AWS AppMesh syntax reference
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS AppMesh, service mesh, mesh
@@ -5,19 +6,16 @@
 .. _appmesh_syntax_reference:
 
 =======================
-x-appmesh - AWS AppMesh
+x-appmesh
 =======================
-
-.. contents::
-    :depth: 2
 
 .. warning::
 
     This module is still under development and we would love to get any feedback on the syntax and how to make it easier.
 
 
-Syntax
-=======
+Syntax reference
+=====================
 
 .. code-block:: yaml
 

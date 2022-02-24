@@ -4,21 +4,13 @@
 
 .. _kms_syntax_reference:
 
-======
+=================
 x-kms
-======
+=================
 
-Syntax
-=======
-
-.. code-block:: yaml
-
-    x-kms:
-      keyA:
-        Properties: {}
-        Settings: {}
-        Services: []
-        Lookup: {}
+This module allows you to specify new and existing KMS Keys you wish to either grant access to your services, or,
+link to your other AWS Resources (such as S3, SQS etc.) which would also automatically grant permission to services
+accessing these.
 
 .. tip::
 
@@ -30,9 +22,8 @@ Properties
 
 See `AWS CFN KMS Key Documentation`_
 
-Settings
-========
-
+MacroParameters
+==================
 
 Alias
 ------
@@ -84,10 +75,10 @@ Three access types have been created for the table:
           - name: serviceB
             access: DecryptOnly
 
-IAM Permissions
-================
+Access
+---------
 
-Three access types have been created for the table:
+Here are pre-defined IAM permissions to use for your KMS Key.
 
 * EncryptDecrypt
 * EncryptOnly
@@ -97,7 +88,28 @@ Three access types have been created for the table:
 
 .. literalinclude:: ../../../ecs_composex/kms/kms_perms.json
     :language: json
-    :caption: KMS Permissions scaffold
+    :caption: KMS Permissions skeleton
+
+
+ReturnValues
+--------------
+
+`See the AWS KMS Key return values from AWS CFN Documentation`_. The value for **Ref** can be accessed with **KeyId**
+
+JSON Schema
+============
+
+Representation
+-------------------
+
+.. jsonschema:: ../../../ecs_composex/specs/x-kms.spec.json
+
+Definition
+-------------
+
+.. literalinclude:: ../../../ecs_composex/specs/x-kms.spec.json
+    :language: json
 
 
 .. _AWS CFN KMS Key Documentation: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-kms-key.html
+.. _See the AWS KMS Key return values from AWS CFN Documentation: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-kms-key.html#aws-resource-kms-key-return-values

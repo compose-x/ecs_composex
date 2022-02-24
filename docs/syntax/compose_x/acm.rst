@@ -1,3 +1,4 @@
+
 .. meta::
     :description: ECS Compose-X ACM syntax reference
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS ACM, SSL Certificates
@@ -5,40 +6,33 @@
 .. _acm_syntax_reference:
 
 =================
-x-acm - AWS ACM
+x-acm
 =================
+
+This module allows you to define new ACM Certificates (with DNS Validation) or import existing ones that you wish
+to use with supported AWS services and resources.
 
 .. contents::
     :depth: 2
 
-Syntax
-======
-
-.. code-block:: yaml
+Syntax Reference
+=================
 
     x-acm:
-      certificate-01:
-        Properties: {} # AWS CFN Properties
-        MacroParameters: {} # ComposeX Macro parameters for ACM
-
+      certificate:
+        Properties: {}
+        MacroParameters: {}
+        Lookup: {}
 
 .. tip::
 
     You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/acm>`__ to use
     as reference for your use-case.
 
-
-.. warning::
-
-    You cannot be creating your public DNS Zone and validating it at the same time, simply because the NS servers
-    of you new Public Zone are not registered in your DNS registra. Therefore, DNS validation would never work.
-    Make sure that if you are creating a new DNS PublicZone, you will be able to use it!
-
-
 Properties
 ==========
 
-The properties will be supported exactly like in the native `AWS ACM Properties`_
+Full support of AWS ACM native properties. Refer to `AWS ACM Properties`_
 
 .. hint::
 
@@ -49,30 +43,40 @@ The properties will be supported exactly like in the native `AWS ACM Properties`
 MacroParameters
 ================
 
-In the aspiration of making things easy, you can now simply define very straight forward settings to define your certificate.
-This automatically creates the full ACM Certificate definition, and uses DNS validation.
+This automatically creates the full ACM Certificate definition, and uses DNS validation with AWS CloudFormation.
+All you have to do is list the domain names that you wish to have in the certificate and the x-route53 or HostedZoneID
+that you will allow for DNS validation to succeed.
 
 .. code-block:: yaml
+    :caption: example using macro parameters and x-route53
 
-    DomainNames:
-      - domain.tld
-      - sub.domain.tld
-    HostedZoneId: ZoneID
+    x-acm:
+      PublicELBCert:
+        MacroParameters:
+            DomainNames:
+              - domain.tld
+              - sub.domain.tld
+            HostedZoneId: x-route53::public-domain # Alternatively, you can set the hosted zone ID directly.
 
+    x-route53:
+      public-domain:
+        ZoneName: domain.tld
+        Lookup: true
 
 DomainNames
 -----------
 
 List of the domain names you want to create the ACM Certificate for.
 
-.. note::
+.. hint::
 
     The first domain name will be used for the CN, and the following ones will be used for SubjectAlternative names
 
 HostedZoneId
 ------------
 
-If you wish to override the x-dns/PublicZone settings you can set that here.
+The pointer to the x-route53 domain that will allow for DNS Validation. If however you prefer to enter the HostedZoneID
+directly, you can (or use environment variable).
 
 .. attention::
 
@@ -90,6 +94,7 @@ Example
 =======
 
 .. code-block:: yaml
+    :caption: Using CFN Properties
 
     x-acm:
       public-acm-01:
@@ -105,8 +110,21 @@ Example
 
 .. hint::
 
-    If you need to specify `x-dns` in the template and provide the **HostedZoneId** which will be used there.
+    If you need to specify ``x-dns`` in the template and provide the **HostedZoneId** which will be used there.
     DNS Reference: :ref:`dns_reference_syntax`
+
+JSON Schema
+=============
+
+Representation
+---------------
+.. jsonschema:: ../../../ecs_composex/specs/x-acm.spec.json
+
+
+Definition
+-----------
+
+.. literalinclude:: ../../../ecs_composex/specs/x-acm.spec.json
 
 .. _AWS ACM Properties: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-certificatemanager-certificate.html
 .. _DomainValidationOptions: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-certificatemanager-certificate.html#cfn-certificatemanager-certificate-domainvalidationoptions

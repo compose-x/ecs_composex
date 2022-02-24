@@ -5,7 +5,7 @@
 .. _route53_reference_syntax:
 
 =========================
-x-route53 - AWS Route53
+x-route53
 =========================
 
 .. note::

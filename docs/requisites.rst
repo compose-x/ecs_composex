@@ -10,14 +10,10 @@ AWS Account configuration
 IAM Permissions to execute ECS Compose-X
 ----------------------------------------
 
-Since ECS Compose-X adds more and more features, we highly recommend to use the AWS Managed policy
-**arn:aws:iam:aws::policy/ReadOnlyAccess**.
-
-Additionally, you will need to use all the features and push your files to S3
-
-.. literalinclude:: composex_iam_policy.json
-    :language: json
-    :caption: ECS Compose-X specific permissions
+Since ECS Compose-X adds more and more features, we highly recommend to have the AWS Managed policy
+**arn:aws:iam:aws::policy/ReadOnlyAccess** associated with your user/group/role. The reason for it is,
+it requires access to the AWS Account to discover the resources (in read-only mode) and be able to perform the appropriate
+mapping to the ones you have defined in the x-resources extension fields.
 
 
 ECS Settings
