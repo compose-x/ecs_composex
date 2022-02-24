@@ -100,9 +100,9 @@ def main_parser():
         "default use default region from config or environment vars",
     )
     base_command_parser.add_argument(
-        "--az",
+        "--azs",
         dest=ComposeXSettings.zones_arg,
-        default=ComposeXSettings.default_azs,
+        default=[],
         action="append",
         required=False,
         help="List AZs you want to deploy to specifically within the region",

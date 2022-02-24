@@ -48,7 +48,7 @@ class MeshService(object):
     Class to represent a mesh Virtual Service.
     """
 
-    def __init__(self, name, definition, routers, nodes, mesh, dns_settings):
+    def __init__(self, name, definition, routers, nodes, mesh, settings):
         """
         Method to initialize the Mesh service.
 
@@ -84,7 +84,7 @@ class MeshService(object):
             MeshOwner=appmesh_conditions.set_mesh_owner_id(),
             VirtualServiceName=Sub(
                 f"{name}.${{ZoneName}}",
-                ZoneName=dns_settings.private_zone.name_value,
+                ZoneName=settings.private_zone.name_value,
             ),
             Spec=appmesh.VirtualServiceSpec(
                 Provider=appmesh.VirtualServiceProvider(
@@ -104,7 +104,7 @@ class MeshService(object):
             ),
         )
 
-    def add_dns_entries(self, template, dns_settings):
+    def add_dns_entries(self, template, settings):
         """
         Method to add CloudMap service and record for DNS resolution.
         """
@@ -115,7 +115,7 @@ class MeshService(object):
             Description=Sub(
                 f"Record for VirtualService {self.title} in mesh ${{{self.service.title}.MeshName}}"
             ),
-            NamespaceId=dns_settings.private_zone.id_value,
+            NamespaceId=settings.private_zone.id_value,
             DnsConfig=SdDnsConfig(
                 RoutingPolicy="MULTIVALUE",
                 NamespaceId=Ref(AWS_NO_VALUE),

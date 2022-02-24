@@ -13,7 +13,7 @@ from troposphere import Ref
 from troposphere.route53 import HostedZone as CfnHostedZone
 
 from ecs_composex.acm.acm_stack import Certificate
-from ecs_composex.common import build_template, setup_logging
+from ecs_composex.common import add_update_mapping, build_template, setup_logging
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources import (
     AwsEnvironmentResource,
@@ -180,13 +180,25 @@ class HostedZone(AwsEnvironmentResource):
                 )
         self.generate_cfn_mappings_from_lookup_properties()
 
-    def handle_x_dependencies(self, settings, root_stack=None):
+    def init_stack_for_records(self, root_stack) -> None:
+        """
+        When creating new Route53 records, if the x-route53 where looked up, we need to initialize the Route53 stack
+
+        :param ComposeXStack root_stack: The root stack
+        """
+        if MOD_KEY not in root_stack.stack_template.resources:
+            stack_template = build_template(self.stack.stack_title)
+            super(XStack, self.stack).__init__(MOD_KEY, stack_template)
+            self.stack.is_void = False
+            root_stack.stack_template.add_resource(self.stack)
+
+    def handle_x_dependencies(self, settings, root_stack) -> None:
         """
         WIll go over all the new resources to create in the execution and search for properties that can be updated
         with itself
 
         :param ecs_composex.common.settings.ComposeXSettings settings:
-        :param ComposeXStack root_stack: Not used. Present for general compatibility
+        :param ComposeXStack root_stack: The root stack
         """
         for resource in settings.get_x_resources(include_mappings=False):
             if not resource.cfn_resource:
@@ -205,6 +217,13 @@ class HostedZone(AwsEnvironmentResource):
                 if isinstance(resource, target[0]) or issubclass(
                     type(resource), target[0]
                 ):
+                    self.init_stack_for_records(root_stack)
+                    if self.mappings:
+                        add_update_mapping(
+                            self.stack.stack_template,
+                            self.mapping_key,
+                            settings.mappings[self.mapping_key],
+                        )
                     target[1](
                         self,
                         self.stack,
@@ -242,7 +261,7 @@ class XStack(ComposeXStack):
     :param ecs_composex.common.settings.ComposeXSettings settings:
     """
 
-    _title = "Route53 zones and records created from x-route53"
+    stack_title = "Route53 zones and records created from x-route53"
 
     def __init__(self, name: str, settings, **kwargs):
         """
@@ -260,9 +279,8 @@ class XStack(ComposeXStack):
         for resource in x_resources:
             resource.stack = self
         if new_resources:
-            stack_template = build_template(self._title)
+            stack_template = build_template(self.stack_title)
             super().__init__(name, stack_template, **kwargs)
-            # define_acm_certs(new_resources, settings, self)
         else:
             self.is_void = True
         if lookup_resources:
