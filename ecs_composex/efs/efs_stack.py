@@ -115,7 +115,6 @@ class Efs(NetworkXResource):
         :param ecs_composex.common.settings.ComposeXSettings settings:
         :return:
         """
-        print("EFS FROM VPC UPDATE", self, self.cfn_resource, self.stack.stack_template)
         subnets_params = self.subnets_param
         if self.subnets_override:
             for subnet_az in vpc_stack.vpc_resource.azs:

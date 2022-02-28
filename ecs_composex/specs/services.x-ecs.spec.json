@@ -10,6 +10,28 @@
       "type": "boolean",
       "description": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ecs-service.html#cfn-ecs-service-enableexecutecommand"
     },
+    "CpuArchitecture": {
+      "type": "string",
+      "enum": [
+        "ARM64",
+        "X86_64"
+      ],
+      "description": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ecs-taskdefinition-runtimeplatform.html#cfn-ecs-taskdefinition-runtimeplatform-cpuarchitecture"
+    },
+    "OperatingSystemFamily": {
+      "type": "string",
+      "enum": [
+        "LINUX",
+        "WINDOWS_SERVER_2004_CORE",
+        "WINDOWS_SERVER_2016_FULL",
+        "WINDOWS_SERVER_2019_CORE",
+        "WINDOWS_SERVER_2019_FULL",
+        "WINDOWS_SERVER_2022_CORE",
+        "WINDOWS_SERVER_2022_FULL",
+        "WINDOWS_SERVER_20H2_CORE"
+      ],
+      "description": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ecs-taskdefinition-runtimeplatform.html#cfn-ecs-taskdefinition-runtimeplatform-operatingsystemfamily"
+    },
     "CapacityProviderStrategy": {
       "type": "array",
       "items": {

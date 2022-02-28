@@ -163,6 +163,10 @@ class ComposeService(object):
         self.capacity_provider_strategy = set_else_none(
             "CapacityProviderStrategy", self.x_ecs, None
         )
+        self.runtime_architecture = set_else_none("CpuArchitecture", self.x_ecs, None)
+        self.runtime_os_family = set_else_none(
+            "OperatingSystemFamily", self.x_ecs, None
+        )
 
         self.container_start_condition = "START"
         self.healthcheck = set_else_none("healthcheck", self.definition, None)

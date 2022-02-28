@@ -32,7 +32,7 @@ Syntax Reference
     For more structural details, see `JSON Schema`_
 
 CapacityProviderStrategy
-=========================
+---------------------------
 
 List of `CapacityProviderStrategyItem`_ that allows to define the CapacityProviders you wish to use for this service,
 that comes as an override of the Cluster defined default CapacityProviderStrategy.
@@ -54,6 +54,29 @@ that comes as an override of the Cluster defined default CapacityProviderStrateg
 .. attention::
 
     When using x-cluster.Use, no validation is performed on the cluster to evaluate available capacity providers.
+
+EnableExecuteCommand
+---------------------
+
+Allows to create the IAM permissions, and other settings, to use AWS ECS Execute Command. False by default
+
+CpuArchitecture
+-----------------
+
+Allows you to override the `RuntimePlatform.CpuArchitecture`_ property for the TaskDefinition.
+
+.. note::
+
+    Only works for FARGATE. Must be unique for all tasks of the family.
+
+OperatingSystemFamily
+-------------------------
+
+Allows you to override the `RuntimePlatform.OperatingSystemFamily`_ property for the TaskDefinition.
+
+.. note::
+
+    Only works for FARGATE. Must be unique for all tasks of the family.
 
 Examples
 =========
@@ -106,6 +129,8 @@ we do the following:
 * If they both define properties for a same CapacityProvider, here, FARGATE, we take the maximum value of the set.
     Here we take 1 for Base (from grafana) and 3 for Weight (from nginx).
 
+
+
 JSON Schema
 ============
 
@@ -118,3 +143,5 @@ JSON Schema
 
 .. _CapacityProviderStrategyItem: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ecs-service-capacityproviderstrategyitem.html
 .. _JSON Schema: https://ecs-composex-specs.compose-x.io/schemas_docs/services/x_ecs.html
+.. _RuntimePlatform.CpuArchitecture: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ecs-taskdefinition-runtimeplatform.html#cfn-ecs-taskdefinition-runtimeplatform-cpuarchitecture
+.. _RuntimePlatform.OperatingSystemFamily: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ecs-taskdefinition-runtimeplatform.html#cfn-ecs-taskdefinition-runtimeplatform-operatingsystemfamily

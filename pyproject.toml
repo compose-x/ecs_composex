@@ -36,7 +36,8 @@ exclude = ["*.pyc", "*~", "*pycache*"]
 [tool.poetry.dependencies]
 python = "^3.7"
 boto3 = ">=1.18,<1.21"
-troposphere = "4.0.0b0"
+#troposphere = "4.0.0b0"
+troposphere = { git = "https://github.com/compose-x/troposphere", branch="fix/one_of-validator"}
 ecr-scan-reporter = { version = "^0.4", optional = true }
 compose-x-render = "^0.5.2"
 compose-x-common = "^0.4.2"

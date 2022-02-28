@@ -140,12 +140,25 @@ LOG_GROUP_RETENTION = Parameter(
     ],
 )
 
+RUNTIME_CPU_ARCHITECTURE_T = "RuntimeCpuArchitecture"
+RUNTIME_CPU_ARCHITECTURE = Parameter(
+    RUNTIME_CPU_ARCHITECTURE_T,
+    Type="String",
+    AllowedValues=["X86_64", "ARM64"],
+    Default="X86_64",
+)
+
+
+RUNTIME_OS_FAMILY_T = "RuntimeOperatingSystemFamily"
+RUNTIME_OS_FAMILY = Parameter(RUNTIME_OS_FAMILY_T, Type="String", Default="LINUX")
+
+
 FARGATE_MODES = {
-    256: [2 ** i for i in [9, 10, 11]],
-    512: [(2 ** 10) * i for i in range(1, 5)],
-    1024: [(2 ** 10) * i for i in range(2, 9)],
-    2048: [(2 ** 10) * i for i in range(4, 17)],
-    4096: [(2 ** 10) * i for i in range(8, 33)],
+    256: [2**i for i in [9, 10, 11]],
+    512: [(2**10) * i for i in range(1, 5)],
+    1024: [(2**10) * i for i in range(2, 9)],
+    2048: [(2**10) * i for i in range(4, 17)],
+    4096: [(2**10) * i for i in range(8, 33)],
 }
 
 FARGATE_MODES_VALUES = []

@@ -32,6 +32,7 @@ from troposphere.ecs import (
     LinuxParameters,
     MountPoint,
     RepositoryCredentials,
+    RuntimePlatform,
 )
 from troposphere.ecs import Service as EcsService
 from troposphere.ecs import TaskDefinition, Volume
@@ -422,6 +423,7 @@ class ComposeFamily(object):
         self.services_depends_on = []
         self.deployment_config = {}
         self.template = None
+        self.set_template()
         self.use_xray = None
         self.stack = None
         self.task_definition = None
@@ -434,10 +436,11 @@ class ComposeFamily(object):
         self.enable_execute_command = False
         self.scalable_target = None
         self.ecs_service = None
+        self.runtime_cpu_arch = None
+        self.runtime_os_family = None
         self.launch_type = self.default_launch_type
         self.outputs = []
 
-        self.set_template()
         self.set_family_launch_type()
         self.ecs_capacity_providers = []
         self.target_groups = []
@@ -500,6 +503,8 @@ class ComposeFamily(object):
                 ecs_params.ELB_GRACE_PERIOD,
                 ecs_params.FARGATE_VERSION,
                 ecs_params.LOG_GROUP_RETENTION,
+                ecs_params.RUNTIME_CPU_ARCHITECTURE,
+                ecs_params.RUNTIME_OS_FAMILY,
             ],
         )
         self.template.add_condition(
@@ -677,7 +682,79 @@ class ComposeFamily(object):
             and self.scalable_target.title not in self.template.resources
         ):
             self.template.add_resource(self.scalable_target)
+        self.define_family_runtime_parameters()
         self.generate_outputs()
+
+    def define_family_runtime_cpu_arch(self, svc) -> None:
+        """
+        Sets the CPU Runtime architecture set from services, if set.
+        Validates that if set, it is the same for all
+
+        :raises: ValueError
+        """
+        if svc.runtime_architecture and not self.runtime_cpu_arch:
+            self.runtime_cpu_arch = svc.runtime_architecture
+        elif (
+            svc.runtime_architecture
+            and self.runtime_cpu_arch
+            and self.runtime_cpu_arch != svc.runtime_architecture
+        ):
+            raise ValueError(
+                self.name,
+                "You cannot have multiple containers in the same family run on different CPU architecture",
+                [
+                    svc.runtime_architecture
+                    for svc in self.services
+                    if svc.runtime_architecture
+                ],
+            )
+
+    def define_family_runtime_os_family(self, svc) -> None:
+        """
+        Sets the Runtime Host OS Family set from services, if set.
+        Validates that if set, it is the same for all
+
+        :raises: ValueError
+        """
+        if svc.runtime_os_family and not self.runtime_os_family:
+            self.runtime_os_family = svc.runtime_os_family
+        elif (
+            svc.runtime_os_family
+            and self.runtime_os_family
+            and self.runtime_os_family != svc.runtime_os_family
+        ):
+            raise ValueError(
+                self.name,
+                "You cannot have multiple containers in the same family run on different OS Hosts Family",
+                [
+                    svc.runtime_os_family
+                    for svc in self.services
+                    if svc.runtime_os_family
+                ],
+            )
+
+    def define_family_runtime_parameters(self) -> None:
+        """
+        Based on the services x-ecs. Configuration, allows to change the TaskDefinition Runtime configuration
+        """
+        for svc in self.services:
+            self.define_family_runtime_cpu_arch(svc)
+            self.define_family_runtime_os_family(svc)
+
+        if self.stack and self.runtime_cpu_arch:
+            self.stack.Parameters.update(
+                {ecs_params.RUNTIME_CPU_ARCHITECTURE_T: self.runtime_cpu_arch}
+            )
+            LOG.info(
+                f"{self.name} - Host CPU Architecture updated to {self.runtime_cpu_arch}"
+            )
+        if self.stack and self.runtime_os_family:
+            self.stack.Parameters.update(
+                {ecs_params.RUNTIME_OS_FAMILY_T: self.runtime_os_family}
+            )
+            LOG.info(
+                f"{self.name} - OS Host Family updated to {self.runtime_os_family}"
+            )
 
     def set_initial_services_dependencies(self):
         """
@@ -1348,6 +1425,14 @@ class ComposeFamily(object):
             ContainerDefinitions=[s.container_definition for s in self.services],
             RequiresCompatibilities=ecs_conditions.use_external_lt_con(
                 ["EXTERNAL"], ["EC2", "FARGATE"]
+            ),
+            RuntimePlatform=If(
+                ecs_conditions.USE_FARGATE_CON_T,
+                RuntimePlatform(
+                    CpuArchitecture=Ref(ecs_params.RUNTIME_CPU_ARCHITECTURE),
+                    OperatingSystemFamily=Ref(ecs_params.RUNTIME_OS_FAMILY),
+                ),
+                Ref(AWS_NO_VALUE),
             ),
             Tags=Tags(
                 {
