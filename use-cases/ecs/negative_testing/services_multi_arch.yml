@@ -23,6 +23,8 @@ services:
         - CapacityProvider: FARGATE
           Base: 1
           Weight: 2
+      CpuArchitecture: ARM64
+      OperatingSystemFamily: LINUX
 
   app01:
     x-ecs:
@@ -30,6 +32,8 @@ services:
         - CapacityProvider: FARGATE
           Base: 2
           Weight: 4
+      CpuArchitecture: X86_64
+      OperatingSystemFamily: LINUX
 
   app02:
     x-ecs:

@@ -33,3 +33,5 @@ Feature: ecs-cluster
         Examples:
             | file_path                   | override_file                                                |
             | use-cases/blog.features.yml | use-cases/ecs/negative_testing/invalid_capacity_provider.yml |
+            | use-cases/blog.features.yml | use-cases/ecs/negative_testing/services_multi_arch.yml       |
+            | use-cases/blog.features.yml | use-cases/ecs/negative_testing/services_multi_os.yml         |

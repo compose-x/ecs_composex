@@ -23,6 +23,7 @@ services:
         - CapacityProvider: FARGATE
           Base: 1
           Weight: 2
+      OperatingSystemFamily: LINUX
 
   app01:
     x-ecs:
@@ -30,6 +31,7 @@ services:
         - CapacityProvider: FARGATE
           Base: 2
           Weight: 4
+      OperatingSystemFamily: WINDOWS_SERVER_2022_CORE
 
   app02:
     x-ecs:
