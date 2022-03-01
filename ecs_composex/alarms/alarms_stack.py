@@ -220,12 +220,14 @@ class Alarm(ServicesXResource):
         if namespace == "AWS/ApplicationELB" or namespace == "AWS/NetworkELB":
             for dimension in dimensions:
                 if dimension.Name == "LoadBalancer" and dimension.Value.startswith(
-                    "x-elbv2::"
+                    r"x-elbv2::"
                 ):
                     handle_elbv2_dimension_mapping(
                         self.stack, dimension, self, settings
                     )
-                elif dimension.Name == "TargetGroup":
+                elif dimension.Name == "TargetGroup" and dimension.Value.startswith(
+                    r"x-elbv2::"
+                ):
                     handle_elbv2_target_group_dimensions(
                         self.stack, dimension, self, settings
                     )

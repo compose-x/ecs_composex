@@ -110,9 +110,9 @@ def validate_tgt_input(dimension, settings):
             "Got",
             parts,
         )
-    if parts.group("svc") not in settings.families.keys():
+    if parts.group("svc") not in [_.name for _ in settings.families.values()]:
         raise ValueError(
-            f"the service {parts.group('svc')} not in the defined services",
+            f"alarms - Service {parts.group('svc')} not in the defined services",
             settings.families.keys(),
         )
     return parts
@@ -134,7 +134,16 @@ def handle_elbv2_target_group_dimensions(alarms_stack, dimension, resource, sett
         )
         return
     parts = validate_tgt_input(dimension, settings)
-    family = settings.families[parts.group("svc")]
+    for family in settings.families.values():
+        if family.name == parts.group("svc"):
+            break
+    else:
+        raise KeyError(
+            "alarms. unable to find services family",
+            parts.group("svc"),
+            "service families available",
+            [_.name for _ in settings.families.values()],
+        )
     port = int(parts.group("port"))
     the_tgt = None
     the_lb = get_target_lb(parts, dimension, resource, settings)
