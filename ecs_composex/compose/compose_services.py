@@ -138,6 +138,8 @@ class ComposeService(object):
             if keyisset("command", definition)
             else Ref(AWS_NO_VALUE)
         )
+        if not keyisset("image", self.definition):
+            raise KeyError("You must specify the image to use for", self.name)
         self.image = self.definition["image"]
         self.image_digest = None
         self.image_param = Parameter(

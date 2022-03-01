@@ -53,7 +53,13 @@ from ecs_composex.cognito_userpool.cognito_params import (
     USERPOOL_DOMAIN,
     USERPOOL_ID,
 )
-from ecs_composex.common import LOG, NONALPHANUM, add_parameters, build_template
+from ecs_composex.common import (
+    LOG,
+    NONALPHANUM,
+    add_parameters,
+    add_update_mapping,
+    build_template,
+)
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME, Parameter
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources import (
@@ -529,13 +535,11 @@ def handle_import_cognito_pool(the_pool, listener_stack, settings):
         )
         return Ref(pool_id_param), Ref(pool_arn)
     elif the_pool.mappings and not the_pool.cfn_resource:
-        if (
-            keyisset(COGNITO_KEY, settings.mappings)
-            and COGNITO_MAP not in listener_stack.stack_template.mappings
-        ):
-            listener_stack.stack_template.add_mapping(
-                COGNITO_MAP, settings.mappings[COGNITO_KEY]
-            )
+        add_update_mapping(
+            listener_stack.stack_template,
+            the_pool.mapping_key,
+            settings.mappings[the_pool.mapping_key],
+        )
         return (
             FindInMap(COGNITO_MAP, the_pool.logical_name, USERPOOL_ID.title),
             FindInMap(COGNITO_MAP, the_pool.logical_name, USERPOOL_ARN.return_value),

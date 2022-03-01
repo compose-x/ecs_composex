@@ -467,6 +467,8 @@ def link_resource_to_services(
     arn_attr_value = set_arn_att_value(resource, arn_settings, arn_parameter)
 
     for target in resource.families_targets:
+        if target[0] and (not target[0].stack or not target[0].template):
+            continue
         import_resource_into_service_stack(
             settings, resource, target[0], params_to_add, params_values
         )
@@ -500,16 +502,19 @@ def handle_resource_to_services(
     :param bool nested:
     :return:
     """
-    s_resources = x_resource.stack.stack_template.resources
-    for resource_name, s_resource in s_resources.items():
-        if issubclass(type(s_resource), ComposeXStack):
-            handle_resource_to_services(
-                settings,
-                s_resource,
-                arn_parameter,
-                nested=True,
-                access_subkeys=access_subkeys,
-            )
+    if x_resource.stack and not x_resource.stack.is_void:
+        for (
+            resource_name,
+            s_resource,
+        ) in x_resource.stack.stack_template.resources.items():
+            if issubclass(type(s_resource), ComposeXStack):
+                handle_resource_to_services(
+                    settings,
+                    s_resource,
+                    arn_parameter,
+                    nested=True if nested is False else nested,
+                    access_subkeys=access_subkeys,
+                )
     link_resource_to_services(
         settings=settings,
         resource=x_resource,
