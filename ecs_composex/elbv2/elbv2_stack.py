@@ -1023,7 +1023,7 @@ class Elbv2(NetworkXResource):
         :rtype: str
         """
         if self.subnets_override:
-            if not self.parameters["Subnets"] in vpc_stack.vpc_resource.mappings.keys():
+            if self.subnets_override not in vpc_stack.vpc_resource.mappings.keys():
                 raise KeyError(
                     f"The subnets indicated for {self.name} is not valid. Valid ones are",
                     vpc_stack.vpc_resource.mappings.keys(),
