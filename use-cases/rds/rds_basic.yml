@@ -6,7 +6,7 @@ x-rds:
   dbA:
     MacroParameters:
       Engine: "aurora-postgresql"
-      EngineVersion: "11.7"
+      EngineVersion: "12.7"
     Settings:
       EnvNames:
         - DBA
@@ -22,7 +22,7 @@ x-rds:
   dbB:
     Properties:
       Engine: "aurora-postgresql"
-      EngineVersion: "11.7"
+      EngineVersion: "12.7"
       BackupRetentionPeriod: 1
       DatabaseName: dbname
       DeletionProtection: False
