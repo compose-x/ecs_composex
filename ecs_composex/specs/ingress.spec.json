@@ -30,11 +30,27 @@
     }
   },
   "definitions": {
+    "NetPort": {
+      "type": "number",
+      "minimum": 1,
+      "maximum": 65535,
+      "description": "Network Port"
+    },
+    "Ports": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/definitions/NetPort"
+      }
+    },
     "Service": {
       "type": "object",
       "properties": {
         "Name": {
           "type": "string"
+        },
+        "Ports": {
+          "$ref": "#/definitions/Ports"
         }
       }
     },
@@ -52,6 +68,14 @@
         "Id": {
           "type": "string",
           "pattern": "^sg-[a-z0-9]+$|^pl-[a-z0-9]+$"
+        },
+        "AccountOwner": {
+          "type": "string",
+          "pattern": "^[0-9]{12}$",
+          "description": "The account owner AWS Account ID"
+        },
+        "Ports": {
+          "$ref": "#/definitions/Ports"
         }
       }
     },
@@ -72,6 +96,9 @@
         },
         "Description": {
           "type": "string"
+        },
+        "Ports": {
+          "$ref": "#/definitions/Ports"
         }
       }
     }
