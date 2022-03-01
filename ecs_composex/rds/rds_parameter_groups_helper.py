@@ -11,6 +11,7 @@ https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-rd
 """
 import boto3
 from botocore.exceptions import ClientError
+from compose_x_common.compose_x_common import keyisset
 
 from ecs_composex.common import LOG
 
@@ -75,6 +76,12 @@ def get_family_from_engine_version(
         LOG.error(error)
         return None
 
+    if not keyisset("DBEngineVersions", req):
+        raise LookupError(
+            "x-rds - Failed to get DB Engine version details for",
+            engine_name,
+            engine_version,
+        )
     db_family = req["DBEngineVersions"][0]["DBParameterGroupFamily"]
     return db_family
 
