@@ -1498,9 +1498,9 @@ policy = ["awacs (>=2.0.0)"]
 
 [package.source]
 type = "git"
-url = "https://github.com/compose-x/troposphere"
-reference = "fix/one_of-validator"
-resolved_reference = "1a7606eb7bf06fb4bd4c9297c5829efb7b22274c"
+url = "https://github.com/cloudtools/troposphere"
+reference = "75db1661e17e7d6c36c53d269d999774a0a30e45"
+resolved_reference = "75db1661e17e7d6c36c53d269d999774a0a30e45"
 
 [[package]]
 name = "typed-ast"
@@ -1576,7 +1576,7 @@ ecrscan = ["ecr-scan-reporter"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "72cb2aa32bd7ca57ed8f2a2f42380c1d597cc5273df02fce4a167612a742c966"
+content-hash = "e8726ae28cf87a672c684afca7f52e10598876fd7a0497fbef20c736ac132f50"
 
 [metadata.files]
 alabaster = [

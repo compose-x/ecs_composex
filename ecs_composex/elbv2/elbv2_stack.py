@@ -72,6 +72,7 @@ from ecs_composex.compose.x_resources import (
 from ecs_composex.elbv2.elbv2_params import (
     LB_DNS_NAME,
     LB_DNS_ZONE_ID,
+    LB_FULL_NAME,
     LB_NAME,
     LB_SG_ID,
     MAPPINGS_KEY,
@@ -857,6 +858,12 @@ class Elbv2(NetworkXResource):
                 self.cfn_resource,
                 GetAtt,
                 LB_NAME.return_value,
+            ),
+            LB_FULL_NAME: (
+                f"{self.logical_name}{LB_FULL_NAME.return_value}",
+                self.cfn_resource,
+                GetAtt,
+                LB_FULL_NAME.return_value,
             ),
         }
 

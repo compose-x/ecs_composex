@@ -12,7 +12,7 @@ from troposphere.cloudwatch import Alarm as CWAlarm
 from troposphere.cloudwatch import CompositeAlarm, MetricDimension
 
 from ecs_composex.alarms.alarms_stack import Alarm, create_alarms
-from ecs_composex.common import LOG, add_outputs, add_parameters
+from ecs_composex.common import LOG, add_outputs, add_parameters, add_update_mapping
 from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME, SERVICE_SCALING_TARGET
 from ecs_composex.ecs.ecs_scaling import (
@@ -217,13 +217,12 @@ def handle_compose_topics(alarm, alarms_stack, settings, topic_def, notify_on):
         alarms_stack.Parameters.update({topic_arn["Name"]: topic_arn["ImportValue"]})
         map_topic_to_action(alarm, notify_on, Ref(topic_arn["ImportParameter"]))
     else:
-        if keyisset(SNS_KEY, settings.mappings) and keyisset(
-            topic.logical_name, settings.mappings[SNS_KEY]
-        ):
-            alarms_stack.stack_template.add_mapping(
-                topic.module_name, settings.mappings[SNS_KEY]
-            )
-            map_topic_to_action(alarm, notify_on, topic_arn["ImportValue"])
+        add_update_mapping(
+            alarms_stack.stack_template,
+            topic.mapping_key,
+            settings.mappings[topic.mapping_key],
+        )
+        map_topic_to_action(alarm, notify_on, topic_arn["ImportValue"])
 
 
 def handle_alarm_topics(alarm, alarms_stack, settings):

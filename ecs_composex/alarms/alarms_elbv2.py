@@ -13,7 +13,7 @@ import re
 from troposphere import Ref
 
 from ecs_composex.common import add_parameters, setup_logging
-from ecs_composex.elbv2.elbv2_params import LB_NAME, TGT_FULL_NAME
+from ecs_composex.elbv2.elbv2_params import LB_FULL_NAME, LB_NAME, TGT_FULL_NAME
 
 LOG = setup_logging()
 
@@ -39,16 +39,17 @@ def handle_elbv2_dimension_mapping(alarms_stack, dimension, resource, settings):
         raise ValueError(f"x-elbv2.{lb_name} is not present in this execution")
     lb = x_elbv2[lb_name]
     add_parameters(
-        alarms_stack.stack_template, [lb.attributes_outputs[LB_NAME]["ImportParameter"]]
+        alarms_stack.stack_template,
+        [lb.attributes_outputs[LB_FULL_NAME]["ImportParameter"]],
     )
     alarms_stack.Parameters.update(
         {
-            lb.attributes_outputs[LB_NAME][
+            lb.attributes_outputs[LB_FULL_NAME][
                 "ImportParameter"
-            ].title: lb.attributes_outputs[LB_NAME]["ImportValue"]
+            ].title: lb.attributes_outputs[LB_FULL_NAME]["ImportValue"]
         }
     )
-    dimension.Value = Ref(lb.attributes_outputs[LB_NAME]["ImportParameter"])
+    dimension.Value = Ref(lb.attributes_outputs[LB_FULL_NAME]["ImportParameter"])
     LOG.info(
         f"x-alarms - Associated {lb.cfn_resource.title} to {alarms_stack.title} - {resource.name}"
     )
