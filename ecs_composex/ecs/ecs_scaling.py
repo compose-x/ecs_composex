@@ -11,7 +11,15 @@ import string
 from json import dumps
 
 from compose_x_common.compose_x_common import keyisset, keypresent
-from troposphere import AWS_NO_VALUE, Ref, Sub, applicationautoscaling
+from troposphere import (
+    AWS_ACCOUNT_ID,
+    AWS_NO_VALUE,
+    AWS_PARTITION,
+    AWS_URL_SUFFIX,
+    Ref,
+    Sub,
+    applicationautoscaling,
+)
 from troposphere.applicationautoscaling import (
     ScalingPolicy,
     StepAdjustment,
@@ -30,7 +38,7 @@ def validate_steps_definition(steps, unordered):
     :param list steps: list of step definitions
     :param list unordered: list of steps, unordered.
     """
-    allowed_keys = ["lower_bound", "upper_bound", "count"]
+    allowed_keys = ["LowerBound", "UpperBound", "Count"]
     for step_def in steps:
         if not all(key in allowed_keys for key in step_def.keys()):
             raise KeyError(
@@ -40,11 +48,11 @@ def validate_steps_definition(steps, unordered):
                 step_def.keys(),
             )
         if (
-            keyisset("upper_bound", step_def)
-            and step_def["lower_bound"] >= step_def["upper_bound"]
+            keyisset("UpperBound", step_def)
+            and step_def["LowerBound"] >= step_def["UpperBound"]
         ):
             raise ValueError(
-                "The lower_bound value must strictly lower than the upper bound",
+                "The LowerBound value must strictly lower than the upper bound",
                 step_def,
             )
         unordered.append(step_def)
@@ -70,22 +78,22 @@ def rectify_scaling_steps(cfn_steps):
 
 def define_step_adjustment(pre_upper, ordered, cfn_steps):
     for step_def in ordered:
-        if pre_upper and not int(step_def["lower_bound"]) >= pre_upper:
+        if pre_upper and not int(step_def["LowerBound"]) >= pre_upper:
             raise ValueError(
-                f"The value for lower bound is {step_def['lower_bound']},"
-                f"which is higher than the previous upper_bound, {pre_upper}"
+                f"The value for lower bound is {step_def['LowerBound']},"
+                f"which is higher than the previous UpperBound, {pre_upper}"
             )
         cfn_steps.append(
             StepAdjustment(
-                MetricIntervalLowerBound=int(step_def["lower_bound"]),
-                MetricIntervalUpperBound=int(step_def["upper_bound"])
-                if keyisset("upper_bound", step_def)
+                MetricIntervalLowerBound=int(step_def["LowerBound"]),
+                MetricIntervalUpperBound=int(step_def["UpperBound"])
+                if keyisset("UpperBound", step_def)
                 else Ref(AWS_NO_VALUE),
-                ScalingAdjustment=int(step_def["count"]),
+                ScalingAdjustment=int(step_def["Count"]),
             )
         )
         pre_upper = (
-            int(step_def["upper_bound"]) if keyisset("upper_bound", step_def) else None
+            int(step_def["UpperBound"]) if keyisset("UpperBound", step_def) else None
         )
 
 
@@ -99,13 +107,13 @@ def generate_scaling_out_steps(steps, target):
     """
     unordered = []
     validate_steps_definition(steps, unordered)
-    ordered = sorted(unordered, key=lambda i: i["lower_bound"])
-    if target and ordered[-1]["count"] > target.MaxCapacity:
+    ordered = sorted(unordered, key=lambda i: i["LowerBound"])
+    if target and ordered[-1]["Count"] > target.MaxCapacity:
         LOG.warning(
-            f"The current maximum in your Range is {target.MaxCapacity} whereas you defined {ordered[-1]['count']}"
+            f"The current maximum in your Range is {target.MaxCapacity} whereas you defined {ordered[-1]['Count']}"
             " for step scaling. Adjusting to step scaling max."
         )
-        setattr(target, "MaxCapacity", ordered[-1]["count"])
+        setattr(target, "MaxCapacity", ordered[-1]["Count"])
     cfn_steps = []
     pre_upper = 0
     define_step_adjustment(pre_upper, ordered, cfn_steps)
@@ -126,9 +134,9 @@ def generate_alarm_scaling_out_policy(
     :return: The scaling out policy
     :rtype: ScalingPolicy
     """
-    if not keyisset("steps", scaling_def):
+    if not keyisset("Steps", scaling_def):
         raise KeyError("No steps were defined in the scaling definition", scaling_def)
-    steps_definition = scaling_def["steps"]
+    steps_definition = scaling_def["Steps"]
     length = 6
     if not scaling_source:
         scaling_source = "".join(
@@ -393,8 +401,8 @@ class ServiceScaling(object):
                 ScalableDimension="ecs:service:DesiredCount",
                 ServiceNamespace="ecs",
                 RoleARN=Sub(
-                    "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/"
-                    "ecs.application-autoscaling.${AWS::URLSuffix}/"
+                    f"arn:${{{AWS_PARTITION}}}:iam::${{{AWS_ACCOUNT_ID}}}:role/"
+                    f"ecs.application-autoscaling.${{{AWS_URL_SUFFIX}}}/"
                     "AWSServiceRoleForApplicationAutoScaling_ECSService"
                 ),
                 ResourceId=Sub(
@@ -412,8 +420,8 @@ class ServiceScaling(object):
                 ScalableDimension="ecs:service:DesiredCount",
                 ServiceNamespace="ecs",
                 RoleARN=Sub(
-                    "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/"
-                    "ecs.application-autoscaling.${AWS::URLSuffix}/"
+                    f"arn:${{{AWS_PARTITION}}}:iam::${{{AWS_ACCOUNT_ID}}}:role/"
+                    f"ecs.application-autoscaling.${{{AWS_URL_SUFFIX}}}/"
                     "AWSServiceRoleForApplicationAutoScaling_ECSService"
                 ),
                 ResourceId=Sub(

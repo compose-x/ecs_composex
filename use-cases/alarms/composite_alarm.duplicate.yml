@@ -50,13 +50,13 @@ x-alarms:
         Scaling:
           scaling_in_cooldown: 300
           scaling_out_cooldown: 60
-          steps:
-            - lower_bound: 0
-              upper_bound: 1000
-              count: 1
-            - lower_bound: 1000
-              upper_bound: 10000
-              count: 3
+          Steps:
+            - LowerBound: 0
+              UpperBound: 1000
+              Count: 1
+            - LowerBound: 1000
+              UpperBound: 10000
+              Count: 3
     Topics:
       - TopicArn: arn:aws:sns:eu-west-1:012346578900:topic/sometopic
       - x-sns: topic-01
@@ -71,13 +71,13 @@ x-alarms:
         Scaling:
           scaling_in_cooldown: 300
           scaling_out_cooldown: 60
-          steps:
-            - lower_bound: 0
-              upper_bound: 1000
-              count: 1
-            - lower_bound: 1000
-              upper_bound: 10000
-              count: 3
+          Steps:
+            - LowerBound: 0
+              UpperBound: 1000
+              Count: 1
+            - LowerBound: 1000
+              UpperBound: 10000
+              Count: 3
     Topics:
       - TopicArn: arn:aws:sns:eu-west-1:012346578900:topic/sometopic
       - x-sns: topic-01
