@@ -1,0 +1,23 @@
+---
+# Added test case from https://github.com/compose-x/ecs_composex/issues/578
+
+x-events:
+  TestTaskSchedule:
+    Properties:
+      Description: "EventRule to trigger the ECS Tasks"
+      ScheduleExpression: "cron(0 8 * * ? *)"
+      State: "ENABLED"
+    Services:
+      - name: app03
+        TaskCount: 2
+        DeleteDefaultService: True
+
+  TestTaskSchedule2:
+    Properties:
+      Description: "EventRule to trigger the ECS Tasks"
+      ScheduleExpression: "cron(0 20 * * ? *)"
+      State: "ENABLED"
+    Services:
+      app03:
+        TaskCount: 2
+        DeleteDefaultService: True

@@ -123,40 +123,45 @@ def define_service_targets(settings, stack, rule, cluster_arn):
         events_policy = Policy(
             PolicyName="EventsAccess", PolicyDocument=events_policy_doc
         )
-        service[0].template.add_resource(
-            PolicyType(
-                "EventsAccessPolicy",
-                PolicyName="EventsAccess",
-                PolicyDocument=task_events_policy_doc,
-                Roles=[
-                    service[0].task_role.name,
-                    service[0].exec_role.name,
-                ],
-            )
-        )
-        role = stack.stack_template.add_resource(
-            Role(
-                f"{rule.logical_name}IamRoleToTrigger{service[0].logical_name}",
-                AssumeRolePolicyDocument={
-                    "Version": "2012-10-17",
-                    "Statement": [
-                        {
-                            "Sid": "TrustPolicy",
-                            "Effect": "Allow",
-                            "Principal": {
-                                "Service": Sub(f"events.${{{AWS_URL_SUFFIX}}}")
-                            },
-                            "Action": "sts:AssumeRole",
-                        }
+        if "EventsAccessPolicy" not in service[0].template.resources:
+            service[0].template.add_resource(
+                PolicyType(
+                    "EventsAccessPolicy",
+                    PolicyName="EventsAccess",
+                    PolicyDocument=task_events_policy_doc,
+                    Roles=[
+                        service[0].task_role.name,
+                        service[0].exec_role.name,
                     ],
-                },
-                ManagedPolicyArns=[],
-                Policies=[events_policy],
-                PermissionsBoundary=Ref(AWS_NO_VALUE),
+                )
             )
-        )
-        if service[0].iam and keyisset("PermissionsBoundary", service[0].iam):
-            role.PermissionsBoundary = service[0].iam["PermissionsBoundary"]
+        role_name = f"{rule.logical_name}IamRoleToTrigger{service[0].logical_name}"
+        if role_name not in stack.stack_template.resources:
+            role = stack.stack_template.add_resource(
+                Role(
+                    f"{rule.logical_name}IamRoleToTrigger{service[0].logical_name}",
+                    AssumeRolePolicyDocument={
+                        "Version": "2012-10-17",
+                        "Statement": [
+                            {
+                                "Sid": "TrustPolicy",
+                                "Effect": "Allow",
+                                "Principal": {
+                                    "Service": Sub(f"events.${{{AWS_URL_SUFFIX}}}")
+                                },
+                                "Action": "sts:AssumeRole",
+                            }
+                        ],
+                    },
+                    ManagedPolicyArns=[],
+                    Policies=[events_policy],
+                    PermissionsBoundary=Ref(AWS_NO_VALUE),
+                )
+            )
+            if service[0].iam and keyisset("PermissionsBoundary", service[0].iam):
+                role.PermissionsBoundary = service[0].iam["PermissionsBoundary"]
+        else:
+            role = stack.stack_template.resources[role_name]
         add_parameters(
             stack.stack_template,
             [service_sg_param, service_task_def_param, service_subnets_param],

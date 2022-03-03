@@ -9,7 +9,7 @@ from troposphere.efs import AccessPoint, CreationInfo, PosixUser, RootDirectory
 from troposphere.iam import PolicyType
 
 from ecs_composex.common import add_parameters, setup_logging
-from ecs_composex.ecs.ecs_params import SERVICE_T, TASK_T
+from ecs_composex.ecs.ecs_params import TASK_T
 from ecs_composex.efs.efs_params import FS_ARN, FS_ID, FS_MNT_PT_SG_ID, FS_PORT
 from ecs_composex.rds_resources_settings import handle_new_tcp_resource
 
@@ -58,14 +58,6 @@ def add_task_iam_access_to_access_point(family, access_points, efs):
     :param list<troposphere.efs.AccessPoint> access_points:
     :param ecs_composex.efs.efs_stack.Efs efs:
     """
-    service_definition = family.template.resources[SERVICE_T]
-    service_depends_on = (
-        getattr(service_definition, "DependsOn")
-        if hasattr(service_definition, "DependsOn")
-        else []
-    )
-    if not service_depends_on:
-        setattr(service_definition, "DependsOn", service_depends_on)
     policy = PolicyType(
         f"{family.logical_name}IamAccess",
         PolicyName=f"IamAccessToEfs{efs.logical_name}",
@@ -96,7 +88,6 @@ def add_task_iam_access_to_access_point(family, access_points, efs):
         },
         Roles=[family.task_role.name],
     )
-    service_depends_on.append(policy.title)
     family.template.add_resource(policy)
 
 

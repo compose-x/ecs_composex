@@ -13,7 +13,7 @@ import re
 from troposphere import Ref
 
 from ecs_composex.common import add_parameters, setup_logging
-from ecs_composex.elbv2.elbv2_params import LB_FULL_NAME, LB_NAME, TGT_FULL_NAME
+from ecs_composex.elbv2.elbv2_params import LB_FULL_NAME, TGT_FULL_NAME
 
 LOG = setup_logging()
 
