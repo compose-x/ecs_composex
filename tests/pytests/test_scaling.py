@@ -14,8 +14,8 @@ def test_steps_definition():
     """
     steps = generate_scaling_out_steps(
         [
-            {"lower_bound": 0, "upper_bound": 20, "count": 1},
-            {"lower_bound": 20, "upper_bound": 52, "count": 5},
+            {"LowerBound": 0, "UpperBound": 20, "Count": 1},
+            {"LowerBound": 20, "UpperBound": 52, "Count": 5},
         ],
         target=None,
     )
@@ -24,15 +24,15 @@ def test_steps_definition():
     with raises(ValueError):
         generate_scaling_out_steps(
             [
-                {"lower_bound": 0, "upper_bound": 21, "count": 1},
-                {"lower_bound": 20, "upper_bound": 52, "count": 5},
+                {"LowerBound": 0, "UpperBound": 21, "Count": 1},
+                {"LowerBound": 20, "UpperBound": 52, "Count": 5},
             ],
             target=None,
         )
         generate_scaling_out_steps(
             [
-                {"lower_bound": 22, "upper_bound": 21, "count": 1},
-                {"lower_bound": 20, "upper_bound": 52, "count": 5},
+                {"LowerBound": 22, "UpperBound": 21, "Count": 1},
+                {"LowerBound": 20, "UpperBound": 52, "Count": 5},
             ],
             target=None,
         )

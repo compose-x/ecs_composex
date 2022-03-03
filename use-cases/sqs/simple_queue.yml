@@ -49,12 +49,12 @@ x-sqs:
         scaling:
           ScaleInCooldown: 180
           ScaleOutCooldown: 60
-          steps:
-            - lower_bound: 0
-              upper_bound: 10
-              count: 1
-            - lower_bound: 10
-              upper_bound: 20
-              count: 5
-            - lower_bound: 20
-              count: 7
+          Steps:
+            - LowerBound: 0
+              UpperBound: 10
+              Count: 1
+            - LowerBound: 10
+              UpperBound: 20
+              Count: 5
+            - LowerBound: 20
+              Count: 7

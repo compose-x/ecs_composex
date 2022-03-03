@@ -158,6 +158,8 @@
     },
     "ScalingDefinition": {
       "type": "object",
+      "additionalProperties": false,
+      "required": ["Steps"],
       "properties": {
         "Steps": {
           "type": "array",
@@ -174,6 +176,7 @@
       }
     },
     "StepDefinition": {
+      "additionalProperties": false,
       "type": "object",
       "properties": {
         "LowerBound": {

@@ -215,6 +215,7 @@ class Alarm(ServicesXResource):
         """
         if not hasattr(self.cfn_resource, "Dimensions"):
             LOG.debug(f"{self.module_name}.{self.name} - No Dimensions defined")
+            return
         dimensions = getattr(self.cfn_resource, "Dimensions")
         namespace = self.cfn_resource.Namespace
         if namespace == "AWS/ApplicationELB" or namespace == "AWS/NetworkELB":
