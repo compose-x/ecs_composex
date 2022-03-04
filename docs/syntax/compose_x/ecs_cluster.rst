@@ -1,3 +1,4 @@
+
 .. meta::
     :description: ECS Compose-X AWS ECS Cluster syntax reference
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS ECS, AWS Fargate, ECS Spot
@@ -8,12 +9,7 @@
 x-cluster
 ==========
 
-.. contents::
-    :depth: 2
-
-.. seealso::
-
-    For more structural details, see `JSON Schema`_
+Allows to create / lookup an ECS cluster that will be used to deploy services into.
 
 Properties
 ==========
@@ -53,18 +49,18 @@ Allows you to enter the name of an existing ECS Cluster that you want to deploy 
 
     If the cluster name is not found, by default, a new cluster will be created with the default settings.
 
-Use
-===
-
-This key allows you to set a cluster to use, that you do not wish to lookup, you just know the name you want to use.
-(Useful for multi-account where you can't lookup cross-account).
-
 
 .. _AWS CFN reference for ECS Cluster: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ecs-cluster.html
 
 JSON Schema
 =============
 
+Model
+--------
+
 .. jsonschema:: ../../../ecs_composex/specs/x-cluster.spec.json
+
+Definition
+------------
 
 .. literalinclude:: ../../../ecs_composex/specs/x-cluster.spec.json

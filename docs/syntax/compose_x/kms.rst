@@ -1,3 +1,4 @@
+
 .. meta::
     :description: ECS Compose-X AWS KMS syntax reference
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS KMS, encryption
@@ -44,10 +45,10 @@ Examples
         Properties:
           PendingWindowInDays: 14
         Services:
-          - name: serviceA
-            access: EncryptDecrypt
-          - name: serviceB
-            access: EncryptDecrypt
+          serviceA:
+            Access: EncryptDecrypt
+          serviceB:
+            Access: EncryptDecrypt
         Settings:
           Alias: keyA
 
@@ -56,13 +57,6 @@ Services
 
 List of key/pair values, as for other ECS ComposeX x-resources.
 
-Three access types have been created for the table:
-
-* EncryptDecrypt
-* EncryptOnly
-* DecryptOnly
-* SQS
-
 .. code-block:: yaml
     :caption: KMS and Services
 
@@ -70,10 +64,10 @@ Three access types have been created for the table:
       keyA:
         Properties: {}
         Services:
-          - name: serviceA
-            access: EncryptDecrypt
-          - name: serviceB
-            access: DecryptOnly
+          serviceA
+            Access: EncryptDecrypt
+          serviceB:
+            Access: DecryptOnly
 
 Access
 ---------
@@ -99,7 +93,7 @@ ReturnValues
 JSON Schema
 ============
 
-Representation
+Model
 -------------------
 
 .. jsonschema:: ../../../ecs_composex/specs/x-kms.spec.json

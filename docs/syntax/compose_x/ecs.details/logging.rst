@@ -1,3 +1,4 @@
+
 .. meta::
     :description: ECS Compose-X logging syntax reference
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS CloudWatch, AWS Logs, logging
@@ -8,13 +9,19 @@
 services.x-logging
 ======================
 
+This allows you to provide an override configuration for logging of your services in ECS.
 
-The following parameter is identical in behaviour to **x-aws-logs_retention** defined in the docker ECS Plugin.
+.. hint::
+
+    The following parameter is identical in behaviour to **x-aws-logs_retention** defined in the docker ECS Plugin.
 
 .. code-block:: yaml
     :caption: x-logging syntax definition
 
-    RetentionInDays: int
+    services:
+      serviceA:
+        x-logging:
+          RetentionInDays: int
 
 .. hint::
 
@@ -28,7 +35,7 @@ The following parameter is identical in behaviour to **x-aws-logs_retention** de
 
 
 RetentionInDays
-=====================
+-----------------
 
 Value to indicate how long should the logs be retained for the service.
 
@@ -54,7 +61,9 @@ Examples
 JSON Schema
 ===========
 
-.. jsonschema:: ../../../../ecs_composex/specs/services.x-logging.spec.json
+Model
+--------
 
+.. jsonschema:: ../../../../ecs_composex/specs/services.x-logging.spec.json
 
 .. _RetentionInDays Property: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-logs-loggroup.html#cfn-logs-loggroup-retentionindays

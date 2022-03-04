@@ -1,3 +1,4 @@
+
 .. meta::
     :description: ECS Compose-X AWS Elasticache syntax reference
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS Elasticache, redis, memcached
@@ -7,6 +8,9 @@
 ===================
 x-elasticache
 ===================
+
+Allows to create / lookup ElastiCache clusters to use with the ECS services.
+Note that given the return outputs changes based on the type of deployment, you need to adapt it to valid outputs.
 
 Syntax
 =======
@@ -83,8 +87,8 @@ Services
 .. code-block:: YAML
 
     Services:
-      - name: <service name>    # Service or Family name
-        access: <ignored>       # Generic property that has to be set, ignored for now.
+      <name>:
+        Access: <>
 
 List of services you want to grant access to the CacheCluster or ReplicationGroup to.
 ECS ComposeX will automatically get the attributes of your cluster based on its type (Memcached/Redis/Redis ReplicationGroup),

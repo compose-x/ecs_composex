@@ -1,11 +1,11 @@
+
 .. _x_efs_syntax_reference:
 
 =================
 x-efs
 =================
 
-.. contents::
-    :depth: 2
+Allows to define a new EFS to use for shared resources among services.
 
 Syntax reference
 ================
@@ -13,17 +13,12 @@ Syntax reference
 .. code-block::
 
     volumes:
-      abcd:
+      shared-images:
         x-efs:
           Properties: {}
           MacroParameters: {}
           Settings: {}
           Lookup: {}
-          Use: <str>
-
-.. seealso::
-
-    For more structural details, see `JSON Schema`_
 
 .. hint::
 
@@ -63,7 +58,7 @@ EnforceIamAuth
     :caption: Enable IAM Auth restriction
 
     volumes:
-      abcd:
+      shared-images:
         x-efs:
           MacroParameters:
             EnforceIamAuth: <True|False>
@@ -111,29 +106,6 @@ can also use ECS Compose-X to identify dynamically AWS EFS which already exists.
             Tags: []
             RoleArn: <>
 
-Use
-====
-
-If you did know your Filesystem ID in AWS EFS, and wanted to just pass it on as the value instead of using Lookup, you can,
-either through use or through the original ECS Plugin definition.
-
-.. code-block:: yaml
-    :caption: ECS Plugin syntax
-
-    volumes:
-      abcd:
-        external: true
-        name: fs-abcd1234
-
-
-.. code-block:: yaml
-    :caption: ECS ComposeX Syntax
-
-    volumes:
-      abcd:
-        x-efs:
-          Use: fs-abcd1234
-
 
 Examples
 =========
@@ -169,7 +141,13 @@ Given ECS Compose-X tries to focus as much as possible on security, we have impl
 JSON Schema
 =============
 
+Model
+-------
+
 .. jsonschema:: ../../../ecs_composex/specs/x-efs.spec.json
+
+Definition
+-------------
 
 .. literalinclude:: ../../../ecs_composex/specs/x-efs.spec.json
 

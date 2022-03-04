@@ -1,3 +1,4 @@
+
 .. meta::
     :description: ECS Compose-X AWS DocumentDB syntax reference
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS DocumentDB, MongoDB
@@ -8,13 +9,7 @@
 x-docdb
 =========
 
-.. contents::
-    :depth: 2
-
-Definition
-================
-
-.. jsonschema:: ../../../ecs_composex/specs/x-docdb.spec.json
+Allows you to create / lookup DocumentDB clusters you want to connect your ECS Services to.
 
 .. tip::
 
@@ -148,7 +143,7 @@ Lookup for this resource will accept 2 key elements
 Credentials
 ===========
 
-The credentials strucutre remains the same as for RDS SQL versions
+The credentials structure remains the same as for RDS SQL versions
 
 .. code-block:: json
     :caption: DocumentDB secret structure after attachment
@@ -177,6 +172,15 @@ Examples
 
 JSON Schema
 ============
+
+Model
+----------
+
+.. jsonschema:: ../../../ecs_composex/specs/x-docdb.spec.json
+
+
+Definition
+-------------
 
 .. literalinclude:: ../../../ecs_composex/specs/x-docdb.spec.json
 

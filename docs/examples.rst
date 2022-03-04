@@ -17,6 +17,7 @@
     :titlesonly:
     :caption: How-Tos
 
-    examples/use_secrets_manager_for_services_secrets
-    examples/change_rds_secret_env_names
-    examples/ecs_scheduled_tasks
+    how_tos/use_secrets_manager_for_services_secrets
+    how_tos/change_rds_secret_env_names
+    how_tos/autoscaling_on_custom_alarm
+    how_tos/ecs_scheduled_tasks

@@ -1,3 +1,4 @@
+
 .. meta::
     :description: ECS Compose-X AWS DynamoDB syntax reference
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS SSM, SSM Parameter
@@ -133,11 +134,6 @@ ECS Compose-X defined access names:
 * RO: Allow read only to the parameter including by path
 * ROStrict: Similarly to RO, without ByPath support
 
-AWS SAM Predefined Policy:
-
-* `SSMParameterReadPolicy`_
-
-
 Services
 ========
 
@@ -153,7 +149,13 @@ Services
 JSON Schema
 ============
 
+Model
+-------
+
 .. jsonschema:: ../../../ecs_composex/specs/x-ssm_parameter.spec.json
+
+Definition
+-----------
 
 .. literalinclude:: ../../../ecs_composex/specs/x-ssm_parameter.spec.json
 

@@ -37,10 +37,6 @@ CapacityProviderStrategy
 List of `CapacityProviderStrategyItem`_ that allows to define the CapacityProviders you wish to use for this service,
 that comes as an override of the Cluster defined default CapacityProviderStrategy.
 
-.. warning::
-
-    The CapacityProvider defined in the list must be a defined capacity provider in the ECS Cluster.
-
 .. hint::
 
     When using x-cluster.Lookup, the cluster properties will be evaluated to identify what capacity providers are
@@ -51,14 +47,12 @@ that comes as an override of the Cluster defined default CapacityProviderStrateg
 
     If the cluster has no Capacity Provider defined, validation is skipped.
 
-.. attention::
-
-    When using x-cluster.Use, no validation is performed on the cluster to evaluate available capacity providers.
 
 EnableExecuteCommand
 ---------------------
 
-Allows to create the IAM permissions, and other settings, to use AWS ECS Execute Command. False by default
+Allows to create the IAM permissions, and other settings, to use AWS ECS Execute Command. False by default.
+Currently only enabled when using Fargate, future version will enable it for ECS Anywhere.
 
 CpuArchitecture
 -----------------
@@ -134,7 +128,13 @@ we do the following:
 JSON Schema
 ============
 
+Model
+--------
+
 .. jsonschema:: ../../../../ecs_composex/specs/services.x-ecs.spec.json
+
+Definition
+-----------
 
 .. literalinclude:: ../../../../ecs_composex/specs/services.x-ecs.spec.json
     :language: json

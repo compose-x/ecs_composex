@@ -1,3 +1,4 @@
+
 .. meta::
     :description: ECS Compose-X advanced network syntax reference
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, networking, subnets, vpc, cloudmap
@@ -8,16 +9,18 @@
 services.x-network
 ==================
 
-.. contents::
+Allows you to define network override settings.
 
 Syntax
 =======
 
 .. code-block:: yaml
 
-    x-network:
-      UseCloudmap: bool
-      Ingress: {} # Ingress Definition
+    services:
+      serviceA:
+        x-network:
+          x-cloudmap: {}
+          Ingress: {} # Ingress Definition
 
 
 .. seealso::
@@ -25,29 +28,17 @@ Syntax
     For more structural details, see `JSON Schema`_
 
 
-UseCloudmap
-============
-
-Boolean to turn on or off the integration to CloudMap for the services.
-
-Default: False
-
-.. note::
-
-    If you want to use appmesh and define **x-appmesh** in the template, automatically, all services will be registered
-    in AWS CloudMap.
-
 .. _services_ingress_syntax_reference:
 
 Ingress definition
-==================
+---------------------
 
 This allows you to define specific ingress control from external sources to your environment. For example, if you have
 to whitelist IP addresses that are to be allowed communication to the services, you can list these, and indicate their
 name which will be shown in the EC2 security group description of the ingress rule.
 
-Syntax reference
------------------
+Ingress Syntax reference
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code-block:: yaml
 
@@ -95,6 +86,11 @@ Syntax reference
     When using an ALB, you do not need to define that ALB security group etc., all inbound rules will be defined automatically
     to allow the ALB to communicate with your service!
 
+x-cloudmap
+-----------
+
+Refer to :ref:`cloudmap_reference_syntax` for more details on how to use it.
+
 Map VPC subnets to docker-compose networks
 ===========================================
 
@@ -129,6 +125,12 @@ that network.
 JSON Schema
 ============
 
+Model
+------
+
 .. jsonschema:: ../../../../ecs_composex/specs/services.x-network.spec.json
+
+Definition
+-----------
 
 .. literalinclude:: ../../../../ecs_composex/specs/services.x-network.spec.json

@@ -9,6 +9,13 @@
 services.x-ecr
 ==================
 
+This section allows you to define special settings when the docker image is stored in AWS ECR.
+It uses `ECR Scan Reporter`_ as a library to communicate with AWS ECR and trigger actions.
+
+.. hint::
+
+    If `ECR Scan Reporter`_ is not installed, this is ignored all together, but won't fail ECS Compose-X execution.
+
 Syntax Reference
 ==================
 
@@ -34,7 +41,7 @@ Syntax Reference
     For more structural details, see `JSON Schema`_
 
 InterpolateWithDigest
-=====================
+----------------------
 
 When the image comes from ECR, we can very easily identify the image digest (sha256) for it and use that instead of a tag.
 However not as human user friendly, this allows to always point to the same image regardless of tags change.
@@ -49,7 +56,7 @@ However not as human user friendly, this allows to always point to the same imag
 
 
 VulnerabilitiesScan
-====================
+----------------------
 
 Most companies running applications in AWS use the power of AWS ECR to store their docker images, and most use the
 free scan feature to detect security vulnerabilities by scanning the content of the images and match it against CVE
@@ -67,7 +74,7 @@ some images securities evaluations.
 +----------+--------+
 
 IgnoreFailure
---------------
+^^^^^^^^^^^^^^^
 
 Boolean to indicate that, although you wanted the scan to be evaluated, it won't stop compose-x execution.
 
@@ -80,7 +87,7 @@ Boolean to indicate that, although you wanted the scan to be evaluated, it won't
 +----------+---------+
 
 TreatFailedAs
----------------
+^^^^^^^^^^^^^^^
 
 When the scan status is FAILED (unsupported image for example), allow do define whether that is fine or not.
 
@@ -96,7 +103,7 @@ When the scan status is FAILED (unsupported image for example), allow do define 
 +----------------+-----------+
 
 Thresholds
-----------
+^^^^^^^^^^^^^^^
 
 Allows you to define the level for evaluation that you wish to have for stopping the execution.
 
@@ -143,11 +150,16 @@ Examples
 JSON Schema
 ============
 
+Model
+-------
+
 .. jsonschema:: ../../../../ecs_composex/specs/services.x-ecr.spec.json
+
+Definition
+-----------
 
 .. literalinclude:: ../../../../ecs_composex/specs/services.x-ecr.spec.json
     :language: json
-
 
 
 .. _ECR Scan Reporter: https://ecr-scan-reporter.compose-x.io/

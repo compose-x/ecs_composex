@@ -16,7 +16,7 @@ For more details on the deploy, see `docker documentation for deploy here <https
 At the moment, all keys are not supported, mostly due to the way Fargate by nature is expecting settings to be.
 
 resources
------------
+=============
 
 The resources allow you to define the CPU/RAM reservations and limits. In AWS ECS, the CPU only has one attribute, so
 ECS Compose-X will **use the highest value of the two if both set**.
@@ -29,7 +29,7 @@ From there, it will automatically select the closest valid Fargate CPU/RAM combi
     CPUs should be set between 0.25 and 4 to be valid for Fargate, otherwise you will have an error.
 
 replicas
-+++++++++
+==========
 
 This setting allows you to define how many tasks should be running for a given service.
 The value is used to define **MicroserviceCount**.
@@ -37,7 +37,7 @@ The value is used to define **MicroserviceCount**.
 .. _composex_families_labels_syntax_reference:
 
 labels
-+++++++
+=========
 
 These labels aren't used for much in native Docker compose as per the documentation. They are only used for the service,
 but not for the containers themselves. Which is great for us, as we can then leverage that structure to implement a
@@ -52,7 +52,7 @@ So, here is the tag that will allow you to merge your reverse proxy or waf (if y
 your web application:
 
 ecs.task.family
-^^^^^^^^^^^^^^^
+----------------
 
 For example, you would have:
 
@@ -68,7 +68,7 @@ For example, you would have:
     * a dictionary
 
 ecs.depends.condition
-^^^^^^^^^^^^^^^^^^^^^^
+----------------------
 
 This label allows to define what condition should this service be monitored under by ECS. Useful when container is set
 as a dependency to another.
@@ -90,7 +90,7 @@ as a dependency to another.
     See `Dependency reference for more information`_
 
 ecs.ephemeral.storage
-^^^^^^^^^^^^^^^^^^^^^^
+-----------------------
 
 This label allows you to extend the local capacity (ephemeral, which is destroyed after the task is stopped) of storage
 beyond the free 20GB coming by default.
@@ -116,7 +116,7 @@ beyond the free 20GB coming by default.
 .. _ecs_anywhere_compute_platform:
 
 ecs.compute.platform
-^^^^^^^^^^^^^^^^^^^^^^
+----------------------
 
 This setting allows you to define which compute platform to deploy your services onto. This is useful if you
 have cluster that has a mix of EC2 capacity (default behaviour) and Fargate ones.

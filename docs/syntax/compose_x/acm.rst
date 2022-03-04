@@ -12,9 +12,6 @@ x-acm
 This module allows you to define new ACM Certificates (with DNS Validation) or import existing ones that you wish
 to use with supported AWS services and resources.
 
-.. contents::
-    :depth: 2
-
 Syntax Reference
 =================
 
@@ -116,8 +113,9 @@ Example
 JSON Schema
 =============
 
-Representation
+Model
 ---------------
+
 .. jsonschema:: ../../../ecs_composex/specs/x-acm.spec.json
 
 

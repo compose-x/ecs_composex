@@ -117,7 +117,7 @@ When in the documentation, is referred a feature as **service.x-**, this means t
 set inside the service definition.
 
 For example, here x-s3 is a top level feature of ECS Compose-X, whereas x-scaling only applies at the level of the service.
-.
+
 .. code-block:: yaml
 
     x-s3:               # x-s3 is a top level definition

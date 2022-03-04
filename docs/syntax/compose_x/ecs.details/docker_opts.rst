@@ -1,3 +1,4 @@
+
 .. meta::
     :description: ECS Compose-X docker_opts extension
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, security, docker_opts, repositories
@@ -8,6 +9,11 @@
 =======================
 services.x-docker_opts
 =======================
+
+.. warning::
+
+    DUE TO SECURITY DEPS not being fixed in the docker python library, this feature is for now disabled.
+    Apologies for the inconvenience.
 
 Syntax Reference
 ==================
@@ -47,6 +53,12 @@ However not as human user friendly, this allows to always point to the same imag
 JSON Schema
 ============
 
+Model
+-------
+
 .. jsonschema:: ../../../../ecs_composex/specs/services.x-docker_opts.spec.json
+
+Definition
+-----------
 
 .. literalinclude:: ../../../../ecs_composex/specs/services.x-docker_opts.spec.json

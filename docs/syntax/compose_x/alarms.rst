@@ -14,7 +14,6 @@ You can only create new alarms.
 Syntax
 =======
 
-
 .. code-block:: yaml
     :caption: Syntax reference
 
@@ -23,7 +22,7 @@ Syntax
         Properties: {}
         MacroParameters: {}
         Settings: {}
-        Services: []
+        Services: {}
         Topics: []
 
 .. tip::
@@ -49,8 +48,72 @@ See `AWS CW Alarms definition`_ and `AWS CW Composite Alarms definition`_
 .. attention::
 
     You can only create new alarms. To use existing alarms with new services would required to modify
-    the actions of that alarm, which would be an external change to any IaC.
+    the actions of that alarm to be useful, which would be an external change to any IaC.
 
+Services
+=========
+
+.. code-block:: yaml
+
+    x-alarms:
+      kafka-scaling-01:
+        Properties: {}
+        Services:
+          <service_name>:
+            Scaling: {} # Service scaling definition
+
+
+Scaling
+--------
+
+Allows to define the Scaling of an ECS Service based on that alarm. See :ref:`x_resource_service_scaling_def` for more
+details.
+
+See :ref:`autoscaling_on_custom_alarm` for an example.
+
+Topics
+======
+
+.. code-block:: yaml
+    :caption: Topics syntax
+
+    x-alarms:
+      alarms-01:
+        Properties: {}
+        Topics:
+          - TopicArn: <str>
+            NotifyOn: okay
+          - x-sns: <str>
+            NotifyOn: all
+
+TopicArn
+-----------
+
+A string representing the topic ARN. The topic ARN must be valid (will be validated).
+
+x-sns
+---------
+
+Allows you to define a SNS topic that was defined in compose-x files already.
+Supports new created topics and topics found via Lookup.
+
+NotifyOn
+---------
+
+This allows you to determine whether the messages should be published based on the alarm status.
+Default is ``alarm``
+
++-------+---------------+
+| Value | Alarm actions |
++=======+===============+
+| all   | OKActions     |
+|       |               |
+|       | AlarmActions  |
++-------+---------------+
+| alarm | AlarmActions  |
++-------+---------------+
+| okay  | OKActions     |
++-------+---------------+
 
 Linking to x-resources properties
 ===================================
@@ -74,8 +137,8 @@ Supported x-resources
 x-elbv2
 ^^^^^^^^^^^
 
-Marker for LB: **x-elbv2::<lb_name>**
-Marker for Target Group: **x-elbv2::<lb_name>::<service>::<port>**
+Marker for LB: ``x-elbv2::<lb_name>``
+Marker for Target Group: ``x-elbv2::<lb_name>::<service>::<port>``
 
 .. hint::
 
@@ -100,79 +163,14 @@ to define is the Alarm expression
       CompositeExpression: <str>
 
 CompositeExpression
-++++++++++++++++++++
+--------------------
 
 String with a logical high level expression of the composite alarm.
 
-.. hint::
+In your expression, use the alarm name as defined in the compose file, not using the **AlarmName** property!
+ECS Compose-X will automatically map to the CFN Alarm being created.
 
-    In your expression, use the alarm name as defined in the compose file, not using the **AlarmName** property!
-    ECS Compose-X will automatically map to the CFN Alarm being created.
-
-Services
-=========
-
-.. code-block:: yaml
-
-    x-alarms:
-      kafka-scaling-01:
-        Properties: {}
-        Services:
-          - name: <str>
-            access: <str>
-            scaling: {} # Service scaling definition
-
-Topics
-======
-
-.. code-block:: yaml
-    :caption: Topics syntax
-
-    x-alarms:
-      alarms-01:
-        Properties: {}
-        Topics:
-          - TopicArn: <str>
-            NotifyOn: okay
-          - x-sns: <str>
-            NotifyOn: all
-
-TopicArn
-+++++++++
-
-A string representing the topic ARN. The topic ARN must be valid (will be validated).
-
-x-sns
-++++++
-
-Allows you to define a SNS topic that was defined in compose-x files already.
-Supports new created topics and topics found via Lookup.
-
-NotifyOn
-+++++++++
-
-This allows you to determine whether the messages should be published based on the alarm status.
-
-+-------+---------------+
-| Value | Alarm actions |
-+=======+===============+
-| all   | OKActions     |
-|       |               |
-|       | AlarmActions  |
-+-------+---------------+
-| alarm | AlarmActions  |
-+-------+---------------+
-| okay  | OKActions     |
-+-------+---------------+
-
-
-Examples
-=========
-
-.. literalinclude:: ../../../use-cases/alarms/create_only.with_topics.yml
-    :language: yaml
-    :caption: Alarm with scaling actions for service
-
+For example
 
 .. code-block:: yaml
     :caption: Example CompositeAlarm with MacroParameters
@@ -187,6 +185,14 @@ Examples
       composite-alarm:
         MacroParameters:
           CompositeExpression: ALARM(alarm-01) and ALARM(alarm-02)
+
+Examples
+=========
+
+.. literalinclude:: ../../../use-cases/alarms/create_only.with_topics.yml
+    :language: yaml
+    :caption: Alarm with scaling actions for service
+
 
 .. hint::
 

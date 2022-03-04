@@ -1,3 +1,4 @@
+
 .. meta::
     :description: ECS Compose-X AWS ECS AutoScaling syntax reference
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS ECS, autoscaling, cpu scaling, memory scaling, ecs scaling
@@ -8,19 +9,19 @@
 services.x-scaling
 ======================
 
-.. contents::
 
 This section allows to define scaling for the ECS Service.
-For SQS Based scaling using step scaling, refer to SQS Documentation.
+For SQS Based scaling using step scaling, refer to SQS :ref:`sqs_scaling_reference` Documentation.
 
 .. code-block:: yaml
 
     services:
       serviceA:
         x-scaling:
-          Range: "1-10"
+          Range: "<>"
           TargetScaling:
-            CpuTarget: 80
+            CpuTarget: <>
+            RamTarget: <>
 
 .. seealso::
 
@@ -95,4 +96,12 @@ applications that do not support to scale-in.
 JSON Schema
 ===========
 
+Model
+------
+
 .. jsonschema:: ../../../../ecs_composex/specs/services.x-scaling.spec.json
+
+Definition
+
+.. literalinclude:: ../../../../ecs_composex/specs/services.x-scaling.spec.json
+    :language: json

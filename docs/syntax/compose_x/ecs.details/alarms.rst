@@ -125,7 +125,13 @@ possible, and if not possible, alert people so risks get mitigated.
 JSON Schema
 ============
 
+Model
+--------
+
 .. jsonschema:: ../../../../ecs_composex/specs/services.x-alarms.spec.json
+
+Definition
+------------
 
 .. literalinclude:: ../../../../ecs_composex/specs/services.x-alarms.spec.json
     :language: json

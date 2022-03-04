@@ -1,3 +1,4 @@
+
 .. meta::
     :description: ECS Compose-X AWS Neptune syntax reference
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS Neptune, MongoDB
@@ -10,14 +11,9 @@ x-neptune
 
 This modules allows you to provision new AWS Neptune DB Clusters, or use existing ones, that your services will connect to.
 
-.. contents::
-    :depth: 2
 
-Definition
-============
-
-YAML Representation
-----------------------
+Syntax Reference
+=================
 
 .. code-block:: yaml
     :caption:
@@ -54,7 +50,7 @@ Define services access
 .. note::
 
     AWS Neptune clusters only support AWS IAM authentication to allow users to connect to the cluster nodes.
-    Therefore when using Lookup, you need only to specify Tags or Identifier for the cluster, ECS Compose-X will do the rest.
+    Therefore when using Lookup, you need only to specify Tags or Identifier for the cluster.
 
 
 MacroParameters
@@ -115,13 +111,13 @@ Examples
 JSON Schema
 ==========================
 
-Definition
+Model
 ------------
 
 .. jsonschema:: ../../../ecs_composex/specs/x-neptune.spec.json
 
-Literal
---------
+Definition
+------------
 
 .. literalinclude:: ../../../ecs_composex/specs/x-neptune.spec.json
 

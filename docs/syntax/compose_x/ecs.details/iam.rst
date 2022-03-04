@@ -1,3 +1,4 @@
+
 .. meta::
     :description: ECS Compose-X AWS IAM syntax reference
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS IAM, least-privileges, permissions, iam
@@ -7,8 +8,6 @@
 ==================
 services.x-iam
 ==================
-
-.. contents::
 
 This section is the entrypoint to further extension of IAM definition for the IAM roles created throughout.
 
@@ -26,7 +25,7 @@ x-iam:
 
 
 PermissionsBoundary
-====================
+--------------------
 
 This key represents an IAM policy (name or ARN) that needs to be added to the IAM roles in order to represent the IAM
 Permissions Boundary.
@@ -60,7 +59,7 @@ Examples:
     **arn:${AWS::Partition}:iam::${AWS::AccountId}:policy/containers**
 
 Policies
-========
+------------
 
 Allows you to define additional IAM policies.
 Follows the same pattern as CFN IAM Policies
@@ -86,7 +85,7 @@ Follows the same pattern as CFN IAM Policies
     If you used the ECS Plugin from docker before, this is equivalent to *x-aws-role*
 
 ManagedPolicyArns
-==================
+------------------
 
 Allows you to add additional managed policies. You can specify the full ARN or just a string for the name / path of the
 policy. If will resolve into the same regexp as for `PermissionsBoundary`_
@@ -112,7 +111,12 @@ policy. If will resolve into the same regexp as for `PermissionsBoundary`_
 JSON Schema
 =============
 
+Model
+---------
 .. jsonschema:: ../../../../ecs_composex/specs/services.x-iam.spec.json
+
+Definition
+-----------
 
 .. literalinclude:: ../../../../ecs_composex/specs/services.x-iam.spec.json
     :language: json

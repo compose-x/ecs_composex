@@ -100,6 +100,8 @@ See :ref:`lookup_syntax_reference` for more details about Lookup.
             - Name: queue-a-123
             - owner: app01
 
+.. _sqs_scaling_reference:
+
 Scaling
 =======
 

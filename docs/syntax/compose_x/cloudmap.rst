@@ -71,8 +71,9 @@ Examples
 JSON Schema
 ===========
 
-Representation
+Model
 ----------------
+
 .. jsonschema:: ../../../ecs_composex/specs/x-cloudmap.spec.json
 
 Definition

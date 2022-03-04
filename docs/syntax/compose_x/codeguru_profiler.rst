@@ -1,3 +1,4 @@
+
 .. meta::
     :description: ECS Compose-X AWS CodeGuru syntax reference
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS CodeGuru, APM, profiling
@@ -88,7 +89,7 @@ Full Applications code used for this sort of testing can be found `here <https:/
 JSON Schema
 ============
 
-Representation
+Model
 ---------------
 
 .. jsonschema:: ../../../ecs_composex/specs/services.x-codeguru_profiler.spec.json

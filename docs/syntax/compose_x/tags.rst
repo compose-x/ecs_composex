@@ -37,7 +37,7 @@ CreatedByComposeX: true # Allows you to identify quickly if that resource was cr
 JSON Schema
 ============
 
-Representation
+Model
 ---------------
 
 .. jsonschema:: ../../../ecs_composex/specs/x-tags.spec.json

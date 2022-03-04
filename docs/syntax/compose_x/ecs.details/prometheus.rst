@@ -1,3 +1,4 @@
+
 .. meta::
     :description: ECS Compose-X advanced network syntax reference
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, networking, subnets, vpc, cloudmap
@@ -8,9 +9,7 @@
 services.x-prometheus
 ======================
 
-.. contents::
-
-This section allows to define some settings to make ECS integration to Prometheus easy.
+Allows to define some settings to make ECS integration to Prometheus easy.
 
 At the moment, the integration focuses primarily in integration with ECS Insights integration and future version will
 add support for AWS AMP and other Prometheus clusters.
@@ -25,12 +24,9 @@ Syntax
         x-prometheus:
           ContainersInsights: ContainersInsights
 
-.. seealso::
 
-    For more structural details, see `JSON Schema`_
-
-ContainersInsights
-===================
+ContainersInsights Syntax Reference
+=======================================
 
 .. code-block:: yaml
 
@@ -226,7 +222,13 @@ Examples
 JSON Schema
 ============
 
+Model
+------
+
 .. jsonschema:: ../../../../ecs_composex/specs/services.x-prometheus.spec.json
+
+Definition
+-----------
 
 .. literalinclude:: ../../../../ecs_composex/specs/services.x-prometheus.spec.json
     :language: json

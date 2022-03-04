@@ -151,6 +151,46 @@ For example, if we take these three resources
     In the example above, although we want two different properties from the different resources, the environment variable
     is the same, therefore the value will be wrong for one of them. To avoid that, simply change the environment variable name.
 
+.. _x_resource_service_scaling_def:
+
+Scaling
+^^^^^^^^^^^
+
+This allows to define how to implement autoscaling, which uses AWS Application Autoscaling, and in the current implementation
+allows to define StepScaling of the containers.
+
+You can create arbitrary alarms of your own, to define scaling based on Metrics and Dimensions.
+Some dimensions have a built-in mechanism that allows for you to point to other x-resources (i.e. x-elbv2)
+and it would automatically pick up the right name and properties to use.
+
+`StepScaling <https://docs.aws.amazon.com/autoscaling/application/userguide/application-auto-scaling-step-scaling-policies.html>`_ is rather straight forward, and the documentation
+explains it very well. Once you defined your alarm, and indicate which services should scale based on it, ECS Compose-X will do
+the rest for you.
+
+.. warning::
+
+    If you create different alarms / scaling rules for a same service, the desired count used will be **the highest resolved value**.
+    So ensure that your conditions are correct.
+
+.. code-block:: yaml
+
+    Scaling:
+      Steps:
+        - LowerBound: 0 # From 0
+          UpperBound: 1000 # To 1000
+          Count: 2 # Deploy 2 containers
+        - LowerBound: 1000 # From 1000
+          UpperBound: 10000 # To 10000
+          Count: 6 # Deploy 2 containers
+        - LowerBound: 10000 # From 10000 to infinity
+          Count: 12 # Deploy 2 containers
+
+
+JSON model
+"""""""""""""""
+
+.. jsonschema:: ../../../ecs_composex/specs/ingress.spec.json#/definitions/ScalingDefinition
+
 
 Properties
 ==========

@@ -8,7 +8,7 @@
 x-vpc
 ============================
 
-Syntax Reference
+Syntax
 ================
 
 .. code-block:: yaml
@@ -165,7 +165,7 @@ This leaves a just under 120 IP address for the EC2 hosts and/or Docker containe
 JSON Schema
 ============
 
-Representation
+Model
 ---------------
 
 .. jsonschema:: ../../../ecs_composex/specs/x-vpc.spec.json

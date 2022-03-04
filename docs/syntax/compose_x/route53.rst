@@ -92,6 +92,12 @@ new ACM Certificates that will automatically set the DNS records in your DNS zon
 JSON Schema
 ===========
 
+Model
+--------
+
 .. jsonschema:: ../../../ecs_composex/specs/x-route53.spec.json
+
+Definition
+------------
 
 .. literalinclude:: ../../../ecs_composex/specs/x-route53.spec.json

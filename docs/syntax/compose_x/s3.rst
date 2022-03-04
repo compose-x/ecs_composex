@@ -1,3 +1,4 @@
+
 .. meta::
     :description: ECS Compose-X AWS S3 syntax reference
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS S3, S3 Buckets
@@ -9,10 +10,8 @@ x-s3
 =====================
 
 This module allows you to create new S3 Buckets, Lookup existing ones, and link them to your services or other AWS Resources,
-when supported
+where supported
 
-.. contents::
-    :depth: 2
 
 Syntax
 =========
@@ -203,7 +202,7 @@ Examples
 JSON Schema
 ============
 
-Representation
+Model
 ----------------
 
 .. jsonschema:: ../../../ecs_composex/specs/x-s3.spec.json

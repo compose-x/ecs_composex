@@ -31,7 +31,6 @@ generate all the AWS CloudFormation templates required to deploy all your servic
 
 It automatically takes care of network access requirements and IAM permissions, following best practices.
 
-
 Installation
 ============
 
@@ -50,38 +49,6 @@ Using docker
 
     docker run --rm -v ~/.aws:/root/.aws public.ecr.aws/compose-x/compose-x:latest
 
-CLI Usage
-==========
-
-.. code-block:: bash
-
-    usage: ecs-compose-x [-h] {up,render,create,plan,config,init,version} ...
-
-    positional arguments:
-      {up,render,create,plan,config,init,version}
-                            Command to execute.
-        up                  Generates & Validates the CFN templates, Creates/Updates stack in CFN
-        render              Generates & Validates the CFN templates locally.
-        create              Generates & Validates the CFN templates to S3 (there is still a local copy).
-        plan                Creates a recursive change-set to show the diff prior to an update
-        config              Merges docker-compose files to provide with the final compose content version
-        init                Initializes your AWS Account with prerequisites settings for ECS
-        version             ECS ComposeX Version
-
-    optional arguments:
-      -h, --help            show this help message and exit
-
-
-Examples
---------
-
-.. code-block:: bash
-
-    # Render all your CFN templates from your docker compose and extension files
-    ecs-compose-x render --format yaml -n my-awesome-app -f docker-compose.yml -f aws.yml -d outputs
-
-    # Deploy / Update your application to AWS
-    ecs-compose-x up --format yaml -n my-awesome-app -f docker-compose.yml -f aws.yml -d outputs
 
 How is it different ?
 =====================
@@ -89,27 +56,35 @@ How is it different ?
 There are a lot of similar tools out there, including published by AWS. So here are a few of the features
 that we think could be of interest to you.
 
-Modularity / "Plug & Play"
----------------------------
+Works with docker-compose
+--------------------------
 
-The majority of people who are going to use ECS Compose-X on a daily basis should be developers who need to have an
-environment of their own and want to quickly iterate over it.
+The most important thing for ECS Compose-X is to allow people to use the same compose files they use locally to spin
+services up in AWS ECS. Other tools, such as Copilot, require you to rewrite into their specific format and input.
 
-However, it is certainly something that Cloud Engineers in charge of the AWS accounts etc. would want to use to make their own lives easy too.
+Modularity and "Plug & Play"
+-----------------------------
 
-In many areas, you as the end-user of Compose-X will already have infrastructure in place: VPC, DBs and what not.
-So as much as possible, you will be able in Compose-X to define :ref:`lookup_syntax_reference` sections which will find your existing resources,
-and map these to the services.
+ECS Compose-X on was written to make AWS accessible to developers and cloud engineers of all level.
+For developers, we hope that enables them to create new environment of their own and want to quickly iterate over it.
 
-Built for AWS Fargate
-----------------------
+In many areas, the end-user of Compose-X will already have infrastructure in place: VPC, Databases in AWS RDS, DynamoDB tables, etc.
+With Compose-X you can define :ref:`lookup_syntax_reference` sections which will find your existing resources,
+and map these to the new services.
 
-However the original deployments and work on this project was done using EC2 instances (using SpotFleet), everything
-is now implemented to work on AWS Fargate First (2020-06-06).
+.. note::
 
-That said, all features that can be supported with EC2 instances are available to you with ECS Compose-X, which, will
-simply disable such settings when deployed on top of AWS Fargate.
+    When using :ref:`lookup_syntax_reference`, the resource in AWS will **never** be altered to avoid conflicts.
 
+
+Easy compute definition
+------------------------
+
+ECS Compose-X allows you to define which services should be running on EC2 / Fargate, use ARM64 or X86_64 architecture,
+CapacityProviders etc. for each individual service.
+
+When using :ref:`lookup_syntax_reference`, it will also automatically detect configuration, which avoids configuration
+settings conflicts and errors.
 
 Supports AWS ECS Anywhere
 --------------------------------
@@ -136,34 +111,14 @@ will understand how two services are connected and will auto-correct the setting
 For example, if you set the Log retention to be 42 days, which is invalid, it will automatically change that to the
 closest valid value (here, 30).
 
-Using JSON Specification
--------------------------
+Using JSON Schema specifications
+---------------------------------
 
 Docker Compose follows a well known, well documented and open source JSON Schema definition to ensure consistency in the
-compose files syntax, making it very accessible for all to use. So in the same spirit, from version 0.15 onwards,
-Compose-X will make use of JSON Schema definition.
+compose files syntax, making it very accessible for all to use.
 
-Credits
-=======
-
-This package would not have been possible without the amazing job done by the AWS CloudFormation team!
-This package would not have been possible without the amazing community around `Troposphere`_!
-This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypackage`_ project template.
-
-.. _Cookiecutter: https://github.com/audreyr/cookiecutter
-.. _`audreyr/cookiecutter-pypackage`: https://github.com/audreyr/cookiecutter-pypackage
-.. _`Mark Peek`: https://github.com/markpeek
-.. _`AWS ECS CLI`: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ECS_CLI.html
-.. _Troposphere: https://github.com/cloudtools/troposphere
-.. _Blog: https://blog.compose-x.io/
-.. _Docker Compose: https://docs.docker.com/compose/
-.. _ECS Compose-X: https://github.com/compose-x/ecs_composex
-.. _YAML Specifications: https://yaml.org/spec/
-.. _Extensions fields:  https://docs.docker.com/compose/compose-file/#extension-fields
-.. _ECS Compose-X Project: https://github.com/orgs/lambda-my-aws/projects/3
-.. _CICD Pipeline for multiple services on AWS ECS with ECS Compose-X: https://blog.ecs-composex.lambda-my-aws.io/posts/cicd-pipeline-for-multiple-services-on-aws-ecs-with-ecs-composex/
-.. _the compatibilty matrix: https://nightly.docs.compose-x.io/compatibility/docker_compose.html
-.. _Find out how to use ECS Compose-X in AWS here: https://blog.compose-x.io/posts/use-your-docker-compose-files-as-a-cloudformation-template/index.html
+ECS Compose-X uses that schema definition to ensure compatibility with ``docker-compose``, and uses JSON Schemas
+for extensions in order to ensure the compose files input are correct before doing any further processing.
 
 
 .. |BUILD| image:: https://codebuild.eu-west-1.amazonaws.com/badges?uuid=eyJlbmNyeXB0ZWREYXRhIjoiWjIrbSsvdC9jZzVDZ3N5dVNiMlJCOUZ4M0FQNFZQeXRtVmtQbWIybUZ1ZmV4NVJEdG9yZURXMk5SVVFYUjEwYXpxUWV1Y0ZaOEcwWS80M0pBSkVYQjg0PSIsIml2UGFyYW1ldGVyU3BlYyI6Ik1rT0NaR05yZHpTMklCT0MiLCJtYXRlcmlhbFNldFNlcmlhbCI6MX0%3D&branch=main
@@ -236,14 +191,6 @@ This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypack
 .. toctree::
     :titlesonly:
     :maxdepth: 1
-    :caption: Thanks & Credits
-
-    authors
-    credits
-
-.. toctree::
-    :titlesonly:
-    :maxdepth: 1
     :caption: Library Modules
 
     modules
@@ -258,3 +205,26 @@ Indices and tables
 .. meta::
     :description: ECS Compose-X
     :keywords: AWS, AWS ECS, Docker, Containers, Compose, docker-compose
+
+
+Credits
+=======
+
+This package would not have been possible without the amazing job done by the AWS CloudFormation team!
+This package would not have been possible without the amazing community around `Troposphere`_!
+This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypackage`_ project template.
+
+.. _Cookiecutter: https://github.com/audreyr/cookiecutter
+.. _`audreyr/cookiecutter-pypackage`: https://github.com/audreyr/cookiecutter-pypackage
+.. _`Mark Peek`: https://github.com/markpeek
+.. _`AWS ECS CLI`: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ECS_CLI.html
+.. _Troposphere: https://github.com/cloudtools/troposphere
+.. _Blog: https://blog.compose-x.io/
+.. _Docker Compose: https://docs.docker.com/compose/
+.. _ECS Compose-X: https://github.com/compose-x/ecs_composex
+.. _YAML Specifications: https://yaml.org/spec/
+.. _Extensions fields:  https://docs.docker.com/compose/compose-file/#extension-fields
+.. _ECS Compose-X Project: https://github.com/orgs/lambda-my-aws/projects/3
+.. _CICD Pipeline for multiple services on AWS ECS with ECS Compose-X: https://blog.ecs-composex.lambda-my-aws.io/posts/cicd-pipeline-for-multiple-services-on-aws-ecs-with-ecs-composex/
+.. _the compatibilty matrix: https://nightly.docs.compose-x.io/compatibility/docker_compose.html
+.. _Find out how to use ECS Compose-X in AWS here: https://blog.compose-x.io/posts/use-your-docker-compose-files-as-a-cloudformation-template/index.html

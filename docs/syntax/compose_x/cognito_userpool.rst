@@ -119,7 +119,7 @@ Examples
 JSON Schema
 ============
 
-Representation
+Model
 -----------------
 
 .. jsonschema:: ../../../ecs_composex/specs/x-cognito_userpool.spec.json

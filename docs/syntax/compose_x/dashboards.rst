@@ -41,7 +41,7 @@ Examples
 JSON Schema
 ==============
 
-Representation
+Model
 ---------------
 
 .. jsonschema:: ../../../ecs_composex/specs/x-dashboards.spec.json

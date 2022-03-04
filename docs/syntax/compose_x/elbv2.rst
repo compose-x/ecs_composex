@@ -8,6 +8,12 @@
 x-elbv2
 =========
 
+Allows you to create new ELBv2 (ALB/NLB) and configure traffic to send to the services.
+You can define conditions to distinguish services from each other and allow to re-use the same ELBv2 (mostly applies to ALBs)
+to use it as a smart reverse proxy.
+
+Supports OIDC and Cognito Conditions. Refer to :ref:`cognito_userpool_syntax_reference` for more details.
+
 Syntax
 ========
 
@@ -433,7 +439,13 @@ Examples
 JSON Schema
 ============
 
+Model
+-------
+
 .. jsonschema:: ../../../ecs_composex/specs/x-elbv2.spec.json
+
+Definition
+------------
 
 .. literalinclude:: ../../../ecs_composex/specs/x-elbv2.spec.json
 

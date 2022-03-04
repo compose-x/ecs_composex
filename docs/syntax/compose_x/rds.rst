@@ -13,10 +13,17 @@ x-rds
     You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/rds>`__ to use
     as reference for your use-case.
 
-Definition
-=============
+Syntax reference
+=================
 
-.. jsonschema:: ../../../ecs_composex/specs/x-rds.spec.json
+.. code-block:: yaml
+
+x-rds:
+  dbA:
+    Properties: {}
+    MacroParameters: {}
+    Services: {}
+    Lookup: {}
 
 Properties
 ===========
@@ -137,13 +144,27 @@ might re-define in **RdsFeatures** will be skipped. If you wish to use **RdsFeat
     You can reference a S3 bucket defined in **x-s3**. This supports S3 buckets created and referenced via Lookup
 
 
+Services
+============
+
+Access
+---------
+
+.. code-block:: yaml
+
+    Access:
+      DBCluster: RO
+
+The only valid key for Access is DBCluster. The only valid value is ``RO`` for read-only, which allows IAM calls to RDS
+to describe the cluster.
+
 ReturnValues
-=================
+--------------
 
 Use the `AWS RDS DBCluster Return Values`_ to expose the value for these properties to your service as an environment variable.
 If you are creating a RDS DB Instance, see `AWS RDS DB Instance Return Values`_.
 
-The value `DBCluster` can be used to expose the value for **Ref**
+The value ``DBCluster`` can be used to expose the value for **Ref**
 
 .. _rds_db_secrets_mappings:
 
@@ -168,8 +189,9 @@ environment variable.
             - Key: Name
               Value: "dummy-db"
         Services:
-          - name: wordpress
-            access: RW
+          wordpress:
+            Access:
+              DBCluster: RO
             SecretsMappings:
               Mappings:
                 host: MARIADB_HOST
@@ -264,7 +286,7 @@ Examples
           Engine: aurora-mysql
           EngineVersion: 5.7.12
         Services:
-          app01
+          app01:
             Access:
               DBCluster: RO
 
@@ -291,6 +313,14 @@ Examples
 
 JSON Schema
 ============
+
+Model
+-------
+
+.. jsonschema:: ../../../ecs_composex/specs/x-rds.spec.json
+
+Definition
+-----------
 
 .. literalinclude:: ../../../ecs_composex/specs/x-rds.spec.json
 

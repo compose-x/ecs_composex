@@ -8,8 +8,12 @@
 x-opensearch
 ==============
 
-.. contents::
-    :depth: 2
+Allows you to create / lookup OpenSearch Domains to use with your ECS Services.
+
+.. hint::
+
+    Given the combinations of settings that only work together, we have implemented validations to verify those early.
+    If we missed something, please `report an issue in GitHub `_
 
 Syntax
 =======
@@ -20,7 +24,7 @@ Syntax
       opensearch-01:
         Properties: {}
         Settings: {}
-        Services: []
+        Services: {}
         Lookup: {}
         MacroParameters: {}
 
@@ -155,10 +159,10 @@ The syntax for listing the services remains the same as the other x- resources.
 .. code-block:: yaml
 
     Services:
-      - name: <service/family name>
-        access:
+      <service/family name>
+        Access:
           Http: [RO|RW]
-          IAM: [RO|RW]
+          DBCluster: [RO|RW]
 
 Access types
 ------------
@@ -168,8 +172,8 @@ Http
 
 This defines the Http permissions that you wish to grant your service to perform queries to the OpenSearch domain
 
-IAM
-^^^^^
+DBCluster
+^^^^^^^^^^
 
 This defines the IAM permissions you wish to grant to the service that will allow to describe and discover the
 OpenSearch domain
@@ -207,7 +211,13 @@ Examples
 JSON Schema
 ============
 
+Model
+--------
+
 .. jsonschema:: ../../../ecs_composex/specs/x-opensearch.spec.json
+
+Definition
+------------
 
 .. literalinclude:: ../../../ecs_composex/specs/x-opensearch.spec.json
 
@@ -215,3 +225,4 @@ JSON Schema
 .. _AWS OpenSearch Domain CFN Properties: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-elasticsearch-domain.html
 .. _VpcOptions: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-elasticsearch-domain-vpcoptions.html
 .. _Instance Types supported by OpenSearch: https://docs.aws.amazon.com/opensearch-service/latest/developerguide/supported-instance-types.html
+.. _report an issue in GitHub : https://github.com/compose-x/ecs_composex/issues/new?assignees=JohnPreston&labels=bug&template=bug_report.md&title=%5BBUG%5D

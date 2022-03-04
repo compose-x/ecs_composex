@@ -1,3 +1,4 @@
+
 .. _compose_logging_syntax_reference:
 
 ============

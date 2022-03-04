@@ -3,14 +3,15 @@
 .. toctree::
     :caption: Services-level Extension Fields
     :glob:
-    :maxdepth: 2
+    :maxdepth: 1
     :titlesonly:
 
     syntax/compose_x/ecs.details/*
 
+
 .. toctree::
-    :caption: Generic resources
-    :maxdepth: 2
+    :caption: General purpose resources
+    :maxdepth: 1
     :titlesonly:
 
 
@@ -25,7 +26,7 @@
 
 .. toctree::
     :caption: Networking configuration
-    :maxdepth: 2
+    :maxdepth: 1
     :titlesonly:
 
     syntax/compose_x/vpc
@@ -37,7 +38,7 @@
 
 .. toctree::
     :caption: Storage & Database services
-    :maxdepth: 2
+    :maxdepth: 1
     :titlesonly:
 
     syntax/compose_x/s3
@@ -51,16 +52,17 @@
 
 .. toctree::
     :caption: Messaging services
-    :maxdepth: 2
+    :maxdepth: 1
     :titlesonly:
 
     syntax/compose_x/kinesis
     syntax/compose_x/sqs
     syntax/compose_x/sns
 
+
 .. toctree::
     :caption: Monitoring services
-    :maxdepth: 2
+    :maxdepth: 1
     :titlesonly:
 
     syntax/compose_x/dashboards
@@ -70,7 +72,7 @@
 .. toctree::
     :caption: Docker Compose syntax
     :glob:
-    :maxdepth: 2
+    :maxdepth: 1
     :titlesonly:
 
     syntax/docker-compose/*

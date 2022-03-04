@@ -96,7 +96,12 @@ Examples
 JSON Schema
 ============
 
+Model
+-------
 .. jsonschema:: ../../../ecs_composex/specs/x-kinesis.spec.json
+
+Definition
+-----------
 
 .. literalinclude:: ../../../ecs_composex/specs/x-kinesis.spec.json
 

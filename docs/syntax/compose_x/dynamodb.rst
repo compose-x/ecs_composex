@@ -1,3 +1,4 @@
+
 .. meta::
     :description: ECS Compose-X AWS DynamoDB syntax reference
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS DynamoDB, dynamodb, serverless
@@ -22,7 +23,6 @@ Syntax Reference
         Properties: {}
         MacroParameters: {}
         Services: {}
-        Settings: {}
 
 .. tip::
 
@@ -99,26 +99,11 @@ ECS Compose-X defined access names:
 * RW : Allow read/write/delete on the table items
 * RO: Allow read only actions on the table items
 
-Some of the AWS SAM access:
-
-* `DynamoDBCrudPolicy`_
-* `DynamoDBReadPolicy`_
-* `DynamoDBWritePolicy`_
-
-Settings
-========
-
-See the :ref:`settings_syntax_reference` for more details.
-
-.. hint::
-
-    Given DynamoDB is serverless (unless using DAX), there is no **Subnets** override.
-
 
 JSON Schema
 ============
 
-Representation
+Model
 ----------------
 
 .. jsonschema:: ../../../ecs_composex/specs/x-dynamodb.spec.json
