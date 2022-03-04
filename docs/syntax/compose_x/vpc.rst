@@ -8,13 +8,19 @@
 x-vpc
 ============================
 
+Allows you to create / lookup an AWS VPC to deploy your services into. When using :ref:`lookup_syntax_reference`, you simply
+identify the VPC and the subnets you then place the services and AWS Resources into.
+
+If ``x-vpc`` is not specified, ECS Compose-X will try to figure out whether a new VPC should be created for the given services.
+For instance, if using ECS Anywhere and have no services in AWS VPC, the VPC won't be created.
+
 Syntax
 ================
 
 .. code-block:: yaml
 
     x-vpc:
-      Create: {}
+      Properties: {}
       Lookup: {}
 
 .. tip::
@@ -22,18 +28,15 @@ Syntax
     You can find the test files for VPC `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/vpc>`__ to use
     as reference for your use-case.
 
-.. seealso::
 
-    For more structural details, see `JSON Schema`_
-
-Create
-=======
+Properties
+============
 
 .. code-block::
     :caption: Create example with a single NAT and 3 VPC Endpoints
 
     x-vpc:
-      Create:
+      Properties:
         SingleNat: true
         VpcCidr: 172.6.7.42/24
         Endpoints:
@@ -43,33 +46,33 @@ Create
             - service: ecr.dkr
 
 VpcCidr
-+++++++
+--------------------
 
 The CIDR you want to use.
 Default is **100.127.254.0/24**.
 
 
 SingleNat
-++++++++++
+--------------------
 
 Whether you want to have 1 NAT per AZ for your application subnets.
 Reduces the costs for dev environments!
 
 
 Endpoints
-+++++++++
+--------------------
 
 List of VPC Endpoints from AWS Services you want to create.
 Default will create Endpoints for ECR (DKR and API).
 
 EnableFlowLogs
-++++++++++++++
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Whether you want to have a VPC Flow Log created for the VPC.
 It will create a new LogGroup and IAM Role to allow logging to CloudWatch.
 
 FlowLogsRoleBoundary
-++++++++++++++++++++
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
 For those of you who require IAM PermissionsBoundary for your IAM Roles, this allows to set the boundary.
 If it starts with **arn:aws** it will assume this is a valid ARN, otherwise, it will use the value as

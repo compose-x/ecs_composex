@@ -141,10 +141,6 @@
       "type": "object",
       "$ref": "#/definitions/VpcLookup"
     },
-    "Use": {
-      "type": "object",
-      "$ref": "#/definitions/VpcUse"
-    },
     "Properties": {
       "type": "object",
       "$ref": "#/definitions/VpcCreate"
@@ -155,12 +151,6 @@
       "type": "object",
       "required": [
         "Lookup"
-      ]
-    },
-    {
-      "type": "object",
-      "required": [
-        "Use"
       ]
     },
     {
