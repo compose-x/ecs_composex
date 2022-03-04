@@ -65,7 +65,12 @@ For example, you would have:
 
     * a list of strings
 
-    * a dictionary
+.. _ecs_task_family_hostname_ref:
+
+ecs.task.family.hostname
+---------------------------
+
+This allows to define the hostname (equivalent of services.hostname) but overrides it for the whole ECS Family.
 
 ecs.depends.condition
 ----------------------
