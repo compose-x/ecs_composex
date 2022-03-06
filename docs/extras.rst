@@ -1,15 +1,19 @@
+
 .. meta::
     :description: ECS Compose-X extra features
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS AppMesh, AWS Autoscaling, ecs-plugin, AWS Fargate
 
 .. _extras:
 
-=======
-Extras
-=======
+==============================
+Additional features
+==============================
 
-Plug & Play to existing resources with auto discovery
-======================================================
+.. contents::
+
+
+Plug & Play to existing resources with resources discovery
+=============================================================
 
 Since the start of this project, the ability to plug & play to an existing infrastructure has been a priority to this
 project.
@@ -35,45 +39,6 @@ Finally, alternatively, if you do not have cross-account in place or have some r
 **Use** feature and provide directly the ID or ARN (depends based on the resource type) that you wish to use.
 
 For further information, refer to :ref:`lookup_syntax_reference`
-
-Docker ECS-Plugin x-aws-keys support
-=====================================
-
-In order to keep make the integration and inter-operability of tools used by developers, we are going to add support
-for, mostly, services level x-aws keys such as **-xaws-iam-role** or **x-aws-autoscaling**.
-
-This will allow developers who might have started a journey to ECS using the docker ecs plugin to continue that journey
-with ECS Compose-X without making too many changes.
-
-In case for a similar setting, such as *x-aws-iam-policies* which in ECS Compose-X is under *x-iam/Policies*, these
-non conflicting settings will add up together. However, in case of conflicting information, the ECS Compose-X definition
-will prevail over the x-aws-keys.
-
-AWS AppMesh integration
-=======================
-
-AWS AppMesh is a service mesh which allows you to define how services talk to each other at an application L7) level,
-and optionally, TCP (layer 4) level. It is extremely powerful
-
-
-Since the beginning of the project, we have been using AWS Cloud Map to create a private DNS Hosted Zone linked to the
-VPC created at the same time. This allowed us to very simply register into the PHZ (private hosted zone) via Service
-Discovery.
-
-We are going to use these entries to make a 1-1 mapping between our services defined in the *services* section of the
-docker-compose file and the *nodes* listed in the *x-appmesh* section.
-
-AppMesh uses envoy as a side-car proxy that will capture our services packets and route these to their defined backends.
-Using AWS AppMesh empowers developers to declare how services are supposed to communicate together, what to do in case
-of errors, and administrators can define whether or not the traffic between all the components should be done using TLS
-termination end-to-end, to ensure no man-in-the-middle attacks could happen.
-
-The syntax for AppMesh in ECS Compose-X is a mix of Istio, Envoy and AWS AppMesh definitions.
-
-.. seealso::
-
-    :ref:`appmesh_syntax_reference`
-
 
 Services autoscaling integration
 =================================
@@ -111,20 +76,20 @@ numbers.
         Properties: {}
         Settings: {}
         Services:
-          - name: frontend
-            access: RWMessages
-          - name: backend
-            access: RWMessages
-            scaling:
-              steps:
-                - lower_bound: 0
-                  upper_bound: 10
-                  count: 1
-                - lower_bound: 10
-                  upper_bound: 20
-                  count: 2
-                - lower_bound: 20
-                  count: 21
+          frontend:
+            Access: RWMessages
+          backend:
+            Access: RWMessages
+            Scaling:
+              Steps:
+                - LowerBound: 0
+                  UpperBound: 10
+                  Count: 1
+                - LowerBound: 10
+                  UpperBound: 20
+                  Count: 2
+                - LowerBound: 20
+                  Count: 21
 
 As you can see we defined scaling for SQS only on the backend, as we don't need to scale the frontend based on that.
 Also we set the count for final step to 21, which is higher than the Range indicated.
@@ -141,7 +106,7 @@ Our frontend will be managed by ECS itself which will be ensuring that the avera
 
 
 Fargate CPU/RAM auto configuration
-==================================
+====================================
 
 When you want to create services on ECS, you first need to create a Task Definition. Among the IAM permissions and the
 network configuration, the Task definition also defines how much CPU and RAM you want to have available **for all your
@@ -179,7 +144,6 @@ We have the following example:
 
 .. literalinclude:: ../use-cases/blog.yml
     :language: yaml
-    :emphasize-lines: 18-24, 18-44
 
 We have CPU and RAM limits set for **both limits and reservations**. So we know that we can use the limits, add them up,
 and this will indicate us our CPU configuration.
@@ -294,5 +258,43 @@ For example,
       Queue01:
         Properties: {}
         Services:
-          - name: app01
-            access: RWMessages
+          app01:
+            Access: RWMessages
+
+Docker ECS-Plugin x-aws-keys support
+=====================================
+
+In order to keep make the integration and inter-operability of tools used by developers, we are going to add support
+for, mostly, services level x-aws keys such as **-xaws-iam-role** or **x-aws-autoscaling**.
+
+This will allow developers who might have started a journey to ECS using the docker ecs plugin to continue that journey
+with ECS Compose-X without making too many changes.
+
+In case for a similar setting, such as *x-aws-iam-policies* which in ECS Compose-X is under *x-iam/Policies*, these
+non conflicting settings will add up together. However, in case of conflicting information, the ECS Compose-X definition
+will prevail over the x-aws-keys.
+
+AWS AppMesh integration
+=======================
+
+AWS AppMesh is a service mesh which allows you to define how services talk to each other at an application L7) level,
+and optionally, TCP (layer 4) level. It is extremely powerful
+
+
+Since the beginning of the project, we have been using AWS Cloud Map to create a private DNS Hosted Zone linked to the
+VPC created at the same time. This allowed us to very simply register into the PHZ (private hosted zone) via Service
+Discovery.
+
+We are going to use these entries to make a 1-1 mapping between our services defined in the *services* section of the
+docker-compose file and the *nodes* listed in the *x-appmesh* section.
+
+AppMesh uses envoy as a side-car proxy that will capture our services packets and route these to their defined backends.
+Using AWS AppMesh empowers developers to declare how services are supposed to communicate together, what to do in case
+of errors, and administrators can define whether or not the traffic between all the components should be done using TLS
+termination end-to-end, to ensure no man-in-the-middle attacks could happen.
+
+The syntax for AppMesh in ECS Compose-X is a mix of Istio, Envoy and AWS AppMesh definitions.
+
+.. seealso::
+
+    :ref:`appmesh_syntax_reference`

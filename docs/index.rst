@@ -168,15 +168,15 @@ for extensions in order to ensure the compose files input are correct before doi
 
 .. toctree::
     :maxdepth: 1
-    :caption: Getting Started
 
     requisites
     installation
     lexicon
-    contributing
+    syntax/compose_x/common
+    examples
+    extras
+    compatibility_matrix
 
-.. include:: examples.rst
-.. include:: compatibility_matrix.rst
 .. include:: modules_syntax.rst
 
 
@@ -185,15 +185,15 @@ for extensions in order to ensure the compose files input are correct before doi
     :caption: Additional content
 
     changelog
-    extras
     story
 
 .. toctree::
     :titlesonly:
     :maxdepth: 1
-    :caption: Library Modules
+    :caption: Modules and Source Code
 
     modules
+    contributing
 
 Indices and tables
 ==================

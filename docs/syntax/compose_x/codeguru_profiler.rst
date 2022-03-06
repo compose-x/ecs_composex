@@ -14,21 +14,12 @@ Definition
 
 .. hint::
 
-    Using ECS ComposeX, this automatically adds an Environment variable to your container,
-    and **AWS_CODEGURU_PROFILER_GROUP_NAME** of the newly created Profiling Group.
-
-.. hint::
-
     If you do not specify any Properties, the Profiling group name gets generated for you.
 
 .. tip::
 
     You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/codeguru>`__ to use
     as reference for your use-case.
-
-.. seealso::
-
-    For more structural details, see `JSON Schema`_
 
 Properties
 ===========
@@ -75,6 +66,9 @@ Example
         Services:
           service01
             Access: RW
+            ReturnValues:
+              ProfileName: AWS_CODEGURU_PROFILER_GROUP_NAME
+
 
 .. attention::
 

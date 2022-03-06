@@ -16,10 +16,6 @@ Define an AWS EventBride rule to stop start services.
     as reference for your use-case.
 
 
-.. seealso::
-
-    For more structural details, see `JSON Schema`_
-
 Properties
 ==========
 
@@ -29,16 +25,6 @@ You can find all the properties on the `AWS CFN Events Rules definitions`_.
 
     You do not need to define Targets to point to the services defined in docker-compose. Refer to `Services`_ for that.
 
-MacroParameters
-================
-
-No specific parameters at this time!
-
-
-Settings
-========
-
-No specific settings at this time!
 
 Services
 ========
@@ -48,24 +34,14 @@ There we define the tasks we want to deploy at specific times or events.
 .. code-block:: yaml
     :caption: Services syntax for rules
 
-    name: service_name
-    TaskCount: <N>
-    DeleteDefaultService: True/False (default. False)
+    Services:
+    <service_family_name>:
+      TaskCount: <N>
+      DeleteDefaultService: True/False (default. False)
 
-name
-""""
-
-Here we want to define the name of the **family** we want to use for trigger. If the service is not defined as part of a
-specific family, you can use the service name itself.
-
-.. seealso::
-
-    .. :ref:`composex_deploy_extension`
-
-*Required: Yes.*
 
 TaskCount
-"""""""""
+-----------
 
 Same property as for ECS Parameters of the `Task Rule target definition`_ itself, this allows you to set a specific number
 of tasks.
@@ -77,7 +53,7 @@ of tasks.
     Not using deploy/replicas on purpose, because of the `DeleteDefaultService`_ option
 
 DeleteDefaultService
-"""""""""""""""""""""
+-----------------------
 
 Custom setting, this allows you to NOT define a ECS Service along with the task, therefore you will only get the TaskDefinition
 created.

@@ -14,8 +14,6 @@
     :maxdepth: 1
     :titlesonly:
 
-
-    syntax/compose_x/common
     syntax/compose_x/tags
     syntax/compose_x/ecs_cluster
     syntax/compose_x/kms
