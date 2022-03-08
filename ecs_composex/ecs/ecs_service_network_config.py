@@ -322,7 +322,6 @@ class ServiceNetworking(Ingress):
         self.merge_services_ports(family)
         self.merge_networks(family)
         self.configuration = merge_services_network(family)
-        self.is_public = keypresent("IsPublic", self.configuration)
         self.ingress_from_self = False
         if any([svc.expose_ports for svc in family.services]):
             self.ingress_from_self = True
@@ -330,7 +329,9 @@ class ServiceNetworking(Ingress):
                 f"{family.name} - services have export ports, allowing internal ingress"
             )
         self.security_group = None
-        self.cloudmap_config = merge_cloudmap_settings(family, self.ports)
+        self.cloudmap_config = (
+            merge_cloudmap_settings(family, self.ports) if self.ports else {}
+        )
         super().__init__(self.configuration[self.master_key], self.ports)
         self.ingress_from_self = keyisset(self.self_key, self.definition)
 
