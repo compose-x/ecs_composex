@@ -18,15 +18,12 @@ respective AZ
 
 """
 
-from math import ceil, log
-
 from compose_x_common.compose_x_common import keyisset
 from troposphere import GetAtt, Ref, Sub, Tags
 from troposphere.ec2 import (
     EIP,
     Entry,
     NatGateway,
-    PrefixList,
     Route,
     RouteTable,
     SecurityGroup,
@@ -98,15 +95,6 @@ def add_storage_subnets(template, vpc, az_index, layers):
                 Description=Sub(f"storage-{index} -- ${{{vpc.title}}}"),
             )
         )
-    template.add_resource(
-        PrefixList(
-            "StorageSubnetsPrefixList",
-            AddressFamily="IPv4",
-            Entries=entries,
-            MaxEntries=int((pow(2, ceil(log(len(entries), 2)))) * 2),
-            PrefixListName=Sub(f"${{{vpc.title}}}-storage-subnets"),
-        )
-    )
     return [rtb], subnets
 
 
@@ -186,15 +174,6 @@ def add_public_subnets(template, vpc, az_index, layers, igw, single_nat):
                 Description=Sub(f"public-{index} -- ${{{vpc.title}}}"),
             )
         )
-    template.add_resource(
-        PrefixList(
-            "PublicSubnetsPrefixList",
-            AddressFamily="IPv4",
-            Entries=entries,
-            MaxEntries=int((pow(2, ceil(log(len(entries), 2)))) * 2),
-            PrefixListName=Sub(f"${{{vpc.title}}}-public-subnets"),
-        )
-    )
     return [rtb], subnets, nats
 
 
@@ -321,13 +300,4 @@ def add_apps_subnets(template, vpc, az_index, layers, nats, endpoints=None):
             else:
                 add_interface_endpoint(sg_endpoints, service, subnets, template)
 
-    template.add_resource(
-        PrefixList(
-            "AppsSubnetsPrefixList",
-            AddressFamily="IPv4",
-            Entries=entries,
-            MaxEntries=int((pow(2, ceil(log(len(entries), 2)))) * 2),
-            PrefixListName=Sub(f"${{{vpc.title}}}-apps-subnets"),
-        )
-    )
     return rtbs, subnets

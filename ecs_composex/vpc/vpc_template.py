@@ -22,10 +22,8 @@ from troposphere import (
 from troposphere.ec2 import VPC as VPCType
 from troposphere.ec2 import (
     DHCPOptions,
-    Entry,
     FlowLog,
     InternetGateway,
-    PrefixList,
     VPCDHCPOptionsAssociation,
     VPCGatewayAttachment,
 )
@@ -71,20 +69,6 @@ def add_vpc_core(template, vpc_cidr):
             ),
         ),
         Metadata=metadata,
-    )
-    template.add_resource(
-        PrefixList(
-            "VpcPrefixList",
-            AddressFamily="IPv4",
-            Entries=[
-                Entry(
-                    Cidr=vpc_cidr,
-                    Description=Sub(f"Primary CIDR for ${{{vpc.title}}}"),
-                )
-            ],
-            MaxEntries=5,
-            PrefixListName=Ref(vpc),
-        )
     )
     igw = InternetGateway(IGW_T, template=template)
     VPCGatewayAttachment(
