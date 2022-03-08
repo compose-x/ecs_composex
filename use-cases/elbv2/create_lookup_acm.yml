@@ -4,7 +4,7 @@
 
 x-route53:
   PublicZone:
-    ZoneName: bdd-testing.compose-x.io
+    Name: bdd-testing.compose-x.io
     Lookup: true
 
 x-acm:

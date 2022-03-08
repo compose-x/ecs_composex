@@ -79,7 +79,9 @@ def update_route53_pointer(
         raise RuntimeError("Failed to associate route53 zone to acm validation option")
 
 
-def handle_acm_records(x_hosted_zone, route53_stack, target_cert, acm_stack, settings):
+def handle_acm_records(
+    x_hosted_zone, route53_stack, target_cert, acm_stack, settings, root_stack=None
+):
     """
     Function to go over the ACM Certificate Domain validation options, and identifies x-route53 to map it to.
 
@@ -106,6 +108,7 @@ def handle_acm_records(x_hosted_zone, route53_stack, target_cert, acm_stack, set
         dns_zone_pointer = validation_opt.HostedZoneId.split(r"x-route53::")[-1]
         if dns_zone_pointer != x_hosted_zone.name:
             continue
+        x_hosted_zone.init_stack_for_records(root_stack)
         update_route53_pointer(
             x_hosted_zone,
             validation_opt,

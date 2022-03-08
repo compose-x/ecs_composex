@@ -6,11 +6,24 @@
   "description": "x-route53 specification",
   "type": "object",
   "additionalProperties": false,
-  "required": [
-    "ZoneName"
+  "oneOf": [
+    {
+      "required": [
+        "ZoneName"
+      ]
+    },
+    {
+      "required": [
+        "Name"
+      ]
+    }
   ],
   "properties": {
     "ZoneName": {
+      "type": "string",
+      "format": "idn-hostname"
+    },
+    "Name": {
       "type": "string",
       "format": "idn-hostname"
     },

@@ -8,7 +8,7 @@ Main module for x-route53
 
 import warnings
 
-from compose_x_common.compose_x_common import keyisset
+from compose_x_common.compose_x_common import keyisset, set_else_none
 from troposphere import Ref
 from troposphere.route53 import HostedZone as CfnHostedZone
 
@@ -121,7 +121,13 @@ class HostedZone(AwsEnvironmentResource):
         self.records = []
         super().__init__(name, definition, module_name, settings, mapping_key)
         self.cloud_control_attributes_mapping = {PUBLIC_DNS_ZONE_ID.title: "Id"}
-        self.zone_name = self.definition["ZoneName"]
+        self.zone_name = set_else_none(
+            "ZoneName", self.definition, set_else_none("Name", self.definition, None)
+        )
+        if self.zone_name is None:
+            raise ValueError(
+                f"{self.module_name}.{self.name} - Could not define the Zone Name"
+            )
 
     def init_outputs(self):
         """
@@ -217,19 +223,19 @@ class HostedZone(AwsEnvironmentResource):
                 if isinstance(resource, target[0]) or issubclass(
                     type(resource), target[0]
                 ):
-                    self.init_stack_for_records(root_stack)
-                    if self.mappings:
+                    if (
+                        self.mappings
+                        and self.stack
+                        and not self.stack.is_void
+                        and self.stack.stack_template
+                    ):
                         add_update_mapping(
                             self.stack.stack_template,
                             self.mapping_key,
                             settings.mappings[self.mapping_key],
                         )
                     target[1](
-                        self,
-                        self.stack,
-                        resource,
-                        resource_stack,
-                        settings,
+                        self, self.stack, resource, resource_stack, settings, root_stack
                     )
 
 
