@@ -87,7 +87,6 @@ def add_dns_records_for_elbv2(
     :param ecs_composex.elbv2.elbv2_stack.Elbv2 target_elbv2:
     :param ComposeXStack elbv2_stack:
     """
-
     if x_hosted_zone.cfn_resource and route53_stack.title not in elbv2_stack.DependsOn:
         elbv2_stack.DependsOn.append(route53_stack.title)
     dns_names = record["Names"]
@@ -101,7 +100,12 @@ def add_dns_records_for_elbv2(
 
 
 def handle_elbv2_records(
-    x_hosted_zone, route53_stack, target_elbv2, elbv2_stack, settings=None
+    x_hosted_zone,
+    route53_stack,
+    target_elbv2,
+    elbv2_stack,
+    settings=None,
+    root_stack=None,
 ) -> None:
     """
     Function to add DNS Records for ELBv2
@@ -115,12 +119,12 @@ def handle_elbv2_records(
     if not keyisset("DnsAliases", target_elbv2.definition):
         return
     records = target_elbv2.definition["DnsAliases"]
-
     for record in records:
         dns_zone = record["Route53Zone"]
         dns_zone_pointer = dns_zone.split(r"x-route53::")[-1]
         if dns_zone_pointer != x_hosted_zone.name:
             continue
+        x_hosted_zone.init_stack_for_records(root_stack)
         add_dns_records_for_elbv2(
             x_hosted_zone,
             record,

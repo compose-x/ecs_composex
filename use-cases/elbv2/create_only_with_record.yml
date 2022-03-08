@@ -2,20 +2,10 @@
 # ELBv2 creation for services
 
 
-x-dns:
+x-route53:
   PublicZone:
     Name: bdd-testing.compose-x.io
-    Use: ZABCDEFGHIS0123
-  Records:
-    - Properties:
-        Name: toto.bdd-testing.compose-x.io
-        Type: A
-      Target: x-elbv2::lbA
-    - Properties:
-        Name: tata.bdd-testing.compose-x.io
-        Type: A
-        HostedZoneId: ZSOMETHINGBOGUS
-      Target: x-elbv2::lbA
+    Lookup: true
 
 x-acm:
   public-acm-01:
@@ -32,6 +22,11 @@ x-acm:
 x-elbv2:
   lbA:
     Properties: {}
+    DnsAliases:
+      - Route53Zone: x-route53::PublicZone
+        Names:
+          - test.bdd-testing.compose-x.io
+          - anothertest.bdd-testing.compose-x.io
     Settings:
      S3Logs: bucket:/prefix
      timeout_seconds: 60
