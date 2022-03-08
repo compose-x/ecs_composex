@@ -474,7 +474,7 @@ class ComposeFamily(object):
             )
 
         self.outputs.append(
-            CfnOutput(ecs_params.TASK_T, Value=Ref(self.task_definition))
+            CfnOutput(self.task_definition.title, Value=Ref(self.task_definition))
         )
         if (
             self.scalable_target

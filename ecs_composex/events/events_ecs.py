@@ -174,11 +174,11 @@ def define_service_targets(settings, stack, rule, cluster_arn):
                 ),
                 service_task_def_param.title: GetAtt(
                     service[0].logical_name,
-                    f"Outputs.{service[0].logical_name}{TASK_T}",
+                    f"Outputs.{service[0].task_definition.title}",
                 ),
                 service_subnets_param.title: GetAtt(
                     service[0].logical_name,
-                    f"Outputs.{service[0].logical_name}{APP_SUBNETS.title}",
+                    f"Outputs.{APP_SUBNETS.title}",
                 ),
             }
         )
