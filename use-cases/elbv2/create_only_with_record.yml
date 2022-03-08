@@ -39,9 +39,13 @@ x-elbv2:
         ExtSources:
           - IPv4: "0.0.0.0/0"
             Description: ANY
+            Ports:
+              - 443
+            Name: GOOGLE
           - IPv4: "1.1.1.1/32"
             Description: CLOUDFLARE
             Name: CLOUDFLARE
+
     Listeners:
       - Port: 80
         Protocol: HTTP

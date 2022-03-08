@@ -11,7 +11,7 @@ from copy import deepcopy
 from ipaddress import IPv4Interface
 from json import dumps
 
-from compose_x_common.compose_x_common import keyisset
+from compose_x_common.compose_x_common import keyisset, set_else_none
 from troposphere import AWS_ACCOUNT_ID, AWS_NO_VALUE, Ref, Sub
 from troposphere.ec2 import SecurityGroupIngress
 
@@ -111,9 +111,9 @@ def set_port_from_str(port: str):
         raise ValueError("target port is not valid", numbers_only.pattern)
     if not numbers_only.match(published):
         raise ValueError("published port is not valid", numbers_only.pattern)
-    if not (1 <= int(target) < (2 ** 16)):
+    if not (1 <= int(target) < (2**16)):
         raise ValueError(f"target port {target} is not between 1 and 65535")
-    if not (1 <= int(published) < (2 ** 16)):
+    if not (1 <= int(published) < (2**16)):
         raise ValueError(f"published port {published} is not between 1 and 65535")
 
     return published, target, protocol
@@ -213,9 +213,22 @@ class Ingress(object):
             if keyisset(self.ext_sources_key, self.definition)
             else []
         )
-        self.ext_sources = [
-            dict(y) for y in set(tuple(x.items()) for x in self.ext_sources)
-        ]
+        self.ext_sources = []
+        if keyisset(self.ext_sources_key, self.definition):
+            cidrs = []
+            for ext_source in self.definition[self.ext_sources_key]:
+                source_cidr = set_else_none(
+                    self.ipv4_key,
+                    ext_source,
+                    set_else_none(self.ipv6_key, ext_source, None),
+                )
+                if source_cidr and source_cidr not in cidrs:
+                    self.ext_sources.append(ext_source)
+                else:
+                    LOG.warning(
+                        f"Ingress source {source_cidr} already defined in a previous Ingress rule."
+                    )
+
         self.services = (
             self.definition[self.services_key]
             if keyisset(self.services_key, self.definition)
@@ -229,36 +242,21 @@ class Ingress(object):
     def __repr__(self):
         return dumps(self.definition, indent=2)
 
-    def validate_aws_sources(self):
-        allowed_keys = ["Type", "Id", "Lookup"]
-        allowed_types = ["SecurityGroup", "PrefixList"]
-        for source in self.aws_sources:
-            if not all(key in allowed_keys for key in source.keys()):
-                raise KeyError(
-                    "Missing ingress properties. Got",
-                    source.keys,
-                    "Expected",
-                    allowed_keys,
-                )
-            if not source["Type"] in allowed_types:
-                raise ValueError(
-                    "Invalid type specified. Got",
-                    source["Type"],
-                    "Allowed one of ",
-                    allowed_types,
-                )
-
-    def set_aws_sources_ingress(self, settings, destination_title, sg_ref):
+    def set_aws_sources_ingress(self, settings, destination_title, sg_ref) -> None:
         """
         Method to define AWS Sources ingresses
 
+        :param settings:
         :param destination_title:
         :param sg_ref:
-        :return:
         """
-        self.validate_aws_sources()
         for source in self.aws_sources:
             for port in self.ports:
+                if (
+                    keyisset("Ports", source)
+                    and port["published"] not in source["Ports"]
+                ):
+                    continue
                 common_args = {
                     "FromPort": port["published"],
                     "ToPort": port["published"],
@@ -299,15 +297,28 @@ class Ingress(object):
                     )
 
     def create_ext_sources_ingress_rule(
-        self, destination_tile, allowed_source, security_group, **props
-    ):
+        self, destination_title, allowed_source, security_group, **props
+    ) -> None:
+        """
+        Creates the Security Ingress rule for a CIDR based rule
+
+        :param str destination_title:
+        :param dict allowed_source:
+        :param security_group:
+        :param dict props:
+        """
         for port in self.ports:
+            if (
+                keyisset("Ports", allowed_source)
+                and port["published"] not in allowed_source["Ports"]
+            ):
+                continue
             if keyisset("Name", allowed_source):
                 name = NONALPHANUM.sub("", allowed_source["Name"])
                 title = f"From{name.title()}To{port['published']}{port['protocol']}"
                 description = Sub(
                     f"From {name.title()} "
-                    f"To {port['published']}{port['protocol']} for {destination_tile}"
+                    f"To {port['published']}{port['protocol']} for {destination_title}"
                 )
             else:
                 title = (
@@ -316,7 +327,7 @@ class Ingress(object):
                 )
                 description = Sub(
                     f"Public {port['published']}{port['protocol']}"
-                    f" for {destination_tile}"
+                    f" for {destination_title}"
                 )
             self.ext_ingress_rules.append(
                 SecurityGroupIngress(

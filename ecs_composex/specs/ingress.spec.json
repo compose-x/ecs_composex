@@ -57,6 +57,18 @@
     "AwsSource": {
       "type": "object",
       "additionalProperties": false,
+      "oneOf": [
+        {
+          "required": [
+            "Lookup"
+          ]
+        },
+        {
+          "required": [
+            "Id"
+          ]
+        }
+      ],
       "properties": {
         "Type": {
           "type": "string",
@@ -64,6 +76,9 @@
             "SecurityGroup",
             "PrefixList"
           ]
+        },
+        "Lookup": {
+          "type": "object"
         },
         "Id": {
           "type": "string",
