@@ -8,6 +8,7 @@ Module to define the entry point for AWS Event Rules
 import warnings
 
 from compose_x_common.compose_x_common import keyisset
+from troposphere import NoValue
 from troposphere.events import Rule as CfnRule
 
 from ecs_composex.common import LOG, NONALPHANUM, build_template
@@ -34,6 +35,8 @@ def define_event_rule(stack, rule):
     rule_props = import_record_properties(rule.properties, CfnRule)
     if not keyisset("Targets", rule_props):
         rule_props["Targets"] = []
+    if not keyisset("Name", rule_props) or rule_props["Name"] == "":
+        rule_props["Name"] = NoValue
     rule.cfn_resource = CfnRule(rule.logical_name, **rule_props)
     stack.stack_template.add_resource(rule.cfn_resource)
 
