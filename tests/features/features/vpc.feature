@@ -7,6 +7,5 @@ Feature: ecs_composex.vpc
     And I render all files to verify execution
     Examples:
       | file_path                   | override_file                       |
-      | use-cases/blog.features.yml | use-cases/vpc/use_existing.yml      |
       | use-cases/blog.features.yml | use-cases/vpc/new_vpc.yml           |
       | use-cases/blog.features.yml | use-cases/vpc/new_with_flowlogs.yml |
