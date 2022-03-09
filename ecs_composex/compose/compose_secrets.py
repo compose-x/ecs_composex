@@ -171,20 +171,13 @@ class ComposeSecret(object):
         """
         if not keyisset(self.json_keys_key, self.definition[self.x_key]):
             return
-        required_keys = ["SecretKey"]
-        allowed_keys = ["SecretKey", "VarName", "Transform"]
         unfiltered_secrets = self.definition[self.x_key][self.json_keys_key]
         filtered_secrets = [
             dict(y) for y in set(tuple(x.items()) for x in unfiltered_secrets)
         ]
+        old_secrets = deepcopy(self.ecs_secret)
+        self.ecs_secret = []
         for secret_key in filtered_secrets:
-            if not all(key in allowed_keys for key in secret_key):
-                raise KeyError(
-                    "For Secrets JSON Key support, you must specify",
-                    required_keys,
-                    "Got",
-                    secret_key.keys(),
-                )
             json_key = secret_key["SecretKey"]
             secret_name = define_env_var_name(secret_key)
             if isinstance(self.arn, str):
@@ -220,6 +213,8 @@ class ComposeSecret(object):
                         ),
                     )
                 )
+        if not self.ecs_secret:
+            self.ecs_secret = old_secrets
 
     def define_names_from_import(self):
         """

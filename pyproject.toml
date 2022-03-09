@@ -64,7 +64,7 @@ tox = "^3.24.5"
 tbump = "6.5.0"
 sphinx-jsonschema = "^1.17.2"
 boto3-stubs = {extras = ["acm", "ecs", "cloudformation", "essential"], version = "^1.20.5"}
-pyclean = "^2.0.0"
+pyclean = "^2.1.0"
 
 [tool.poetry.scripts]
 ecs-compose-x = "ecs_composex.cli:main"
