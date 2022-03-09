@@ -17,6 +17,7 @@ from compose_x_common.compose_x_common import (
     attributes_to_mapping,
     keyisset,
     keypresent,
+    set_else_none,
 )
 from troposphere import AWSObject, Export, FindInMap, GetAtt, Join, Output, Ref, Sub
 from troposphere.ecs import Environment
@@ -228,6 +229,8 @@ class XResource(object):
             "compose-x::resource_name": self.name,
             "compose-x::logical_name": self.logical_name,
         }
+        self.cloudmap_settings = set_else_none("x-cloudmap", self.settings, {})
+        self.default_cloudmap_settings = {}
 
     def __repr__(self):
         return self.logical_name

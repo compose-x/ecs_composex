@@ -69,11 +69,56 @@
     "Settings": {
       "type": "object",
       "properties": {
-        "EnvNames": {
-          "description": "WARNING - This is now deprecated. It will be removed in future versions",
-          "type": "array",
-          "items": {
-            "type": "string"
+        "Subnets": {
+          "type": "string",
+          "description": "For applicable resources, allows to override the subnets to place them into from default."
+        },
+        "x-cloudmap": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/definitions/CloudMapDef"
+            }
+          ]
+        }
+      }
+    },
+    "CloudMapDef": {
+      "type": "object",
+      "properties": {
+        "DnsSettings": {
+          "type": "object",
+          "properties": {
+            "Hostname": {
+              "type": "string"
+            },
+            "Port": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 65535
+            }
+          }
+        },
+        "AdditionalValues": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Add arbitrary values for your resource attributes in CloudMap",
+          "patternProperties": {
+            "[\\x20-\\x7E]+$": {
+              "type": "string"
+            }
+          }
+        },
+        "ReturnValues": {
+          "type": "object",
+          "description": "Set the CFN Return Value as attribute in CloudMap",
+          "additionalProperties": false,
+          "patternProperties": {
+            "[\\x20-\\x7E]+$": {
+              "type": "string"
+            }
           }
         }
       }
@@ -159,7 +204,9 @@
     "ScalingDefinition": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["Steps"],
+      "required": [
+        "Steps"
+      ],
       "properties": {
         "Steps": {
           "type": "array",
