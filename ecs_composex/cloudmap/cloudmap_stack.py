@@ -200,7 +200,6 @@ class PrivateNamespace(AwsEnvironmentResource):
                 )
                 continue
             if resource.cloudmap_settings:
-                print("PROCESSING RESOURCE", resource.module_name, resource.name)
                 self.init_stack_for_resources(settings)
                 if (
                     isinstance(resource.cloudmap_settings, str)
