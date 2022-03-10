@@ -7,6 +7,7 @@ Main module for ACM
 """
 
 import warnings
+from copy import deepcopy
 
 from compose_x_common.aws.cloudmap import get_all_dns_namespaces
 from compose_x_common.compose_x_common import keyisset
@@ -36,7 +37,7 @@ from .cloudmap_params import (
     RES_KEY,
     ZONES_PATTERN,
 )
-from .cloudmap_x_resources import handle_dict_cloudmap_settings
+from .cloudmap_x_resources import handle_resource_cloudmap_settings
 
 LOG = setup_logging()
 
@@ -195,10 +196,19 @@ class PrivateNamespace(AwsEnvironmentResource):
                 continue
             if resource.cloudmap_settings:
                 self.init_stack_for_resources()
-                if isinstance(resource.cloudmap_settings, str):
-                    pass
+                if (
+                    isinstance(resource.cloudmap_settings, str)
+                    and resource.default_cloudmap_settings
+                ):
+                    cloudmap_settings = deepcopy(resource.default_cloudmap_settings)
+                    cloudmap_settings["NamespaceName"] = resource.cloudmap_settings
+                    handle_resource_cloudmap_settings(
+                        self, resource, cloudmap_settings, settings
+                    )
                 elif isinstance(resource.cloudmap_settings, dict):
-                    handle_dict_cloudmap_settings(self, resource, settings)
+                    handle_resource_cloudmap_settings(
+                        self, resource, resource.cloudmap_settings, settings
+                    )
         if (
             stack_initialized
             and self.stack.stack_template

@@ -45,12 +45,14 @@ def process_return_values(
     """
     for key, value in return_values.items():
         for attribute_param in resource.attributes_outputs.keys():
-            if attribute_param.title == key:
+            if attribute_param.title == key or (
+                attribute_param.return_value and attribute_param.return_value == key
+            ):
                 break
         else:
             raise KeyError(
                 f"{resource.module_name}.{resource.name} - ReturnValue {key} not found. Available",
-                [p.title for p in resource.output_properties.keys()],
+                [p.title for p in resource.attributes_outputs.keys()],
             )
         attribute_pointer = resource.attributes_outputs[attribute_param]
         if resource.cfn_resource:
@@ -91,18 +93,19 @@ def process_additional_attributes(additional_attributes: dict, instance_props: d
         instance_props["InstanceAttributes"][key] = value
 
 
-def handle_dict_cloudmap_settings(namespace, resource, settings) -> None:
+def handle_resource_cloudmap_settings(
+    namespace, resource, cloudmap_settings: dict, settings
+) -> None:
     """
     Function to handle x-cloudmap.{} settings
 
     :param ecs_composex.cloudmap.cloudmap_stack.PrivateNamespace namespace: The namespace to check on association with the resource.
     :param ecs_composex.compose.x_resources.XResource resource:
+    :param ecs_composex.common.settings.ComposeXSettings settings:
     """
-    if resource.cloudmap_settings["NamespaceName"] != namespace.name:
+    if cloudmap_settings["NamespaceName"] != namespace.name:
         return
-    if not resource.cfn_resource and not keyisset(
-        "ForceRegister", resource.cloudmap_settings
-    ):
+    if not resource.cfn_resource and not keyisset("ForceRegister", cloudmap_settings):
         print("WE ONLY REGISTER TO CLOUDMAP NEW RESOURCES")
         return
     resource_service_title = f"{resource.module_name}{resource.logical_name}Service"
@@ -119,27 +122,24 @@ def handle_dict_cloudmap_settings(namespace, resource, settings) -> None:
     }
     instance_props = {"InstanceAttributes": {}}
     if (
-        keyisset("DnsSettings", resource.cloudmap_settings)
+        keyisset("DnsSettings", cloudmap_settings)
         and not resource.cloudmap_dns_supported
     ):
         service_props["Type"] = "HTTP"
-    elif (
-        keyisset("DnsSettings", resource.cloudmap_settings)
-        and resource.cloudmap_dns_supported
-    ):
+    elif keyisset("DnsSettings", cloudmap_settings) and resource.cloudmap_dns_supported:
         pass
-    if keyisset("ReturnValues", resource.cloudmap_settings):
+    if keyisset("ReturnValues", cloudmap_settings):
         process_return_values(
             namespace,
             resource,
-            resource.cloudmap_settings["ReturnValues"],
+            cloudmap_settings["ReturnValues"],
             service_props,
             instance_props,
             settings,
         )
-    if keyisset("AdditionalAttributes", resource.cloudmap_settings):
+    if keyisset("AdditionalAttributes", cloudmap_settings):
         process_additional_attributes(
-            resource.cloudmap_settings["AdditionalAttributes"], instance_props
+            cloudmap_settings["AdditionalAttributes"], instance_props
         )
 
     resource_service = Service(resource_service_title, **service_props)
