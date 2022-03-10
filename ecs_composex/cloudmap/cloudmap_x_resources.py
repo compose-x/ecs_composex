@@ -110,7 +110,7 @@ def handle_resource_cloudmap_settings(
     if resource_service_title in namespace.stack.stack_template.resources:
         return
     namespace_id_pointer = (
-        namespace.attributes_outputs[PRIVATE_NAMESPACE_ID]["Value"]
+        namespace.attributes_outputs[PRIVATE_NAMESPACE_ID]["ImportValue"]
         if not namespace.cfn_resource
         else Ref(namespace.cfn_resource)
     )

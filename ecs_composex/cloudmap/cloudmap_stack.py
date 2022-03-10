@@ -14,7 +14,7 @@ from compose_x_common.compose_x_common import keyisset
 from troposphere import GetAtt, Ref
 from troposphere.servicediscovery import PrivateDnsNamespace
 
-from ecs_composex.common import build_template, setup_logging
+from ecs_composex.common import add_update_mapping, build_template, setup_logging
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources import (
     AwsEnvironmentResource,
@@ -169,7 +169,7 @@ class PrivateNamespace(AwsEnvironmentResource):
                     ns_id=lookup_attributes["NamespaceId"],
                 )
 
-    def init_stack_for_resources(self) -> None:
+    def init_stack_for_resources(self, settings) -> None:
         """
         When creating new Route53 records, if the x-route53 where looked up, we need to initialize the Route53 stack
 
@@ -179,6 +179,11 @@ class PrivateNamespace(AwsEnvironmentResource):
             stack_template = build_template("Root stack for x-cloudmap resources")
             super(XStack, self.stack).__init__(MOD_KEY, stack_template)
             self.stack.is_void = False
+            add_update_mapping(
+                self.stack.stack_template,
+                self.mapping_key,
+                settings.mappings[self.mapping_key],
+            )
 
     def handle_x_dependencies(self, settings, root_stack=None) -> None:
         """
@@ -195,7 +200,7 @@ class PrivateNamespace(AwsEnvironmentResource):
                 )
                 continue
             if resource.cloudmap_settings:
-                self.init_stack_for_resources()
+                self.init_stack_for_resources(settings)
                 if (
                     isinstance(resource.cloudmap_settings, str)
                     and resource.default_cloudmap_settings
@@ -215,7 +220,7 @@ class PrivateNamespace(AwsEnvironmentResource):
             and self.stack.stack_template.resources
             and self.stack.title not in root_stack.stack_template.resources
         ):
-            root_stack.add_resource(self.stack)
+            root_stack.stack_template.add_resource(self.stack)
 
 
 def resolve_lookup(lookup_resources, settings):
