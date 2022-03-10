@@ -113,7 +113,7 @@
           "description": "Add arbitrary values for your resource attributes in CloudMap",
           "patternProperties": {
             "[\\x20-\\x7E]+$": {
-              "type": "string"
+              "type": ["string", "boolean"]
             }
           }
         },
