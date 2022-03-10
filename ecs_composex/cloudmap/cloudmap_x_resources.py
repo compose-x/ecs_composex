@@ -119,11 +119,10 @@ def handle_resource_cloudmap_settings(
         "NamespaceId": namespace_id_pointer,
     }
     instance_props = {"InstanceAttributes": {}}
-    if (
-        keyisset("DnsSettings", cloudmap_settings)
-        and not resource.cloudmap_dns_supported
-    ):
+    if not resource.cloudmap_dns_supported:
         service_props["Type"] = "HTTP"
+        if keyisset("DnsSettings", cloudmap_settings):
+            print(f"{resource.module_name}.{resource.name} does not support DnsSettins for x-cloudmap.")
     elif keyisset("DnsSettings", cloudmap_settings) and resource.cloudmap_dns_supported:
         pass
     if keyisset("ReturnValues", cloudmap_settings):
