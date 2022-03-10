@@ -231,6 +231,7 @@ class XResource(object):
         }
         self.cloudmap_settings = set_else_none("x-cloudmap", self.settings, {})
         self.default_cloudmap_settings = {}
+        self.cloudmap_dns_supported = False
 
     def __repr__(self):
         return self.logical_name
@@ -945,6 +946,7 @@ class NetworkXResource(ServicesXResource):
         self.requires_vpc = True
         self.cleanse_external_targets()
         self.set_override_subnets()
+        self.cloudmap_dns_supported = True
 
     def remove_services_after_family_cleanups(self) -> None:
         """

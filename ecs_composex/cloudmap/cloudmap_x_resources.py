@@ -1,0 +1,149 @@
+#   -*- coding: utf-8 -*-
+#  SPDX-License-Identifier: MPL-2.0
+#  Copyright 2020-2022 John Mille <john@compose-x.io>
+
+"""
+Manage the registration of x-resources into AWS CloudMap namespace
+"""
+
+from compose_x_common.compose_x_common import keyisset
+from troposphere import FindInMap, GetAtt, NoValue, Ref, Region, Sub
+from troposphere.servicediscovery import DnsConfig, DnsRecord, Instance, Service
+
+from ecs_composex.common import add_parameters, add_update_mapping
+
+from .cloudmap_params import PRIVATE_NAMESPACE_ID
+
+
+def process_dns_config(namespace, resource, dns_settings: dict) -> None:
+    """
+    Process the DnsSettings of the x-cloudmap configuration
+
+    :param namespace:
+    :param ecs_composex.compose.x_resources.XResource resource:
+    :param dict dns_settings:
+    :return:
+    """
+
+
+def process_return_values(
+    namespace,
+    resource,
+    return_values: dict,
+    service_props: dict,
+    instance_props: dict,
+    settings,
+):
+    """
+    Processes the ReturnValues attributes to assign to an instance.
+
+    :param namespace:
+    :param ecs_composex.compose.x_resources.XResource resource:
+    :param dict return_values:
+    :param dict service_props:
+    :param dict instance_props:
+    """
+    for key, value in return_values.items():
+        for attribute_param in resource.attributes_outputs.keys():
+            if attribute_param.title == key:
+                break
+        else:
+            raise KeyError(
+                f"{resource.module_name}.{resource.name} - ReturnValue {key} not found. Available",
+                [p.title for p in resource.output_properties.keys()],
+            )
+        attribute_pointer = resource.attributes_outputs[attribute_param]
+        if resource.cfn_resource:
+            add_parameters(
+                namespace.stack.stack_template, [attribute_pointer["ImportParameter"]]
+            )
+            namespace.stack.Parameters.update(
+                {
+                    attribute_pointer["ImportParameter"].title: attribute_pointer[
+                        "ImportValue"
+                    ]
+                }
+            )
+            instance_props["InstanceAttributes"][key] = Ref(
+                attribute_pointer["ImportParameter"]
+            )
+        else:
+            add_update_mapping(
+                namespace.stack.stack_template,
+                resource.mapping_key,
+                settings.mappings[resource.mapping_key],
+            )
+            instance_props["InstanceAttributes"][value] = attribute_pointer[
+                "ImportValue"
+            ]
+
+
+def process_additional_attributes(additional_attributes: dict, instance_props: dict):
+    """
+    Processes the ReturnValues attributes to assign to an instance.
+
+    :param dict additional_attributes:
+    :param dict instance_props:
+    """
+    for key, value in additional_attributes.items():
+        if key.startswith("AWS_"):
+            continue
+        instance_props["InstanceAttributes"][key] = value
+
+
+def handle_dict_cloudmap_settings(namespace, resource, settings) -> None:
+    """
+    Function to handle x-cloudmap.{} settings
+
+    :param ecs_composex.cloudmap.cloudmap_stack.PrivateNamespace namespace: The namespace to check on association with the resource.
+    :param ecs_composex.compose.x_resources.XResource resource:
+    """
+    if resource.cloudmap_settings["NamespaceName"] != namespace.name:
+        return
+    if not resource.cfn_resource and not keyisset(
+        "ForceRegister", resource.cloudmap_settings
+    ):
+        print("WE ONLY REGISTER TO CLOUDMAP NEW RESOURCES")
+        return
+    resource_service_title = f"{resource.module_name}{resource.logical_name}Service"
+    if resource_service_title in namespace.stack.stack_template.resources:
+        return
+    namespace_id_pointer = (
+        namespace.attributes_outputs[PRIVATE_NAMESPACE_ID]["Value"]
+        if not namespace.cfn_resource
+        else Ref(namespace.cfn_resource)
+    )
+    service_props = {
+        "Description": f"{resource.name}",
+        "NamespaceId": namespace_id_pointer,
+    }
+    instance_props = {"InstanceAttributes": {}}
+    if (
+        keyisset("DnsSettings", resource.cloudmap_settings)
+        and not resource.cloudmap_dns_supported
+    ):
+        service_props["Type"] = "HTTP"
+    elif (
+        keyisset("DnsSettings", resource.cloudmap_settings)
+        and resource.cloudmap_dns_supported
+    ):
+        pass
+    if keyisset("ReturnValues", resource.cloudmap_settings):
+        process_return_values(
+            namespace,
+            resource,
+            resource.cloudmap_settings["ReturnValues"],
+            service_props,
+            instance_props,
+            settings,
+        )
+    if keyisset("AdditionalAttributes", resource.cloudmap_settings):
+        process_additional_attributes(
+            resource.cloudmap_settings["AdditionalAttributes"], instance_props
+        )
+
+    resource_service = Service(resource_service_title, **service_props)
+    instance_props["ServiceId"] = Ref(resource_service)
+    resource_instance = Instance(f"{resource_service_title}Instance", **instance_props)
+    namespace.stack.stack_template.add_resource(resource_service)
+    namespace.stack.stack_template.add_resource(resource_instance)

@@ -174,7 +174,7 @@ class KmsKey(AwsEnvironmentResource, ApiXResource):
                 Metadata=metadata,
             )
 
-    def handle_x_dependencies(self, settings, root_stack=None):
+    def handle_x_dependencies(self, settings, root_stack=None) -> None:
         """
         WIll go over all the new resources to create in the execution and search for properties that can be updated
         with itself

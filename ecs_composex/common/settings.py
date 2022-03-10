@@ -173,7 +173,7 @@ class ComposeXSettings(object):
         self.ignore_ecr_findings = keyisset(self.ecr_arg, kwargs)
         self.x_resources_void = []
 
-    def get_x_resources(self, include_new=True, include_mappings=True):
+    def get_x_resources(self, include_new=True, include_mappings=True) -> list:
         """
         Returns the x_resources with filters
 

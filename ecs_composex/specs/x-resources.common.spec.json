@@ -88,6 +88,10 @@
     "CloudMapDef": {
       "type": "object",
       "properties": {
+        "NamespaceName": {
+          "type": "string",
+          "description": "The name of the x-cloudmap namespace to register the resource into."
+        },
         "DnsSettings": {
           "type": "object",
           "properties": {
@@ -101,7 +105,7 @@
             }
           }
         },
-        "AdditionalValues": {
+        "AdditionalAttributes": {
           "type": "object",
           "additionalProperties": false,
           "description": "Add arbitrary values for your resource attributes in CloudMap",
@@ -120,6 +124,11 @@
               "type": "string"
             }
           }
+        },
+        "ForceRegister": {
+          "type": "boolean",
+          "description": "When used on Lookup resources, enable registering the resource anyway.",
+          "default": false
         }
       }
     },
