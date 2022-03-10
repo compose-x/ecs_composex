@@ -187,6 +187,7 @@ class Bucket(ApiXResource):
         self.default_cloudmap_settings = {
             "ReturnValues": {
                 S3_BUCKET_NAME.title: S3_BUCKET_NAME.title,
+                S3_BUCKET_ARN.title: S3_BUCKET_ARN.title,
                 S3_BUCKET_DOMAIN_NAME.return_value: S3_BUCKET_NAME.return_value,
             }
         }

@@ -6,8 +6,8 @@ x-dynamodb:
   tableA-A:
     Settings:
       x-cloudmap:
-        NamespaceName: private
-        AdditionalValues:
+        Namespace: private
+        AdditionalAttributes:
           profession: spartan
         ReturnValues:
           TableName: MyTableName
@@ -96,8 +96,8 @@ x-dynamodb:
     Settings:
       x-cloudmap:
         ForceRegister: true
-        NamespaceName: private
-        AdditionalValues:
+        Namespace: private
+        AdditionalAttributes:
           profession: spartan
         ReturnValues:
           TableName: MyTableName
@@ -112,8 +112,8 @@ x-dynamodb:
         access: RW
     Settings:
       x-cloudmap:
-        NamespaceName: private
-        AdditionalValues:
+        Namespace: private
+        AdditionalAttributes:
           profession: spartan
         ReturnValues:
           TableName: MyTableName

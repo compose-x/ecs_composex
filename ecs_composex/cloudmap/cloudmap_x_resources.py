@@ -30,7 +30,6 @@ def process_return_values(
     namespace,
     resource,
     return_values: dict,
-    service_props: dict,
     instance_props: dict,
     settings,
 ):
@@ -40,8 +39,8 @@ def process_return_values(
     :param namespace:
     :param ecs_composex.compose.x_resources.XResource resource:
     :param dict return_values:
-    :param dict service_props:
     :param dict instance_props:
+    :param ecs_composex.common.settings.ComposeXSettings settings:
     """
     for key, value in return_values.items():
         for attribute_param in resource.attributes_outputs.keys():
@@ -103,10 +102,9 @@ def handle_resource_cloudmap_settings(
     :param ecs_composex.compose.x_resources.XResource resource:
     :param ecs_composex.common.settings.ComposeXSettings settings:
     """
-    if cloudmap_settings["NamespaceName"] != namespace.name:
+    if cloudmap_settings["Namespace"] != namespace.name:
         return
     if not resource.cfn_resource and not keyisset("ForceRegister", cloudmap_settings):
-        print("WE ONLY REGISTER TO CLOUDMAP NEW RESOURCES")
         return
     resource_service_title = f"{resource.module_name}{resource.logical_name}Service"
     if resource_service_title in namespace.stack.stack_template.resources:
@@ -133,7 +131,6 @@ def handle_resource_cloudmap_settings(
             namespace,
             resource,
             cloudmap_settings["ReturnValues"],
-            service_props,
             instance_props,
             settings,
         )

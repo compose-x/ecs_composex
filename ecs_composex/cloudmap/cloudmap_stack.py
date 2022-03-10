@@ -201,7 +201,7 @@ class PrivateNamespace(AwsEnvironmentResource):
                     and resource.default_cloudmap_settings
                 ):
                     cloudmap_settings = deepcopy(resource.default_cloudmap_settings)
-                    cloudmap_settings["NamespaceName"] = resource.cloudmap_settings
+                    cloudmap_settings["Namespace"] = resource.cloudmap_settings
                     handle_resource_cloudmap_settings(
                         self, resource, cloudmap_settings, settings
                     )

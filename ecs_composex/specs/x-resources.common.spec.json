@@ -87,8 +87,10 @@
     },
     "CloudMapDef": {
       "type": "object",
+      "additionalProperties": false,
+      "required": ["Namespace"],
       "properties": {
-        "NamespaceName": {
+        "Namespace": {
           "type": "string",
           "description": "The name of the x-cloudmap namespace to register the resource into."
         },
