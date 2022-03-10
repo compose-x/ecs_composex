@@ -10,20 +10,68 @@ from compose_x_common.compose_x_common import keyisset
 from troposphere import FindInMap, GetAtt, NoValue, Ref, Region, Sub
 from troposphere.servicediscovery import DnsConfig, DnsRecord, Instance, Service
 
-from ecs_composex.common import add_parameters, add_update_mapping
+from ecs_composex.common import LOG, add_parameters, add_update_mapping
 
 from .cloudmap_params import PRIVATE_NAMESPACE_ID
 
 
-def process_dns_config(namespace, resource, dns_settings: dict) -> None:
+def process_dns_config(
+    namespace,
+    resource,
+    dns_settings: dict,
+    settings,
+    service: Service,
+    instance: Instance,
+) -> None:
     """
     Process the DnsSettings of the x-cloudmap configuration
 
-    :param namespace:
-    :param ecs_composex.compose.x_resources.XResource resource:
+    :param ecs_composex.cloudmap.cloudmap_stack.PrivateNamespace namespace:
+    :param ecs_composex.compose.x_resources.DatabaseXResource resource:
     :param dict dns_settings:
-    :return:
+    :param ecs_composex.common.settings.ComposeXSettings settings:
+    :param troposphere.servicediscovery.Service service:
+    :param troposphere.servicediscovery.Instance instance:
     """
+    hostname = (
+        dns_settings["Hostname"]
+        if keyisset("Hostname", dns_settings)
+        else resource.logical_name
+    )
+    if namespace.zone_name not in hostname:
+        hostname = f"{hostname}.{namespace.zone_name}"
+    record = DnsRecord(Type="CNAME", TTL="15")
+    config = DnsConfig(DnsRecords=[record], NamespaceId=NoValue)
+    setattr(service, "DnsConfig", config)
+    setattr(service, "Name", hostname)
+
+    if not hasattr(resource, "db_cluster_endpoint_param"):
+        return
+
+    attribute_pointer = resource.attributes_outputs[resource.db_cluster_endpoint_param]
+    if resource.cfn_resource:
+        add_parameters(
+            namespace.stack.stack_template, [attribute_pointer["ImportParameter"]]
+        )
+        namespace.stack.Parameters.update(
+            {
+                attribute_pointer["ImportParameter"].title: attribute_pointer[
+                    "ImportValue"
+                ]
+            }
+        )
+        instance.InstanceAttributes.update(
+            {"AWS_INSTANCE_CNAME": Ref(attribute_pointer["ImportParameter"])}
+        )
+    else:
+        add_update_mapping(
+            namespace.stack.stack_template,
+            resource.mapping_key,
+            settings.mappings[resource.mapping_key],
+        )
+        instance.InstanceAttributes.update(
+            {"AWS_INSTANCE_CNAME": attribute_pointer["ImportValue"]}
+        )
 
 
 def process_return_values(
@@ -103,12 +151,18 @@ def handle_resource_cloudmap_settings(
     :param ecs_composex.common.settings.ComposeXSettings settings:
     """
     if cloudmap_settings["Namespace"] != namespace.name:
+        LOG.debug("NAMESPACE DOES NOT MATCH", cloudmap_settings, namespace.name)
         return
     if not resource.cfn_resource and not keyisset("ForceRegister", cloudmap_settings):
+        LOG.debug("LOOKUP AND NO FORCE", cloudmap_settings)
         return
     resource_service_title = f"{resource.module_name}{resource.logical_name}Service"
     if resource_service_title in namespace.stack.stack_template.resources:
+        LOG.debug("ALREADY BEEN PROCESSED", resource.name)
         return
+    LOG.debug(
+        "PROCESSING IN HANDLER", resource.module_name, resource.name, cloudmap_settings
+    )
     namespace_id_pointer = (
         namespace.attributes_outputs[PRIVATE_NAMESPACE_ID]["ImportValue"]
         if not namespace.cfn_resource
@@ -117,14 +171,9 @@ def handle_resource_cloudmap_settings(
     service_props = {
         "Description": f"{resource.name}",
         "NamespaceId": namespace_id_pointer,
+        "Type": "HTTP",
     }
     instance_props = {"InstanceAttributes": {}}
-    if not resource.cloudmap_dns_supported:
-        service_props["Type"] = "HTTP"
-        if keyisset("DnsSettings", cloudmap_settings):
-            print(f"{resource.module_name}.{resource.name} does not support DnsSettins for x-cloudmap.")
-    elif keyisset("DnsSettings", cloudmap_settings) and resource.cloudmap_dns_supported:
-        pass
     if keyisset("ReturnValues", cloudmap_settings):
         process_return_values(
             namespace,
@@ -137,9 +186,29 @@ def handle_resource_cloudmap_settings(
         process_additional_attributes(
             cloudmap_settings["AdditionalAttributes"], instance_props
         )
-
     resource_service = Service(resource_service_title, **service_props)
+
     instance_props["ServiceId"] = Ref(resource_service)
     resource_instance = Instance(f"{resource_service_title}Instance", **instance_props)
+
+    if keyisset("DnsSettings", cloudmap_settings) and resource.cloudmap_dns_supported:
+        del service_props["Type"]
+        process_dns_config(
+            namespace,
+            resource,
+            cloudmap_settings["DnsSettings"],
+            settings,
+            resource_service,
+            resource_instance,
+        )
+    elif not resource.cloudmap_dns_supported and keyisset(
+        "DnsSettings", cloudmap_settings
+    ):
+        LOG.warning(
+            f"{resource.module_name}.{resource.name} does not support DnsSettings for x-cloudmap."
+        )
     namespace.stack.stack_template.add_resource(resource_service)
     namespace.stack.stack_template.add_resource(resource_instance)
+
+
+7

@@ -200,6 +200,7 @@ class PrivateNamespace(AwsEnvironmentResource):
                 )
                 continue
             if resource.cloudmap_settings:
+                print("PROCESSING RESOURCE", resource.module_name, resource.name)
                 self.init_stack_for_resources(settings)
                 if (
                     isinstance(resource.cloudmap_settings, str)
@@ -207,6 +208,7 @@ class PrivateNamespace(AwsEnvironmentResource):
                 ):
                     cloudmap_settings = deepcopy(resource.default_cloudmap_settings)
                     cloudmap_settings["Namespace"] = resource.cloudmap_settings
+                    cloudmap_settings["ForceRegister"] = True
                     handle_resource_cloudmap_settings(
                         self, resource, cloudmap_settings, settings
                     )

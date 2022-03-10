@@ -845,7 +845,7 @@ class ServicesXResource(XResource):
         """
         for service_name, service_def in self.services.items():
             if not keyisset("Scaling", service_def):
-                LOG.info(
+                LOG.debug(
                     f"{self.module_name}.{self.name} - No Scaling set for {service_name}"
                 )
                 continue
@@ -1030,6 +1030,9 @@ class NetworkXResource(ServicesXResource):
 class DatabaseXResource(NetworkXResource):
     """
     Class for network resources that share common properties
+
+    :ivar ecs_composex.common.cfn_params.Parameter db_secret_arn_parameter:
+    :ivar ecs_composex.common.cfn_params.Parameter db_cluster_endpoint_param:
     """
 
     def __init__(
@@ -1042,6 +1045,11 @@ class DatabaseXResource(NetworkXResource):
         self.db_cluster_endpoint_param = None
         self.db_cluster_ro_endpoint_param = None
         super().__init__(name, definition, module_name, settings, mapping_key)
+        self.default_cloudmap_settings = {
+            "DnsSettings": {
+                "Hostname": self.logical_name,
+            },
+        }
 
     def to_ecs(self, settings, root_stack=None) -> None:
         """

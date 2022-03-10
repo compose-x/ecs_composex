@@ -35,7 +35,13 @@ from ecs_composex.docdb.docdb_template import (
     init_doc_db_template,
 )
 from ecs_composex.iam.import_sam_policies import get_access_types
-from ecs_composex.rds.rds_params import DB_CLUSTER_ARN, DB_SECRET_ARN, DB_SG
+from ecs_composex.rds.rds_params import (
+    DB_CLUSTER_ARN,
+    DB_ENDPOINT_ADDRESS,
+    DB_RO_ENDPOINT_ADDRESS,
+    DB_SECRET_ARN,
+    DB_SG,
+)
 from ecs_composex.rds_resources_settings import lookup_rds_resource, lookup_rds_secret
 from ecs_composex.vpc.vpc_params import STORAGE_SUBNETS
 
@@ -79,6 +85,8 @@ def get_db_cluster_config(db, account_id, resource_id):
         db.port_param: "Port",
         db.security_group_param: "VpcSecurityGroups::0::VpcSecurityGroupId",
         db.db_cluster_arn_parameter: "DBClusterArn",
+        db.db_cluster_endpoint_param: "Endpoint",
+        db.db_cluster_ro_endpoint_param: "ReaderEndpoint",
     }
     config = attributes_to_mapping(db_cluster, attributes_mappings)
     return config
@@ -113,6 +121,8 @@ class DocDb(DatabaseXResource):
         self.db_cluster_arn_parameter = DB_CLUSTER_ARN
         self.ref_parameter = DOCDB_NAME
         self.arn_parameter = DB_CLUSTER_ARN
+        self.db_cluster_endpoint_param = DB_ENDPOINT_ADDRESS
+        self.db_cluster_ro_endpoint_param = DB_RO_ENDPOINT_ADDRESS
 
     def init_outputs(self):
         """
