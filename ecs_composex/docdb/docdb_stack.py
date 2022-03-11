@@ -26,6 +26,8 @@ from ecs_composex.docdb.docdb_params import (
     DOCDB_ID,
     DOCDB_NAME,
     DOCDB_PORT,
+    DOCDBC_ENDPOINT,
+    DOCDBC_READ_ENDPOINT,
     MAPPINGS_KEY,
     MOD_KEY,
     RES_KEY,
@@ -79,6 +81,8 @@ def get_db_cluster_config(db, account_id, resource_id):
         db.port_param: "Port",
         db.security_group_param: "VpcSecurityGroups::0::VpcSecurityGroupId",
         db.db_cluster_arn_parameter: "DBClusterArn",
+        db.db_cluster_endpoint_param: "Endpoint",
+        db.db_cluster_ro_endpoint_param: "ReaderEndpoint",
     }
     config = attributes_to_mapping(db_cluster, attributes_mappings)
     return config
@@ -113,6 +117,8 @@ class DocDb(DatabaseXResource):
         self.db_cluster_arn_parameter = DB_CLUSTER_ARN
         self.ref_parameter = DOCDB_NAME
         self.arn_parameter = DB_CLUSTER_ARN
+        self.db_cluster_endpoint_param = DOCDBC_ENDPOINT
+        self.db_cluster_ro_endpoint_param = DOCDBC_READ_ENDPOINT
 
     def init_outputs(self):
         """
@@ -125,6 +131,18 @@ class DocDb(DatabaseXResource):
                 self.cfn_resource,
                 GetAtt,
                 self.port_param.return_value,
+            ),
+            self.db_cluster_endpoint_param: (
+                f"{self.logical_name}{self.db_cluster_endpoint_param.return_value}",
+                self.cfn_resource,
+                GetAtt,
+                self.db_cluster_endpoint_param.return_value,
+            ),
+            self.db_cluster_ro_endpoint_param: (
+                f"{self.logical_name}{self.db_cluster_ro_endpoint_param.return_value}",
+                self.cfn_resource,
+                GetAtt,
+                self.db_cluster_ro_endpoint_param.return_value,
             ),
             self.db_secret_arn_parameter: (
                 self.db_secret.title,

@@ -17,6 +17,7 @@ from compose_x_common.compose_x_common import (
     attributes_to_mapping,
     keyisset,
     keypresent,
+    set_else_none,
 )
 from troposphere import AWSObject, Export, FindInMap, GetAtt, Join, Output, Ref, Sub
 from troposphere.ecs import Environment
@@ -228,6 +229,9 @@ class XResource(object):
             "compose-x::resource_name": self.name,
             "compose-x::logical_name": self.logical_name,
         }
+        self.cloudmap_settings = set_else_none("x-cloudmap", self.settings, {})
+        self.default_cloudmap_settings = {}
+        self.cloudmap_dns_supported = False
 
     def __repr__(self):
         return self.logical_name
@@ -841,7 +845,7 @@ class ServicesXResource(XResource):
         """
         for service_name, service_def in self.services.items():
             if not keyisset("Scaling", service_def):
-                LOG.info(
+                LOG.debug(
                     f"{self.module_name}.{self.name} - No Scaling set for {service_name}"
                 )
                 continue
@@ -942,6 +946,7 @@ class NetworkXResource(ServicesXResource):
         self.requires_vpc = True
         self.cleanse_external_targets()
         self.set_override_subnets()
+        self.cloudmap_dns_supported = True
 
     def remove_services_after_family_cleanups(self) -> None:
         """
@@ -1025,6 +1030,9 @@ class NetworkXResource(ServicesXResource):
 class DatabaseXResource(NetworkXResource):
     """
     Class for network resources that share common properties
+
+    :ivar ecs_composex.common.cfn_params.Parameter db_secret_arn_parameter:
+    :ivar ecs_composex.common.cfn_params.Parameter db_cluster_endpoint_param:
     """
 
     def __init__(
@@ -1037,6 +1045,11 @@ class DatabaseXResource(NetworkXResource):
         self.db_cluster_endpoint_param = None
         self.db_cluster_ro_endpoint_param = None
         super().__init__(name, definition, module_name, settings, mapping_key)
+        self.default_cloudmap_settings = {
+            "DnsSettings": {
+                "Hostname": self.logical_name,
+            },
+        }
 
     def to_ecs(self, settings, root_stack=None) -> None:
         """

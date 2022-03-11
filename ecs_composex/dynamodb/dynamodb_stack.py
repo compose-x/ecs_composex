@@ -78,6 +78,12 @@ class Table(ApiXResource):
         super().__init__(name, definition, module_name, settings, mapping_key)
         self.arn_parameter = TABLE_ARN
         self.ref_parameter = TABLE_NAME
+        self.default_cloudmap_settings = {
+            "ReturnValues": {
+                TABLE_NAME.title: TABLE_NAME.title,
+                TABLE_ARN.title: TABLE_ARN.title,
+            }
+        }
 
     def init_outputs(self):
         self.output_properties = {

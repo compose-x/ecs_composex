@@ -296,6 +296,13 @@ resources that do not have this override.
     For ECS services to be deployed into different subnets, refer to :ref:`compose_networks_syntax_reference`
 
 
+x-cloudmap
+-------------
+
+This allows you to register your services into AWS Service Discovery (AWS CloudMap) automatically.
+
+See :ref:`resources_settings_cloudmap` for more details.
+
 
 JSON Schema
 ============

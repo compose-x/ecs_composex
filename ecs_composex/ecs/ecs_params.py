@@ -154,11 +154,11 @@ RUNTIME_OS_FAMILY = Parameter(RUNTIME_OS_FAMILY_T, Type="String", Default="LINUX
 
 
 FARGATE_MODES = {
-    256: [2**i for i in [9, 10, 11]],
-    512: [(2**10) * i for i in range(1, 5)],
-    1024: [(2**10) * i for i in range(2, 9)],
-    2048: [(2**10) * i for i in range(4, 17)],
-    4096: [(2**10) * i for i in range(8, 33)],
+    256: [2 ** i for i in [9, 10, 11]],
+    512: [(2 ** 10) * i for i in range(1, 5)],
+    1024: [(2 ** 10) * i for i in range(2, 9)],
+    2048: [(2 ** 10) * i for i in range(4, 17)],
+    4096: [(2 ** 10) * i for i in range(8, 33)],
 }
 
 FARGATE_MODES_VALUES = []

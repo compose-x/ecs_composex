@@ -25,8 +25,10 @@ from ecs_composex.rds.rds_features import apply_extra_parameters
 from ecs_composex.rds.rds_params import (
     DB_CLUSTER_ARN,
     DB_CLUSTER_NAME,
+    DB_ENDPOINT_ADDRESS,
     DB_ENDPOINT_PORT,
     DB_NAME,
+    DB_RO_ENDPOINT_ADDRESS,
     DB_SECRET_ARN,
     DB_SG,
     MAPPINGS_KEY,
@@ -99,6 +101,8 @@ def get_db_cluster_config(db, account_id, resource_id):
         db.port_param: "Port",
         db.security_group_param: "VpcSecurityGroups::0::VpcSecurityGroupId",
         db.db_cluster_arn_parameter: "DBClusterArn",
+        db.db_cluster_endpoint_param: "Endpoint",
+        db.db_cluster_ro_endpoint_param: "ReaderEndpoint",
     }
     config = attributes_to_mapping(db_config_r, attributes_mappings)
     return config
@@ -125,6 +129,8 @@ class Rds(DatabaseXResource):
         self.security_group_param = DB_SG
         self.db_cluster_arn_parameter = DB_CLUSTER_ARN
         self.ref_parameter = DB_CLUSTER_NAME
+        self.db_cluster_endpoint_param = DB_ENDPOINT_ADDRESS
+        self.db_cluster_ro_endpoint_param = DB_RO_ENDPOINT_ADDRESS
 
     def init_outputs(self):
         """
@@ -165,6 +171,20 @@ class Rds(DatabaseXResource):
                 GetAtt,
                 self.security_group_param.return_value,
                 "VpcSecurityGroupId",
+            ),
+            self.db_cluster_endpoint_param: (
+                f"{self.logical_name}{self.db_cluster_endpoint_param.title}",
+                self.cfn_resource,
+                GetAtt,
+                self.db_cluster_endpoint_param.return_value,
+                self.db_cluster_endpoint_param.return_value.replace(".", ""),
+            ),
+            self.db_cluster_ro_endpoint_param: (
+                f"{self.logical_name}{self.db_cluster_ro_endpoint_param.title}",
+                self.cfn_resource,
+                GetAtt,
+                self.db_cluster_ro_endpoint_param.return_value,
+                self.db_cluster_ro_endpoint_param.return_value.replace(".", ""),
             ),
         }
 

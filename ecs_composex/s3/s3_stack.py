@@ -184,6 +184,15 @@ class Bucket(ApiXResource):
         self.arn_parameter = S3_BUCKET_ARN
         self.ref_parameter = S3_BUCKET_NAME
 
+        self.default_cloudmap_settings = {
+            "ReturnValues": {
+                S3_BUCKET_NAME.title: S3_BUCKET_NAME.title,
+                S3_BUCKET_ARN.title: S3_BUCKET_ARN.title,
+                S3_BUCKET_DOMAIN_NAME.return_value: S3_BUCKET_NAME.return_value,
+            }
+        }
+        self.cloudmap_dns_supported = False
+
     def init_outputs(self):
         self.output_properties = {
             S3_BUCKET_NAME: (self.logical_name, self.cfn_resource, Ref, None),
