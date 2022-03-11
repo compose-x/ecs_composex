@@ -1,20 +1,14 @@
----
-# Simple KMS definition
-
 x-kms:
   keyA:
     Properties: {}
-    Settings:
-      Alias: alias/keyA
     Services:
       bignicefamily:
         Access: EncryptDecrypt
-
+    Settings:
+      Alias: alias/keyA
   keyB:
     Properties:
       PendingWindowInDays: 14
-    Settings:
-      Alias: keyB
     Services:
       app02:
         Access: SQS
@@ -22,48 +16,49 @@ x-kms:
         Access: EncryptOnly
       bignicefamily:
         Access: DecryptOnly
-
+    Settings:
+      Alias: keyB
   keyC:
     Properties:
       Description: An example symmetric CMK
-      PendingWindowInDays: 21
       KeyPolicy:
-        Version: '2012-10-17'
         Id: key-default-1
         Statement:
-          - Sid: Enable IAM User Permissions
+          - Action: kms:*
             Effect: Allow
             Principal:
               AWS: arn:aws:iam::111122223333:root
-            Action: kms:*
             Resource: '*'
-          - Sid: Allow administration of the key
+            Sid: Enable IAM User Permissions
+          - Action:
+              - kms:Create*
+              - kms:Describe*
+              - kms:Enable*
+              - kms:List*
+              - kms:Put*
+              - kms:Update*
+              - kms:Revoke*
+              - kms:Disable*
+              - kms:Get*
+              - kms:Delete*
+              - kms:ScheduleKeyDeletion
+              - kms:CancelKeyDeletion
             Effect: Allow
             Principal:
               AWS: arn:aws:iam::123456789012:user/Alice
-            Action:
-            - kms:Create*
-            - kms:Describe*
-            - kms:Enable*
-            - kms:List*
-            - kms:Put*
-            - kms:Update*
-            - kms:Revoke*
-            - kms:Disable*
-            - kms:Get*
-            - kms:Delete*
-            - kms:ScheduleKeyDeletion
-            - kms:CancelKeyDeletion
             Resource: '*'
-          - Sid: Allow use of the key
+            Sid: Allow administration of the key
+          - Action:
+              - kms:DescribeKey
+              - kms:Encrypt
+              - kms:Decrypt
+              - kms:ReEncrypt*
+              - kms:GenerateDataKey
+              - kms:GenerateDataKeyWithoutPlaintext
             Effect: Allow
             Principal:
               AWS: arn:aws:iam::123456789012:user/Bob
-            Action:
-            - kms:DescribeKey
-            - kms:Encrypt
-            - kms:Decrypt
-            - kms:ReEncrypt*
-            - kms:GenerateDataKey
-            - kms:GenerateDataKeyWithoutPlaintext
             Resource: '*'
+            Sid: Allow use of the key
+        Version: '2012-10-17'
+      PendingWindowInDays: 21

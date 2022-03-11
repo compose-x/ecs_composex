@@ -1,31 +1,22 @@
-
-version: "3.9"
 services:
-  # Invalid image
   serviceA:
     image: public.ecr.aws/nginx/nginx-prometheus-exporter:0.10.0-amd6
     x-docker_opts:
       InterpolateWithDigest: true
-
   serviceB:
-    # Image list manifest
     image: public.ecr.aws/nginx/nginx-prometheus-exporter:0.10.0
     x-docker_opts:
       InterpolateWithDigest: true
-
   serviceC:
-    # Image Sha already given
     image: public.ecr.aws/nginx/nginx-prometheus-exporter@sha256:1c6eba17d7768401ba1ed056101fc56ec3e3b5c82e508fdd8968fbcd96ec9574
     x-docker_opts:
       InterpolateWithDigest: true
-
   serviceD:
-    # Image
     image: public.ecr.aws/nginx/nginx-prometheus-exporter:0.10.0
     x-docker_opts:
       InterpolateWithDigest: true
-
   serviceE:
     image: busybox:latest
     x-docker_opts:
       InterpolateWithDigest: true
+version: '3.9'

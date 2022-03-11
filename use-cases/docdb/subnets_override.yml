@@ -1,37 +1,41 @@
----
-# DOCDB Simple use-case. Creating new DBs
-
-
 x-docdb:
   docdbA:
     Properties: {}
-    Settings:
-      EnvNames:
-        - DOCDB_A
     Services:
-      app03:
-
+      app03: null
   docdbB:
+    MacroParameters:
+      Instances:
+        - DBInstanceClass: db.r5.large
+        - AutoMinorVersionUpgrade: true
+          DBInstanceClass: db.r5.xlarge
     Properties: {}
-    Settings:
-      Subnets: AppSubnets
     Services:
       app03:
         ReturnValues:
           DBClusterName: DOcdb_CLUSTER_dbb
+    Settings:
+      Subnets: AppSubnets
+  docdbC:
     MacroParameters:
+      DBClusterParameterGroup:
+        Description: Some description
+        Family: docdb4.0
+        Name: sampleParameterGroup
+        Parameters:
+          audit_logs: disabled
+          tls: disabled
+          ttl_monitor: enabled
       Instances:
         - DBInstanceClass: db.r5.large
-        - DBInstanceClass: db.r5.xlarge
-          AutoMinorVersionUpgrade: True
-
-  docdbC:
+        - AutoMinorVersionUpgrade: true
+          DBInstanceClass: db.t3.medium
     Properties:
       BackupRetentionPeriod: 7
       DBSubnetGroupName: String
-      DeletionProtection: False
+      DeletionProtection: false
       EngineVersion: 4.0.0
-      StorageEncrypted: True
+      StorageEncrypted: true
       Tags:
         - Key: Name
           Value: docdb_C
@@ -39,16 +43,3 @@ x-docdb:
       app03:
         Access:
           DBCluster: RO
-    MacroParameters:
-      Instances:
-        - DBInstanceClass: db.r5.large
-        - DBInstanceClass: db.t3.medium
-          AutoMinorVersionUpgrade: True
-      DBClusterParameterGroup:
-        Description: "Some description"
-        Family: "docdb4.0"
-        Name: "sampleParameterGroup"
-        Parameters:
-          audit_logs: "disabled"
-          tls: "disabled"
-          ttl_monitor: "enabled"

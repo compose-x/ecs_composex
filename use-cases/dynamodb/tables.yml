@@ -1,37 +1,41 @@
----
-# Blog applications
-
+services:
+  app01:
+    deploy:
+      labels:
+        ecs.depends.condition: COMPLETE
+        ecs.task.family: bignicefamily
+  rproxy:
+    depends_on:
+      - app01
+    deploy:
+      labels:
+        ecs.task.family: bignicefamily
 version: '3.8'
-
-x-tags:
-  owner: johnpreston
-  contact: john@compose-x.io
-
 x-dynamodb:
   tableA:
     Properties:
       AttributeDefinitions:
-        - AttributeName: "ArtistId"
-          AttributeType: "S"
-        - AttributeName: "Concert"
-          AttributeType: "S"
-        - AttributeName: "TicketSales"
-          AttributeType: "S"
-      KeySchema:
-        - AttributeName: "ArtistId"
-          KeyType: "HASH"
-        - AttributeName: "Concert"
-          KeyType: "RANGE"
+        - AttributeName: ArtistId
+          AttributeType: S
+        - AttributeName: Concert
+          AttributeType: S
+        - AttributeName: TicketSales
+          AttributeType: S
       GlobalSecondaryIndexes:
-        - IndexName: "GSI"
+        - IndexName: GSI
           KeySchema:
-            - AttributeName: "TicketSales"
-              KeyType: "HASH"
+            - AttributeName: TicketSales
+              KeyType: HASH
           Projection:
-            ProjectionType: "KEYS_ONLY"
+            ProjectionType: KEYS_ONLY
           ProvisionedThroughput:
             ReadCapacityUnits: 5
             WriteCapacityUnits: 5
+      KeySchema:
+        - AttributeName: ArtistId
+          KeyType: HASH
+        - AttributeName: Concert
+          KeyType: RANGE
       ProvisionedThroughput:
         ReadCapacityUnits: 5
         WriteCapacityUnits: 5
@@ -41,88 +45,75 @@ x-dynamodb:
       bignicefamily:
         ReturnValues:
           TableName: TABLE_A
-
   tableB:
     Properties:
       AttributeDefinitions:
-        - AttributeName: "Album"
-          AttributeType: "S"
-        - AttributeName: "Artist"
-          AttributeType: "S"
-        - AttributeName: "Sales"
-          AttributeType: "N"
-        - AttributeName: "NumberOfSongs"
-          AttributeType: "N"
-      KeySchema:
-        - AttributeName: "Album"
-          KeyType: "HASH"
-        - AttributeName: "Artist"
-          KeyType: "RANGE"
-      ProvisionedThroughput:
-        ReadCapacityUnits: "5"
-        WriteCapacityUnits: "5"
+        - AttributeName: Album
+          AttributeType: S
+        - AttributeName: Artist
+          AttributeType: S
+        - AttributeName: Sales
+          AttributeType: N
+        - AttributeName: NumberOfSongs
+          AttributeType: N
       GlobalSecondaryIndexes:
-        - IndexName: "myGSI"
+        - IndexName: myGSI
           KeySchema:
-            - AttributeName: "Sales"
-              KeyType: "HASH"
-            - AttributeName: "Artist"
-              KeyType: "RANGE"
+            - AttributeName: Sales
+              KeyType: HASH
+            - AttributeName: Artist
+              KeyType: RANGE
           Projection:
             NonKeyAttributes:
-              - "Album"
-              - "NumberOfSongs"
-            ProjectionType: "INCLUDE"
+              - Album
+              - NumberOfSongs
+            ProjectionType: INCLUDE
           ProvisionedThroughput:
-            ReadCapacityUnits: "5"
-            WriteCapacityUnits: "5"
-        - IndexName: "myGSI2"
+            ReadCapacityUnits: '5'
+            WriteCapacityUnits: '5'
+        - IndexName: myGSI2
           KeySchema:
-            - AttributeName: "NumberOfSongs"
-              KeyType: "HASH"
-            - AttributeName: "Sales"
-              KeyType: "RANGE"
+            - AttributeName: NumberOfSongs
+              KeyType: HASH
+            - AttributeName: Sales
+              KeyType: RANGE
           Projection:
             NonKeyAttributes:
-              - "Album"
-              - "Artist"
-            ProjectionType: "INCLUDE"
+              - Album
+              - Artist
+            ProjectionType: INCLUDE
           ProvisionedThroughput:
-            ReadCapacityUnits: "5"
-            WriteCapacityUnits: "5"
+            ReadCapacityUnits: '5'
+            WriteCapacityUnits: '5'
+      KeySchema:
+        - AttributeName: Album
+          KeyType: HASH
+        - AttributeName: Artist
+          KeyType: RANGE
       LocalSecondaryIndexes:
-        - IndexName: "myLSI"
+        - IndexName: myLSI
           KeySchema:
-            - AttributeName: "Album"
-              KeyType: "HASH"
-            - AttributeName: "Sales"
-              KeyType: "RANGE"
+            - AttributeName: Album
+              KeyType: HASH
+            - AttributeName: Sales
+              KeyType: RANGE
           Projection:
             NonKeyAttributes:
-              - "Artist"
-              - "NumberOfSongs"
-            ProjectionType: "INCLUDE"
-
-
+              - Artist
+              - NumberOfSongs
+            ProjectionType: INCLUDE
+      ProvisionedThroughput:
+        ReadCapacityUnits: '5'
+        WriteCapacityUnits: '5'
+x-tags:
+  contact: john@compose-x.io
+  owner: johnpreston
 x-vpc:
   Properties:
-    VpcCidr: 172.23.0.0/24
-    SingleNat: False
     Endpoints:
       AwsServices:
         - service: s3
         - service: ecr.dkr
         - service: ecr.api
-
-services:
-  rproxy:
-    deploy:
-      labels:
-        ecs.task.family: bignicefamily
-    depends_on:
-      - app01
-  app01:
-    deploy:
-      labels:
-        ecs.task.family: bignicefamily
-        ecs.depends.condition: COMPLETE
+    SingleNat: false
+    VpcCidr: 172.23.0.0/24

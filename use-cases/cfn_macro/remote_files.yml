@@ -1,6 +1,3 @@
----
-# CFN Template generated from ECS Compose-X
-
 Fn::Transform:
   Name: compose-x
   Parameters:

@@ -1,12 +1,17 @@
----
-# Simple OS Domains creation
-
-version: "3.8"
-
+version: '3.8'
 x-opensearch:
-  domain-01: # Simple example to test singularly
-    Properties: # Domain using Settings for Subnets
-      EngineVersion: 'OpenSearch_1.0'
+  domain-01:
+    MacroParameters:
+      CreateLogGroups: true
+      CreateLogGroupsResourcePolicy: false
+      CreateMasterUserRole: true
+      MasterUserRolePermissionsBoundary: ccoe/js-developer
+    Properties:
+      AdvancedOptions:
+        override_main_response_version: true
+        rest.action.multi.allow_explicit_index: true
+      AdvancedSecurityOptions:
+        InternalUserDatabaseEnabled: false
       ClusterConfig:
         InstanceCount: '1'
         InstanceType: c6g.large.search
@@ -14,25 +19,23 @@ x-opensearch:
         EBSEnabled: true
         Iops: '0'
         VolumeSize: '10'
-        VolumeType: 'gp2'
-      AdvancedSecurityOptions:
-        InternalUserDatabaseEnabled: false
-      AdvancedOptions:
-        rest.action.multi.allow_explicit_index: true
-        override_main_response_version: true
+        VolumeType: gp2
+      EngineVersion: OpenSearch_1.0
       Tags:
         - Key: foo
           Value: bar
+  domain-02:
     MacroParameters:
-#      GenerateMasterUserSecret: true
-      CreateMasterUserRole: true
       CreateLogGroups: true
-      MasterUserRolePermissionsBoundary: ccoe/js-developer
       CreateLogGroupsResourcePolicy: false
-
-  domain-02: # Simple example to test singularly
-    Properties: # Domain using Settings for Subnets
-      EngineVersion: 'OpenSearch_1.0'
+      CreateMasterUserRole: true
+      MasterUserRolePermissionsBoundary: ccoe/js-developer
+    Properties:
+      AdvancedOptions:
+        override_main_response_version: true
+        rest.action.multi.allow_explicit_index: true
+      AdvancedSecurityOptions:
+        InternalUserDatabaseEnabled: false
       ClusterConfig:
         InstanceCount: '1'
         InstanceType: c6g.large.search
@@ -40,20 +43,10 @@ x-opensearch:
         EBSEnabled: true
         Iops: '0'
         VolumeSize: '10'
-        VolumeType: 'gp2'
-      AdvancedSecurityOptions:
-        InternalUserDatabaseEnabled: false
-      AdvancedOptions:
-        rest.action.multi.allow_explicit_index: true
-        override_main_response_version: true
+        VolumeType: gp2
+      EngineVersion: OpenSearch_1.0
       Tags:
         - Key: foo
           Value: bar
-    MacroParameters:
-#      GenerateMasterUserSecret: true
-      CreateMasterUserRole: true
-      CreateLogGroups: true
-      MasterUserRolePermissionsBoundary: ccoe/js-developer
-      CreateLogGroupsResourcePolicy: false
     Settings:
       Subnets: StorageSubnets

@@ -2,8 +2,8 @@ global:
   scrape_interval: 10s
   scrape_timeout: 5s
 scrape_configs:
-  - job_name: cwscraping
-    sample_limit: 5000
-    file_sd_configs:
+  - file_sd_configs:
       files:
         - /tmp/cwagent_ecs_auto_sd.yaml
+    job_name: cwscraping
+    sample_limit: 5000
