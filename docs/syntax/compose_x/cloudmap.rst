@@ -154,6 +154,12 @@ Syntax reference
             AdditionalAttributes:
               MasterSecret: /rds/my-database-02/master
 
+.. warning::
+
+    When registering resources with DNS Settings, such as RDS, the name of the service depends on the name of the
+    resource in the compose file. If you have multiple environments, we recommend to use one namespace per environment,
+    as the service can only be created once.
+
 JSON Schema
 ===========
 

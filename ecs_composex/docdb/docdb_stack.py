@@ -26,6 +26,8 @@ from ecs_composex.docdb.docdb_params import (
     DOCDB_ID,
     DOCDB_NAME,
     DOCDB_PORT,
+    DOCDBC_ENDPOINT,
+    DOCDBC_READ_ENDPOINT,
     MAPPINGS_KEY,
     MOD_KEY,
     RES_KEY,
@@ -35,13 +37,7 @@ from ecs_composex.docdb.docdb_template import (
     init_doc_db_template,
 )
 from ecs_composex.iam.import_sam_policies import get_access_types
-from ecs_composex.rds.rds_params import (
-    DB_CLUSTER_ARN,
-    DB_ENDPOINT_ADDRESS,
-    DB_RO_ENDPOINT_ADDRESS,
-    DB_SECRET_ARN,
-    DB_SG,
-)
+from ecs_composex.rds.rds_params import DB_CLUSTER_ARN, DB_SECRET_ARN, DB_SG
 from ecs_composex.rds_resources_settings import lookup_rds_resource, lookup_rds_secret
 from ecs_composex.vpc.vpc_params import STORAGE_SUBNETS
 
@@ -121,8 +117,8 @@ class DocDb(DatabaseXResource):
         self.db_cluster_arn_parameter = DB_CLUSTER_ARN
         self.ref_parameter = DOCDB_NAME
         self.arn_parameter = DB_CLUSTER_ARN
-        self.db_cluster_endpoint_param = DB_ENDPOINT_ADDRESS
-        self.db_cluster_ro_endpoint_param = DB_RO_ENDPOINT_ADDRESS
+        self.db_cluster_endpoint_param = DOCDBC_ENDPOINT
+        self.db_cluster_ro_endpoint_param = DOCDBC_READ_ENDPOINT
 
     def init_outputs(self):
         """
@@ -135,6 +131,18 @@ class DocDb(DatabaseXResource):
                 self.cfn_resource,
                 GetAtt,
                 self.port_param.return_value,
+            ),
+            self.db_cluster_endpoint_param: (
+                f"{self.logical_name}{self.db_cluster_endpoint_param.return_value}",
+                self.cfn_resource,
+                GetAtt,
+                self.db_cluster_endpoint_param.return_value,
+            ),
+            self.db_cluster_ro_endpoint_param: (
+                f"{self.logical_name}{self.db_cluster_ro_endpoint_param.return_value}",
+                self.cfn_resource,
+                GetAtt,
+                self.db_cluster_ro_endpoint_param.return_value,
             ),
             self.db_secret_arn_parameter: (
                 self.db_secret.title,

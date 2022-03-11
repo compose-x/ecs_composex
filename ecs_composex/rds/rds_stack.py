@@ -173,11 +173,18 @@ class Rds(DatabaseXResource):
                 "VpcSecurityGroupId",
             ),
             self.db_cluster_endpoint_param: (
-                f"{self.logical_name}{self.db_cluster_endpoint_param}",
+                f"{self.logical_name}{self.db_cluster_endpoint_param.title}",
                 self.cfn_resource,
                 GetAtt,
                 self.db_cluster_endpoint_param.return_value,
                 self.db_cluster_endpoint_param.return_value.replace(".", ""),
+            ),
+            self.db_cluster_ro_endpoint_param: (
+                f"{self.logical_name}{self.db_cluster_ro_endpoint_param.title}",
+                self.cfn_resource,
+                GetAtt,
+                self.db_cluster_ro_endpoint_param.return_value,
+                self.db_cluster_ro_endpoint_param.return_value.replace(".", ""),
             ),
         }
 

@@ -1,0 +1,64 @@
+---
+# DOCDB Simple use-case. Creating new DBs
+
+
+x-docdb:
+  docdbA:
+    Properties: {}
+    Services:
+      app03:
+
+  docdbB:
+    Properties: {}
+    Services:
+       app03:
+         ReturnValues:
+           DBClusterName: DOCDB_DB_B
+    MacroParameters:
+      Instances:
+        - DBInstanceClass: db.r5.large
+        - DBInstanceClass: db.r5.xlarge
+          AutoMinorVersionUpgrade: True
+    Settings:
+      x-cloudmap: private
+
+  docdbC:
+    Properties:
+      BackupRetentionPeriod: 7
+      DBSubnetGroupName: String
+      DeletionProtection: False
+      EngineVersion: 4.0.0
+      StorageEncrypted: True
+      Tags:
+        - Key: Name
+          Value: docdb_C
+    Services:
+       app03:
+        Access:
+          DBCluster: RO
+        SecretsMappings:
+          Mappings:
+            - SecretKey: host
+              VarName: DB_HOST
+    MacroParameters:
+      Instances:
+        - DBInstanceClass: db.r5.large
+        - DBInstanceClass: db.t3.medium
+          AutoMinorVersionUpgrade: True
+      DBClusterParameterGroup:
+        Description: "Some description"
+        Family: "docdb4.0"
+        Name: "sampleParameterGroup"
+        Parameters:
+          audit_logs: "disabled"
+          tls: "disabled"
+          ttl_monitor: "enabled"
+    Settings:
+      x-cloudmap:
+        Namespace: private
+        DnsSettings:
+          Hostname: dbc.dev
+
+x-cloudmap:
+  private:
+    Name: testing.cluster
