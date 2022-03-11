@@ -530,6 +530,7 @@ def set_families_ecs_service(settings):
     for family in settings.families.values():
         family.ecs_service.generate_service_definition(family, settings)
         family.ecs_service.scaling.create_scalable_target(family)
+        family.ecs_service.scaling.add_target_scaling(family)
         # family.ecs_service.generate_service_template_outputs(family)
 
 

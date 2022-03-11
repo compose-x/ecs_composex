@@ -44,7 +44,7 @@ Feature: common
             | file_path                   | override_file                    |
             | use-cases/blog.features.yml | use-cases/logging/variations.yml |
 
-    @ecs-plugin-suport
+    @ecs-plugin-support
     Scenario Outline: ECS Plugin support
         Given I use <file_path> as my docker-compose file and <override_file> as override file
         Then I render the docker-compose to composex to validate
