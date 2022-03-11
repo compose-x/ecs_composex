@@ -124,8 +124,8 @@ crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
 
 [[package]]
 name = "boto3-stubs"
-version = "1.21.14"
-description = "Type annotations for boto3 1.21.14 generated with mypy-boto3-builder 7.3.0"
+version = "1.21.18"
+description = "Type annotations for boto3 1.21.18 generated with mypy-boto3-builder 7.3.0"
 category = "dev"
 optional = false
 python-versions = ">=3.6"
@@ -465,8 +465,8 @@ crt = ["awscrt (==0.12.5)"]
 
 [[package]]
 name = "botocore-stubs"
-version = "1.24.14"
-description = "Type annotations for botocore 1.24.14 generated with mypy-boto3-builder 7.3.0"
+version = "1.24.18"
+description = "Type annotations for botocore 1.24.18 generated with mypy-boto3-builder 7.3.0"
 category = "dev"
 optional = false
 python-versions = ">=3.6"
@@ -910,8 +910,8 @@ typing-extensions = {version = "*", markers = "python_version < \"3.9\""}
 
 [[package]]
 name = "mypy-boto3-lambda"
-version = "1.21.6"
-description = "Type annotations for boto3.Lambda 1.21.6 service generated with mypy-boto3-builder 7.1.2"
+version = "1.21.18"
+description = "Type annotations for boto3.Lambda 1.21.18 service generated with mypy-boto3-builder 7.3.0"
 category = "dev"
 optional = false
 python-versions = ">=3.6"
@@ -1521,7 +1521,7 @@ python-versions = ">=3.6"
 
 [[package]]
 name = "unidecode"
-version = "1.3.3"
+version = "1.3.4"
 description = "ASCII transliterations of Unicode text"
 category = "dev"
 optional = false
@@ -1577,7 +1577,7 @@ ecrscan = ["ecr-scan-reporter"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "e8726ae28cf87a672c684afca7f52e10598876fd7a0497fbef20c736ac132f50"
+content-hash = "c1d02bb94851363a96947936d4c01c95cdff052180a73cf8b3299a2e44927980"
 
 [metadata.files]
 alabaster = [
@@ -1617,16 +1617,16 @@ boto3 = [
     {file = "boto3-1.20.54.tar.gz", hash = "sha256:8129ad42cc0120d1c63daa18512d6f0b1439e385b2b6e0fe987f116bdf795546"},
 ]
 boto3-stubs = [
-    {file = "boto3-stubs-1.21.14.tar.gz", hash = "sha256:9e0510056441f109b89c3c939da8e0572bec7f9adb7c69201a186d217ef8154d"},
-    {file = "boto3_stubs-1.21.14-py3-none-any.whl", hash = "sha256:fe96246f51766cf70ae2fcaad8595c27ed072d268e622991cab88869868e0427"},
+    {file = "boto3-stubs-1.21.18.tar.gz", hash = "sha256:f091e469317f4bcf6ae53799a776edbeae6f64c6d5211eb85fa6f0e8aa1a1302"},
+    {file = "boto3_stubs-1.21.18-py3-none-any.whl", hash = "sha256:a6bfad4835adf0a7c1dc25a659ed075017c755cec81919a683693e7dbfaf9838"},
 ]
 botocore = [
     {file = "botocore-1.23.54-py3-none-any.whl", hash = "sha256:06ae8076c4dcf3d72bec4d37e5f2dce4a92a18a8cdaa3bfaa6e3b7b5e30a8d7e"},
     {file = "botocore-1.23.54.tar.gz", hash = "sha256:4bb9ba16cccee5f5a2602049bc3e2db6865346b2550667f3013bdf33b0a01ceb"},
 ]
 botocore-stubs = [
-    {file = "botocore-stubs-1.24.14.tar.gz", hash = "sha256:fc83d0a8e1b1a195d3a5aafc8a701020ba98f07231667b56583b85823613c9ed"},
-    {file = "botocore_stubs-1.24.14-py3-none-any.whl", hash = "sha256:9ec990865498b9ed6d62c40fb96d605bdcd63f93c30464cfb2e7b1cdc0ad3486"},
+    {file = "botocore-stubs-1.24.18.tar.gz", hash = "sha256:25074f7d7fbc5436e7060f5adbd8b9cf16f5ec601212725d63eb1386673f2f48"},
+    {file = "botocore_stubs-1.24.18-py3-none-any.whl", hash = "sha256:ef94b9247f36231939fbcf79a2510fb99c1cdb8ca36e528ba4f5539a0eb6aa6d"},
 ]
 certifi = [
     {file = "certifi-2021.10.8-py2.py3-none-any.whl", hash = "sha256:d62a0163eb4c2344ac042ab2bdf75399a71a2d8c7d47eac2e2ee91b9d6339569"},
@@ -1924,8 +1924,8 @@ mypy-boto3-ecs = [
     {file = "mypy_boto3_ecs-1.21.14-py3-none-any.whl", hash = "sha256:2ebc53167ef653ebc4908ac974e2d599d869f6dc8196f9d476f061f7b3737d2f"},
 ]
 mypy-boto3-lambda = [
-    {file = "mypy-boto3-lambda-1.21.6.tar.gz", hash = "sha256:437f05ffdc800353282a5ea250d9416b61b89104db6e8056b5346ba32dd52931"},
-    {file = "mypy_boto3_lambda-1.21.6-py3-none-any.whl", hash = "sha256:73d6dac0053779238aaf5e7883726b30a4853f2e87adee6743997aeccc2b1f5a"},
+    {file = "mypy-boto3-lambda-1.21.18.tar.gz", hash = "sha256:97f27a517b6933d329d856eb264b6d78126f3536cdfb8557e9a58d0abb56ad9e"},
+    {file = "mypy_boto3_lambda-1.21.18-py3-none-any.whl", hash = "sha256:ac4a67e79c94b68e56bb44c07efefce1a210849872a0db2e4a0116ba4e58747a"},
 ]
 mypy-boto3-rds = [
     {file = "mypy-boto3-rds-1.21.10.tar.gz", hash = "sha256:9fed1582797b9b054974765c1519ea7c7bfe1926f75392e9d3ff8b9e6a1f7561"},
@@ -2198,8 +2198,8 @@ typing-extensions = [
     {file = "typing_extensions-4.1.1.tar.gz", hash = "sha256:1a9462dcc3347a79b1f1c0271fbe79e844580bb598bafa1ed208b94da3cdcd42"},
 ]
 unidecode = [
-    {file = "Unidecode-1.3.3-py3-none-any.whl", hash = "sha256:a5a8a4b6fb033724ffba8502af2e65ca5bfc3dd53762dedaafe4b0134ad42e3c"},
-    {file = "Unidecode-1.3.3.tar.gz", hash = "sha256:8521f2853fd250891dc27d156a9d30e61c4e76319da963c4a1c27083a909ac30"},
+    {file = "Unidecode-1.3.4-py3-none-any.whl", hash = "sha256:afa04efcdd818a93237574791be9b2817d7077c25a068b00f8cff7baa4e59257"},
+    {file = "Unidecode-1.3.4.tar.gz", hash = "sha256:8e4352fb93d5a735c788110d2e7ac8e8031eb06ccbfe8d324ab71735015f9342"},
 ]
 urllib3 = [
     {file = "urllib3-1.26.8-py2.py3-none-any.whl", hash = "sha256:000ca7f471a233c2251c6c7023ee85305721bfdf18621ebff4fd17a8653427ed"},
