@@ -233,32 +233,25 @@ def handle_defined_target_scaling_props(prop, config, key, new_config):
 
 def define_new_config(config, key, new_config):
     valid_keys = [
-        ("CpuTarget", int, None),
-        ("MemoryTarget", int, None),
-        ("DisableScaleIn", bool, None),
-        ("TgtTargetsCount", int, None),
-        ("ScaleInCooldown", int, None),
-        ("ScaleOutCooldown", int, None),
+        "CpuTarget",
+        "MemoryTarget",
+        "DisableScaleIn",
+        "TgtTargetsCount",
+        "ScaleInCooldown",
+        "ScaleOutCooldown",
     ]
     for prop in valid_keys:
-        if (
-            keypresent(prop[0], config[key])
-            and keypresent(prop[0], new_config)
-            and isinstance(new_config[prop[0]], prop[1])
-        ):
+        if keypresent(prop, config[key]) and keypresent(prop, new_config):
             handle_defined_target_scaling_props(prop, config, key, new_config)
-        elif (
-            not keypresent(prop[0], config[key])
-            and keypresent(prop[0], new_config)
-            and isinstance(new_config[prop[0]], prop[1])
-        ):
-            config[key][prop[0]] = new_config[prop[0]]
+        elif not keypresent(prop, config[key]) and keypresent(prop, new_config):
+            config[key][prop] = new_config[prop]
 
 
 def handle_target_scaling(config, key, new_config):
     """
     Function to handle merge of target tracking config
     """
+
     if not config[key]:
         config[key] = new_config
     else:
@@ -433,9 +426,14 @@ class ServiceScaling(object):
             )
         if family.scalable_target.title not in family.template.resources:
             family.template.add_resource(family.scalable_target)
+
+    def add_target_scaling(self, family) -> None:
+        """
+        Adds target scaling rules
+        """
         if family.scalable_target and family.ecs_service.scaling.target_scaling:
             if keyisset("CpuTarget", family.ecs_service.scaling.target_scaling):
-                applicationautoscaling.ScalingPolicy(
+                policy = applicationautoscaling.ScalingPolicy(
                     "ServiceCpuTrackingPolicy",
                     ScalingTargetId=Ref(family.scalable_target),
                     PolicyName="CpuTrackingScalingPolicy",
@@ -444,8 +442,8 @@ class ServiceScaling(object):
                         family.ecs_service.scaling.target_scaling, "cpu"
                     ),
                 )
-            if keyisset("MemoryTarget", family.ecs_service.scaling.target_scaling):
-                applicationautoscaling.ScalingPolicy(
+            elif keyisset("MemoryTarget", family.ecs_service.scaling.target_scaling):
+                policy = applicationautoscaling.ScalingPolicy(
                     "ServiceMemoryTrackingPolicy",
                     ScalingTargetId=Ref(family.scalable_target),
                     PolicyName="MemoryTrackingScalingPolicy",
@@ -454,3 +452,11 @@ class ServiceScaling(object):
                         family.ecs_service.scaling.target_scaling, "memory"
                     ),
                 )
+            else:
+                policy = None
+            if (
+                policy
+                and family.template
+                and policy.title not in family.template.resources
+            ):
+                family.template.add_resource(policy)

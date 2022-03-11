@@ -16,21 +16,62 @@
   "definitions": {
     "TargetScalingDef": {
       "type": "object",
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "allOf": [
+            {
+              "not": {
+                "required": [
+                  "CpuTarget"
+                ]
+              }
+            },
+            {
+              "not": {
+                "required": [
+                  "MemoryTarget"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "required": [
+            "CpuTarget"
+          ]
+        },
+        {
+          "required": [
+            "MemoryTarget"
+          ]
+        }
+      ],
       "properties": {
         "CpuTarget": {
-          "type": "integer"
+          "type": "integer",
+          "maximum": 100.0,
+          "description": "Percentage of CPU usage to track and scale services accordingly"
         },
         "MemoryTarget": {
-          "type": "integer"
+          "type": "integer",
+          "description": "Percentage of RAM usage to track and scale services accordingly",
+          "maximum": 100.0
         },
         "ScaleInCooldown": {
-          "type": "integer"
+          "type": "integer",
+          "default": 300,
+          "description": "Lapse of time before scaling in since last scaling activity"
         },
         "ScaleOutCooldown": {
-          "type": "integer"
+          "type": "integer",
+          "default": 60,
+          "description": "Lapse of time before scaling out since last scaling activity."
         },
         "DisableScaleIn": {
-          "type": "boolean"
+          "type": "boolean",
+          "default": false,
+          "description": "Whether the scaling in should be disabled or not."
         }
       }
     }

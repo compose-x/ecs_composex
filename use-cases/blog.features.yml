@@ -125,7 +125,6 @@ services:
     x-scaling:
       Range: "1-5"
       TargetScaling:
-        CpuTarget: 88
         DisableScaleIn: true
     x-xray: false
     tmpfs: /run

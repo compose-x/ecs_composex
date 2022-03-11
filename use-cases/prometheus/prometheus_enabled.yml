@@ -33,7 +33,6 @@ services:
     x-scaling:
       Range: 1-5
       TargetScaling:
-        CpuTarget: 30
         DisableScaleIn: true
         MemoryTarget: 30
     x-xray: false
