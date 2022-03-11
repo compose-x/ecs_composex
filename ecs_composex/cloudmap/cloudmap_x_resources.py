@@ -209,4 +209,3 @@ def handle_resource_cloudmap_settings(
         )
     namespace.stack.stack_template.add_resource(resource_service)
     namespace.stack.stack_template.add_resource(resource_instance)
-

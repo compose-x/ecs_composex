@@ -57,4 +57,4 @@ x-rds:
 
 x-cloudmap:
   private:
-    ZoneName: testing.cluster
+    Name: testing.cluster

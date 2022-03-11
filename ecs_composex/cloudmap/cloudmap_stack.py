@@ -10,7 +10,7 @@ import warnings
 from copy import deepcopy
 
 from compose_x_common.aws.cloudmap import get_all_dns_namespaces
-from compose_x_common.compose_x_common import keyisset
+from compose_x_common.compose_x_common import keyisset, set_else_none
 from troposphere import GetAtt, Ref
 from troposphere.servicediscovery import PrivateDnsNamespace
 
@@ -106,7 +106,13 @@ class PrivateNamespace(AwsEnvironmentResource):
         self.zone_name = None
         self.records = []
         super().__init__(name, definition, module_name, settings, mapping_key)
-        self.zone_name = self.definition["ZoneName"]
+        self.zone_name = set_else_none(
+            "Name", self.definition, set_else_none("ZoneName", self.definition, None)
+        )
+        if self.zone_name is None:
+            raise ValueError(
+                f"{self.module_name}.{self.name} - No ZoneName/Name specified"
+            )
         self.requires_vpc = True
 
     def init_outputs(self):
