@@ -31,6 +31,8 @@ generate all the AWS CloudFormation templates required to deploy all your servic
 
 It automatically takes care of network access requirements and IAM permissions, following best practices.
 
+------------
+
 Installation
 ============
 
@@ -49,6 +51,7 @@ Using docker
 
     docker run --rm -v ~/.aws:/root/.aws public.ecr.aws/compose-x/compose-x:latest
 
+------------
 
 How is it different ?
 =====================
@@ -174,6 +177,7 @@ for extensions in order to ensure the compose files input are correct before doi
     lexicon
     syntax/compose_x/common
     examples
+    how_tos
     extras
     compatibility_matrix
 

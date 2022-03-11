@@ -1,9 +1,9 @@
 
 .. _how_tos_main:
 
-===============
+###############
 How To
-===============
+###############
 
 Welcome to the ``How-To`` section. We have put together a few examples to help you go through some of the functionalities
 of ECS Compose-X, to try help you get started faster and take full advantage of the different features.

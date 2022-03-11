@@ -102,8 +102,8 @@ html_theme_options = {
     "html_prettify": True,
     "css_minify": True,
     # Set the color and the accent color
-    "color_primary": "blue",
-    "color_accent": "light-blue",
+    "color_primary": "blue-grey",
+    "color_accent": "white",
     # Set the repo location to get a badge with stats
     "repo_url": "https://github.com/compose-x/ecs_composex/",
     "repo_name": "compose-x/ecs_composex",

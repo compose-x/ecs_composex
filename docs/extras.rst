@@ -40,6 +40,8 @@ Finally, alternatively, if you do not have cross-account in place or have some r
 
 For further information, refer to :ref:`lookup_syntax_reference`
 
+------------
+
 Services autoscaling integration
 =================================
 
@@ -104,6 +106,7 @@ Our frontend will be managed by ECS itself which will be ensuring that the avera
 
     Scaling with target tracking based on ELBv2 metrics is coming too.
 
+------------
 
 Fargate CPU/RAM auto configuration
 ====================================
@@ -195,6 +198,8 @@ might need, this is a good way to keep for free space, just in case.
 
     However, in this configuration, the CPU represents ~80% of the costs (29.5$+6.5$=36$).
 
+------------
+
 Multiple services, one microservice
 ====================================
 
@@ -261,6 +266,8 @@ For example,
           app01:
             Access: RWMessages
 
+------------
+
 Docker ECS-Plugin x-aws-keys support
 =====================================
 
@@ -273,6 +280,8 @@ with ECS Compose-X without making too many changes.
 In case for a similar setting, such as *x-aws-iam-policies* which in ECS Compose-X is under *x-iam/Policies*, these
 non conflicting settings will add up together. However, in case of conflicting information, the ECS Compose-X definition
 will prevail over the x-aws-keys.
+
+------------
 
 AWS AppMesh integration
 =======================

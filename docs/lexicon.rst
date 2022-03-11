@@ -1,9 +1,9 @@
 
 .. _lexicon:
 
-=============
-Lexicon
-=============
+########################
+Lexicon & Definitions
+########################
 
 
 Before diving into the examples and getting started, there are a few terms to be familiar to get the most out of the
@@ -17,6 +17,7 @@ CloudFormation / CFN
 In AWS CFN, a template is used in order to create a stack. The Stack will then create the resources etc.
 See more details with the `AWS CFN Stack Anatomy`_
 
+------------
 
 .. _family_lexicon:
 
@@ -86,6 +87,8 @@ combination at times.
 
 Otherwise for IAM and most modules, pointing to the service for permissions/access prefers the family name.
 
+------------
+
 Task Definition
 ===================
 
@@ -95,6 +98,8 @@ as well as IAM roles to use.
 .. seealso::
 
     More details can be found in the `AWS Task Definition CFN Syntax`_
+
+------------
 
 Service Definition
 ====================
@@ -107,10 +112,12 @@ of the task definition.
 
     More details can be found in the `AWS Service Definition CFN Syntax`_
 
+------------
+
 services.x-feature
 =====================
 
-In ECS Compose-X, extension fields are used to define properties ignore by docker-compose when running commands, but that
+In ECS Compose-X, extension fields are used to define properties ignored by docker-compose when running commands, but that
 we can then use to extend the utility of the template with.
 
 When in the documentation, is referred a feature as **service.x-**, this means that this is an extension field that is
@@ -129,6 +136,7 @@ For example, here x-s3 is a top level feature of ECS Compose-X, whereas x-scalin
         x-scaling:      # This is a service.x- extension
             Range: 1-10
 
+------------
 
 JSON Schema
 =============
