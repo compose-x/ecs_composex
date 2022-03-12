@@ -1,0 +1,110 @@
+---
+# Blog applications
+
+version: '3.8'
+
+x-kms:
+  keyA:
+    Properties: {}
+    Services:
+      bignicefamily:
+        Access: EncryptDecrypt
+    Settings:
+      Alias: alias/keyA
+  keyC:
+    Lookup:
+      Tags:
+        - name: cicd
+        - costcentre: lambda
+    Services:
+      app03:
+        Access: EncryptDecrypt
+      bignicefamily:
+        Access: DecryptOnly
+
+
+x-sqs:
+  queueA:
+    Settings:
+      EnvNames:
+        - QUEUEA
+
+  queueB:
+    Properties:
+      KmsMasterKeyId: x-kms::keyC
+      RedrivePolicy:
+        deadLetterTargetArn: queueA
+        maxReceiveCount: 10
+    Settings:
+      EnvNames:
+        - queueb
+    Services:
+      - name: bignicefamily
+        access: RWMessages
+
+  queueC:
+    Properties:
+      FifoQueue: True
+    Services:
+      - name: rproxy
+        access: RWMessages
+      - name: youtoo
+        access: RWMessages
+    Settings:
+      EnvNames:
+        - FIFO_QUEUE
+
+  queueD:
+    Properties:
+      KmsMasterKeyId: x-kms::keyA
+    Services:
+      - name: app01
+        access: RWMessages
+      - name: app03
+        access: RWMessages
+
+  queueE:
+    Properties: {}
+    Services:
+      bignicefamily:
+        Access: RWMessages
+        Scaling:
+          ScaleInCooldown: 120
+          ScaleOutCooldown: 60
+          Steps:
+            - LowerBound: 0
+              UpperBound: 10
+              Count: 1
+            - LowerBound: 10
+              UpperBound: 20
+              Count: 2
+            - LowerBound: 20
+              Count: 5
+
+  queueF:
+    Properties: {}
+    Lookup:
+      Tags:
+        - useless: "yes"
+        - costcentre: lambda
+    Services:
+      bignicefamily:
+        Access: RWMessages
+        ReturnValues:
+          QueueName: QUEUE_F_NAME
+      app03:
+        Access: RWMessages
+        ReturnValues:
+          QueueName: QUEUE_F_NAME
+        Scaling:
+          ScaleInCooldown: 120
+          ScaleOutCooldown: 60
+          Steps:
+            - LowerBound: 0
+              UpperBound: 10
+              Count: 1
+            - LowerBound: 10
+              UpperBound: 20
+              Count: 2
+            - LowerBound: 20
+              Count: 5

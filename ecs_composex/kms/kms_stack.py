@@ -33,6 +33,9 @@ from ecs_composex.kms.kms_s3 import handle_bucket_kms
 from ecs_composex.kms.kms_template import create_kms_template
 from ecs_composex.resources_import import import_record_properties
 from ecs_composex.s3.s3_stack import Bucket
+from ecs_composex.sqs.sqs_stack import Queue
+
+from .kms_sqs import handle_queue_kms
 
 
 def get_key_config(key, account_id, resource_id):
@@ -185,15 +188,12 @@ class KmsKey(AwsEnvironmentResource, ApiXResource):
         for resource in settings.get_x_resources(include_mappings=False):
             if not resource.cfn_resource:
                 continue
-            resource_stack = resource.stack
-            if not resource_stack:
-                LOG.error(
+            if not resource.stack:
+                LOG.debug(
                     f"resource {resource.name} has no `stack` attribute defined. Skipping"
                 )
                 continue
-            mappings = [
-                (Bucket, handle_bucket_kms),
-            ]
+            mappings = [(Bucket, handle_bucket_kms), (Queue, handle_queue_kms)]
             for target in mappings:
                 if isinstance(resource, target[0]) or issubclass(
                     type(resource), target[0]
@@ -201,7 +201,7 @@ class KmsKey(AwsEnvironmentResource, ApiXResource):
                     target[1](
                         self,
                         resource,
-                        resource_stack,
+                        resource.stack,
                         settings,
                     )
 
