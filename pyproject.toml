@@ -36,7 +36,7 @@ exclude = ["*.pyc", "*~", "*pycache*"]
 
 [tool.poetry.dependencies]
 python = "^3.7"
-boto3 = ">=1.18,<1.21"
+boto3 = ">=1.18,<1.22"
 #troposphere = "4.0.0b0"
 troposphere = { git = "https://github.com/cloudtools/troposphere", rev = "75db1661e17e7d6c36c53d269d999774a0a30e45" }
 ecr-scan-reporter = { version = "^0.4.5", optional = true }
@@ -48,7 +48,7 @@ tabulate = "^0.8.9"
 importlib-resources = "^5.4.0"
 PyYAML = "^6.0"
 urllib3 = "^1.26.8"
-retry = "^0.9.2"
+retry2 = "^0.9.3"
 
 [tool.poetry.dev-dependencies]
 isort = "^5.10.1"
