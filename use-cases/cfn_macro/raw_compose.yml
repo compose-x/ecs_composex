@@ -1,11 +1,5 @@
----
-# Extension file to add all the x-keys related to services.
-
 Transform:
   - compose-x
-
-# base file for services with the x-keys for BDD
-version: '3.8'
 secrets:
   abcd: {}
   john:
@@ -16,13 +10,13 @@ secrets:
       Name: SFTP/asl-cscs-files-dev
   zyx:
     x-secrets:
-      Name: secret/with/kmskey
+      JsonKeys:
+        - SecretKey: test
+          VarName: ZYX_TEST
       Lookup:
         Tags:
           - costcentre: lambda
-      JsonKeys:
-        - VarName: ZYX_TEST
-          SecretKey: test
+      Name: secret/with/kmskey
 services:
   app01:
     deploy:
@@ -46,21 +40,9 @@ services:
         target: 5000
     secrets:
       - zyx
-    x-logging:
-      RetentionInDays: 42
-      CreateLogGroup: False
-    x-network:
-      IsPublic: False
-      use_cloudmap: True
-      Ingress:
-        Myself: False
-        AwsSources:
-          - Type: PrefixList
-            Id: pl-6da54004
     x-iam:
       Policies:
-        - PolicyName: AllowPublishToCw
-          PolicyDocument:
+        - PolicyDocument:
             Statement:
               - Action:
                   - cloudwatch:PutMetricData
@@ -68,9 +50,21 @@ services:
                 Resource:
                   - '*'
                 Sid: AllowPublishMetricsToCw
-    x-xray: false
+          PolicyName: AllowPublishToCw
+    x-logging:
+      CreateLogGroup: false
+      RetentionInDays: 42
+    x-network:
+      Ingress:
+        AwsSources:
+          - Id: pl-6da54004
+            Type: PrefixList
+        Myself: false
+      IsPublic: false
+      use_cloudmap: true
     x-scaling:
-      Range: "1-4"
+      Range: 1-4
+    x-xray: false
   app02:
     deploy:
       labels:
@@ -102,11 +96,11 @@ services:
         target: /app/data
         type: volume
     x-iam:
-      PermissionsBoundary: arn:aws:iam::aws:policy/AdministratorAccess
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AdministratorAccess
+      PermissionsBoundary: arn:aws:iam::aws:policy/AdministratorAccess
     x-scaling:
-      Range: "1-5"
+      Range: 1-5
       TargetScaling:
         CpuTarget: 88
         DisableScaleIn: true
@@ -133,15 +127,14 @@ services:
       - normal-vol
       - shared-images:/app/images
       - some-volume:/app/data:ro
+    x-logging:
+      RetentionInDays: 30
     x-network:
       Ingress:
-        Myself: False
         ExtSources:
-          - IPv4: 0.0.0.0/0
-            Description: ANYWHERE
-
-    x-logging:
-        RetentionInDays: 30
+          - Description: ANYWHERE
+            IPv4: 0.0.0.0/0
+        Myself: false
     x-scaling:
       Range: 1-10
   rproxy:
@@ -168,19 +161,17 @@ services:
     x-iam:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/ReadOnlyAccess
-    x-xray: true
     x-network:
-      IsPublic: False
-      use_cloudmap: True
+      IsPublic: false
+      use_cloudmap: true
+    x-xray: true
+version: '3.8'
 volumes:
+  normal-vol: {}
   shared-images: {}
   some-volume: {}
-  normal-vol: {}
-
-
-x-dns:
+x-cloudmap:
   PrivateNamespace:
     Name: lambda.internal
-
 x-tags:
   costcentre: lambda

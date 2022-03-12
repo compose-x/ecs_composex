@@ -1,59 +1,49 @@
----
-# DOCDB Simple use-case. Creating new DBs
-
-
 x-docdb:
   docdbA:
     Properties: {}
-    Settings:
-      EnvNames:
-        - DOCDB_A
     Services:
-      - name: app03
-        access: RW
-
+      app03:
+        Access:
+          DBCluster: RO
   docdbB:
-    Properties: {}
-    Settings:
-      EnvNames:
-        - DOCDB_B
-    Services:
-      - name: app03
-        access: RW
     MacroParameters:
       Instances:
         - DBInstanceClass: db.r5.large
-        - DBInstanceClass: db.r5.xlarge
-          AutoMinorVersionUpgrade: True
-
+        - AutoMinorVersionUpgrade: true
+          DBInstanceClass: db.r5.xlarge
+    Properties: {}
+    Services:
+      app03:
+        Access:
+          DBCluster: RO
   docdbC:
+    MacroParameters:
+      DBClusterParameterGroup:
+        Description: Some description
+        Family: docdb4.0
+        Name: sampleParameterGroup
+        Parameters:
+          audit_logs: disabled
+          tls: disabled
+          ttl_monitor: enabled
+      Instances:
+        - DBInstanceClass: db.r5.large
+        - AutoMinorVersionUpgrade: true
+          DBInstanceClass: db.t3.medium
     Properties:
       BackupRetentionPeriod: 7
       DBSubnetGroupName: String
-      DeletionProtection: False
+      DeletionProtection: false
       EngineVersion: 4.0.0
-      StorageEncrypted: True
+      StorageEncrypted: true
       Tags:
         - Key: Name
           Value: docdb_C
     Services:
-      - name: app03
-        access:
+      app03:
+        Access:
           DBCluster: RO
         SecretsMappings:
           Mappings:
             - SecretKey: host
               VarName: DB_HOST
-    MacroParameters:
-      Instances:
-        - DBInstanceClass: db.r5.large
-        - DBInstanceClass: db.t3.medium
-          AutoMinorVersionUpgrade: True
-      DBClusterParameterGroup:
-        Description: "Some description"
-        Family: "docdb4.0"
-        Name: "sampleParameterGroup"
-        Parameters:
-          audit_logs: "disabled"
-          tls: "disabled"
-          ttl_monitor: "enabled"

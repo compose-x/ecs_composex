@@ -1,24 +1,19 @@
----
-# DOCDB Simple use-case. Creating new DBs
-
-
 x-docdb:
   docdbA:
     Properties: {}
     Services:
       app03:
         access: RW
-
   docdbB:
-    Services:
-      app03:
-        Access: RW
     Lookup:
       cluster:
         Name: docdbb-purmjgtgvyqr
         Tags:
-          - CreatedByComposeX: "true"
+          - CreatedByComposeX: 'true'
           - Name: docdb.docdbB
       secret:
         Tags:
           - aws:cloudformation:logical-id: docdbBSecret
+    Services:
+      app03:
+        Access: RW

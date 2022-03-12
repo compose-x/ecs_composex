@@ -1,64 +1,57 @@
----
-# DOCDB Simple use-case. Creating new DBs
-
-
+x-cloudmap:
+  private:
+    Name: testing.cluster
 x-docdb:
   docdbA:
     Properties: {}
     Services:
-      app03:
-
+      app03: null
   docdbB:
-    Properties: {}
-    Services:
-       app03:
-         ReturnValues:
-           DBClusterName: DOCDB_DB_B
     MacroParameters:
       Instances:
         - DBInstanceClass: db.r5.large
-        - DBInstanceClass: db.r5.xlarge
-          AutoMinorVersionUpgrade: True
+        - AutoMinorVersionUpgrade: true
+          DBInstanceClass: db.r5.xlarge
+    Properties: {}
+    Services:
+      app03:
+        ReturnValues:
+          DBClusterName: DOCDB_DB_B
     Settings:
       x-cloudmap: private
-
   docdbC:
+    MacroParameters:
+      DBClusterParameterGroup:
+        Description: Some description
+        Family: docdb4.0
+        Name: sampleParameterGroup
+        Parameters:
+          audit_logs: disabled
+          tls: disabled
+          ttl_monitor: enabled
+      Instances:
+        - DBInstanceClass: db.r5.large
+        - AutoMinorVersionUpgrade: true
+          DBInstanceClass: db.t3.medium
     Properties:
       BackupRetentionPeriod: 7
       DBSubnetGroupName: String
-      DeletionProtection: False
+      DeletionProtection: false
       EngineVersion: 4.0.0
-      StorageEncrypted: True
+      StorageEncrypted: true
       Tags:
         - Key: Name
           Value: docdb_C
     Services:
-       app03:
+      app03:
         Access:
           DBCluster: RO
         SecretsMappings:
           Mappings:
             - SecretKey: host
               VarName: DB_HOST
-    MacroParameters:
-      Instances:
-        - DBInstanceClass: db.r5.large
-        - DBInstanceClass: db.t3.medium
-          AutoMinorVersionUpgrade: True
-      DBClusterParameterGroup:
-        Description: "Some description"
-        Family: "docdb4.0"
-        Name: "sampleParameterGroup"
-        Parameters:
-          audit_logs: "disabled"
-          tls: "disabled"
-          ttl_monitor: "enabled"
     Settings:
       x-cloudmap:
-        Namespace: private
         DnsSettings:
           Hostname: dbc.dev
-
-x-cloudmap:
-  private:
-    Name: testing.cluster
+        Namespace: private

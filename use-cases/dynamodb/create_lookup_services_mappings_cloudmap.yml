@@ -1,123 +1,115 @@
----
-# Blog applications
-
 version: '3.8'
+x-cloudmap:
+  private:
+    ZoneName: testing.cluster
 x-dynamodb:
   tableA-A:
-    Settings:
-      x-cloudmap:
-        Namespace: private
-        AdditionalAttributes:
-          profession: spartan
-        ReturnValues:
-          TableName: MyTableName
     Properties:
       AttributeDefinitions:
-        - AttributeName: "Album"
-          AttributeType: "S"
-        - AttributeName: "Artist"
-          AttributeType: "S"
-        - AttributeName: "Sales"
-          AttributeType: "N"
-        - AttributeName: "NumberOfSongs"
-          AttributeType: "N"
-      KeySchema:
-        - AttributeName: "Album"
-          KeyType: "HASH"
-        - AttributeName: "Artist"
-          KeyType: "RANGE"
-      ProvisionedThroughput:
-        ReadCapacityUnits: "5"
-        WriteCapacityUnits: "5"
+        - AttributeName: Album
+          AttributeType: S
+        - AttributeName: Artist
+          AttributeType: S
+        - AttributeName: Sales
+          AttributeType: N
+        - AttributeName: NumberOfSongs
+          AttributeType: N
       GlobalSecondaryIndexes:
-        - IndexName: "myGSI"
+        - IndexName: myGSI
           KeySchema:
-            - AttributeName: "Sales"
-              KeyType: "HASH"
-            - AttributeName: "Artist"
-              KeyType: "RANGE"
+            - AttributeName: Sales
+              KeyType: HASH
+            - AttributeName: Artist
+              KeyType: RANGE
           Projection:
             NonKeyAttributes:
-              - "Album"
-              - "NumberOfSongs"
-            ProjectionType: "INCLUDE"
+              - Album
+              - NumberOfSongs
+            ProjectionType: INCLUDE
           ProvisionedThroughput:
-            ReadCapacityUnits: "5"
-            WriteCapacityUnits: "5"
-        - IndexName: "myGSI2"
+            ReadCapacityUnits: '5'
+            WriteCapacityUnits: '5'
+        - IndexName: myGSI2
           KeySchema:
-            - AttributeName: "NumberOfSongs"
-              KeyType: "HASH"
-            - AttributeName: "Sales"
-              KeyType: "RANGE"
+            - AttributeName: NumberOfSongs
+              KeyType: HASH
+            - AttributeName: Sales
+              KeyType: RANGE
           Projection:
             NonKeyAttributes:
-              - "Album"
-              - "Artist"
-            ProjectionType: "INCLUDE"
+              - Album
+              - Artist
+            ProjectionType: INCLUDE
           ProvisionedThroughput:
-            ReadCapacityUnits: "5"
-            WriteCapacityUnits: "5"
+            ReadCapacityUnits: '5'
+            WriteCapacityUnits: '5'
+      KeySchema:
+        - AttributeName: Album
+          KeyType: HASH
+        - AttributeName: Artist
+          KeyType: RANGE
       LocalSecondaryIndexes:
-        - IndexName: "myLSI"
+        - IndexName: myLSI
           KeySchema:
-            - AttributeName: "Album"
-              KeyType: "HASH"
-            - AttributeName: "Sales"
-              KeyType: "RANGE"
+            - AttributeName: Album
+              KeyType: HASH
+            - AttributeName: Sales
+              KeyType: RANGE
           Projection:
             NonKeyAttributes:
-              - "Artist"
-              - "NumberOfSongs"
-            ProjectionType: "INCLUDE"
-
+              - Artist
+              - NumberOfSongs
+            ProjectionType: INCLUDE
+      ProvisionedThroughput:
+        ReadCapacityUnits: '5'
+        WriteCapacityUnits: '5'
     Services:
+      app02:
+        Access: RW
       app03:
         Access: RW
         ReturnValues:
           Arn: tableA_ARN
-      app02:
-        Access: RW
       bignicefamily:
         Access: RO
-
+    Settings:
+      x-cloudmap:
+        AdditionalAttributes:
+          profession: spartan
+        Namespace: private
+        ReturnValues:
+          TableName: MyTableName
   tableC:
     Lookup:
       Tags:
         - name: tableC
-        - createdbycomposex: "True"
+        - createdbycomposex: 'True'
     Services:
       app03:
         Access: RW
         ReturnValues:
-          TableName: TABLE_CCC
           Arn: TABLE_cccc_Arn
-
+          TableName: TABLE_CCC
     Settings:
       x-cloudmap:
-        ForceRegister: true
-        Namespace: private
         AdditionalAttributes:
           profession: spartan
+        ForceRegister: true
+        Namespace: private
         ReturnValues:
           TableName: MyTableName
-
   tableD:
     Lookup:
       Tags:
         - name: tableC
-        - createdbycomposex: "False"
+        - createdbycomposex: 'False'
     Services:
-      - name: app03
-        access: RW
+      app03:
+        Access: RW
     Settings:
       x-cloudmap:
-        Namespace: private
         AdditionalAttributes:
           profession: spartan
+        Namespace: private
         ReturnValues:
           TableName: MyTableName
-
-x-cloudmap:
-  private:
-    ZoneName: testing.cluster

@@ -1,157 +1,146 @@
----
-# Simple OS Domains creation
-
-version: "3.8"
-
+version: '3.8'
 x-opensearch:
-  domain-01: # Example as-is from the AWS Docs
+  domain-01:
     Properties:
-      DomainName: 'test'
-      EngineVersion: 'OpenSearch_1.0'
+      AccessPolicies:
+        Statement:
+          - Action: es:*
+            Effect: Allow
+            Principal:
+              AWS: arn:aws:iam::123456789012:user/opensearch-user
+            Resource: arn:aws:es:us-east-1:846973539254:domain/test/*
+        Version: '2012-10-17'
+      AdvancedOptions:
+        override_main_response_version: true
+        rest.action.multi.allow_explicit_index: true
       ClusterConfig:
-        DedicatedMasterEnabled: true
-        InstanceCount: '2'
-        ZoneAwarenessEnabled: true
-        InstanceType: 'm3.medium.search'
-        DedicatedMasterType: 'm3.medium.search'
         DedicatedMasterCount: '3'
+        DedicatedMasterEnabled: true
+        DedicatedMasterType: m3.medium.search
+        InstanceCount: '2'
+        InstanceType: m3.medium.search
+        ZoneAwarenessEnabled: true
+      DomainName: test
       EBSOptions:
         EBSEnabled: true
         Iops: '0'
         VolumeSize: '20'
-        VolumeType: 'gp2'
-      AccessPolicies:
-        Version: '2012-10-17'
-        Statement:
-          -
-            Effect: 'Allow'
-            Principal:
-              AWS: 'arn:aws:iam::123456789012:user/opensearch-user'
-            Action: 'es:*'
-            Resource: 'arn:aws:es:us-east-1:846973539254:domain/test/*'
+        VolumeType: gp2
+      EngineVersion: OpenSearch_1.0
       LogPublishingOptions:
         ES_APPLICATION_LOGS:
-            CloudWatchLogsLogGroupArn: 'arn:aws:logs:us-east-1:123456789012:log-group:/aws/opensearch/domains/opensearch-application-logs'
-            Enabled: true
-        SEARCH_SLOW_LOGS:
-            CloudWatchLogsLogGroupArn: 'arn:aws:logs:us-east-1:123456789012:log-group:/aws/opensearch/domains/opensearch-slow-logs'
-            Enabled: true
+          CloudWatchLogsLogGroupArn: arn:aws:logs:us-east-1:123456789012:log-group:/aws/opensearch/domains/opensearch-application-logs
+          Enabled: true
         INDEX_SLOW_LOGS:
-            CloudWatchLogsLogGroupArn: 'arn:aws:logs:us-east-1:123456789012:log-group:/aws/opensearch/domains/opensearch-index-slow-logs'
-            Enabled: true
-      AdvancedOptions:
-        rest.action.multi.allow_explicit_index: true
-        override_main_response_version: true
-
+          CloudWatchLogsLogGroupArn: arn:aws:logs:us-east-1:123456789012:log-group:/aws/opensearch/domains/opensearch-index-slow-logs
+          Enabled: true
+        SEARCH_SLOW_LOGS:
+          CloudWatchLogsLogGroupArn: arn:aws:logs:us-east-1:123456789012:log-group:/aws/opensearch/domains/opensearch-slow-logs
+          Enabled: true
   domain-02:
-    Properties: # Domain with some valid networking input
-      DomainName: test2
-      EngineVersion: 'OpenSearch_1.0'
+    Properties:
+      AccessPolicies:
+        Statement:
+          - Action: es:*
+            Effect: Deny
+            Principal:
+              AWS: '*'
+            Resource: '*'
+        Version: '2012-10-17'
+      AdvancedOptions:
+        override_main_response_version: true
+        rest.action.multi.allow_explicit_index: true
       ClusterConfig:
         InstanceCount: '1'
-        InstanceType: 'm3.medium.search'
+        InstanceType: m3.medium.search
+      DomainName: test2
       EBSOptions:
         EBSEnabled: true
         Iops: '0'
         VolumeSize: '10'
-        VolumeType: 'standard'
-      AccessPolicies:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Deny
-            Principal:
-              AWS: '*'
-            Action: 'es:*'
-            Resource: '*'
-      AdvancedOptions:
-        rest.action.multi.allow_explicit_index: true
-        override_main_response_version: true
+        VolumeType: standard
+      EngineVersion: OpenSearch_1.0
       Tags:
         - Key: foo
           Value: bar
       VPCOptions:
-        SubnetIds:
-          - subnet-abdc818l
         SecurityGroupIds:
           - sg-012344rsto
-
+        SubnetIds:
+          - subnet-abdc818l
   domain-03:
-    Properties: # Domain using Settings for Subnets
-      DomainName: test2
-      EngineVersion: 'OpenSearch_1.0'
+    Properties:
+      AccessPolicies:
+        Statement:
+          - Action: es:*
+            Effect: Deny
+            Principal:
+              AWS: '*'
+            Resource: '*'
+        Version: '2012-10-17'
+      AdvancedOptions:
+        override_main_response_version: true
+        rest.action.multi.allow_explicit_index: true
       ClusterConfig:
         InstanceCount: '1'
-        InstanceType: 'm3.medium.search'
+        InstanceType: m3.medium.search
+      DomainName: test2
       EBSOptions:
         EBSEnabled: true
         Iops: '0'
         VolumeSize: '10'
-        VolumeType: 'standard'
-      AccessPolicies:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Deny
-            Principal:
-              AWS: '*'
-            Action: 'es:*'
-            Resource: '*'
-      AdvancedOptions:
-        rest.action.multi.allow_explicit_index: true
-        override_main_response_version: true
+        VolumeType: standard
+      EngineVersion: OpenSearch_1.0
       Tags:
         - Key: foo
           Value: bar
     Settings:
       Subnets: StorageSubnets
-
   domain-04:
-    Properties: # Domain using Settings for Subnets
-      EngineVersion: 'OpenSearch_1.0'
+    MacroParameters:
+      CreateLogGroups:
+        - SEARCH_SLOW_LOGS
+        - INDEX_SLOW_LOGS
+      CreateMasterUserRole: true
+      RetentionInDays: 120
+    Properties:
+      AdvancedOptions:
+        override_main_response_version: true
+        rest.action.multi.allow_explicit_index: true
       ClusterConfig:
         InstanceCount: '1'
-        InstanceType: 'r5.medium.search'
+        InstanceType: r5.medium.search
       EBSOptions:
         EBSEnabled: true
         Iops: '0'
         VolumeSize: '10'
-        VolumeType: 'gp2'
-      AdvancedOptions:
-        rest.action.multi.allow_explicit_index: true
-        override_main_response_version: true
+        VolumeType: gp2
+      EngineVersion: OpenSearch_1.0
       Tags:
         - Key: foo
           Value: bar
     Settings:
       Subnets: AppSubnets
-    MacroParameters:
-#      GenerateMasterUserSecret: true
-      CreateMasterUserRole: true
-      CreateLogGroups:
-        - SEARCH_SLOW_LOGS
-        - INDEX_SLOW_LOGS
-      RetentionInDays: 120
-
   domain-05:
-    Properties: # Domain using Settings for Subnets
-      EngineVersion: 'OpenSearch_0.1'
+    MacroParameters:
+      CreateLogGroups: true
+      GenerateMasterUserSecret: true
+    Properties:
+      AdvancedOptions:
+        override_main_response_version: true
+        rest.action.multi.allow_explicit_index: true
+      AdvancedSecurityOptions:
+        InternalUserDatabaseEnabled: true
       ClusterConfig:
+        DedicatedMasterType: m6g.large.search
         InstanceCount: '1'
-        InstanceType: 'r6gd.large.search'
-        DedicatedMasterType: 'm6g.large.search'
+        InstanceType: r6gd.large.search
       EBSOptions:
         EBSEnabled: false
         Iops: '0'
         VolumeSize: '10'
-        VolumeType: 'standard'
-      AdvancedSecurityOptions:
-        InternalUserDatabaseEnabled: true
-      AdvancedOptions:
-        rest.action.multi.allow_explicit_index: true
-        override_main_response_version: true
+        VolumeType: standard
+      EngineVersion: OpenSearch_0.1
       Tags:
         - Key: foo
           Value: bar
-    MacroParameters:
-      GenerateMasterUserSecret: true
-#      CreateMasterUserRole: true
-      CreateLogGroups: true

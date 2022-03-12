@@ -1,21 +1,8 @@
----
-# Extension file to add all the x-keys related to services.
-version: '3.8'
 services:
   app01:
-    x-logging:
-      RetentionInDays: 42
-      CreateLogGroup: False
-    x-network:
-      Ingress:
-        Myself: False
-        AwsSources:
-          - Type: PrefixList
-            Id: pl-6da54004
     x-iam:
       Policies:
         - PolicyDocument:
-            Version: "2012-10-17"
             Statement:
               - Action:
                   - cloudwatch:PutMetricData
@@ -23,13 +10,23 @@ services:
                 Resource:
                   - '*'
                 Sid: AllowPublishMetricsToCw
+            Version: '2012-10-17'
           PolicyName: AllowPublishToCw
+    x-logging:
+      CreateLogGroup: false
+      RetentionInDays: 42
+    x-network:
+      Ingress:
+        AwsSources:
+          - Id: pl-6da54004
+            Type: PrefixList
+        Myself: false
     x-xray: false
   app02:
     x-iam:
-      PermissionsBoundary: arn:aws:iam::aws:policy/AdministratorAccess
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AdministratorAccess
+      PermissionsBoundary: arn:aws:iam::aws:policy/AdministratorAccess
     x-scaling:
       Range: 1-5
       TargetScaling:
@@ -37,40 +34,38 @@ services:
         MemoryTarget: 30
     x-xray: false
   app03:
-    x-network:
-      Ingress:
-        Myself: False
-        ExtSources:
-          - IPv4: 0.0.0.0/0
-            Description: ANYWHERE
-
+    labels:
+      Java_EMF_Metrics: 'true'
     x-logging:
       RetentionInDays: 42
+    x-network:
+      Ingress:
+        ExtSources:
+          - Description: ANYWHERE
+            IPv4: 0.0.0.0/0
+        Myself: false
+    x-prometheus:
+      ContainersInsights:
+        CollectForAppMesh: false
+        CollectForJavaJmx: true
+        CustomRules:
+          - EmfProcessors:
+              - dimensions:
+                  - - ClusterName
+                    - TaskDefinitionFamily
+                label_matcher: app03
+                metric_selectors:
+                  - ^startsEnds$
+                source_labels:
+                  - container_name
+            ExporterPort: 1234
+        ScrapingConfiguration:
+          Interval: 15s
+          Timeout: 5s
     x-scaling:
       Range: 1-10
       TargetScaling:
         CpuTarget: 50
-    x-prometheus:
-      ContainersInsights:
-        ScrapingConfiguration:
-          Interval: 15s
-          Timeout: 5s
-        CollectForAppMesh: false
-        CollectForJavaJmx: true
-        CustomRules:
-          - ExporterPort: 1234
-            EmfProcessors:
-              - source_labels:
-                  - container_name
-                label_matcher: app03
-                dimensions:
-                  - - ClusterName
-                    - TaskDefinitionFamily
-                metric_selectors:
-                  - "^startsEnds$"
-    labels:
-      Java_EMF_Metrics: "true"
-
   rproxy:
     x-iam:
       ManagedPolicyArns:
@@ -80,3 +75,4 @@ services:
       TargetScaling:
         CpuTarget: 50
     x-xray: true
+version: '3.8'

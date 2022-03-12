@@ -2,25 +2,15 @@ secrets:
   abcd: {}
   john:
     x-secrets:
-      LinksTo:
-        - EcsExecutionRole
-        - EcsTaskRole
-      Name: SFTP/asl-cscs-files-dev
-  zyx:
-    x-secrets:
-      JsonKeys:
-        - SecretKey: test
-          VarName: ZYX_TEST
-      Lookup:
-        Tags:
-          - costcentre: lambda
-      Name: secret/with/kmskey
+      Name: /cicd/shared/github.com/token
+  zyx: {}
 services:
   app01:
     cap_add:
       - ALL
     deploy:
       labels:
+        ecs.ephemeral.storage: 65
         ecs.task.family: bignicefamily
       resources:
         reservations:
@@ -89,6 +79,7 @@ services:
       - bignicefamily
     deploy:
       labels:
+        ecs.ephemeral.storage: 12128GB
         ecs.task.family: youtoo
       replicas: 2
       resources:
@@ -128,6 +119,7 @@ services:
     x-scaling:
       Range: 1-5
       TargetScaling:
+        CpuTarget: 88
         DisableScaleIn: true
     x-xray: false
   app03:
@@ -137,6 +129,9 @@ services:
     cap_drop:
       - SYS_ADMIN
     deploy:
+      labels:
+        ecs.ephemeral.storage: 20
+        testing: value
       resources:
         reservations:
           cpus: '0.25'
@@ -186,6 +181,7 @@ services:
       - app02
     deploy:
       labels:
+        ecs.ephemeral.storage: 175
         ecs.task.family: bignicefamily,youtoo
       replicas: 1
       resources:

@@ -1,33 +1,42 @@
----
-# Blog applications
-
+services:
+  app01:
+    deploy:
+      labels:
+        ecs.task.family: bignicefamily
+  rproxy:
+    depends_on:
+      - app01
+    deploy:
+      labels:
+        ecs.task.family: bignicefamily
 version: '3.8'
-
+x-cluster:
+  Use: test
 x-dynamodb:
   tableA:
     Properties:
       AttributeDefinitions:
-        - AttributeName: "ArtistId"
-          AttributeType: "S"
-        - AttributeName: "Concert"
-          AttributeType: "S"
-        - AttributeName: "TicketSales"
-          AttributeType: "S"
-      KeySchema:
-        - AttributeName: "ArtistId"
-          KeyType: "HASH"
-        - AttributeName: "Concert"
-          KeyType: "RANGE"
+        - AttributeName: ArtistId
+          AttributeType: S
+        - AttributeName: Concert
+          AttributeType: S
+        - AttributeName: TicketSales
+          AttributeType: S
       GlobalSecondaryIndexes:
-        - IndexName: "GSI"
+        - IndexName: GSI
           KeySchema:
-            - AttributeName: "TicketSales"
-              KeyType: "HASH"
+            - AttributeName: TicketSales
+              KeyType: HASH
           Projection:
-            ProjectionType: "KEYS_ONLY"
+            ProjectionType: KEYS_ONLY
           ProvisionedThroughput:
             ReadCapacityUnits: 5
             WriteCapacityUnits: 5
+      KeySchema:
+        - AttributeName: ArtistId
+          KeyType: HASH
+        - AttributeName: Concert
+          KeyType: RANGE
       ProvisionedThroughput:
         ReadCapacityUnits: 5
         WriteCapacityUnits: 5
@@ -36,28 +45,12 @@ x-dynamodb:
         Access: RW
       bignicefamily:
         Access: RO
-
 x-vpc:
   Properties:
-    VpcCidr: 172.23.0.0/24
-    SingleNat: False
     Endpoints:
       AwsServices:
         - service: s3
         - service: ecr.dkr
         - service: ecr.api
-
-x-cluster:
-  Use: test
-
-services:
-  rproxy:
-    deploy:
-      labels:
-        ecs.task.family: bignicefamily
-    depends_on:
-      - app01
-  app01:
-    deploy:
-      labels:
-        ecs.task.family: bignicefamily
+    SingleNat: false
+    VpcCidr: 172.23.0.0/24
