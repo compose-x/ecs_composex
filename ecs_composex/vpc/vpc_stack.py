@@ -415,11 +415,11 @@ class XStack(ComposeXStack):
         In case no x-vpc was specified but the deployment settings require a new VPC, allows for an easy way to set one.
         """
         self.vpc_resource = Vpc(
-            "vpc",
-            {"Properties": {VPC_CIDR.title: Vpc.default_ipv4_cidr}},
-            "vpc",
-            settings,
-            "vpc",
+            name="vpc",
+            definition={"Properties": {VPC_CIDR.title: Vpc.default_ipv4_cidr}},
+            module_name="vpc",
+            settings=settings,
+            mapping_key="vpc",
         )
         template = init_vpc_template()
         self.vpc_resource.create_vpc(template, settings)

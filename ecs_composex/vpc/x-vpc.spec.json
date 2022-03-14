@@ -5,6 +5,30 @@
   "title": "x-vpc",
   "description": "x-vpc specification",
   "type": "object",
+  "properties": {
+    "Lookup": {
+      "type": "object",
+      "$ref": "#/definitions/VpcLookup"
+    },
+    "Properties": {
+      "type": "object",
+      "$ref": "#/definitions/VpcCreate"
+    }
+  },
+  "oneOf": [
+    {
+      "type": "object",
+      "required": [
+        "Lookup"
+      ]
+    },
+    {
+      "type": "object",
+      "required": [
+        "Properties"
+      ]
+    }
+  ],
   "definitions": {
     "VpcLookup": {
       "type": "object",
@@ -135,29 +159,5 @@
         }
       }
     }
-  },
-  "properties": {
-    "Lookup": {
-      "type": "object",
-      "$ref": "#/definitions/VpcLookup"
-    },
-    "Properties": {
-      "type": "object",
-      "$ref": "#/definitions/VpcCreate"
-    }
-  },
-  "oneOf": [
-    {
-      "type": "object",
-      "required": [
-        "Lookup"
-      ]
-    },
-    {
-      "type": "object",
-      "required": [
-        "Properties"
-      ]
-    }
-  ]
+  }
 }

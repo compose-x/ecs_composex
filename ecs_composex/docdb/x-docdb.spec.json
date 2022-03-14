@@ -18,13 +18,13 @@
       "$ref": "x-resources.common.spec.json#/definitions/Settings"
     },
     "Services": {
-      "$ref": "x-rds.spec.json#/definitions/ServicesDef"
+      "$ref": "x-rds-common.spec.json#/definitions/ServicesDef"
     },
     "MacroParameters": {
       "$ref": "#/definitions/MacroParameters"
     },
     "SecretsMappings": {
-      "$ref": "x-rds.spec.json#/definitions/SecretsMappingsDef"
+      "$ref": "x-rds-common.spec.json#/definitions/SecretsMappingsDef"
     }
   },
   "oneOf": [

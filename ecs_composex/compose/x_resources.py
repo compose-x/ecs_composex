@@ -10,8 +10,10 @@ import json
 import re
 import warnings
 from copy import deepcopy
+from os import path
 from re import sub
 
+import jsonschema
 from compose_x_common.aws import get_account_id
 from compose_x_common.compose_x_common import (
     attributes_to_mapping,
@@ -19,6 +21,7 @@ from compose_x_common.compose_x_common import (
     keypresent,
     set_else_none,
 )
+from importlib_resources import files as pkg_files
 from troposphere import AWSObject, Export, FindInMap, GetAtt, Join, Output, Ref, Sub
 from troposphere.ecs import Environment
 
@@ -165,6 +168,7 @@ class XResource(object):
         :param dict definition: The definition of the resource as-is
         :param ecs_composex.common.settings.ComposeXSettings settings:
         """
+        self.validate_schema(name, definition, module_name)
         self.name = name
         self.requires_vpc = False
         self.arn = None
@@ -245,6 +249,41 @@ class XResource(object):
         :param args:
         :param kwargs:
         """
+
+    def validate_schema(self, name, definition, module_name) -> None:
+        """
+        JSON Validation of the resources module validation
+        """
+
+        import json
+
+        RES_KEY = f"{X_KEY}{module_name}"
+        module_source = pkg_files("ecs_composex").joinpath(
+            f"{module_name}/{RES_KEY}.spec.json"
+        )
+        try:
+            module_schema = json.loads(module_source.read_text())
+        except FileNotFoundError:
+            LOG.error(
+                f"{RES_KEY}.{name} - No module schema found for that resource. Errors might occur!!"
+            )
+            return
+        resolver_source = pkg_files("ecs_composex").joinpath("specs/compose-spec.json")
+        LOG.debug(f"Validating against input schema {resolver_source}")
+        resolver = jsonschema.RefResolver(
+            base_uri=f"file://{path.abspath(path.dirname(resolver_source))}/",
+            referrer=module_schema,
+        )
+
+        try:
+            jsonschema.validate(
+                definition,
+                module_schema,
+                resolver=resolver,
+            )
+        except jsonschema.exceptions.ValidationError as error:
+            LOG.error(f"{RES_KEY}.{name} - Definition is not conform to schema.")
+            raise
 
     def cloud_control_attributes_mapping_lookup(
         self, resource_type, resource_id, **kwargs

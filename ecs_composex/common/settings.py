@@ -231,7 +231,7 @@ class ComposeXSettings(object):
         If so it will also expect x-dns.PrivateNamespace to be set.
         """
         self.requires_private_namespace = self.use_appmesh or any(
-            keyisset("UseCloudmap", service.x_network) for service in self.services
+            keyisset("x-cloudmap", service.x_network) for service in self.services
         )
         if self.requires_private_namespace:
             LOG.warning(
@@ -299,7 +299,6 @@ class ComposeXSettings(object):
                         "Properties": volume.efs_definition,
                         "MacroParameters": volume.parameters,
                         "Lookup": volume.lookup,
-                        "Use": volume.use,
                         "Services": [
                             {"name": service.name, "access": "RW"}
                             for service in volume.services

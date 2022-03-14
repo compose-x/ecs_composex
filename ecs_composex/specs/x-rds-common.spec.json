@@ -10,9 +10,6 @@
     "Lookup": {
       "$ref": "#/definitions/Lookup"
     },
-    "Use": {
-      "type": "string"
-    },
     "Properties": {
       "type": "object"
     },
