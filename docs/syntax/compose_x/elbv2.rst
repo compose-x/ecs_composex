@@ -1,3 +1,4 @@
+
 .. meta::
     :description: ECS Compose-X AWS Load Balancing syntax reference
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS ELB, ELBv2, ALB, NLB
@@ -161,7 +162,7 @@ Syntax
 `JSON Schema definition <https://github.com/compose-x/ecs_composex_specs/blob/main/ecs_composex_specs/x-elbv2.spec.json#L38>`__
 
 name
-----
+^^^^^^^^^^^^^^^^^^
 
 Given that you can now re-use one of the service in the docker-compose file multiple times for multiple ECS Services
 in multiple Task definitions, and ECS to ELBv2 supports to route traffic to a specific container in the task definition,
@@ -179,13 +180,13 @@ you have to indicate the service name in the following format
 
 
 protocol
---------
+^^^^^^^^^^^^^^^^^^
 
 The Target Group protocol
 
 
 port
-----
+^^^^^^^^^^^^^^^^^^
 
 The port of the target to send the traffic to
 
@@ -195,7 +196,7 @@ The port of the target to send the traffic to
 
 
 healthcheck
------------
+^^^^^^^^^^^^^^^^^^
 
 The healthcheck properties can be defined in the same fashion as defined in the `Target Group`_ definition.
 However, it is also possible to shorten the syntax into a simple string
@@ -337,8 +338,6 @@ The following properties are identical to the original CFN definition.
 
 Listener Targets
 =================
-
-
 
 List of targets to send the requests to. These are equivalent to ELBv2::TargetGroup
 

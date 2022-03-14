@@ -1,3 +1,4 @@
+
 .. meta::
     :description: ECS Compose-X AWS SQS syntax reference
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS SQS, queuing, messages
@@ -7,6 +8,14 @@
 =================
 x-sqs
 =================
+
+Allows you to define SQS Queues that you want to create / lookup (use existing ones) and link these to services that are
+going to publish/consume messages.
+
+You can also create DLQ and reference them to each other. See `Special Features`_ for more details.
+
+You can also define services autoscaling automatically in the queue section instead of creating a new alarm etc.
+separately, compose-x will do all of that for you automatically. See `Scaling`_ for more details.
 
 Definition
 ================
@@ -111,12 +120,12 @@ You can now defined StepScaling on the ECS Service based on the number of messag
     :caption: Scaling Syntax
 
     Scaling:
-      steps:
-        - lower_bound: int
-          upper_bound: int
-          count: int
-      scaling_in_cooldown: int
-      scaling_out_cooldown: int
+      Steps:
+        - LowerBound: int
+          UpperBound: int
+          Count: int
+      ScalingInCooldown: int
+      ScalingOutCooldown: int
 
 .. tip::
 

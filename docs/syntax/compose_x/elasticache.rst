@@ -76,11 +76,6 @@ It supports all of the properties you can set in the original `AWS ParameterGrou
     Your parameter group settings have to match the settings supported by the Engine. Refer to `Engine Parameters guide`_
     to see what the engine you have can support as settings.
 
-Settings
-=========
-
-See :ref:`settings_syntax_reference`
-
 Services
 =========
 
@@ -101,6 +96,12 @@ via the indicated SecurityGroup.
 
     ECS ComposeX will not handle the Redis6.x RBAC access as this is a lot more involved than generating CFN templates etc.
     This might come in a future version.
+
+Settings
+=========
+
+See :ref:`settings_syntax_reference`
+
 
 Lookup
 =======

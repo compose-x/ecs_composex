@@ -8,7 +8,13 @@
 x-route53
 =========================
 
-.. note::
+This module allows you to create new Route53 zones and lookup existing ones.
+Generally we recommend to use existing zones as other features, such as x-acm auto validation,
+won't work without a working hosted zone.
+
+This will allow you to create DNS records for supported resources.
+
+.. attention::
 
     This module replaces the deprecated x-dns.PublicDomain module & resource.
 

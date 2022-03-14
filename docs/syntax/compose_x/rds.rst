@@ -1,3 +1,4 @@
+
 .. meta::
     :description: ECS Compose-X AWS RDS syntax reference
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS RDS, mysql, postresql, rds
@@ -8,22 +9,22 @@
 x-rds
 ===================
 
-.. tip::
-
-    You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/rds>`__ to use
-    as reference for your use-case.
+Allows to define RDS DB Instances/Clusters and/or use existing ones and link access to the services.
+When creating new RDS resources, compose-x will use AWS Secrets Manager to automatically register
+the new database username / password and passes it on to the services. See `SecretsMapping`_ and `Database Credentials`_
+for more details.
 
 Syntax reference
 =================
 
 .. code-block:: yaml
 
-x-rds:
-  dbA:
-    Properties: {}
-    MacroParameters: {}
-    Services: {}
-    Lookup: {}
+    x-rds:
+      dbA:
+        Properties: {}
+        MacroParameters: {}
+        Services: {}
+        Lookup: {}
 
 Properties
 ===========
@@ -38,7 +39,7 @@ and password. The reason for it is to allow to keep integration to your ECS Serv
 
     When using Properties, you can use either the `RDS Aurora Cluster`_ properties or `RDS Instances`_ properties.
     ECS ComposeX will attempt to automatically identify whether this is a DB Cluster or DB Instance properties set.
-    If successful, it will ingest all your properties, and explained earlier, interpolate a few with new ones created for you.
+    If successful, it will ingest all your properties, and interpolate a few with new ones created for you.
 
 Properties overridden
 ----------------------
@@ -309,6 +310,11 @@ Examples
 
     The DB Family group will be found automatically and the setting will allow creation of a
     new RDS Parameter group for the Cluster / DB Instance.
+
+.. tip::
+
+    You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/rds>`__ to use
+    as reference for your use-case.
 
 
 JSON Schema

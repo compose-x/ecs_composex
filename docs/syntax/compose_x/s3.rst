@@ -10,8 +10,7 @@ x-s3
 =====================
 
 This module allows you to create new S3 Buckets, Lookup existing ones, and link them to your services or other AWS Resources,
-where supported
-
+where supported.
 
 Syntax
 =========

@@ -1,3 +1,4 @@
+
 .. meta::
     :description: ECS Compose-X AWS OpenSearch syntax reference
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS OpenSearch, ElasticSearch
