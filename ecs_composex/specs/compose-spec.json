@@ -901,7 +901,7 @@
           ]
         },
         "timeout": {
-          "type": "string",
+          "type": "string"
         },
         "start_period": {
           "type": "string",
