@@ -1,6 +1,6 @@
 Feature: ecs_composex.cloudmap
 
-    @compose @efs
+    @compose
     Scenario Outline: AWS CloudMap network settings
         Given I use <file_path> as my docker-compose file and <override_file> as override file
         Then I render the docker-compose to composex to validate

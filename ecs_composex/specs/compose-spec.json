@@ -6,160 +6,11 @@
   "description": "Compose specification from compose-spec with added specifications for ECS Compose-X",
   "$comment": "Compose specification from compose-spec with added specifications for ECS Compose-X. Source gh:from compose-spec/compose-spec/schema",
   "properties": {
-    "x-vpc": {
-      "$ref": "x-vpc.spec.json"
-    },
     "x-tags": {
       "$ref": "x-tags.spec.json"
     },
-    "x-appmesh": {
-      "$ref": "x-appmesh.spec.json"
-    },
     "x-cluster": {
       "$ref": "x-cluster.spec.json"
-    },
-    "x-acm": {
-      "patternProperties": {
-        "^[a-zA-Z0-9._-]+$": {
-          "$ref": "x-acm.spec.json"
-        }
-      }
-    },
-    "x-elbv2": {
-      "patternProperties": {
-        "^[a-zA-Z0-9._-]+$": {
-          "$ref": "x-elbv2.spec.json"
-        }
-      }
-    },
-    "x-s3": {
-      "type": "object",
-      "patternProperties": {
-        "^[a-zA-Z0-9._-]+$": {
-          "$ref": "x-s3.spec.json"
-        }
-      }
-    },
-    "x-alarms": {
-      "type": "object",
-      "patternProperties": {
-        "^[a-zA-Z0-9._-]+$": {
-          "$ref": "x-alarms.spec.json"
-        }
-      }
-    },
-    "x-dashboards": {
-      "type": "object",
-      "patternProperties": {
-        "^[a-zA-Z0-9._-]+$": {
-          "$ref": "x-dashboards.spec.json"
-        }
-      }
-    },
-    "x-cognito_userpool": {
-      "type": "object",
-      "description": "Allows definition of AWS Cognito Userpool (Lookup only)",
-      "patternProperties": {
-        "^[a-zA-Z0-9._-]+$": {
-          "$ref": "x-cognito_userpool.spec.json"
-        }
-      }
-    },
-    "x-ssm_parameter": {
-      "type": "object",
-      "patternProperties": {
-        "^[a-zA-Z0-9._-]+$": {
-          "$ref": "x-ssm_parameter.spec.json"
-        }
-      }
-    },
-    "x-dynamodb": {
-      "type": "object",
-      "patternProperties": {
-        "^[a-zA-Z0-9._-]+$": {
-          "$ref": "x-dynamodb.spec.json"
-        }
-      }
-    },
-    "x-kinesis": {
-      "type": "object",
-      "patternProperties": {
-        "^[a-zA-Z0-9._-]+$": {
-          "$ref": "x-kinesis.spec.json"
-        }
-      }
-    },
-    "x-sqs": {
-      "type": "object",
-      "patternProperties": {
-        "^[a-zA-Z0-9._-]+$": {
-          "$ref": "x-sqs.spec.json"
-        }
-      }
-    },
-    "x-kms": {
-      "type": "object",
-      "patternProperties": {
-        "^[a-zA-Z0-9._-]+$": {
-          "$ref": "x-kms.spec.json"
-        }
-      }
-    },
-    "x-rds": {
-      "type": "object",
-      "patternProperties": {
-        "^[a-zA-Z0-9._-]+$": {
-          "$ref": "x-rds.spec.json"
-        }
-      }
-    },
-    "x-docdb": {
-      "type": "object",
-      "patternProperties": {
-        "^[a-zA-Z0-9._-]+$": {
-          "$ref": "x-docdb.spec.json"
-        }
-      }
-    },
-    "x-neptune": {
-      "type": "object",
-      "patternProperties": {
-        "^[a-zA-Z0-9._-]+$": {
-          "$ref": "x-neptune.spec.json"
-        }
-      }
-    },
-    "x-events": {
-      "type": "object",
-      "patternProperties": {
-        "^[a-zA-Z0-9._-]+$": {
-          "$ref": "x-events.spec.json"
-        }
-      }
-    },
-    "x-opensearch": {
-      "type": "object",
-      "patternProperties": {
-        "^[a-zA-Z0-9._-]+$": {
-          "$ref": "x-opensearch.spec.json"
-        }
-      }
-    },
-    "x-route53": {
-      "type": "object",
-      "patternProperties": {
-        "^[a-zA-Z0-9._-]+$": {
-          "$ref": "x-route53.spec.json"
-        }
-      }
-    },
-    "x-cloudmap": {
-      "type": "object",
-      "patternProperties": {
-        "^[a-zA-Z0-9._-]+$": {
-          "$ref": "x-cloudmap.spec.json"
-        }
-      }
     },
     "version": {
       "type": "string",
@@ -1051,7 +902,6 @@
         },
         "timeout": {
           "type": "string",
-          "format": "duration"
         },
         "start_period": {
           "type": "string",
@@ -1437,9 +1287,6 @@
         "null"
       ],
       "properties": {
-        "x-efs": {
-          "$ref": "x-efs.spec.json"
-        },
         "name": {
           "type": "string"
         },

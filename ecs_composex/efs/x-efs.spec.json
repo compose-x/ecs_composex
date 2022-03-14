@@ -21,9 +21,6 @@
         }
       }
     },
-    "Use": {
-      "type": "string"
-    },
     "Settings": {
       "type": "object",
       "additionalProperties": false,
