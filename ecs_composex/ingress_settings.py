@@ -257,9 +257,16 @@ class Ingress(object):
                     and port["published"] not in source["Ports"]
                 ):
                     continue
+                target_port = set_else_none(
+                    "published", port, alt_value=set_else_none("target", port, None)
+                )
+                if target_port is None:
+                    raise ValueError(
+                        "Wrong port definition value for security group ingress", port
+                    )
                 common_args = {
-                    "FromPort": port["published"],
-                    "ToPort": port["published"],
+                    "FromPort": target_port,
+                    "ToPort": target_port,
                     "IpProtocol": port["protocol"],
                     "GroupId": sg_ref,
                 }
@@ -275,13 +282,13 @@ class Ingress(object):
                     common_args.update(
                         {
                             "Description": Sub(
-                                f"From {sg_id} to {destination_title} on port {port['published']}"
+                                f"From {sg_id} to {destination_title} on port {target_port}"
                             )
                         }
                     )
                     self.aws_ingress_rules.append(
                         SecurityGroupIngress(
-                            f"From{NONALPHANUM.sub('', sg_id)}ToServiceOn{port['published']}",
+                            f"From{NONALPHANUM.sub('', sg_id)}ToServiceOn{target_port}",
                             SourceSecurityGroupId=sg_id,
                             SourceSecurityGroupOwnerId=Ref(AWS_ACCOUNT_ID),
                             **common_args,
@@ -290,7 +297,7 @@ class Ingress(object):
                 elif source["Type"] == "PrefixList":
                     self.aws_ingress_rules.append(
                         SecurityGroupIngress(
-                            f"From{NONALPHANUM.sub('', source['Id'])}ToServiceOn{port['published']}",
+                            f"From{NONALPHANUM.sub('', source['Id'])}ToServiceOn{target_port}",
                             SourcePrefixListId=source["Id"],
                             **common_args,
                         )
@@ -308,25 +315,32 @@ class Ingress(object):
         :param dict props:
         """
         for port in self.ports:
+            target_port = set_else_none(
+                "published", port, alt_value=set_else_none("target", port, None)
+            )
+            if target_port is None:
+                raise ValueError(
+                    "Wrong port definition value for security group ingress", port
+                )
             if (
                 keyisset("Ports", allowed_source)
-                and port["published"] not in allowed_source["Ports"]
+                and target_port not in allowed_source["Ports"]
             ):
                 continue
             if keyisset("Name", allowed_source):
                 name = NONALPHANUM.sub("", allowed_source["Name"])
-                title = f"From{name.title()}To{port['published']}{port['protocol']}"
+                title = f"From{name.title()}To{target_port}{port['protocol']}"
                 description = Sub(
                     f"From {name.title()} "
-                    f"To {port['published']}{port['protocol']} for {destination_title}"
+                    f"To {target_port}{port['protocol']} for {destination_title}"
                 )
             else:
                 title = (
                     f"From{flatten_ip(allowed_source[self.ipv4_key])}"
-                    f"To{port['published']}{port['protocol']}"
+                    f"To{target_port}{port['protocol']}"
                 )
                 description = Sub(
-                    f"Public {port['published']}{port['protocol']}"
+                    f"Public {target_port}{port['protocol']}"
                     f" for {destination_title}"
                 )
             self.ext_ingress_rules.append(
@@ -337,8 +351,8 @@ class Ingress(object):
                     else allowed_source["Description"],
                     GroupId=security_group,
                     IpProtocol=port["protocol"],
-                    FromPort=port["published"],
-                    ToPort=port["published"],
+                    FromPort=target_port,
+                    ToPort=target_port,
                     **props,
                 )
             )
