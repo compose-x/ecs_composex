@@ -156,20 +156,28 @@ def define_ingress_mappings(service_ports):
     """
     Function to create a mapping of sources for a common target
     """
-    ingress_mappings = {}
+    udp_mappings = {}
+    tcp_mappings = {}
+    ports_mappings = {"tcp": tcp_mappings, "udp": udp_mappings}
     for port in service_ports:
         if not keyisset("target", port):
             raise KeyError("The ports must always at least define the target.")
-        if not keyisset("published", port):
-            port["published"] = port["target"]
-        if not port["target"] in ingress_mappings.keys():
-            ingress_mappings[port["target"]] = [port["published"]]
+        if keyisset("protocol", port) and port["protocol"] == "udp":
+            mappings = udp_mappings
+        else:
+            mappings = tcp_mappings
+
+        if not port["target"] in mappings.keys() and keyisset("published", port):
+            mappings[port["target"]] = [port["published"]]
+
+        elif not port["target"] in mappings.keys() and not keyisset("published", port):
+            mappings[port["target"]] = []
         elif (
-            port["target"] in ingress_mappings.keys()
-            and not port["published"] in ingress_mappings[port["target"]]
+            port["target"] in mappings.keys()
+            and not port["published"] in mappings[port["target"]]
         ):
-            ingress_mappings[port["target"]].append(port["published"])
-    return ingress_mappings
+            mappings[port["target"]].append(port["published"])
+    return ports_mappings
 
 
 def validate_healthcheck(healthcheck, valid_keys, required_keys):

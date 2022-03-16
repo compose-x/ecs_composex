@@ -11,7 +11,6 @@ from os import path
 from compose_x_common.compose_x_common import keyisset, keypresent, set_else_none
 from troposphere import (
     AWS_ACCOUNT_ID,
-    AWS_NO_VALUE,
     AWS_PARTITION,
     AWS_REGION,
     AWS_STACK_NAME,
@@ -19,6 +18,7 @@ from troposphere import (
     GetAtt,
     If,
     Join,
+    NoValue,
 )
 from troposphere import Output as CfnOutput
 from troposphere import Ref, Sub, Tags
@@ -654,6 +654,15 @@ class ComposeFamily(object):
         self.set_task_compute_parameter()
         self.set_family_hostname()
 
+    def finalize_services_networking_settings(self):
+        for service in self.services:
+            if service.ports or service.expose_ports:
+                setattr(
+                    service.container_definition,
+                    "PortMappings",
+                    service.define_port_mappings(),
+                )
+
     def finalize_family_settings(self):
         """
         Once all services have been added, we add the sidecars and deal with appropriate permissions and settings
@@ -661,15 +670,12 @@ class ComposeFamily(object):
         """
         self.set_xray()
         self.set_prometheus()
+        self.finalize_services_networking_settings()
         if self.launch_type == "EXTERNAL":
             if hasattr(self.ecs_service.ecs_service, "LoadBalancers"):
-                setattr(
-                    self.ecs_service.ecs_service, "LoadBalancers", Ref(AWS_NO_VALUE)
-                )
+                setattr(self.ecs_service.ecs_service, "LoadBalancers", NoValue)
             if hasattr(self.ecs_service.ecs_service, "ServiceRegistries"):
-                setattr(
-                    self.ecs_service.ecs_service, "ServiceRegistries", Ref(AWS_NO_VALUE)
-                )
+                setattr(self.ecs_service.ecs_service, "ServiceRegistries", NoValue)
             for container in self.task_definition.ContainerDefinitions:
                 if hasattr(container, "LinuxParameters"):
                     parameters = getattr(container, "LinuxParameters")
@@ -1406,19 +1412,17 @@ class ComposeFamily(object):
             NetworkMode=If(
                 ecs_conditions.USE_FARGATE_CON_T,
                 "awsvpc",
-                Ref(AWS_NO_VALUE)
-                if not self.family_network_mode
-                else self.family_network_mode,
+                NoValue if not self.family_network_mode else self.family_network_mode,
             ),
             EphemeralStorage=If(
                 ecs_conditions.USE_FARGATE_CON_T,
                 EphemeralStorage(SizeInGiB=self.task_ephemeral_storage),
-                Ref(AWS_NO_VALUE),
+                NoValue,
             )
             if 0 < self.task_ephemeral_storage >= 21
-            else Ref(AWS_NO_VALUE),
-            InferenceAccelerators=Ref(AWS_NO_VALUE),
-            IpcMode=Ref(AWS_NO_VALUE),
+            else NoValue,
+            InferenceAccelerators=NoValue,
+            IpcMode=NoValue,
             Family=Ref(ecs_params.SERVICE_NAME),
             TaskRoleArn=self.task_role.arn,
             ExecutionRoleArn=self.exec_role.arn,
@@ -1432,7 +1436,7 @@ class ComposeFamily(object):
                     CpuArchitecture=Ref(ecs_params.RUNTIME_CPU_ARCHITECTURE),
                     OperatingSystemFamily=Ref(ecs_params.RUNTIME_OS_FAMILY),
                 ),
-                Ref(AWS_NO_VALUE),
+                NoValue,
             ),
             Tags=Tags(
                 {
@@ -1669,7 +1673,7 @@ class ComposeFamily(object):
                 else:
                     mnt_point = If(
                         ecs_conditions.USE_FARGATE_CON_T,
-                        Ref(AWS_NO_VALUE),
+                        NoValue,
                         MountPoint(
                             ContainerPath=volume["target"],
                             ReadOnly=volume["read_only"],
@@ -1733,16 +1737,14 @@ class ComposeFamily(object):
         for volume in family_task_volumes:
             if volume.type == "volume" and volume.driver == "local":
                 volume.cfn_volume = Volume(
-                    Host=Ref(AWS_NO_VALUE),
+                    Host=NoValue,
                     Name=volume.volume_name,
                     DockerVolumeConfiguration=If(
                         ecs_conditions.USE_FARGATE_CON_T,
-                        Ref(AWS_NO_VALUE),
+                        NoValue,
                         DockerVolumeConfiguration(
                             Scope="task" if not volume.is_shared else "shared",
-                            Autoprovision=Ref(AWS_NO_VALUE)
-                            if not volume.is_shared
-                            else True,
+                            Autoprovision=NoValue if not volume.is_shared else True,
                         ),
                     ),
                 )
@@ -1751,10 +1753,10 @@ class ComposeFamily(object):
         for volume_config in host_volumes:
             cfn_volume = If(
                 ecs_conditions.USE_FARGATE_CON_T,
-                Ref(AWS_NO_VALUE),
+                NoValue,
                 Volume(
                     Host=Host(SourcePath=volume_config["source"]),
-                    DockerVolumeConfiguration=Ref(AWS_NO_VALUE),
+                    DockerVolumeConfiguration=NoValue,
                     Name=NONALPHANUM.sub("", volume_config["target"]),
                 ),
             )
@@ -1964,7 +1966,7 @@ class ComposeFamily(object):
             setattr(
                 self.service_definition,
                 "CapacityProviderStrategy",
-                Ref(AWS_NO_VALUE),
+                NoValue,
             )
 
     def validate_capacity_providers(self, cluster):
@@ -2021,7 +2023,7 @@ class ComposeFamily(object):
                 setattr(
                     self.service_definition,
                     "CapacityProviderStrategy",
-                    Ref(AWS_NO_VALUE),
+                    NoValue,
                 )
         else:
             self.merge_capacity_providers()

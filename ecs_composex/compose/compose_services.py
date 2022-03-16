@@ -25,7 +25,7 @@ except ImportError:
 import requests
 import urllib3
 from compose_x_common.compose_x_common import keyisset, keypresent, set_else_none
-from troposphere import AWS_NO_VALUE, AWS_REGION, If, Ref, Sub
+from troposphere import AWS_NO_VALUE, AWS_REGION, If, NoValue, Ref, Sub
 from troposphere.ecs import (
     ContainerDefinition,
     HealthCheck,
@@ -131,7 +131,6 @@ class ComposeService(object):
             if self.environment
             else Ref(AWS_NO_VALUE)
         )
-        self.ports = set_else_none("ports", self.definition, [])
         self.depends_on = set_else_none("depends_on", self.definition, [], False)
         self.command = (
             definition["command"]
@@ -145,18 +144,28 @@ class ComposeService(object):
         self.image_param = Parameter(
             f"{self.logical_name}ImageUrl", Default=self.image, Type="String"
         )
-        self.deploy = set_else_none("deploy", self.definition, None)
-        self.ingress_mappings = define_ingress_mappings(self.ports)
-        self.expose_ports = set_else_none("expose", self.definition, [])
+        self.ecr_config = set_else_none("x-ecr", self.definition, None)
+        self.launch_type = ecs_params.LAUNCH_TYPE.Default
+        self.container_start_condition = "START"
+
         self.mem_alloc = None
         self.mem_resa = None
         self.cpu_amount = None
-        self.launch_type = ecs_params.LAUNCH_TYPE.Default
         self.families = []
         self.my_family = None
         self.is_aws_sidecar = False
         self.is_essential = True
         self.container_definition = None
+
+        self.ecs_healthcheck = Ref(AWS_NO_VALUE)
+        self.healthcheck = set_else_none("healthcheck", self.definition, None)
+        self.deploy = set_else_none("deploy", self.definition, None)
+        self.set_service_deploy()
+
+        self.ports = set_else_none("ports", self.definition, [])
+        self.expose_ports = set_else_none("expose", self.definition, [])
+        self.ingress_mappings = define_ingress_mappings(self.ports)
+
         self.update_config = {}
         self.working_dir = set_else_none(
             "working_dir", self.definition, alt_value=Ref(AWS_NO_VALUE)
@@ -170,9 +179,6 @@ class ComposeService(object):
             "OperatingSystemFamily", self.x_ecs, None
         )
 
-        self.container_start_condition = "START"
-        self.healthcheck = set_else_none("healthcheck", self.definition, None)
-        self.ecs_healthcheck = Ref(AWS_NO_VALUE)
         self.set_ecs_healthcheck()
         self.define_logging()
         self.container_parameters = {}
@@ -181,10 +187,8 @@ class ComposeService(object):
         self.map_volumes(volumes)
         self.map_secrets(secrets)
         self.define_families()
-        self.set_service_deploy()
         self.set_container_definition()
         self.set_networks()
-        self.ecr_config = set_else_none("x-ecr", self.definition, None)
 
     def retrieve_image_digest(self):
         """
@@ -233,7 +237,7 @@ class ComposeService(object):
 
         :param list[troposphere.ecs.PortMapping] aws_vpc_mappings: List of ECS Port Mappings defined from ports[]
         """
-        expose_port_re = re.compile(r"^(?P<target>\d{2,5})(?=/(?P<protocol>udp|tcp))")
+        expose_port_re = re.compile(r"^(?P<target>\d{1,5})(?=/(?P<protocol>udp|tcp))")
         for expose_port in self.expose_ports:
             if isinstance(expose_port, str):
                 parts = expose_port_re.match(expose_port)
@@ -260,27 +264,43 @@ class ComposeService(object):
                     )
                 )
             else:
-                LOG.warning(
-                    f"Port {port} was already defined as Container Port."
+                LOG.debug(
+                    f"{self.name} - Port {port} was already defined as ``ports``."
                     " In awsvpc mode the Container Ports must be unique."
                     f" Skipping {self.name}.expose.{expose_port}"
                 )
 
-    def define_port_mappings(self):
+    def define_port_mappings(self) -> list:
         """
         Define the list of port mappings to use for either AWS VPC deployments or else (bridge etc).
         Not in use atm as AWS VPC is made mandatory
         """
-        ec2_mappings = []
-        for c_port, h_ports in self.ingress_mappings.items():
-            for port in h_ports:
-                ec2_mappings.append(PortMapping(ContainerPort=c_port, HostPort=port))
-        aws_vpc_mappings = [
-            PortMapping(ContainerPort=port, HostPort=port)
-            for port in self.ingress_mappings.keys()
-        ]
-        self.handle_expose_ports(aws_vpc_mappings)
-        return aws_vpc_mappings, ec2_mappings
+        service_port_mappings = (
+            getattr(self.container_definition, "PortMappings")
+            if self.container_definition
+            else []
+        )
+        for protocol, mappings in self.ingress_mappings.items():
+            for target_port, published_ports in mappings.items():
+                if published_ports:
+                    for port in published_ports:
+                        service_port_mappings.append(
+                            PortMapping(
+                                ContainerPort=target_port,
+                                HostPort=If(USE_FARGATE_CON_T, NoValue, port),
+                                Protocol=protocol.lower(),
+                            )
+                        )
+                else:
+                    service_port_mappings.append(
+                        PortMapping(
+                            ContainerPort=target_port,
+                            HostPort=NoValue,
+                            Protocol=protocol.lower(),
+                        )
+                    )
+            self.handle_expose_ports(service_port_mappings)
+        return service_port_mappings
 
     def import_docker_labels(self):
         """
@@ -303,7 +323,6 @@ class ComposeService(object):
         Function to define the container definition matching the service definition
         """
         secrets = [secret for secrets in self.secrets for secret in secrets.ecs_secret]
-        ports_mappings = self.define_port_mappings()
         self.define_compose_logging()
         self.container_definition = ContainerDefinition(
             Image=Ref(self.image_param),
@@ -311,7 +330,7 @@ class ComposeService(object):
             Cpu=self.cpu_amount if self.cpu_amount else Ref(AWS_NO_VALUE),
             Memory=self.mem_alloc if self.mem_alloc else Ref(AWS_NO_VALUE),
             MemoryReservation=self.mem_resa if self.mem_resa else Ref(AWS_NO_VALUE),
-            PortMappings=ports_mappings[0] if self.ports else Ref(AWS_NO_VALUE),
+            PortMappings=[],
             Environment=self.cfn_environment,
             LogConfiguration=self.logging,
             Command=self.command,
@@ -1122,10 +1141,10 @@ class ComposeService(object):
         deploy = "deploy"
         if not keyisset("deploy", self.definition):
             return
+        self.define_compute_platform(self.definition[deploy])
         self.set_compute_resources(self.definition[deploy])
         self.set_replicas(self.definition[deploy])
         self.define_start_condition(self.definition[deploy])
-        self.define_compute_platform(self.definition[deploy])
         self.define_essential(self.definition[deploy])
         self.set_update_config(self.definition[deploy])
         self.define_ephemeral_storage_condition(self.definition[deploy])

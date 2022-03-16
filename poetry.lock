@@ -108,14 +108,14 @@ uvloop = ["uvloop (>=0.15.2)"]
 
 [[package]]
 name = "boto3"
-version = "1.21.18"
+version = "1.21.19"
 description = "The AWS SDK for Python"
 category = "main"
 optional = false
 python-versions = ">= 3.6"
 
 [package.dependencies]
-botocore = ">=1.24.18,<1.25.0"
+botocore = ">=1.24.19,<1.25.0"
 jmespath = ">=0.7.1,<1.0.0"
 s3transfer = ">=0.5.0,<0.6.0"
 
@@ -124,8 +124,8 @@ crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
 
 [[package]]
 name = "boto3-stubs"
-version = "1.21.18"
-description = "Type annotations for boto3 1.21.18 generated with mypy-boto3-builder 7.3.0"
+version = "1.21.19"
+description = "Type annotations for boto3 1.21.19 generated with mypy-boto3-builder 7.3.0"
 category = "dev"
 optional = false
 python-versions = ">=3.6"
@@ -449,7 +449,7 @@ xray = ["mypy-boto3-xray (>=1.21.0)"]
 
 [[package]]
 name = "botocore"
-version = "1.24.18"
+version = "1.24.19"
 description = "Low-level, data-driven core of boto 3."
 category = "main"
 optional = false
@@ -465,8 +465,8 @@ crt = ["awscrt (==0.12.5)"]
 
 [[package]]
 name = "botocore-stubs"
-version = "1.24.18"
-description = "Type annotations for botocore 1.24.18 generated with mypy-boto3-builder 7.3.0"
+version = "1.24.19"
+description = "Type annotations for botocore 1.24.19 generated with mypy-boto3-builder 7.3.0"
 category = "dev"
 optional = false
 python-versions = ">=3.6"
@@ -563,7 +563,7 @@ python-dateutil = ">=2.8.2,<3.0.0"
 
 [[package]]
 name = "compose-x-render"
-version = "0.5.2"
+version = "0.5.3"
 description = "Library & Tool to compile/merge compose files with top level extension fields"
 category = "main"
 optional = false
@@ -714,7 +714,7 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 
 [[package]]
 name = "importlib-metadata"
-version = "4.11.2"
+version = "4.11.3"
 description = "Read metadata from Python packages"
 category = "main"
 optional = false
@@ -1577,7 +1577,7 @@ ecrscan = ["ecr-scan-reporter"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "172a73b78d876b70b6f9a32d8169b229c670ed1af7e89168a2d60c962a0a2c60"
+content-hash = "8bf187bc0517b11dc62903daa2f6879bef7649dcfbeb249f1cebdf472a0b8f61"
 
 [metadata.files]
 alabaster = [
@@ -1613,20 +1613,20 @@ black = [
     {file = "black-21.12b0.tar.gz", hash = "sha256:77b80f693a569e2e527958459634f18df9b0ba2625ba4e0c2d5da5be42e6f2b3"},
 ]
 boto3 = [
-    {file = "boto3-1.21.18-py3-none-any.whl", hash = "sha256:d857feb6af9932e1ee3a748060a2cd9fd6043dbbccf66976eda54586597efdc0"},
-    {file = "boto3-1.21.18.tar.gz", hash = "sha256:8d6f3c548f0ee03d742f404c96515e7579fc6968135aaa50dd855a046698ff79"},
+    {file = "boto3-1.21.19-py3-none-any.whl", hash = "sha256:7bb2e6506a6ad44d111dd20a5d510374b6958fe989b4ef887109c79d812f926f"},
+    {file = "boto3-1.21.19.tar.gz", hash = "sha256:76d5b90400c54b25278150768e946edf166acce2c1597c0ecfbebb1dbe9acf2c"},
 ]
 boto3-stubs = [
-    {file = "boto3-stubs-1.21.18.tar.gz", hash = "sha256:f091e469317f4bcf6ae53799a776edbeae6f64c6d5211eb85fa6f0e8aa1a1302"},
-    {file = "boto3_stubs-1.21.18-py3-none-any.whl", hash = "sha256:a6bfad4835adf0a7c1dc25a659ed075017c755cec81919a683693e7dbfaf9838"},
+    {file = "boto3-stubs-1.21.19.tar.gz", hash = "sha256:6ecbc897909d62d54837441f526096528721902c4fed735043da66008b5541b4"},
+    {file = "boto3_stubs-1.21.19-py3-none-any.whl", hash = "sha256:21fd563d98f4b57fdb0d9a34e49f41720b6232c078834511f5ca943a02e93302"},
 ]
 botocore = [
-    {file = "botocore-1.24.18-py3-none-any.whl", hash = "sha256:7ea8ef1ff7c4882ab59b337662f90ddf5ea860e95e7e209dca593a34ea585b1b"},
-    {file = "botocore-1.24.18.tar.gz", hash = "sha256:d2da7ccbc5ddd61fe3cd45fcbd3de380d9e3a15bfa8fbfd2d9259a93dcc60c56"},
+    {file = "botocore-1.24.19-py3-none-any.whl", hash = "sha256:d0d77bce152ca51f3c2cd0f9bf05cb3b623e719406ad58b4c20444e237fe82eb"},
+    {file = "botocore-1.24.19.tar.gz", hash = "sha256:5ed2be0e413961134f4c17eab16396d41a5b4b73a637588260c04d20806d52ea"},
 ]
 botocore-stubs = [
-    {file = "botocore-stubs-1.24.18.tar.gz", hash = "sha256:25074f7d7fbc5436e7060f5adbd8b9cf16f5ec601212725d63eb1386673f2f48"},
-    {file = "botocore_stubs-1.24.18-py3-none-any.whl", hash = "sha256:ef94b9247f36231939fbcf79a2510fb99c1cdb8ca36e528ba4f5539a0eb6aa6d"},
+    {file = "botocore-stubs-1.24.19.tar.gz", hash = "sha256:75a2b872f55c5d5bd1b65acb26acfda46e2355127755864d1389f3923f620e10"},
+    {file = "botocore_stubs-1.24.19-py3-none-any.whl", hash = "sha256:8ce705e5dea08bd0251ed7648ca8303737148864f7f5cb2598376679d96d8b18"},
 ]
 certifi = [
     {file = "certifi-2021.10.8-py2.py3-none-any.whl", hash = "sha256:d62a0163eb4c2344ac042ab2bdf75399a71a2d8c7d47eac2e2ee91b9d6339569"},
@@ -1661,8 +1661,8 @@ compose-x-common = [
     {file = "compose_x_common-0.4.3.tar.gz", hash = "sha256:46c6a692f9ad7a77481473d0ab1c2139a83ddee8712a58f79c04c92b110aa2bf"},
 ]
 compose-x-render = [
-    {file = "compose_x_render-0.5.2-py3-none-any.whl", hash = "sha256:aa1684e65b0a5ec4eb6fbd69f15af43bc29cc8fcd783f8a73b74d4192680ae32"},
-    {file = "compose_x_render-0.5.2.tar.gz", hash = "sha256:728475b0b5be35eb7f2ce353e9f5208006086f19058835d20357725e1b18ba8b"},
+    {file = "compose_x_render-0.5.3-py3-none-any.whl", hash = "sha256:02b07cbbc4fb830f52f29ebc43458dc3622a5d934f38ce163a1565c945d7c8c4"},
+    {file = "compose_x_render-0.5.3.tar.gz", hash = "sha256:4ae98614863348bec9934fb151725411e8a35a56e79104fe9b1e31b077fadae6"},
 ]
 contextlib2 = [
     {file = "contextlib2-21.6.0-py2.py3-none-any.whl", hash = "sha256:3fbdb64466afd23abaf6c977627b75b6139a5a3e8ce38405c5b413aed7a0471f"},
@@ -1759,8 +1759,8 @@ imagesize = [
     {file = "imagesize-1.3.0.tar.gz", hash = "sha256:cd1750d452385ca327479d45b64d9c7729ecf0b3969a58148298c77092261f9d"},
 ]
 importlib-metadata = [
-    {file = "importlib_metadata-4.11.2-py3-none-any.whl", hash = "sha256:d16e8c1deb60de41b8e8ed21c1a7b947b0bc62fab7e1d470bcdf331cea2e6735"},
-    {file = "importlib_metadata-4.11.2.tar.gz", hash = "sha256:b36ffa925fe3139b2f6ff11d6925ffd4fa7bc47870165e3ac260ac7b4f91e6ac"},
+    {file = "importlib_metadata-4.11.3-py3-none-any.whl", hash = "sha256:1208431ca90a8cca1a6b8af391bb53c1a2db74e5d1cef6ddced95d4b2062edc6"},
+    {file = "importlib_metadata-4.11.3.tar.gz", hash = "sha256:ea4c597ebf37142f827b8f39299579e31685c31d3a438b59f469406afd0f2539"},
 ]
 importlib-resources = [
     {file = "importlib_resources-5.4.0-py3-none-any.whl", hash = "sha256:33a95faed5fc19b4bc16b29a6eeae248a3fe69dd55d4d229d2b480e23eeaad45"},
