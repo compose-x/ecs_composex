@@ -429,7 +429,7 @@ def update_families_networking_settings(settings, vpc_stack):
     """
     for family in settings.families.values():
         if family.launch_type == "EXTERNAL":
-            LOG.info(f"{family.name} Ingress cannot be set (EXTERNAL mode). Skipping")
+            LOG.debug(f"{family.name} Ingress cannot be set (EXTERNAL mode). Skipping")
             continue
         if vpc_stack.vpc_resource.mappings:
             family.stack.set_vpc_params_from_vpc_stack_import(vpc_stack)

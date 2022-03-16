@@ -40,7 +40,7 @@ boto3 = ">=1.18,<1.22"
 #troposphere = "4.0.0b0"
 troposphere = { git = "https://github.com/cloudtools/troposphere", rev = "75db1661e17e7d6c36c53d269d999774a0a30e45" }
 ecr-scan-reporter = { version = "^0.4.5", optional = true }
-compose-x-render = "^0.5.2"
+compose-x-render = "^0.5.3"
 compose-x-common = "^0.4.2"
 jsonschema = "^4.4.0"
 requests = "^2.27.1"
