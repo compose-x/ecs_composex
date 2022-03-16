@@ -8,7 +8,7 @@ Module to help with defining the network settings for the ECS Service based on t
 
 from json import dumps
 
-from compose_x_common.compose_x_common import keyisset, keypresent
+from compose_x_common.compose_x_common import keyisset, keypresent, set_else_none
 from troposphere import AWS_ACCOUNT_ID, GetAtt, Parameter, Ref, Sub
 from troposphere.ec2 import SecurityGroupIngress
 
@@ -215,14 +215,21 @@ def add_independent_rules(dst_family, service_name, root_stack):
     """
     src_service_stack = root_stack.stack_template.resources[service_name]
     for port in dst_family.ecs_service.network.ports:
+        target_port = set_else_none(
+            "published", port, alt_value=set_else_none("target", port, None)
+        )
+        if target_port is None:
+            raise ValueError(
+                "Wrong port definition value for security group ingress", port
+            )
         ingress_rule = SecurityGroupIngress(
-            f"From{src_service_stack.title}To{dst_family.logical_name}On{port['published']}",
-            FromPort=port["published"],
-            ToPort=port["published"],
+            f"From{src_service_stack.title}To{dst_family.logical_name}On{target_port}",
+            FromPort=target_port,
+            ToPort=target_port,
             IpProtocol=port["protocol"],
             Description=Sub(
                 f"From {src_service_stack.title} to {dst_family.logical_name}"
-                f" on port {port['published']}/{port['protocol']}"
+                f" on port {target_port}/{port['protocol']}"
             ),
             GroupId=GetAtt(
                 dst_family.stack.title,
@@ -274,18 +281,25 @@ def set_compose_services_ingress(root_stack, dst_family, families, settings):
                 }
             )
             for port in dst_family.ecs_service.network.ports:
+                target_port = set_else_none(
+                    "published", port, alt_value=set_else_none("target", port, None)
+                )
+                if target_port is None:
+                    raise ValueError(
+                        "Wrong port definition value for security group ingress", port
+                    )
                 common_args = {
-                    "FromPort": port["published"],
-                    "ToPort": port["published"],
+                    "FromPort": target_port,
+                    "ToPort": target_port,
                     "IpProtocol": port["protocol"],
                     "SourceSecurityGroupOwnerId": Ref(AWS_ACCOUNT_ID),
                     "Description": Sub(
-                        f"From ${{{SERVICE_NAME_T}}} to {dst_family.stack.title} on port {port['published']}"
+                        f"From ${{{SERVICE_NAME_T}}} to {dst_family.stack.title} on port {target_port}"
                     ),
                 }
                 src_family.template.add_resource(
                     SecurityGroupIngress(
-                        f"From{src_family.logical_name}To{dst_family.stack.title}On{port['published']}",
+                        f"From{src_family.logical_name}To{dst_family.stack.title}On{target_port}",
                         SourceSecurityGroupId=GetAtt(
                             src_family.ecs_service.network.security_group, "GroupId"
                         ),
@@ -386,12 +400,19 @@ class ServiceNetworking(Ingress):
         if not family.template or not family.ecs_service or not self.ingress_from_self:
             return
         for port in self.ports:
+            target_port = set_else_none(
+                "published", port, alt_value=set_else_none("target", port, None)
+            )
+            if target_port is None:
+                raise ValueError(
+                    "Wrong port definition value for security group ingress", port
+                )
             self.to_self_rules.append(
                 SecurityGroupIngress(
-                    f"AllowingInterCommunicationPort{port['published']}{port['protocol']}",
+                    f"AllowingInterCommunicationPort{target_port}{port['protocol']}",
                     template=family.template,
-                    FromPort=port["published"],
-                    ToPort=port["published"],
+                    FromPort=target_port,
+                    ToPort=target_port,
                     IpProtocol=port["protocol"],
                     GroupId=GetAtt(
                         family.ecs_service.network.security_group, "GroupId"
@@ -401,7 +422,7 @@ class ServiceNetworking(Ingress):
                     ),
                     SourceSecurityGroupOwnerId=Ref(AWS_ACCOUNT_ID),
                     Description=Sub(
-                        f"Allowing traffic internally on port {port['published']}"
+                        f"Allowing traffic internally on port {target_port}"
                     ),
                 )
             )
