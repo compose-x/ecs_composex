@@ -1017,8 +1017,8 @@ class Elbv2(NetworkXResource):
             self.ingress.set_ext_sources_ingress(
                 self.logical_name, GetAtt(self.lb_sg, "GroupId")
             )
-            self.ingress.associate_aws_igress_rules(stack_template)
-            self.ingress.associate_ext_igress_rules(stack_template)
+            self.ingress.associate_aws_ingress_rules(stack_template)
+            self.ingress.associate_ext_ingress_rules(stack_template)
 
     def define_override_subnets(self, subnets, vpc_stack):
         """

@@ -15,7 +15,7 @@ from ecs_composex.alarms.alarms_stack import Alarm, create_alarms
 from ecs_composex.common import LOG, add_outputs, add_parameters, add_update_mapping
 from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME, SERVICE_SCALING_TARGET
-from ecs_composex.ecs.ecs_scaling import (
+from ecs_composex.ecs.service_scaling import (
     generate_alarm_scaling_out_policy,
     reset_to_zero_policy,
 )

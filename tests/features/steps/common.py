@@ -19,6 +19,39 @@ def here():
     return path.abspath(path.dirname(__file__))
 
 
+@given("With {file_path}")
+def step_impl(context, file_path):
+    if not hasattr(context, "files"):
+        files = []
+        setattr(context, "files", files)
+    else:
+        files = getattr(context, "files")
+    files.append(file_path)
+
+
+@then("I use defined files as input expecting an error")
+def step_impl(context):
+
+    cases_path = [
+        path.abspath(f"{here()}/../../../{file_name}") for file_name in context.files
+    ]
+    print(cases_path)
+    with raises((ValueError, KeyError, ComposeBaseException)):
+        context.settings = ComposeXSettings(
+            profile_name=getattr(context, "profile_name")
+            if hasattr(context, "profile_name")
+            else None,
+            **{
+                ComposeXSettings.name_arg: "test",
+                ComposeXSettings.command_arg: ComposeXSettings.render_arg,
+                ComposeXSettings.input_file_arg: cases_path,
+                ComposeXSettings.format_arg: "yaml",
+            },
+        )
+        context.settings.set_bucket_name_from_account_id()
+        generate_full_template(context.settings)
+
+
 @given("I use {file_path} as my docker-compose file")
 def step_impl(context, file_path):
     """
@@ -29,6 +62,7 @@ def step_impl(context, file_path):
     :return:
     """
     cases_path = path.abspath(f"{here()}/../../../{file_path}")
+
     context.settings = ComposeXSettings(
         profile_name=getattr(context, "profile_name")
         if hasattr(context, "profile_name")

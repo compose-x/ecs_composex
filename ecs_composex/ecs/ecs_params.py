@@ -20,7 +20,6 @@ from ecs_composex.vpc.vpc_params import SG_ID_TYPE
 CLUSTER_T = "EcsCluster"
 LOG_GROUP_T = "ServicesLogGroup"
 SG_T = "ServiceSecurityGroup"
-NETWORK_MODE = "awsvpc"
 EXEC_ROLE_T = "EcsExecutionRole"
 TASK_ROLE_T = "EcsTaskRole"
 SERVICE_T = "EcsServiceDefinition"
@@ -95,14 +94,6 @@ ELB_GRACE_PERIOD = Parameter(
     MinValue=0,
     Default=300,
     MaxValue=2147483647,
-)
-
-ECS_CONTROLLER_T = "EcsServiceDeploymentController"
-ECS_CONTROLLER = Parameter(
-    ECS_CONTROLLER_T,
-    Type="String",
-    AllowedValues=["ECS", "CODE_DEPLOY", "EXTERNAL"],
-    Default="ECS",
 )
 
 CREATE_LOG_GROUP_T = "CreateLogGroup"
@@ -191,6 +182,20 @@ SERVICE_GROUP_ID = Parameter(SERVICE_GROUP_ID_T, Type=SG_ID_TYPE, Default="<none
 AWS_XRAY_IMAGE = "public.ecr.aws/xray/aws-xray-daemon:latest"
 XRAY_IMAGE_T = "AWSXRayImage"
 XRAY_IMAGE = Parameter(XRAY_IMAGE_T, Type="String", Default=AWS_XRAY_IMAGE)
+
+
+NETWORK_MODE_T = "TaskNetworkingMode"
+NETWORK_MODE = Parameter(
+    NETWORK_MODE_T,
+    Type="String",
+    AllowedValues=["awsvpc", "bridge", "host", "none"],
+    Default="awsvpc",
+)
+
+IPC_MODE_T = "TaskIpcMode"
+IPC_MODE = Parameter(
+    IPC_MODE_T, Type="String", AllowedValues=["task", "host", "none"], Default="none"
+)
 
 
 def get_import_service_group_id(remote_service_name):

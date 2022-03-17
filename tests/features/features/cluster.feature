@@ -27,8 +27,9 @@ Feature: ecs-cluster
 
     @cluster
     Scenario Outline: ECS services with invalid capacity provider
-        Given I use <file_path> as my docker-compose file and <override_file> as override file
-        Then I render the docker-compose expecting an error
+        Given With <file_path>
+        And With <override_file>
+        Then I use defined files as input expecting an error
 
         Examples:
             | file_path                   | override_file                                                |

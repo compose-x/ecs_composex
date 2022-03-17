@@ -11,7 +11,7 @@ from troposphere.cloudwatch import Alarm, MetricDimension
 
 from ecs_composex.common import LOG, add_parameters
 from ecs_composex.common.cfn_params import Parameter
-from ecs_composex.ecs.ecs_scaling import (
+from ecs_composex.ecs.service_scaling.helpers import (
     generate_alarm_scaling_out_policy,
     reset_to_zero_policy,
 )
@@ -57,6 +57,7 @@ def handle_service_scaling(resource, settings=None) -> None:
             target[1],
             scaling_source=resource.logical_name,
         )
+
         if not resource.lookup:
             resource_parameter = Parameter(
                 f"{resource.logical_name}{resource_attribute}", Type="String"

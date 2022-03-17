@@ -62,6 +62,19 @@ USE_LAUNCH_TYPE_CON = Or(
     Condition(USE_EXTERNAL_LT_T),
 )
 
+USE_LINUX_OS_T = "UseLinuxOS"
+USE_LINUX_OS = Equals(
+    Ref(ecs_params.RUNTIME_OS_FAMILY), ecs_params.RUNTIME_OS_FAMILY.Default
+)
+
+USE_WINDOWS_OS_T = "UseWindowsOS"
+USE_WINDOWS_OS = Not(Condition(USE_LINUX_OS_T))
+
+USE_WINDOWS_OR_FARGATE_T = "UseWindowsOSorFargate"
+USE_WINDOWS_OR_FARGATE = Or(Condition(USE_WINDOWS_OS_T), Condition(USE_FARGATE_CON_T))
+
+IPC_FROM_HOST_CON_T = "IpcSetForHost"
+IPC_FROM_HOST_CON = Equals(Ref(ecs_params.IPC_MODE), "host")
 
 SERVICE_COUNT_ZERO_AND_FARGATE_CON_T = "ServiceCountZeroAndFargate"
 SERVICE_COUNT_ZERO_AND_FARGATE_CON = And(

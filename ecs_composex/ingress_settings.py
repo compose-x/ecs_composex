@@ -384,7 +384,7 @@ class Ingress(object):
                     destination_tile, allowed_source, security_group, **props
                 )
 
-    def associate_aws_igress_rules(self, template):
+    def associate_aws_ingress_rules(self, template):
         """
         Method to associate AWS ingress rules to a specific template
 
@@ -395,7 +395,7 @@ class Ingress(object):
             if ingress_rule.title not in template.resources:
                 template.add_resource(ingress_rule)
 
-    def associate_ext_igress_rules(self, template):
+    def associate_ext_ingress_rules(self, template):
         """
         Method to associate External ingress rules to a specific template
 

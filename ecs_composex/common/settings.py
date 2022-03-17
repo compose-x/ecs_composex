@@ -245,19 +245,16 @@ class ComposeXSettings(object):
         x_resources_require_vpc = any([res.requires_vpc for res in self.x_resources])
         services_require_vpc = any(
             [
-                family.ecs_service.network.network_mode == "awsvpc"
+                family.service_networking.network_mode == "awsvpc"
                 for family in self.families.values()
                 if (family and family.ecs_service)
             ]
         )
         return any([x_resources_require_vpc, services_require_vpc])
 
-    def set_secrets(self):
+    def set_secrets(self) -> None:
         """
         Function to parse the settings compose content and define the secrets.
-
-        :param ecs_composex.common.settings.ComposeXSettings settings:
-        :return:
         """
         if not keyisset(ComposeSecret.main_key, self.compose_content):
             return
@@ -271,7 +268,7 @@ class ComposeXSettings(object):
                 self.secrets.append(secret)
                 self.compose_content[ComposeSecret.main_key][secret_name] = secret
 
-    def set_efs(self):
+    def set_efs(self) -> None:
         """
         Method to add a x-efs definition to the compose-x definition when a volume is flagged as using NFS/EFS
         """
@@ -311,7 +308,7 @@ class ComposeXSettings(object):
                         f"x-efs {volume.name} was already defined in top-level x-efs. Not overriding from volumes"
                     )
 
-    def set_volumes(self):
+    def set_volumes(self) -> None:
         """
         Method configuring the volumes at root level
         :return:
@@ -327,7 +324,7 @@ class ComposeXSettings(object):
             self.compose_content[ComposeVolume.main_key][volume_name] = volume
             self.volumes.append(volume)
 
-    def set_networks(self, vpc_stack):
+    def set_networks(self, vpc_stack) -> None:
         """
         Method configuring the networks defined at root level
         :return:
@@ -349,7 +346,7 @@ class ComposeXSettings(object):
             self.compose_content[ComposeNetwork.main_key][network_name] = network
             self.networks.append(network)
 
-    def set_services(self):
+    def set_services(self) -> None:
         """
         Method to define the ComposeXResource for each service.
         :return:
@@ -366,7 +363,7 @@ class ComposeXSettings(object):
             self.compose_content[ComposeService.main_key][service_name] = service
             self.services.append(service)
 
-    def add_new_family(self, family_name, service, assigned_services):
+    def add_new_family(self, family_name, service, assigned_services) -> None:
         if service.name in [r_service.name for r_service in assigned_services]:
             LOG.info(
                 f"Detected {service.name} is-reused in different family. Making a deepcopy"
@@ -380,7 +377,7 @@ class ComposeXSettings(object):
             family = ComposeFamily([service], family_name)
             service.my_family = family
         self.families[family.logical_name] = family
-        if service.name not in [service.name for service in assigned_services]:
+        if service.name not in [_service.name for _service in assigned_services]:
             assigned_services.append(service)
 
     def handle_assigned_existing_service(self, family_name, service, assigned_services):
@@ -391,11 +388,11 @@ class ComposeXSettings(object):
             )
 
             the_service = deepcopy(service)
-            the_family.add_service(the_service)
+            the_family.add_service_as_task_container(the_service)
             the_service.my_family = self.families[family_name]
             self.services.append(the_service)
         else:
-            the_family.add_service(service)
+            the_family.add_service_as_task_container(service)
             service.my_family = self.families[family_name]
             assigned_services.append(service)
 
@@ -415,7 +412,7 @@ class ComposeXSettings(object):
                 if formatted_name not in self.families.keys():
                     self.add_new_family(family_name, service, assigned_services)
                 elif formatted_name in self.families.keys() and service.name not in [
-                    service.name for service in self.families[formatted_name].services
+                    _service.name for _service in self.families[formatted_name].services
                 ]:
                     self.handle_assigned_existing_service(
                         formatted_name, service, assigned_services

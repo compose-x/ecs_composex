@@ -17,7 +17,7 @@ from troposphere.iam import PolicyType
 
 from ecs_composex.common import LOG, add_parameters, add_update_mapping
 from ecs_composex.common.aws import find_aws_resource_arn_from_tags_api
-from ecs_composex.common.services_helpers import extend_container_secrets
+from ecs_composex.compose.compose_services.helpers import extend_container_secrets
 from ecs_composex.ecs.ecs_params import SG_T
 from ecs_composex.rds.rds_params import DB_SECRET_POLICY_NAME
 from ecs_composex.resource_settings import get_parameter_settings
@@ -328,8 +328,8 @@ def add_secrets_access_policy(
     :return:
     """
     db_policy_statement = generate_rds_secrets_permissions(secret_import, db_name)
-    task_role = service_family.task_role.name
-    exec_role = service_family.exec_role.name
+    task_role = service_family.iam_manager.task_role.name
+    exec_role = service_family.iam_manager.exec_role.name
     if keyisset(DB_SECRET_POLICY_NAME, service_family.template.resources):
         db_policy = service_family.template.resources[DB_SECRET_POLICY_NAME]
         db_policy.PolicyDocument["Statement"].append(db_policy_statement)

@@ -18,7 +18,7 @@ from troposphere.iam import PolicyType
 from ecs_composex.appmesh import appmesh_conditions, appmesh_params, metadata
 from ecs_composex.appmesh.appmesh_params import BACKENDS_KEY, NAME_KEY
 from ecs_composex.common import LOG, add_parameters
-from ecs_composex.common.services_helpers import extend_container_envvars
+from ecs_composex.compose.compose_services.helpers import extend_container_envvars
 from ecs_composex.ecs import ecs_params
 
 
@@ -234,7 +234,7 @@ class MeshNode(object):
                     },
                 ],
             },
-            Roles=[family.task_role.name],
+            Roles=[family.iam_manager.task_role.name],
         )
         if policy.title not in family.template.resources:
             family.template.add_resource(policy)

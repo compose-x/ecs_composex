@@ -2,18 +2,61 @@
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2022 John Mille <john@compose-x.io>
 
-from troposphere import FindInMap
+from troposphere import FindInMap, Ref
 
-from ecs_composex.common import LOG, add_parameters
+from ecs_composex.common import LOG, add_parameters, add_update_mapping
+from ecs_composex.common.cfn_params import ROOT_STACK_NAME, ROOT_STACK_NAME_T
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.ecs import ecs_params, metadata
-from ecs_composex.ecs.ecs_template import initialize_family_services
+from ecs_composex.ecs.ecs_cluster.ecs_family_helpers import validate_capacity_providers
+from ecs_composex.ecs.ecs_family.task_logging import create_log_group
+from ecs_composex.ecs.ecs_params import CLUSTER_NAME, CLUSTER_NAME_T
+from ecs_composex.ecs.ecs_service import EcsService
+from ecs_composex.secrets.secrets_params import RES_KEY as SECRETS_KEY
 
 
 class ServiceStack(ComposeXStack):
     """
     Class to identify specifically a service stack
     """
+
+
+def initialize_family_services(settings, family):
+    """
+    Function to handle creation of services within the same family.
+
+    :param ecs_composex.ecs.ecs_family.ComposeFamily family:
+    :param ecs_composex.common.settings.ComposeXSettings settings:
+    :return:
+    """
+    if settings.secrets_mappings:
+        add_update_mapping(family.template, SECRETS_KEY, settings.secrets_mappings)
+        add_update_mapping(
+            family.iam_manager.exec_role.stack.stack_template,
+            SECRETS_KEY,
+            settings.secrets_mappings,
+        )
+    family.init_task_definition()
+    family.set_secrets_access()
+    family.refresh()
+    family.service_compute.set_update_capacity_providers()
+    # merge_capacity_providers(family)
+    validate_capacity_providers(family, settings.ecs_cluster)
+    family.ecs_service = EcsService(family, settings)
+    family.stack.Parameters.update(
+        {
+            ecs_params.SERVICE_NAME_T: family.logical_name,
+            CLUSTER_NAME_T: Ref(CLUSTER_NAME),
+            ROOT_STACK_NAME_T: Ref(ROOT_STACK_NAME),
+        }
+    )
+    family.upload_services_env_files(settings)
+    family.set_repository_credentials(settings)
+    family.set_volumes()
+    create_log_group(family)
+    family.handle_logging()
+    family.handle_alarms()
+    family.validate_compute_configuration_for_task(settings)
 
 
 def handle_families_dependencies(settings, families_post):
@@ -34,14 +77,13 @@ def handle_families_dependencies(settings, families_post):
                 )
 
 
-def associate_services_to_root_stack(root_stack, settings):
+def add_compose_families(root_stack, settings) -> None:
     """
-    Function to generate all services and associate their stack to the root stack
+    Using existing ComposeFamily in settings, creates the ServiceStack
+    and template
 
     :param ecs_composex.common.stacks.ComposeXStack root_stack:
     :param ecs_composex.common.settings.ComposeXSettings settings:
-
-    :return:
     """
     for family_name, family in settings.families.items():
         family.stack = ServiceStack(
@@ -53,10 +95,10 @@ def associate_services_to_root_stack(root_stack, settings):
         add_parameters(
             family.template,
             [
-                family.task_role.arn_param,
-                family.task_role.name_param,
-                family.exec_role.arn_param,
-                family.exec_role.name_param,
+                family.iam_manager.task_role.arn_param,
+                family.iam_manager.task_role.name_param,
+                family.iam_manager.exec_role.arn_param,
+                family.iam_manager.exec_role.name_param,
             ],
         )
         family.stack.Parameters.update(
@@ -65,10 +107,10 @@ def associate_services_to_root_stack(root_stack, settings):
                 ecs_params.FARGATE_VERSION.title: FindInMap(
                     "ComposeXDefaults", "ECS", "PlatformVersion"
                 ),
-                family.task_role.arn_param.title: family.task_role.output_arn,
-                family.task_role.name_param.title: family.task_role.output_name,
-                family.exec_role.arn_param.title: family.exec_role.output_arn,
-                family.exec_role.name_param.title: family.exec_role.output_name,
+                family.iam_manager.task_role.arn_param.title: family.iam_manager.task_role.output_arn,
+                family.iam_manager.task_role.name_param.title: family.iam_manager.task_role.output_name,
+                family.iam_manager.exec_role.arn_param.title: family.iam_manager.exec_role.output_arn,
+                family.iam_manager.exec_role.name_param.title: family.iam_manager.exec_role.output_name,
                 ecs_params.SERVICE_HOSTNAME.title: family.family_hostname,
             }
         )
@@ -79,7 +121,7 @@ def associate_services_to_root_stack(root_stack, settings):
             )
         family.template.set_metadata(metadata)
         root_stack.stack_template.add_resource(family.stack)
-        if settings.networks and family.ecs_service.network.networks:
+        if settings.networks and family.service_networking.networks:
             family.update_family_subnets(settings)
 
     families_stacks = [

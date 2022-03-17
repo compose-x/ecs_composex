@@ -118,12 +118,12 @@ def cloudmap_to_ecs(resources, services_stack, res_root_stack, settings):
     new_resources = [res for res in resources.values() if res.cfn_resource]
     lookup_resources = [res for res in resources.values() if res.lookup_properties]
     for family in settings.families.values():
-        if not family.ecs_service.network.cloudmap_config:
+        if not family.service_networking.cloudmap_config:
             continue
         for (
             namespace,
             port_config,
-        ) in family.ecs_service.network.cloudmap_config.items():
+        ) in family.service_networking.cloudmap_config.items():
             if namespace in [res.name for res in new_resources]:
                 map_namespace_to_service(
                     new_resources, family, namespace, port_config, settings

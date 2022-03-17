@@ -4,7 +4,7 @@
 
 from pytest import raises
 
-from ecs_composex.ecs.ecs_scaling import generate_scaling_out_steps
+from ecs_composex.ecs.service_scaling.helpers import generate_scaling_out_steps
 
 
 def test_steps_definition():
