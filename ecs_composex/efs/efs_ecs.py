@@ -86,7 +86,7 @@ def add_task_iam_access_to_access_point(family, access_points, efs):
                 }
             ],
         },
-        Roles=[family.task_role.name],
+        Roles=[family.iam_manager.task_role.name],
     )
     family.template.add_resource(policy)
 

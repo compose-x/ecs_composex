@@ -22,8 +22,8 @@ from troposphere.iam import PolicyType
 
 from ecs_composex.common import LOG, add_parameters, add_update_mapping
 from ecs_composex.common.cfn_params import STACK_ID_SHORT, Parameter
-from ecs_composex.common.services_helpers import extend_container_envvars
 from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.compose.compose_services.helpers import extend_container_envvars
 from ecs_composex.iam.import_sam_policies import get_access_types
 from ecs_composex.kms.kms_params import MAPPINGS_KEY as KMS_MAPPING_KEY
 from ecs_composex.kms.kms_params import MOD_KEY as KMS_MOD
@@ -212,18 +212,18 @@ def define_iam_permissions(
     :param str access_subkey:
     """
     access_type = set_sid_name(access_definition, access_subkey)
-    if resource_mapping_key not in family.iam_modules_policies.keys():
-        family.iam_modules_policies[resource_mapping_key] = PolicyType(
+    if resource_mapping_key not in family.iam_manager.iam_modules_policies.keys():
+        family.iam_manager.iam_modules_policies[resource_mapping_key] = PolicyType(
             policy_title,
             PolicyName=policy_title,
             PolicyDocument={"Version": "2012-10-17", "Statement": []},
-            Roles=[family.task_role.name],
+            Roles=[family.iam_manager.task_role.name],
         )
         res_policy = family.template.add_resource(
-            family.iam_modules_policies[resource_mapping_key]
+            family.iam_manager.iam_modules_policies[resource_mapping_key]
         )
     else:
-        res_policy = family.iam_modules_policies[resource_mapping_key]
+        res_policy = family.iam_manager.iam_modules_policies[resource_mapping_key]
 
     for statement in res_policy.PolicyDocument["Statement"]:
         if keyisset("Sid", statement) and statement["Sid"] == access_type:

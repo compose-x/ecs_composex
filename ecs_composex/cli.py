@@ -14,7 +14,8 @@ from ecs_composex.common import LOG
 from ecs_composex.common.aws import deploy, plan
 from ecs_composex.common.settings import ComposeXSettings
 from ecs_composex.common.stacks import process_stacks
-from ecs_composex.ecs_composex import evaluate_ecr_configs, generate_full_template
+from ecs_composex.ecr.docker_opts import evaluate_docker_configs, evaluate_ecr_configs
+from ecs_composex.ecs_composex import generate_full_template
 
 
 class ArgparseHelper(argparse._HelpAction):
@@ -164,6 +165,7 @@ def main():
             "You must update the templates in order to deploy. We won't be deploying."
         )
         settings.deploy = False
+    evaluate_docker_configs(settings)
     scan_results = evaluate_ecr_configs(settings)
     if scan_results and not settings.ignore_ecr_findings:
         warnings.warn("SCAN Images failed for instructed images. Failure")

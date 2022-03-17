@@ -315,8 +315,8 @@ def handle_sg_lb_ingress_to_service(resource, family, resources_stack):
         resource.generate_outputs()
     lb_sg_param = resource.attributes_outputs[LB_SG_ID]["ImportParameter"]
     add_parameters(family.template, [lb_sg_param])
-    family.ecs_service.network.add_lb_ingress(
-        family, lb_name=resource.logical_name, lb_sg_ref=Ref(lb_sg_param)
+    family.service_networking.add_lb_ingress(
+        lb_name=resource.logical_name, lb_sg_ref=Ref(lb_sg_param)
     )
     family.stack_parameters.update(
         {lb_sg_param.title: resource.attributes_outputs[LB_SG_ID]["ImportValue"]}

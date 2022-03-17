@@ -130,8 +130,8 @@ def define_service_targets(settings, stack, rule, cluster_arn):
                     PolicyName="EventsAccess",
                     PolicyDocument=task_events_policy_doc,
                     Roles=[
-                        service[0].task_role.name,
-                        service[0].exec_role.name,
+                        service[0].iam_manager.task_role.name,
+                        service[0].iam_manager.exec_role.name,
                     ],
                 )
             )
@@ -158,8 +158,8 @@ def define_service_targets(settings, stack, rule, cluster_arn):
                     PermissionsBoundary=Ref(AWS_NO_VALUE),
                 )
             )
-            if service[0].iam and keyisset("PermissionsBoundary", service[0].iam):
-                role.PermissionsBoundary = service[0].iam["PermissionsBoundary"]
+            if service[0].iam_manager.permissions_boundary:
+                role.PermissionsBoundary = service[0].iam_manager.permissions_boundary
         else:
             role = stack.stack_template.resources[role_name]
         add_parameters(
