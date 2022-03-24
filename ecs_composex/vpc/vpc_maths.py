@@ -7,7 +7,8 @@
 """
 
 import ipaddress
-from math import ceil, log
+
+from ecs_composex.common import clpow2, nxtpow2
 
 pow2_2_prefix = {
     "16": 28,
@@ -32,27 +33,6 @@ pow2_2_prefix = {
     "8388608": 9,
     "16777216": 8,
 }
-
-
-def clpow2(x):
-    """
-    Function to return the closest power of two from given x
-
-    :param x: Number to look the closest power of two for
-
-    :returns: int() closest power of two
-    """
-    return pow(2, int(log(x, 2) + 0.5))
-
-
-def nxtpow2(x):
-    """Function to find the next power of two from given x number
-
-    :param x: number to look for the next power of two
-
-    :returns: next power of two number
-    """
-    return int(pow(2, ceil(log(x, 2))))
 
 
 def cut_per_az(az_cidr, layers_cidr):

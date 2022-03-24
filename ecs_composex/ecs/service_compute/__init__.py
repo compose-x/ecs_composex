@@ -49,6 +49,14 @@ class ServiceCompute(object):
         if self.family.stack:
             self.family.stack.Parameters.update({LAUNCH_TYPE.title: self._launch_type})
 
+    @property
+    def ecs_capacity_providers(self):
+        return self._ecs_capacity_providers
+
+    @ecs_capacity_providers.setter
+    def ecs_capacity_providers(self, providers):
+        self._ecs_capacity_providers = providers
+
     def set_update_capacity_providers(self) -> None:
         """
         If the Launch Type is not EXTERNAL, will merge the capacity providers defined by the services.x-ecs

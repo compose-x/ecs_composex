@@ -2,11 +2,27 @@
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2022 John Mille <john@compose-x.io>
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ecs_composex.ecs.ecs_family import ComposeFamily
+    from ecs_composex.common.settings import ComposeXSettings
+    from ecs_composex.common.stacks import ComposeXStack
+
 from troposphere import FindInMap, Ref
 
 from ecs_composex.common import LOG, add_parameters, add_update_mapping
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME, ROOT_STACK_NAME_T
 from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.compose.compose_secrets.ecs_family_helpers import (
+    set_repository_credentials,
+)
+from ecs_composex.compose.compose_services.env_files_helpers import (
+    upload_services_env_files,
+)
+from ecs_composex.compose.compose_volumes.ecs_family_helpers import set_volumes
 from ecs_composex.ecs import ecs_params, metadata
 from ecs_composex.ecs.ecs_cluster.ecs_family_helpers import validate_capacity_providers
 from ecs_composex.ecs.ecs_family.task_logging import create_log_group
@@ -21,7 +37,9 @@ class ServiceStack(ComposeXStack):
     """
 
 
-def initialize_family_services(settings, family):
+def initialize_family_services(
+    settings: ComposeXSettings, family: ComposeFamily
+) -> None:
     """
     Function to handle creation of services within the same family.
 
@@ -38,7 +56,7 @@ def initialize_family_services(settings, family):
         )
     family.init_task_definition()
     family.set_secrets_access()
-    family.refresh()
+    # family.refresh()
     family.service_compute.set_update_capacity_providers()
     # merge_capacity_providers(family)
     validate_capacity_providers(family, settings.ecs_cluster)
@@ -50,16 +68,18 @@ def initialize_family_services(settings, family):
             ROOT_STACK_NAME_T: Ref(ROOT_STACK_NAME),
         }
     )
-    family.upload_services_env_files(settings)
-    family.set_repository_credentials(settings)
-    family.set_volumes()
+    upload_services_env_files(family, settings)
+    set_repository_credentials(family, settings)
+    set_volumes(family)
     create_log_group(family)
     family.handle_logging()
     family.handle_alarms()
     family.validate_compute_configuration_for_task(settings)
 
 
-def handle_families_dependencies(settings, families_post):
+def handle_families_dependencies(
+    settings: ComposeXSettings, families_post: list
+) -> None:
     """
     Function to handle family to family services based on docker compose depends_on
 
@@ -77,7 +97,7 @@ def handle_families_dependencies(settings, families_post):
                 )
 
 
-def add_compose_families(root_stack, settings) -> None:
+def add_compose_families(root_stack: ComposeXStack, settings: ComposeXSettings) -> None:
     """
     Using existing ComposeFamily in settings, creates the ServiceStack
     and template
@@ -86,6 +106,7 @@ def add_compose_families(root_stack, settings) -> None:
     :param ecs_composex.common.settings.ComposeXSettings settings:
     """
     for family_name, family in settings.families.items():
+        family.init_family()
         family.stack = ServiceStack(
             family.logical_name,
             stack_template=family.template,
@@ -119,7 +140,7 @@ def add_compose_families(root_stack, settings) -> None:
             family.stack.Parameters.update(
                 {ecs_params.LAUNCH_TYPE.title: settings.ecs_cluster.platform_override}
             )
-        family.template.set_metadata(metadata)
+        family.template.metadata.update(metadata)
         root_stack.stack_template.add_resource(family.stack)
         if settings.networks and family.service_networking.networks:
             family.update_family_subnets(settings)

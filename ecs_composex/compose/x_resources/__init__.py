@@ -607,6 +607,9 @@ class XResource(object):
                     ),
                     "ImportParameter": Parameter(
                         output_name,
+                        group_label=attribute_parameter.group_label
+                        if attribute_parameter.group_label
+                        else self.module_name,
                         return_value=attribute_parameter.return_value,
                         Type=attribute_parameter.Type,
                     ),
@@ -627,6 +630,9 @@ class XResource(object):
                     "Output": Output(output_name, Value=value, Export=export),
                     "ImportParameter": Parameter(
                         output_name,
+                        group_label=attribute_parameter.group_label
+                        if attribute_parameter.group_label
+                        else self.module_name,
                         return_value=attribute_parameter.return_value,
                         Type=attribute_parameter.Type,
                     ),

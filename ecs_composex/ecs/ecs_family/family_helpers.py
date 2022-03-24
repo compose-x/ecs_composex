@@ -28,21 +28,19 @@ def handle_same_task_services_dependencies(services_config):
 
     :param list[list[]] services_config:
     """
-    for service in services_config:
-        LOG.debug(service[1].depends_on)
+    for config in services_config:
+        LOG.debug(config[1].depends_on)
         LOG.debug(
-            any(
-                k in [j[1].name for j in services_config] for k in service[1].depends_on
-            )
+            any(k in [j[1].name for j in services_config] for k in config[1].depends_on)
         )
-        if service[1].depends_on and any(
-            k in [j[1].name for j in services_config] for k in service[1].depends_on
+        if config[1].depends_on and any(
+            k in [j[1].name for j in services_config] for k in config[1].depends_on
         ):
-            service[1].container_definition.Essential = False
+            config[1].container_definition.Essential = False
             parents = [
                 s_service[1]
                 for s_service in services_config
-                if s_service[1].name in service[1].depends_on
+                if s_service[1].name in config[1].depends_on
             ]
             parents_dependency = [
                 {
@@ -51,12 +49,12 @@ def handle_same_task_services_dependencies(services_config):
                 }
                 for p in parents
             ]
-            setattr(service[1].container_definition, "DependsOn", parents_dependency)
+            setattr(config[1].container_definition, "DependsOn", parents_dependency)
             for _ in parents:
-                service[0] += 1
+                config[0] += 1
 
 
-def define_essential_containers(family, ordered_containers_config):
+def define_essential_containers(family, ordered_containers_config) -> None:
     for service in family.ordered_services:
         if (
             service.container_start_condition == "SUCCESS"

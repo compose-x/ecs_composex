@@ -5,7 +5,6 @@
 
 from compose_x_common.compose_x_common import keyisset
 from troposphere import GetAtt, Output, Ref, Sub
-from troposphere.iam import Policy
 from troposphere.iam import Role as IamRole
 
 from ecs_composex.common.cfn_params import Parameter
@@ -183,6 +182,7 @@ class EcsRole(object):
                 "Output": Output(output_name, Value=value),
                 "ImportParameter": Parameter(
                     output_name,
+                    group_label="ECS IAM Settings",
                     return_value=attribute_parameter.return_value,
                     Type=attribute_parameter.Type,
                 ),

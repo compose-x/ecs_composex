@@ -37,8 +37,9 @@ def handle_service_scaling(resource, settings=None) -> None:
         resource_value = FindInMap(MOD_KEY, resource.logical_name, resource_attribute)
     for target in resource.families_scaling:
         if (
-            not target[0].scalable_target
-            or target[0].scalable_target not in target[0].template.resources.values()
+            not target[0].service_scaling.scalable_target
+            or target[0].service_scaling.scalable_target
+            not in target[0].template.resources.values()
         ):
             LOG.warning(
                 f"No Scalable target defined for {target[0].name}."

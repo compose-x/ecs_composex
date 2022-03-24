@@ -28,9 +28,15 @@ RES_KEY = "services"
 ECS_TASK_FAMILY_LABEL = "ecs.task.family"
 SERVICE_SCALING_TARGET = "ServiceScalingTarget"
 
+ECS_COMPUTE_SETTINGS = "ECS Compute Settings"
+LOGGING_SETTINGS = "Logging Settings"
+FARGATE_SETTINGS = "AWS Fargate Settings"
+
 LAUNCH_TYPE_T = "EcsLaunchType"
 LAUNCH_TYPE = Parameter(
     LAUNCH_TYPE_T,
+    group_label=ECS_COMPUTE_SETTINGS,
+    label="Defines the Launch Type to use for ECS Service",
     Type="String",
     AllowedValues=[
         "EC2",
@@ -46,13 +52,13 @@ LAUNCH_TYPE = Parameter(
 FARGATE_VERSION_T = "FargatePlatformVersion"
 FARGATE_VERSION = Parameter(
     FARGATE_VERSION_T,
+    group_label=ECS_COMPUTE_SETTINGS,
+    label="Fargate platform version",
     Type="String",
     AllowedValues=["DEFAULT", "1.4.0", "1.3.0"],
     Default="1.4.0",
 )
 
-IS_PUBLIC_T = "ExposeServicePublicly"
-IS_PUBLIC = Parameter(IS_PUBLIC_T, AllowedValues=["True", "False"], Type="String")
 
 CLUSTER_NAME_T = "EcsCluster"
 CLUSTER_NAME = Parameter(
@@ -60,14 +66,6 @@ CLUSTER_NAME = Parameter(
     Type="String",
     AllowedPattern=r"[a-zA-Z0-9-]+",
     Default="default",
-)
-
-CREATE_CLUSTER_PT = "CreateEcsCluster"
-CREATE_CLUSTER = Parameter(
-    CREATE_CLUSTER_PT,
-    Type="String",
-    AllowedValues=["True", "False"],
-    Default="True",
 )
 
 SERVICE_NAME_T = "MicroServiceName"
@@ -81,11 +79,15 @@ SERVICE_HOSTNAME = Parameter(
     AllowedPattern=r"^[a-z0-9-.]+$",
 )
 
-SERVICE_IMAGE_T = "MicroserviceImage"
-SERVICE_IMAGE = Parameter(SERVICE_IMAGE_T, Type="String")
-
 SERVICE_COUNT_T = "MicroservicesCount"
-SERVICE_COUNT = Parameter(SERVICE_COUNT_T, Type="Number", MinValue=0, Default=0)
+SERVICE_COUNT = Parameter(
+    SERVICE_COUNT_T,
+    group_label=ECS_COMPUTE_SETTINGS,
+    Description="Defines how many containers by default the service should have",
+    Type="Number",
+    MinValue=0,
+    Default=0,
+)
 
 ELB_GRACE_PERIOD_T = "ElbGracePeriod"
 ELB_GRACE_PERIOD = Parameter(
@@ -99,6 +101,9 @@ ELB_GRACE_PERIOD = Parameter(
 CREATE_LOG_GROUP_T = "CreateLogGroup"
 CREATE_LOG_GROUP = Parameter(
     CREATE_LOG_GROUP_T,
+    group_label=LOGGING_SETTINGS,
+    label="How long to retain logs? (in days)",
+    Description="Amount of time to retain logs, in days",
     Type="String",
     AllowedValues=["True", "False"],
     Default="True",
@@ -108,6 +113,8 @@ LOG_GROUP_NAME = Parameter(LOG_GROUP_NAME_T, Type="String", Default="ComposeXDef
 LOG_GROUP_RETENTION_T = "ServiceLogGroupRetentionPeriod"
 LOG_GROUP_RETENTION = Parameter(
     LOG_GROUP_RETENTION_T,
+    group_label=LOGGING_SETTINGS,
+    label="Name of the CW Log Group to store the containers logs into",
     Type="Number",
     Default=30,
     AllowedValues=[
@@ -134,6 +141,8 @@ LOG_GROUP_RETENTION = Parameter(
 RUNTIME_CPU_ARCHITECTURE_T = "RuntimeCpuArchitecture"
 RUNTIME_CPU_ARCHITECTURE = Parameter(
     RUNTIME_CPU_ARCHITECTURE_T,
+    group_label=ECS_COMPUTE_SETTINGS,
+    label="Choose CPU Architecture to use for your services",
     Type="String",
     AllowedValues=["X86_64", "ARM64"],
     Default="X86_64",
@@ -160,6 +169,8 @@ for cpu in FARGATE_MODES.keys():
 FARGATE_CPU_RAM_CONFIG_T = "FargateCpuRamConfiguration"
 FARGATE_CPU_RAM_CONFIG = Parameter(
     FARGATE_CPU_RAM_CONFIG_T,
+    group_label=FARGATE_SETTINGS,
+    Description="AWS Fargate CPU/RAM combination for your ECS Task",
     Type="String",
     AllowedValues=FARGATE_MODES_VALUES,
     Default="256!512",

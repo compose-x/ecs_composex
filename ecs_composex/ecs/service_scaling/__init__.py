@@ -6,6 +6,17 @@
 Package to help generate target scaling policies for given alarms.
 """
 
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ecs_composex.ecs.ecs_family import ComposeFamily
+    from ecs_composex.common.settings import ComposeXSettings
+    from ecs_composex.common.stacks import ComposeXStack
+
+
 from json import dumps
 
 from compose_x_common.compose_x_common import keyisset
@@ -31,7 +42,7 @@ class ServiceScaling(object):
     defined = False
     target_scaling_keys = ["CpuTarget", "MemoryTarget", "TgtTargetsCount"]
 
-    def __init__(self, family):
+    def __init__(self, family: ComposeFamily):
         self.family = family
         configuration = merge_family_services_scaling(family.services)
         self.scaling_range = None
@@ -58,7 +69,7 @@ class ServiceScaling(object):
             indent=2,
         )
 
-    def create_scalable_target(self, family):
+    def create_scalable_target(self):
         """
         Method to automatically create a scalable target
         """
@@ -75,7 +86,7 @@ class ServiceScaling(object):
                     "AWSServiceRoleForApplicationAutoScaling_ECSService"
                 ),
                 ResourceId=Sub(
-                    f"service/${{{ecs_params.CLUSTER_NAME.title}}}/${{{family.ecs_service.ecs_service.title}.Name}}"
+                    f"service/${{{ecs_params.CLUSTER_NAME.title}}}/${{{self.family.ecs_service.ecs_service.title}.Name}}"
                 ),
                 SuspendedState=applicationautoscaling.SuspendedState(
                     DynamicScalingInSuspended=False
@@ -94,7 +105,7 @@ class ServiceScaling(object):
                     "AWSServiceRoleForApplicationAutoScaling_ECSService"
                 ),
                 ResourceId=Sub(
-                    f"service/${{{ecs_params.CLUSTER_NAME.title}}}/${{{family.ecs_service.ecs_service.title}.Name}}"
+                    f"service/${{{ecs_params.CLUSTER_NAME.title}}}/${{{self.family.ecs_service.ecs_service.title}.Name}}"
                 ),
                 SuspendedState=applicationautoscaling.SuspendedState(
                     DynamicScalingInSuspended=False
@@ -102,11 +113,11 @@ class ServiceScaling(object):
             )
         if (
             self.scalable_target
-            and self.scalable_target.title not in family.template.resources
+            and self.scalable_target.title not in self.family.template.resources
         ):
-            family.template.add_resource(self.scalable_target)
+            self.family.template.add_resource(self.scalable_target)
 
-    def add_target_scaling(self, family) -> None:
+    def add_target_scaling(self) -> None:
         """
         Adds target scaling rules
         """
@@ -135,5 +146,8 @@ class ServiceScaling(object):
                 policy = None
             if policy:
                 self.scaling_policies.append(policy)
-                if family.template and policy.title not in family.template.resources:
-                    family.template.add_resource(policy)
+                if (
+                    self.family.template
+                    and policy.title not in self.family.template.resources
+                ):
+                    self.family.template.add_resource(policy)

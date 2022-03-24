@@ -6,6 +6,15 @@
 Module to help with defining the network settings for the ECS Service based on the family services definitions.
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ecs_composex.ecs.ecs_family import ComposeFamily
+
+from itertools import chain
+
 from compose_x_common.compose_x_common import keyisset, set_else_none
 from troposphere import AWS_ACCOUNT_ID, GetAtt, Ref, Sub
 from troposphere.ec2 import SecurityGroupIngress
@@ -29,7 +38,7 @@ class ServiceNetworking(object):
 
     self_key = "Myself"
 
-    def __init__(self, family):
+    def __init__(self, family: ComposeFamily):
         """
         Initialize network settings for the family ServiceConfig
 
@@ -89,10 +98,8 @@ class ServiceNetworking(object):
         """
         source_ports = [
             service.ports
-            for service in (
-                self.family.ordered_services
-                if self.family.ordered_services
-                else self.family.services
+            for service in chain(
+                self.family.managed_sidecars, self.family.ordered_services
             )
             if service.ports
         ]

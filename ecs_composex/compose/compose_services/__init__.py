@@ -103,7 +103,12 @@ class ComposeService(object):
         self.x_scaling = set_else_none("x-scaling", self.definition, None, False)
         self.x_network = set_else_none("x-network", self.definition, None, False)
         self.x_cloudmap = set_else_none("x-cloudmap", self.x_network, None, False)
-        self.x_ray = set_else_none("x-xray", self.definition, False, True)
+        self.x_ray = set_else_none(
+            "x-xray",
+            self.definition,
+            set_else_none("x-ray", self.definition, False, True),
+            True,
+        )
         self.x_iam = set_else_none("x-iam", self.definition)
         self.x_logging = {"RetentionInDays": 14}
         self.x_repo_credentials = None
@@ -186,6 +191,9 @@ class ComposeService(object):
         self.define_families()
         self.set_container_definition()
         self.set_networks()
+
+    def __repr__(self):
+        return self.name
 
     def retrieve_image_digest(self):
         """

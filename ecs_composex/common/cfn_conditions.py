@@ -14,10 +14,6 @@ USE_STACK_NAME_CON = Equals(
 )
 
 
-USE_SPOT_CON_T = "UseSpotFleetHostsCondition"
-USE_SPOT_CON = Equals(Ref(cfn_params.USE_FLEET), "True")
-
-
 def pass_root_stack_name():
     """
     Function to add root_stack to a stack parameters

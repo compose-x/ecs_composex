@@ -92,8 +92,8 @@ def set_volumes(family):
     """
     family_task_volumes = define_shared_volumes(family)
     host_volumes = define_host_volumes(family)
-    family_definition_volumes = []
     if not hasattr(family.task_definition, "Volumes"):
+        family_definition_volumes = []
         setattr(family.task_definition, "Volumes", family_definition_volumes)
     else:
         family_definition_volumes = getattr(family.task_definition, "Volumes")

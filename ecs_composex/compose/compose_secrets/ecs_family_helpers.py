@@ -54,6 +54,7 @@ def set_repository_credentials(family, settings):
     Method to go over each service and identify which ones have credentials to pull the Docker image from a private
     repository
 
+    :param ecs_composex.ecs.ecs_family.ComposeFamily family:
     :param ecs_composex.common.settings.ComposeXSettings settings:
     :return:
     """
