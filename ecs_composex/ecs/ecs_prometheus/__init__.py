@@ -6,10 +6,12 @@ from compose_x_common.compose_x_common import keyisset
 
 from ecs_composex.common import LOG
 from ecs_composex.compose.compose_services import ComposeService
-from ecs_composex.ecs.ecs_prometheus.helpers import (
-    define_cloudwatch_agent,
+from ecs_composex.ecs.ecs_prometheus.config_ssm_parameters import (
     set_cw_config_parameter,
     set_cw_prometheus_config_parameter,
+)
+from ecs_composex.ecs.ecs_prometheus.helpers import (
+    define_cloudwatch_agent,
     set_ecs_cw_policy,
 )
 
@@ -64,7 +66,6 @@ def add_cw_agent_to_family(family, **options):
     """
     prometheus_config = set_cw_prometheus_config_parameter(family, options)
     cw_agent_config = set_cw_config_parameter(family, **options)
-    family.add_managed_sidecar(
-        define_cloudwatch_agent(family, prometheus_config, cw_agent_config)
-    )
+    cw_agent_service = define_cloudwatch_agent(prometheus_config, cw_agent_config)
+    cw_agent_service.add_to_family(family)
     set_ecs_cw_policy(family, prometheus_config, cw_agent_config)

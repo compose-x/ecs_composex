@@ -24,13 +24,13 @@ from troposphere.ecs import EphemeralStorage, RuntimePlatform, TaskDefinition
 from ecs_composex.common import LOG, add_outputs, add_parameters
 from ecs_composex.compose.compose_services import ComposeService
 from ecs_composex.ecs import ecs_conditions, ecs_params
-from ecs_composex.ecs.aws_xray import set_xray
 from ecs_composex.ecs.ecs_family.family_helpers import (
     handle_same_task_services_dependencies,
     set_ecs_cluster_logging_access,
 )
 from ecs_composex.ecs.ecs_params import TASK_T
 from ecs_composex.ecs.ecs_prometheus import set_prometheus
+from ecs_composex.ecs.managed_sidecars.aws_xray import set_xray
 from ecs_composex.ecs.service_compute import ServiceCompute
 from ecs_composex.ecs.service_networking import ServiceNetworking
 from ecs_composex.ecs.service_scaling import ServiceScaling
