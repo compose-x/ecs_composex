@@ -26,7 +26,6 @@ from troposphere import AWSObject
 from ecs_composex import __version__
 from ecs_composex.common import LOG, NONALPHANUM
 from ecs_composex.common.aws import get_cross_role_session
-from ecs_composex.common.cfn_params import USE_FLEET_T
 from ecs_composex.compose.compose_networks import ComposeNetwork
 from ecs_composex.compose.compose_secrets import ComposeSecret
 from ecs_composex.compose.compose_services import ComposeService
@@ -158,7 +157,6 @@ class ComposeXSettings(object):
         self.no_upload = True if keyisset(self.render_arg, kwargs) else False
 
         self.upload = False if self.no_upload else True
-        self.create_compute = False if not keyisset(USE_FLEET_T, kwargs) else True
         self.parse_command(kwargs, content)
         self.compose_content = {}
         self.input_file = (
@@ -380,21 +378,18 @@ class ComposeXSettings(object):
         if service.name not in [_service.name for _service in assigned_services]:
             assigned_services.append(service)
 
-    def handle_assigned_existing_service(self, family_name, service, assigned_services):
+    def add_service_to_family(self, family_name, service, assigned_services):
         the_family = self.families[family_name]
         if service.name in [r_service.name for r_service in assigned_services]:
             LOG.info(
-                f"Detected {service.name} is-reused in different family. Making a deepcopy"
+                f"Service {service.name} is-reused in different family. Making a deepcopy"
             )
-
             the_service = deepcopy(service)
-            the_family.add_service_as_task_container(the_service)
-            the_service.my_family = self.families[family_name]
-            self.services.append(the_service)
         else:
-            the_family.add_service_as_task_container(service)
-            service.my_family = self.families[family_name]
-            assigned_services.append(service)
+            the_service = service
+        the_family.add_service(the_service)
+        the_service.my_family = the_family
+        self.services.append(the_service)
 
     def set_families(self):
         """
@@ -414,7 +409,7 @@ class ComposeXSettings(object):
                 elif formatted_name in self.families.keys() and service.name not in [
                     _service.name for _service in self.families[formatted_name].services
                 ]:
-                    self.handle_assigned_existing_service(
+                    self.add_service_to_family(
                         formatted_name, service, assigned_services
                     )
         LOG.debug([self.families[family] for family in self.families])

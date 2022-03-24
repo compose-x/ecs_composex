@@ -6,7 +6,15 @@
 Package to manage an ECS "Family" Task and Service definition
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ecs_composex.common.settings import ComposeXSettings
+
 import re
+from itertools import chain
 
 from troposphere import AWS_STACK_NAME, GetAtt, If, Join, NoValue
 from troposphere import Output as CfnOutput
@@ -16,20 +24,22 @@ from troposphere.ecs import EphemeralStorage, RuntimePlatform, TaskDefinition
 from ecs_composex.common import LOG, add_outputs, add_parameters
 from ecs_composex.compose.compose_services import ComposeService
 from ecs_composex.ecs import ecs_conditions, ecs_params
+from ecs_composex.ecs.aws_xray import set_xray
 from ecs_composex.ecs.ecs_family.family_helpers import (
     handle_same_task_services_dependencies,
     set_ecs_cluster_logging_access,
 )
-from ecs_composex.ecs.ecs_params import AWS_XRAY_IMAGE, TASK_T
+from ecs_composex.ecs.ecs_params import TASK_T
+from ecs_composex.ecs.ecs_prometheus import set_prometheus
 from ecs_composex.ecs.service_compute import ServiceCompute
 from ecs_composex.ecs.service_networking import ServiceNetworking
 from ecs_composex.ecs.service_scaling import ServiceScaling
+from ecs_composex.ecs.task_compute import TaskCompute
 from ecs_composex.ecs.task_iam import TaskIam
 from ecs_composex.vpc.vpc_params import APP_SUBNETS
 
 from .family_helpers import assign_secrets_to_roles, define_essential_containers
 from .family_template import set_template
-from .task_compute_helpers import set_task_compute_parameter
 from .task_runtime import define_family_runtime_parameters
 
 
@@ -39,13 +49,15 @@ class ComposeFamily(object):
 
     Processing order
 
-    * Import all services
-    * Define capacity providers
+    * Import first service
     * Define LaunchType
+    * Define CapacityProviders if set
+        This helps determine if we run in EXTERNAL mode early, as a lot of networking settings won't apply.
 
     :ivar list[ecs_composex.compose.compose_services.ComposeService] services: List of the Services part of the family
     :ivar ecs_composex.ecs.ecs_service.Service ecs_service: ECS Service settings
     :ivar ecs_composex.ecs.task_iam.TaskIam iam_manager:
+    :ivar TaskCompute task_compute: Task Compute manager
     """
 
     default_launch_type = "EC2"
@@ -54,25 +66,20 @@ class ComposeFamily(object):
     def __init__(self, services, family_name):
         self.services = services
         self.ordered_services = []
-        self.ignored_services = []
+        self.managed_sidecars = []
         self.name = family_name
         self.logical_name = re.sub(r"[^a-zA-Z0-9]+", "", family_name)
         self.iam_manager = TaskIam(self)
-        self.task_cpu = 0
-        self.task_memory = 0
         self.family_hostname = self.name.replace("_", "-").lower()
         self.services_depends_on = []
-        self.template = None
-        set_template(self)
+        self.template = set_template(self)
         self.stack = None
         self.stack_parameters = {}
         self.task_definition = None
         self.service_definition = None
         self.service_tags = None
         self.task_ephemeral_storage = 0
-        self.family_network_mode = None
         self.enable_execute_command = False
-        self.scalable_target = None
         self.ecs_service = None
         self.runtime_cpu_arch = None
         self.runtime_os_family = None
@@ -81,20 +88,27 @@ class ComposeFamily(object):
         self.task_logging_options = {}
         self.alarms = {}
         self.predefined_alarms = {}
-        self.ecs_capacity_providers = []
         self.target_groups = []
+        self.iam_manager.init_update_policies()
+        self.service_compute = None
+        self.service_scaling = None
+        self.service_networking = None
+        self.task_compute = None
 
-        self.set_xray()
-        self.set_prometheus()
-        self.sort_container_configs()
+    def init_family(self) -> None:
+        """
+        Initializes the family after all services in the docker-compose definition have been assigned.
+
+        The only containers that might then be added will be sidecars which won't influence
+        launch type, capacity providers or anything else than the ECS Task Definition (CPU/RAM | ProxySettings)
+        """
+        self.set_services_to_services_dependencies()
+        self.set_update_containers_priority()
         self.service_compute = ServiceCompute(self)
-
         define_family_runtime_parameters(self)
 
-        self.set_initial_services_dependencies()
-        self.iam_manager.init_update_policies()
+        self.task_compute = TaskCompute(self)
         self.add_containers_images_cfn_parameters()
-
         self.service_scaling = ServiceScaling(self)
         self.service_networking = ServiceNetworking(self)
 
@@ -106,7 +120,7 @@ class ComposeFamily(object):
         * Sets the TaskDefinition using current services/ContainerDefinitions
         * Update the logging configuration for the containers.
         """
-        set_task_compute_parameter(self)
+        self.task_compute.set_task_compute_parameter()
         self.set_task_definition()
         self.refresh_container_logging_definition()
 
@@ -122,12 +136,12 @@ class ComposeFamily(object):
             Cpu=If(
                 ecs_conditions.USE_FARGATE_CON_T,
                 ecs_params.FARGATE_CPU,
-                self.task_cpu if self.task_cpu else NoValue,
+                self.task_compute.family_cpu,
             ),
             Memory=If(
                 ecs_conditions.USE_FARGATE_CON_T,
                 ecs_params.FARGATE_RAM,
-                self.task_memory if self.task_memory else NoValue,
+                self.task_compute.family_ram,
             ),
             NetworkMode=If(
                 ecs_conditions.USE_WINDOWS_OS_T,
@@ -183,6 +197,14 @@ class ComposeFamily(object):
                 }
             )
 
+    def import_all_sidecars(self) -> None:
+        """
+        Once all services have been added from the ComposeXSettings looping over services, we import all sidecars
+        Should be invoked only once.
+        """
+        set_xray(self)
+        set_prometheus(self)
+
     def generate_outputs(self):
         """
         Generates a list of CFN outputs for the ECS Service and Task Definition
@@ -205,11 +227,15 @@ class ComposeFamily(object):
             CfnOutput(self.task_definition.title, Value=Ref(self.task_definition))
         )
         if (
-            self.scalable_target
-            and self.scalable_target.title in self.template.resources
+            self.service_scaling
+            and self.service_scaling.scalable_target
+            and self.service_scaling.scalable_target.title in self.template.resources
         ):
             self.outputs.append(
-                CfnOutput(self.scalable_target.title, Value=Ref(self.scalable_target))
+                CfnOutput(
+                    self.service_scaling.scalable_target.title,
+                    Value=Ref(self.service_scaling.scalable_target),
+                )
             )
         add_outputs(self.template, self.outputs)
 
@@ -222,31 +248,21 @@ class ComposeFamily(object):
         LOG.info(f"{self.name} - Ephemeral storage: {self.task_ephemeral_storage}")
         LOG.info(f"{self.name} - LaunchType set to {self.launch_type}")
         LOG.info(
-            f"{self.name} - TaskDefinition containers: {[svc.name for svc in self.services]}"
+            f"{self.name} - TaskDefinition containers: {[svc.name for svc in chain(self.ordered_services, self.managed_sidecars)]}"
         )
 
-    def add_security_group(self):
+    def add_service(self, service: ComposeService):
         """
-        Creates a new EC2 SecurityGroup and assigns to ecs_service.network_settings
-        Adds the security group to the family template resources.
+        Function to add new services (defined in the compose files). Not to use for managed sidecars
+        :param ComposeService service:
         """
-        from ecs_composex.ecs.service_networking.helpers import add_security_group
+        from ecs_composex.ecs.service_networking.helpers import set_family_hostname
 
-        add_security_group(family=self)
-
-    def add_service_as_task_container(self, service):
-        """
-        Adds a new container/service to the Task Family and validates all settings that go along with the change.
-        :param service:
-        """
         from .task_execute_command import set_enable_execute_command
 
-        if service.name in [svc.name for svc in self.services]:
-            LOG.debug(
-                f"{self.name} - container service {service.name} is already set. Skipping"
-            )
-            return
         self.services.append(service)
+
+        self.set_update_containers_priority()
         if self.task_definition and service.container_definition:
             self.task_definition.ContainerDefinitions.append(
                 service.container_definition
@@ -254,7 +270,35 @@ class ComposeFamily(object):
             self.set_secrets_access()
         self.set_task_ephemeral_storage()
         set_enable_execute_command(self)
-        self.refresh()
+        set_family_hostname(self)
+        self.add_containers_images_cfn_parameters()
+
+    def add_managed_sidecar(self, service: ComposeService):
+        """
+        Adds a new container/service to the Task Family and validates all settings that go along with the change.
+        :param service:
+        """
+        from .task_execute_command import set_enable_execute_command
+
+        if not isinstance(service, ComposeService) or not issubclass(
+            type(service), ComposeService
+        ):
+            raise TypeError("service must be", ComposeService, "Got", type(service))
+        if self.managed_sidecars and service.name in [
+            svc.name for svc in self.managed_sidecars
+        ]:
+            LOG.debug(
+                f"{self.name} - container service {service.name} is already set. Skipping"
+            )
+            return
+        self.managed_sidecars.append(service)
+        if self.task_definition and service.container_definition:
+            self.task_definition.ContainerDefinitions.append(
+                service.container_definition
+            )
+            self.set_secrets_access()
+        self.add_containers_images_cfn_parameters()
+        self.task_compute.set_task_compute_parameter()
 
     def refresh(self):
         """
@@ -262,14 +306,14 @@ class ComposeFamily(object):
         """
         from ecs_composex.ecs.service_networking.helpers import set_family_hostname
 
-        self.sort_container_configs()
+        self.set_update_containers_priority()
         self.service_compute.set_update_launch_type()
         self.service_compute.set_update_capacity_providers()
         define_family_runtime_parameters(self)
         self.iam_manager.init_update_policies()
         self.handle_logging()
         self.add_containers_images_cfn_parameters()
-        set_task_compute_parameter(self)
+        self.task_compute.set_task_compute_parameter()
         set_family_hostname(self)
 
     def finalize_services_networking_settings(self):
@@ -288,10 +332,12 @@ class ComposeFamily(object):
         """
         from .family_helpers import set_service_dependency_on_all_iam_policies
 
-        set_service_dependency_on_all_iam_policies(self)
-        self.set_xray()
-        self.set_prometheus()
+        self.import_all_sidecars()
+        self.add_containers_images_cfn_parameters()
+        self.task_compute.set_task_compute_parameter()
+        self.task_compute.unlock_compute_for_main_container()
         self.finalize_services_networking_settings()
+        set_service_dependency_on_all_iam_policies(self)
         if self.launch_type == "EXTERNAL":
             if hasattr(self.ecs_service.ecs_service, "LoadBalancers"):
                 setattr(self.ecs_service.ecs_service, "LoadBalancers", NoValue)
@@ -305,13 +351,15 @@ class ComposeFamily(object):
             self.ecs_service.ecs_service
             and self.ecs_service.ecs_service.title in self.template.resources
         ) and (
-            self.scalable_target
-            and self.scalable_target.title not in self.template.resources
+            self.service_scaling
+            and self.service_scaling.scalable_target
+            and self.service_scaling.scalable_target.title
+            not in self.template.resources
         ):
-            self.template.add_resource(self.scalable_target)
+            self.template.add_resource(self.service_scaling.scalable_target)
         self.generate_outputs()
 
-    def set_initial_services_dependencies(self):
+    def set_services_to_services_dependencies(self):
         """
         Method to iterate over each depends_on service set in the family services and add them up
 
@@ -340,7 +388,7 @@ class ComposeFamily(object):
 
         set_enable_execute_command(self)
 
-    def apply_ecs_execute_command_permissions(self, settings) -> None:
+    def apply_ecs_execute_command_permissions(self, settings: ComposeXSettings) -> None:
         """
         Method to set the IAM Policies in place to allow ECS Execute SSM and Logging
 
@@ -350,59 +398,6 @@ class ComposeFamily(object):
         from .task_execute_command import apply_ecs_execute_command_permissions
 
         apply_ecs_execute_command_permissions(self, settings)
-
-    def set_xray(self):
-        """
-        Automatically adds the xray-daemon sidecar to the task definition.
-
-        Evaluates if any of the services x_ray is True to add.
-        If any(True) then checks whether the xray-daemon container is already in the services.
-        """
-        if self.xray_service_name not in [
-            service.name for service in self.services
-        ] and any([service.x_ray for service in self.services]):
-            xray_service = ComposeService(
-                "xray-daemon",
-                {
-                    "image": AWS_XRAY_IMAGE,
-                    "deploy": {
-                        "resources": {"limits": {"cpus": 0.03125, "memory": "256M"}},
-                    },
-                    "x-iam": {
-                        "ManagedPolicyArns": [
-                            "arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess"
-                        ]
-                    },
-                },
-            )
-            xray_service.is_aws_sidecar = True
-            self.add_service_as_task_container(xray_service)
-            if xray_service.name not in self.ignored_services:
-                self.ignored_services.append(xray_service)
-            self.update_xray_service_dependencies(xray_service)
-        else:
-            self.update_xray_service_dependencies()
-
-    def update_xray_service_dependencies(self, xray_service=None):
-        if not xray_service:
-            for service in self.services:
-                if service.name == self.xray_service_name:
-                    xray_service = service
-                    break
-            else:
-                raise AttributeError(
-                    "Failed to identify the already defined x-ray service",
-                    [svc.name for svc in self.services],
-                )
-
-        for service in self.services:
-            if service.is_aws_sidecar:
-                continue
-            if xray_service.name not in service.depends_on:
-                service.depends_on.append(xray_service.name)
-                LOG.info(
-                    f"{self.name} - Adding xray-daemon as dependency to {service.name}"
-                )
 
     def handle_alarms(self) -> None:
         from ecs_composex.ecs.service_alarms import handle_alarms
@@ -418,7 +413,7 @@ class ComposeFamily(object):
 
         handle_logging(self)
 
-    def sort_container_configs(self):
+    def set_update_containers_priority(self):
         """
         Method to sort out the containers dependencies and create the containers definitions based on the configs.
         :return:
@@ -453,11 +448,11 @@ class ComposeFamily(object):
         """
         Adds parameters to the stack and set values for each service/container in the family definition
         """
-        if not self.template:
+        if not self.template or not self.stack:
             return
         images_parameters = []
-        for service in self.services:
-            self.stack_parameters.update({service.image_param.title: service.image})
+        for service in chain(self.managed_sidecars, self.ordered_services):
+            self.stack.Parameters.update({service.image_param.title: service.image})
             images_parameters.append(service.image_param)
         add_parameters(self.template, images_parameters)
 
@@ -477,43 +472,9 @@ class ComposeFamily(object):
 
         update_family_subnets(self, settings)
 
-    def upload_services_env_files(self, settings):
-        from ecs_composex.compose.compose_services.env_files_helpers import (
-            upload_services_env_files,
-        )
-
-        upload_services_env_files(self, settings)
-
-    def set_repository_credentials(self, settings):
-        """
-        Method to go over each service and identify which ones have credentials to pull the Docker image from a private
-        repository
-
-        :param ecs_composex.common.settings.ComposeXSettings settings:
-        :return:
-        """
-        from ecs_composex.compose.compose_secrets.ecs_family_helpers import (
-            set_repository_credentials,
-        )
-
-        set_repository_credentials(self, settings)
-
-    def set_volumes(self) -> None:
-        """
-        Method to create the volumes definition to the Task Definition
-        """
-        from ecs_composex.compose.compose_volumes.ecs_family_helpers import set_volumes
-
-        set_volumes(self)
-
     def validate_compute_configuration_for_task(self, settings):
         from ecs_composex.ecs.ecs_cluster.ecs_family_helpers import (
             validate_compute_configuration_for_task,
         )
 
         validate_compute_configuration_for_task(self, settings)
-
-    def set_prometheus(self) -> None:
-        from ecs_composex.ecs.ecs_prometheus import set_prometheus
-
-        set_prometheus(self)

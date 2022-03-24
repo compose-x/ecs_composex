@@ -181,9 +181,7 @@ def set_compose_services_ingress(root_stack, dst_family, families, settings) -> 
     :param ecs_composex.ecs.ecs_family.ComposeFamily dst_family:
     :param list families: The list of family names.
     :param ecs_composex.common.settings.ComposeXSettings settings:
-    :return:
     """
-    print("DST FAMILY", dst_family.name, dst_family.service_networking.ingress.services)
     for service in dst_family.service_networking.ingress.services:
         service_name = service["Name"]
         if service_name not in families:

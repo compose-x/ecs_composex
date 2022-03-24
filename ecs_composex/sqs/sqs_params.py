@@ -15,20 +15,26 @@ SQS_SSM_PREFIX = f"/{RES_KEY}/"
 MAPPINGS_KEY = NONALPHANUM.sub("", MOD_KEY)
 TAGGING_API_ID = "sqs"
 
+SQS_SETTINGS = "SQS Settings"
+
 SQS_URL_T = "Url"
-SQS_URL = Parameter(SQS_URL_T, Type="String")
+SQS_URL = Parameter(SQS_URL_T, group_label=SQS_SETTINGS, Type="String")
 
 SQS_ARN_T = "Arn"
-SQS_ARN = Parameter(SQS_ARN_T, return_value="Arn", Type="String")
+SQS_ARN = Parameter(
+    SQS_ARN_T, group_label=SQS_SETTINGS, return_value="Arn", Type="String"
+)
 
 SQS_NAME_T = "QueueName"
-SQS_NAME = Parameter(SQS_NAME_T, return_value="QueueName", Type="String")
+SQS_NAME = Parameter(
+    SQS_NAME_T, group_label=SQS_SETTINGS, return_value="QueueName", Type="String"
+)
 
 DLQ_NAME_T = "DeadLetterQueueName"
-DLQ_NAME = Parameter(DLQ_NAME_T, Type="String")
+DLQ_NAME = Parameter(DLQ_NAME_T, group_label=SQS_SETTINGS, Type="String")
 
 DLQ_ARN_T = "DeadLetterQueueArn"
-DLQ_ARN = Parameter(DLQ_ARN_T, Type="String")
+DLQ_ARN = Parameter(DLQ_ARN_T, group_label=SQS_SETTINGS, Type="String")
 
 SQS_KMS_KEY_T = "QueueKmsKey"
-SQS_KMS_KEY = Parameter(SQS_KMS_KEY_T, Type="String")
+SQS_KMS_KEY = Parameter(SQS_KMS_KEY_T, group_label=SQS_SETTINGS, Type="String")

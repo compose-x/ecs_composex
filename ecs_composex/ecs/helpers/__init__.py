@@ -7,6 +7,7 @@ from troposphere import GetAtt, Ref
 
 from ecs_composex.common import LOG
 from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.ecs.service_networking.helpers import add_security_group
 from ecs_composex.vpc.vpc_params import APP_SUBNETS
 
 
@@ -38,7 +39,7 @@ def update_families_networking_settings(settings, vpc_stack):
             family.stack.set_vpc_params_from_vpc_stack_import(vpc_stack)
         else:
             family.stack.set_vpc_parameters_from_vpc_stack(vpc_stack)
-        family.add_security_group()
+        add_security_group(family)
         family.ecs_service.subnets = Ref(APP_SUBNETS)
 
 
@@ -94,5 +95,5 @@ def set_families_ecs_service(settings):
     """
     for family in settings.families.values():
         family.ecs_service.generate_service_definition(settings)
-        family.service_scaling.create_scalable_target(family)
-        family.service_scaling.add_target_scaling(family)
+        family.service_scaling.create_scalable_target()
+        family.service_scaling.add_target_scaling()

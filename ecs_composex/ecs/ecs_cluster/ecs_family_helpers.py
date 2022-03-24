@@ -27,7 +27,10 @@ def validate_capacity_providers(family, cluster):
     :raises: ValueError if not all task family providers in the cluster providers
     :raises: TypeError if cluster_providers not a list
     """
-    if not family.ecs_capacity_providers and not cluster.capacity_providers:
+    if (
+        not family.service_compute.ecs_capacity_providers
+        and not cluster.capacity_providers
+    ):
         LOG.debug(
             f"{family.name} - No capacity providers specified in task definition nor cluster"
         )
@@ -35,7 +38,9 @@ def validate_capacity_providers(family, cluster):
     elif not cluster.capacity_providers:
         LOG.debug(f"{family.name} - No capacity provider set for cluster")
         return True
-    cap_names = [cap["CapacityProvider"] for cap in family.ecs_capacity_providers]
+    cap_names = [
+        cap["CapacityProvider"] for cap in family.service_compute.ecs_capacity_providers
+    ]
     if not all(cap_name in FARGATE_PROVIDERS for cap_name in cap_names):
         raise ValueError(
             f"{family.name} - You cannot mix FARGATE capacity provider with AutoScaling Capacity Providers",
@@ -64,7 +69,7 @@ def validate_compute_configuration_for_task(family, settings):
         family.service_compute.launch_type
         and family.service_compute.launch_type == "EXTERNAL"
     ):
-        LOG.debug(f"{family.name} - Already set to EXTERNAL")
+        LOG.debug(f"{family.name} - Launch Type set to EXTERNAL. Nothing to do.")
         return
     if settings.ecs_cluster.platform_override:
         family.service_compute.launch_type = settings.ecs_cluster.platform_override
@@ -82,6 +87,7 @@ def validate_compute_configuration_for_task(family, settings):
                 NoValue,
             )
     else:
+        family.service_compute.set_update_launch_type()
         family.service_compute.set_update_capacity_providers()
         validate_capacity_providers(family, settings.ecs_cluster)
         set_service_launch_type(family, settings.ecs_cluster)
@@ -98,7 +104,7 @@ def validate_compute_configuration_for_task(family, settings):
 def set_launch_type_from_cluster_and_service(family):
     if all(
         provider["CapacityProvider"] in ["FARGATE", "FARGATE_SPOT"]
-        for provider in family.ecs_capacity_providers
+        for provider in family.service_compute.ecs_capacity_providers
     ):
         LOG.debug(
             f"{family.name} - Cluster and Service use Fargate only. Setting to FARGATE_PROVIDERS"
@@ -110,7 +116,7 @@ def set_launch_type_from_cluster_and_service(family):
             f"{family.name} - Using AutoScaling Based Providers",
             [
                 provider["CapacityProvider"]
-                for provider in family.ecs_capacity_providers
+                for provider in family.service_compute.ecs_capacity_providers
             ],
         )
 
@@ -146,7 +152,7 @@ def set_family_ecs_service_launch_type(family):
     ):
         cfn_capacity_providers = [
             CapacityProviderStrategyItem(**props)
-            for props in family.ecs_capacity_providers
+            for props in family.service_compute.ecs_capacity_providers
         ]
         if isinstance(family.service_definition, EcsService):
             setattr(
@@ -173,8 +179,10 @@ def set_service_launch_type(family, cluster):
     """
     if family.service_compute.launch_type == "EXTERNAL":
         return
-    if family.ecs_capacity_providers and cluster.capacity_providers:
+    if family.service_compute.ecs_capacity_providers and cluster.capacity_providers:
         set_launch_type_from_cluster_and_service(family)
-    elif not family.ecs_capacity_providers and cluster.capacity_providers:
+    elif (
+        not family.service_compute.ecs_capacity_providers and cluster.capacity_providers
+    ):
         set_launch_type_from_cluster_only(family, cluster)
     set_family_ecs_service_launch_type(family)

@@ -189,7 +189,7 @@ def define_nginx_exporter_sidecar(family):
     )
     nginx_prom_exporter_service.is_aws_sidecar = True
 
-    family.add_service_as_task_container(nginx_prom_exporter_service)
+    family.add_managed_sidecar(nginx_prom_exporter_service)
 
 
 def get_ngnix_processor(
@@ -422,7 +422,9 @@ def set_cw_config_parameter(family, **options):
         return family.template.resources[parameter.title]
 
 
-def define_cloudwatch_agent(family, cw_prometheus_config, cw_agent_config):
+def define_cloudwatch_agent(
+    family, cw_prometheus_config, cw_agent_config
+) -> ComposeService:
     """
     Function to define the CW Agent image task definition
 
@@ -558,16 +560,3 @@ def set_ecs_cw_policy(family, prometheus_parameter, cw_config_parameter):
     )
     if ecs_sd_policy.title not in family.template.resources:
         family.template.add_resource(ecs_sd_policy)
-
-
-def add_cw_agent_to_family(family, **options):
-    """
-    Function to add the CW Agent to the task family for additional monitoring
-    :param ecs_composex.ecs.ecs_family.ComposeFamily family:
-    """
-    prometheus_config = set_cw_prometheus_config_parameter(family, options)
-    cw_agent_config = set_cw_config_parameter(family, **options)
-    family.add_service_as_task_container(
-        define_cloudwatch_agent(family, prometheus_config, cw_agent_config)
-    )
-    set_ecs_cw_policy(family, prometheus_config, cw_agent_config)

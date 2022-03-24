@@ -6,8 +6,12 @@ from compose_x_common.compose_x_common import keyisset
 
 from ecs_composex.common import LOG
 from ecs_composex.compose.compose_services import ComposeService
-
-from .helpers import add_cw_agent_to_family
+from ecs_composex.ecs.ecs_prometheus.helpers import (
+    define_cloudwatch_agent,
+    set_cw_config_parameter,
+    set_cw_prometheus_config_parameter,
+    set_ecs_cw_policy,
+)
 
 
 def set_prometheus_containers_insights(
@@ -51,3 +55,16 @@ def set_prometheus(family):
             )
     if any(insights_options.values()):
         add_cw_agent_to_family(family, **insights_options)
+
+
+def add_cw_agent_to_family(family, **options):
+    """
+    Function to add the CW Agent to the task family for additional monitoring
+    :param ecs_composex.ecs.ecs_family.ComposeFamily family:
+    """
+    prometheus_config = set_cw_prometheus_config_parameter(family, options)
+    cw_agent_config = set_cw_config_parameter(family, **options)
+    family.add_managed_sidecar(
+        define_cloudwatch_agent(family, prometheus_config, cw_agent_config)
+    )
+    set_ecs_cw_policy(family, prometheus_config, cw_agent_config)

@@ -89,8 +89,6 @@ NOT_USE_HOSTNAME_CON = Equals(
 USE_HOSTNAME_CON_T = "UseMicroserviceHostnameCondition"
 USE_HOSTNAME_CON = Not(Condition(NOT_USE_HOSTNAME_CON_T))
 
-CREATE_CLUSTER_CON_T = "CreateClusterCondition"
-CREATE_CLUSTER_CON = Equals(Ref(ecs_params.CREATE_CLUSTER), "True")
 GENERATED_CLUSTER_NAME_CON_T = "GenerateEcsClusterName"
 GENERATED_CLUSTER_NAME_CON = Not(
     Equals(Ref(ecs_params.CLUSTER_NAME), ecs_params.CLUSTER_NAME.Default)
