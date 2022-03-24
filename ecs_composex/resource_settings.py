@@ -251,7 +251,7 @@ def map_resource_env_vars_to_family_services(
         {} if not keyisset("ReturnValues", target[-1]) else target[-1]["ReturnValues"]
     )
     for svc in target[2]:
-        if svc in target[0].ordered_services:
+        if svc in target[0].managed_sidecars:
             continue
         if return_values:
             extend_container_envvars(

@@ -13,13 +13,13 @@ from troposphere.events import Rule as CfnRule
 
 from ecs_composex.common import LOG, NONALPHANUM, build_template
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.compose.x_resources import ServicesXResource
 from ecs_composex.compose.x_resources.helpers import (
     set_lookup_resources,
     set_new_resources,
     set_resources,
     set_use_resources,
 )
+from ecs_composex.compose.x_resources.services_resources import ServicesXResource
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME, FARGATE_VERSION
 from ecs_composex.events.events_params import MOD_KEY, RES_KEY
 from ecs_composex.resources_import import import_record_properties

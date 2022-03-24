@@ -1,79 +1,56 @@
----
-# Blog applications
-
 version: '3.8'
-
 x-sqs:
-  queueA:
-    Settings:
-      EnvNames:
-        - QUEUEA
-
+  queueA: {}
   queueB:
     Properties:
       RedrivePolicy:
         deadLetterTargetArn: queueA
         maxReceiveCount: 10
-    Settings:
-      EnvNames:
-        - queueb
     Services:
-      bignicefamily:
-        Access: RWMessages
       app03:
         ReturnValues:
           QueueName: QUEUE_B_NAME
-
+      bignicefamily:
+        Access: RWMessages
   queueC:
     Properties:
-      FifoQueue: True
+      FifoQueue: true
     Services:
-      - name: rproxy
-        access: RWMessages
-      - name: youtoo
-        access: RWMessages
-    Settings:
-      EnvNames:
-        - FIFO_QUEUE
-
+      rproxy:
+        Access: RWMessages
+      youtoo:
+        Access: RWMessages
   queueD:
     Properties: {}
     Services:
-      - name: app01
-        access: RWMessages
-      - name: app03
-        access: RWMessages
-
+      app01:
+        Access: RWMessages
+      app03:
+        Access: RWMessages
   queueE:
     Properties: {}
     Services:
-      - name: bignicefamily
-        access: RWMessages
+      bignicefamily:
+        Access: RWMessages
         scaling:
           ScaleInCooldown: 120
           ScaleOutCooldown: 60
           Steps:
-            - LowerBound: 0
+            - Count: 1
+              LowerBound: 0
               UpperBound: 10
-              Count: 1
-            - LowerBound: 10
+            - Count: 2
+              LowerBound: 10
               UpperBound: 20
-              Count: 2
-            - LowerBound: 20
-              Count: 5
-
-
-
+            - Count: 5
+              LowerBound: 20
   queueF:
-    Properties: {}
     Lookup:
       Tags:
-        - useless: "yes"
+        - useless: 'yes'
         - costcentre: lambda
+    Properties: {}
     Services:
-      bignicefamily:
-        ReturnValues:
-          QueueName: QUEUE_F_NAME
       app03:
         ReturnValues:
           QueueName: QUEUE_F_NAME
@@ -81,11 +58,14 @@ x-sqs:
           ScaleInCooldown: 120
           ScaleOutCooldown: 60
           Steps:
-            - LowerBound: 0
+            - Count: 1
+              LowerBound: 0
               UpperBound: 10
-              Count: 1
-            - LowerBound: 10
+            - Count: 2
+              LowerBound: 10
               UpperBound: 20
-              Count: 2
-            - LowerBound: 20
-              Count: 5
+            - Count: 5
+              LowerBound: 20
+      bignicefamily:
+        ReturnValues:
+          QueueName: QUEUE_F_NAME
