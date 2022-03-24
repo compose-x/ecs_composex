@@ -10,7 +10,7 @@ from troposphere.sns import Topic as CfnTopic
 
 from ecs_composex.common import build_template, setup_logging
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.compose.x_resources import ApiXResource
+from ecs_composex.compose.x_resources.api_x_resources import ApiXResource
 from ecs_composex.iam.import_sam_policies import get_access_types
 from ecs_composex.sns.sns_params import (
     MAPPINGS_KEY,

@@ -11,14 +11,6 @@ from troposphere.kms import Alias, Key
 from ecs_composex.common import LOG, build_template
 from ecs_composex.common.cfn_conditions import define_stack_name
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.compose.x_resources import (
-    ApiXResource,
-    AwsEnvironmentResource,
-    set_lookup_resources,
-    set_new_resources,
-    set_resources,
-    set_use_resources,
-)
 from ecs_composex.iam.import_sam_policies import get_access_types
 from ecs_composex.kms import metadata
 from ecs_composex.kms.kms_params import (
@@ -35,6 +27,14 @@ from ecs_composex.resources_import import import_record_properties
 from ecs_composex.s3.s3_stack import Bucket
 from ecs_composex.sqs.sqs_stack import Queue
 
+from ..compose.x_resources.api_x_resources import ApiXResource
+from ..compose.x_resources.environment_x_resources import AwsEnvironmentResource
+from ..compose.x_resources.helpers import (
+    set_lookup_resources,
+    set_new_resources,
+    set_resources,
+    set_use_resources,
+)
 from .kms_sqs import handle_queue_kms
 
 

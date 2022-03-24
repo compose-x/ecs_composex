@@ -24,9 +24,11 @@ from ecs_composex.cognito_userpool.cognito_params import (
 )
 from ecs_composex.common import build_template, setup_logging
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.compose.x_resources import (
-    ApiXResource,
+from ecs_composex.compose.x_resources.api_x_resources import ApiXResource
+from ecs_composex.compose.x_resources.environment_x_resources import (
     AwsEnvironmentResource,
+)
+from ecs_composex.compose.x_resources.helpers import (
     set_lookup_resources,
     set_new_resources,
     set_resources,

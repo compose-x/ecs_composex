@@ -30,13 +30,13 @@ from ecs_composex.compose.compose_networks import ComposeNetwork
 from ecs_composex.compose.compose_secrets import ComposeSecret
 from ecs_composex.compose.compose_services import ComposeService
 from ecs_composex.compose.compose_volumes import ComposeVolume
-from ecs_composex.compose.x_resources import (
-    ApiXResource,
+from ecs_composex.compose.x_resources import XResource
+from ecs_composex.compose.x_resources.api_x_resources import ApiXResource
+from ecs_composex.compose.x_resources.environment_x_resources import (
     AwsEnvironmentResource,
-    NetworkXResource,
-    ServicesXResource,
-    XResource,
 )
+from ecs_composex.compose.x_resources.network_x_resources import NetworkXResource
+from ecs_composex.compose.x_resources.services_resources import ServicesXResource
 from ecs_composex.ecs.ecs_family import ComposeFamily
 from ecs_composex.iam import ROLE_ARN_ARG
 from ecs_composex.utils.init_ecs import set_ecs_settings
@@ -361,9 +361,11 @@ class ComposeXSettings(object):
             self.compose_content[ComposeService.main_key][service_name] = service
             self.services.append(service)
 
-    def add_new_family(self, family_name, service, assigned_services) -> None:
-        if service.name in [r_service.name for r_service in assigned_services]:
-            LOG.info(
+    def add_new_family(
+        self, family_name: str, service: ComposeService, assigned_services: list
+    ) -> None:
+        if service in assigned_services:
+            print(
                 f"Detected {service.name} is-reused in different family. Making a deepcopy"
             )
             the_service = deepcopy(service)
@@ -375,21 +377,26 @@ class ComposeXSettings(object):
             family = ComposeFamily([service], family_name)
             service.my_family = family
         self.families[family.logical_name] = family
-        if service.name not in [_service.name for _service in assigned_services]:
+        if service not in assigned_services:
             assigned_services.append(service)
 
-    def add_service_to_family(self, family_name, service, assigned_services):
+    def add_service_to_family(
+        self, family_name: str, service: ComposeService, assigned_services: list
+    ) -> None:
         the_family = self.families[family_name]
-        if service.name in [r_service.name for r_service in assigned_services]:
+        if service in assigned_services:
             LOG.info(
                 f"Service {service.name} is-reused in different family. Making a deepcopy"
             )
             the_service = deepcopy(service)
         else:
             the_service = service
+        LOG.debug(f"THE_SERVICE, {hex(id(the_service))}, SERVICE, {hex(id(service))}")
         the_family.add_service(the_service)
         the_service.my_family = the_family
         self.services.append(the_service)
+        if the_service not in assigned_services:
+            assigned_services.append(the_service)
 
     def set_families(self):
         """
@@ -407,7 +414,8 @@ class ComposeXSettings(object):
                 if formatted_name not in self.families.keys():
                     self.add_new_family(family_name, service, assigned_services)
                 elif formatted_name in self.families.keys() and service.name not in [
-                    _service.name for _service in self.families[formatted_name].services
+                    _service.name
+                    for _service in self.families[formatted_name].ordered_services
                 ]:
                     self.add_service_to_family(
                         formatted_name, service, assigned_services

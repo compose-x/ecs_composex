@@ -13,8 +13,8 @@ from troposphere.events import Rule as CfnRule
 
 from ecs_composex.common import LOG, NONALPHANUM, build_template
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.compose.x_resources import (
-    ServicesXResource,
+from ecs_composex.compose.x_resources import ServicesXResource
+from ecs_composex.compose.x_resources.helpers import (
     set_lookup_resources,
     set_new_resources,
     set_resources,

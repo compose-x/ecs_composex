@@ -18,7 +18,6 @@ from troposphere.servicediscovery import PrivateDnsNamespace
 from ecs_composex.common import LOG, add_outputs, build_template
 from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.compose.x_resources import AwsEnvironmentResource
 from ecs_composex.resources_import import (
     find_aws_properties_in_aws_resource,
     find_aws_resources_in_template_resources,
@@ -47,6 +46,7 @@ from ecs_composex.vpc.vpc_subnets import (
 )
 from ecs_composex.vpc.vpc_template import add_vpc_core, add_vpc_flow
 
+from ..compose.x_resources.environment_x_resources import AwsEnvironmentResource
 from .vpc_cloudmap import x_vpc_to_x_cloudmap
 
 AZ_INDEX_PATTERN = r"(([a-z0-9-]+)([a-z]{1}$))"

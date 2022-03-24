@@ -62,13 +62,13 @@ from ecs_composex.common import (
 )
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME, Parameter
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.compose.x_resources import (
-    NetworkXResource,
+from ecs_composex.compose.x_resources.helpers import (
     set_lookup_resources,
     set_new_resources,
     set_resources,
     set_use_resources,
 )
+from ecs_composex.compose.x_resources.network_x_resources import NetworkXResource
 from ecs_composex.elbv2.elbv2_params import (
     LB_DNS_NAME,
     LB_DNS_ZONE_ID,
@@ -423,18 +423,16 @@ def handle_non_default_services(listener, services_def) -> list:
     :param services_def:
     :return:
     """
-    default_target = None
     left_services = deepcopy(services_def)
     for count, service_def in enumerate(services_def):
         if isinstance(service_def["access"], str) and service_def["access"] == "/":
-            default_target = service_def
             left_services.pop(count)
+            listener.DefaultActions += define_actions(listener, service_def)
             break
-    if not default_target:
+    else:
         LOG.warning("No service path matches /. Defaulting to return TeaPot")
         listener.DefaultActions.append(tea_pot(True))
-    elif default_target:
-        listener.DefaultActions += define_actions(listener, default_target)
+
     rules = define_listener_rules_actions(listener, left_services)
     return rules
 
@@ -686,7 +684,8 @@ class ComposeListener(Listener):
             self.DefaultActions = define_actions(self, self.services[0])
         elif not self.default_actions and self.services and len(self.services) > 1:
             LOG.warning(
-                "No default actions defined and more than one service defined."
+                f"{self.title} - "
+                "No default actions defined and more than one service defined. "
                 "If one of the access path is / it will be used as default"
             )
             rules = handle_non_default_services(self, self.services)
@@ -903,7 +902,6 @@ class Elbv2(NetworkXResource):
         :param ecs_composex.common.settings.ComposeXSettings settings:
         :return:
         """
-        the_right_service = None
         if not self.services:
             LOG.debug(f"{self.module_name}.{self.name} No Services defined.")
             return
@@ -919,34 +917,34 @@ class Elbv2(NetworkXResource):
                     f"{self.module_name}.{self.name} - Service family {family_name} is invalid. Defined families",
                     settings.families.keys(),
                 )
-            for f_service in settings.families[family_name].services:
+            for f_service in settings.families[family_name].ordered_services:
                 if f_service.name == service_name:
-                    the_right_service = f_service
+                    if (
+                        f_service in settings.services
+                        and f_service not in self.families_targets
+                    ):
+                        self.families_targets.append(
+                            (
+                                f_service.my_family,
+                                f_service,
+                                service_def,
+                                f"{service_def['name']}{service_def['port']}",
+                            )
+                        )
+                    elif f_service not in settings.services:
+                        raise ValueError(
+                            f"{self.module_name}.{self.name} Please, use only the services names."
+                            "You cannot use the family name defined by deploy labels"
+                            f"Found {f_service}",
+                            [s for s in settings.services],
+                            [f for f in settings.families],
+                        )
                     break
-            if not the_right_service:
+            else:
                 raise ValueError(
                     f"{self.module_name}.{self.name} - Could not find {service_name} in family {family_name}"
                 )
-            if (
-                the_right_service in settings.services
-                and the_right_service not in self.families_targets
-            ):
-                self.families_targets.append(
-                    (
-                        the_right_service.my_family,
-                        the_right_service,
-                        service_def,
-                        f"{service_def['name']}{service_def['port']}",
-                    )
-                )
-            elif the_right_service not in settings.services:
-                raise ValueError(
-                    f"{self.module_name}.{self.name} Please, use only the services names."
-                    "You cannot use the family name defined by deploy labels"
-                    f"Found {the_right_service}",
-                    [s for s in settings.services],
-                    [f for f in settings.families],
-                )
+
         self.debug_families_targets()
 
     def validate_services(self):

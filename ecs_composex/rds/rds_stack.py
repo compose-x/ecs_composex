@@ -14,12 +14,12 @@ from troposphere.rds import DBInstance as CfnDBInstance
 
 from ecs_composex.common import build_template, setup_logging
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.compose.x_resources import (
-    DatabaseXResource,
+from ecs_composex.compose.x_resources.helpers import (
     set_lookup_resources,
     set_new_resources,
     set_resources,
 )
+from ecs_composex.compose.x_resources.network_x_resources import DatabaseXResource
 from ecs_composex.iam.import_sam_policies import get_access_types
 from ecs_composex.rds.rds_features import apply_extra_parameters
 from ecs_composex.rds.rds_params import (

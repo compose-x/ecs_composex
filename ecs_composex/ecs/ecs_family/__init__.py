@@ -65,7 +65,7 @@ class ComposeFamily(object):
 
     def __init__(self, services, family_name):
         self.services = services
-        self.ordered_services = []
+        self.ordered_services = services
         self.managed_sidecars = []
         self.name = family_name
         self.logical_name = re.sub(r"[^a-zA-Z0-9]+", "", family_name)

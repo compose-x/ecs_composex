@@ -442,19 +442,24 @@ def define_service_target_group(
     props["TargetType"] = "ip"
     import_target_group_attributes(props, target_definition, resource, service)
     validate_props_and_service_definition(props, service)
+    target_group_name = f"Tgt{resource.logical_name}{family.logical_name}{service.logical_name}{props['Port']}"
     target_group = ComposeTargetGroup(
-        f"Tgt{resource.logical_name}{family.logical_name}{service.logical_name}{props['Port']}",
+        target_group_name,
         elbv2=resource,
         family=family,
         stack=resource.stack,
         VpcId=Ref(VPC_ID),
         **props,
     )
+    if target_group.title not in resources_root_stack.stack_template.resources:
+        resources_root_stack.stack_template.add_resource(target_group)
+    else:
+        target_group = resources_root_stack.stack_template.resources[target_group.title]
     target_group.init_outputs()
     target_group.generate_outputs()
-    resources_root_stack.stack_template.add_resource(target_group)
-    resources_root_stack.stack_template.add_output(target_group.outputs)
-    family.target_groups.append(target_group)
+    add_outputs(resources_root_stack.stack_template, target_group.outputs)
+    if target_group not in family.target_groups:
+        family.target_groups.append(target_group)
     tgt_parameter = target_group.attributes_outputs[TGT_GROUP_ARN]["ImportParameter"]
     add_parameters(family.template, [tgt_parameter])
     family.stack_parameters.update(
@@ -496,7 +501,7 @@ def define_service_target_group_definition(
     if resource.logical_name not in family.stack.DependsOn:
         family.stack.DependsOn.append(resources_root_stack.title)
         LOG.info(
-            f"{resource.module_name}.{resource.name} - Added {family.logical_name} {service.name}"
+            f"{resource.module_name}.{resource.name} - Adding {family.logical_name} {service.name}"
         )
 
     service_tgt_group = define_service_target_group(
