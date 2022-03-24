@@ -2,7 +2,7 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  Copyright 2020-2022 John Mille <john@compose-x.io>
 
-import random
+import secrets
 import string
 
 from compose_x_common.compose_x_common import keyisset, keypresent
@@ -126,7 +126,7 @@ def generate_alarm_scaling_out_policy(
     length = 6
     if not scaling_source:
         scaling_source = "".join(
-            random.choice(string.ascii_lowercase) for _ in range(length)
+            secrets.choice(string.ascii_lowercase) for _ in range(length)
         )
     scalable_target = service_template.resources[SERVICE_SCALING_TARGET]
     step_adjustments = generate_scaling_out_steps(
@@ -166,7 +166,7 @@ def reset_to_zero_policy(
     length = 6
     if not scaling_source:
         scaling_source = "".join(
-            random.choice(string.ascii_lowercase) for _ in range(length)
+            secrets.choice(string.ascii_lowercase) for _ in range(length)
         )
     policy = ScalingPolicy(
         f"ScalingInPolicy{scaling_source}{service_name}",
