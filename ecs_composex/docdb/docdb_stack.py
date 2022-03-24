@@ -15,13 +15,13 @@ from troposphere.docdb import DBCluster as CfnDBCluster
 
 from ecs_composex.common import setup_logging
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.compose.x_resources import (
-    DatabaseXResource,
+from ecs_composex.compose.x_resources.helpers import (
     set_lookup_resources,
     set_new_resources,
     set_resources,
     set_use_resources,
 )
+from ecs_composex.compose.x_resources.network_x_resources import DatabaseXResource
 from ecs_composex.docdb.docdb_params import (
     DOCDB_ID,
     DOCDB_NAME,

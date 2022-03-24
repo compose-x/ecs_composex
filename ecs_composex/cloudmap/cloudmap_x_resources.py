@@ -27,7 +27,7 @@ def process_dns_config(
     Process the DnsSettings of the x-cloudmap configuration
 
     :param ecs_composex.cloudmap.cloudmap_stack.PrivateNamespace namespace:
-    :param ecs_composex.compose.x_resources.DatabaseXResource resource:
+    :param ecs_composex.compose.x_resources.network_x_resources.DatabaseXResource resource:
     :param dict dns_settings:
     :param ecs_composex.common.settings.ComposeXSettings settings:
     :param troposphere.servicediscovery.Service service:

@@ -56,7 +56,7 @@ def define_family_runtime_parameters(family) -> None:
     """
     Based on the services x-ecs. Configuration, allows to change the TaskDefinition Runtime configuration
     """
-    for svc in family.services:
+    for svc in family.ordered_services:
         define_family_runtime_cpu_arch(family, svc)
         define_family_runtime_os_family(family, svc)
 

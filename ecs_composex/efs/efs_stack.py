@@ -13,13 +13,13 @@ from troposphere.efs import FileSystem, MountTarget
 
 from ecs_composex.common import build_template
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.compose.x_resources import (
-    NetworkXResource,
+from ecs_composex.compose.x_resources.helpers import (
     set_lookup_resources,
     set_new_resources,
     set_resources,
     set_use_resources,
 )
+from ecs_composex.compose.x_resources.network_x_resources import NetworkXResource
 from ecs_composex.efs.efs_params import (
     FS_ARN,
     FS_ID,

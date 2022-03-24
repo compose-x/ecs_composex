@@ -15,15 +15,15 @@ from troposphere.route53 import HostedZone as CfnHostedZone
 from ecs_composex.acm.acm_stack import Certificate
 from ecs_composex.common import add_update_mapping, build_template, setup_logging
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.compose.x_resources import (
-    AwsEnvironmentResource,
+from ecs_composex.elbv2.elbv2_stack import Elbv2
+
+from ..compose.x_resources.environment_x_resources import AwsEnvironmentResource
+from ..compose.x_resources.helpers import (
     set_lookup_resources,
     set_new_resources,
     set_resources,
     set_use_resources,
 )
-from ecs_composex.elbv2.elbv2_stack import Elbv2
-
 from .route53_acm import handle_acm_records
 from .route53_elbv2 import handle_elbv2_records
 from .route53_params import (

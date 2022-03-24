@@ -57,7 +57,7 @@ def lookup_rds_secret(rds_resource, secret_lookup):
     """
     Lookup RDS DB Secret specified
 
-    :param ecs_composex.compose.x_resources.DatabaseXResource rds_resource:
+    :param ecs_composex.compose.x_resources.network_x_resources.DatabaseXResource rds_resource:
     :param secret_lookup:
     :return:
     """
@@ -354,7 +354,7 @@ def handle_db_secret_to_services(db, secret_import, target) -> None:
     """
     Maps DB Secret to ECS Service containers. It however won't expose the secret to an AWS SideCar (i.e. x-ray).
 
-    :param ecs_composex.compose.x_resources.DatabaseXResource db: The DB we want to expose the secret for.
+    :param ecs_composex.compose.x_resources.network_x_resources.DatabaseXResource db: The DB we want to expose the secret for.
     :param troposphere.AWSHelperFn secret_import: The pointer to the Secret
     :param tuple target: The family target
     """

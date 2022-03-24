@@ -19,7 +19,10 @@ from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.ecs_composex import X_AWS_KEY, X_KEY
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common.tagging import add_all_tags
-from ecs_composex.compose.x_resources import AwsEnvironmentResource, ServicesXResource
+from ecs_composex.compose.x_resources.environment_x_resources import (
+    AwsEnvironmentResource,
+)
+from ecs_composex.compose.x_resources.services_resources import ServicesXResource
 from ecs_composex.dashboards.dashboards_stack import XStack as DashboardsStack
 from ecs_composex.ecs.ecs_cluster import add_ecs_cluster
 from ecs_composex.ecs.ecs_cluster.helpers import set_ecs_cluster_identifier

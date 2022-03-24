@@ -7,12 +7,12 @@ from troposphere import AWS_ACCOUNT_ID, AWS_PARTITION, GetAtt, Ref, Sub
 
 from ecs_composex.common import build_template
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.compose.x_resources import (
-    DatabaseXResource,
+from ecs_composex.compose.x_resources.helpers import (
     set_lookup_resources,
     set_new_resources,
     set_resources,
 )
+from ecs_composex.compose.x_resources.network_x_resources import DatabaseXResource
 from ecs_composex.iam.import_sam_policies import get_access_types
 from ecs_composex.opensearch.opensearch_aws import create_opensearch_mappings
 from ecs_composex.opensearch.opensearch_params import (

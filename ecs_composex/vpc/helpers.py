@@ -4,7 +4,7 @@
 
 
 from ecs_composex.common import LOG, add_update_mapping
-from ecs_composex.compose.x_resources import NetworkXResource
+from ecs_composex.compose.x_resources.network_x_resources import NetworkXResource
 
 
 def update_network_resources_vpc_config(settings, vpc_stack):
