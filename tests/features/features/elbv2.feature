@@ -28,12 +28,12 @@ Feature: ecs_composex.elbv2
             | use-cases/blog.features.yml | use-cases/elbv2/create_only_with_oidc.yml   |
             | use-cases/blog.features.yml | use-cases/elbv2/create_only_with_record.yml |
             | use-cases/blog.features.yml | use-cases/elbv2/create_only_with_alarms.yml |
-
-    @elbv2 @alarms
-    Scenario Outline: ELBv2 with alarms mis-configured
-        Given I use <file_path> as my docker-compose file and <override_file> as override file
-        Then I render the docker-compose expecting an error
-
-        Examples:
-            | file_path                   | override_file                                                |
-            | use-cases/blog.features.yml | use-cases/elbv2/negative-testing/create_only_with_alarms.yml |
+#
+#    @elbv2 @alarms
+#    Scenario Outline: ELBv2 with alarms mis-configured
+#        Given I use <file_path> as my docker-compose file and <override_file> as override file
+#        Then I render the docker-compose expecting an error
+#
+#        Examples:
+#            | file_path                   | override_file                                                |
+#            | use-cases/blog.features.yml | use-cases/elbv2/negative-testing/create_only_with_alarms.yml |
