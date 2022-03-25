@@ -4,22 +4,14 @@
 
 from troposphere import AWS_NO_VALUE, GetAtt, Parameter, Ref, Sub, appmesh
 from troposphere.ec2 import SecurityGroupIngress
-from troposphere.ecs import (
-    ContainerDefinition,
-    Environment,
-    HealthCheck,
-    LogConfiguration,
-    PortMapping,
-    ProxyConfiguration,
-    Ulimit,
-)
-from troposphere.iam import PolicyType
+from troposphere.ecs import Environment, ProxyConfiguration
 
 from ecs_composex.appmesh import appmesh_conditions, appmesh_params, metadata
 from ecs_composex.appmesh.appmesh_params import BACKENDS_KEY, NAME_KEY
 from ecs_composex.common import LOG, add_parameters
 from ecs_composex.compose.compose_services.helpers import extend_container_envvars
 from ecs_composex.ecs import ecs_params
+from ecs_composex.ecs.managed_sidecars import ManagedSidecar
 
 
 class MeshNode(object):
@@ -48,7 +40,6 @@ class MeshNode(object):
         self.set_listeners_port_mappings()
         self.extend_service_stack(mesh)
         self.add_envoy_container_definition(family)
-        self.extend_task_policy(family)
 
     def set_port_mappings(self):
         """
@@ -129,56 +120,6 @@ class MeshNode(object):
         """
         Method to expand the containers configuration and add the Envoy SideCar.
         """
-        envoy_container_name = "envoy"
-        task = family.task_definition
-        envoy_port_mapping = [
-            PortMapping(ContainerPort=15000, HostPort=15000),
-            PortMapping(ContainerPort=15001, HostPort=15001),
-        ]
-        envoy_environment = [
-            Environment(
-                Name="APPMESH_VIRTUAL_NODE_NAME",
-                Value=Sub(
-                    f"mesh/${{{appmesh_params.MESH_NAME.title}}}/virtualNode/${{{self.node.title}.VirtualNodeName}}"
-                ),
-            ),
-            Environment(
-                Name="ENABLE_ENVOY_XRAY_TRACING",
-                Value="1" if family.use_xray else "0",
-            ),
-            Environment(Name="ENABLE_ENVOY_STATS_TAGS", Value="1"),
-        ]
-        envoy_log_config = LogConfiguration(
-            LogDriver="awslogs",
-            Options={
-                "awslogs-group": Ref(ecs_params.LOG_GROUP_T),
-                "awslogs-region": Ref("AWS::Region"),
-                "awslogs-stream-prefix": envoy_container_name,
-            },
-        )
-        family.template.add_parameter(appmesh_params.ENVOY_IMAGE_URL)
-        envoy_container = ContainerDefinition(
-            Image=Ref(appmesh_params.ENVOY_IMAGE_URL),
-            Name=envoy_container_name,
-            Cpu=128,
-            Memory=256,
-            User="1337",
-            Essential=True,
-            LogConfiguration=envoy_log_config,
-            Environment=envoy_environment,
-            PortMappings=envoy_port_mapping,
-            Ulimits=[Ulimit(HardLimit=15000, SoftLimit=15000, Name="nofile")],
-            HealthCheck=HealthCheck(
-                Command=[
-                    "CMD-SHELL",
-                    "curl -s http://localhost:9901/server_info | grep state | grep -q LIVE",
-                ],
-                Interval=5,
-                Timeout=2,
-                Retries=3,
-                StartPeriod=10,
-            ),
-        )
         proxy_config = ProxyConfiguration(
             ContainerName="envoy",
             Type="APPMESH",
@@ -201,43 +142,72 @@ class MeshNode(object):
                 ),
             ],
         )
-        task.ContainerDefinitions.append(envoy_container)
-        setattr(family.task_definition, "ProxyConfiguration", proxy_config)
-        family.refresh()
 
-    def extend_task_policy(self, family):
-        """
-        Method to add a policy for AppMesh Access
-        """
-        policy = PolicyType(
-            "AppMeshAccess",
-            PolicyName="AppMeshAccess",
-            PolicyDocument={
-                "Version": "2012-10-17",
-                "Statement": [
-                    {
-                        "Sid": "AppMeshAccess",
-                        "Effect": "Allow",
-                        "Action": ["appmesh:StreamAggregatedResources"],
-                        "Resource": ["*"],
-                    },
-                    {
-                        "Sid": "ServiceDiscoveryAccess",
-                        "Effect": "Allow",
-                        "Action": [
-                            "servicediscovery:Get*",
-                            "servicediscovery:Describe*",
-                            "servicediscovery:List*",
-                            "servicediscovery:DiscoverInstances*",
-                        ],
-                        "Resource": "*",
-                    },
+        envoy_service = ManagedSidecar(
+            "envoy",
+            {
+                "image": "public.ecr.aws/appmesh/aws-appmesh-envoy:v1.21.1.1-prod",
+                "user": "1337",
+                "deploy": {"resources": {"limits": {"cpus": 0.125, "memory": "256MB"}}},
+                "environment": {
+                    "ENABLE_ENVOY_XRAY_TRACING": 0,
+                },
+                "ports": [
+                    {"target": 15000, "published": 15000, "protocol": "tcp"},
+                    {"target": 15001, "published": 15001, "protocol": "tcp"},
                 ],
+                "healthcheck": {
+                    "test": [
+                        "CMD-SHELL",
+                        "curl -s http://localhost:9901/server_info | grep state | grep -q LIVE",
+                    ],
+                    "interval": "5s",
+                    "timeout": "2s",
+                    "retries": 3,
+                    "start_period": 10,
+                },
+                "ulimits": {"nofile": {"soft": 15000, "hard": 15000}},
+                "x-iam": {
+                    "Policies": [
+                        {
+                            "PolicyName": "AppMeshAccess",
+                            "PolicyDocument": {
+                                "Version": "2012-10-17",
+                                "Statement": [
+                                    {
+                                        "Sid": "AppMeshAccess",
+                                        "Effect": "Allow",
+                                        "Action": ["appmesh:StreamAggregatedResources"],
+                                        "Resource": ["*"],
+                                    },
+                                    {
+                                        "Sid": "ServiceDiscoveryAccess",
+                                        "Effect": "Allow",
+                                        "Action": [
+                                            "servicediscovery:Get*",
+                                            "servicediscovery:Describe*",
+                                            "servicediscovery:List*",
+                                            "servicediscovery:DiscoverInstances*",
+                                        ],
+                                        "Resource": "*",
+                                    },
+                                ],
+                            },
+                        }
+                    ]
+                },
             },
-            Roles=[family.iam_manager.task_role.name],
         )
-        if policy.title not in family.template.resources:
-            family.template.add_resource(policy)
+        envoy_service.container_definition.Environment.append(
+            Environment(
+                Name="APPMESH_VIRTUAL_NODE_NAME",
+                Value=Sub(
+                    f"mesh/${{{appmesh_params.MESH_NAME.title}}}/virtualNode/${{{self.node.title}.VirtualNodeName}}"
+                ),
+            )
+        )
+        family.add_managed_sidecar(envoy_service)
+        setattr(family.task_definition, "ProxyConfiguration", proxy_config)
 
     def expand_backends(self, root_stack, services):
         """

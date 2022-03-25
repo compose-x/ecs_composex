@@ -7,13 +7,6 @@
 Simple class to manage AWS XRay sidecar
 """
 
-from __future__ import annotations
-
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    pass
-
 from ecs_composex.common.cfn_params import Parameter
 
 from . import ManagedSidecar
@@ -32,6 +25,5 @@ CW_AGENT_DEFINITION = {
     },
     "labels": {"container_name": "cw-agent"},
 }
-
 
 CW_AGENT_SERVICE = ManagedSidecar(CW_AGENT_NAME, CW_AGENT_DEFINITION)

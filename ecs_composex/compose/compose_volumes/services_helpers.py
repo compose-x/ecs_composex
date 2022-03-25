@@ -2,6 +2,15 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  Copyright 2020-2022 John Mille <john@compose-x.io>
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ecs_composex.common.settings import ComposeXSettings
+    from ecs_composex.compose.compose_services import ComposeService
+    from ecs_composex.ecs.ecs_family import ComposeFamily
+
 import re
 from uuid import uuid4
 
@@ -12,7 +21,9 @@ from ecs_composex.common import LOG
 from . import ComposeVolume
 
 
-def match_volumes_services_config(service, vol_config, volumes):
+def match_volumes_services_config(
+    service: ComposeService, vol_config: dict, volumes: list
+):
     """
     Function to map volume config in services and top-level volumes
 
@@ -42,7 +53,7 @@ def match_volumes_services_config(service, vol_config, volumes):
     )
 
 
-def handle_volume_str_config(service, config, volumes):
+def handle_volume_str_config(service: ComposeService, config: str, volumes: list):
     """
     Function to return the volume configuration (long)
     :param ComposeService service:
@@ -75,7 +86,7 @@ def handle_volume_str_config(service, config, volumes):
     match_volumes_services_config(service, volume_config, volumes)
 
 
-def is_tmpfs(config):
+def is_tmpfs(config: dict) -> bool:
     """
     Function to identify whether the volume defined is tmpfs
 
@@ -90,7 +101,7 @@ def is_tmpfs(config):
     return False
 
 
-def handle_volume_dict_config(service, config, volumes):
+def handle_volume_dict_config(service: ComposeService, config: dict, volumes: list):
     """
     :param ComposeService service:
     :param dict config:
@@ -110,7 +121,29 @@ def handle_volume_dict_config(service, config, volumes):
         match_volumes_services_config(service, volume_config, volumes)
 
 
-def map_volumes(service, volumes=None) -> None:
+def handle_tmpfs(service: ComposeService, volume: dict) -> None:
+    """
+    Detect whether the volume is tmpfs and therefore validates further input
+
+    :param service:
+    :param volume:
+    """
+    tmpfs_def = {}
+    if not keyisset("target", volume):
+        raise KeyError(
+            f"{service.name}.volumes - When defining tmpfs as volume, you must define a target"
+        )
+    tmpfs_def["ContainerPath"] = volume["target"]
+    if (
+        keyisset("tmpfs", volume)
+        and isinstance(volume["tmpfs"], dict)
+        and keyisset("size", volume["tmpfs"])
+    ):
+        tmpfs_def["Size"] = int(volume["tmpfs"]["size"])
+    service.tmpfses.append(tmpfs_def)
+
+
+def map_volumes(service: ComposeService, volumes: list = None) -> None:
     """
     Method to apply mapping of volumes to the service and define the mapping configuration
 
@@ -124,19 +157,7 @@ def map_volumes(service, volumes=None) -> None:
                 and (keyisset("type", s_volume) and s_volume["type"] == "tmpfs")
                 or keyisset("tmpfs", s_volume)
             ):
-                tmpfs_def = {}
-                if not keyisset("target", s_volume):
-                    raise KeyError(
-                        f"{service.name}.volumes - When defining tmpfs as volume, you must define a target"
-                    )
-                tmpfs_def["ContainerPath"] = s_volume["target"]
-                if (
-                    keyisset("tmpfs", s_volume)
-                    and isinstance(s_volume["tmpfs"], dict)
-                    and keyisset("size", s_volume["tmpfs"])
-                ):
-                    tmpfs_def["Size"] = int(s_volume["tmpfs"]["size"])
-                service.tmpfses.append(tmpfs_def)
+                handle_tmpfs(service, s_volume)
             else:
                 if not volumes:
                     continue

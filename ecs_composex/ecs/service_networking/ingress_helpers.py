@@ -2,14 +2,24 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  Copyright 2020-2022 John Mille <john@compose-x.io>
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ecs_composex.ecs.ecs_family import ComposeFamily
+    from ecs_composex.common.settings import ComposeXSettings
+    from ecs_composex.common.stacks import ComposeXStack
+
 from json import dumps
 
 from compose_x_common.compose_x_common import keyisset, keypresent, set_else_none
-from troposphere import AWS_ACCOUNT_ID, GetAtt, Parameter, Ref, Sub
+from troposphere import AWS_ACCOUNT_ID, GetAtt, Ref, Sub
 from troposphere.ec2 import SecurityGroupIngress
 
 from ecs_composex.cloudmap.cloudmap_params import RES_KEY as CLOUDMAP_KEY
 from ecs_composex.common import LOG, add_parameters
+from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.ecs.ecs_params import SERVICE_NAME_T
 from ecs_composex.ingress_settings import Ingress
 from ecs_composex.vpc.vpc_params import SG_ID_TYPE
@@ -102,7 +112,7 @@ def merge_family_network_setting(
             network_config[CLOUDMAP_KEY] = network[CLOUDMAP_KEY]
 
 
-def merge_family_services_networking(family) -> dict:
+def merge_family_services_networking(family: ComposeFamily) -> dict:
     """
     Merge the different services network configuration definitions
 
@@ -130,7 +140,9 @@ def merge_family_services_networking(family) -> dict:
     return network_config
 
 
-def add_independent_rules(dst_family, service_name: str, root_stack) -> None:
+def add_independent_rules(
+    dst_family: ComposeFamily, service_name: str, root_stack: ComposeXStack
+) -> None:
     """
     Adds security groups rules in the root stack as both services need to be created (with their SG)
     before the ingress rule can be defined.
@@ -172,7 +184,41 @@ def add_independent_rules(dst_family, service_name: str, root_stack) -> None:
             root_stack.stack_template.add_resource(ingress_rule)
 
 
-def set_compose_services_ingress(root_stack, dst_family, families, settings) -> None:
+def add_dependant_ingress_rules(
+    dst_family: ComposeFamily, dst_family_sg_param: Parameter, src_family: ComposeFamily
+) -> None:
+    for port in dst_family.service_networking.ports:
+        target_port = set_else_none(
+            "published", port, alt_value=set_else_none("target", port, None)
+        )
+        if target_port is None:
+            raise ValueError(
+                "Wrong port definition value for security group ingress", port
+            )
+        common_args = {
+            "FromPort": target_port,
+            "ToPort": target_port,
+            "IpProtocol": port["protocol"],
+            "SourceSecurityGroupOwnerId": Ref(AWS_ACCOUNT_ID),
+            "Description": Sub(
+                f"From ${{{SERVICE_NAME_T}}} to {dst_family.stack.title} on port {target_port}"
+            ),
+        }
+        src_family.template.add_resource(
+            SecurityGroupIngress(
+                f"From{src_family.logical_name}To{dst_family.stack.title}On{target_port}",
+                SourceSecurityGroupId=GetAtt(
+                    src_family.service_networking.security_group, "GroupId"
+                ),
+                GroupId=Ref(dst_family_sg_param),
+                **common_args,
+            )
+        )
+
+
+def set_compose_services_ingress(
+    root_stack, dst_family: ComposeFamily, families: list, settings: ComposeXSettings
+) -> None:
     """
     Function to crate SG Ingress between two families / services.
     Presently, the ingress rules are set after all services have been created
@@ -207,36 +253,12 @@ def set_compose_services_ingress(root_stack, dst_family, families, settings) -> 
                     ),
                 }
             )
-            for port in dst_family.service_networking.ports:
-                target_port = set_else_none(
-                    "published", port, alt_value=set_else_none("target", port, None)
-                )
-                if target_port is None:
-                    raise ValueError(
-                        "Wrong port definition value for security group ingress", port
-                    )
-                common_args = {
-                    "FromPort": target_port,
-                    "ToPort": target_port,
-                    "IpProtocol": port["protocol"],
-                    "SourceSecurityGroupOwnerId": Ref(AWS_ACCOUNT_ID),
-                    "Description": Sub(
-                        f"From ${{{SERVICE_NAME_T}}} to {dst_family.stack.title} on port {target_port}"
-                    ),
-                }
-                src_family.template.add_resource(
-                    SecurityGroupIngress(
-                        f"From{src_family.logical_name}To{dst_family.stack.title}On{target_port}",
-                        SourceSecurityGroupId=GetAtt(
-                            src_family.service_networking.security_group, "GroupId"
-                        ),
-                        GroupId=Ref(dst_family_sg_param),
-                        **common_args,
-                    )
-                )
+            add_dependant_ingress_rules(dst_family, dst_family_sg_param, src_family)
 
 
-def handle_str_cloudmap_config(family, family_mappings, cloudmap_config, ports) -> None:
+def handle_str_cloudmap_config(
+    family: ComposeFamily, family_mappings: dict, cloudmap_config: str, ports: list
+) -> None:
     """
     Handle cloudmap config when config is set as str
 
@@ -255,7 +277,7 @@ def handle_str_cloudmap_config(family, family_mappings, cloudmap_config, ports) 
 
 
 def handle_dict_cloudmap_config(
-    family, family_mappings, cloudmap_config, ports
+    family: ComposeFamily, family_mappings: dict, cloudmap_config: dict, ports: list
 ) -> None:
     """
     Handles cloudmap config settings when set as a mapping/dict
@@ -281,7 +303,7 @@ def handle_dict_cloudmap_config(
                 family_mappings[map_name] = ports[0]
 
 
-def merge_cloudmap_settings(family, ports) -> dict:
+def merge_cloudmap_settings(family: ComposeFamily, ports: list) -> dict:
     """
     Function to merge the x_cloudmap from the service
 

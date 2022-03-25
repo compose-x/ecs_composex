@@ -7,13 +7,6 @@
 Simple class to manage AWS XRay sidecar
 """
 
-from __future__ import annotations
-
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    pass
-
 from ecs_composex.common.cfn_params import Parameter
 
 from . import ManagedSidecar

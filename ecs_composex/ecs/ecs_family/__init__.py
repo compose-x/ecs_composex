@@ -303,22 +303,6 @@ class ComposeFamily(object):
             self.set_secrets_access()
         self.task_compute.set_task_compute_parameter()
 
-    def refresh(self):
-        """
-        Refresh the ComposeFamily settings as a result of a change
-        """
-        # from ecs_composex.ecs.service_networking.helpers import set_family_hostname
-        #
-        # self.set_update_containers_priority()
-        # self.service_compute.set_update_launch_type()
-        # self.service_compute.set_update_capacity_providers()
-        # define_family_runtime_parameters(self)
-        # self.iam_manager.init_update_policies()
-        # self.handle_logging()
-        # self.add_containers_images_cfn_parameters()
-        # self.task_compute.set_task_compute_parameter()
-        # set_family_hostname(self)
-
     def finalize_services_networking_settings(self, settings: ComposeXSettings) -> None:
         """
         Final pass on the service network settings

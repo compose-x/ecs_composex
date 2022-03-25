@@ -14,10 +14,10 @@ Class and functions to interact with the volumes: defined in compose files.
 from copy import deepcopy
 
 from compose_x_common.compose_x_common import keyisset
-from troposphere import NoValue
 
 from ecs_composex.common import LOG
-from ecs_composex.efs.efs_params import FS_REGEXP, RES_KEY
+from ecs_composex.efs.efs_params import FS_REGEXP
+from ecs_composex.efs.efs_params import RES_KEY as EFS_KEY
 
 from .helpers import evaluate_plugin_efs_properties
 
@@ -77,45 +77,54 @@ class ComposeVolume(object):
             self.efs_definition = {"Use": self.definition["name"]}
             self.use = self.definition["name"]
         else:
-            if keyisset(RES_KEY, self.definition):
-                self.driver = "nfs"
-                self.type = "bind"
-                self.is_shared = True
-                if keyisset("Lookup", self.efs_definition):
-                    self.lookup = self.efs_definition["Lookup"]
-                elif keyisset("Use", self.efs_definition):
-                    self.use = self.efs_definition["Use"]
-                if not self.use and not self.lookup:
-                    self.efs_definition = (
-                        self.definition[RES_KEY]["Properties"]
-                        if keyisset("Properties", self.efs_definition)
-                        else self.efs_defaults
-                    )
-                    self.parameters = (
-                        self.definition[RES_KEY]["MacroParameters"]
-                        if keyisset("MacroParameters", self.definition[RES_KEY])
-                        else {}
-                    )
-            elif (
-                not keyisset(RES_KEY, self.definition)
-                and keyisset(self.driver_key, self.definition)
-                and not keyisset(self.driver_opts_key, self.definition)
-            ):
-                if self.definition[self.driver_key] == "local":
-                    self.type = "volume"
-                    self.driver = "local"
-                    self.efs_definition = None
-                elif (
-                    self.definition[self.driver_key] == "nfs"
-                    or self.definition[self.driver_key] == "efs"
-                ):
-                    self.type = "bind"
-                    self.is_shared = True
-                    self.driver = "nfs"
-            else:
-                self.type = "volume"
-                self.driver = "local"
-                self.is_shared = False
+            self.import_volume_from_definition()
+
+    def import_volume_from_definition(self):
+        if keyisset(EFS_KEY, self.definition):
+            self.import_from_x_efs_settings()
+        elif (
+            not keyisset(EFS_KEY, self.definition)
+            and keyisset(self.driver_key, self.definition)
+            and not keyisset(self.driver_opts_key, self.definition)
+        ):
+            self.import_local_volume()
+        else:
+            self.type = "volume"
+            self.driver = "local"
+            self.is_shared = False
+
+    def import_from_x_efs_settings(self):
+        self.driver = "nfs"
+        self.type = "bind"
+        self.is_shared = True
+        if keyisset("Lookup", self.efs_definition):
+            self.lookup = self.efs_definition["Lookup"]
+        elif keyisset("Use", self.efs_definition):
+            self.use = self.efs_definition["Use"]
+        if not self.use and not self.lookup:
+            self.efs_definition = (
+                self.definition[EFS_KEY]["Properties"]
+                if keyisset("Properties", self.efs_definition)
+                else self.efs_defaults
+            )
+            self.parameters = (
+                self.definition[EFS_KEY]["MacroParameters"]
+                if keyisset("MacroParameters", self.definition[EFS_KEY])
+                else {}
+            )
+
+    def import_local_volume(self):
+        if self.definition[self.driver_key] == "local":
+            self.type = "volume"
+            self.driver = "local"
+            self.efs_definition = None
+        elif (
+            self.definition[self.driver_key] == "nfs"
+            or self.definition[self.driver_key] == "efs"
+        ):
+            self.type = "bind"
+            self.is_shared = True
+            self.driver = "nfs"
 
     def __repr__(self):
         return self.name
