@@ -264,6 +264,8 @@ class ComposeFamily(object):
         self.services.append(service)
 
         self.set_update_containers_priority()
+        self.iam_manager.init_update_policies()
+        self.handle_logging()
 
         self.service_compute.set_update_launch_type()
         self.service_compute.set_update_capacity_providers()
@@ -301,6 +303,11 @@ class ComposeFamily(object):
                 service.container_definition
             )
             self.set_secrets_access()
+        self.iam_manager.init_update_policies()
+        self.handle_logging()
+
+        self.service_compute.set_update_launch_type()
+        self.service_compute.set_update_capacity_providers()
         self.task_compute.set_task_compute_parameter()
 
     def finalize_services_networking_settings(self, settings: ComposeXSettings) -> None:
