@@ -86,7 +86,7 @@ def set_memory_to_mb(value):
     :param value: the string value
     :rtype: int or Ref(AWS_NO_VALUE)
     """
-    b_pat = re.compile(r"(^[0-9.]+(b|B)$)")
+    b_pat = re.compile(r"(^[0-9.]+[bB]$)")
     kb_pat = re.compile(r"(^[0-9.]+(k|kb|kB|Kb|K|KB)$)")
     mb_pat = re.compile(r"(^[0-9.]+(m|mb|mB|Mb|M|MB)$)")
     gb_pat = re.compile(r"(^[0-9.]+(g|gb|gB|Gb|G|GB)$)")

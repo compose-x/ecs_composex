@@ -51,16 +51,10 @@ def handle_multi_services(sidecar_used_memory: int, family: ComposeFamily) -> No
     """
     essential_containers = []
     containers_used_ram = 0
-    containers_used_cpu = 0
     for service in family.ordered_services:
         if service.container_definition.Essential is True:
             essential_containers.append(service.container_definition)
         else:
-            containers_used_cpu += (
-                0
-                if not isinstance(service.container_definition.Cpu, int)
-                else service.container_definition.Cpu
-            )
             containers_used_ram += (
                 0
                 if not isinstance(service.container_definition.Memory, int)
@@ -91,11 +85,8 @@ def unlock_compute_for_main_container(family: ComposeFamily) -> None:
             0, family, family.ordered_services[0].container_definition
         )
         return
-    sidecar_used_cpus = 0
     sidecar_used_memory = 0
     for _svc in family.managed_sidecars:
-        if isinstance(_svc.container_definition.Cpu, int):
-            sidecar_used_cpus += _svc.container_definition.Cpu
         if isinstance(_svc.container_definition.Memory, int):
             sidecar_used_memory += _svc.container_definition.Memory
 

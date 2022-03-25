@@ -41,9 +41,28 @@ def set_enable_execute_command(family):
                 )
 
 
+def expand_policy_roles(role_stack, policy_title, task_role) -> None:
+    """
+    Adds the task role to the policy when the policy already exists
+
+    :param role_stack:
+    :param str policy_title:
+    :param task_role:
+    """
+    policy = role_stack.stack_template.resources[policy_title]
+    if hasattr(policy, "Roles"):
+        roles = getattr(policy, "Roles")
+        if roles:
+            for role in roles:
+                if isinstance(role, Ref) and role.data["Ref"] != task_role.data["Ref"]:
+                    roles.append(task_role)
+    else:
+        setattr(policy, "Roles", [task_role])
+
+
 def apply_ecs_execute_command_permissions(family, settings):
     """
-    Method to set the IAM Policies in place to allow ECS Execute SSM and Logging
+    Set the IAM Policies in place to allow ECS Execute SSM and Logging
 
     :param settings:
     :return:
@@ -75,19 +94,8 @@ def apply_ecs_execute_command_permissions(family, settings):
             )
         )
         set_ecs_cluster_logging_access(settings, policy, role_stack)
-    elif policy_title in role_stack.stack_template.resources:
-        policy = role_stack.stack_template.resources[policy_title]
-        if hasattr(policy, "Roles"):
-            roles = getattr(policy, "Roles")
-            if roles:
-                for role in roles:
-                    if (
-                        isinstance(role, Ref)
-                        and role.data["Ref"] != task_role.data["Ref"]
-                    ):
-                        roles.append(task_role)
-        else:
-            setattr(policy, "Roles", [task_role])
+    else:
+        expand_policy_roles(role_stack, policy_title, task_role)
     setattr(
         family.ecs_service.ecs_service,
         "EnableExecuteCommand",

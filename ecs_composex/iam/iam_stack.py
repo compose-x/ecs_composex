@@ -16,7 +16,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    pass
+    from ecs_composex.common.settings import ComposeXSettings
 
 from ecs_composex.common import add_outputs, add_parameters, build_template
 from ecs_composex.common.stacks import ComposeXStack
@@ -30,7 +30,7 @@ class XStack(ComposeXStack):
     Class to represent the IAM top stack
     """
 
-    def __init__(self, name, settings, **kwargs):
+    def __init__(self, name: str, settings: ComposeXSettings, **kwargs):
         stack_template = build_template("Root stack for IAM Roles")
         add_parameters(stack_template, [CLUSTER_NAME])
         super().__init__(name, stack_template, **kwargs)
