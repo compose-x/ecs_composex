@@ -141,9 +141,6 @@ def set_service_ports(ports):
                 }
             )
         elif isinstance(port, dict):
-            valid_keys = ["published", "target", "protocol", "mode"]
-            if not set(port).issubset(valid_keys):
-                raise KeyError("Valid keys are", valid_keys, "got", port.keys())
             service_ports.append(port)
         elif isinstance(port, int):
             service_ports.append(

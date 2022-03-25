@@ -226,7 +226,7 @@ def expand_family_with_efs_volumes(efs_root_stack_title, new_efs, settings):
     fs_id_parameter = new_efs.attributes_outputs[FS_ID]["ImportParameter"]
     fs_id_getatt = new_efs.attributes_outputs[FS_ID]["ImportValue"]
     for target in new_efs.families_targets:
-        if target[0].launch_type == "EXTERNAL":
+        if target[0].service_compute.launch_type == "EXTERNAL":
             LOG.warning(
                 f"x-efs - {target[0].name} - When using EXTERNAL Launch Type, networking settings cannot be set."
             )

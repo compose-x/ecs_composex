@@ -14,7 +14,10 @@ Unrelated to the Task compute settings (RAM/CPU)
 from troposphere import If, NoValue, Ref
 
 from ecs_composex.common import LOG
-from ecs_composex.ecs.ecs_conditions import USE_LAUNCH_TYPE_CON_T
+from ecs_composex.ecs.ecs_conditions import (
+    DISABLE_CAPACITY_PROVIDERS_CON_T,
+    USE_LAUNCH_TYPE_CON_T,
+)
 from ecs_composex.ecs.ecs_params import LAUNCH_TYPE
 
 from .helpers import merge_capacity_providers
@@ -27,7 +30,7 @@ class ServiceCompute(object):
 
     def __init__(self, family):
         self.family = family
-        self._launch_type = "EC2"
+        self._launch_type = None
         self._ecs_capacity_providers = []
 
         self._cfn_launch_type = None
@@ -37,7 +40,7 @@ class ServiceCompute(object):
 
     @property
     def cfn_launch_type(self):
-        return If(USE_LAUNCH_TYPE_CON_T, NoValue, Ref(LAUNCH_TYPE))
+        return If(USE_LAUNCH_TYPE_CON_T, Ref(LAUNCH_TYPE), NoValue)
 
     @property
     def launch_type(self):
@@ -55,7 +58,21 @@ class ServiceCompute(object):
 
     @ecs_capacity_providers.setter
     def ecs_capacity_providers(self, providers):
+        if not isinstance(providers, list):
+            raise TypeError(
+                "ECS Capacity Providers must be a list. Got", providers, type(providers)
+            )
         self._ecs_capacity_providers = providers
+        if self.family.ecs_service and self.family.ecs_service.ecs_service:
+            setattr(
+                self.family.ecs_service.ecs_service,
+                "CapacityProviderStrategy",
+                If(
+                    DISABLE_CAPACITY_PROVIDERS_CON_T,
+                    NoValue,
+                    providers,
+                ),
+            )
 
     def set_update_capacity_providers(self) -> None:
         """
@@ -70,37 +87,20 @@ class ServiceCompute(object):
         Goes over all the services and verifies if one of them is set to use EXTERNAL mode.
         If so, overrides for all
         """
-        if self.launch_type == "EXTERNAL":
-            LOG.debug(f"{self.family.name} is already set to EXTERNAL")
-        for service in self.family.services:
-            if service.launch_type == "EXTERNAL":
+        launch_modes = [
+            _svc.launch_type
+            for _svc in self.family.ordered_services
+            if _svc.launch_type
+        ]
+        modes_priority_ordered = ["EXTERNAL", "EC2", "FARGATE"]
+        for mode in modes_priority_ordered:
+            if mode in launch_modes:
                 LOG.info(
-                    f"{self.family.name} - service {service.name} is set to EXTERNAL. Overriding for all"
+                    f"{self.family.name} - At least one service defined for EXTERNAL. Overriding for all"
                 )
-                self.launch_type = "EXTERNAL"
+                self.launch_type = mode
                 break
-
-    def set_compute_platform(self) -> None:
-        """
-        Iterates over all services and if ecs.compute.platform
-        """
-        if self.launch_type and self.launch_type == "EXTERNAL":
-            return
-        if self.launch_type != self.family.default_launch_type:
+        else:
             LOG.debug(
-                f"{self.family.name} - The compute platform is already overridden to {self.family.launch_type}"
+                f"{self.family.name} - Using default Launch Type - {LAUNCH_TYPE.Default}"
             )
-            for service in self.family.services:
-                setattr(service, "compute_platform", self.family.launch_type)
-        elif not all(
-            service.launch_type == self.family.launch_type
-            for service in self.family.services
-        ):
-            for service in self.family.services:
-                if service.launch_type != self.launch_type:
-                    platform = service.launch_type
-                    LOG.debug(
-                        f"{self.family.name} - At least one service is defined not to be on FARGATE."
-                        f" Overriding to {platform}"
-                    )
-                    self.launch_type = platform

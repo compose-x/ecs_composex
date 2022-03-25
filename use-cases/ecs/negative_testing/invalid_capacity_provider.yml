@@ -1,6 +1,6 @@
 
 x-cluster:
-  Lookup: test
+  Lookup: testing
 
 version: "3.8"
 services:

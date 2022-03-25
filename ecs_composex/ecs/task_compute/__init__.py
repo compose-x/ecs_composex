@@ -13,6 +13,7 @@ from itertools import chain
 
 from troposphere import If, NoValue
 
+from ecs_composex.common import LOG
 from ecs_composex.compose.compose_services.docker_tools import (
     find_closest_fargate_configuration,
 )
@@ -71,6 +72,15 @@ class TaskCompute(object):
     def family_cpu(self):
         return self._raw_cpu
 
+    @property
+    def cfn_family_cpu(self):
+        if self._raw_cpu < 128:
+            LOG.info(
+                f"{self.family.name} - Minimum CPU for task in ECS is 128. Got {self._raw_cpu}. Correcting"
+            )
+            return "128"
+        return str(self._raw_cpu)
+
     @family_cpu.setter
     def family_cpu(self, value: int):
         self._raw_cpu = value
@@ -78,12 +88,16 @@ class TaskCompute(object):
             setattr(
                 self.family.task_definition,
                 "Cpu",
-                If(USE_FARGATE_CON_T, FARGATE_CPU, self._raw_cpu),
+                If(USE_FARGATE_CON_T, FARGATE_CPU, self.cfn_family_cpu),
             )
 
     @property
     def family_ram(self):
         return self._raw_ram
+
+    @property
+    def cfn_family_ram(self):
+        return str(self._raw_ram)
 
     @family_ram.setter
     def family_ram(self, value: int):
@@ -92,7 +106,7 @@ class TaskCompute(object):
             setattr(
                 self.family.task_definition,
                 "Memory",
-                If(USE_FARGATE_CON_T, FARGATE_RAM, self._raw_ram),
+                If(USE_FARGATE_CON_T, FARGATE_RAM, self.cfn_family_ram),
             )
 
     def update_family_fargate(self, cpu, ram):
@@ -101,7 +115,7 @@ class TaskCompute(object):
         )
         if self.family.stack:
             cpu_ram = f"{self.fargate_cpu}!{self.fargate_ram}"
-            self.family.stack_parameters.update({FARGATE_CPU_RAM_CONFIG_T: cpu_ram})
+            self.family.stack.Parameters.update({FARGATE_CPU_RAM_CONFIG_T: cpu_ram})
 
     def set_task_compute_parameter(self):
         """

@@ -3,6 +3,7 @@
 #  Copyright 2020-2022 John Mille <john@compose-x.io>
 
 from compose_x_common.compose_x_common import keypresent, set_else_none
+from troposphere.ecs import CapacityProviderStrategyItem
 
 from ecs_composex.common import LOG
 
@@ -12,7 +13,7 @@ def merge_capacity_providers(service_compute):
     Merge capacity providers set on the services of the task service_compute.family if service is not sidecar
     """
     task_config = {}
-    for svc in service_compute.family.services:
+    for svc in service_compute.family.ordered_services:
         if not svc.capacity_provider_strategy or svc.is_aws_sidecar:
             continue
         for provider in svc.capacity_provider_strategy:
@@ -39,4 +40,6 @@ def merge_capacity_providers(service_compute):
                 f"Deleting Base for {provider['CapacityProvider']}"
             )
         provider["Weight"] = int(max(provider["Weight"]))
-    service_compute.ecs_capacity_providers = list(task_config.values())
+    service_compute.ecs_capacity_providers = [
+        CapacityProviderStrategyItem(**config) for config in task_config.values()
+    ]

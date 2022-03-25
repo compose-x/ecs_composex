@@ -114,7 +114,7 @@ class ComposeService(object):
         self.x_repo_credentials = None
         self.ipc = set_else_none("ipc", self.definition)
         self.import_x_aws_settings()
-        self.networks = {}
+        self.networks = set_else_none("networks", self.definition, {})
         self.replicas = 1
         self.container = None
         self.volumes = []
@@ -147,7 +147,7 @@ class ComposeService(object):
             f"{self.logical_name}ImageUrl", Default=self.image, Type="String"
         )
         self.ecr_config = set_else_none("x-ecr", self.definition, None)
-        self.launch_type = ecs_params.LAUNCH_TYPE.Default
+        self.launch_type = None
         self.container_start_condition = "START"
 
         self.mem_alloc = None
@@ -190,7 +190,7 @@ class ComposeService(object):
         map_secrets(self, secrets)
         self.define_families()
         self.set_container_definition()
-        self.set_networks()
+        self.set_update_networks()
 
     def __repr__(self):
         return self.name
@@ -735,17 +735,15 @@ class ComposeService(object):
                 self.env_files.append(path.abspath(file_path))
         LOG.debug(self.env_files)
 
-    def set_networks(self):
+    def set_update_networks(self):
         """
         Sets / Assigns tne network to use based services.networks
         """
-        if not keyisset("networks", self.definition):
-            return
-        if isinstance(self.definition["networks"], list):
-            for name in self.definition["networks"]:
-                self.networks[name] = None
-        elif isinstance(self.definition["networks"], dict):
-            self.networks.update(self.definition["networks"])
+        if isinstance(self.networks, list):
+            new_definition = {}
+            for name in self.networks:
+                new_definition[name] = {}
+            self.networks = new_definition
 
     def merge_x_aws_role(self, key):
         """

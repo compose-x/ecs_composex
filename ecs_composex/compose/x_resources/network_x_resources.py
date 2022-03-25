@@ -2,6 +2,13 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  Copyright 2020-2022 John Mille <john@compose-x.io>
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ecs_composex.ecs.ecs_family import ComposeFamily
+
 from compose_x_common.compose_x_common import keyisset
 
 from ecs_composex.common import LOG
@@ -71,13 +78,19 @@ class NetworkXResource(ServicesXResource):
         Will automatically remove the target families which are set as external
         """
         for target in self.families_targets:
-            if target[0].launch_type and target[0].launch_type == "EXTERNAL":
+            if (
+                target[0].service_compute
+                and target[0].service_compute.launch_type == "EXTERNAL"
+            ):
                 LOG.info(
                     f"{self.module_name}.{self.name} - Target {target[0].name} - Launch Type not supported (EXTERNAL)"
                 )
                 self.families_targets.remove(target)
         for target in self.families_scaling:
-            if target[0].launch_type and target[0].launch_type == "EXTERNAL":
+            if (
+                target[0].service_compute
+                and target[0].service_compute.launch_type == "EXTERNAL"
+            ):
                 LOG.info(
                     f"{self.module_name}.{self.name} - Target {target[0].name} - Launch Type not supported (EXTERNAL)"
                 )

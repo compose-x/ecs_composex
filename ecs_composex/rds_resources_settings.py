@@ -6,6 +6,20 @@
 Module of functions factorizing common patterns for TCP based access such as RDS, DocumentDB
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Union
+
+if TYPE_CHECKING:
+    from ecs_composex.ecs.ecs_family import ComposeFamily
+    from ecs_composex.common.cfn_params import Parameter
+    from ecs_composex.common.settings import ComposeXSettings
+    from ecs_composex.compose.x_resources.network_x_resources import (
+        NetworkXResource,
+        DatabaseXResource,
+    )
+    from ecs_composex.common.stacks import ComposeXStack
+
 from botocore.exceptions import ClientError
 from compose_x_common.aws import get_account_id
 from compose_x_common.aws.rds import RDS_DB_ID_CLUSTER_ARN_RE
@@ -15,7 +29,7 @@ from troposphere.ec2 import SecurityGroupIngress
 from troposphere.ecs import Secret as EcsSecret
 from troposphere.iam import PolicyType
 
-from ecs_composex.common import LOG, add_parameters, add_update_mapping
+from ecs_composex.common import LOG, add_parameters, add_resource, add_update_mapping
 from ecs_composex.common.aws import find_aws_resource_arn_from_tags_api
 from ecs_composex.compose.compose_services.helpers import extend_container_secrets
 from ecs_composex.ecs.ecs_params import SG_T
@@ -281,7 +295,7 @@ def add_secret_to_container(db, secret_import, service, target):
         extend_container_secrets(service.container_definition, db_secret)
 
 
-def add_security_group_ingress(service_stack, db_name, sg_id, port):
+def add_security_group_ingress(service_stack: ComposeXStack, db_name: str, sg_id, port):
     """
     Function to add a SecurityGroupIngress rule into the ECS Service template
 
@@ -291,20 +305,23 @@ def add_security_group_ingress(service_stack, db_name, sg_id, port):
     :param port: The port for Ingress to the DB.
     """
     service_template = service_stack.stack_template
-    SecurityGroupIngress(
-        f"AllowFrom{service_stack.title}to{db_name}",
-        template=service_template,
-        GroupId=sg_id,
-        FromPort=port,
-        ToPort=port,
-        Description=Sub(f"Allow FROM {service_stack.title} TO {db_name}"),
-        SourceSecurityGroupId=GetAtt(service_template.resources[SG_T], "GroupId"),
-        SourceSecurityGroupOwnerId=Ref("AWS::AccountId"),
-        IpProtocol="6",
+    add_resource(
+        service_template,
+        SecurityGroupIngress(
+            f"AllowFrom{service_stack.title}to{db_name}",
+            template=service_template,
+            GroupId=sg_id,
+            FromPort=port,
+            ToPort=port,
+            Description=Sub(f"Allow FROM {service_stack.title} TO {db_name}"),
+            SourceSecurityGroupId=GetAtt(service_template.resources[SG_T], "GroupId"),
+            SourceSecurityGroupOwnerId=Ref("AWS::AccountId"),
+            IpProtocol="6",
+        ),
     )
 
 
-def generate_rds_secrets_permissions(resources, db_name):
+def generate_rds_secrets_permissions(resources: list, db_name: str) -> dict:
     """
     Function to generate the IAM policy to use for the ECS Execution role to get access to the RDS secrets
     :return:
@@ -318,7 +335,10 @@ def generate_rds_secrets_permissions(resources, db_name):
 
 
 def add_secrets_access_policy(
-    service_family, secret_import, db_name, use_task_role=False
+    service_family: ComposeFamily,
+    secret_import,
+    db_name: str,
+    use_task_role: bool = False,
 ):
     """
     Function to add or append policy to access DB Secret for the Execution Role
@@ -350,7 +370,9 @@ def add_secrets_access_policy(
             policy.Roles.append(task_role)
 
 
-def handle_db_secret_to_services(db, secret_import, target) -> None:
+def handle_db_secret_to_services(
+    db: Union[DatabaseXResource, NetworkXResource], secret_import, target: tuple
+) -> None:
     """
     Maps DB Secret to ECS Service containers. It however won't expose the secret to an AWS SideCar (i.e. x-ray).
 
@@ -365,12 +387,11 @@ def handle_db_secret_to_services(db, secret_import, target) -> None:
     add_secrets_access_policy(target[0], secret_import, db.logical_name)
 
 
-def handle_import_dbs_to_services(db, target) -> None:
+def handle_import_dbs_to_services(
+    db: Union[DatabaseXResource, NetworkXResource], target: tuple
+) -> None:
     """
     Function to map the Looked up DBs (DocDB and RDS) to the services.
-
-    :param ecs_composex.rds.rds_stack.Rds db:
-    :param tuple target:
     """
     if db.db_secret_arn_parameter and keyisset(
         db.db_secret_arn_parameter, db.attributes_outputs
@@ -400,7 +421,9 @@ def handle_import_dbs_to_services(db, target) -> None:
     )
 
 
-def import_dbs(db, settings) -> None:
+def import_dbs(
+    db: Union[NetworkXResource, DatabaseXResource], settings: ComposeXSettings
+) -> None:
     """
     Function to go over each service defined in the DB and assign found DB settings to service
     """
@@ -412,9 +435,9 @@ def import_dbs(db, settings) -> None:
 
 
 def handle_new_tcp_resource(
-    resource,
-    port_parameter,
-    sg_parameter,
+    resource: Union[NetworkXResource, DatabaseXResource],
+    port_parameter: Parameter,
+    sg_parameter: Parameter,
     secret_parameter=None,
 ):
     """
@@ -443,7 +466,7 @@ def handle_new_tcp_resource(
     parameters_values[sg_settings[0]] = sg_settings[2]
 
     for target in resource.families_targets:
-        if target[0].launch_type == "EXTERNAL":
+        if target[0].service_compute.launch_type == "EXTERNAL":
             LOG.warning(
                 f"{resource.stack.title} - {target[0].name} - "
                 "When using EXTERNAL Launch Type, networking settings cannot be set."

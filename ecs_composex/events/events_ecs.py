@@ -29,6 +29,7 @@ from ecs_composex.ecs.ecs_params import (
     CLUSTER_NAME,
     FARGATE_VERSION,
     SERVICE_SCALING_TARGET,
+    SERVICE_SUBNETS,
     SERVICE_T,
     TASK_T,
 )
@@ -178,7 +179,7 @@ def define_service_targets(settings, stack, rule, cluster_arn):
                 ),
                 service_subnets_param.title: GetAtt(
                     service[0].logical_name,
-                    f"Outputs.{APP_SUBNETS.title}",
+                    f"Outputs.{SERVICE_SUBNETS.title}",
                 ),
             }
         )

@@ -161,6 +161,9 @@ class Vpc(AwsEnvironmentResource):
                 boundary=set_else_none("FlowLogsRoleBoundary", self.properties, None),
             )
         self.cfn_resource = self.vpc
+        self.subnets_parameters.append(APP_SUBNETS)
+        self.subnets_parameters.append(PUBLIC_SUBNETS)
+        self.subnets_parameters.append(STORAGE_SUBNETS)
 
     def lookup_vpc(self, settings):
         """
@@ -172,32 +175,6 @@ class Vpc(AwsEnvironmentResource):
         vpc_settings = lookup_x_vpc_settings(self)
         self.create_vpc_mappings(vpc_settings, settings)
         LOG.info(f"{RES_KEY} - Found VPC - {self.mappings[VPC_ID.title][VPC_ID.title]}")
-
-    def use_vpc(self, settings):
-        """
-        Function to import settings set "in-stone" from docker-compose definition
-
-        :return: settings
-        :rtype dict:
-        """
-        if not keyisset(VPC_ID.title, self.use):
-            raise KeyError("You must specify the VPC ID to use for deployment")
-        vpc_settings = {VPC_ID.title: self.use[VPC_ID.title]}
-
-        excluded = [VPC_ID.title, "RoleArn"]
-        if not all(subnet in self.use.keys() for subnet in self.required_subnets):
-            raise KeyError(
-                "All required subnets must be indicated", self.required_subnets
-            )
-        extra_subnets = [
-            key
-            for key in self.use.keys()
-            if key not in self.required_subnets and key not in excluded
-        ]
-        set_subnets_from_use(self.required_subnets, self.use, vpc_settings)
-        set_subnets_from_use(extra_subnets, self.use, vpc_settings)
-
-        self.create_vpc_mappings(vpc_settings, settings)
 
     def create_vpc_mappings(self, vpc_settings, settings):
         """
@@ -399,8 +376,6 @@ class XStack(ComposeXStack):
             )
             if self.vpc_resource.lookup:
                 self.vpc_resource.lookup_vpc(settings)
-            elif self.vpc_resource.use:
-                self.vpc_resource.use_vpc(settings)
             elif self.vpc_resource.properties:
                 template = init_vpc_template()
                 self.vpc_resource.create_vpc(template, settings)
