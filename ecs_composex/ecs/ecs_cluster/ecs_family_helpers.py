@@ -2,12 +2,9 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  Copyright 2020-2022 John Mille <john@compose-x.io>
 
-from compose_x_common.compose_x_common import keypresent, set_else_none
 from troposphere import NoValue
-from troposphere.ecs import CapacityProviderStrategyItem
 
 from ecs_composex.ecs.ecs_params import LAUNCH_TYPE
-from ecs_composex.ecs.ecs_service import EcsService
 from ecs_composex.ecs_composex import LOG
 
 from .helpers import FARGATE_PROVIDERS
@@ -39,7 +36,7 @@ def validate_capacity_providers(family, cluster):
         LOG.debug(f"{family.name} - No capacity provider set for cluster")
         return True
     cap_names = [
-        cap["CapacityProvider"] for cap in family.service_compute.ecs_capacity_providers
+        cap.CapacityProvider for cap in family.service_compute.ecs_capacity_providers
     ]
     if not all(cap_name in FARGATE_PROVIDERS for cap_name in cap_names):
         raise ValueError(
@@ -73,14 +70,12 @@ def validate_compute_configuration_for_task(family, settings):
         return
     if settings.ecs_cluster.platform_override:
         family.service_compute.launch_type = settings.ecs_cluster.platform_override
-        if hasattr(
-            family.service_definition, "CapacityProviderStrategy"
-        ) and isinstance(family.service_definition.CapacityProviderStrategy, list):
-            LOG.warning(
-                f"{family.name} - Due to Launch Type override to {settings.ecs_cluster.platform_override}"
-                ", ignoring CapacityProviders"
-                f"{[cap.CapacityProvider for cap in family.service_definition.CapacityProviderStrategy]}"
-            )
+        LOG.warning(
+            f"{family.name} - Due to Launch Type override to {settings.ecs_cluster.platform_override}"
+            ", ignoring CapacityProviders"
+            f"{[_cap.CapacityProvider for _cap in family.service_compute.ecs_capacity_providers]}"
+        )
+        if family.ecs_service.ecs_service:
             setattr(
                 family.service_definition,
                 "CapacityProviderStrategy",
@@ -90,20 +85,18 @@ def validate_compute_configuration_for_task(family, settings):
         family.service_compute.set_update_launch_type()
         family.service_compute.set_update_capacity_providers()
         validate_capacity_providers(family, settings.ecs_cluster)
+        if family.service_compute.launch_type in ["EC2", "EXTERNAL", "FARGATE"]:
+            return
         set_service_launch_type(family, settings.ecs_cluster)
         LOG.debug(
             f"{family.name} - Updated {LAUNCH_TYPE.title} to"
             f" {family.service_compute.launch_type}"
         )
-    if family.stack:
-        family.stack.Parameters.update(
-            {LAUNCH_TYPE.title: family.service_compute.launch_type}
-        )
 
 
 def set_launch_type_from_cluster_and_service(family):
     if all(
-        provider["CapacityProvider"] in ["FARGATE", "FARGATE_SPOT"]
+        provider.CapacityProvider in ["FARGATE", "FARGATE_SPOT"]
         for provider in family.service_compute.ecs_capacity_providers
     ):
         LOG.debug(
@@ -112,10 +105,10 @@ def set_launch_type_from_cluster_and_service(family):
         family.service_compute.launch_type = "FARGATE_PROVIDERS"
     else:
         family.service_compute.launch_type = "SERVICE_MODE"
-        LOG.debug(
+        LOG.info(
             f"{family.name} - Using AutoScaling Based Providers",
             [
-                provider["CapacityProvider"]
+                provider.CapacityProvider
                 for provider in family.service_compute.ecs_capacity_providers
             ],
         )
@@ -139,45 +132,14 @@ def set_launch_type_from_cluster_only(family, cluster):
         family.service_compute.launch_type = "CLUSTER_MODE"
 
 
-def set_family_ecs_service_launch_type(family):
-    """
-    Sets Launch Type for family
-    """
-    if not family.service_definition:
-        LOG.warning(f"{family.name} - ECS Service not yet defined. Skipping")
-        return
-    if (
-        family.service_compute.launch_type == "FARGATE_PROVIDERS"
-        or family.service_compute.launch_type == "SERVICE_MODE"
-    ):
-        cfn_capacity_providers = [
-            CapacityProviderStrategyItem(**props)
-            for props in family.service_compute.ecs_capacity_providers
-        ]
-        if isinstance(family.service_definition, EcsService):
-            setattr(
-                family.service_definition,
-                "CapacityProviderStrategy",
-                cfn_capacity_providers,
-            )
-    elif (
-        family.service_compute.launch_type == "FARGATE"
-        or family.service_compute.launch_type == "CLUSTER_MODE"
-        or family.service_compute.launch_type == "EC2"
-        or family.service_compute.launch_type == "EXTERNAL"
-    ):
-        setattr(
-            family.service_definition,
-            "CapacityProviderStrategy",
-            NoValue,
-        )
-
-
 def set_service_launch_type(family, cluster):
     """
     Sets the LaunchType value for the ECS Service
     """
-    if family.service_compute.launch_type == "EXTERNAL":
+    if (
+        family.service_compute.launch_type == "EXTERNAL"
+        or family.service_compute.launch_type == "EC2"
+    ):
         return
     if family.service_compute.ecs_capacity_providers and cluster.capacity_providers:
         set_launch_type_from_cluster_and_service(family)
@@ -185,4 +147,3 @@ def set_service_launch_type(family, cluster):
         not family.service_compute.ecs_capacity_providers and cluster.capacity_providers
     ):
         set_launch_type_from_cluster_only(family, cluster)
-    set_family_ecs_service_launch_type(family)

@@ -15,7 +15,7 @@ from troposphere import ImportValue, Ref, Select, Split, Sub
 
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T, Parameter
 from ecs_composex.common.ecs_composex import CFN_EXPORT_DELIMITER as DELIM
-from ecs_composex.vpc.vpc_params import SG_ID_TYPE
+from ecs_composex.vpc.vpc_params import SG_ID_TYPE, SUBNETS_TYPE
 
 CLUSTER_T = "EcsCluster"
 LOG_GROUP_T = "ServicesLogGroup"
@@ -207,6 +207,9 @@ IPC_MODE_T = "TaskIpcMode"
 IPC_MODE = Parameter(
     IPC_MODE_T, Type="String", AllowedValues=["task", "host", "none"], Default="none"
 )
+
+SERVICE_SUBNETS_T = "ECSServiceSubnets"
+SERVICE_SUBNETS = Parameter(SERVICE_SUBNETS_T, Type=SUBNETS_TYPE)
 
 
 def get_import_service_group_id(remote_service_name):

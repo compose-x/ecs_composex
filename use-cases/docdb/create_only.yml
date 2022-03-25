@@ -2,7 +2,7 @@ x-docdb:
   docdbA:
     Properties: {}
     Services:
-      app03: null
+      app03:
   docdbB:
     MacroParameters:
       Instances:

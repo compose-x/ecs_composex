@@ -11,7 +11,9 @@
 Class and functions to interact with the networks: defined in compose files.
 """
 
-from compose_x_common.compose_x_common import keyisset
+from copy import deepcopy
+
+from compose_x_common.compose_x_common import keyisset, set_else_none
 
 from ecs_composex.common import LOG
 
@@ -47,18 +49,13 @@ class ComposeNetwork(object):
 
     def __init__(self, name, definition, subnets_list):
         self.name = name
-        self.subnet_name = name
-        if keyisset("name", definition):
-            self.subnet_name = definition["name"]
-        elif (
-            not keyisset("name", definition)
-            and keyisset("x-vpc", definition)
-            and isinstance(definition["x-vpc"], str)
-        ):
-            self.subnet_name = definition["x-vpc"]
+        self.definition = deepcopy(definition)
+        self.subnet_name = set_else_none(
+            "x-vpc", definition, set_else_none("name", definition, name)
+        )
         subnet_names = [subnet.title for subnet in subnets_list]
         if self.subnet_name not in subnet_names:
             raise KeyError(
-                f"No subnet {self.name} defined. Valid options are",
+                f"networks.{name} - x-vpc.{self.subnet_name} defined. Valid options are",
                 subnet_names,
             )

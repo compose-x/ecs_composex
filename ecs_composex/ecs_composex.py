@@ -336,8 +336,9 @@ def generate_full_template(settings):
 
     x_cloud_lookup_and_new_vpc(settings, vpc_stack)
 
-    update_families_networking_settings(settings, vpc_stack)
-    update_families_network_ingress(settings)
+    for family in settings.families.values():
+        family.init_network_settings(settings, vpc_stack)
+
     handle_families_cross_dependencies(settings, root_stack)
     update_network_resources_vpc_config(settings, vpc_stack)
     set_families_ecs_service(settings)
@@ -353,7 +354,6 @@ def generate_full_template(settings):
         root_stack.stack_template.add_resource(DashboardsStack("dashboards", settings))
     for family in settings.families.values():
         add_iam_dependency(iam_stack, family)
-        family.validate_compute_configuration_for_task(settings)
         family.set_enable_execute_command()
         if family.enable_execute_command:
             family.apply_ecs_execute_command_permissions(settings)

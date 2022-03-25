@@ -101,6 +101,11 @@ GENERATED_LOG_GROUP_NAME_CON = Equals(
     Ref(ecs_params.LOG_GROUP_NAME), ecs_params.LOG_GROUP_NAME.Default
 )
 
+DISABLE_CAPACITY_PROVIDERS_CON_T = "DisableCapacityProviders"
+DISABLE_CAPACITY_PROVIDERS_CON = Or(
+    Condition(USE_LAUNCH_TYPE_CON_T), Condition(USE_CLUSTER_MODE_CON_T)
+)
+
 
 def use_external_lt_con(if_true, if_false) -> If:
     """

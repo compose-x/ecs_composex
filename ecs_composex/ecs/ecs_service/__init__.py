@@ -46,15 +46,14 @@ class EcsService(object):
         self.dependencies = []
         self.ecs_service = None
         self.alarms = {}
-        family.stack_parameters.update({ecs_params.SERVICE_NAME_T: family.name})
+        if family.stack:
+            family.stack.Parameters.update({ecs_params.SERVICE_NAME_T: family.name})
 
         self.lbs = []
         self.registries = []
-        self.security_groups = []
-        self.subnets = []
         self.service_tags = []
 
-    def generate_service_definition(self, settings):
+    def generate_service_definition(self, family, settings):
         """
         Function to generate the Service definition.
         This is the last step in defining the service, after all other settings have been prepared.
@@ -72,11 +71,7 @@ class EcsService(object):
             TaskDefinition=Ref(self.family.task_definition),
             Cluster=Ref(ecs_params.CLUSTER_NAME),
             DeploymentController=DeploymentController(Type="ECS"),
-            LaunchType=If(
-                ecs_conditions.USE_LAUNCH_TYPE_CON_T,
-                Ref(ecs_params.LAUNCH_TYPE),
-                NoValue,
-            ),
+            LaunchType=family.service_compute.cfn_launch_type,
             CapacityProviderStrategy=NoValue,
             EnableECSManagedTags=True,
             DesiredCount=If(
@@ -94,15 +89,7 @@ class EcsService(object):
             ),
             SchedulingStrategy=NoValue,
             PlacementStrategies=NoValue,
-            NetworkConfiguration=use_external_lt_con(
-                NoValue,
-                NetworkConfiguration(
-                    AwsvpcConfiguration=AwsvpcConfiguration(
-                        Subnets=self.subnets,
-                        SecurityGroups=self.security_groups,
-                    )
-                ),
-            ),
+            NetworkConfiguration=family.service_networking.ecs_network_config,
             LoadBalancers=use_external_lt_con(NoValue, self.lbs),
             ServiceRegistries=use_external_lt_con(NoValue, self.registries),
             Tags=set_service_default_tags_labels(self.family),

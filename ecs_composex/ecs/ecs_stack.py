@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ecs_composex.ecs.ecs_family import ComposeFamily
+    from ecs_composex.ecs.ecs_family import ComposeFamily, ServiceStack
     from ecs_composex.common.settings import ComposeXSettings
     from ecs_composex.common.stacks import ComposeXStack
 
@@ -15,7 +15,6 @@ from troposphere import FindInMap, Ref
 
 from ecs_composex.common import LOG, add_parameters, add_update_mapping
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME, ROOT_STACK_NAME_T
-from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.compose_secrets.ecs_family_helpers import (
     set_repository_credentials,
 )
@@ -24,17 +23,12 @@ from ecs_composex.compose.compose_services.env_files_helpers import (
 )
 from ecs_composex.compose.compose_volumes.ecs_family_helpers import set_volumes
 from ecs_composex.ecs import ecs_params, metadata
-from ecs_composex.ecs.ecs_cluster.ecs_family_helpers import validate_capacity_providers
 from ecs_composex.ecs.ecs_family.task_logging import create_log_group
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME, CLUSTER_NAME_T
 from ecs_composex.ecs.ecs_service import EcsService
 from ecs_composex.secrets.secrets_params import RES_KEY as SECRETS_KEY
 
-
-class ServiceStack(ComposeXStack):
-    """
-    Class to identify specifically a service stack
-    """
+from .ecs_family import ServiceStack
 
 
 def initialize_family_services(
@@ -57,9 +51,9 @@ def initialize_family_services(
     family.init_task_definition()
     family.set_secrets_access()
     # family.refresh()
-    family.service_compute.set_update_capacity_providers()
+    # family.service_compute.set_update_capacity_providers()
     # merge_capacity_providers(family)
-    validate_capacity_providers(family, settings.ecs_cluster)
+    # validate_capacity_providers(family, settings.ecs_cluster)
     family.ecs_service = EcsService(family, settings)
     family.stack.Parameters.update(
         {
@@ -74,7 +68,6 @@ def initialize_family_services(
     create_log_group(family)
     family.handle_logging()
     family.handle_alarms()
-    family.validate_compute_configuration_for_task(settings)
 
 
 def handle_families_dependencies(
@@ -107,11 +100,6 @@ def add_compose_families(root_stack: ComposeXStack, settings: ComposeXSettings) 
     """
     for family_name, family in settings.families.items():
         family.init_family()
-        family.stack = ServiceStack(
-            family.logical_name,
-            stack_template=family.template,
-            stack_parameters=family.stack_parameters,
-        )
         initialize_family_services(settings, family)
         add_parameters(
             family.template,
@@ -135,15 +123,9 @@ def add_compose_families(root_stack: ComposeXStack, settings: ComposeXSettings) 
                 ecs_params.SERVICE_HOSTNAME.title: family.family_hostname,
             }
         )
-        if settings.ecs_cluster.platform_override:
-            family.launch_type = settings.ecs_cluster.platform_override
-            family.stack.Parameters.update(
-                {ecs_params.LAUNCH_TYPE.title: settings.ecs_cluster.platform_override}
-            )
         family.template.metadata.update(metadata)
         root_stack.stack_template.add_resource(family.stack)
-        if settings.networks and family.service_networking.networks:
-            family.update_family_subnets(settings)
+        family.validate_compute_configuration_for_task(settings)
 
     families_stacks = [
         family

@@ -58,8 +58,7 @@ def set_xray(family: ComposeFamily) -> None:
     )
     if not have_xray and want_xray:
         xray_service = deepcopy(XRAY_SERVICE)
-        xray_service.add_to_family(family)
-        xray_service.set_as_dependency_to_family_services(is_dependency=True)
+        xray_service.add_to_family(family, is_dependency=True)
     elif have_xray_container and want_xray:
         LOG.warning(
             f"{family.name}"
@@ -76,4 +75,4 @@ def set_xray(family: ComposeFamily) -> None:
                 "Failed to identify the already defined x-ray service",
                 [svc.name for svc in family.services],
             )
-        xray_service.set_as_dependency_to_family_services()
+        xray_service.set_as_dependency_to_family_services(is_dependency=True)

@@ -3,12 +3,11 @@
 #  Copyright 2020-2022 John Mille <john@compose-x.io>
 
 
-from troposphere import GetAtt, Ref
+from troposphere import GetAtt
 
 from ecs_composex.common import LOG
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.ecs.service_networking.helpers import add_security_group
-from ecs_composex.vpc.vpc_params import APP_SUBNETS
 
 
 def add_iam_dependency(iam_stack: ComposeXStack, family):
@@ -32,7 +31,7 @@ def update_families_networking_settings(settings, vpc_stack):
     :type vpc_stack: ecs_composex.vpc.vpc_stack.VpcStack
     """
     for family in settings.families.values():
-        if family.launch_type == "EXTERNAL":
+        if family.service_compute.launch_type == "EXTERNAL":
             LOG.debug(f"{family.name} Ingress cannot be set (EXTERNAL mode). Skipping")
             continue
         if vpc_stack.vpc_resource.mappings:
@@ -40,7 +39,6 @@ def update_families_networking_settings(settings, vpc_stack):
         else:
             family.stack.set_vpc_parameters_from_vpc_stack(vpc_stack)
         add_security_group(family)
-        family.ecs_service.subnets = Ref(APP_SUBNETS)
 
 
 def update_families_network_ingress(settings):
@@ -70,7 +68,7 @@ def update_families_network_ingress(settings):
 
 
 def handle_families_cross_dependencies(settings, root_stack):
-    from ecs_composex.ecs.ecs_stack import ServiceStack
+    from ecs_composex.ecs.ecs_family import ServiceStack
     from ecs_composex.ecs.service_networking.ingress_helpers import (
         set_compose_services_ingress,
     )
@@ -94,6 +92,6 @@ def set_families_ecs_service(settings):
     Sets the ECS Service in the family.ecs_service from ServiceConfig and family settings
     """
     for family in settings.families.values():
-        family.ecs_service.generate_service_definition(settings)
+        family.ecs_service.generate_service_definition(family, settings)
         family.service_scaling.create_scalable_target()
         family.service_scaling.add_target_scaling()

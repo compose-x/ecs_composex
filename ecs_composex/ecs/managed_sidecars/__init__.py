@@ -37,7 +37,6 @@ class ManagedSidecar(ComposeService):
         """
         Auto adds the sidecar container image as parameter to the stack
         """
-        print(self.name, self.my_family.name, self.image_param.title)
         if self.my_family.template and self.my_family.stack and self.image_param:
             add_parameters(self.my_family.template, [self.image_param])
 
@@ -51,14 +50,14 @@ class ManagedSidecar(ComposeService):
             if service.is_aws_sidecar:
                 continue
             if is_dependency:
-                if service.depends_on and self.name not in service.depends_on:
+                if self.name not in service.depends_on:
                     service.depends_on.append(self.name)
                     LOG.info(
-                        f"{self.my_family.name}.{self.name} - Added {self.name} as dependency"
+                        f"{self.my_family.name}.{service.name} - Added {self.name} as startup dependency"
                     )
             else:
                 if service.name not in self.depends_on:
                     self.depends_on.append(service.name)
                     LOG.info(
-                        f"{self.my_family.name}.{self.name} - Added as a dependency of {self.name}"
+                        f"{self.my_family.name}.{self.name} - Added {service.name} as startup dependency"
                     )

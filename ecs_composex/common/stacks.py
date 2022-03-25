@@ -304,7 +304,7 @@ class ComposeXStack(Stack, object):
         add_parameters(self.stack_template, vpc_stack.vpc_resource.subnets_parameters)
         add_parameters(self.stack_template, [VPC_ID])
         self.Parameters.update(
-            {VPC_ID_T: FindInMap("Network", VPC_ID.title, VPC_ID.title)}
+            {VPC_ID.title: FindInMap("Network", VPC_ID.title, VPC_ID.title)}
         )
         for subnet_param in vpc_stack.vpc_resource.subnets_parameters:
             self.Parameters.update(

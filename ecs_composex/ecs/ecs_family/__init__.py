@@ -22,6 +22,7 @@ from troposphere import Ref, Tags
 from troposphere.ecs import EphemeralStorage, RuntimePlatform, TaskDefinition
 
 from ecs_composex.common import LOG, add_outputs, add_parameters
+from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.compose_services import ComposeService
 from ecs_composex.ecs import ecs_conditions, ecs_params
 from ecs_composex.ecs.ecs_family.family_helpers import (
@@ -33,10 +34,10 @@ from ecs_composex.ecs.ecs_prometheus import set_prometheus
 from ecs_composex.ecs.managed_sidecars.aws_xray import set_xray
 from ecs_composex.ecs.service_compute import ServiceCompute
 from ecs_composex.ecs.service_networking import ServiceNetworking
+from ecs_composex.ecs.service_networking.helpers import update_family_subnets
 from ecs_composex.ecs.service_scaling import ServiceScaling
 from ecs_composex.ecs.task_compute import TaskCompute
 from ecs_composex.ecs.task_iam import TaskIam
-from ecs_composex.vpc.vpc_params import APP_SUBNETS
 
 from .family_helpers import assign_secrets_to_roles, define_essential_containers
 from .family_template import set_template
@@ -60,21 +61,19 @@ class ComposeFamily(object):
     :ivar TaskCompute task_compute: Task Compute manager
     """
 
-    default_launch_type = "EC2"
-    xray_service_name = "xray-daemon"
-
     def __init__(self, services, family_name):
         self.services = services
         self.ordered_services = services
         self.managed_sidecars = []
         self.name = family_name
         self.logical_name = re.sub(r"[^a-zA-Z0-9]+", "", family_name)
-        self.iam_manager = TaskIam(self)
         self.family_hostname = self.name.replace("_", "-").lower()
         self.services_depends_on = []
         self.template = set_template(self)
-        self.stack = None
-        self.stack_parameters = {}
+        self.stack = ServiceStack(
+            self.logical_name,
+            stack_template=self.template,
+        )
         self.task_definition = None
         self.service_definition = None
         self.service_tags = None
@@ -83,17 +82,17 @@ class ComposeFamily(object):
         self.ecs_service = None
         self.runtime_cpu_arch = None
         self.runtime_os_family = None
-        self.launch_type = self.default_launch_type
         self.outputs = []
         self.task_logging_options = {}
         self.alarms = {}
         self.predefined_alarms = {}
         self.target_groups = []
+        self.iam_manager = TaskIam(self)
         self.iam_manager.init_update_policies()
-        self.service_compute = None
         self.service_scaling = None
         self.service_networking = None
         self.task_compute = None
+        self.service_compute = ServiceCompute(self)
 
     def init_family(self) -> None:
         """
@@ -104,13 +103,14 @@ class ComposeFamily(object):
         """
         self.set_services_to_services_dependencies()
         self.set_update_containers_priority()
-        self.service_compute = ServiceCompute(self)
+
+        self.service_compute.set_update_launch_type()
+        self.service_compute.set_update_capacity_providers()
+
         define_family_runtime_parameters(self)
 
         self.task_compute = TaskCompute(self)
-        self.add_containers_images_cfn_parameters()
         self.service_scaling = ServiceScaling(self)
-        self.service_networking = ServiceNetworking(self)
 
     def init_task_definition(self):
         """
@@ -136,12 +136,12 @@ class ComposeFamily(object):
             Cpu=If(
                 ecs_conditions.USE_FARGATE_CON_T,
                 ecs_params.FARGATE_CPU,
-                self.task_compute.family_cpu,
+                self.task_compute.cfn_family_cpu,
             ),
             Memory=If(
                 ecs_conditions.USE_FARGATE_CON_T,
                 ecs_params.FARGATE_RAM,
-                self.task_compute.family_ram,
+                self.task_compute.cfn_family_ram,
             ),
             NetworkMode=If(
                 ecs_conditions.USE_WINDOWS_OS_T,
@@ -218,8 +218,8 @@ class ComposeFamily(object):
             )
             self.outputs.append(
                 CfnOutput(
-                    APP_SUBNETS.title,
-                    Value=Join(",", Ref(APP_SUBNETS)),
+                    ecs_params.SERVICE_SUBNETS.title,
+                    Value=Join(",", self.service_networking.subnets_output),
                 )
             )
 
@@ -246,9 +246,10 @@ class ComposeFamily(object):
         """
         LOG.info(f"{self.name} - Hostname set to {self.family_hostname}")
         LOG.info(f"{self.name} - Ephemeral storage: {self.task_ephemeral_storage}")
-        LOG.info(f"{self.name} - LaunchType set to {self.launch_type}")
+        LOG.info(f"{self.name} - LaunchType set to {self.service_compute.launch_type}")
         LOG.info(
-            f"{self.name} - TaskDefinition containers: {[svc.name for svc in chain(self.ordered_services, self.managed_sidecars)]}"
+            f"{self.name} - TaskDefinition containers: "
+            f"{[svc.name for svc in chain(self.ordered_services, self.managed_sidecars)]}"
         )
 
     def add_service(self, service: ComposeService):
@@ -263,6 +264,10 @@ class ComposeFamily(object):
         self.services.append(service)
 
         self.set_update_containers_priority()
+
+        self.service_compute.set_update_launch_type()
+        self.service_compute.set_update_capacity_providers()
+
         if self.task_definition and service.container_definition:
             self.task_definition.ContainerDefinitions.append(
                 service.container_definition
@@ -271,7 +276,6 @@ class ComposeFamily(object):
         self.set_task_ephemeral_storage()
         set_enable_execute_command(self)
         set_family_hostname(self)
-        self.add_containers_images_cfn_parameters()
 
     def add_managed_sidecar(self, service: ComposeService):
         """
@@ -297,33 +301,72 @@ class ComposeFamily(object):
                 service.container_definition
             )
             self.set_secrets_access()
-        self.add_containers_images_cfn_parameters()
         self.task_compute.set_task_compute_parameter()
 
     def refresh(self):
         """
         Refresh the ComposeFamily settings as a result of a change
         """
-        from ecs_composex.ecs.service_networking.helpers import set_family_hostname
+        # from ecs_composex.ecs.service_networking.helpers import set_family_hostname
+        #
+        # self.set_update_containers_priority()
+        # self.service_compute.set_update_launch_type()
+        # self.service_compute.set_update_capacity_providers()
+        # define_family_runtime_parameters(self)
+        # self.iam_manager.init_update_policies()
+        # self.handle_logging()
+        # self.add_containers_images_cfn_parameters()
+        # self.task_compute.set_task_compute_parameter()
+        # set_family_hostname(self)
 
-        self.set_update_containers_priority()
-        self.service_compute.set_update_launch_type()
-        self.service_compute.set_update_capacity_providers()
-        define_family_runtime_parameters(self)
-        self.iam_manager.init_update_policies()
-        self.handle_logging()
-        self.add_containers_images_cfn_parameters()
-        self.task_compute.set_task_compute_parameter()
-        set_family_hostname(self)
-
-    def finalize_services_networking_settings(self):
-        for service in self.services:
+    def finalize_services_networking_settings(self, settings: ComposeXSettings) -> None:
+        """
+        Final pass on the service network settings
+        """
+        if settings.networks and self.service_networking.networks:
+            update_family_subnets(self, settings)
+        for service in chain(self.managed_sidecars, self.ordered_services):
             if service.ports or service.expose_ports:
                 setattr(
                     service.container_definition,
                     "PortMappings",
                     service.define_port_mappings(),
                 )
+
+    def init_network_settings(
+        self, settings: ComposeXSettings, vpc_stack: ComposeXStack
+    ) -> None:
+        """
+        Once we have figured out the compute settings (EXTERNAL vs other)
+
+        :param settings:
+        :param vpc_stack:
+        :return:
+        """
+        from ecs_composex.ecs.service_networking.helpers import add_security_group
+
+        self.service_networking = ServiceNetworking(self)
+        self.finalize_services_networking_settings(settings)
+        if self.service_compute.launch_type == "EXTERNAL":
+            LOG.debug(f"{self.name} Ingress cannot be set (EXTERNAL mode). Skipping")
+        else:
+            if vpc_stack.vpc_resource.mappings:
+                self.stack.set_vpc_params_from_vpc_stack_import(vpc_stack)
+            else:
+                self.stack.set_vpc_parameters_from_vpc_stack(vpc_stack)
+            add_security_group(self)
+            self.service_networking.ingress.set_aws_sources_ingress(
+                settings,
+                self.logical_name,
+                GetAtt(self.service_networking.security_group, "GroupId"),
+            )
+            self.service_networking.ingress.set_ext_sources_ingress(
+                self.logical_name,
+                GetAtt(self.service_networking.security_group, "GroupId"),
+            )
+            self.service_networking.ingress.associate_aws_ingress_rules(self.template)
+            self.service_networking.ingress.associate_ext_ingress_rules(self.template)
+            self.service_networking.add_self_ingress()
 
     def finalize_family_settings(self):
         """
@@ -336,9 +379,9 @@ class ComposeFamily(object):
         self.add_containers_images_cfn_parameters()
         self.task_compute.set_task_compute_parameter()
         self.task_compute.unlock_compute_for_main_container()
-        self.finalize_services_networking_settings()
+
         set_service_dependency_on_all_iam_policies(self)
-        if self.launch_type == "EXTERNAL":
+        if self.service_compute.launch_type == "EXTERNAL":
             if hasattr(self.ecs_service.ecs_service, "LoadBalancers"):
                 setattr(self.ecs_service.ecs_service, "LoadBalancers", NoValue)
             if hasattr(self.ecs_service.ecs_service, "ServiceRegistries"):
@@ -425,7 +468,7 @@ class ComposeFamily(object):
         define_essential_containers(self, ordered_containers_config)
 
         for service in self.services:
-            self.stack_parameters.update(service.container_parameters)
+            self.stack.Parameters.update(service.container_parameters)
 
     def set_secrets_access(self):
         """
@@ -462,19 +505,15 @@ class ComposeFamily(object):
             logging_def = c_def.LogConfiguration
             logging_def.Options.update(self.task_logging_options)
 
-    def update_family_subnets(self, settings):
-        """
-        Method to update the stack parameters
-
-        :param ecs_composex.common.settings.ComposeXSettings settings:
-        """
-        from ecs_composex.ecs.service_networking.helpers import update_family_subnets
-
-        update_family_subnets(self, settings)
-
     def validate_compute_configuration_for_task(self, settings):
         from ecs_composex.ecs.ecs_cluster.ecs_family_helpers import (
             validate_compute_configuration_for_task,
         )
 
         validate_compute_configuration_for_task(self, settings)
+
+
+class ServiceStack(ComposeXStack):
+    """
+    Class to identify specifically a service stack
+    """

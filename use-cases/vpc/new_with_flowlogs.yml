@@ -17,4 +17,4 @@ services:
 
 networks:
   custom01:
-    x-vpc: Custom01
+    x-vpc: AppSubnets

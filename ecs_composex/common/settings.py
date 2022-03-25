@@ -243,7 +243,7 @@ class ComposeXSettings(object):
         x_resources_require_vpc = any([res.requires_vpc for res in self.x_resources])
         services_require_vpc = any(
             [
-                family.service_networking.network_mode == "awsvpc"
+                family.service_compute.launch_type != "EXTERNAL"
                 for family in self.families.values()
                 if (family and family.ecs_service)
             ]
@@ -324,24 +324,19 @@ class ComposeXSettings(object):
 
     def set_networks(self, vpc_stack) -> None:
         """
-        Method configuring the networks defined at root level
-        :return:
+        Maps top level docker-compose networks with x-vpc subnets when applicable.
         """
         if not keyisset(ComposeNetwork.main_key, self.compose_content):
             LOG.debug("No networks detected at the root level of compose file")
             return
-        elif vpc_stack and vpc_stack.vpc_resource and vpc_stack.vpc_resource.vpc:
-            LOG.info(
-                "ComposeX will be creating the VPC, therefore networks are ignored!"
-            )
-            return
-        for network_name in self.compose_content[ComposeNetwork.main_key]:
+        networks = self.compose_content[ComposeNetwork.main_key]
+        for network_name, definition in networks.items():
             network = ComposeNetwork(
                 network_name,
-                self.compose_content[ComposeNetwork.main_key][network_name],
+                definition,
                 vpc_stack.vpc_resource.subnets_parameters,
             )
-            self.compose_content[ComposeNetwork.main_key][network_name] = network
+            networks[network_name] = network
             self.networks.append(network)
 
     def set_services(self) -> None:

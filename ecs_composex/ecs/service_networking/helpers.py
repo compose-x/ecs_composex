@@ -5,7 +5,7 @@
 from troposphere import FindInMap, GetAtt, Join, Ref, StackName, Sub, Tags
 from troposphere.ec2 import SecurityGroup
 
-from ecs_composex.common import LOG
+from ecs_composex.common import LOG, add_resource
 from ecs_composex.common.cfn_conditions import define_stack_name
 from ecs_composex.ecs.ecs_params import SERVICE_NAME, SG_T
 from ecs_composex.vpc.vpc_params import APP_SUBNETS, VPC_ID
@@ -36,19 +36,7 @@ def add_security_group(family) -> None:
         ),
         VpcId=Ref(VPC_ID),
     )
-    if (
-        family.template
-        and family.service_networking.security_group.title
-        not in family.template.resources
-    ):
-        family.template.add_resource(family.service_networking.security_group)
-    if (
-        family.service_networking.security_group
-        not in family.ecs_service.security_groups
-    ):
-        family.ecs_service.security_groups.append(
-            Ref(family.service_networking.security_group)
-        )
+    add_resource(family.template, family.service_networking.security_group)
 
 
 def update_family_subnets(family, settings) -> None:
@@ -61,17 +49,16 @@ def update_family_subnets(family, settings) -> None:
     network_names = list(family.service_networking.networks.keys())
     for network in settings.networks:
         if network.name in network_names:
-            family.stack_parameters.update(
-                {
-                    APP_SUBNETS.title: Join(
-                        ",",
-                        FindInMap("Network", network.subnet_name, "Ids"),
-                    )
-                }
-            )
+            family.service_networking.subnets = Ref(network.subnet_name)
             LOG.info(
-                f"{family.name} - {APP_SUBNETS.title} set to {network.subnet_name}"
+                f"networks.{network.name} - "
+                f"mapped x-vpc.{network.subnet_name} to {family.name}"
             )
+            break
+    else:
+        LOG.error(
+            f"{family.name}.networks - unable to assign AppSubnets to a top-level defined network"
+        )
 
 
 def set_family_hostname(family):

@@ -16,16 +16,22 @@ if TYPE_CHECKING:
 from itertools import chain
 
 from compose_x_common.compose_x_common import keyisset, set_else_none
-from troposphere import AWS_ACCOUNT_ID, GetAtt, Ref, Sub
-from troposphere.ec2 import SecurityGroupIngress
+from troposphere import AWS_ACCOUNT_ID, AWSHelperFn, GetAtt, NoValue, Ref, Sub
+from troposphere.ec2 import SecurityGroup, SecurityGroupIngress
+from troposphere.ecs import AwsvpcConfiguration, NetworkConfiguration
 
 from ecs_composex.common import LOG
+from ecs_composex.common.cfn_params import Parameter
+from ecs_composex.ecs.ecs_conditions import use_external_lt_con
 from ecs_composex.ecs.ecs_params import NETWORK_MODE, SERVICE_NAME_T
 from ecs_composex.ecs.service_networking.ingress_helpers import (
     merge_cloudmap_settings,
     merge_family_services_networking,
 )
 from ecs_composex.ingress_settings import Ingress, set_service_ports
+from ecs_composex.vpc.vpc_params import APP_SUBNETS
+
+from .helpers import add_security_group
 
 
 class ServiceNetworking(object):
@@ -46,7 +52,7 @@ class ServiceNetworking(object):
         """
         self.family = family
         self._network_mode = "awsvpc"
-        if family.launch_type == "EXTERNAL":
+        if family.service_compute.launch_type == "EXTERNAL":
             LOG.warning(
                 f"{family.name} - External mode cannot use awsvpc mode. Falling back to bridge"
             )
@@ -62,12 +68,55 @@ class ServiceNetworking(object):
             LOG.info(
                 f"{family.name} - services have export ports, allowing internal ingress"
             )
-        self.security_group = None
+        self._security_group = None
+        self.extra_security_groups = []
+        self._subnets = Ref(APP_SUBNETS)
         self.cloudmap_config = (
             merge_cloudmap_settings(family, self.ports) if self.ports else {}
         )
         self.ingress = Ingress(self.definition[Ingress.master_key], self.ports)
         self.ingress_from_self = keyisset(self.self_key, self.definition)
+
+    @property
+    def ecs_network_config(self):
+        if self.family.service_compute.launch_type == "EXTERNAL":
+            return NoValue
+        return use_external_lt_con(
+            NoValue,
+            NetworkConfiguration(
+                AwsvpcConfiguration=AwsvpcConfiguration(
+                    Subnets=self.subnets, SecurityGroups=self.security_groups
+                )
+            ),
+        )
+
+    @property
+    def security_groups(self) -> list:
+        groups = [Ref(self.security_group)]
+        for extra_group in self.extra_security_groups:
+            if (
+                isinstance(extra_group, SecurityGroup)
+                and extra_group.title in self.family.template.resources
+            ):
+                groups.append(Ref(extra_group))
+        return groups
+
+    @property
+    def security_group(self):
+        return self._security_group
+
+    @security_group.setter
+    def security_group(self, value):
+        if isinstance(value, SecurityGroup):
+            self._security_group = value
+        else:
+            raise TypeError(
+                "Service security group must be",
+                SecurityGroup,
+                "Got",
+                value,
+                type(value),
+            )
 
     @property
     def network_mode(self):
@@ -80,13 +129,43 @@ class ServiceNetworking(object):
     @network_mode.setter
     def network_mode(self, mode: str):
         self._network_mode = mode
-        self.family.stack.Parameters.update({NETWORK_MODE.title: self._network_mode})
+        if self.family.stack:
+            self.family.stack.Parameters.update(
+                {NETWORK_MODE.title: self._network_mode}
+            )
+
+    @property
+    def subnets(self):
+        return self._subnets
+
+    @property
+    def subnets_output(self):
+        if isinstance(self.subnets, Ref):
+            return self.subnets
+
+    @subnets.setter
+    def subnets(self, value):
+        """
+        Subnets value should only be a Ref on parameter or a CFN Function.
+        If successful, auto updates the NetworkConfiguration for the family ecs_service
+        """
+        if isinstance(value, Parameter):
+            self._subnets = Ref(Parameter)
+        elif issubclass(type(value), AWSHelperFn):
+            self._subnets = value
+        self._subnets = value
+        if self.family.ecs_service and self.family.ecs_service.ecs_service:
+            setattr(
+                self.family.ecs_service.ecs_service,
+                "NetworkConfiguration",
+                self.ecs_network_config,
+            )
 
     def merge_networks(self):
         """
         Method to merge network
         """
-        for svc in self.family.services:
+        for svc in self.family.ordered_services:
             if svc.networks:
                 self.networks.update(svc.networks)
 

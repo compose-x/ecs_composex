@@ -199,12 +199,11 @@ def add_update_mapping(template, mapping_key, mapping_value, mapping_subkey=None
 
 def add_resource(template, resource, replace=False):
     """
-    Function to add resource to template if the resource does not already exists
+    Function to add resource to template if the resource does not already exist
 
     :param troposphere.Template template:
     :param troposphere.AWSObject resource:
     :param bool replace:
-    :return:
     """
     if resource not in template.resources.values():
         template.add_resource(resource)

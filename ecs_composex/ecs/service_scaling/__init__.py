@@ -55,7 +55,9 @@ class ServiceScaling(object):
             return
         self.defined = True
         if self.replicas != ecs_params.SERVICE_COUNT.Default:
-            self.family.stack_parameters[ecs_params.SERVICE_COUNT.title] = self.replicas
+            self.family.stack.Parameters.update(
+                {ecs_params.SERVICE_COUNT.title: self.replicas}
+            )
         self.scaling_range = configuration["Range"]
         for key in self.target_scaling_keys:
             if keyisset("TargetScaling", configuration) and keyisset(

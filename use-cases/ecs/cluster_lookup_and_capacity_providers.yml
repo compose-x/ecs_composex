@@ -25,11 +25,10 @@ services:
           Weight: 2
 
   app01:
-    x-ecs:
-      CapacityProviderStrategy:
-        - CapacityProvider: FARGATE
-          Base: 2
-          Weight: 4
+    deploy:
+      labels:
+        ecs.compute.platform: EC2
+
 
   app02:
     x-ecs:

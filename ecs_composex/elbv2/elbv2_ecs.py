@@ -318,7 +318,7 @@ def handle_sg_lb_ingress_to_service(resource, family, resources_stack):
     family.service_networking.add_lb_ingress(
         lb_name=resource.logical_name, lb_sg_ref=Ref(lb_sg_param)
     )
-    family.stack_parameters.update(
+    family.stack.Parameters.update(
         {lb_sg_param.title: resource.attributes_outputs[LB_SG_ID]["ImportValue"]}
     )
     if resources_stack.title not in family.stack.DependsOn:
@@ -462,7 +462,7 @@ def define_service_target_group(
         family.target_groups.append(target_group)
     tgt_parameter = target_group.attributes_outputs[TGT_GROUP_ARN]["ImportParameter"]
     add_parameters(family.template, [tgt_parameter])
-    family.stack_parameters.update(
+    family.stack.Parameters.update(
         {
             tgt_parameter.title: target_group.attributes_outputs[TGT_GROUP_ARN][
                 "ImportValue"
