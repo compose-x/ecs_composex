@@ -50,10 +50,6 @@ def initialize_family_services(
         )
     family.init_task_definition()
     family.set_secrets_access()
-    # family.refresh()
-    # family.service_compute.set_update_capacity_providers()
-    # merge_capacity_providers(family)
-    # validate_capacity_providers(family, settings.ecs_cluster)
     family.ecs_service = EcsService(family, settings)
     family.stack.Parameters.update(
         {

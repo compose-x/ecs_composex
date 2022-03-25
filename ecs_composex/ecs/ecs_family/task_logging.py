@@ -9,6 +9,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ecs_composex.ecs.ecs_family import ComposeFamily
 
+from itertools import chain
+
 from compose_x_common.compose_x_common import keyisset
 from troposphere import GetAtt, Ref, Sub
 from troposphere.iam import Policy, PolicyType
@@ -134,7 +136,7 @@ def handle_logging(family: ComposeFamily):
     """
     if not family.template:
         return
-    for service in family.ordered_services:
+    for service in chain(family.managed_sidecars, family.ordered_services):
         expiry = set_logging_expiry(service)
         log_group_title = f"{service.logical_name}LogGroup"
         if keyisset("awslogs-region", service.logging.Options) and not isinstance(

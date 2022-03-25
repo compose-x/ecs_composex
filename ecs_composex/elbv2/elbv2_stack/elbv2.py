@@ -140,8 +140,17 @@ class Elbv2(NetworkXResource):
                 )
             for f_service in settings.families[family_name].ordered_services:
                 if f_service.name == service_name:
-                    if (
-                        f_service in settings.services
+                    if f_service not in settings.services:
+                        raise ValueError(
+                            f"{self.module_name}.{self.name} Please, use only the services names."
+                            "You cannot use the family name defined by deploy labels"
+                            f"Found {f_service}",
+                            [s for s in settings.services],
+                            [f for f in settings.families],
+                        )
+                    elif (
+                        f_service.name == service_name
+                        and f_service in settings.services
                         and f_service not in self.families_targets
                     ):
                         self.families_targets.append(
@@ -152,15 +161,7 @@ class Elbv2(NetworkXResource):
                                 f"{service_def['name']}{service_def['port']}",
                             )
                         )
-                    elif f_service not in settings.services:
-                        raise ValueError(
-                            f"{self.module_name}.{self.name} Please, use only the services names."
-                            "You cannot use the family name defined by deploy labels"
-                            f"Found {f_service}",
-                            [s for s in settings.services],
-                            [f for f in settings.families],
-                        )
-                    break
+                        break
             else:
                 raise ValueError(
                     f"{self.module_name}.{self.name} - Could not find {service_name} in family {family_name}"
