@@ -22,7 +22,6 @@ services:
           memory: 0.25G
           cpus: 0.5
     x-network:
-      UseCloudmap: True # Allows to automatically create phpapp.privatedomain.lan so any other app can call it.
 
   phpfpm:
     image: php-fpm

@@ -161,9 +161,13 @@ class ComposeFamily(object):
             else NoValue,
             InferenceAccelerators=NoValue,
             IpcMode=If(
-                ecs_conditions.USE_WINDOWS_OR_FARGATE_T,
+                ecs_conditions.USE_WINDOWS_OS_T,
                 NoValue,
-                Ref(ecs_params.IPC_MODE),
+                If(
+                    ecs_conditions.USE_EC2_OR_EXTERNAL_LT_CON_T,
+                    Ref(ecs_params.IPC_MODE),
+                    NoValue,
+                ),
             ),
             Family=Ref(ecs_params.SERVICE_NAME),
             TaskRoleArn=self.iam_manager.task_role.arn,
@@ -447,19 +451,15 @@ class ComposeFamily(object):
 
         handle_logging(self)
 
-    def set_update_containers_priority(self):
+    def set_update_containers_priority(self) -> None:
         """
         Method to sort out the containers dependencies and create the containers definitions based on the configs.
-        :return:
         """
         service_configs = [[0, service] for service in self.services]
         handle_same_task_services_dependencies(service_configs)
         ordered_containers_config = sorted(service_configs, key=lambda i: i[0])
         self.ordered_services = [s[1] for s in ordered_containers_config]
-        define_essential_containers(self, ordered_containers_config)
-
-        for service in self.services:
-            self.stack.Parameters.update(service.container_parameters)
+        define_essential_containers(self)
 
     def set_secrets_access(self):
         """

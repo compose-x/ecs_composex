@@ -7,7 +7,7 @@
   "description": "The services.x-network specification for ComposeX",
   "additionalProperties": false,
   "properties": {
-    "UseCloudmap": {
+    "AssignPublicIp": {
       "type": "boolean"
     },
     "x-cloudmap": {
@@ -40,9 +40,6 @@
           }
         }
       ]
-    },
-    "IsPublic": {
-      "type": "boolean"
     },
     "Ingress": {
       "$ref": "ingress.spec.json"

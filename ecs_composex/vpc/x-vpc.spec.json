@@ -133,12 +133,59 @@
     "VpcCreate": {
       "additionalProperties": false,
       "type": "object",
+      "oneOf": [
+        {
+          "required": [
+            "SingleNat"
+          ],
+          "not": {
+            "required": [
+              "DisableNat"
+            ]
+          }
+        },
+        {
+          "required": [
+            "DisableNat"
+          ],
+          "not": {
+            "required": [
+              "SingleNat"
+            ]
+          }
+        },
+        {
+          "allOf": [
+            {
+              "not": {
+                "required": [
+                  "DisableNat"
+                ]
+              }
+            },
+            {
+              "not": {
+                "required": [
+                  "SingleNat"
+                ]
+              }
+            }
+          ]
+        }
+      ],
       "properties": {
         "VpcCidr": {
           "format": "ipv4"
         },
         "SingleNat": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "If true, will create only 1 NAT Gateway for all subnets. Saves costs. Mutually exclusive with DisableNat",
+          "default": false
+        },
+        "DisableNat": {
+          "type": "boolean",
+          "description": "If true, won't create any NAT. Mutually exclusive with SingleNat",
+          "default": false
         },
         "Endpoints": {
           "type": "object",

@@ -37,7 +37,7 @@ exclude = ["*.pyc", "*~", "*pycache*"]
 [tool.poetry.dependencies]
 python = "^3.7"
 boto3 = ">=1.20"
-troposphere = "4.0.0b1"
+troposphere = "4.0.0"
 #troposphere = { git = "https://github.com/cloudtools/troposphere", rev = "75db1661e17e7d6c36c53d269d999774a0a30e45" }
 ecr-scan-reporter = { version = "^0.4.5", optional = true }
 compose-x-render = "^0.5.3"
@@ -60,7 +60,7 @@ behave = "^1.2.6"
 coverage = { extras = ["toml"], version = "^6.3.2" }
 flake8 = "^3.9.2"
 pytest = "^6.2.5"
-Sphinx = "^4.4.0"
+Sphinx = "^4.5.0"
 tox = "^3.24.5"
 tbump = "6.5.0"
 sphinx-jsonschema = "^1.17.2"

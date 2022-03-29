@@ -2,12 +2,26 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  Copyright 2020-2022 John Mille <john@compose-x.io>
 
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ecs_composex.common.settings import ComposeXSettings
+    from ecs_composex.ecs.ecs_family import ComposeFamily
+    from ecs_composex.common.stacks import ComposeXStack
+    from troposphere.iam import Role
+
+from itertools import chain
+
 from troposphere import (
     AWS_ACCOUNT_ID,
     AWS_PARTITION,
     AWS_REGION,
     FindInMap,
     GetAtt,
+    NoValue,
     Ref,
     Sub,
 )
@@ -18,7 +32,7 @@ from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.ecs.ecs_params import EXEC_ROLE_T, TASK_ROLE_T
 
 
-def handle_same_task_services_dependencies(services_config):
+def handle_same_task_services_dependencies(services_config: list) -> None:
     """
     Function to define inter-tasks dependencies.
     It defines a priority value (service[0]) based on how many parents
@@ -54,24 +68,29 @@ def handle_same_task_services_dependencies(services_config):
                 config[0] += 1
 
 
-def define_essential_containers(family, ordered_containers_config) -> None:
-    for service in family.ordered_services:
+def define_essential_containers(family: ComposeFamily) -> None:
+    """
+    Iterates over the services of the family, and ensures that containers.Essential is set
+    appropriately according to the service requirements
+
+    :param family:
+    """
+    for service in chain(family.managed_sidecars, family.ordered_services):
         if (
             service.container_start_condition == "SUCCESS"
             or service.container_start_condition == "COMPLETE"
             or service.is_aws_sidecar
-            or not service.is_essential
         ):
-            setattr(service.container_definition, "Essential", False)
+            service.is_essential = False
         else:
-            setattr(service.container_definition, "Essential", True)
+            service.is_essential = True
 
-    if len(ordered_containers_config) == 1:
+    if len(family.ordered_services + family.managed_sidecars) == 1:
         LOG.debug("There is only one service, we need to ensure it is essential")
-        setattr(ordered_containers_config[0][1].container_definition, "Essential", True)
+        family.ordered_services[0].is_essential = True
 
 
-def assign_policy_to_role(role_secrets, role):
+def assign_policy_to_role(role_secrets, role: Role) -> None:
     """
     Function to assign the policy to role Policies
     :param list role_secrets:
@@ -115,7 +134,7 @@ def assign_policy_to_role(role_secrets, role):
         setattr(role, "Policies", [role_policy])
 
 
-def assign_secrets_to_roles(secrets, exec_role, task_role):
+def assign_secrets_to_roles(secrets, exec_role: Role, task_role: Role) -> None:
     """
     Function to assign secrets access policies to exec_role and/or task_role
 
@@ -140,7 +159,9 @@ def assign_secrets_to_roles(secrets, exec_role, task_role):
         assign_policy_to_role(task_role_secrets, task_role)
 
 
-def set_ecs_cluster_logging_s3_access(settings, policy, role_stack):
+def set_ecs_cluster_logging_s3_access(
+    settings: ComposeXSettings, policy, role_stack: ComposeXStack
+):
     """
     Based on ECS Cluster settings / configurations, grant permissions to put logs to S3 Bucket for logs defined to log
     ECS Execute command feature
@@ -149,7 +170,7 @@ def set_ecs_cluster_logging_s3_access(settings, policy, role_stack):
     :param policy:
     :param ecs_composex.common.stacks.ComposeXStack role_stack:
     """
-    if settings.ecs_cluster.log_bucket:
+    if settings.ecs_cluster.log_bucket and settings.ecs_cluster.log_bucket != NoValue:
         parameter = Parameter("EcsExecuteLoggingBucket", Type="String")
         add_parameters(role_stack.stack_template, [parameter])
         if isinstance(settings.ecs_cluster.log_bucket, FindInMap):
@@ -182,7 +203,9 @@ def set_ecs_cluster_logging_s3_access(settings, policy, role_stack):
         )
 
 
-def set_ecs_cluster_logging_kms_access(settings, policy, role_stack):
+def set_ecs_cluster_logging_kms_access(
+    settings: ComposeXSettings, policy, role_stack: ComposeXStack
+):
     """
     Based on ECS Cluster settings / configurations, grant permissions to KMS key encrypting Log defined to log
     ECS Execute command feature
@@ -191,7 +214,7 @@ def set_ecs_cluster_logging_kms_access(settings, policy, role_stack):
     :param policy:
     :param ecs_composex.common.stacks.ComposeXStack role_stack:
     """
-    if settings.ecs_cluster.log_key:
+    if settings.ecs_cluster.log_key and settings.ecs_cluster.log_key != NoValue:
         parameter = Parameter("EcsExecuteLoggingEncryptionKey", Type="String")
         add_parameters(role_stack.stack_template, [parameter])
         if isinstance(settings.ecs_cluster.log_key, FindInMap):
@@ -221,7 +244,9 @@ def set_ecs_cluster_logging_kms_access(settings, policy, role_stack):
         )
 
 
-def set_ecs_cluster_logging_cw_access(settings, policy, role_stack):
+def set_ecs_cluster_logging_cw_access(
+    settings: ComposeXSettings, policy, role_stack: ComposeXStack
+) -> None:
     """
     Based on ECS Cluster settings / configurations, grant permissions to CW Log defined to log
     ECS Execute command feature
@@ -230,7 +255,7 @@ def set_ecs_cluster_logging_cw_access(settings, policy, role_stack):
     :param policy:
     :param ecs_composex.common.stacks.ComposeXStack role_stack:
     """
-    if settings.ecs_cluster.log_group:
+    if settings.ecs_cluster.log_group and settings.ecs_cluster.log_group != NoValue:
         parameter = Parameter("EcsExecuteLoggingGroup", Type="String")
         add_parameters(role_stack.stack_template, [parameter])
         if isinstance(settings.ecs_cluster.log_group, FindInMap):
@@ -267,7 +292,9 @@ def set_ecs_cluster_logging_cw_access(settings, policy, role_stack):
         )
 
 
-def set_ecs_cluster_logging_access(settings, policy, role_stack):
+def set_ecs_cluster_logging_access(
+    settings: ComposeXSettings, policy, role_stack: ComposeXStack
+) -> None:
     """
     Based on ECS Cluster settings / configurations, grant permissions to specific resources
     for all functionalities to work.
@@ -281,7 +308,7 @@ def set_ecs_cluster_logging_access(settings, policy, role_stack):
     set_ecs_cluster_logging_s3_access(settings, policy, role_stack)
 
 
-def set_service_dependency_on_all_iam_policies(family):
+def set_service_dependency_on_all_iam_policies(family: ComposeFamily) -> None:
     """
     Function to ensure the Service does not get created/updated before all IAM policies were set completely
     """

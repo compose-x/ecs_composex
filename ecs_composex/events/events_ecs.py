@@ -55,11 +55,10 @@ def delete_service_from_template(service):
             del service[0].template.outputs[output_name]
 
 
-def define_service_targets(settings, stack, rule, cluster_arn):
+def define_service_targets(stack, rule, cluster_arn):
     """
     Function to define the targets for service.
 
-    :param ecs_composex.common.settings.ComposeXSettings settings:
     :param ecs_composex.events.events_stack.XStack stack:
     :param ecs_composex.events.events_stack.Rule rule:
     :param troposphere.Sub cluster_arn:
@@ -189,6 +188,7 @@ def define_service_targets(settings, stack, rule, cluster_arn):
                     AwsVpcConfiguration=AwsVpcConfiguration(
                         Subnets=Ref(service_subnets_param),
                         SecurityGroups=[Ref(service_sg_param)],
+                        AssignPublicIp=service[0].service_networking.eip_assign,
                     )
                 ),
                 PlatformVersion=Ref(FARGATE_VERSION),
@@ -238,4 +238,4 @@ def events_to_ecs(resources, services_stack, res_root_stack, settings):
     ]
     for rule in rules:
         if rule.families_targets:
-            define_service_targets(settings, res_root_stack, rule, cluster_arn)
+            define_service_targets(res_root_stack, rule, cluster_arn)

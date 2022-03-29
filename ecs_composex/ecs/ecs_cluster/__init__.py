@@ -172,6 +172,9 @@ class EcsCluster(object):
         root_stack.stack_template.add_resource(self.log_group)
         root_stack.stack_template.add_resource(self.cfn_resource)
         self.capacity_providers = FARGATE_PROVIDERS
+        self.default_strategy_providers = [
+            cap.CapacityProvider for cap in DEFAULT_STRATEGY
+        ]
         self.cluster_identifier = Ref(self.cfn_resource)
 
     def import_log_config(self, exec_config):

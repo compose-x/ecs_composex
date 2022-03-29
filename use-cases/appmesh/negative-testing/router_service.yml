@@ -21,7 +21,6 @@ services:
         ecs.task.family: app01
     x-configs:
       network:
-        IsPublic: True
         lb_type: application
     depends_on:
       - app01

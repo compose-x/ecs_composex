@@ -103,6 +103,7 @@ class ComposeService(object):
         self.x_scaling = set_else_none("x-scaling", self.definition, None, False)
         self.x_network = set_else_none("x-network", self.definition, None, False)
         self.x_cloudmap = set_else_none("x-cloudmap", self.x_network, None, False)
+        self.eip_auto_assign = set_else_none("AssignPublicIp", self.x_network, False)
         self.x_ray = set_else_none(
             "x-xray",
             self.definition,
@@ -156,7 +157,7 @@ class ComposeService(object):
         self.families = []
         self.my_family = None
         self.is_aws_sidecar = False
-        self.is_essential = True
+        self._is_essential = True
         self.container_definition = None
 
         self.ecs_healthcheck = NoValue
@@ -183,7 +184,6 @@ class ComposeService(object):
 
         self.set_ecs_healthcheck()
         self.define_logging()
-        self.container_parameters = {}
 
         self.set_user_group()
         map_volumes(self, volumes)
@@ -194,6 +194,16 @@ class ComposeService(object):
 
     def __repr__(self):
         return self.name
+
+    @property
+    def is_essential(self):
+        return self._is_essential
+
+    @is_essential.setter
+    def is_essential(self, value: bool):
+        self._is_essential = value
+        if self.container_definition:
+            setattr(self.container_definition, "Essential", self._is_essential)
 
     def retrieve_image_digest(self):
         """
@@ -370,7 +380,6 @@ class ComposeService(object):
             if self.user_group
             else NoValue,
         )
-        self.container_parameters.update({self.image_param.title: self.image})
 
     def define_compose_logging(self):
         """
@@ -394,7 +403,7 @@ class ComposeService(object):
             return
         logging_def = self.definition["logging"]
         valid_drivers = ["awslogs"]
-        if not logging_def["driver"] in valid_drivers:
+        if logging_def["driver"] not in valid_drivers:
             LOG.warning(
                 "The logging driver",
                 logging_def["driver"],
