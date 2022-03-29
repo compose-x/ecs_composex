@@ -53,6 +53,7 @@ def set_template(family) -> Template:
         ecs_conditions.IPC_FROM_HOST_CON_T: ecs_conditions.IPC_FROM_HOST_CON,
         ecs_conditions.USE_WINDOWS_OR_FARGATE_T: ecs_conditions.USE_WINDOWS_OR_FARGATE,
         ecs_conditions.DISABLE_CAPACITY_PROVIDERS_CON_T: ecs_conditions.DISABLE_CAPACITY_PROVIDERS_CON,
+        ecs_conditions.USE_EC2_OR_EXTERNAL_LT_CON_T: ecs_conditions.USE_EC2_OR_EXTERNAL_LT_CON,
     }
     for title, condition in conditions.items():
         template.add_condition(title, condition)

@@ -85,10 +85,22 @@ class ServiceNetworking(object):
             NoValue,
             NetworkConfiguration(
                 AwsvpcConfiguration=AwsvpcConfiguration(
-                    Subnets=self.subnets, SecurityGroups=self.security_groups
+                    Subnets=self.subnets,
+                    SecurityGroups=self.security_groups,
+                    AssignPublicIp=self.eip_assign,
                 )
             ),
         )
+
+    @property
+    def eip_assign(self):
+        if any([svc.eip_auto_assign for svc in self.family.ordered_services]):
+            LOG.info(
+                f"{self.family.name} - networking - "
+                "At least one service in definition has AssignPublicIp set to True."
+            )
+            return "ENABLED"
+        return "DISABLED"
 
     @property
     def security_groups(self) -> list:

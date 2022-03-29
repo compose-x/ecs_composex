@@ -98,7 +98,9 @@ def add_storage_subnets(template, vpc, az_index, layers):
     return [rtb], subnets
 
 
-def add_public_subnets(template, vpc, az_index, layers, igw, single_nat):
+def add_public_subnets(
+    template, vpc, az_index, layers, igw, single_nat: bool, disable_nat: bool = False
+):
     """
     Function to add public subnets for the VPC
 
@@ -151,7 +153,7 @@ def add_public_subnets(template, vpc, az_index, layers, igw, single_nat):
             + Tags({f"vpc{DELIM}usage": "public", f"vpc{DELIM}vpc-id": Ref(vpc)}),
             Metadata=metadata,
         )
-        if (single_nat and not nats) or not single_nat:
+        if not disable_nat and ((single_nat and not nats) or not single_nat):
             eip = EIP(f"NatGatewayEip{index.upper()}", template=template, Domain="vpc")
             nat = NatGateway(
                 f"NatGatewayAz{index.upper()}",
@@ -221,11 +223,14 @@ def add_apps_subnets(template, vpc, az_index, layers, nats, endpoints=None):
     subnets = []
     rtbs = []
     entries = []
-    if len(nats) < len(az_index):
+    if nats and (len(nats) < len(az_index)):
         primary_nat = nats[0]
         nats = []
         for _ in az_index:
             nats.append(primary_nat)
+    elif not nats:
+        for _ in az_index:
+            nats.append(None)
     for index, subnet_cidr, nat in zip(az_index, layers["app"], nats):
         suffix = index.upper()
         subnet = Subnet(
@@ -255,13 +260,14 @@ def add_apps_subnets(template, vpc, az_index, layers, nats, endpoints=None):
             Tags=Tags(Name=f"AppRtb{index.upper()}"),
             Metadata=metadata,
         )
-        Route(
-            f"AppRoute{index.upper()}",
-            template=template,
-            NatGatewayId=Ref(nat),
-            RouteTableId=Ref(rtb),
-            DestinationCidrBlock="0.0.0.0/0",
-        )
+        if nat:
+            Route(
+                f"AppRoute{index.upper()}",
+                template=template,
+                NatGatewayId=Ref(nat),
+                RouteTableId=Ref(rtb),
+                DestinationCidrBlock="0.0.0.0/0",
+            )
         SubnetRouteTableAssociation(
             f"SubnetRtbAssoc{index.upper()}",
             template=template,

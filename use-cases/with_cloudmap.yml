@@ -68,8 +68,6 @@ services:
           - Id: pl-6da54004
             Type: PrefixList
         Myself: false
-      IsPublic: false
-      UseCloudmap: true
     x-scaling:
       Range: 1-4
     x-xray: false
@@ -207,8 +205,6 @@ services:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/ReadOnlyAccess
     x-network:
-      IsPublic: false
-      UseCloudmap: true
     x-xray: true
 version: '3.8'
 volumes:

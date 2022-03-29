@@ -118,6 +118,9 @@ def set_launch_type_from_cluster_only(family, cluster):
     if any(
         provider in ["FARGATE", "FARGATE_SPOT"]
         for provider in cluster.default_strategy_providers
+    ) or all(
+        provider in cluster.capacity_providers
+        for provider in ["FARGATE", "FARGATE_SPOT"]
     ):
         family.service_compute.launch_type = "FARGATE_PROVIDERS"
         LOG.debug(

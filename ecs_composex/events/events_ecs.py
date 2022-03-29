@@ -189,6 +189,7 @@ def define_service_targets(settings, stack, rule, cluster_arn):
                     AwsVpcConfiguration=AwsVpcConfiguration(
                         Subnets=Ref(service_subnets_param),
                         SecurityGroups=[Ref(service_sg_param)],
+                        AssignPublicIp=service[0].service_networking.eip_assign,
                     )
                 ),
                 PlatformVersion=Ref(FARGATE_VERSION),

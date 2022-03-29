@@ -10,8 +10,6 @@ services:
       RetentionInDays: 42
       CreateLogGroup: True
     x-network:
-      IsPublic: False
-      UseCloudmap: True
       Ingress:
         Myself: False
         AwsSources:
@@ -40,5 +38,3 @@ services:
         - arn:aws:iam::aws:policy/ReadOnlyAccess
     x-xray: true
     x-network:
-      IsPublic: False
-      UseCloudmap: True

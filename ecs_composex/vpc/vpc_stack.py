@@ -143,8 +143,11 @@ class Vpc(AwsEnvironmentResource):
             self.layers,
             vpc_core[-1],
             set_else_none(
-                VPC_SINGLE_NAT.title, self.properties, bool(VPC_SINGLE_NAT.Default)
+                VPC_SINGLE_NAT.title,
+                self.properties,
+                bool(VPC_SINGLE_NAT.Default),
             ),
+            set_else_none("DisableNat", self.properties, False),
         )
         self.app_subnets = add_apps_subnets(
             template,
