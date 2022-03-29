@@ -5,6 +5,14 @@
 """
 AWS DocumentDB entrypoint for ECS ComposeX
 """
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ecs_composex.common.settings import ComposeXSettings
+    from ecs_composex.mods_manager import XResourceModule
+
 
 import warnings
 
@@ -19,7 +27,6 @@ from ecs_composex.compose.x_resources.helpers import (
     set_lookup_resources,
     set_new_resources,
     set_resources,
-    set_use_resources,
 )
 from ecs_composex.compose.x_resources.network_x_resources import DatabaseXResource
 from ecs_composex.docdb.docdb_params import (
@@ -67,7 +74,7 @@ def get_db_cluster_config(db, account_id, resource_id):
         )["DBClusters"]
         db_cluster = db_config_r[0]
     except (client.exceptions.DBClusterNotFoundFault,) as error:
-        LOG.error(f"{db.module_name}.{db.name} - Failed to retrieve configuration")
+        LOG.error(f"{db.module.res_key}.{db.name} - Failed to retrieve configuration")
         LOG.error(error)
         raise
     if keyisset("VpcSecurityGroups", db_config_r):
@@ -96,7 +103,9 @@ class DocDb(DatabaseXResource):
     subnets_param = STORAGE_SUBNETS
     policies_scaffolds = get_access_types(MOD_KEY)
 
-    def __init__(self, name, definition, module_name, settings, mapping_key=None):
+    def __init__(
+        self, name, definition, module: XResourceModule, settings: ComposeXSettings
+    ):
         """
         Init method
 
@@ -107,9 +116,7 @@ class DocDb(DatabaseXResource):
         self.db_secret = None
         self.db_sg = None
         self.db_subnets_group = None
-        super().__init__(
-            name, definition, module_name, settings, mapping_key=mapping_key
-        )
+        super().__init__(name, definition, module, settings)
         self.set_override_subnets()
         self.security_group_param = DB_SG
         self.db_secret_arn_parameter = DB_SECRET_ARN
@@ -224,16 +231,15 @@ class XStack(ComposeXStack):
     Class for the Stack of DocDB
     """
 
-    def __init__(self, title, settings, **kwargs):
-        set_resources(settings, DocDb, RES_KEY, MOD_KEY, mapping_key=MAPPINGS_KEY)
-        x_resources = settings.compose_content[RES_KEY].values()
-        use_resources = set_use_resources(x_resources, RES_KEY, False)
-        if use_resources:
-            warnings.warn(f"{RES_KEY} does not yet support Use.")
-        lookup_resources = set_lookup_resources(x_resources, RES_KEY)
-        if lookup_resources or use_resources:
+    def __init__(
+        self, title, settings: ComposeXSettings, module: XResourceModule, **kwargs
+    ):
+        set_resources(settings, DocDb, module)
+        x_resources = settings.compose_content[module.res_key].values()
+        lookup_resources = set_lookup_resources(x_resources)
+        if lookup_resources:
             resolve_lookup(lookup_resources, settings)
-        new_resources = set_new_resources(x_resources, RES_KEY, True)
+        new_resources = set_new_resources(x_resources, True)
 
         if new_resources:
             stack_template = init_doc_db_template()
@@ -242,5 +248,5 @@ class XStack(ComposeXStack):
         else:
             self.is_void = True
 
-        for resource in settings.compose_content[RES_KEY].values():
+        for resource in settings.compose_content[module.res_key].values():
             resource.stack = self

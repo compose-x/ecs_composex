@@ -70,7 +70,7 @@ def elasticache_to_ecs(resources, services_stack, res_root_stack, settings):
     :param ecs_composex.common.settings.ComposeXSettings settings:
     """
     for resource_name, resource in resources.items():
-        LOG.info(f"{resource.module_name}.{resource_name} - Linking to services")
+        LOG.info(f"{resource.module.res_key}.{resource_name} - Linking to services")
         if not resource.mappings and resource.cfn_resource:
             handle_new_tcp_resource(
                 resource,

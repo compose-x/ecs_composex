@@ -5,6 +5,15 @@
 """
 Module to create the root stack for DynamoDB tables
 """
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ecs_composex.common.settings import ComposeXSettings
+    from ecs_composex.mods_manager import XResourceModule
+
+
 import warnings
 
 from botocore.exceptions import ClientError
@@ -20,7 +29,6 @@ from ecs_composex.compose.x_resources.helpers import (
     set_lookup_resources,
     set_new_resources,
     set_resources,
-    set_use_resources,
 )
 from ecs_composex.dynamodb.dynamodb_params import (
     MAPPINGS_KEY,
@@ -71,11 +79,10 @@ class Table(ApiXResource):
         self,
         name: str,
         definition: dict,
-        module_name: str,
-        settings,
-        mapping_key: str = None,
+        module: XResourceModule,
+        settings: ComposeXSettings,
     ):
-        super().__init__(name, definition, module_name, settings, mapping_key)
+        super().__init__(name, definition, module, settings)
         self.arn_parameter = TABLE_ARN
         self.ref_parameter = TABLE_NAME
         self.default_cloudmap_settings = {
@@ -124,16 +131,15 @@ class XStack(ComposeXStack):
     Class for Dynamodb
     """
 
-    def __init__(self, title, settings, **kwargs):
-        set_resources(settings, Table, RES_KEY, MOD_KEY, mapping_key=MAPPINGS_KEY)
-        x_resources = settings.compose_content[RES_KEY].values()
-        use_resources = set_use_resources(x_resources, RES_KEY, False)
-        if use_resources:
-            warnings.warn(f"{RES_KEY} does not yet support Use.")
-        lookup_resources = set_lookup_resources(x_resources, RES_KEY)
+    def __init__(
+        self, title, settings: ComposeXSettings, module: XResourceModule, **kwargs
+    ):
+        set_resources(settings, Table, module)
+        x_resources = settings.compose_content[module.res_key].values()
+        lookup_resources = set_lookup_resources(x_resources)
         if lookup_resources:
             resolve_lookup(lookup_resources, settings)
-        new_resources = set_new_resources(x_resources, RES_KEY, False)
+        new_resources = set_new_resources(x_resources, False)
         if new_resources:
             stack_template = build_template("Root template for DynamoDB tables")
             super().__init__(title, stack_template, **kwargs)

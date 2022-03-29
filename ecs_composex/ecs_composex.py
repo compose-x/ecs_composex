@@ -6,35 +6,46 @@
 Main module to generate a full stack with VPC, Cluster, Compute, Services and all X- AWS resources.
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ecs_composex.common.settings import ComposeXSettings
+    from ecs_composex.compose.x_resources import XResource
+
 import re
 import warnings
 from importlib import import_module
 
-from compose_x_common.compose_x_common import keyisset
 from troposphere import AWS_STACK_NAME, Ref
 
 from ecs_composex.cloudmap.cloudmap_stack import x_cloud_lookup_and_new_vpc
-from ecs_composex.common import LOG, NONALPHANUM, add_update_mapping, init_template
+from ecs_composex.common import (
+    LOG,
+    NONALPHANUM,
+    add_resource,
+    add_update_mapping,
+    init_template,
+)
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
-from ecs_composex.common.ecs_composex import X_AWS_KEY, X_KEY
+from ecs_composex.common.ecs_composex import X_KEY
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common.tagging import add_all_tags
 from ecs_composex.compose.x_resources.environment_x_resources import (
     AwsEnvironmentResource,
 )
 from ecs_composex.compose.x_resources.services_resources import ServicesXResource
-from ecs_composex.dashboards.dashboards_stack import XStack as DashboardsStack
-from ecs_composex.ecs.ecs_cluster import add_ecs_cluster
-from ecs_composex.ecs.ecs_cluster.helpers import set_ecs_cluster_identifier
 from ecs_composex.ecs.ecs_stack import add_compose_families
 from ecs_composex.ecs.helpers import (
     add_iam_dependency,
     handle_families_cross_dependencies,
     set_families_ecs_service,
-    update_families_network_ingress,
-    update_families_networking_settings,
 )
+from ecs_composex.ecs_cluster import add_ecs_cluster
+from ecs_composex.ecs_cluster.helpers import set_ecs_cluster_identifier
 from ecs_composex.iam.iam_stack import XStack as IamStack
+from ecs_composex.mods_manager import ModManager
 from ecs_composex.vpc.helpers import (
     define_vpc_settings,
     update_network_resources_vpc_config,
@@ -88,32 +99,12 @@ def get_mod_function(module_name, function_name):
     return function
 
 
-def get_mod_class(module_name):
-    """
-    Function to get the XModule class for a specific ecs_composex module
-
-    :param str module_name: Name of the x-module we are looking for.
-    :return: the_class, maps to the main class for the given x-module
-    """
-    composex_module_name = f"ecs_composex.{module_name}.{module_name}_stack"
-    LOG.debug(composex_module_name)
-    the_class = None
-    try:
-        res_module = import_module(composex_module_name)
-        LOG.debug(res_module)
-        try:
-            the_class = getattr(res_module, "XStack")
-            return the_class
-        except AttributeError:
-            LOG.info(f"No XStack class for {module_name} found - skipping")
-            return None
-    except ImportError as error:
-        LOG.error(f"Failure to process the module {composex_module_name}")
-        LOG.error(error)
-    return the_class
-
-
-def invoke_x_to_ecs(module_name, services_stack, resource, settings) -> None:
+def invoke_x_to_ecs(
+    module_name: str,
+    services_stack: ComposeXStack,
+    resource: XResource,
+    settings: ComposeXSettings,
+) -> None:
     """
     Function to associate X resources to Services
 
@@ -139,7 +130,9 @@ def invoke_x_to_ecs(module_name, services_stack, resource, settings) -> None:
         )
 
 
-def apply_x_configs_to_ecs(settings, root_stack) -> None:
+def apply_x_configs_to_ecs(
+    settings: ComposeXSettings, root_stack: ComposeXStack
+) -> None:
     """
     Function that evaluates only the x- resources of the root template and iterates over the resources.
     If there is an implemented module in ECS ComposeX for that resource_stack to map to the ECS Services, it will
@@ -169,7 +162,10 @@ def apply_x_configs_to_ecs(settings, root_stack) -> None:
 
 
 def apply_x_resource_to_x(
-    settings, root_stack, vpc_stack, env_resources_only: bool = False
+    settings: ComposeXSettings,
+    root_stack: ComposeXStack,
+    vpc_stack: ComposeXStack,
+    env_resources_only: bool = False,
 ) -> None:
     """
     Goes over each x resource in the execution and execute logical association between the resources.
@@ -193,64 +189,32 @@ def apply_x_resource_to_x(
         vpc_stack.vpc_resource.handle_x_dependencies(settings, root_stack)
 
 
-def process_x_class(root_stack, settings, key):
-    """
-    Process the resource class module for its respective Compose stack
-    """
-    res_type = RES_REGX.sub("", key)
-    xclass = get_mod_class(res_type)
-    parameters = {ROOT_STACK_NAME_T: Ref(AWS_STACK_NAME)}
-    LOG.debug(xclass)
-    if not xclass:
-        LOG.info(f"Class for {res_type} not found")
-        xstack = None
-    else:
-        xstack = xclass(
-            res_type.strip(),
-            settings=settings,
-            Parameters=parameters,
-        )
-    if xstack and xstack.is_void:
-        settings.x_resources_void.append({res_type: xstack})
-    elif (
-        xstack
-        and hasattr(xstack, "title")
-        and hasattr(xstack, "stack_template")
-        and not xstack.is_void
-    ):
-        root_stack.stack_template.add_resource(xstack)
-
-
-def add_x_env_resources(root_stack, settings) -> None:
+def add_x_resources(
+    root_stack: ComposeXStack, settings: ComposeXSettings, mods_manager: ModManager
+) -> None:
     """
     Processes the modules / resources that are defining the environment settings
     """
-    for key in settings.compose_content:
-        if (
-            key.startswith(X_KEY)
-            and key in ENV_RESOURCES
-            and not re.match(X_AWS_KEY, key)
+    for name, module in mods_manager.modules.items():
+        LOG.info(f"Processing {name}")
+        x_stack = module.stack(
+            module.mapping_key,
+            settings=settings,
+            module=module,
+            Parameters={ROOT_STACK_NAME_T: Ref(AWS_STACK_NAME)},
+        )
+        if x_stack and x_stack.is_void:
+            settings.x_resources_void.append({module.res_key: x_stack})
+        elif (
+            x_stack
+            and hasattr(x_stack, "title")
+            and hasattr(x_stack, "stack_template")
+            and not x_stack.is_void
         ):
-            LOG.info(f"{settings.name} - Processing {key}")
-            process_x_class(root_stack, settings, key)
+            add_resource(root_stack.stack_template, x_stack)
 
 
-def add_x_resources(root_stack, settings) -> None:
-    """
-    Function to add each X resource from the compose file
-    For each resource type, will create a ComposeXStack and add the resources to it.
-    """
-    for key in settings.compose_content:
-        if (
-            key.startswith(X_KEY)
-            and key not in IGNORED_X_KEYS
-            and key not in ENV_RESOURCES
-            and not re.match(X_AWS_KEY, key)
-        ):
-            process_x_class(root_stack, settings, key)
-
-
-def create_root_stack(settings) -> ComposeXStack:
+def create_root_stack(settings: ComposeXSettings) -> ComposeXStack:
     """
     Initializes the root stack template and ComposeXStack
 
@@ -280,7 +244,9 @@ def deprecation_warning(settings):
             )
 
 
-def set_all_mappings_to_root_stack(root_stack, settings):
+def set_all_mappings_to_root_stack(
+    root_stack: ComposeXStack, settings: ComposeXSettings
+):
     """
     Adds all of the mappings to the root stack
 
@@ -291,7 +257,7 @@ def set_all_mappings_to_root_stack(root_stack, settings):
         add_update_mapping(root_stack.stack_template, mapping_key, mapping)
 
 
-def generate_full_template(settings):
+def generate_full_template(settings: ComposeXSettings):
     """
     Function to generate the root template and associate services, x-resources to each other.
 
@@ -308,17 +274,19 @@ def generate_full_template(settings):
     :rtype: root_template, list
     """
     deprecation_warning(settings)
+    manager = ModManager(settings)
+    manager.modules_repr()
     LOG.info(
         f"Service families to process {[family.name for family in settings.families.values()]}"
     )
     root_stack = create_root_stack(settings)
-    add_ecs_cluster(root_stack, settings)
+    add_ecs_cluster(root_stack, settings, manager)
     iam_stack = root_stack.stack_template.add_resource(IamStack("iam", settings))
-    add_x_env_resources(root_stack, settings)
-    add_x_resources(root_stack, settings)
+    add_x_resources(root_stack, settings, manager)
     add_compose_families(root_stack, settings)
-    vpc_stack = VpcStack("vpc", settings)
-    define_vpc_settings(settings, vpc_stack, root_stack)
+    vpc_module = manager.add_module("x-vpc")
+    vpc_stack = VpcStack("vpc", settings, vpc_module)
+    define_vpc_settings(settings, vpc_module, vpc_stack, root_stack)
 
     if vpc_stack.vpc_resource and (
         vpc_stack.vpc_resource.cfn_resource or vpc_stack.vpc_resource.mappings
@@ -349,9 +317,6 @@ def generate_full_template(settings):
         root_stack,
     )
     apply_x_resource_to_x(settings, root_stack, vpc_stack)
-
-    if keyisset("x-dashboards", settings.compose_content):
-        root_stack.stack_template.add_resource(DashboardsStack("dashboards", settings))
     for family in settings.families.values():
         add_iam_dependency(iam_stack, family)
         family.set_enable_execute_command()

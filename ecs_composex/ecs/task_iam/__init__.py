@@ -6,7 +6,7 @@
 Package managing the IAM resources (roles, policies etc.) for a given ComposeFamily
 """
 
-from typing import OrderedDict
+from collections import OrderedDict
 
 from compose_x_common.compose_x_common import set_else_none
 from troposphere import Ref

@@ -5,9 +5,9 @@
 
 .. _sns_syntax_reference:
 
-======
+############
 x-sns
-======
+############
 
 Module to manage SNS Topics that are going to be used by your services or other AWS Resources you define in the compose
 files.
@@ -19,12 +19,10 @@ Syntax
     :caption: x-sns syntax reference
 
     x-sns:
-      Topics:
-        TopicA:
-          Properties: {}
-          Settings: {}
-          Services: []
-
+      TopicA:
+        Properties: {}
+        Settings: {}
+        Services: {}
 
 .. tip::
 

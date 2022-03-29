@@ -41,8 +41,8 @@ def assign_kms_key_to_queue(kms_key, queue, queue_stack, settings):
     elif not kms_key.cfn_resource and kms_key.mappings:
         add_update_mapping(
             queue.stack.stack_template,
-            kms_key.mapping_key,
-            settings.mappings[kms_key.mapping_key],
+            kms_key.module.mapping_key,
+            settings.mappings[kms_key.module.mapping_key],
         )
         setattr(queue.cfn_resource, KEY, kms_key_id["ImportValue"])
 
@@ -60,7 +60,7 @@ def handle_queue_kms(kms_key, queue, queue_stack, settings):
     """
 
     if not queue.cfn_resource:
-        LOG.debug(f"{queue.module_name}.{queue.name} - Not a new resource. Skipping")
+        LOG.debug(f"{queue.module.res_key}.{queue.name} - Not a new resource. Skipping")
         return
     if not hasattr(queue.cfn_resource, KEY):
         return

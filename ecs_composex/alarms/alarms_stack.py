@@ -6,6 +6,14 @@
 Main module to create x-alarms defined at the top level.
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ecs_composex.common.settings import ComposeXSettings
+    from ecs_composex.mods_manager import XResourceModule
+
 import re
 import warnings
 
@@ -21,13 +29,12 @@ from ecs_composex.alarms.alarms_elbv2 import (
 from ecs_composex.alarms.alarms_params import RES_KEY
 from ecs_composex.common import build_template, setup_logging
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.compose.x_resources import ServicesXResource
 from ecs_composex.compose.x_resources.helpers import (
     set_lookup_resources,
     set_new_resources,
     set_resources,
-    set_use_resources,
 )
+from ecs_composex.compose.x_resources.services_resources import ServicesXResource
 from ecs_composex.resources_import import import_record_properties
 
 LOG = setup_logging()
@@ -193,13 +200,13 @@ class Alarm(ServicesXResource):
 
     topics_key = "Topics"
 
-    def __init__(self, name, definition, module_name, settings, mapping_key=None):
+    def __init__(
+        self, name, definition, module: XResourceModule, settings: ComposeXSettings
+    ):
         self.topics = []
         self.is_composite = False
         self.in_composite = False
-        super().__init__(
-            name, definition, module_name, settings, mapping_key=mapping_key
-        )
+        super().__init__(name, definition, module, settings)
         self.topics = (
             definition[self.topics_key]
             if keyisset(self.topics_key, self.definition)
@@ -214,7 +221,7 @@ class Alarm(ServicesXResource):
         :param ecs_composex.common.settings.ComposeXSettings settings:
         """
         if not hasattr(self.cfn_resource, "Dimensions"):
-            LOG.debug(f"{self.module_name}.{self.name} - No Dimensions defined")
+            LOG.debug(f"{self.module.res_key}.{self.name} - No Dimensions defined")
             return
         dimensions = getattr(self.cfn_resource, "Dimensions")
         namespace = self.cfn_resource.Namespace
@@ -255,21 +262,22 @@ class XStack(ComposeXStack):
     Class to represent the root stack for alarms
     """
 
-    def __init__(self, name, settings, **kwargs):
-        set_resources(settings, Alarm, RES_KEY)
-        x_resources = settings.compose_content[RES_KEY].values()
-        new_resources = set_new_resources(x_resources, RES_KEY, False)
-        lookup_resources = set_lookup_resources(x_resources, RES_KEY)
-        use_resources = set_use_resources(x_resources, RES_KEY, False)
+    def __init__(
+        self, name, settings: ComposeXSettings, module: XResourceModule, **kwargs
+    ):
+        set_resources(settings, Alarm, module)
+        x_resources = settings.compose_content[module.res_key].values()
+        new_resources = set_new_resources(x_resources, False)
+        lookup_resources = set_lookup_resources(x_resources)
         if new_resources:
             template = build_template("Root stack for Alarms created via Compose-X")
             super().__init__(name, stack_template=template, **kwargs)
             create_alarms(template, settings, new_resources)
         else:
             self.is_void = True
-        if lookup_resources or use_resources:
+        if lookup_resources:
             warnings.warn(
-                f"{RES_KEY} - Lookup and Use are not supported. "
+                f"{module.res_key} - Lookup and Use are not supported. "
                 "You can only create new resources"
             )
         for resource in x_resources:

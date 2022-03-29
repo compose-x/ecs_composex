@@ -5,6 +5,14 @@
 """
 Main module for x-route53
 """
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ecs_composex.common.settings import ComposeXSettings
+    from ecs_composex.mods_manager import XResourceModule
+
 
 import warnings
 
@@ -22,7 +30,6 @@ from ..compose.x_resources.helpers import (
     set_lookup_resources,
     set_new_resources,
     set_resources,
-    set_use_resources,
 )
 from .route53_acm import handle_acm_records
 from .route53_elbv2 import handle_elbv2_records
@@ -115,18 +122,22 @@ class HostedZone(AwsEnvironmentResource):
     """
 
     def __init__(
-        self, name: str, definition: dict, module_name: str, settings, mapping_key=None
+        self,
+        name: str,
+        definition: dict,
+        module: XResourceModule,
+        settings: ComposeXSettings,
     ):
         self.zone_name = None
         self.records = []
-        super().__init__(name, definition, module_name, settings, mapping_key)
+        super().__init__(name, definition, module, settings)
         self.cloud_control_attributes_mapping = {PUBLIC_DNS_ZONE_ID.title: "Id"}
         self.zone_name = set_else_none(
             "ZoneName", self.definition, set_else_none("Name", self.definition, None)
         )
         if self.zone_name is None:
             raise ValueError(
-                f"{self.module_name}.{self.name} - Could not define the Zone Name"
+                f"{self.module.res_key}.{self.name} - Could not define the Zone Name"
             )
 
     def init_outputs(self):
@@ -165,7 +176,7 @@ class HostedZone(AwsEnvironmentResource):
         if subattribute_key is not None:
             if not keyisset(subattribute_key, self.lookup):
                 raise KeyError(
-                    f"{self.module_name}.{self.name} - Lookup sub-key {subattribute_key} is not defined."
+                    f"{self.module.res_key}.{self.name} - Lookup sub-key {subattribute_key} is not defined."
                 )
             lookup_attributes = self.lookup[subattribute_key]
         if isinstance(lookup_attributes, bool):
@@ -231,8 +242,8 @@ class HostedZone(AwsEnvironmentResource):
                     ):
                         add_update_mapping(
                             self.stack.stack_template,
-                            self.mapping_key,
-                            settings.mappings[self.mapping_key],
+                            self.module.mapping_key,
+                            settings.mappings[self.module.mapping_key],
                         )
                     target[1](
                         self, self.stack, resource, resource_stack, settings, root_stack
@@ -269,7 +280,9 @@ class XStack(ComposeXStack):
 
     stack_title = "Route53 zones and records created from x-route53"
 
-    def __init__(self, name: str, settings, **kwargs):
+    def __init__(
+        self, name: str, settings: ComposeXSettings, module: XResourceModule, **kwargs
+    ):
         """
         :param str name:
         :param ecs_composex.common.settings.ComposeXSettings settings:
@@ -277,11 +290,10 @@ class XStack(ComposeXStack):
         """
         self.x_to_x_mappings = []
         self.x_resource_class = HostedZone
-        set_resources(settings, HostedZone, RES_KEY, MOD_KEY, mapping_key=MAPPINGS_KEY)
-        x_resources = settings.compose_content[RES_KEY].values()
-        use_resources = set_use_resources(x_resources, RES_KEY, False)
-        lookup_resources = set_lookup_resources(x_resources, RES_KEY)
-        new_resources = set_new_resources(x_resources, RES_KEY, False)
+        set_resources(settings, HostedZone, module)
+        x_resources = settings.compose_content[module.res_key].values()
+        lookup_resources = set_lookup_resources(x_resources)
+        new_resources = set_new_resources(x_resources, False)
         for resource in x_resources:
             resource.stack = self
         if new_resources:
@@ -291,6 +303,4 @@ class XStack(ComposeXStack):
             self.is_void = True
         if lookup_resources:
             resolve_lookup(lookup_resources, settings)
-        if use_resources:
-            warnings.warn(f"{RES_KEY}. - Use is not yet supported.")
         self.module_name = MOD_KEY

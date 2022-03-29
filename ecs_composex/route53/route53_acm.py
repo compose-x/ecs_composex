@@ -44,8 +44,8 @@ def lookup_dns_zone(route53_zone, validation_option, acm_stack, settings):
     """
     add_update_mapping(
         acm_stack.stack_template,
-        route53_zone.mapping_key,
-        settings.mappings[route53_zone.mapping_key],
+        route53_zone.module.mapping_key,
+        settings.mappings[route53_zone.module.mapping_key],
     )
     zone_id_attribute = route53_zone.attributes_outputs[PUBLIC_DNS_ZONE_ID]
     setattr(validation_option, "HostedZoneId", zone_id_attribute["ImportValue"])
@@ -93,7 +93,7 @@ def handle_acm_records(
     """
     if not target_cert.cfn_resource:
         LOG.debug(
-            f"{target_cert.module_name}.{target_cert.name} - Not a new certificate. Skipping"
+            f"{target_cert.module.res_key}.{target_cert.name} - Not a new certificate. Skipping"
         )
         return
     validation_options = [

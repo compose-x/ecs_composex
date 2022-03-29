@@ -16,10 +16,10 @@ compared to the original order, but nothing else.
 
 """
 
+from copy import deepcopy
+
 import yaml
 from yaml.loader import Loader
-
-from copy import deepcopy
 
 try:
     from compose_x_common.compose_x_common import keyisset, keypresent
@@ -29,7 +29,6 @@ except ImportError:
 
 
 class MyDumper(yaml.Dumper):
-
     def increase_indent(self, flow=False, indentless=False):
         return super(MyDumper, self).increase_indent(flow, False)
 
@@ -70,6 +69,14 @@ def remove_env_settings(resource_definition):
         del resource_definition["Settings"]
 
 
+def rework_sns_topics(sns_definition):
+    if not keyisset("Topics", sns_definition):
+        return
+    topics = deepcopy(sns_definition["Topics"])
+    del sns_definition["Topics"]
+    sns_definition.update(topics)
+
+
 def reformat_services(input_file):
     db_services = ["x-elasticache", "x-rds", "x-docdb", "x-neptune"]
     excluded = ["x-elbv2"]
@@ -83,6 +90,8 @@ def reformat_services(input_file):
             continue
         if not isinstance(value, dict):
             continue
+        if key == "x-sns":
+            rework_sns_topics(value)
         for res, definition in value.items():
             remove_env_settings(definition)
             if not keyisset("Services", definition) or (

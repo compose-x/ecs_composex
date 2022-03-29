@@ -5,6 +5,14 @@
 """
 Module to control S3 stack
 """
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ecs_composex.common.settings import ComposeXSettings
+    from ecs_composex.mods_manager import XResourceModule
+
 
 from botocore.exceptions import ClientError
 from compose_x_common.aws import get_account_id
@@ -26,7 +34,6 @@ from ecs_composex.compose.x_resources.helpers import (
     set_lookup_resources,
     set_new_resources,
     set_resources,
-    set_use_resources,
 )
 from ecs_composex.iam.import_sam_policies import get_access_types
 from ecs_composex.resource_settings import link_resource_to_services
@@ -175,10 +182,10 @@ class Bucket(ApiXResource):
 
     policies_scaffolds = get_access_types(MOD_KEY)
 
-    def __init__(self, name, definition, module_name, settings, mapping_key=None):
-        super().__init__(
-            name, definition, module_name, settings, mapping_key=mapping_key
-        )
+    def __init__(
+        self, name, definition, module: XResourceModule, settings: ComposeXSettings
+    ):
+        super().__init__(name, definition, module, settings)
         self.cloud_control_attributes_mapping = CONTROL_CLOUD_ATTR_MAPPING
         self.kms_arn_attr = S3_BUCKET_KMS_KEY
         self.arn_parameter = S3_BUCKET_ARN
@@ -236,7 +243,7 @@ class Bucket(ApiXResource):
             arn_parts = arn_re.match(self.lookup["Arn"])
             if not arn_parts:
                 raise KeyError(
-                    f"{self.module_name}.{self.name} - ARN {self.lookup['Arn']} is not valid. Must match",
+                    f"{self.module.res_key}.{self.name} - ARN {self.lookup['Arn']} is not valid. Must match",
                     arn_re.pattern,
                 )
             self.arn = self.lookup["Arn"]
@@ -249,11 +256,11 @@ class Bucket(ApiXResource):
             resource_id = arn_parts.group("id")
         else:
             raise KeyError(
-                f"{self.module_name}.{self.name} - You must specify Arn or Tags to identify existing resource"
+                f"{self.module.res_key}.{self.name} - You must specify Arn or Tags to identify existing resource"
             )
         if not self.arn:
             raise LookupError(
-                f"{self.module_name}.{self.name} - Failed to find the AWS Resource with given tags"
+                f"{self.module.res_key}.{self.name} - Failed to find the AWS Resource with given tags"
             )
         props = {}
         if self.cloud_control_attributes_mapping:
@@ -265,7 +272,7 @@ class Bucket(ApiXResource):
                     )
             except _s3.meta.client.exceptions:
                 LOG.warning(
-                    f"{self.module_name}.{self.name} - Failed to evaluate bucket ownership. Cannot use Control API"
+                    f"{self.module.res_key}.{self.name} - Failed to evaluate bucket ownership. Cannot use Control API"
                 )
         if not props:
             props = self.native_attributes_mapping_lookup(
@@ -274,11 +281,11 @@ class Bucket(ApiXResource):
         self.lookup_properties = props
         self.generate_cfn_mappings_from_lookup_properties()
 
-    def to_ecs(self, settings, root_stack=None):
+    def to_ecs(self, settings, modules, root_stack=None):
         """
         Handles mapping the S3 bucket to ECS services
         """
-        LOG.info(f"{self.module_name}.{self.name} - Linking to services")
+        LOG.info(f"{self.module.res_key}.{self.name} - Linking to services")
         link_resource_to_services(
             settings,
             self,
@@ -287,12 +294,11 @@ class Bucket(ApiXResource):
         )
 
 
-def define_bucket_mappings(lookup_buckets, use_buckets, settings):
+def define_bucket_mappings(lookup_buckets, settings):
     """
     Method to define CFN Mappings for the lookup buckets
 
     :param list[Bucket] lookup_buckets:
-    :param use_buckets:
     :param settings:
     :return:
     """
@@ -329,21 +335,22 @@ class XStack(ComposeXStack):
     Class to handle S3 buckets
     """
 
-    def __init__(self, title, settings, **kwargs):
-        set_resources(settings, Bucket, RES_KEY, MOD_KEY, mapping_key=MAPPINGS_KEY)
-        x_resources = settings.compose_content[RES_KEY].values()
-        use_resources = set_use_resources(x_resources, RES_KEY, True)
-        lookup_resources = set_lookup_resources(x_resources, RES_KEY)
-        if lookup_resources or use_resources:
-            if not keyisset(MAPPINGS_KEY, settings.mappings):
-                settings.mappings[MAPPINGS_KEY] = {}
-            define_bucket_mappings(lookup_resources, use_resources, settings)
-        new_resources = set_new_resources(x_resources, RES_KEY, True)
+    def __init__(
+        self, title, settings: ComposeXSettings, module: XResourceModule, **kwargs
+    ):
+        set_resources(settings, Bucket, module)
+        x_resources = settings.compose_content[module.res_key].values()
+        lookup_resources = set_lookup_resources(x_resources)
+        if lookup_resources:
+            if not keyisset(module.mapping_key, settings.mappings):
+                settings.mappings[module.mapping_key] = {}
+            define_bucket_mappings(lookup_resources, settings)
+        new_resources = set_new_resources(x_resources, True)
         if new_resources:
             stack_template = build_template(f"Root template for {settings.name}.s3")
             super().__init__(title, stack_template, **kwargs)
             create_s3_template(new_resources, stack_template)
         else:
             self.is_void = True
-        for resource in settings.compose_content[RES_KEY].values():
+        for resource in settings.compose_content[module.res_key].values():
             resource.stack = self

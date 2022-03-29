@@ -53,13 +53,13 @@ def create_registry(family, namespace, port_config, settings):
     elif namespace.lookup_properties:
         add_update_mapping(
             family.template,
-            namespace.mapping_key,
-            settings.mappings[namespace.mapping_key],
+            namespace.module.mapping_key,
+            settings.mappings[namespace.module.mapping_key],
         )
         namespace_id = namespace.attributes_outputs[PRIVATE_NAMESPACE_ID]["ImportValue"]
     else:
         raise AttributeError(
-            f"{namespace.module_name}.{namespace.name} - Cannot define if new or lookup !?"
+            f"{namespace.module.res_key}.{namespace.name} - Cannot define if new or lookup !?"
         )
 
     sd_service = SdService(
@@ -100,7 +100,7 @@ def map_namespace_to_service(namespaces, family, namespace_name, port_config, se
     for _namespace in namespaces:
         if _namespace.name == namespace_name:
             LOG.info(
-                f"{_namespace.module_name}.{_namespace} mapped to family service {family.name}"
+                f"{_namespace.module.res_key}.{_namespace} mapped to family service {family.name}"
             )
             create_registry(family, _namespace, port_config, settings)
             break

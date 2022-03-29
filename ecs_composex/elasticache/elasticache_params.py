@@ -25,7 +25,7 @@ CLUSTER_SG = Parameter(CLUSTER_SG_T, return_value="GroupId", Type=SG_ID_TYPE)
 
 CLUSTER_PORT_T = "Port"
 CLUSTER_PORT = Parameter(
-    CLUSTER_PORT_T, Type="Number", MinValue=1, MaxValue=((2 ** 16) - 1)
+    CLUSTER_PORT_T, Type="Number", MinValue=1, MaxValue=((2**16) - 1)
 )
 
 CLUSTER_MEMCACHED_ADDRESS_T = "ClusterConfigAddress"

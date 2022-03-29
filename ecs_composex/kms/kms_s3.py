@@ -52,7 +52,9 @@ def handle_bucket_kms(kms_key, bucket, bucket_stack, settings):
     """
 
     if not bucket.cfn_resource:
-        LOG.debug(f"{bucket.module_name}.{bucket.name} - Not a new resource. Skipping")
+        LOG.debug(
+            f"{bucket.module.res_key}.{bucket.name} - Not a new resource. Skipping"
+        )
         return
     if not hasattr(bucket.cfn_resource, "BucketEncryption"):
         return

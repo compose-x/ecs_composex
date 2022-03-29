@@ -5,6 +5,14 @@
 """
 Module for VpcStack
 """
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ecs_composex.common.settings import ComposeXSettings
+    from ecs_composex.mods_manager import XResourceModule
+
 
 import re
 
@@ -87,7 +95,11 @@ class Vpc(AwsEnvironmentResource):
     ]
 
     def __init__(
-        self, name: str, definition: dict, module_name: str, settings, mapping_key=None
+        self,
+        name: str,
+        definition: dict,
+        module: XResourceModule,
+        settings: ComposeXSettings,
     ):
         self.vpc = None
         self.vpc_cidr = None
@@ -101,7 +113,7 @@ class Vpc(AwsEnvironmentResource):
         self.logging = None
         self.layers = None
         self.azs = {}
-        super().__init__(name, definition, module_name, settings, mapping_key)
+        super().__init__(name, definition, module, settings)
 
     def create_vpc(self, template, settings):
         """
@@ -368,15 +380,17 @@ class XStack(ComposeXStack):
     Class to create the VPC Stack
     """
 
-    def __init__(self, title, settings, **kwargs):
+    def __init__(
+        self, title, settings: ComposeXSettings, module: XResourceModule, **kwargs
+    ):
         self.is_void = True
         self.vpc_resource = None
-        if not keyisset(RES_KEY, settings.compose_content):
-            LOG.warning(f"{RES_KEY} - not defined. Assuming no VPC")
+        if not keyisset(module.res_key, settings.compose_content):
+            LOG.warning(f"{module.res_key} - not defined. Assuming no VPC")
             self.is_void = True
         else:
             self.vpc_resource = Vpc(
-                "vpc", settings.compose_content[RES_KEY], "vpc", settings, "vpc"
+                "vpc", settings.compose_content[module.res_key], module, settings
             )
             if self.vpc_resource.lookup:
                 self.vpc_resource.lookup_vpc(settings)
@@ -389,16 +403,15 @@ class XStack(ComposeXStack):
                 self.vpc_resource.generate_outputs()
                 add_outputs(template, self.vpc_resource.outputs)
 
-    def create_new_default_vpc(self, title, settings):
+    def create_new_default_vpc(self, title, vpc_module, settings):
         """
         In case no x-vpc was specified but the deployment settings require a new VPC, allows for an easy way to set one.
         """
         self.vpc_resource = Vpc(
             name="vpc",
             definition={"Properties": {VPC_CIDR.title: Vpc.default_ipv4_cidr}},
-            module_name="vpc",
+            module=vpc_module,
             settings=settings,
-            mapping_key="vpc",
         )
         template = init_vpc_template()
         self.vpc_resource.create_vpc(template, settings)

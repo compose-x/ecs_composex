@@ -4,11 +4,9 @@
 
 from os import path
 
-import placebo
 from behave import given, then
 from pytest import raises
 
-from ecs_composex.common.aws import deploy
 from ecs_composex.common.settings import ComposeXSettings
 from ecs_composex.common.stacks import process_stacks
 from ecs_composex.ecs_composex import generate_full_template
@@ -27,6 +25,27 @@ def step_impl(context, file_path):
     else:
         files = getattr(context, "files")
     files.append(file_path)
+
+
+@given("I use defined files as input to define execution settings")
+def step_impl(context):
+
+    cases_path = [
+        path.abspath(f"{here()}/../../../{file_name}") for file_name in context.files
+    ]
+    print(cases_path)
+    context.settings = ComposeXSettings(
+        profile_name=getattr(context, "profile_name")
+        if hasattr(context, "profile_name")
+        else None,
+        **{
+            ComposeXSettings.name_arg: "test",
+            ComposeXSettings.command_arg: ComposeXSettings.render_arg,
+            ComposeXSettings.input_file_arg: cases_path,
+            ComposeXSettings.format_arg: "yaml",
+        },
+    )
+    context.settings.set_bucket_name_from_account_id()
 
 
 @then("I use defined files as input expecting an error")
@@ -107,6 +126,8 @@ def step_impl(context, file_path, override_file):
 
 @then("I render all files to verify execution")
 def set_impl(context):
+    if not hasattr(context, "root_stack"):
+        context.root_stack = generate_full_template(context.settings)
     process_stacks(context.root_stack, context.settings)
 
 
@@ -129,43 +150,6 @@ def step_impl(context, bucket_name):
 def step_impl(context):
     context.settings.upload = False
     context.settings.no_upload = True
-
-
-@given("I want to deploy to CFN stack named test")
-def step_impl(context):
-    """
-    Function to test the deployment.
-    """
-    pill = placebo.attach(
-        session=context.settings.session, data_path=f"{here()}/cfn_create"
-    )
-    pill.playback()
-    context.stack_id = deploy(context.settings, context.root_stack)
-
-
-@given("I want to update to CFN stack named test")
-def step_impl(context):
-    """
-    Function to test the deployment.
-    """
-    pill = placebo.attach(
-        session=context.settings.session, data_path=f"{here()}/cfn_update"
-    )
-    pill.playback()
-    context.stack_id = deploy(context.settings, context.root_stack)
-
-
-@given("I want to update a failed stack named test")
-def step_impl(context):
-    """
-    Function to test the deployment.
-    """
-    pill = placebo.attach(
-        session=context.settings.session,
-        data_path=f"{here()}/cfn_cannot_update",
-    )
-    pill.playback()
-    context.stack_id = deploy(context.settings, context.root_stack)
 
 
 @then("I should have a stack ID")

@@ -5,8 +5,17 @@
 """
 Module for the XStack SSM
 """
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ecs_composex.common.settings import ComposeXSettings
+    from ecs_composex.mods_manager import XResourceModule
+
+
 import json
-import warnings
 from os import path
 
 import yaml
@@ -23,14 +32,10 @@ from ecs_composex.compose.x_resources.helpers import (
     set_lookup_resources,
     set_new_resources,
     set_resources,
-    set_use_resources,
 )
 from ecs_composex.iam.import_sam_policies import get_access_types
 from ecs_composex.resources_import import import_record_properties
 from ecs_composex.ssm_parameter.ssm_parameter_params import (
-    MAPPINGS_KEY,
-    MOD_KEY,
-    RES_KEY,
     SSM_PARAM_ARN,
     SSM_PARAM_NAME,
 )
@@ -164,17 +169,14 @@ class SsmParameter(ApiXResource):
     Class to represent a SQS Queue
     """
 
-    policies_scaffolds = get_access_types(MOD_KEY)
-
     def __init__(
         self,
         name: str,
         definition: dict,
-        module_name: str,
-        settings,
-        mapping_key: str = None,
+        module: XResourceModule,
+        settings: ComposeXSettings,
     ):
-        super().__init__(name, definition, module_name, settings, mapping_key)
+        super().__init__(name, definition, module, settings)
         self.ref_parameter = SSM_PARAM_NAME
         self.arn_parameter = SSM_PARAM_ARN
 
@@ -225,18 +227,15 @@ class XStack(ComposeXStack):
     Class to handle SQS Root stack related actions
     """
 
-    def __init__(self, title, settings, **kwargs):
-        set_resources(
-            settings, SsmParameter, RES_KEY, MOD_KEY, mapping_key=MAPPINGS_KEY
-        )
-        x_resources = settings.compose_content[RES_KEY].values()
-        use_resources = set_use_resources(x_resources, RES_KEY, False)
-        if use_resources:
-            warnings.warn(f"Use not supported for {RES_KEY}")
-        lookup_resources = set_lookup_resources(x_resources, RES_KEY)
-        if lookup_resources or use_resources:
+    def __init__(
+        self, title, settings: ComposeXSettings, module: XResourceModule, **kwargs
+    ):
+        set_resources(settings, SsmParameter, module)
+        x_resources = settings.compose_content[module.res_key].values()
+        lookup_resources = set_lookup_resources(x_resources)
+        if lookup_resources:
             resolve_lookup(lookup_resources, settings)
-        new_resources = set_new_resources(x_resources, RES_KEY, False)
+        new_resources = set_new_resources(x_resources, False)
 
         if new_resources:
             template = build_template("Parent template for SSM in ECS Compose-X")
@@ -244,5 +243,5 @@ class XStack(ComposeXStack):
             render_new_parameters(new_resources, self)
         else:
             self.is_void = True
-        for resource in settings.compose_content[RES_KEY].values():
+        for resource in settings.compose_content[module.res_key].values():
             resource.stack = self

@@ -497,8 +497,8 @@ def handle_import_cognito_pool(the_pool, listener_stack, settings):
     elif the_pool.mappings and not the_pool.cfn_resource:
         add_update_mapping(
             listener_stack.stack_template,
-            the_pool.mapping_key,
-            settings.mappings[the_pool.mapping_key],
+            the_pool.module.mapping_key,
+            settings.mappings[the_pool.module.mapping_key],
         )
         return (
             FindInMap(COGNITO_MAP, the_pool.logical_name, USERPOOL_ID.title),

@@ -5,6 +5,15 @@
 """
 Module to handle the creation of the root EFS stack
 """
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ecs_composex.common.settings import ComposeXSettings
+    from ecs_composex.mods_manager import XResourceModule
+
+
 import warnings
 
 from troposphere import GetAtt, Ref, Select, Sub
@@ -17,7 +26,6 @@ from ecs_composex.compose.x_resources.helpers import (
     set_lookup_resources,
     set_new_resources,
     set_resources,
-    set_use_resources,
 )
 from ecs_composex.compose.x_resources.network_x_resources import NetworkXResource
 from ecs_composex.efs.efs_params import (
@@ -66,15 +74,15 @@ class Efs(NetworkXResource):
 
     subnets_param = STORAGE_SUBNETS
 
-    def __init__(self, name, definition, module_name, settings, mapping_key=None):
+    def __init__(
+        self, name, definition, module: XResourceModule, settings: ComposeXSettings
+    ):
         self.db_sg = None
         self.db_secret = None
         self.mnt_targets = []
         self.access_points = []
         self.volume = definition["Volume"]
-        super().__init__(
-            name, definition, module_name, settings, mapping_key=mapping_key
-        )
+        super().__init__(name, definition, module, settings)
         self.set_override_subnets()
         self.ref_parameter = FS_ID
         self.arn_parameter = FS_ARN
@@ -123,7 +131,7 @@ class Efs(NetworkXResource):
                     break
             else:
                 raise KeyError(
-                    f"{self.module_name}.{self.name} - "
+                    f"{self.module.res_key}.{self.name} - "
                     f"Override subnet name {self.subnets_override} is not defined in x-vpc",
                     list(vpc_stack.vpc_resource.azs.keys()),
                 )
@@ -143,20 +151,21 @@ class XStack(ComposeXStack):
     Class to represent the root for EFS
     """
 
-    def __init__(self, name, settings, **kwargs):
-        set_resources(settings, Efs, RES_KEY, MOD_KEY)
-        x_resources = settings.compose_content[RES_KEY].values()
-        new_resources = set_new_resources(x_resources, RES_KEY, False)
-        lookup_resources = set_lookup_resources(x_resources, RES_KEY)
-        use_resources = set_use_resources(x_resources, RES_KEY, False)
+    def __init__(
+        self, name, settings: ComposeXSettings, module: XResourceModule, **kwargs
+    ):
+        set_resources(settings, Efs, module)
+        x_resources = settings.compose_content[module.res_key].values()
+        new_resources = set_new_resources(x_resources, False)
+        lookup_resources = set_lookup_resources(x_resources)
         if new_resources:
             stack_template = create_efs_stack(settings, new_resources)
             super().__init__(name, stack_template, **kwargs)
         else:
             self.is_void = True
-        if lookup_resources or use_resources:
+        if lookup_resources:
             warnings.warn(
-                f"{RES_KEY} - Lookup not supported. You can only create new resources"
+                f"{module.res_key} - Lookup not supported. You can only create new resources at the moment"
             )
-        for resource in settings.compose_content[RES_KEY].values():
+        for resource in settings.compose_content[module.res_key].values():
             resource.stack = self

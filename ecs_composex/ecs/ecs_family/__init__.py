@@ -497,7 +497,7 @@ class ComposeFamily(object):
             logging_def.Options.update(self.task_logging_options)
 
     def validate_compute_configuration_for_task(self, settings):
-        from ecs_composex.ecs.ecs_cluster.ecs_family_helpers import (
+        from ecs_composex.ecs_cluster.ecs_family_helpers import (
             validate_compute_configuration_for_task,
         )
 

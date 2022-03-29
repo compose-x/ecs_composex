@@ -5,6 +5,14 @@
 """
 Module to manage the creation of Dashboards
 """
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ecs_composex.common.settings import ComposeXSettings
+    from ecs_composex.mods_manager import XResourceModule
+
 
 import json
 
@@ -113,7 +121,9 @@ class XStack(ComposeXStack):
     Class to manage the Dashboard stack
     """
 
-    def __init__(self, title, settings, **kwargs):
+    def __init__(
+        self, title, settings: ComposeXSettings, module: XResourceModule, **kwargs
+    ):
         params = {
             CLUSTER_NAME.title: settings.ecs_cluster,
         }

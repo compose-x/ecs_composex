@@ -6,6 +6,15 @@
 Module to handle AWS RDS CFN Templates creation
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ecs_composex.common.settings import ComposeXSettings
+    from ecs_composex.mods_manager import XResourceModule
+
+
 from compose_x_common.aws.rds import RDS_DB_CLUSTER_ARN_RE, RDS_DB_INSTANCE_ARN_RE
 from compose_x_common.compose_x_common import attributes_to_mapping, keyisset
 from troposphere import AWS_ACCOUNT_ID, AWS_PARTITION, AWS_REGION, GetAtt, Ref, Sub
@@ -56,7 +65,7 @@ def get_db_instance_config(db, account_id, resource_id):
             "DBInstances"
         ][0]
     except (client.exceptions.DBInstanceNotFoundFault,) as error:
-        LOG.error(f"{db.module_name}.{db.name} - Failed to retrieve configuration")
+        LOG.error(f"{db.module.res_key}.{db.name} - Failed to retrieve configuration")
         LOG.error(error)
         raise
     attributes_mappings = {}
@@ -86,7 +95,7 @@ def get_db_cluster_config(db, account_id, resource_id):
             "DBClusters"
         ][0]
     except (client.exceptions.DBClusterNotFoundFault,) as error:
-        LOG.error(f"{db.module_name}.{db.name} - Failed to retrieve configuration")
+        LOG.error(f"{db.module.res_key}.{db.name} - Failed to retrieve configuration")
         LOG.error(error)
         raise
     if keyisset("VpcSecurityGroups", db_config_r):
@@ -110,19 +119,19 @@ def get_db_cluster_config(db, account_id, resource_id):
 
 class Rds(DatabaseXResource):
     """
-    Class to represent a RDS DB
+    Class to represent RDS DB
     """
 
     subnets_param = STORAGE_SUBNETS
     policies_scaffolds = get_access_types(MOD_KEY)
 
-    def __init__(self, name, definition, module_name, settings, mapping_key=None):
+    def __init__(
+        self, name, definition, module: XResourceModule, settings: ComposeXSettings
+    ):
         self.db_secret = None
         self.db_sg = None
         self.db_subnet_group = None
-        super().__init__(
-            name, definition, module_name, settings, mapping_key=mapping_key
-        )
+        super().__init__(name, definition, module, settings)
         self.set_override_subnets()
         self.port_param = DB_ENDPOINT_PORT
         self.db_secret_arn_parameter = DB_SECRET_ARN
@@ -227,11 +236,13 @@ class XStack(ComposeXStack):
     Class to handle ECS root stack specific settings
     """
 
-    def __init__(self, title, settings, **kwargs):
-        set_resources(settings, Rds, RES_KEY, MOD_KEY, mapping_key=MAPPINGS_KEY)
-        x_resources = settings.compose_content[RES_KEY].values()
-        new_resources = set_new_resources(x_resources, RES_KEY, True)
-        lookup_resources = set_lookup_resources(x_resources, RES_KEY)
+    def __init__(
+        self, title, settings: ComposeXSettings, module: XResourceModule, **kwargs
+    ):
+        set_resources(settings, Rds, module)
+        x_resources = settings.compose_content[module.res_key].values()
+        new_resources = set_new_resources(x_resources, True)
+        lookup_resources = set_lookup_resources(x_resources)
         if new_resources:
             stack_template = build_template(
                 "Root stack for RDS DBs", [VPC_ID, STORAGE_SUBNETS]
@@ -241,7 +252,7 @@ class XStack(ComposeXStack):
             self.mark_nested_stacks()
         else:
             self.is_void = True
-        for resource in settings.compose_content[RES_KEY].values():
+        for resource in settings.compose_content[module.res_key].values():
             resource.stack = self
         if lookup_resources and MAPPINGS_KEY not in settings.mappings:
             settings.mappings[MAPPINGS_KEY] = {}
@@ -264,7 +275,7 @@ class XStack(ComposeXStack):
                 )
             else:
                 raise KeyError(
-                    f"{resource.module_name}.{resource.name} - "
+                    f"{resource.module.res_key}.{resource.name} - "
                     "You must specify the cluster or instance to lookup"
                 )
             if keyisset("secret", resource.lookup):

@@ -3,16 +3,8 @@
 # Copyright 2020-2022 John Mille <john@compose-x.io>
 
 
-from os import path
-
-from ecs_composex.common import NONALPHANUM
 from ecs_composex.common.cfn_params import Parameter
-from ecs_composex.common.ecs_composex import X_KEY
 
-MOD_KEY = path.basename(path.dirname(path.abspath(__file__)))
-RES_KEY = f"{X_KEY}{MOD_KEY}"
-SQS_SSM_PREFIX = f"/{RES_KEY}/"
-MAPPINGS_KEY = NONALPHANUM.sub("", MOD_KEY)
 TAGGING_API_ID = "sqs"
 
 SQS_SETTINGS = "SQS Settings"

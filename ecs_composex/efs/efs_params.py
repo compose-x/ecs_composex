@@ -29,7 +29,7 @@ FS_ID = Parameter(
 
 FS_PORT_T = "FilesystemPort"
 FS_PORT = Parameter(
-    FS_PORT_T, Type="Number", MinValue=1, MaxValue=((2 ** 16) - 1), Default=2049
+    FS_PORT_T, Type="Number", MinValue=1, MaxValue=((2**16) - 1), Default=2049
 )
 
 FS_ARN_T = "FilesystemArn"

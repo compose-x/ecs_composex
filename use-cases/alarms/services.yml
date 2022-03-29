@@ -1,47 +1,41 @@
----
-# Services level alarms
-
 services:
-  rproxy:
-    x-alarms:
-      Predefined:
-        HighCpuUsageAndMaxScaledOut:
-          Topics:
-            - x-sns: topic-01
-          Settings:
-            CPUUtilization: 50
-            Period: 30
-            EvaluationPeriods: 15
-            DatapointsToAlarm: 10
   app02:
     x-alarms:
       Predefined:
         HighCpuUsageAndMaxScaledOut:
           Topics:
             - x-sns: topic-02
-
   app03:
     x-alarms:
       Predefined:
         HighCpuUsageAndMaxScaledOut:
-          Topics:
-            - x-sns: topic-01
           Settings:
             CPUUtilization: 85
             RunningTaskCount: 8
+          Topics:
+            - x-sns: topic-01
         HighRamUsageAndMaxScaledOut:
+          Settings:
+            DatapointsToAlarm: 7
+            EvaluationPeriods: 21
+            MemoryUtilization: 60
+            Period: 30
+            RunningTaskCount: 6
           Topics:
             - x-sns: topic-02
+  rproxy:
+    x-alarms:
+      Predefined:
+        HighCpuUsageAndMaxScaledOut:
           Settings:
-            MemoryUtilization: 60
-            RunningTaskCount: 6
+            CPUUtilization: 50
+            DatapointsToAlarm: 10
+            EvaluationPeriods: 15
             Period: 30
-            EvaluationPeriods: 21
-            DatapointsToAlarm: 7
-
+          Topics:
+            - x-sns: topic-01
 x-sns:
-  Topics:
-    topic-01:
-      Properties: {}
-    topic-02:
-      Properties: {}
+  topic-01:
+    Properties: {}
+  topic-02:
+    Properties: {}

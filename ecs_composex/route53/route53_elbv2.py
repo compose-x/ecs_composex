@@ -94,8 +94,8 @@ def add_dns_records_for_elbv2(
         validate_domain_name(name, x_hosted_zone.zone_name)
         create_record(name, x_hosted_zone, route53_stack, target_elbv2, elbv2_stack)
         LOG.info(
-            f"{x_hosted_zone.module_name}.{x_hosted_zone.name} - "
-            f"Created {name} for {target_elbv2.module_name}.{target_elbv2.name}"
+            f"{x_hosted_zone.module.res_key}.{x_hosted_zone.name} - "
+            f"Created {name} for {target_elbv2.module.res_key}.{target_elbv2.name}"
         )
 
 
