@@ -209,6 +209,31 @@ def add_interface_endpoint(sg, service, subnets, template):
     )
 
 
+def define_nats(az_index: list, nats: list) -> list:
+    """
+    if there is not as many nats as there are AZs, that means
+    we need to re-use that NAT GW for each app subnet
+
+    If nats is empty, that means DisableNat is true and there for we just need an iterable
+    with None for each AZ
+
+    :param list az_index:
+    :param list nats:
+    :return: List of nats to use
+    :rtype: list
+    """
+
+    nats_to_use = []
+    if nats and (len(nats) < len(az_index)):
+        primary_nat = nats[0]
+        for _ in az_index:
+            nats_to_use.append(primary_nat)
+    elif not nats:
+        for _ in az_index:
+            nats_to_use.append(None)
+    return nats_to_use
+
+
 def add_apps_subnets(template, vpc, az_index, layers, nats, endpoints=None):
     """
     Function to add application/hosts subnets to the VPC
@@ -223,15 +248,8 @@ def add_apps_subnets(template, vpc, az_index, layers, nats, endpoints=None):
     subnets = []
     rtbs = []
     entries = []
-    if nats and (len(nats) < len(az_index)):
-        primary_nat = nats[0]
-        nats = []
-        for _ in az_index:
-            nats.append(primary_nat)
-    elif not nats:
-        for _ in az_index:
-            nats.append(None)
-    for index, subnet_cidr, nat in zip(az_index, layers["app"], nats):
+    nats_to_use = define_nats(az_index, nats)
+    for index, subnet_cidr, nat in zip(az_index, layers["app"], nats_to_use):
         suffix = index.upper()
         subnet = Subnet(
             f"AppSubnet{suffix}",

@@ -403,7 +403,7 @@ class ComposeService(object):
             return
         logging_def = self.definition["logging"]
         valid_drivers = ["awslogs"]
-        if not logging_def["driver"] in valid_drivers:
+        if logging_def["driver"] not in valid_drivers:
             LOG.warning(
                 "The logging driver",
                 logging_def["driver"],

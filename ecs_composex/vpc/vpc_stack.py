@@ -103,10 +103,11 @@ class Vpc(AwsEnvironmentResource):
         self.azs = {}
         super().__init__(name, definition, module_name, settings, mapping_key)
 
-    def create_vpc(self, template, settings, default=False):
+    def create_vpc(self, template, settings):
         """
         Creates a new VPC from Properties (or from defaults)
 
+        :param troposhere.Template template:
         :param ecs_composex.common.settings.ComposeXSettings settings:
         """
         self.endpoints = set_else_none("Endpoints", self.properties, [])
@@ -176,10 +177,10 @@ class Vpc(AwsEnvironmentResource):
         :rtype: dict
         """
         vpc_settings = lookup_x_vpc_settings(self)
-        self.create_vpc_mappings(vpc_settings, settings)
+        self.create_vpc_mappings(vpc_settings)
         LOG.info(f"{RES_KEY} - Found VPC - {self.mappings[VPC_ID.title][VPC_ID.title]}")
 
-    def create_vpc_mappings(self, vpc_settings, settings):
+    def create_vpc_mappings(self, vpc_settings):
         """
         Generates the VPC CFN Mappings
 

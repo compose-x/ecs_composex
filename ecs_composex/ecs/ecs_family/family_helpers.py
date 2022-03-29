@@ -170,10 +170,7 @@ def set_ecs_cluster_logging_s3_access(
     :param policy:
     :param ecs_composex.common.stacks.ComposeXStack role_stack:
     """
-    if (
-        settings.ecs_cluster.log_bucket
-        and not settings.ecs_cluster.log_bucket == NoValue
-    ):
+    if settings.ecs_cluster.log_bucket and settings.ecs_cluster.log_bucket != NoValue:
         parameter = Parameter("EcsExecuteLoggingBucket", Type="String")
         add_parameters(role_stack.stack_template, [parameter])
         if isinstance(settings.ecs_cluster.log_bucket, FindInMap):
@@ -217,7 +214,7 @@ def set_ecs_cluster_logging_kms_access(
     :param policy:
     :param ecs_composex.common.stacks.ComposeXStack role_stack:
     """
-    if settings.ecs_cluster.log_key and not settings.ecs_cluster.log_key == NoValue:
+    if settings.ecs_cluster.log_key and settings.ecs_cluster.log_key != NoValue:
         parameter = Parameter("EcsExecuteLoggingEncryptionKey", Type="String")
         add_parameters(role_stack.stack_template, [parameter])
         if isinstance(settings.ecs_cluster.log_key, FindInMap):
@@ -258,7 +255,7 @@ def set_ecs_cluster_logging_cw_access(
     :param policy:
     :param ecs_composex.common.stacks.ComposeXStack role_stack:
     """
-    if settings.ecs_cluster.log_group and not settings.ecs_cluster.log_group == NoValue:
+    if settings.ecs_cluster.log_group and settings.ecs_cluster.log_group != NoValue:
         parameter = Parameter("EcsExecuteLoggingGroup", Type="String")
         add_parameters(role_stack.stack_template, [parameter])
         if isinstance(settings.ecs_cluster.log_group, FindInMap):
