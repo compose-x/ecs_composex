@@ -37,4 +37,3 @@ services:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/ReadOnlyAccess
     x-xray: true
-    x-network:
