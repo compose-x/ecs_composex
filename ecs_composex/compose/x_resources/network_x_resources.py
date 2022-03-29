@@ -7,7 +7,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ecs_composex.ecs.ecs_family import ComposeFamily
+    from ecs_composex.common.settings import ComposeXSettings
+    from ecs_composex.mods_manager import XResourceModule
+
 
 from compose_x_common.compose_x_common import keyisset
 
@@ -24,13 +26,17 @@ class NetworkXResource(ServicesXResource):
     """
 
     def __init__(
-        self, name: str, definition: dict, module_name: str, settings, mapping_key=None
+        self,
+        name: str,
+        definition: dict,
+        module: XResourceModule,
+        settings: ComposeXSettings,
     ):
         self.subnets_override = None
         self.security_group = None
         self.security_group_param = None
         self.port_param = None
-        super().__init__(name, definition, module_name, settings, mapping_key)
+        super().__init__(name, definition, module, settings)
         self.requires_vpc = True
         self.cleanse_external_targets()
         self.set_override_subnets()
@@ -70,7 +76,7 @@ class NetworkXResource(ServicesXResource):
                 else:
                     to_del.append(service_name)
             for key in to_del:
-                print(f"{self.module_name}.{self.name} - Removing service {key}")
+                print(f"{self.module.res_key}.{self.name} - Removing service {key}")
                 del self.services[key]
 
     def cleanse_external_targets(self) -> None:
@@ -83,7 +89,7 @@ class NetworkXResource(ServicesXResource):
                 and target[0].service_compute.launch_type == "EXTERNAL"
             ):
                 LOG.info(
-                    f"{self.module_name}.{self.name} - Target {target[0].name} - Launch Type not supported (EXTERNAL)"
+                    f"{self.module.res_key}.{self.name} - Target {target[0].name} - Launch Type not supported (EXTERNAL)"
                 )
                 self.families_targets.remove(target)
         for target in self.families_scaling:
@@ -92,7 +98,7 @@ class NetworkXResource(ServicesXResource):
                 and target[0].service_compute.launch_type == "EXTERNAL"
             ):
                 LOG.info(
-                    f"{self.module_name}.{self.name} - Target {target[0].name} - Launch Type not supported (EXTERNAL)"
+                    f"{self.module.res_key}.{self.name} - Target {target[0].name} - Launch Type not supported (EXTERNAL)"
                 )
                 self.families_scaling.remove(target)
         self.remove_services_after_family_cleanups()
@@ -130,7 +136,11 @@ class DatabaseXResource(NetworkXResource):
     """
 
     def __init__(
-        self, name: str, definition: dict, module_name: str, settings, mapping_key=None
+        self,
+        name: str,
+        definition: dict,
+        module: XResourceModule,
+        settings: ComposeXSettings,
     ):
         self.db_secret = None
         self.db_secret_arn_parameter = None
@@ -138,14 +148,14 @@ class DatabaseXResource(NetworkXResource):
         self.db_cluster_arn = None
         self.db_cluster_endpoint_param = None
         self.db_cluster_ro_endpoint_param = None
-        super().__init__(name, definition, module_name, settings, mapping_key)
+        super().__init__(name, definition, module, settings)
         self.default_cloudmap_settings = {
             "DnsSettings": {
                 "Hostname": self.logical_name,
             },
         }
 
-    def to_ecs(self, settings, root_stack=None) -> None:
+    def to_ecs(self, settings, modules, root_stack=None) -> None:
         """
         Maps a database service to ECS services
 

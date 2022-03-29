@@ -5,6 +5,14 @@
 """
 Module to define the entry point for AWS Event Rules
 """
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ecs_composex.common.settings import ComposeXSettings
+    from ecs_composex.mods_manager import XResourceModule
+
 import warnings
 
 from compose_x_common.compose_x_common import keyisset
@@ -17,11 +25,9 @@ from ecs_composex.compose.x_resources.helpers import (
     set_lookup_resources,
     set_new_resources,
     set_resources,
-    set_use_resources,
 )
 from ecs_composex.compose.x_resources.services_resources import ServicesXResource
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME, FARGATE_VERSION
-from ecs_composex.events.events_params import MOD_KEY, RES_KEY
 from ecs_composex.resources_import import import_record_properties
 
 
@@ -170,7 +176,7 @@ class Rule(ServicesXResource):
                 f[0].name for f in self.families_targets
             ]:
                 LOG.debug(
-                    f"{self.module_name}.{self.name} - Family {service_name} has already been added. Skipping"
+                    f"{self.module.res_key}.{self.name} - Family {service_name} has already been added. Skipping"
                 )
             elif service_name in [s.name for s in settings.services]:
                 self.handle_families_targets_expansion_dict(
@@ -183,7 +189,9 @@ class XStack(ComposeXStack):
     Class to handle events stack
     """
 
-    def __init__(self, title, settings, **kwargs):
+    def __init__(
+        self, title, settings: ComposeXSettings, module: XResourceModule, **kwargs
+    ):
         """
         Method to initialize the XStack for Events
 
@@ -191,11 +199,10 @@ class XStack(ComposeXStack):
         :param ecs_composex.common.settings.ComposeXSettings settings: Execution settings
         :param dict kwargs:
         """
-        set_resources(settings, Rule, RES_KEY, MOD_KEY)
-        x_resources = settings.compose_content[RES_KEY].values()
-        lookup_resources = set_lookup_resources(x_resources, RES_KEY)
-        use_resources = set_use_resources(x_resources, RES_KEY, False)
-        new_resources = set_new_resources(x_resources, RES_KEY, False)
+        set_resources(settings, Rule, module)
+        x_resources = settings.compose_content[module.res_key].values()
+        lookup_resources = set_lookup_resources(x_resources)
+        new_resources = set_new_resources(x_resources, False)
         if new_resources:
             stack_template = build_template(
                 "Events rules for ComposeX",
@@ -205,7 +212,7 @@ class XStack(ComposeXStack):
             create_events_template(self, settings, new_resources)
         else:
             self.is_void = True
-        if lookup_resources or use_resources:
+        if lookup_resources:
             warnings.warn(
-                f"{RES_KEY} does not support Lookup/Use. You can only create new resources"
+                f"{module.res_key} does not support Lookup/Use. You can only create new resources"
             )

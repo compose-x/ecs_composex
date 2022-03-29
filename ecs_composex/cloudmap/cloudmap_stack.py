@@ -6,6 +6,14 @@
 Main module for ACM
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ecs_composex.mods_manager import XResourceModule
+    from ecs_composex.common.settings import ComposeXSettings
+
 import warnings
 from copy import deepcopy
 
@@ -25,7 +33,6 @@ from ..compose.x_resources.helpers import (
     set_lookup_resources,
     set_new_resources,
     set_resources,
-    set_use_resources,
 )
 from .cloudmap_params import (
     LAST_DOT_RE,
@@ -70,7 +77,7 @@ def lookup_service_discovery_namespace(zone, session, ns_id=None):
             zone_r = client.get_namespace(Id=ns_id)
         if not zone_r:
             raise LookupError(
-                f"{zone.module_name}.{zone.name} - Failed to lookup {zone.zone_name}"
+                f"{zone.module.res_key}.{zone.name} - Failed to lookup {zone.zone_name}"
             )
         properties = zone_r["Namespace"]["Properties"]
         if zone_r["Namespace"]["Type"] == "HTTP":
@@ -101,17 +108,21 @@ class PrivateNamespace(AwsEnvironmentResource):
     """
 
     def __init__(
-        self, name: str, definition: dict, module_name: str, settings, mapping_key=None
+        self,
+        name: str,
+        definition: dict,
+        module: XResourceModule,
+        settings: ComposeXSettings,
     ):
         self.zone_name = None
         self.records = []
-        super().__init__(name, definition, module_name, settings, mapping_key)
+        super().__init__(name, definition, module, settings)
         self.zone_name = set_else_none(
             "Name", self.definition, set_else_none("ZoneName", self.definition, None)
         )
         if self.zone_name is None:
             raise ValueError(
-                f"{self.module_name}.{self.name} - No ZoneName/Name specified"
+                f"{self.module.res_key}.{self.name} - No ZoneName/Name specified"
             )
         self.requires_vpc = True
 
@@ -156,7 +167,7 @@ class PrivateNamespace(AwsEnvironmentResource):
         if subattribute_key is not None:
             if not keyisset(subattribute_key, self.lookup):
                 raise KeyError(
-                    f"{self.module_name}.{self.name} - Lookup sub-key {subattribute_key} is not defined."
+                    f"{self.module.res_key}.{self.name} - Lookup sub-key {subattribute_key} is not defined."
                 )
             lookup_attributes = self.lookup[subattribute_key]
         if isinstance(lookup_attributes, bool):
@@ -187,8 +198,8 @@ class PrivateNamespace(AwsEnvironmentResource):
             self.stack.is_void = False
             add_update_mapping(
                 self.stack.stack_template,
-                self.mapping_key,
-                settings.mappings[self.mapping_key],
+                self.module.mapping_key,
+                settings.mappings[self.module.mapping_key],
             )
 
     def handle_x_dependencies(self, settings, root_stack=None) -> None:
@@ -269,7 +280,7 @@ def define_new_namespace(new_namespaces, stack_template):
                 and namespace.zone_name != namespace.properties["Name"]
             ):
                 raise ValueError(
-                    f"{namespace.module_name}.{namespace.name} - "
+                    f"{namespace.module.res_key}.{namespace.name} - "
                     "ZoneName and Properties.Name must be the same value when set."
                 )
             elif not keyisset("Name", namespace.properties):
@@ -280,7 +291,7 @@ def define_new_namespace(new_namespaces, stack_template):
             )
             if keyisset("Vpc", namespace_props):
                 LOG.warn(
-                    f"{namespace.module_name}.{namespace.name} - "
+                    f"{namespace.module.res_key}.{namespace.name} - "
                     "Vpc property was set. Overriding to compose-x x-vpc defined for execution."
                 )
             namespace_props["Vpc"] = f"x-vpc::{VPC_ID.title}"
@@ -297,7 +308,7 @@ def define_new_namespace(new_namespaces, stack_template):
             )
         if not namespace.cfn_resource:
             raise AttributeError(
-                f"{namespace.module_name}.{namespace.name} - "
+                f"{namespace.module.res_key}.{namespace.name} - "
                 "Failed to create PrivateNamespace from Properties/MacroParameters"
             )
         stack_template.add_resource(namespace.cfn_resource)
@@ -356,22 +367,17 @@ class XStack(ComposeXStack):
 
     _title = "AWS CloudMap Namespaces"
 
-    def __init__(self, name: str, settings, **kwargs):
+    def __init__(self, name: str, settings, module, **kwargs):
         """
         :param str name:
         :param ecs_composex.common.settings.ComposeXSettings settings:
         :param dict kwargs:
         """
-        set_resources(
-            settings, PrivateNamespace, RES_KEY, MOD_KEY, mapping_key=MAPPINGS_KEY
-        )
-        x_resources = settings.compose_content[RES_KEY].values()
+        set_resources(settings, PrivateNamespace, module)
+        x_resources = settings.compose_content[module.res_key].values()
         detect_duplicas(x_resources)
-        use_resources = set_use_resources(x_resources, RES_KEY, False)
-        lookup_resources = set_lookup_resources(x_resources, RES_KEY)
-        new_resources = set_new_resources(
-            x_resources, RES_KEY, supports_uses_default=True
-        )
+        lookup_resources = set_lookup_resources(x_resources)
+        new_resources = set_new_resources(x_resources, supports_uses_default=True)
         for resource in x_resources:
             resource.stack = self
         if new_resources:
@@ -382,6 +388,4 @@ class XStack(ComposeXStack):
             self.is_void = True
         if lookup_resources:
             resolve_lookup(lookup_resources, settings)
-        if use_resources:
-            warnings.warn(f"{RES_KEY}. - Use is not yet supported.")
-        self.module_name = MOD_KEY
+        self.module_name = module.mod_key

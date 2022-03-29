@@ -2,6 +2,15 @@
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2022 John Mille <john@compose-x.io>
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ecs_composex.common.settings import ComposeXSettings
+    from ecs_composex.mods_manager import XResourceModule
+
+
 from compose_x_common.compose_x_common import keyisset
 from troposphere import AWS_ACCOUNT_ID, AWS_PARTITION, GetAtt, Ref, Sub
 
@@ -68,10 +77,15 @@ class OpenSearchDomain(DatabaseXResource):
 
     policies_scaffolds = get_access_types(MOD_KEY)
 
-    def __init__(self, name, definition, module_name, settings, mapping_key):
+    def __init__(
+        self, name, definition, module: XResourceModule, settings: ComposeXSettings
+    ):
 
         super().__init__(
-            name, definition, module_name, settings, mapping_key=mapping_key
+            name,
+            definition,
+            module,
+            settings,
         )
         self.subnets_param = STORAGE_SUBNETS
         self.security_group_param = OS_DOMAIN_SG
@@ -101,7 +115,7 @@ class OpenSearchDomain(DatabaseXResource):
             ),
         }
 
-    def to_ecs(self, settings, root_stack=None) -> None:
+    def to_ecs(self, settings, modules, root_stack=None) -> None:
         """
         Mapping for OpenSearch domains override from default RDS DB access
         """
@@ -153,13 +167,13 @@ class XStack(ComposeXStack):
     Class for KMS Root stack
     """
 
-    def __init__(self, title, settings, **kwargs):
-        set_resources(
-            settings, OpenSearchDomain, RES_KEY, MOD_KEY, mapping_key=MAPPINGS_KEY
-        )
-        x_resources = settings.compose_content[RES_KEY].values()
-        lookup_resources = set_lookup_resources(x_resources, RES_KEY)
-        new_resources = set_new_resources(x_resources, RES_KEY, True)
+    def __init__(
+        self, title, settings: ComposeXSettings, module: XResourceModule, **kwargs
+    ):
+        set_resources(settings, OpenSearchDomain, module)
+        x_resources = settings.compose_content[module.res_key].values()
+        lookup_resources = set_lookup_resources(x_resources)
+        new_resources = set_new_resources(x_resources, True)
         if new_resources:
             stack_template = build_template(
                 "Root template for OpenSearch", [VPC_ID, STORAGE_SUBNETS]
@@ -169,8 +183,8 @@ class XStack(ComposeXStack):
         else:
             self.is_void = True
         if lookup_resources:
-            if not keyisset(MAPPINGS_KEY, settings.mappings):
-                settings.mappings[MAPPINGS_KEY] = {}
+            if not keyisset(module.mapping_key, settings.mappings):
+                settings.mappings[module.mapping_key] = {}
             create_opensearch_mappings(lookup_resources, settings)
-        for resource in settings.compose_content[RES_KEY].values():
+        for resource in settings.compose_content[module.res_key].values():
             resource.stack = self

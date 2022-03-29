@@ -110,9 +110,7 @@ def define_resources(res_content):
     return res_count
 
 
-def generate_sns_templates(
-    settings, new_topics, new_subscriptions, xstack, root_template
-):
+def generate_sns_templates(settings, new_topics, xstack, root_template):
     """
     Entrypoint function to generate the SNS topics templates
 

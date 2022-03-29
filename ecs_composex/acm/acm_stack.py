@@ -6,6 +6,14 @@
 Main module for ACM
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ecs_composex.common.settings import ComposeXSettings
+    from ecs_composex.mods_manager import XResourceModule
+
 import re
 import warnings
 
@@ -18,7 +26,7 @@ from troposphere.certificatemanager import DomainValidationOption
 from troposphere.elasticloadbalancingv2 import Certificate as ElbCertificate
 from troposphere.elasticloadbalancingv2 import Listener, ListenerCertificate
 
-from ecs_composex.acm.acm_params import CERT_ARN, MAPPINGS_KEY, MOD_KEY, RES_KEY
+from ecs_composex.acm.acm_params import CERT_ARN, MAPPINGS_KEY, RES_KEY
 from ecs_composex.common import (
     add_parameters,
     add_update_mapping,
@@ -33,7 +41,6 @@ from ecs_composex.compose.x_resources.helpers import (
     set_lookup_resources,
     set_new_resources,
     set_resources,
-    set_use_resources,
 )
 from ecs_composex.resources_import import (
     find_aws_properties_in_aws_resource,
@@ -222,7 +229,7 @@ def resolve_lookup(lookup_resources, settings):
         resource.generate_cfn_mappings_from_lookup_properties()
         resource.generate_outputs()
         LOG.info(
-            f"{resource.module_name}.{resource.name} - Matched certificate {resource.arn}"
+            f"{resource.module.res_key}.{resource.name} - Matched certificate {resource.arn}"
         )
         settings.mappings[MAPPINGS_KEY].update(
             {resource.logical_name: resource.mappings}
@@ -299,15 +306,17 @@ def update_stack_with_resource_settings(
             Ref(the_resource.attributes_outputs[CERT_ARN]["ImportParameter"]),
         )
     elif the_resource.mappings:
-        if keyisset(the_resource.mapping_key, property_stack.stack_template.mappings):
-            property_stack.stack_template.mappings[the_resource.mapping_key][
+        if keyisset(
+            the_resource.module.mapping_key, property_stack.stack_template.mappings
+        ):
+            property_stack.stack_template.mappings[the_resource.module.mapping_key][
                 the_resource.logical_name
             ].update(the_resource.mappings)
         else:
             add_update_mapping(
                 property_stack.stack_template,
-                the_resource.mapping_key,
-                settings.mappings[the_resource.mapping_key],
+                the_resource.module.mapping_key,
+                settings.mappings[the_resource.module.mapping_key],
             )
         setattr(
             the_property,
@@ -323,27 +332,26 @@ class XStack(ComposeXStack):
     :param ecs_composex.common.settings.ComposeXSettings settings:
     """
 
-    def __init__(self, name: str, settings, **kwargs):
+    def __init__(
+        self, name: str, settings: ComposeXSettings, module: XResourceModule, **kwargs
+    ):
         """
         :param str name:
         :param ecs_composex.common.settings.ComposeXSettings settings:
         :param dict kwargs:
         """
-        set_resources(settings, Certificate, RES_KEY, MOD_KEY, mapping_key=MAPPINGS_KEY)
-        x_resources = settings.compose_content[RES_KEY].values()
-        use_resources = set_use_resources(x_resources, RES_KEY, False)
-        lookup_resources = set_lookup_resources(x_resources, RES_KEY)
-        new_resources = set_new_resources(x_resources, RES_KEY, False)
+        set_resources(settings, Certificate, module)
+        x_resources = settings.compose_content[module.res_key].values()
+        lookup_resources = set_lookup_resources(x_resources)
+        new_resources = set_new_resources(x_resources, False)
         if new_resources:
             stack_template = build_template("ACM Certificates created from x-acm")
-            super().__init__(name, stack_template, **kwargs)
+            super().__init__(name, stack_template, module=module, **kwargs)
             define_acm_certs(new_resources, self)
         else:
             self.is_void = True
         if lookup_resources:
             resolve_lookup(lookup_resources, settings)
-        if use_resources:
-            warnings.warn("x-acm.Use is not yet supported.")
-        self.module_name = MOD_KEY
+        self.module_name = module.mod_key
         for resource in x_resources:
             resource.stack = self

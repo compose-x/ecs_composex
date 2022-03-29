@@ -2,6 +2,14 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  Copyright 2020-2022 John Mille <john@compose-x.io>
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ecs_composex.mods_manager import XResourceModule
+    from ecs_composex.common.settings import ComposeXSettings
+
 from compose_x_common.compose_x_common import keyisset, keypresent
 from troposphere import AWS_NO_VALUE, AWS_STACK_NAME, GetAtt, Ref, Select, Sub, Tags
 from troposphere.ec2 import EIP, SecurityGroup
@@ -41,7 +49,9 @@ class Elbv2(NetworkXResource):
 
     subnets_param = APP_SUBNETS
 
-    def __init__(self, name, definition, module_name, settings, mapping_key=None):
+    def __init__(
+        self, name, definition, module: XResourceModule, settings: ComposeXSettings
+    ):
         if not keyisset("Listeners", definition):
             raise KeyError("You must specify at least one Listener for a LB.", name)
         self.lb_is_public = False
@@ -52,9 +62,7 @@ class Elbv2(NetworkXResource):
         self.unique_service_lb = False
         self.lb = None
         self.listeners = []
-        super().__init__(
-            name, definition, module_name, settings, mapping_key=mapping_key
-        )
+        super().__init__(name, definition, module, settings)
         self.validate_services()
         self.sort_props()
         self.module_name = MOD_KEY
@@ -110,7 +118,7 @@ class Elbv2(NetworkXResource):
                 self.listeners.append(new_listener)
             else:
                 LOG.warning(
-                    f"{self.module_name}.{self.name} - "
+                    f"{self.module.res_key}.{self.name} - "
                     f"Listener {listener_def['Port']} has no action or service. Not used."
                 )
 
@@ -124,25 +132,25 @@ class Elbv2(NetworkXResource):
         :return:
         """
         if not self.services:
-            LOG.debug(f"{self.module_name}.{self.name} No Services defined.")
+            LOG.debug(f"{self.module.res_key}.{self.name} No Services defined.")
             return
         for service_def in self.services:
             family_combo_name = service_def["name"]
             service_name = family_combo_name.split(":")[-1]
             family_name = NONALPHANUM.sub("", family_combo_name.split(":")[0])
             LOG.info(
-                f"{self.module_name}.{self.name} - Adding target {family_name}:{service_name}"
+                f"{self.module.res_key}.{self.name} - Adding target {family_name}:{service_name}"
             )
             if family_name not in settings.families:
                 raise ValueError(
-                    f"{self.module_name}.{self.name} - Service family {family_name} is invalid. Defined families",
+                    f"{self.module.res_key}.{self.name} - Service family {family_name} is invalid. Defined families",
                     settings.families.keys(),
                 )
             for f_service in settings.families[family_name].ordered_services:
                 if f_service.name == service_name:
                     if f_service not in settings.services:
                         raise ValueError(
-                            f"{self.module_name}.{self.name} Please, use only the services names."
+                            f"{self.module.res_key}.{self.name} Please, use only the services names."
                             "You cannot use the family name defined by deploy labels"
                             f"Found {f_service}",
                             [s for s in settings.services],
@@ -164,7 +172,7 @@ class Elbv2(NetworkXResource):
                         break
             else:
                 raise ValueError(
-                    f"{self.module_name}.{self.name} - Could not find {service_name} in family {family_name}"
+                    f"{self.module.res_key}.{self.name} - Could not find {service_name} in family {family_name}"
                 )
 
         self.debug_families_targets()

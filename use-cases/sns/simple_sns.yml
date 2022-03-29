@@ -1,10 +1,9 @@
 
 x-sns:
-  Topics:
-    abcd:
-      Properties: {}
-      Services:
-        - name: app01
-          access: Publish
-        - name: youtoo
-          access: Publish
+  abcd:
+    Properties: {}
+    Services:
+      - name: app01
+        access: Publish
+      - name: youtoo
+        access: Publish

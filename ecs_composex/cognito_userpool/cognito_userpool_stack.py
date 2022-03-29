@@ -5,6 +5,16 @@
 """
 Module to manage top level AWS CodeGuru profiles
 """
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ecs_composex.common.settings import ComposeXSettings
+    from ecs_composex.mods_manager import XResourceModule
+
+
 import warnings
 
 from compose_x_common.aws.cognito_userpool import USER_POOL_RE
@@ -32,7 +42,6 @@ from ecs_composex.compose.x_resources.helpers import (
     set_lookup_resources,
     set_new_resources,
     set_resources,
-    set_use_resources,
 )
 
 LOG = setup_logging()
@@ -73,11 +82,10 @@ class UserPool(AwsEnvironmentResource, ApiXResource):
         self,
         name: str,
         definition: dict,
-        module_name: str,
-        settings,
-        mapping_key: str = None,
+        module: XResourceModule,
+        settings: ComposeXSettings,
     ):
-        super().__init__(name, definition, module_name, settings, mapping_key)
+        super().__init__(name, definition, module, settings)
         self.arn_parameter = USERPOOL_ARN
 
     def init_outputs(self):
@@ -114,7 +122,7 @@ def resolve_lookup(lookup_resources, settings):
         settings.mappings[MAPPINGS_KEY].update(
             {resource.logical_name: resource.mappings}
         )
-        LOG.info(f"{resource.module_name}.{resource.name} Found in AWS Account")
+        LOG.info(f"{resource.module.res_key}.{resource.name} Found in AWS Account")
 
 
 class XStack(ComposeXStack):
@@ -122,20 +130,21 @@ class XStack(ComposeXStack):
     Method to manage the elastic cache resources and root stack
     """
 
-    def __init__(self, title, settings, **kwargs):
+    def __init__(
+        self, title, settings: ComposeXSettings, module: XResourceModule, **kwargs
+    ):
         """
         :param str title:
         :param ecs_composex.common.settings.ComposeXSettings settings:
         :param dict kwargs:
         """
-        set_resources(settings, UserPool, RES_KEY, MOD_KEY, mapping_key=MAPPINGS_KEY)
-        x_resources = settings.compose_content[RES_KEY].values()
-        new_resources = set_new_resources(x_resources, RES_KEY, False)
-        lookup_resources = set_lookup_resources(x_resources, RES_KEY)
-        use_resources = set_use_resources(x_resources, RES_KEY, False)
+        set_resources(settings, UserPool, module)
+        x_resources = settings.compose_content[module.res_key].values()
+        new_resources = set_new_resources(x_resources, False)
+        lookup_resources = set_lookup_resources(x_resources)
         if new_resources:
-            LOG.error(f"{RES_KEY} does not support new resources creation yet.")
-            stack_template = build_template(f"Root stack to manage {MOD_KEY}")
+            LOG.error(f"{module.res_key} does not support new resources creation yet.")
+            stack_template = build_template(f"Root stack to manage {module.mod_key}")
             super().__init__(title, stack_template, **kwargs)
             self.is_void = True
         else:
@@ -144,5 +153,3 @@ class XStack(ComposeXStack):
             resource.stack = self
         if lookup_resources:
             resolve_lookup(lookup_resources, settings)
-        if use_resources:
-            warnings.warn(f"{RES_KEY} does not support .Use")

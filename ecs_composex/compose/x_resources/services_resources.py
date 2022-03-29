@@ -2,6 +2,15 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  Copyright 2020-2022 John Mille <john@compose-x.io>
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ecs_composex.common.settings import ComposeXSettings
+    from ecs_composex.mods_manager import XResourceModule
+
+
 from compose_x_common.compose_x_common import keyisset
 
 from ecs_composex.common import LOG, NONALPHANUM
@@ -18,13 +27,17 @@ class ServicesXResource(XResource):
     """
 
     def __init__(
-        self, name: str, definition: dict, module_name: str, settings, mapping_key=None
+        self,
+        name: str,
+        definition: dict,
+        module: XResourceModule,
+        settings: ComposeXSettings,
     ):
         self.services = []
         self.families_targets = []
         self.families_scaling = []
         self.arn_parameter = None
-        super().__init__(name, definition, module_name, settings, mapping_key)
+        super().__init__(name, definition, module, settings)
         self.services = (
             []
             if not keyisset("Services", self.definition)
@@ -95,7 +108,7 @@ class ServicesXResource(XResource):
                 f[0].name for f in self.families_targets
             ]:
                 LOG.debug(
-                    f"{self.module_name}.{self.name} - Family {service_name} has already been added. Skipping"
+                    f"{self.module.res_key}.{self.name} - Family {service_name} has already been added. Skipping"
                 )
             elif service_name in [s.name for s in settings.services]:
                 self.handle_families_targets_expansion(service, settings)
@@ -151,7 +164,7 @@ class ServicesXResource(XResource):
                 f[0].name for f in self.families_targets
             ]:
                 LOG.debug(
-                    f"{self.module_name}.{self.name} - Family {service_name} has already been added. Skipping"
+                    f"{self.module.res_key}.{self.name} - Family {service_name} has already been added. Skipping"
                 )
             elif service_name in [s.name for s in settings.services]:
                 self.handle_families_targets_expansion_dict(
@@ -168,7 +181,7 @@ class ServicesXResource(XResource):
         :return:
         """
         if not self.services:
-            LOG.debug(f"{self.module_name}.{self.name} No Services defined.")
+            LOG.debug(f"{self.module.res_key}.{self.name} No Services defined.")
             return
         if isinstance(self.services, list):
             self.set_services_targets_from_list(settings)
@@ -208,7 +221,7 @@ class ServicesXResource(XResource):
             scaling_key = get_setting_key("scaling", service)
             if not keyisset(scaling_key, service):
                 LOG.debug(
-                    f"{self.module_name}.{self.name} - No Scaling set for {service[name_key]}"
+                    f"{self.module.res_key}.{self.name} - No Scaling set for {service[name_key]}"
                 )
                 continue
             service_name = service[name_key]
@@ -222,7 +235,7 @@ class ServicesXResource(XResource):
                 f[0].name for f in self.families_scaling
             ]:
                 LOG.debug(
-                    f"{self.module_name}.{self.name} - Family {service_name} has already been added. Skipping"
+                    f"{self.module.res_key}.{self.name} - Family {service_name} has already been added. Skipping"
                 )
             elif service_name in [s.name for s in settings.services]:
                 self.handle_family_scaling_expansion(service, settings)
@@ -256,7 +269,7 @@ class ServicesXResource(XResource):
         for service_name, service_def in self.services.items():
             if not keyisset("Scaling", service_def):
                 LOG.debug(
-                    f"{self.module_name}.{self.name} - No Scaling set for {service_name}"
+                    f"{self.module.res_key}.{self.name} - No Scaling set for {service_name}"
                 )
                 continue
             if service_name in settings.families and service_name not in [
@@ -272,7 +285,7 @@ class ServicesXResource(XResource):
                 f[0].name for f in self.families_scaling
             ]:
                 LOG.debug(
-                    f"{self.module_name}.{self.name} - Family {service_name} has already been added. Skipping"
+                    f"{self.module.res_key}.{self.name} - Family {service_name} has already been added. Skipping"
                 )
             elif service_name in [s.name for s in settings.services]:
                 self.handle_families_scaling_expansion_dict(
@@ -289,7 +302,7 @@ class ServicesXResource(XResource):
         :return:
         """
         if not self.services:
-            LOG.debug(f"{self.module_name}.{self.name} No Services defined.")
+            LOG.debug(f"{self.module.res_key}.{self.name} No Services defined.")
             return
         if isinstance(self.services, list):
             self.set_services_scaling_list(settings)

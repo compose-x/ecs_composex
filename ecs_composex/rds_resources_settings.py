@@ -82,7 +82,7 @@ def lookup_rds_secret(rds_resource, secret_lookup):
 
         except client.exceptions.ResourceNotFoundException:
             LOG.error(
-                f"{rds_resource.module_name}.{rds_resource.name} - Secret {secret_lookup['Arn']} not found"
+                f"{rds_resource.module.res_key}.{rds_resource.name} - Secret {secret_lookup['Arn']} not found"
             )
             raise
         except ClientError as error:
@@ -96,7 +96,7 @@ def lookup_rds_secret(rds_resource, secret_lookup):
         )
     else:
         raise LookupError(
-            f"{rds_resource.module_name}.{rds_resource.name} - Failed to find the DB Secret"
+            f"{rds_resource.module.res_key}.{rds_resource.name} - Failed to find the DB Secret"
         )
     if secret_arn:
         rds_resource.lookup_properties[
@@ -129,7 +129,7 @@ def lookup_rds_resource(
         arn_parts = arn_re.match(lookup_attributes["Arn"])
         if not arn_parts:
             raise KeyError(
-                f"{rds_resource.module_name}.{rds_resource.name} - "
+                f"{rds_resource.module.res_key}.{rds_resource.name} - "
                 f"ARN {lookup_attributes['Arn']} is not valid. Must match",
                 arn_re.pattern,
             )
@@ -146,12 +146,12 @@ def lookup_rds_resource(
         account_id = arn_parts.group("accountid")
     else:
         raise KeyError(
-            f"{rds_resource.module_name}.{rds_resource.name} - "
+            f"{rds_resource.module.res_key}.{rds_resource.name} - "
             "You must specify Arn or Tags to identify existing resource"
         )
     if not rds_resource.arn:
         raise LookupError(
-            f"{rds_resource.module_name}.{rds_resource.name} - Failed to find the AWS Resource with given tags"
+            f"{rds_resource.module.res_key}.{rds_resource.name} - Failed to find the AWS Resource with given tags"
         )
     props = {}
     _account_id = get_account_id(rds_resource.lookup_session)
@@ -269,13 +269,13 @@ def define_db_secrets(db, secret_import, target) -> list:
             db, secrets, secret_import, target[-1]["SecretsMappings"]
         )
     elif keyisset("SecretsMappings", db.settings):
-        LOG.info(f"{db.module_name}.{db.name} has secrets mappings settings.")
+        LOG.info(f"{db.module.res_key}.{db.name} has secrets mappings settings.")
         generate_secrets_from_secrets_mappings(
             db, secrets, secret_import, db.settings["SecretsMappings"]
         )
     else:
         LOG.info(
-            f"{db.module_name}.{db.name} - No SecretsMappings set. Exposing the secrets content as-is."
+            f"{db.module.res_key}.{db.name} - No SecretsMappings set. Exposing the secrets content as-is."
         )
         secrets.append(EcsSecret(Name=db.name, ValueFrom=secret_import))
     return secrets
@@ -429,7 +429,9 @@ def import_dbs(
     """
     for target in db.families_targets:
         add_update_mapping(
-            target[0].template, db.mapping_key, settings.mappings[db.mapping_key]
+            target[0].template,
+            db.module.mapping_key,
+            settings.mappings[db.module.mapping_key],
         )
         handle_import_dbs_to_services(db, target)
 

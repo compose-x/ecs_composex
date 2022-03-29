@@ -6,6 +6,13 @@
 Module to define the ComposeX Resources into a simple object to make it easier to navigate through.
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ecs_composex.common.settings import ComposeXSettings
+
 import json
 import re
 from copy import deepcopy
@@ -33,6 +40,8 @@ from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.common.ecs_composex import CFN_EXPORT_DELIMITER as DELIM
 from ecs_composex.common.ecs_composex import X_KEY
 from ecs_composex.compose.x_resources.helpers import get_setting_key
+from ecs_composex.iam.import_sam_policies import get_access_types
+from ecs_composex.mods_manager import XResourceModule
 from ecs_composex.resource_settings import get_parameter_settings
 
 ENV_VAR_NAME = re.compile(r"([^a-zA-Z0-9_]+)")
@@ -49,26 +58,29 @@ class XResource(object):
     :ivar bool requires_vpc: Whether or not the resource requires a VPC to function (i.e. RDS)
     """
 
-    policies_scaffolds = {}
-
     def __init__(
-        self, name: str, definition: dict, module_name: str, settings, mapping_key=None
+        self,
+        name: str,
+        definition: dict,
+        module: XResourceModule,
+        settings: ComposeXSettings,
     ):
         """
         :param str name: Name of the resource in the template
         :param dict definition: The definition of the resource as-is
         :param ecs_composex.common.settings.ComposeXSettings settings:
         """
-        self.validate_schema(name, definition, module_name)
+        if not isinstance(module, XResourceModule):
+            raise TypeError(
+                name, "module must be", XResourceModule, "Got", module, type(module)
+            )
+        self.module = module
+        self.validate_schema(name, definition, module.mod_key)
         self.name = name
         self.requires_vpc = False
         self.arn = None
         self.cloud_control_attributes_mapping = {}
         self.native_attributes_mapping = {}
-        self.module_name = module_name
-        self.mapping_key = mapping_key
-        if self.mapping_key is None:
-            self.mapping_key = self.module_name
         self.definition = deepcopy(definition)
         self.env_names = []
         self.env_vars = []
@@ -120,13 +132,14 @@ class XResource(object):
         self.lookup_properties = {}
         self.mappings = {}
         self.default_tags = {
-            "compose-x::module": self.module_name,
+            "compose-x::module": self.module.mod_key,
             "compose-x::resource_name": self.name,
             "compose-x::logical_name": self.logical_name,
         }
         self.cloudmap_settings = set_else_none("x-cloudmap", self.settings, {})
         self.default_cloudmap_settings = {}
         self.cloudmap_dns_supported = False
+        self.policies_scaffolds = get_access_types(module.mod_key)
 
     def __repr__(self):
         return self.logical_name
@@ -141,24 +154,26 @@ class XResource(object):
         :param kwargs:
         """
 
-    def validate_schema(self, name, definition, module_name) -> None:
+    def validate_schema(
+        self, name, definition, module_name, module_schema: str = None
+    ) -> None:
         """
         JSON Validation of the resources module validation
         """
 
-        import json
-
-        RES_KEY = f"{X_KEY}{module_name}"
-        module_source = pkg_files("ecs_composex").joinpath(
-            f"{module_name}/{RES_KEY}.spec.json"
-        )
-        try:
-            module_schema = json.loads(module_source.read_text())
-        except FileNotFoundError:
-            LOG.error(
-                f"{RES_KEY}.{name} - No module schema found for that resource. Errors might occur!!"
+        if not module_schema:
+            res_key = f"{X_KEY}{module_name}"
+            module_source = pkg_files("ecs_composex").joinpath(
+                f"{module_name}/{res_key}.spec.json"
             )
-            return
+            try:
+                module_schema = json.loads(module_source.read_text())
+            except FileNotFoundError:
+                LOG.error(
+                    f"{res_key}.{name} - No module schema found for that resource. Errors might occur!!"
+                )
+                return
+
         resolver_source = pkg_files("ecs_composex").joinpath("specs/compose-spec.json")
         LOG.debug(f"Validating against input schema {resolver_source}")
         resolver = jsonschema.RefResolver(
@@ -173,7 +188,7 @@ class XResource(object):
                 resolver=resolver,
             )
         except jsonschema.exceptions.ValidationError as error:
-            LOG.error(f"{RES_KEY}.{name} - Definition is not conform to schema.")
+            LOG.error(f"{module_name}.{name} - Definition is not conform to schema.")
             raise
 
     def cloud_control_attributes_mapping_lookup(
@@ -229,23 +244,23 @@ class XResource(object):
         if subattribute_key is not None:
             lookup_attributes = self.lookup[subattribute_key]
         if keyisset("Arn", lookup_attributes):
-            LOG.info(f"{self.module_name}.{self.name} - Lookup via ARN")
+            LOG.info(f"{self.module.res_key}.{self.name} - Lookup via ARN")
             LOG.debug(
-                f"{self.module_name}.{self.name} - ARN is {lookup_attributes['Arn']}"
+                f"{self.module.res_key}.{self.name} - ARN is {lookup_attributes['Arn']}"
             )
             arn_parts = arn_re.match(lookup_attributes["Arn"])
             if not arn_parts:
                 raise KeyError(
-                    f"{self.module_name}.{self.name} - ARN {lookup_attributes['Arn']} is not valid. Must match",
+                    f"{self.module.res_key}.{self.name} - ARN {lookup_attributes['Arn']} is not valid. Must match",
                     arn_re.pattern,
                 )
             self.arn = lookup_attributes["Arn"]
             resource_id = arn_parts.group("id")
             account_id = arn_parts.group("accountid")
         elif keyisset("Tags", lookup_attributes):
-            LOG.info(f"{self.module_name}.{self.name} - Lookup via Tags")
+            LOG.info(f"{self.module.res_key}.{self.name} - Lookup via Tags")
             LOG.debug(
-                f"{self.module_name}.{self.name} - Lookup tags -> {lookup_attributes}"
+                f"{self.module.res_key}.{self.name} - Lookup tags -> {lookup_attributes}"
             )
             self.arn = find_aws_resource_arn_from_tags_api(
                 lookup_attributes, self.lookup_session, tagging_api_id
@@ -255,11 +270,11 @@ class XResource(object):
             account_id = arn_parts.group("accountid")
         else:
             raise KeyError(
-                f"{self.module_name}.{self.name} - You must specify Arn or Tags to identify existing resource"
+                f"{self.module.res_key}.{self.name} - You must specify Arn or Tags to identify existing resource"
             )
         if not self.arn:
             raise LookupError(
-                f"{self.module_name}.{self.name} - Failed to find the AWS Resource with given tags"
+                f"{self.module.res_key}.{self.name} - Failed to find the AWS Resource with given tags"
             )
         props = {}
         _account_id = get_account_id(self.lookup_session)
@@ -282,7 +297,7 @@ class XResource(object):
         for parameter, value in self.lookup_properties.items():
             if not isinstance(parameter, Parameter):
                 raise TypeError(
-                    f"{self.module_name}.{self.name} - lookup attribute {parameter} is",
+                    f"{self.module.res_key}.{self.name} - lookup attribute {parameter} is",
                     type(parameter),
                     "Expected",
                     Parameter,
@@ -316,7 +331,7 @@ class XResource(object):
             )
         else:
             LOG.info(
-                f"{self.module_name}.{self.module_name} - Ref parameter {self.ref_parameter.title} override."
+                f"{self.module.res_key}.{self.module.res_key} - Ref parameter {self.ref_parameter.title} override."
             )
         for prop_name, env_var_name in target_definition.items():
             if prop_name in res_return_names:
@@ -358,7 +373,7 @@ class XResource(object):
         """
         if not self.ref_parameter:
             LOG.error(
-                f"{self.module_name}.{self.name}. Default ref_parameter not set. Skipping env_vars"
+                f"{self.module.res_key}.{self.name}. Default ref_parameter not set. Skipping env_vars"
             )
             return []
         env_var_name = ENV_VAR_NAME.sub("", self.name.upper().replace("-", "_"))
@@ -381,7 +396,7 @@ class XResource(object):
             )
         else:
             raise ValueError(
-                f"{self.module_name}.{self.name} - Unable to set the default env var"
+                f"{self.module.res_key}.{self.name} - Unable to set the default env var"
             )
         return [ref_env_var]
 
@@ -395,13 +410,13 @@ class XResource(object):
         """
         if attribute_parameter.return_value:
             return FindInMap(
-                self.mapping_key,
+                self.module.mapping_key,
                 self.logical_name,
                 NONALPHANUM.sub("", attribute_parameter.return_value),
             )
         else:
             return FindInMap(
-                self.mapping_key, self.logical_name, attribute_parameter.title
+                self.module.mapping_key, self.logical_name, attribute_parameter.title
             )
 
     def define_export_name(self, output_definition, attribute_parameter):
@@ -487,7 +502,7 @@ class XResource(object):
         if self.stack and not self.stack.is_void:
             root_stack = self.stack.title
         else:
-            root_stack = self.mapping_key
+            root_stack = self.module.mapping_key
         if self.lookup_properties:
             for attribute_parameter, value in self.lookup_properties.items():
                 output_name = f"{self.logical_name}{attribute_parameter.title}"

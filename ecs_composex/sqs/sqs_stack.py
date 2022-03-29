@@ -5,32 +5,31 @@
 """
 Module for the XStack SQS
 """
-import warnings
-from os import path
+from __future__ import annotations
 
-import jsonschema
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ecs_composex.common.settings import ComposeXSettings
+    from ecs_composex.mods_manager import XResourceModule
+
 from botocore.exceptions import ClientError
 from compose_x_common.aws.sqs import SQS_QUEUE_ARN_RE
 from compose_x_common.compose_x_common import keyisset
-from importlib_resources import files as pkg_files
 from troposphere import GetAtt, Ref
 from troposphere.sqs import Queue as CfnQueue
 
-from ecs_composex.common import build_template, setup_logging
+from ecs_composex.common import add_update_mapping, build_template, setup_logging
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources.api_x_resources import ApiXResource
 from ecs_composex.compose.x_resources.helpers import (
     set_lookup_resources,
     set_new_resources,
     set_resources,
-    set_use_resources,
 )
 from ecs_composex.iam.import_sam_policies import get_access_types
 from ecs_composex.sqs.sqs_ecs_scaling import handle_service_scaling
 from ecs_composex.sqs.sqs_params import (
-    MAPPINGS_KEY,
-    MOD_KEY,
-    RES_KEY,
     SQS_ARN,
     SQS_KMS_KEY,
     SQS_NAME,
@@ -75,7 +74,7 @@ def get_queue_config(queue, account_id, resource_id):
                         "The KMS Key provided is not an ARN. Implementation requires full ARN today"
                     )
             else:
-                LOG.info(f"{queue.module_name}.{queue.name} - No KMS encryption.")
+                LOG.info(f"{queue.module.res_key}.{queue.name} - No KMS encryption.")
         except client.exceptions.InvalidAttributeName as error:
             LOG.error("Failed to retrieve the Queue attributes")
             LOG.error(error)
@@ -92,12 +91,14 @@ class Queue(ApiXResource):
     Class to represent a SQS Queue
     """
 
-    policies_scaffolds = get_access_types(MOD_KEY)
-
     def __init__(
-        self, name: str, definition: dict, module_name: str, settings, mapping_key=None
+        self,
+        name: str,
+        definition: dict,
+        module: XResourceModule,
+        settings: ComposeXSettings,
     ):
-        super().__init__(name, definition, module_name, settings, mapping_key)
+        super().__init__(name, definition, module, settings)
         self.kms_arn_attr = SQS_KMS_KEY
         self.arn_parameter = SQS_ARN
         self.ref_parameter = SQS_URL
@@ -126,15 +127,18 @@ class Queue(ApiXResource):
         }
 
 
-def resolve_lookup(lookup_resources, settings):
+def resolve_lookup(
+    lookup_resources, settings: ComposeXSettings, module: XResourceModule
+) -> None:
     """
     Lookup AWS Resource
 
     :param list[Queue] lookup_resources:
     :param ecs_composex.common.settings.ComposeXSettings settings:
+    :param XResourceModule module:
     """
-    if not keyisset(MAPPINGS_KEY, settings.mappings):
-        settings.mappings[MAPPINGS_KEY] = {}
+    if not keyisset(module.mapping_key, settings.mappings):
+        settings.mappings[module.mapping_key] = {}
     for resource in lookup_resources:
         resource.lookup_resource(
             SQS_QUEUE_ARN_RE,
@@ -142,13 +146,15 @@ def resolve_lookup(lookup_resources, settings):
             CfnQueue.resource_type,
             TAGGING_API_ID,
         )
-        settings.mappings[MAPPINGS_KEY].update(
+        settings.mappings[module.mapping_key].update(
             {resource.logical_name: resource.mappings}
         )
-        LOG.info(f"{RES_KEY}.{resource.name} - Matched AWS Resource {resource.arn}")
+        LOG.info(
+            f"{module.res_key}.{resource.name} - Matched AWS Resource {resource.arn}"
+        )
         if keyisset(SQS_KMS_KEY, resource.lookup_properties):
             LOG.info(
-                f"{RES_KEY}.{resource.name} - Identified CMK - {resource.lookup_properties[SQS_KMS_KEY]}"
+                f"{module.res_key}.{resource.name} - Identified CMK - {resource.lookup_properties[SQS_KMS_KEY]}"
             )
 
 
@@ -157,24 +163,29 @@ class XStack(ComposeXStack):
     Class to handle SQS Root stack related actions
     """
 
-    def __init__(self, title, settings, **kwargs):
+    def __init__(
+        self, title, settings: ComposeXSettings, module: XResourceModule, **kwargs
+    ):
         """
         :param str title: Name of the stack
         :param ecs_composex.common.settings.ComposeXSettings settings:
         :param dict kwargs:
         """
-        # self.validate_resources_schema(settings.compose_content[RES_KEY])
-        set_resources(settings, Queue, RES_KEY, MOD_KEY, mapping_key=MAPPINGS_KEY)
-        x_resources = settings.compose_content[RES_KEY].values()
-        lookup_resources = set_lookup_resources(x_resources, RES_KEY)
+        set_resources(settings, Queue, module)
+        x_resources = settings.compose_content[module.res_key].values()
+        lookup_resources = set_lookup_resources(x_resources)
         if lookup_resources:
-            resolve_lookup(lookup_resources, settings)
-        new_resources = set_new_resources(x_resources, RES_KEY, True)
+            resolve_lookup(lookup_resources, settings, module)
+        new_resources = set_new_resources(x_resources, True)
         if new_resources:
             template = build_template("SQS template generated by ECS Compose-X")
+            if lookup_resources:
+                add_update_mapping(
+                    template, module.mapping_key, settings.mappings[module.mapping_key]
+                )
             super().__init__(title, stack_template=template, **kwargs)
-            render_new_queues(settings, new_resources, self, template)
+            render_new_queues(settings, new_resources, x_resources, self, template)
         else:
             self.is_void = True
-        for resource in settings.compose_content[RES_KEY].values():
+        for resource in settings.compose_content[module.res_key].values():
             resource.stack = self

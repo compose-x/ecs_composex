@@ -2,6 +2,19 @@
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2022 John Mille <john@compose-x.io>
 
+"""
+Manage Creation/Deletion of AWS KMS Keys
+"""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ecs_composex.common.settings import ComposeXSettings
+    from ecs_composex.mods_manager import XResourceModule
+
+
 from botocore.exceptions import ClientError
 from compose_x_common.aws.kms import KMS_KEY_ARN_RE
 from compose_x_common.compose_x_common import attributes_to_mapping, keyisset
@@ -33,7 +46,6 @@ from ..compose.x_resources.helpers import (
     set_lookup_resources,
     set_new_resources,
     set_resources,
-    set_use_resources,
 )
 from .kms_sqs import handle_queue_kms
 
@@ -58,7 +70,7 @@ def get_key_config(key, account_id, resource_id):
             aliases_r = client.list_aliases(KeyId=key_attributes[KMS_KEY_ID])
             key_attributes[KMS_KEY_ALIAS_NAME] = aliases_r["Aliases"][0]["AliasName"]
         except client.exceptions.NotFoundException:
-            LOG.debug(f"{key.module_name}.{key.name} - No KMS Key Alias.")
+            LOG.debug(f"{key.module.res_key}.{key.name} - No KMS Key Alias.")
         return key_attributes
     except client.exceptions.QueueDoesNotExist:
         return None
@@ -107,11 +119,10 @@ class KmsKey(AwsEnvironmentResource, ApiXResource):
         self,
         name: str,
         definition: dict,
-        module_name: str,
-        settings,
-        mapping_key: str = None,
+        module: XResourceModule,
+        settings: ComposeXSettings,
     ):
-        super().__init__(name, definition, module_name, settings, mapping_key)
+        super().__init__(name, definition, module, settings)
         self.arn_parameter = KMS_KEY_ARN
         self.ref_parameter = KMS_KEY_ID
 
@@ -211,27 +222,28 @@ class XStack(ComposeXStack):
     Class for KMS Root stack
     """
 
-    def __init__(self, title, settings, **kwargs):
-        set_resources(settings, KmsKey, RES_KEY, MOD_KEY, mapping_key=MAPPINGS_KEY)
-        x_resources = settings.compose_content[RES_KEY].values()
-        lookup_resources = set_lookup_resources(x_resources, RES_KEY)
-        new_resources = set_new_resources(x_resources, RES_KEY, True)
-        use_resources = set_use_resources(x_resources, RES_KEY, False)
+    def __init__(
+        self, title, settings: ComposeXSettings, module: XResourceModule, **kwargs
+    ):
+        set_resources(settings, KmsKey, module)
+        x_resources = settings.compose_content[module.res_key].values()
+        lookup_resources = set_lookup_resources(x_resources)
+        new_resources = set_new_resources(x_resources, True)
         if new_resources:
             stack_template = build_template("Root template for KMS")
             super().__init__(title, stack_template, **kwargs)
             create_kms_template(stack_template, new_resources, self)
         else:
             self.is_void = True
-        if lookup_resources or use_resources:
-            if not keyisset(MAPPINGS_KEY, settings.mappings):
-                settings.mappings[MAPPINGS_KEY] = {}
+        if lookup_resources:
+            if not keyisset(module.mapping_key, settings.mappings):
+                settings.mappings[module.mapping_key] = {}
             for resource in lookup_resources:
                 resource.lookup_resource(
                     KMS_KEY_ARN_RE, get_key_config, Key.resource_type, "kms:key"
                 )
-                settings.mappings[MAPPINGS_KEY].update(
+                settings.mappings[module.mapping_key].update(
                     {resource.logical_name: resource.mappings}
                 )
-        for resource in settings.compose_content[RES_KEY].values():
+        for resource in settings.compose_content[module.res_key].values():
             resource.stack = self

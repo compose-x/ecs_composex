@@ -5,6 +5,14 @@
 """
 Module to handle the AWS ES Stack and resources creation
 """
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ecs_composex.common.settings import ComposeXSettings
+    from ecs_composex.mods_manager import XResourceModule
+
 
 import json
 
@@ -17,7 +25,6 @@ from ecs_composex.compose.x_resources.helpers import (
     set_lookup_resources,
     set_new_resources,
     set_resources,
-    set_use_resources,
 )
 from ecs_composex.compose.x_resources.network_x_resources import NetworkXResource
 from ecs_composex.elasticache.elasticache_ecs import create_lookup_mappings
@@ -29,13 +36,10 @@ from ecs_composex.elasticache.elasticache_params import (
     CLUSTER_REDIS_ADDRESS,
     CLUSTER_REDIS_PORT,
     CLUSTER_SG,
-    MAPPINGS_KEY,
-    MOD_KEY,
     REPLICA_PRIMARY_ADDRESS,
     REPLICA_PRIMARY_PORT,
     REPLICA_READ_ENDPOINT_ADDRESSES,
     REPLICA_READ_ENDPOINT_PORTS,
-    RES_KEY,
 )
 from ecs_composex.elasticache.elasticache_template import create_root_template
 from ecs_composex.vpc.vpc_params import STORAGE_SUBNETS
@@ -48,7 +52,9 @@ class CacheCluster(NetworkXResource):
 
     subnets_param = STORAGE_SUBNETS
 
-    def __init__(self, name, definition, module_name, settings, mapping_key=None):
+    def __init__(
+        self, name, definition, module: XResourceModule, settings: ComposeXSettings
+    ):
         self.db_sg = None
         self.parameter_group = None
         self.db_secret = None
@@ -56,9 +62,7 @@ class CacheCluster(NetworkXResource):
         self.engine = None
         self.port_attr = None
         self.config_parameter = None
-        super().__init__(
-            name, definition, module_name, settings, mapping_key=mapping_key
-        )
+        super().__init__(name, definition, module, settings)
         self.set_override_subnets()
 
     def init_memcached_outputs(self):
@@ -226,24 +230,23 @@ class XStack(ComposeXStack):
     Method to manage the elastic cache resources and root stack
     """
 
-    def __init__(self, title, settings, **kwargs):
-        set_resources(
-            settings, CacheCluster, RES_KEY, MOD_KEY, mapping_key=MAPPINGS_KEY
-        )
-        x_resources = settings.compose_content[RES_KEY].values()
-        new_resources = set_new_resources(x_resources, RES_KEY, False)
-        lookup_resources = set_lookup_resources(x_resources, RES_KEY)
-        use_resources = set_use_resources(x_resources, RES_KEY, False)
+    def __init__(
+        self, title, settings: ComposeXSettings, module: XResourceModule, **kwargs
+    ):
+        set_resources(settings, CacheCluster, module)
+        x_resources = settings.compose_content[module.res_key].values()
+        lookup_resources = set_lookup_resources(x_resources)
+        new_resources = set_new_resources(x_resources, False)
         if new_resources:
             stack_template = create_root_template(new_resources)
             super().__init__(title, stack_template, **kwargs)
         else:
             self.is_void = True
-        if lookup_resources or use_resources:
-            if not keyisset(RES_KEY, settings.mappings):
-                settings.mappings[RES_KEY] = {}
+        if lookup_resources:
+            if not keyisset(module.res_key, settings.mappings):
+                settings.mappings[module.res_key] = {}
             create_lookup_mappings(
-                settings.mappings[RES_KEY], lookup_resources, settings
+                settings.mappings[module.res_key], lookup_resources, settings
             )
-        for resource in settings.compose_content[RES_KEY].values():
+        for resource in settings.compose_content[module.res_key].values():
             resource.stack = self

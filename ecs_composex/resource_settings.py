@@ -52,7 +52,7 @@ def get_parameter_settings(resource, parameter: Parameter) -> tuple:
         print(resource.attributes_outputs.items())
         if isinstance(parameter, Parameter):
             print(parameter, parameter.title)
-        print(f"{resource.module_name}.{resource.name}")
+        print(f"{resource.module.res_key}.{resource.name}")
         raise
 
 
@@ -294,7 +294,9 @@ def map_service_perms_to_resource(
             "You must specify either resource or resource_policies and resources_mappings"
         )
     resource_policies = resource.policies_scaffolds if resource else resource_policies
-    resource_mapping_key = resource.mapping_key if resource else resource_mapping_key
+    resource_mapping_key = (
+        resource.module.mapping_key if resource else resource_mapping_key
+    )
     policies_models = (
         deepcopy(resource_policies)
         if not access_subkey
@@ -352,7 +354,7 @@ def set_arn_att_value(resource, arn_settings, arn_parameter) -> AWSHelperFn:
         arn_attr_value = resource.attributes_outputs[arn_parameter]["ImportValue"]
     else:
         raise AttributeError(
-            f"{resource.module_name}.{resource.name} - Unable to define ARN Attribute"
+            f"{resource.module.res_key}.{resource.name} - Unable to define ARN Attribute"
         )
     return arn_attr_value
 
@@ -379,8 +381,8 @@ def import_resource_into_service_stack(
     elif resource.mappings:
         add_update_mapping(
             family.template,
-            resource.mapping_key,
-            settings.mappings[resource.mapping_key],
+            resource.module.mapping_key,
+            settings.mappings[resource.module.mapping_key],
         )
 
 
@@ -475,7 +477,7 @@ def link_resource_to_services(
         map_resource_env_vars_to_family_services(target, resource)
         if not target[3]:
             LOG.warning(
-                f"{resource.module_name}.{resource.name} - Access not defined for {target[0].name}"
+                f"{resource.module.res_key}.{resource.name} - Access not defined for {target[0].name}"
             )
             continue
         set_iam_link_resource_to_services(

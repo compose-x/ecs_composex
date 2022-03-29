@@ -13,20 +13,30 @@ from ecs_composex.common import LOG, NONALPHANUM, build_template
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.sqs import metadata
-from ecs_composex.sqs.sqs_params import DLQ_ARN, DLQ_ARN_T, RES_KEY, SQS_ARN_T
+from ecs_composex.sqs.sqs_params import DLQ_ARN, DLQ_ARN_T, SQS_ARN, SQS_ARN_T
 
 CFN_MAX_OUTPUTS = 190
 
 
 def define_redrive_policy(target_queue, retries=None, mono_template=True):
-    policy = {
-        "RedrivePolicy": RedrivePolicy(
-            deadLetterTargetArn=GetAtt(target_queue, "Arn")
-            if mono_template
-            else Ref(DLQ_ARN),
-            maxReceiveCount=retries,
-        )
-    }
+    if target_queue.cfn_resource:
+        policy = {
+            "RedrivePolicy": RedrivePolicy(
+                deadLetterTargetArn=GetAtt(target_queue.cfn_resource, "Arn")
+                if mono_template
+                else Ref(DLQ_ARN),
+                maxReceiveCount=retries,
+            )
+        }
+    else:
+        policy = {
+            "RedrivePolicy": RedrivePolicy(
+                deadLetterTargetArn=target_queue.attributes_outputs[SQS_ARN][
+                    "ImportValue"
+                ],
+                maxReceiveCount=retries,
+            )
+        }
     return policy
 
 
@@ -68,7 +78,7 @@ def define_queue(queue, queues, mono_template=True):
     Function to parse the queue definition and generate the queue accordingly. Created the redrive policy if necessary
 
     :param ecs_composex.common.compose_resources.Queue queue: name of the queue
-    :param dict queues: the queues defined in x-sqs
+    :param list[ecs_composex.sqs.sqs_stack.Queue] queues: the queues defined in x-sqs
     :param bool mono_template: whether or not there are so many outputs we need to split.
 
     :return: queue
@@ -85,7 +95,10 @@ def define_queue(queue, queues, mono_template=True):
         "deadLetterTargetArn", properties["RedrivePolicy"]
     ):
         redrive_target = properties["RedrivePolicy"]["deadLetterTargetArn"]
-        if redrive_target not in queues:
+        for _queue in queues:
+            if redrive_target == _queue.name:
+                break
+        else:
             raise KeyError(
                 f"Queue {redrive_target} defined as DLQ for {queue.name} but is not defined"
             )
@@ -93,14 +106,14 @@ def define_queue(queue, queues, mono_template=True):
             retries = int(properties["RedrivePolicy"]["maxReceiveCount"])
         else:
             retries = 5
-        redrive_policy = define_redrive_policy(redrive_target, retries, mono_template)
+        redrive_policy = define_redrive_policy(_queue, retries, mono_template)
     queue.cfn_resource = set_queue(queue, properties, redrive_policy)
 
     LOG.debug(queue.cfn_resource.title, queue.logical_name)
     return queue
 
 
-def render_new_queues(settings, new_queues, xstack, template):
+def render_new_queues(settings, new_queues, queues, xstack, template):
     """
     Function to create the root DynamdoDB template.
 
@@ -108,9 +121,9 @@ def render_new_queues(settings, new_queues, xstack, template):
     """
     mono_template = False
     output_per_resource = 3
-    queues = settings.compose_content[RES_KEY]
     if (len(new_queues) * output_per_resource) <= CFN_MAX_OUTPUTS:
         mono_template = True
+
     for queue in new_queues:
         queue.stack = xstack
         define_queue(queue, queues, mono_template)

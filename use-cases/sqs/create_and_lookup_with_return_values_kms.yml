@@ -24,45 +24,6 @@ x-kms:
 
 
 x-sqs:
-  queueA:
-    Settings:
-      EnvNames:
-        - QUEUEA
-
-  queueB:
-    Properties:
-      KmsMasterKeyId: x-kms::keyC
-      RedrivePolicy:
-        deadLetterTargetArn: queueA
-        maxReceiveCount: 10
-    Settings:
-      EnvNames:
-        - queueb
-    Services:
-      - name: bignicefamily
-        access: RWMessages
-
-  queueC:
-    Properties:
-      FifoQueue: True
-    Services:
-      - name: rproxy
-        access: RWMessages
-      - name: youtoo
-        access: RWMessages
-    Settings:
-      EnvNames:
-        - FIFO_QUEUE
-
-  queueD:
-    Properties:
-      KmsMasterKeyId: x-kms::keyA
-    Services:
-      - name: app01
-        access: RWMessages
-      - name: app03
-        access: RWMessages
-
   queueE:
     Properties: {}
     Services:
@@ -108,3 +69,41 @@ x-sqs:
               Count: 2
             - LowerBound: 20
               Count: 5
+  queueA:
+    Settings:
+      EnvNames:
+        - QUEUEA
+
+  queueB:
+    Properties:
+      KmsMasterKeyId: x-kms::keyC
+      RedrivePolicy:
+        deadLetterTargetArn: queueA
+        maxReceiveCount: 10
+    Settings:
+      EnvNames:
+        - queueb
+    Services:
+      - name: bignicefamily
+        access: RWMessages
+
+  queueC:
+    Properties:
+      FifoQueue: True
+    Services:
+      - name: rproxy
+        access: RWMessages
+      - name: youtoo
+        access: RWMessages
+    Settings:
+      EnvNames:
+        - FIFO_QUEUE
+
+  queueD:
+    Properties:
+      KmsMasterKeyId: x-kms::keyA
+    Services:
+      - name: app01
+        access: RWMessages
+      - name: app03
+        access: RWMessages

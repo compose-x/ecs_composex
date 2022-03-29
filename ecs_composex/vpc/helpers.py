@@ -22,17 +22,17 @@ def update_network_resources_vpc_config(settings, vpc_stack):
     for resource in settings.x_resources:
         if resource.mappings:
             LOG.debug(
-                f"{resource.module_name}.{resource.name} - Lookup resource need no VPC Settings."
+                f"{resource.module.res_key}.{resource.name} - Lookup resource need no VPC Settings."
             )
             continue
         if not resource.requires_vpc:
             LOG.debug(
-                f"{resource.module_name}.{resource.name} - Resource is not bound to VPC."
+                f"{resource.module.res_key}.{resource.name} - Resource is not bound to VPC."
             )
             continue
         if not issubclass(type(resource), NetworkXResource):
             LOG.debug(
-                f"{resource.module_name}.{resource.name} - Not a NetworkXResource"
+                f"{resource.module.res_key}.{resource.name} - Not a NetworkXResource"
             )
         if (
             hasattr(resource.stack, "stack_parent")
@@ -47,7 +47,7 @@ def update_network_resources_vpc_config(settings, vpc_stack):
             resource.update_from_vpc(vpc_stack, settings)
 
 
-def define_vpc_settings(settings, vpc_stack, root_stack):
+def define_vpc_settings(settings, vpc_module, vpc_stack, root_stack):
     """
     Function to deal with vpc stack settings
 
@@ -59,7 +59,7 @@ def define_vpc_settings(settings, vpc_stack, root_stack):
         LOG.info(
             f"{settings.name} - Services or x-Resources need a VPC to function. Creating default one"
         )
-        vpc_stack.create_new_default_vpc("vpc", settings)
+        vpc_stack.create_new_default_vpc("vpc", vpc_module, settings)
         root_stack.stack_template.add_resource(vpc_stack)
         vpc_stack.vpc_resource.generate_outputs()
     elif (

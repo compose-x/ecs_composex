@@ -501,7 +501,7 @@ def define_service_target_group_definition(
     if resource.logical_name not in family.stack.DependsOn:
         family.stack.DependsOn.append(resources_root_stack.title)
         LOG.info(
-            f"{resource.module_name}.{resource.name} - Adding {family.logical_name} {service.name}"
+            f"{resource.module.res_key}.{resource.name} - Adding {family.logical_name} {service.name}"
         )
 
     service_tgt_group = define_service_target_group(
@@ -544,7 +544,7 @@ def handle_services_association(resource, res_root_stack, settings):
                 identified.append(True)
     if not identified:
         LOG.error(
-            f"{resource.module_name}.{resource.name} - No services found as targets. Skipping association"
+            f"{resource.module.res_key}.{resource.name} - No services found as targets. Skipping association"
         )
         return
 
@@ -567,6 +567,6 @@ def elbv2_to_ecs(resources, services_stack, res_root_stack, settings):
     :return:
     """
     for resource_name, resource in resources.items():
-        LOG.info(f"{resource.module_name}.{resource_name} - Linking to services")
+        LOG.info(f"{resource.module.res_key}.{resource_name} - Linking to services")
         if resource.cfn_resource and not resource.mappings:
             handle_services_association(resource, res_root_stack, settings)

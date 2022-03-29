@@ -6,8 +6,21 @@
 Manage the registration of x-resources into AWS CloudMap namespace
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ecs_composex.common.settings import ComposeXSettings
+    from ecs_composex.compose.x_resources.network_x_resources import (
+        NetworkXResource,
+        DatabaseXResource,
+    )
+
+from typing import Union
+
 from compose_x_common.compose_x_common import keyisset
-from troposphere import FindInMap, GetAtt, NoValue, Ref, Region, Sub
+from troposphere import NoValue, Ref
 from troposphere.servicediscovery import DnsConfig, DnsRecord, Instance, Service
 
 from ecs_composex.common import LOG, add_parameters, add_update_mapping
@@ -17,21 +30,14 @@ from .cloudmap_params import PRIVATE_NAMESPACE_ID
 
 def process_dns_config(
     namespace,
-    resource,
+    resource: Union[NetworkXResource, DatabaseXResource],
     dns_settings: dict,
-    settings,
+    settings: ComposeXSettings,
     service: Service,
     instance: Instance,
 ) -> None:
     """
     Process the DnsSettings of the x-cloudmap configuration
-
-    :param ecs_composex.cloudmap.cloudmap_stack.PrivateNamespace namespace:
-    :param ecs_composex.compose.x_resources.network_x_resources.DatabaseXResource resource:
-    :param dict dns_settings:
-    :param ecs_composex.common.settings.ComposeXSettings settings:
-    :param troposphere.servicediscovery.Service service:
-    :param troposphere.servicediscovery.Instance instance:
     """
     hostname = (
         dns_settings["Hostname"]
@@ -66,8 +72,8 @@ def process_dns_config(
     else:
         add_update_mapping(
             namespace.stack.stack_template,
-            resource.mapping_key,
-            settings.mappings[resource.mapping_key],
+            resource.module.mapping_key,
+            settings.mappings[resource.module.mapping_key],
         )
         instance.InstanceAttributes.update(
             {"AWS_INSTANCE_CNAME": attribute_pointer["ImportValue"]}
@@ -98,7 +104,7 @@ def process_return_values(
                 break
         else:
             raise KeyError(
-                f"{resource.module_name}.{resource.name} - ReturnValue {key} not found. Available",
+                f"{resource.module.res_key}.{resource.name} - ReturnValue {key} not found. Available",
                 [p.title for p in resource.attributes_outputs.keys()],
             )
         attribute_pointer = resource.attributes_outputs[attribute_param]
@@ -119,8 +125,8 @@ def process_return_values(
         else:
             add_update_mapping(
                 namespace.stack.stack_template,
-                resource.mapping_key,
-                settings.mappings[resource.mapping_key],
+                resource.module.mapping_key,
+                settings.mappings[resource.module.mapping_key],
             )
             instance_props["InstanceAttributes"][value] = attribute_pointer[
                 "ImportValue"
@@ -156,12 +162,17 @@ def handle_resource_cloudmap_settings(
     if not resource.cfn_resource and not keyisset("ForceRegister", cloudmap_settings):
         LOG.debug("LOOKUP AND NO FORCE", cloudmap_settings)
         return
-    resource_service_title = f"{resource.module_name}{resource.logical_name}Service"
+    resource_service_title = (
+        f"{resource.module.mapping_key}{resource.logical_name}Service"
+    )
     if resource_service_title in namespace.stack.stack_template.resources:
         LOG.debug("ALREADY BEEN PROCESSED", resource.name)
         return
     LOG.debug(
-        "PROCESSING IN HANDLER", resource.module_name, resource.name, cloudmap_settings
+        "PROCESSING IN HANDLER",
+        resource.module.res_key,
+        resource.name,
+        cloudmap_settings,
     )
     namespace_id_pointer = (
         namespace.attributes_outputs[PRIVATE_NAMESPACE_ID]["ImportValue"]
@@ -205,7 +216,7 @@ def handle_resource_cloudmap_settings(
         "DnsSettings", cloudmap_settings
     ):
         LOG.warning(
-            f"{resource.module_name}.{resource.name} does not support DnsSettings for x-cloudmap."
+            f"{resource.module.res_key}.{resource.name} does not support DnsSettings for x-cloudmap."
         )
     namespace.stack.stack_template.add_resource(resource_service)
     namespace.stack.stack_template.add_resource(resource_instance)

@@ -5,6 +5,14 @@
 """
 Module to handle elbv2.
 """
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ecs_composex.common.settings import ComposeXSettings
+    from ecs_composex.mods_manager import XResourceModule
+
 
 import warnings
 
@@ -16,9 +24,7 @@ from ecs_composex.compose.x_resources.helpers import (
     set_lookup_resources,
     set_new_resources,
     set_resources,
-    set_use_resources,
 )
-from ecs_composex.elbv2.elbv2_params import MAPPINGS_KEY, MOD_KEY, RES_KEY
 from ecs_composex.elbv2.elbv2_stack.elbv2 import Elbv2
 from ecs_composex.vpc.vpc_params import APP_SUBNETS, PUBLIC_SUBNETS, VPC_ID
 
@@ -38,15 +44,16 @@ class XStack(ComposeXStack):
     Class to handle ELBv2 resources
     """
 
-    def __init__(self, title, settings, **kwargs):
-        set_resources(settings, Elbv2, RES_KEY, MOD_KEY, mapping_key=MAPPINGS_KEY)
-        x_resources = settings.compose_content[RES_KEY].values()
-        new_resources = set_new_resources(x_resources, RES_KEY, True)
-        lookup_resources = set_lookup_resources(x_resources, RES_KEY)
-        use_resources = set_use_resources(x_resources, RES_KEY, False)
-        if lookup_resources or use_resources:
+    def __init__(
+        self, title, settings: ComposeXSettings, module: XResourceModule, **kwargs
+    ):
+        set_resources(settings, Elbv2, module)
+        x_resources = settings.compose_content[module.res_key].values()
+        lookup_resources = set_lookup_resources(x_resources)
+        new_resources = set_new_resources(x_resources, True)
+        if lookup_resources:
             warnings.warn(
-                f"{RES_KEY} - Lookup not supported. You can only create new resources."
+                f"{module.res_key} - Lookup not supported. You can only create new resources."
             )
         if not new_resources:
             self.is_void = True

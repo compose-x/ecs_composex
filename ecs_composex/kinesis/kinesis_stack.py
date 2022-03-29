@@ -2,7 +2,16 @@
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2022 John Mille <john@compose-x.io>
 
-import warnings
+"""
+Module to handle import/create AWS Kinesis Data Streams
+"""
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ecs_composex.common.settings import ComposeXSettings
+    from ecs_composex.mods_manager import XResourceModule
 
 from botocore.exceptions import ClientError
 from compose_x_common.aws.kinesis import KINESIS_STREAM_ARN_RE
@@ -17,7 +26,6 @@ from ecs_composex.compose.x_resources.helpers import (
     set_lookup_resources,
     set_new_resources,
     set_resources,
-    set_use_resources,
 )
 from ecs_composex.iam.import_sam_policies import get_access_types
 from ecs_composex.kinesis.kinesis_params import (
@@ -65,9 +73,14 @@ class Stream(ApiXResource):
 
     policies_scaffolds = get_access_types(MOD_KEY)
 
-    def __init__(self, name, definition, module_name, settings, mapping_key=None):
+    def __init__(
+        self, name, definition, module: XResourceModule, settings: ComposeXSettings
+    ):
         super().__init__(
-            name, definition, module_name, settings, mapping_key=mapping_key
+            name,
+            definition,
+            module,
+            settings,
         )
         self.arn_parameter = STREAM_ARN
         self.ref_parameter = STREAM_ID
@@ -100,7 +113,7 @@ def resolve_lookup(lookup_resources, settings):
         settings.mappings[MAPPINGS_KEY] = {}
     for resource in lookup_resources:
         LOG.info(
-            f"{resource.module_name}.{resource.logical_name} - Looking up AWS Resource"
+            f"{resource.module.res_key}.{resource.logical_name} - Looking up AWS Resource"
         )
         resource.lookup_resource(
             KINESIS_STREAM_ARN_RE,
@@ -117,16 +130,15 @@ class XStack(ComposeXStack):
     Class to represent
     """
 
-    def __init__(self, title, settings, **kwargs):
-        set_resources(settings, Stream, RES_KEY, MOD_KEY, mapping_key=MAPPINGS_KEY)
-        x_resources = settings.compose_content[RES_KEY].values()
-        use_resources = set_use_resources(x_resources, RES_KEY, False)
-        if use_resources:
-            warnings.warn(f"{RES_KEY} does not yet support Use.")
-        lookup_resources = set_lookup_resources(x_resources, RES_KEY)
+    def __init__(
+        self, title, settings: ComposeXSettings, module: XResourceModule, **kwargs
+    ):
+        set_resources(settings, Stream, module)
+        x_resources = settings.compose_content[module.res_key].values()
+        lookup_resources = set_lookup_resources(x_resources)
         if lookup_resources:
             resolve_lookup(lookup_resources, settings)
-        new_resources = set_new_resources(x_resources, RES_KEY, True)
+        new_resources = set_new_resources(x_resources, True)
         if new_resources:
             stack_template = create_streams_template(new_resources, settings)
             super().__init__(title, stack_template, **kwargs)

@@ -38,7 +38,6 @@ exclude = ["*.pyc", "*~", "*pycache*"]
 python = "^3.7"
 boto3 = ">=1.20"
 troposphere = "4.0.0"
-#troposphere = { git = "https://github.com/cloudtools/troposphere", rev = "75db1661e17e7d6c36c53d269d999774a0a30e45" }
 ecr-scan-reporter = { version = "^0.4.5", optional = true }
 compose-x-render = "^0.5.3"
 compose-x-common = "^0.4.2"
@@ -54,7 +53,7 @@ retry2 = "^0.9.3"
 isort = "^5.10.1"
 placebo = "^0.10.0"
 pre-commit = "^2.17.0"
-black = "^21.12b0"
+black = "^22.3.0"
 sphinx-material = "^0.0.34"
 behave = "^1.2.6"
 coverage = { extras = ["toml"], version = "^6.3.2" }

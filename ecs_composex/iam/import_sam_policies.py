@@ -10,19 +10,19 @@ import json
 
 from importlib_resources import files as pkg_files
 
-from ..common import setup_logging
+from ecs_composex.common import setup_logging
 
 LOG = setup_logging()
 
 
-def import_and_cleanse_policies():
+def import_and_cleanse_sam_policies():
     """
     Function to go over each policy defined in AWS SAM policies and align it to ECS ComposeX expected format.
 
     :return: The policies
     :rtype: dict
     """
-    template_path = pkg_files("ecs_composex").joinpath("iam/sam_policies.json")
+    template_path = str(pkg_files("ecs_composex").joinpath("iam/sam_policies.json"))
     with open(template_path, "r") as policies_fd:
         policies_orig = json.loads(policies_fd.read())["Templates"]
     import_policies = {}
@@ -44,15 +44,18 @@ def get_access_types(module_name: str) -> dict:
     :return: the policies
     :rtype: dict
     """
-    sam_policies = import_and_cleanse_policies()
-    source = pkg_files("ecs_composex").joinpath(
-        f"{module_name}/{module_name}_perms.json"
+    sam_policies = import_and_cleanse_sam_policies()
+    source = str(
+        pkg_files("ecs_composex").joinpath(f"{module_name}/{module_name}_perms.json")
     )
-    with open(
-        source,
-        "r",
-        encoding="utf-8-sig",
-    ) as perms_fd:
-        dyn_policies = json.loads(perms_fd.read())
-    sam_policies.update(dyn_policies)
-    return sam_policies
+    try:
+        with open(
+            source,
+            "r",
+            encoding="utf-8-sig",
+        ) as perms_fd:
+            dyn_policies = json.loads(perms_fd.read())
+        sam_policies.update(dyn_policies)
+        return sam_policies
+    except IOError:
+        return sam_policies

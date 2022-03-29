@@ -78,6 +78,7 @@ class ComposeXStack(Stack, object):
         stack_parameters=None,
         file_name=None,
         module_name=None,
+        module=None,
         **kwargs,
     ):
         """

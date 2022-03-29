@@ -5,7 +5,14 @@
 """
 Module to manage top level AWS CodeGuru profiles
 """
-import warnings
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ecs_composex.common.settings import ComposeXSettings
+    from ecs_composex.mods_manager import XResourceModule
 
 from compose_x_common.compose_x_common import keyisset
 from troposphere import GetAtt, Ref, Sub, Template
@@ -13,11 +20,9 @@ from troposphere.codeguruprofiler import ProfilingGroup
 
 from ecs_composex.codeguru_profiler.codeguru_profiler_aws import lookup_profile_config
 from ecs_composex.codeguru_profiler.codeguru_profiler_params import (
-    MAPPINGS_KEY,
     MOD_KEY,
     PROFILER_ARN,
     PROFILER_NAME,
-    RES_KEY,
 )
 from ecs_composex.common import add_outputs, build_template
 from ecs_composex.common.cfn_params import STACK_ID_SHORT
@@ -27,7 +32,6 @@ from ecs_composex.compose.x_resources.helpers import (
     set_lookup_resources,
     set_new_resources,
     set_resources,
-    set_use_resources,
 )
 from ecs_composex.iam.import_sam_policies import get_access_types
 from ecs_composex.resources_import import import_record_properties
@@ -74,10 +78,10 @@ class CodeProfiler(ApiXResource):
 
     policies_scaffolds = get_access_types(MOD_KEY)
 
-    def __init__(self, name, definition, module_name, settings, mapping_key=None):
-        super().__init__(
-            name, definition, module_name, settings, mapping_key=mapping_key
-        )
+    def __init__(
+        self, name, definition, module: XResourceModule, settings: ComposeXSettings
+    ):
+        super().__init__(name, definition, module, settings)
         self.arn_parameter = PROFILER_ARN
         self.ref_parameter = PROFILER_NAME
 
@@ -114,7 +118,9 @@ class XStack(ComposeXStack):
     Method to manage the elastic cache resources and root stack
     """
 
-    def __init__(self, title, settings, **kwargs):
+    def __init__(
+        self, title, settings: ComposeXSettings, module: XResourceModule, **kwargs
+    ):
         """
         Init method
 
@@ -122,19 +128,16 @@ class XStack(ComposeXStack):
         :param ecs_composex.common.settings.ComposeXSettings settings:
         :param kwargs:
         """
-        set_resources(settings, CodeProfiler, RES_KEY, MAPPINGS_KEY)
-        x_resources = settings.compose_content[RES_KEY].values()
-        use_resources = set_use_resources(x_resources, RES_KEY, False)
-        if use_resources:
-            warnings.warn(f"{RES_KEY} does not yet support Use.")
-        lookup_resources = set_lookup_resources(x_resources, RES_KEY)
+        set_resources(settings, CodeProfiler, module)
+        x_resources = settings.compose_content[module.res_key].values()
+        lookup_resources = set_lookup_resources(x_resources)
         if lookup_resources:
-            if not keyisset(MAPPINGS_KEY, settings.mappings):
-                settings.mappings[MAPPINGS_KEY] = {}
+            if not keyisset(module.mapping_key, settings.mappings):
+                settings.mappings[module.mapping_key] = {}
             define_lookup_profile_mappings(
-                settings.mappings[MAPPINGS_KEY], lookup_resources, settings
+                settings.mappings[module.mapping_key], lookup_resources, settings
             )
-        new_resources = set_new_resources(x_resources, RES_KEY, False)
+        new_resources = set_new_resources(x_resources, False)
 
         if new_resources:
             stack_template = create_root_template(new_resources)
@@ -142,5 +145,5 @@ class XStack(ComposeXStack):
         else:
             self.is_void = True
 
-        for resource in settings.compose_content[RES_KEY].values():
+        for resource in settings.compose_content[module.res_key].values():
             resource.stack = self

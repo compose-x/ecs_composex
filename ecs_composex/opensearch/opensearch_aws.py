@@ -69,6 +69,6 @@ def create_opensearch_mappings(lookup_resources, settings):
         resource.init_outputs()
         resource.generate_cfn_mappings_from_lookup_properties()
         resource.generate_outputs()
-        settings.mappings[resource.mapping_key][
+        settings.mappings[resource.module.mapping_key][
             resource.logical_name
         ] = resource.mappings

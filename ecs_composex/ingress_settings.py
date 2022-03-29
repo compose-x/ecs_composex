@@ -111,9 +111,9 @@ def set_port_from_str(port: str):
         raise ValueError("target port is not valid", numbers_only.pattern)
     if not numbers_only.match(published):
         raise ValueError("published port is not valid", numbers_only.pattern)
-    if not (1 <= int(target) < (2 ** 16)):
+    if not (1 <= int(target) < (2**16)):
         raise ValueError(f"target port {target} is not between 1 and 65535")
-    if not (1 <= int(published) < (2 ** 16)):
+    if not (1 <= int(published) < (2**16)):
         raise ValueError(f"published port {published} is not between 1 and 65535")
 
     return published, target, protocol

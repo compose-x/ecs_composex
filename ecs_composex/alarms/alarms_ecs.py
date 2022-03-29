@@ -15,7 +15,7 @@ from ecs_composex.alarms.alarms_stack import Alarm, create_alarms
 from ecs_composex.common import LOG, add_outputs, add_parameters, add_update_mapping
 from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME, SERVICE_SCALING_TARGET
-from ecs_composex.ecs.service_scaling import (
+from ecs_composex.ecs.service_scaling.helpers import (
     generate_alarm_scaling_out_policy,
     reset_to_zero_policy,
 )
@@ -204,7 +204,7 @@ def handle_compose_topics(alarm, alarms_stack, settings, topic_def, notify_on):
     :return:
     """
     try:
-        topic = settings.compose_content[SNS_KEY][Topic.keyword][topic_def[SNS_KEY]]
+        topic = settings.compose_content[SNS_KEY][topic_def[SNS_KEY]]
     except KeyError:
         LOG.error(f"No topic {topic_def[SNS_KEY]} found in {SNS_KEY}.{Topic.keyword}")
         raise
@@ -219,8 +219,8 @@ def handle_compose_topics(alarm, alarms_stack, settings, topic_def, notify_on):
     else:
         add_update_mapping(
             alarms_stack.stack_template,
-            topic.mapping_key,
-            settings.mappings[topic.mapping_key],
+            topic.module.mapping_key,
+            settings.mappings[topic.module.mapping_key],
         )
         map_topic_to_action(alarm, notify_on, topic_arn["ImportValue"])
 
@@ -246,11 +246,12 @@ def handle_alarm_topics(alarm, alarms_stack, settings):
                 keyisset(SNS_KEY, settings.compose_content)
                 and not keyisset(
                     topic[SNS_KEY],
-                    settings.compose_content[SNS_KEY][Topic.keyword],
+                    settings.compose_content[SNS_KEY],
                 )
             ):
                 raise KeyError(
-                    f"There is no topic {topic[SNS_KEY]} defined in {SNS_KEY}"
+                    f"There is no topic {topic[SNS_KEY]} defined in {SNS_KEY}",
+                    settings.compose_content[SNS_KEY].keys(),
                 )
             handle_compose_topics(alarm, alarms_stack, settings, topic, notify_on)
 

@@ -15,7 +15,7 @@ from ecs_composex.ecs.service_scaling.helpers import (
     generate_alarm_scaling_out_policy,
     reset_to_zero_policy,
 )
-from ecs_composex.sqs.sqs_params import MOD_KEY, SQS_NAME
+from ecs_composex.sqs.sqs_params import SQS_NAME
 
 
 def handle_service_scaling(resource, settings=None) -> None:
@@ -34,7 +34,7 @@ def handle_service_scaling(resource, settings=None) -> None:
             f"Outputs.{resource.logical_name}{SQS_NAME.title}",
         )
     else:
-        resource_value = FindInMap(MOD_KEY, resource.logical_name, resource_attribute)
+        resource_value = FindInMap("sqs", resource.logical_name, resource_attribute)
     for target in resource.families_scaling:
         if (
             not target[0].service_scaling.scalable_target
