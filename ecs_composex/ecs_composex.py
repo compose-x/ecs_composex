@@ -198,7 +198,7 @@ def add_x_resources(
     """
     for name, module in mods_manager.modules.items():
         LOG.info(f"Processing {name}")
-        x_stack = module.stack(
+        x_stack = module.stack_class(
             module.mapping_key,
             settings=settings,
             module=module,

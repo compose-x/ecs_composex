@@ -218,7 +218,7 @@ def add_defaults(template):
     :param template: source template to add the params and conditions to
     :type template: Template
     """
-    template.add_parameter(cfn_params.ROOT_STACK_NAME)
+    template.add_parameter(ROOT_STACK_NAME)
     template.add_condition(
         cfn_conditions.USE_STACK_NAME_CON_T, cfn_conditions.USE_STACK_NAME_CON
     )

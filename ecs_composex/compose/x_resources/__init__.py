@@ -39,7 +39,6 @@ from ecs_composex.common.cfn_conditions import define_stack_name
 from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.common.ecs_composex import CFN_EXPORT_DELIMITER as DELIM
 from ecs_composex.common.ecs_composex import X_KEY
-from ecs_composex.compose.x_resources.helpers import get_setting_key
 from ecs_composex.iam.import_sam_policies import get_access_types
 from ecs_composex.mods_manager import XResourceModule
 from ecs_composex.resource_settings import get_parameter_settings
@@ -187,7 +186,7 @@ class XResource(object):
                 module_schema,
                 resolver=resolver,
             )
-        except jsonschema.exceptions.ValidationError as error:
+        except jsonschema.exceptions.ValidationError:
             LOG.error(f"{module_name}.{name} - Definition is not conform to schema.")
             raise
 

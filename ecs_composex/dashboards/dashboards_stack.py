@@ -7,12 +7,12 @@ Module to manage the creation of Dashboards
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Union
 
 if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
     from ecs_composex.mods_manager import XResourceModule
-
+    from ecs_composex.ecs.ecs_family import ComposeFamily
 
 import json
 
@@ -33,12 +33,13 @@ from ecs_composex.dashboards.dashboards_services_metrics import ServiceEcsWidget
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME, SERVICE_T
 
 
-def get_family_from_name(settings, name):
+def get_family_from_name(
+    settings: ComposeXSettings, name: str
+) -> Union[ComposeFamily, None]:
     """
 
     :param ecs_composex.common.settings.ComposeXSettings settings:
     :param name:
-    :return:
     """
     for family in settings.families.values():
         if family.name == name:
@@ -48,7 +49,7 @@ def get_family_from_name(settings, name):
 
 def retrieve_services(
     settings: ComposeXSettings, services: dict, x_stack: ComposeXStack
-):
+) -> List[tuple]:
     """
     Function to
 
@@ -85,7 +86,7 @@ def retrieve_services(
 
 def create_dashboards(
     settings: ComposeXSettings, x_stack: ComposeXStack, module: XResourceModule
-):
+) -> None:
     """
     Loop to iterate over dashboards definitions
 

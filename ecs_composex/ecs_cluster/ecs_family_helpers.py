@@ -5,9 +5,8 @@
 from troposphere import NoValue
 
 from ecs_composex.ecs.ecs_params import LAUNCH_TYPE
+from ecs_composex.ecs_cluster import FARGATE_PROVIDERS
 from ecs_composex.ecs_composex import LOG
-
-from .helpers import FARGATE_PROVIDERS
 
 """
 Module to set the Launch Type / Capacity providers of ComposeFamily according to the ECS Cluter settings

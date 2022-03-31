@@ -82,7 +82,8 @@ def lookup_rds_secret(rds_resource, secret_lookup):
 
         except client.exceptions.ResourceNotFoundException:
             LOG.error(
-                f"{rds_resource.module.res_key}.{rds_resource.name} - Secret {secret_lookup['Arn']} not found"
+                f"{rds_resource.module.res_key}.{rds_resource.name}"
+                f" - Secret {secret_lookup['Arn']} not found"
             )
             raise
         except ClientError as error:
@@ -96,7 +97,8 @@ def lookup_rds_secret(rds_resource, secret_lookup):
         )
     else:
         raise LookupError(
-            f"{rds_resource.module.res_key}.{rds_resource.name} - Failed to find the DB Secret"
+            f"{rds_resource.module.res_key}.{rds_resource.name}"
+            " - Failed to find the DB Secret"
         )
     if secret_arn:
         rds_resource.lookup_properties[
@@ -151,7 +153,8 @@ def lookup_rds_resource(
         )
     if not rds_resource.arn:
         raise LookupError(
-            f"{rds_resource.module.res_key}.{rds_resource.name} - Failed to find the AWS Resource with given tags"
+            f"{rds_resource.module.res_key}.{rds_resource.name}"
+            " - Failed to find the AWS Resource with given tags"
         )
     props = {}
     _account_id = get_account_id(rds_resource.lookup_session)
@@ -202,7 +205,8 @@ def define_secrets_keys_mappings(mappings_definition):
         for mapping in mappings:
             if not keyisset("SecretKey", mapping):
                 raise KeyError(
-                    "When using a list of mappings, you must specify at least SecretKey. Got",
+                    "When using a list of mappings, "
+                    "you must specify at least SecretKey. Got",
                     mapping.keys(),
                 )
             if not keyisset("VarName", mapping):
@@ -275,7 +279,8 @@ def define_db_secrets(db, secret_import, target) -> list:
         )
     else:
         LOG.info(
-            f"{db.module.res_key}.{db.name} - No SecretsMappings set. Exposing the secrets content as-is."
+            f"{db.module.res_key}.{db.name}"
+            " - No SecretsMappings set. Exposing the secrets content as-is."
         )
         secrets.append(EcsSecret(Name=db.name, ValueFrom=secret_import))
     return secrets
@@ -376,7 +381,7 @@ def handle_db_secret_to_services(
     """
     Maps DB Secret to ECS Service containers. It however won't expose the secret to an AWS SideCar (i.e. x-ray).
 
-    :param ecs_composex.compose.x_resources.network_x_resources.DatabaseXResource db: The DB we want to expose the secret for.
+    :param ecs_composex.compose.x_resources.network_x_resources.DatabaseXResource db:
     :param troposphere.AWSHelperFn secret_import: The pointer to the Secret
     :param tuple target: The family target
     """

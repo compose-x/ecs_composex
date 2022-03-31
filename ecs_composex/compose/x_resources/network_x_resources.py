@@ -89,7 +89,8 @@ class NetworkXResource(ServicesXResource):
                 and target[0].service_compute.launch_type == "EXTERNAL"
             ):
                 LOG.info(
-                    f"{self.module.res_key}.{self.name} - Target {target[0].name} - Launch Type not supported (EXTERNAL)"
+                    f"{self.module.res_key}.{self.name} - Target {target[0].name} - "
+                    "Launch Type not supported (EXTERNAL)"
                 )
                 self.families_targets.remove(target)
         for target in self.families_scaling:
@@ -98,7 +99,8 @@ class NetworkXResource(ServicesXResource):
                 and target[0].service_compute.launch_type == "EXTERNAL"
             ):
                 LOG.info(
-                    f"{self.module.res_key}.{self.name} - Target {target[0].name} - Launch Type not supported (EXTERNAL)"
+                    f"{self.module.res_key}.{self.name} - Target {target[0].name} "
+                    "- Launch Type not supported (EXTERNAL)"
                 )
                 self.families_scaling.remove(target)
         self.remove_services_after_family_cleanups()

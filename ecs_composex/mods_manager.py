@@ -55,7 +55,7 @@ class XResourceModule(object):
         return re.sub(X_KEY, "", self._res_key)
 
     @property
-    def stack(self):
+    def stack_class(self):
         return self._xstack_class
 
     @property

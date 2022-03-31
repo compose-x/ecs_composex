@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
-    from ecs_composex.mods_manager import XResourceModule, ModManager
+    from ecs_composex.mods_manager import ModManager
 
 from botocore.exceptions import ClientError
 from compose_x_common.aws import get_assume_role_session
@@ -45,22 +45,19 @@ from ecs_composex.compose.compose_services.helpers import (
 )
 from ecs_composex.ecs import metadata
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME, CLUSTER_T
-from ecs_composex.kms.kms_stack import KmsKey
-from ecs_composex.resources_import import import_record_properties
-from ecs_composex.s3.s3_stack import Bucket
-from ecs_composex.s3.s3_template import evaluate_parameters, generate_bucket
-
-from .helpers import (
+from ecs_composex.ecs_cluster.ecs_cluster_params import (
     DEFAULT_STRATEGY,
-    FARGATE_PROVIDER,
     FARGATE_PROVIDERS,
-    FARGATE_SPOT_PROVIDER,
     RES_KEY,
+)
+from ecs_composex.ecs_cluster.helpers import (
     evaluate_capacity_providers,
     evaluate_fargate_is_set,
     get_default_capacity_strategy,
     import_from_x_aws_cluster,
 )
+from ecs_composex.kms.kms_stack import KmsKey
+from ecs_composex.resources_import import import_record_properties
 
 
 def add_ecs_cluster(root_stack, settings, manager: ModManager):

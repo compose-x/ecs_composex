@@ -5,7 +5,6 @@
 import re
 from os import path
 
-from ecs_composex.common import NONALPHANUM
 from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.common.ecs_composex import X_KEY
 

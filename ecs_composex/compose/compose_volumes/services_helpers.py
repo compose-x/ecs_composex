@@ -7,9 +7,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ecs_composex.common.settings import ComposeXSettings
     from ecs_composex.compose.compose_services import ComposeService
-    from ecs_composex.ecs.ecs_family import ComposeFamily
 
 import re
 from uuid import uuid4

@@ -19,12 +19,14 @@ if TYPE_CHECKING:
 import warnings
 
 from compose_x_common.compose_x_common import keyisset
+from troposphere import GetAtt, Ref
 from troposphere.cloudwatch import CompositeAlarm
 
 from ecs_composex.alarms.alarms_elbv2 import (
     handle_elbv2_dimension_mapping,
     handle_elbv2_target_group_dimensions,
 )
+from ecs_composex.alarms.alarms_params import ALARM_ARN, ALARM_NAME
 from ecs_composex.common import LOG, build_template
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources.helpers import (
@@ -55,7 +57,18 @@ class Alarm(ServicesXResource):
             else []
         )
 
-    def handle_dimensions(self, settings, root_stack):
+    def init_outputs(self):
+        self.output_properties = {
+            ALARM_NAME: (self.logical_name, self.cfn_resource, Ref, None),
+            ALARM_ARN: (
+                f"{self.logical_name}{ALARM_ARN.return_value}",
+                self.cfn_resource,
+                GetAtt,
+                ALARM_ARN.return_value,
+            ),
+        }
+
+    def handle_dimensions(self, settings: ComposeXSettings, root_stack):
         """
         Handles the dimensions settings and tries to resolve
 

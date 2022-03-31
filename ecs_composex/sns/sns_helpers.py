@@ -17,8 +17,6 @@ from compose_x_common.compose_x_common import attributes_to_mapping, keyisset
 from troposphere.sns import Topic as CfnTopic
 
 from ecs_composex.common import LOG
-from ecs_composex.common.settings import ComposeXSettings
-from ecs_composex.mods_manager import XResourceModule
 from ecs_composex.sns.sns_params import TOPIC_ARN, TOPIC_KMS_KEY, TOPIC_NAME
 
 

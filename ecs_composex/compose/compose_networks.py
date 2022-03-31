@@ -1,11 +1,6 @@
-#  -*- coding: utf-8 -*-
-
 #   -*- coding: utf-8 -*-
 #  SPDX-License-Identifier: MPL-2.0
 #  Copyright 2020-2022 John Mille <john@compose-x.io>
-
-# SPDX-License-Identifier: MPL-2.0
-# Copyright 2020-2022 John Mille <john@compose-x.io>
 
 """
 Class and functions to interact with the networks: defined in compose files.
@@ -13,7 +8,7 @@ Class and functions to interact with the networks: defined in compose files.
 
 from copy import deepcopy
 
-from compose_x_common.compose_x_common import keyisset, set_else_none
+from compose_x_common.compose_x_common import set_else_none
 
 from ecs_composex.common import LOG
 

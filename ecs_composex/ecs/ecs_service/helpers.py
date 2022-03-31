@@ -3,27 +3,37 @@
 #  Copyright 2020-2022 John Mille <john@compose-x.io>
 
 from compose_x_common.compose_x_common import keyisset, keypresent
-from troposphere import Ref, StackName, Tags
+from troposphere import If, NoValue, Ref, StackName, Tags
 from troposphere.ecs import (
     DeploymentCircuitBreaker,
     DeploymentConfiguration,
     PlacementStrategy,
 )
 
+from ecs_composex.ecs.ecs_conditions import USE_EXTERNAL_LT, USE_FARGATE_CON_T
 from ecs_composex.ecs.ecs_params import SERVICE_NAME
 
 
-def define_placement_strategies() -> list:
+def define_placement_strategies() -> If:
     """
     Function to generate placement strategies. Defaults to spreading across all AZs
 
     :return: list of placement strategies
-    :rtype: list
     """
-    return [
-        PlacementStrategy(Field="instanceId", Type="spread"),
-        PlacementStrategy(Field="attribute:ecs.availability-zone", Type="spread"),
-    ]
+    return If(
+        USE_FARGATE_CON_T,
+        NoValue,
+        If(
+            USE_EXTERNAL_LT,
+            NoValue,
+            [
+                PlacementStrategy(Field="instanceId", Type="spread"),
+                PlacementStrategy(
+                    Field="attribute:ecs.availability-zone", Type="spread"
+                ),
+            ],
+        ),
+    )
 
 
 def define_family_deploy_percents(values: list, default: int) -> int:
