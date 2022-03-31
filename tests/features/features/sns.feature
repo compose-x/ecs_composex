@@ -1,7 +1,7 @@
 Feature: ecs_composex.sns
 
   @sns
-  Scenario Outline: Create services with a queue
+  Scenario Outline: SNS Topics basic tests
     Given I use <file_path> as my docker-compose file and <override_file> as override file
     Then I render the docker-compose to composex to validate
     And I render all files to verify execution

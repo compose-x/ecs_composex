@@ -236,17 +236,18 @@ class XStack(ComposeXStack):
         set_resources(settings, CacheCluster, module)
         x_resources = settings.compose_content[module.res_key].values()
         lookup_resources = set_lookup_resources(x_resources)
-        new_resources = set_new_resources(x_resources, False)
-        if new_resources:
-            stack_template = create_root_template(new_resources)
-            super().__init__(title, stack_template, **kwargs)
-        else:
-            self.is_void = True
         if lookup_resources:
             if not keyisset(module.res_key, settings.mappings):
                 settings.mappings[module.res_key] = {}
             create_lookup_mappings(
                 settings.mappings[module.res_key], lookup_resources, settings
             )
-        for resource in settings.compose_content[module.res_key].values():
+        new_resources = set_new_resources(x_resources, False)
+        if new_resources:
+            stack_template = create_root_template(new_resources)
+            super().__init__(title, stack_template, **kwargs)
+        else:
+            self.is_void = True
+
+        for resource in x_resources:
             resource.stack = self

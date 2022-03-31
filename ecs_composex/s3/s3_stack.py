@@ -7,11 +7,11 @@ Module to control S3 stack
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
-    from ecs_composex.mods_manager import XResourceModule
+    from ecs_composex.mods_manager import XResourceModule, ModManager
 
 
 from botocore.exceptions import ClientError
@@ -35,13 +35,9 @@ from ecs_composex.compose.x_resources.helpers import (
     set_new_resources,
     set_resources,
 )
-from ecs_composex.iam.import_sam_policies import get_access_types
 from ecs_composex.resource_settings import link_resource_to_services
 from ecs_composex.s3.s3_params import (
     CONTROL_CLOUD_ATTR_MAPPING,
-    MAPPINGS_KEY,
-    MOD_KEY,
-    RES_KEY,
     S3_BUCKET_ARN,
     S3_BUCKET_DOMAIN_NAME,
     S3_BUCKET_KMS_KEY,
@@ -180,8 +176,6 @@ class Bucket(ApiXResource):
     Class for S3 bucket.
     """
 
-    policies_scaffolds = get_access_types(MOD_KEY)
-
     def __init__(
         self, name, definition, module: XResourceModule, settings: ComposeXSettings
     ):
@@ -281,7 +275,12 @@ class Bucket(ApiXResource):
         self.lookup_properties = props
         self.generate_cfn_mappings_from_lookup_properties()
 
-    def to_ecs(self, settings, modules, root_stack=None):
+    def to_ecs(
+        self,
+        settings: ComposeXSettings,
+        modules: ModManager,
+        root_stack: ComposeXStack = None,
+    ):
         """
         Handles mapping the S3 bucket to ECS services
         """
@@ -294,27 +293,31 @@ class Bucket(ApiXResource):
         )
 
 
-def define_bucket_mappings(lookup_buckets, settings):
+def define_bucket_mappings(
+    lookup_buckets: List[Bucket], settings: ComposeXSettings, module: XResourceModule
+) -> None:
     """
     Method to define CFN Mappings for the lookup buckets
 
     :param list[Bucket] lookup_buckets:
-    :param settings:
-    :return:
+    :param ComposeXSettings settings:
+    :param module:
     """
     for bucket in lookup_buckets:
         bucket.init_outputs()
         bucket.lookup_resource(
             S3_BUCKET_ARN_RE, get_bucket_config, CfnBucket.resource_type, "s3"
         )
-        settings.mappings[MAPPINGS_KEY].update({bucket.logical_name: bucket.mappings})
+        settings.mappings[module.mapping_key].update(
+            {bucket.logical_name: bucket.mappings}
+        )
         if not keyisset(S3_BUCKET_KMS_KEY, bucket.lookup_properties):
             LOG.info(
-                f"{RES_KEY}.{bucket.name} - No CMK Key identified. Not KMS permissions to set."
+                f"{module.res_key}.{bucket.name} - No CMK Key identified. Not KMS permissions to set."
             )
         else:
             LOG.info(
-                f"{RES_KEY}.{bucket.name} - "
+                f"{module.res_key}.{bucket.name} - "
                 f"CMK identified {bucket.lookup_properties[S3_BUCKET_KMS_KEY]}."
             )
             bucket.add_new_output_attribute(
@@ -336,7 +339,7 @@ class XStack(ComposeXStack):
     """
 
     def __init__(
-        self, title, settings: ComposeXSettings, module: XResourceModule, **kwargs
+        self, title: str, settings: ComposeXSettings, module: XResourceModule, **kwargs
     ):
         set_resources(settings, Bucket, module)
         x_resources = settings.compose_content[module.res_key].values()
@@ -344,11 +347,11 @@ class XStack(ComposeXStack):
         if lookup_resources:
             if not keyisset(module.mapping_key, settings.mappings):
                 settings.mappings[module.mapping_key] = {}
-            define_bucket_mappings(lookup_resources, settings)
+            define_bucket_mappings(lookup_resources, settings, module)
         new_resources = set_new_resources(x_resources, True)
         if new_resources:
             stack_template = build_template(f"Root template for {settings.name}.s3")
-            super().__init__(title, stack_template, **kwargs)
+            super().__init__(module.mapping_key, stack_template, **kwargs)
             create_s3_template(new_resources, stack_template)
         else:
             self.is_void = True

@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
-    from ecs_composex.mods_manager import XResourceModule
+    from ecs_composex.mods_manager import XResourceModule, ModManager
     from ecs_composex.common.stacks import ComposeXStack
 
 
@@ -35,7 +35,7 @@ class ApiXResource(ServicesXResource):
     def to_ecs(
         self,
         settings: ComposeXSettings,
-        modules: XResourceModule,
+        modules: ModManager,
         root_stack: ComposeXStack = None,
     ) -> None:
         """

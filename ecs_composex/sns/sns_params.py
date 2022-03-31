@@ -11,9 +11,6 @@ from ecs_composex.common.ecs_composex import X_KEY
 
 MOD_KEY = path.basename(path.dirname(path.abspath(__file__)))
 RES_KEY = f"{X_KEY}{MOD_KEY}"
-MAPPINGS_KEY = NONALPHANUM.sub("", MOD_KEY)
-
-SSM_PREFIX = f"/{RES_KEY}/"
 
 TOPIC_ARN_RE = re.compile(r"(^arn:aws(?:-[a-z]+)?:sns:[\S]+:[0-9]+:[\S]+)$")
 

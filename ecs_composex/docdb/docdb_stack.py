@@ -7,14 +7,11 @@ AWS DocumentDB entrypoint for ECS ComposeX
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
     from ecs_composex.mods_manager import XResourceModule
-
-
-import warnings
 
 from compose_x_common.aws.rds import RDS_DB_CLUSTER_ARN_RE
 from compose_x_common.compose_x_common import attributes_to_mapping, keyisset
@@ -35,15 +32,11 @@ from ecs_composex.docdb.docdb_params import (
     DOCDB_PORT,
     DOCDBC_ENDPOINT,
     DOCDBC_READ_ENDPOINT,
-    MAPPINGS_KEY,
-    MOD_KEY,
-    RES_KEY,
 )
 from ecs_composex.docdb.docdb_template import (
     create_docdb_template,
     init_doc_db_template,
 )
-from ecs_composex.iam.import_sam_policies import get_access_types
 from ecs_composex.rds.rds_params import DB_CLUSTER_ARN, DB_SECRET_ARN, DB_SG
 from ecs_composex.rds_resources_settings import lookup_rds_resource, lookup_rds_secret
 from ecs_composex.vpc.vpc_params import STORAGE_SUBNETS
@@ -101,7 +94,6 @@ class DocDb(DatabaseXResource):
     """
 
     subnets_param = STORAGE_SUBNETS
-    policies_scaffolds = get_access_types(MOD_KEY)
 
     def __init__(
         self, name, definition, module: XResourceModule, settings: ComposeXSettings
@@ -200,15 +192,18 @@ class DocDb(DatabaseXResource):
         )
 
 
-def resolve_lookup(lookup_resources, settings):
+def resolve_lookup(
+    lookup_resources: List[DocDb], settings: ComposeXSettings, module: XResourceModule
+):
     """
     Lookup AWS Resources
 
     :param list[DocDb] lookup_resources:
     :param ecs_composex.common.settings.ComposeXSettings settings:
+    :param module:
     """
-    if not keyisset(MAPPINGS_KEY, settings.mappings):
-        settings.mappings[MAPPINGS_KEY] = {}
+    if not keyisset(module.mapping_key, settings.mappings):
+        settings.mappings[module.mapping_key] = {}
     for resource in lookup_resources:
         resource.lookup_resource(
             RDS_DB_CLUSTER_ARN_RE,
@@ -221,7 +216,7 @@ def resolve_lookup(lookup_resources, settings):
             lookup_rds_secret(resource, resource.lookup["secret"])
         resource.generate_cfn_mappings_from_lookup_properties()
         resource.generate_outputs()
-        settings.mappings[MAPPINGS_KEY].update(
+        settings.mappings[module.mapping_key].update(
             {resource.logical_name: resource.mappings}
         )
 
@@ -238,7 +233,7 @@ class XStack(ComposeXStack):
         x_resources = settings.compose_content[module.res_key].values()
         lookup_resources = set_lookup_resources(x_resources)
         if lookup_resources:
-            resolve_lookup(lookup_resources, settings)
+            resolve_lookup(lookup_resources, settings, module)
         new_resources = set_new_resources(x_resources, True)
 
         if new_resources:

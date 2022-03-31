@@ -6,16 +6,9 @@
 OpenSearch parameters
 """
 import re
-from os import path
 
-from ecs_composex.common import NONALPHANUM
 from ecs_composex.common.cfn_params import Parameter
-from ecs_composex.ecs_composex import X_KEY
 from ecs_composex.vpc.vpc_params import SG_ID_TYPE
-
-MOD_KEY = path.basename(path.dirname(path.abspath(__file__)))
-RES_KEY = f"{X_KEY}{MOD_KEY}"
-MAPPINGS_KEY = NONALPHANUM.sub("", MOD_KEY)
 
 OS_DOMAIN_ID_T = "DomainId"
 OS_DOMAIN_ID = Parameter(OS_DOMAIN_ID_T, Type="String")

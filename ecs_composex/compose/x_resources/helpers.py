@@ -4,12 +4,22 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Union
 
 if TYPE_CHECKING:
+    from ecs_composex.common.settings import ComposeXSettings
     from ecs_composex.mods_manager import XResourceModule
+    from ecs_composex.compose.x_resources import XResource
+    from ecs_composex.compose.x_resources.services_resources import ServicesXResource
+    from ecs_composex.compose.x_resources.api_x_resources import ApiXResource
+    from ecs_composex.compose.x_resources.environment_x_resources import (
+        AwsEnvironmentResource,
+    )
+    from ecs_composex.compose.x_resources.network_x_resources import (
+        NetworkXResource,
+        DatabaseXResource,
+    )
 
-import warnings
 from collections import OrderedDict
 
 from compose_x_common.compose_x_common import keyisset
@@ -17,7 +27,19 @@ from compose_x_common.compose_x_common import keyisset
 from ecs_composex.common import LOG
 
 
-def set_new_resources(x_resources, supports_uses_default=False):
+def set_new_resources(
+    x_resources: List[
+        Union[
+            XResource,
+            ServicesXResource,
+            ApiXResource,
+            AwsEnvironmentResource,
+            NetworkXResource,
+            DatabaseXResource,
+        ]
+    ],
+    supports_uses_default: bool = False,
+):
     """
     Function to create a list of new resources. Check if empty resource is supported
 
@@ -41,7 +63,18 @@ def set_new_resources(x_resources, supports_uses_default=False):
     return new_resources
 
 
-def set_lookup_resources(x_resources):
+def set_lookup_resources(
+    x_resources: List[
+        Union[
+            XResource,
+            ServicesXResource,
+            ApiXResource,
+            AwsEnvironmentResource,
+            NetworkXResource,
+            DatabaseXResource,
+        ]
+    ]
+):
     """
 
     :param list[XResource] x_resources:
@@ -63,13 +96,13 @@ def set_lookup_resources(x_resources):
     return lookup_resources
 
 
-def set_resources(settings, resource_class, module: XResourceModule):
+def set_resources(settings: ComposeXSettings, resource_class, module: XResourceModule):
     """
     Method to define the ComposeXResource for each service.
     First updates the resources dict
 
     :param ecs_composex.common.settings.ComposeXSettings settings:
-    :param ecs_composex.common.compose_resources.XResource.__init__ resource_class:
+    :param ecs_composex.common.compose_resources.XResource resource_class:
     :param XResourceModule module:
     """
     if not keyisset(module.res_key, settings.compose_content):

@@ -9,15 +9,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from ecs_composex.events.events_helpers import create_events_template
+
 if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
     from ecs_composex.mods_manager import XResourceModule
 
 import warnings
-
-from compose_x_common.compose_x_common import keyisset
-from troposphere import NoValue
-from troposphere.events import Rule as CfnRule
 
 from ecs_composex.common import LOG, NONALPHANUM, build_template
 from ecs_composex.common.stacks import ComposeXStack
@@ -28,40 +26,6 @@ from ecs_composex.compose.x_resources.helpers import (
 )
 from ecs_composex.compose.x_resources.services_resources import ServicesXResource
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME, FARGATE_VERSION
-from ecs_composex.resources_import import import_record_properties
-
-
-def define_event_rule(stack, rule):
-    """
-    Function to define the EventRule properties
-
-    :param ecs_composex.common.stacks.ComposeXStack stack:
-    :param ecs_composex.events.events_stack.Rule rule:
-    """
-    rule_props = import_record_properties(rule.properties, CfnRule)
-    if not keyisset("Targets", rule_props):
-        rule_props["Targets"] = []
-    if not keyisset("Name", rule_props) or rule_props["Name"] == "":
-        rule_props["Name"] = NoValue
-    rule.cfn_resource = CfnRule(rule.logical_name, **rule_props)
-    stack.stack_template.add_resource(rule.cfn_resource)
-
-
-def create_events_template(stack, settings, new_resources):
-    """
-    Function to create the CFN root template for Events Rules
-
-    :param ecs_composex.events.events_stack.XStack stack:
-    :param ecs_composex.common.settings.ComposeXSettings settings:
-    :param list[Rule] new_resources:
-    """
-    for resource in new_resources:
-        if not resource.families_targets:
-            LOG.error(
-                f"The rule {resource.logical_name} does not have any families_targets defined"
-            )
-            continue
-        define_event_rule(stack, resource)
 
 
 class Rule(ServicesXResource):
@@ -202,6 +166,11 @@ class XStack(ComposeXStack):
         set_resources(settings, Rule, module)
         x_resources = settings.compose_content[module.res_key].values()
         lookup_resources = set_lookup_resources(x_resources)
+        if lookup_resources:
+            warnings.warn(
+                f"{module.res_key} does not support Lookup/Use. You can only create new resources"
+            )
+
         new_resources = set_new_resources(x_resources, False)
         if new_resources:
             stack_template = build_template(
@@ -212,7 +181,3 @@ class XStack(ComposeXStack):
             create_events_template(self, settings, new_resources)
         else:
             self.is_void = True
-        if lookup_resources:
-            warnings.warn(
-                f"{module.res_key} does not support Lookup/Use. You can only create new resources"
-            )

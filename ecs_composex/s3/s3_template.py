@@ -14,12 +14,8 @@ from troposphere import (
 )
 
 from ecs_composex.common import LOG
-from ecs_composex.iam.import_sam_policies import get_access_types
 from ecs_composex.resource_settings import generate_resource_permissions
 from ecs_composex.resources_import import import_record_properties
-from ecs_composex.s3.s3_params import MOD_KEY
-
-ACCESS_TYPES = get_access_types(MOD_KEY)
 
 
 def define_bucket_name(bucket):
@@ -102,14 +98,14 @@ def handle_predefined_policies(bucket, param_key, managed_policies_key, statemen
         set(bucket.parameters[param_key]["PredefinedBucketPolicies"])
     )
     for policy_name in unique_policies:
-        if policy_name not in ACCESS_TYPES[managed_policies_key].keys():
+        if policy_name not in bucket.module.iam_policies[managed_policies_key].keys():
             LOG.error(
                 f"Policy {policy_name} is not defined as part of possible permissions set"
             )
             continue
         policies = generate_resource_permissions(
             bucket.logical_name,
-            ACCESS_TYPES[managed_policies_key],
+            bucket.module.iam_policies[managed_policies_key],
             Sub(f"arn:${{{AWS_PARTITION}}}:s3:::${{{bucket.cfn_resource.title}}}"),
         )
         statement += policies[policy_name].PolicyDocument["Statement"]
@@ -155,7 +151,7 @@ def implement_bucket_policy(bucket, param_key, bucket_template):
     user_policies_key = "Policies"
     policy_document = {"Version": "2012-10-17", "Statement": statement}
     if keyisset(managed_policies_key, bucket.parameters[param_key]) and keyisset(
-        managed_policies_key, ACCESS_TYPES
+        managed_policies_key, bucket.module.iam_policies
     ):
         handle_predefined_policies(bucket, param_key, managed_policies_key, statement)
     if keyisset(user_policies_key, bucket.parameters[param_key]):

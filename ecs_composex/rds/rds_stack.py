@@ -29,7 +29,6 @@ from ecs_composex.compose.x_resources.helpers import (
     set_resources,
 )
 from ecs_composex.compose.x_resources.network_x_resources import DatabaseXResource
-from ecs_composex.iam.import_sam_policies import get_access_types
 from ecs_composex.rds.rds_features import apply_extra_parameters
 from ecs_composex.rds.rds_params import (
     DB_CLUSTER_ARN,
@@ -40,9 +39,6 @@ from ecs_composex.rds.rds_params import (
     DB_RO_ENDPOINT_ADDRESS,
     DB_SECRET_ARN,
     DB_SG,
-    MAPPINGS_KEY,
-    MOD_KEY,
-    RES_KEY,
 )
 from ecs_composex.rds.rds_template import generate_rds_templates
 from ecs_composex.rds_resources_settings import lookup_rds_resource, lookup_rds_secret
@@ -123,7 +119,6 @@ class Rds(DatabaseXResource):
     """
 
     subnets_param = STORAGE_SUBNETS
-    policies_scaffolds = get_access_types(MOD_KEY)
 
     def __init__(
         self, name, definition, module: XResourceModule, settings: ComposeXSettings
@@ -254,8 +249,8 @@ class XStack(ComposeXStack):
             self.is_void = True
         for resource in settings.compose_content[module.res_key].values():
             resource.stack = self
-        if lookup_resources and MAPPINGS_KEY not in settings.mappings:
-            settings.mappings[MAPPINGS_KEY] = {}
+        if lookup_resources and module.mapping_key not in settings.mappings:
+            settings.mappings[module.mapping_key] = {}
         for resource in lookup_resources:
             if keyisset("cluster", resource.lookup):
                 resource.lookup_resource(
@@ -283,6 +278,6 @@ class XStack(ComposeXStack):
 
             resource.generate_cfn_mappings_from_lookup_properties()
             resource.generate_outputs()
-            settings.mappings[MAPPINGS_KEY].update(
+            settings.mappings[module.mapping_key].update(
                 {resource.logical_name: resource.mappings}
             )

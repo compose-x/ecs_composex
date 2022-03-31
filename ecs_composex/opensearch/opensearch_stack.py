@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
-    from ecs_composex.mods_manager import XResourceModule
+    from ecs_composex.mods_manager import XResourceModule, ModManager
 
 
 from compose_x_common.compose_x_common import keyisset
@@ -22,17 +22,13 @@ from ecs_composex.compose.x_resources.helpers import (
     set_resources,
 )
 from ecs_composex.compose.x_resources.network_x_resources import DatabaseXResource
-from ecs_composex.iam.import_sam_policies import get_access_types
 from ecs_composex.opensearch.opensearch_aws import create_opensearch_mappings
 from ecs_composex.opensearch.opensearch_params import (
-    MAPPINGS_KEY,
-    MOD_KEY,
     OS_DOMAIN_ARN,
     OS_DOMAIN_ENDPOINT,
     OS_DOMAIN_ID,
     OS_DOMAIN_PORT,
     OS_DOMAIN_SG,
-    RES_KEY,
 )
 from ecs_composex.opensearch.opensearch_template import create_new_domains
 from ecs_composex.rds.rds_params import DB_SECRET_ARN
@@ -75,8 +71,6 @@ class OpenSearchDomain(DatabaseXResource):
     Class to represent the OpenSearch domain
     """
 
-    policies_scaffolds = get_access_types(MOD_KEY)
-
     def __init__(
         self, name, definition, module: XResourceModule, settings: ComposeXSettings
     ):
@@ -115,7 +109,12 @@ class OpenSearchDomain(DatabaseXResource):
             ),
         }
 
-    def to_ecs(self, settings, modules, root_stack=None) -> None:
+    def to_ecs(
+        self,
+        settings: ComposeXSettings,
+        modules: ModManager,
+        root_stack: ComposeXStack = None,
+    ) -> None:
         """
         Mapping for OpenSearch domains override from default RDS DB access
         """

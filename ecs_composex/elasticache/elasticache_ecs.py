@@ -6,6 +6,14 @@
 Module to handle Linking ECS tasks and the elastic cache clusters
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, List
+
+if TYPE_CHECKING:
+    from ecs_composex.common.settings import ComposeXSettings
+    from .elasticache_stack import CacheCluster
+
 from troposphere import FindInMap, Select
 
 from ecs_composex.common import LOG
@@ -21,7 +29,9 @@ from ecs_composex.rds_resources_settings import (
 )
 
 
-def link_cluster_to_service(cluster, cluster_mappings, mapping_name):
+def link_cluster_to_service(
+    cluster: CacheCluster, cluster_mappings: dict, mapping_name: str
+):
     """
     Function to go over each service defined in the DB and assign found DB settings to service
 
@@ -43,7 +53,9 @@ def link_cluster_to_service(cluster, cluster_mappings, mapping_name):
         )
 
 
-def create_lookup_mappings(mappings, lookup_resources, settings):
+def create_lookup_mappings(
+    mappings: dict, lookup_resources: List[CacheCluster], settings: ComposeXSettings
+):
     """
     Function to build up the Mappings for ElastiCache
 

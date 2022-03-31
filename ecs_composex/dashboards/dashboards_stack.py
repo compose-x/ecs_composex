@@ -29,7 +29,6 @@ from ecs_composex.common import (
 )
 from ecs_composex.common.cfn_conditions import define_stack_name
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.dashboards.dashboards_params import RES_KEY
 from ecs_composex.dashboards.dashboards_services_metrics import ServiceEcsWidget
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME, SERVICE_T
 
@@ -47,7 +46,9 @@ def get_family_from_name(settings, name):
     return None
 
 
-def retrieve_services(settings, services, x_stack):
+def retrieve_services(
+    settings: ComposeXSettings, services: dict, x_stack: ComposeXStack
+):
     """
     Function to
 
@@ -82,16 +83,19 @@ def retrieve_services(settings, services, x_stack):
     return services_params
 
 
-def create_dashboards(settings, x_stack):
+def create_dashboards(
+    settings: ComposeXSettings, x_stack: ComposeXStack, module: XResourceModule
+):
     """
     Loop to iterate over dashboards definitions
 
     :param ecs_composex.common.settings.ComposeXSettings settings:
     :param ecs_composex.common.stacks.ComposeXStack x_stack:
+    :param ModManager module:
     """
-    if not keyisset(RES_KEY, settings.compose_content):
-        LOG.error(f"No {RES_KEY} defined")
-    dashboards = settings.compose_content[RES_KEY]
+    if not keyisset(module.res_key, settings.compose_content):
+        LOG.error(f"No {module.res_key} defined")
+    dashboards = settings.compose_content[module.res_key]
     for name, dashboard in dashboards.items():
         widgets = []
         if keyisset("Services", dashboard):
@@ -129,4 +133,4 @@ class XStack(ComposeXStack):
         }
         stack_template = build_template("Root template for Dashboards", [CLUSTER_NAME])
         super().__init__(title, stack_template, stack_parameters=params, **kwargs)
-        create_dashboards(settings, self)
+        create_dashboards(settings, self, module)

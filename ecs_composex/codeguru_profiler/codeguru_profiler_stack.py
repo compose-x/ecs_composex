@@ -8,7 +8,7 @@ Module to manage top level AWS CodeGuru profiles
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
@@ -20,7 +20,6 @@ from troposphere.codeguruprofiler import ProfilingGroup
 
 from ecs_composex.codeguru_profiler.codeguru_profiler_aws import lookup_profile_config
 from ecs_composex.codeguru_profiler.codeguru_profiler_params import (
-    MOD_KEY,
     PROFILER_ARN,
     PROFILER_NAME,
 )
@@ -33,19 +32,19 @@ from ecs_composex.compose.x_resources.helpers import (
     set_new_resources,
     set_resources,
 )
-from ecs_composex.iam.import_sam_policies import get_access_types
 from ecs_composex.resources_import import import_record_properties
 
 
-def create_root_template(new_resources: list) -> Template:
+def create_root_template(new_resources: list, module_res_key: str) -> Template:
     """
     Function to create the root stack template for profiles
 
     :param list[CodeProfiler] new_resources:
+    :param str module_res_key:
     :return: The template wit the profiles
     :rtype: troposphere.Template
     """
-    root_tpl = build_template(f"Root stack to manage {MOD_KEY}")
+    root_tpl = build_template(f"Root stack to manage {module_res_key}")
     for res in new_resources:
         try:
             props = import_record_properties(
@@ -76,8 +75,6 @@ class CodeProfiler(ApiXResource):
     Class to manage AWS Code Guru profiles
     """
 
-    policies_scaffolds = get_access_types(MOD_KEY)
-
     def __init__(
         self, name, definition, module: XResourceModule, settings: ComposeXSettings
     ):
@@ -97,7 +94,9 @@ class CodeProfiler(ApiXResource):
         }
 
 
-def define_lookup_profile_mappings(mappings, resources, settings):
+def define_lookup_profile_mappings(
+    mappings: dict, resources: List[CodeProfiler], settings: ComposeXSettings
+):
     """
     Function to update the mappings of CodeGuru profile identified via Lookup
     :param dict mappings:
@@ -140,7 +139,7 @@ class XStack(ComposeXStack):
         new_resources = set_new_resources(x_resources, False)
 
         if new_resources:
-            stack_template = create_root_template(new_resources)
+            stack_template = create_root_template(new_resources, module.res_key)
             super().__init__(title, stack_template, **kwargs)
         else:
             self.is_void = True

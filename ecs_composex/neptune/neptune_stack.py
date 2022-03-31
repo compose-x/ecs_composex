@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
-    from ecs_composex.mods_manager import XResourceModule
+    from ecs_composex.mods_manager import XResourceModule, ModManager
 
 
 from compose_x_common.aws.neptune import NEPTUNE_DB_CLUSTER_ARN_RE
@@ -21,16 +21,12 @@ from troposphere.neptune import DBCluster as CfnDBCluster
 
 from ecs_composex.common import build_template, setup_logging
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.iam.import_sam_policies import get_access_types
 from ecs_composex.neptune.neptune_params import (
     DB_CLUSTER_RESOURCES_ARN,
     DB_ENDPOINT,
     DB_PORT,
     DB_READ_ENDPOINT,
     DB_RESOURCE_ID,
-    MAPPINGS_KEY,
-    MOD_KEY,
-    RES_KEY,
 )
 from ecs_composex.rds.rds_params import DB_CLUSTER_ARN, DB_CLUSTER_NAME, DB_SG
 from ecs_composex.rds_resources_settings import (
@@ -96,7 +92,6 @@ class NeptuneDBCluster(DatabaseXResource):
     """
 
     subnets_param = STORAGE_SUBNETS
-    policies_scaffolds = get_access_types(MOD_KEY)
 
     def __init__(
         self, name, definition, module: XResourceModule, settings: ComposeXSettings
@@ -190,7 +185,12 @@ class NeptuneDBCluster(DatabaseXResource):
             subattribute_key,
         )
 
-    def to_ecs(self, settings, modules, root_stack=None) -> None:
+    def to_ecs(
+        self,
+        settings: ComposeXSettings,
+        modules: ModManager,
+        root_stack: ComposeXStack = None,
+    ) -> None:
         LOG.info(f"{self.module.res_key}.{self.name} - Linking to services")
         if not self.mappings and self.cfn_resource:
             handle_new_tcp_resource(
