@@ -8,7 +8,7 @@
 
 import ipaddress
 
-from ecs_composex.common import clpow2, nxtpow2
+from ecs_composex.common import clpow2
 
 pow2_2_prefix = {
     "16": 28,

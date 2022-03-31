@@ -8,8 +8,6 @@ Represent a service from the docker-compose services
 
 from compose_x_common.compose_x_common import keyisset
 
-from ecs_composex.common import LOG
-
 
 def to_java_properties(name):
     """

@@ -6,18 +6,23 @@
 Package to build the ECS Service Definition
 """
 
-from troposphere import If, NoValue, Ref, StackName, Tags
-from troposphere.ecs import (
-    AwsvpcConfiguration,
-    DeploymentController,
-    NetworkConfiguration,
-    Service,
-)
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ecs_composex.common.settings import ComposeXSettings
+    from ecs_composex.ecs.ecs_family import ComposeFamily
+
+from troposphere import If, NoValue, Ref
+from troposphere.ecs import DeploymentController, Service
 
 from ecs_composex.ecs import ecs_conditions, ecs_params
 from ecs_composex.ecs.ecs_conditions import use_external_lt_con
-
-from .helpers import define_deployment_options, define_placement_strategies
+from ecs_composex.ecs.ecs_service.helpers import (
+    define_deployment_options,
+    define_placement_strategies,
+)
 
 
 class EcsService(object):
@@ -33,12 +38,11 @@ class EcsService(object):
     :ivar dict service_attrs: Attributes defined to expand the troposphere.ecs.ServiceDefinition from prior settings.
     """
 
-    def __init__(self, family, settings):
+    def __init__(self, family: ComposeFamily):
         """
         Function to initialize the Service object
 
         :param ecs_composex.compose_services.ComposeFamily family:
-        :param ecs_composex.common.settings.ComposeXSettings settings:
         """
         self.family = family
         self.links = []
@@ -53,7 +57,9 @@ class EcsService(object):
         self.registries = []
         self.service_tags = []
 
-    def generate_service_definition(self, family, settings):
+    def generate_service_definition(
+        self, family: ComposeFamily, settings: ComposeXSettings
+    ) -> None:
         """
         Function to generate the Service definition.
         This is the last step in defining the service, after all other settings have been prepared.
@@ -88,7 +94,7 @@ class EcsService(object):
                 ),
             ),
             SchedulingStrategy=NoValue,
-            PlacementStrategies=NoValue,
+            PlacementStrategies=define_placement_strategies(),
             NetworkConfiguration=family.service_networking.ecs_network_config,
             LoadBalancers=use_external_lt_con(NoValue, self.lbs),
             ServiceRegistries=use_external_lt_con(NoValue, self.registries),

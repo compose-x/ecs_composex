@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING, List
 
 if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
-    from ecs_composex.mods_manager import XResourceModule
     from .alarms_stack import Alarm
     from troposphere import Template
 
@@ -19,6 +18,7 @@ from troposphere import AWS_REGION, AWS_STACK_ID, Join, Ref, Select, Split, Sub
 from troposphere.cloudwatch import Alarm as CWAlarm
 from troposphere.cloudwatch import CompositeAlarm
 
+from ecs_composex.common import add_outputs, add_resource
 from ecs_composex.resources_import import import_record_properties
 
 
@@ -137,8 +137,10 @@ def add_composite_alarms(template: Template, new_alarms: List[Alarm]) -> None:
         ):
             alarm.is_composite = True
             create_composite_alarm(alarm, new_alarms)
-            if alarm.cfn_resource.title not in template.resources:
-                template.add_resource(alarm.cfn_resource)
+            add_resource(template, alarm.cfn_resource)
+            alarm.init_outputs()
+            alarm.generate_outputs()
+            add_outputs(template, alarm.outputs)
 
 
 def create_alarms(
@@ -167,7 +169,10 @@ def create_alarms(
                 props = import_record_properties(alarm.properties, CWAlarm)
                 alarm.cfn_resource = CWAlarm(alarm.logical_name, **props)
                 if alarm.cfn_resource.title not in template.resources:
-                    template.add_resource(alarm.cfn_resource)
+                    alarm.init_outputs()
+                    alarm.generate_outputs()
+                    add_resource(template, alarm.cfn_resource)
+                    add_outputs(template, alarm.outputs)
         elif alarm.parameters and keyisset("CompositeExpression", alarm.parameters):
             continue
 

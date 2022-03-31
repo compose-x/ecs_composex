@@ -16,6 +16,7 @@ if TYPE_CHECKING:
         NetworkXResource,
         DatabaseXResource,
     )
+    from ecs_composex.cloudmap.cloudmap_stack import PrivateNamespace
 
 from typing import Union
 
@@ -29,7 +30,7 @@ from .cloudmap_params import PRIVATE_NAMESPACE_ID
 
 
 def process_dns_config(
-    namespace,
+    namespace: PrivateNamespace,
     resource: Union[NetworkXResource, DatabaseXResource],
     dns_settings: dict,
     settings: ComposeXSettings,
@@ -81,7 +82,7 @@ def process_dns_config(
 
 
 def process_return_values(
-    namespace,
+    namespace: PrivateNamespace,
     resource,
     return_values: dict,
     instance_props: dict,
@@ -104,7 +105,8 @@ def process_return_values(
                 break
         else:
             raise KeyError(
-                f"{resource.module.res_key}.{resource.name} - ReturnValue {key} not found. Available",
+                f"{resource.module.res_key}.{resource.name}"
+                " - ReturnValue {key} not found. Available",
                 [p.title for p in resource.attributes_outputs.keys()],
             )
         attribute_pointer = resource.attributes_outputs[attribute_param]
@@ -147,14 +149,14 @@ def process_additional_attributes(additional_attributes: dict, instance_props: d
 
 
 def handle_resource_cloudmap_settings(
-    namespace, resource, cloudmap_settings: dict, settings
+    namespace: PrivateNamespace, resource, cloudmap_settings: dict, settings
 ) -> None:
     """
     Function to handle x-cloudmap.{} settings
 
-    :param ecs_composex.cloudmap.cloudmap_stack.PrivateNamespace namespace: The namespace to check on association with the resource.
-    :param ecs_composex.compose.x_resources.XResource resource:
-    :param ecs_composex.common.settings.ComposeXSettings settings:
+    :type namespace: class`ecs_composex.cloudmap.cloudmap_stack.PrivateNamespace`
+    :type resource: class`Union[DatabaseXResource, NetworkXResource]`
+    :type settings: class`ecs_composex.common.settings.ComposeXSettings`
     """
     if cloudmap_settings["Namespace"] != namespace.name:
         LOG.debug("NAMESPACE DOES NOT MATCH", cloudmap_settings, namespace.name)
@@ -216,7 +218,8 @@ def handle_resource_cloudmap_settings(
         "DnsSettings", cloudmap_settings
     ):
         LOG.warning(
-            f"{resource.module.res_key}.{resource.name} does not support DnsSettings for x-cloudmap."
+            f"{resource.module.res_key}.{resource.name}"
+            " does not support DnsSettings for x-cloudmap."
         )
     namespace.stack.stack_template.add_resource(resource_service)
     namespace.stack.stack_template.add_resource(resource_instance)

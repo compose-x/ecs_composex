@@ -5,22 +5,11 @@
 import re
 
 from compose_x_common.compose_x_common import keyisset
-from troposphere.ecs import CapacityProviderStrategyItem
 
 from ecs_composex.common import LOG
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME
-
-RES_KEY = "x-cluster"
-FARGATE_PROVIDER = "FARGATE"
-FARGATE_SPOT_PROVIDER = "FARGATE_SPOT"
-FARGATE_PROVIDERS = [FARGATE_PROVIDER, FARGATE_SPOT_PROVIDER]
-DEFAULT_STRATEGY = [
-    CapacityProviderStrategyItem(
-        Weight=2, Base=1, CapacityProvider=FARGATE_SPOT_PROVIDER
-    ),
-    CapacityProviderStrategyItem(Weight=1, CapacityProvider=FARGATE_PROVIDER),
-]
+from ecs_composex.ecs_cluster import FARGATE_PROVIDER, FARGATE_SPOT_PROVIDER, RES_KEY
 
 
 def evaluate_fargate_is_set(providers, cluster_def):

@@ -17,8 +17,6 @@ from compose_x_common.compose_x_common import keyisset
 from troposphere.sqs import Queue as CfnQueue
 
 from ecs_composex.common import LOG
-from ecs_composex.common.settings import ComposeXSettings
-from ecs_composex.mods_manager import XResourceModule
 from ecs_composex.sqs.sqs_params import (
     SQS_ARN,
     SQS_KMS_KEY,
@@ -59,7 +57,8 @@ def get_queue_config(
                     ]
                 else:
                     LOG.warning(
-                        "The KMS Key provided is not an ARN. Implementation requires full ARN today"
+                        "The KMS Key provided is not an ARN."
+                        " Implementation requires full ARN today"
                     )
             else:
                 LOG.info(f"{queue.module.res_key}.{queue.name} - No KMS encryption.")
@@ -101,5 +100,6 @@ def resolve_lookup(
         )
         if keyisset(SQS_KMS_KEY, resource.lookup_properties):
             LOG.info(
-                f"{module.res_key}.{resource.name} - Identified CMK - {resource.lookup_properties[SQS_KMS_KEY]}"
+                f"{module.res_key}.{resource.name} - Identified CMK"
+                " - {resource.lookup_properties[SQS_KMS_KEY]}"
             )

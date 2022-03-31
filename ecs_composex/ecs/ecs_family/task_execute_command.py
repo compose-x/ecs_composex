@@ -11,7 +11,7 @@ from troposphere import Ref
 from troposphere.ecs import LinuxParameters
 from troposphere.iam import PolicyType
 
-from .family_helpers import set_ecs_cluster_logging_access
+from ecs_composex.ecs.ecs_family.family_helpers import set_ecs_cluster_logging_access
 
 
 def set_enable_execute_command(family):

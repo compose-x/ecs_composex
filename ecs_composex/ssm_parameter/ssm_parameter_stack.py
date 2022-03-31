@@ -14,18 +14,12 @@ if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
     from ecs_composex.mods_manager import XResourceModule
 
-
-import json
-from os import path
-
-import yaml
 from compose_x_common.aws.ssm_parameter import SSM_PARAMETER_ARN_RE
 from compose_x_common.compose_x_common import keyisset
-from troposphere import AWS_ACCOUNT_ID, AWS_PARTITION, AWS_REGION, Base64, Ref, Sub
+from troposphere import AWS_ACCOUNT_ID, AWS_PARTITION, AWS_REGION, Ref, Sub
 from troposphere.ssm import Parameter as CfnSsmParameter
-from yaml import Loader
 
-from ecs_composex.common import LOG, add_outputs, build_template
+from ecs_composex.common import LOG, build_template
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources.api_x_resources import ApiXResource
 from ecs_composex.compose.x_resources.helpers import (
@@ -33,135 +27,14 @@ from ecs_composex.compose.x_resources.helpers import (
     set_new_resources,
     set_resources,
 )
-from ecs_composex.iam.import_sam_policies import get_access_types
-from ecs_composex.resources_import import import_record_properties
+from ecs_composex.ssm_parameter.ssm_parameter_helpers import (
+    get_parameter_config,
+    render_new_parameters,
+)
 from ecs_composex.ssm_parameter.ssm_parameter_params import (
     SSM_PARAM_ARN,
     SSM_PARAM_NAME,
 )
-
-
-def get_parameter_config(parameter, account_id, resource_id):
-    """
-
-    :param parameter:
-    :param account_id:
-    :param resource_id:
-    :return:
-    """
-    return {SSM_PARAM_NAME.title: resource_id, SSM_PARAM_ARN.title: parameter.arn}
-
-
-def handle_yaml_validation(resource, value, file_path):
-    """
-    Function to evaluate the JSON content
-
-    :param SsmParamter resource:
-    :param str value: Value read from file
-    :param str file_path:
-    :return:
-    """
-    try:
-        payload = yaml.load(value, Loader=Loader)
-        if keyisset("RenderToJson", resource.parameters):
-            return json.dumps(payload, separators=(",", ":"))
-        return value
-    except yaml.YAMLError:
-        if keyisset("IgnoreInvalidYaml", resource.parameters):
-            LOG.warn(
-                f"{resource.name} - The content of {file_path} "
-                "did not pass YAML validation. Skipping due to IgnoreInvalidYaml"
-            )
-            return value
-        else:
-            LOG.error(
-                f"{resource.name} - The content of {file_path} "
-                "did not pass YAML validation."
-            )
-            raise
-
-
-def handle_json_validation(resource, value, file_path):
-    """
-    Function to evaluate the JSON content
-
-    :param SsmParamter resource:
-    :param str value: Value read from file
-    :param str file_path:
-    :return:
-    """
-    try:
-        payload = json.loads(value)
-        if keyisset("MinimizeJson", resource.parameters):
-            return json.dumps(payload, separators=(",", ":"))
-        return value
-    except json.decoder.JSONDecodeError:
-        if keyisset("IgnoreInvalidJson", resource.parameters):
-            LOG.warn(
-                f"{resource.name} - The content of {file_path} "
-                "did not pass JSON validation. Skipping due to IgnoreInvalidJson"
-            )
-            return value
-        else:
-            LOG.error(
-                f"{resource.name} - The content of {file_path} "
-                "did not pass JSON validation."
-            )
-            raise
-
-
-def import_value_from_file(resource):
-    """
-    Function to import file into the SSM Parameter value
-    :param SsmParameter resource:
-    :return: The value
-    :rtype: str
-    """
-    file_path = path.abspath(resource.parameters["FromFile"])
-    with open(file_path, "r") as file_fd:
-        value = file_fd.read()
-    if keyisset("EncodeToBase64", resource.parameters):
-        return Base64(value)
-    if keyisset("ValidateJson", resource.parameters):
-        return handle_json_validation(resource, value, file_path)
-    elif keyisset("ValidateYaml", resource.parameters):
-        return handle_yaml_validation(resource, value, file_path)
-    return value
-
-
-def render_new_parameters(new_resources, root_stack):
-    """
-
-    :param list[SsmParameter] new_resources:
-    :param ecs_composex.common.stacks.ComposeXStack root_stack:
-    :return:
-    """
-    for new_res in new_resources:
-        value = None
-        if (
-            keyisset("Type", new_res.definition)
-            and new_res.definition["Type"] == "SecureString"
-        ):
-            raise ValueError(f"{new_res.name} AWS CFN does not support SecureString.")
-        if new_res.parameters and keyisset("FromFile", new_res.parameters):
-            value = import_value_from_file(new_res)
-        if keyisset("Value", new_res.properties):
-            if value:
-                LOG.warn(
-                    "Both Value and FromFile properties were set. Using Value from Properties"
-                )
-            value = new_res.properties["Value"]
-        if not value:
-            raise ValueError(f"{new_res.name} - Failed to determine the value")
-        new_res.properties.update({"Value": value})
-        param_props = import_record_properties(
-            new_res.properties, CfnSsmParameter, ignore_missing_required=False
-        )
-        new_res.cfn_resource = CfnSsmParameter(new_res.logical_name, **param_props)
-        root_stack.stack_template.add_resource(new_res.cfn_resource)
-        new_res.init_outputs()
-        new_res.generate_outputs()
-        add_outputs(root_stack.stack_template, new_res.outputs)
 
 
 class SsmParameter(ApiXResource):
@@ -200,15 +73,15 @@ class SsmParameter(ApiXResource):
         }
 
 
-def resolve_lookup(lookup_resources, settings):
+def resolve_lookup(lookup_resources, settings, module: XResourceModule):
     """
     Lookup of the AWS resources and setting the mappings for the resource type
 
     :param list lookup_resources:
     :param ecs_composex.common.settings.ComposeXSettings settings:
     """
-    if not keyisset(MAPPINGS_KEY, settings.mappings):
-        settings.mappings[MAPPINGS_KEY] = {}
+    if not keyisset(module.mapping_key, settings.mappings):
+        settings.mappings[module.mapping_key] = {}
     for resource in lookup_resources:
         resource.lookup_resource(
             SSM_PARAMETER_ARN_RE,
@@ -216,8 +89,8 @@ def resolve_lookup(lookup_resources, settings):
             CfnSsmParameter.resource_type,
             "ssm:parameter",
         )
-        LOG.info(f"{RES_KEY}.{resource.name} - Matched to {resource.arn}")
-        settings.mappings[MAPPINGS_KEY].update(
+        LOG.info(f"{module.res_key}.{resource.name} - Matched to {resource.arn}")
+        settings.mappings[module.mapping_key].update(
             {resource.logical_name: resource.mappings}
         )
 
@@ -234,12 +107,12 @@ class XStack(ComposeXStack):
         x_resources = settings.compose_content[module.res_key].values()
         lookup_resources = set_lookup_resources(x_resources)
         if lookup_resources:
-            resolve_lookup(lookup_resources, settings)
+            resolve_lookup(lookup_resources, settings, module)
         new_resources = set_new_resources(x_resources, False)
 
         if new_resources:
             template = build_template("Parent template for SSM in ECS Compose-X")
-            super().__init__(title, stack_template=template, **kwargs)
+            super().__init__(module.mapping_key, stack_template=template, **kwargs)
             render_new_parameters(new_resources, self)
         else:
             self.is_void = True

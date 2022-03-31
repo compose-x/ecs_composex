@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ecs_composex.ecs.ecs_family import ComposeFamily, ServiceStack
+    from ecs_composex.ecs.ecs_family import ComposeFamily
     from ecs_composex.common.settings import ComposeXSettings
     from ecs_composex.common.stacks import ComposeXStack
 
@@ -23,12 +23,11 @@ from ecs_composex.compose.compose_services.env_files_helpers import (
 )
 from ecs_composex.compose.compose_volumes.ecs_family_helpers import set_volumes
 from ecs_composex.ecs import ecs_params, metadata
+from ecs_composex.ecs.ecs_family import ServiceStack
 from ecs_composex.ecs.ecs_family.task_logging import create_log_group
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME, CLUSTER_NAME_T
 from ecs_composex.ecs.ecs_service import EcsService
 from ecs_composex.secrets.secrets_params import RES_KEY as SECRETS_KEY
-
-from .ecs_family import ServiceStack
 
 
 def initialize_family_services(
@@ -50,7 +49,7 @@ def initialize_family_services(
         )
     family.init_task_definition()
     family.set_secrets_access()
-    family.ecs_service = EcsService(family, settings)
+    family.ecs_service = EcsService(family)
     family.stack.Parameters.update(
         {
             ecs_params.SERVICE_NAME_T: family.logical_name,

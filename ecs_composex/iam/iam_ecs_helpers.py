@@ -4,10 +4,10 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
-    from troposphere import Template
+    from troposphere import Template, AWSObject
     from ecs_composex.common.settings import ComposeXSettings
 
 from troposphere import Ref, Sub
@@ -16,7 +16,9 @@ from troposphere.iam import ManagedPolicy
 from ecs_composex.common.cfn_conditions import define_stack_name
 
 
-def add_ecs_execution_role_managed_policy(template: Template) -> ManagedPolicy:
+def add_ecs_execution_role_managed_policy(
+    template: Template,
+) -> Union[ManagedPolicy, AWSObject]:
     """
     Creates a blanket IAM Managed policy to use for the ECS Execution roles
 
@@ -30,7 +32,7 @@ def add_ecs_execution_role_managed_policy(template: Template) -> ManagedPolicy:
             ManagedPolicy(
                 policy_logical_id,
                 Description=Sub(
-                    f"Managed policy for ECS Execution role in {{STACK_NAME}})",
+                    r"Managed policy for ECS Execution role in ${STACK_NAME})",
                     STACK_NAME=define_stack_name(),
                 ),
                 Roles=[],

@@ -12,17 +12,14 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ecs_composex.ecs.managed_sidecars import ManagedSidecar
-
-try:
-    from yaml import CDumper as Dumper
-    from yaml import CLoader as Loader
-except ImportError:
-    from yaml import Dumper, Loader
+    from ecs_composex.ecs.ecs_family import ComposeFamily
+    from troposphere.ssm import Parameter
 
 from troposphere import AWS_ACCOUNT_ID, AWS_PARTITION, AWS_REGION, Sub
 from troposphere.ecs import Secret
 from troposphere.iam import PolicyType
 
+from ecs_composex.common import add_resource
 from ecs_composex.ecs import ecs_params
 
 
@@ -66,7 +63,11 @@ def define_cloudwatch_agent(cw_prometheus_config, cw_agent_config) -> ManagedSid
     return cw_service
 
 
-def set_ecs_cw_policy(family, prometheus_parameter, cw_config_parameter):
+def set_ecs_cw_policy(
+    family: ComposeFamily,
+    prometheus_parameter: Parameter,
+    cw_config_parameter: Parameter,
+) -> None:
     """
     Renders the IAM policy to grant the TaskRole access to CW, ECS and SSM Parameters
 
@@ -154,5 +155,4 @@ def set_ecs_cw_policy(family, prometheus_parameter, cw_config_parameter):
             family.iam_manager.task_role.name,
         ],
     )
-    if ecs_sd_policy.title not in family.template.resources:
-        family.template.add_resource(ecs_sd_policy)
+    add_resource(family.template, ecs_sd_policy)

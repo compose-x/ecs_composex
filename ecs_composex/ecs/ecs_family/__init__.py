@@ -27,7 +27,6 @@ from ecs_composex.compose.compose_services import ComposeService
 from ecs_composex.ecs import ecs_conditions, ecs_params
 from ecs_composex.ecs.ecs_family.family_helpers import (
     handle_same_task_services_dependencies,
-    set_ecs_cluster_logging_access,
 )
 from ecs_composex.ecs.ecs_params import TASK_T
 from ecs_composex.ecs.ecs_prometheus import set_prometheus
@@ -288,7 +287,6 @@ class ComposeFamily(object):
         Adds a new container/service to the Task Family and validates all settings that go along with the change.
         :param service:
         """
-        from .task_execute_command import set_enable_execute_command
 
         if not isinstance(service, ComposeService) or not issubclass(
             type(service), ComposeService

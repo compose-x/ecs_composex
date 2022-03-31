@@ -2,13 +2,13 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  Copyright 2020-2022 John Mille <john@compose-x.io>
 
-from troposphere import FindInMap, GetAtt, Join, Ref, StackName, Sub, Tags
+from troposphere import Ref, StackName, Sub, Tags
 from troposphere.ec2 import SecurityGroup
 
 from ecs_composex.common import LOG, add_resource
 from ecs_composex.common.cfn_conditions import define_stack_name
 from ecs_composex.ecs.ecs_params import SERVICE_NAME, SG_T
-from ecs_composex.vpc.vpc_params import APP_SUBNETS, VPC_ID
+from ecs_composex.vpc.vpc_params import VPC_ID
 
 
 def add_security_group(family) -> None:

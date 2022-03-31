@@ -13,9 +13,6 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ecs_composex.ecs.ecs_family import ComposeFamily
-    from ecs_composex.common.settings import ComposeXSettings
-    from ecs_composex.common.stacks import ComposeXStack
-
 
 from json import dumps
 
@@ -37,6 +34,8 @@ from .helpers import define_tracking_target_configuration, merge_family_services
 class ServiceScaling(object):
     """
     Class to group the configuration for Service scaling
+
+    :ivar ComposeFamily family:
     """
 
     defined = False
@@ -88,7 +87,8 @@ class ServiceScaling(object):
                     "AWSServiceRoleForApplicationAutoScaling_ECSService"
                 ),
                 ResourceId=Sub(
-                    f"service/${{{ecs_params.CLUSTER_NAME.title}}}/${{{self.family.ecs_service.ecs_service.title}.Name}}"
+                    f"service/${{{ecs_params.CLUSTER_NAME.title}}}/"
+                    f"${{{self.family.ecs_service.ecs_service.title}.Name}}"
                 ),
                 SuspendedState=applicationautoscaling.SuspendedState(
                     DynamicScalingInSuspended=False
@@ -107,7 +107,8 @@ class ServiceScaling(object):
                     "AWSServiceRoleForApplicationAutoScaling_ECSService"
                 ),
                 ResourceId=Sub(
-                    f"service/${{{ecs_params.CLUSTER_NAME.title}}}/${{{self.family.ecs_service.ecs_service.title}.Name}}"
+                    f"service/${{{ecs_params.CLUSTER_NAME.title}}}/"
+                    f"${{{self.family.ecs_service.ecs_service.title}.Name}}"
                 ),
                 SuspendedState=applicationautoscaling.SuspendedState(
                     DynamicScalingInSuspended=False

@@ -31,8 +31,6 @@ from ecs_composex.ecs.service_networking.ingress_helpers import (
 from ecs_composex.ingress_settings import Ingress, set_service_ports
 from ecs_composex.vpc.vpc_params import APP_SUBNETS
 
-from .helpers import add_security_group
-
 
 class ServiceNetworking(object):
     """
