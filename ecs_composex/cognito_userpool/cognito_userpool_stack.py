@@ -8,14 +8,11 @@ Module to manage top level AWS CodeGuru profiles
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
     from ecs_composex.mods_manager import XResourceModule
-
-
-import warnings
 
 from compose_x_common.aws.cognito_userpool import USER_POOL_RE
 from compose_x_common.compose_x_common import attributes_to_mapping, keyisset
@@ -23,9 +20,6 @@ from troposphere import GetAtt, Ref
 from troposphere.cognito import UserPool as CfnUserPool
 
 from ecs_composex.cognito_userpool.cognito_params import (
-    MAPPINGS_KEY,
-    MOD_KEY,
-    RES_KEY,
     USERPOOL_ARN,
     USERPOOL_CUSTOM_DOMAIN,
     USERPOOL_DOMAIN,
@@ -100,15 +94,20 @@ class UserPool(AwsEnvironmentResource, ApiXResource):
         }
 
 
-def resolve_lookup(lookup_resources, settings):
+def resolve_lookup(
+    lookup_resources: List[UserPool],
+    settings: ComposeXSettings,
+    module: XResourceModule,
+):
     """
     Iterates over the lookup resources and performs the lookup to create the resource mapping used in the template.
 
     :param list[UserPool] lookup_resources: the lookup resources to process
     :param ecs_composex.common.settings.ComposeXSettings settings: the ComposeX Execution settings.
+    :param module:
     """
-    if not keyisset(MAPPINGS_KEY, settings.mappings):
-        settings.mappings[MAPPINGS_KEY] = {}
+    if not keyisset(module.mapping_key, settings.mappings):
+        settings.mappings[module.mapping_key] = {}
     for resource in lookup_resources:
         resource.lookup_resource(
             USER_POOL_RE,
@@ -119,7 +118,7 @@ def resolve_lookup(lookup_resources, settings):
         resource.init_outputs()
         resource.generate_cfn_mappings_from_lookup_properties()
         resource.generate_outputs()
-        settings.mappings[MAPPINGS_KEY].update(
+        settings.mappings[module.mapping_key].update(
             {resource.logical_name: resource.mappings}
         )
         LOG.info(f"{resource.module.res_key}.{resource.name} Found in AWS Account")
@@ -131,7 +130,7 @@ class XStack(ComposeXStack):
     """
 
     def __init__(
-        self, title, settings: ComposeXSettings, module: XResourceModule, **kwargs
+        self, title: str, settings: ComposeXSettings, module: XResourceModule, **kwargs
     ):
         """
         :param str title:
@@ -140,8 +139,12 @@ class XStack(ComposeXStack):
         """
         set_resources(settings, UserPool, module)
         x_resources = settings.compose_content[module.res_key].values()
-        new_resources = set_new_resources(x_resources, False)
+
         lookup_resources = set_lookup_resources(x_resources)
+        if lookup_resources:
+            resolve_lookup(lookup_resources, settings, module)
+
+        new_resources = set_new_resources(x_resources, False)
         if new_resources:
             LOG.error(f"{module.res_key} does not support new resources creation yet.")
             stack_template = build_template(f"Root stack to manage {module.mod_key}")
@@ -151,5 +154,3 @@ class XStack(ComposeXStack):
             self.is_void = True
         for resource in x_resources:
             resource.stack = self
-        if lookup_resources:
-            resolve_lookup(lookup_resources, settings)

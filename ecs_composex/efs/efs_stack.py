@@ -13,7 +13,6 @@ if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
     from ecs_composex.mods_manager import XResourceModule
 
-
 import warnings
 
 from troposphere import GetAtt, Ref, Select, Sub
@@ -28,14 +27,7 @@ from ecs_composex.compose.x_resources.helpers import (
     set_resources,
 )
 from ecs_composex.compose.x_resources.network_x_resources import NetworkXResource
-from ecs_composex.efs.efs_params import (
-    FS_ARN,
-    FS_ID,
-    FS_MNT_PT_SG_ID,
-    FS_PORT,
-    MOD_KEY,
-    RES_KEY,
-)
+from ecs_composex.efs.efs_params import FS_ARN, FS_ID, FS_MNT_PT_SG_ID, FS_PORT
 from ecs_composex.resources_import import import_record_properties
 from ecs_composex.vpc.vpc_params import STORAGE_SUBNETS, VPC_ID
 

@@ -120,8 +120,8 @@ crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
 
 [[package]]
 name = "boto3-stubs"
-version = "1.21.28"
-description = "Type annotations for boto3 1.21.28 generated with mypy-boto3-builder 7.5.4"
+version = "1.21.30"
+description = "Type annotations for boto3 1.21.30 generated with mypy-boto3-builder 7.5.4"
 category = "dev"
 optional = false
 python-versions = ">=3.6"
@@ -1296,6 +1296,21 @@ lint = ["flake8 (>=3.5.0)", "isort", "mypy (>=0.931)", "docutils-stubs", "types-
 test = ["pytest", "pytest-cov", "html5lib", "cython", "typed-ast"]
 
 [[package]]
+name = "sphinx-autodoc-typehints"
+version = "1.17.0"
+description = "Type hints (PEP 484) support for the Sphinx autodoc extension"
+category = "dev"
+optional = false
+python-versions = ">=3.7"
+
+[package.dependencies]
+Sphinx = ">=4"
+
+[package.extras]
+testing = ["covdefaults (>=2)", "coverage (>=6)", "diff-cover (>=6.4)", "nptyping (>=1)", "pytest (>=6)", "pytest-cov (>=3)", "sphobjinv (>=2)", "typing-extensions (>=3.5)"]
+type_comments = ["typed-ast (>=1.4.0)"]
+
+[[package]]
 name = "sphinx-jsonschema"
 version = "1.17.2"
 description = "Sphinx extension to display JSON Schema"
@@ -1568,7 +1583,7 @@ ecrscan = ["ecr-scan-reporter"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "d6742bace966809b42e1d75aabfd4b8dff0027773c100f7a13c7b1bf938466fa"
+content-hash = "cfdde82fa6146552fbd2d1cb4ae4fc12c399ce24197266310e827cb5667b626c"
 
 [metadata.files]
 alabaster = [
@@ -1629,8 +1644,8 @@ boto3 = [
     {file = "boto3-1.21.28.tar.gz", hash = "sha256:788aa3281e91413bc201268a251c9d4ca2e9deb3a4af74daea2389cf66e5132e"},
 ]
 boto3-stubs = [
-    {file = "boto3-stubs-1.21.28.tar.gz", hash = "sha256:93955b1a30a52b577dffac4f209a73d2ca3c72077a46c733a0df2fcd4ed11161"},
-    {file = "boto3_stubs-1.21.28-py3-none-any.whl", hash = "sha256:9f56ed7ca5c6e0cbce53b39fcc4b9b27c9269d3795a47294692930607e47d7a1"},
+    {file = "boto3-stubs-1.21.30.tar.gz", hash = "sha256:0fc0dad766c644f595d4e91d768ad0eb1b228e752b86b8944a9c4493dc71e000"},
+    {file = "boto3_stubs-1.21.30-py3-none-any.whl", hash = "sha256:28be36333f6a6bcecc77569ca1e1b82d2fdbdece722e551e392c9703d176a29a"},
 ]
 botocore = [
     {file = "botocore-1.24.28-py3-none-any.whl", hash = "sha256:03c41d26d1e765380b8175d4b136d3144aa051f17a86eebfdf9a885a5a9a6a72"},
@@ -2117,6 +2132,10 @@ soupsieve = [
 sphinx = [
     {file = "Sphinx-4.5.0-py3-none-any.whl", hash = "sha256:ebf612653238bcc8f4359627a9b7ce44ede6fdd75d9d30f68255c7383d3a6226"},
     {file = "Sphinx-4.5.0.tar.gz", hash = "sha256:7bf8ca9637a4ee15af412d1a1d9689fec70523a68ca9bb9127c2f3eeb344e2e6"},
+]
+sphinx-autodoc-typehints = [
+    {file = "sphinx_autodoc_typehints-1.17.0-py3-none-any.whl", hash = "sha256:081daf53077b4ae1c28347d6d858e13e63aefe3b4aacef79fd717dd60687b470"},
+    {file = "sphinx_autodoc_typehints-1.17.0.tar.gz", hash = "sha256:51c7b3f5cb9ccd15d0b52088c62df3094f1abd9612930340365c26def8629a14"},
 ]
 sphinx-jsonschema = [
     {file = "sphinx-jsonschema-1.17.2.tar.gz", hash = "sha256:90880aac56382a52d1ea928ec21fcd315ca732469d04813d5095de9eb6cdd832"},

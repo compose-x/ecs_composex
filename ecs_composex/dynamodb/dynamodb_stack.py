@@ -7,14 +7,11 @@ Module to create the root stack for DynamoDB tables
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
     from ecs_composex.mods_manager import XResourceModule
-
-
-import warnings
 
 from botocore.exceptions import ClientError
 from compose_x_common.aws.dynamodb import TABLE_ARN_RE
@@ -30,15 +27,8 @@ from ecs_composex.compose.x_resources.helpers import (
     set_new_resources,
     set_resources,
 )
-from ecs_composex.dynamodb.dynamodb_params import (
-    MAPPINGS_KEY,
-    MOD_KEY,
-    RES_KEY,
-    TABLE_ARN,
-    TABLE_NAME,
-)
+from ecs_composex.dynamodb.dynamodb_params import TABLE_ARN, TABLE_NAME
 from ecs_composex.dynamodb.dynamodb_template import create_dynamodb_template
-from ecs_composex.iam.import_sam_policies import get_access_types
 
 LOG = setup_logging()
 
@@ -73,8 +63,6 @@ class Table(ApiXResource):
     Class to represent a DynamoDB Table
     """
 
-    policies_scaffolds = get_access_types(MOD_KEY)
-
     def __init__(
         self,
         name: str,
@@ -104,15 +92,18 @@ class Table(ApiXResource):
         }
 
 
-def resolve_lookup(lookup_resources, settings):
+def resolve_lookup(
+    lookup_resources: List[Table], settings: ComposeXSettings, module: XResourceModule
+) -> None:
     """
     Lookup AWS Resource
 
     :param list[Table] lookup_resources:
     :param ecs_composex.common.settings.ComposeXSettings settings:
+    :param XResourceModule module:
     """
-    if not keyisset(MAPPINGS_KEY, settings.mappings):
-        settings.mappings[MAPPINGS_KEY] = {}
+    if not keyisset(module.mapping_key, settings.mappings):
+        settings.mappings[module.mapping_key] = {}
     for resource in lookup_resources:
         resource.lookup_resource(
             TABLE_ARN_RE,
@@ -120,8 +111,8 @@ def resolve_lookup(lookup_resources, settings):
             CfnTable.resource_type,
             "dynamodb:table",
         )
-        LOG.info(f"{RES_KEY}.{resource.name} - Matched to {resource.arn}")
-        settings.mappings[MAPPINGS_KEY].update(
+        LOG.info(f"{module.res_key}.{resource.name} - Matched to {resource.arn}")
+        settings.mappings[module.mapping_key].update(
             {resource.logical_name: resource.mappings}
         )
 
@@ -138,7 +129,7 @@ class XStack(ComposeXStack):
         x_resources = settings.compose_content[module.res_key].values()
         lookup_resources = set_lookup_resources(x_resources)
         if lookup_resources:
-            resolve_lookup(lookup_resources, settings)
+            resolve_lookup(lookup_resources, settings, module)
         new_resources = set_new_resources(x_resources, False)
         if new_resources:
             stack_template = build_template("Root template for DynamoDB tables")

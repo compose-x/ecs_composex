@@ -7,7 +7,7 @@ Module to handle import/create AWS Kinesis Data Streams
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
@@ -27,15 +27,7 @@ from ecs_composex.compose.x_resources.helpers import (
     set_new_resources,
     set_resources,
 )
-from ecs_composex.iam.import_sam_policies import get_access_types
-from ecs_composex.kinesis.kinesis_params import (
-    MAPPINGS_KEY,
-    MOD_KEY,
-    RES_KEY,
-    STREAM_ARN,
-    STREAM_ID,
-    STREAM_KMS_KEY_ID,
-)
+from ecs_composex.kinesis.kinesis_params import STREAM_ARN, STREAM_ID, STREAM_KMS_KEY_ID
 from ecs_composex.kinesis.kinesis_template import create_streams_template
 
 LOG = setup_logging()
@@ -71,8 +63,6 @@ class Stream(ApiXResource):
     Class to represent a Kinesis Stream
     """
 
-    policies_scaffolds = get_access_types(MOD_KEY)
-
     def __init__(
         self, name, definition, module: XResourceModule, settings: ComposeXSettings
     ):
@@ -102,15 +92,14 @@ class Stream(ApiXResource):
         }
 
 
-def resolve_lookup(lookup_resources, settings):
+def resolve_lookup(
+    lookup_resources: List[Stream], settings: ComposeXSettings, module: XResourceModule
+) -> None:
     """
-    Lookup AWS Resource
-
-    :param list[Stream] lookup_resources:
-    :param ecs_composex.common.settings.ComposeXSettings settings:
+    Lookup AWS Kinesis streams and creates CFN Mappings
     """
-    if not keyisset(MAPPINGS_KEY, settings.mappings):
-        settings.mappings[MAPPINGS_KEY] = {}
+    if not keyisset(module.mapping_key, settings.mappings):
+        settings.mappings[module.mapping_key] = {}
     for resource in lookup_resources:
         LOG.info(
             f"{resource.module.res_key}.{resource.logical_name} - Looking up AWS Resource"
@@ -121,13 +110,15 @@ def resolve_lookup(lookup_resources, settings):
             CfnStream.resource_type,
             "kinesis:stream",
         )
-        LOG.info(f"{RES_KEY}.{resource.name} - Matched to {resource.arn}")
-        settings.mappings[RES_KEY].update({resource.logical_name: resource.mappings})
+        LOG.info(f"{module.res_key}.{resource.name} - Matched to {resource.arn}")
+        settings.mappings[module.res_key].update(
+            {resource.logical_name: resource.mappings}
+        )
 
 
 class XStack(ComposeXStack):
     """
-    Class to represent
+    Class to represent Kinesis Data Streams stack
     """
 
     def __init__(
@@ -137,7 +128,7 @@ class XStack(ComposeXStack):
         x_resources = settings.compose_content[module.res_key].values()
         lookup_resources = set_lookup_resources(x_resources)
         if lookup_resources:
-            resolve_lookup(lookup_resources, settings)
+            resolve_lookup(lookup_resources, settings, module)
         new_resources = set_new_resources(x_resources, True)
         if new_resources:
             stack_template = create_streams_template(new_resources, settings)

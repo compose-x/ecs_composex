@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
-    from ecs_composex.mods_manager import XResourceModule
+    from ecs_composex.mods_manager import XResourceModule, ModManager
 
 
 from compose_x_common.compose_x_common import keyisset
@@ -155,11 +155,12 @@ class DatabaseXResource(NetworkXResource):
             },
         }
 
-    def to_ecs(self, settings, modules, root_stack=None) -> None:
+    def to_ecs(self, settings, modules: ModManager, root_stack=None) -> None:
         """
         Maps a database service to ECS services
 
         :param ecs_composex.common.settings.ComposeXSettings settings:
+        :param ModManager modules:
         :param ecs_composex.common.stacks.ComposeXStack root_stack:
         """
         if not self.mappings and self.cfn_resource:

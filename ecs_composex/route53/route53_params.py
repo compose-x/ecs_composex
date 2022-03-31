@@ -6,14 +6,9 @@
 Module for DNS Route53 parameters
 """
 import re
-from os import path
 
-from ecs_composex.common import NONALPHANUM
 from ecs_composex.common.cfn_params import Parameter
 
-MOD_KEY = path.basename(path.dirname(path.abspath(__file__)))
-RES_KEY = f"x-{path.basename(path.dirname(path.abspath(__file__)))}"
-MAPPINGS_KEY = NONALPHANUM.sub("", MOD_KEY)
 TAGGING_API_ID = "route53"
 
 ZONES_PATTERN = re.compile(r"^Z[0-9A-Z]+$")

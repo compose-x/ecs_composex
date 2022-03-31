@@ -14,7 +14,6 @@ if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
     from ecs_composex.mods_manager import XResourceModule
 
-
 from botocore.exceptions import ClientError
 from compose_x_common.aws.kms import KMS_KEY_ARN_RE
 from compose_x_common.compose_x_common import attributes_to_mapping, keyisset
@@ -24,16 +23,8 @@ from troposphere.kms import Alias, Key
 from ecs_composex.common import LOG, build_template
 from ecs_composex.common.cfn_conditions import define_stack_name
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.iam.import_sam_policies import get_access_types
 from ecs_composex.kms import metadata
-from ecs_composex.kms.kms_params import (
-    KMS_KEY_ALIAS_NAME,
-    KMS_KEY_ARN,
-    KMS_KEY_ID,
-    MAPPINGS_KEY,
-    MOD_KEY,
-    RES_KEY,
-)
+from ecs_composex.kms.kms_params import KMS_KEY_ALIAS_NAME, KMS_KEY_ARN, KMS_KEY_ID
 from ecs_composex.kms.kms_s3 import handle_bucket_kms
 from ecs_composex.kms.kms_template import create_kms_template
 from ecs_composex.resources_import import import_record_properties
@@ -112,8 +103,6 @@ class KmsKey(AwsEnvironmentResource, ApiXResource):
     """
     Class to represent a KMS Key
     """
-
-    policies_scaffolds = get_access_types(MOD_KEY)
 
     def __init__(
         self,

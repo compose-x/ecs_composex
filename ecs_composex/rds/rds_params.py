@@ -12,15 +12,8 @@ which it heavily relies onto.
 You can change the names *values* so you like so long as you keep it Alphanumerical [a-zA-Z0-9]
 """
 
-from os import path
-
 from ecs_composex.common.cfn_params import Parameter
-from ecs_composex.common.ecs_composex import X_KEY
 from ecs_composex.vpc.vpc_params import SG_ID_TYPE
-
-MOD_KEY = path.basename(path.dirname(path.abspath(__file__)))
-RES_KEY = f"{X_KEY}{MOD_KEY}"
-MAPPINGS_KEY = MOD_KEY
 
 DB_SECRET_POLICY_NAME = "RdsDbPolicy"
 DB_SECRET_T = "DBSecret"

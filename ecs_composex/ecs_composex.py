@@ -20,7 +20,7 @@ from importlib import import_module
 
 from troposphere import AWS_STACK_NAME, Ref
 
-from ecs_composex.cloudmap.cloudmap_stack import x_cloud_lookup_and_new_vpc
+from ecs_composex.cloudmap.cloudmap_helpers import x_cloud_lookup_and_new_vpc
 from ecs_composex.common import (
     LOG,
     NONALPHANUM,
@@ -131,7 +131,7 @@ def invoke_x_to_ecs(
 
 
 def apply_x_configs_to_ecs(
-    settings: ComposeXSettings, root_stack: ComposeXStack
+    settings: ComposeXSettings, root_stack: ComposeXStack, modules: ModManager
 ) -> None:
     """
     Function that evaluates only the x- resources of the root template and iterates over the resources.
@@ -142,13 +142,14 @@ def apply_x_configs_to_ecs(
 
     :param ecs_composex.common.settings.ComposeXSettings settings: The compose file content
     :param ecs_composex.ecs.ServicesStack root_stack: root stack for services.
+    :param ecs_composex.mod_manager.ModManager modules:
     """
     for resource in settings.x_resources:
         if (
             isinstance(resource, ServicesXResource)
             or issubclass(type(resource), ServicesXResource)
         ) and hasattr(resource, "to_ecs"):
-            resource.to_ecs(settings, root_stack)
+            resource.to_ecs(settings, modules, root_stack)
 
     for resource_stack in root_stack.stack_template.resources.values():
         if (
@@ -312,10 +313,7 @@ def generate_full_template(settings: ComposeXSettings):
     set_families_ecs_service(settings)
 
     apply_x_resource_to_x(settings, root_stack, vpc_stack, env_resources_only=True)
-    apply_x_configs_to_ecs(
-        settings,
-        root_stack,
-    )
+    apply_x_configs_to_ecs(settings, root_stack, modules=manager)
     apply_x_resource_to_x(settings, root_stack, vpc_stack)
     for family in settings.families.values():
         add_iam_dependency(iam_stack, family)

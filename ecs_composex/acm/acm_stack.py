@@ -10,29 +10,26 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from ecs_composex.acm.acm_stack_helpers import (
+    define_acm_certs,
+    resolve_lookup,
+    update_property_stack_with_resource,
+)
+
 if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
     from ecs_composex.mods_manager import XResourceModule
 
 import re
-import warnings
 
-from botocore.exceptions import ClientError
-from compose_x_common.aws.acm import ACM_ARN_RE
-from compose_x_common.compose_x_common import keyisset
 from troposphere import Ref, Tags
 from troposphere.certificatemanager import Certificate as CfnAcmCertificate
 from troposphere.certificatemanager import DomainValidationOption
 from troposphere.elasticloadbalancingv2 import Certificate as ElbCertificate
 from troposphere.elasticloadbalancingv2 import Listener, ListenerCertificate
 
-from ecs_composex.acm.acm_params import CERT_ARN, MAPPINGS_KEY, RES_KEY
-from ecs_composex.common import (
-    add_parameters,
-    add_update_mapping,
-    build_template,
-    setup_logging,
-)
+from ecs_composex.acm.acm_params import CERT_ARN
+from ecs_composex.common import LOG, build_template
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources.environment_x_resources import (
     AwsEnvironmentResource,
@@ -47,51 +44,6 @@ from ecs_composex.resources_import import (
     find_aws_resources_in_template_resources,
     import_record_properties,
 )
-
-LOG = setup_logging()
-
-
-def validate_certificate_status(certificate_definition):
-    """
-    Function to verify a few things for the ACM Certificate
-
-    :param dict certificate_definition:
-    :return:
-    """
-    validations = certificate_definition["DomainValidationOptions"]
-    for validation in validations:
-        if (
-            keyisset("ValidationStatus", validation)
-            and validation["ValidationStatus"] != "SUCCESS"
-        ):
-            raise ValueError(
-                f"The certificate {certificate_definition['CertificateArn']} is not valid."
-            )
-
-
-def get_cert_config(certificate, account_id, resource_id):
-    """
-    Retrieves the AWS ACM Certificate details using AWS API
-    """
-    client = certificate.lookup_session.client("acm")
-    cert_config = {}
-    try:
-        cert_r = client.describe_certificate(CertificateArn=certificate.arn)
-        client.get_certificate(CertificateArn=cert_r["Certificate"]["CertificateArn"])
-        cert_config[CERT_ARN] = cert_r["Certificate"]["CertificateArn"]
-        validate_certificate_status(cert_r["Certificate"])
-        return cert_config
-    except client.exceptions.RequestInProgressException:
-        LOG.error(f"Certificate {certificate.arn} has not yet been issued.")
-        raise
-    except client.exceptions.ResourceNotFoundException:
-        return None
-    except client.exceptions.InvalidArnException:
-        LOG.error(f"CertARN {certificate.arn} is invalid?!?")
-        raise
-    except ClientError as error:
-        LOG.error(error)
-        raise
 
 
 class Certificate(AwsEnvironmentResource):
@@ -192,139 +144,6 @@ class Certificate(AwsEnvironmentResource):
                     )
 
 
-def define_acm_certs(new_resources, acm_stack):
-    """
-    Function to create the certificates
-
-    :param list[Certificate] new_resources:
-    :param settings:
-    :param ecs_composex.common.stacks.ComposeXStack acm_stack:
-    """
-    for resource in new_resources:
-        resource.create_acm_cert()
-        acm_stack.stack_template.add_resource(resource.cfn_resource)
-        if not resource.outputs:
-            resource.generate_outputs()
-        if resource.outputs:
-            acm_stack.stack_template.add_output(resource.outputs)
-
-
-def resolve_lookup(lookup_resources, settings):
-    """
-    Lookup the ACM certificates in AWS and creates the CFN mappings for them
-
-    :param list[Certificate] lookup_resources: List of resources to lookup
-    :param ecs_composex.common.settings.ComposeXSettings settings:
-    """
-    if not keyisset(MAPPINGS_KEY, settings.mappings):
-        settings.mappings[MAPPINGS_KEY] = {}
-    for resource in lookup_resources:
-        resource.lookup_resource(
-            ACM_ARN_RE,
-            get_cert_config,
-            CfnAcmCertificate.resource_type,
-            "acm:certificate",
-        )
-        resource.init_outputs()
-        resource.generate_cfn_mappings_from_lookup_properties()
-        resource.generate_outputs()
-        LOG.info(
-            f"{resource.module.res_key}.{resource.name} - Matched certificate {resource.arn}"
-        )
-        settings.mappings[MAPPINGS_KEY].update(
-            {resource.logical_name: resource.mappings}
-        )
-
-
-def update_property_stack_with_resource(
-    x_certificate, property_stack, properties_to_update, property_name, settings
-):
-    """
-    Function to associate the resource
-
-    :param Certificate x_certificate:
-    :param ecs_composex.common.stacks.ComposeXStack property_stack:
-    :param list properties_to_update:
-    :param str property_name:
-    :param ecs_composex.common.settings.ComposeXSettings settings:
-    """
-    for prop_to_update in properties_to_update:
-        if not hasattr(prop_to_update, property_name):
-            raise AttributeError(
-                f"{prop_to_update} does not have {property_name} set !?"
-            )
-        property_value = getattr(prop_to_update, property_name)
-        if not isinstance(property_value, str):
-            continue
-        if not property_value.startswith(RES_KEY):
-            continue
-        if not property_value.find(RES_KEY) >= 0:
-            LOG.info(
-                f"{RES_KEY} - {property_value} is not a pointer to x-acm. {property_value}"
-            )
-        else:
-            cert_name = property_value.split(r"::")[-1]
-            if x_certificate.name == cert_name:
-                update_stack_with_resource_settings(
-                    property_stack,
-                    x_certificate,
-                    prop_to_update,
-                    property_name,
-                    settings,
-                )
-
-
-def update_stack_with_resource_settings(
-    property_stack, the_resource, the_property, property_name, settings
-):
-    """
-    Assigns the CFN pointer to the value to replace.
-    If it is a new certificate, it will add the parameter to get the cert ARN and set the parameter stack value
-    If it is a Lookup certificate, it will add the mapping to the stack and set FindInMap to the certificate ARN
-
-    :param ComposeXStack property_stack:
-    :param Certificate the_resource:
-    :param the_property:
-    :param property_name:
-    :param ecs_composex.common.settings.ComposeXSettings settings:
-    """
-    if the_resource.cfn_resource:
-        add_parameters(
-            property_stack.stack_template,
-            [the_resource.attributes_outputs[CERT_ARN]["ImportParameter"]],
-        )
-        property_stack.Parameters.update(
-            {
-                the_resource.attributes_outputs[CERT_ARN][
-                    "ImportParameter"
-                ].title: the_resource.attributes_outputs[CERT_ARN]["ImportValue"]
-            }
-        )
-        setattr(
-            the_property,
-            property_name,
-            Ref(the_resource.attributes_outputs[CERT_ARN]["ImportParameter"]),
-        )
-    elif the_resource.mappings:
-        if keyisset(
-            the_resource.module.mapping_key, property_stack.stack_template.mappings
-        ):
-            property_stack.stack_template.mappings[the_resource.module.mapping_key][
-                the_resource.logical_name
-            ].update(the_resource.mappings)
-        else:
-            add_update_mapping(
-                property_stack.stack_template,
-                the_resource.module.mapping_key,
-                settings.mappings[the_resource.module.mapping_key],
-            )
-        setattr(
-            the_property,
-            property_name,
-            the_resource.attributes_outputs[CERT_ARN]["ImportValue"],
-        )
-
-
 class XStack(ComposeXStack):
     """
     Root stack for x-acm new certificates
@@ -351,7 +170,7 @@ class XStack(ComposeXStack):
         else:
             self.is_void = True
         if lookup_resources:
-            resolve_lookup(lookup_resources, settings)
+            resolve_lookup(lookup_resources, settings, module)
         self.module_name = module.mod_key
         for resource in x_resources:
             resource.stack = self

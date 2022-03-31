@@ -13,13 +13,9 @@ if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
     from ecs_composex.mods_manager import XResourceModule
 
-from botocore.exceptions import ClientError
-from compose_x_common.aws.sqs import SQS_QUEUE_ARN_RE
-from compose_x_common.compose_x_common import keyisset
 from troposphere import GetAtt, Ref
-from troposphere.sqs import Queue as CfnQueue
 
-from ecs_composex.common import add_update_mapping, build_template, setup_logging
+from ecs_composex.common import add_update_mapping, build_template
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources.api_x_resources import ApiXResource
 from ecs_composex.compose.x_resources.helpers import (
@@ -27,63 +23,10 @@ from ecs_composex.compose.x_resources.helpers import (
     set_new_resources,
     set_resources,
 )
-from ecs_composex.iam.import_sam_policies import get_access_types
 from ecs_composex.sqs.sqs_ecs_scaling import handle_service_scaling
-from ecs_composex.sqs.sqs_params import (
-    SQS_ARN,
-    SQS_KMS_KEY,
-    SQS_NAME,
-    SQS_URL,
-    TAGGING_API_ID,
-)
+from ecs_composex.sqs.sqs_helpers import resolve_lookup
+from ecs_composex.sqs.sqs_params import SQS_ARN, SQS_KMS_KEY, SQS_NAME, SQS_URL
 from ecs_composex.sqs.sqs_template import render_new_queues
-
-LOG = setup_logging()
-
-
-def get_queue_config(queue, account_id, resource_id):
-    """
-
-    :param ecs_composex.sqs.sqs_stack.Queue queue:
-    :param account_id:
-    :param resource_id:
-    :return:
-    """
-    queue_config = {SQS_NAME: resource_id}
-    client = queue.lookup_session.client("sqs")
-    try:
-        queue_config[SQS_URL] = client.get_queue_url(
-            QueueName=resource_id, QueueOwnerAWSAccountId=account_id
-        )["QueueUrl"]
-        try:
-            encryption_config_r = client.get_queue_attributes(
-                QueueUrl=queue_config[SQS_URL],
-                AttributeNames=["KmsMasterKeyId", "QueueArn"],
-            )
-            queue_config[SQS_ARN] = encryption_config_r["Attributes"]["QueueArn"]
-            if keyisset("Attributes", encryption_config_r) and keyisset(
-                "KmsMasterKeyId", encryption_config_r["Attributes"]
-            ):
-                kms_key_id = encryption_config_r["Attributes"]["KmsMasterKeyId"]
-                if kms_key_id.startswith("arn:aws"):
-                    queue_config[SQS_KMS_KEY] = encryption_config_r["Attributes"][
-                        "KmsMasterKeyId"
-                    ]
-                else:
-                    LOG.warning(
-                        "The KMS Key provided is not an ARN. Implementation requires full ARN today"
-                    )
-            else:
-                LOG.info(f"{queue.module.res_key}.{queue.name} - No KMS encryption.")
-        except client.exceptions.InvalidAttributeName as error:
-            LOG.error("Failed to retrieve the Queue attributes")
-            LOG.error(error)
-        return queue_config
-    except client.exceptions.QueueDoesNotExist:
-        return None
-    except ClientError as error:
-        LOG.error(error)
-        raise
 
 
 class Queue(ApiXResource):
@@ -125,37 +68,6 @@ class Queue(ApiXResource):
                 "QueueName",
             ),
         }
-
-
-def resolve_lookup(
-    lookup_resources, settings: ComposeXSettings, module: XResourceModule
-) -> None:
-    """
-    Lookup AWS Resource
-
-    :param list[Queue] lookup_resources:
-    :param ecs_composex.common.settings.ComposeXSettings settings:
-    :param XResourceModule module:
-    """
-    if not keyisset(module.mapping_key, settings.mappings):
-        settings.mappings[module.mapping_key] = {}
-    for resource in lookup_resources:
-        resource.lookup_resource(
-            SQS_QUEUE_ARN_RE,
-            get_queue_config,
-            CfnQueue.resource_type,
-            TAGGING_API_ID,
-        )
-        settings.mappings[module.mapping_key].update(
-            {resource.logical_name: resource.mappings}
-        )
-        LOG.info(
-            f"{module.res_key}.{resource.name} - Matched AWS Resource {resource.arn}"
-        )
-        if keyisset(SQS_KMS_KEY, resource.lookup_properties):
-            LOG.info(
-                f"{module.res_key}.{resource.name} - Identified CMK - {resource.lookup_properties[SQS_KMS_KEY]}"
-            )
 
 
 class XStack(ComposeXStack):

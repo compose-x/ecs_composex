@@ -11,7 +11,8 @@ from troposphere import GetAtt, Output, Ref
 from troposphere.cloudwatch import Alarm as CWAlarm
 from troposphere.cloudwatch import CompositeAlarm, MetricDimension
 
-from ecs_composex.alarms.alarms_stack import Alarm, create_alarms
+from ecs_composex.alarms.alarms_helpers import create_alarms
+from ecs_composex.alarms.alarms_stack import Alarm
 from ecs_composex.common import LOG, add_outputs, add_parameters, add_update_mapping
 from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME, SERVICE_SCALING_TARGET

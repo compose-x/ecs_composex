@@ -7,43 +7,36 @@ Main module for x-route53
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
     from ecs_composex.mods_manager import XResourceModule
-
-
-import warnings
 
 from compose_x_common.compose_x_common import keyisset, set_else_none
 from troposphere import Ref
 from troposphere.route53 import HostedZone as CfnHostedZone
 
 from ecs_composex.acm.acm_stack import Certificate
-from ecs_composex.common import add_update_mapping, build_template, setup_logging
+from ecs_composex.common import LOG, add_update_mapping, build_template
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.elbv2.elbv2_stack import Elbv2
-
-from ..compose.x_resources.environment_x_resources import AwsEnvironmentResource
-from ..compose.x_resources.helpers import (
+from ecs_composex.compose.x_resources.environment_x_resources import (
+    AwsEnvironmentResource,
+)
+from ecs_composex.compose.x_resources.helpers import (
     set_lookup_resources,
     set_new_resources,
     set_resources,
 )
-from .route53_acm import handle_acm_records
-from .route53_elbv2 import handle_elbv2_records
-from .route53_params import (
+from ecs_composex.elbv2.elbv2_stack import Elbv2
+from ecs_composex.route53.route53_acm import handle_acm_records
+from ecs_composex.route53.route53_elbv2 import handle_elbv2_records
+from ecs_composex.route53.route53_params import (
     LAST_DOT_RE,
-    MAPPINGS_KEY,
-    MOD_KEY,
     PUBLIC_DNS_ZONE_ID,
     PUBLIC_DNS_ZONE_NAME,
-    RES_KEY,
     ZONES_PATTERN,
 )
-
-LOG = setup_logging()
 
 
 def lookup_hosted_zone(zone, session, private, zone_id=None) -> dict:
@@ -61,7 +54,7 @@ def lookup_hosted_zone(zone, session, private, zone_id=None) -> dict:
         if zone_id:
             if not ZONES_PATTERN.match(zone_id):
                 raise ValueError(
-                    f"{RES_KEY}.{zone.name} - HostedZoneId is not valid. Got",
+                    f"{zone.module.res_key}.{zone.name} - HostedZoneId is not valid. Got",
                     zone_id,
                     "Expected to match",
                     ZONES_PATTERN.pattern,
@@ -203,9 +196,9 @@ class HostedZone(AwsEnvironmentResource):
 
         :param ComposeXStack root_stack: The root stack
         """
-        if MOD_KEY not in root_stack.stack_template.resources:
+        if self.module.mapping_key not in root_stack.stack_template.resources:
             stack_template = build_template(self.stack.stack_title)
-            super(XStack, self.stack).__init__(MOD_KEY, stack_template)
+            super(XStack, self.stack).__init__(self.module.mapping_key, stack_template)
             self.stack.is_void = False
             root_stack.stack_template.add_resource(self.stack)
 
@@ -250,25 +243,29 @@ class HostedZone(AwsEnvironmentResource):
                     )
 
 
-def resolve_lookup(lookup_resources, settings):
+def resolve_lookup(
+    lookup_resources: List[HostedZone],
+    settings: ComposeXSettings,
+    module: XResourceModule,
+) -> None:
     """
     Lookup the ACM certificates in AWS and creates the CFN mappings for them
 
     :param list[HostedZone] lookup_resources: List of resources to lookup
     :param ecs_composex.common.settings.ComposeXSettings settings:
     """
-    if not keyisset(MAPPINGS_KEY, settings.mappings):
-        settings.mappings[MAPPINGS_KEY] = {}
+    if not keyisset(module.mapping_key, settings.mappings):
+        settings.mappings[module.mapping_key] = {}
     for resource in lookup_resources:
         resource.lookup_resource(
             ZONES_PATTERN, lookup_hosted_zone, CfnHostedZone.resource_type, ""
         )
-        settings.mappings[MAPPINGS_KEY].update(
+        settings.mappings[module.mapping_key].update(
             {resource.logical_name: resource.mappings}
         )
         resource.init_outputs()
         resource.generate_outputs()
-    LOG.debug(settings.mappings[MAPPINGS_KEY])
+    LOG.debug(settings.mappings[module.mapping_key])
 
 
 class XStack(ComposeXStack):
@@ -293,14 +290,13 @@ class XStack(ComposeXStack):
         set_resources(settings, HostedZone, module)
         x_resources = settings.compose_content[module.res_key].values()
         lookup_resources = set_lookup_resources(x_resources)
+        if lookup_resources:
+            resolve_lookup(lookup_resources, settings, module)
         new_resources = set_new_resources(x_resources, False)
-        for resource in x_resources:
-            resource.stack = self
         if new_resources:
             stack_template = build_template(self.stack_title)
-            super().__init__(name, stack_template, **kwargs)
+            super().__init__(module.mapping_key, stack_template, **kwargs)
         else:
             self.is_void = True
-        if lookup_resources:
-            resolve_lookup(lookup_resources, settings)
-        self.module_name = MOD_KEY
+        for resource in x_resources:
+            resource.stack = self
