@@ -46,15 +46,6 @@ def get_alarm_actions(alarm):
     return okay_actions, alarm_actions
 
 
-def handle_services_alarm_access(alarm):
-    """
-    Function to grant describe access onto the alarm
-
-    :param alarm:
-    :return:
-    """
-
-
 def add_service_actions(
     alarm, alarms_stack, target, scaling_in_policy, scaling_out_policy
 ):
@@ -307,7 +298,6 @@ def set_services_alarms(settings):
     Function to create and assign alarms to services
 
     :param ecs_composex.common.settings.ComposeXSettings settings:
-    :return:
     """
     for family in settings.families.values():
         if not family.predefined_alarms:
@@ -330,7 +320,7 @@ def set_services_alarms(settings):
                     alarm_name, alarm_definition, family.logical_name, settings
                 )
                 family_alarms.append(the_alarm)
-        create_alarms(family.template, settings, family_alarms)
+        create_alarms(family.template, family_alarms)
         for alarm in family_alarms:
             dimensions = [
                 MetricDimension(**{"Name": "ClusterName", "Value": Ref(CLUSTER_NAME)}),

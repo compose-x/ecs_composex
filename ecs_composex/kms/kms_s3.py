@@ -45,7 +45,7 @@ def handle_bucket_kms(kms_key, bucket, bucket_stack, settings):
     assigns the value accordingly in the template
 
     :param ecs_composex.kms.kms_stack.KmsKey kms_key:
-    :param ecs_composex.s3.s3_stack.Bucket bucket:
+    :param ecs_composex.s3.s3_bucket.Bucket bucket:
     :param ecs_composex.s3.s3_stack.XStack bucket_stack:
     :param ecs_composex.common.settings.ComposeXSettings settings: unused
     :return:

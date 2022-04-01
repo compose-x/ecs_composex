@@ -4,10 +4,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 if TYPE_CHECKING:
     from ecs_composex.mods_manager import XResourceModule
+    from ecs_composex.common.settings import ComposeXSettings
+    from ecs_composex.vpc.vpc_stack import XStack as VpcStack
+    from boto3.session import Session
+    from .cloudmap_stack import PrivateNamespace
 
 from compose_x_common.aws.cloudmap import get_all_dns_namespaces
 from compose_x_common.compose_x_common import keyisset
@@ -15,7 +19,6 @@ from troposphere.servicediscovery import PrivateDnsNamespace
 
 from ecs_composex.cloudmap.cloudmap_params import (
     LAST_DOT_RE,
-    MAPPINGS_KEY,
     PRIVATE_DNS_ZONE_ID,
     PRIVATE_DNS_ZONE_NAME,
     PRIVATE_NAMESPACE_ID,
@@ -33,8 +36,8 @@ def resolve_lookup(lookup_resources, settings, module: XResourceModule):
     :param ecs_composex.common.settings.ComposeXSettings settings:
     :param XResourceModule module:
     """
-    if not keyisset(MAPPINGS_KEY, settings.mappings):
-        settings.mappings[MAPPINGS_KEY] = {}
+    if not keyisset(module.mapping_key, settings.mappings):
+        settings.mappings[module.mapping_key] = {}
     for resource in lookup_resources:
         resource.lookup_resource(
             ZONES_PATTERN,
@@ -45,13 +48,13 @@ def resolve_lookup(lookup_resources, settings, module: XResourceModule):
         resource.init_outputs()
         resource.generate_cfn_mappings_from_lookup_properties()
         resource.generate_outputs()
-        settings.mappings[MAPPINGS_KEY].update(
+        settings.mappings[module.mapping_key].update(
             {resource.logical_name: resource.mappings}
         )
-    LOG.debug(settings.mappings[MAPPINGS_KEY])
+    LOG.debug(settings.mappings[module.mapping_key])
 
 
-def x_cloud_lookup_and_new_vpc(settings, vpc_stack):
+def x_cloud_lookup_and_new_vpc(settings: ComposeXSettings, vpc_stack: VpcStack):
     """
     Function to ensure there is no x-cloudmap.Lookup resource and Compose-X is creating a new VPC.
     The Namespace (CloudMap PrivateNamespace) cannot span across multiple VPC
@@ -75,7 +78,7 @@ def x_cloud_lookup_and_new_vpc(settings, vpc_stack):
         )
 
 
-def detect_duplicas(x_resources: list):
+def detect_duplicas(x_resources: List[PrivateNamespace]) -> None:
     """
     Function to ensure there is no multiple resources with the same zone name
 
@@ -95,7 +98,9 @@ def detect_duplicas(x_resources: list):
         )
 
 
-def lookup_service_discovery_namespace(zone, session, ns_id=None):
+def lookup_service_discovery_namespace(
+    zone: PrivateNamespace, session: Session, ns_id: str = None
+) -> dict:
     """
     Function to find and get the PrivateDnsNamespace properties needed by other resources
 

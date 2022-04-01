@@ -50,9 +50,7 @@ def map_expression_to_alarms(expression: str, alarms: List[Alarm]):
     return alarms_mapping
 
 
-def create_composite_alarm_expression(
-    mapping: dict, expression: str, alarms: List[Alarm]
-) -> Join:
+def create_composite_alarm_expression(mapping: dict, expression: str) -> Join:
     """
     Function to create the composite alarms
 
@@ -63,7 +61,7 @@ def create_composite_alarm_expression(
     """
     rendered_bits = []
     func_re = re.compile(
-        r"((?:\({1,})?(?:ALARM|OK|INSUFFICIENT_DATA))(?:\()([\S][^\(\)]+)(?:\))(\){1,})?"
+        r"((?:\(+)?(?:ALARM|OK|INSUFFICIENT_DATA))\(?([\S][^()]+)(?:\))(\)+)?"
     )
     for split in expression.split(" "):
         if func_re.match(split):
@@ -96,9 +94,7 @@ def create_composite_alarm(alarm: Alarm, alarms: List[Alarm]) -> None:
             alarm.parameters,
         )
     mapping = map_expression_to_alarms(eval_expression, alarms)
-    composite_expression = create_composite_alarm_expression(
-        mapping, eval_expression, alarms
-    )
+    composite_expression = create_composite_alarm_expression(mapping, eval_expression)
     stack_id = Select(4, Split("-", Select(2, Split("/", Ref(AWS_STACK_ID)))))
     alarm_name = f"${{{AWS_REGION}}}-${{StackId}}-CompositeAlarmFor" + "".join(
         [a.title for a in mapping.values()]
@@ -143,9 +139,7 @@ def add_composite_alarms(template: Template, new_alarms: List[Alarm]) -> None:
             add_outputs(template, alarm.outputs)
 
 
-def create_alarms(
-    template: Template, settings: ComposeXSettings, new_alarms: List[Alarm]
-) -> None:
+def create_alarms(template: Template, new_alarms: List[Alarm]) -> None:
     """
     Main function to create new alarms
     Rules out CompositeAlarms first, creates "Simple" alarms, and then link these to ComopsiteAlarms if so declared.
