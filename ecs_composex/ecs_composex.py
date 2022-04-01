@@ -275,13 +275,13 @@ def generate_full_template(settings: ComposeXSettings):
     :rtype: root_template, list
     """
     deprecation_warning(settings)
-    manager = ModManager(settings)
-    manager.modules_repr()
     LOG.info(
         f"Service families to process {[family.name for family in settings.families.values()]}"
     )
     root_stack = create_root_stack(settings)
-    add_ecs_cluster(root_stack, settings, manager)
+    add_ecs_cluster(root_stack, settings)
+    manager = ModManager(settings)
+    manager.modules_repr()
     iam_stack = root_stack.stack_template.add_resource(IamStack("iam", settings))
     add_x_resources(root_stack, settings, manager)
     add_compose_families(root_stack, settings)

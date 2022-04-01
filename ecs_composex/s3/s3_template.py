@@ -2,23 +2,36 @@
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2022 John Mille <john@compose-x.io>
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, List, Union
+
+if TYPE_CHECKING:
+    from ecs_composex.s3.s3_bucket import Bucket
+    from troposphere import NoValue
+    from troposphere import Template
+
 from compose_x_common.compose_x_common import keyisset
 from troposphere import (
     AWS_ACCOUNT_ID,
     AWS_NO_VALUE,
     AWS_PARTITION,
     AWS_REGION,
+    MAX_OUTPUTS,
     Ref,
     Sub,
     s3,
 )
 
-from ecs_composex.common import LOG
+from ecs_composex.common import LOG, build_template
+from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.resource_settings import generate_resource_permissions
 from ecs_composex.resources_import import import_record_properties
 
+COMPOSEX_MAX_OUTPUTS = MAX_OUTPUTS - 10
 
-def define_bucket_name(bucket):
+
+def define_bucket_name(bucket: Bucket) -> Union[str, NoValue]:
     """
     Function to automatically add Region and Account ID to the bucket name.
     If set, will use a user-defined separator, else, `-`
@@ -64,12 +77,11 @@ def define_bucket_name(bucket):
     return Ref(AWS_NO_VALUE)
 
 
-def generate_bucket(bucket):
+def generate_bucket(bucket: Bucket) -> None:
     """
     Function to generate the S3 bucket object
 
-    :param ecs_composex.s3.s3_stack.Bucket bucket:
-    :return:
+    :param ecs_composex.s3.s3_bucket.Bucket bucket:
     """
     bucket_name = define_bucket_name(bucket)
     final_bucket_name = (
@@ -85,7 +97,9 @@ def generate_bucket(bucket):
     bucket.cfn_resource = s3.Bucket(bucket.logical_name, **props)
 
 
-def handle_predefined_policies(bucket, param_key, managed_policies_key, statement):
+def handle_predefined_policies(
+    bucket: Bucket, param_key: str, managed_policies_key: str, statement: list
+) -> None:
     """
     Function to configure and add statements for bucket policy based on predefined Bucket Policies
 
@@ -111,7 +125,9 @@ def handle_predefined_policies(bucket, param_key, managed_policies_key, statemen
         statement += policies[policy_name].PolicyDocument["Statement"]
 
 
-def handle_user_defined_policies(bucket, param_key, user_policies_key, statement):
+def handle_user_defined_policies(
+    bucket: Bucket, param_key: str, user_policies_key: str, statement: list
+):
     """
     Function to add user defined policies
 
@@ -138,11 +154,11 @@ def handle_user_defined_policies(bucket, param_key, user_policies_key, statement
         statement += policy.PolicyDocument["Statement"]
 
 
-def implement_bucket_policy(bucket, param_key, bucket_template):
+def implement_bucket_policy(bucket: Bucket, param_key: str, bucket_template: Template):
     """
     Function to parse the input parameter for the Bucket Policy, and generate the policy accordingly
 
-    :param ecs_composex.s3.s3_stack.Bucket bucket:
+    :param ecs_composex.s3.s3_bucket.Bucket bucket:
     :param str param_key: The MacroParameters sub parameter to evaluate
     :param troposphere.Template bucket_template:
     """
@@ -168,7 +184,7 @@ def implement_bucket_policy(bucket, param_key, bucket_template):
 def evaluate_parameters(bucket, bucket_template):
     """
 
-    :param ecs_composex.s3.s3_stack.Bucket bucket:
+    :param ecs_composex.s3.s3_bucket.Bucket bucket:
     :param troposphere.Template bucket_template:
     """
     if bucket.mappings or bucket.use:
@@ -180,3 +196,38 @@ def evaluate_parameters(bucket, bucket_template):
     for name, function in parameters.items():
         if keyisset(name, bucket.parameters) and function:
             function(bucket, name, bucket_template)
+
+
+def create_s3_template(new_buckets: List[Bucket], template: Template) -> Template:
+    """
+    Function to create the root S3 template.
+
+    :param list new_buckets:
+    :param troposphere.Template template:
+    :return:
+    """
+    mono_template = False
+    if len(list(new_buckets)) <= COMPOSEX_MAX_OUTPUTS:
+        mono_template = True
+
+    for bucket in new_buckets:
+        generate_bucket(bucket)
+        if bucket.cfn_resource:
+            bucket.init_outputs()
+            bucket.generate_outputs()
+            bucket_template = template
+            if mono_template:
+                bucket_template.add_resource(bucket.cfn_resource)
+                bucket_template.add_output(bucket.outputs)
+            elif not mono_template:
+                bucket_template = build_template(
+                    f"Template for S3 Bucket {bucket.name}"
+                )
+                bucket_template.add_resource(bucket.cfn_resource)
+                bucket_template.add_output(bucket.outputs)
+                bucket_stack = ComposeXStack(
+                    bucket.logical_name, stack_template=bucket_template
+                )
+                template.add_resource(bucket_stack)
+            evaluate_parameters(bucket, bucket_template)
+    return template

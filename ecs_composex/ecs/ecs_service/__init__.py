@@ -11,7 +11,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ecs_composex.common.settings import ComposeXSettings
     from ecs_composex.ecs.ecs_family import ComposeFamily
 
 from troposphere import If, NoValue, Ref
@@ -57,9 +56,7 @@ class EcsService(object):
         self.registries = []
         self.service_tags = []
 
-    def generate_service_definition(
-        self, family: ComposeFamily, settings: ComposeXSettings
-    ) -> None:
+    def generate_service_definition(self, family: ComposeFamily) -> None:
         """
         Function to generate the Service definition.
         This is the last step in defining the service, after all other settings have been prepared.

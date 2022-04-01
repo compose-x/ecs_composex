@@ -8,7 +8,7 @@ Manage Creation/Deletion of AWS KMS Keys
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
@@ -23,25 +23,27 @@ from troposphere.kms import Alias, Key
 from ecs_composex.common import LOG, build_template
 from ecs_composex.common.cfn_conditions import define_stack_name
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.kms import metadata
-from ecs_composex.kms.kms_params import KMS_KEY_ALIAS_NAME, KMS_KEY_ARN, KMS_KEY_ID
-from ecs_composex.kms.kms_s3 import handle_bucket_kms
-from ecs_composex.kms.kms_template import create_kms_template
-from ecs_composex.resources_import import import_record_properties
-from ecs_composex.s3.s3_stack import Bucket
-from ecs_composex.sqs.sqs_stack import Queue
-
-from ..compose.x_resources.api_x_resources import ApiXResource
-from ..compose.x_resources.environment_x_resources import AwsEnvironmentResource
-from ..compose.x_resources.helpers import (
+from ecs_composex.compose.x_resources.api_x_resources import ApiXResource
+from ecs_composex.compose.x_resources.environment_x_resources import (
+    AwsEnvironmentResource,
+)
+from ecs_composex.compose.x_resources.helpers import (
     set_lookup_resources,
     set_new_resources,
     set_resources,
 )
-from .kms_sqs import handle_queue_kms
+from ecs_composex.kms import metadata
+from ecs_composex.kms.kms_ecs_cluster import handle_ecs_cluster
+from ecs_composex.kms.kms_params import KMS_KEY_ALIAS_NAME, KMS_KEY_ARN, KMS_KEY_ID
+from ecs_composex.kms.kms_s3 import handle_bucket_kms
+from ecs_composex.kms.kms_sqs import handle_queue_kms
+from ecs_composex.kms.kms_template import create_kms_template
+from ecs_composex.resources_import import import_record_properties
+from ecs_composex.s3.s3_bucket import Bucket
+from ecs_composex.sqs.sqs_stack import Queue
 
 
-def get_key_config(key, account_id, resource_id):
+def get_key_config(key, account_id: str, resource_id: str) -> Union[dict, None]:
     """
 
     :param Key key:
@@ -70,7 +72,7 @@ def get_key_config(key, account_id, resource_id):
         raise
 
 
-def define_default_key_policy():
+def define_default_key_policy() -> dict:
     """
     Function to return the default KMS management policy allowing root account access.
     :return: policy
@@ -185,6 +187,7 @@ class KmsKey(AwsEnvironmentResource, ApiXResource):
         :param ecs_composex.common.settings.ComposeXSettings settings:
         :param ComposeXStack root_stack: Not used. Present for general compatibility
         """
+        handle_ecs_cluster(settings, self)
         for resource in settings.get_x_resources(include_mappings=False):
             if not resource.cfn_resource:
                 continue

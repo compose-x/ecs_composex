@@ -11,138 +11,35 @@ from typing import TYPE_CHECKING, List
 
 if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
-    from ecs_composex.mods_manager import XResourceModule, ModManager
-
+    from ecs_composex.mods_manager import XResourceModule
 
 from botocore.exceptions import ClientError
-from compose_x_common.aws import get_account_id
-from compose_x_common.aws.kms import (
-    KMS_ALIAS_ARN_RE,
-    KMS_KEY_ARN_RE,
-    get_key_from_alias,
-)
 from compose_x_common.aws.s3 import S3_BUCKET_ARN_RE
 from compose_x_common.compose_x_common import attributes_to_mapping, keyisset
-from troposphere import MAX_OUTPUTS, GetAtt, Ref
 from troposphere.s3 import Bucket as CfnBucket
 
-from ecs_composex.common import build_template, setup_logging
-from ecs_composex.common.aws import find_aws_resource_arn_from_tags_api
+from ecs_composex.common import LOG, build_template
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.compose.x_resources.api_x_resources import ApiXResource
 from ecs_composex.compose.x_resources.helpers import (
     set_lookup_resources,
     set_new_resources,
     set_resources,
 )
-from ecs_composex.resource_settings import link_resource_to_services
+from ecs_composex.s3.s3_bucket import Bucket
 from ecs_composex.s3.s3_params import (
     CONTROL_CLOUD_ATTR_MAPPING,
     S3_BUCKET_ARN,
-    S3_BUCKET_DOMAIN_NAME,
     S3_BUCKET_KMS_KEY,
     S3_BUCKET_NAME,
 )
-from ecs_composex.s3.s3_template import evaluate_parameters, generate_bucket
-
-COMPOSEX_MAX_OUTPUTS = MAX_OUTPUTS - 10
-LOG = setup_logging()
+from ecs_composex.s3.s3_template import create_s3_template
 
 
-def create_s3_template(new_buckets, template):
-    """
-    Function to create the root S3 template.
-
-    :param list new_buckets:
-    :param troposphere.Template template:
-    :return:
-    """
-    mono_template = False
-    if len(list(new_buckets)) <= COMPOSEX_MAX_OUTPUTS:
-        mono_template = True
-
-    for bucket in new_buckets:
-        generate_bucket(bucket)
-        if bucket.cfn_resource:
-            bucket.init_outputs()
-            bucket.generate_outputs()
-            bucket_template = template
-            if mono_template:
-                bucket_template.add_resource(bucket.cfn_resource)
-                bucket_template.add_output(bucket.outputs)
-            elif not mono_template:
-                bucket_template = build_template(
-                    f"Template for S3 Bucket {bucket.title}"
-                )
-                bucket_template.add_resource(bucket.cfn_resource)
-                bucket_template.add_output(bucket.outputs)
-                bucket_stack = ComposeXStack(
-                    bucket.logical_name, stack_template=bucket_template
-                )
-                template.add_resource(bucket_stack)
-            evaluate_parameters(bucket, bucket_template)
-    return template
-
-
-def validate_bucket_kms_key(kms_key, lookup_session):
-    """
-    Function to evaluate the KMS Key ID and ensure we return a KMS Key ARN
-
-    :param str kms_key:
-    :param boto3.session.Session lookup_session: Settings session
-    :return: The KMS Key ARN or None
-    :rtype: str
-    """
-    if KMS_KEY_ARN_RE.match(kms_key):
-        return kms_key
-    elif KMS_ALIAS_ARN_RE.match(kms_key):
-        key_alias = KMS_ALIAS_ARN_RE.match(kms_key).group("key_alias")
-        key = get_key_from_alias(key_alias, session=lookup_session)
-        if key and keyisset("KeyArn", key):
-            return key["KeyArn"]
-    elif kms_key == "aws/s3":
-        LOG.warn("KMS Key used the aws/s3 default key.")
-        key = get_key_from_alias("alias/aws/s3", session=lookup_session)
-        if key and keyisset("KeyArn", key):
-            return key["KeyArn"]
-    return None
-
-
-def get_bucket_kms_key_from_config(bucket, bucket_config, session):
-    """
-    Function to get the KMS Encryption key if defined.
-
-    :param ecs_composex.s3.s3_stack.Bucket bucket:
-    :param dict bucket_config:
-    :param boto3.session.Session session: Settings session
-    :return: The KMS Key ARN or None
-    :rtype: str
-    """
-    rules = (
-        []
-        if not (
-            keyisset("ServerSideEncryptionConfiguration", bucket_config)
-            and keyisset("Rules", bucket_config["ServerSideEncryptionConfiguration"])
-        )
-        else bucket_config["ServerSideEncryptionConfiguration"]["Rules"]
-    )
-    for rule in rules:
-        if keyisset("ApplyServerSideEncryptionByDefault", rule):
-            settings = rule["ApplyServerSideEncryptionByDefault"]
-            if (
-                keyisset("SSEAlgorithm", settings)
-                and settings["SSEAlgorithm"] == "aws:kms"
-                and keyisset("KMSMasterKeyID", settings)
-            ):
-                return validate_bucket_kms_key(settings["KMSMasterKeyID"], session)
-    return None
-
-
-def get_bucket_config(bucket, resource_id):
+def get_bucket_config(bucket: Bucket, resource_id: str) -> dict:
     """
 
-    :param Bucket bucket:
-    :return:
+    :param ecs_composex.s3.s3_bucket.Bucket bucket:
+    :param str resource_id:
     """
     bucket_config = {
         S3_BUCKET_NAME: resource_id,
@@ -169,128 +66,6 @@ def get_bucket_config(bucket, resource_id):
             raise
         LOG.warning(error.response["Error"]["Message"])
     return bucket_config
-
-
-class Bucket(ApiXResource):
-    """
-    Class for S3 bucket.
-    """
-
-    def __init__(
-        self, name, definition, module: XResourceModule, settings: ComposeXSettings
-    ):
-        super().__init__(name, definition, module, settings)
-        self.cloud_control_attributes_mapping = CONTROL_CLOUD_ATTR_MAPPING
-        self.kms_arn_attr = S3_BUCKET_KMS_KEY
-        self.arn_parameter = S3_BUCKET_ARN
-        self.ref_parameter = S3_BUCKET_NAME
-
-        self.default_cloudmap_settings = {
-            "ReturnValues": {
-                S3_BUCKET_NAME.title: S3_BUCKET_NAME.title,
-                S3_BUCKET_ARN.title: S3_BUCKET_ARN.title,
-                S3_BUCKET_DOMAIN_NAME.return_value: S3_BUCKET_NAME.return_value,
-            }
-        }
-        self.cloudmap_dns_supported = False
-
-    def init_outputs(self):
-        self.output_properties = {
-            S3_BUCKET_NAME: (self.logical_name, self.cfn_resource, Ref, None),
-            S3_BUCKET_ARN: (
-                f"{self.logical_name}{S3_BUCKET_ARN.title}",
-                self.cfn_resource,
-                GetAtt,
-                S3_BUCKET_ARN.return_value,
-            ),
-            S3_BUCKET_DOMAIN_NAME: (
-                f"{self.logical_name}{S3_BUCKET_DOMAIN_NAME.return_value}",
-                self.cfn_resource,
-                GetAtt,
-                S3_BUCKET_DOMAIN_NAME.return_value,
-                None,
-            ),
-        }
-
-    def native_attributes_mapping_lookup(self, account_id, resource_id, function):
-        properties = function(self, resource_id)
-        if self.native_attributes_mapping:
-            conform_mapping = attributes_to_mapping(
-                properties, self.native_attributes_mapping
-            )
-            return conform_mapping
-        return properties
-
-    def lookup_resource(
-        self,
-        arn_re,
-        native_lookup_function,
-        cfn_resource_type,
-        tagging_api_id,
-        subattribute_key=None,
-    ):
-        """
-        Method to self-identify properties
-        :return:
-        """
-        if keyisset("Arn", self.lookup):
-            arn_parts = arn_re.match(self.lookup["Arn"])
-            if not arn_parts:
-                raise KeyError(
-                    f"{self.module.res_key}.{self.name} - ARN {self.lookup['Arn']} is not valid. Must match",
-                    arn_re.pattern,
-                )
-            self.arn = self.lookup["Arn"]
-            resource_id = arn_parts.group("id")
-        elif keyisset("Tags", self.lookup):
-            self.arn = find_aws_resource_arn_from_tags_api(
-                self.lookup, self.lookup_session, tagging_api_id
-            )
-            arn_parts = arn_re.match(self.arn)
-            resource_id = arn_parts.group("id")
-        else:
-            raise KeyError(
-                f"{self.module.res_key}.{self.name} - You must specify Arn or Tags to identify existing resource"
-            )
-        if not self.arn:
-            raise LookupError(
-                f"{self.module.res_key}.{self.name} - Failed to find the AWS Resource with given tags"
-            )
-        props = {}
-        if self.cloud_control_attributes_mapping:
-            _s3 = self.lookup_session.resource("s3")
-            try:
-                if _s3.Bucket(resource_id) in _s3.buckets.all():
-                    props = self.cloud_control_attributes_mapping_lookup(
-                        cfn_resource_type, resource_id
-                    )
-            except _s3.meta.client.exceptions:
-                LOG.warning(
-                    f"{self.module.res_key}.{self.name} - Failed to evaluate bucket ownership. Cannot use Control API"
-                )
-        if not props:
-            props = self.native_attributes_mapping_lookup(
-                get_account_id(self.lookup_session), resource_id, native_lookup_function
-            )
-        self.lookup_properties = props
-        self.generate_cfn_mappings_from_lookup_properties()
-
-    def to_ecs(
-        self,
-        settings: ComposeXSettings,
-        modules: ModManager,
-        root_stack: ComposeXStack = None,
-    ):
-        """
-        Handles mapping the S3 bucket to ECS services
-        """
-        LOG.info(f"{self.module.res_key}.{self.name} - Linking to services")
-        link_resource_to_services(
-            settings,
-            self,
-            arn_parameter=S3_BUCKET_ARN,
-            access_subkeys=["objects", "bucket", "enforceSecureConnection"],
-        )
 
 
 def define_bucket_mappings(

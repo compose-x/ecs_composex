@@ -59,14 +59,16 @@ from ecs_composex.ecs_cluster.helpers import (
 from ecs_composex.kms.kms_stack import KmsKey
 from ecs_composex.resources_import import import_record_properties
 
+MANAGED_KMS_KEY_NAME = "ecs-cluster-logging-cmk"
+MANAGED_S3_BUCKET_NAME = "ecs-cluster-logging-bucket"
 
-def add_ecs_cluster(root_stack, settings, manager: ModManager):
+
+def add_ecs_cluster(root_stack, settings):
     """
     Function to create the ECS Cluster.
 
     :param ecs_composex.common.stacks.ComposeXStack root_stack:
     :param ecs_composex.common.settings.ComposeXSettings settings:
-    :param ModManager manager:
     """
     if keyisset("x-aws-cluster", settings.compose_content):
         import_from_x_aws_cluster(settings.compose_content)
@@ -76,7 +78,7 @@ def add_ecs_cluster(root_stack, settings, manager: ModManager):
         cluster = EcsCluster(root_stack)
     elif isinstance(settings.compose_content[RES_KEY], dict):
         cluster = EcsCluster(root_stack, settings.compose_content[EcsCluster.res_key])
-        cluster.set_from_definition(root_stack, settings.session, settings, manager)
+        cluster.set_from_definition(root_stack, settings.session, settings)
     else:
         raise LookupError("Unable to determine what to do for x-cluster")
     settings.ecs_cluster = cluster
@@ -132,7 +134,7 @@ class EcsCluster(object):
                 else {}
             )
 
-    def set_from_definition(self, root_stack, session, settings, manager):
+    def set_from_definition(self, root_stack, session, settings):
         if self.lookup:
             self.lookup_cluster(session)
             add_update_mapping(
@@ -147,7 +149,7 @@ class EcsCluster(object):
                 self.mappings_key, CLUSTER_NAME.title, "Name"
             )
         elif self.properties:
-            self.define_cluster(root_stack, settings, manager)
+            self.define_cluster(root_stack, settings)
 
     def set_default_cluster_config(self, root_stack):
         """
@@ -290,9 +292,7 @@ class EcsCluster(object):
     def set_kms_key(
         self,
         cluster_name,
-        root_stack,
         settings: ComposeXSettings,
-        module,
         log_settings,
         log_configuration,
     ):
@@ -394,13 +394,11 @@ class EcsCluster(object):
             "Settings": {"Alias": Sub(f"alias/ecs/execute-logs/{cluster_name}")},
         }
         if not keyisset("x-kms", settings.compose_content):
-            settings.compose_content["x-kms"] = {
-                "ecs-cluster-encryption-key": key_config
-            }
+            settings.compose_content["x-kms"] = {MANAGED_KMS_KEY_NAME: key_config}
+        else:
+            settings.compose_content["x-kms"][MANAGED_KMS_KEY_NAME] = key_config
 
-        log_settings[
-            "KmsKeyId"
-        ] = "x-kms::ecs-cluster-encryption-key"  # GetAtt(self.log_key.cfn_resource, "Arn")
+        log_settings["KmsKeyId"] = f"x-kms::{MANAGED_KMS_KEY_NAME}"
         log_configuration["CloudWatchEncryptionEnabled"] = True
 
     def set_log_group(self, cluster_name, root_stack, log_configuration):
@@ -427,16 +425,13 @@ class EcsCluster(object):
     def set_log_bucket(
         self,
         cluster_name,
-        root_stack,
         settings: ComposeXSettings,
-        s3_module,
         log_configuration,
     ):
         """
         Defines the S3 bucket and settings to log ECS Execution commands
 
         :param str cluster_name:
-        :param ecs_composex.common.stacks.ComposeXStack root_stack:
         :param ecs_composex.common.settings.ComposeXSettings settings:
         :param dict log_configuration:
         :return:
@@ -459,7 +454,6 @@ class EcsCluster(object):
                 },
             },
         }
-        # if isinstance(self.log_key, KmsKey):
         if keyisset("x-kms", settings.compose_content) and keyisset(
             "ecs-cluster-encryption-key", settings.compose_content["x-kms"]
         ):
@@ -469,22 +463,22 @@ class EcsCluster(object):
                         "BucketKeyEnabled": True,
                         "ServerSideEncryptionByDefault": {
                             "SSEAlgorithm": "aws:kms",
-                            "KMSMasterKeyID": "x-kms::ecs-cluster-encryption-key",
+                            "KMSMasterKeyID": f"x-kms::{MANAGED_KMS_KEY_NAME}",
                         },
                     }
                 ]
             }
 
         if not keyisset("x-s3", settings.compose_content):
-            settings.compose_content["x-s3"] = {
-                "ecs-cluster-encryption-bucket": bucket_config
-            }
+            settings.compose_content["x-s3"] = {MANAGED_S3_BUCKET_NAME: bucket_config}
+        else:
+            settings.compose_content["x-s3"][MANAGED_S3_BUCKET_NAME] = bucket_config
         log_configuration["S3BucketName"] = "x-s3::ecs-cluster-encryption-bucket"
         log_configuration["S3KeyPrefix"] = Sub(f"ecs/execute-logs/{cluster_name}/")
         log_configuration["S3EncryptionEnabled"] = True
 
     def update_props_from_parameters(
-        self, cluster_name, root_stack, settings: ComposeXSettings, manager: ModManager
+        self, cluster_name, root_stack, settings: ComposeXSettings
     ):
         """
         Adapt cluster config to settings
@@ -498,15 +492,9 @@ class EcsCluster(object):
         log_settings = {}
         log_configuration = {}
         if keyisset("CreateExecLoggingKmsKey", self.parameters):
-            if "x-kms" not in manager.modules:
-                kms_module = manager.add_module("x-kms")
-            else:
-                kms_module = manager.modules["x-kms"]
             self.set_kms_key(
                 cluster_name,
-                root_stack,
                 settings,
-                kms_module,
                 log_settings,
                 log_configuration,
             )
@@ -514,13 +502,7 @@ class EcsCluster(object):
             self.set_log_group(cluster_name, root_stack, log_configuration)
 
         if keyisset("CreateExecLoggingBucket", self.parameters):
-            if "x-s3" not in manager.modules:
-                s3_module = manager.add_module("x-s3")
-            else:
-                s3_module = manager.modules["x-s3"]
-            self.set_log_bucket(
-                cluster_name, root_stack, settings, s3_module, log_configuration
-            )
+            self.set_log_bucket(cluster_name, settings, log_configuration)
 
         log_settings["LogConfiguration"] = ExecuteCommandLogConfiguration(
             **log_configuration
@@ -531,9 +513,7 @@ class EcsCluster(object):
         )
         return configuration
 
-    def define_cluster(
-        self, root_stack, settings: ComposeXSettings, manager: ModManager
-    ):
+    def define_cluster(self, root_stack, settings: ComposeXSettings):
         """
         Function to create the cluster from provided properties.
         """
@@ -551,11 +531,9 @@ class EcsCluster(object):
         cluster_name = props["ClusterName"]
         if self.parameters:
             configuration = self.update_props_from_parameters(
-                cluster_name, root_stack, settings, manager
+                cluster_name, root_stack, settings
             )
             props["Configuration"] = configuration
         self.cfn_resource = Cluster(CLUSTER_T, **props)
         root_stack.stack_template.add_resource(self.cfn_resource)
-        # if self.parameters:
-        #     self.update_props_from_parameters(root_stack, settings, manager)
         self.cluster_identifier = Ref(self.cfn_resource)

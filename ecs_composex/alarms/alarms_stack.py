@@ -68,11 +68,10 @@ class Alarm(ServicesXResource):
             ),
         }
 
-    def handle_dimensions(self, settings: ComposeXSettings, root_stack):
+    def handle_dimensions(self, settings: ComposeXSettings) -> None:
         """
         Handles the dimensions settings and tries to resolve
 
-        :param ecs_composex.common.stacks.ComposeXStacks root_stack:
         :param ecs_composex.common.settings.ComposeXSettings settings:
         """
         if not hasattr(self.cfn_resource, "Dimensions"):
@@ -95,7 +94,9 @@ class Alarm(ServicesXResource):
                         self.stack, dimension, self, settings
                     )
 
-    def handle_x_dependencies(self, settings, root_stack=None) -> None:
+    def handle_x_dependencies(
+        self, settings: ComposeXSettings, root_stack: ComposeXStack = None
+    ) -> None:
         """
         Function to cross reference alarm settings with other resources
 
@@ -109,7 +110,7 @@ class Alarm(ServicesXResource):
             or not self.cfn_resource
         ):
             return
-        self.handle_dimensions(settings, root_stack)
+        self.handle_dimensions(settings)
 
 
 class XStack(ComposeXStack):
@@ -127,7 +128,7 @@ class XStack(ComposeXStack):
         if new_resources:
             template = build_template("Root stack for Alarms created via Compose-X")
             super().__init__(name, stack_template=template, **kwargs)
-            create_alarms(template, settings, new_resources)
+            create_alarms(template, new_resources)
         else:
             self.is_void = True
         if lookup_resources:

@@ -2,6 +2,13 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  Copyright 2020-2022 John Mille <john@compose-x.io>
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ecs_composex.common.settings import ComposeXSettings
+    from ecs_composex.ecs.ecs_family import ComposeFamily
 
 from troposphere import GetAtt
 
@@ -10,7 +17,7 @@ from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.ecs.service_networking.helpers import add_security_group
 
 
-def add_iam_dependency(iam_stack: ComposeXStack, family):
+def add_iam_dependency(iam_stack: ComposeXStack, family: ComposeFamily):
     """
     Adds the IAM Stack as dependency to the family one if not set already
 
@@ -21,7 +28,9 @@ def add_iam_dependency(iam_stack: ComposeXStack, family):
         family.stack.DependsOn.append(iam_stack.title)
 
 
-def update_families_networking_settings(settings, vpc_stack):
+def update_families_networking_settings(
+    settings: ComposeXSettings, vpc_stack: ComposeXStack
+):
     """
     Function to update the families network settings prior to rendering the ECS Service settings
 
@@ -41,7 +50,7 @@ def update_families_networking_settings(settings, vpc_stack):
         add_security_group(family)
 
 
-def update_families_network_ingress(settings):
+def update_families_network_ingress(settings: ComposeXSettings):
     """
     Now that the network settings have been figured out, we can deal with ingress rules
 
@@ -67,7 +76,9 @@ def update_families_network_ingress(settings):
         family.service_networking.add_self_ingress()
 
 
-def handle_families_cross_dependencies(settings, root_stack):
+def handle_families_cross_dependencies(
+    settings: ComposeXSettings, root_stack: ComposeXStack
+):
     from ecs_composex.ecs.ecs_family import ServiceStack
     from ecs_composex.ecs.service_networking.ingress_helpers import (
         set_compose_services_ingress,
@@ -87,11 +98,11 @@ def handle_families_cross_dependencies(settings, root_stack):
         )
 
 
-def set_families_ecs_service(settings):
+def set_families_ecs_service(settings: ComposeXSettings):
     """
     Sets the ECS Service in the family.ecs_service from ServiceConfig and family settings
     """
     for family in settings.families.values():
-        family.ecs_service.generate_service_definition(family, settings)
+        family.ecs_service.generate_service_definition(family)
         family.service_scaling.create_scalable_target()
         family.service_scaling.add_target_scaling()
