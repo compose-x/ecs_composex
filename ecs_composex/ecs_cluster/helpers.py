@@ -9,7 +9,11 @@ from compose_x_common.compose_x_common import keyisset
 from ecs_composex.common import LOG
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME
-from ecs_composex.ecs_cluster import FARGATE_PROVIDER, FARGATE_SPOT_PROVIDER, RES_KEY
+from ecs_composex.ecs_cluster.ecs_cluster_params import (
+    FARGATE_PROVIDER,
+    FARGATE_SPOT_PROVIDER,
+    RES_KEY,
+)
 
 
 def evaluate_fargate_is_set(providers, cluster_def):
@@ -100,4 +104,4 @@ def import_from_x_aws_cluster(compose_content):
         )
     else:
         cluster_name = compose_content[x_aws_key]
-    compose_content[RES_KEY] = {"Use": cluster_name}
+    compose_content[RES_KEY] = {"Lookup": {"ClusterName": cluster_name}}

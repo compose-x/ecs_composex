@@ -7,8 +7,6 @@ services:
       RetentionInDays: 42
       CreateLogGroup: False
     x-network:
-      lb_type: application
-      use_cloudmap: True
       Ingress:
         Myself: False
         AwsSources:

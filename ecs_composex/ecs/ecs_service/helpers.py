@@ -10,7 +10,7 @@ from troposphere.ecs import (
     PlacementStrategy,
 )
 
-from ecs_composex.ecs.ecs_conditions import USE_EXTERNAL_LT, USE_FARGATE_CON_T
+from ecs_composex.ecs.ecs_conditions import USE_EXTERNAL_LT_T, USE_FARGATE_CON_T
 from ecs_composex.ecs.ecs_params import SERVICE_NAME
 
 
@@ -24,7 +24,7 @@ def define_placement_strategies() -> If:
         USE_FARGATE_CON_T,
         NoValue,
         If(
-            USE_EXTERNAL_LT,
+            USE_EXTERNAL_LT_T,
             NoValue,
             [
                 PlacementStrategy(Field="instanceId", Type="spread"),
