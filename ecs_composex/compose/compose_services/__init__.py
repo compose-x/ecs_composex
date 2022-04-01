@@ -164,7 +164,6 @@ class ComposeService(object):
         self.healthcheck = set_else_none("healthcheck", self.definition, None)
         self.deploy = set_else_none("deploy", self.definition, None)
         self.set_service_deploy()
-
         self.ports = set_else_none("ports", self.definition, [])
         self.expose_ports = set_else_none("expose", self.definition, [])
         self.ingress_mappings = define_ingress_mappings(self.ports)
