@@ -9,7 +9,7 @@ Docker compose integration related function, wrapping transformation to Containe
 
 import re
 
-from compose_x_common.compose_x_common import keyisset
+from compose_x_common.compose_x_common import keyisset, set_else_none
 from troposphere import NoValue
 
 from ecs_composex.common import LOG, clpow2, nxtpow2
@@ -99,7 +99,7 @@ def set_memory_to_mb(value):
         final_amount = int(amount)
     elif gb_pat.findall(value):
         unit = "GBytes"
-        final_amount = int(amount) * pow(2, 10)
+        final_amount = int(amount * pow(2, 10))
     else:
         raise ValueError(f"Could not parse {value} to units")
     LOG.debug(f"Computed unit for {value}: {unit}. Results into {final_amount}MB")
