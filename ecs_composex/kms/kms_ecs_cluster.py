@@ -49,7 +49,6 @@ def update_cluster_kms_property(ecs_cluster: EcsCluster, kms_key: KmsKey) -> Non
     :param ecs_cluster:
     :param kms_key:
     """
-    print("UPDATING CLUSTER PROPS WITH KEY", kms_key.name)
     if not ecs_cluster.cfn_resource or not hasattr(
         ecs_cluster.cfn_resource, "Configuration"
     ):

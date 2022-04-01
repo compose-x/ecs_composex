@@ -61,7 +61,7 @@ def update_route53_pointer(
 ):
     """
     Iterates over each HostedZone and upon finding the right one
-    :param ecs_composex.route53.route53_stack.HostedZone x_hosted_zone: List of HostedZones defined
+    :param ecs_composex.route53.route53_zone.HostedZone x_hosted_zone: List of HostedZones defined
     :param troposphere.certificatemanager.DomainValidationOption validation_setting:
     :param XStack route53_stack:
     :param ComposeXStack acm_stack:
@@ -85,7 +85,7 @@ def handle_acm_records(
     """
     Function to go over the ACM Certificate Domain validation options, and identifies x-route53 to map it to.
 
-    :param ecs_composex.route53.route53_stack.HostedZone x_hosted_zone: HostedZone to evaluate.
+    :param ecs_composex.route53.route53_zone.HostedZone x_hosted_zone: HostedZone to evaluate.
     :param ecs_composex.common.stacks.ComposeXStack route53_stack:
     :param ecs_composex.acm.acm_stack.Certificate target_cert:
     :param ecs_composex.common.stacks.ComposeXStack acm_stack:

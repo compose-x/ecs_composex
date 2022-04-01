@@ -19,7 +19,7 @@ def create_record(name, route53_zone, route53_stack, target_elbv2, elbv2_stack) 
     Create a new RecordResource with the given DNS Name pointing to the ELB
 
     :param str name:
-    :param ecs_composex.route53.route53_stack.HostedZone route53_zone:
+    :param ecs_composex.route53.route53_zone.HostedZone route53_zone:
     :param ecs_composex.route53.route53_stack.XStack route53_stack:
     :param ecs_composex.elbv2.elbv2_stack.Elbv2 target_elbv2:
     :param ComposeXStack elbv2_stack:
@@ -81,7 +81,7 @@ def add_dns_records_for_elbv2(
 ) -> None:
     """
     Iterates over each HostedZone and upon finding the right one
-    :param ecs_composex.route53.route53_stack.HostedZone x_hosted_zone: List of HostedZones defined
+    :param ecs_composex.route53.route53_zone.HostedZone x_hosted_zone: List of HostedZones defined
     :param dict record:
     :param XStack route53_stack:
     :param ecs_composex.elbv2.elbv2_stack.Elbv2 target_elbv2:

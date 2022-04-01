@@ -47,7 +47,6 @@ def update_cluster_s3_property(ecs_cluster: EcsCluster, bucket: Bucket) -> None:
     :param ecs_cluster:
     :param bucket:
     """
-    print("UPDATING CLUSTER PROPS WITH BUCKET", bucket.name)
     if not ecs_cluster.cfn_resource or not hasattr(
         ecs_cluster.cfn_resource, "Configuration"
     ):
