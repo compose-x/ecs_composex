@@ -146,8 +146,8 @@ def apply_x_configs_to_ecs(
     """
     for resource in settings.x_resources:
         if (
-            isinstance(resource, ServicesXResource)
-            or issubclass(type(resource), ServicesXResource)
+            isinstance(resource, (ServicesXResource, AwsEnvironmentResource))
+            or issubclass(type(resource), (ServicesXResource, AwsEnvironmentResource))
         ) and hasattr(resource, "to_ecs"):
             resource.to_ecs(settings, modules, root_stack)
 

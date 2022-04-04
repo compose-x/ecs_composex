@@ -77,7 +77,48 @@ def rework_sns_topics(sns_definition):
     sns_definition.update(topics)
 
 
-def reformat_services(input_file):
+def update_networking(service_name, service_def):
+    if not keyisset("x-network", service_def):
+        return
+    x_network = service_def["x-network"]
+    if keypresent("UseCloudmap", x_network):
+        del x_network["UseCloudmap"]
+    if keypresent("IsPublic", x_network):
+        del x_network["IsPublic"]
+
+
+def update_services(input_file):
+    with open(input_file, "r") as fd:
+        content = yaml.load(fd.read(), Loader=Loader)
+    if not keyisset("services", content):
+        return
+    services = content["services"]
+    for service_name, service_def in services.items():
+        update_networking(service_name, service_def)
+    with open(input_file, "w") as input_fd:
+        input_fd.write(yaml.dump(content, Dumper=MyDumper))
+
+
+def update_cluster(cluster_def, content):
+    if (
+        keyisset("x-vpc", content)
+        and keyisset("Lookup", content["x-vpc"])
+        and keyisset("RoleArn", content["x-vpc"]["Lookup"])
+    ):
+        role_arn = content["x-vpc"]["Lookup"]["RoleArn"]
+    else:
+        print("Not found a RoleArn in x-vpc.Lookup", content["x-vpc"])
+        role_arn = None
+    if keyisset("Use", cluster_def):
+        cluster_name = cluster_def["Use"]
+        del cluster_def["Use"]
+        new_def = {"Lookup": {"ClusterName": cluster_name}}
+        if role_arn:
+            new_def["Lookup"]["RoleArn"] = role_arn
+        cluster_def.update(new_def)
+
+
+def reformat_resources_services(input_file):
     db_services = ["x-elasticache", "x-rds", "x-docdb", "x-neptune"]
     excluded = ["x-elbv2"]
     with open(input_file, "r") as fd:
@@ -90,6 +131,8 @@ def reformat_services(input_file):
             continue
         if not isinstance(value, dict):
             continue
+        if key == "x-cluster":
+            update_cluster(content["x-cluster"], content)
         if key == "x-sns":
             rework_sns_topics(value)
         for res, definition in value.items():
@@ -140,4 +183,5 @@ if __name__ == "__main__":
     parser.add_argument("-f", dest="input_file", required=True)
     args = parser.parse_args()
     replace_dns(args.input_file)
-    reformat_services(args.input_file)
+    reformat_resources_services(args.input_file)
+    update_services(args.input_file)

@@ -5,6 +5,7 @@
   "title": "x-cluster",
   "description": "x-cluster specification for ECS Cluster",
   "type": "object",
+  "additionalProperties": false,
   "properties": {
     "Lookup": {
       "oneOf": [
@@ -26,9 +27,6 @@
           }
         }
       ]
-    },
-    "Use": {
-      "type": "string"
     },
     "Properties": {
       "type": "object",
@@ -67,12 +65,6 @@
     }
   },
   "oneOf": [
-    {
-      "type": "object",
-      "required": [
-        "Use"
-      ]
-    },
     {
       "type": "object",
       "required": [
