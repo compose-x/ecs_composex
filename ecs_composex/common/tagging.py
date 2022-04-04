@@ -83,6 +83,7 @@ def generate_tags_parameters(tags):
                 define_tag_parameter_title(tag["Key"])
                 if isinstance(tags, list)
                 else define_tag_parameter_title(tag),
+                group_label="Tagging",
                 Type="String",
                 MinLength=2,
                 MaxLength=128,
