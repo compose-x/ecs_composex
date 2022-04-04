@@ -12,11 +12,8 @@ from typing import TYPE_CHECKING
 
 from troposphere.servicediscovery import PrivateDnsNamespace
 
-from ..resources_import import import_record_properties
-from ..vpc.vpc_params import VPC_ID
-
 if TYPE_CHECKING:
-    from ecs_composex.mods_manager import XResourceModule
+    from ecs_composex.mods_manager import XResourceModule, ModManager
     from ecs_composex.common.settings import ComposeXSettings
 
 from copy import deepcopy
@@ -39,6 +36,8 @@ from ecs_composex.compose.x_resources.helpers import (
     set_new_resources,
     set_resources,
 )
+from ecs_composex.resources_import import import_record_properties
+from ecs_composex.vpc.vpc_params import VPC_ID
 
 from .cloudmap_params import MOD_KEY, PRIVATE_DNS_ZONE_NAME, PRIVATE_NAMESPACE_ID
 from .cloudmap_x_resources import handle_resource_cloudmap_settings
@@ -183,6 +182,30 @@ class PrivateNamespace(AwsEnvironmentResource):
             and self.stack.title not in root_stack.stack_template.resources
         ):
             root_stack.stack_template.add_resource(self.stack)
+
+    def to_ecs(
+        self,
+        settings: ComposeXSettings,
+        modules: ModManager,
+        root_stack: ComposeXStack = None,
+    ) -> None:
+        """
+        Checks whether the namespace should be mapped to a given ECS Service
+        :param ComposeXSettings settings: Execution settings
+        :param ModManager modules: Unused atm
+        :param ComposeXStack root_stack: Unused atm
+        """
+        from .cloudmap_ecs import create_registry
+
+        for family in settings.families.values():
+            if not family.service_networking.cloudmap_config:
+                continue
+            for (
+                namespace,
+                port_config,
+            ) in family.service_networking.cloudmap_config.items():
+                if namespace == self.name:
+                    create_registry(family, self, port_config, settings)
 
 
 class XStack(ComposeXStack):
