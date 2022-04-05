@@ -1,4 +1,3 @@
-#   -*- coding: utf-8 -*-
 #  SPDX-License-Identifier: MPL-2.0
 #  Copyright 2020-2022 John Mille <john@compose-x.io>
 
@@ -61,7 +60,7 @@ def lookup_hosted_zone(zone, session, private, zone_id=None) -> dict:
         LOG.warning(f"Zone {zone.zone_name} is invalid or malformed.")
 
 
-def filter_out_cloudmap_zones(zones: List[dict], zone_name: str):
+def filter_out_cloudmap_zones(zones: list[dict], zone_name: str):
     """
     Function to filter out the Hosted Zones linked to CloudMap
     """
@@ -88,7 +87,7 @@ def filter_out_cloudmap_zones(zones: List[dict], zone_name: str):
 
 
 def resolve_lookup(
-    lookup_resources: List[HostedZone],
+    lookup_resources: list[HostedZone],
     settings: ComposeXSettings,
     module: XResourceModule,
 ) -> None:

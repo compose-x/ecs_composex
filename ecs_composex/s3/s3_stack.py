@@ -1,4 +1,3 @@
-#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2022 John Mille <john@compose-x.io>
 
@@ -69,7 +68,7 @@ def get_bucket_config(bucket: Bucket, resource_id: str) -> dict:
 
 
 def define_bucket_mappings(
-    lookup_buckets: List[Bucket], settings: ComposeXSettings, module: XResourceModule
+    lookup_buckets: list[Bucket], settings: ComposeXSettings, module: XResourceModule
 ) -> None:
     """
     Method to define CFN Mappings for the lookup buckets

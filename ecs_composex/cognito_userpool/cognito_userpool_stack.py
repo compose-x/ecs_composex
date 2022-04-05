@@ -1,4 +1,3 @@
-#   -*- coding: utf-8 -*-
 #  SPDX-License-Identifier: MPL-2.0
 #  Copyright 2020-2022 John Mille <john@compose-x.io>
 
@@ -95,7 +94,7 @@ class UserPool(AwsEnvironmentResource, ApiXResource):
 
 
 def resolve_lookup(
-    lookup_resources: List[UserPool],
+    lookup_resources: list[UserPool],
     settings: ComposeXSettings,
     module: XResourceModule,
 ):

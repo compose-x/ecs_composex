@@ -1,4 +1,3 @@
-#   -*- coding: utf-8 -*-
 #  SPDX-License-Identifier: MPL-2.0
 #  Copyright 2020-2022 John Mille <john@compose-x.io>
 
@@ -28,15 +27,15 @@ from ecs_composex.common import LOG
 
 
 def set_new_resources(
-    x_resources: List[
-        Union[
-            XResource,
-            ServicesXResource,
-            ApiXResource,
-            AwsEnvironmentResource,
-            NetworkXResource,
-            DatabaseXResource,
-        ]
+    x_resources: list[
+        (
+            XResource
+            | ServicesXResource
+            | ApiXResource
+            | AwsEnvironmentResource
+            | NetworkXResource
+            | DatabaseXResource
+        )
     ],
     supports_uses_default: bool = False,
 ):
@@ -64,16 +63,16 @@ def set_new_resources(
 
 
 def set_lookup_resources(
-    x_resources: List[
-        Union[
-            XResource,
-            ServicesXResource,
-            ApiXResource,
-            AwsEnvironmentResource,
-            NetworkXResource,
-            DatabaseXResource,
-        ]
-    ]
+    x_resources: list[
+        (
+            XResource
+            | ServicesXResource
+            | ApiXResource
+            | AwsEnvironmentResource
+            | NetworkXResource
+            | DatabaseXResource
+        )
+    ],
 ):
     """
 

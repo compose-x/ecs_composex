@@ -30,14 +30,14 @@ except ImportError:
 
 class MyDumper(yaml.Dumper):
     def increase_indent(self, flow=False, indentless=False):
-        return super(MyDumper, self).increase_indent(flow, False)
+        return super().increase_indent(flow, False)
 
 
 def replace_dns(input_file):
     cloudmap_config = {}
     route_53_config = {}
 
-    with open(input_file, "r") as fd:
+    with open(input_file) as fd:
         content = yaml.load(fd.read(), Loader=Loader)
 
     if "x-dns" not in content:
@@ -88,7 +88,7 @@ def update_networking(service_name, service_def):
 
 
 def update_services(input_file):
-    with open(input_file, "r") as fd:
+    with open(input_file) as fd:
         content = yaml.load(fd.read(), Loader=Loader)
     if not keyisset("services", content):
         return
@@ -121,7 +121,7 @@ def update_cluster(cluster_def, content):
 def reformat_resources_services(input_file):
     db_services = ["x-elasticache", "x-rds", "x-docdb", "x-neptune"]
     excluded = ["x-elbv2"]
-    with open(input_file, "r") as fd:
+    with open(input_file) as fd:
         content = yaml.load(fd.read(), Loader=Loader)
     if not isinstance(content, dict):
         print(input_file, content)

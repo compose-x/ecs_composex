@@ -1,4 +1,3 @@
-#   -*- coding: utf-8 -*-
 #  SPDX-License-Identifier: MPL-2.0
 #  Copyright 2020-2022 John Mille <john@compose-x.io>
 
@@ -23,7 +22,7 @@ from ecs_composex.ecs.ecs_params import LAUNCH_TYPE
 from .helpers import merge_capacity_providers
 
 
-class ServiceCompute(object):
+class ServiceCompute:
     """
     Class to manage the ECS Service settings for launch type and capacity providers
     """

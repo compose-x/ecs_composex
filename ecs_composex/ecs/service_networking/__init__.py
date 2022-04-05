@@ -1,4 +1,3 @@
-#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2022 John Mille <john@compose-x.io>
 
@@ -32,7 +31,7 @@ from ecs_composex.ingress_settings import Ingress, set_service_ports
 from ecs_composex.vpc.vpc_params import APP_SUBNETS
 
 
-class ServiceNetworking(object):
+class ServiceNetworking:
     """
     Class to group the configuration for Service network settings
 

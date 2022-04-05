@@ -1,4 +1,3 @@
-#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2022 John Mille <john@compose-x.io>
 
@@ -14,7 +13,7 @@ from ecs_composex.iam.iam_params import IAM_ROLE, IAM_ROLE_ARN, IAM_ROLE_ID
 from ecs_composex.iam.iam_params import MAPPINGS_KEY as IAM_MAPPINGS_KEY
 
 
-class EcsRole(object):
+class EcsRole:
     """
     Class to wrap around the AWS IAM Role
     """

@@ -1,4 +1,3 @@
-#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2022 John Mille <john@compose-x.io>
 
@@ -93,7 +92,7 @@ class Stream(ApiXResource):
 
 
 def resolve_lookup(
-    lookup_resources: List[Stream], settings: ComposeXSettings, module: XResourceModule
+    lookup_resources: list[Stream], settings: ComposeXSettings, module: XResourceModule
 ) -> None:
     """
     Lookup AWS Kinesis streams and creates CFN Mappings

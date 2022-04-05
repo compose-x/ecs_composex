@@ -1,4 +1,3 @@
-#   -*- coding: utf-8 -*-
 #  SPDX-License-Identifier: MPL-2.0
 #  Copyright 2020-2022 John Mille <john@compose-x.io>
 
@@ -33,9 +32,7 @@ from ecs_composex.dashboards.dashboards_services_metrics import ServiceEcsWidget
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME, SERVICE_T
 
 
-def get_family_from_name(
-    settings: ComposeXSettings, name: str
-) -> Union[ComposeFamily, None]:
+def get_family_from_name(settings: ComposeXSettings, name: str) -> ComposeFamily | None:
     """
 
     :param ecs_composex.common.settings.ComposeXSettings settings:
@@ -49,7 +46,7 @@ def get_family_from_name(
 
 def retrieve_services(
     settings: ComposeXSettings, services: dict, x_stack: ComposeXStack
-) -> List[tuple]:
+) -> list[tuple]:
     """
     Function to
 

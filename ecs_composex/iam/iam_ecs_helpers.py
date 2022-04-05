@@ -1,4 +1,3 @@
-#   -*- coding: utf-8 -*-
 #  SPDX-License-Identifier: MPL-2.0
 #  Copyright 2020-2022 John Mille <john@compose-x.io>
 
@@ -18,7 +17,7 @@ from ecs_composex.common.cfn_conditions import define_stack_name
 
 def add_ecs_execution_role_managed_policy(
     template: Template,
-) -> Union[ManagedPolicy, AWSObject]:
+) -> ManagedPolicy | AWSObject:
     """
     Creates a blanket IAM Managed policy to use for the ECS Execution roles
 

@@ -10,8 +10,6 @@ services:
       labels:
         ecs.task.family: bignicefamily
 version: '3.8'
-x-cluster:
-  Use: test
 x-dynamodb:
   tableA:
     Properties:

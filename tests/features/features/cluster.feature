@@ -8,7 +8,6 @@ Feature: ecs-cluster
         Examples:
             | file_path                   | override_file                                  |
             | use-cases/blog.features.yml | use-cases/ecs/cluster_create.yml               |
-            | use-cases/blog.features.yml | use-cases/ecs/cluster_use.yml                  |
             | use-cases/blog.features.yml | use-cases/ecs/cluster_lookup.yml               |
             | use-cases/blog.features.yml | use-cases/ecs/cluster_lookup_with_logging.yaml |
             | use-cases/blog.features.yml | use-cases/ecs/cluster_create_with_logging.yml  |

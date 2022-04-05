@@ -1,4 +1,3 @@
-#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2022 John Mille <john@compose-x.io>
 
@@ -14,7 +13,7 @@ from ecs_composex.ecs import ecs_params
 from ecs_composex.ecs.managed_sidecars import ManagedSidecar
 
 
-class MeshNode(object):
+class MeshNode:
     """
     Class representing an AppMesh Node.
     """

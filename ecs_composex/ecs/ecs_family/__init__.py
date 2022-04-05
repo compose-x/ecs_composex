@@ -1,4 +1,3 @@
-#   -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2022 John Mille <john@compose-x.io>
 
@@ -43,7 +42,7 @@ from .family_template import set_template
 from .task_runtime import define_family_runtime_parameters
 
 
-class ComposeFamily(object):
+class ComposeFamily:
     """
     Class to group services logically to create the final ECS Task and Service definitions
 
@@ -411,7 +410,7 @@ class ComposeFamily(object):
         """
         If any service ephemeral storage is defined above, sets the ephemeral storage to the maximum of them.
         """
-        max_storage = max([service.ephemeral_storage for service in self.services])
+        max_storage = max(service.ephemeral_storage for service in self.services)
         if max_storage >= 21:
             self.task_ephemeral_storage = max_storage
 

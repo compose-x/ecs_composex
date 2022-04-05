@@ -1,4 +1,3 @@
-#   -*- coding: utf-8 -*-
 #  SPDX-License-Identifier: MPL-2.0
 #  Copyright 2020-2022 John Mille <john@compose-x.io>
 
@@ -21,7 +20,7 @@ from ecs_composex.sns.sns_params import TOPIC_ARN, TOPIC_KMS_KEY, TOPIC_NAME
 
 
 def create_sns_mappings(
-    resources: List[Topic], settings: ComposeXSettings, module: XResourceModule
+    resources: list[Topic], settings: ComposeXSettings, module: XResourceModule
 ) -> None:
     """
     Creates the Mappings for x-sns
@@ -39,9 +38,7 @@ def create_sns_mappings(
         )
 
 
-def get_topic_config(
-    topic: Topic, account_id: str, resource_id: str
-) -> Union[dict, None]:
+def get_topic_config(topic: Topic, account_id: str, resource_id: str) -> dict | None:
     """
     Function to create the mapping definition for SNS topics
     """

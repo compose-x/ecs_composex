@@ -1,4 +1,3 @@
-#   -*- coding: utf-8 -*-
 #  SPDX-License-Identifier: MPL-2.0
 #  Copyright 2020-2022 John Mille <john@compose-x.io>
 
@@ -22,7 +21,7 @@ from ecs_composex.acm.acm_params import CERT_ARN, RES_KEY
 from ecs_composex.common import LOG, add_parameters, add_update_mapping
 
 
-def define_acm_certs(new_resources: List[Certificate], acm_stack: ComposeXStack):
+def define_acm_certs(new_resources: list[Certificate], acm_stack: ComposeXStack):
     """
     Function to create the certificates
 
@@ -39,7 +38,7 @@ def define_acm_certs(new_resources: List[Certificate], acm_stack: ComposeXStack)
 
 
 def resolve_lookup(
-    lookup_resources: List[Certificate],
+    lookup_resources: list[Certificate],
     settings: ComposeXSettings,
     module: XResourceModule,
 ) -> None:
@@ -187,7 +186,7 @@ def validate_certificate_status(certificate_definition: dict) -> None:
 
 def get_cert_config(
     certificate: Certificate, account_id: str, resource_id: str
-) -> Union[dict, None]:
+) -> dict | None:
     """
     Retrieves the AWS ACM Certificate details using AWS API
     """

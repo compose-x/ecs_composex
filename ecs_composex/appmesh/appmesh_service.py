@@ -1,4 +1,3 @@
-#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2022 John Mille <john@compose-x.io>
 
@@ -43,7 +42,7 @@ def validate_service_backend(service, routers, nodes):
         )
 
 
-class MeshService(object):
+class MeshService:
     """
     Class to represent a mesh Virtual Service.
     """

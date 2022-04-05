@@ -1,4 +1,3 @@
-#   -*- coding: utf-8 -*-
 #  SPDX-License-Identifier: MPL-2.0
 #  Copyright 2020-2022 John Mille <john@compose-x.io>
 
@@ -95,7 +94,7 @@ class CodeProfiler(ApiXResource):
 
 
 def define_lookup_profile_mappings(
-    mappings: dict, resources: List[CodeProfiler], settings: ComposeXSettings
+    mappings: dict, resources: list[CodeProfiler], settings: ComposeXSettings
 ):
     """
     Function to update the mappings of CodeGuru profile identified via Lookup

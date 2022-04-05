@@ -1,4 +1,3 @@
-#   -*- coding: utf-8 -*-
 #  SPDX-License-Identifier: MPL-2.0
 #  Copyright 2020-2022 John Mille <john@compose-x.io>
 
@@ -40,7 +39,7 @@ def set_cw_prometheus_config_parameter(
         scrape_config = options["ScrapingConfiguration"]
     if keyisset("ScrapingConfigurationFile", scrape_config):
         with open(
-            path.abspath(scrape_config["ScrapingConfigurationFile"]), "r"
+            path.abspath(scrape_config["ScrapingConfigurationFile"])
         ) as config_fd:
             value_py = yaml.load(config_fd.read(), Loader=Loader)
     else:

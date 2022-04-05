@@ -1,4 +1,3 @@
-#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2022 John Mille <john@compose-x.io>
 
@@ -376,7 +375,7 @@ def add_secrets_access_policy(
 
 
 def handle_db_secret_to_services(
-    db: Union[DatabaseXResource, NetworkXResource], secret_import, target: tuple
+    db: DatabaseXResource | NetworkXResource, secret_import, target: tuple
 ) -> None:
     """
     Maps DB Secret to ECS Service containers. It however won't expose the secret to an AWS SideCar (i.e. x-ray).
@@ -393,7 +392,7 @@ def handle_db_secret_to_services(
 
 
 def handle_import_dbs_to_services(
-    db: Union[DatabaseXResource, NetworkXResource], target: tuple
+    db: DatabaseXResource | NetworkXResource, target: tuple
 ) -> None:
     """
     Function to map the Looked up DBs (DocDB and RDS) to the services.
@@ -427,7 +426,7 @@ def handle_import_dbs_to_services(
 
 
 def import_dbs(
-    db: Union[NetworkXResource, DatabaseXResource], settings: ComposeXSettings
+    db: NetworkXResource | DatabaseXResource, settings: ComposeXSettings
 ) -> None:
     """
     Function to go over each service defined in the DB and assign found DB settings to service
@@ -442,7 +441,7 @@ def import_dbs(
 
 
 def handle_new_tcp_resource(
-    resource: Union[NetworkXResource, DatabaseXResource],
+    resource: NetworkXResource | DatabaseXResource,
     port_parameter: Parameter,
     sg_parameter: Parameter,
     secret_parameter=None,

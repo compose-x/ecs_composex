@@ -1,4 +1,3 @@
-#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2022 John Mille <john@compose-x.io>
 
@@ -24,7 +23,7 @@ from ecs_composex.ecs.ecs_service.helpers import (
 )
 
 
-class EcsService(object):
+class EcsService:
     """
     Class representing the service from the Docker compose file and translate it into
     AWS ECS Task Definition and Service.

@@ -1,4 +1,3 @@
-#   -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2022 John Mille <john@compose-x.io>
 
@@ -88,7 +87,7 @@ def get_kms_key_config(cluster_name, allow_kms_reuse=False):
     return
 
 
-class EcsCluster(object):
+class EcsCluster:
     """
     Class to make it easier to manipulate the ECS Cluster to use and its various properties
     """

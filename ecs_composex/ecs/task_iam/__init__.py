@@ -1,4 +1,3 @@
-#   -*- coding: utf-8 -*-
 #  SPDX-License-Identifier: MPL-2.0
 #  Copyright 2020-2022 John Mille <john@compose-x.io>
 
@@ -23,7 +22,7 @@ from .helpers import (
 from .task_role import EcsRole
 
 
-class TaskIam(object):
+class TaskIam:
     """
     Class to manage the compose family IAM roles, permissions and other settings
     """

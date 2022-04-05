@@ -1,4 +1,3 @@
-#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2022 John Mille <john@compose-x.io>
 
@@ -179,7 +178,7 @@ def lookup_security_group(settings, lookup):
     return sg_re.match(sg_arn).groups()[0]
 
 
-class Ingress(object):
+class Ingress:
     """
     Class to group the configuration for Service network settings
     """

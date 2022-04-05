@@ -1,4 +1,3 @@
-#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2022 John Mille <john@compose-x.io>
 
@@ -23,7 +22,7 @@ def import_and_cleanse_sam_policies():
     :rtype: dict
     """
     template_path = str(pkg_files("ecs_composex").joinpath("iam/sam_policies.json"))
-    with open(template_path, "r") as policies_fd:
+    with open(template_path) as policies_fd:
         policies_orig = json.loads(policies_fd.read())["Templates"]
     import_policies = {}
 
@@ -51,11 +50,10 @@ def get_access_types(module_name: str) -> dict:
     try:
         with open(
             source,
-            "r",
             encoding="utf-8-sig",
         ) as perms_fd:
             dyn_policies = json.loads(perms_fd.read())
         sam_policies.update(dyn_policies)
         return sam_policies
-    except IOError:
+    except OSError:
         return sam_policies

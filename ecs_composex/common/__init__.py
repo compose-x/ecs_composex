@@ -1,4 +1,3 @@
-#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2022 John Mille <john@compose-x.io>
 
@@ -376,7 +375,7 @@ def load_composex_file(file_path):
     :return: content of the docker file
     :rtype: dict
     """
-    with open(file_path, "r") as composex_fd:
+    with open(file_path) as composex_fd:
         return yaml.load(composex_fd.read(), Loader=Loader)
 
 

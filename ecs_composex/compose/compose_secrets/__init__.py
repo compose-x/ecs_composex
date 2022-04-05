@@ -1,4 +1,3 @@
-#   -*- coding: utf-8 -*-
 #  SPDX-License-Identifier: MPL-2.0
 #  Copyright 2020-2022 John Mille <john@compose-x
 
@@ -22,7 +21,7 @@ from ecs_composex.secrets.secrets_params import RES_KEY, XRES_KEY
 from .helpers import define_env_var_name
 
 
-class ComposeSecret(object):
+class ComposeSecret:
     """
     Class to represent a Compose secret.
     """
@@ -90,7 +89,7 @@ class ComposeSecret(object):
             return
         unfiltered_secrets = self.definition[self.x_key][self.json_keys_key]
         filtered_secrets = [
-            dict(y) for y in set(tuple(x.items()) for x in unfiltered_secrets)
+            dict(y) for y in {tuple(x.items()) for x in unfiltered_secrets}
         ]
         old_secrets = deepcopy(self.ecs_secret)
         self.ecs_secret = []

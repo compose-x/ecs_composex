@@ -1,4 +1,3 @@
-#   -*- coding: utf-8 -*-
 #  SPDX-License-Identifier: MPL-2.0
 #  Copyright 2020-2022 John Mille <john@compose-x.io>
 
@@ -45,15 +44,11 @@ class ComposeListener(Listener):
         """
         self.definition = deepcopy(definition)
         straight_import_keys = ["Port", "Protocol", "SslPolicy", "AlpnPolicy"]
-        listener_kwargs = dict(
-            (x, self.definition[x])
-            for x in straight_import_keys
-            if x in self.definition
-        )
+        listener_kwargs = {
+            x: self.definition[x] for x in straight_import_keys if x in self.definition
+        }
         listener_kwargs.update(
-            dict(
-                (x, self.definition[x]) for x in self.attributes if x in self.definition
-            )
+            {x: self.definition[x] for x in self.attributes if x in self.definition}
         )
         self.services = (
             self.definition[self.targets_keys]

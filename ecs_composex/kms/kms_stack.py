@@ -1,4 +1,3 @@
-#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2022 John Mille <john@compose-x.io>
 
@@ -43,7 +42,7 @@ from ecs_composex.s3.s3_bucket import Bucket
 from ecs_composex.sqs.sqs_stack import Queue
 
 
-def get_key_config(key, account_id: str, resource_id: str) -> Union[dict, None]:
+def get_key_config(key, account_id: str, resource_id: str) -> dict | None:
     """
 
     :param Key key:

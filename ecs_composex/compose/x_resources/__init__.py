@@ -1,4 +1,3 @@
-#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2022 John Mille <john@compose-x.io>
 
@@ -46,7 +45,7 @@ from ecs_composex.resource_settings import get_parameter_settings
 ENV_VAR_NAME = re.compile(r"([^a-zA-Z0-9_]+)")
 
 
-class XResource(object):
+class XResource:
     """
     Class to represent each defined resource in the template
 

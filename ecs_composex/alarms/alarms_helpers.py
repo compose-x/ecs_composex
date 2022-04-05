@@ -1,4 +1,3 @@
-#   -*- coding: utf-8 -*-
 #  SPDX-License-Identifier: MPL-2.0
 #  Copyright 2020-2022 John Mille <john@compose-x.io>
 
@@ -22,7 +21,7 @@ from ecs_composex.common import add_outputs, add_resource
 from ecs_composex.resources_import import import_record_properties
 
 
-def map_expression_to_alarms(expression: str, alarms: List[Alarm]):
+def map_expression_to_alarms(expression: str, alarms: list[Alarm]):
     """
     Function to map the alarms in expression to  CFN alarms
 
@@ -79,7 +78,7 @@ def create_composite_alarm_expression(mapping: dict, expression: str) -> Join:
     return rendered_expression
 
 
-def create_composite_alarm(alarm: Alarm, alarms: List[Alarm]) -> None:
+def create_composite_alarm(alarm: Alarm, alarms: list[Alarm]) -> None:
     """
     Function to create the composite alarms
     """
@@ -124,7 +123,7 @@ def create_composite_alarm(alarm: Alarm, alarms: List[Alarm]) -> None:
     )
 
 
-def add_composite_alarms(template: Template, new_alarms: List[Alarm]) -> None:
+def add_composite_alarms(template: Template, new_alarms: list[Alarm]) -> None:
 
     for alarm in new_alarms:
         if not alarm.cfn_resource and (
@@ -139,7 +138,7 @@ def add_composite_alarms(template: Template, new_alarms: List[Alarm]) -> None:
             add_outputs(template, alarm.outputs)
 
 
-def create_alarms(template: Template, new_alarms: List[Alarm]) -> None:
+def create_alarms(template: Template, new_alarms: list[Alarm]) -> None:
     """
     Main function to create new alarms
     Rules out CompositeAlarms first, creates "Simple" alarms, and then link these to ComopsiteAlarms if so declared.

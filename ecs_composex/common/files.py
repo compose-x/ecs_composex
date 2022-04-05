@@ -1,4 +1,3 @@
-#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2022 John Mille <john@compose-x.io>
 
@@ -92,7 +91,7 @@ def validate_wrapper(session, body: str = None, url: str = None):
         raise
 
 
-class FileArtifact(object):
+class FileArtifact:
     """
     Class to handle files artifacts, such as configuration files or templates.
     It will allow to upload the content to S3 or write to local filesystem.

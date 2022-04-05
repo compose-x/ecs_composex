@@ -1,4 +1,3 @@
-#   -*- coding: utf-8 -*-
 #  SPDX-License-Identifier: MPL-2.0
 #  Copyright 2020-2022 John Mille <john@compose-x.io>
 
@@ -78,7 +77,7 @@ def x_cloud_lookup_and_new_vpc(settings: ComposeXSettings, vpc_stack: VpcStack):
         )
 
 
-def detect_duplicas(x_resources: List[PrivateNamespace]) -> None:
+def detect_duplicas(x_resources: list[PrivateNamespace]) -> None:
     """
     Function to ensure there is no multiple resources with the same zone name
 

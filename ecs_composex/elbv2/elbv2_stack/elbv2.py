@@ -1,4 +1,3 @@
-#   -*- coding: utf-8 -*-
 #  SPDX-License-Identifier: MPL-2.0
 #  Copyright 2020-2022 John Mille <john@compose-x.io>
 
@@ -178,7 +177,7 @@ class Elbv2(NetworkXResource):
         self.debug_families_targets()
 
     def validate_services(self):
-        services_names = list(set([service["name"] for service in self.services]))
+        services_names = list({service["name"] for service in self.services})
         if len(services_names) == 1:
             LOG.info(
                 f"LB {self.name} only has a unique service. LB will be deployed with the service stack."

@@ -1,4 +1,3 @@
-#   -*- coding: utf-8 -*-
 #  SPDX-License-Identifier: MPL-2.0
 #  Copyright 2020-2022 John Mille <john@compose-x.io>
 
@@ -26,9 +25,7 @@ from ecs_composex.sqs.sqs_params import (
 )
 
 
-def get_queue_config(
-    queue: Queue, account_id: str, resource_id: str
-) -> Union[dict, None]:
+def get_queue_config(queue: Queue, account_id: str, resource_id: str) -> dict | None:
     """
 
     :param ecs_composex.sqs.sqs_stack.Queue queue:
@@ -74,7 +71,7 @@ def get_queue_config(
 
 
 def resolve_lookup(
-    lookup_resources: List[Queue], settings: ComposeXSettings, module: XResourceModule
+    lookup_resources: list[Queue], settings: ComposeXSettings, module: XResourceModule
 ) -> None:
     """
     Lookup AWS Resource

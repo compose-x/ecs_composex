@@ -1,4 +1,3 @@
-#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2022 John Mille <john@compose-x.io>
 
@@ -31,7 +30,7 @@ from ecs_composex.ecs import ecs_params
 from .helpers import define_tracking_target_configuration, merge_family_services_scaling
 
 
-class ServiceScaling(object):
+class ServiceScaling:
     """
     Class to group the configuration for Service scaling
 
@@ -48,7 +47,7 @@ class ServiceScaling(object):
         self.target_scaling = None
         self.scalable_target = None
         self.scaling_policies = []
-        self.replicas = max([service.replicas for service in family.services])
+        self.replicas = max(service.replicas for service in family.services)
         self.defined = False
         if not keyisset("Range", configuration):
             return

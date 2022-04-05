@@ -1,4 +1,3 @@
-#   -*- coding: utf-8 -*-
 #  SPDX-License-Identifier: MPL-2.0
 #  Copyright 2020-2022 John Mille <john@compose-x.io>
 
@@ -63,7 +62,7 @@ def upload_services_env_files(family, settings) -> None:
     for service in family.services:
         env_files = []
         for env_file in service.env_files:
-            with open(env_file, "r") as file_fd:
+            with open(env_file) as file_fd:
                 file_body = file_fd.read()
             object_name = path.basename(env_file)
             try:

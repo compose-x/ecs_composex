@@ -1,4 +1,3 @@
-#   -*- coding: utf-8 -*-
 #  SPDX-License-Identifier: MPL-2.0
 #  Copyright 2020-2022 John Mille <john@compose-x.io>
 
@@ -32,7 +31,7 @@ from ecs_composex.common.ecs_composex import X_KEY
 from ecs_composex.iam.import_sam_policies import import_and_cleanse_sam_policies
 
 
-class XResourceModule(object):
+class XResourceModule:
     def __init__(self, res_key: str, x_class, posix_path):
         self._res_key = res_key
         self._xstack_class = x_class
@@ -80,23 +79,21 @@ class XResourceModule(object):
     def import_perms_definition(self):
         perms_file_path = self._path.joinpath(f"{self.mod_key}_perms.json")
         try:
-            with open(perms_file_path, "r", encoding="utf-8-sig") as perms_fd:
+            with open(perms_file_path, encoding="utf-8-sig") as perms_fd:
                 self._mod_policies = loads(perms_fd.read())
-        except IOError:
+        except OSError:
             pass
 
     def import_json_schema(self):
         json_schema_file_path = self._path.joinpath(f"{self.res_key}.spec.json")
         try:
-            with open(
-                json_schema_file_path, "r", encoding="utf-8-sig"
-            ) as json_schema_fd:
+            with open(json_schema_file_path, encoding="utf-8-sig") as json_schema_fd:
                 self._json_schema = loads(json_schema_fd.read())
-        except IOError:
+        except OSError:
             pass
 
 
-class ModManager(object):
+class ModManager:
     """
     Class to manage the modules
     """

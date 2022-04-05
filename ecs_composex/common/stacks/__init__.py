@@ -1,4 +1,3 @@
-#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2022 John Mille <john@compose-x.io>
 
@@ -52,7 +51,7 @@ def render_codepipeline_config_file(parameters):
     return config
 
 
-class ComposeXStack(Stack, object):
+class ComposeXStack(Stack):
     """
     Class to define a CFN Stack as a composition of its template object, parameters, tags etc.
 
@@ -107,10 +106,8 @@ class ComposeXStack(Stack, object):
             self.stack_parameters = {}
         elif not isinstance(stack_parameters, dict):
             raise TypeError("parameters is", type(stack_parameters), "expected", dict)
-        stack_kwargs = dict((x, kwargs[x]) for x in self.props.keys() if x in kwargs)
-        stack_kwargs.update(
-            dict((x, kwargs[x]) for x in self.attributes if x in kwargs)
-        )
+        stack_kwargs = {x: kwargs[x] for x in self.props.keys() if x in kwargs}
+        stack_kwargs.update({x: kwargs[x] for x in self.attributes if x in kwargs})
         if stack_parameters:
             stack_kwargs.update({"Parameters": stack_parameters})
         else:

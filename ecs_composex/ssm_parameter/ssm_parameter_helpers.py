@@ -1,4 +1,3 @@
-#   -*- coding: utf-8 -*-
 #  SPDX-License-Identifier: MPL-2.0
 #  Copyright 2020-2022 John Mille <john@compose-x.io>
 
@@ -96,14 +95,14 @@ def handle_json_validation(resource: SsmParameter, value: str, file_path: str) -
             raise
 
 
-def import_value_from_file(resource: SsmParameter) -> Union[str, Base64]:
+def import_value_from_file(resource: SsmParameter) -> str | Base64:
     """
     Function to import file into the SSM Parameter value
     :param SsmParameter resource:
     :return: The value
     """
     file_path = path.abspath(resource.parameters["FromFile"])
-    with open(file_path, "r") as file_fd:
+    with open(file_path) as file_fd:
         value = file_fd.read()
     if keyisset("EncodeToBase64", resource.parameters):
         return Base64(value)
@@ -115,7 +114,7 @@ def import_value_from_file(resource: SsmParameter) -> Union[str, Base64]:
 
 
 def render_new_parameters(
-    new_resources: List[SsmParameter], root_stack: ComposeXStack
+    new_resources: list[SsmParameter], root_stack: ComposeXStack
 ) -> None:
     """
 

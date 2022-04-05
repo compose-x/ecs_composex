@@ -1,4 +1,3 @@
-#   -*- coding: utf-8 -*-
 #  SPDX-License-Identifier: MPL-2.0
 #  Copyright 2020-2022 John Mille <john@compose-x.io>
 
@@ -31,7 +30,7 @@ from .cloudmap_params import PRIVATE_NAMESPACE_ID
 
 def process_dns_config(
     namespace: PrivateNamespace,
-    resource: Union[NetworkXResource, DatabaseXResource],
+    resource: NetworkXResource | DatabaseXResource,
     dns_settings: dict,
     settings: ComposeXSettings,
     service: Service,

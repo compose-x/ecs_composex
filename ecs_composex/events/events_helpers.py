@@ -1,4 +1,3 @@
-#   -*- coding: utf-8 -*-
 #  SPDX-License-Identifier: MPL-2.0
 #  Copyright 2020-2022 John Mille <john@compose-x.io>
 
@@ -36,7 +35,7 @@ def define_event_rule(stack: ComposeXStack, rule: Rule) -> None:
 
 
 def create_events_template(
-    stack: ComposeXStack, settings: ComposeXSettings, new_resources: List[Rule]
+    stack: ComposeXStack, settings: ComposeXSettings, new_resources: list[Rule]
 ) -> None:
     """
     Function to create the CFN root template for Events Rules

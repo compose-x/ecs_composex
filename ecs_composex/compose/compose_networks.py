@@ -1,4 +1,3 @@
-#   -*- coding: utf-8 -*-
 #  SPDX-License-Identifier: MPL-2.0
 #  Copyright 2020-2022 John Mille <john@compose-x.io>
 
@@ -34,7 +33,7 @@ def match_networks_services_config(service, net_config, networks):
     )
 
 
-class ComposeNetwork(object):
+class ComposeNetwork:
     """
     Class to keep track of the Docker-compose Volumes
     """

@@ -1,4 +1,3 @@
-#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2022 John Mille <john@compose-x.io>
 
@@ -193,7 +192,7 @@ class DocDb(DatabaseXResource):
 
 
 def resolve_lookup(
-    lookup_resources: List[DocDb], settings: ComposeXSettings, module: XResourceModule
+    lookup_resources: list[DocDb], settings: ComposeXSettings, module: XResourceModule
 ):
     """
     Lookup AWS Resources

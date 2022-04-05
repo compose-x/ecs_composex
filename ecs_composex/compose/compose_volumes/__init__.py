@@ -1,6 +1,3 @@
-#  -*- coding: utf-8 -*-
-
-#   -*- coding: utf-8 -*-
 #  SPDX-License-Identifier: MPL-2.0
 #  Copyright 2020-2022 John Mille <john@compose-x.io>
 
@@ -22,7 +19,7 @@ from ecs_composex.efs.efs_params import RES_KEY as EFS_KEY
 from .helpers import evaluate_plugin_efs_properties
 
 
-class ComposeVolume(object):
+class ComposeVolume:
     """
     Class to keep track of the Docker-compose Volumes
 

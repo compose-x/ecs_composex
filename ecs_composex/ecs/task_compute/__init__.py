@@ -1,4 +1,3 @@
-#   -*- coding: utf-8 -*-
 #  SPDX-License-Identifier: MPL-2.0
 #  Copyright 2020-2022 John Mille <john@compose-x.io>
 
@@ -27,7 +26,7 @@ from ecs_composex.ecs.ecs_params import (
 from .helpers import unlock_compute_for_main_container
 
 
-class TaskCompute(object):
+class TaskCompute:
     """
     Class to handle task and services compute settings (CPU/RAM)
     """

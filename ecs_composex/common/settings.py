@@ -1,4 +1,3 @@
-#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2022 John Mille <john@compose-x.io>
 
@@ -43,7 +42,7 @@ from ecs_composex.utils.init_ecs import set_ecs_settings
 from ecs_composex.utils.init_s3 import create_bucket
 
 
-class ComposeXSettings(object):
+class ComposeXSettings:
     """
     Class to handle the settings to use for ECS ComposeX.
 

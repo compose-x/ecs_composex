@@ -1,4 +1,3 @@
-#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2022 John Mille <john@compose-x.io>
 
@@ -31,7 +30,7 @@ from ecs_composex.resources_import import import_record_properties
 COMPOSEX_MAX_OUTPUTS = MAX_OUTPUTS - 10
 
 
-def define_bucket_name(bucket: Bucket) -> Union[str, NoValue]:
+def define_bucket_name(bucket: Bucket) -> str | NoValue:
     """
     Function to automatically add Region and Account ID to the bucket name.
     If set, will use a user-defined separator, else, `-`
@@ -198,7 +197,7 @@ def evaluate_parameters(bucket, bucket_template):
             function(bucket, name, bucket_template)
 
 
-def create_s3_template(new_buckets: List[Bucket], template: Template) -> Template:
+def create_s3_template(new_buckets: list[Bucket], template: Template) -> Template:
     """
     Function to create the root S3 template.
 

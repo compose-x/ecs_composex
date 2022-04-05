@@ -1,4 +1,3 @@
-#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2022 John Mille <john@compose-x.io>
 
@@ -94,7 +93,7 @@ def define_route_name(route_match):
     return f"{scheme_suffix}{method_suffix}{prefix_suffix}"
 
 
-class MeshRouter(object):
+class MeshRouter:
     """
     Defines a router.
     """

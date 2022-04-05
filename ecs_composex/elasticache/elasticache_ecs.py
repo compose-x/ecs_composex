@@ -1,4 +1,3 @@
-#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2022 John Mille <john@compose-x.io>
 
@@ -54,7 +53,7 @@ def link_cluster_to_service(
 
 
 def create_lookup_mappings(
-    mappings: dict, lookup_resources: List[CacheCluster], settings: ComposeXSettings
+    mappings: dict, lookup_resources: list[CacheCluster], settings: ComposeXSettings
 ):
     """
     Function to build up the Mappings for ElastiCache
