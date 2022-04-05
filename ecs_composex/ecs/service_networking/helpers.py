@@ -47,6 +47,8 @@ def update_family_subnets(family, settings) -> None:
     """
     network_names = list(family.service_networking.networks.keys())
     for network in settings.networks:
+        if not network.subnet_name:
+            continue
         if network.name in network_names:
             family.service_networking.subnets = Ref(network.subnet_name)
             LOG.info(

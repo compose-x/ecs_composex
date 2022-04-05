@@ -44,11 +44,9 @@ class ComposeNetwork:
     def __init__(self, name, definition, subnets_list):
         self.name = name
         self.definition = deepcopy(definition)
-        self.subnet_name = set_else_none(
-            "x-vpc", definition, set_else_none("name", definition, name)
-        )
+        self.subnet_name = set_else_none("x-vpc", definition, None)
         subnet_names = [subnet.title for subnet in subnets_list]
-        if self.subnet_name not in subnet_names:
+        if self.subnet_name and self.subnet_name not in subnet_names:
             raise KeyError(
                 f"networks.{name} - x-vpc.{self.subnet_name} defined. Valid options are",
                 subnet_names,

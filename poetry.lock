@@ -1156,11 +1156,11 @@ six = ">=1.5"
 
 [[package]]
 name = "python-slugify"
-version = "6.1.1"
-description = "A Python slugify application that also handles Unicode"
+version = "5.0.2"
+description = "A Python Slugify application that handles Unicode"
 category = "dev"
 optional = false
-python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*"
+python-versions = ">=3.6"
 
 [package.dependencies]
 text-unidecode = ">=1.3"
@@ -1516,7 +1516,7 @@ testing = ["flaky (>=3.4.0)", "freezegun (>=0.3.11)", "pytest (>=4.0.0)", "pytes
 
 [[package]]
 name = "troposphere"
-version = "4.0.0"
+version = "4.0.1"
 description = "AWS CloudFormation creation library"
 category = "main"
 optional = false
@@ -1603,7 +1603,7 @@ ecrscan = ["ecr-scan-reporter"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "94ab03fa331411fc7992aba61f4c650ba6d6a77b446fd81b2f39622bff5b42b0"
+content-hash = "1c52095e3336089275ccbd2d4d8b8e37c524f7efa74d8bc152dc2e42148d93aa"
 
 [metadata.files]
 alabaster = [
@@ -2080,8 +2080,8 @@ python-dateutil = [
     {file = "python_dateutil-2.8.2-py2.py3-none-any.whl", hash = "sha256:961d03dc3453ebbc59dbdea9e4e11c5651520a876d0f4db161e8674aae935da9"},
 ]
 python-slugify = [
-    {file = "python-slugify-6.1.1.tar.gz", hash = "sha256:00003397f4e31414e922ce567b3a4da28cf1436a53d332c9aeeb51c7d8c469fd"},
-    {file = "python_slugify-6.1.1-py2.py3-none-any.whl", hash = "sha256:8c0016b2d74503eb64761821612d58fcfc729493634b1eb0575d8f5b4aa1fbcf"},
+    {file = "python-slugify-5.0.2.tar.gz", hash = "sha256:f13383a0b9fcbe649a1892b9c8eb4f8eab1d6d84b84bb7a624317afa98159cab"},
+    {file = "python_slugify-5.0.2-py2.py3-none-any.whl", hash = "sha256:6d8c5df75cd4a7c3a2d21e257633de53f52ab0265cd2d1dc62a730e8194a7380"},
 ]
 pytz = [
     {file = "pytz-2021.3-py2.py3-none-any.whl", hash = "sha256:3672058bc3453457b622aab7a1c3bfd5ab0bdae451512f6cf25f64ed37f5b87c"},
@@ -2225,8 +2225,8 @@ tox = [
     {file = "tox-3.24.5.tar.gz", hash = "sha256:67e0e32c90e278251fea45b696d0fef3879089ccbe979b0c556d35d5a70e2993"},
 ]
 troposphere = [
-    {file = "troposphere-4.0.0-py3-none-any.whl", hash = "sha256:a6e996f7ef2090fdc60d1114f4da11650e529f6702964b69c3784c2892cc499b"},
-    {file = "troposphere-4.0.0.tar.gz", hash = "sha256:8b57da018a55eace6c3ba1f3dddc24bba8cdf02c2cbf9e734849f91ab62375f9"},
+    {file = "troposphere-4.0.1-py3-none-any.whl", hash = "sha256:c5542ce63af3bd2c757973a351a1cf745120fd93c83783b239f1b401c586db52"},
+    {file = "troposphere-4.0.1.tar.gz", hash = "sha256:719e9387524762c559218776a6e1240f5cfbf725261d520ba6c1cd0dcc37786a"},
 ]
 typed-ast = [
     {file = "typed_ast-1.5.2-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:183b183b7771a508395d2cbffd6db67d6ad52958a5fdc99f450d954003900266"},
