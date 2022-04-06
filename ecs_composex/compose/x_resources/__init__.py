@@ -158,31 +158,19 @@ class XResource:
         """
         JSON Validation of the resources module validation
         """
-
-        if not module_schema:
-            res_key = f"{X_KEY}{module_name}"
-            module_source = pkg_files("ecs_composex").joinpath(
-                f"{module_name}/{res_key}.spec.json"
-            )
-            try:
-                module_schema = json.loads(module_source.read_text())
-            except FileNotFoundError:
-                LOG.error(
-                    f"{res_key}.{name} - No module schema found for that resource. Errors might occur!!"
-                )
-                return
-
+        if not self.module.json_schema and not module_schema:
+            return
         resolver_source = pkg_files("ecs_composex").joinpath("specs/compose-spec.json")
         LOG.debug(f"Validating against input schema {resolver_source}")
         resolver = jsonschema.RefResolver(
             base_uri=f"file://{path.abspath(path.dirname(resolver_source))}/",
-            referrer=module_schema,
+            referrer=self.module.json_schema,
         )
 
         try:
             jsonschema.validate(
                 definition,
-                module_schema,
+                module_schema if module_schema else self.module.json_schema,
                 resolver=resolver,
             )
         except jsonschema.exceptions.ValidationError:
