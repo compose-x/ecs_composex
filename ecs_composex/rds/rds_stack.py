@@ -7,6 +7,7 @@ Module to handle AWS RDS CFN Templates creation
 
 from __future__ import annotations
 
+import json
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -63,7 +64,13 @@ def get_db_instance_config(db, account_id, resource_id):
         LOG.error(f"{db.module.res_key}.{db.name} - Failed to retrieve configuration")
         LOG.error(error)
         raise
-    attributes_mappings = {}
+    attributes_mappings = {
+        DB_NAME: "DBName",
+        db.port_param: "Endpoint::Port",
+        db.security_group_param: "VpcSecurityGroups::0::VpcSecurityGroupId",
+        db.db_cluster_arn_parameter: "DBInstanceArn",
+        db.db_cluster_endpoint_param: "Endpoint::Address",
+    }
     if keyisset("VpcSecurityGroups", db_config_r):
         db_config_r["VpcSecurityGroups"] = [
             sg
@@ -259,13 +266,13 @@ class XStack(ComposeXStack):
                     "rds:cluster",
                     "cluster",
                 )
-            elif keyisset("instance", resource.lookup):
+            elif keyisset("db", resource.lookup):
                 resource.lookup_resource(
                     RDS_DB_INSTANCE_ARN_RE,
                     get_db_instance_config,
                     CfnDBInstance.resource_type,
-                    "rds:instance",
-                    "instance",
+                    "rds:db",
+                    "db",
                 )
             else:
                 raise KeyError(
