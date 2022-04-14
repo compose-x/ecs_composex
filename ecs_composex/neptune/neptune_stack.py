@@ -77,6 +77,9 @@ def get_db_cluster_config(db, account_id, resource_id):
         db.port_param: "Port",
         db.security_group_param: "VpcSecurityGroups::0::VpcSecurityGroupId",
         db.db_cluster_arn_parameter: DB_CLUSTER_ARN.title,
+        db.db_cluster_ro_endpoint_param: DB_READ_ENDPOINT.return_value,
+        db.db_cluster_endpoint_param: db.db_cluster_endpoint_param.return_value,
+        db.ref_parameter: "DBClusterIdentifier",
     }
     config = attributes_to_mapping(db_cluster, attributes_mappings)
     config[
@@ -109,6 +112,9 @@ class NeptuneDBCluster(DatabaseXResource):
         self.security_group_param = DB_SG
         self.db_cluster_arn_parameter = DB_CLUSTER_ARN
         self.port_param = DB_PORT
+        self.db_cluster_ro_endpoint_param = DB_READ_ENDPOINT
+        self.db_cluster_endpoint_param = DB_ENDPOINT
+        self.ref_parameter = DB_CLUSTER_NAME
 
     def init_outputs(self):
         """

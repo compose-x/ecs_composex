@@ -308,17 +308,24 @@ class XResource:
                 res_return_names[prop_param.title] = prop_param
         env_vars = []
         params_to_add = []
-        if (
+        if self.ref_parameter and self.ref_parameter.title in target_definition.keys():
+            LOG.debug(
+                f"{self.module.res_key}.{self.module.res_key} - Ref parameter {self.ref_parameter.title} override."
+            )
+        elif (
             self.ref_parameter
             and self.ref_parameter.title not in target_definition.keys()
         ):
-            target_definition[self.ref_parameter.title] = ENV_VAR_NAME.sub(
-                "", self.name.replace("-", "_").upper()
+            env_var_name = ENV_VAR_NAME.sub("", self.name.replace("-", "_").upper())
+            target_definition[self.ref_parameter.title] = env_var_name
+            LOG.info(
+                f"{self.module.res_key}.{self.name} - Auto-added {env_var_name} for Ref value"
             )
         else:
-            LOG.info(
-                f"{self.module.res_key}.{self.module.res_key} - Ref parameter {self.ref_parameter.title} override."
+            LOG.warning(
+                f"{self.module.res_key}.{self.name} - Ref parameter not defined on {self.__class__}"
             )
+
         for prop_name, env_var_name in target_definition.items():
             if prop_name in res_return_names:
                 if self.cfn_resource:
