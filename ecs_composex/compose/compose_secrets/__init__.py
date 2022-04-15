@@ -81,6 +81,45 @@ class ComposeSecret:
             settings.secrets_mappings.update({self.logical_name: self.mapping})
             self.add_json_keys()
 
+    def define_secret(self, secret_name, json_key) -> EcsSecret:
+        if isinstance(self.arn, str):
+            secret = EcsSecret(Name=secret_name, ValueFrom=f"{self.arn}:{json_key}::")
+        elif isinstance(self.arn, Sub):
+            secret = EcsSecret(
+                Name=secret_name,
+                ValueFrom=Sub(
+                    f"arn:${{{AWS_PARTITION}}}:secretsmanager:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:"
+                    f"secret:${{SecretName}}:{json_key}::",
+                    SecretName=FindInMap(
+                        self.map_name,
+                        self.logical_name,
+                        self.map_name_name,
+                    ),
+                ),
+            )
+        elif isinstance(self.arn, FindInMap):
+            secret = EcsSecret(
+                Name=secret_name,
+                ValueFrom=Sub(
+                    f"${{SecretArn}}:{json_key}::",
+                    SecretArn=FindInMap(
+                        self.map_name,
+                        self.logical_name,
+                        self.map_arn_name,
+                    ),
+                ),
+            )
+        else:
+            raise TypeError(
+                f"secrets.{self.name} - ARN is",
+                type(self.arn),
+                "must be one of",
+                str,
+                Sub,
+                FindInMap,
+            )
+        return secret
+
     def add_json_keys(self):
         """
         Add secrets definitions based on JSON secret keys
@@ -92,43 +131,25 @@ class ComposeSecret:
             dict(y) for y in {tuple(x.items()) for x in unfiltered_secrets}
         ]
         old_secrets = deepcopy(self.ecs_secret)
+        secrets_to_map = {}
         self.ecs_secret = []
-        for secret_key in filtered_secrets:
-            json_key = secret_key["SecretKey"]
-            secret_name = define_env_var_name(secret_key)
-            if isinstance(self.arn, str):
-                self.ecs_secret.append(
-                    EcsSecret(Name=secret_name, ValueFrom=f"{self.arn}:{json_key}::")
+        for secret_json_key in filtered_secrets:
+            secret_key = secret_json_key["SecretKey"]
+            secret_name = define_env_var_name(secret_json_key)
+            if secret_name not in secrets_to_map:
+                secrets_to_map[secret_name] = self.define_secret(
+                    secret_name, secret_key
                 )
-            elif isinstance(self.arn, Sub):
-                self.ecs_secret.append(
-                    EcsSecret(
-                        Name=secret_name,
-                        ValueFrom=Sub(
-                            f"arn:${{{AWS_PARTITION}}}:secretsmanager:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:"
-                            f"secret:${{SecretName}}:{json_key}::",
-                            SecretName=FindInMap(
-                                self.map_name,
-                                self.logical_name,
-                                self.map_name_name,
-                            ),
-                        ),
-                    )
+            else:
+                LOG.warning(
+                    f"secrets.{self.name} - Secret VarName {secret_name} already defined. Overriding value"
                 )
-            elif isinstance(self.arn, FindInMap):
-                self.ecs_secret.append(
-                    EcsSecret(
-                        Name=secret_name,
-                        ValueFrom=Sub(
-                            f"${{SecretArn}}:{json_key}::",
-                            SecretArn=FindInMap(
-                                self.map_name,
-                                self.logical_name,
-                                self.map_arn_name,
-                            ),
-                        ),
-                    )
+                secrets_to_map[secret_name] = self.define_secret(
+                    secret_name, secret_key
                 )
+        self.ecs_secret = [
+            _defined_secret for _defined_secret in secrets_to_map.values()
+        ]
         if not self.ecs_secret:
             self.ecs_secret = old_secrets
 
