@@ -8,8 +8,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ecs_composex.route53.route53_helpers import resolve_lookup
-
 if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
     from ecs_composex.mods_manager import XResourceModule
@@ -21,6 +19,7 @@ from ecs_composex.compose.x_resources.helpers import (
     set_new_resources,
     set_resources,
 )
+from ecs_composex.route53.route53_helpers import resolve_lookup
 from ecs_composex.route53.route53_zone import HostedZone
 
 

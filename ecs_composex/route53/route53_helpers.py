@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, List
 if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
     from ecs_composex.mods_manager import XResourceModule
+    from ecs_composex.route53.route53_zone import HostedZone
 
 from compose_x_common.compose_x_common import keyisset
 from troposphere.route53 import HostedZone as CfnHostedZone
@@ -19,7 +20,6 @@ from ecs_composex.route53.route53_params import (
     PUBLIC_DNS_ZONE_NAME,
     ZONES_PATTERN,
 )
-from ecs_composex.route53.route53_zone import HostedZone
 
 
 def lookup_hosted_zone(zone, session, private, zone_id=None) -> dict:
