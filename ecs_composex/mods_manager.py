@@ -153,9 +153,11 @@ def get_mod_class(module_name):
         try:
             the_class = getattr(res_module, "XStack")
             return the_class
-        except AttributeError:
+        except AttributeError as error:
+            LOG.debug(error)
             return None
-    except ImportError:
+    except ImportError as error:
+        LOG.debug(error)
         return None
 
 
@@ -173,7 +175,9 @@ def get_module(module_name):
                 return module
             except AttributeError:
                 LOG.debug(f"No {module_name}.COMPOSE_X_MODULE function found")
-        except AttributeError:
+        except AttributeError as error:
+            LOG.debug(error)
             return None
-    except ImportError:
+    except ImportError as error:
+        LOG.debug(error)
         return None

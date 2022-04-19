@@ -22,7 +22,6 @@ from ecs_composex.route53.route53_acm import handle_acm_records
 from ecs_composex.route53.route53_elbv2 import handle_elbv2_records
 from ecs_composex.route53.route53_helpers import lookup_hosted_zone
 from ecs_composex.route53.route53_params import PUBLIC_DNS_ZONE_ID, PUBLIC_DNS_ZONE_NAME
-from ecs_composex.route53.route53_stack import XStack
 
 
 class HostedZone(AwsEnvironmentResource):
@@ -115,6 +114,8 @@ class HostedZone(AwsEnvironmentResource):
         :param ComposeXStack root_stack: The root stack
         """
         if self.module.mapping_key not in root_stack.stack_template.resources:
+            from ecs_composex.route53.route53_stack import XStack
+
             stack_template = build_template(self.stack.stack_title)
             super(XStack, self.stack).__init__(self.module.mapping_key, stack_template)
             self.stack.is_void = False
