@@ -28,6 +28,7 @@ from troposphere import (
     GetAtt,
     NoValue,
     Ref,
+    StackName,
     Sub,
 )
 from troposphere.ecs import (
@@ -349,9 +350,12 @@ class EcsCluster:
                             "kms:EncryptionContext:aws:logs:arn": Sub(
                                 f"arn:${{{AWS_PARTITION}}}:logs:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:"
                                 "log-group:*"
-                                if keyisset("AllowKmsKeyReuse", self.parameters)
-                                else f"arn:${{{AWS_PARTITION}}}:logs:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:"
-                                f"log-group:/ecs/execute-logs/{cluster_name}"
+                            )
+                            if keyisset("AllowKmsKeyReuse", self.parameters)
+                            else Sub(
+                                f"arn:${{{AWS_PARTITION}}}:logs:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:"
+                                f"log-group:/ecs/execute-logs/${{CLUSTER_NAME}}",
+                                CLUSTER_NAME=cluster_name,
                             )
                         }
                     },
@@ -390,7 +394,12 @@ class EcsCluster:
                     "Statement": statement,
                 },
             },
-            "Settings": {"Alias": Sub(f"alias/ecs/execute-logs/{cluster_name}")},
+            "Settings": {
+                "Alias": Sub(
+                    f"log-group:/ecs/execute-logs/${{CLUSTER_NAME}}",
+                    CLUSTER_NAME=cluster_name,
+                )
+            },
         }
         if not keyisset("x-kms", settings.compose_content):
             settings.compose_content["x-kms"] = {MANAGED_KMS_KEY_NAME: key_config}
@@ -403,7 +412,10 @@ class EcsCluster:
     def set_log_group(self, cluster_name, root_stack, log_configuration):
         self.log_group = LogGroup(
             "EcsExecLogGroup",
-            LogGroupName=Sub(f"/ecs/execute-logs/{cluster_name}"),
+            LogGroupName=Sub(
+                f"log-group:/ecs/execute-logs/${{CLUSTER_NAME}}",
+                CLUSTER_NAME=cluster_name,
+            ),
             RetentionInDays=120
             if not keyisset("LogGroupRetentionInDays", self.parameters)
             else get_closest_valid_log_retention_period(
@@ -472,8 +484,10 @@ class EcsCluster:
             settings.compose_content["x-s3"] = {MANAGED_S3_BUCKET_NAME: bucket_config}
         else:
             settings.compose_content["x-s3"][MANAGED_S3_BUCKET_NAME] = bucket_config
-        log_configuration["S3BucketName"] = "x-s3::ecs-cluster-encryption-bucket"
-        log_configuration["S3KeyPrefix"] = Sub(f"ecs/execute-logs/{cluster_name}/")
+        log_configuration["S3BucketName"] = f"x-s3::{MANAGED_S3_BUCKET_NAME}"
+        log_configuration["S3KeyPrefix"] = Sub(
+            f"ecs/execute-logs/${{CLUSTER_NAME}}/", CLUSTER_NAME=cluster_name
+        )
         log_configuration["S3EncryptionEnabled"] = True
 
     def update_props_from_parameters(
@@ -482,9 +496,7 @@ class EcsCluster:
         """
         Adapt cluster config to settings
         """
-        cluster_name = (
-            f"${{{AWS_STACK_NAME}}}" if cluster_name == NoValue else cluster_name
-        )
+        cluster_name = StackName if cluster_name == NoValue else cluster_name
         self.log_group = Ref(AWS_NO_VALUE)
         self.log_bucket = Ref(AWS_NO_VALUE)
 

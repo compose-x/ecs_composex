@@ -1,9 +1,9 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "id": "x-kinesis.spec.json",
-  "$id": "x-kinesis.spec.json",
-  "title": "x-kinesis",
-  "description": "x-kinesis specification",
+  "id": "x-kms.spec.json",
+  "$id": "x-kms.spec.json",
+  "title": "x-kms",
+  "description": "x-kms specification",
   "type": "object",
   "additionalProperties": false,
   "properties": {
