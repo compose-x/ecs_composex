@@ -26,11 +26,6 @@ Syntax
         Services: {}
         Topics: []
 
-.. tip::
-
-    You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/alarms>`__ to use
-    as reference for your use-case.
-
 .. seealso::
 
     For more structural details, see `JSON Schema`_
@@ -210,14 +205,19 @@ JSON Schema
 Representation
 ----------------
 
-.. jsonschema:: ../../../ecs_composex/specs/x-alarms.spec.json
+.. jsonschema:: ../../../ecs_composex/alarms/x-alarms.spec.json
 
 Definition
 -----------
 
-.. literalinclude:: ../../../ecs_composex/specs/x-alarms.spec.json
+.. literalinclude:: ../../../ecs_composex/alarms/x-alarms.spec.json
 
 .. _x-alarms Documentation: https://docs.compose-x.io/syntax/compose_x/alarms.html
+
+Test files
+==========
+
+You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/alarms>`__ to use as reference for your use-case.
 
 
 .. _AWS CW Alarms definition: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-cw-alarm.html

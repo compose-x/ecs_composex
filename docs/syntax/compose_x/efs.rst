@@ -144,12 +144,18 @@ JSON Schema
 Model
 -------
 
-.. jsonschema:: ../../../ecs_composex/specs/x-efs.spec.json
+.. jsonschema:: ../../../ecs_composex/efs/x-efs.spec.json
 
 Definition
 -------------
 
-.. literalinclude:: ../../../ecs_composex/specs/x-efs.spec.json
+.. literalinclude:: ../../../ecs_composex/efs/x-efs.spec.json
+
+Test files
+==========
+
+You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/>`__ to use
+as reference for your use-case.
 
 
 .. _AWS CFN EFS syntax reference: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-efs-filesystem.html

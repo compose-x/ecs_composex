@@ -24,12 +24,6 @@ Syntax
       Properties: {}
       Lookup: {}
 
-.. tip::
-
-    You can find the test files for VPC `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/vpc>`__ to use
-    as reference for your use-case.
-
-
 Properties
 ============
 
@@ -172,10 +166,17 @@ JSON Schema
 Model
 ---------------
 
-.. jsonschema:: ../../../ecs_composex/specs/x-vpc.spec.json
+.. jsonschema:: ../../../ecs_composex/vpc/x-vpc.spec.json
 
 Definition
 ------------
 
-.. literalinclude:: ../../../ecs_composex/specs/x-vpc.spec.json
+.. literalinclude:: ../../../ecs_composex/vpc/x-vpc.spec.json
     :language: json
+
+
+Test files
+===========
+
+You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/vpc>`__ to use
+as reference for your use-case.

@@ -24,11 +24,6 @@ Syntax Reference
         MacroParameters: {}
         Services: {}
 
-.. tip::
-
-    You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/dynamodb>`__ to use
-    as reference for your use-case.
-
 
 Properties
 ===========
@@ -106,14 +101,19 @@ JSON Schema
 Model
 ----------------
 
-.. jsonschema:: ../../../ecs_composex/specs/x-dynamodb.spec.json
+.. jsonschema:: ../../../ecs_composex/dynamodb/x-dynamodb.spec.json
 
 Definition
 ------------
 
-.. literalinclude:: ../../../ecs_composex/specs/x-dynamodb.spec.json
+.. literalinclude:: ../../../ecs_composex/dynamodb/x-dynamodb.spec.json
     :language: json
 
+Test files
+==========
+
+You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/dynamodb>`__ to use
+as reference for your use-case.
 
 
 .. _AWS CFN Dynamodb Documentation: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-dynamodb-table.html

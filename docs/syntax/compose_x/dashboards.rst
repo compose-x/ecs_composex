@@ -44,10 +44,17 @@ JSON Schema
 Model
 ---------------
 
-.. jsonschema:: ../../../ecs_composex/specs/x-dashboards.spec.json
+.. jsonschema:: ../../../ecs_composex/dashboards/x-dashboards.spec.json
 
 Definition
 ------------
 
-.. literalinclude:: ../../../ecs_composex/specs/x-dashboards.spec.json
+.. literalinclude:: ../../../ecs_composex/dashboards/x-dashboards.spec.json
     :language: json
+
+
+Test files
+==========
+
+You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/dashboards>`__ to use
+as reference for your use-case.

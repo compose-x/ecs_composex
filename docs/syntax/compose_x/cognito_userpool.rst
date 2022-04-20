@@ -122,10 +122,10 @@ JSON Schema
 Model
 -----------------
 
-.. jsonschema:: ../../../ecs_composex/specs/x-cognito_userpool.spec.json
+.. jsonschema:: ../../../ecs_composex/cognito_userpool/x-cognito_userpool.spec.json
 
 Definition
 ------------
 
-.. literalinclude:: ../../../ecs_composex/specs/x-cognito_userpool.spec.json
+.. literalinclude:: ../../../ecs_composex/cognito_userpool/x-cognito_userpool.spec.json
     :language: json

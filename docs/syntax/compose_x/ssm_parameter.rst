@@ -152,12 +152,12 @@ JSON Schema
 Model
 -------
 
-.. jsonschema:: ../../../ecs_composex/specs/x-ssm_parameter.spec.json
+.. jsonschema:: ../../../ecs_composex/ssm_parameters/x-ssm_parameter.spec.json
 
 Definition
 -----------
 
-.. literalinclude:: ../../../ecs_composex/specs/x-ssm_parameter.spec.json
+.. literalinclude:: ../../../ecs_composex/ssm_parameters/x-ssm_parameter.spec.json
 
 
 .. _AWS CFN SSM Parameter Documentation: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ssm-parameter.html

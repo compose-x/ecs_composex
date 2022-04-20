@@ -323,13 +323,19 @@ JSON Schema
 Model
 -------
 
-.. jsonschema:: ../../../ecs_composex/specs/x-rds.spec.json
+.. jsonschema:: ../../../ecs_composex/rds/x-rds.spec.json
 
 Definition
 -----------
 
-.. literalinclude:: ../../../ecs_composex/specs/x-rds.spec.json
+.. literalinclude:: ../../../ecs_composex/rds/x-rds.spec.json
 
+
+Test files
+============
+
+You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/rds>`__ to use
+as reference for your use-case.
 
 .. _Engine: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-rds-dbcluster.html#cfn-rds-dbcluster-engine
 .. _EngineVersion: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-rds-dbcluster.html#cfn-rds-dbcluster-engineversion

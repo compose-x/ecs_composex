@@ -29,11 +29,6 @@ Syntax
         DnsAliases: []
         Settings: {}
 
-.. tip::
-
-    You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/elbv2>`__ to use
-    as reference for your use-case.
-
 .. seealso::
 
     For more structural details, see `JSON Schema`_
@@ -441,12 +436,18 @@ JSON Schema
 Model
 -------
 
-.. jsonschema:: ../../../ecs_composex/specs/x-elbv2.spec.json
+.. jsonschema:: ../../../ecs_composex/elbv2/x-elbv2.spec.json
 
 Definition
 ------------
 
-.. literalinclude:: ../../../ecs_composex/specs/x-elbv2.spec.json
+.. literalinclude:: ../../../ecs_composex/elbv2/x-elbv2.spec.json
+
+Test files
+===========
+
+You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/elbv2>`__ to use
+as reference for your use-case.
 
 
 .. _LB Attributes: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-elasticloadbalancingv2-loadbalancer.html#cfn-elasticloadbalancingv2-loadbalancer-loadbalancerattributes

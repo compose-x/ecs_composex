@@ -21,11 +21,6 @@ Syntax Reference
         MacroParameters: {}
         Lookup: {}
 
-.. tip::
-
-    You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/acm>`__ to use
-    as reference for your use-case.
-
 Properties
 ==========
 
@@ -116,13 +111,21 @@ JSON Schema
 Model
 ---------------
 
-.. jsonschema:: ../../../ecs_composex/specs/x-acm.spec.json
+.. jsonschema:: ../../../ecs_composex/acm/x-acm.spec.json
 
 
 Definition
 -----------
 
-.. literalinclude:: ../../../ecs_composex/specs/x-acm.spec.json
+.. literalinclude:: ../../../ecs_composex/acm/x-acm.spec.json
+
+
+Test files
+===========
+
+You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/acm>`__
+to use as reference for your use-case.
+
 
 .. _AWS ACM Properties: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-certificatemanager-certificate.html
 .. _DomainValidationOptions: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-certificatemanager-certificate.html#cfn-certificatemanager-certificate-domainvalidationoptions

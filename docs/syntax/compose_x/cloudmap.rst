@@ -166,9 +166,15 @@ JSON Schema
 Model
 ----------------
 
-.. jsonschema:: ../../../ecs_composex/specs/x-cloudmap.spec.json
+.. jsonschema:: ../../../ecs_composex/cloudmap/x-cloudmap.spec.json
 
 Definition
 -----------
 
-.. literalinclude:: ../../../ecs_composex/specs/x-cloudmap.spec.json
+.. literalinclude:: ../../../ecs_composex/cloudmap/x-cloudmap.spec.json
+
+Test files
+===========
+
+You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases>`__ to use
+as reference for your use-case.

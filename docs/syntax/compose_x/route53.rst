@@ -101,9 +101,9 @@ JSON Schema
 Model
 --------
 
-.. jsonschema:: ../../../ecs_composex/specs/x-route53.spec.json
+.. jsonschema:: ../../../ecs_composex/route53/x-route53.spec.json
 
 Definition
 ------------
 
-.. literalinclude:: ../../../ecs_composex/specs/x-route53.spec.json
+.. literalinclude:: ../../../ecs_composex/route53/x-route53.spec.json

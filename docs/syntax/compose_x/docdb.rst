@@ -17,11 +17,6 @@ Allows you to create / lookup DocumentDB clusters you want to connect your ECS S
     you generate the CFN templates for docdb, and deploy the stacks separately.
     Using Lookup you can use existing DocDB clusters with your new services.
 
-.. tip::
-
-    You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/docdb>`__ to use
-    as reference for your use-case.
-
 .. seealso::
 
     For more structural details, see `JSON Schema`_
@@ -176,13 +171,19 @@ JSON Schema
 Model
 ----------
 
-.. jsonschema:: ../../../ecs_composex/specs/x-docdb.spec.json
+.. jsonschema:: ../../../ecs_composex/docdb/x-docdb.spec.json
 
 
 Definition
 -------------
 
-.. literalinclude:: ../../../ecs_composex/specs/x-docdb.spec.json
+.. literalinclude:: ../../../ecs_composex/docdb/x-docdb.spec.json
+
+Test files
+==========
+
+You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/docdb>`__ to use
+as reference for your use-case.
 
 
 .. _DocDB Cluster properties: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-docdb-dbcluster.html

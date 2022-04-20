@@ -25,15 +25,6 @@ Syntax
         Settings: {}
         Services: {}
 
-.. tip::
-
-    You can find the test files for S3 `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/s3>`__ to use
-    as reference for your use-case.
-
-.. seealso::
-
-    For more structural details, see `JSON Schema`_
-
 Services
 ========
 
@@ -204,14 +195,20 @@ JSON Schema
 Model
 ----------------
 
-.. jsonschema:: ../../../ecs_composex/specs/x-s3.spec.json
+.. jsonschema:: ../../../ecs_composex/s3/x-s3.spec.json
 
 Definition
 ------------
 
-.. literalinclude:: ../../../ecs_composex/specs/x-s3.spec.json
+.. literalinclude:: ../../../ecs_composex/s3/x-s3.spec.json
     :language: json
 
+
+Test files
+===========
+
+You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/s3>`__ to use
+as reference for your use-case.
 
 .. _AWS CFN S3 Definition: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-s3-bucket.html
 .. _AWS S3 Return Values: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-s3-bucket.html#aws-properties-s3-bucket-return-values

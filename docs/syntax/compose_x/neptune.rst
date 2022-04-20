@@ -114,13 +114,18 @@ JSON Schema
 Model
 ------------
 
-.. jsonschema:: ../../../ecs_composex/specs/x-neptune.spec.json
+.. jsonschema:: ../../../ecs_composex/neptune/x-neptune.spec.json
 
 Definition
 ------------
 
-.. literalinclude:: ../../../ecs_composex/specs/x-neptune.spec.json
+.. literalinclude:: ../../../ecs_composex/neptune/x-neptune.spec.json
 
+Test files
+===========
+
+You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/neptune>`__ to use
+as reference for your use-case.
 
 .. _Neptune Cluster properties: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-neptune-dbcluster.html
 .. _Neptune Instance: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-neptune-dbinstance.html

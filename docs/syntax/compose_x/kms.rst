@@ -13,15 +13,10 @@ This module allows you to specify new and existing KMS Keys you wish to either g
 link to your other AWS Resources (such as S3, SQS etc.) which would also automatically grant permission to services
 accessing these.
 
-.. tip::
-
-    You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/kms>`__ to use
-    as reference for your use-case.
-
 Properties
 ==========
 
-See `AWS CFN KMS Key Documentation`_
+All properties are supported. See `AWS CFN KMS Key Documentation`_ for the full details.
 
 MacroParameters
 ==================
@@ -96,13 +91,19 @@ JSON Schema
 Model
 -------------------
 
-.. jsonschema:: ../../../ecs_composex/specs/x-kms.spec.json
+.. jsonschema:: ../../../ecs_composex/kms/x-kms.spec.json
 
 Definition
 -------------
 
-.. literalinclude:: ../../../ecs_composex/specs/x-kms.spec.json
+.. literalinclude:: ../../../ecs_composex/kms/x-kms.spec.json
     :language: json
+
+Test files
+===========
+
+You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/kms>`__ to use
+as reference for your use-case.
 
 
 .. _AWS CFN KMS Key Documentation: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-kms-key.html

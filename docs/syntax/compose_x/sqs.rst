@@ -17,16 +17,6 @@ You can also create DLQ and reference them to each other. See `Special Features`
 You can also define services autoscaling automatically in the queue section instead of creating a new alarm etc.
 separately, compose-x will do all of that for you automatically. See `Scaling`_ for more details.
 
-Definition
-================
-
-.. jsonschema:: ../../../ecs_composex/specs/x-sqs.spec.json
-
-
-.. tip::
-
-    You can find the test files for SQS `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/sqs>`__ to use
-    as reference for your use-case.
 
 .. seealso::
 
@@ -220,15 +210,15 @@ Examples
             scaling:
               ScaleInCooldown: 120
               ScaleOutCooldown: 60
-              steps:
-                - lower_bound: 0
-                  upper_bound: 10
-                  count: 1 # Gives you 1 container if there is between 0 and 10 messages in the queue.
-                - lower_bound: 10
-                  upper_bound: 100
-                  count: 10 # Gives you 10 containers if you have between 10 and 100 messages in the queue.
-                - lower_bound: 100
-                  count: 20 # Gives you 20 containers if there is 100+ messages in the queue
+              Steps:
+                - LowerBound: 0
+                  UpperBound: 10
+                  Count: 1 # Gives you 1 container if there is between 0 and 10 messages in the queue.
+                - LowerBound: 10
+                  UpperBound: 100
+                  Count: 10 # Gives you 10 containers if you have between 10 and 100 messages in the queue.
+                - LowerBound: 100
+                  Count: 20 # Gives you 20 containers if there is 100+ messages in the queue
 
 .. note::
 
@@ -241,8 +231,22 @@ Examples
 JSON Schema
 =============
 
-.. literalinclude:: ../../../ecs_composex/specs/x-sqs.spec.json
+Model
+-------
 
+.. jsonschema:: ../../../ecs_composex/sqs/x-sqs.spec.json
+
+Definition
+-------------
+
+.. literalinclude:: ../../../ecs_composex/sqs/x-sqs.spec.json
+
+
+Test files
+===========
+
+You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/sqs>`__ to use
+as reference for your use-case.
 
 .. _Engine: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-rds-dbcluster.html#cfn-rds-dbcluster-engine
 .. _EngineVersion: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-rds-dbcluster.html#cfn-rds-dbcluster-engineversion

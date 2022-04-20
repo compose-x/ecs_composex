@@ -16,11 +16,6 @@ Definition
 
     If you do not specify any Properties, the Profiling group name gets generated for you.
 
-.. tip::
-
-    You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/codeguru>`__ to use
-    as reference for your use-case.
-
 Properties
 ===========
 
@@ -95,3 +90,9 @@ Definition
     :language: json
 
 .. _AWS CFN definition for CodeGuru profiling group: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-codeguruprofiler-profilinggroup.html
+
+Test files
+==========
+
+You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/codeguru>`__ to use
+as reference for your use-case.

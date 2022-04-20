@@ -65,13 +65,18 @@ JSON Schema
 Model
 ------
 
-.. jsonschema:: ../../../ecs_composex/specs/x-events.spec.json
+.. jsonschema:: ../../../ecs_composex/events/x-events.spec.json
 
 Definition
 -----------
 
-.. literalinclude:: ../../../ecs_composex/specs/x-events.spec.json
+.. literalinclude:: ../../../ecs_composex/events/x-events.spec.json
 
+Test files
+===========
+
+You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/events>`__ to use
+as reference for your use-case.
 
 .. _AWS CFN Events Rules definitions: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-events-rule.html
 .. _Task Rule target definition: https://docs.aws.amazon.com/eventbridge/latest/APIReference/API_PutTargets.html
