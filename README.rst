@@ -47,28 +47,9 @@ It automatically takes care of network access requirements and IAM permissions, 
 Installation
 ============
 
-ECS Compose-X can be used as a CLI ran locally, in CICD pipelines, or as an AWS CloudFormation macro, allowing you
-to use your Docker Compose files directly in CloudFormation!
-
-On AWS using AWS CloudFormation Macro
---------------------------------------
-
-You can now deploy the CloudFormation macro to your AWS Account using AWS Serverless Application Repository (SAR).
-
-Deploy it in your account today |AWS_SAR|
-
-.. |AWS_SAR| image:: https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png
-    :target: https://serverlessrepo.aws.amazon.com/applications/eu-west-1/518078317392/compose-x
-
-
-`Find out how to use ECS Compose-X in AWS here`_
-
-Via pip
---------
-
 .. code-block:: bash
 
-    pip install ecs_composex
+    pip install ecs-composex
 
 
 How is it different ?
@@ -80,37 +61,47 @@ that we think could be of interest to you.
 Modularity / "Plug & Play"
 ---------------------------
 
-The majority of people who are going to use ECS ComposeX on a daily basis should be developers who need to have an
-environment of their own and want to quickly iterate over it.
+The origin of ECS Compose-X was to provide developers with the ability of deploying an entire test stack from scratch.
+However, the reality is more that companies have already gotten VPC/Networking sorted out, other applications, services
+and resources already exist and new services need access to that existing infrastructure.
 
-However, it is certainly something that Cloud Engineers in charge of the AWS accounts etc. would want to use to make their own lives easy too.
+So with ECS-ComposeX we have since very early on , defined `Lookup`_, which allows you to use your existing services
+and resources you have in AWS. Via API discovery, all the settings, configuration of those will be used to grant
+the necessary access and define configuration accordingly for your services to use these successfully.
 
-In many areas, you as the end-user of ComposeX will already have infrastructure in place: VPC, DBs and what not.
-So as much as possible, you will be able in ComposeX to define `Lookup`_ sections which will find your existing resources,
-and map these to the services.
 
-Built for AWS Fargate
-----------------------
+Deploy to AWS Fargate, AWS EC2 and ECS Anywhere
+---------------------------------------------------
 
-However the original deployments and work on this project was done using EC2 instances (using SpotFleet), everything
-is now implemented to work on AWS Fargate First (2020-06-06).
+Since the beginning, the focus has been on running with AWS Fargate, as it is what allows developers least effort
+to deploying applications. But by users demand, the project was adapted to support deploying to existing EC2 based
+clusters, as well as on ECS Anywhere.
 
-That said, all features that can be supported with EC2 instances are available to you with ECS Compose-X, which, will
-simply disable such settings when deployed on top of AWS Fargate.
+With the growing adoption of other ARM there is also now support to specify whether you want to run your services
+on AWS Fargate using Graviton processors.
 
 Attributes auto-correct
 -------------------------
 
 A fair amount of the time, deployments via AWS CloudFormation, Ansible and other IaC will fail because of incompatible
-settings. This happened a number of times, with a lot of different AWS Services.
+settings. This is particularly frustrating and can lead to failed deployments.
+It happened to us all, a number of times, with a lot of different AWS Services.
 
 Whilst giving you the ability to use all properties of AWS CloudFormation objects, whenever possible, ECS Compose-X
-will understand how two services are connected and will auto-correct the settings for you.
+will try to identify incompatible settings, warn you of changes it made, and otherwise fail early to avoid deployment
+issues.
 
 For example, if you set the Log retention to be 42 days, which is invalid, it will automatically change that to the
 closest valid value (here, 30).
 
+Create your own modules
+==========================
 
+Since version 0.18 of ECS Compose-X, you can create your own ``x-`` modules that will automatically be detected at
+execution time. Thanks to the module manager, if your module contains all the necessary entrypoints, it will be able
+to act as an extension of compose-x and do whatever you want it to do.
+
+See how to create your own modules
 
 Credits
 =======

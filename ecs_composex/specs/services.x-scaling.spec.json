@@ -3,7 +3,7 @@
   "id": "services.x-scaling",
   "$id": "services.x-scaling.spec.json",
   "type": "object",
-  "title": "services.x-iam specification",
+  "title": "services.x-scaling specification",
   "description": "The services.x-scaling specification for ComposeX",
   "properties": {
     "Range": {
@@ -51,12 +51,14 @@
         "CpuTarget": {
           "type": "integer",
           "maximum": 100.0,
+          "minimum": 0.1,
           "description": "Percentage of CPU usage to track and scale services accordingly"
         },
         "MemoryTarget": {
           "type": "integer",
           "description": "Percentage of RAM usage to track and scale services accordingly",
-          "maximum": 100.0
+          "maximum": 100.0,
+          "minimum": 0.1
         },
         "ScaleInCooldown": {
           "type": "integer",

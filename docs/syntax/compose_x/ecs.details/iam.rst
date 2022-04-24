@@ -14,14 +14,12 @@ This section is the entrypoint to further extension of IAM definition for the IA
 Syntax
 =======
 
-x-iam:
-  Policies: []
-  PermissionsBoundary: str
-  ManagedPolicyArns: []
+.. code-block:: yaml
 
-.. seealso::
-
-    For more structural details, see `JSON Schema`_
+    x-iam:
+      Policies: []
+      PermissionsBoundary: str
+      ManagedPolicyArns: []
 
 
 PermissionsBoundary
@@ -30,18 +28,14 @@ PermissionsBoundary
 This key represents an IAM policy (name or ARN) that needs to be added to the IAM roles in order to represent the IAM
 Permissions Boundary.
 
-.. note::
+.. tip::
 
-    You can either provide a full policy arn, or just the name of your policy.
-    The validation regexp is:
+    if you specify ony the name, ie. **containers**, this will resolve into
+    **arn:${AWS::Partition}:iam::${AWS::AccountId}:policy/containers**
 
-    .. code-block:: python
-
-        r"((^([a-zA-Z0-9-_.\/]+)$)|(^(arn:aws:iam::(aws|[0-9]{12}):policy\/)[a-zA-Z0-9-_.\/]+$))"
-
-Examples:
 
 .. code-block:: yaml
+    :caption: PermissionsBoundary example
 
     services:
       serviceA:
@@ -53,10 +47,14 @@ Examples:
         x-iam:
           PermissionsBoundary: arn:aws:iam::aws:policy/PowerUserAccess
 
-.. tip::
+.. note::
 
-    if you specify ony the name, ie. **containers**, this will resolve into
-    **arn:${AWS::Partition}:iam::${AWS::AccountId}:policy/containers**
+    You can either provide a full policy arn, or just the name of your policy.
+    The validation regexp is:
+
+    .. code-block:: python
+
+        r"((^([a-zA-Z0-9-_.\/]+)$)|(^(arn:aws:iam::(aws|[0-9]{12}):policy\/)[a-zA-Z0-9-_.\/]+$))"
 
 Policies
 ------------

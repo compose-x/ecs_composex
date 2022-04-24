@@ -23,12 +23,6 @@ Syntax reference
         MacroParameters: {}
         Services: {}
 
-.. tip::
-
-    You can find the test files for Kinesis `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/kinesis>`__ to use
-    as reference for your use-case.
-
-
 Services
 =========
 

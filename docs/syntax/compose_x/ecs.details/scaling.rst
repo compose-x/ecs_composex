@@ -53,8 +53,8 @@ Allows you to define target scaling for the service based on CPU/RAM.
     x-scaling:
       Range: "1-10"
       TargetScaling:
-        CpuTarget: int (will be casted to float)
-        MemoryTarget: int (will be casted to float)
+        CpuTarget: number (percentage, i.e. 75.0)
+        MemoryTarget: number (percentage, i.e. 80.0)
         ScaleInCooldown: int (ie. 60)
         ScaleOutCooldown: int (ie. 60)
         DisableScaleIn: boolean (True/False)

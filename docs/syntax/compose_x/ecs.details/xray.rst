@@ -9,8 +9,8 @@
 services.x-xray
 ==================
 
-This section allows to enable X-Ray to run right next to your container.
-It will use the AWS original image for X-Ray Daemon and exposes the ports to the task.
+This section allows to automatically add the ``xray-daemon`` sidecar to your task definition, automatically
+defining port, environment variables for the other containers to use.
 
 Syntax reference
 =================

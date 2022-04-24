@@ -9,6 +9,8 @@
 x-ssm_parameter
 =================
 
+Allows you to create new SSM Parameters, including from local files with optional transformations.1
+
 Syntax
 =======
 
@@ -20,17 +22,8 @@ Syntax
         Properties: {}
         MacroParameters: {}
         Settings: {}
-        Services: []
+        Services: {}
 
-
-.. tip::
-
-    You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/ssm>`__ to use
-    as reference for your use-case.
-
-.. seealso::
-
-    For more structural details, see `JSON Schema`_
 
 Properties
 ===========
@@ -158,6 +151,13 @@ Definition
 -----------
 
 .. literalinclude:: ../../../ecs_composex/ssm_parameters/x-ssm_parameter.spec.json
+
+
+Test files
+===========
+
+You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/ssm>`__ to use
+as reference for your use-case.
 
 
 .. _AWS CFN SSM Parameter Documentation: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ssm-parameter.html

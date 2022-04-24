@@ -12,6 +12,35 @@ You can contribute in many ways:
 Types of Contributions
 ----------------------
 
+Submit Feedback
+~~~~~~~~~~~~~~~
+
+The best way to send feedback is to file an issue at https://github.com/compose-x/ecs_composex/issues,
+or join us on `Slack <https://join.slack.com/t/compose-x/shared_invite/zt-w9ly4f3k-QhqGDs57RY7WcBnLYDw_lg>`_
+
+If you are proposing a feature:
+
+* Explain in detail how it would work.
+* Keep the scope as narrow as possible, to make it easier to implement.
+* Remember that this is a volunteer-driven project, and that contributions
+  are welcome :)
+
+
+Submit your use-case to the test-suite
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In the repository, under `use-cases`, we have many variations of docker-compose files that will be used to test
+each individual ECS Compose-X module, sometimes merged together. If you have been using ECS Compose-X and want to
+make sure that future versions will maintain compatibility, please feel free to submit your compose file and have it
+added to the test suite!
+
+.. note::
+
+    If you do submit your use-case, keep in mind not to use your own resource ARNs and otherwise account specific
+    configuration.
+    If you defined a domain name, x-route53.Lookup in your file, you can change it with to `bdd-testing.compose-x.io`
+    instead so that all your settings (Records etc.)
+
 Report Bugs
 ~~~~~~~~~~~
 
@@ -41,18 +70,6 @@ Write Documentation
 ECS-ComposeX could always use more documentation, whether as part of the
 official ECS-ComposeX docs, in docstrings, or even on the web in blog posts,
 articles, and such.
-
-Submit Feedback
-~~~~~~~~~~~~~~~
-
-The best way to send feedback is to file an issue at https://github.com/compose-x/ecs_composex/issues.
-
-If you are proposing a feature:
-
-* Explain in detail how it would work.
-* Keep the scope as narrow as possible, to make it easier to implement.
-* Remember that this is a volunteer-driven project, and that contributions
-  are welcome :)
 
 Get Started!
 ------------
@@ -111,7 +128,6 @@ Tips
 To run a subset of tests::
 
 $ make test
-$ make conform
 $ make coverage
 
 
