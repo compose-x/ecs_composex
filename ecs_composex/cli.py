@@ -78,8 +78,9 @@ def main_parser():
     )
     base_command_parser.add_argument(
         "-n",
+        "-p",
         "--name",
-        help="Name of your stack",
+        help="Name of your stack / docker project",
         required=True,
         type=str,
         dest=ComposeXSettings.name_arg,
