@@ -13,7 +13,8 @@ are required to run the service.
 
 For more details on the deploy, see `docker documentation for deploy here <https://docs.docker.com/compose/compose-file/compose-file-v3/#deploy>`_
 
-At the moment, all keys are not supported, mostly due to the way Fargate by nature is expecting settings to be.
+The templates rendered will import all settings you set, and within CloudFormation itself, use conditions to rule
+out settings that would be incompatible with a specific compute mode, i.e. ``Fargate``
 
 resources
 =============
@@ -27,26 +28,24 @@ From there, it will automatically select the closest valid Fargate CPU/RAM combi
 .. important::
 
     CPUs should be set between 0.25 and 4 to be valid for Fargate, otherwise you will have an error.
+    ECS Compose-X will automatically correct values to fit within all of the containers in the task,
+    to the closest values. First evaluates the CPU, then finds the closest value for RAM.
 
 replicas
 ==========
 
-This setting allows you to define how many tasks should be running for a given service.
-The value is used to define **MicroserviceCount**.
+This setting allows you to define how many tasks should be running for a given service. It will define the initial
+``ecs::DesiredCount`` for your service.
 
 .. _composex_families_labels_syntax_reference:
 
 labels
 =========
 
-These labels aren't used for much in native Docker compose as per the documentation. They are only used for the service,
-but not for the containers themselves. Which is great for us, as we can then leverage that structure to implement a
-merge of services.
+These labels aren't used as per the documentation. They are only used for the service,
+but not for the containers themselves.
 
-In AWS ECS, a Task definition is a group of one or more containers which are going to be running as a one task.
-The most usual use-case for this, is with web applications, which need to have a reverse proxy (ie. nginx) in front
-of the actual application. But also, if you used the *use_xray* option, you realized that ECS ComposeX automatically
-adds the x-ray-daemon sidecar. Equally, when we implement AppMesh, we will also have another side-car container for this.
+We leverage that structure to implement simple services flags that will allow users to define settings.
 
 So, here is the tag that will allow you to merge your reverse proxy or waf (if you used a WAF in container) fronting
 your web application:
@@ -54,7 +53,39 @@ your web application:
 ecs.task.family
 ----------------
 
-For example, you would have:
+By default, the name of the "family" used is the name of the service. But you can override it with this label.
+When you have multiple services in your compose file that you would want to have in the same ECS TaskDefinition/Service,
+you can use that label to join two services together.
+
+.. code-block:: yaml
+
+    services:
+      backend: # resulting family name: backend
+        image: backend
+
+      webapp: # resulting family name: frontend
+        deploy:
+          labels:
+            ecs.task.family: frontend
+        expose:
+          8000/tcp
+
+      api: # resulting family name: api
+        expose:
+         - 8080/tcp
+
+      rproxy: # will be used (duplicated) in both frontend and api families
+        ports:
+         - 80:80/tcp
+        deploy:
+          labels:
+            ecs.task.family: frontend,api # comma delimited list of the families it belongs with
+
+
+See `ecs.depends.condition`_ to define services priorities for sidecars.
+
+Full example
+++++++++++++++
 
 .. literalinclude:: ../../../../use-cases/blog.features.yml
     :language: yaml

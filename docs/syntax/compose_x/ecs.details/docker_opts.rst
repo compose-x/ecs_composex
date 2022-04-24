@@ -22,14 +22,13 @@ Syntax Reference
 
     services:
       serviceA:
-        image: 012345678912.dkr.region.amazonaws.com/repo:tag
+        image: nginx
         x-docker_opts:
           InterpolateWithDigest: bool
 
 .. seealso::
 
     For more structural details, see `JSON Schema`_
-
 
 
 InterpolateWithDigest

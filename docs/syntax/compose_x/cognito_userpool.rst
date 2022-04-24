@@ -11,7 +11,7 @@ x-cognito_userpool
 
 This module allows you to identify through Lookup the Cognito Userpool you wish to us in x-elbv2.
 
-For now this module is of limited use, but will be soon extended to all capabilities (Create/Use)
+For now this module is only of use with x-elbv2, but in future versions be extended to full features.
 
 Syntax Reference
 =================

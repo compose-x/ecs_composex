@@ -68,17 +68,36 @@ services up in AWS ECS. Other tools, such as Copilot, require you to rewrite int
 Modularity and "Plug & Play"
 -----------------------------
 
+The origin of ECS Compose-X was to provide developers with the ability of deploying an entire test stack from scratch.
+However, the reality is more that companies have already gotten VPC/Networking sorted out, other applications, services
+and resources already exist and new services need access to that existing infrastructure.
+
+So with ECS-ComposeX we have since very early on , defined :ref:`lookup_syntax_reference`, which allows you to use your existing services
+and resources you have in AWS. Via API discovery, all the settings, configuration of those will be used to grant
+the necessary access and define configuration accordingly for your services to use these successfully.
+
 ECS Compose-X on was written to make AWS accessible to developers and cloud engineers of all level.
 For developers, we hope that enables them to create new environment of their own and want to quickly iterate over it.
-
-In many areas, the end-user of Compose-X will already have infrastructure in place: VPC, Databases in AWS RDS, DynamoDB tables, etc.
-With Compose-X you can define :ref:`lookup_syntax_reference` sections which will find your existing resources,
-and map these to the new services.
 
 .. note::
 
     When using :ref:`lookup_syntax_reference`, the resource in AWS will **never** be altered to avoid conflicts.
 
+
+Deploy to AWS Fargate, AWS EC2 and ECS Anywhere
+---------------------------------------------------
+
+Since the beginning, the focus has been on running with AWS Fargate, as it is what allows developers least effort
+to deploying applications. But by users demand, the project was adapted to support deploying to existing EC2 based
+clusters, as well as on ECS Anywhere.
+
+With the growing adoption of other ARM there is also now support to specify whether you want to run your services
+on AWS Fargate using Graviton processors.
+
+
+.. seealso::
+
+    See how to enable ECS Anywhere with :ref:`ecs_anywhere_compute_platform`
 
 Easy compute definition
 ------------------------
@@ -88,19 +107,6 @@ CapacityProviders etc. for each individual service.
 
 When using :ref:`lookup_syntax_reference`, it will also automatically detect configuration, which avoids configuration
 settings conflicts and errors.
-
-Supports AWS ECS Anywhere
---------------------------------
-
-For enterprises, as much as for enthusiasts home-labbers out there, ECS Anywhere allows us to manage our services
-definitions and deployment using AWS ECS as the control plane, and on-premise hardware or VMs to run the linux containers.
-
-Adding since 0.18, you can now get ECS Compose-X to generate all the resources and configuration necessary to provision
-your infrastructure (in AWS) and services.
-
-.. seealso::
-
-    See how to enable ECS Anywhere with :ref:`ecs_anywhere_compute_platform`
 
 Attributes auto-correct
 -------------------------
@@ -179,6 +185,8 @@ for extensions in order to ensure the compose files input are correct before doi
     examples
     how_tos
     extras
+    create_own_extension
+    community_extensions
     compatibility_matrix
 
 .. include:: modules_syntax.rst

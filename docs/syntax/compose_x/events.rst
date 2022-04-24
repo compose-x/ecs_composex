@@ -9,13 +9,7 @@
 x-events
 ==========
 
-Define an AWS EventBride rule to stop start services.
-
-.. tip::
-
-    You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/events>`__ to use
-    as reference for your use-case.
-
+Define an AWS EventBride rule to create Scheduled Tasks with the defined services.
 
 Properties
 ==========

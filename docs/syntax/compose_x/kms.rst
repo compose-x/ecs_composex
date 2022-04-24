@@ -85,6 +85,113 @@ ReturnValues
 
 `See the AWS KMS Key return values from AWS CFN Documentation`_. The value for **Ref** can be accessed with **KeyId**
 
+Link to other x-resources
+===========================
+
+You can currently use `x-kms::<key name>` with the following AWS Resources defined in your docker-compose files.
+
+.. note::
+
+    This only applies to **new** resources that will be provisioned within the compose-x stack.
+    Existing resources looked up, such as x-s3, if have a KMS Key, the services that need access to the bucket
+    will automatically be granted least privileges access to the key as well.
+
+x-s3
+-----
+
+.. code-block:: yaml
+    :caption: Create new buckets with new and existing KMS Keys
+
+    x-kms:
+      s3-encryption-key: # New key
+        Properties: {}
+        Settings:
+          Alias: alias/s3-encryption-key
+
+      keyC: # Existing key, lookup
+        Lookup:
+          Tags:
+            - name: cicd
+            - costcentre: lambda
+        Services:
+          - name: app03
+            access: EncryptDecrypt
+          - name: bignicefamily
+            access: DecryptOnly
+
+    x-s3:
+      bucket-01:
+        Properties:
+          BucketName: bucket-01
+          AccessControl: BucketOwnerFullControl
+          ObjectLockEnabled: True
+          PublicAccessBlockConfiguration:
+              BlockPublicAcls: True
+              BlockPublicPolicy: True
+              IgnorePublicAcls: True
+              RestrictPublicBuckets: False
+          AccelerateConfiguration:
+            AccelerationStatus: Suspended
+          BucketEncryption:
+            ServerSideEncryptionConfiguration:
+              - ServerSideEncryptionByDefault:
+                  SSEAlgorithm: "aws:kms"
+                  KMSMasterKeyID: x-kms::keyC
+          VersioningConfiguration:
+            Status: "Enabled"
+      bucket-03:
+        Properties:
+          BucketName: bucket-03
+          AccessControl: BucketOwnerFullControl
+          ObjectLockEnabled: True
+          PublicAccessBlockConfiguration:
+              BlockPublicAcls: True
+              BlockPublicPolicy: True
+              IgnorePublicAcls: True
+              RestrictPublicBuckets: False
+          AccelerateConfiguration:
+            AccelerationStatus: Suspended
+          BucketEncryption:
+            ServerSideEncryptionConfiguration:
+              - ServerSideEncryptionByDefault:
+                  SSEAlgorithm: aws:kms
+                  KMSMasterKeyID: x-kms::s3-encryption-key
+          VersioningConfiguration:
+            Status: "Enabled"
+
+x-sqs
+--------
+
+.. code-block:: yaml
+    :caption: Create new SQS Queues new and existing KMS Keys
+
+    x-kms:
+      keyA: # New key
+        Properties: {}
+      keyC: # Lookup key
+        Lookup:
+          Tags:
+            - name: cicd
+            - costcentre: lambda
+
+    x-sqs:
+      queue01:
+        Properties:
+          KmsMasterKeyId: x-kms::keyC
+          RedrivePolicy:
+            deadLetterTargetArn: queueA
+            maxReceiveCount: 10
+
+      queue02:
+        Properties:
+          KmsMasterKeyId: x-kms::keyA
+
+
+x-cluster
+----------
+
+See :ref:`ecs_cluster_syntax_reference` for full details.
+
 JSON Schema
 ============
 

@@ -24,6 +24,10 @@ Syntax
         x-prometheus:
           ContainersInsights: ContainersInsights
 
+.. tip::
+
+    There are multiple examples of this features in `the Labs`_ for you to walk through
+
 
 ContainersInsights Syntax Reference
 =======================================
@@ -235,3 +239,4 @@ Definition
 
 
 .. _Full Kafdrop configuration walkthrough: https://labs.compose-x.io/kafka/kafdrop.html
+.. _the Labs: https://labs.compose-x.io

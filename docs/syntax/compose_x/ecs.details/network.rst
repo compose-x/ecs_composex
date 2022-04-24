@@ -19,13 +19,8 @@ Syntax
     services:
       serviceA:
         x-network:
+          Ingress: {}
           x-cloudmap: {}
-          Ingress: {} # Ingress Definition
-
-
-.. seealso::
-
-    For more structural details, see `JSON Schema`_
 
 
 .. _services_ingress_syntax_reference:
