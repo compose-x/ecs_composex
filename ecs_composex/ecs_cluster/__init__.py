@@ -354,7 +354,7 @@ class EcsCluster:
                             if keyisset("AllowKmsKeyReuse", self.parameters)
                             else Sub(
                                 f"arn:${{{AWS_PARTITION}}}:logs:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:"
-                                f"log-group:/ecs/execute-logs/${{CLUSTER_NAME}}",
+                                f"log-group:/ecs/execute-logs/${{CLUSTER_NAME}}*",
                                 CLUSTER_NAME=cluster_name,
                             )
                         }
@@ -396,7 +396,7 @@ class EcsCluster:
             },
             "Settings": {
                 "Alias": Sub(
-                    f"log-group:/ecs/execute-logs/${{CLUSTER_NAME}}",
+                    f"alias/ecs/execute-logs/${{CLUSTER_NAME}}",
                     CLUSTER_NAME=cluster_name,
                 )
             },
@@ -413,7 +413,7 @@ class EcsCluster:
         self.log_group = LogGroup(
             "EcsExecLogGroup",
             LogGroupName=Sub(
-                f"log-group:/ecs/execute-logs/${{CLUSTER_NAME}}",
+                f"/ecs/execute-logs/${{CLUSTER_NAME}}",
                 CLUSTER_NAME=cluster_name,
             ),
             RetentionInDays=120
