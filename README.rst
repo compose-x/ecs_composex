@@ -14,9 +14,16 @@ ECS ComposeX
 
 |BUILD|
 
----------------------------------------------------------------------------------------------------------------
-Configure, Deploy and maintain your applications/services and AWS resources with docker-compose files
----------------------------------------------------------------------------------------------------------------
+-----------------------------------------------
+The no-code CDK for docker-compose & AWS ECS
+-----------------------------------------------
+
+Deploy your services to AWS ECS from your docker-compose files in 3 steps
+
+* Step 1. Install ECS Compose-x
+* Step 2. Use your existing docker-compose files. Optionally, add Compose-X extensions.
+* Step 3. Deploy to AWS via CloudFormation.
+
 
 What does it do?
 ========================
