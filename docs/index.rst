@@ -3,9 +3,9 @@
     :description: ECS Compose-X - README
     :keywords: AWS, AWS ECS, Docker, Containers, Compose, docker-compose
 
-========================================
+##########################################
 Welcome to ECS Compose-X documentation
-========================================
+##########################################
 
 |PYPI_VERSION| |PYPI_LICENSE| |PY_DLS|
 
@@ -13,45 +13,45 @@ Welcome to ECS Compose-X documentation
 
 |QUALITY| |BUILD|
 
----------------------------------------------------------------------------------------------------------------
-Manage, Configure and deploy your applications/services and AWS resources from your docker-compose definitions
----------------------------------------------------------------------------------------------------------------
+-----------------------------------------------
+The no-code CDK for docker-compose & AWS ECS
+-----------------------------------------------
 
 What does it do?
 ========================
 
-As a developer, working locally is a crucial part of your day to day work, and **docker-compose** allows you to do
-just that, for simple services as well as very complex structures.
+* Simplify applications and resources deployment to AWS for developers/SRE/Cloud engineers
+    * Generates CloudFormation templates out of the Compose Files
+    * Links services and AWS Resources together via IAM / Networking / Configuration
+    * Detects mis-configurations and autocorrects wherever possible
 
-Your prototype works, and you want to deploy to AWS. But what about IAM ? Networking ? Security ? Configuration ?
+* Use/Re-use existing docker-compose files and compose specifications
+    * Supports docker-compose specification 3.7+
+    * Performs JSON validation of input to improve reliability
+    * Enable/disable features to run in AWS Fargate automatically
 
-Using ECS Compose-X, you keep your docker-compose definitions as they are, add the AWS services you have chosen
-as part of that definition, such as ELB, RDS/DynamodDB Databases etc, and the program will automatically
-generate all the AWS CloudFormation templates required to deploy all your services.
+* Expand the definitions with AWS CloudFormation resources
+    * For supported resources, supports full CloudFormation properties
+    * For existing resources, will detect them and allow to use the ``Return Values`` with other components
 
-It automatically takes care of network access requirements and IAM permissions, following best practices.
+* Allows to use existing resources in your AWS Account
+* Can be extended with custom modules/hooks
 
-------------
 
-Installation
+Install
 ============
 
-Via pip
---------
-
 .. code-block:: bash
 
-    pip install ecs_composex
+    # Inside a python virtual environment
+    python3 -m venv venv
+    source venv/bin/activate
+    pip install pip -U
+    pip install ecs-composex
 
+    # For your user only, without virtualenv
+    pip install ecs-composex --user
 
-Using docker
---------------
-
-.. code-block:: bash
-
-    docker run --rm -v ~/.aws:/root/.aws public.ecr.aws/compose-x/compose-x:latest
-
-------------
 
 How is it different ?
 =====================
@@ -182,12 +182,23 @@ for extensions in order to ensure the compose files input are correct before doi
     installation
     lexicon
     syntax/compose_x/common
+    compatibility_matrix
+
+.. toctree::
+    :maxdepth: 1
+    :caption: Examples and Help
+
     examples
     how_tos
     extras
+
+.. toctree::
+    :maxdepth: 1
+    :caption: Additional extensions
+
     create_own_extension
     community_extensions
-    compatibility_matrix
+
 
 .. include:: modules_syntax.rst
 

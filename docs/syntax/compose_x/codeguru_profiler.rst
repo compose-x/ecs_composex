@@ -9,12 +9,11 @@
 x-codeguru_profiler
 =============================================
 
-Definition
-============
+.. code-block:: yaml
 
-.. hint::
-
-    If you do not specify any Properties, the Profiling group name gets generated for you.
+    x-codeguru_profiler:
+        Profiler01:
+          Properties: {} # No properties need to be set. ECS Compose-X will do all that.
 
 Properties
 ===========

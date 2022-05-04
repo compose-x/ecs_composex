@@ -5,8 +5,6 @@
 volumes
 ===================
 
-This section covers the integration compatibility with docker-compose volumes into AWS ECS.
-
 .. seealso::
 
     `docker-compose volumes`_

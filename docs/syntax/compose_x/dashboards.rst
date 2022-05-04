@@ -9,11 +9,6 @@
 x-dashboards
 ===============
 
-This module allows you to define and create CloudWatch dashboards with predefined template for your services.
-Later will allow to create custom dashboards from your own input template.
-
-Syntax Reference
-=================
 
 .. code-block:: yaml
 
@@ -30,6 +25,8 @@ Syntax Reference
           service-02:
             UsePredefinedMetrics: true
 
+Define and create CloudWatch dashboards with predefined template for your services.
+Future release will allow to create custom dashboards from your own input template.
 
 Examples
 ============

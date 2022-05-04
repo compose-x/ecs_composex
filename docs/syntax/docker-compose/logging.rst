@@ -14,7 +14,7 @@ Supported drivers
 ==================
 
 Currently, any other driver is ignored and AWS Logs is used by default. This is to guarantee deployment success on
-AWS ECS with AWS Fargate.
+AWS ECS with AWS Fargate. Future versions will cater for other logging drivers.
 
 awslogs
 ---------

@@ -4,7 +4,7 @@
     :keywords: AWS, AWS ECS, Docker, Containers, Compose, docker-compose, rds, secrets
 
 
-.. _change_aws_rds_env_vars:
+.. _how_to_change_aws_rds_env_vars:
 
 ============================================================
 Change AWS RDS / DocumentDB secret environment variables

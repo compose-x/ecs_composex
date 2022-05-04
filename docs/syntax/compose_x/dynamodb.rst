@@ -9,12 +9,6 @@
 x-dynamodb
 ===========
 
-This module allows you to create / use existing DynamoDB tables and link them logically to the services (and other
-AWS resources, where applicable).
-
-Syntax Reference
-=================
-
 .. code-block:: yaml
     :caption: Syntax reference
 
@@ -24,40 +18,7 @@ Syntax Reference
         MacroParameters: {}
         Services: {}
 
-
-Properties
-===========
-
-Refer to `AWS CFN Dynamodb Documentation`_. We support all of the definition and test with the documentation examples.
-
-.. literalinclude:: ../../../use-cases/dynamodb/table_with_gsi.yml
-    :language: yaml
-    :caption: Tables with GSI
-
-.. note::
-
-    You may set the `TableName`_ property yourselves, or let AWS CloudFormation set one for you. If you set it yourselves,
-    as per the documentation, that table will be replaced with a new table using the new name. Set it at your own risks.
-
-
-Lookup
-======
-
-For more details, see the :ref:`lookup_syntax_reference`.
-
-.. code-block:: yaml
-    :caption: Lookup DynamoDB Table example
-
-    x-dynamodb:
-      table-A:
-        Lookup:
-          Tags:
-            - table-name: table123
-            - owner: myself
-            - costallocation: 123
-        Services:
-          serviceA:
-            Access: DynamoDBCrudPolicy
+Create / use existing DynamoDB tables and link them logically to the services (and other AWS resources, where applicable).
 
 Services
 ========
@@ -94,6 +55,37 @@ ECS Compose-X defined access names:
 * RW : Allow read/write/delete on the table items
 * RO: Allow read only actions on the table items
 
+Properties
+===========
+
+Refer to `AWS CFN Dynamodb Documentation`_. We support all of the definition and test with the documentation examples.
+
+.. literalinclude:: ../../../use-cases/dynamodb/table_with_gsi.yml
+    :language: yaml
+    :caption: Tables with GSI
+
+.. attention::
+
+    You may set the `TableName`_ property yourselves, or let AWS CloudFormation set one for you. If you set it yourselves,
+    as per the documentation, that table will be replaced with a new table using the new name. Set it at your own risks
+Lookup
+======
+
+For more details, see the :ref:`lookup_syntax_reference`.
+
+.. code-block:: yaml
+    :caption: Lookup DynamoDB Table example
+
+    x-dynamodb:
+      table-A:
+        Lookup:
+          Tags:
+            - table-name: table123
+            - owner: myself
+            - costallocation: 123
+        Services:
+          serviceA:
+            Access: DynamoDBCrudPolicy
 
 JSON Schema
 ============

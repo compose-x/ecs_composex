@@ -12,9 +12,6 @@ x-sns
 Module to manage SNS Topics that are going to be used by your services or other AWS Resources you define in the compose
 files.
 
-Syntax
-======
-
 .. code-block:: yaml
     :caption: x-sns syntax reference
 
@@ -23,11 +20,6 @@ Syntax
         Properties: {}
         Settings: {}
         Services: {}
-
-.. tip::
-
-    You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/sns>`__ to use
-    as reference for your use-case.
 
 Properties
 ===========
@@ -54,3 +46,8 @@ Examples
 .. literalinclude:: ../../../use-cases/sns/create_and_lookup.yml
     :language: yaml
     :caption: Create and Lookup SNS topics
+
+.. tip::
+
+    You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/sns>`__ to use
+    as reference for your use-case.

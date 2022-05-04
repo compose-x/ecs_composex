@@ -236,7 +236,7 @@ Integrability
 This might be the other reason that tips the scale, if the security and features aspect did not help, and you somehow
 automated recycling of ECS Service tasks on secrets rotation: integrability.
 
-As we have seen above, or in the :ref:`change_aws_rds_env_vars` example, some applications were not written for AWS, and
+As we have seen above, or in the :ref:`how_to_change_aws_rds_env_vars` example, some applications were not written for AWS, and
 environment variables are your only option.
 
 

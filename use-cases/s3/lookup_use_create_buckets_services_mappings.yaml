@@ -3,9 +3,6 @@ version: "3.8"
 x-s3:
   bucket-01:
     Properties: {}
-    Settings:
-      EnvNames:
-        - BUCKET01
     Services:
       - name: app03
         access:
@@ -27,9 +24,6 @@ x-s3:
           Arn: BUCKET_02_ARN
 
   bucket-03:
-    Settings:
-      EnvNames:
-        - BUCKET03
     Lookup:
       Identifier: sacrificial-lamb
       Tags:

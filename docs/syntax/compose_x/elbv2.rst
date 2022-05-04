@@ -9,15 +9,6 @@
 x-elbv2
 =========
 
-Allows you to create new ELBv2 (ALB/NLB) and configure traffic to send to the services.
-You can define conditions to distinguish services from each other and allow to re-use the same ELBv2 (mostly applies to ALBs)
-to use it as a smart reverse proxy.
-
-Supports OIDC and Cognito Conditions. Refer to :ref:`cognito_userpool_syntax_reference` for more details.
-
-Syntax
-========
-
 .. code-block:: yaml
 
     x-elbv2:
@@ -29,9 +20,15 @@ Syntax
         DnsAliases: []
         Settings: {}
 
-.. seealso::
 
-    For more structural details, see `JSON Schema`_
+Create new ELBv2 (ALB/NLB) and configure traffic to send to the services.
+You can define conditions to distinguish services from each other and allow to re-use the same ELBv2 (mostly applies to ALBs)
+to use it as a smart reverse proxy.
+
+.. hint::
+
+    Supports OIDC and Cognito Conditions. Refer to :ref:`cognito_userpool_syntax_reference` for more details.
+
 
 Properties
 ==========

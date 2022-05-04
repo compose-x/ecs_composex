@@ -9,30 +9,15 @@
 services.x-xray
 ==================
 
-This section allows to automatically add the ``xray-daemon`` sidecar to your task definition, automatically
-defining port, environment variables for the other containers to use.
-
-Syntax reference
-=================
-
 .. code-block:: yaml
-
-    x-xray: True/False
-
-
-Example
-=======
-
-.. code-block:: yaml
-    :caption: Enable XRay for your service.
 
     services:
-      serviceA:
-        x-xray: True
+      frontend:
+        x-xray: True/False
 
-.. seealso::
+Automatically add the ``xray-daemon`` sidecar to your task definition, automatically
+defining port, environment variables for the other containers to use.
 
-    ecs_composex.ecs.ecs_service#set_xray
 
 IAM permissions
 ===============

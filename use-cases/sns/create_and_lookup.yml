@@ -1,18 +1,16 @@
-
 x-sns:
   abcd:
     Properties: {}
     Services:
-      - name: app01
-        access: Publish
-      - name: youtoo
-        access: Publish
-
+      app01:
+        Access: Publish
+      youtoo:
+        Access: Publish
   hello:
     Lookup:
       Tags:
         - costcentre: lambda
-        - composexdev: "yes"
+        - composexdev: 'yes'
     Services:
-      - name: app03
-        access: Publish
+      app03:
+        Access: Publish

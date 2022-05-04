@@ -1,14 +1,14 @@
 
+.. meta::
+    :description: ECS Compose-X AWS EFS
+    :keywords: AWS, AWS ECS, Docker, Compose, volumes, NFS, EFS
+
+
 .. _x_efs_syntax_reference:
 
 =================
 x-efs
 =================
-
-Allows to define a new EFS to use for shared resources among services.
-
-Syntax reference
-================
 
 .. code-block::
 
@@ -19,11 +19,6 @@ Syntax reference
           MacroParameters: {}
           Settings: {}
           Lookup: {}
-
-.. hint::
-
-    Even though x-efs is defined at the volumes level, at rendering time, a top level EFS stack will be created to contain
-    the various filesystems required to be shared access across services.
 
 Synopsis
 =========
@@ -80,10 +75,6 @@ the filesystem.
 
 Settings
 =========
-
-This might be one rare case where the generic **EnvNames** has no impact, given that the volume name is the only thing
-that matters in this particular use-case. ECS Will automatically resolve the DNS name of the target in order to mount
-the shared filesystem as a volume to the container.
 
 Subnets
 -------

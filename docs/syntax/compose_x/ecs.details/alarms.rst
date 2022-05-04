@@ -8,11 +8,6 @@
 services.x-alarms
 ===================
 
-*This section describes the service level alarms that will automatically monitor the ECS Service*
-
-Syntax reference
-=================
-
 .. code-block:: yaml
     :caption: Service level x-alarms reference
 
@@ -23,10 +18,6 @@ Syntax reference
             RuleName:
               Topics: []        # Similar to other x-alarms settings
               Settings: {}      # Input values override.
-
-.. seealso::
-
-    For more structural details, see `JSON Schema`_
 
 
 Predefined alarms

@@ -3,17 +3,16 @@
     :description: ECS Compose-X AWS Elasticache syntax reference
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS Elasticache, redis, memcached
 
+.. attention::
+
+    For production workloads, we recommend sing Lookup you can use existing ElastiCache clusters with your new services.
+    This will avoid accidental deletions or rollback situations where both your DB and services have to rollback.
+
 .. _elastic_cache_syntax_reference:
 
 ===================
 x-elasticache
 ===================
-
-Allows to create / lookup ElastiCache clusters to use with the ECS services.
-Note that given the return outputs changes based on the type of deployment, you need to adapt it to valid outputs.
-
-Syntax
-=======
 
 .. code-block:: yaml
     :caption: syntax reference
@@ -24,16 +23,31 @@ Syntax
     Services: []        # List of services that will get automatically access to the resource.
     Lookup: {}          # Lookup definition to find existing Cache or ReplicationGroup.
 
+Create / lookup ElastiCache clusters to use with the ECS services.
+Note that given the return outputs changes based on the type of deployment, you need to adapt it to valid outputs.
 
-.. note::
 
-    ECS ComposeX will always create a new SecurityGroup for a new resource to ensure the services can get access by
-    setting EC2 Security Ingress rules.
+Services
+=========
 
-.. tip::
+.. code-block:: YAML
 
-    You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/elasticache>`__ to use
-    as reference for your use-case.
+    Services:
+      <name>:
+        Access: {}
+        ReturnValues: {}
+
+List of services you want to grant access to the CacheCluster or ReplicationGroup to.
+ECS ComposeX will automatically get the attributes of your cluster based on its type (Memcached/Redis/Redis ReplicationGroup),
+and pass these on down to the service stack.
+
+Most importantly, it will create the SecurityGroup Ingress rules to allow your service to have access to the Cluster Node
+via the indicated SecurityGroup.
+
+.. hint::
+
+    ECS ComposeX will not handle the Redis6.x RBAC access as this is a lot more involved than generating CFN templates etc.
+    This might come in a future version.
 
 Properties
 ==========
@@ -43,12 +57,15 @@ part of the AWS ElasticCache family.
 
 ECS ComposeX will automatically detect which of the two resource it is, based on the properties you will define.
 
-
 .. note::
 
     ECS ComposeX evaluates first for CacheCluster, so you might need to add an extra different parameter for ReplicationGroup
     to be detected appropriately.
 
+.. note::
+
+    ECS ComposeX will always create a new SecurityGroup for a new resource to ensure the services can get access by
+    setting EC2 Security Ingress rules.
 
 MacroParameters
 ===============
@@ -76,27 +93,6 @@ It supports all of the properties you can set in the original `AWS ParameterGrou
     Your parameter group settings have to match the settings supported by the Engine. Refer to `Engine Parameters guide`_
     to see what the engine you have can support as settings.
 
-Services
-=========
-
-.. code-block:: YAML
-
-    Services:
-      <name>:
-        Access: <>
-
-List of services you want to grant access to the CacheCluster or ReplicationGroup to.
-ECS ComposeX will automatically get the attributes of your cluster based on its type (Memcached/Redis/Redis ReplicationGroup),
-and pass these on down to the service stack.
-
-Most importantly, it will create the SecurityGroup Ingress rules to allow your service to have access to the Cluster Node
-via the indicated SecurityGroup.
-
-.. hint::
-
-    ECS ComposeX will not handle the Redis6.x RBAC access as this is a lot more involved than generating CFN templates etc.
-    This might come in a future version.
-
 Settings
 =========
 
@@ -117,6 +113,11 @@ Examples
 
 .. literalinclude:: ../../../use-cases/elasticache/create_only.yml
     :language: YAML
+
+.. tip::
+
+    You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/elasticache>`__ to use
+    as reference for your use-case.
 
 
 .. _AWS CacheCluster: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-elasticache-cache-cluster.html

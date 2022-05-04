@@ -3,6 +3,8 @@
     :description: ECS Compose-X How To
     :keywords: AWS, docker, compose, public, networking, subnets
 
+.. _how_to_service_public_eip:
+
 ################################################
 Deploy services with EIP on public subnets
 ################################################

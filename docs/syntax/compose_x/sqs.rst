@@ -9,37 +9,23 @@
 x-sqs
 =================
 
-Allows you to define SQS Queues that you want to create / lookup (use existing ones) and link these to services that are
+.. code-block:: yaml
+
+    x-sqs:
+      queue-logical-name:
+        Properties: {}
+        Lookup: {}
+        MacroParameters: {}
+        Settings: {}
+        Services: {}
+
+Define SQS Queues that you want to create / lookup (use existing ones) and link these to services that are
 going to publish/consume messages.
 
 You can also create DLQ and reference them to each other. See `Special Features`_ for more details.
 
 You can also define services autoscaling automatically in the queue section instead of creating a new alarm etc.
 separately, compose-x will do all of that for you automatically. See `Scaling`_ for more details.
-
-
-.. seealso::
-
-    For more structural details, see `JSON Schema`_
-
-Properties
-==========
-
-Mandatory Properties
---------------------
-
-SQS does not require any properties to be set in order to create the queue. No settings are mandatory. The QueueName
-will be automatically generated for you.
-
-
-Special properties
-------------------
-
-It is possible to define Dead Letter Queues for SQS messages (DLQ). It is possible to easily define this in ECS ComposeX
-simply by referring to the name of the queue, deployed in this same deployment.
-
-.. warning:: It won't be possible to import a queue ARN at this time in ECS ComposeX that exists outside of the stack today.
-
 
 Services
 ========
@@ -74,16 +60,35 @@ IAM Permissions
         x-sqs:
           QueueA:
             Services:
-              - name: serviceA
-                access: SQSPollerPolicy
+              serviceA:
+                Access: SQSPollerPolicy
 
-Return Values
+ReturnValues
 ================
 
 Refer to `AWS SQS Return Values`_ from the AWS CFN documentation.
 
 By default, the value for **Ref** is automatically set on the service. Use *QueueUrl* as return value to map to a custom
 environment variable.
+
+Properties
+==========
+
+Mandatory Properties
+--------------------
+
+SQS does not require any properties to be set in order to create the queue. No settings are mandatory. The QueueName
+will be automatically generated for you.
+
+
+Special properties
+------------------
+
+It is possible to define Dead Letter Queues for SQS messages (DLQ). It is possible to easily define this in ECS ComposeX
+simply by referring to the name of the queue, deployed in this same deployment.
+
+.. warning:: It won't be possible to import a queue ARN at this time in ECS ComposeX that exists outside of the stack today.
+
 
 Lookup
 ======
@@ -152,9 +157,6 @@ Example with DLQ:
         RedrivePolicy:
           deadLetterTargetArn: DLQ
           maxReceiveCount: 10
-      Settings:
-        EnvNames:
-          - APPQUEUE01
 
 
 Settings
@@ -175,28 +177,20 @@ Examples
     x-sqs:
       Queue02:
         Services:
-          - name: app02
-            access: RWPermissions
-          - name: app03
-            access: RO
+          app02:
+            Access: RWPermissions
+          app03:
+            Access: RO
         Properties:
           RedrivePolicy:
             deadLetterTargetArn: Queue01
             maxReceiveCount: 10
-        Settings:
-          EnvNames:
-            - APP_QUEUE
-            - AppQueue
 
       Queue01:
         Services:
-          - name: app03
-            access: RWMessages
+          app03:
+            Access: RWMessages
         Properties: {}
-        Settings:
-          EnvNames:
-            - DLQ
-            - dlq
 
 
 .. code-block:: yaml
@@ -205,8 +199,8 @@ Examples
     x-sqs:
       QueueA:
         Services:
-          - name: abcd
-            access: RWMessages
+          frontend:
+            Access: RWMessages
             scaling:
               ScaleInCooldown: 120
               ScaleOutCooldown: 60

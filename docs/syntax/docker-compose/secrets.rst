@@ -10,7 +10,18 @@
 secrets
 ========
 
-As you might have already used these, docker-compose allows you to define secrets to use for the application.
+.. code-block::
+
+    secrets:
+      my-docker-compose-secret:
+        x-secrets:
+          Name: str
+          LinksTo: []
+          JsonKeys: []
+          Lookup: {}
+
+
+With docker-compose, you can define secrets to use for the application.
 
 To help continue with docker-compose syntax compatibility, you can now declare your secret in docker-compose,
 and add an extension field which will be a direct mapping to the secret name you have in AWS Secrets Manager.
@@ -26,23 +37,6 @@ to your container, using the same name as in the compose file.
 
     For security purposes, the containers **envoy** / **CloudWatch** / **xray-daemon** are not getting
     assigned the secrets when part of the same service family.
-
-
-Syntax
-======
-
-.. code-block::
-
-    x-secrets:
-      Name: str
-      LinksTo: []
-      JsonKeys: []
-      Lookup: {}
-
-.. seealso::
-
-    For more structural details, see `JSON Schema`_
-
 
 Name
 ----
@@ -191,7 +185,15 @@ Examples
 JSON Schema
 ============
 
+Model
+-------
+
 .. jsonschema:: ../../../ecs_composex/specs/secrets.x-secrets.spec.json
 
+
+Definition
+-----------
+
+.. literalinclude:: ../../../ecs_composex/specs/secrets.x-secrets.spec.json
 
 .. _docker-compose secrets reference: https://docs.docker.com/compose/compose-file/#secrets

@@ -9,12 +9,6 @@
 services.x-logging
 ======================
 
-This allows you to provide an override configuration for logging of your services in ECS.
-
-.. hint::
-
-    The following parameter is identical in behaviour to **x-aws-logs_retention** defined in the docker ECS Plugin.
-
 .. code-block:: yaml
     :caption: x-logging syntax definition
 
@@ -22,17 +16,6 @@ This allows you to provide an override configuration for logging of your service
       serviceA:
         x-logging:
           RetentionInDays: int
-
-.. hint::
-
-    Alternatively you can use the ECS Plugin logging definition will ECS Compose-X will use.
-    If both are defined, priority goes to the highest value.
-
-
-.. seealso::
-
-    For more structural details, see `JSON Schema`_
-
 
 RetentionInDays
 -----------------
@@ -57,6 +40,16 @@ Examples
         x-logging:
           RetentionInDays: 42
 
+.. hint::
+
+    The following parameter is identical in behaviour to **x-aws-logs_retention** defined in the docker ECS Plugin.
+
+
+.. note::
+
+    Alternatively you can use the ECS Plugin logging definition will ECS Compose-X will use.
+    If both are defined, priority goes to the highest value.
+
 
 JSON Schema
 ===========
@@ -65,5 +58,11 @@ Model
 --------
 
 .. jsonschema:: ../../../../ecs_composex/specs/services.x-logging.spec.json
+
+Definition
+-----------
+
+.. literalinclude:: ../../../../ecs_composex/specs/services.x-logging.spec.json
+    :language: json
 
 .. _RetentionInDays Property: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-logs-loggroup.html#cfn-logs-loggroup-retentionindays

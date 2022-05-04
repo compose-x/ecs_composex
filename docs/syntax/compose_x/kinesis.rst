@@ -8,12 +8,6 @@
 x-kinesis
 ===========
 
-This module allows you to define Kinesis Data Streams, new or existing ones, that you wish your services to consume/produce
-from/to.
-
-Syntax reference
-==================
-
 .. code-block:: yaml
 
     x-kinesis:
@@ -23,6 +17,9 @@ Syntax reference
         MacroParameters: {}
         Services: {}
 
+Define Kinesis Data Streams, new or existing ones, that you wish your services to consume/produce from/to.
+
+
 Services
 =========
 
@@ -30,6 +27,13 @@ As per the generic Services definition, we have a list of object, name and acces
 
 For AWS Kinesis streams, we have the following permissions.
 
+
+ReturnValues
+-------------
+
+To access the **Ref** value, use *StreamId*
+
+See `AWS CFN Kinesis Return Values`_ for available values.
 
 IAM permissions
 -----------------
@@ -44,13 +48,6 @@ The following predefined permissions are available (see JSON definition of the I
 .. literalinclude:: ../../../ecs_composex/kinesis/kinesis_perms.json
     :language: JSON
     :caption: IAM permissions pre-defined for your services.
-
-ReturnValues
--------------
-
-To access the **Ref** value, use *StreamId*
-
-See `AWS CFN Kinesis Return Values`_ for available values.
 
 Properties
 ===========
@@ -81,10 +78,10 @@ Examples
         Properties:
           ShardCount: 2
         Services:
-          - name: serviceA
-            access: Producer
-          - name: serviceB
-            access: Consumer
+          serviceA:
+            Access: Producer
+          serviceB:
+            Access: Consumer
 
 
 JSON Schema

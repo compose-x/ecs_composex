@@ -73,10 +73,6 @@ x-s3:
     MacroParameters:
       ExpandRegionToBucket: True
       ExpandAccountIdToBucket: True
-    Settings:
-      EnvNames:
-        - bucket01
-        - BUCKET_ABCD-01
     Services:
       - name: app03
         access:

@@ -9,31 +9,47 @@
 services.x-network
 ==================
 
-Allows you to define network override settings.
-
-Syntax
-=======
-
 .. code-block:: yaml
 
     services:
       serviceA:
         x-network:
+          AssignPublicIp: bool
           Ingress: {}
           x-cloudmap: {}
 
+.. _public_eip_for_service_option:
+
+AssignPublicIp
+===============
+
+This flag allows to assign an Elastic IP to the container when using ``awsvpc`` networking mode.
+
+.. hint::
+
+    Make sure to set your service to be in a subnet that use an ``Internet Gateway``, such as ``PublicSubnets``, otherwise
+    routing won't work.
+
+.. tip::
+
+    See :ref:`how_to_service_public_eip` to have a full example of how to implement this feature.
 
 .. _services_ingress_syntax_reference:
 
-Ingress definition
----------------------
+.. tip::
+
+    To select which subnets to place the services, see :ref:`compose_networks_syntax_reference`
+
+
+Ingress
+======================
 
 This allows you to define specific ingress control from external sources to your environment. For example, if you have
 to whitelist IP addresses that are to be allowed communication to the services, you can list these, and indicate their
 name which will be shown in the EC2 security group description of the ingress rule.
 
 Ingress Syntax reference
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-----------------------------
 
 .. code-block:: yaml
 
@@ -112,10 +128,6 @@ Map VPC subnets to docker-compose networks
       serviceA:
         networks: [internal]
 
-
-In some cases, you might have complex VPC topology and created new specific Subnets in **x-vpc**, and map that subnet
-name to a docker-network defined network. Then later, you can set your service in the services definition to be put into
-that network.
 
 JSON Schema
 ============

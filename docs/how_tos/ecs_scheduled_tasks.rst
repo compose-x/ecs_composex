@@ -4,6 +4,8 @@
     :keywords: AWS, AWS ECS, Docker, Containers, Compose, docker-compose, examples
 
 
+.. _how_to_ecs_scheduled_events:
+
 ====================================================
 Create ECS Scheduled tasks using AWS EventsBridge
 ====================================================

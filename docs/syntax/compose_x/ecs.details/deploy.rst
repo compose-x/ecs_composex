@@ -8,6 +8,15 @@
 services.deploy
 ===================
 
+.. code-block:: yaml
+
+    services:
+      frontend:
+        deploy: {} # Deploy section of the service.
+
+Description
+============
+
 The deploy section allows to set various settings around how the container should be deployed, and what compute resources
 are required to run the service.
 

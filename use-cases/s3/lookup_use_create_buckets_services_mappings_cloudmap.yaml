@@ -26,9 +26,6 @@ x-s3:
           Arn: BUCKET_02_ARN
 
   bucket-03:
-    Settings:
-      EnvNames:
-        - BUCKET03
     Lookup:
       Identifier: sacrificial-lamb
       Tags:

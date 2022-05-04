@@ -5,17 +5,24 @@
 
 .. _ecs_cluster_syntax_reference:
 
-==========
-x-cluster
-==========
-
-Allows to create / lookup an ECS cluster that will be used to deploy services into.
-
 .. attention::
 
     We highly recommend for production workloads to create the ECS Cluster outside of ECS Compose-X and use the `Lookup`_
     feature.
 
+==========
+x-cluster
+==========
+
+.. code-block:: yaml
+
+    x-cluster:
+        Properties: {}
+        Lookup: {}
+        MacroParameters: {}
+
+
+Allows to create / lookup an ECS cluster that will be used to deploy services into.
 
 Properties
 ==========
@@ -29,7 +36,7 @@ Refer to the `AWS CFN reference for ECS Cluster`_
         CapacityProviders:
           - FARGATE
           - FARGATE_SPOT
-        ClusterName: spotalltheway
+        ClusterName: FargateOnly
         DefaultCapacityProviderStrategy:
           - CapacityProvider: FARGATE_SPOT
             Weight: 4
@@ -51,12 +58,10 @@ Allows you to enter the name of an existing ECS Cluster that you want to deploy 
           - costcentre: lambda
 
 
-.. warning::
+.. attention::
 
     If the cluster name is not found, by default, a new cluster will be created with the default settings.
 
-
-.. _AWS CFN reference for ECS Cluster: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ecs-cluster.html
 
 Secure your cluster and ECS Execution commands
 ==================================================
@@ -153,3 +158,5 @@ Definition
 ------------
 
 .. literalinclude:: ../../../ecs_composex/specs/x-cluster.spec.json
+
+.. _AWS CFN reference for ECS Cluster: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ecs-cluster.html

@@ -2,7 +2,7 @@
 .. _how_tos_main:
 
 ###############
-How To
+How do I .. ?
 ###############
 
 Welcome to the ``How-To`` section. We have put together a few examples to help you go through some of the functionalities

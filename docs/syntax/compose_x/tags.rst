@@ -9,16 +9,17 @@
 x-tags
 =======
 
-This module allows you to define tags that you want to applied to all the resources that you are creating.
-
-Syntax Reference
-==================
+Mapping syntax
+---------------
 
 .. code-block:: yaml
     :caption: Key/Value structure
 
     x-tags:
       str: value
+
+List syntax
+-------------
 
 Alternatively, you can use the default AWS CFN implementation
 
@@ -29,10 +30,12 @@ Alternatively, you can use the default AWS CFN implementation
       - Key: sts
         Value: <value>
 
+
 Default tags
 =============
 
-CreatedByComposeX: true # Allows you to identify quickly if that resource was created by Compose-X
+CreatedByComposeX: true         # Allows you to identify quickly if that resource was created by Compose-X
+compose-x::version: <value>     # Defines which version of compose-x was used to create this resource.
 
 JSON Schema
 ============
@@ -47,3 +50,8 @@ Definition
 
 .. literalinclude:: ../../../ecs_composex/specs/x-tags.spec.json
     :language: json
+
+.. hint::
+
+    It is against the ECS Compose-X philosophy to tag existing resources. If you need to tag existing resources,
+    you will have to find another technique to do that. Sorry for the inconvenience.

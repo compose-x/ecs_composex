@@ -3,26 +3,32 @@
     :description: ECS Compose-X AWS VPC syntax reference
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS VPC, networking, private network
 
+.. attention::
+
+    For production workloads, we recommend to use an existing VPC using :ref:`lookup_syntax_reference`.
+
 .. _vpc_syntax_reference:
 
 ============================
 x-vpc
 ============================
 
-Allows you to create / lookup an AWS VPC to deploy your services into. When using :ref:`lookup_syntax_reference`, you simply
-identify the VPC and the subnets you then place the services and AWS Resources into.
-
-If ``x-vpc`` is not specified, ECS Compose-X will try to figure out whether a new VPC should be created for the given services.
-For instance, if using ECS Anywhere and have no services in AWS VPC, the VPC won't be created.
-
-Syntax
-================
-
 .. code-block:: yaml
 
     x-vpc:
       Properties: {}
       Lookup: {}
+
+Allows you to create / lookup an AWS VPC to deploy your services into. When using :ref:`lookup_syntax_reference`, you simply
+identify the VPC and the subnets you then place the services and AWS Resources into.
+
+If ``x-vpc`` is not specified, ECS Compose-X will try to figure out whether a new VPC should be created for the given services.
+For instance, **if using ECS Anywhere and have no services in AWS VPC, the VPC won't be created.**
+
+
+.. tip::
+
+    To see how to override the subnets to use for services, see :ref:`compose_networks_syntax_reference`
 
 Properties
 ============
@@ -33,7 +39,7 @@ Properties
     x-vpc:
       Properties:
         SingleNat: true
-        VpcCidr: 172.6.7.42/24
+        VpcCidr: 172.6.42.0/24
         Endpoints:
           AwsServices:
             - service: s3
@@ -52,6 +58,20 @@ SingleNat
 
 Whether you want to have 1 NAT per AZ for your application subnets.
 Reduces the costs for dev environments!
+
+DisableNat
+-----------
+
+When you deploy services that will be in the public subnets only, you might not need a NAT at all.
+Disabling it can save you the costs of the NAT that wouldn't be used.
+
+.. note::
+
+    If you want your services to be public facing with the awsvpc networking mode, make sure to enable :ref:`public_eip_for_service_option`
+
+.. tip::
+
+    See :ref:`how_to_service_public_eip` to have a full example of how to implement this feature.
 
 
 Endpoints

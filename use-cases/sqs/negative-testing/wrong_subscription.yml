@@ -60,9 +60,6 @@ x-sqs:
   queueA:
     Properties:
       QueueName: abcd
-    Settings:
-      EnvNames:
-        - QUEUEA
     Services:
       - name: app
         access: RWMessages
@@ -70,9 +67,6 @@ x-sqs:
   queueB:
     Properties:
       QueueName: xyz
-    Settings:
-      EnvNames:
-        - QUEUEB
     Services:
       - name: rproxy
         access: RWMessages
@@ -99,9 +93,6 @@ x-rds:
     Properties:
       Engine: "aurora-mysql"
       EngineVersion: "5.7.12"
-    Settings:
-      EnvNames:
-        - DBA
     Services:
       - name: backend
         access: RW

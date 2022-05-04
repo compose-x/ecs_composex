@@ -9,17 +9,19 @@
 x-events
 ==========
 
+.. code-block:: yaml
+
+    x-events:
+      event-logical-name:
+        Properties: {}
+        Services: {}
+
+
 Define an AWS EventBride rule to create Scheduled Tasks with the defined services.
 
-Properties
-==========
+.. seealso::
 
-You can find all the properties on the `AWS CFN Events Rules definitions`_.
-
-.. note::
-
-    You do not need to define Targets to point to the services defined in docker-compose. Refer to `Services`_ for that.
-
+    See to :ref:`how_to_ecs_scheduled_events` for a step by step example.
 
 Services
 ========
@@ -52,6 +54,16 @@ DeleteDefaultService
 
 Custom setting, this allows you to NOT define a ECS Service along with the task, therefore you will only get the TaskDefinition
 created.
+
+Properties
+==========
+
+You can find all the properties on the `AWS CFN Events Rules definitions`_.
+
+.. note::
+
+    You do not need to define Targets to point to the services defined in docker-compose. Refer to `Services`_ for that.
+
 
 JSON Schema
 ============

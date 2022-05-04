@@ -4,14 +4,8 @@
 
 .. _composex_ecs_extension:
 
-
 ==================
 services.x-ecs
-==================
-
-This service level extension will allow to set some of the ECS Service properties
-
-Syntax Reference
 ==================
 
 .. code-block::
@@ -21,18 +15,12 @@ Syntax Reference
         image: nginx/nginx
         x-ecs:
           CapacityProviderStrategy: [CapacityProviderStrategyItem]
-
-.. tip::
-
-    You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/ecs>`__ to use
-    as reference for your use-case.
-
-.. seealso::
-
-    For more structural details, see `JSON Schema`_
+          EnableExecuteCommand: bool
+          CpuArchitecture: str
+          OperatingSystemFamily: str
 
 CapacityProviderStrategy
----------------------------
+============================
 
 List of `CapacityProviderStrategyItem`_ that allows to define the CapacityProviders you wish to use for this service,
 that comes as an override of the Cluster defined default CapacityProviderStrategy.
@@ -49,13 +37,13 @@ that comes as an override of the Cluster defined default CapacityProviderStrateg
 
 
 EnableExecuteCommand
----------------------
+============================
 
 Allows to create the IAM permissions, and other settings, to use AWS ECS Execute Command. False by default.
 Currently only enabled when using Fargate, future version will enable it for ECS Anywhere.
 
 CpuArchitecture
------------------
+============================
 
 Allows you to override the `RuntimePlatform.CpuArchitecture`_ property for the TaskDefinition.
 
@@ -64,7 +52,7 @@ Allows you to override the `RuntimePlatform.CpuArchitecture`_ property for the T
     Only works for FARGATE. Must be unique for all tasks of the family.
 
 OperatingSystemFamily
--------------------------
+============================
 
 Allows you to override the `RuntimePlatform.OperatingSystemFamily`_ property for the TaskDefinition.
 
@@ -123,6 +111,10 @@ we do the following:
 * If they both define properties for a same CapacityProvider, here, FARGATE, we take the maximum value of the set.
     Here we take 1 for Base (from grafana) and 3 for Weight (from nginx).
 
+.. tip::
+
+    You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/ecs>`__ to use
+    as reference for your use-case.
 
 
 JSON Schema
