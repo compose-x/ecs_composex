@@ -2,6 +2,160 @@
 History
 =======
 
+0.18.0 (2022-05-04)
+=====================
+
+It has been a long time since 0.17 has been released, and the subsequent patch releases have been resilient enough
+to guide us to this point.
+
+So May the 4th be with us all on this new release, packed with bug fixes, new features, and more to come!
+
+New features
+----------------
+
+Some very exciting new features have come into this new version, and although only one new AWS Resource has
+made it to the project, the most exciting change is the use of a module manager which if going to dynamically
+load the core ECS Compose-X modules as well as extensions that anyone can write on their own, to support
+further use-cases.
+
+* c36a853 Adding documentation on creating new modules Further docs corrections (John Preston)
+* 91a3962 Adding -p option, equivalent to -n, for project name (John Preston)
+* eafdbb4 Adding label on tags parameters (John Preston)
+* 47021cd TaskCompute class to manage CPU/RAM settings (John Preston)
+* f1bdb5f Added x-kms to x-sqs support (John Preston)
+* 8cb0edd x-cloudmap for x-resources (#584) (John Preston)
+* b953169 Allows to define ports to allow for ext_sources and aws_sources (#582) (John Preston)
+* bfb1a74 Added feature for RuntimePlatform Task definition settings (John Preston)
+* 5a300eb Route53 stack created for records (John Preston)
+* 9525f05 Added x-kms:: mapping to S3.BucketEncryption (John Preston)
+* b1d6de2 Added x-neptune.Lookup (#565) (John Preston)
+
+Breaking changes
+--------------------
+
+This new version comes with a few breaking changes :
+
+* Deprecation of ``Use`` for resources, such as x-vpc, x-cluster, x-s3 and so on. The Use functionality was too limited.
+* Deprecation of ``x-dns``, replaced with ``x-route53`` and ``x-cloudmap``
+* ec24dd1 Remove prefix list given max size is immutable when set (John Preston)
+
+To help with the transition to using the 0.18 version, an upgrade script has been created.
+
+To use it, simply do
+
+.. code-block:: bash
+
+    python3 -m venv compose-x
+    source compose-x/bin/activate
+    pip install pip poetry -U
+    git clone https://github.com/compose-x/ecs_composex
+    cd ecs_composex/; poetry install
+    ./upgrade_scripts/upgrade_to_0.18.py -h
+
+    # for example
+    ./upgrade_scripts/upgrade_to_0.18.py -f docker-compose.yaml
+
+
+Geneal Improvements
+-----------------------
+
+These improvements have been made to make ecs-compose-x more reliable and consistent at validating
+itself and getting closer to a proper production-grade tool.
+
+* 9d9c57e Simplified JSON schema loading (John Preston)
+* cb76c1a Using pyupgrade pre-commit hook (John Preston)
+* e7ea8f0  (John Preston)
+    * Allowing Env resources with _to_ecs to apply
+    * Enforce x-cluster deprecation of Use * Improve migration script
+* f3518be Refactoring x-route53 code into smaller modules (John Preston)
+* ef0bca0 Lint code. Change x-cluster to add the exec bucket/key into x-s3/x-kms (John Preston)
+* 1860d43 Linted code (John Preston)
+* ac27461 Refactor to use modules more and cleanup params RES/MOD key (John Preston)
+* 0b5d87b (John Preston)
+    * Refactored resources stack to use the module from manager
+    * Refactored x-cluster bucket/kms key to use x-kms/x-s3 properly
+    * Fixed up use case tests * Refactored x-sns to not use x-sns.Topics{}
+* a6b3685 Refactors and renames of ecs packages to improve ECS Family configuration (John Preston)
+* c33d63f Using published first, target second when creating ingress rules (#589) (John Preston)
+* bc2787d Refactor schemas files to be within module (#587) (John Preston)
+* e32f92b Updated deps and NOTICES (John Preston)
+* a11254b Simple upgrade script to 0.18 syntax (John Preston)
+* bfab153 Updated test files with upgrade script (John Preston)
+* ff6acd4 When secret JSON keys given, only expose those, remove default secret value (John Preston)
+* 97907a1 Precaution for Name value in x-events (John Preston)
+* 43c24be Removing tests for deprecated feature (John Preston)
+* d558645 No more Zones defined in settings (John Preston)
+* d7233b1 Refactored x_dependencies for x-rds (John Preston)
+* b6d57de Updated JSON Specs (John Preston)
+* 8f3b4b8 Refactored function to link x-resource to services for IAM and environment variables. Added typing for resource to service linking Link resource to services function deals with new vs lookup on its own (John Preston)
+* 52d0771 Testing troposphere 4.0.0 beta Refactored env vars, only the Ref value is exposed by default (John Preston)
+* 3b41ad6 Refactored to_ecs for RDS like resources (John Preston)
+* 926ce99 Refactor x-alarms to x mapping (John Preston)
+* 77b9dbd Refactored x_dependencies for x-rds (John Preston)
+* 39ef236 Using retry on CFN validate template (John Preston)
+* 29fea25 Updating CICD. Macro will be moved elsewhere (John Preston)
+* b52a568 Updated neptune for creation and added test case (John Preston)
+* 3c9cc03 Reworked lookup resources.kms policies assignment (John Preston)
+* 8d345b1 Simplified _to_ecs functions and added tests cases (John Preston)
+* 9ec1dde Refactored x-s3 to use generic IAM policies functions (John Preston)
+* 233d973 Strenghtening Lookup JSON model (John Preston)
+* 14bcb48 pre-commit cleanup (John Preston)
+* 5057944 Updated copyright dates (John Preston)
+* c55e27c Updated userpool mappings (John Preston)
+* ce6b049 Updated ACM, cloudmap and other settings (John Preston)
+* 361ac79 Reworked x-route53 with ACM and ELBv2 (John Preston)
+* 78e3ced Reworked x-dns to x-route53 and x-cloudmap (John Preston)
+* 3de79c5 Refactoring ELBv2 for external support (John Preston)
+* 0cf307a Reworked ECS IAM Roles and Family init (John Preston)
+* 9891e4f Reworking the XResources classes (John Preston)
+* 2df8b24 Re-instating default PrivateNamespace to support all DNS features (#571) (John Preston)
+* 2745038 Refactoring / cleaning the compose and ECS services related settings (#568) (John Preston)
+* 4bac941 Use official nginx-prometheus-exporter image (#570) (Luca Comellini)
+
+
+Bug Fixes
+----------
+
+A number of these bug fixes are the result of changes in the general improvements above,
+which mostly were due to restructuring of the code and classes.
+
+* fcddf63 Fix ECS Log group name (John Preston)
+* bf44bfd Fixed x-cluster logging configuration (#595) (John Preston)
+* cbd1546 Fix for x-route53 circular imports (John Preston)
+* c6c5db6 Fix for duplicate secret var names (John Preston)
+* 690c55a Fixing x-rds.Lokup.db and x-neptune.Lookup (#593) (John Preston)
+* 88f0697 Fix networks{} to subnets association (John Preston)
+* 023a555 Fix cloudmap to ecs (John Preston)
+* 84c7cc5 Fix RAM GB conversion to MB (John Preston)
+* a445e6b Fix imports (John Preston)
+* a96d565 Network feature and compute settings fixes. (#591) (John Preston)
+* 2cfd6f3 Fixing logging. Working traefik public e2e (John Preston)
+* 431309d Fixing code smells (John Preston)
+* eb432a6 Fix Launch Type and set it early Fix min CPU for ECS Auto-fix feature for ECS cluster providers Common class for sidecars (John Preston)
+* 4ce25d9 Split refactor of ecs_prometheus and sidecars (John Preston)
+* ee5d386 Fixing a non-problem for non-secret value (John Preston)
+* 23ec4c8 Split x-elbv2 into modules and fix for env vars (John Preston)
+* fd1d0bc Fix services add and split-refactor compose.x_resources (John Preston)
+* ea9b56f Fixing port mappings, adding protocol support and fargate default (#588) (John Preston)
+* f00f0af Fix services scaling and improve input validation (John Preston)
+* 72f1cd2 Fix x-events input from services output (John Preston)
+* 5a3a92e Fixing up condition where template is in fact not needed (John Preston)
+* ab327cb Align the code to the JSON Schema specs (John Preston)
+* 1798a25 Fix x-events multi events on same service and efs bug (John Preston)
+* db57b4b Fixed x-alarms to x-elbv2 Dimensions (John Preston)
+* 69db70a Fixing up RDS and DB Version for testing (John Preston)
+* b4a8e5d Fixed ELBv2 - Alarms (John Preston)
+* 0c0e60c Fixed ELBv2 - Cognito mapping (John Preston)
+* 6fec8fc Fix and simplified resource to services container env vars (John Preston)
+* dc351a8 Fix SSM ARN parameter (John Preston)
+* a09f17e Fixing volumes settings and handle host config (John Preston)
+* d2de0a6 Fixes in RDS like resources (John Preston)
+* 73f43d1 Fixed up x-acm to x-elbv2. Got generic algorithm for x-to-x resources (John Preston)
+* 96ad4c5 Fixes and log formatting (John Preston)
+* 6edf0f2 Fix x-ssm_parameter (John Preston)
+* 3980975 Fixed x-events and x-elbv2 (John Preston)
+
+
 0.17.0 (2021-10-20)
 ====================
 
