@@ -9,10 +9,6 @@
 services.x-scaling
 ======================
 
-
-This section allows to define scaling for the ECS Service.
-For SQS Based scaling using step scaling, refer to SQS :ref:`sqs_scaling_reference` Documentation.
-
 .. code-block:: yaml
 
     services:
@@ -22,10 +18,6 @@ For SQS Based scaling using step scaling, refer to SQS :ref:`sqs_scaling_referen
           TargetScaling:
             CpuTarget: <>
             RamTarget: <>
-
-.. seealso::
-
-    For more structural details, see `JSON Schema`_
 
 Range
 =====
@@ -93,6 +85,11 @@ applications that do not support to scale-in.
     If you define multiple services within the same **family**, the lowest value for CPU/RAM and highest for scale in/out
     are used in order to minimize the impact and focus on the weakest point.
 
+.. tip::
+
+    For SQS Based scaling using step scaling, refer to SQS :ref:`sqs_scaling_reference` Documentation.
+
+
 JSON Schema
 ===========
 
@@ -102,6 +99,7 @@ Model
 .. jsonschema:: ../../../../ecs_composex/specs/services.x-scaling.spec.json
 
 Definition
+-----------
 
 .. literalinclude:: ../../../../ecs_composex/specs/services.x-scaling.spec.json
     :language: json

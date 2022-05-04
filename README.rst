@@ -15,99 +15,65 @@ ECS ComposeX
 |BUILD|
 
 ---------------------------------------------------------------------------------------------------------------
-Manage, Configure and deploy your applications/services and AWS resources from your docker-compose definitions
+Configure, Deploy and maintain your applications/services and AWS resources with docker-compose files
 ---------------------------------------------------------------------------------------------------------------
+
+What does it do?
+========================
+
+* Help developers/SRE/Cloud engineers to deploy applications to AWS using docker-compose syntax
+    * Generates CloudFormation templates out of the Compose Files
+    * Links services and AWS Resources together via IAM / Networking / Configuration
+    * Detects mis-configurations and autocorrects wherever possible
+
+* Use/Re-use existing docker-compose files and compose specifications
+    * Supports docker-compose specification 3.7+
+    * Performs JSON validation of input to improve reliability
+    * Enable/disable features to run in AWS Fargate automatically
+
+* Expand the definitions with AWS CloudFormation resources
+    * For supported resources, supports full CloudFormation properties
+    * For existing resources, will detect them and allow to use the ``Return Values`` with other components
+
+* Allows to use existing resources in your AWS Account
+* Can be extended with custom modules/hooks
+
 
 Useful Links
 ===============
 
 * `Documentation`_
-* `Blog`_
 * `Labs <https://labs.compose-x.io/>`_
-* `Feature requests <https://github.com/compose-x/ecs_composex/projects/2>`_
-* `Issues <https://github.com/compose-x/ecs_composex/projects/3>`_
+* `Feature requests`_
+* `Issues`_
 * `Compatibility Matrix`_
 
 
-Why use ECS Compose-X?
-========================
-
-As a developer, working locally is a crucial part of your day to day work, and **docker-compose** allows you to do
-just that, for simple services as well as very complex structures.
-
-Your prototype works, and you want to deploy to AWS. But what about IAM ? Networking ? Security ? Configuration ?
-
-Using ECS Compose-X, you keep your docker-compose definitions as they are, add the AWS services you have chosen
-as part of that definition, such as ELB, RDS/DynamodDB Databases etc, and the program will automatically
-generate all the AWS CloudFormation templates required to deploy all your services.
-
-It automatically takes care of network access requirements and IAM permissions, following best practices.
-
-
 Installation
-============
+=====================
 
 .. code-block:: bash
 
+    # Inside a python virtual environment
+    python3 -m venv venv
+    source venv/bin/activate
+    pip install pip -U
     pip install ecs-composex
 
+    # For your user only
+    pip install ecs-composex --user
 
-How is it different ?
-=====================
+Usage
+======
 
-There are a lot of similar tools out there, including published by AWS. So here are a few of the features
-that we think could be of interest to you.
+.. code-block:: bash
 
-Modularity / "Plug & Play"
----------------------------
+    # Get all the options
+    ecs-compose-x -h
 
-The origin of ECS Compose-X was to provide developers with the ability of deploying an entire test stack from scratch.
-However, the reality is more that companies have already gotten VPC/Networking sorted out, other applications, services
-and resources already exist and new services need access to that existing infrastructure.
+    # Simple example using docker-compose file and an extension with your AWS Settings
+    ecs-compose-x render -d templates -n my-new-stack -f docker-compose.yaml -f aws-settings.yaml
 
-So with ECS-ComposeX we have since very early on , defined `Lookup`_, which allows you to use your existing services
-and resources you have in AWS. Via API discovery, all the settings, configuration of those will be used to grant
-the necessary access and define configuration accordingly for your services to use these successfully.
-
-
-Deploy to AWS Fargate, AWS EC2 and ECS Anywhere
----------------------------------------------------
-
-Since the beginning, the focus has been on running with AWS Fargate, as it is what allows developers least effort
-to deploying applications. But by users demand, the project was adapted to support deploying to existing EC2 based
-clusters, as well as on ECS Anywhere.
-
-With the growing adoption of other ARM there is also now support to specify whether you want to run your services
-on AWS Fargate using Graviton processors.
-
-Attributes auto-correct
--------------------------
-
-A fair amount of the time, deployments via AWS CloudFormation, Ansible and other IaC will fail because of incompatible
-settings. This is particularly frustrating and can lead to failed deployments.
-It happened to us all, a number of times, with a lot of different AWS Services.
-
-Whilst giving you the ability to use all properties of AWS CloudFormation objects, whenever possible, ECS Compose-X
-will try to identify incompatible settings, warn you of changes it made, and otherwise fail early to avoid deployment
-issues.
-
-For example, if you set the Log retention to be 42 days, which is invalid, it will automatically change that to the
-closest valid value (here, 30).
-
-Create your own modules
-==========================
-
-Since version 0.18 of ECS Compose-X, you can create your own ``x-`` modules that will automatically be detected at
-execution time. Thanks to the module manager, if your module contains all the necessary entrypoints, it will be able
-to act as an extension of compose-x and do whatever you want it to do.
-
-See how to create your own modules
-
-Credits
-=======
-
-This package would not have been possible without the amazing job done by the AWS CloudFormation team!
-This package would not have been possible without the amazing community around `Troposphere`_!
 
 .. _`Mark Peek`: https://github.com/markpeek
 .. _`AWS ECS CLI`: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ECS_CLI.html
@@ -119,6 +85,9 @@ This package would not have been possible without the amazing community around `
 .. _Extensions fields:  https://docs.docker.com/compose/compose-file/#extension-fields
 .. _ECS ComposeX Project: https://github.com/orgs/lambda-my-aws/projects/3
 .. _CICD Pipeline for multiple services on AWS ECS with ECS ComposeX: https://blog.compose-x.io/posts/cicd-pipeline-for-multiple-services-on-aws-ecs-with-ecs-composex/
+.. _Feature requests: https://github.com/compose-x/ecs_composex/issues/new?assignees=JohnPreston&labels=enhancement&template=feature_request.md&title=%5BFR%5D+%3Caws+service%7Cdocker+compose%3E+
+.. _Issues: https://github.com/compose-x/ecs_composex/issues/new?assignees=JohnPreston&labels=bug&template=bug_report.md&title=%5BBUG%5D
+
 
 .. _AWS ECS:            https://nightly.docs.compose-x.io/syntax/composex/ecs.html
 .. _AWS VPC:            https://nightly.docs.compose-x.io/syntax/composex/vpc.html

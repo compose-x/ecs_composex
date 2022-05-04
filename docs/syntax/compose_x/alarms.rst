@@ -9,12 +9,6 @@
 x-alarms
 ===============================
 
-This module allows you to define AWS CloudWatch alarms on the different resources, services, and define actions.
-You can only create new alarms.
-
-Syntax
-=======
-
 .. code-block:: yaml
     :caption: Syntax reference
 
@@ -26,9 +20,12 @@ Syntax
         Services: {}
         Topics: []
 
-.. seealso::
+Define AWS CloudWatch alarms on the different resources, services, and define actions.
 
-    For more structural details, see `JSON Schema`_
+.. note::
+
+    You can only create new alarms.
+
 
 Properties
 ==============
@@ -202,7 +199,7 @@ Examples
 JSON Schema
 ============
 
-Representation
+Model
 ----------------
 
 .. jsonschema:: ../../../ecs_composex/alarms/x-alarms.spec.json
@@ -215,7 +212,7 @@ Definition
 .. _x-alarms Documentation: https://docs.compose-x.io/syntax/compose_x/alarms.html
 
 Test files
-==========
+============
 
 You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/alarms>`__ to use as reference for your use-case.
 

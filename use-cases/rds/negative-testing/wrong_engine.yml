@@ -52,9 +52,6 @@ x-rds:
     Properties:
       Engine: "aurora-mysql"
       EngineVersion: "5.7.100"
-    Settings:
-      EnvNames:
-        - DBA
     Services:
       - name: backend
         access: RW

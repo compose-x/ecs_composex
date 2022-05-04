@@ -69,20 +69,13 @@ x-sqs:
               Count: 2
             - LowerBound: 20
               Count: 5
-  queueA:
-    Settings:
-      EnvNames:
-        - QUEUEA
-
+  queueA: {}
   queueB:
     Properties:
       KmsMasterKeyId: x-kms::keyC
       RedrivePolicy:
         deadLetterTargetArn: queueA
         maxReceiveCount: 10
-    Settings:
-      EnvNames:
-        - queueb
     Services:
       - name: bignicefamily
         access: RWMessages
@@ -95,9 +88,6 @@ x-sqs:
         access: RWMessages
       - name: youtoo
         access: RWMessages
-    Settings:
-      EnvNames:
-        - FIFO_QUEUE
 
   queueD:
     Properties:

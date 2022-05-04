@@ -3,18 +3,17 @@
     :description: ECS Compose-X AWS Cognito UserPool syntax reference
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS Cognito
 
+.. attention::
+
+    This module only allows to perform lookup to an exising userpool at the moment.
+    The only integration is with :ref:`elbv2_syntax_reference` listener properties.
+    Raise a feature request if you need further integrations.
+
 .. _cognito_userpool_syntax_reference:
 
 ======================
 x-cognito_userpool
 ======================
-
-This module allows you to identify through Lookup the Cognito Userpool you wish to us in x-elbv2.
-
-For now this module is only of use with x-elbv2, but in future versions be extended to full features.
-
-Syntax Reference
-=================
 
 .. code-block:: yaml
 
@@ -29,7 +28,7 @@ Examples
 =========
 
 .. code-block:: yaml
-    :caption: Example with x-elbv2 for ALB integration.
+    :caption: Example with x-elbv2 for ALB integration. This is taken from a real use-case.
 
     x-cognito_userpool:
       kafdrop-pool:

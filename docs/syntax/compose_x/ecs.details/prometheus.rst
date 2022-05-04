@@ -9,14 +9,6 @@
 services.x-prometheus
 ======================
 
-Allows to define some settings to make ECS integration to Prometheus easy.
-
-At the moment, the integration focuses primarily in integration with ECS Insights integration and future version will
-add support for AWS AMP and other Prometheus clusters.
-
-Syntax
-=======
-
 .. code-block:: yaml
 
     services:
@@ -24,10 +16,15 @@ Syntax
         x-prometheus:
           ContainersInsights: ContainersInsights
 
+Allows to define some settings to make ECS integration to Prometheus easy.
+
+At the moment, the integration focuses primarily in integration with ECS Insights integration and future version will
+add support for AWS AMP and other Prometheus clusters.
+
+
 .. tip::
 
     There are multiple examples of this features in `the Labs`_ for you to walk through
-
 
 ContainersInsights Syntax Reference
 =======================================

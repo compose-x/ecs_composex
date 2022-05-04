@@ -3,33 +3,33 @@
     :description: ECS Compose-X AWS Neptune syntax reference
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS Neptune, MongoDB
 
+.. attention::
+
+    For production workloads, we recommend sing Lookup you can use existing Neptune clusters with your new services.
+    This will avoid accidental deletions or rollback situations where both your DB and services have to rollback.
+
+
 .. _neptune_syntax_reference:
 
 ==========================
 x-neptune
 ==========================
 
-This modules allows you to provision new AWS Neptune DB Clusters, or use existing ones, that your services will connect to.
-
-
-Syntax Reference
-=================
-
 .. code-block:: yaml
     :caption:
 
-x-neptune:
-  cluster-01:
-    Properties: {}
-    MacroParameters: {}
-    Lookup: {}
-    Services: {}
-    Settings: {}
+    x-neptune:
+      cluster-01:
+        Properties: {}
+        MacroParameters: {}
+        Lookup: {}
+        Services: {}
+        Settings: {}
 
+This modules allows you to provision new AWS Neptune DB Clusters, or use existing ones, that your services will connect to.
 
-Define services access
-=======================
-
+Services
+==========
 
 .. code-block:: yaml
 

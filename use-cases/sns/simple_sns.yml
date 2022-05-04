@@ -1,9 +1,8 @@
-
 x-sns:
   abcd:
     Properties: {}
     Services:
-      - name: app01
-        access: Publish
-      - name: youtoo
-        access: Publish
+      app01:
+        Access: Publish
+      youtoo:
+        Access: Publish

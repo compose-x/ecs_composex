@@ -3,23 +3,45 @@
     :description: ECS Compose-X AWS DocumentDB syntax reference
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS DocumentDB, MongoDB
 
+.. attention::
+
+    For production workloads, we recommend sing Lookup you can use existing DocDB clusters with your new services.
+    This will avoid accidental deletions or rollback situations where both your DB and services have to rollback.
+
 .. _docdb_syntax_reference:
 
 =========
 x-docdb
 =========
 
-Allows you to create / lookup DocumentDB clusters you want to connect your ECS Services to.
+.. code-block:: yaml
 
-.. tip::
+    x-docdb:
+      cluster:
+        Properties: {}
+        MacroParameters: {}
+        Settings: {}
+        Services: {}
 
-    For production workloads, to avoid any CFN deadlock situations, it is recommended that
-    you generate the CFN templates for docdb, and deploy the stacks separately.
-    Using Lookup you can use existing DocDB clusters with your new services.
+
+Create / lookup DocumentDB clusters you want to connect your ECS Services to.
 
 .. seealso::
 
-    For more structural details, see `JSON Schema`_
+    See :ref:`how_to_change_aws_rds_env_vars` for a step by step example to change the SecretsMapping.
+
+
+Services
+========
+
+Refer to :ref:`services_ref` for in-depth details.
+
+ReturnValues
+-------------
+
+The available return Values are as per the `CFN return values for AWS DocDb Cluster`_
+To access the *Ref* value, use **DBCluster**.
+
 
 Properties
 ===========
@@ -96,11 +118,6 @@ for more details.
       tls: "enabled"
       ttl_monitor: "enabled"
 
-Services
-========
-
-Refer to :ref:`services_ref` for in-depth details.
-
 Access
 --------
 
@@ -115,11 +132,6 @@ Available options
     Access:
       DBCluster: RO # Grants Read/Describe access only to the DB Cluster.
 
-ReturnValues
--------------
-
-The available return Values are as per the `CFN return values for AWS DocDb Cluster`_
-To access the *Ref* value, use **DBCluster**.
 
 Settings
 ========

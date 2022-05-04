@@ -41,10 +41,6 @@ x-s3:
     MacroParameters:
       ExpandRegionToBucket: True
       ExpandAccountIdToBucket: True
-    Settings:
-      EnvNames:
-        - bucket01
-        - BUCKET_ABCD-01
     Services:
       - name: app03
         access:
@@ -73,9 +69,6 @@ x-s3:
     Settings:
       ExpandRegionToBucket: True
       ExpandAccountIdToBucket: False
-      EnvNames:
-        - bucket01
-        - BUCKET_ABCD-01
     Services:
       - name: app03
         access:
@@ -88,9 +81,6 @@ x-s3:
       ExpandAccountIdToBucket: False
       EnableEncryption: AES256
       EnableAcceleration: True
-      EnvNames:
-        - bucket01
-        - BUCKET_ABCD-01
     Services:
       - name: app03
         access:
@@ -106,9 +96,6 @@ x-s3:
       ExpandAccountIdToBucket: False
       EnableEncryption: AES256
       EnableAcceleration: True
-      EnvNames:
-        - bucket01
-        - BUCKET_ABCD-01
     Services:
       - name: app03
         access:

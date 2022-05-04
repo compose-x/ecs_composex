@@ -3,21 +3,16 @@
     :description: ECS Compose-X AWS OpenSearch syntax reference
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS OpenSearch, ElasticSearch
 
+.. attention::
+
+    For production workloads, we recommend sing Lookup you can use existing OpenSearch clusters with your new services.
+    This will avoid accidental deletions or rollback situations where both your DB and services have to rollback.
+
 .. _opensearch_syntax_reference:
 
 ==============
 x-opensearch
 ==============
-
-Allows you to create / lookup OpenSearch Domains to use with your ECS Services.
-
-.. hint::
-
-    Given the combinations of settings that only work together, we have implemented validations to verify those early.
-    If we missed something, please `report an issue in GitHub `_
-
-Syntax
-=======
 
 .. code-block:: yaml
 
@@ -29,19 +24,51 @@ Syntax
         Lookup: {}
         MacroParameters: {}
 
-.. tip::
+Allows you to create / lookup OpenSearch Domains to use with your ECS Services.
 
-    For production workloads, to avoid any CFN deadlock situations, I recommend you generate the CFN templates for opensearch,
-    and deploy the stacks separately. Using Lookup you can use existing DocDB clusters with your new services.
+Services
+========
 
-.. seealso::
+The syntax for listing the services remains the same as the other x- resources.
 
-    For more structural details, see `JSON Schema`_
+.. code-block:: yaml
+
+    Services:
+      <service/family name>
+        Access:
+          Http: [RO|RW]
+          DBCluster: [RO|RW]
+        ReturnValues: {}
+
+Access types
+------------
+
+Http
+^^^^^^^^
+
+This defines the Http permissions that you wish to grant your service to perform queries to the OpenSearch domain
+
+DBCluster
+^^^^^^^^^^
+
+This defines the IAM permissions you wish to grant to the service that will allow to describe and discover the
+OpenSearch domain
+
+.. literalinclude:: ../../../ecs_composex/opensearch/opensearch_perms.json
+    :language: json
+
+ReturnValues
+-------------
+
+See `AWS OpenSearch Domain return values`_ from the AWS Documentation pages.
+
 
 Properties
 ===========
 
 Refer to the `AWS OpenSearch Domain CFN Properties`_.
+
+
 
 .. attention::
 
@@ -50,6 +77,11 @@ Refer to the `AWS OpenSearch Domain CFN Properties`_.
     However, if it cannot solve the issue due to too incompatible settings contradicting each other, it will fail.
 
     Refer to the `Instance Types supported by OpenSearch`_ to check out these settings.
+
+.. hint::
+
+    Given the combinations of settings that only work together, we have implemented validations to verify those early.
+    If we missed something, please `report an issue in GitHub `_
 
 .. hint::
 
@@ -147,37 +179,6 @@ MasterUserRolePermissionsBoundary
 
 Allows you to define IAM Permissions Boundary when creating the new AWS IAM MasterRole
 
-Services
-========
-
-The syntax for listing the services remains the same as the other x- resources.
-
-.. code-block:: yaml
-
-    Services:
-      <service/family name>
-        Access:
-          Http: [RO|RW]
-          DBCluster: [RO|RW]
-
-Access types
-------------
-
-Http
-^^^^^^^^
-
-This defines the Http permissions that you wish to grant your service to perform queries to the OpenSearch domain
-
-DBCluster
-^^^^^^^^^^
-
-This defines the IAM permissions you wish to grant to the service that will allow to describe and discover the
-OpenSearch domain
-
-.. literalinclude:: ../../../ecs_composex/opensearch/opensearch_perms.json
-    :language: json
-
-
 Settings
 ========
 
@@ -228,3 +229,4 @@ as reference for your use-case.
 .. _VpcOptions: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-elasticsearch-domain-vpcoptions.html
 .. _Instance Types supported by OpenSearch: https://docs.aws.amazon.com/opensearch-service/latest/developerguide/supported-instance-types.html
 .. _report an issue in GitHub : https://github.com/compose-x/ecs_composex/issues/new?assignees=JohnPreston&labels=bug&template=bug_report.md&title=%5BBUG%5D
+.. _AWS OpenSearch Domain return values: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-opensearchservice-domain.html#aws-resource-opensearchservice-domain-return-values

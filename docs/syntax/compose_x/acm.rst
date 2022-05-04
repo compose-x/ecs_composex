@@ -9,17 +9,17 @@
 x-acm
 =================
 
-This module allows you to define new ACM Certificates (with DNS Validation) or import existing ones that you wish
-to use with supported AWS services and resources.
-
-Syntax Reference
-=================
+.. code-block:: yaml
 
     x-acm:
       certificate:
         Properties: {}
         MacroParameters: {}
         Lookup: {}
+
+
+Define new ACM Certificates (with DNS Validation) or import existing ones that you wish
+to use with supported AWS services and resources.
 
 Properties
 ==========

@@ -3,20 +3,16 @@
     :description: ECS Compose-X docker_opts extension
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, security, docker_opts, repositories
 
-.. _composex_docker_opts_extension:
-
-
-=======================
-services.x-docker_opts
-=======================
-
 .. warning::
 
     DUE TO SECURITY DEPS not being fixed in the docker python library, this feature is for now disabled.
     Apologies for the inconvenience.
 
-Syntax Reference
-==================
+.. _composex_docker_opts_extension:
+
+=======================
+services.x-docker_opts
+=======================
 
 .. code-block::
 
@@ -25,10 +21,6 @@ Syntax Reference
         image: nginx
         x-docker_opts:
           InterpolateWithDigest: bool
-
-.. seealso::
-
-    For more structural details, see `JSON Schema`_
 
 
 InterpolateWithDigest

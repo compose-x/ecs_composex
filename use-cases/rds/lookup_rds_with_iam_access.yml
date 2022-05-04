@@ -7,9 +7,6 @@ x-rds:
     MacroParameters:
       Engine: "aurora-postgresql"
       EngineVersion: "12.7"
-    Settings:
-      EnvNames:
-        - DBA
     Services:
       - name: app01
         access: RW
@@ -51,9 +48,6 @@ x-rds:
             - x-s3::bucket-01
             - arn:aws:s3:::sacrificial-lamb/folder/*
             - bucket-name
-    Settings:
-      EnvNames:
-        - DB_B
     Services:
       - name: app01
         access: RW

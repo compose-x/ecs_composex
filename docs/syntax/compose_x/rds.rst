@@ -3,19 +3,17 @@
     :description: ECS Compose-X AWS RDS syntax reference
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS RDS, mysql, postresql, rds
 
+.. attention::
+
+    For production workloads, we recommend sing Lookup you can use existing OpenSearch clusters with your new services.
+    This will avoid accidental deletions or rollback situations where both your DB and services have to rollback.
+
+
 .. _rds_syntax_reference:
 
 ===================
 x-rds
 ===================
-
-Allows to define RDS DB Instances/Clusters and/or use existing ones and link access to the services.
-When creating new RDS resources, compose-x will use AWS Secrets Manager to automatically register
-the new database username / password and passes it on to the services. See `SecretsMapping`_ and `Database Credentials`_
-for more details.
-
-Syntax reference
-=================
 
 .. code-block:: yaml
 
@@ -25,6 +23,79 @@ Syntax reference
         MacroParameters: {}
         Services: {}
         Lookup: {}
+
+Define RDS DB Instances/Clusters and/or use existing ones and link access to the services.
+
+When creating new RDS resources, compose-x will use AWS Secrets Manager to automatically register
+the new database username / password and passes it on to the services. See `SecretsMapping`_ and `Database Credentials`_
+for more details.
+
+.. seealso::
+
+    See :ref:`how_to_change_aws_rds_env_vars` for a step by step example to change the `SecretsMapping`_
+
+Services
+============
+
+Access
+---------
+
+.. code-block:: yaml
+
+    Access:
+      DBCluster: RO
+
+The only valid key for Access is DBCluster. The only valid value is ``RO`` for read-only, which allows IAM calls to RDS
+to describe the cluster.
+
+ReturnValues
+--------------
+
+Use the `AWS RDS DBCluster Return Values`_ to expose the value for these properties to your service as an environment variable.
+If you are creating a RDS DB Instance, see `AWS RDS DB Instance Return Values`_.
+
+The value ``DBCluster`` can be used to expose the value for **Ref**
+
+.. _rds_db_secrets_mappings:
+
+SecretsMapping
+---------------
+
+This is an optional feature that allows you to map the secret key stored into Secrets Manager (see `Database Credentials`_) to a different
+environment variable.
+
+.. code-block:: yaml
+    :caption: Sample for bitnami wordpress application
+
+    x-rds:
+      wordpress-db:
+        Properties:
+          Engine: "aurora-mysql"
+          EngineVersion: "5.7"
+          BackupRetentionPeriod: 1
+          DatabaseName: wordpress
+          StorageEncrypted: True
+          Tags:
+            - Key: Name
+              Value: "dummy-db"
+        Services:
+          wordpress:
+            Access:
+              DBCluster: RO
+            SecretsMappings:
+              Mappings:
+                host: MARIADB_HOST
+                port: MARIADB_PORT_NUMBER
+                username: WORDPRESS_DATABASE_USER
+                password: WORDPRESS_DATABASE_PASSWORD
+                dbname: WORDPRESS_DATABASE_NAME
+
+.. hint::
+
+    Using a mapping/dict format avoids duplicates. If you need the same value more than once, use the list syntax,
+    as shown in the previous example.
+
+    If you combine the mappings for all services to specific mappings for one service, the specific ones take precedence.
 
 Properties
 ===========
@@ -143,70 +214,6 @@ might re-define in **RdsFeatures** will be skipped. If you wish to use **RdsFeat
 .. hint::
 
     You can reference a S3 bucket defined in **x-s3**. This supports S3 buckets created and referenced via Lookup
-
-
-Services
-============
-
-Access
----------
-
-.. code-block:: yaml
-
-    Access:
-      DBCluster: RO
-
-The only valid key for Access is DBCluster. The only valid value is ``RO`` for read-only, which allows IAM calls to RDS
-to describe the cluster.
-
-ReturnValues
---------------
-
-Use the `AWS RDS DBCluster Return Values`_ to expose the value for these properties to your service as an environment variable.
-If you are creating a RDS DB Instance, see `AWS RDS DB Instance Return Values`_.
-
-The value ``DBCluster`` can be used to expose the value for **Ref**
-
-.. _rds_db_secrets_mappings:
-
-SecretsMapping
----------------
-
-This is an optional feature that allows you to map the secret key stored into Secrets Manager (see `Database Credentials`_) to a different
-environment variable.
-
-.. code-block:: yaml
-    :caption: Sample for bitnami wordpress application
-
-    x-rds:
-      wordpress-db:
-        Properties:
-          Engine: "aurora-mysql"
-          EngineVersion: "5.7"
-          BackupRetentionPeriod: 1
-          DatabaseName: wordpress
-          StorageEncrypted: True
-          Tags:
-            - Key: Name
-              Value: "dummy-db"
-        Services:
-          wordpress:
-            Access:
-              DBCluster: RO
-            SecretsMappings:
-              Mappings:
-                host: MARIADB_HOST
-                port: MARIADB_PORT_NUMBER
-                username: WORDPRESS_DATABASE_USER
-                password: WORDPRESS_DATABASE_PASSWORD
-                dbname: WORDPRESS_DATABASE_NAME
-
-.. hint::
-
-    Using a mapping/dict format avoids duplicates. If you need the same value more than once, use the list syntax,
-    as shown in the previous example.
-
-    If you combine the mappings for all services to specific mappings for one service, the specific ones take precedence.
 
 Settings
 ========

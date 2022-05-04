@@ -5,17 +5,13 @@
 
 .. _appmesh_syntax_reference:
 
-=======================
-x-appmesh
-=======================
-
-.. warning::
+.. attention::
 
     This module is still under development and we would love to get any feedback on the syntax and how to make it easier.
 
-
-Syntax reference
-=====================
+=======================
+x-appmesh
+=======================
 
 .. code-block:: yaml
 
@@ -32,15 +28,6 @@ Syntax reference
         Services:
           - <service>
 
-
-The properties for the mesh are very straight forward. Even though, the wish with ECS ComposeX is to keep the Properties
-the same as the ones defined in CFN as much as possible, for AWS AppMesh, given the simplicity of the properties,
-we are going with somewhat custom properties, mostly to allow for more features integration down the line.
-
-.. tip::
-
-    You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/appmesh>`__ to use
-    as reference for your use-case.
 
 .. warning::
 
@@ -325,6 +312,12 @@ between the nodes.
 
     For troubleshooting, you can use the ClusterWide Security Group which is attached to all containers deployed with
     ECS ComposeX, and allow all traffic within the security group to allow your ECS Services to communicate.
+
+
+.. tip::
+
+    You can find the test files `here <https://github.com/compose-x/ecs_composex/tree/main/use-cases/appmesh>`__ to use
+    as reference for your use-case.
 
 
 .. _AWS Appmesh official documentation: https://docs.aws.amazon.com/app-mesh/latest/userguide/what-is-app-mesh.html

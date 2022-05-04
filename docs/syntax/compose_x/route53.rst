@@ -2,32 +2,16 @@
     :description: ECS Compose-X Route53
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS Route53, AWS CloudMap, dns
 
+.. attention::
+
+    Generally we recommend to use existing zones, because other features, such as x-acm for DNS validation,
+    won't work without a working hosted zone. We specially recommend that for production workloads and use :ref:`lookup_syntax_reference`
+
 .. _route53_reference_syntax:
 
 =========================
 x-route53
 =========================
-
-This module allows you to create new Route53 zones and lookup existing ones.
-Generally we recommend to use existing zones as other features, such as x-acm auto validation,
-won't work without a working hosted zone.
-
-This will allow you to create DNS records for supported resources.
-
-.. attention::
-
-    This module replaces the deprecated x-dns.PublicDomain module & resource.
-
-
-Description
-===============
-
-Allows to Create or Lookup Route53 Hosted Zones in your AWS Account, to use along your services.
-Once you have defined the HostedZone, compose-x will use its properties to
-
-
-Syntax
-=======
 
 .. code-block:: yaml
 
@@ -36,6 +20,10 @@ Syntax
         ZoneName: example.com
         Properties: {}
         Lookup: {}
+
+
+Create or Lookup Route53 Hosted Zones in your AWS Account, to use along your services.
+Once you have defined the HostedZone, compose-x will use its properties where appropriate with other resources.
 
 
 .. _x_route53-x_elbv2:

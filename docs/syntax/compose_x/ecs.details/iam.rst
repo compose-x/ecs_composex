@@ -9,11 +9,6 @@
 services.x-iam
 ==================
 
-This section is the entrypoint to further extension of IAM definition for the IAM roles created throughout.
-
-Syntax
-=======
-
 .. code-block:: yaml
 
     x-iam:
@@ -21,9 +16,11 @@ Syntax
       PermissionsBoundary: str
       ManagedPolicyArns: []
 
+This section is the entrypoint to further extension of IAM definition for the IAM roles created throughout.
+
 
 PermissionsBoundary
---------------------
+======================
 
 This key represents an IAM policy (name or ARN) that needs to be added to the IAM roles in order to represent the IAM
 Permissions Boundary.
@@ -57,7 +54,7 @@ Permissions Boundary.
         r"((^([a-zA-Z0-9-_.\/]+)$)|(^(arn:aws:iam::(aws|[0-9]{12}):policy\/)[a-zA-Z0-9-_.\/]+$))"
 
 Policies
-------------
+==========
 
 Allows you to define additional IAM policies.
 Follows the same pattern as CFN IAM Policies
@@ -80,10 +77,10 @@ Follows the same pattern as CFN IAM Policies
 
 .. tip::
 
-    If you used the ECS Plugin from docker before, this is equivalent to *x-aws-role*
+    This is equivalent to *x-aws-role* if you used the ECS Plugin.
 
 ManagedPolicyArns
-------------------
+==================
 
 Allows you to add additional managed policies. You can specify the full ARN or just a string for the name / path of the
 policy. If will resolve into the same regexp as for `PermissionsBoundary`_

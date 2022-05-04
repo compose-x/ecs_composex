@@ -4,7 +4,7 @@
     :keywords: AWS, AWS ECS, Docker, Containers, Compose, docker-compose, kafka, alarm, autoscaling
 
 
-.. _autoscaling_on_custom_alarm:
+.. _how_to_autoscaling_on_custom_alarm:
 
 ============================================================
 Services step scaling from custom alarm

@@ -12,10 +12,6 @@ x-ssm_parameter:
       Type: String
       Value: ABCD
 
-    Settings:
-      EnvNames:
-        - parameterA
-
   parameterB:
     Properties:
       DataType: text
@@ -23,9 +19,7 @@ x-ssm_parameter:
       Name: /some/other-parameter
       Type: String
       Value: ABCD
-    Settings:
-      EnvNames:
-        - parameterb
+
     Services:
       - name: bignicefamily
         access: RW
@@ -43,9 +37,6 @@ x-ssm_parameter:
         access: RO
       - name: youtoo
         access: SSMParameterReadPolicy
-    Settings:
-      EnvNames:
-        - FIFO_parameter
 
   parameterD:
     Properties:
@@ -59,9 +50,6 @@ x-ssm_parameter:
         access: RO
       - name: youtoo
         access: SSMParameterReadPolicy
-    Settings:
-      EnvNames:
-        - YAML_PARAM
 
   parameterS:
     Properties:
@@ -76,9 +64,6 @@ x-ssm_parameter:
         access: RO
       - name: youtoo
         access: SSMParameterReadPolicy
-    Settings:
-      EnvNames:
-        - YAML_CONVERTED_PARAM
 
   parameterENCODED:
     Properties:

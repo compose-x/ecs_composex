@@ -4,19 +4,12 @@
 version: '3.8'
 
 x-sqs:
-  queueA:
-    Settings:
-      EnvNames:
-        - QUEUEA
-
+  queueA: {}
   queueB:
     Properties:
       RedrivePolicy:
         deadLetterTargetArn: queueA
         maxReceiveCount: 10
-    Settings:
-      EnvNames:
-        - queueb
     Services:
       - name: bignicefamily
         access: RWMessages
@@ -29,9 +22,6 @@ x-sqs:
         access: RWMessages
       - name: youtoo
         access: RWMessages
-    Settings:
-      EnvNames:
-        - FIFO_QUEUE
 
   queueD:
     Properties: {}

@@ -9,10 +9,6 @@
 x-ssm_parameter
 =================
 
-Allows you to create new SSM Parameters, including from local files with optional transformations.1
-
-Syntax
-=======
 
 .. code-block:: yaml
     :caption: Syntax reference
@@ -23,6 +19,31 @@ Syntax
         MacroParameters: {}
         Settings: {}
         Services: {}
+        Lookup: {}
+
+Create new SSM Parameters, including from local files with optional transformations.
+
+Services
+========
+
+.. code-block:: yaml
+    :caption: Define services
+
+    Services:
+      serviceA:
+        Access: RW
+      serviceB:
+        Access: RO
+
+IAM Permissions
+----------------
+
+ECS Compose-X defined access names:
+
+* RW : Allow read/write to the parameter including by path
+* RWStrict: Similarly to RW, without ByPath support
+* RO: Allow read only to the parameter including by path
+* ROStrict: Similarly to RO, without ByPath support
 
 
 Properties
@@ -119,25 +140,6 @@ For more details, see the :ref:`lookup_syntax_reference`.
         Services:
           - name: serviceA
             access: SSMParameterReadPolicy
-
-ECS Compose-X defined access names:
-
-* RW : Allow read/write to the parameter including by path
-* RWStrict: Similarly to RW, without ByPath support
-* RO: Allow read only to the parameter including by path
-* ROStrict: Similarly to RO, without ByPath support
-
-Services
-========
-
-.. code-block:: yaml
-    :caption: Define services
-
-    Services:
-      - name: serviceA
-        access: RW
-      - name: serviceB
-        access: RO
 
 JSON Schema
 ============

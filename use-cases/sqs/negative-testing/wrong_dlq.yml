@@ -56,18 +56,13 @@ services:
 x-sqs:
   queueA:
     Properties: {}
-    Settings:
-      EnvNames:
-        - QUEUEA
 
   queueB:
     Properties:
       RedrivePolicy:
         deadLetterTargetArn: undefined
         maxReceiveCount: 10
-    Settings:
-      EnvNames:
-        - queueb
+
     Services:
       - name: app01
         access: RWMessages

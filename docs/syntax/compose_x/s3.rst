@@ -3,17 +3,16 @@
     :description: ECS Compose-X AWS S3 syntax reference
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS S3, S3 Buckets
 
+.. attention::
+
+    For production workloads, we recommend to create the buckets separately for any bucket that stores critical data.
+    See :ref:`lookup_syntax_reference` to use existing buckets.
+
 .. _s3_syntax_reference:
 
 =====================
 x-s3
 =====================
-
-This module allows you to create new S3 Buckets, Lookup existing ones, and link them to your services or other AWS Resources,
-where supported.
-
-Syntax
-=========
 
 .. code-block:: yaml
 
@@ -24,6 +23,13 @@ Syntax
         Lookup: {}
         Settings: {}
         Services: {}
+
+Define or use existing S3 buckets to use with your services or other AWS Resources (where applicable).
+
+.. hint::
+
+    When the bucket uses encryption, ECS Compose-X will automatically identify the KMS key and if applicable, grant
+    the necessary permissions to the service role. The KMS predefined **EncryptDecrypt** policy will be used to that effect.
 
 Services
 ========
@@ -166,13 +172,16 @@ Results into
 Lookup
 =======
 
-Lookup is currently implemented for S3 buckets!
+Refer to :ref:`lookup_syntax_reference` for the full details.
 
-.. hint::
+.. code-block:: yaml
 
-    For S3, if the S3 bucket has a default KMS key encryption, the services will automatically be granted KMS default
-    **EncryptDecrypt** permissions in order to allow using the KMS key for objects manipulation.
-
+    x-s3:
+      existing-bucket:
+        Lookup:
+          Tags:
+            - name: my-first-bucket
+            - environment: dev
 
 Examples
 =========

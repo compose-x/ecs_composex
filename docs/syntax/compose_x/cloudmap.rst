@@ -3,24 +3,16 @@
     :description: ECS Compose-X AWS CloudMap
     :keywords: AWS, AWS ECS, Docker, Compose, docker-compose, AWS Route53, AWS CloudMap, dns
 
+.. attention::
+
+    This module replaces the deprecated x-dns.PrivateNamespace module & resource.
+
+
 .. _cloudmap_reference_syntax:
 
 =========================
 x-cloudmap
 =========================
-
-This module allows you to specify one or more AWS CloudMap PrivateNamespace that you want to create / lookup and associate
-services to.
-
-At the moment, only the ECS Services are registered against CloudMap, but in a future version, you will be able to
-register other services in CloudMap.
-
-.. warning::
-
-    This module replaces the deprecated x-dns.PrivateNamespace module & resource.
-
-Syntax
-===========
 
 .. code-block:: yaml
 
@@ -29,6 +21,10 @@ Syntax
         Name: example.com # You can also use ``ZoneName`` to avoid ambiguity
         Properties: {}
         Lookup: {}
+
+
+Specify one or more AWS CloudMap PrivateNamespace that you want to create / lookup and associate
+services to.
 
 
 Use with services

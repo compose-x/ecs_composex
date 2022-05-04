@@ -10,9 +10,6 @@ x-rds:
       Instances:
         - DBInstanceClass: db.m5a.large
           DBAllocatedStorage: 50
-    Settings:
-      EnvNames:
-        - DBA
     Services:
       - name: app01
         access: RW
@@ -32,9 +29,7 @@ x-rds:
           sql_mode: IGNORE_SPACE
           max_allowed_packet: 1024
           innodb_buffer_pool_size: '{DBInstanceClassMemory*3/4}'
-    Settings:
-      EnvNames:
-        - DBC
+
     Services:
       - name: app01
         access: RW
@@ -63,9 +58,6 @@ x-rds:
         - Key: Name
           Value: "dummy-db"
 
-    Settings:
-      EnvNames:
-        - DBB
     Services:
       - name: app01
         access: RW
