@@ -147,12 +147,12 @@ JSON Schema
 Model
 -------
 
-.. jsonschema:: ../../../ecs_composex/ssm_parameters/x-ssm_parameter.spec.json
+.. jsonschema:: ../../../ecs_composex/ssm_parameter/x-ssm_parameter.spec.json
 
 Definition
 -----------
 
-.. literalinclude:: ../../../ecs_composex/ssm_parameters/x-ssm_parameter.spec.json
+.. literalinclude:: ../../../ecs_composex/ssm_parameter/x-ssm_parameter.spec.json
 
 
 Test files

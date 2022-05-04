@@ -16,7 +16,6 @@ x-neptune
 ==========================
 
 .. code-block:: yaml
-    :caption:
 
     x-neptune:
       cluster-01:
@@ -99,7 +98,7 @@ The lookup will automatically deal with finding the Security Group too and allow
 Examples
 ========
 
-.. literalinclude:: ../../../use-cases/neptune/create_only.yml
+.. literalinclude:: ../../../use-cases/neptune/create_only.yaml
     :language: yaml
     :caption: Create a new Neptune Cluster
 

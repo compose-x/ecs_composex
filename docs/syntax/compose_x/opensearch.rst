@@ -68,8 +68,6 @@ Properties
 
 Refer to the `AWS OpenSearch Domain CFN Properties`_.
 
-
-
 .. attention::
 
     The OpenSearch properties are very tedious, not all instance types support the same settings (EBSOptions etc.).
@@ -81,7 +79,7 @@ Refer to the `AWS OpenSearch Domain CFN Properties`_.
 .. hint::
 
     Given the combinations of settings that only work together, we have implemented validations to verify those early.
-    If we missed something, please `report an issue in GitHub `_
+    If we missed something, please `report an issue in GitHub`_
 
 .. hint::
 
@@ -196,11 +194,11 @@ Lookup for OpenSearch domains is available. However not used / tested with legac
 Examples
 ========
 
-.. literalinclude:: ../../../use-cases/opensearch/create_only.yml
+.. literalinclude:: ../../../use-cases/opensearch/create_only.yaml
     :language: yaml
     :caption: Sample to crate two DBs with different instances configuration
 
-.. literalinclude:: ../../../use-cases/opensearch/lookup_only.yml
+.. literalinclude:: ../../../use-cases/opensearch/lookup_only.yaml
     :language: yaml
     :caption: Create a DocDB and import an existing one.
 
@@ -228,5 +226,5 @@ as reference for your use-case.
 .. _AWS OpenSearch Domain CFN Properties: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-elasticsearch-domain.html
 .. _VpcOptions: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-elasticsearch-domain-vpcoptions.html
 .. _Instance Types supported by OpenSearch: https://docs.aws.amazon.com/opensearch-service/latest/developerguide/supported-instance-types.html
-.. _report an issue in GitHub : https://github.com/compose-x/ecs_composex/issues/new?assignees=JohnPreston&labels=bug&template=bug_report.md&title=%5BBUG%5D
+.. _report an issue in GitHub: https://github.com/compose-x/ecs_composex/issues/new?assignees=JohnPreston&labels=bug&template=bug_report.md&title=%5BBUG%5D
 .. _AWS OpenSearch Domain return values: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-opensearchservice-domain.html#aws-resource-opensearchservice-domain-return-values

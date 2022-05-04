@@ -68,8 +68,9 @@ Refer to `AWS CFN Dynamodb Documentation`_. We support all of the definition and
 
     You may set the `TableName`_ property yourselves, or let AWS CloudFormation set one for you. If you set it yourselves,
     as per the documentation, that table will be replaced with a new table using the new name. Set it at your own risks
+
 Lookup
-======
+=======
 
 For more details, see the :ref:`lookup_syntax_reference`.
 
