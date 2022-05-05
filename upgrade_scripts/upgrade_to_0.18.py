@@ -107,7 +107,7 @@ def update_cluster(cluster_def, content):
     ):
         role_arn = content["x-vpc"]["Lookup"]["RoleArn"]
     else:
-        print("Not found a RoleArn in x-vpc.Lookup", content["x-vpc"])
+        print("Not found a RoleArn in x-vpc.Lookup or no x-vpc")
         role_arn = None
     if keyisset("Use", cluster_def):
         cluster_name = cluster_def["Use"]
