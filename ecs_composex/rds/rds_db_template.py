@@ -6,7 +6,7 @@ RDS DB template generator
 """
 
 from compose_x_common.compose_x_common import keyisset
-from troposphere import AWS_NO_VALUE, GetAtt, If, Ref, Sub, Tags
+from troposphere import AWS_NO_VALUE, GetAtt, If, NoValue, Ref, Sub, Tags
 from troposphere.ec2 import SecurityGroup
 from troposphere.rds import (
     DBCluster,
@@ -160,7 +160,11 @@ def add_default_instance_definition(db, for_cluster=False):
     """
     props = {
         "Engine": Ref(DB_ENGINE_NAME),
-        "EngineVersion": Ref(DB_ENGINE_VERSION),
+        "EngineVersion": If(
+            rds_conditions.USE_CLUSTER_CON_T,
+            NoValue,
+            Ref(DB_ENGINE_VERSION),
+        ),
         "StorageType": If(
             rds_conditions.USE_CLUSTER_CON_T,
             Ref(AWS_NO_VALUE),
