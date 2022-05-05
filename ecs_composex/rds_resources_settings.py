@@ -385,7 +385,7 @@ def handle_db_secret_to_services(
     :param tuple target: The family target
     """
     for service in target[2]:
-        if service in target[0].ordered_services or service.is_aws_sidecar:
+        if service not in target[0].ordered_services or service.is_aws_sidecar:
             continue
         add_secret_to_container(db, secret_import, service, target)
     add_secrets_access_policy(target[0], secret_import, db.logical_name)
@@ -492,5 +492,9 @@ def handle_new_tcp_resource(
             add_parameters(target[0].template, [secret_settings[1]])
             target[0].stack.Parameters.update({secret_settings[0]: secret_settings[2]})
             handle_db_secret_to_services(resource, Ref(secret_settings[1]), target)
+        else:
+            LOG.debug(
+                f"No secret_parameter for {resource.module.res_key}.{resource.name}"
+            )
         if resource.stack.title not in target[0].stack.DependsOn:
             target[0].stack.DependsOn.append(resource.stack.title)
