@@ -55,7 +55,7 @@ Subnets associations can be overridden in the Settings.Subnets section. See :ref
 DnsAliases
 ===========
 
-To create DNS records in Route53 pointing to your ELBv2, see :ref:`_x_route53-x_elbv2`
+To create DNS records in Route53 pointing to your ELBv2, see :ref:`x_route53-x_elbv2`
 
 MacroParameters
 ================

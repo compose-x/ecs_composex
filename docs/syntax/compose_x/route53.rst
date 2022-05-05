@@ -69,7 +69,7 @@ new ACM Certificates that will automatically set the DNS records in your DNS zon
           DomainNames:
             - test.compose-x.io
             - someother.test.compose-x.io
-          Route53Zone: x-route53::public-domain
+          HostedZoneId: x-route53::public-domain
 
 
 .. warning::
