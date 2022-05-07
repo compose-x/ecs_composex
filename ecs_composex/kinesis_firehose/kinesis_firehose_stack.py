@@ -20,17 +20,20 @@ from troposphere.kinesis import Stream as CfnStream
 
 from ecs_composex.common import setup_logging
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.compose.x_resources.api_x_resources import ApiXResource
+from ecs_composex.compose.x_resources.environment_x_resources import (
+    AwsEnvironmentResource,
+)
 from ecs_composex.compose.x_resources.helpers import (
     set_lookup_resources,
     set_new_resources,
     set_resources,
 )
-from ecs_composex.kinesis.kinesis_params import STREAM_ARN, STREAM_ID, STREAM_KMS_KEY_ID
-from ecs_composex.kinesis.kinesis_template import create_streams_template
-from ecs_composex.kinesis_firehose.kinesis_firehose_stack import DeliveryStream
-
-from .kinesis_kinesis_firehose import kinesis_to_firehose
+from ecs_composex.kinesis_firehose.kinesis_params import (
+    FIREHOSE_ARN,
+    FIREHOSE_ID,
+    FIREHOSE_KMS_KEY_ID,
+)
+from ecs_composex.kinesis_firehose.kinesis_template import create_streams_template
 
 LOG = setup_logging()
 
@@ -44,14 +47,14 @@ def get_stream_config(stream, account_id, resource_id):
     :param str resource_id:
     :return:
     """
-    client = stream.lookup_session.client("kinesis")
+    client = stream.lookup_session.client("firehose")
     stream_mapping = {
-        STREAM_ARN: "StreamDescription::StreamARN",
-        STREAM_ID: "StreamDescription::StreamName",
-        STREAM_KMS_KEY_ID: "StreamDescription::KeyId",
+        FIREHOSE_ARN: "DeliveryStreamDescription::DeliveryStreamARN",
+        FIREHOSE_ID: "DeliveryStreamDescription::DeliveryStreamName",
+        FIREHOSE_KMS_KEY_ID: "DeliveryStreamDescription::DeliveryStreamEncryptionConfiguration::KeyARN",
     }
     try:
-        stream_r = client.describe_stream(StreamName=resource_id)
+        stream_r = client.describe_delivery_stream(DeliveryStreamName=resource_id)
         stream_config = attributes_to_mapping(stream_r, stream_mapping)
         return stream_config
     except client.exceptions.ResourceNotFoundException:
@@ -60,7 +63,7 @@ def get_stream_config(stream, account_id, resource_id):
         LOG.error(error)
 
 
-class Stream(ApiXResource):
+class DeliveryStream(AwsEnvironmentResource):
     """
     Class to represent a Kinesis Stream
     """
@@ -74,58 +77,30 @@ class Stream(ApiXResource):
             module,
             settings,
         )
-        self.arn_parameter = STREAM_ARN
-        self.ref_parameter = STREAM_ID
+        self.arn_parameter = FIREHOSE_ARN
+        self.ref_parameter = FIREHOSE_ID
         self.cloud_control_attributes_mapping = {
-            STREAM_ARN.title: "Arn",
-            STREAM_ID.title: "Name",
-            STREAM_KMS_KEY_ID.title: "StreamEncryption::KeyId",
+            FIREHOSE_ARN.title: "Arn",
+            FIREHOSE_ID.title: "Name",
+            FIREHOSE_KMS_KEY_ID.title: "StreamEncryption::KeyId",
         }
 
     def init_outputs(self):
         self.output_properties = {
-            STREAM_ID: (self.logical_name, self.cfn_resource, Ref, None),
-            STREAM_ARN: (
-                f"{self.logical_name}{STREAM_ARN.title}",
+            FIREHOSE_ID: (self.logical_name, self.cfn_resource, Ref, None),
+            FIREHOSE_ARN: (
+                f"{self.logical_name}{FIREHOSE_ARN.title}",
                 self.cfn_resource,
                 GetAtt,
-                STREAM_ARN.return_value,
+                FIREHOSE_ARN.return_value,
             ),
         }
 
-    def handle_x_dependencies(
-        self, settings: ComposeXSettings, root_stack: ComposeXStack
-    ) -> None:
-        """
-        Updates other resources and replace the values for `x-kinesis` wherever applicable.
-
-        :param settings:
-        :param root_stack:
-        :return:
-        """
-        for resource in settings.get_x_resources(include_mappings=False):
-            if not resource.cfn_resource:
-                continue
-            if not resource.stack:
-                LOG.debug(
-                    f"resource {resource.name} has no `stack` attribute defined. Skipping"
-                )
-                continue
-            mappings = [(DeliveryStream, kinesis_to_firehose)]
-            for target in mappings:
-                if isinstance(resource, target[0]) or issubclass(
-                    type(resource), target[0]
-                ):
-                    target[1](
-                        self,
-                        resource,
-                        resource.stack,
-                        settings,
-                    )
-
 
 def resolve_lookup(
-    lookup_resources: list[Stream], settings: ComposeXSettings, module: XResourceModule
+    lookup_resources: list[DeliveryStream],
+    settings: ComposeXSettings,
+    module: XResourceModule,
 ) -> None:
     """
     Lookup AWS Kinesis streams and creates CFN Mappings
@@ -156,11 +131,12 @@ class XStack(ComposeXStack):
     def __init__(
         self, title, settings: ComposeXSettings, module: XResourceModule, **kwargs
     ):
-        set_resources(settings, Stream, module)
+        set_resources(settings, DeliveryStream, module)
         x_resources = settings.compose_content[module.res_key].values()
         lookup_resources = set_lookup_resources(x_resources)
         if lookup_resources:
-            resolve_lookup(lookup_resources, settings, module)
+            # resolve_lookup(lookup_resources, settings, module)
+            LOG.error("Lookup not supported")
         new_resources = set_new_resources(x_resources, True)
         if new_resources:
             stack_template = create_streams_template(new_resources, settings)

@@ -27,6 +27,7 @@ class AwsEnvironmentResource(XResource):
         settings: ComposeXSettings,
     ):
         self.lookup_only = False
+        self.iam_linked_role = None
         super().__init__(name, definition, module, settings)
         self.requires_vpc = False
         self.arn_parameter = None

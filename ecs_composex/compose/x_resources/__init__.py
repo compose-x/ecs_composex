@@ -508,7 +508,7 @@ class XResource:
                         output_name,
                         group_label=attribute_parameter.group_label
                         if attribute_parameter.group_label
-                        else self.module_name,
+                        else self.module.mod_key,
                         return_value=attribute_parameter.return_value,
                         Type=attribute_parameter.Type,
                     ),
@@ -531,7 +531,7 @@ class XResource:
                         output_name,
                         group_label=attribute_parameter.group_label
                         if attribute_parameter.group_label
-                        else self.module_name,
+                        else self.module.mod_key,
                         return_value=attribute_parameter.return_value,
                         Type=attribute_parameter.Type,
                     ),
