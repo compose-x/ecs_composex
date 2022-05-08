@@ -3,20 +3,26 @@
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from troposphere import Template
     from .kinesis_firehose_stack import DeliveryStream
 
-from troposphere import Sub
+from troposphere import NoValue, Sub
 from troposphere.firehose import DeliveryStream
 from troposphere.logs import LogGroup
 
-from ecs_composex.common import build_template
+from ecs_composex.common import LOG, build_template
+from ecs_composex.common.cfn_params import STACK_ID_SHORT
 from ecs_composex.resources_import import import_record_properties
 
 from .kinesis_firehose_iam_helpers import set_replace_iam_role
+from .kinesis_firehose_logging_helpers import (
+    grant_log_group_access,
+    set_replace_cw_logging,
+)
 
 
 def create_new_stream(stream: DeliveryStream) -> None:
@@ -34,8 +40,19 @@ def create_new_stream(stream: DeliveryStream) -> None:
     stream.cfn_resource = DeliveryStream(stream.logical_name, **props)
     stream.log_group = LogGroup(
         f"{stream.logical_name}LogGroup",
-        LogGroupName=Sub(f"firehose/${stream.cfn_resource}"),
+        LogGroupName=Sub(
+            f"firehose/${{STACK_ID}}/{stream.name}", STACK_ID=STACK_ID_SHORT
+        ),
     )
+    if (
+        stream.cfn_resource.DeliveryStreamType == "KinesisStreamAsSource"
+        and stream.cfn_resource.DeliveryStreamEncryptionConfigurationInput != NoValue
+    ):
+        LOG.error(
+            f"{stream.module.res_key}.{stream.name} -"
+            " You can only have ServerSide encryption with DirectPut DeliveryStream. Removing."
+        )
+        stream.cfn_resource.DeliveryStreamEncryptionConfigurationInput = NoValue
     set_replace_iam_role(stream)
     stream.init_outputs()
     stream.generate_outputs()
@@ -53,5 +70,9 @@ def create_streams_template(new_resources: list[DeliveryStream]) -> Template:
         create_new_stream(res)
         root_template.add_resource(res.cfn_resource)
         root_template.add_resource(res.iam_manager.service_linked_role)
+        root_template.add_resource(res.log_group)
+        root_template.add_resource(grant_log_group_access(res))
+        set_replace_cw_logging(res)
         root_template.add_output(res.outputs)
+        res.ensure_iam_policies_dependencies()
     return root_template

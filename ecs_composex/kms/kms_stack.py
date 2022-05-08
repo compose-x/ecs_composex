@@ -63,7 +63,10 @@ def get_key_config(key, account_id: str, resource_id: str) -> dict | None:
         key.manager = key_desc["KeyMetadata"]["KeyManager"]
         try:
             aliases_r = client.list_aliases(KeyId=key_attributes[KMS_KEY_ID])
-            key_attributes[KMS_KEY_ALIAS_NAME] = aliases_r["Aliases"][0]["AliasName"]
+            if aliases_r["Aliases"]:
+                key_attributes[KMS_KEY_ALIAS_NAME] = aliases_r["Aliases"][0][
+                    "AliasName"
+                ]
         except client.exceptions.NotFoundException:
             LOG.debug(f"{key.module.res_key}.{key.name} - No KMS Key Alias.")
         return key_attributes

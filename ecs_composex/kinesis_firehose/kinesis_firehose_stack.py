@@ -139,6 +139,15 @@ class DeliveryStream(AwsEnvironmentResource, ApiXResource):
         if self.predefined_resource_service_scaling_function:
             self.predefined_resource_service_scaling_function(self, settings)
 
+    def ensure_iam_policies_dependencies(self):
+        if not hasattr(self.cfn_resource, "DependsOn"):
+            setattr(self.cfn_resource, "DependsOn", [])
+        depends_on = getattr(self.cfn_resource, "DependsOn")
+        for policy in self.iam_manager.iam_modules_policies.values():
+            if policy.title not in depends_on:
+                depends_on.append(policy.title)
+                LOG.debug(f"Enforce {self.name} depends on {policy.title}")
+
 
 def resolve_lookup(
     lookup_resources: list[DeliveryStream],

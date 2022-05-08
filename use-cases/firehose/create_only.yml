@@ -59,9 +59,6 @@ x-kinesis_firehose:
         Access: Producer
 
 x-kinesis:
-  another-stream-source:
-    Properties: {}
-
   stream-source:
     Properties: {}
 
@@ -69,21 +66,14 @@ x-s3:
   delivery-stream-output-bucket:
     Properties:
       AccessControl: BucketOwnerFullControl
-      ObjectLockEnabled: True
+      ObjectLockEnabled: False
       PublicAccessBlockConfiguration:
           BlockPublicAcls: True
           BlockPublicPolicy: True
           IgnorePublicAcls: True
-          RestrictPublicBuckets: False
+          RestrictPublicBuckets: True
       AccelerateConfiguration:
         AccelerationStatus: Suspended
-      BucketEncryption:
-        ServerSideEncryptionConfiguration:
-          - ServerSideEncryptionByDefault:
-              SSEAlgorithm: "aws:kms"
-              KMSMasterKeyID: "aws/s3"
-      VersioningConfiguration:
-        Status: "Enabled"
     MacroParameters:
       ExpandRegionToBucket: True
       ExpandAccountIdToBucket: True
@@ -99,8 +89,11 @@ x-s3:
 
 x-kms:
   stream-encryption-key:
-    Properties: {}
+    Lookup:
+      Tags:
+        - usage: unknown
+        - ForLookup: "true"
 
 services:
   ad-hoc-testing:
-    image: dummy
+    image: nginx

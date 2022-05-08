@@ -112,3 +112,4 @@ def kms_to_firehose(
             resource_policies=get_access_types(resource.module.mod_key),
             resource_mapping_key=resource.module.mapping_key,
         )
+        dest_resource.ensure_iam_policies_dependencies()

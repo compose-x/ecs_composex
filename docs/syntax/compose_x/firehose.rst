@@ -186,7 +186,7 @@ Kinesis Streams
 ----------------
 
 You can use ``x-kinesis::<stream-logical-name>`` to update the value for `KinesisStreamSourceConfiguration.KinesisStreamARN`_
-This will automatically set the right value for it and
+This will automatically set the right value for it and `DeliveryStreamType`.
 
 It will grant the corresponding IAM permissions to the IAM Role linked to the Firehose DeliveryStream
 
