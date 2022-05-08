@@ -333,13 +333,11 @@ def map_service_perms_to_resource(
 
 def map_x_resource_perms_to_resource(
     dest_resource: XResource,
-    # target,
     arn_value,
     access_definition,
     resource=None,
     resource_policies=None,
     resource_mapping_key=None,
-    # access_definition=None,
     access_subkey=None,
     ignore_missing_primary=False,
 ) -> None:
@@ -372,7 +370,6 @@ def map_x_resource_perms_to_resource(
         if not access_subkey
         else deepcopy(resource_policies[access_subkey])
     )
-    # access_definition = target[3] if not access_definition else access_definition
     access_type_policy_model = get_access_type_policy_model(
         access_definition, policies_models, access_subkey
     )

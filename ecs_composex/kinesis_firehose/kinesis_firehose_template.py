@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from troposphere import Template
     from .kinesis_firehose_stack import DeliveryStream
 
 from troposphere import Sub
@@ -40,13 +41,12 @@ def create_new_stream(stream: DeliveryStream) -> None:
     stream.generate_outputs()
 
 
-def create_streams_template(new_resources, settings):
+def create_streams_template(new_resources: list[DeliveryStream]) -> Template:
     """
-    Function to create the root template for Kinesis streams
+    Function to create the root template for Firehose DeliveryStream
 
-    :param list<DeliveryStream> new_resources:
-    :param ecs_composex.common.settings.ComposeXSettings settings:
-    :return:
+    :param list[DeliveryStream] new_resources:
+    :return: root template
     """
     root_template = build_template("Root stack for ecs_composex.kinesis_firehose")
     for res in new_resources:

@@ -64,10 +64,7 @@ def set_replace_iam_role(resource: DeliveryStream) -> None:
         return
     for dest_prop, dest_type in to_evaluate_role_arn.items():
         if not hasattr(resource.cfn_resource, dest_prop):
-            LOG.debug(
-                f"f{resource.module.res_key}.{resource.name} - No {dest_prop} set"
-            )
-            continue
+            LOG.debug(f"{resource.module.res_key}.{resource.name} - No {dest_prop} set")
         elif (
             dont_override
             and isinstance(dont_override, list)
@@ -76,7 +73,6 @@ def set_replace_iam_role(resource: DeliveryStream) -> None:
             LOG.warn(
                 f"f{resource.module.res_key}.{resource.name} - {dest_prop} not overriding with new IAM Role"
             )
-            continue
         else:
             LOG.debug(
                 f"f{resource.module.res_key}.{resource.name} - {dest_prop} overriding with new IAM Role"

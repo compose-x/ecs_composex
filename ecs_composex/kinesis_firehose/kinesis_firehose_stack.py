@@ -181,7 +181,7 @@ class XStack(ComposeXStack):
             resolve_lookup(lookup_resources, settings, module)
         new_resources = set_new_resources(x_resources, True)
         if new_resources:
-            stack_template = create_streams_template(new_resources, settings)
+            stack_template = create_streams_template(new_resources)
             super().__init__(title, stack_template, **kwargs)
         else:
             self.is_void = True
