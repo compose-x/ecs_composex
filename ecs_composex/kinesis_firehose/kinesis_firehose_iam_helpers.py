@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from .kinesis_firehose_stack import DeliveryStream
 
 from compose_x_common.compose_x_common import set_else_none
-from troposphere import GetAtt, firehose
+from troposphere import GetAtt
 
 from ecs_composex.common import LOG
 
@@ -52,17 +52,17 @@ def set_replace_iam_role(resource: DeliveryStream) -> None:
             " - Not overriding any RoleARN defined for delivery destinations"
         )
         return
-    to_evaluate_role_arn = {
-        "AmazonopensearchserviceDestinationConfiguration": firehose.AmazonopensearchserviceDestinationConfiguration,
-        "S3DestinationConfiguration": firehose.S3DestinationConfiguration,
-        "KinesisStreamSourceConfiguration": firehose.KinesisStreamSourceConfiguration,
-        "ElasticsearchDestinationConfiguration": firehose.ElasticsearchDestinationConfiguration,
-        "ExtendedS3DestinationConfiguration": firehose.ExtendedS3DestinationConfiguration,
-        "RedshiftDestinationConfiguration": firehose.RedshiftDestinationConfiguration,
-    }
+    to_evaluate_role_arn = [
+        "AmazonopensearchserviceDestinationConfiguration",
+        "S3DestinationConfiguration",
+        "KinesisStreamSourceConfiguration",
+        "ElasticsearchDestinationConfiguration",
+        "ExtendedS3DestinationConfiguration",
+        "RedshiftDestinationConfiguration",
+    ]
     if dont_override and isinstance(dont_override, bool):
         return
-    for dest_prop, dest_type in to_evaluate_role_arn.items():
+    for dest_prop in to_evaluate_role_arn:
         if not hasattr(resource.cfn_resource, dest_prop):
             LOG.debug(f"{resource.module.res_key}.{resource.name} - No {dest_prop} set")
         elif (
