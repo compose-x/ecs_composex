@@ -23,7 +23,11 @@ def set_replace_s3_backup_config(resource: DeliveryStream, dest_config) -> None:
     if backup_mode == "Disabled":
         return
     s3_backup_config = getattr(dest_config, "S3Configuration")
-    setattr(s3_backup_config, "RoleARN", GetAtt(resource.iam_linked_role, "Arn"))
+    setattr(
+        s3_backup_config,
+        "RoleARN",
+        GetAtt(resource.iam_manager.service_linked_role, "Arn"),
+    )
 
 
 def set_replace_iam_role(resource: DeliveryStream) -> None:
@@ -78,5 +82,9 @@ def set_replace_iam_role(resource: DeliveryStream) -> None:
                 f"f{resource.module.res_key}.{resource.name} - {dest_prop} overriding with new IAM Role"
             )
             dest_config = getattr(resource.cfn_resource, dest_prop)
-            setattr(dest_config, "RoleARN", GetAtt(resource.iam_linked_role, "Arn"))
+            setattr(
+                dest_config,
+                "RoleARN",
+                GetAtt(resource.iam_manager.service_linked_role, "Arn"),
+            )
             set_replace_s3_backup_config(resource, dest_config)

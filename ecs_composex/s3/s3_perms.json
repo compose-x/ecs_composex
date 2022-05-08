@@ -157,5 +157,33 @@
         "${ARN}/*"
       ]
     }
+  },
+  "kinesis_firehose": {
+    "s3destination": {
+      "Effect": "Allow",
+      "Action": [
+        "s3:AbortMultipartUpload",
+        "s3:GetBucketLocation",
+        "s3:GetObject",
+        "s3:ListBucket",
+        "s3:ListBucketMultipartUploads",
+        "s3:PutObject",
+        "s3:PutObjectAcl"
+      ],
+      "Resource": [
+        "${ARN}",
+        "${ARN}/*"
+      ]
+    },
+    "s3keyaccess": {
+      "Effect": "Allow",
+      "Action": [
+        "kms:Decrypt",
+        "kms:GenerateDataKey"
+      ],
+      "Resource": [
+        "${ARN}"
+      ]
+    }
   }
 }

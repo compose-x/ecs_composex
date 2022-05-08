@@ -23,6 +23,15 @@
     "MacroParameters": {
       "type": "object",
       "properties": {
+        "x-iam": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "PermissionsBoundary": {
+              "type": "string"
+            }
+          }
+        },
         "DoNotOverrideIamRole": {
           "oneOf": [
             {

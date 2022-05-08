@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 from troposphere import Ref
 
 from ecs_composex.common import LOG, add_parameters, add_update_mapping
-from ecs_composex.resources_import import get_dest_resource_nested_property
+from ecs_composex.resources_import import get_dest_resource_nested_property, skip_if
 
 FIREHOSE_PROPERTIES = {
     "S3DestinationConfiguration::BucketARN": S3_BUCKET_ARN,
@@ -34,14 +34,14 @@ FIREHOSE_PROPERTIES = {
 
 
 def s3_to_firehose(
-    bucket: Bucket,
+    resource: Bucket,
     dest_resource: DeliveryStream,
     dest_resource_stack,
     settings: ComposeXSettings,
 ) -> None:
     """
     Updates
-    :param Bucket bucket:
+    :param Bucket resource:
     :param DeliveryStream dest_resource:
     :param dest_resource_stack:
     :param settings:
@@ -55,13 +55,10 @@ def s3_to_firehose(
         prop_attr = get_dest_resource_nested_property(
             prop_path, dest_resource.cfn_resource
         )
-        if not prop_attr:
+        if skip_if(resource, prop_attr):
             continue
-        prop_attr_value = getattr(prop_attr[0], prop_attr[1])
-        if bucket.name not in prop_attr_value:
-            continue
-        bucket_id = bucket.attributes_outputs[bucket_param]
-        if bucket.cfn_resource:
+        bucket_id = resource.attributes_outputs[bucket_param]
+        if resource.cfn_resource:
             add_parameters(
                 dest_resource_stack.stack_template, [bucket_id["ImportParameter"]]
             )
@@ -73,10 +70,29 @@ def s3_to_firehose(
             dest_resource.stack.Parameters.update(
                 {bucket_id["ImportParameter"].title: bucket_id["ImportValue"]}
             )
-        elif not bucket.cfn_resource and bucket.mappings:
+            arn_pointer = Ref(bucket_id["ImportParameter"])
+        elif not resource.cfn_resource and resource.mappings:
             add_update_mapping(
                 dest_resource.stack.stack_template,
-                bucket.module.mapping_key,
-                settings.mappings[bucket.module.mapping_key],
+                resource.module.mapping_key,
+                settings.mappings[resource.module.mapping_key],
             )
             setattr(prop_attr[0], prop_attr[1], bucket_id["ImportValue"])
+            arn_pointer = bucket_id["ImportValue"]
+        else:
+            raise ValueError(
+                resource.module.mapping_key,
+                resource.name,
+                "Unable to determine if new or lookup",
+            )
+        from ecs_composex.iam.import_sam_policies import get_access_types
+        from ecs_composex.resource_settings import map_x_resource_perms_to_resource
+
+        map_x_resource_perms_to_resource(
+            dest_resource,
+            arn_value=arn_pointer,
+            access_definition="s3destination",
+            access_subkey="kinesis_firehose",
+            resource_policies=get_access_types(resource.module.mod_key),
+            resource_mapping_key=resource.module.mapping_key,
+        )

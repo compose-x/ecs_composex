@@ -8,10 +8,28 @@ Module to import CFN Resources defined by their properties
 from __future__ import annotations
 
 from inspect import isfunction
-from typing import Union
 
 from compose_x_common.compose_x_common import keyisset, keypresent
 from troposphere import AWSHelperFn, AWSObject, AWSProperty
+
+
+def skip_if(resource, prop_attr) -> bool:
+    """
+    Helper function to skip when conditions are not met to link one resource to another.
+    :param resource:
+    :param prop_attr:
+    :return:
+    """
+    if not prop_attr:
+        return True
+    prop_attr_value = getattr(prop_attr[0], prop_attr[1])
+    if not isinstance(prop_attr_value, str):
+        return True
+    if not prop_attr_value.startswith(resource.module.res_key):
+        return True
+    if resource.name not in prop_attr_value.split(resource.module.res_key)[-1]:
+        return True
+    return False
 
 
 def get_dest_resource_nested_property(

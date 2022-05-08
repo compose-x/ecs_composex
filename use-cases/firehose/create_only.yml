@@ -34,7 +34,9 @@ x-kinesis_firehose:
               Parameters:
                 - ParameterName: Delimiter
                   ParameterValue: "\\n"
-
+    Services:
+      ad-hoc-testing:
+        Access: Producer
 
   stream-to-s3:
     Properties:
@@ -52,10 +54,13 @@ x-kinesis_firehose:
         CompressionFormat: UNCOMPRESSED
         Prefix: firehose/
         RoleARN: deliveryRoleArn
+    Services:
+      ad-hoc-testing:
+        Access: Producer
 
 x-kinesis:
   another-stream-source:
-    Properties: { }
+    Properties: {}
 
   stream-source:
     Properties: {}
@@ -85,8 +90,17 @@ x-s3:
       BucketPolicy:
         PredefinedBucketPolicies:
           - enforceSecureConnection
+    Services:
+      ad-hoc-testing:
+        Access:
+          bucket: ListOnly
+          objects: ReadOnly
 
 
 x-kms:
   stream-encryption-key:
     Properties: {}
+
+services:
+  ad-hoc-testing:
+    image: dummy

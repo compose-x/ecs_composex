@@ -16,3 +16,5 @@ FIREHOSE_ARN = Parameter(
 FIREHOSE_KMS_KEY_ID = Parameter(
     FIREHOSE_KMS_KEY_ID_T, group_label=GROUP_LABEL, Type="String"
 )
+
+FIREHOSE_CMK_MANAGER = Parameter("CmkKeyManager", Type="String")

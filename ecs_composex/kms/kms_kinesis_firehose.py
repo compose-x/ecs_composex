@@ -15,11 +15,12 @@ if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
     from .kms_stack import KmsKey
     from ecs_composex.kinesis_firehose.kinesis_firehose_stack import DeliveryStream
+    from troposphere import AWSHelperFn
 
 from troposphere import Ref
 
 from ecs_composex.common import LOG, add_parameters, add_update_mapping
-from ecs_composex.resources_import import get_dest_resource_nested_property
+from ecs_composex.resources_import import get_dest_resource_nested_property, skip_if
 
 FIREHOSE_PROPERTIES = {
     "DeliveryStreamEncryptionConfigurationInput::KeyARN": KMS_KEY_ARN,
@@ -32,17 +33,36 @@ FIREHOSE_PROPERTIES = {
 }
 
 
-def skip_if(resource, prop_attr) -> bool:
-    if not prop_attr:
-        return True
-    prop_attr_value = getattr(prop_attr[0], prop_attr[1])
-    if not isinstance(prop_attr_value, str):
-        return True
-    if not prop_attr_value.startswith(resource.module.res_key):
-        return True
-    if resource.name not in prop_attr_value.split(resource.module.res_key)[-1]:
-        return True
-    return False
+def set_for_new_kms_key(
+    prop_attr, resource_id, dest_resource, dest_resource_stack
+) -> AWSHelperFn:
+    add_parameters(dest_resource_stack.stack_template, [resource_id["ImportParameter"]])
+    setattr(
+        prop_attr[0],
+        prop_attr[1],
+        Ref(resource_id["ImportParameter"]),
+    )
+    setattr(prop_attr[0], "KeyType", "CUSTOMER_MANAGED_CMK")
+    dest_resource.stack.Parameters.update(
+        {resource_id["ImportParameter"].title: resource_id["ImportValue"]}
+    )
+    return Ref(resource_id["ImportParameter"])
+
+
+def set_for_lookup_kms_key(
+    prop_attr, resource, resource_id, dest_resource, settings
+) -> AWSHelperFn:
+    add_update_mapping(
+        dest_resource.stack.stack_template,
+        resource.module.mapping_key,
+        settings.mappings[resource.module.mapping_key],
+    )
+    setattr(prop_attr[0], prop_attr[1], resource_id["ImportValue"])
+    if resource.is_cmk:
+        setattr(prop_attr[0], "KeyType", "CUSTOMER_MANAGED_CMK")
+    else:
+        setattr(prop_attr[0], "KeyType", "AWS_OWNED_CMK")
+    return resource_id["ImportValue"]
 
 
 def kms_to_firehose(
@@ -71,26 +91,24 @@ def kms_to_firehose(
             continue
         resource_id = resource.attributes_outputs[resource_param]
         if resource.cfn_resource:
-            add_parameters(
-                dest_resource_stack.stack_template, [resource_id["ImportParameter"]]
-            )
-            setattr(
-                prop_attr[0],
-                prop_attr[1],
-                Ref(resource_id["ImportParameter"]),
-            )
-            setattr(prop_attr[0], "KeyType", "CUSTOMER_MANAGED_CMK")
-            dest_resource.stack.Parameters.update(
-                {resource_id["ImportParameter"].title: resource_id["ImportValue"]}
+            arn_pointer = set_for_new_kms_key(
+                prop_attr, resource_id, dest_resource, dest_resource_stack
             )
         elif not resource.cfn_resource and resource.mappings:
-            add_update_mapping(
-                dest_resource.stack.stack_template,
-                resource.module.mapping_key,
-                settings.mappings[resource.module.mapping_key],
+            arn_pointer = set_for_lookup_kms_key(
+                prop_attr, resource, resource_id, dest_resource, settings
             )
-            setattr(prop_attr[0], prop_attr[1], resource_id["ImportValue"])
-            if resource.is_cmk:
-                setattr(prop_attr[0], "KeyType", "CUSTOMER_MANAGED_CMK")
-            else:
-                setattr(prop_attr[0], "KeyType", "AWS_OWNED_CMK")
+        else:
+            raise ValueError("Unable to determine if the KMS Key is new or lookup")
+
+        from ecs_composex.iam.import_sam_policies import get_access_types
+        from ecs_composex.resource_settings import map_x_resource_perms_to_resource
+
+        map_x_resource_perms_to_resource(
+            dest_resource,
+            arn_value=arn_pointer,
+            access_definition="Direct",
+            access_subkey="kinesis_firehose",
+            resource_policies=get_access_types(resource.module.mod_key),
+            resource_mapping_key=resource.module.mapping_key,
+        )

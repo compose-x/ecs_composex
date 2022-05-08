@@ -1,0 +1,22 @@
+---
+# Use cases for kinesis
+
+x-kinesis_firehose:
+  stream-to-s3-direct-put:
+    Lookup:
+      Tags:
+        - ForLookupTesting: "true"
+        - s3-has-aws-cmk: "true"
+        - with-aws-cmk: "true"
+        - Name: "PUT-S3-g6B0t"
+    Services:
+      ad-hoc-testing:
+        Access: Producer
+
+x-kms:
+  stream-encryption-key:
+    Properties: {}
+
+services:
+  ad-hoc-testing:
+    image: dummy

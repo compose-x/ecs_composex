@@ -77,9 +77,9 @@ class Stream(ApiXResource):
         self.arn_parameter = STREAM_ARN
         self.ref_parameter = STREAM_ID
         self.cloud_control_attributes_mapping = {
-            STREAM_ARN.title: "Arn",
-            STREAM_ID.title: "Name",
-            STREAM_KMS_KEY_ID.title: "StreamEncryption::KeyId",
+            STREAM_ARN: "Arn",
+            STREAM_ID: "Name",
+            STREAM_KMS_KEY_ID: "StreamEncryption::KeyId",
         }
 
     def init_outputs(self):

@@ -8,12 +8,11 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .kinesis_firehose_stack import DeliveryStream
 
-from troposphere import Sub, firehose
-from troposphere.iam import Role as IamRole
+from troposphere import Sub
+from troposphere.firehose import DeliveryStream
+from troposphere.logs import LogGroup
 
 from ecs_composex.common import build_template
-from ecs_composex.common.cfn_conditions import define_stack_name
-from ecs_composex.iam import service_role_trust_policy
 from ecs_composex.resources_import import import_record_properties
 
 from .kinesis_firehose_iam_helpers import set_replace_iam_role
@@ -27,11 +26,15 @@ def create_new_stream(stream: DeliveryStream) -> None:
     """
     props = import_record_properties(
         stream.properties,
-        firehose.DeliveryStream,
+        DeliveryStream,
         ignore_missing_required=True,
         ignore_missing_sub_required=True,
     )
-    stream.cfn_resource = firehose.DeliveryStream(stream.logical_name, **props)
+    stream.cfn_resource = DeliveryStream(stream.logical_name, **props)
+    stream.log_group = LogGroup(
+        f"{stream.logical_name}LogGroup",
+        LogGroupName=Sub(f"firehose/${stream.cfn_resource}"),
+    )
     set_replace_iam_role(stream)
     stream.init_outputs()
     stream.generate_outputs()
@@ -47,16 +50,8 @@ def create_streams_template(new_resources, settings):
     """
     root_template = build_template("Root stack for ecs_composex.kinesis_firehose")
     for res in new_resources:
-        res.iam_linked_role = IamRole(
-            f"{res.logical_name}IamRole",
-            AssumeRolePolicyDocument=service_role_trust_policy("firehose"),
-            Description=Sub(
-                f"Firehose IAM Role for {res.logical_name} - ${{STACK_NAME}}",
-                STACK_NAME=define_stack_name(root_template),
-            ),
-        )
         create_new_stream(res)
         root_template.add_resource(res.cfn_resource)
-        root_template.add_resource(res.iam_linked_role)
+        root_template.add_resource(res.iam_manager.service_linked_role)
         root_template.add_output(res.outputs)
     return root_template
