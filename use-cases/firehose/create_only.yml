@@ -11,8 +11,8 @@ x-kinesis_firehose:
       ExtendedS3DestinationConfiguration:
         BucketARN: x-s3::delivery-stream-output-bucket
         BufferingHints:
-          SizeInMBs: 16
-          IntervalInSeconds: 30
+          SizeInMBs: 64
+          IntervalInSeconds: 60
         CompressionFormat: UNCOMPRESSED
         ErrorOutputPrefix: table/error/!{firehose:error-output-type}/dt=!{timestamp:yyyy'-'MM'-'dd}/h=!{timestamp:HH}/
         Prefix: YYYY=!{partitionKeyFromQuery:YYYY}/MM=!{partitionKeyFromQuery:MM}//DD=!{partitionKeyFromQuery:DD}/HH=!{partitionKeyFromQuery:HH}/REGION=!{partitionKeyFromQuery:REGION}/SITEID=!{partitionKeyFromQuery:SITEID}/
@@ -52,7 +52,7 @@ x-kinesis_firehose:
         BucketARN: x-s3::delivery-stream-output-bucket
         BufferingHints:
           IntervalInSeconds: 60
-          SizeInMBs: 50
+          SizeInMBs: 64
         CompressionFormat: UNCOMPRESSED
         Prefix: firehose/
         RoleARN: deliveryRoleArn

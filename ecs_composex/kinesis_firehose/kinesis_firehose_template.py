@@ -16,13 +16,54 @@ from troposphere.logs import LogGroup
 
 from ecs_composex.common import LOG, build_template
 from ecs_composex.common.cfn_params import STACK_ID_SHORT
-from ecs_composex.resources_import import import_record_properties
+from ecs_composex.resources_import import (
+    get_dest_resource_nested_property,
+    import_record_properties,
+)
 
 from .kinesis_firehose_iam_helpers import set_replace_iam_role
 from .kinesis_firehose_logging_helpers import (
     grant_log_group_access,
     set_replace_cw_logging,
 )
+
+
+def values_validation(stream: DeliveryStream) -> None:
+    """
+    Simple function to do values validation based on errors / limits encountered
+    """
+
+    properties_to_values_mapping = {
+        "ExtendedS3DestinationConfiguration::BufferingHints::IntervalInSeconds": ">= 60",
+        "ExtendedS3DestinationConfiguration::BufferingHints::SizeInMBs": ">= 64",
+    }
+    for property_path, expression in properties_to_values_mapping.items():
+        prop_attr = get_dest_resource_nested_property(
+            property_path, stream.cfn_resource
+        )
+        if not prop_attr:
+            continue
+        value = getattr(prop_attr[0], prop_attr[1])
+        if not isinstance(value, (str, int, float)):
+            LOG.debug(
+                f"{stream.name} - Not evaluating property {prop_attr[1]} - {type(value)}"
+            )
+            continue
+        if isinstance(expression, str):
+            eval_str = f"{value} {expression}"
+            if not eval(eval_str):
+                raise ValueError(
+                    stream.module.res_key,
+                    stream.name,
+                    "Property",
+                    property_path.replace(r"::", r"."),
+                    "is invalid",
+                    value,
+                    "must be",
+                    expression,
+                )
+        else:
+            expression(stream, prop_attr)
 
 
 def create_new_stream(stream: DeliveryStream) -> None:
@@ -54,6 +95,7 @@ def create_new_stream(stream: DeliveryStream) -> None:
         )
         stream.cfn_resource.DeliveryStreamEncryptionConfigurationInput = NoValue
     set_replace_iam_role(stream)
+    values_validation(stream)
     stream.init_outputs()
     stream.generate_outputs()
 
