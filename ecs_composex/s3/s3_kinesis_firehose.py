@@ -19,6 +19,8 @@ if TYPE_CHECKING:
 from troposphere import Ref
 
 from ecs_composex.common import LOG, add_parameters, add_update_mapping
+from ecs_composex.iam.import_sam_policies import get_access_types
+from ecs_composex.resource_settings import map_x_resource_perms_to_resource
 from ecs_composex.resources_import import get_dest_resource_nested_property, skip_if
 
 FIREHOSE_PROPERTIES = {
@@ -85,9 +87,6 @@ def s3_to_firehose(
                 resource.name,
                 "Unable to determine if new or lookup",
             )
-        from ecs_composex.iam.import_sam_policies import get_access_types
-        from ecs_composex.resource_settings import map_x_resource_perms_to_resource
-
         map_x_resource_perms_to_resource(
             dest_resource,
             arn_value=arn_pointer,

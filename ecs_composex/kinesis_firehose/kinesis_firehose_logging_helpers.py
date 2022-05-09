@@ -54,9 +54,8 @@ def set_replace_cw_logs_config(
         cw_config = getattr(dest_config, "CloudWatchLoggingOptions")
         if hasattr(cw_config, "Enabled") and cw_config.Enabled is False:
             LOG.warn(
-                f"{resource.module.res_key}.{resource.name}.{dest_prop} - CW Logging explicitely disabled"
+                f"{resource.module.res_key}.{resource.name}.{dest_prop} - CW Logging explicitly disabled"
             )
-            return
         else:
             setattr(cw_config, "LogGroupName", Ref(resource.log_group))
             setattr(cw_config, "LogStreamName", dest_prop)

@@ -6,11 +6,13 @@ x-kinesis_firehose:
     Properties:
       DeliveryStreamName: tester-partitioning-delimiter
       DeliveryStreamType: DirectPut
+      DeliveryStreamEncryptionConfigurationInput:
+        KeyARN: x-kms::stream-encryption-key
       ExtendedS3DestinationConfiguration:
         BucketARN: x-s3::delivery-stream-output-bucket
         BufferingHints:
-          SizeInMBs: 128
-          IntervalInSeconds: 900
+          SizeInMBs: 16
+          IntervalInSeconds: 30
         CompressionFormat: UNCOMPRESSED
         ErrorOutputPrefix: table/error/!{firehose:error-output-type}/dt=!{timestamp:yyyy'-'MM'-'dd}/h=!{timestamp:HH}/
         Prefix: YYYY=!{partitionKeyFromQuery:YYYY}/MM=!{partitionKeyFromQuery:MM}//DD=!{partitionKeyFromQuery:DD}/HH=!{partitionKeyFromQuery:HH}/REGION=!{partitionKeyFromQuery:REGION}/SITEID=!{partitionKeyFromQuery:SITEID}/
@@ -18,7 +20,7 @@ x-kinesis_firehose:
         DynamicPartitioningConfiguration:
           Enabled: true
           RetryOptions:
-            DurationInSeconds: 300
+            DurationInSeconds: 60
         ProcessingConfiguration:
           Enabled: true
           Processors:
