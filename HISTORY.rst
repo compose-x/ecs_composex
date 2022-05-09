@@ -2,6 +2,22 @@
 History
 =======
 
+0.19.0 (2022-05-09)
+=====================
+
+New Features
+--------------
+
+* 3d8d602 New: x-kinesis_firehose (#603) (John Preston)
+
+Fixes
+--------
+
+* 67ec8d8 Patching up documentation for x-route53 (John Preston)
+* f160319 Fix x-rds instance Engine properties and secrets mappings (#598) (John Preston)
+* 6f5e488 Fix no x-vpc defined in file to upgrade (John Preston)
+
+
 0.18.0 (2022-05-04)
 =====================
 
