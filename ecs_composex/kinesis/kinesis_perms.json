@@ -27,5 +27,19 @@
     "Resource": [
       "${ARN}"
     ]
+  },
+  "kinesis_firehose": {
+    "kinesisSource": {
+      "Effect": "Allow",
+      "Action": [
+        "kinesis:DescribeStream",
+        "kinesis:GetShardIterator",
+        "kinesis:GetRecords",
+        "kinesis:ListShards"
+      ],
+      "Resource": [
+        "${ARN}"
+      ]
+    }
   }
 }

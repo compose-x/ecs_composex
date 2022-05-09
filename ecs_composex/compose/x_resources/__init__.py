@@ -77,6 +77,7 @@ class XResource:
         self.name = name
         self.requires_vpc = False
         self.arn = None
+        self.iam_manager = None
         self.cloud_control_attributes_mapping = {}
         self.native_attributes_mapping = {}
         self.definition = deepcopy(definition)
@@ -284,6 +285,7 @@ class XResource:
             if not isinstance(parameter, Parameter):
                 raise TypeError(
                     f"{self.module.res_key}.{self.name} - lookup attribute {parameter} is",
+                    parameter,
                     type(parameter),
                     "Expected",
                     Parameter,
@@ -508,7 +510,7 @@ class XResource:
                         output_name,
                         group_label=attribute_parameter.group_label
                         if attribute_parameter.group_label
-                        else self.module_name,
+                        else self.module.mod_key,
                         return_value=attribute_parameter.return_value,
                         Type=attribute_parameter.Type,
                     ),
@@ -531,7 +533,7 @@ class XResource:
                         output_name,
                         group_label=attribute_parameter.group_label
                         if attribute_parameter.group_label
-                        else self.module_name,
+                        else self.module.mod_key,
                         return_value=attribute_parameter.return_value,
                         Type=attribute_parameter.Type,
                     ),

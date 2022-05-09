@@ -1,0 +1,101 @@
+---
+# Use cases for kinesis
+
+x-kinesis_firehose:
+  stream-to-s3-direct-put:
+    Properties:
+      DeliveryStreamName: tester-partitioning-delimiter
+      DeliveryStreamType: DirectPut
+      DeliveryStreamEncryptionConfigurationInput:
+        KeyARN: x-kms::stream-encryption-key
+      ExtendedS3DestinationConfiguration:
+        BucketARN: x-s3::delivery-stream-output-bucket
+        BufferingHints:
+          SizeInMBs: 64
+          IntervalInSeconds: 60
+        CompressionFormat: UNCOMPRESSED
+        ErrorOutputPrefix: table/error/!{firehose:error-output-type}/dt=!{timestamp:yyyy'-'MM'-'dd}/h=!{timestamp:HH}/
+        Prefix: YYYY=!{partitionKeyFromQuery:YYYY}/MM=!{partitionKeyFromQuery:MM}//DD=!{partitionKeyFromQuery:DD}/HH=!{partitionKeyFromQuery:HH}/REGION=!{partitionKeyFromQuery:REGION}/SITEID=!{partitionKeyFromQuery:SITEID}/
+        RoleARN: arn:aws:iam::012345678912:role/service-role/KinesisFirehoseServiceRole-dp-kinesis-f-us-east-1-012345678912
+        DynamicPartitioningConfiguration:
+          Enabled: true
+          RetryOptions:
+            DurationInSeconds: 60
+        ProcessingConfiguration:
+          Enabled: true
+          Processors:
+            - Type: MetadataExtraction
+              Parameters:
+                - ParameterName: MetadataExtractionQuery
+                  ParameterValue: '{YYYY : (.ts/1000) | strftime("%Y"), MM : (.ts/1000)
+                | strftime("%m"), DD : (.ts/1000) | strftime("%d"), HH: (.ts/1000)
+                | strftime("%H")}'
+                - ParameterName: JsonParsingEngine
+                  ParameterValue: JQ-1.6
+            - Type: AppendDelimiterToRecord
+              Parameters:
+                - ParameterName: Delimiter
+                  ParameterValue: "\\n"
+    Services:
+      ad-hoc-testing:
+        Access: Producer
+
+  stream-to-s3:
+    Properties:
+      DeliveryStreamType: KinesisStreamAsSource
+      DeliveryStreamEncryptionConfigurationInput:
+        KeyARN: x-kms::stream-encryption-key
+      KinesisStreamSourceConfiguration:
+        KinesisStreamARN: x-kinesis::stream-source
+        RoleARN: arn:aws:iam::012345678912:role/service-role/KinesisFirehoseServiceRole-dp-kinesis-f-us-east-1-012345678912
+      ExtendedS3DestinationConfiguration:
+        BucketARN: x-s3::delivery-stream-output-bucket
+        BufferingHints:
+          IntervalInSeconds: 60
+          SizeInMBs: 64
+        CompressionFormat: UNCOMPRESSED
+        Prefix: firehose/
+        RoleARN: deliveryRoleArn
+    Services:
+      ad-hoc-testing:
+        Access: Producer
+
+x-kinesis:
+  stream-source:
+    Properties: {}
+
+x-s3:
+  delivery-stream-output-bucket:
+    Properties:
+      AccessControl: BucketOwnerFullControl
+      ObjectLockEnabled: False
+      PublicAccessBlockConfiguration:
+          BlockPublicAcls: True
+          BlockPublicPolicy: True
+          IgnorePublicAcls: True
+          RestrictPublicBuckets: True
+      AccelerateConfiguration:
+        AccelerationStatus: Suspended
+    MacroParameters:
+      ExpandRegionToBucket: True
+      ExpandAccountIdToBucket: True
+      BucketPolicy:
+        PredefinedBucketPolicies:
+          - enforceSecureConnection
+    Services:
+      ad-hoc-testing:
+        Access:
+          bucket: ListOnly
+          objects: ReadOnly
+
+
+x-kms:
+  stream-encryption-key:
+    Lookup:
+      Tags:
+        - usage: unknown
+        - ForLookup: "true"
+
+services:
+  ad-hoc-testing:
+    image: nginx

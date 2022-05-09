@@ -12,6 +12,7 @@ from ecs_composex.common.aws import find_aws_resource_arn_from_tags_api
 from ecs_composex.common.settings import ComposeXSettings
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources.api_x_resources import ApiXResource
+from ecs_composex.kinesis_firehose.kinesis_firehose_stack import DeliveryStream
 from ecs_composex.mods_manager import ModManager, XResourceModule
 from ecs_composex.resource_settings import link_resource_to_services
 from ecs_composex.s3.s3_ecs_cluster import handle_ecs_cluster
@@ -22,6 +23,8 @@ from ecs_composex.s3.s3_params import (
     S3_BUCKET_KMS_KEY,
     S3_BUCKET_NAME,
 )
+
+from .s3_kinesis_firehose import s3_to_firehose
 
 
 class Bucket(ApiXResource):
@@ -155,3 +158,22 @@ class Bucket(ApiXResource):
         :return:
         """
         handle_ecs_cluster(settings, bucket=self)
+        for resource in settings.get_x_resources(include_mappings=False):
+            if not resource.cfn_resource:
+                continue
+            if not resource.stack:
+                LOG.debug(
+                    f"resource {resource.name} has no `stack` attribute defined. Skipping"
+                )
+                continue
+            mappings = [(DeliveryStream, s3_to_firehose)]
+            for target in mappings:
+                if isinstance(resource, target[0]) or issubclass(
+                    type(resource), target[0]
+                ):
+                    target[1](
+                        self,
+                        resource,
+                        resource.stack,
+                        settings,
+                    )

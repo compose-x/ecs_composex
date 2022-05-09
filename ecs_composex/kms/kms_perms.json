@@ -42,5 +42,30 @@
     "Resource": [
       "${ARN}"
     ]
+  },
+  "kinesis_firehose": {
+    "Direct": {
+      "Effect": "Allow",
+      "Resource": [
+        "${ARN}"
+      ],
+      "Action": [
+        "kms:Encrypt",
+        "kms:Decrypt",
+        "kms:ReEncrypt*",
+        "kms:GenerateDataKey*",
+        "kms:DescribeKey"
+      ]
+    },
+    "s3": {
+      "Effect": "Allow",
+      "Resource": [
+        "${ARN}"
+      ],
+      "Action": [
+        "kms:Decrypt",
+        "kms:GenerateDataKey"
+      ]
+    }
   }
 }

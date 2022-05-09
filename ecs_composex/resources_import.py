@@ -5,10 +5,50 @@
 Module to import CFN Resources defined by their properties
 """
 
+from __future__ import annotations
+
 from inspect import isfunction
 
 from compose_x_common.compose_x_common import keyisset, keypresent
 from troposphere import AWSHelperFn, AWSObject, AWSProperty
+
+
+def skip_if(resource, prop_attr) -> bool:
+    """
+    Helper function to skip when conditions are not met to link one resource to another.
+    :param resource:
+    :param prop_attr:
+    :return:
+    """
+    if not prop_attr:
+        return True
+    prop_attr_value = getattr(prop_attr[0], prop_attr[1])
+    if not isinstance(prop_attr_value, str):
+        return True
+    if not prop_attr_value.startswith(resource.module.res_key):
+        return True
+    if resource.name not in prop_attr_value.split(resource.module.res_key)[-1]:
+        return True
+    return False
+
+
+def get_dest_resource_nested_property(
+    properties_path: str, dest_resource: AWSObject | AWSProperty
+) -> tuple | None:
+    """
+    Function that will return the
+    :param properties_path:
+    :param dest_resource:
+    :return:
+    """
+    parts = properties_path.split(r"::", 1)
+    if not hasattr(dest_resource, parts[0]):
+        return None
+    if parts[0] != parts[-1]:
+        return get_dest_resource_nested_property(
+            parts[-1], getattr(dest_resource, parts[0])
+        )
+    return dest_resource, parts[-1]
 
 
 def handle_list(properties, property_class):
@@ -29,7 +69,9 @@ def handle_list(properties, property_class):
     return rendered_properties
 
 
-def import_non_functions(props, prop_name, top_class, properties, set_to_novalue):
+def import_non_functions(
+    props, prop_name, top_class, properties, set_to_novalue, ignore_missing
+):
     """
     Function to set property for flat object or recursive to sub properties
 
@@ -38,6 +80,7 @@ def import_non_functions(props, prop_name, top_class, properties, set_to_novalue
     :param top_class:
     :param dict properties:
     :param bool set_to_novalue:
+    :param bool ignore_missing:
     """
     if isinstance(properties[prop_name], AWSHelperFn):
         props[prop_name] = properties[prop_name]
@@ -59,7 +102,7 @@ def import_non_functions(props, prop_name, top_class, properties, set_to_novalue
                     properties[prop_name],
                     top_class.props[prop_name][0],
                     set_to_novalue,
-                    ignore_missing_required=False,
+                    ignore_missing_required=ignore_missing,
                 )
                 props[prop_name] = top_class.props[prop_name][0](**sub_props)
             else:
@@ -69,7 +112,11 @@ def import_non_functions(props, prop_name, top_class, properties, set_to_novalue
 
 
 def import_record_properties(
-    properties, top_class, set_to_novalue=False, ignore_missing_required=True
+    properties,
+    top_class,
+    set_to_novalue=False,
+    ignore_missing_required=True,
+    ignore_missing_sub_required=False,
 ):
     """
     Generic function importing the RecordSet properties.
@@ -79,7 +126,8 @@ def import_record_properties(
     :param dict properties:
     :param top_class: The class we are going to import properties for
     :param bool set_to_novalue: Instead of skipping the property, actively set to AWS::NoValue
-    :param bool ignore_missing_required: Whether or not raise an error when missing an essential key.
+    :param bool ignore_missing_required: Whether raise an error when missing an essential key.
+    :param bool ignore_missing_sub_required: Whether raise an error when missing an essential key in sub properties
     :return:  The properties for the RecordSet
     :rtype: dict
     """
@@ -109,7 +157,12 @@ def import_record_properties(
             properties[prop_name]
         ):
             import_non_functions(
-                props, prop_name, top_class, properties, set_to_novalue
+                props,
+                prop_name,
+                top_class,
+                properties,
+                set_to_novalue,
+                ignore_missing_sub_required,
             )
         elif keypresent(prop_name, properties):
             props[prop_name] = properties[prop_name]

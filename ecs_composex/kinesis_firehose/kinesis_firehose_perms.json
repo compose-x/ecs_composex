@@ -1,0 +1,13 @@
+{
+  "Producer": {
+    "Effect": "Allow",
+    "Action": [
+      "firehose:PutRecord",
+      "firehose:PutRecordBatch",
+      "firehose:UpdateDestination"
+    ],
+    "Resource": [
+      "${ARN}"
+    ]
+  }
+}

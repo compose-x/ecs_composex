@@ -1,0 +1,72 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "id": "x-kinesis_firehose.spec.json",
+  "$id": "x-kinesis_firehose.spec.json",
+  "title": "x-kinesis_firehose",
+  "description": "x-kinesis_firehose",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "Lookup": {
+      "$ref": "x-resources.common.spec.json#/definitions/Lookup"
+    },
+    "Properties": {
+      "type": "object",
+      "description": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-kinesis-stream.html"
+    },
+    "Settings": {
+      "$ref": "x-resources.common.spec.json#/definitions/Settings"
+    },
+    "Services": {
+      "$ref": "x-resources.common.spec.json#/definitions/Services"
+    },
+    "MacroParameters": {
+      "type": "object",
+      "properties": {
+        "x-iam": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "PermissionsBoundary": {
+              "type": "string"
+            }
+          }
+        },
+        "DoNotOverrideIamRole": {
+          "oneOf": [
+            {
+              "type": "boolean",
+              "default": false
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "S3DestinationConfiguration",
+                  "RedshiftDestinationConfiguration",
+                  "KinesisStreamSourceConfiguration",
+                  "ExtendedS3DestinationConfiguration",
+                  "ElasticsearchDestinationConfiguration",
+                  "AmazonopensearchserviceDestinationConfiguration"
+                ]
+              }
+            }
+          ]
+        }
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "required": [
+        "Lookup"
+      ]
+    },
+    {
+      "required": [
+        "Properties"
+      ]
+    }
+  ]
+}

@@ -54,6 +54,7 @@
     :titlesonly:
 
     syntax/compose_x/kinesis
+    syntax/compose_x/firehose
     syntax/compose_x/sqs
     syntax/compose_x/sns
 

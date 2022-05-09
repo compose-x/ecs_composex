@@ -28,6 +28,9 @@ from ecs_composex.compose.x_resources.helpers import (
 )
 from ecs_composex.kinesis.kinesis_params import STREAM_ARN, STREAM_ID, STREAM_KMS_KEY_ID
 from ecs_composex.kinesis.kinesis_template import create_streams_template
+from ecs_composex.kinesis_firehose.kinesis_firehose_stack import DeliveryStream
+
+from .kinesis_kinesis_firehose import kinesis_to_firehose
 
 LOG = setup_logging()
 
@@ -74,9 +77,9 @@ class Stream(ApiXResource):
         self.arn_parameter = STREAM_ARN
         self.ref_parameter = STREAM_ID
         self.cloud_control_attributes_mapping = {
-            STREAM_ARN.title: "Arn",
-            STREAM_ID.title: "Name",
-            STREAM_KMS_KEY_ID.title: "StreamEncryption::KeyId",
+            STREAM_ARN: "Arn",
+            STREAM_ID: "Name",
+            STREAM_KMS_KEY_ID: "StreamEncryption::KeyId",
         }
 
     def init_outputs(self):
@@ -89,6 +92,36 @@ class Stream(ApiXResource):
                 STREAM_ARN.return_value,
             ),
         }
+
+    def handle_x_dependencies(
+        self, settings: ComposeXSettings, root_stack: ComposeXStack
+    ) -> None:
+        """
+        Updates other resources and replace the values for `x-kinesis` wherever applicable.
+
+        :param settings:
+        :param root_stack:
+        :return:
+        """
+        for resource in settings.get_x_resources(include_mappings=False):
+            if not resource.cfn_resource:
+                continue
+            if not resource.stack:
+                LOG.debug(
+                    f"resource {resource.name} has no `stack` attribute defined. Skipping"
+                )
+                continue
+            mappings = [(DeliveryStream, kinesis_to_firehose)]
+            for target in mappings:
+                if isinstance(resource, target[0]) or issubclass(
+                    type(resource), target[0]
+                ):
+                    target[1](
+                        self,
+                        resource,
+                        resource.stack,
+                        settings,
+                    )
 
 
 def resolve_lookup(

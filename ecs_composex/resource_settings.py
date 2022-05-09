@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
     from ecs_composex.ecs.ecs_family import ComposeFamily
+    from ecs_composex.compose.x_resources import XResource
 
 from compose_x_common.compose_x_common import keyisset
 from troposphere import AWSHelperFn, Ref, Sub
@@ -144,7 +145,6 @@ def get_access_type_policy_model(
 
     :param str|dict access_type:
     :param dict policies_models:
-    :param ecs_composex.compose.x_resources.XResource resource:
     :param str access_subkey:
     :return:
     """
@@ -189,12 +189,14 @@ def set_sid_name(access_definition, access_subkey: str) -> str:
 
 def define_iam_permissions(
     resource_mapping_key,
-    family,
+    dest_resource,
+    dest_resource_template,
     policy_title,
     access_type_policy_model,
     access_definition,
     resource_arns,
     access_subkey: str = None,
+    roles=None,
 ) -> None:
     """
     If a policy already exists to manage resources of the same AWS Service, imports the policy, else, creates one.
@@ -203,7 +205,7 @@ def define_iam_permissions(
     If there were no SID set already in a statement, adds it.
 
     :param resource_mapping_key:
-    :param family:
+    :param dest_resource:
     :param str policy_title:
     :param dict access_type_policy_model:
     :param str, dict access_definition:
@@ -211,18 +213,25 @@ def define_iam_permissions(
     :param str access_subkey:
     """
     access_type = set_sid_name(access_definition, access_subkey)
-    if resource_mapping_key not in family.iam_manager.iam_modules_policies.keys():
-        family.iam_manager.iam_modules_policies[resource_mapping_key] = PolicyType(
+    if (
+        resource_mapping_key
+        not in dest_resource.iam_manager.iam_modules_policies.keys()
+    ):
+        dest_resource.iam_manager.iam_modules_policies[
+            resource_mapping_key
+        ] = PolicyType(
             policy_title,
             PolicyName=policy_title,
             PolicyDocument={"Version": "2012-10-17", "Statement": []},
-            Roles=[family.iam_manager.task_role.name],
+            Roles=roles,
         )
-        res_policy = family.template.add_resource(
-            family.iam_manager.iam_modules_policies[resource_mapping_key]
+        res_policy = dest_resource_template.add_resource(
+            dest_resource.iam_manager.iam_modules_policies[resource_mapping_key]
         )
     else:
-        res_policy = family.iam_manager.iam_modules_policies[resource_mapping_key]
+        res_policy = dest_resource.iam_manager.iam_modules_policies[
+            resource_mapping_key
+        ]
 
     for statement in res_policy.PolicyDocument["Statement"]:
         if keyisset("Sid", statement) and statement["Sid"] == access_type:
@@ -312,11 +321,72 @@ def map_service_perms_to_resource(
     define_iam_permissions(
         resource_mapping_key,
         family,
+        family.template,
         policy_title,
         access_type_policy_model,
         access_definition,
         resource_arns,
         access_subkey=access_subkey,
+        roles=[family.iam_manager.task_role.name],
+    )
+
+
+def map_x_resource_perms_to_resource(
+    dest_resource: XResource,
+    arn_value,
+    access_definition,
+    resource=None,
+    resource_policies=None,
+    resource_mapping_key=None,
+    access_subkey=None,
+    ignore_missing_primary=False,
+) -> None:
+    """
+    Maps an x-resource to another's IAM Manager
+
+    :param XResource dest_resource:
+    :param arn_value:
+    :param ecs_composex.compose.x_resources.XResource resource:
+    :param dict resource_policies:
+    :param str resource_mapping_key:
+    :param str,dict access_definition:
+    :param str access_subkey:
+    :param bool ignore_missing_primary:
+    """
+    if not dest_resource.iam_manager:
+        print("RESOURCE", dest_resource.name, "HAS NO IAM MANAGER SET")
+        return
+
+    if not resource and not resource_policies and not resource_mapping_key:
+        raise ValueError(
+            "You must specify either resource or resource_policies and resources_mappings"
+        )
+    resource_policies = resource.policies_scaffolds if resource else resource_policies
+    resource_mapping_key = (
+        resource.module.mapping_key if resource else resource_mapping_key
+    )
+    policies_models = (
+        deepcopy(resource_policies)
+        if not access_subkey
+        else deepcopy(resource_policies[access_subkey])
+    )
+    access_type_policy_model = get_access_type_policy_model(
+        access_definition, policies_models, access_subkey
+    )
+    resource_arns = determine_arns(
+        arn_value, access_type_policy_model, ignore_missing_primary
+    )
+    policy_title = f"{dest_resource.logical_name}To{resource_mapping_key}"
+    define_iam_permissions(
+        resource_mapping_key,
+        dest_resource,
+        dest_resource.stack.stack_template,
+        policy_title,
+        access_type_policy_model,
+        access_definition,
+        resource_arns,
+        access_subkey=access_subkey,
+        roles=[Ref(dest_resource.iam_manager.service_linked_role)],
     )
 
 

@@ -31,8 +31,10 @@ from ecs_composex.compose.x_resources.helpers import (
     set_new_resources,
     set_resources,
 )
+from ecs_composex.kinesis_firehose.kinesis_firehose_stack import DeliveryStream
 from ecs_composex.kms import metadata
 from ecs_composex.kms.kms_ecs_cluster import handle_ecs_cluster
+from ecs_composex.kms.kms_kinesis_firehose import kms_to_firehose
 from ecs_composex.kms.kms_params import KMS_KEY_ALIAS_NAME, KMS_KEY_ARN, KMS_KEY_ID
 from ecs_composex.kms.kms_s3 import handle_bucket_kms
 from ecs_composex.kms.kms_sqs import handle_queue_kms
@@ -45,7 +47,7 @@ from ecs_composex.sqs.sqs_stack import Queue
 def get_key_config(key, account_id: str, resource_id: str) -> dict | None:
     """
 
-    :param Key key:
+    :param KmsKey key:
     :param str account_id: unused
     :param str resource_id: unused
     :return:
@@ -58,9 +60,13 @@ def get_key_config(key, account_id: str, resource_id: str) -> dict | None:
     try:
         key_desc = client.describe_key(KeyId=key.arn)
         key_attributes = attributes_to_mapping(key_desc, key_attributes_mappings)
+        key.manager = key_desc["KeyMetadata"]["KeyManager"]
         try:
             aliases_r = client.list_aliases(KeyId=key_attributes[KMS_KEY_ID])
-            key_attributes[KMS_KEY_ALIAS_NAME] = aliases_r["Aliases"][0]["AliasName"]
+            if aliases_r["Aliases"]:
+                key_attributes[KMS_KEY_ALIAS_NAME] = aliases_r["Aliases"][0][
+                    "AliasName"
+                ]
         except client.exceptions.NotFoundException:
             LOG.debug(f"{key.module.res_key}.{key.name} - No KMS Key Alias.")
         return key_attributes
@@ -112,9 +118,16 @@ class KmsKey(AwsEnvironmentResource, ApiXResource):
         module: XResourceModule,
         settings: ComposeXSettings,
     ):
+        self.manager = "CUSTOMER"
         super().__init__(name, definition, module, settings)
         self.arn_parameter = KMS_KEY_ARN
         self.ref_parameter = KMS_KEY_ID
+
+    @property
+    def is_cmk(self):
+        if self.manager == "CUSTOMER":
+            return True
+        return False
 
     def init_outputs(self):
         self.output_properties = {
@@ -195,7 +208,11 @@ class KmsKey(AwsEnvironmentResource, ApiXResource):
                     f"resource {resource.name} has no `stack` attribute defined. Skipping"
                 )
                 continue
-            mappings = [(Bucket, handle_bucket_kms), (Queue, handle_queue_kms)]
+            mappings = [
+                (Bucket, handle_bucket_kms),
+                (Queue, handle_queue_kms),
+                (DeliveryStream, kms_to_firehose),
+            ]
             for target in mappings:
                 if isinstance(resource, target[0]) or issubclass(
                     type(resource), target[0]

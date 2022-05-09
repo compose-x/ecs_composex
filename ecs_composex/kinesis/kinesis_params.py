@@ -7,6 +7,12 @@ STREAM_ID_T = "StreamId"
 STREAM_ARN_T = "Arn"
 STREAM_KMS_KEY_ID_T = "KmsKeyId"
 
-STREAM_ID = Parameter(STREAM_ID_T, Type="String")
-STREAM_ARN = Parameter(STREAM_ARN_T, return_value="Arn", Type="String")
-STREAM_KMS_KEY_ID = Parameter(STREAM_KMS_KEY_ID_T, Type="String")
+GROUP_LABEL = "Kinesis Data Stream"
+
+STREAM_ID = Parameter(STREAM_ID_T, group_label=GROUP_LABEL, Type="String")
+STREAM_ARN = Parameter(
+    STREAM_ARN_T, group_label=GROUP_LABEL, return_value="Arn", Type="String"
+)
+STREAM_KMS_KEY_ID = Parameter(
+    STREAM_KMS_KEY_ID_T, group_label=GROUP_LABEL, Type="String"
+)
