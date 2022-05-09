@@ -114,7 +114,7 @@ def create_streams_template(new_resources: list[DeliveryStream]) -> Template:
         root_template.add_resource(res.iam_manager.service_linked_role)
         root_template.add_resource(res.log_group)
         root_template.add_resource(grant_log_group_access(res))
-        set_replace_cw_logging(res)
+        set_replace_cw_logging(res, root_template)
         root_template.add_output(res.outputs)
         res.ensure_iam_policies_dependencies()
     return root_template

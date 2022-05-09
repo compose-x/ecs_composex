@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import troposphere
+
 if TYPE_CHECKING:
     from .kinesis_firehose_stack import DeliveryStream
 
@@ -12,6 +14,7 @@ from compose_x_common.compose_x_common import set_else_none
 from troposphere import GetAtt, Ref
 from troposphere.firehose import CloudWatchLoggingOptions
 from troposphere.iam import PolicyType
+from troposphere.logs import LogStream
 
 from ecs_composex.common import LOG
 
@@ -37,16 +40,26 @@ def grant_log_group_access(stream: DeliveryStream) -> PolicyType:
 
 
 def set_replace_cw_logs_config(
-    resource: DeliveryStream, dest_prop: str, dest_config
+    resource: DeliveryStream,
+    dest_prop: str,
+    dest_config,
+    template: troposphere.Template,
 ) -> None:
     if not hasattr(dest_config, "CloudWatchLoggingOptions"):
+        log_stream = template.add_resource(
+            LogStream(
+                f"{resource.logical_name}{dest_prop}LogStream",
+                LogGroupName=Ref(resource.log_group),
+                LogStreamName=dest_prop,
+            )
+        )
         setattr(
             dest_config,
             "CloudWatchLoggingOptions",
             CloudWatchLoggingOptions(
                 Enabled=True,
                 LogGroupName=Ref(resource.log_group),
-                LogStreamName=dest_prop,
+                LogStreamName=Ref(log_stream),
             ),
         )
 
@@ -57,11 +70,20 @@ def set_replace_cw_logs_config(
                 f"{resource.module.res_key}.{resource.name}.{dest_prop} - CW Logging explicitly disabled"
             )
         else:
+            log_stream = template.add_resource(
+                LogStream(
+                    f"{resource.logical_name}{dest_prop}LogStream",
+                    LogGroupName=Ref(resource.log_group),
+                    LogStreamName=dest_prop,
+                )
+            )
             setattr(cw_config, "LogGroupName", Ref(resource.log_group))
-            setattr(cw_config, "LogStreamName", dest_prop)
+            setattr(cw_config, "LogStreamName", Ref(log_stream))
 
 
-def set_replace_cw_logging(resource: DeliveryStream) -> None:
+def set_replace_cw_logging(
+    resource: DeliveryStream, template: troposphere.Template
+) -> None:
     """
     Function to either set, or update, or neither, the RoleARN of
 
@@ -73,6 +95,7 @@ def set_replace_cw_logging(resource: DeliveryStream) -> None:
     * "AmazonopensearchserviceDestinationConfiguration"
 
     :param DeliveryStream resource:
+    :param troposphere.Template template:
     """
     dont_override = set_else_none(
         "DoNotOverrideIamRole", resource.parameters, eval_bool=True
@@ -108,4 +131,4 @@ def set_replace_cw_logging(resource: DeliveryStream) -> None:
                 f"f{resource.module.res_key}.{resource.name} - {dest_prop} overriding with new IAM Role"
             )
             dest_config = getattr(resource.cfn_resource, dest_prop)
-            set_replace_cw_logs_config(resource, dest_prop, dest_config)
+            set_replace_cw_logs_config(resource, dest_prop, dest_config, template)
