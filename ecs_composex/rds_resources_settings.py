@@ -401,9 +401,7 @@ def handle_import_dbs_to_services(
         db.db_secret_arn_parameter, db.attributes_outputs
     ):
         valid_ones = [
-            service
-            for service in target[2]
-            if service not in target[0].ordered_services
+            service for service in target[2] if service in target[0].ordered_services
         ]
         for service in valid_ones:
             add_secret_to_container(
