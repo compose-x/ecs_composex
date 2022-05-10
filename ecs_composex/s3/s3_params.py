@@ -30,11 +30,27 @@ S3_BUCKET_DOMAIN_NAME = Parameter(
     Type="String",
 )
 
-S3_BUCKET_REGION_DOMAIN_NAME_T = "BucketDomainName"
+S3_BUCKET_REGION_DOMAIN_NAME_T = "BucketRegionalDomainName"
 S3_BUCKET_REGION_DOMAIN_NAME = Parameter(
     S3_BUCKET_REGION_DOMAIN_NAME_T,
     group_label=GROUP_LABEL,
     return_value="RegionalDomainName",
+    Type="String",
+)
+
+S3_BUCKET_DUAL_STACK_NAME_T = "BucketDualStackDomainName"
+S3_BUCKET_DUAL_STACK_NAME = Parameter(
+    S3_BUCKET_DUAL_STACK_NAME_T,
+    group_label=GROUP_LABEL,
+    return_value="DualStackDomainName",
+    Type="String",
+)
+
+S3_BUCKET_WEB_URL_NAME_T = "BucketWebsiteURL"
+S3_BUCKET_WEB_URL_NAME = Parameter(
+    S3_BUCKET_WEB_URL_NAME_T,
+    group_label=GROUP_LABEL,
+    return_value="WebsiteURL",
     Type="String",
 )
 
@@ -54,4 +70,6 @@ CONTROL_CLOUD_ATTR_MAPPING = {
     S3_BUCKET_KMS_KEY: "BucketEncryption::ServerSideEncryptionConfiguration::"
     "0::ServerSideEncryptionByDefault::KMSMasterKeyID",
     S3_BUCKET_ARN: "Arn",
+    S3_BUCKET_WEB_URL_NAME: "WebsiteURL",
+    S3_BUCKET_DUAL_STACK_NAME: "S3_BUCKET_WEB_URL_NAME",
 }

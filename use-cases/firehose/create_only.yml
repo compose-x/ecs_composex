@@ -87,6 +87,8 @@ x-s3:
         Access:
           bucket: ListOnly
           objects: ReadOnly
+        ReturnValues:
+          BucketName: STREAM_OUTPUT_BUCKET
 
 
 x-kms:
@@ -99,3 +101,6 @@ x-kms:
 services:
   ad-hoc-testing:
     image: nginx
+    environment:
+      DELIVERY_BUCKET_NAME: x-s3::delivery-stream-output-bucket::BucketName
+      DELIVERY_BUCKET_ARN: x-s3::delivery-stream-output-bucket::Arn
