@@ -2,7 +2,7 @@
 # Copyright 2020-2022 John Mille <john@compose-x.io>
 
 from compose_x_common.compose_x_common import keyisset
-from troposphere import AWS_NO_VALUE, FindInMap, GetAtt, ImportValue, Ref, Sub
+from troposphere import AWS_NO_VALUE, FindInMap, GetAtt, ImportValue, NoValue, Ref, Sub
 from troposphere.ecs import ContainerDefinition, Environment
 
 from ecs_composex.common import LOG
@@ -55,7 +55,30 @@ def define_string_interpolation(var_value):
     return var_value
 
 
-def import_env_variables(environment):
+def set_environment_dict_from_list(environment: list) -> dict:
+    """
+    Transforms a list of string with a ``key=value`` into a dict of key/value
+
+    :param list environment:
+    :rtype: dict
+    :return: dict of key/value
+    """
+    env_vars_to_map = {}
+    for key in environment:
+        if not isinstance(key, str) or key.find(r"=") < 0:
+            raise TypeError(
+                f"Environment variable {key} must be a string in the Key=Value format"
+            )
+        splits = key.split(r"=")
+        if splits[0] not in env_vars_to_map:
+            env_vars_to_map[splits[0]] = splits[1]
+        else:
+            LOG.warning(f"{splits[0]} was already defined. Overriding to newer value")
+            env_vars_to_map[splits[0]] = splits[1]
+    return env_vars_to_map
+
+
+def import_env_variables(environment) -> list:
     """
     Function to import Docker compose env variables into ECS Env Variables
 
@@ -66,25 +89,24 @@ def import_env_variables(environment):
     """
     env_vars = []
     if isinstance(environment, list):
-        for key in environment:
-            if not isinstance(key, str) or key.find(r"=") < 0:
-                raise TypeError(
-                    f"Environment variable {key} must be a string in the Key=Value format"
-                )
-            splits = key.split(r"=")
-            env_vars.append(Environment(Name=splits[0], Value=str(splits[1])))
+        env_vars_to_map = set_environment_dict_from_list(environment)
 
     elif isinstance(environment, dict):
-        for key, value in environment.items():
-            if not isinstance(value, str):
-                env_vars.append(Environment(Name=key, Value=str(environment[key])))
-            else:
-                env_vars.append(
-                    Environment(
-                        Name=key,
-                        Value=define_string_interpolation(value),
-                    )
+        env_vars_to_map = environment
+    else:
+        raise TypeError(
+            "Enviroment must be a list of string or a dict of key/value where value is a string"
+        )
+    for key, value in env_vars_to_map.items():
+        if not isinstance(value, str):
+            env_vars.append(Environment(Name=key, Value=str(environment[key])))
+        else:
+            env_vars.append(
+                Environment(
+                    Name=key,
+                    Value=define_string_interpolation(value),
                 )
+            )
     return env_vars
 
 
@@ -109,7 +131,24 @@ def extend_container_secrets(container, secret):
         setattr(container, "Secrets", [secret])
 
 
-def extend_container_envvars(container: ContainerDefinition, env_vars: list) -> None:
+def set_validate_environment(container: ContainerDefinition) -> None:
+    """
+    Validates that the environment property of the container definition is valid.
+    If is NoValue
+    """
+    _environment = getattr(container, "Environment")
+    if isinstance(_environment, Ref) and _environment == NoValue:
+        setattr(container, "Environment", [])
+    elif not isinstance(_environment, list):
+        raise TypeError(
+            f"container def Environment {_environment} is not list or Ref(AWS_NO_VALUE).",
+            _environment,
+        )
+
+
+def extend_container_envvars(
+    container: ContainerDefinition, env_vars: list, replace: bool = False
+) -> None:
     """
     Extends the container environment variables with new ones to add. If not already set, defines.
 
@@ -125,19 +164,10 @@ def extend_container_envvars(container: ContainerDefinition, env_vars: list) -> 
     ):
         LOG.debug(f"Ignoring AWS Container {container.Name}")
         return
-    if hasattr(container, "Environment"):
-        environment = getattr(container, "Environment")
-        if isinstance(environment, Ref) and environment.data["Ref"] == AWS_NO_VALUE:
-            environment = []
-            setattr(container, "Environment", environment)
-        elif not isinstance(environment, list):
-            raise TypeError(
-                f"container def Environment {environment} is not list or Ref(AWS_NO_VALUE).",
-                type(environment),
-            )
-    else:
-        environment = []
-        setattr(container, "Environment", environment)
+    if not hasattr(container, "Environment"):
+        setattr(container, "Environment", [])
+    set_validate_environment(container)
+    environment = getattr(container, "Environment")
     existing = [
         var.Name
         for var in environment
@@ -147,6 +177,11 @@ def extend_container_envvars(container: ContainerDefinition, env_vars: list) -> 
         if var.Name not in existing:
             LOG.debug(f"Adding {var.Name} to {existing}")
             environment.append(var)
+        elif var.Name in existing and replace:
+            for defined_env_var in environment:
+                if defined_env_var.Name == var.Name:
+                    setattr(defined_env_var, "Value", var.Value)
+                    break
 
     LOG.debug(f"{container.Name}, {[env.Name for env in environment]}")
 

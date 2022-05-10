@@ -14,9 +14,10 @@ if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
     from ecs_composex.ecs.ecs_family import ComposeFamily
     from ecs_composex.compose.x_resources import XResource
+    from ecs_composex.compose.compose_services import ComposeService
 
 from compose_x_common.compose_x_common import keyisset
-from troposphere import AWSHelperFn, Ref, Sub
+from troposphere import AWSHelperFn, NoValue, Ref, Sub
 from troposphere.iam import Policy as IamPolicy
 from troposphere.iam import PolicyType
 
@@ -244,6 +245,70 @@ def define_iam_permissions(
     res_policy.PolicyDocument["Statement"].append(access_type_policy_model)
 
 
+def set_update_container_env_vars_from_resource_attribute(
+    svc_container_environment: list,
+    svc: ComposeService,
+    resource: XResource,
+    target: tuple,
+) -> None:
+    """
+    For each environment variable set, if it is a string matching the regular expression,
+    replace environment variable value with resource attribute ``ReturnValue``
+
+    :param svc_container_environment:
+    :param svc:
+    :param resource:
+    :param target:
+    :return:
+    """
+    resource_attribute_match_re = re.compile(
+        r"^(?P<res_key>x-[\S]+)::(?P<res_name>[\S]+)::(?P<return_value>[\S]+)$"
+    )
+    for defined_env_var in svc_container_environment:
+        value = defined_env_var.Value
+        if not isinstance(value, str):
+            continue
+        parts = resource_attribute_match_re.match(value)
+        if not parts or not (
+            parts.group("res_name") == resource.name
+            and parts.group("res_key") == resource.module.res_key
+        ):
+            continue
+        extend_container_envvars(
+            svc.container_definition,
+            resource.set_update_container_env_var(
+                target, parts.group("return_value"), defined_env_var.Name
+            ),
+            replace=True,
+        )
+
+
+def map_resource_env_vars_to_family_service_environment(
+    target: tuple, resource: XResource
+) -> None:
+    """
+    Function to expose environment variables to a specific container service from a given x-resource
+    based on the environment defined in the service definition.
+
+    These take precedence ReturnValues settings which would be applied to all containers in the family
+
+    :param tuple target:
+    :param XResource resource:
+    """
+
+    for svc in target[2]:
+        if svc in target[0].managed_sidecars:
+            continue
+        if not hasattr(svc.container_definition, "Environment"):
+            continue
+        svc_container_environment = svc.container_definition.Environment
+        if svc_container_environment == NoValue:
+            continue
+        set_update_container_env_vars_from_resource_attribute(
+            svc_container_environment, svc, resource, target
+        )
+
+
 def map_resource_env_vars_to_family_services(
     target,
     resource,
@@ -255,6 +320,7 @@ def map_resource_env_vars_to_family_services(
     :param tuple target:
     :param ecs_composex.compose.x_resources.XResource resource:
     """
+    map_resource_env_vars_to_family_service_environment(target, resource)
     return_values = (
         {} if not keyisset("ReturnValues", target[-1]) else target[-1]["ReturnValues"]
     )

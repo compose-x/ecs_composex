@@ -20,8 +20,10 @@ from ecs_composex.s3.s3_params import (
     CONTROL_CLOUD_ATTR_MAPPING,
     S3_BUCKET_ARN,
     S3_BUCKET_DOMAIN_NAME,
+    S3_BUCKET_DUAL_STACK_NAME,
     S3_BUCKET_KMS_KEY,
     S3_BUCKET_NAME,
+    S3_BUCKET_REGION_DOMAIN_NAME,
 )
 
 from .s3_kinesis_firehose import s3_to_firehose
@@ -64,6 +66,20 @@ class Bucket(ApiXResource):
                 self.cfn_resource,
                 GetAtt,
                 S3_BUCKET_DOMAIN_NAME.return_value,
+                None,
+            ),
+            S3_BUCKET_DUAL_STACK_NAME: (
+                f"{self.logical_name}{S3_BUCKET_DUAL_STACK_NAME.return_value}",
+                self.cfn_resource,
+                GetAtt,
+                S3_BUCKET_DUAL_STACK_NAME.return_value,
+                None,
+            ),
+            S3_BUCKET_REGION_DOMAIN_NAME: (
+                f"{self.logical_name}{S3_BUCKET_REGION_DOMAIN_NAME.return_value}",
+                self.cfn_resource,
+                GetAtt,
+                S3_BUCKET_REGION_DOMAIN_NAME.return_value,
                 None,
             ),
         }

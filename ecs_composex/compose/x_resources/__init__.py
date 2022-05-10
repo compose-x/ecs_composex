@@ -37,7 +37,6 @@ from ecs_composex.common.aws import (
 from ecs_composex.common.cfn_conditions import define_stack_name
 from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.common.ecs_composex import CFN_EXPORT_DELIMITER as DELIM
-from ecs_composex.common.ecs_composex import X_KEY
 from ecs_composex.iam.import_sam_policies import get_access_types
 from ecs_composex.mods_manager import XResourceModule
 from ecs_composex.resource_settings import get_parameter_settings
@@ -142,6 +141,18 @@ class XResource:
 
     def __repr__(self):
         return self.logical_name
+
+    @property
+    def property_to_parameter_mapping(self):
+        mapping = {}
+        if not self.attributes_outputs:
+            return mapping
+        for parameter in self.output_properties:
+            if parameter.return_value:
+                mapping[parameter.return_value] = parameter
+            else:
+                mapping[parameter.title] = parameter
+        return mapping
 
     def validate(self, settings, root_stack=None, *args, **kwargs) -> None:
         """
@@ -294,6 +305,57 @@ class XResource:
                 self.mappings[NONALPHANUM.sub("", parameter.return_value)] = value
             else:
                 self.mappings[parameter.title] = value
+
+    def set_update_container_env_var(
+        self, target: tuple, parameter, env_var_name: str
+    ) -> list:
+        """
+        Function that will set or update the value of a given env var from Return value of a resource.
+        :param tuple target:
+        :param parameter:
+        """
+        if isinstance(parameter, str):
+            try:
+                attr_parameter = self.property_to_parameter_mapping[parameter]
+            except KeyError:
+                LOG.error(
+                    f"{self.module.res_key}.{self.name} - No return value {parameter} available."
+                )
+                return []
+        elif isinstance(parameter, Parameter):
+            attr_parameter = parameter
+        else:
+            raise TypeError(
+                "parameter is", type(parameter), "must be one of", [str, Parameter]
+            )
+        env_vars = []
+        params_to_add = []
+        attr_id = self.attributes_outputs[attr_parameter]
+        if self.cfn_resource:
+            env_vars.append(
+                Environment(
+                    Name=env_var_name,
+                    Value=Ref(attr_id["ImportParameter"]),
+                )
+            )
+            params_to_add.append(attr_parameter)
+        elif self.lookup_properties:
+            env_vars.append(
+                Environment(
+                    Name=env_var_name,
+                    Value=attr_id["ImportValue"],
+                )
+            )
+        if params_to_add:
+            params_values = {}
+            settings = [get_parameter_settings(self, param) for param in params_to_add]
+            resource_params_to_add = []
+            for setting in settings:
+                resource_params_to_add.append(setting[1])
+                params_values[setting[0]] = setting[2]
+            add_parameters(target[0].template, resource_params_to_add)
+            target[0].stack.Parameters.update(params_values)
+        return env_vars
 
     def generate_resource_service_env_vars(
         self, target: tuple, target_definition: dict
