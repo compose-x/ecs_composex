@@ -2,6 +2,14 @@
 History
 =======
 
+0.19.1 (2022-05-10)
+====================
+
+New features
+--------------
+
+* 063f9ee Support services.environment: x-resource attribute mapping (#609) (John Preston)
+
 0.19.0 (2022-05-09)
 =====================
 
