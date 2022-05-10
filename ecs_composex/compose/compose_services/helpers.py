@@ -55,6 +55,29 @@ def define_string_interpolation(var_value):
     return var_value
 
 
+def set_environment_dict_from_list(environment: list) -> dict:
+    """
+    Transforms a list of string with a ``key=value`` into a dict of key/value
+
+    :param list environment:
+    :rtype: dict
+    :return: dict of key/value
+    """
+    env_vars_to_map = {}
+    for key in environment:
+        if not isinstance(key, str) or key.find(r"=") < 0:
+            raise TypeError(
+                f"Environment variable {key} must be a string in the Key=Value format"
+            )
+        splits = key.split(r"=")
+        if splits[0] not in env_vars_to_map:
+            env_vars_to_map[splits[0]] = splits[1]
+        else:
+            LOG.warning(f"{splits[0]} was already defined. Overriding to newer value")
+            env_vars_to_map[splits[0]] = splits[1]
+    return env_vars_to_map
+
+
 def import_env_variables(environment) -> list:
     """
     Function to import Docker compose env variables into ECS Env Variables
@@ -66,20 +89,7 @@ def import_env_variables(environment) -> list:
     """
     env_vars = []
     if isinstance(environment, list):
-        env_vars_to_map = {}
-        for key in environment:
-            if not isinstance(key, str) or key.find(r"=") < 0:
-                raise TypeError(
-                    f"Environment variable {key} must be a string in the Key=Value format"
-                )
-            splits = key.split(r"=")
-            if not splits[0] in env_vars_to_map:
-                env_vars_to_map[splits[0]] = splits[1]
-            else:
-                LOG.warning(
-                    f"{splits[0]} was already defined. Overriding to newer value"
-                )
-                env_vars_to_map[splits[0]] = splits[1]
+        env_vars_to_map = set_environment_dict_from_list(environment)
 
     elif isinstance(environment, dict):
         env_vars_to_map = environment
