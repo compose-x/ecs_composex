@@ -8,9 +8,9 @@ Feature: ecs_composex.dynamodb
         Examples:
             | file_path                   | override_file                                                   |
             | use-cases/blog.features.yml | use-cases/dynamodb/table_with_gsi.yml                           |
+            | use-cases/blog.features.yml | use-cases/dynamodb/table_with_gsi_autoscaling.yml               |
             | use-cases/blog.features.yml | use-cases/dynamodb/table.yml                                    |
             | use-cases/blog.features.yml | use-cases/dynamodb/tables.yml                                   |
             | use-cases/blog.features.yml | use-cases/dynamodb/create_lookup_legacy.yml                     |
             | use-cases/blog.features.yml | use-cases/dynamodb/create_lookup_services_mappings.yml          |
             | use-cases/blog.features.yml | use-cases/dynamodb/create_lookup_services_mappings_cloudmap.yml |
-

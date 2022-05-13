@@ -119,6 +119,8 @@ class XResource:
         self.uses_default = not any(
             [self.lookup, self.parameters, self.use, self.properties]
         )
+        self.scaling = set_else_none("Scaling", self.definition)
+        self.scaling_target = None
         self.cfn_resource = None
         self.output_properties = {}
         self.outputs = []
