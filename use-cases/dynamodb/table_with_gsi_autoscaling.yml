@@ -7,10 +7,12 @@ x-dynamodb:
           MaxCapacity: 100
           MinCapacity: 10
           TargetValue: 70.0
+          ScaleOutCooldown: 60
         WriteCapacityUnits:
           MaxCapacity: 70
           MinCapacity: 10
           TargetValue: 70.0
+          ScaleInCooldown: 120
       Indexes:
         myGSI:
           <<: *scaling_definition
