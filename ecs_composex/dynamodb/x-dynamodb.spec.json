@@ -74,13 +74,11 @@
       "properties": {
         "MinCapacity": {
           "type": "number",
-          "minimum": 5.0,
-          "maximum": 100.0
+          "minimum": 5.0
         },
         "MaxCapacity": {
           "type": "number",
-          "minimum": 5.0,
-          "maximum": 100.0
+          "minimum": 5.0
         },
         "TargetValue": {
           "type": "number",
