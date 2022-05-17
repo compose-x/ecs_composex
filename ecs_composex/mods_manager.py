@@ -117,16 +117,40 @@ class ModManager:
                 module.path,
             )
 
+    def import_resource_modules(self, res_key: str, module_path: str):
+        mod_x_stack_modules = get_module(module_path)
+        if mod_x_stack_modules:
+            for module_res_key, module_def in mod_x_stack_modules.items():
+                self.modules[module_res_key] = module_def["Module"]
+            for module_name, module in self.modules.items():
+                if module_name == res_key:
+                    return module
+            return
+
+    def add_module_from_module_def(self, res_key: str, module_name: str, mod_key: str):
+        module_path = f"{module_name}.{mod_key}_module"
+        core_module = self.import_resource_modules(res_key, module_path)
+        if core_module:
+            return core_module
+
+        module_name = f"ecs_composex_{mod_key}"
+        extensions_modules_path = f"{module_name}.{mod_key}_module"
+        extension_module = self.import_resource_modules(
+            res_key, extensions_modules_path
+        )
+        if extension_module:
+            return extension_module
+
     def add_module(self, res_key):
         if not res_key.startswith(X_KEY):
             return
         mod_key = re.sub(X_KEY, "", res_key)
         module_name = f"ecs_composex.{mod_key}"
 
-        mod_x_stack_module = get_module(f"{module_name}.{mod_key}_module")
-        if mod_x_stack_module:
-            self.modules[res_key] = mod_x_stack_module
-            return mod_x_stack_module
+        module = self.add_module_from_module_def(res_key, module_name, mod_key)
+        if module:
+            LOG.debug(f"{module.res_key} - Loaded from module definition")
+            return module
 
         mod_x_stack_class = get_mod_class(f"{module_name}.{mod_key}_stack")
         if not mod_x_stack_class:
@@ -162,6 +186,25 @@ def get_mod_class(module_name):
         return None
 
 
+def get_mod_entrypoints(module_name):
+    """
+    Function to get the XModule class for a specific ecs_composex module
+
+    :return: the_class, maps to the main class for the given x-module
+    """
+    try:
+        res_module = import_module(module_name)
+        try:
+            the_class = getattr(res_module, "XStack")
+            return the_class
+        except AttributeError as error:
+            LOG.debug(error)
+            return None
+    except ImportError as error:
+        LOG.debug(error)
+        return None
+
+
 def get_module(module_name):
     """
     Function to get the XResourceModule if it has been defined.
@@ -171,14 +214,13 @@ def get_module(module_name):
     try:
         res_module = import_module(module_name)
         try:
-            try:
-                module = getattr(res_module, "COMPOSE_X_MODULE")
-                return module
-            except AttributeError:
-                LOG.debug(f"No {module_name}.COMPOSE_X_MODULE function found")
-        except AttributeError as error:
-            LOG.debug(error)
-            return None
+            module = getattr(res_module, "COMPOSE_X_MODULES")
+            return module
+        except AttributeError:
+            LOG.debug(f"No {module_name}.COMPOSE_X_MODULES found")
+    except AttributeError as error:
+        LOG.debug(error)
+        return None
     except ImportError as error:
         LOG.debug(error)
         return None

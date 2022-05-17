@@ -51,7 +51,7 @@ def handle_aws_sources(existing_sources: list, new_sources: list) -> None:
     """
     set_ids = [s["Id"] for s in existing_sources if keyisset("Id", s)]
     for new_s in new_sources:
-        if new_s["Id"] not in set_ids:
+        if keyisset("Id", new_s) and new_s["Id"] not in set_ids:
             existing_sources.append(new_s)
 
 
