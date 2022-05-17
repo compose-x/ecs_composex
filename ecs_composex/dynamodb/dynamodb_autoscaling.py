@@ -38,6 +38,14 @@ def create_autoscaling_target_and_policy(
     :param str index:
     :return: The target and the associated policy
     """
+    property_mapping: dict = {
+        "WriteCapacityUnits": {
+            "PredefinedMetricType": "DynamoDBWriteCapacityUtilization"
+        },
+        "ReadCapacityUnits": {
+            "PredefinedMetricType": "DynamoDBReadCapacityUtilization"
+        },
+    }
     scablable_resource = (
         Sub(f"table/${{{table.cfn_resource.title}}}")
         if not index
@@ -53,7 +61,9 @@ def create_autoscaling_target_and_policy(
         MinCapacity=scale_definition["MinCapacity"],
         MaxCapacity=scale_definition["MaxCapacity"],
         ServiceNamespace="dynamodb",
-        ScalableDimension=f"dynamodb:table:{scalable_property}",
+        ScalableDimension=f"dynamodb:table:{scalable_property}"
+        if not index
+        else f"dynamodb:index:{scalable_property}",
         RoleARN=Sub(
             "arn:aws:iam::${AWS::AccountId}:role/aws-service-role/"
             "dynamodb.application-autoscaling.${AWS::URLSuffix}/"
@@ -64,7 +74,7 @@ def create_autoscaling_target_and_policy(
     scaling_policy = ScalingPolicy(
         f"{scaling_target.title}ScalingPolicy",
         DependsOn=[scaling_target.title],
-        PolicyName="WriteAutoScalingPolicy",
+        PolicyName=f"{scalable_property}AutoScalingPolicy",
         PolicyType="TargetTrackingScaling",
         ScalingTargetId=Ref(scaling_target),
         TargetTrackingScalingPolicyConfiguration=TargetTrackingScalingPolicyConfiguration(
@@ -76,7 +86,9 @@ def create_autoscaling_target_and_policy(
                 "ScaleOutCooldown", scale_definition, alt_value=60
             ),
             PredefinedMetricSpecification=PredefinedMetricSpecification(
-                PredefinedMetricType="DynamoDBWriteCapacityUtilization"
+                PredefinedMetricType=property_mapping[scalable_property][
+                    "PredefinedMetricType"
+                ]
             ),
         ),
     )
@@ -141,7 +153,6 @@ def add_autoscaling_for_indexes(
 def cover_indexes_without_scaling_definition(
     table: Table, template: Template, table_gsis: list, processed_indexes: list
 ) -> None:
-
     for index in table_gsis:
         if index in processed_indexes:
             continue
