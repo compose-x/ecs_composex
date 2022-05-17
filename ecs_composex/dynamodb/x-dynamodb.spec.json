@@ -22,6 +22,33 @@
     },
     "MacroParameters": {
       "type": "object"
+    },
+    "Scaling": {
+      "type": "object",
+      "description": "Defines autoscaling settings for the table and indexes.",
+      "additionalProperties": false,
+      "required": [
+        "Table"
+      ],
+      "properties": {
+        "Table": {
+          "$ref": "#/definitions/AutoscalingUnit"
+        },
+        "CopyToIndexes": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether or not apply the same scaling configuration to all indexes than Table. Does not override settings set in Indexes"
+        },
+        "Indexes": {
+          "type": "object",
+          "description": "The indexes to apply autoscaling too.",
+          "patternProperties": {
+            "[a-zA-Z0-9-_.]{3,255}": {
+              "$ref": "#/definitions/AutoscalingUnit"
+            }
+          }
+        }
+      }
     }
   },
   "oneOf": [
@@ -35,5 +62,52 @@
         "Properties"
       ]
     }
-  ]
+  ],
+  "definitions": {
+    "CapacityUnits": {
+      "type": "object",
+      "required": [
+        "MinCapacity",
+        "MaxCapacity",
+        "TargetValue"
+      ],
+      "properties": {
+        "MinCapacity": {
+          "type": "number",
+          "minimum": 5.0
+        },
+        "MaxCapacity": {
+          "type": "number",
+          "minimum": 5.0
+        },
+        "TargetValue": {
+          "type": "number",
+          "minimum": 1.0,
+          "maximum": 100.0
+        },
+        "ScaleInCooldown": {
+          "type": "number",
+          "minimum": 1,
+          "default": 60
+        },
+        "ScaleOutCooldown": {
+          "type": "number",
+          "minimum": 1,
+          "default": 60
+        }
+      }
+    },
+    "AutoscalingUnit": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "WriteCapacityUnits": {
+          "$ref": "#/definitions/CapacityUnits"
+        },
+        "ReadCapacityUnits": {
+          "$ref": "#/definitions/CapacityUnits"
+        }
+      }
+    }
+  }
 }

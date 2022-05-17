@@ -1,0 +1,126 @@
+version: '3.8'
+x-dynamodb:
+  tableA:
+    Scaling:
+      Table: &scaling_definition
+        ReadCapacityUnits:
+          MaxCapacity: 100
+          MinCapacity: 10
+          TargetValue: 70.0
+          ScaleOutCooldown: 60
+        WriteCapacityUnits:
+          MaxCapacity: 70
+          MinCapacity: 10
+          TargetValue: 70.0
+          ScaleInCooldown: 120
+      Indexes:
+        myGSI:
+          <<: *scaling_definition
+      CopyToIndexes: true
+
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: Album
+          AttributeType: S
+        - AttributeName: Artist
+          AttributeType: S
+        - AttributeName: Sales
+          AttributeType: N
+        - AttributeName: NumberOfSongs
+          AttributeType: N
+      GlobalSecondaryIndexes:
+        - IndexName: myGSI
+          KeySchema:
+            - AttributeName: Sales
+              KeyType: HASH
+            - AttributeName: Artist
+              KeyType: RANGE
+          Projection:
+            NonKeyAttributes:
+              - Album
+              - NumberOfSongs
+            ProjectionType: INCLUDE
+          ProvisionedThroughput:
+            ReadCapacityUnits: '5'
+            WriteCapacityUnits: '5'
+        - IndexName: myGSI2
+          KeySchema:
+            - AttributeName: NumberOfSongs
+              KeyType: HASH
+            - AttributeName: Sales
+              KeyType: RANGE
+          Projection:
+            NonKeyAttributes:
+              - Album
+              - Artist
+            ProjectionType: INCLUDE
+          ProvisionedThroughput:
+            ReadCapacityUnits: '5'
+            WriteCapacityUnits: '5'
+      KeySchema:
+        - AttributeName: Album
+          KeyType: HASH
+        - AttributeName: Artist
+          KeyType: RANGE
+      LocalSecondaryIndexes:
+        - IndexName: myLSI
+          KeySchema:
+            - AttributeName: Album
+              KeyType: HASH
+            - AttributeName: Sales
+              KeyType: RANGE
+          Projection:
+            NonKeyAttributes:
+              - Artist
+              - NumberOfSongs
+            ProjectionType: INCLUDE
+      ProvisionedThroughput:
+        ReadCapacityUnits: '5'
+        WriteCapacityUnits: '5'
+    Services:
+      app02:
+        Access: RW
+        ReturnValues:
+          Arn: TABLE_A_ARN
+      app03:
+        access: RW
+      bignicefamily:
+        ReturnValues:
+          Arn: TABLE_A_arn
+
+  tableB:
+    Scaling:
+      Table:
+        <<: *scaling_definition
+      CopyToIndexes: true
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: ArtistId
+          AttributeType: S
+        - AttributeName: Concert
+          AttributeType: S
+        - AttributeName: TicketSales
+          AttributeType: S
+      GlobalSecondaryIndexes:
+        - IndexName: GSI
+          KeySchema:
+            - AttributeName: TicketSales
+              KeyType: HASH
+          Projection:
+            ProjectionType: KEYS_ONLY
+          ProvisionedThroughput:
+            ReadCapacityUnits: 5
+            WriteCapacityUnits: 5
+      KeySchema:
+        - AttributeName: ArtistId
+          KeyType: HASH
+        - AttributeName: Concert
+          KeyType: RANGE
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+    Services:
+      app03:
+        Access: RW
+      bignicefamily:
+        Access: RO

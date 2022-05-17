@@ -17,6 +17,7 @@ x-dynamodb
         Properties: {}
         MacroParameters: {}
         Services: {}
+        Scaling: {}
 
 Create / use existing DynamoDB tables and link them logically to the services (and other AWS resources, where applicable).
 
@@ -60,9 +61,9 @@ Properties
 
 Refer to `AWS CFN Dynamodb Documentation`_. We support all of the definition and test with the documentation examples.
 
-.. literalinclude:: ../../../use-cases/dynamodb/table_with_gsi.yml
+.. literalinclude:: ../../../use-cases/dynamodb/table_with_gsi_autoscaling.yml
     :language: yaml
-    :caption: Tables with GSI
+    :caption: Tables with GSI and autoscaling
 
 .. attention::
 
@@ -87,6 +88,74 @@ For more details, see the :ref:`lookup_syntax_reference`.
         Services:
           serviceA:
             Access: DynamoDBCrudPolicy
+
+Scaling
+=========
+
+.. note::
+
+    This is only available to new DynamoDB tables.
+
+.. code-block:: yaml
+
+x-dynamodb:
+  TableA:
+    Properties: {}
+    Scaling:
+      Table: AutoscalingUnit
+      Indexes:
+        <index_name>: AutoscalingUnit
+      CopyToIndexes: bool
+
+AutoscalingUnit
+-----------------
+
+Allows to define the scaling properties for either ``ReadCapacityUnits`` or ``WriteCapacityUnits``
+
+.. code-block:: yaml
+    :caption: AutoscalingUnit
+
+    ReadCapacityUnits: ScalingDefinition
+    WriteCapacityUnits: ScalingDefinition
+
+ScalingDefinition
+^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: yaml
+    :caption: ScalingDefinition
+
+    MaxCapacity: number
+    MinCapacity: numer
+    TargetValue: number
+    ScaleInCooldown: number
+    ScaleOutCooldown: number
+
+CopyToIndexes
+----------------
+
+If you want to define autoscaling on the indexes with the same properties as for the Table, setting ``CopyToIndexes`` to
+true will automatically go through the GSIs of the table and set the same scaling policy as the one defined for the table.
+
+Indexes
+----------
+
+.. code-block:: yaml
+
+x-dynamodb:
+  TableA:
+    Properties: {}
+    Scaling:
+      Table: AutoscalingUnit
+      Indexes:
+        myGSI: AutoscalingUnit
+
+Allows you define the same parameters as for the table, but on the indexes. If you set both ``CopyToIndexes`` and an
+index in this section, the Index level settings take precedence.
+
+.. tip::
+
+    If you define scaling on an index that is not in the Properties, it will automatically flag it and fail.
+
 
 JSON Schema
 ============
