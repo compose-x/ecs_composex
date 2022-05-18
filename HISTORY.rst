@@ -2,6 +2,31 @@
 History
 =======
 
+0.20.0 (2022-05-18)
+============================
+
+Improving environment variables settings and setup autoscaling on DynamoDB Table and Indexes.
+
+New features
+-------------
+
+* ebbe1af feature: x-dynamodb.Scaling (#615) (John Preston)
+* 063f9ee Support services.environment: x-resource attribute mapping (#609) (John Preston)
+
+Improvement / Maintenance
+--------------------------
+
+* 24e9684 Updated dependencies (John Preston)
+
+
+Fixes
+---------
+
+* 96a2687 Updated deps (John Preston)
+* 141ef32 Fix x-rds.Lookup SecretsMappings (John Preston)
+
+
+
 0.19.1 (2022-05-10)
 ====================
 
