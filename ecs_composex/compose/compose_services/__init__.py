@@ -78,7 +78,14 @@ class ComposeService:
         ("x-aws-max_percent", int),
     ]
 
-    def __init__(self, name, definition, volumes=None, secrets=None):
+    def __init__(
+        self,
+        name,
+        definition,
+        volumes=None,
+        secrets=None,
+        image_param: Parameter = None,
+    ):
 
         for setting in self.ecs_plugin_aws_keys:
             if keyisset(setting[0], definition) and not isinstance(
@@ -141,14 +148,17 @@ class ComposeService:
         )
         if not keyisset("image", self.definition):
             raise KeyError("You must specify the image to use for", self.name)
-        self.image = self.definition["image"]
+        if not image_param:
+            self.image = self.definition["image"]
+            self.image_param = Parameter(
+                f"{self.logical_name}ImageUrl", Default=self.image, Type="String"
+            )
+        else:
+            self.image_param = image_param
+            self.image = Ref(self.image_param)
         self.image_digest = None
-        self.image_param = Parameter(
-            f"{self.logical_name}ImageUrl", Default=self.image, Type="String"
-        )
         self.ecr_config = set_else_none("x-ecr", self.definition, None)
         self.launch_type = None
-        self.container_start_condition = "START"
 
         self.mem_alloc = None
         self.mem_resa = None
@@ -157,11 +167,13 @@ class ComposeService:
         self.my_family = None
         self.is_aws_sidecar = False
         self._is_essential = True
+        self._start_condition = "START"
         self.container_definition = None
 
         self.ecs_healthcheck = NoValue
         self.healthcheck = set_else_none("healthcheck", self.definition, None)
         self.deploy = set_else_none("deploy", self.definition, None)
+        self.set_ecs_healthcheck()
         self.set_service_deploy()
         self.ports = set_else_none("ports", self.definition, [])
         self.expose_ports = set_else_none("expose", self.definition, [])
@@ -179,9 +191,7 @@ class ComposeService:
         self.runtime_os_family = set_else_none(
             "OperatingSystemFamily", self.x_ecs, None
         )
-
-        self.set_ecs_healthcheck()
-        self.define_logging()
+        self.define_x_logging()
 
         self.set_user_group()
         map_volumes(self, volumes)
@@ -195,6 +205,11 @@ class ComposeService:
 
     @property
     def is_essential(self):
+        if (
+            self.container_start_condition == "SUCCESS"
+            or self.container_definition == "COMPLETE"
+        ):
+            return False
         return self._is_essential
 
     @is_essential.setter
@@ -203,10 +218,24 @@ class ComposeService:
         if self.container_definition:
             setattr(self.container_definition, "Essential", self._is_essential)
 
+    @property
+    def container_start_condition(self):
+        if not self.ecs_healthcheck or not isinstance(
+            self.ecs_healthcheck, HealthCheck
+        ):
+            return self._start_condition
+        return "HEALTHY"
+
+    @container_start_condition.setter
+    def container_start_condition(self, value):
+        self._start_condition = value
+
     def retrieve_image_digest(self):
         """
         Retrieves the docker images digest from the repository to use instead of the image tag.
         """
+        if isinstance(self.image, Ref):
+            return
         valid_media_types = [
             "application/vnd.docker.distribution.manifest.v1+json",
             "application/vnd.docker.distribution.manifest.v2+json",
@@ -381,7 +410,7 @@ class ComposeService:
 
     def define_compose_logging(self):
         """
-        Method to define logging for service.
+        Method to define logging for container definition.
         """
         default = LogConfiguration(
             LogDriver="awslogs",
@@ -393,73 +422,29 @@ class ComposeService:
                 "awslogs-stream-prefix": self.name,
             },
         )
-        if not keyisset("logging", self.definition) or (
-            keyisset("logging", self.definition)
-            and not keyisset("driver", self.definition["logging"])
-        ):
+
+        logging_def = set_else_none("logging", self.definition)
+        if not logging_def or not keyisset("driver", logging_def):
             self.logging = default
             return
-        logging_def = self.definition["logging"]
-        valid_drivers = ["awslogs"]
-        if logging_def["driver"] not in valid_drivers:
+        managed_drivers = ["awslogs", "awsfirelens"]
+        logging_driver = logging_def["driver"]
+        if logging_driver not in managed_drivers:
             LOG.warning(
                 "The logging driver",
-                logging_def["driver"],
-                "is not supported. Only supported are",
-                valid_drivers,
+                logging_driver,
+                "is not managed. Only managed ones are",
+                managed_drivers,
             )
             self.logging = default
-        elif logging_def["driver"] == "awslogs" and keyisset("options", logging_def):
-            options_def = logging_def["options"]
-            options = {
-                "awslogs-group": set_else_none(
-                    "awslogs-group", options_def, alt_value=self.logical_name
-                ),
-                "awslogs-region": set_else_none(
-                    "awslogs-region", options_def, alt_value=Ref(AWS_REGION)
-                ),
-                "awslogs-stream-prefix": set_else_none(
-                    "awslogs-stream-prefix", options_def, alt_value=self.name
-                ),
-                "awslogs-endpoint": set_else_none(
-                    "awslogs-endpoint", options_def, alt_value=NoValue
-                ),
-                "awslogs-datetime-format": set_else_none(
-                    "awslogs-datetime-format",
-                    options_def,
-                    alt_value=NoValue,
-                ),
-                "awslogs-multiline-pattern": set_else_none(
-                    "awslogs-multiline-pattern",
-                    options_def,
-                    alt_value=NoValue,
-                ),
-                "mode": set_else_none("mode", options_def, alt_value=Ref(AWS_NO_VALUE)),
-                "max-buffer-size": set_else_none(
-                    "max-buffer-size", options_def, alt_value=NoValue
-                ),
-            }
-            if keypresent("awslogs-create-group", options_def) and isinstance(
-                options_def["awslogs-create-group"], bool
-            ):
-                options["awslogs-create-group"] = keyisset(
-                    "awslogs-create-group", options_def
-                )
-            elif keypresent("awslogs-create-group", options_def) and isinstance(
-                options_def["awslogs-create-group"], str
-            ):
-                options["awslogs-create-group"] = options_def[
-                    "awslogs-create-group"
-                ] in [
-                    "yes",
-                    "true",
-                    "Yes",
-                    "True",
-                ]
-            self.logging = LogConfiguration(
-                LogDriver="awslogs",
-                Options=options,
-            )
+        elif logging_driver == "awslogs" and keyisset("options", logging_def):
+            from .logging_definition_helpers import handle_awslogs_options
+
+            self.logging = handle_awslogs_options(self, logging_def)
+        elif logging_driver == "awsfirelens":
+            from .logging_definition_helpers import handle_firelens_options
+
+            self.logging = handle_firelens_options(self, logging_def)
 
     def define_tmpfs(self):
         """
@@ -812,12 +797,11 @@ class ComposeService:
             elif keyisset(setting[0], self.definition) and setting[2]:
                 setting[2](setting[0])
 
-    def define_logging(self):
+    def define_x_logging(self):
         """
         Method to define logging properties
         """
-        if keyisset("x-logging", self.definition):
-            self.x_logging = self.definition["x-logging"]
+        self.x_logging = set_else_none("x-logging", self.definition, alt_value={})
         if keyisset("x-aws-logs_retention", self.definition) and keyisset(
             "RetentionInDays", self.x_logging
         ):
@@ -831,6 +815,9 @@ class ComposeService:
             self.x_logging["RetentionInDays"] = int(
                 self.definition["x-aws-logs_retention"]
             )
+        self.x_logging["FireLens"] = set_else_none(
+            "FireLens", self.x_logging, alt_value={}
+        )
 
     def is_in_family(self, family_name):
         """
@@ -979,7 +966,7 @@ class ComposeService:
         depends_key = "ecs.depends.condition"
         labels = "labels"
         allowed_values = ["START", "COMPLETE", "SUCCESS", "HEALTHY"]
-        if not isinstance(self.ecs_healthcheck, Ref):
+        if isinstance(self.ecs_healthcheck, Ref) and self.ecs_healthcheck == NoValue:
             LOG.warning(
                 f"Healthcheck was defined on {self.name}. Overriding to HEALTHY"
             )

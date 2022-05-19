@@ -49,7 +49,7 @@ def handle_same_task_services_dependencies(services_config: list) -> None:
         if config[1].depends_on and any(
             k in [j[1].name for j in services_config] for k in config[1].depends_on
         ):
-            config[1].container_definition.Essential = False
+            # config[1].is_essential = False
             parents = [
                 s_service[1]
                 for s_service in services_config

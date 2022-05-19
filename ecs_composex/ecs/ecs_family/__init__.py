@@ -17,10 +17,11 @@ from itertools import chain
 
 from troposphere import AWS_STACK_NAME, GetAtt, If, Join, NoValue
 from troposphere import Output as CfnOutput
-from troposphere import Ref, Tags
+from troposphere import Ref, Sub, Tags
 from troposphere.ecs import EphemeralStorage, RuntimePlatform, TaskDefinition
 
 from ecs_composex.common import LOG, add_outputs, add_parameters
+from ecs_composex.common.cfn_conditions import define_stack_name
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.compose_services import ComposeService
 from ecs_composex.ecs import ecs_conditions, ecs_params
@@ -72,6 +73,13 @@ class ComposeFamily:
             self.logical_name,
             stack_template=self.template,
         )
+        self.family_logging_prefix = f"svc/ecs/{self.logical_name}"
+        self.logging_group_name = Sub(
+            f"${{STACK_NAME}}/"
+            f"{self.family_logging_prefix}/${{{ecs_params.CLUSTER_NAME_T}}}",
+            STACK_NAME=define_stack_name(self.template if self.template else None),
+        )
+        self.family_log_group = None
         self.task_definition = None
         self.service_definition = None
         self.service_tags = None
@@ -267,7 +275,7 @@ class ComposeFamily:
 
         self.set_update_containers_priority()
         self.iam_manager.init_update_policies()
-        self.handle_logging()
+        # self.handle_logging()
 
         self.service_compute.set_update_launch_type()
         self.service_compute.set_update_capacity_providers()
@@ -305,7 +313,7 @@ class ComposeFamily:
             )
             self.set_secrets_access()
         self.iam_manager.init_update_policies()
-        self.handle_logging()
+        # self.handle_logging()
 
         self.service_compute.set_update_launch_type()
         self.service_compute.set_update_capacity_providers()
@@ -360,7 +368,7 @@ class ComposeFamily:
             self.service_networking.ingress.associate_ext_ingress_rules(self.template)
             self.service_networking.add_self_ingress()
 
-    def finalize_family_settings(self):
+    def finalize_family_settings(self, settings: ComposeXSettings):
         """
         Once all services have been added, we add the sidecars and deal with appropriate permissions and settings
         Will add xray / prometheus sidecars
@@ -393,6 +401,12 @@ class ComposeFamily:
         ):
             self.template.add_resource(self.service_scaling.scalable_target)
         self.generate_outputs()
+        self.handle_logging(settings)
+        service_configs = [
+            [0, service]
+            for service in chain(self.managed_sidecars, self.ordered_services)
+        ]
+        handle_same_task_services_dependencies(service_configs)
 
     def set_services_to_services_dependencies(self):
         """
@@ -439,14 +453,14 @@ class ComposeFamily:
 
         handle_alarms(self)
 
-    def handle_logging(self):
+    def handle_logging(self, settings: ComposeXSettings):
         """
         Method to go over each service logging configuration and accordingly define the IAM permissions needed for
         the exec role
         """
         from .task_logging import handle_logging
 
-        handle_logging(self)
+        handle_logging(self, settings)
 
     def set_update_containers_priority(self) -> None:
         """
@@ -483,8 +497,10 @@ class ComposeFamily:
             return
         images_parameters = []
         for service in chain(self.managed_sidecars, self.ordered_services):
-            self.stack.Parameters.update({service.image_param.title: service.image})
-            images_parameters.append(service.image_param)
+            print("SERVICE", service, service.image, service.image_param.title)
+            if service.image_param.title not in self.stack.Parameters:
+                self.stack.Parameters.update({service.image_param.title: service.image})
+                images_parameters.append(service.image_param)
         add_parameters(self.template, images_parameters)
 
     def refresh_container_logging_definition(self):

@@ -3,9 +3,11 @@
 
 from __future__ import annotations
 
+import copy
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from ecs_composex.common.settings import ComposeXSettings
     from ecs_composex.ecs.ecs_family import ComposeFamily
 
 from itertools import chain
@@ -15,53 +17,48 @@ from troposphere import GetAtt, Ref, Sub
 from troposphere.iam import Policy, PolicyType
 from troposphere.logs import LogGroup
 
-from ecs_composex.common import LOG
-from ecs_composex.common.cfn_conditions import define_stack_name
+from ecs_composex.common import LOG, add_resource
 from ecs_composex.compose.compose_services.helpers import set_logging_expiry
-from ecs_composex.ecs.ecs_params import CLUSTER_NAME_T, LOG_GROUP_RETENTION, LOG_GROUP_T
+from ecs_composex.ecs.ecs_params import LOG_GROUP_RETENTION, LOG_GROUP_T
+from ecs_composex.resource_settings import define_iam_permissions
 
-LOGGING_ACTIONS = ["logs:CreateLogStream", "logs:PutLogEvents"]
+LOGGING_ACTIONS = ["logs:CreateLogStream", "logs:PutLogEvents", "logs:CreateLogGroup"]
 
 
-def create_log_group(family: ComposeFamily) -> None:
+def create_log_group(
+    family: ComposeFamily,
+    grant_task_role_access: bool = False,
+) -> LogGroup:
     """
     Function to create a new Log Group for the services
     :return:
     """
-    svc_log = family.template.add_resource(
-        LogGroup(
+    if LOG_GROUP_T not in family.template.resources:
+        svc_log = LogGroup(
             LOG_GROUP_T,
             RetentionInDays=Ref(LOG_GROUP_RETENTION),
-            LogGroupName=Sub(
-                f"${{STACK_NAME}}/"
-                f"svc/ecs/${{{CLUSTER_NAME_T}}}/{family.logical_name}",
-                STACK_NAME=define_stack_name(
-                    family.template if family.template else None
-                ),
-            ),
-        ),
+            LogGroupName=family.logging_group_name,
+        )
+        add_resource(family.template, svc_log)
+
+    else:
+        svc_log = family.template.resources[LOG_GROUP_T]
+    permissions_model = {"Effect": "Allow", "Action": LOGGING_ACTIONS}
+    roles = [family.iam_manager.exec_role.name]
+    if grant_task_role_access:
+        roles.append(family.iam_manager.task_role.name)
+    define_iam_permissions(
+        "logs",
+        family,
+        family.template,
+        "CloudWatchLogsAccess",
+        permissions_model,
+        access_definition="LogGroupOwner",
+        resource_arns=[GetAtt(svc_log, "Arn")],
+        roles=roles,
     )
-    policy = PolicyType(
-        f"{family.logical_name}LogGroupAccess",
-        PolicyName=Sub(f"CloudWatchAccessForFamily{family.logical_name}"),
-        PolicyDocument={
-            "Version": "2012-10-17",
-            "Statement": [
-                {
-                    "Sid": "AllowCloudWatchLoggingToSpecificLogGroup",
-                    "Effect": "Allow",
-                    "Action": LOGGING_ACTIONS,
-                    "Resource": [GetAtt(svc_log, "Arn")],
-                }
-            ],
-        },
-        Roles=[family.iam_manager.exec_role.name],
-    )
-    if (
-        family.template
-        and f"{family.logical_name}LogGroupAccess" not in family.template.resources
-    ):
-        family.template.add_resource(policy)
+
+    return svc_log
 
 
 def add_container_level_log_group(
@@ -119,7 +116,7 @@ def logging_from_defined_region(family: ComposeFamily) -> None:
                     {
                         "Sid": "AllowCloudWatchLoggingToSpecificLogGroup",
                         "Effect": "Allow",
-                        "Action": LOGGING_ACTIONS + ["logs:CreateLogGroup"],
+                        "Action": LOGGING_ACTIONS,
                         "Resource": "*",
                     }
                 ],
@@ -128,7 +125,7 @@ def logging_from_defined_region(family: ComposeFamily) -> None:
     )
 
 
-def handle_logging(family: ComposeFamily):
+def handle_awslogs_logging(family: ComposeFamily):
     """
     Method to go over each service logging configuration and accordingly define the IAM permissions needed for
     the exec role
@@ -148,3 +145,46 @@ def handle_logging(family: ComposeFamily):
             add_container_level_log_group(family, service, log_group_title, expiry)
         else:
             service.logging.Options.update({"awslogs-group": Ref(LOG_GROUP_T)})
+
+
+def handle_firelens(family: ComposeFamily, settings: ComposeXSettings) -> None:
+    """
+    Handles the firelens configuration / creation for the services
+    """
+    from ecs_composex.ecs.ecs_firelens.firelens_managed_sidecars import (
+        FLUENT_BIT_AGENT_NAME,
+        FluentBit,
+        render_agent_config,
+    )
+
+    family_fluentbit_service = FluentBit(
+        FLUENT_BIT_AGENT_NAME, render_agent_config(family)
+    )
+    family_fluentbit_service.set_firelens_configuration()
+    family_fluentbit_service.add_to_family(family, True)
+    family_fluentbit_service.set_as_dependency_to_family_services()
+    family_fluentbit_service.update_family_services_logging_configuration(settings)
+
+
+def handle_logging(family: ComposeFamily, settings: ComposeXSettings) -> None:
+    """
+    Configuration parser to catch firelens vs aws cloudwatch config
+
+    :param ComposeFamily family:
+    :param ComposeXSettings settings:
+    """
+    wants_firelens = any(
+        [
+            keyisset("FireLens", service.x_logging)
+            for service in family.ordered_services
+            if service.x_logging
+        ]
+    )
+    if not wants_firelens:
+        create_log_group(family)
+        handle_awslogs_logging(family)
+    else:
+        LOG.info(
+            f"{family.name} - At least one service has x-logging.FireLens set. Overriding for all."
+        )
+        handle_firelens(family, settings)

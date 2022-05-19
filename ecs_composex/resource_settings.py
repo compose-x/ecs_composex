@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import re
 from copy import deepcopy
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from ecs_composex.compose.compose_services import ComposeService
 
 from compose_x_common.compose_x_common import keyisset
-from troposphere import AWSHelperFn, NoValue, Ref, Sub
+from troposphere import AWSHelperFn, FindInMap, GetAtt, NoValue, Ref, Sub
 from troposphere.iam import Policy as IamPolicy
 from troposphere.iam import PolicyType
 
@@ -188,13 +188,48 @@ def set_sid_name(access_definition, access_subkey: str) -> str:
     return access_type
 
 
+def get_att_already_set(
+    existing_arns: list, cfn_type, get_object, get_prop: str
+) -> bool:
+    """
+    Compares a list of
+    :param existing_arns:
+    :param get_object:
+    :param get_prop:
+    :return:
+    """
+    for arn in existing_arns:
+        if isinstance(arn, cfn_type):
+            _object = arn.data["Fn::GetAtt"][0]
+            _prop = arn.data["Fn::GetAtt"][1]
+            LOG.debug("Already have a ", _object, _prop)
+            if get_object == _object and get_prop == _prop:
+                return True
+    return False
+
+
+def add_new_arns_to_statement_resource(existing_arns: list, new_arns: list):
+    """
+    Identifies if an ARN in the new arns to add already is set. Returns the list of non duplicate ARNs to add to statement
+    :param existing_arns:
+    :param new_arns:
+    """
+    for new_arn in new_arns:
+        if isinstance(new_arn, GetAtt):
+            get_object = new_arn.data["Fn::GetAtt"][0]
+            get_prop = new_arn.data["Fn::GetAtt"][1]
+            print("Getting", get_object, get_prop)
+            if not get_att_already_set(existing_arns, (GetAtt,), get_object, get_prop):
+                existing_arns.append(new_arn)
+
+
 def define_iam_permissions(
     resource_mapping_key,
     dest_resource,
     dest_resource_template,
     policy_title,
     access_type_policy_model,
-    access_definition,
+    access_definition: Union[str, dict],
     resource_arns,
     access_subkey: str = None,
     roles=None,
@@ -207,11 +242,13 @@ def define_iam_permissions(
 
     :param resource_mapping_key:
     :param dest_resource:
+    :param troposphere.Template dest_resource_template:
     :param str policy_title:
     :param dict access_type_policy_model:
     :param str, dict access_definition:
     :param list resource_arns:
     :param str access_subkey:
+    :param list roles: List of Role pointers to use as Policy targets
     """
     access_type = set_sid_name(access_definition, access_subkey)
     if (
@@ -238,11 +275,12 @@ def define_iam_permissions(
         if keyisset("Sid", statement) and statement["Sid"] == access_type:
             if not isinstance(statement["Resource"], list):
                 statement["Resource"] = [statement["Resource"]]
-            statement["Resource"] += resource_arns
-            return
-    access_type_policy_model["Sid"] = access_type
-    access_type_policy_model["Resource"] = resource_arns
-    res_policy.PolicyDocument["Statement"].append(access_type_policy_model)
+            add_new_arns_to_statement_resource(statement["Resource"], resource_arns)
+            break
+    else:
+        access_type_policy_model["Sid"] = access_type
+        access_type_policy_model["Resource"] = resource_arns
+        res_policy.PolicyDocument["Statement"].append(access_type_policy_model)
 
 
 def set_update_container_env_vars_from_resource_attribute(
@@ -588,6 +626,7 @@ def link_resource_to_services(
     resource,
     arn_parameter: Parameter,
     access_subkeys: list = None,
+    targets_overrides: list = None,
 ) -> None:
     """
     Function to assign the new resource to the service/family using it.
@@ -603,7 +642,8 @@ def link_resource_to_services(
 
     arn_attr_value = set_arn_att_value(resource, arn_settings, arn_parameter)
 
-    for target in resource.families_targets:
+    targets = resource.families_targets if not targets_overrides else targets_overrides
+    for target in targets:
         if target[0] and (not target[0].stack or not target[0].template):
             continue
         import_resource_into_service_stack(
@@ -628,6 +668,7 @@ def handle_resource_to_services(
     arn_parameter,
     nested=False,
     access_subkeys=None,
+    targets_overrides: list = None,
 ):
     """
     Function to evaluate the type of resource coming in and pass on the settings and parameters for
@@ -637,7 +678,7 @@ def handle_resource_to_services(
     :param ecs_composex.common.settings.ComposeXSettings settings:
     :param arn_parameter:
     :param bool nested:
-    :return:
+    :param list targets_overrides: overrides the list of targets to process for the resource
     """
     if x_resource.stack and not x_resource.stack.is_void:
         for (
@@ -651,10 +692,12 @@ def handle_resource_to_services(
                     arn_parameter,
                     nested=True if nested is False else nested,
                     access_subkeys=access_subkeys,
+                    targets_overrides=targets_overrides,
                 )
     link_resource_to_services(
         settings=settings,
         resource=x_resource,
         arn_parameter=arn_parameter,
         access_subkeys=access_subkeys,
+        targets_overrides=targets_overrides,
     )

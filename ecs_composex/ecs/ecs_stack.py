@@ -59,8 +59,8 @@ def initialize_family_services(
     upload_services_env_files(family, settings)
     set_repository_credentials(family, settings)
     set_volumes(family)
-    create_log_group(family)
-    family.handle_logging()
+    # create_log_group(family)
+    # family.handle_logging()
     family.handle_alarms()
 
 

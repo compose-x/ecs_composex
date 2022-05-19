@@ -152,6 +152,7 @@ class Bucket(ApiXResource):
         settings: ComposeXSettings,
         modules: ModManager,
         root_stack: ComposeXStack = None,
+        targets_overrides: list = None,
     ):
         """
         Handles mapping the S3 bucket to ECS services
@@ -162,6 +163,7 @@ class Bucket(ApiXResource):
             self,
             arn_parameter=S3_BUCKET_ARN,
             access_subkeys=["objects", "bucket", "enforceSecureConnection"],
+            targets_overrides=targets_overrides,
         )
 
     def handle_x_dependencies(

@@ -13,6 +13,188 @@
     },
     "CreateLogGroup": {
       "type": "boolean"
+    },
+    "FireLens": {
+      "oneOf": [
+        {
+          "$ref": "#/definitions/FireLensAdvancedConfig"
+        },
+        {
+          "type": "boolean",
+          "description": "Simple option to automatically use FireLens with CloudWatch logs destination",
+          "default": false
+        }
+      ]
+    }
+  },
+  "definitions": {
+    "FireLensAdvancedConfig": {
+      "type": "object",
+      "oneOf": [
+        {
+          "required": [
+            "rawOptions"
+          ]
+        },
+        {
+          "required": [
+            "s3FileConfiguration"
+          ]
+        },
+        {
+          "required": [
+            "Rendered"
+          ]
+        },
+        {
+          "required": [
+            "AutoCloudWatch"
+          ]
+        }
+      ],
+      "properties": {
+        "Type": {
+          "type": "string",
+          "enum": [
+            "fluentbit",
+            "fluentd"
+          ],
+          "default": "fluentbit",
+          "description": "Select which of fluentd or fluentbit to use."
+        },
+        "ApplyToAllSidecars": {
+          "type": "boolean",
+          "default": false,
+          "description": "If you enable FireLens for the main application services, this enables it for the managed sidecars too."
+        },
+        "AutoCloudWatch": {
+          "type": "boolean",
+          "description": "Uses FireLens and CloudWatch, leaving Compose-X generate all the configuration for you."
+        },
+        "rawOptions": {
+          "type": "object",
+          "description": "Define the logConfiguration for awsfirelens options. Compose-X only adds the sidecar and IAM permissions"
+        },
+        "firelensConfiguration": {
+          "type": "object",
+          "description": "allows to define the firelensConfiguration for the firelens sidecar"
+        },
+        "s3FileConfiguration": {
+          "oneOf": [
+            {
+              "type": "string",
+              "description": "Native path syntax to the configuration file for FireLens, i.e. aws:s3:::bucket/file.conf. You need to set access to the bucket via x-iam"
+            },
+            {
+              "type": "object",
+              "description": "Object that allows you to define s3 bucket and path to config file separately. using x-s3 will replace the value accordingly and deal with permissions",
+              "properties": {
+                "BucketName": {
+                  "type": "string",
+                  "description": "bucket name. can be x-s3::<logical_bucket>."
+                },
+                "FilePath": {
+                  "type": "string",
+                  "description": "Path to the config file, i.e. firelens/myapp.conf"
+                }
+              }
+            }
+          ]
+        },
+        "Rendered": {
+          "type": "object",
+          "description": "For Fargate, allows to generate a file that will be placed in shared volume. Configuration content is stored in AWS SSM",
+          "properties": {
+            "SourceFile": {
+              "type": "string",
+              "description": "Path to the source file that contains the configuration"
+            },
+            "ComposeXManagedAwsDestinations": {
+              "type": "array",
+              "uniqueItems": true,
+              "description": "Generates automatically a new OUTPUT for a Compose-X managed resource",
+              "items": {
+                "oneOf": [
+                  {
+                    "$ref": "#/definitions/FireLensCloudWatchManagedDestination"
+                  },
+                  {
+                    "$ref": "#/definitions/FireLensFirehoseManagedDestination"
+                  }
+                ]
+              }
+            },
+            "EnvironmentVariables": {
+              "$ref": "#/definitions/RenderEnvVars"
+            }
+          }
+        }
+      }
+    },
+    "FireLensFirehoseManagedDestination": {
+      "type": "object",
+      "required": [
+        "delivery_stream"
+      ],
+      "description": "Allows to setup all settings from https://docs.fluentbit.io/manual/pipeline/outputs/firehose.",
+      "additionalProperties": true,
+      "properties": {
+        "delivery_stream": {
+          "type": "string",
+          "description": "Allows to define delivery_stream with simple name or a delivery stream defined in x-kinesis_firehose."
+        }
+      }
+    },
+    "FireLensCloudWatchManagedDestination": {
+      "type": "object",
+      "description": "Allows to define all settings from https://docs.fluentbit.io/manual/pipeline/outputs/cloudwatch",
+      "required": [
+        "log_group_name"
+      ],
+      "properties": {
+        "log_group_name": {
+          "type": "string",
+          "description": "Value for log_group_name from the original plugin."
+        }
+      }
+    },
+    "RenderEnvVars": {
+      "type": "object",
+      "description": "Allows to specify extra environment variables to the ",
+      "patternProperties": {
+        "^[a-zA-Z\\d._-]+$": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "Allows to use CFN Ref or Sub functions directly",
+              "properties": {
+                "Fn::Sub": {
+                  "type": "string"
+                },
+                "Fn::Ref": {
+                  "type": "string"
+                }
+              },
+              "oneOf": [
+                {
+                  "required": [
+                    "Fn::Ref"
+                  ]
+                },
+                {
+                  "required": [
+                    "Fn::Sub"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
     }
   }
 }

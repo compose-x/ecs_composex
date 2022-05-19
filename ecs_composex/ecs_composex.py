@@ -319,7 +319,7 @@ def generate_full_template(settings: ComposeXSettings):
         family.set_enable_execute_command()
         if family.enable_execute_command:
             family.apply_ecs_execute_command_permissions(settings)
-        family.finalize_family_settings()
+        family.finalize_family_settings(settings)
         family.state_facts()
     set_ecs_cluster_identifier(root_stack, settings)
     add_all_tags(root_stack.stack_template, settings)
