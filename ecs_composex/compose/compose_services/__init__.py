@@ -412,11 +412,13 @@ class ComposeService:
         """
         Method to define logging for container definition.
         """
+        from .logging_definition_helpers import handle_managed_log_drivers
+
         default = LogConfiguration(
             LogDriver="awslogs",
             Options={
                 "awslogs-group": Sub(
-                    f"${{{ROOT_STACK_NAME.title}}}/svc/ecs/{self.logical_name}"
+                    f"${{{ROOT_STACK_NAME.title}}}/svc/ecs/${{{ecs_params.CLUSTER_NAME.title}}}/{self.logical_name}"
                 ),
                 "awslogs-region": Ref(AWS_REGION),
                 "awslogs-stream-prefix": self.name,
@@ -437,14 +439,8 @@ class ComposeService:
                 managed_drivers,
             )
             self.logging = default
-        elif logging_driver == "awslogs" and keyisset("options", logging_def):
-            from .logging_definition_helpers import handle_awslogs_options
-
-            self.logging = handle_awslogs_options(self, logging_def)
-        elif logging_driver == "awsfirelens":
-            from .logging_definition_helpers import handle_firelens_options
-
-            self.logging = handle_firelens_options(self, logging_def)
+        else:
+            self.logging = handle_managed_log_drivers(self, logging_driver, logging_def)
 
     def define_tmpfs(self):
         """
@@ -801,23 +797,17 @@ class ComposeService:
         """
         Method to define logging properties
         """
+        from .helpers import get_closest_valid_log_retention_period
+
         self.x_logging = set_else_none("x-logging", self.definition, alt_value={})
-        if keyisset("x-aws-logs_retention", self.definition) and keyisset(
-            "RetentionInDays", self.x_logging
-        ):
-            self.x_logging["RetentionInDays"] = max(
-                int(self.definition["x-aws-logs_retention"]),
-                int(self.x_logging["RetentionInDays"]),
-            )
-        elif keyisset("x-aws-logs_retention", self.definition) and not keyisset(
-            "RetentionInDays", self.x_logging
-        ):
-            self.x_logging["RetentionInDays"] = int(
-                self.definition["x-aws-logs_retention"]
-            )
-        self.x_logging["FireLens"] = set_else_none(
-            "FireLens", self.x_logging, alt_value={}
+        x_aws_logs_retention = int(
+            set_else_none("x-aws-logs_retention", self.definition, alt_value=14)
         )
+        retention_in_days = int(
+            set_else_none("RetentionInDays", self.x_logging, alt_value=14)
+        )
+        self.x_logging["RetentionInDays"] = max(x_aws_logs_retention, retention_in_days)
+        self.x_logging["FireLens"] = set_else_none("FireLens", self.x_logging)
 
     def is_in_family(self, family_name):
         """
@@ -851,7 +841,7 @@ class ComposeService:
         for key, value in self.healthcheck.items():
             ecs_key = attr_mappings[key][0]
             params[ecs_key] = value
-            if attr_mappings[key][1] is not None:
+            if callable(attr_mappings[key][1]):
                 params[ecs_key] = attr_mappings[key][1](self.healthcheck[key])
         if isinstance(params["Command"], str):
             params["Command"] = [params["Command"]]
@@ -966,7 +956,10 @@ class ComposeService:
         depends_key = "ecs.depends.condition"
         labels = "labels"
         allowed_values = ["START", "COMPLETE", "SUCCESS", "HEALTHY"]
-        if isinstance(self.ecs_healthcheck, Ref) and self.ecs_healthcheck == NoValue:
+        if (
+            isinstance(self.ecs_healthcheck, Ref)
+            and not self.ecs_healthcheck == NoValue
+        ):
             LOG.warning(
                 f"Healthcheck was defined on {self.name}. Overriding to HEALTHY"
             )

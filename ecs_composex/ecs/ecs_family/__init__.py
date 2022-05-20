@@ -38,8 +38,9 @@ from ecs_composex.ecs.service_scaling import ServiceScaling
 from ecs_composex.ecs.task_compute import TaskCompute
 from ecs_composex.ecs.task_iam import TaskIam
 
-from .family_helpers import assign_secrets_to_roles, define_essential_containers
+from .family_helpers import assign_secrets_to_roles, ensure_essential_containers
 from .family_template import set_template
+from .task_logging import create_log_group
 from .task_runtime import define_family_runtime_parameters
 
 
@@ -79,7 +80,7 @@ class ComposeFamily:
             f"{self.family_logging_prefix}/${{{ecs_params.CLUSTER_NAME_T}}}",
             STACK_NAME=define_stack_name(self.template if self.template else None),
         )
-        self.family_log_group = None
+        self.umbrella_log_group = None
         self.task_definition = None
         self.service_definition = None
         self.service_tags = None
@@ -470,7 +471,7 @@ class ComposeFamily:
         handle_same_task_services_dependencies(service_configs)
         ordered_containers_config = sorted(service_configs, key=lambda i: i[0])
         self.ordered_services = [s[1] for s in ordered_containers_config]
-        define_essential_containers(self)
+        ensure_essential_containers(self)
 
     def set_secrets_access(self):
         """

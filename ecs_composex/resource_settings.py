@@ -218,7 +218,6 @@ def add_new_arns_to_statement_resource(existing_arns: list, new_arns: list):
         if isinstance(new_arn, GetAtt):
             get_object = new_arn.data["Fn::GetAtt"][0]
             get_prop = new_arn.data["Fn::GetAtt"][1]
-            print("Getting", get_object, get_prop)
             if not get_att_already_set(existing_arns, (GetAtt,), get_object, get_prop):
                 existing_arns.append(new_arn)
 
@@ -458,7 +457,6 @@ def map_x_resource_perms_to_resource(
     :param bool ignore_missing_primary:
     """
     if not dest_resource.iam_manager:
-        print("RESOURCE", dest_resource.name, "HAS NO IAM MANAGER SET")
         return
 
     if not resource and not resource_policies and not resource_mapping_key:

@@ -11,13 +11,18 @@
       "type": "integer",
       "description": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-logs-loggroup.html#cfn-logs-loggroup-retentionindays"
     },
-    "CreateLogGroup": {
-      "type": "boolean"
-    },
     "FireLens": {
       "oneOf": [
         {
-          "$ref": "#/definitions/FireLensAdvancedConfig"
+          "type": "object",
+          "properties": {
+            "Shorthands": {
+              "$ref": "#/definitions/FireLensShortCuts"
+            },
+            "Advanced": {
+              "$ref": "#/definitions/FireLensAdvancedConfig"
+            }
+          }
         },
         {
           "type": "boolean",
@@ -28,14 +33,57 @@
     }
   },
   "definitions": {
+    "FireLensShortCuts": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "ReplaceAwsLogs": {
+          "type": "boolean",
+          "default": false,
+          "description": "If set to true, will use FireLens with CloudWatch logs instead of awslogs driver"
+        },
+        "FirelensConfiguration": {
+          "$ref": "#/definitions/FirelensConfiguration"
+        }
+      }
+    },
+    "FirelensConfiguration": {
+      "type": "object",
+      "description": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ecs-taskdefinition-firelensconfiguration.html",
+      "additionalProperties": false,
+      "properties": {
+        "Type": {
+          "type": "string",
+          "description": "Which fluent to use. For now catering only for fluentbit. Apologies for inconvenience",
+          "enum": [
+            "fluentbit"
+          ]
+        },
+        "Options": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enable-ecs-log-metadata": {
+              "type": "boolean",
+              "default": true
+            },
+            "config-file-type": {
+              "type": "string",
+              "enum": [
+                "file",
+                "s3"
+              ]
+            },
+            "config-file-value": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
     "FireLensAdvancedConfig": {
       "type": "object",
       "oneOf": [
-        {
-          "required": [
-            "rawOptions"
-          ]
-        },
         {
           "required": [
             "s3FileConfiguration"
@@ -53,15 +101,6 @@
         }
       ],
       "properties": {
-        "Type": {
-          "type": "string",
-          "enum": [
-            "fluentbit",
-            "fluentd"
-          ],
-          "default": "fluentbit",
-          "description": "Select which of fluentd or fluentbit to use."
-        },
         "ApplyToAllSidecars": {
           "type": "boolean",
           "default": false,
@@ -71,13 +110,8 @@
           "type": "boolean",
           "description": "Uses FireLens and CloudWatch, leaving Compose-X generate all the configuration for you."
         },
-        "rawOptions": {
-          "type": "object",
-          "description": "Define the logConfiguration for awsfirelens options. Compose-X only adds the sidecar and IAM permissions"
-        },
-        "firelensConfiguration": {
-          "type": "object",
-          "description": "allows to define the firelensConfiguration for the firelens sidecar"
+        "FirelensConfiguration": {
+          "$ref": "#/definitions/FirelensConfiguration"
         },
         "s3FileConfiguration": {
           "oneOf": [

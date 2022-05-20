@@ -1,6 +1,13 @@
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2022 John Mille <john@compose-x.io>
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ecs_composex.compose.compose_services import ComposeService
+
 from compose_x_common.compose_x_common import keyisset
 from troposphere import AWS_NO_VALUE, FindInMap, GetAtt, ImportValue, NoValue, Ref, Sub
 from troposphere.ecs import ContainerDefinition, Environment
@@ -238,12 +245,13 @@ def get_closest_valid_log_retention_period(set_expiry):
     )
 
 
-def set_logging_expiry(service):
+def set_logging_expiry(service: ComposeService) -> int:
     """
     Method to reset the logging retention period to the closest valid value.
 
     :param ecs_composex.common.compose_services.ComposeService service:
-    :return:
+    :return: The valid closest log retention value for CloudWatch log group.
+    :rtype: int
     """
     closest_valid = LOG_GROUP_RETENTION.Default
     if service.x_logging and keyisset("RetentionInDays", service.x_logging):

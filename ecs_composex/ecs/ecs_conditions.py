@@ -91,18 +91,6 @@ NOT_USE_HOSTNAME_CON = Equals(
 USE_HOSTNAME_CON_T = "UseMicroserviceHostnameCondition"
 USE_HOSTNAME_CON = Not(Condition(NOT_USE_HOSTNAME_CON_T))
 
-GENERATED_CLUSTER_NAME_CON_T = "GenerateEcsClusterName"
-GENERATED_CLUSTER_NAME_CON = Not(
-    Equals(Ref(ecs_params.CLUSTER_NAME), ecs_params.CLUSTER_NAME.Default)
-)
-
-CREATE_LOG_GROUP_CON_T = "CreateNewLogGroupCondition"
-CREATE_LOG_GROUP_CON = Equals(Ref(ecs_params.CREATE_LOG_GROUP), "True")
-GENERATED_LOG_GROUP_NAME_CON_T = "GenerateLogGroupName"
-GENERATED_LOG_GROUP_NAME_CON = Equals(
-    Ref(ecs_params.LOG_GROUP_NAME), ecs_params.LOG_GROUP_NAME.Default
-)
-
 DISABLE_CAPACITY_PROVIDERS_CON_T = "DisableCapacityProviders"
 DISABLE_CAPACITY_PROVIDERS_CON = Or(
     Condition(USE_LAUNCH_TYPE_CON_T), Condition(USE_CLUSTER_MODE_CON_T)

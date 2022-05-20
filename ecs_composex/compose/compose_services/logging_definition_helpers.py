@@ -9,14 +9,14 @@ if TYPE_CHECKING:
     from . import ComposeService
 
 from compose_x_common.compose_x_common import keyisset, keypresent, set_else_none
-from troposphere import NoValue, Region
+from troposphere import NoValue, Ref, Region
 from troposphere.ecs import LogConfiguration
 
 
 def handle_awslogs_options(
     service: ComposeService, logging_def: dict
 ) -> LogConfiguration:
-    options_def = logging_def["options"]
+    options_def = set_else_none("options", logging_def, alt_value={})
     options = {
         "awslogs-group": set_else_none(
             "awslogs-group", options_def, alt_value=service.logical_name
@@ -64,6 +64,37 @@ def handle_awslogs_options(
     )
 
 
+def replace_awslogs_with_firelens_configuration(
+    service: ComposeService, awslogs_config: LogConfiguration
+) -> LogConfiguration:
+    """
+    Remaps the awslogs driver options into the fluentbit options
+
+    :param ComposeService service:
+    :param LogConfiguration awslogs_config:
+    :return:
+    """
+    awslogs_to_fluentbit = {
+        "awslogs-group": "log_group_name",
+        "awslogs-stream-prefix": "log_stream_prefix",
+        "awslogs-endpoint": "endpoint",
+        "awslogs-region": "region",
+        "awslogs-create-group": "auto_create_group",
+    }
+    set_options = awslogs_config.Options
+    fluent_bit_options: dict = {"Name": "cloudwatch"}
+    for awslogs_option, fluentbit_option in awslogs_to_fluentbit.items():
+        if keyisset(awslogs_option, set_options):
+            if (
+                isinstance(set_options[awslogs_option], Ref)
+                and set_options[awslogs_option] == NoValue
+            ):
+                continue
+            else:
+                fluent_bit_options[fluentbit_option] = set_options[awslogs_option]
+    return LogConfiguration(Driver="awsfirelens", Options=fluent_bit_options)
+
+
 def handle_firelens_options(
     service: ComposeService, logging_def: dict, set_cw_default: bool = False
 ) -> LogConfiguration:
@@ -81,3 +112,32 @@ def handle_firelens_options(
     else:
         options = set_else_none("options", logging_def, alt_value=NoValue)
     return LogConfiguration(LogDriver="awsfirelens", Options=options)
+
+
+def handle_managed_log_drivers(
+    service: ComposeService, log_driver: str, logging_def: dict
+) -> LogConfiguration:
+    """
+
+    :param service:
+    :param log_driver:
+    :param logging_def:
+    :return: LogConfiguration
+    """
+    if log_driver == "awslogs":
+        if keyisset("options", logging_def):
+            log_config = handle_awslogs_options(service, logging_def)
+        else:
+            log_config = handle_awslogs_options(service, {"options": {}})
+        if service.x_logging and service.x_logging["FireLens"]:
+            if keyisset("ReplaceAwsLogs", service.x_logging["FireLens"]):
+                log_config = replace_awslogs_with_firelens_configuration(
+                    service, log_config
+                )
+    elif log_driver == "awsfirelens":
+        log_config = handle_firelens_options(service, logging_def)
+    else:
+        raise ValueError(
+            "log_driver is", log_driver, "must be one of", ["awslogs", "awsfirelens"]
+        )
+    return log_config

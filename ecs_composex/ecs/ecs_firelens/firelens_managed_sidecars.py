@@ -43,7 +43,7 @@ def render_agent_config(family: ComposeFamily) -> dict:
         "logging": {
             "logDriver": "awslogs",
             "options": {
-                "awslogs-group-name": family.family_logging_prefix,
+                "awslogs-group": family.family_logging_prefix,
                 "awslogs-stream-prefix": "firelens",
                 "awslogs-create-group": True,
             },
