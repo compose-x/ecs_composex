@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-import json
+import re
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -12,10 +12,13 @@ if TYPE_CHECKING:
 
 from itertools import chain
 
+from compose_x_common.compose_x_common import keyisset
+from troposphere import If, NoValue, Ref
 from troposphere.ecs import FirelensConfiguration
 
 from ecs_composex.common import LOG, add_parameters
 from ecs_composex.common.cfn_params import Parameter
+from ecs_composex.ecs.ecs_conditions import USE_FARGATE_CON_T
 from ecs_composex.ecs.managed_sidecars import ManagedSidecar
 
 from .firelens_logger_helpers import parse_set_update_firelens_configuration_options
@@ -41,9 +44,11 @@ def render_agent_config(family: ComposeFamily) -> dict:
         "expose": ["24224/tcp"],
         "labels": {"container_name": "log_router"},
         "logging": {
-            "logDriver": "awslogs",
+            "driver": "awslogs",
             "options": {
-                "awslogs-group": family.family_logging_prefix,
+                "awslogs-group": Ref(family.umbrella_log_group)
+                if family.umbrella_log_group
+                else family.family_logging_prefix,
                 "awslogs-stream-prefix": "firelens",
                 "awslogs-create-group": True,
             },
@@ -72,12 +77,35 @@ class FluentBit(ManagedSidecar):
             name, definition, is_essential=True, image_param=FLUENT_BIT_IMAGE_PARAMETER
         )
 
-    def set_firelens_configuration(self):
+    @property
+    def firelens_config(self):
+        return (
+            getattr(self.container_definition, "FirelensConfiguration")
+            if hasattr(self.container_definition, "FirelensConfiguration")
+            else NoValue
+        )
+
+    @firelens_config.setter
+    def firelens_config(self, config):
+        if keyisset("config-file-type", config) and config["config-file-type"] == "s3":
+            config["config-file-type"] = If(
+                USE_FARGATE_CON_T, NoValue, config["config-file-type"]
+            )
+            config["config-file-value"] = If(
+                USE_FARGATE_CON_T, NoValue, config["config-file-value"]
+            )
+            parts = re.match(
+                r"arn:aws(-[a-z-]+)?:s3:::(?P<bucket>[a-zA-Z-.\d][^/]+)/(?P<path>[\S]+)$",
+                config["config-file-value"],
+            )
         setattr(
             self.container_definition,
             "FirelensConfiguration",
-            FirelensConfiguration(**self.fluentbit_firelens_defaults),
+            FirelensConfiguration(**config),
         )
+
+    def set_firelens_configuration(self):
+        self.firelens_config = self.fluentbit_firelens_defaults
 
     def add_to_family(self, family: ComposeFamily, is_dependency: bool = False) -> None:
         """

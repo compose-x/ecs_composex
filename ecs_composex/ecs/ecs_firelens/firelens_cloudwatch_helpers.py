@@ -17,8 +17,12 @@ from troposphere.iam import PolicyType
 
 from ecs_composex.common import LOG, add_resource
 from ecs_composex.common.cfn_params import STACK_ID_SHORT
-from ecs_composex.ecs.ecs_family.task_logging import create_log_group
+from ecs_composex.ecs.ecs_family.task_logging import (
+    LOGGING_IAM_PERMISSIONS_MODEL,
+    create_log_group,
+)
 from ecs_composex.kinesis_firehose.kinesis_firehose_stack import DeliveryStream
+from ecs_composex.resource_settings import define_iam_permissions
 
 
 def set_default_cloudwatch_logging_options(
@@ -48,7 +52,7 @@ def set_default_cloudwatch_logging_options(
     )
 
 
-def handle_cloudwatch_log_group_options(
+def handle_cloudwatch_log_group_name(
     family: ComposeFamily,
     service: ComposeService,
     log_config: LogConfiguration,
@@ -66,3 +70,22 @@ def handle_cloudwatch_log_group_options(
     :param options:
     :param settings:
     """
+    if not isinstance(options[parameter_name], str):
+        return options[parameter_name]
+    _arn = Sub(
+        f"arn:${{AWS::Partition}}:logs:*:${{AWS::AccountId}}:log-group:{options[parameter_name]}:*"
+    )
+
+    roles = [family.iam_manager.exec_role.name, family.iam_manager.task_role.name]
+    define_iam_permissions(
+        "logs",
+        family,
+        family.template,
+        "CloudWatchLogsAccess",
+        LOGGING_IAM_PERMISSIONS_MODEL,
+        access_definition="LogGroupOwner",
+        resource_arns=[_arn],
+        roles=roles,
+        sid_override=f"{service.logical_name}CloudWatchLogsAccess",
+    )
+    return options[parameter_name]

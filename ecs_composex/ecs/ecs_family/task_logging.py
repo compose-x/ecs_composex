@@ -12,12 +12,16 @@ if TYPE_CHECKING:
 
 from itertools import chain
 
-from compose_x_common.compose_x_common import keyisset
-from troposphere import GetAtt, Ref, Sub
+from compose_x_common.compose_x_common import keyisset, set_else_none
+from troposphere import GetAtt, NoValue, Ref, Region, Sub
+from troposphere.ecs import LogConfiguration
 from troposphere.iam import Policy
 from troposphere.logs import LogGroup
 
 from ecs_composex.common import LOG, add_resource
+from ecs_composex.compose.compose_services.logging_definition_helpers import (
+    handle_managed_log_drivers,
+)
 from ecs_composex.ecs.ecs_params import LOG_GROUP_RETENTION, LOG_GROUP_T
 from ecs_composex.resource_settings import define_iam_permissions
 
@@ -63,7 +67,7 @@ def create_log_group(
 def add_container_level_log_group(
     family: ComposeFamily,
     service,
-    log_group_title,
+    log_group_access_sid: str,
     grant_task_role_access: bool = False,
 ):
     """
@@ -71,8 +75,8 @@ def add_container_level_log_group(
 
     :param family:
     :param service:
-    :param str log_group_title:
-    :param expiry:
+    :param str log_group_access_sid:
+    :param bool grant_task_role_access:
     """
 
     roles = [family.iam_manager.exec_role.name]
@@ -92,6 +96,7 @@ def add_container_level_log_group(
             )
         ],
         roles=roles,
+        sid_override=log_group_access_sid,
     )
     service.logging.Options.update({"awslogs-create-group": True})
 
@@ -139,9 +144,12 @@ def handle_awslogs_logging(family: ComposeFamily):
     ElIf the group name is set and is a string, passed by the log driver options, just grant access to it.
     """
     if not family.template:
-        return
+        raise AttributeError(
+            family.name,
+            "Template not yet initialized. Must have a valid template to configure logging",
+        )
+
     for service in chain(family.managed_sidecars, family.ordered_services):
-        log_group_title = f"{service.logical_name}LogGroup"
         if keyisset("awslogs-region", service.logging.Options) and isinstance(
             service.logging.Options["awslogs-region"], str
         ):
@@ -149,7 +157,9 @@ def handle_awslogs_logging(family: ComposeFamily):
         elif keyisset("awslogs-group", service.logging.Options) and not isinstance(
             service.logging.Options["awslogs-group"], (Ref, Sub)
         ):
-            add_container_level_log_group(family, service, log_group_title)
+            add_container_level_log_group(
+                family, service, f"{service.logical_name}LogGroupAccess"
+            )
         else:
             service.logging.Options.update(
                 {"awslogs-group": Ref(family.umbrella_log_group)}
@@ -173,6 +183,41 @@ def handle_firelens(family: ComposeFamily, settings: ComposeXSettings) -> None:
     family_fluentbit_service.add_to_family(family, True)
     family_fluentbit_service.set_as_dependency_to_family_services()
     family_fluentbit_service.update_family_services_logging_configuration(settings)
+    setattr(
+        family_fluentbit_service.container_definition,
+        "LogConfiguration",
+        LogConfiguration(
+            LogDriver="awslogs",
+            Options={
+                "awslogs-group": Ref(family.umbrella_log_group),
+                "awslogs-region": Region,
+                "awslogs-stream-prefix": family_fluentbit_service.name,
+            },
+        ),
+    )
+
+
+def init_verify_services_log_configuration(family: ComposeFamily) -> None:
+    default_family_options = {
+        "awslogs-group": Ref(family.umbrella_log_group),
+        "awslogs-region": Region,
+    }
+    for service in chain(family.managed_sidecars, family.ordered_services):
+        svc_logging_def = set_else_none("logging", service.definition)
+        svc_logging_driver = set_else_none("driver", svc_logging_def)
+        if svc_logging_driver in ["awslogs", "awsfirelens"]:
+
+            log_config = handle_managed_log_drivers(
+                service, svc_logging_driver, svc_logging_def, family.umbrella_log_group
+            )
+        else:
+            default_family_options.update({"awslogs-stream-prefix": service.name})
+            log_config = LogConfiguration(
+                LogDriver="awslogs", Options=default_family_options
+            )
+
+        service.logging = log_config
+        setattr(service.container_definition, "LogConfiguration", service.logging)
 
 
 def handle_logging(family: ComposeFamily, settings: ComposeXSettings) -> None:
@@ -183,18 +228,16 @@ def handle_logging(family: ComposeFamily, settings: ComposeXSettings) -> None:
     :param ComposeXSettings settings:
     """
     wants_firelens = any(
-        [
-            keyisset("FireLens", service.x_logging)
-            for service in family.ordered_services
-            if service.x_logging
-        ]
+        [service.x_logging_firelens for service in family.ordered_services]
     )
     if not wants_firelens:
         family.umbrella_log_group = create_log_group(family)
+        init_verify_services_log_configuration(family)
         handle_awslogs_logging(family)
     else:
         LOG.info(
             f"{family.name} - At least one service has x-logging.FireLens set. Overriding for all."
         )
         family.umbrella_log_group = create_log_group(family, True)
+        init_verify_services_log_configuration(family)
         handle_firelens(family, settings)

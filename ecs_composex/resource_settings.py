@@ -6,6 +6,7 @@ Module to handle resource settings definition to containers.
 """
 from __future__ import annotations
 
+import copy
 import re
 from copy import deepcopy
 from typing import TYPE_CHECKING, Union
@@ -220,6 +221,9 @@ def add_new_arns_to_statement_resource(existing_arns: list, new_arns: list):
             get_prop = new_arn.data["Fn::GetAtt"][1]
             if not get_att_already_set(existing_arns, (GetAtt,), get_object, get_prop):
                 existing_arns.append(new_arn)
+        elif isinstance(new_arn, str):
+            if new_arn not in existing_arns:
+                existing_arns.append(new_arn)
 
 
 def define_iam_permissions(
@@ -232,6 +236,7 @@ def define_iam_permissions(
     resource_arns,
     access_subkey: str = None,
     roles=None,
+    sid_override: str = None,
 ) -> None:
     """
     If a policy already exists to manage resources of the same AWS Service, imports the policy, else, creates one.
@@ -249,7 +254,12 @@ def define_iam_permissions(
     :param str access_subkey:
     :param list roles: List of Role pointers to use as Policy targets
     """
-    access_type = set_sid_name(access_definition, access_subkey)
+    new_policy_statement = copy.deepcopy(access_type_policy_model)
+    sid_name = (
+        set_sid_name(access_definition, access_subkey)
+        if not sid_override
+        else sid_override
+    )
     if (
         resource_mapping_key
         not in dest_resource.iam_manager.iam_modules_policies.keys()
@@ -269,17 +279,20 @@ def define_iam_permissions(
         res_policy = dest_resource.iam_manager.iam_modules_policies[
             resource_mapping_key
         ]
-
-    for statement in res_policy.PolicyDocument["Statement"]:
-        if keyisset("Sid", statement) and statement["Sid"] == access_type:
+    policy_doc = getattr(res_policy, "PolicyDocument")
+    policy_doc_statement = policy_doc["Statement"]
+    for statement in policy_doc_statement:
+        if keyisset("Sid", statement) and statement["Sid"] == sid_name:
             if not isinstance(statement["Resource"], list):
                 statement["Resource"] = [statement["Resource"]]
             add_new_arns_to_statement_resource(statement["Resource"], resource_arns)
             break
     else:
-        access_type_policy_model["Sid"] = access_type
-        access_type_policy_model["Resource"] = resource_arns
-        res_policy.PolicyDocument["Statement"].append(access_type_policy_model)
+        new_policy_statement["Sid"] = sid_name
+        new_policy_statement["Resource"] = (
+            resource_arns if isinstance(resource_arns, list) else [resource_arns]
+        )
+        policy_doc_statement.append(new_policy_statement)
 
 
 def set_update_container_env_vars_from_resource_attribute(

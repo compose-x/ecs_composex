@@ -16,7 +16,7 @@ from troposphere.ecs import LogConfiguration
 def handle_awslogs_options(
     service: ComposeService, logging_def: dict
 ) -> LogConfiguration:
-    options_def = set_else_none("options", logging_def, alt_value={})
+    options_def = set_else_none("options", logging_def)
     options = {
         "awslogs-group": set_else_none(
             "awslogs-group", options_def, alt_value=service.logical_name
@@ -90,9 +90,15 @@ def replace_awslogs_with_firelens_configuration(
                 and set_options[awslogs_option] == NoValue
             ):
                 continue
-            else:
+            elif set_options[awslogs_option]:
                 fluent_bit_options[fluentbit_option] = set_options[awslogs_option]
-    return LogConfiguration(Driver="awsfirelens", Options=fluent_bit_options)
+    if not keyisset("log_group_name", fluent_bit_options):
+        fluent_bit_options["log_group_name"] = f"ecs/svc/{service.logical_name}"
+    if not keyisset("log_stream_prefix", fluent_bit_options):
+        fluent_bit_options["log_stream_prefix"] = service.name
+    if not keypresent("auto_create_group", fluent_bit_options):
+        fluent_bit_options["auto_create_group"] = True
+    return LogConfiguration(LogDriver="awsfirelens", Options=fluent_bit_options)
 
 
 def handle_firelens_options(
@@ -115,22 +121,27 @@ def handle_firelens_options(
 
 
 def handle_managed_log_drivers(
-    service: ComposeService, log_driver: str, logging_def: dict
+    service: ComposeService, log_driver: str, logging_def: dict, family_log_group
 ) -> LogConfiguration:
     """
 
     :param service:
     :param log_driver:
     :param logging_def:
+    :param family_log_group:
     :return: LogConfiguration
     """
     if log_driver == "awslogs":
         if keyisset("options", logging_def):
             log_config = handle_awslogs_options(service, logging_def)
         else:
-            log_config = handle_awslogs_options(service, {"options": {}})
-        if service.x_logging and service.x_logging["FireLens"]:
-            if keyisset("ReplaceAwsLogs", service.x_logging["FireLens"]):
+            log_config = handle_awslogs_options(
+                service, {"options": {"awslogs-group": Ref(family_log_group)}}
+            )
+        if service.x_logging_firelens:
+            if keyisset("Shorthands", service.x_logging_firelens) and keyisset(
+                "ReplaceAwsLogs", service.x_logging_firelens["Shorthands"]
+            ):
                 log_config = replace_awslogs_with_firelens_configuration(
                     service, log_config
                 )
@@ -140,4 +151,5 @@ def handle_managed_log_drivers(
         raise ValueError(
             "log_driver is", log_driver, "must be one of", ["awslogs", "awsfirelens"]
         )
+    print(log_config.Options)
     return log_config

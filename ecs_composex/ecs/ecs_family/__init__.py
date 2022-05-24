@@ -129,7 +129,6 @@ class ComposeFamily:
         """
         self.task_compute.set_task_compute_parameter()
         self.set_task_definition()
-        self.refresh_container_logging_definition()
 
     def set_task_definition(self):
         """
@@ -503,12 +502,6 @@ class ComposeFamily:
                 self.stack.Parameters.update({service.image_param.title: service.image})
                 images_parameters.append(service.image_param)
         add_parameters(self.template, images_parameters)
-
-    def refresh_container_logging_definition(self):
-        for service in self.services:
-            c_def = service.container_definition
-            logging_def = c_def.LogConfiguration
-            logging_def.Options.update(self.task_logging_options)
 
     def validate_compute_configuration_for_task(self, settings):
         from ecs_composex.ecs_cluster.ecs_family_helpers import (

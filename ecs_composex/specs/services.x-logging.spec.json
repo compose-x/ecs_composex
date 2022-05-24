@@ -62,6 +62,13 @@
         "Options": {
           "type": "object",
           "additionalProperties": false,
+          "dependencies": {
+            "config-file-type": {
+              "required": [
+                "config-file-value"
+              ]
+            }
+          },
           "properties": {
             "enable-ecs-log-metadata": {
               "type": "boolean",
@@ -106,7 +113,7 @@
           "default": false,
           "description": "If you enable FireLens for the main application services, this enables it for the managed sidecars too."
         },
-        "AutoCloudWatch": {
+        "ReplaceAwsLogs": {
           "type": "boolean",
           "description": "Uses FireLens and CloudWatch, leaving Compose-X generate all the configuration for you."
         },
@@ -117,7 +124,8 @@
           "oneOf": [
             {
               "type": "string",
-              "description": "Native path syntax to the configuration file for FireLens, i.e. aws:s3:::bucket/file.conf. You need to set access to the bucket via x-iam"
+              "description": "Native path syntax to the configuration file for FireLens, i.e. arn:aws:s3:::bucket/file.conf.",
+              "pattern": "arn:aws(-[a-z-]+)?:s3:::([a-zA-Z-.\\d][^/]+)/([\\S]+)$"
             },
             {
               "type": "object",

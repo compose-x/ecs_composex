@@ -16,7 +16,7 @@ from compose_x_common.compose_x_common import set_else_none
 from ecs_composex.common import LOG
 
 from .firelens_cloudwatch_helpers import (
-    handle_cloudwatch_log_group_options,
+    handle_cloudwatch_log_group_name,
     set_default_cloudwatch_logging_options,
 )
 from .firelens_firehose_helpers import handle_x_kinesis_firehose
@@ -70,7 +70,7 @@ def handle_cloudwatch(
     """
     param_to_handler = {
         "log_group_name": (
-            handle_cloudwatch_log_group_options,
+            handle_cloudwatch_log_group_name,
             set_default_cloudwatch_logging_options,
         ),
         "role_arn": (handle_cross_account_permissions, None),

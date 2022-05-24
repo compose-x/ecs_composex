@@ -117,7 +117,12 @@ class ComposeService:
             True,
         )
         self.x_iam = set_else_none("x-iam", self.definition)
-        self.x_logging = {"RetentionInDays": 14}
+        self.x_logging = set_else_none(
+            "x-logging", self.definition, alt_value={"RetentionInDays": 14}
+        )
+        self.x_logging_firelens = set_else_none(
+            "FireLens", self.x_logging, alt_value={}
+        )
         self.x_repo_credentials = None
         self.ipc = set_else_none("ipc", self.definition)
         self.import_x_aws_settings()
@@ -125,7 +130,7 @@ class ComposeService:
         self.replicas = 1
         self.container = None
         self.volumes = []
-        self.logging = {}
+        self.logging = NoValue
         self.secrets = []
         self.env_files = []
         self.tmpfses = []
@@ -365,7 +370,7 @@ class ComposeService:
         Function to define the container definition matching the service definition
         """
         secrets = [secret for secrets in self.secrets for secret in secrets.ecs_secret]
-        self.define_compose_logging()
+        # self.define_compose_logging()
         self.container_definition = ContainerDefinition(
             Image=Ref(self.image_param),
             Name=self.name,
@@ -799,7 +804,6 @@ class ComposeService:
         """
         from .helpers import get_closest_valid_log_retention_period
 
-        self.x_logging = set_else_none("x-logging", self.definition, alt_value={})
         x_aws_logs_retention = int(
             set_else_none("x-aws-logs_retention", self.definition, alt_value=14)
         )
@@ -807,7 +811,6 @@ class ComposeService:
             set_else_none("RetentionInDays", self.x_logging, alt_value=14)
         )
         self.x_logging["RetentionInDays"] = max(x_aws_logs_retention, retention_in_days)
-        self.x_logging["FireLens"] = set_else_none("FireLens", self.x_logging)
 
     def is_in_family(self, family_name):
         """
