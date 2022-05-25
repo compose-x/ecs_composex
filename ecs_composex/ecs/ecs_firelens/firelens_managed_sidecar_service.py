@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 from itertools import chain
 
 from compose_x_common.compose_x_common import keyisset
-from troposphere import If, NoValue, Ref
+from troposphere import If, NoValue, Ref, Sub
 from troposphere.ecs import FirelensConfiguration
 
 from ecs_composex.common import LOG, add_parameters
@@ -98,6 +98,30 @@ class FluentBit(ManagedSidecar):
                 r"arn:aws(-[a-z-]+)?:s3:::(?P<bucket>[a-zA-Z-.\d][^/]+)/(?P<path>[\S]+)$",
                 config["config-file-value"],
             )
+            if parts and parts.group("bucket"):
+                from ecs_composex.resource_settings import define_iam_permissions
+
+                define_iam_permissions(
+                    "s3",
+                    self.my_family,
+                    self.my_family.template,
+                    "s3ForFirelens",
+                    {
+                        "RO": {
+                            "Action": ["s3:GetObject*", "s3:ListBucket"],
+                            "Effect": "Allow",
+                        }
+                    },
+                    access_definition="RO",
+                    resource_arns=[
+                        Sub(f"arn:aws:s3:::{parts.group('bucket')}"),
+                        Sub(f"arn:aws:s3:::{parts.group('bucket')}/*"),
+                    ],
+                    roles=[
+                        self.my_family.iam_manager.task_role.name,
+                        self.my_family.iam_manager.exec_role.name,
+                    ],
+                )
         setattr(
             self.container_definition,
             "FirelensConfiguration",
@@ -167,3 +191,12 @@ class FluentBit(ManagedSidecar):
                 continue
             else:
                 setattr(logging_config, "LogDriver", "awsfirelens")
+
+
+class FluentBitConfig(ManagedSidecar):
+    """
+    Sidecar to pull/render the configuration file to use for fluentbit / fluentd
+    """
+
+    def __init__(self, name, definition):
+        super().__init__(name, definition)
