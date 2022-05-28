@@ -15,6 +15,18 @@
       "oneOf": [
         {
           "type": "object",
+          "oneOf": [
+            {
+              "required": [
+                "Shorthands"
+              ]
+            },
+            {
+              "required": [
+                "Advanced"
+              ]
+            }
+          ],
           "properties": {
             "Shorthands": {
               "$ref": "#/definitions/FireLensShortCuts"
@@ -100,11 +112,6 @@
           "required": [
             "Rendered"
           ]
-        },
-        {
-          "required": [
-            "AutoCloudWatch"
-          ]
         }
       ],
       "properties": {
@@ -145,6 +152,9 @@
         },
         "Rendered": {
           "type": "object",
+          "required": [
+            "SourceFile"
+          ],
           "description": "For Fargate, allows to generate a file that will be placed in shared volume. Configuration content is stored in AWS SSM",
           "properties": {
             "SourceFile": {

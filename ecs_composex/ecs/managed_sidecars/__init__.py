@@ -21,8 +21,9 @@ class ManagedSidecar(ComposeService):
         definition,
         is_essential: bool = False,
         image_param: Parameter = None,
+        volumes: list = None,
     ):
-        super().__init__(name, definition, image_param=image_param)
+        super().__init__(name, definition, image_param=image_param, volumes=volumes)
         self.is_essential = is_essential
         self.is_aws_sidecar = True
 
@@ -53,8 +54,6 @@ class ManagedSidecar(ComposeService):
         :param bool is_dependency: Whether the family services depend on sidecar or not.
         """
         for service in self.my_family.ordered_services:
-            if service.is_aws_sidecar:
-                continue
             if is_dependency:
                 if self.name not in service.depends_on:
                     service.depends_on.append(self.name)

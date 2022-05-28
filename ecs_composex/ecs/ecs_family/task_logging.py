@@ -3,14 +3,16 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
     from ecs_composex.ecs.ecs_family import ComposeFamily
     from ecs_composex.compose.compose_services import ComposeService
 
+from collections import OrderedDict
 from itertools import chain
+from operator import getitem
 
 from compose_x_common.compose_x_common import keyisset, set_else_none
 from troposphere import GetAtt, NoValue, Ref, Region, Sub
@@ -170,28 +172,28 @@ def handle_firelens(family: ComposeFamily, settings: ComposeXSettings) -> None:
     """
     Handles the firelens configuration / creation for the services
     """
-    from ecs_composex.ecs.ecs_firelens.firelens_managed_sidecars import (
+    from ecs_composex.ecs.ecs_firelens.firelens_managed_sidecar_service import (
         FLUENT_BIT_AGENT_NAME,
         FluentBit,
         render_agent_config,
     )
 
-    family_fluentbit_service = FluentBit(
+    family.firelens_service = FluentBit(
         FLUENT_BIT_AGENT_NAME, render_agent_config(family)
     )
-    family_fluentbit_service.set_firelens_configuration()
-    family_fluentbit_service.add_to_family(family, True)
-    family_fluentbit_service.set_as_dependency_to_family_services()
-    family_fluentbit_service.update_family_services_logging_configuration(settings)
+    family.firelens_service.set_firelens_configuration()
+    family.firelens_service.add_to_family(family, True)
+    family.firelens_service.set_as_dependency_to_family_services()
+    family.firelens_service.update_family_services_logging_configuration(settings)
     setattr(
-        family_fluentbit_service.container_definition,
+        family.firelens_service.container_definition,
         "LogConfiguration",
         LogConfiguration(
             LogDriver="awslogs",
             Options={
                 "awslogs-group": Ref(family.umbrella_log_group),
                 "awslogs-region": Region,
-                "awslogs-stream-prefix": family_fluentbit_service.name,
+                "awslogs-stream-prefix": family.firelens_service.name,
             },
         ),
     )
@@ -220,6 +222,65 @@ def init_verify_services_log_configuration(family: ComposeFamily) -> None:
         setattr(service.container_definition, "LogConfiguration", service.logging)
 
 
+def elect_priority_firelens_service(
+    family: ComposeFamily,
+) -> Union[None, ComposeService]:
+    """
+    Iterates over the non sidecar services and merge the x_logging_firelens configuration of each.
+    In order of priority:
+
+    x-logging.FireLens.Advanced
+        Advanced.Rendered
+        Advanced.s3FileConfiguration
+    x-logging.FireLens.Shorthands
+    x-logging.FireLens(bool)
+
+    :param ComposeFamily family:
+    """
+    advanced_render = 4
+    advanced_s3 = 3
+    shorthands = 2
+    boolean = 1
+    _unordered_mapping = {}
+    for service in family.ordered_services:
+        priority = boolean
+        if not service.x_logging_firelens:
+            _unordered_mapping[service.name] = {"priority": 0, "service": service}
+            continue
+        if keyisset("Advanced", service.x_logging_firelens):
+            if keyisset("Rendered", service.x_logging_firelens["Advanced"]):
+                priority = advanced_render
+            elif keyisset(
+                "s3FileConfiguration", service.x_logging_firelens["Advanced"]
+            ):
+                priority = advanced_s3
+        elif keyisset("Shorthands", service.x_logging_firelens):
+            priority = shorthands
+        _unordered_mapping[service.name] = {"priority": priority, "service": service}
+    _ordered_services = sorted(
+        _unordered_mapping.items(),
+        key=lambda i: getitem(i[1], "priority"),
+        reverse=True,
+    )
+    _the_service = None
+    for _service in [_s[1] for _s in _ordered_services]:
+        print("the_service", _the_service, "service", _service)
+        if _the_service is None:
+            _the_service = _service
+        elif (
+            _service is not _the_service
+            and _service["priority"] == _the_service["priority"]
+        ):
+            print("GOT A TIE", _service, _the_service)
+    if _the_service["priority"] == advanced_render:
+        print("Configuration file will be rendered")
+        return _the_service["service"]
+    elif _the_service["priority"] == advanced_s3:
+        print("Configuration pulled from s3")
+        return _the_service["service"]
+    return None
+
+
 def handle_logging(family: ComposeFamily, settings: ComposeXSettings) -> None:
     """
     Configuration parser to catch firelens vs aws cloudwatch config
@@ -239,5 +300,9 @@ def handle_logging(family: ComposeFamily, settings: ComposeXSettings) -> None:
             f"{family.name} - At least one service has x-logging.FireLens set. Overriding for all."
         )
         family.umbrella_log_group = create_log_group(family, True)
+        family.firelens_advanced_reference_service = elect_priority_firelens_service(
+            family
+        )
+        print("REFERENCE SERVICE", family.firelens_advanced_reference_service)
         init_verify_services_log_configuration(family)
         handle_firelens(family, settings)

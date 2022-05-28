@@ -51,6 +51,7 @@ def define_shared_volumes(family):
     """
     family_task_volumes = []
     for service in family.services:
+        print("SERVICE", family.name, service.name, "VOLUMES", service.volumes)
         for volume in service.volumes:
             if not keyisset("volume", volume):
                 continue

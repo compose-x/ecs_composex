@@ -17,13 +17,15 @@ from itertools import chain
 
 from troposphere import AWS_STACK_NAME, GetAtt, If, Join, NoValue
 from troposphere import Output as CfnOutput
-from troposphere import Ref, Sub, Tags
+from troposphere import Ref, Region, Sub, Tags
 from troposphere.ecs import EphemeralStorage, RuntimePlatform, TaskDefinition
 
 from ecs_composex.common import LOG, add_outputs, add_parameters
 from ecs_composex.common.cfn_conditions import define_stack_name
+from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.compose_services import ComposeService
+from ecs_composex.compose.compose_services.helpers import extend_container_envvars
 from ecs_composex.ecs import ecs_conditions, ecs_params
 from ecs_composex.ecs.ecs_family.family_helpers import (
     handle_same_task_services_dependencies,
@@ -62,7 +64,7 @@ class ComposeFamily:
     """
 
     def __init__(self, services, family_name):
-        self.services = services
+        self._services = services
         self.ordered_services = services
         self.managed_sidecars = []
         self.name = family_name
@@ -81,6 +83,9 @@ class ComposeFamily:
             STACK_NAME=define_stack_name(self.template if self.template else None),
         )
         self.umbrella_log_group = None
+        self.firelens_service = None
+        self.firelens_config_service = None
+        self.firelens_advanced_reference_service = None
         self.task_definition = None
         self.service_definition = None
         self.service_tags = None
@@ -100,6 +105,10 @@ class ComposeFamily:
         self.service_networking = None
         self.task_compute = None
         self.service_compute = ServiceCompute(self)
+
+    @property
+    def services(self):
+        return chain(self.managed_sidecars, self.ordered_services)
 
     def init_family(self) -> None:
         """
@@ -271,7 +280,7 @@ class ComposeFamily:
 
         from .task_execute_command import set_enable_execute_command
 
-        self.services.append(service)
+        self._services.append(service)
 
         self.set_update_containers_priority()
         self.iam_manager.init_update_policies()
@@ -375,7 +384,7 @@ class ComposeFamily:
         """
         from .family_helpers import set_service_dependency_on_all_iam_policies
 
-        self.import_all_sidecars()
+        # self.import_all_sidecars()
         self.add_containers_images_cfn_parameters()
         self.task_compute.set_task_compute_parameter()
         self.task_compute.unlock_compute_for_main_container()
@@ -401,12 +410,34 @@ class ComposeFamily:
         ):
             self.template.add_resource(self.service_scaling.scalable_target)
         self.generate_outputs()
-        self.handle_logging(settings)
+        # self.handle_logging(settings)
         service_configs = [
             [0, service]
             for service in chain(self.managed_sidecars, self.ordered_services)
         ]
         handle_same_task_services_dependencies(service_configs)
+        self.set_add_region_when_external()
+
+    def set_add_region_when_external(self):
+        from troposphere.ecs import Environment
+
+        env_var_to_add = Environment(Name="AWS_DEFAULT_REGION", Value=Region)
+        region_conditional = If(
+            ecs_conditions.USE_EXTERNAL_LT_T, env_var_to_add, NoValue
+        )
+        for service in self.services:
+            environment = getattr(service.container_definition, "Environment")
+            if (
+                not environment
+                or environment == NoValue
+                or not isinstance(environment, list)
+            ):
+                environment = []
+                setattr(service.container_definition, "Environment", environment)
+            if "AWS_DEFAULT_REGION" not in [
+                _env.Name for _env in environment if isinstance(_env, Environment)
+            ]:
+                environment.append(region_conditional)
 
     def set_services_to_services_dependencies(self):
         """
@@ -497,9 +528,13 @@ class ComposeFamily:
             return
         images_parameters = []
         for service in chain(self.managed_sidecars, self.ordered_services):
-            print("SERVICE", service, service.image, service.image_param.title)
             if service.image_param.title not in self.stack.Parameters:
-                self.stack.Parameters.update({service.image_param.title: service.image})
+                if isinstance(service.image, str):
+                    self.stack.Parameters.update(
+                        {service.image_param.title: service.image}
+                    )
+                elif isinstance(service.image, Parameter):
+                    LOG.debug(f"{service.name} image is Parameter already.")
                 images_parameters.append(service.image_param)
         add_parameters(self.template, images_parameters)
 

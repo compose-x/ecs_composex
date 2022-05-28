@@ -38,7 +38,7 @@ from ecs_composex.ssm_parameter.ssm_parameter_params import (
 
 class SsmParameter(ApiXResource):
     """
-    Class to represent a SQS Queue
+    Class to represent a SSM Parameter
     """
 
     def __init__(
@@ -58,7 +58,7 @@ class SsmParameter(ApiXResource):
             self.properties
             and keyisset("Name", self.properties)
             and not self.properties["Name"].startswith(r"/")
-        ):
+        ) or not keyisset("Name", self.properties):
             spacer = "/"
         self.output_properties = {
             SSM_PARAM_NAME: (self.logical_name, self.cfn_resource, Ref, None),

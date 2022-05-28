@@ -211,7 +211,11 @@ def get_att_already_set(
 
 def add_new_arns_to_statement_resource(existing_arns: list, new_arns: list):
     """
-    Identifies if an ARN in the new arns to add already is set. Returns the list of non duplicate ARNs to add to statement
+    Identifies if an ARN in the new arns to add already is set. Returns the list of
+    non duplicate ARNs to add to statement
+
+    if type of input is unmanaged, add to the list anyway...
+
     :param existing_arns:
     :param new_arns:
     """
@@ -224,6 +228,8 @@ def add_new_arns_to_statement_resource(existing_arns: list, new_arns: list):
         elif isinstance(new_arn, str):
             if new_arn not in existing_arns:
                 existing_arns.append(new_arn)
+        else:
+            existing_arns.append(new_arn)
 
 
 def define_iam_permissions(
@@ -386,6 +392,59 @@ def map_resource_env_vars_to_family_services(
             extend_container_envvars(
                 svc.container_definition, resource.generate_ref_env_var(target)
             )
+
+
+def map_resource_return_value_to_services_command(
+    family: ComposeFamily, settings: ComposeXSettings
+) -> None:
+    """
+    Checks if their is a x-<res_key>::<name>::<return_value>
+    """
+    resource_attribute_match_re = re.compile(
+        r"^(?P<res_key>x-[\S]+)::(?P<res_name>[\S]+)::(?P<return_value>[\S]+)$"
+    )
+    from itertools import chain
+
+    for service in chain(family.managed_sidecars, family.ordered_services):
+        if not hasattr(service.container_definition, "Command"):
+            continue
+        command = getattr(service.container_definition, "Command")
+        if command == NoValue:
+            continue
+        new_command = []
+        for sh_part in command:
+            parts = resource_attribute_match_re.match(sh_part)
+            if not parts:
+                new_command.append(sh_part)
+                continue
+            resource = settings.find_resource(
+                f"{parts.group('res_key')}::{parts.group('res_name')}"
+            )
+            if (
+                parts.group("return_value")
+                not in resource.property_to_parameter_mapping
+            ):
+                raise KeyError(
+                    parts.group("return_value"),
+                    "not a valid return value for",
+                    resource.module.res_key,
+                    resource.name,
+                    resource.property_to_parameter_mapping.keys(),
+                )
+            parameter = resource.property_to_parameter_mapping[
+                parts.group("return_value")
+            ]
+            res_param_id = resource.add_parameter_to_family_stack(
+                family, settings, parameter
+            )
+            if res_param_id is resource:
+                new_command.append(Ref(resource.cfn_resource))
+            elif res_param_id is not resource and resource.cfn_resource:
+                new_command.append(Ref(res_param_id["ImportParameter"]))
+            else:
+                new_command.append(res_param_id["ImportValue"])
+        service.command = new_command
+        setattr(service.container_definition, "Command", service.command)
 
 
 def map_service_perms_to_resource(

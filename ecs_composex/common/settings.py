@@ -5,11 +5,18 @@
 Module for the ComposeXSettings class
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ecs_composex.mods_manager import ModManager
+
 from copy import deepcopy
 from datetime import datetime as dt
 from json import loads
 from os import path
-from re import sub
+from re import compile, sub
 
 import boto3
 import jsonschema
@@ -25,6 +32,7 @@ from troposphere import AWSObject
 from ecs_composex import __version__
 from ecs_composex.common import LOG, NONALPHANUM
 from ecs_composex.common.aws import get_cross_role_session
+from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.compose_networks import ComposeNetwork
 from ecs_composex.compose.compose_secrets import ComposeSecret
 from ecs_composex.compose.compose_services import ComposeService
@@ -47,6 +55,8 @@ class ComposeXSettings:
     Class to handle the settings to use for ECS ComposeX.
 
     :ivar dict of {str: ComposeFamily} families: Map of families and services
+    :ivar ComposeXStack root_stack:
+    :ivar ModManager mod_manager:
     """
 
     name_arg = "Name"
@@ -169,6 +179,8 @@ class ComposeXSettings:
         self.ecs_cluster = None
         self.ignore_ecr_findings = keyisset(self.ecr_arg, kwargs)
         self.x_resources_void = []
+        self.mod_manager = None
+        self.root_stack = None
 
     def get_x_resources(self, include_new=True, include_mappings=True) -> list:
         """
@@ -190,6 +202,43 @@ class ComposeXSettings:
                 continue
             x_resources.append(resource)
         return x_resources
+
+    def find_resource(self, compose_resource_arn: str) -> XResource:
+        resource_attribute_match_re = compile(
+            r"^(?P<res_key>x-[\S]+)::(?P<res_name>[\S]+)$"
+        )
+        parts = resource_attribute_match_re.match(compose_resource_arn)
+        if not parts:
+            raise ValueError(
+                compose_resource_arn,
+                "does not match",
+                resource_attribute_match_re.pattern,
+            )
+        for resource in self.x_resources:
+            if resource.module.res_key == parts.group(
+                "res_key"
+            ) and resource.name == parts.group("res_name"):
+                return resource
+        else:
+            raise LookupError(
+                "Unable to find any resource matching",
+                compose_resource_arn,
+                self.x_resource_repr,
+            )
+
+    @property
+    def x_resource_repr(self):
+        return [f"{_r.module.res_key}.{_r.name}" for _r in self.x_resources]
+
+    @property
+    def stacks(self):
+        _stacks = {}
+        for resource_name, resource in self.root_stack.stack_template.resources.items():
+            if isinstance(resource, ComposeXStack) or issubclass(
+                type(resource), ComposeXStack
+            ):
+                _stacks[resource.title] = resource
+        return _stacks
 
     @property
     def x_resources(self):

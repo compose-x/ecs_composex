@@ -148,9 +148,13 @@ class ComposeService:
             import_env_variables(self.environment) if self.environment else NoValue
         )
         self.depends_on = set_else_none("depends_on", self.definition, [], False)
-        self.command = (
-            definition["command"] if keyisset("command", definition) else NoValue
-        )
+        _command = definition["command"] if keyisset("command", definition) else NoValue
+        if isinstance(_command, str):
+            import shlex
+
+            self.command = shlex.split(_command)
+        else:
+            self.command = _command
         if not keyisset("image", self.definition):
             raise KeyError("You must specify the image to use for", self.name)
         if not image_param:

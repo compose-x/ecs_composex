@@ -2,6 +2,15 @@
 #  Copyright 2020-2022 John Mille <john@compose-x.io>
 
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ecs_composex.common.settings import ComposeXSettings
+    from ecs_composex.mods_manager import XResourceModule
+    from ecs_composex.common.stacks import ComposeXStack
+
 from ecs_composex.common import LOG, add_update_mapping
 from ecs_composex.compose.x_resources.network_x_resources import NetworkXResource
 
@@ -46,33 +55,33 @@ def update_network_resources_vpc_config(settings, vpc_stack):
             resource.update_from_vpc(vpc_stack, settings)
 
 
-def define_vpc_settings(settings, vpc_module, vpc_stack, root_stack):
+def define_vpc_settings(
+    settings: ComposeXSettings, vpc_module: XResourceModule, vpc_stack: ComposeXStack
+):
     """
     Function to deal with vpc stack settings
-
-    :param ecs_composex.common.settings.ComposeXSettings settings: The settings for the execution
-    :param ecs_composex.vpc.vpc_stack.VpcStack vpc_stack: The VPC stack and details
-    :param ecs_composex.common.stacks.ComposeXStack root_stack:
     """
     if settings.requires_vpc() and not vpc_stack.vpc_resource:
         LOG.info(
             f"{settings.name} - Services or x-Resources need a VPC to function. Creating default one"
         )
         vpc_stack.create_new_default_vpc("vpc", vpc_module, settings)
-        root_stack.stack_template.add_resource(vpc_stack)
+        settings.root_stack.stack_template.add_resource(vpc_stack)
         vpc_stack.vpc_resource.generate_outputs()
     elif (
         vpc_stack.is_void and vpc_stack.vpc_resource and vpc_stack.vpc_resource.mappings
     ):
         vpc_stack.vpc_resource.generate_outputs()
         add_update_mapping(
-            root_stack.stack_template, "Network", vpc_stack.vpc_resource.mappings
+            settings.root_stack.stack_template,
+            "Network",
+            vpc_stack.vpc_resource.mappings,
         )
     elif (
         vpc_stack.vpc_resource
         and vpc_stack.vpc_resource.cfn_resource
-        and vpc_stack.title not in root_stack.stack_template.resources.keys()
+        and vpc_stack.title not in settings.root_stack.stack_template.resources.keys()
     ):
-        root_stack.stack_template.add_resource(vpc_stack)
+        settings.root_stack.stack_template.add_resource(vpc_stack)
         LOG.info(f"{settings.name}.x-vpc - VPC stack added. A new VPC will be created.")
         vpc_stack.vpc_resource.generate_outputs()

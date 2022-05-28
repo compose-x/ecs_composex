@@ -84,12 +84,11 @@ def handle_families_dependencies(
                 )
 
 
-def add_compose_families(root_stack: ComposeXStack, settings: ComposeXSettings) -> None:
+def add_compose_families(settings: ComposeXSettings) -> None:
     """
     Using existing ComposeFamily in settings, creates the ServiceStack
     and template
 
-    :param ecs_composex.common.stacks.ComposeXStack root_stack:
     :param ecs_composex.common.settings.ComposeXSettings settings:
     """
     for family_name, family in settings.families.items():
@@ -118,12 +117,12 @@ def add_compose_families(root_stack: ComposeXStack, settings: ComposeXSettings) 
             }
         )
         family.template.metadata.update(metadata)
-        root_stack.stack_template.add_resource(family.stack)
+        settings.root_stack.stack_template.add_resource(family.stack)
         family.validate_compute_configuration_for_task(settings)
 
     families_stacks = [
         family
-        for family in root_stack.stack_template.resources
+        for family in settings.root_stack.stack_template.resources
         if (
             family in settings.families
             and isinstance(settings.families[family].stack, ServiceStack)

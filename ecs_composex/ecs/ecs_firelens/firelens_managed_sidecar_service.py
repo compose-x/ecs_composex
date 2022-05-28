@@ -21,7 +21,10 @@ from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.ecs.ecs_conditions import USE_FARGATE_CON_T
 from ecs_composex.ecs.managed_sidecars import ManagedSidecar
 
-from .firelens_logger_helpers import parse_set_update_firelens_configuration_options
+from .firelens_logger_helpers import (
+    parse_set_update_firelens_configuration_options,
+    update_set_fluent_configuration_from_advanced,
+)
 
 FLUENT_BIT_IMAGE_PARAMETER = Parameter(
     "FluentBitAwsImage",
@@ -192,11 +195,5 @@ class FluentBit(ManagedSidecar):
             else:
                 setattr(logging_config, "LogDriver", "awsfirelens")
 
-
-class FluentBitConfig(ManagedSidecar):
-    """
-    Sidecar to pull/render the configuration file to use for fluentbit / fluentd
-    """
-
-    def __init__(self, name, definition):
-        super().__init__(name, definition)
+        if self.my_family.firelens_advanced_reference_service:
+            update_set_fluent_configuration_from_advanced(self.my_family, settings)
