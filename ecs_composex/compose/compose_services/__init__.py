@@ -374,7 +374,6 @@ class ComposeService:
         Function to define the container definition matching the service definition
         """
         secrets = [secret for secrets in self.secrets for secret in secrets.ecs_secret]
-        # self.define_compose_logging()
         self.container_definition = ContainerDefinition(
             Image=Ref(self.image_param),
             Name=self.name,
@@ -416,40 +415,6 @@ class ComposeService:
             if self.user_group
             else NoValue,
         )
-
-    def define_compose_logging(self):
-        """
-        Method to define logging for container definition.
-        """
-        from .logging_definition_helpers import handle_managed_log_drivers
-
-        default = LogConfiguration(
-            LogDriver="awslogs",
-            Options={
-                "awslogs-group": Sub(
-                    f"${{{ROOT_STACK_NAME.title}}}/svc/ecs/${{{ecs_params.CLUSTER_NAME.title}}}/{self.logical_name}"
-                ),
-                "awslogs-region": Ref(AWS_REGION),
-                "awslogs-stream-prefix": self.name,
-            },
-        )
-
-        logging_def = set_else_none("logging", self.definition)
-        if not logging_def or not keyisset("driver", logging_def):
-            self.logging = default
-            return
-        managed_drivers = ["awslogs", "awsfirelens"]
-        logging_driver = logging_def["driver"]
-        if logging_driver not in managed_drivers:
-            LOG.warning(
-                "The logging driver",
-                logging_driver,
-                "is not managed. Only managed ones are",
-                managed_drivers,
-            )
-            self.logging = default
-        else:
-            self.logging = handle_managed_log_drivers(self, logging_driver, logging_def)
 
     def define_tmpfs(self):
         """

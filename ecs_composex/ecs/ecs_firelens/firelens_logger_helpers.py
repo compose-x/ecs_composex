@@ -147,7 +147,6 @@ def update_set_fluent_configuration_from_advanced(
     advanced_settings = set_else_none(
         "Advanced", family.firelens_advanced_reference_service.x_logging_firelens
     )
-    print("AVANCED ?", advanced_settings)
     if not advanced_settings:
         return
     if keyisset("Rendered", advanced_settings):

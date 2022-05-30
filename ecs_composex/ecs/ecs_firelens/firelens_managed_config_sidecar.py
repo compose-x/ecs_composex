@@ -4,29 +4,19 @@
 
 from __future__ import annotations
 
-import re
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ecs_composex.ecs.ecs_family import ComposeFamily
     from ecs_composex.common.settings import ComposeXSettings
     from .firelens_managed_sidecar_service import FluentBit
-    from ecs_composex.ssm_parameter.ssm_parameter_stack import SsmParameter
 
-from itertools import chain
+from compose_x_common.compose_x_common import keyisset
+from troposphere import Ref
 
-from compose_x_common.compose_x_common import keyisset, set_else_none
-from troposphere import If, NoValue, Ref, Sub
-from troposphere.ecs import FirelensConfiguration
-
-from ecs_composex.common import LOG, add_parameters
-from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.compose.compose_volumes import ComposeVolume
 from ecs_composex.compose.compose_volumes.services_helpers import map_volumes
-from ecs_composex.ecs.ecs_conditions import USE_FARGATE_CON_T
 from ecs_composex.ecs.managed_sidecars import ManagedSidecar
-
-from .firelens_logger_helpers import parse_set_update_firelens_configuration_options
 
 
 def render_config_sidecar_config(

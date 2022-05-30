@@ -15,6 +15,19 @@
       "oneOf": [
         {
           "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "FireLensService": {
+              "type": "string",
+              "description": "Name of the service in compose file to use as FireLens log router"
+            },
+            "FirelensConfiguration": {
+              "$ref": "#/definitions/FirelensConfiguration"
+            }
+          }
+        },
+        {
+          "type": "object",
           "oneOf": [
             {
               "required": [
@@ -66,9 +79,11 @@
       "properties": {
         "Type": {
           "type": "string",
-          "description": "Which fluent to use. For now catering only for fluentbit. Apologies for inconvenience",
+          "description": "Which fluent to use. FluentD only works when using FireLensService.",
+          "default": "fluentbit",
           "enum": [
-            "fluentbit"
+            "fluentbit",
+            "fluentd"
           ]
         },
         "Options": {
@@ -115,14 +130,12 @@
         }
       ],
       "properties": {
-        "ApplyToAllSidecars": {
-          "type": "boolean",
-          "default": false,
-          "description": "If you enable FireLens for the main application services, this enables it for the managed sidecars too."
-        },
-        "ReplaceAwsLogs": {
-          "type": "boolean",
-          "description": "Uses FireLens and CloudWatch, leaving Compose-X generate all the configuration for you."
+        "LogDriverBufferLimit": {
+          "type": "number",
+          "minimum": 33554432,
+          "maximum": 536870912,
+          "default": 67108864,
+          "description": "Allows to change log-driver-buffer-limit and set the RAM for the fluent container accordingly"
         },
         "FirelensConfiguration": {
           "$ref": "#/definitions/FirelensConfiguration"
@@ -152,14 +165,22 @@
         },
         "Rendered": {
           "type": "object",
-          "required": [
-            "SourceFile"
-          ],
-          "description": "For Fargate, allows to generate a file that will be placed in shared volume. Configuration content is stored in AWS SSM",
+          "description": "Allows to generate a file that will be placed in shared volume. Configuration content is stored in AWS SSM",
           "properties": {
             "SourceFile": {
               "type": "string",
               "description": "Path to the source file that contains the configuration"
+            },
+            "EnableHeathCheck": {
+              "type": "boolean",
+              "default": true
+            },
+            "GracePeriod": {
+              "type": "number",
+              "minimum": 5,
+              "maximum": 120,
+              "default": 30,
+              "description": "Time in seconds for GRACE period before the container stops after receiving SIGTERM"
             },
             "ComposeXManagedAwsDestinations": {
               "type": "array",

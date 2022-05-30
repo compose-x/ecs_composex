@@ -22,6 +22,7 @@ from ecs_composex.compose.compose_volumes.ecs_family_helpers import set_volumes
 from ecs_composex.resources_import import import_record_properties
 from ecs_composex.ssm_parameter.ssm_parameter_stack import SsmParameter
 
+from .ecs_firelens_managed import FireLensManagedConfiguration
 from .firelens_cloudwatch_helpers import (
     handle_cloudwatch_log_group_name,
     set_default_cloudwatch_logging_options,
@@ -35,7 +36,9 @@ from .firelens_options_generic_helpers import handle_cross_account_permissions
 
 
 def add_managed_ssm_parameter(
-    family: ComposeFamily, settings: ComposeXSettings, rendered_settings: dict
+    family: ComposeFamily,
+    settings: ComposeXSettings,
+    rendered_settings: FireLensManagedConfiguration,
 ) -> str:
     """
     Handles x-logging.FireLens.Advanced.Rendered
@@ -44,10 +47,14 @@ def add_managed_ssm_parameter(
     :param settings:
     :param rendered_settings:
     """
-    source_file = rendered_settings["SourceFile"]
-    with open(path.abspath(source_file)) as source_fd:
-        source_content = source_fd.read()
-    render_config = {"files": {"/rendered/firelens.conf": {"content": source_content}}}
+
+    render_config = {
+        "files": {
+            "/rendered/firelens.conf": {
+                "content": rendered_settings.render_jinja_config_file()
+            }
+        }
+    }
     ssm_parameter_title = f"{family.logical_name}FireLensConfigurationSsm"
     ssm_parameter_definition = {
         "Properties": {
@@ -104,7 +111,10 @@ def handle_rendered_settings(
 
     from ecs_composex.compose.compose_services.helpers import extend_container_envvars
 
-    ssm_parameter = add_managed_ssm_parameter(family, settings, rendered_settings)
+    advanced_config = FireLensManagedConfiguration(rendered_settings)
+    advanced_config.render_jinja_config_file()
+
+    ssm_parameter = add_managed_ssm_parameter(family, settings, advanced_config)
     extra_env_vars = set_else_none(
         "EnvironmentVariables", rendered_settings, alt_value={}
     )
