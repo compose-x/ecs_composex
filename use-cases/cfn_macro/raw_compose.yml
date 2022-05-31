@@ -52,7 +52,6 @@ services:
                 Sid: AllowPublishMetricsToCw
           PolicyName: AllowPublishToCw
     x-logging:
-      CreateLogGroup: false
       RetentionInDays: 42
     x-network:
       Ingress:

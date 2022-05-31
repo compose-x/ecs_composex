@@ -8,7 +8,6 @@ services:
         ecs.ephemeral.storage: 65
     x-logging:
       RetentionInDays: 42
-      CreateLogGroup: True
     x-network:
       Ingress:
         Myself: False
