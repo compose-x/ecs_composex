@@ -288,9 +288,6 @@ def generate_full_template(settings: ComposeXSettings):
     vpc_module = settings.mod_manager.add_module("x-vpc")
     vpc_stack = VpcStack("vpc", settings, vpc_module)
     define_vpc_settings(settings, vpc_module, vpc_stack)
-
-    print("SETTINGS STACKS", settings.stacks)
-
     if vpc_stack.vpc_resource and (
         vpc_stack.vpc_resource.cfn_resource or vpc_stack.vpc_resource.mappings
     ):

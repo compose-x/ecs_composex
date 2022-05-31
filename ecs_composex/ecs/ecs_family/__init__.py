@@ -17,15 +17,13 @@ from itertools import chain
 
 from troposphere import AWS_STACK_NAME, GetAtt, If, Join, NoValue
 from troposphere import Output as CfnOutput
-from troposphere import Ref, Region, Sub, Tags
+from troposphere import Ref, Region, Tags
 from troposphere.ecs import EphemeralStorage, RuntimePlatform, TaskDefinition
 
 from ecs_composex.common import LOG, add_outputs, add_parameters
-from ecs_composex.common.cfn_conditions import define_stack_name
 from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.compose_services import ComposeService
-from ecs_composex.compose.compose_services.helpers import extend_container_envvars
 from ecs_composex.ecs import ecs_conditions, ecs_params
 from ecs_composex.ecs.ecs_family.family_helpers import (
     handle_same_task_services_dependencies,
@@ -42,7 +40,6 @@ from ecs_composex.ecs.task_iam import TaskIam
 
 from .family_helpers import assign_secrets_to_roles, ensure_essential_containers
 from .family_template import set_template
-from .task_logging import create_log_group
 from .task_runtime import define_family_runtime_parameters
 
 
@@ -72,20 +69,14 @@ class ComposeFamily:
         self.family_hostname = self.name.replace("_", "-").lower()
         self.services_depends_on = []
         self.template = set_template(self)
-        self.stack = ServiceStack(
+        self.stack: ServiceStack = ServiceStack(
             self.logical_name,
             stack_template=self.template,
         )
-        self.family_logging_prefix = f"svc/ecs/{self.logical_name}"
-        self.logging_group_name = Sub(
-            f"${{STACK_NAME}}/"
-            f"{self.family_logging_prefix}/${{{ecs_params.CLUSTER_NAME_T}}}",
-            STACK_NAME=define_stack_name(self.template if self.template else None),
-        )
+        self.logging = None
         self.umbrella_log_group = None
         self.firelens_service = None
         self.firelens_config_service = None
-        self.firelens_advanced_reference_service = None
         self.task_definition = None
         self.service_definition = None
         self.service_tags = None
@@ -489,9 +480,19 @@ class ComposeFamily:
         Method to go over each service logging configuration and accordingly define the IAM permissions needed for
         the exec role
         """
-        from .task_logging import handle_logging
+        from .family_logging import FamilyLogging
 
-        handle_logging(self, settings)
+        self.logging = FamilyLogging(self, settings)
+        self.logging.init_family_services_log_configuration()
+        wants_firelens = [
+            service
+            for service in self.ordered_services
+            if service.logging.uses_firelens
+        ]
+        self.logging.handle_awslogs_logging(wants_firelens)
+        if wants_firelens:
+            self.logging.handle_firelens(settings)
+        self.logging.update_cw_log_retention()
 
     def set_update_containers_priority(self) -> None:
         """

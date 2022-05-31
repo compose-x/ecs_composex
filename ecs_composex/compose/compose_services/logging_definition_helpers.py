@@ -105,7 +105,6 @@ def handle_firelens_options(
     service: ComposeService, logging_def: dict, set_cw_default: bool = False
 ) -> LogConfiguration:
     default_cloudwatch_options = {
-        "Name": "cloudwatch",
         "region": Region,
         "auto_create_group": True,
         "log_group_name": service.logical_name,
@@ -117,39 +116,15 @@ def handle_firelens_options(
         )
     else:
         options = set_else_none("options", logging_def, alt_value=NoValue)
+    config_name_map = {
+        "delivery_stream": "kinesis_firehose",
+        "log_group_name": "cloudwatch",
+        "stream": "kinesis_streams",
+        "bucket": "s3",
+    }
+    for key, value in config_name_map.items():
+        if keyisset(key, options):
+            options.update({"Name": value})
+            break
+
     return LogConfiguration(LogDriver="awsfirelens", Options=options)
-
-
-def handle_managed_log_drivers(
-    service: ComposeService, log_driver: str, logging_def: dict, family_log_group
-) -> LogConfiguration:
-    """
-
-    :param service:
-    :param log_driver:
-    :param logging_def:
-    :param family_log_group:
-    :return: LogConfiguration
-    """
-    if log_driver == "awslogs":
-        if keyisset("options", logging_def):
-            log_config = handle_awslogs_options(service, logging_def)
-        else:
-            log_config = handle_awslogs_options(
-                service, {"options": {"awslogs-group": Ref(family_log_group)}}
-            )
-        if service.x_logging_firelens:
-            if keyisset("Shorthands", service.x_logging_firelens) and keyisset(
-                "ReplaceAwsLogs", service.x_logging_firelens["Shorthands"]
-            ):
-                log_config = replace_awslogs_with_firelens_configuration(
-                    service, log_config
-                )
-    elif log_driver == "awsfirelens":
-        log_config = handle_firelens_options(service, logging_def)
-    else:
-        raise ValueError(
-            "log_driver is", log_driver, "must be one of", ["awslogs", "awsfirelens"]
-        )
-    print(log_config.Options)
-    return log_config

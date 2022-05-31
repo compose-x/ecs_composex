@@ -9,18 +9,19 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ecs_composex.ecs.ecs_family import ComposeFamily
     from ecs_composex.common.settings import ComposeXSettings
-    from .firelens_managed_sidecar_service import FluentBit
+    from ecs_composex.ecs.ecs_firelens.firelens_managed_sidecar_service import FluentBit
 
 from compose_x_common.compose_x_common import keyisset
-from troposphere import Ref
+from troposphere import Ref, Region
 
+from ecs_composex.compose.compose_services.service_logging import ServiceLogging
 from ecs_composex.compose.compose_volumes import ComposeVolume
 from ecs_composex.compose.compose_volumes.services_helpers import map_volumes
 from ecs_composex.ecs.managed_sidecars import ManagedSidecar
 
 
 def render_config_sidecar_config(
-    family: ComposeFamily, ssm_parameter: str = None, environment: dict = None
+    family: ComposeFamily, volume_name: str, mount_path: str, ssm_parameter: str = None
 ):
     config: dict = {
         "image": "public.ecr.aws/compose-x/ecs-files-composer:d1a1abb",
@@ -38,14 +39,12 @@ def render_config_sidecar_config(
         "logging": {
             "driver": "awslogs",
             "options": {
-                "awslogs-group": Ref(family.umbrella_log_group)
-                if family.umbrella_log_group
-                else family.family_logging_prefix,
+                "awslogs-group": Ref(family.logging.family_logging_prefix),
                 "awslogs-stream-prefix": "firelens_config",
                 "awslogs-create-group": True,
             },
         },
-        "volumes": ["fluent-rendering:/rendered/"],
+        "volumes": [f"{volume_name}:{mount_path}"],
     }
     if ssm_parameter:
         config["command"] = [
@@ -53,25 +52,29 @@ def render_config_sidecar_config(
             "--from-ssm",
             f"x-ssm_parameter::{ssm_parameter}::ParameterName",
         ]
-    if environment:
-        config["environment"] = environment
     return config
 
 
 def patch_fluent_service(
-    fluent_service: FluentBit, shared_volume: ComposeVolume, sidecar_name: str
+    fluent_service: FluentBit,
+    shared_volume: ComposeVolume,
+    sidecar_name: str,
+    volume_name: str,
+    mount_path: str,
 ) -> None:
     """
 
     :param FluentBit fluent_service:
     :param str sidecar_name:
     :param ComposeVolume shared_volume:
+    :param str volume_name:
+    :param str mount_path:
     :return:
     """
     if keyisset("volumes", fluent_service.definition):
-        fluent_service.definition["volumes"].append("fluent-rendering:/rendered/")
+        fluent_service.definition["volumes"].append(f"{volume_name}:{mount_path}")
     else:
-        fluent_service.definition.update({"volumes": ["fluent-rendering:/rendered/"]})
+        fluent_service.definition.update({"volumes": [f"{volume_name}:{mount_path}"]})
     map_volumes(fluent_service, [shared_volume])
 
     if keyisset("depends_on", fluent_service.definition):
@@ -91,22 +94,21 @@ class FluentBitConfig(ManagedSidecar):
         definition,
         fluent_service: FluentBit,
         settings: ComposeXSettings,
-        volumes: list = None,
+        shared_volume: ComposeVolume,
+        mount_path: str,
     ):
-        if volumes is None:
-            volumes = []
-        shared_volume = ComposeVolume("fluent-rendering", {})
-        volumes.append(shared_volume)
         if keyisset(ComposeVolume.main_key, settings.compose_content):
             settings.compose_content[ComposeVolume.main_key][
-                "fluent-rendering"
+                shared_volume.name
             ] = shared_volume
         else:
             settings.compose_content[ComposeVolume.main_key]: dict = {
-                "fluent-rendering": shared_volume
+                shared_volume.name: shared_volume
             }
         settings.volumes.append(shared_volume)
 
-        super().__init__(name, definition, volumes=volumes)
-        patch_fluent_service(fluent_service, shared_volume, name)
+        super().__init__(name, definition, volumes=[shared_volume])
+        patch_fluent_service(
+            fluent_service, shared_volume, name, shared_volume.name, mount_path
+        )
         fluent_service.depends_on.append(self.name)

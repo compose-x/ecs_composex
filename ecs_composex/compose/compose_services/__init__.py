@@ -6,10 +6,16 @@ Module to import the services defined in compose files and import / transform th
 Compose-X usable properties
 """
 
+from __future__ import annotations
+
 import re
 import warnings
 from copy import deepcopy
 from os import path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .service_logging import ServiceLogging
 
 try:
     import docker
@@ -64,7 +70,8 @@ class ComposeService:
     """
     Class to represent a service
 
-    :cvar str container_name: name of the container to use in definitions
+    :ivar str container_name: name of the container to use in definitions
+    :ivar ServiceLogging logging:
     """
 
     main_key = "services"
@@ -120,9 +127,6 @@ class ComposeService:
         self.x_logging = set_else_none(
             "x-logging", self.definition, alt_value={"RetentionInDays": 14}
         )
-        self.x_logging_firelens = set_else_none(
-            "FireLens", self.x_logging, alt_value={}
-        )
         self.x_repo_credentials = None
         self.ipc = set_else_none("ipc", self.definition)
         self.import_x_aws_settings()
@@ -130,7 +134,7 @@ class ComposeService:
         self.replicas = 1
         self.container = None
         self.volumes = []
-        self.logging = NoValue
+        self.logging = None
         self.secrets = []
         self.env_files = []
         self.tmpfses = []
@@ -382,7 +386,7 @@ class ComposeService:
             MemoryReservation=self.mem_resa if self.mem_resa else NoValue,
             PortMappings=[],
             Environment=self.cfn_environment,
-            LogConfiguration=self.logging,
+            LogConfiguration=NoValue,
             Command=self.command,
             HealthCheck=self.ecs_healthcheck,
             DependsOn=NoValue,

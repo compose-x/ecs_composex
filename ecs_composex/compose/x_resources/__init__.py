@@ -145,6 +145,14 @@ class XResource:
         return self.logical_name
 
     @property
+    def env_var_prefix(self) -> str:
+        return ENV_VAR_NAME.sub("", self.name.replace("-", "_").upper())
+
+    @property
+    def compose_x_arn(self) -> str:
+        return f"{self.module.res_key}::{self.name}"
+
+    @property
     def property_to_parameter_mapping(self):
         mapping = {}
         if not self.attributes_outputs:

@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ecs_composex.ecs.ecs_family import ComposeFamily
-    from ecs_composex.common.settings import ComposeXSettings
 
 from itertools import chain
 
@@ -21,11 +20,6 @@ from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.ecs.ecs_conditions import USE_FARGATE_CON_T
 from ecs_composex.ecs.managed_sidecars import ManagedSidecar
 
-from .firelens_logger_helpers import (
-    parse_set_update_firelens_configuration_options,
-    update_set_fluent_configuration_from_advanced,
-)
-
 FLUENT_BIT_IMAGE_PARAMETER = Parameter(
     "FluentBitAwsImage",
     Type="AWS::SSM::Parameter::Value<String>",
@@ -33,25 +27,35 @@ FLUENT_BIT_IMAGE_PARAMETER = Parameter(
 )
 
 FLUENT_BIT_AGENT_NAME = "log_router"
+DEFAULT_LIMIT = 64
 
 
-def render_agent_config(family: ComposeFamily) -> dict:
-    return {
-        "image": "public.ecr.aws/aws-observability/aws-for-fluent-bit:latest",
+def render_agent_config(
+    family: ComposeFamily,
+    api_health_enabled: bool = False,
+    enable_prometheus: bool = False,
+    memory_limits: int = DEFAULT_LIMIT,
+) -> dict:
+    if memory_limits > 512:
+        LOG.error(
+            f"{family.name} - FireLens container memory exceeds 512MB. Setting to 512MB"
+        )
+        memory_limits = 512
+    elif memory_limits < DEFAULT_LIMIT:
+        memory_limits = DEFAULT_LIMIT
+    config: dict = {
+        "image": "public.ecr.aws/aws-observability/aws-for-firehose_destination.bit:latest",
         "deploy": {
             "resources": {
-                "limits": {"cpus": 0.1, "memory": "64M"},
+                "limits": {"cpus": 0.1, "memory": f"{memory_limits}M"},
                 "reservations": {"memory": "32M"},
             },
         },
-        "expose": ["24224/tcp"],
         "labels": {"container_name": "log_router"},
         "logging": {
             "driver": "awslogs",
             "options": {
-                "awslogs-group": Ref(family.umbrella_log_group)
-                if family.umbrella_log_group
-                else family.family_logging_prefix,
+                "awslogs-group": Ref(family.logging.family_log_group),
                 "awslogs-stream-prefix": "firelens",
                 "awslogs-create-group": True,
             },
@@ -67,6 +71,24 @@ def render_agent_config(family: ComposeFamily) -> dict:
             "timeout": "2s",
         },
     }
+    if api_health_enabled:
+        config.update(
+            {
+                "healthcheck": {
+                    "test": [
+                        "CMD-SHELL",
+                        "curl -sq http://127.0.0.1:2020/api/v1/health  || exit 1",
+                    ],
+                    "interval": "10s",
+                    "retries": 3,
+                    "start_period": "5s",
+                    "timeout": "2s",
+                }
+            }
+        )
+    if enable_prometheus:
+        config["ports"] = [{"target": 2021, "protocol": "tcp"}]
+    return config
 
 
 class FluentBit(ManagedSidecar):
@@ -159,41 +181,8 @@ class FluentBit(ManagedSidecar):
         ):
             if service is self:
                 continue
-            print("SERVICE?", service.name, service.depends_on)
             if self.name not in service.depends_on:
                 service.depends_on.append(self.name)
                 LOG.info(
                     f"{self.my_family.name}.{service.name} - Added {self.name} as startup dependency"
                 )
-
-    def update_family_services_logging_configuration(
-        self,
-        settings: ComposeXSettings,
-        apply_to_sidecars: bool = False,
-    ):
-        """
-        Updates all the container definitions of the ComposeFamily services
-        """
-        for service in chain(
-            self.my_family.managed_sidecars, self.my_family.ordered_services
-        ):
-            if service is self:
-                continue
-            if service.is_aws_sidecar and not apply_to_sidecars:
-                continue
-            container_definition = getattr(service, "container_definition")
-            logging_config = getattr(container_definition, "LogConfiguration")
-            if logging_config.LogDriver == "awsfirelens":
-                LOG.info(
-                    f"{self.my_family.name}.{service.name} - LogDriver is already awsfirelens"
-                )
-                LOG.info(logging_config.Options)
-                parse_set_update_firelens_configuration_options(
-                    self.my_family, service, logging_config, settings
-                )
-                continue
-            else:
-                setattr(logging_config, "LogDriver", "awsfirelens")
-
-        if self.my_family.firelens_advanced_reference_service:
-            update_set_fluent_configuration_from_advanced(self.my_family, settings)

@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ecs_composex.ecs.ecs_family import ComposeFamily
     from ecs_composex.common.settings import ComposeXSettings
-    from ecs_composex.common.stacks import ComposeXStack
 
 from troposphere import FindInMap, Ref
 
@@ -23,7 +22,6 @@ from ecs_composex.compose.compose_services.env_files_helpers import (
 from ecs_composex.compose.compose_volumes.ecs_family_helpers import set_volumes
 from ecs_composex.ecs import ecs_params, metadata
 from ecs_composex.ecs.ecs_family import ServiceStack
-from ecs_composex.ecs.ecs_family.task_logging import create_log_group
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME, CLUSTER_NAME_T
 from ecs_composex.ecs.ecs_service import EcsService
 from ecs_composex.secrets.secrets_params import RES_KEY as SECRETS_KEY
@@ -59,8 +57,6 @@ def initialize_family_services(
     upload_services_env_files(family, settings)
     set_repository_credentials(family, settings)
     set_volumes(family)
-    # create_log_group(family)
-    # family.handle_logging()
     family.handle_alarms()
 
 

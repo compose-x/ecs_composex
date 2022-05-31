@@ -12,53 +12,33 @@
       "description": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-logs-loggroup.html#cfn-logs-loggroup-retentionindays"
     },
     "FireLens": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Define options to configure FireLens and FluentBit accordingly",
       "oneOf": [
         {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "FireLensService": {
-              "type": "string",
-              "description": "Name of the service in compose file to use as FireLens log router"
-            },
-            "FirelensConfiguration": {
-              "$ref": "#/definitions/FirelensConfiguration"
-            }
-          }
+          "required": [
+            "Shorthands"
+          ]
         },
         {
-          "type": "object",
-          "oneOf": [
-            {
-              "required": [
-                "Shorthands"
-              ]
-            },
-            {
-              "required": [
-                "Advanced"
-              ]
-            }
-          ],
-          "properties": {
-            "Shorthands": {
-              "$ref": "#/definitions/FireLensShortCuts"
-            },
-            "Advanced": {
-              "$ref": "#/definitions/FireLensAdvancedConfig"
-            }
-          }
-        },
-        {
-          "type": "boolean",
-          "description": "Simple option to automatically use FireLens with CloudWatch logs destination",
-          "default": false
+          "required": [
+            "Advanced"
+          ]
         }
-      ]
+      ],
+      "properties": {
+        "Shorthands": {
+          "$ref": "#/definitions/FireLensShorthands"
+        },
+        "Advanced": {
+          "$ref": "#/definitions/FireLensAdvancedConfig"
+        }
+      }
     }
   },
   "definitions": {
-    "FireLensShortCuts": {
+    "FireLensShorthands": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
@@ -117,90 +97,51 @@
     },
     "FireLensAdvancedConfig": {
       "type": "object",
-      "oneOf": [
-        {
-          "required": [
-            "s3FileConfiguration"
-          ]
-        },
-        {
-          "required": [
-            "Rendered"
-          ]
-        }
-      ],
+      "additionalProperties": false,
       "properties": {
         "LogDriverBufferLimit": {
           "type": "number",
           "minimum": 33554432,
           "maximum": 536870912,
           "default": 67108864,
-          "description": "Allows to change log-driver-buffer-limit and set the RAM for the fluent container accordingly"
+          "description": "Amount in bytes, of RAM to assign to the FireLens container to cater for BufferLimit."
         },
         "FirelensConfiguration": {
           "$ref": "#/definitions/FirelensConfiguration"
         },
-        "s3FileConfiguration": {
-          "oneOf": [
-            {
-              "type": "string",
-              "description": "Native path syntax to the configuration file for FireLens, i.e. arn:aws:s3:::bucket/file.conf.",
-              "pattern": "arn:aws(-[a-z-]+)?:s3:::([a-zA-Z-.\\d][^/]+)/([\\S]+)$"
-            },
-            {
-              "type": "object",
-              "description": "Object that allows you to define s3 bucket and path to config file separately. using x-s3 will replace the value accordingly and deal with permissions",
-              "properties": {
-                "BucketName": {
-                  "type": "string",
-                  "description": "bucket name. can be x-s3::<logical_bucket>."
-                },
-                "FilePath": {
-                  "type": "string",
-                  "description": "Path to the config file, i.e. firelens/myapp.conf"
-                }
-              }
-            }
-          ]
+        "SourceFile": {
+          "type": "string",
+          "description": "Path to the source file that contains the configuration"
         },
-        "Rendered": {
-          "type": "object",
-          "description": "Allows to generate a file that will be placed in shared volume. Configuration content is stored in AWS SSM",
-          "properties": {
-            "SourceFile": {
-              "type": "string",
-              "description": "Path to the source file that contains the configuration"
-            },
-            "EnableHeathCheck": {
-              "type": "boolean",
-              "default": true
-            },
-            "GracePeriod": {
-              "type": "number",
-              "minimum": 5,
-              "maximum": 120,
-              "default": 30,
-              "description": "Time in seconds for GRACE period before the container stops after receiving SIGTERM"
-            },
-            "ComposeXManagedAwsDestinations": {
-              "type": "array",
-              "uniqueItems": true,
-              "description": "Generates automatically a new OUTPUT for a Compose-X managed resource",
-              "items": {
-                "oneOf": [
-                  {
-                    "$ref": "#/definitions/FireLensCloudWatchManagedDestination"
-                  },
-                  {
-                    "$ref": "#/definitions/FireLensFirehoseManagedDestination"
-                  }
-                ]
+        "EnableApiHeathCheck": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically adds API based healthcheck for fluentbit instead of nc based."
+        },
+        "GracePeriod": {
+          "type": "number",
+          "minimum": 5,
+          "maximum": 120,
+          "default": 30,
+          "description": "Time in seconds for GRACE period before the container stops after receiving SIGTERM"
+        },
+        "ComposeXManagedAwsDestinations": {
+          "type": "array",
+          "uniqueItems": true,
+          "description": "Generates automatically a new OUTPUT for a Compose-X managed resource",
+          "items": {
+            "oneOf": [
+              {
+                "$ref": "#/definitions/FireLensCloudWatchManagedDestination"
+              },
+              {
+                "$ref": "#/definitions/FireLensFirehoseManagedDestination"
               }
-            },
-            "EnvironmentVariables": {
-              "$ref": "#/definitions/RenderEnvVars"
-            }
+            ]
           }
+        },
+        "EnvironmentVariables": {
+          "$ref": "#/definitions/RenderEnvVars"
         }
       }
     },
@@ -209,7 +150,7 @@
       "required": [
         "delivery_stream"
       ],
-      "description": "Allows to setup all settings from https://docs.fluentbit.io/manual/pipeline/outputs/firehose.",
+      "description": "Allows to setup all settings for OUTPUT https://docs.fluentbit.io/manual/pipeline/outputs/firehose",
       "additionalProperties": true,
       "properties": {
         "delivery_stream": {
@@ -220,7 +161,7 @@
     },
     "FireLensCloudWatchManagedDestination": {
       "type": "object",
-      "description": "Allows to define all settings from https://docs.fluentbit.io/manual/pipeline/outputs/cloudwatch",
+      "description": "Allows to define all settings for OUTPUT https://docs.fluentbit.io/manual/pipeline/outputs/cloudwatch",
       "required": [
         "log_group_name"
       ],
@@ -233,7 +174,7 @@
     },
     "RenderEnvVars": {
       "type": "object",
-      "description": "Allows to specify extra environment variables to the ",
+      "description": "Allows to specify extra environment variables to the firelens container",
       "patternProperties": {
         "^[a-zA-Z\\d._-]+$": {
           "oneOf": [
