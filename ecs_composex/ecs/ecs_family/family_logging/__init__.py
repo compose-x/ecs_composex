@@ -42,12 +42,11 @@ class FamilyLogging:
     def __init__(
         self,
         family: ComposeFamily,
-        settings: ComposeXSettings,
     ):
         self._family = family
         self.family_logging_prefix = f"svc/ecs/{family.logical_name}"
         self.logging_group_name = Sub(
-            f"${{STACK_NAME}}/" f"{self.family_logging_prefix}/${{{CLUSTER_NAME_T}}}",
+            f"${{STACK_NAME}}/{self.family_logging_prefix}/${{{CLUSTER_NAME_T}}}",
             STACK_NAME=define_stack_name(family.template if family.template else None),
         )
         self._family_log_group: LogGroup = create_log_group(
@@ -202,8 +201,6 @@ class FamilyLogging:
                 parse_set_update_firelens_configuration_options(
                     self.family, service, settings
                 )
-                continue
-
         self.firelens_advanced_config = handle_firelens_advanced_settings(
             self.family, settings
         )

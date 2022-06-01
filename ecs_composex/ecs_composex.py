@@ -325,7 +325,7 @@ def generate_full_template(settings: ComposeXSettings):
     apply_x_resource_to_x(settings, settings.root_stack, vpc_stack)
 
     for family in settings.families.values():
-        family.finalize_family_settings(settings)
+        family.finalize_family_settings()
         map_resource_return_value_to_services_command(family, settings)
         family.state_facts()
     set_ecs_cluster_identifier(settings.root_stack, settings)

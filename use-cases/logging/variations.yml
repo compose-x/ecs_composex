@@ -8,5 +8,3 @@ services:
   app03:
     x-logging:
       RetentionInDays: 42
-  rproxy:
-    x-logging:

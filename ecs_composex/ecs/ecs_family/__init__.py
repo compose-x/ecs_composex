@@ -28,6 +28,7 @@ from ecs_composex.ecs import ecs_conditions, ecs_params
 from ecs_composex.ecs.ecs_family.family_helpers import (
     handle_same_task_services_dependencies,
 )
+from ecs_composex.ecs.ecs_family.family_logging import FamilyLogging
 from ecs_composex.ecs.ecs_params import TASK_T
 from ecs_composex.ecs.ecs_prometheus import set_prometheus
 from ecs_composex.ecs.managed_sidecars.aws_xray import set_xray
@@ -368,7 +369,7 @@ class ComposeFamily:
             self.service_networking.ingress.associate_ext_ingress_rules(self.template)
             self.service_networking.add_self_ingress()
 
-    def finalize_family_settings(self, settings: ComposeXSettings):
+    def finalize_family_settings(self):
         """
         Once all services have been added, we add the sidecars and deal with appropriate permissions and settings
         Will add xray / prometheus sidecars
@@ -478,11 +479,9 @@ class ComposeFamily:
     def handle_logging(self, settings: ComposeXSettings):
         """
         Method to go over each service logging configuration and accordingly define the IAM permissions needed for
-        the exec role
+        the exec/task role
         """
-        from .family_logging import FamilyLogging
-
-        self.logging = FamilyLogging(self, settings)
+        self.logging = FamilyLogging(self)
         self.logging.init_family_services_log_configuration()
         wants_firelens = [
             service

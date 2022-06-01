@@ -124,9 +124,6 @@ class ComposeService:
             True,
         )
         self.x_iam = set_else_none("x-iam", self.definition)
-        self.x_logging = set_else_none(
-            "x-logging", self.definition, alt_value={"RetentionInDays": 14}
-        )
         self.x_repo_credentials = None
         self.ipc = set_else_none("ipc", self.definition)
         self.import_x_aws_settings()
@@ -204,7 +201,6 @@ class ComposeService:
         self.runtime_os_family = set_else_none(
             "OperatingSystemFamily", self.x_ecs, None
         )
-        self.define_x_logging()
 
         self.set_user_group()
         map_volumes(self, volumes)
@@ -771,20 +767,6 @@ class ComposeService:
             elif keyisset(setting[0], self.definition) and setting[2]:
                 setting[2](setting[0])
 
-    def define_x_logging(self):
-        """
-        Method to define logging properties
-        """
-        from .helpers import get_closest_valid_log_retention_period
-
-        x_aws_logs_retention = int(
-            set_else_none("x-aws-logs_retention", self.definition, alt_value=14)
-        )
-        retention_in_days = int(
-            set_else_none("RetentionInDays", self.x_logging, alt_value=14)
-        )
-        self.x_logging["RetentionInDays"] = max(x_aws_logs_retention, retention_in_days)
-
     def is_in_family(self, family_name):
         """
         Method to check whether this service is part of a given family
@@ -932,10 +914,7 @@ class ComposeService:
         depends_key = "ecs.depends.condition"
         labels = "labels"
         allowed_values = ["START", "COMPLETE", "SUCCESS", "HEALTHY"]
-        if (
-            isinstance(self.ecs_healthcheck, Ref)
-            and not self.ecs_healthcheck == NoValue
-        ):
+        if isinstance(self.ecs_healthcheck, Ref) and self.ecs_healthcheck != NoValue:
             LOG.warning(
                 f"Healthcheck was defined on {self.name}. Overriding to HEALTHY"
             )

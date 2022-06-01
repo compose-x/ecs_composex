@@ -219,12 +219,11 @@ class ComposeXSettings:
                 "res_key"
             ) and resource.name == parts.group("res_name"):
                 return resource
-        else:
-            raise LookupError(
-                "Unable to find any resource matching",
-                compose_resource_arn,
-                self.x_resource_repr,
-            )
+        raise LookupError(
+            "Unable to find any resource matching",
+            compose_resource_arn,
+            self.x_resource_repr,
+        )
 
     @property
     def x_resource_repr(self):
