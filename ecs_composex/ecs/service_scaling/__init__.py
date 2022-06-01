@@ -69,6 +69,20 @@ class ServiceScaling:
             indent=2,
         )
 
+    @property
+    def replicas(self):
+        if self.family.stack and keyisset(
+            ecs_params.SERVICE_COUNT.title, self.family.stack.Parameters
+        ):
+            return self.family.stack.Parameters[ecs_params.SERVICE_COUNT.title]
+        else:
+            return max(service.replicas for service in self.family.services)
+
+    @replicas.setter
+    def replicas(self, value):
+        if self.family.stack:
+            self.family.stack.Parameters.update({ecs_params.SERVICE_COUNT.title: value})
+
     def create_scalable_target(self):
         """
         Method to automatically create a scalable target
