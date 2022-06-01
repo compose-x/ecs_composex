@@ -77,7 +77,10 @@ def handle_families_dependencies(
         for family_name in settings.families[family].services_depends_on:
             if family_name not in families_post:
                 continue
-            if family_name not in settings.families[family].stack.DependsOn:
+            if (
+                family_name not in settings.families[family].stack.DependsOn
+                and family_name != settings.families[family].name
+            ):
                 LOG.info(f"Adding dependency between {family_name} and {family}")
                 settings.families[family].stack.DependsOn.append(
                     settings.families[family_name].stack.title
