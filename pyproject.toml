@@ -24,7 +24,8 @@ include = [
   "LICENSE",
   "MANIFEST.in",
   "NOTICES.rst",
-  "ecs_composex/**/*.json"
+  "ecs_composex/**/*.json",
+  "ecs_composex/**/*.j2"
 ]
 exclude = ["*.pyc", "*~", "*pycache*"]
 
@@ -38,9 +39,9 @@ exclude = ["*.pyc", "*~", "*pycache*"]
 python = "^3.7"
 boto3 = ">=1.20"
 troposphere = "^4.0.0"
-ecr-scan-reporter = { version = "^0.4.6", optional = true }
+ecr-scan-reporter = { version = "^0.4", optional = true }
 compose-x-render = "^0.5"
-compose-x-common = "^0.5"
+compose-x-common = "^1.0"
 jsonschema = "^4.4.0"
 requests = "^2.27.1"
 tabulate = "^0.8.9"
@@ -48,6 +49,7 @@ importlib-resources = "^5.4.0"
 PyYAML = "^6.0"
 urllib3 = "^1.26.8"
 retry2 = "^0.9.3"
+Jinja2 = "^3.1.2"
 
 [tool.poetry.dev-dependencies]
 isort = "^5.10.1"

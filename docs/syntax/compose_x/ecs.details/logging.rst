@@ -30,6 +30,30 @@ Value to indicate how long should the logs be retained for the service.
 .. hint:: Emulates the CW Logs property `RetentionInDays Property`_
 
 
+FireLens
+=========
+
+.. code-block:: yaml
+
+FireLens is a configuration that will automatically generate the configuration for `FluentBit`_ to ship logs in the
+appropriate destinations configured.
+
+We recommend the `Rendered`_ configuration which works for AWS Fargate, EC2 and ECS Anywhere.
+
+Rendered
+-------------
+
+.. hint::
+
+    We recommend to use that option as it will work in all compute platforms.
+
+s3FileConfiguration
+====================
+
+.. note::
+
+    Only works when deploying to AWS ECS on EC2 instances.
+
 Examples
 ========
 
@@ -66,3 +90,4 @@ Definition
     :language: json
 
 .. _RetentionInDays Property: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-logs-loggroup.html#cfn-logs-loggroup-retentionindays
+.. _FluentBit: https://docs.fluentbit.io/

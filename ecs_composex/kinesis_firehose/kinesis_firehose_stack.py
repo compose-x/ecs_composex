@@ -116,6 +116,7 @@ class DeliveryStream(AwsEnvironmentResource, ApiXResource):
         settings: ComposeXSettings,
         modules: ModManager,
         root_stack: ComposeXStack = None,
+        targets_overrides: list = None,
     ) -> None:
         """
         Maps API only based resource to ECS Services

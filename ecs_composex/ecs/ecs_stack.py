@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ecs_composex.ecs.ecs_family import ComposeFamily
     from ecs_composex.common.settings import ComposeXSettings
-    from ecs_composex.common.stacks import ComposeXStack
 
 from troposphere import FindInMap, Ref
 
@@ -23,7 +22,6 @@ from ecs_composex.compose.compose_services.env_files_helpers import (
 from ecs_composex.compose.compose_volumes.ecs_family_helpers import set_volumes
 from ecs_composex.ecs import ecs_params, metadata
 from ecs_composex.ecs.ecs_family import ServiceStack
-from ecs_composex.ecs.ecs_family.task_logging import create_log_group
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME, CLUSTER_NAME_T
 from ecs_composex.ecs.ecs_service import EcsService
 from ecs_composex.secrets.secrets_params import RES_KEY as SECRETS_KEY
@@ -59,8 +57,6 @@ def initialize_family_services(
     upload_services_env_files(family, settings)
     set_repository_credentials(family, settings)
     set_volumes(family)
-    create_log_group(family)
-    family.handle_logging()
     family.handle_alarms()
 
 
@@ -87,12 +83,11 @@ def handle_families_dependencies(
                 )
 
 
-def add_compose_families(root_stack: ComposeXStack, settings: ComposeXSettings) -> None:
+def add_compose_families(settings: ComposeXSettings) -> None:
     """
     Using existing ComposeFamily in settings, creates the ServiceStack
     and template
 
-    :param ecs_composex.common.stacks.ComposeXStack root_stack:
     :param ecs_composex.common.settings.ComposeXSettings settings:
     """
     for family_name, family in settings.families.items():
@@ -121,12 +116,12 @@ def add_compose_families(root_stack: ComposeXStack, settings: ComposeXSettings) 
             }
         )
         family.template.metadata.update(metadata)
-        root_stack.stack_template.add_resource(family.stack)
+        settings.root_stack.stack_template.add_resource(family.stack)
         family.validate_compute_configuration_for_task(settings)
 
     families_stacks = [
         family
-        for family in root_stack.stack_template.resources
+        for family in settings.root_stack.stack_template.resources
         if (
             family in settings.families
             and isinstance(settings.families[family].stack, ServiceStack)

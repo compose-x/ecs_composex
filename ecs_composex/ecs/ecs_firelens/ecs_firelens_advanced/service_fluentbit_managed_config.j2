@@ -1,0 +1,11 @@
+{%- if source_file %}
+{{ source_file }}
+{% endif %}
+{% for firehose_destination in firelens_firehose_destinations %}
+[OUTPUT]
+    Name kinesis_firehose
+    Match {{ service_match }}
+{%- for key, value in firehose_destination.output_definition.items() %}
+    {{ key| safe }} {{ value | safe }}
+{%- endfor -%}
+{% endfor %}

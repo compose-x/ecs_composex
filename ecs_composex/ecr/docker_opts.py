@@ -41,6 +41,8 @@ def evaluate_ecr_configs(settings) -> int:
         return result
     for family in settings.families.values():
         for service in family.services:
+            if not isinstance(service.image, str):
+                continue
             if not keyisset("x-ecr", service.definition) or invalidate_image_from_ecr(
                 service, True
             ):

@@ -8,15 +8,23 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ecs_composex.ecs.ecs_family import ComposeFamily
+    from ecs_composex.common.cfn_params import Parameter
 
 from ecs_composex.common import LOG, add_parameters
 from ecs_composex.compose.compose_services import ComposeService
 
 
 class ManagedSidecar(ComposeService):
-    def __init__(self, name, definition):
-        super().__init__(name, definition)
-        self.is_essential = False
+    def __init__(
+        self,
+        name,
+        definition,
+        is_essential: bool = False,
+        image_param: Parameter = None,
+        volumes: list = None,
+    ):
+        super().__init__(name, definition, image_param=image_param, volumes=volumes)
+        self.is_essential = is_essential
         self.is_aws_sidecar = True
 
     def add_to_family(self, family: ComposeFamily, is_dependency: bool = False) -> None:
@@ -46,8 +54,6 @@ class ManagedSidecar(ComposeService):
         :param bool is_dependency: Whether the family services depend on sidecar or not.
         """
         for service in self.my_family.ordered_services:
-            if service.is_aws_sidecar:
-                continue
             if is_dependency:
                 if self.name not in service.depends_on:
                     service.depends_on.append(self.name)

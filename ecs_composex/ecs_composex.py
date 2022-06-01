@@ -45,6 +45,7 @@ from ecs_composex.ecs_cluster import add_ecs_cluster
 from ecs_composex.ecs_cluster.helpers import set_ecs_cluster_identifier
 from ecs_composex.iam.iam_stack import XStack as IamStack
 from ecs_composex.mods_manager import ModManager
+from ecs_composex.resource_settings import map_resource_return_value_to_services_command
 from ecs_composex.vpc.helpers import (
     define_vpc_settings,
     update_network_resources_vpc_config,
@@ -189,13 +190,11 @@ def apply_x_resource_to_x(
         vpc_stack.vpc_resource.handle_x_dependencies(settings, root_stack)
 
 
-def add_x_resources(
-    root_stack: ComposeXStack, settings: ComposeXSettings, mods_manager: ModManager
-) -> None:
+def add_x_resources(settings: ComposeXSettings) -> None:
     """
     Processes the modules / resources that are defining the environment settings
     """
-    for name, module in mods_manager.modules.items():
+    for name, module in settings.mod_manager.modules.items():
         LOG.info(f"Processing {name}")
         x_stack = module.stack_class(
             module.mapping_key,
@@ -211,7 +210,7 @@ def add_x_resources(
             and hasattr(x_stack, "stack_template")
             and not x_stack.is_void
         ):
-            add_resource(root_stack.stack_template, x_stack)
+            add_resource(settings.root_stack.stack_template, x_stack)
 
 
 def create_root_stack(settings: ComposeXSettings) -> ComposeXStack:
@@ -277,17 +276,18 @@ def generate_full_template(settings: ComposeXSettings):
     LOG.info(
         f"Service families to process {[family.name for family in settings.families.values()]}"
     )
-    root_stack = create_root_stack(settings)
-    add_ecs_cluster(root_stack, settings)
-    manager = ModManager(settings)
-    manager.modules_repr()
-    iam_stack = root_stack.stack_template.add_resource(IamStack("iam", settings))
-    add_x_resources(root_stack, settings, manager)
-    add_compose_families(root_stack, settings)
-    vpc_module = manager.add_module("x-vpc")
+    settings.root_stack = create_root_stack(settings)
+    add_ecs_cluster(settings)
+    settings.mod_manager = ModManager(settings)
+    settings.mod_manager.modules_repr()
+    iam_stack = settings.root_stack.stack_template.add_resource(
+        IamStack("iam", settings)
+    )
+    add_x_resources(settings)
+    add_compose_families(settings)
+    vpc_module = settings.mod_manager.add_module("x-vpc")
     vpc_stack = VpcStack("vpc", settings, vpc_module)
-    define_vpc_settings(settings, vpc_module, vpc_stack, root_stack)
-
+    define_vpc_settings(settings, vpc_module, vpc_stack)
     if vpc_stack.vpc_resource and (
         vpc_stack.vpc_resource.cfn_resource or vpc_stack.vpc_resource.mappings
     ):
@@ -307,21 +307,28 @@ def generate_full_template(settings: ComposeXSettings):
     for family in settings.families.values():
         family.init_network_settings(settings, vpc_stack)
 
-    handle_families_cross_dependencies(settings, root_stack)
+    handle_families_cross_dependencies(settings, settings.root_stack)
     update_network_resources_vpc_config(settings, vpc_stack)
     set_families_ecs_service(settings)
 
-    apply_x_resource_to_x(settings, root_stack, vpc_stack, env_resources_only=True)
-    apply_x_configs_to_ecs(settings, root_stack, modules=manager)
-    apply_x_resource_to_x(settings, root_stack, vpc_stack)
+    apply_x_resource_to_x(
+        settings, settings.root_stack, vpc_stack, env_resources_only=True
+    )
     for family in settings.families.values():
         add_iam_dependency(iam_stack, family)
         family.set_enable_execute_command()
         if family.enable_execute_command:
             family.apply_ecs_execute_command_permissions(settings)
+        family.import_all_sidecars()
+        family.handle_logging(settings)
+    apply_x_configs_to_ecs(settings, settings.root_stack, modules=settings.mod_manager)
+    apply_x_resource_to_x(settings, settings.root_stack, vpc_stack)
+
+    for family in settings.families.values():
         family.finalize_family_settings()
+        map_resource_return_value_to_services_command(family, settings)
         family.state_facts()
-    set_ecs_cluster_identifier(root_stack, settings)
-    add_all_tags(root_stack.stack_template, settings)
-    set_all_mappings_to_root_stack(root_stack, settings)
-    return root_stack
+    set_ecs_cluster_identifier(settings.root_stack, settings)
+    add_all_tags(settings.root_stack.stack_template, settings)
+    set_all_mappings_to_root_stack(settings.root_stack, settings)
+    return settings.root_stack

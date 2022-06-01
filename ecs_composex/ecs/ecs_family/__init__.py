@@ -17,16 +17,18 @@ from itertools import chain
 
 from troposphere import AWS_STACK_NAME, GetAtt, If, Join, NoValue
 from troposphere import Output as CfnOutput
-from troposphere import Ref, Tags
+from troposphere import Ref, Region, Tags
 from troposphere.ecs import EphemeralStorage, RuntimePlatform, TaskDefinition
 
 from ecs_composex.common import LOG, add_outputs, add_parameters
+from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.compose_services import ComposeService
 from ecs_composex.ecs import ecs_conditions, ecs_params
 from ecs_composex.ecs.ecs_family.family_helpers import (
     handle_same_task_services_dependencies,
 )
+from ecs_composex.ecs.ecs_family.family_logging import FamilyLogging
 from ecs_composex.ecs.ecs_params import TASK_T
 from ecs_composex.ecs.ecs_prometheus import set_prometheus
 from ecs_composex.ecs.managed_sidecars.aws_xray import set_xray
@@ -37,7 +39,7 @@ from ecs_composex.ecs.service_scaling import ServiceScaling
 from ecs_composex.ecs.task_compute import TaskCompute
 from ecs_composex.ecs.task_iam import TaskIam
 
-from .family_helpers import assign_secrets_to_roles, define_essential_containers
+from .family_helpers import assign_secrets_to_roles, ensure_essential_containers
 from .family_template import set_template
 from .task_runtime import define_family_runtime_parameters
 
@@ -60,7 +62,7 @@ class ComposeFamily:
     """
 
     def __init__(self, services, family_name):
-        self.services = services
+        self._services = services
         self.ordered_services = services
         self.managed_sidecars = []
         self.name = family_name
@@ -68,10 +70,14 @@ class ComposeFamily:
         self.family_hostname = self.name.replace("_", "-").lower()
         self.services_depends_on = []
         self.template = set_template(self)
-        self.stack = ServiceStack(
+        self.stack: ServiceStack = ServiceStack(
             self.logical_name,
             stack_template=self.template,
         )
+        self.logging = None
+        self.umbrella_log_group = None
+        self.firelens_service = None
+        self.firelens_config_service = None
         self.task_definition = None
         self.service_definition = None
         self.service_tags = None
@@ -91,6 +97,10 @@ class ComposeFamily:
         self.service_networking = None
         self.task_compute = None
         self.service_compute = ServiceCompute(self)
+
+    @property
+    def services(self):
+        return chain(self.managed_sidecars, self.ordered_services)
 
     def init_family(self) -> None:
         """
@@ -120,7 +130,6 @@ class ComposeFamily:
         """
         self.task_compute.set_task_compute_parameter()
         self.set_task_definition()
-        self.refresh_container_logging_definition()
 
     def set_task_definition(self):
         """
@@ -263,11 +272,11 @@ class ComposeFamily:
 
         from .task_execute_command import set_enable_execute_command
 
-        self.services.append(service)
+        self._services.append(service)
 
         self.set_update_containers_priority()
         self.iam_manager.init_update_policies()
-        self.handle_logging()
+        # self.handle_logging()
 
         self.service_compute.set_update_launch_type()
         self.service_compute.set_update_capacity_providers()
@@ -305,7 +314,7 @@ class ComposeFamily:
             )
             self.set_secrets_access()
         self.iam_manager.init_update_policies()
-        self.handle_logging()
+        # self.handle_logging()
 
         self.service_compute.set_update_launch_type()
         self.service_compute.set_update_capacity_providers()
@@ -367,7 +376,7 @@ class ComposeFamily:
         """
         from .family_helpers import set_service_dependency_on_all_iam_policies
 
-        self.import_all_sidecars()
+        # self.import_all_sidecars()
         self.add_containers_images_cfn_parameters()
         self.task_compute.set_task_compute_parameter()
         self.task_compute.unlock_compute_for_main_container()
@@ -393,6 +402,34 @@ class ComposeFamily:
         ):
             self.template.add_resource(self.service_scaling.scalable_target)
         self.generate_outputs()
+        # self.handle_logging(settings)
+        service_configs = [
+            [0, service]
+            for service in chain(self.managed_sidecars, self.ordered_services)
+        ]
+        handle_same_task_services_dependencies(service_configs)
+        self.set_add_region_when_external()
+
+    def set_add_region_when_external(self):
+        from troposphere.ecs import Environment
+
+        env_var_to_add = Environment(Name="AWS_DEFAULT_REGION", Value=Region)
+        region_conditional = If(
+            ecs_conditions.USE_EXTERNAL_LT_T, env_var_to_add, NoValue
+        )
+        for service in self.services:
+            environment = getattr(service.container_definition, "Environment")
+            if (
+                not environment
+                or environment == NoValue
+                or not isinstance(environment, list)
+            ):
+                environment = []
+                setattr(service.container_definition, "Environment", environment)
+            if "AWS_DEFAULT_REGION" not in [
+                _env.Name for _env in environment if isinstance(_env, Environment)
+            ]:
+                environment.append(region_conditional)
 
     def set_services_to_services_dependencies(self):
         """
@@ -439,14 +476,22 @@ class ComposeFamily:
 
         handle_alarms(self)
 
-    def handle_logging(self):
+    def handle_logging(self, settings: ComposeXSettings):
         """
         Method to go over each service logging configuration and accordingly define the IAM permissions needed for
-        the exec role
+        the exec/task role
         """
-        from .task_logging import handle_logging
-
-        handle_logging(self)
+        self.logging = FamilyLogging(self)
+        self.logging.init_family_services_log_configuration()
+        wants_firelens = [
+            service
+            for service in self.ordered_services
+            if service.logging.uses_firelens
+        ]
+        self.logging.handle_awslogs_logging(wants_firelens)
+        if wants_firelens:
+            self.logging.handle_firelens(settings)
+        self.logging.update_cw_log_retention()
 
     def set_update_containers_priority(self) -> None:
         """
@@ -456,7 +501,7 @@ class ComposeFamily:
         handle_same_task_services_dependencies(service_configs)
         ordered_containers_config = sorted(service_configs, key=lambda i: i[0])
         self.ordered_services = [s[1] for s in ordered_containers_config]
-        define_essential_containers(self)
+        ensure_essential_containers(self)
 
     def set_secrets_access(self):
         """
@@ -483,15 +528,15 @@ class ComposeFamily:
             return
         images_parameters = []
         for service in chain(self.managed_sidecars, self.ordered_services):
-            self.stack.Parameters.update({service.image_param.title: service.image})
-            images_parameters.append(service.image_param)
+            if service.image_param.title not in self.stack.Parameters:
+                if isinstance(service.image, str):
+                    self.stack.Parameters.update(
+                        {service.image_param.title: service.image}
+                    )
+                elif isinstance(service.image, Parameter):
+                    LOG.debug(f"{service.name} image is Parameter already.")
+                images_parameters.append(service.image_param)
         add_parameters(self.template, images_parameters)
-
-    def refresh_container_logging_definition(self):
-        for service in self.services:
-            c_def = service.container_definition
-            logging_def = c_def.LogConfiguration
-            logging_def.Options.update(self.task_logging_options)
 
     def validate_compute_configuration_for_task(self, settings):
         from ecs_composex.ecs_cluster.ecs_family_helpers import (

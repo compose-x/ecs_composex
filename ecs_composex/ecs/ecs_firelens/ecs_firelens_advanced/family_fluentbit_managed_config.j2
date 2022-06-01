@@ -1,0 +1,20 @@
+{%- if enable_health_check -%}
+[SERVICE]
+    HTTP_Server  On
+    HTTP_Listen  0.0.0.0
+    HTTP_PORT    2020
+    Health_Check On
+    # customize error and retry thresholds and evaluation period as desired
+    HC_Errors_Count 5
+    HC_Retry_Failure_Count 5
+    HC_Period 5
+{% endif %}
+
+{% if grace_period -%}
+[SERVICE]
+    Flush 1
+    Grace {{ grace_period | int }}
+{% endif %}
+{%- for service_content in services_content -%}
+{{ service_content }}
+{% endfor %}

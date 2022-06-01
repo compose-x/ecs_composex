@@ -20,7 +20,6 @@ services:
     x-aws-logs_retention: 64
     x-logging:
       RetentionInDays: 42
-      CreateLogGroup: False
     x-aws-role:
       Version: "2012-10-17"
       Statement:

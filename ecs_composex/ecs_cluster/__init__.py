@@ -63,11 +63,10 @@ MANAGED_KMS_KEY_NAME = "ecs-cluster-logging-cmk"
 MANAGED_S3_BUCKET_NAME = "ecs-cluster-logging-bucket"
 
 
-def add_ecs_cluster(root_stack, settings):
+def add_ecs_cluster(settings):
     """
     Function to create the ECS Cluster.
 
-    :param ecs_composex.common.stacks.ComposeXStack root_stack:
     :param ecs_composex.common.settings.ComposeXSettings settings:
     """
     if keyisset("x-aws-cluster", settings.compose_content):
@@ -75,10 +74,12 @@ def add_ecs_cluster(root_stack, settings):
         LOG.info("x-aws-cluster was set. Overriding any defined x-cluster settings")
     if not keyisset(EcsCluster.res_key, settings.compose_content):
         LOG.info("No cluster information provided. Creating a new one")
-        cluster = EcsCluster(root_stack)
+        cluster = EcsCluster(settings.root_stack)
     elif isinstance(settings.compose_content[RES_KEY], dict):
-        cluster = EcsCluster(root_stack, settings.compose_content[EcsCluster.res_key])
-        cluster.set_from_definition(root_stack, settings.session, settings)
+        cluster = EcsCluster(
+            settings.root_stack, settings.compose_content[EcsCluster.res_key]
+        )
+        cluster.set_from_definition(settings.root_stack, settings.session, settings)
     else:
         raise LookupError("Unable to determine what to do for x-cluster")
     settings.ecs_cluster = cluster

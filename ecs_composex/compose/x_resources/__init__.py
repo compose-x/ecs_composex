@@ -7,7 +7,7 @@ Module to define the ComposeX Resources into a simple object to make it easier t
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
@@ -29,7 +29,7 @@ from importlib_resources import files as pkg_files
 from troposphere import AWSObject, Export, FindInMap, GetAtt, Join, Output, Ref, Sub
 from troposphere.ecs import Environment
 
-from ecs_composex.common import LOG, NONALPHANUM, add_parameters
+from ecs_composex.common import LOG, NONALPHANUM, add_parameters, add_update_mapping
 from ecs_composex.common.aws import (
     define_lookup_role_from_info,
     find_aws_resource_arn_from_tags_api,
@@ -143,6 +143,14 @@ class XResource:
 
     def __repr__(self):
         return self.logical_name
+
+    @property
+    def env_var_prefix(self) -> str:
+        return ENV_VAR_NAME.sub("", self.name.replace("-", "_").upper())
+
+    @property
+    def compose_x_arn(self) -> str:
+        return f"{self.module.res_key}::{self.name}"
 
     @property
     def property_to_parameter_mapping(self):
@@ -610,3 +618,44 @@ class XResource:
         for attr in self.attributes_outputs.values():
             if keyisset("Output", attr):
                 self.outputs.append(attr["Output"])
+
+    def add_parameter_to_family_stack(
+        self, family, settings: ComposeXSettings, parameter: Union[str, Parameter]
+    ) -> dict:
+        if self.stack == family.stack:
+            LOG.warning(
+                "Cannot add parameter to resource",
+                f"{self.name}",
+                "because it is in the same stack as family",
+                "{family.name}",
+            )
+            return self
+        if (
+            isinstance(parameter, str)
+            and parameter in self.property_to_parameter_mapping.keys()
+        ):
+            the_parameter = self.property_to_parameter_mapping[parameter]
+        elif (
+            isinstance(parameter, Parameter)
+            and parameter in self.property_to_parameter_mapping.values()
+        ):
+            the_parameter = parameter
+        else:
+            raise TypeError(
+                "parameter must be one of", str, Parameter, "got", type(parameter)
+            )
+
+        if self.mappings and self.lookup:
+            add_update_mapping(
+                family.template,
+                self.module.mapping_key,
+                settings.mappings[self.module.mapping_key],
+            )
+            return self.attributes_outputs[the_parameter]
+
+        param_id = self.attributes_outputs[the_parameter]
+        add_parameters(family.template, [param_id["ImportParameter"]])
+        family.stack.Parameters.update(
+            {param_id["ImportParameter"].title: param_id["ImportValue"]}
+        )
+        return param_id

@@ -97,18 +97,6 @@ ELB_GRACE_PERIOD = Parameter(
     MaxValue=2147483647,
 )
 
-CREATE_LOG_GROUP_T = "CreateLogGroup"
-CREATE_LOG_GROUP = Parameter(
-    CREATE_LOG_GROUP_T,
-    group_label=LOGGING_SETTINGS,
-    label="How long to retain logs? (in days)",
-    Description="Amount of time to retain logs, in days",
-    Type="String",
-    AllowedValues=["True", "False"],
-    Default="True",
-)
-LOG_GROUP_NAME_T = "ServicesLogGroupName"
-LOG_GROUP_NAME = Parameter(LOG_GROUP_NAME_T, Type="String", Default="ComposeXDefined")
 LOG_GROUP_RETENTION_T = "ServiceLogGroupRetentionPeriod"
 LOG_GROUP_RETENTION = Parameter(
     LOG_GROUP_RETENTION_T,

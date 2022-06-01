@@ -49,7 +49,6 @@ def handle_same_task_services_dependencies(services_config: list) -> None:
         if config[1].depends_on and any(
             k in [j[1].name for j in services_config] for k in config[1].depends_on
         ):
-            config[1].container_definition.Essential = False
             parents = [
                 s_service[1]
                 for s_service in services_config
@@ -67,24 +66,14 @@ def handle_same_task_services_dependencies(services_config: list) -> None:
                 config[0] += 1
 
 
-def define_essential_containers(family: ComposeFamily) -> None:
+def ensure_essential_containers(family: ComposeFamily) -> None:
     """
     Iterates over the services of the family, and ensures that containers.Essential is set
     appropriately according to the service requirements
 
     :param family:
     """
-    for service in chain(family.managed_sidecars, family.ordered_services):
-        if (
-            service.container_start_condition == "SUCCESS"
-            or service.container_start_condition == "COMPLETE"
-            or service.is_aws_sidecar
-        ):
-            service.is_essential = False
-        else:
-            service.is_essential = True
-
-    if len(family.ordered_services + family.managed_sidecars) == 1:
+    if len(family.ordered_services) == 1:
         LOG.debug("There is only one service, we need to ensure it is essential")
         family.ordered_services[0].is_essential = True
 

@@ -11,5 +11,9 @@ MOD_KEY = path.basename(path.dirname(path.abspath(__file__)))
 RES_KEY = f"{X_KEY}{MOD_KEY}"
 MAPPINGS_KEY = NONALPHANUM.sub("", MOD_KEY)
 
-PROFILER_NAME = Parameter("ProfileName", Type="String")
-PROFILER_ARN = Parameter("ProfileArn", return_value="Arn", Type="String")
+LABEL = "CodeGuru Profiler"
+
+PROFILER_NAME = Parameter("ProfileName", group_label=LABEL, Type="String")
+PROFILER_ARN = Parameter(
+    "ProfileArn", group_label=LABEL, return_value="Arn", Type="String"
+)

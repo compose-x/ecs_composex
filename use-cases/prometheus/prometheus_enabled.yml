@@ -13,7 +13,6 @@ services:
             Version: '2012-10-17'
           PolicyName: AllowPublishToCw
     x-logging:
-      CreateLogGroup: false
       RetentionInDays: 42
     x-network:
       Ingress:

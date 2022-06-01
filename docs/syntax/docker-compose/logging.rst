@@ -10,11 +10,16 @@ In ECS Compose-X, default settings will be applied and use `awslogs driver`_ by 
 
 For more information on the docker-compose logging syntax, refer to `Docker Compose logging syntax reference`_
 
-Supported drivers
-==================
+docker-compose options
+============================
 
-Currently, any other driver is ignored and AWS Logs is used by default. This is to guarantee deployment success on
-AWS ECS with AWS Fargate. Future versions will cater for other logging drivers.
+Currently, the settings defined in ``logging`` are ignored and replaced by default settings for AWS Logs.
+This is to guarantee deployment success on AWS ECS with AWS Fargate. Future versions will cater for other logging drivers.
+You can however update options with logging if you defined the logging driver as ``awslogs``
+
+.. tip::
+
+    For more configuration options with ECS Compose-X, see :ref:`x_configs_logging_syntax_reference` or :ref:`firelens_syntax_reference`
 
 awslogs
 ---------

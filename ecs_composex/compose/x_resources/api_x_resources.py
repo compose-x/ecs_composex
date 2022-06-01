@@ -36,6 +36,7 @@ class ApiXResource(ServicesXResource):
         settings: ComposeXSettings,
         modules: ModManager,
         root_stack: ComposeXStack = None,
+        targets_overrides: list = None,
     ) -> None:
         """
         Maps API only based resource to ECS Services
@@ -46,6 +47,7 @@ class ApiXResource(ServicesXResource):
             self,
             arn_parameter=self.arn_parameter,
             nested=False,
+            targets_overrides=targets_overrides,
         )
         if self.predefined_resource_service_scaling_function:
             self.predefined_resource_service_scaling_function(self, settings)

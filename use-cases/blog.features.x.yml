@@ -5,7 +5,6 @@ services:
   app01:
     x-logging:
       RetentionInDays: 42
-      CreateLogGroup: False
     x-network:
       Ingress:
         Myself: False

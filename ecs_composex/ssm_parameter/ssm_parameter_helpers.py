@@ -104,8 +104,6 @@ def import_value_from_file(resource: SsmParameter) -> str | Base64:
     file_path = path.abspath(resource.parameters["FromFile"])
     with open(file_path) as file_fd:
         value = file_fd.read()
-    if keyisset("EncodeToBase64", resource.parameters):
-        return Base64(value)
     if keyisset("ValidateJson", resource.parameters):
         return handle_json_validation(resource, value, file_path)
     elif keyisset("ValidateYaml", resource.parameters):
@@ -138,6 +136,8 @@ def render_new_parameters(
             value = new_res.properties["Value"]
         if not value:
             raise ValueError(f"{new_res.name} - Failed to determine the value")
+        if keyisset("EncodeToBase64", new_res.parameters):
+            value = Base64(value)
         new_res.properties.update({"Value": value})
         param_props = import_record_properties(
             new_res.properties, CfnSsmParameter, ignore_missing_required=False
