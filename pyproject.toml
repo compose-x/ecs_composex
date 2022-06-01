@@ -39,9 +39,9 @@ exclude = ["*.pyc", "*~", "*pycache*"]
 python = "^3.7"
 boto3 = ">=1.20"
 troposphere = "^4.0.0"
-ecr-scan-reporter = { version = "^0.4.6", optional = true }
+ecr-scan-reporter = { version = "^0.4", optional = true }
 compose-x-render = "^0.5"
-compose-x-common = "^0.5"
+compose-x-common = "^1.0"
 jsonschema = "^4.4.0"
 requests = "^2.27.1"
 tabulate = "^0.8.9"
