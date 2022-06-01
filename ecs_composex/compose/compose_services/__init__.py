@@ -115,7 +115,6 @@ class ComposeService:
         self.ipc = set_else_none("ipc", self.definition)
         self.import_x_aws_settings()
         self.networks = set_else_none("networks", self.definition, {})
-        self.replicas = 1
         self.container = None
         self.volumes = []
         self.logging = {}
@@ -192,6 +191,19 @@ class ComposeService:
 
     def __repr__(self):
         return self.name
+
+    @property
+    def replicas(self):
+        return int(set_else_none("replicas", self.deploy, alt_value=1))
+
+    @replicas.setter
+    def replicas(self, value: int):
+        if not isinstance(value, int):
+            raise ValueError(self.name, "replicas must be an integer")
+        if self.deploy:
+            self.deploy["replicas"] = value
+        else:
+            self.deploy = {"replicas": value}
 
     @property
     def is_essential(self):
