@@ -444,7 +444,6 @@ def map_resource_return_value_to_services_command(
             else:
                 new_command.append(res_param_id["ImportValue"])
         service.command = new_command
-        setattr(service.container_definition, "Command", service.command)
 
 
 def map_service_perms_to_resource(

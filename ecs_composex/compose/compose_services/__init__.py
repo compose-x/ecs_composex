@@ -9,10 +9,11 @@ Compose-X usable properties
 from __future__ import annotations
 
 import re
+import shlex
 import warnings
 from copy import deepcopy
 from os import path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
     from .service_logging import ServiceLogging
@@ -30,7 +31,7 @@ except ImportError:
 import requests
 import urllib3
 from compose_x_common.compose_x_common import keyisset, keypresent, set_else_none
-from troposphere import AWS_NO_VALUE, AWS_REGION, If, NoValue, Ref, Sub
+from troposphere import AWS_NO_VALUE, AWS_REGION, AWSHelperFn, If, NoValue, Ref, Sub
 from troposphere.ecs import (
     ContainerDefinition,
     HealthCheck,
@@ -64,6 +65,8 @@ from ecs_composex.ecs.ecs_conditions import (
     USE_LINUX_OS_T,
     USE_WINDOWS_OS_T,
 )
+
+from .service_image import ServiceImage
 
 
 class ComposeService:
@@ -105,17 +108,18 @@ class ComposeService:
                     "Expected",
                     setting[1],
                 )
-        self.definition = deepcopy(definition)
+        self._definition = deepcopy(definition)
+        self.original_definiton = definition
+        self.container_definition = None
         self.name = name
-        self.logical_name = NONALPHANUM.sub("", self.name)
         self.container_name = name
         self.service_name = Sub(f"${{{ROOT_STACK_NAME.title}}}-{self.name}")
 
         self.deploy_labels = {}
-        self.x_configs = set_else_none("x-configs", self.definition)
         self.x_scaling = set_else_none("x-scaling", self.definition, None, False)
         self.x_network = set_else_none("x-network", self.definition, None, False)
         self.x_cloudmap = set_else_none("x-cloudmap", self.x_network, None, False)
+        self.x_ecs = set_else_none("x-ecs", self.definition, {})
         self.eip_auto_assign = set_else_none("AssignPublicIp", self.x_network, False)
         self.x_ray = set_else_none(
             "x-xray",
@@ -127,16 +131,12 @@ class ComposeService:
         self.x_repo_credentials = None
         self.ipc = set_else_none("ipc", self.definition)
         self.import_x_aws_settings()
-        self.networks = set_else_none("networks", self.definition, {})
-        self.container = None
         self.volumes = []
         self.logging = None
         self.secrets = []
         self.env_files = []
         self.tmpfses = []
-        self.ephemeral_storage = 0
         self.family_hostname = None
-        self.x_ecs = set_else_none("x-ecs", self.definition, {})
         self.user = None
         self.group = None
         self.ulimits = set_else_none("ulimits", self.definition, [])
@@ -148,15 +148,10 @@ class ComposeService:
             import_env_variables(self.environment) if self.environment else NoValue
         )
         self.depends_on = set_else_none("depends_on", self.definition, [], False)
-        _command = definition["command"] if keyisset("command", definition) else NoValue
-        if isinstance(_command, str):
-            import shlex
 
-            self.command = shlex.split(_command)
-        else:
-            self.command = _command
         if not keyisset("image", self.definition):
             raise KeyError("You must specify the image to use for", self.name)
+
         if not image_param:
             self.image = self.definition["image"]
             self.image_param = Parameter(
@@ -165,9 +160,9 @@ class ComposeService:
         else:
             self.image_param = image_param
             self.image = Ref(self.image_param)
+        self._image = None
         self.image_digest = None
         self.ecr_config = set_else_none("x-ecr", self.definition, None)
-        self.launch_type = None
 
         self.mem_alloc = None
         self.mem_resa = None
@@ -177,39 +172,111 @@ class ComposeService:
         self.is_aws_sidecar = False
         self._is_essential = True
         self._start_condition = "START"
-        self.container_definition = None
 
-        self.ecs_healthcheck = NoValue
-        self.healthcheck = set_else_none("healthcheck", self.definition, None)
         self.deploy = set_else_none("deploy", self.definition, None)
-        self.set_ecs_healthcheck()
         self.set_service_deploy()
         self.ports = set_else_none("ports", self.definition, [])
         self.expose_ports = set_else_none("expose", self.definition, [])
         self.ingress_mappings = define_ingress_mappings(self.ports)
 
         self.update_config = {}
-        self.working_dir = set_else_none(
-            "working_dir", self.definition, alt_value=NoValue
-        )
         self.x_ecs = set_else_none("x-ecs", self.definition, None)
-        self.capacity_provider_strategy = set_else_none(
-            "CapacityProviderStrategy", self.x_ecs, None
-        )
-        self.runtime_architecture = set_else_none("CpuArchitecture", self.x_ecs, None)
-        self.runtime_os_family = set_else_none(
-            "OperatingSystemFamily", self.x_ecs, None
-        )
 
         self.set_user_group()
         map_volumes(self, volumes)
         map_secrets(self, secrets)
         self.define_families()
         self.set_container_definition()
-        self.set_update_networks()
 
     def __repr__(self):
         return self.name
+
+    @property
+    def definition(self):
+        return self._definition
+
+    @property
+    def networks(self):
+        _networks = set_else_none("networks", self.definition, alt_value={})
+        if isinstance(_networks, list):
+            new_definition = {}
+            for name in _networks:
+                new_definition[name] = {}
+            return new_definition
+        elif isinstance(_networks, dict):
+            return _networks
+        else:
+            raise TypeError(
+                self.name,
+                "networks is of type",
+                type(_networks),
+                "must be one of",
+                (dict, list),
+            )
+
+    @networks.setter
+    def networks(self, value):
+        if not isinstance(value, (list, dict)) or not issubclass(
+            type(value), AWSHelperFn
+        ):
+            raise TypeError(
+                self.name,
+                "networks is of type",
+                type(value),
+                "must be one of",
+                (dict, list),
+                "or",
+                AWSHelperFn,
+            )
+        if isinstance(value, list):
+            new_definition = {}
+            for name in value:
+                new_definition[name] = {}
+            value = new_definition
+        if not keyisset("networks", self.definition):
+            self.definition["networks"] = value
+        else:
+            self.definition["networks"] = value
+
+    @property
+    def logical_name(self) -> str:
+        return NONALPHANUM.sub("", self.name)
+
+    # @property
+    # def image(self):
+    #     if isinstance(self.image_param, Parameter):
+    #         return Ref(self.definition["image"])
+    #
+    # @image.setter
+    # def image(self, image_pointer):
+    #     if self.container_definition:
+    #         self.container_definition.image = self.image
+
+    @property
+    def command(self):
+        _command = set_else_none("command", self.definition, alt_value=NoValue)
+        if isinstance(_command, str):
+            return shlex.split(_command)
+        else:
+            return _command
+
+    @command.setter
+    def command(self, new_command):
+        self.definition.update({"command": new_command})
+        if self.container_definition:
+            setattr(self.container_definition, "Command", new_command)
+
+    @property
+    def runtime_architecture(self):
+        return set_else_none("CpuArchitecture", self.x_ecs, None)
+
+    @property
+    def runtime_os_family(self):
+        return set_else_none("OperatingSystemFamily", self.x_ecs, None)
+
+    @property
+    def capacity_provider_strategy(self):
+        return set_else_none("CapacityProviderStrategy", self.x_ecs, None)
 
     @property
     def replicas(self):
@@ -225,31 +292,167 @@ class ComposeService:
             self.deploy = {"replicas": value}
 
     @property
+    def working_dir(self):
+        return set_else_none("working_dir", self.definition, alt_value=NoValue)
+
+    @property
     def is_essential(self):
         if (
             self.container_start_condition == "SUCCESS"
             or self.container_definition == "COMPLETE"
         ):
             return False
+        elif self.container_definition == "HEALTHY":
+            return True
         return self._is_essential
 
     @is_essential.setter
     def is_essential(self, value: bool):
+        if not isinstance(value, (bool, Ref)):
+            raise TypeError(
+                self.name,
+                "is_essential must be one of",
+                (bool, Ref),
+                "got",
+                type(value),
+            )
         self._is_essential = value
         if self.container_definition:
             setattr(self.container_definition, "Essential", self._is_essential)
 
     @property
     def container_start_condition(self):
-        if not self.ecs_healthcheck or not isinstance(
-            self.ecs_healthcheck, HealthCheck
-        ):
-            return self._start_condition
-        return "HEALTHY"
+        if self.ecs_healthcheck or isinstance(self.ecs_healthcheck, HealthCheck):
+            return "HEALTHY"
+        depends_key = "ecs.depends.condition"
+
+        return set_else_none(
+            depends_key,
+            set_else_none("labels", self.deploy, alt_value={}),
+            alt_value="START",
+        )
 
     @container_start_condition.setter
     def container_start_condition(self, value):
-        self._start_condition = value
+        depends_key = "ecs.depends.condition"
+        valid_conditions = ["START", "COMPLETE", "SUCCESS", "HEALTHY"]
+        if value not in valid_conditions:
+            raise ValueError(
+                self.name,
+                depends_key,
+                "is set to ",
+                value,
+                "must be one of",
+                valid_conditions,
+            )
+        if self.deploy:
+            if keyisset("labels", self.deploy):
+                self.deploy["labels"][depends_key] = value
+            else:
+                self.deploy["labels"]: dict = {depends_key: value}
+        else:
+            self.deploy: dict = {"labels": {depends_key: value}}
+
+    @property
+    def ephemeral_storage(self):
+        storage_key = "ecs.ephemeral.storage"
+        storage_value = set_else_none(
+            storage_key, set_else_none("labels", self.deploy, alt_value={}), alt_value=0
+        )
+        if isinstance(storage_value, (int, float)):
+            ephemeral_storage = int(storage_value)
+        elif isinstance(storage_value, str):
+            ephemeral_storage = int(set_memory_to_mb(storage_value) / 1024)
+        else:
+            raise TypeError(
+                f"The value for {storage_key} is of type",
+                type(storage_value),
+                "Expected one of",
+                [int, float, str],
+            )
+        if ephemeral_storage <= 21:
+            return 0
+
+        elif ephemeral_storage > 200:
+            return 200
+        else:
+            LOG.info(f"{self.name} - {storage_key} set to {ephemeral_storage}")
+            return int(ephemeral_storage)
+
+    @property
+    def launch_type(self) -> Union[str, None]:
+        compute_key = "ecs.compute.platform"
+        return set_else_none(
+            compute_key,
+            set_else_none("labels", self.deploy, alt_value={}),
+            alt_value=None,
+        )
+
+    @launch_type.setter
+    def launch_type(self, value: str):
+        compute_key = "ecs.compute.platform"
+        valid = ["EC2", "FARGATE", "EXTERNAL"]
+        if value not in valid:
+            raise ValueError(
+                self.name, compute_key, value, "is invalid. Must be one of", valid
+            )
+        if self.deploy:
+            if keyisset("labels", self.deploy):
+                self.deploy["labels"].update({compute_key: value})
+            else:
+                self.deploy["labels"] = {compute_key: value}
+        else:
+            self.deploy = {"labels": {compute_key: value}}
+
+    @property
+    def healthcheck(self):
+        return set_else_none("healthcheck", self.definition, alt_value={})
+
+    @property
+    def ecs_healthcheck(self) -> Union[HealthCheck, AWSHelperFn]:
+        """
+        If HealthCheck already set ContainerDefinition and value is "None" but service.healtheck defined,
+        define HealthCheck() from service.healthcheck.
+        Elif already defined and not "None", return current value
+        """
+        __current = None
+        if self.container_definition and hasattr(
+            self.container_definition, "HealthCheck"
+        ):
+            __current = getattr(self.container_definition, "HealthCheck")
+        if (
+            (__current is None or __current == NoValue)
+            and self.healthcheck
+            and not self.container_definition
+        ):
+            if keyisset("disable", self.healthcheck):
+                return NoValue
+            valid_keys = ["test", "interval", "timeout", "retries", "start_period"]
+            attr_mappings = {
+                "test": ("Command", None),
+                "interval": ("Interval", import_time_values_to_seconds),
+                "timeout": ("Timeout", import_time_values_to_seconds),
+                "retries": ("Retries", None),
+                "start_period": ("StartPeriod", import_time_values_to_seconds),
+            }
+            required_keys = ["test"]
+            validate_healthcheck(self.healthcheck, valid_keys, required_keys)
+            params = {}
+            for key, value in self.healthcheck.items():
+                _mapping = attr_mappings[key]
+                ecs_key = _mapping[0]
+                if callable(_mapping[1]):
+                    params[ecs_key] = _mapping[1](value)
+                else:
+                    params[ecs_key] = value
+            if isinstance(params["Command"], str):
+                params["Command"] = ["CMD-SHELL", params["Command"]]
+            return HealthCheck(**params)
+        elif isinstance(__current, HealthCheck) or issubclass(
+            type(__current), AWSHelperFn
+        ):
+            return __current
+        return NoValue
 
     def retrieve_image_digest(self):
         """
@@ -709,16 +912,6 @@ class ComposeService:
                 self.env_files.append(path.abspath(file_path))
         LOG.debug(self.env_files)
 
-    def set_update_networks(self):
-        """
-        Sets / Assigns tne network to use based services.networks
-        """
-        if isinstance(self.networks, list):
-            new_definition = {}
-            for name in self.networks:
-                new_definition[name] = {}
-            self.networks = new_definition
-
     def merge_x_aws_role(self, key):
         """
         Method to update the service definition with the x-aws-role information if NOT defined in the composex
@@ -789,41 +982,6 @@ class ComposeService:
         """
         return family_name in self.families
 
-    def set_ecs_healthcheck(self):
-        """
-        Function to set healtcheck configuration
-        :return:
-        """
-        if not self.healthcheck:
-            self.ecs_healthcheck = NoValue
-            return
-        valid_keys = ["test", "interval", "timeout", "retries", "start_period"]
-        attr_mappings = {
-            "test": ("Command", None),
-            "interval": ("Interval", import_time_values_to_seconds),
-            "timeout": ("Timeout", import_time_values_to_seconds),
-            "retries": ("Retries", None),
-            "start_period": ("StartPeriod", import_time_values_to_seconds),
-        }
-        required_keys = ["test"]
-        validate_healthcheck(self.healthcheck, valid_keys, required_keys)
-        params = {}
-        for key, value in self.healthcheck.items():
-            ecs_key = attr_mappings[key][0]
-            params[ecs_key] = value
-            if callable(attr_mappings[key][1]):
-                params[ecs_key] = attr_mappings[key][1](self.healthcheck[key])
-        if isinstance(params["Command"], str):
-            params["Command"] = [params["Command"]]
-        self.ecs_healthcheck = HealthCheck(**params)
-
-    def set_replicas(self, deployment):
-        """
-        Function to set the service deployment settings.
-        """
-        if keyisset("replicas", deployment):
-            self.replicas = int(deployment["replicas"])
-
     def define_essential(self, deployment):
         """
         Method to define whether the container is essential.
@@ -849,45 +1007,6 @@ class ComposeService:
                 )
             if deployment[labels][essential_key] in negative_values:
                 self.is_essential = False
-
-    def define_ephemeral_storage_condition(self, deployment):
-        """
-        Method to define the start condition success for the container
-
-        :param deployment:
-        :return:
-        """
-        storage_key = "ecs.ephemeral.storage"
-        labels = "labels"
-        if not keyisset(labels, deployment) or (
-            keyisset(labels, deployment)
-            and not keyisset(storage_key, deployment[labels])
-        ):
-            return
-        storage_value = deployment[labels][storage_key]
-        if isinstance(storage_value, (int, float)):
-            ephemeral_storage = int(storage_value)
-        elif isinstance(storage_value, str):
-            ephemeral_storage = int(set_memory_to_mb(storage_value) / 1024)
-        else:
-            raise TypeError(
-                f"The value for {storage_key} is of type",
-                type(storage_value),
-                "Expected one of",
-                [int, float, str],
-            )
-        if ephemeral_storage < 21:
-            LOG.warning(
-                f"{self.name} - {storage_key}={ephemeral_storage} is smaller than 20(GB). Ignoring."
-            )
-        elif ephemeral_storage > 200:
-            LOG.warning(
-                f"{self.name} - {storage_key}={ephemeral_storage} is bigger than 200(GB). Setting to 200"
-            )
-            self.ephemeral_storage = 200
-        else:
-            self.ephemeral_storage = int(ephemeral_storage)
-            LOG.info(f"{self.name} - {storage_key} set to {self.ephemeral_storage}")
 
     def define_compute_platform(self, deployment):
         """
@@ -915,31 +1034,6 @@ class ComposeService:
         LOG.info(
             f"{self.name} - {ecs_params.LAUNCH_TYPE.title} set to {self.launch_type}"
         )
-
-    def define_start_condition(self, deployment):
-        """
-        Method to define the start condition success for the container
-
-        :param deployment:
-        :return:
-        """
-        depends_key = "ecs.depends.condition"
-        labels = "labels"
-        allowed_values = ["START", "COMPLETE", "SUCCESS", "HEALTHY"]
-        if isinstance(self.ecs_healthcheck, Ref) and self.ecs_healthcheck != NoValue:
-            LOG.warning(
-                f"Healthcheck was defined on {self.name}. Overriding to HEALTHY"
-            )
-            self.container_start_condition = "HEALTHY"
-            if not self.is_essential:
-                self.is_essential = True
-        elif keyisset(labels, deployment) and keyisset(depends_key, deployment[labels]):
-            if deployment[labels][depends_key] not in allowed_values:
-                raise ValueError(
-                    f"Attribute {depends_key} is invalid. Must be one of",
-                    allowed_values,
-                )
-            self.container_start_condition = deployment[labels][depends_key]
 
     def define_families(self):
         """
@@ -1020,10 +1114,8 @@ class ComposeService:
             return
         self.define_compute_platform(self.definition[deploy])
         set_compute_resources(self, self.definition[deploy])
-        self.set_replicas(self.definition[deploy])
-        self.define_start_condition(self.definition[deploy])
         self.define_essential(self.definition[deploy])
         self.set_update_config(self.definition[deploy])
-        self.define_ephemeral_storage_condition(self.definition[deploy])
+
         self.set_family_hostname(self.definition[deploy])
         # self.set_service_labels(self.definition[deploy])
