@@ -27,7 +27,7 @@ from troposphere.logs import LogGroup, ResourcePolicy
 
 from ecs_composex.common import NONALPHANUM, add_outputs, add_parameters, setup_logging
 from ecs_composex.common.cfn_conditions import define_stack_name
-from ecs_composex.compose.compose_services.helpers import (
+from ecs_composex.compose.compose_services.service_logging.helpers import (
     get_closest_valid_log_retention_period,
 )
 from ecs_composex.iam import define_iam_policy

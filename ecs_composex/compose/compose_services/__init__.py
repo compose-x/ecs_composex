@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from .service_logging import ServiceLogging
     from ecs_composex.ecs.ecs_family import ComposeFamily
 
-from compose_x_common.compose_x_common import keyisset, set_else_none
+from compose_x_common.compose_x_common import keyisset, keypresent, set_else_none
 from troposphere import AWSHelperFn, If, NoValue, Ref, Sub
 from troposphere.ecs import (
     ContainerDefinition,
@@ -169,10 +169,6 @@ class ComposeService:
         return self._definition
 
     @property
-    def deploy_labels(self):
-        return set_else_none("labels", self.deploy, alt_value={})
-
-    @property
     def compose_x_arn(self) -> str:
         if self.family:
             return f"{self.family.name}::{self.name}"
@@ -197,9 +193,18 @@ class ComposeService:
                 {self.image.image_param.title: self.image.image}
             )
 
+    @property
+    def deploy_labels(self):
+        return set_else_none("labels", self.deploy, alt_value={})
+
     @deploy_labels.setter
     def deploy_labels(self, value: dict):
-        self.deploy["labels"] = value
+        if not self.deploy:
+            self.deploy: dict = {"labels": value}
+        if keypresent("labels", self.deploy) and not keyisset("labels", self.deploy):
+            self.deploy["labels"]: dict = value
+        elif keyisset("labels", self.deploy):
+            self.deploy.update(value)
 
     @property
     def networks(self):
@@ -272,27 +277,24 @@ class ComposeService:
         alloc = "limits"
         resa = "reservations"
         resource = "cpus"
-        limits = int(
-            float(
-                set_else_none(
-                    resource,
-                    set_else_none(alloc, self.resources, alt_value={}),
-                    alt_value=0,
-                )
-                * 1024
+        _set_limit = float(
+            set_else_none(
+                resource,
+                set_else_none(alloc, self.resources, alt_value={}),
+                alt_value=0,
             )
         )
-        reserved = int(
-            float(
-                set_else_none(
-                    resource,
-                    set_else_none(resa, self.resources, alt_value={}),
-                    alt_value=0,
-                )
-                * 1024
+        _set_resa = float(
+            set_else_none(
+                resource,
+                set_else_none(resa, self.resources, alt_value={}),
+                alt_value=0,
             )
         )
-        return max([limits, reserved])
+        to_set = float(max([_set_limit, _set_resa]))
+        if to_set:
+            return int(float(to_set * 1024))
+        return NoValue
 
     @cpu_amount.setter
     def cpu_amount(self, value: Union[int, AWSHelperFn, None]):
@@ -681,7 +683,7 @@ class ComposeService:
         """
         Set the ulimits
         """
-        _ulimits = set_else_none("ulimits", self.definition, alt_value=[])
+        _ulimits = set_else_none("ulimits", self.definition, alt_value={})
         if not _ulimits:
             return NoValue
         rendered_limits = []
@@ -703,7 +705,7 @@ class ComposeService:
             "sigpending",
             "stack",
         ]
-        for limit_name, limit_value in _ulimits:
+        for limit_name, limit_value in _ulimits.items():
             if limit_name not in allowed:
                 raise KeyError(
                     f"{self.name} - ulimit property {limit_name} is not supported by ECS. Valid ones are",

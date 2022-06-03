@@ -15,6 +15,7 @@ Feature: ecs_composex.opensearch
     Scenario Outline: Negative tests for simple OS Domain with services
         Given I use <file_path> as my docker-compose file and <override_file> as override file
         Then I render the docker-compose expecting an error
+#        Then I render all files to verify execution
 
         Examples:
             | file_path                   | override_file                                                      |

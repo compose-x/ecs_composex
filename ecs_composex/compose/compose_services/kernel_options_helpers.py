@@ -46,7 +46,7 @@ def set_drop_capacities(
     :param list fargate:
     """
     to_drop = set_else_none(drop_key, service.definition, alt_value=[])
-    for capacity in service.definition[drop_key]:
+    for capacity in to_drop:
         if capacity not in valid:
             raise ValueError(
                 f"{service.name} - Linux kernel capacity {capacity} is not supported in ECS or simply not valid"
@@ -118,8 +118,10 @@ def define_kernel_options(service):
     ):
         return NoValue
 
-    service.set_add_capacities(add_key, valid, cap_adds, all_adds, fargate)
-    service.set_drop_capacities(drop_key, valid, cap_adds, all_adds, all_drops, fargate)
+    set_add_capacities(service, add_key, valid, cap_adds, all_adds, fargate)
+    set_drop_capacities(
+        service, drop_key, valid, cap_adds, all_adds, all_drops, fargate
+    )
     kwargs = {
         "Add": cap_adds or NoValue,
         "Drop": cap_drops or NoValue,
