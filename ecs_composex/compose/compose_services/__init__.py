@@ -244,24 +244,11 @@ class ComposeService:
             for name in value:
                 new_definition[name] = {}
             value = new_definition
-        if not keyisset("networks", self.definition):
-            self.definition["networks"] = value
-        else:
-            self.definition["networks"] = value
+        self.definition["networks"]: dict = value
 
     @property
     def logical_name(self) -> str:
         return NONALPHANUM.sub("", self.name)
-
-    # @property
-    # def image(self):
-    #     if isinstance(self.image_param, Parameter):
-    #         return Ref(self.definition["image"])
-    #
-    # @image.setter
-    # def image(self, image_pointer):
-    #     if self.container_definition:
-    #         self.container_definition.image = self.image
 
     @property
     def resources(self):
