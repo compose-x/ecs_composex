@@ -40,7 +40,7 @@ from troposphere.ecs import (
 from troposphere.logs import LogGroup
 
 from ecs_composex.common import LOG, add_update_mapping
-from ecs_composex.compose.compose_services.helpers import (
+from ecs_composex.compose.compose_services.service_logging.helpers import (
     get_closest_valid_log_retention_period,
 )
 from ecs_composex.ecs import metadata

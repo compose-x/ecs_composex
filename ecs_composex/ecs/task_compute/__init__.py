@@ -74,7 +74,7 @@ class TaskCompute:
     @property
     def cfn_family_cpu(self):
         if self._raw_cpu < 128:
-            LOG.info(
+            LOG.debug(
                 f"{self.family.name} - Minimum CPU for task in ECS is 128. Got {self._raw_cpu}. Correcting"
             )
             return "128"
@@ -96,6 +96,11 @@ class TaskCompute:
 
     @property
     def cfn_family_ram(self):
+        if self._raw_ram < 128:
+            LOG.debug(
+                f"{self.family.name} - Minimum RAM for task in ECS is 128MB. Got {self._raw_ram}. Correcting"
+            )
+            return "128"
         return str(self._raw_ram)
 
     @family_ram.setter

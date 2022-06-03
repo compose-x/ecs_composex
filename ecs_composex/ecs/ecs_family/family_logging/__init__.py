@@ -194,10 +194,9 @@ class FamilyLogging:
             if service.is_aws_sidecar and not apply_to_sidecars:
                 continue
             if service.logging.log_driver == "awsfirelens":
-                LOG.info(
+                LOG.debug(
                     f"{self.family.name}.{service.name} - LogDriver is already awsfirelens"
                 )
-                LOG.info(service.logging.log_options)
                 parse_set_update_firelens_configuration_options(
                     self.family, service, settings
                 )

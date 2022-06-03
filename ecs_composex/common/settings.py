@@ -413,11 +413,11 @@ class ComposeXSettings:
             the_service = deepcopy(service)
             family = ComposeFamily([the_service], family_name)
             self.families[family.logical_name] = family
-            the_service.my_family = family
+            the_service.family = family
             self.services.append(the_service)
         else:
             family = ComposeFamily([service], family_name)
-            service.my_family = family
+            service.family = family
         self.families[family.logical_name] = family
         if service not in assigned_services:
             assigned_services.append(service)
@@ -435,7 +435,7 @@ class ComposeXSettings:
             the_service = service
         LOG.debug(f"THE_SERVICE, {hex(id(the_service))}, SERVICE, {hex(id(service))}")
         the_family.add_service(the_service)
-        the_service.my_family = the_family
+        the_service.family = the_family
         self.services.append(the_service)
         if the_service not in assigned_services:
             assigned_services.append(the_service)

@@ -53,6 +53,11 @@
         "RoleArn": {
           "type": "string",
           "format": "^arn:(aws|aws-cn|aws-us-gov):iam::(\\d{12}):role/(.*$)"
+        },
+        "Region": {
+          "type": "string",
+          "format": "(af|ap|ca|eu|me|sa|us|cn|us)-[\\S]+-[\\d]$",
+          "description": "AWS Region to look for the resource into."
         }
       }
     },

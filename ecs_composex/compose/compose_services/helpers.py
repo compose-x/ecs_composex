@@ -233,10 +233,3 @@ def validate_healthcheck(healthcheck, valid_keys, required_keys):
         raise AttributeError(
             f"Expected at least {required_keys}. Got", healthcheck.keys()
         )
-
-
-def get_closest_valid_log_retention_period(set_expiry):
-    return min(
-        LOG_GROUP_RETENTION.AllowedValues,
-        key=lambda x: abs(x - max([set_expiry])),
-    )

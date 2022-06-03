@@ -10,41 +10,28 @@ from __future__ import annotations
 
 import re
 import shlex
-import warnings
 from copy import deepcopy
 from os import path
 from typing import TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
     from .service_logging import ServiceLogging
+    from ecs_composex.ecs.ecs_family import ComposeFamily
 
-try:
-    import docker
-
-    USE_DOCKER = True
-except ImportError:
-    USE_DOCKER = False
-    warnings.warn(
-        "Due to security issues not addressed by docker python, this is temporarily disabled.",
-        DeprecationWarning,
-    )
-import requests
-import urllib3
-from compose_x_common.compose_x_common import keyisset, keypresent, set_else_none
-from troposphere import AWS_NO_VALUE, AWS_REGION, AWSHelperFn, If, NoValue, Ref, Sub
+from compose_x_common.compose_x_common import keyisset, set_else_none
+from troposphere import AWSHelperFn, If, NoValue, Ref, Sub
 from troposphere.ecs import (
     ContainerDefinition,
     HealthCheck,
     KernelCapabilities,
     LinuxParameters,
-    LogConfiguration,
     PortMapping,
     SystemControl,
     Tmpfs,
     Ulimit,
 )
 
-from ecs_composex.common import LOG, NONALPHANUM
+from ecs_composex.common import LOG, NONALPHANUM, add_parameters
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME, Parameter
 from ecs_composex.compose.compose_secrets.services_helpers import map_secrets
 from ecs_composex.compose.compose_services.docker_tools import (
@@ -58,7 +45,6 @@ from ecs_composex.compose.compose_services.helpers import (
     validate_healthcheck,
 )
 from ecs_composex.compose.compose_volumes.services_helpers import map_volumes
-from ecs_composex.ecs import ecs_params
 from ecs_composex.ecs.ecs_conditions import (
     IPC_FROM_HOST_CON_T,
     USE_FARGATE_CON_T,
@@ -71,10 +57,11 @@ from .service_image import ServiceImage
 
 class ComposeService:
     """
-    Class to represent a service
+    Class to represent a docker-compose singleton service
 
     :ivar str container_name: name of the container to use in definitions
-    :ivar ServiceLogging logging:
+    :ivar ServiceLogging logging::
+    :ivar ServiceImage image:
     """
 
     main_key = "services"
@@ -109,17 +96,17 @@ class ComposeService:
                     setting[1],
                 )
         self._definition = deepcopy(definition)
-        self.original_definiton = definition
-        self.container_definition = None
+        self.original_definition = definition
         self.name = name
+        self.container_definition = None
         self.container_name = name
         self.service_name = Sub(f"${{{ROOT_STACK_NAME.title}}}-{self.name}")
 
-        self.deploy_labels = {}
         self.x_scaling = set_else_none("x-scaling", self.definition, None, False)
         self.x_network = set_else_none("x-network", self.definition, None, False)
         self.x_cloudmap = set_else_none("x-cloudmap", self.x_network, None, False)
         self.x_ecs = set_else_none("x-ecs", self.definition, {})
+        self.ecr_config = set_else_none("x-ecr", self.definition, None)
         self.eip_auto_assign = set_else_none("AssignPublicIp", self.x_network, False)
         self.x_ray = set_else_none(
             "x-xray",
@@ -127,22 +114,19 @@ class ComposeService:
             set_else_none("x-ray", self.definition, False, True),
             True,
         )
-        self.x_iam = set_else_none("x-iam", self.definition)
+
         self.x_repo_credentials = None
         self.ipc = set_else_none("ipc", self.definition)
         self.import_x_aws_settings()
         self.volumes = []
         self.logging = None
         self.secrets = []
-        self.env_files = []
         self.tmpfses = []
-        self.family_hostname = None
         self.user = None
         self.group = None
-        self.ulimits = set_else_none("ulimits", self.definition, [])
         self.user_group = None
         self.code_profiler = None
-        self.set_env_files()
+
         self.environment = set_else_none("environment", self.definition, None, False)
         self.cfn_environment = (
             import_env_variables(self.environment) if self.environment else NoValue
@@ -153,39 +137,28 @@ class ComposeService:
             raise KeyError("You must specify the image to use for", self.name)
 
         if not image_param:
-            self.image = self.definition["image"]
-            self.image_param = Parameter(
-                f"{self.logical_name}ImageUrl", Default=self.image, Type="String"
-            )
+            self.image = ServiceImage(self)
         else:
-            self.image_param = image_param
-            self.image = Ref(self.image_param)
-        self._image = None
-        self.image_digest = None
-        self.ecr_config = set_else_none("x-ecr", self.definition, None)
+            self.image = ServiceImage(self, image_param)
 
-        self.mem_alloc = None
-        self.mem_resa = None
-        self.cpu_amount = None
-        self.families = []
-        self.my_family = None
+        self._mem_alloc = None
+        self._mem_resa = None
+        self._cpu_amount = None
+        self.__family = None
         self.is_aws_sidecar = False
-        self._is_essential = True
-        self._start_condition = "START"
 
         self.deploy = set_else_none("deploy", self.definition, None)
-        self.set_service_deploy()
+        self.deploy_labels = set_else_none("labels", self.deploy, alt_value={})
+        if self.deploy:
+            set_compute_resources(self, self.deploy)
+
         self.ports = set_else_none("ports", self.definition, [])
         self.expose_ports = set_else_none("expose", self.definition, [])
         self.ingress_mappings = define_ingress_mappings(self.ports)
 
-        self.update_config = {}
-        self.x_ecs = set_else_none("x-ecs", self.definition, None)
-
         self.set_user_group()
         map_volumes(self, volumes)
         map_secrets(self, secrets)
-        self.define_families()
         self.set_container_definition()
 
     def __repr__(self):
@@ -194,6 +167,39 @@ class ComposeService:
     @property
     def definition(self):
         return self._definition
+
+    @property
+    def deploy_labels(self):
+        return set_else_none("labels", self.deploy, alt_value={})
+
+    @property
+    def compose_x_arn(self) -> str:
+        if self.family:
+            return f"{self.family.name}::{self.name}"
+        else:
+            return self.name
+
+    @property
+    def family(self) -> ComposeFamily:
+        return self.__family if self.__family else None
+
+    @family.setter
+    def family(self, family: ComposeFamily):
+        self.__family = family
+        if family.template:
+            add_parameters(family.template, [self.image.image_param])
+        if (
+            family.stack
+            and isinstance(self.image, ServiceImage)
+            and isinstance(self.image.image, str)
+        ):
+            family.stack.Parameters.update(
+                {self.image.image_param.title: self.image.image}
+            )
+
+    @deploy_labels.setter
+    def deploy_labels(self, value: dict):
+        self.deploy["labels"] = value
 
     @property
     def networks(self):
@@ -253,6 +259,76 @@ class ComposeService:
     #         self.container_definition.image = self.image
 
     @property
+    def resources(self):
+        return set_else_none("resources", self.deploy, alt_value={})
+
+    @property
+    def cpu_amount(self) -> Union[int, Ref]:
+        if not self._cpu_amount or self.container_start_condition in [
+            "SUCCESS",
+            "COMPLETE",
+        ]:
+            return NoValue
+        alloc = "limits"
+        resa = "reservations"
+        resource = "cpus"
+        limits = int(
+            float(
+                set_else_none(
+                    resource,
+                    set_else_none(alloc, self.resources, alt_value={}),
+                    alt_value=0,
+                )
+                * 1024
+            )
+        )
+        reserved = int(
+            float(
+                set_else_none(
+                    resource,
+                    set_else_none(resa, self.resources, alt_value={}),
+                    alt_value=0,
+                )
+                * 1024
+            )
+        )
+        return max([limits, reserved])
+
+    @cpu_amount.setter
+    def cpu_amount(self, value: Union[int, AWSHelperFn, None]):
+        self._cpu_amount = value
+
+    @property
+    def memory_limit(self):
+        if not self._mem_alloc or self.container_start_condition in [
+            "SUCCESS",
+            "COMPLETE",
+        ]:
+            return NoValue
+        resource = "memory"
+        str_value = set_else_none(
+            resource, set_else_none("limits", self.resources, alt_value={})
+        )
+        if not str_value:
+            return NoValue
+        return set_memory_to_mb(str_value)
+
+    @property
+    def memory_resevations(self):
+        if not self._mem_resa or self.container_start_condition in [
+            "SUCCESS",
+            "COMPLETE",
+        ]:
+            return NoValue
+        resource = "memory"
+        str_value = set_else_none(
+            resource, set_else_none("reservations", self.resources, alt_value={})
+        )
+        if not str_value:
+            return NoValue
+        return set_memory_to_mb(str_value)
+
+    @property
     def command(self):
         _command = set_else_none("command", self.definition, alt_value=NoValue)
         if isinstance(_command, str):
@@ -296,19 +372,38 @@ class ComposeService:
         return set_else_none("working_dir", self.definition, alt_value=NoValue)
 
     @property
-    def is_essential(self):
-        if (
+    def is_essential(self) -> bool:
+        """
+        In order of absolutes
+        * If only 1 container in service, it must be essential
+        * If user defined value (bool) and start condition is not SUCCESS or COMPLETE, then user defined
+        * If not user defined value (None) and start condition is SUCCESS or COMPLETE, then it cannot be essential,
+          as it is expected to shutdown
+        """
+        _tmp = True
+        if self.family and len(self.family.services) == 1:
+            _tmp = True
+        elif self.user_define_essential and not (
             self.container_start_condition == "SUCCESS"
             or self.container_definition == "COMPLETE"
         ):
-            return False
-        elif self.container_definition == "HEALTHY":
-            return True
-        return self._is_essential
+            _tmp = self.user_define_essential
+        elif (
+            self.container_start_condition == "SUCCESS"
+            or self.container_definition == "COMPLETE"
+        ):
+            _tmp = False
+        self.is_essential = _tmp
+        if self.container_definition and hasattr(
+            self.container_definition, "Essential"
+        ):
+            return self.container_definition.Essential
+        else:
+            return _tmp
 
     @is_essential.setter
     def is_essential(self, value: bool):
-        if not isinstance(value, (bool, Ref)):
+        if not isinstance(value, bool):
             raise TypeError(
                 self.name,
                 "is_essential must be one of",
@@ -316,19 +411,53 @@ class ComposeService:
                 "got",
                 type(value),
             )
-        self._is_essential = value
         if self.container_definition:
-            setattr(self.container_definition, "Essential", self._is_essential)
+            setattr(self.container_definition, "Essential", value)
 
     @property
-    def container_start_condition(self):
-        if self.ecs_healthcheck or isinstance(self.ecs_healthcheck, HealthCheck):
+    def user_define_essential(self) -> Union[None, bool]:
+        """
+        Allows user to override whether a container is essential or not.
+        By default, in absence of the label, service is considered essential as it might
+        be the only one in the family
+        """
+        essential_key = "ecs.essential"
+        _defined_essential = set_else_none(
+            essential_key, self.deploy_labels, alt_value=None
+        )
+        if _defined_essential is None:
+            return None
+        positive_values = [True, "yes", "True"]
+        negative_values = [False, "no", "False"]
+        if (
+            _defined_essential not in positive_values
+            or _defined_essential not in negative_values
+        ):
+            raise ValueError(
+                "The values allowed for",
+                essential_key,
+                "are",
+                positive_values,
+                negative_values,
+                "Got",
+                _defined_essential,
+            )
+        if _defined_essential in negative_values:
+            return False
+        return True
+
+    @property
+    def container_start_condition(self) -> str:
+        if (
+            isinstance(self.ecs_healthcheck, HealthCheck)
+            and self.ecs_healthcheck != NoValue
+        ):
             return "HEALTHY"
         depends_key = "ecs.depends.condition"
 
         return set_else_none(
             depends_key,
-            set_else_none("labels", self.deploy, alt_value={}),
+            self.deploy_labels,
             alt_value="START",
         )
 
@@ -441,7 +570,7 @@ class ComposeService:
             for key, value in self.healthcheck.items():
                 _mapping = attr_mappings[key]
                 ecs_key = _mapping[0]
-                if callable(_mapping[1]):
+                if _mapping[1] and callable(_mapping[1]):
                     params[ecs_key] = _mapping[1](value)
                 else:
                     params[ecs_key] = value
@@ -454,48 +583,223 @@ class ComposeService:
             return __current
         return NoValue
 
-    def retrieve_image_digest(self):
-        """
-        Retrieves the docker images digest from the repository to use instead of the image tag.
-        """
-        if isinstance(self.image, Ref):
-            return
-        valid_media_types = [
-            "application/vnd.docker.distribution.manifest.v1+json",
-            "application/vnd.docker.distribution.manifest.v2+json",
-            "application/vnd.docker.distribution.manifest.v1+prettyjws",
-            "application/vnd.docker.distribution.manifest.list.v2+json",
-        ]
-        if not USE_DOCKER:
-            return
-        try:
-            dkr_client = docker.APIClient()
-            image_details = dkr_client.inspect_distribution(self.image)
-            if not keyisset("Descriptor", image_details):
-                raise KeyError(f"No information retrieved for {self.image}")
-            details = image_details["Descriptor"]
-            if (
-                keyisset("mediaType", details)
-                and details["mediaType"] not in valid_media_types
-            ):
-                raise ValueError(
-                    "The mediaType is not valid. Got",
-                    details["mediaType"],
-                    "Expected one of",
-                    valid_media_types,
-                )
-            if keyisset("digest", details):
-                self.image_digest = details["digest"]
-            else:
-                LOG.warning(
-                    "No digest found. This might be due to Registry API prior to V2"
-                )
+    @property
+    def family_hostname(self) -> str:
+        hostname = "ecs.task.family.hostname"
+        return set_else_none(
+            hostname, set_else_none("labels", self.deploy, alt_value={}), alt_value=None
+        )
 
-        except (docker.errors.APIError, docker.errors.DockerException) as error:
-            LOG.error(f"Failed to retrieve the image digest for {self.image}")
-            print(error)
-        except (FileNotFoundError, urllib3.exceptions, requests.exceptions):
-            LOG.error("Failed to connect to any docker engine.")
+    @property
+    def update_config(self):
+        _config = set_else_none("update_config", self.deploy, alt_value={})
+        if not isinstance(_config, dict):
+            raise TypeError(
+                "The deploy.update_config must be a dict/map. Got",
+                _config,
+                type(_config),
+            )
+        return _config
+
+    @property
+    def families(self):
+        ecs_task_family = "ecs.task.family"
+        __families = set_else_none(ecs_task_family, self.deploy_labels)
+        if __families is None:
+            return [self.name]
+        if not isinstance(__families, str):
+            raise TypeError(
+                ecs_task_family, "must be", str, "got", __families, type(__families)
+            )
+        return __families.split(r",")
+
+    @property
+    def tmpfs(self):
+        """
+        Method to define the tmpfs settings
+        """
+        tmpfs_key = "tmpfs"
+        tmpfses = set_else_none(tmpfs_key, self.definition, alt_value=[])
+        if not tmpfses:
+            return NoValue
+        if isinstance(self.definition[tmpfs_key], str):
+            self.tmpfses.append(
+                {"ContainerPath": self.definition[tmpfs_key], "Size": 0}
+            )
+        elif isinstance(self.definition[tmpfs_key], list):
+            for container_path in self.definition[tmpfs_key]:
+                self.tmpfses.append({"ContainerPath": container_path, "Size": 0})
+        rendered_fs = [Tmpfs(**args) for args in self.tmpfses]
+        return If(USE_FARGATE_CON_T, NoValue, rendered_fs)
+
+    @property
+    def sysctls(self):
+        """
+        Method to define the SystemControls
+        """
+        sysctls_key = "sysctls"
+        __sysctls = set_else_none(sysctls_key, self.definition, alt_value={})
+        if not __sysctls:
+            return NoValue
+        def_dict = {}
+        if isinstance(__sysctls, list):
+            for prop in __sysctls:
+                splits = prop.split(r"=")
+                if not splits or len(splits) != 2:
+                    raise ValueError(f"Property define {prop} is not valid.")
+                def_dict[splits[0]] = splits[1]
+        elif isinstance(__sysctls, dict):
+            def_dict = __sysctls
+        controls = []
+        for name, value in def_dict.items():
+            controls.append(SystemControl(Namespace=name, Value=str(value)))
+        return If(
+            IPC_FROM_HOST_CON_T, NoValue, If(USE_FARGATE_CON_T, NoValue, controls)
+        )
+
+    @property
+    def shm_size(self):
+        """
+        Method to import and determine SHM SIZE
+        """
+        __shm_size = set_else_none("shm_size", self.definition)
+        if not __shm_size:
+            return NoValue
+        if not isinstance(__shm_size, (int, str, float)):
+            raise TypeError(self.name)
+        memory_value = set_memory_to_mb(__shm_size)
+        return If(USE_FARGATE_CON_T, NoValue, memory_value)
+
+    @property
+    def kernel_properties(self) -> KernelCapabilities:
+        from .kernel_options_helpers import define_kernel_options
+
+        return define_kernel_options(self)
+
+    @property
+    def ulimits(self) -> Union[list, Ref]:
+        """
+        Set the ulimits
+        """
+        _ulimits = set_else_none("ulimits", self.definition, alt_value=[])
+        if not _ulimits:
+            return NoValue
+        rendered_limits = []
+        fargate_supported = ["nofile"]
+        allowed = [
+            "core",
+            "cpu",
+            "data",
+            "fsize",
+            "locks",
+            "memlock",
+            "msgqueue",
+            "nice",
+            "nofile",
+            "nproc",
+            "rss",
+            "rtprio",
+            "rttime",
+            "sigpending",
+            "stack",
+        ]
+        for limit_name, limit_value in _ulimits:
+            if limit_name not in allowed:
+                raise KeyError(
+                    f"{self.name} - ulimit property {limit_name} is not supported by ECS. Valid ones are",
+                    allowed,
+                )
+            elif isinstance(limit_value, (str, int)):
+                ulimit = Ulimit(
+                    SoftLimit=int(limit_value),
+                    HardLimit=int(limit_value),
+                    Name=limit_name,
+                )
+            elif isinstance(limit_value, dict):
+                if keyisset("soft", limit_value) and keyisset("hard", limit_value):
+                    ulimit = Ulimit(
+                        SoftLimit=int(limit_value["soft"]),
+                        HardLimit=int(limit_value["hard"]),
+                        Name=limit_name,
+                    )
+                else:
+                    raise KeyError(
+                        f"Missing hard or soft properties for ulimit {limit_name}"
+                    )
+            else:
+                raise TypeError(f"{self.name} - ulimit is not of the proper definition")
+            if limit_name not in fargate_supported:
+                rendered_limits.append(If(USE_FARGATE_CON_T, NoValue, ulimit))
+            else:
+                rendered_limits.append(ulimit)
+
+        return rendered_limits if rendered_limits else NoValue
+
+    @property
+    def x_iam(self) -> dict:
+        __iam = set_else_none(
+            "x-iam",
+            self.definition,
+            alt_value={
+                "ManagedPolicyArns": [],
+                "Policies": [],
+                "PermissionsBoundary": None,
+            },
+        )
+        if keyisset("x-aws-policies", self.definition):
+            __iam["ManagedPolicyArns"] += self.definition["x-aws-policies"]
+        if keyisset("x-aws-role", self.definition):
+            __iam["Policies"].append(
+                {
+                    "PolicyName": "ImportedFromXAWSRole",
+                    "PolicyDocument": self.definition["x-aws-role"],
+                }
+            )
+        return __iam
+
+    @property
+    def env_files(self) -> list:
+        """
+        Method to list all the env files and check the files are found and available.
+        """
+        env_file_key = "env_file"
+        _env_files = set_else_none(env_file_key, self.definition)
+        if not _env_files:
+            return []
+        if not isinstance(_env_files, (str, list)):
+            raise TypeError(
+                self.name,
+                env_file_key,
+                "must be one of",
+                (str, list),
+                "Got",
+                _env_files,
+                type(_env_files),
+            )
+        env_files = []
+        if isinstance(self.definition[env_file_key], str):
+            env_files = [_env_files]
+        for file_path in _env_files:
+            if not isinstance(file_path, str):
+                raise TypeError(
+                    "Files in the env_file is supposed to be a list of paths to files (str). Got",
+                    type(file_path),
+                )
+            if not path.exists(path.abspath(file_path)):
+                raise FileNotFoundError("No file found at", path.abspath(file_path))
+            env_files.append(path.abspath(file_path))
+        return env_files
+
+    def set_service_labels(self, deployments):
+        labels = "labels"
+        if not keyisset(labels, deployments):
+            return
+        self.deploy_labels = deployments[labels]
+        custom_keys = re.compile(r"^ecs\.[\S]+$")
+        keys = [name for name in self.deploy_labels.keys()]
+        for key in keys:
+            if custom_keys.match(key):
+                del self.deploy_labels[key]
 
     def handle_expose_ports(self, aws_vpc_mappings):
         """
@@ -590,11 +894,11 @@ class ComposeService:
         """
         secrets = [secret for secrets in self.secrets for secret in secrets.ecs_secret]
         self.container_definition = ContainerDefinition(
-            Image=Ref(self.image_param),
+            Image=Ref(self.image.image_param),
             Name=self.name,
-            Cpu=self.cpu_amount if self.cpu_amount else NoValue,
-            Memory=self.mem_alloc if self.mem_alloc else NoValue,
-            MemoryReservation=self.mem_resa if self.mem_resa else NoValue,
+            Cpu=self.cpu_amount,
+            Memory=self.memory_limit,
+            MemoryReservation=self.memory_resevations,
             PortMappings=[],
             Environment=self.cfn_environment,
             LogConfiguration=NoValue,
@@ -603,17 +907,15 @@ class ComposeService:
             DependsOn=NoValue,
             Essential=self.is_essential,
             Secrets=secrets,
-            Ulimits=If(USE_WINDOWS_OS_T, NoValue, self.define_ulimits())
-            if self.ulimits
-            else NoValue,
+            Ulimits=self.ulimits,
             LinuxParameters=If(
-                USE_LINUX_OS_T,
-                LinuxParameters(
-                    Capabilities=self.define_kernel_options(),
-                    SharedMemorySize=self.define_shm_size(),
-                    Tmpfs=self.define_tmpfs(),
-                ),
+                USE_WINDOWS_OS_T,
                 NoValue,
+                LinuxParameters(
+                    Capabilities=self.kernel_properties,
+                    SharedMemorySize=self.shm_size,
+                    Tmpfs=self.tmpfs,
+                ),
             ),
             Privileged=If(
                 USE_FARGATE_CON_T,
@@ -625,245 +927,11 @@ class ComposeService:
             ReadonlyRootFilesystem=If(
                 USE_WINDOWS_OS_T, NoValue, keyisset("read_only", self.definition)
             ),
-            SystemControls=self.define_sysctls(),
+            SystemControls=self.sysctls,
             User=If(USE_WINDOWS_OS_T, NoValue, self.user_group)
             if self.user_group
             else NoValue,
         )
-
-    def define_tmpfs(self):
-        """
-        Method to define the tmpfs settings
-        """
-        tmpfs_key = "tmpfs"
-        if not keyisset(tmpfs_key, self.definition) and not self.tmpfses:
-            return NoValue
-        elif keyisset(tmpfs_key, self.definition):
-            if isinstance(self.definition[tmpfs_key], str):
-                self.tmpfses.append(
-                    {"ContainerPath": self.definition[tmpfs_key], "Size": 0}
-                )
-            elif isinstance(self.definition[tmpfs_key], list):
-                for container_path in self.definition[tmpfs_key]:
-                    self.tmpfses.append({"ContainerPath": container_path, "Size": 0})
-        rendered_fs = [Tmpfs(**args) for args in self.tmpfses]
-        return If(USE_FARGATE_CON_T, NoValue, rendered_fs)
-
-    def define_sysctls(self):
-        """
-        Method to define the SystemControls
-        """
-        sysctls_key = "sysctls"
-        if not keyisset(sysctls_key, self.definition):
-            return NoValue
-        def_dict = {}
-        if isinstance(self.definition[sysctls_key], list):
-            for prop in self.definition[sysctls_key]:
-                splits = prop.split(r"=")
-                if not splits or len(splits) != 2:
-                    raise ValueError(f"Property define {prop} is not valid.")
-                def_dict[splits[0]] = splits[1]
-        elif isinstance(self.definition[sysctls_key], dict):
-            def_dict = self.definition[sysctls_key]
-        controls = []
-        for name, value in def_dict.items():
-            controls.append(SystemControl(Namespace=name, Value=str(value)))
-        return If(
-            IPC_FROM_HOST_CON_T, NoValue, If(USE_FARGATE_CON_T, NoValue, controls)
-        )
-
-    def define_shm_size(self):
-        """
-        Method to import and determine SHM SIZE
-        """
-        if not keyisset("shm_size", self.definition):
-            return NoValue
-        memory_value = set_memory_to_mb(self.definition["shm_size"])
-        return If(USE_FARGATE_CON_T, NoValue, memory_value)
-
-    def set_add_capacities(self, add_key, valid, cap_adds, all_adds, fargate):
-        """
-        Method to set the kernel capacities to add
-
-        :param str add_key:
-        :param list valid:
-        :param list cap_adds:
-        :param list all_adds:
-        :param list fargate:
-        """
-        if keyisset(add_key, self.definition):
-            for capacity in self.definition[add_key]:
-                if capacity not in valid:
-                    raise ValueError(
-                        f"Linux kernel capacity {capacity} is not supported in ECS or simply not valid"
-                    )
-                if capacity in fargate:
-                    cap_adds.append(capacity)
-                else:
-                    all_adds.append(capacity)
-
-    def set_drop_capacities(
-        self, drop_key, valid, cap_adds, all_adds, all_drops, fargate
-    ):
-        """
-        Set the drop kernel capacities
-
-        :param str drop_key:
-        :param list valid:
-        :param list cap_adds:
-        :param list all_adds:
-        :param list all_drops:
-        :param list fargate:
-        """
-        if keyisset(drop_key, self.definition):
-            for capacity in self.definition[drop_key]:
-                if capacity not in valid:
-                    raise ValueError(
-                        f"{self.name} - Linux kernel capacity {capacity} is not supported in ECS or simply not valid"
-                    )
-                if capacity in all_adds or capacity in cap_adds:
-                    raise KeyError(
-                        f"{self.name} - Capacity {capacity} already detected in cap_add. "
-                        "You cannot both add and remove the capacity"
-                    )
-                if capacity in fargate:
-                    cap_adds.append(capacity)
-                else:
-                    all_drops.append(capacity)
-
-    def define_kernel_options(self):
-        """
-        Define and return the kernel option settings for cap_add and cap_drop
-        :return:
-        """
-        valid = [
-            "ALL",
-            "AUDIT_CONTROL",
-            "AUDIT_WRITE",
-            "BLOCK_SUSPEND",
-            "CHOWN",
-            "DAC_OVERRIDE",
-            "DAC_READ_SEARCH",
-            "FOWNER",
-            "FSETID",
-            "IPC_LOCK",
-            "IPC_OWNER",
-            "KILL",
-            "LEASE",
-            "LINUX_IMMUTABLE",
-            "MAC_ADMIN",
-            "MAC_OVERRIDE",
-            "MKNOD",
-            "NET_ADMIN",
-            "NET_BIND_SERVICE",
-            "NET_BROADCAST",
-            "NET_RAW",
-            "SETFCAP",
-            "SETGID",
-            "SETPCAP",
-            "SETUID",
-            "SYS_ADMIN",
-            "SYS_BOOT",
-            "SYS_CHROOT",
-            "SYS_MODULE",
-            "SYS_NICE",
-            "SYS_PACCT",
-            "SYS_PTRACE",
-            "SYS_RAWIO",
-            "SYS_RESOURCE",
-            "SYS_TIME",
-            "SYS_TTY_CONFIG",
-            "SYSLOG",
-            "WAKE_ALARM",
-        ]
-        fargate = ["SYS_PTRACE"]
-        add_key = "cap_add"
-        drop_key = "cap_drop"
-        cap_adds = []
-        cap_drops = []
-        all_adds = []
-        all_drops = []
-        if not keyisset(add_key, self.definition) and not keyisset(
-            drop_key, self.definition
-        ):
-            return NoValue
-
-        self.set_add_capacities(add_key, valid, cap_adds, all_adds, fargate)
-        self.set_drop_capacities(
-            drop_key, valid, cap_adds, all_adds, all_drops, fargate
-        )
-        kwargs = {
-            "Add": cap_adds or NoValue,
-            "Drop": cap_drops or NoValue,
-        }
-        if all_adds:
-            cap_adds.append(If(USE_FARGATE_CON_T, NoValue, all_adds))
-        if all_drops:
-            cap_drops.append(If(USE_FARGATE_CON_T, NoValue, all_drops))
-        return KernelCapabilities(**kwargs)
-
-    def define_ulimits(self):
-        """
-        Set the ulimits
-        """
-        if not self.ulimits:
-            return NoValue
-        rendered_limits = []
-        fargate_supported = ["nofile"]
-        allowed = [
-            "core",
-            "cpu",
-            "data",
-            "fsize",
-            "locks",
-            "memlock",
-            "msgqueue",
-            "nice",
-            "nofile",
-            "nproc",
-            "rss",
-            "rtprio",
-            "rttime",
-            "sigpending",
-            "stack",
-        ]
-        for limit_name, limit_value in self.ulimits.items():
-            if limit_name not in allowed:
-                raise KeyError(
-                    f"{self.name} - ulimit property {limit_name} is not supported by ECS. Valid ones are",
-                    allowed,
-                )
-            elif isinstance(limit_value, (str, int)):
-                ulimit = Ulimit(
-                    SoftLimit=int(limit_value),
-                    HardLimit=int(limit_value),
-                    Name=limit_name,
-                )
-            elif (
-                isinstance(limit_value, dict)
-                and keyisset("soft", limit_value)
-                and keyisset("hard", limit_value)
-            ):
-                ulimit = Ulimit(
-                    SoftLimit=int(limit_value["soft"]),
-                    HardLimit=int(limit_value["hard"]),
-                    Name=limit_name,
-                )
-            elif isinstance(limit_value, dict) and not (
-                keyisset("soft", limit_value) and keyisset("hard", limit_value)
-            ):
-                raise KeyError(
-                    f"Missing hard or soft properties for ulimit {limit_name}"
-                )
-            else:
-                raise TypeError(f"{self.name} - ulimit is not of the proper definition")
-            if limit_name not in fargate_supported:
-                rendered_limits.append(If(USE_FARGATE_CON_T, NoValue, ulimit))
-            else:
-                rendered_limits.append(ulimit)
-        if rendered_limits:
-            return rendered_limits
-        return NoValue
 
     def set_user_group(self):
         """
@@ -888,61 +956,6 @@ class ComposeService:
         if self.group:
             self.user_group = f"{self.user}:{self.group}"
 
-    def set_env_files(self):
-        """
-        Method to list all the env files and check the files are found and available.
-        """
-        env_file_key = "env_file"
-        if not keyisset(env_file_key, self.definition):
-            return
-        if isinstance(self.definition[env_file_key], str):
-            file_path = self.definition[env_file_key]
-            if not path.exists(path.abspath(file_path)):
-                raise FileNotFoundError("No file found at", path.abspath(file_path))
-            self.env_files.append(path.abspath(file_path))
-        elif isinstance(self.definition[env_file_key], list):
-            for file_path in self.definition[env_file_key]:
-                if not isinstance(file_path, str):
-                    raise TypeError(
-                        "Files in the env_file is supposed to be a list of paths to files (str). Got",
-                        type(file_path),
-                    )
-                if not path.exists(path.abspath(file_path)):
-                    raise FileNotFoundError("No file found at", path.abspath(file_path))
-                self.env_files.append(path.abspath(file_path))
-        LOG.debug(self.env_files)
-
-    def merge_x_aws_role(self, key):
-        """
-        Method to update the service definition with the x-aws-role information if NOT defined in the composex
-        definition.
-
-        :param str key:
-        """
-        policy_def = {
-            "PolicyName": "ImportedFromXAWSRole",
-            "PolicyDocument": self.definition[key],
-        }
-        if not self.x_iam:
-            self.x_iam = {"Policies": [policy_def]}
-            LOG.info(f"Added {key} definition")
-        elif self.x_iam and keyisset("Policies", self.x_iam):
-            self.x_iam["Policies"].append(policy_def)
-            LOG.info(f"Merged {key} to existing definition")
-
-    def merge_x_policies(self, key):
-        """
-        Method to merge policies
-
-        :param str key:
-        """
-        if not self.x_iam:
-            self.x_iam = {"ManagedPolicyArns": self.definition[key]}
-            LOG.info(f"Added {key} definition")
-        elif self.x_iam and keyisset("ManagedPolicyArns", self.x_iam):
-            self.x_iam["ManagedPolicyArns"] += self.definition[key]
-            LOG.info(f"Merged {key} definition")
-
     def set_x_credentials_secret(self, key):
         """
         Method that will set the secret associated to the service to retrieve the docker image if defined through
@@ -954,8 +967,6 @@ class ComposeService:
 
     def import_x_aws_settings(self):
         aws_keys = [
-            ("x-aws-role", dict, self.merge_x_aws_role),
-            ("x-aws-policies", list, self.merge_x_policies),
             ("x-aws-autoscaling", dict, None),
             ("x-aws-pull_credentials", str, self.set_x_credentials_secret),
         ]
@@ -969,153 +980,5 @@ class ComposeService:
                     "Expected",
                     setting[1],
                 )
-            elif keyisset(setting[0], self.definition) and setting[2]:
+            elif keyisset(setting[0], self.definition) and callable(setting[2]):
                 setting[2](setting[0])
-
-    def is_in_family(self, family_name):
-        """
-        Method to check whether this service is part of a given family
-
-        :param str family_name:
-        :return: True/False
-        :rtype: bool
-        """
-        return family_name in self.families
-
-    def define_essential(self, deployment):
-        """
-        Method to define whether the container is essential.
-        :param dict deployment:
-        """
-        essential_key = "ecs.essential"
-        labels = "labels"
-        positive_values = [True, "yes", "True"]
-        negative_values = [False, "no", "False"]
-        if keyisset(labels, deployment) and keyisset(essential_key, deployment[labels]):
-            if (
-                deployment[labels][essential_key] not in positive_values
-                or deployment[labels][essential_key] not in negative_values
-            ):
-                raise ValueError(
-                    "The values allowed for",
-                    essential_key,
-                    "are",
-                    positive_values,
-                    negative_values,
-                    "Got",
-                    deployment[labels][essential_key],
-                )
-            if deployment[labels][essential_key] in negative_values:
-                self.is_essential = False
-
-    def define_compute_platform(self, deployment):
-        """
-        Determines whether to use ECS with EC2 or Fargate
-
-        :param dict deployment:
-        """
-        compute_key = "ecs.compute.platform"
-        launch_key = "ecs.launch.type"
-        labels = "labels"
-        allowed_values = ecs_params.LAUNCH_TYPE.AllowedValues
-        if keyisset(labels, deployment) and keyisset(compute_key, deployment[labels]):
-            value = deployment[labels][compute_key]
-        elif keyisset(labels, deployment) and keyisset(launch_key, deployment[labels]):
-            value = deployment[labels][launch_key]
-        else:
-            return
-        if value not in allowed_values:
-            raise ValueError(
-                f"ecs.compute.platform is {deployment[labels][compute_key]}"
-                "Must be one of",
-                allowed_values,
-            )
-        self.launch_type = value
-        LOG.info(
-            f"{self.name} - {ecs_params.LAUNCH_TYPE.title} set to {self.launch_type}"
-        )
-
-    def define_families(self):
-        """
-        Function to assign the service to a family / families
-        """
-        deploy = "deploy"
-        labels = "labels"
-        ecs_task_family = "ecs.task.family"
-        deployment = {}
-        if keyisset(deploy, self.definition):
-            deployment = self.definition[deploy]
-        if (
-            deployment
-            and keyisset(labels, deployment)
-            and keyisset(ecs_task_family, deployment[labels])
-        ):
-            if isinstance(deployment[labels][ecs_task_family], str):
-                self.families = deployment[labels][ecs_task_family].split(",")
-            else:
-                raise TypeError(
-                    f"{ecs_task_family} can only be one of ",
-                    str,
-                    "Got",
-                    type(deployment[labels][ecs_task_family]),
-                )
-        else:
-            self.families.append(self.name)
-
-    def set_update_config(self, deployment):
-        """
-        Method to set the update_config from the deploy service keys
-
-        :param dict deployment:
-        :return:
-        """
-        key = "update_config"
-        if not keyisset(key, deployment):
-            return
-        if not isinstance(deployment[key], dict):
-            raise TypeError(
-                "The deploy.update_config must be a dict/map. Got",
-                type(deployment[key]),
-            )
-        self.update_config = deployment[key]
-
-    def set_service_labels(self, deployments):
-        labels = "labels"
-        if not keyisset(labels, deployments):
-            return
-        self.deploy_labels = deployments[labels]
-        custom_keys = re.compile(r"^ecs\.[\S]+$")
-        keys = [name for name in self.deploy_labels.keys()]
-        for key in keys:
-            if custom_keys.match(key):
-                del self.deploy_labels[key]
-
-    def set_family_hostname(self, deployments):
-        """
-        Override family_hostname based on label
-
-        :param dict deployments:
-        """
-        labels = "labels"
-        hostname = "ecs.task.family.hostname"
-        if not keyisset(labels, deployments):
-            return
-        labels = deployments[labels]
-        if not keyisset(hostname, labels):
-            return
-        self.family_hostname = labels[hostname]
-
-    def set_service_deploy(self):
-        """
-        Function to setup the service configuration from the deploy section of the service in compose file.
-        """
-        deploy = "deploy"
-        if not keyisset("deploy", self.definition):
-            return
-        self.define_compute_platform(self.definition[deploy])
-        set_compute_resources(self, self.definition[deploy])
-        self.define_essential(self.definition[deploy])
-        self.set_update_config(self.definition[deploy])
-
-        self.set_family_hostname(self.definition[deploy])
-        # self.set_service_labels(self.definition[deploy])

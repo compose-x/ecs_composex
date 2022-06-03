@@ -528,14 +528,14 @@ class ComposeFamily:
             return
         images_parameters = []
         for service in chain(self.managed_sidecars, self.ordered_services):
-            if service.image_param.title not in self.stack.Parameters:
-                if isinstance(service.image, str):
+            if service.image.image_param.title not in self.stack.Parameters:
+                if isinstance(service.image.image, str):
                     self.stack.Parameters.update(
-                        {service.image_param.title: service.image}
+                        {service.image.image_param.title: service.image.image}
                     )
-                elif isinstance(service.image, Parameter):
+                elif isinstance(service.image.image, Ref):
                     LOG.debug(f"{service.name} image is Parameter already.")
-                images_parameters.append(service.image_param)
+                images_parameters.append(service.image.image_param)
         add_parameters(self.template, images_parameters)
 
     def validate_compute_configuration_for_task(self, settings):

@@ -35,17 +35,9 @@ class ManagedSidecar(ComposeService):
         :param ecs_composex.ecs.ecs_family.ComposeFamily family:
         :param bool is_dependency: Whether the family services depend on sidecar or not.
         """
-        self.my_family = family
+        self.family = family
         family.add_managed_sidecar(self)
-        self.set_parameters()
         self.set_as_dependency_to_family_services(is_dependency)
-
-    def set_parameters(self) -> None:
-        """
-        Auto adds the sidecar container image as parameter to the stack
-        """
-        if self.my_family.template and self.my_family.stack and self.image_param:
-            add_parameters(self.my_family.template, [self.image_param])
 
     def set_as_dependency_to_family_services(self, is_dependency: bool = False) -> None:
         """
@@ -53,16 +45,16 @@ class ManagedSidecar(ComposeService):
 
         :param bool is_dependency: Whether the family services depend on sidecar or not.
         """
-        for service in self.my_family.ordered_services:
+        for service in self.family.ordered_services:
             if is_dependency:
                 if self.name not in service.depends_on:
                     service.depends_on.append(self.name)
                     LOG.info(
-                        f"{self.my_family.name}.{service.name} - Added {self.name} as startup dependency"
+                        f"{self.family.name}.{service.name} - Added {self.name} as startup dependency"
                     )
             else:
                 if service.name not in self.depends_on:
                     self.depends_on.append(service.name)
                     LOG.info(
-                        f"{self.my_family.name}.{self.name} - Added {service.name} as startup dependency"
+                        f"{self.family.name}.{self.name} - Added {service.name} as startup dependency"
                     )

@@ -128,8 +128,8 @@ class FluentBit(ManagedSidecar):
 
                 define_iam_permissions(
                     "s3",
-                    self.my_family,
-                    self.my_family.template,
+                    self.family,
+                    self.family.template,
                     "s3ForFirelens",
                     {
                         "RO": {
@@ -143,8 +143,8 @@ class FluentBit(ManagedSidecar):
                         Sub(f"arn:aws:s3:::{parts.group('bucket')}/*"),
                     ],
                     roles=[
-                        self.my_family.iam_manager.task_role.name,
-                        self.my_family.iam_manager.exec_role.name,
+                        self.family.iam_manager.task_role.name,
+                        self.family.iam_manager.exec_role.name,
                     ],
                 )
         setattr(
@@ -164,7 +164,7 @@ class FluentBit(ManagedSidecar):
         :param ecs_composex.ecs.ecs_family.ComposeFamily family:
         :param bool is_dependency: Whether the family services depend on sidecar or not.
         """
-        self.my_family = family
+        self.family = family
         family.add_managed_sidecar(self)
         add_parameters(family.template, [FLUENT_BIT_IMAGE_PARAMETER])
         self.image_param = FLUENT_BIT_IMAGE_PARAMETER
@@ -177,12 +177,12 @@ class FluentBit(ManagedSidecar):
         :return:
         """
         for service in chain(
-            self.my_family.managed_sidecars, self.my_family.ordered_services
+            self.family.managed_sidecars, self.family.ordered_services
         ):
             if service is self:
                 continue
             if self.name not in service.depends_on:
                 service.depends_on.append(self.name)
                 LOG.info(
-                    f"{self.my_family.name}.{service.name} - Added {self.name} as startup dependency"
+                    f"{self.family.name}.{service.name} - Added {self.name} as startup dependency"
                 )
