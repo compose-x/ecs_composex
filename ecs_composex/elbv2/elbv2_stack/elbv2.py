@@ -162,7 +162,7 @@ class Elbv2(NetworkXResource):
                     ):
                         self.families_targets.append(
                             (
-                                f_service.my_family,
+                                f_service.family,
                                 f_service,
                                 service_def,
                                 f"{service_def['name']}{service_def['port']}",

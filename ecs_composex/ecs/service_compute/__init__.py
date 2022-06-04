@@ -93,7 +93,7 @@ class ServiceCompute:
         ]
         modes_priority_ordered = ["EXTERNAL", "EC2", "FARGATE"]
         for mode in modes_priority_ordered:
-            if mode in launch_modes:
+            if mode in launch_modes and self.launch_type != mode:
                 LOG.info(
                     f"{self.family.name} - At least one service defined for EXTERNAL. Overriding for all"
                 )

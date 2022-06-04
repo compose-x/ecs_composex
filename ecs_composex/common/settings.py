@@ -10,7 +10,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ecs_composex.mods_manager import ModManager
+    pass
 
 from copy import deepcopy
 from datetime import datetime as dt
@@ -402,6 +402,7 @@ class ComposeXSettings:
             )
             self.compose_content[ComposeService.main_key][service_name] = service
             self.services.append(service)
+            service.image.interpolate_image_digest(self)
 
     def add_new_family(
         self, family_name: str, service: ComposeService, assigned_services: list
@@ -413,11 +414,11 @@ class ComposeXSettings:
             the_service = deepcopy(service)
             family = ComposeFamily([the_service], family_name)
             self.families[family.logical_name] = family
-            the_service.my_family = family
+            the_service.family = family
             self.services.append(the_service)
         else:
             family = ComposeFamily([service], family_name)
-            service.my_family = family
+            service.family = family
         self.families[family.logical_name] = family
         if service not in assigned_services:
             assigned_services.append(service)
@@ -435,7 +436,7 @@ class ComposeXSettings:
             the_service = service
         LOG.debug(f"THE_SERVICE, {hex(id(the_service))}, SERVICE, {hex(id(service))}")
         the_family.add_service(the_service)
-        the_service.my_family = the_family
+        the_service.family = the_family
         self.services.append(the_service)
         if the_service not in assigned_services:
             assigned_services.append(the_service)

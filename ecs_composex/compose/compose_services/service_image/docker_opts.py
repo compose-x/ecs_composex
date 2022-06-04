@@ -14,7 +14,7 @@ from compose_x_common.compose_x_common import keyisset
 from ecs_composex.common import LOG
 
 try:
-    from .ecr_scans_eval import (
+    from ecs_composex.compose.compose_services.service_image.ecr_scans_eval import (
         define_service_image,
         interpolate_ecr_uri_tag_with_digest,
         invalidate_image_from_ecr,

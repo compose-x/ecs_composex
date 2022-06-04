@@ -26,12 +26,18 @@ from ecs_composex.resources_import import get_dest_resource_nested_property, ski
 
 FIREHOSE_PROPERTIES = {
     "DeliveryStreamEncryptionConfigurationInput::KeyARN": KMS_KEY_ARN,
-    "ExtendedS3DestinationConfiguration::EncryptionConfiguration::KMSEncryptionConfig::AWSKMSKeyARN": KMS_KEY_ARN,
-    "RedshiftDestinationConfiguration::EncryptionConfiguration::KMSEncryptionConfig::AWSKMSKeyARN": KMS_KEY_ARN,
-    "ElasticsearchDestinationConfiguration::EncryptionConfiguration::KMSEncryptionConfig::AWSKMSKeyARN": KMS_KEY_ARN,
-    "AmazonopensearchserviceDestinationConfiguration::EncryptionConfiguration::KMSEncryptionConfig::AWSKMSKeyARN": KMS_KEY_ARN,
-    "SplunkDestinationConfiguration::EncryptionConfiguration::KMSEncryptionConfig::AWSKMSKeyARN": KMS_KEY_ARN,
-    "HttpEndpointDestinationConfiguration::EncryptionConfiguration::KMSEncryptionConfig::AWSKMSKeyARN": KMS_KEY_ARN,
+    "ExtendedS3DestinationConfiguration::EncryptionConfiguration::KMSEncryptionConfig::"
+    "AWSKMSKeyARN": KMS_KEY_ARN,
+    "RedshiftDestinationConfiguration::EncryptionConfiguration::KMSEncryptionConfig::"
+    "AWSKMSKeyARN": KMS_KEY_ARN,
+    "ElasticsearchDestinationConfiguration::EncryptionConfiguration::KMSEncryptionConfig::"
+    "AWSKMSKeyARN": KMS_KEY_ARN,
+    "AmazonopensearchserviceDestinationConfiguration::EncryptionConfiguration::KMSEncryptionConfig::"
+    "AWSKMSKeyARN": KMS_KEY_ARN,
+    "SplunkDestinationConfiguration::EncryptionConfiguration::KMSEncryptionConfig::"
+    "AWSKMSKeyARN": KMS_KEY_ARN,
+    "HttpEndpointDestinationConfiguration::EncryptionConfiguration::KMSEncryptionConfig::"
+    "AWSKMSKeyARN": KMS_KEY_ARN,
 }
 
 

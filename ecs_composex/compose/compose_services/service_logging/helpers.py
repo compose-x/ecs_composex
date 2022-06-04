@@ -6,11 +6,13 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from . import ComposeService
+    from ecs_composex.compose.compose_services import ComposeService
 
 from compose_x_common.compose_x_common import keyisset, keypresent, set_else_none
 from troposphere import NoValue, Ref, Region
 from troposphere.ecs import LogConfiguration
+
+from ecs_composex.ecs.ecs_params import LOG_GROUP_RETENTION
 
 
 def handle_awslogs_options(
@@ -128,3 +130,10 @@ def handle_firelens_options(
             break
 
     return LogConfiguration(LogDriver="awsfirelens", Options=options)
+
+
+def get_closest_valid_log_retention_period(set_expiry):
+    return min(
+        LOG_GROUP_RETENTION.AllowedValues,
+        key=lambda x: abs(x - max([set_expiry])),
+    )

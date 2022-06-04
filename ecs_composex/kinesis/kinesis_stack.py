@@ -6,7 +6,7 @@ Module to handle import/create AWS Kinesis Data Streams
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings

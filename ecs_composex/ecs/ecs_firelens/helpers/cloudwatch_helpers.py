@@ -18,7 +18,6 @@ from troposphere import Ref, Region, Sub
 
 from ecs_composex.ecs.ecs_family.family_logging.cw_logging import (
     LOGGING_IAM_PERMISSIONS_MODEL,
-    create_log_group,
 )
 from ecs_composex.resource_settings import define_iam_permissions
 

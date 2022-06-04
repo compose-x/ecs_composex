@@ -1,4 +1,3 @@
-#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille<john@compose-x.io>
 
@@ -55,7 +54,7 @@ def step_impl(context):
         path.abspath(f"{here()}/../../../{file_name}") for file_name in context.files
     ]
     print(cases_path)
-    with raises((ValueError, KeyError, ComposeBaseException)):
+    with raises(Exception):
         context.settings = ComposeXSettings(
             profile_name=getattr(context, "profile_name")
             if hasattr(context, "profile_name")

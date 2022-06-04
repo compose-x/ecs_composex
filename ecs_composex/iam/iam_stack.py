@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 from collections import OrderedDict
 
 from compose_x_common.compose_x_common import keyisset
-from troposphere import NoValue, Ref, Sub
+from troposphere import NoValue, Sub
 from troposphere.iam import Role as IamRole
 
 from ecs_composex.common import add_outputs, add_parameters, build_template

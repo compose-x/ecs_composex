@@ -1,6 +1,8 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  Copyright 2020-2022 John Mille <john@compose-x.io>
 
+from __future__ import annotations
+
 import re
 from time import sleep
 
@@ -8,7 +10,7 @@ from boto3.session import Session
 
 try:
     from ecr_scan_reporter.ecr_scan_reporter import DEFAULT_THRESHOLDS
-    from ecr_scan_reporter.images_scanner import list_all_images, trigger_images_scan
+    from ecr_scan_reporter.images_scanner import trigger_images_scan
 except ImportError:
     raise ImportError(
         "You must install ecr-scan-reporter in order to use this functionality"
@@ -17,7 +19,8 @@ except ImportError:
 from compose_x_common.compose_x_common import keyisset
 
 from ecs_composex.common import LOG
-from ecs_composex.common.aws import get_cross_role_session
+
+from .ecr_helpers import define_ecr_session
 
 ECR_URI_RE = re.compile(
     r"(?P<account_id>\d{12}).dkr.ecr.(?P<region>[a-z0-9-]+).amazonaws.com/"
@@ -144,26 +147,6 @@ def wait_for_scan_report(
     return findings
 
 
-def invalidate_image_from_ecr(service, mute=False):
-    """
-    Function to validate that the image URI is from valid and from private ECR
-
-    :param ecs_composex.common.compose_services.ComposeService service:
-    :param bool mute: Whether we display output
-    :return: True when the image is not from ECR
-    :rtype: bool
-    """
-    if not ECR_URI_RE.match(service.image):
-        if not mute:
-            LOG.info(
-                f"{service.name} - image provided not valid ECR URI - "
-                f"{service.image} - "
-            )
-            LOG.info(f"Expected ECR Regexp {ECR_URI_RE.pattern}")
-        return True
-    return False
-
-
 def validate_input(service):
     """
     Validates that we have enough settings and the URL matches AWS ECR Private Repo
@@ -177,63 +160,7 @@ def validate_input(service):
     if not keyisset("VulnerabilitiesScan", service.ecr_config):
         LOG.info(f"{service.name} - No scan to be evaluated.")
         return True
-    if invalidate_image_from_ecr(service, True):
-        return True
     return False
-
-
-def define_ecr_session(
-    account_id, current_account_id, repo_name, region, settings, role_arn=None
-):
-    """
-    Function to determine the boto3 session to use for subsequent API calls to ECR
-    :param account_id:
-    :param current_account_id:
-    :param repo_name:
-    :param region:
-    :param settings:
-    :param str role_arn:
-    :return:
-    """
-    session = Session(region_name=region)
-    if account_id != current_account_id and role_arn is None:
-        raise KeyError(
-            f"The account for repository {repo_name} detected from image URI is in account "
-            f"{account_id}, execution session in {current_account_id} and no RoleArn provided"
-        )
-    elif account_id != current_account_id and role_arn:
-        session = get_cross_role_session(
-            settings.session,
-            role_arn,
-            region_name=region,
-            session_name="ecr-scan@compose-x",
-        )
-    return session
-
-
-def identify_service_image(repo_name, image_sha, image_tag, session):
-    """
-    Function to identify the image in repository that matches the one defined in services.image
-
-    :param str repo_name:
-    :param str image_sha:
-    :param str image_tag:
-    :param boto3.session.Session session:
-    :return: The image definition
-    :rtype: dict
-    """
-    repo_images = list_all_images(repo_name=repo_name, ecr_session=session)
-    the_image = None
-    for image in repo_images:
-        if (
-            image_sha
-            and keyisset("imageDigest", image)
-            and image["imageDigest"] == image_sha
-        ) or (
-            image_tag and keyisset("imageTag", image) and image["imageTag"] == image_tag
-        ):
-            the_image = image
-    return the_image
 
 
 def define_result(image_url, security_findings, thresholds, vulnerability_config):
@@ -274,56 +201,6 @@ def define_result(image_url, security_findings, thresholds, vulnerability_config
     return result
 
 
-def interpolate_ecr_uri_tag_with_digest(image_url, image_digest):
-    """
-    Function to replace the tag from image_url
-
-    :param str image_url:
-    :param str image_digest:
-    :return:
-    """
-    tag = ECR_URI_RE.match(image_url).group("tag")
-    if tag.startswith(r"@"):
-        return image_url
-    new_image = re.sub(tag, f"@{image_digest}", image_url)
-    return new_image
-
-
-def define_service_image(service, settings):
-    """
-    Function to parse and identify the image for the service in AWS ECR
-
-    :param ecs_composex.common.compose_services.ComposeService service:
-    :param ecs_composex.common.settings.ComposeXSettings settings: The settings for the execution
-    :return:
-    """
-    current_account_id = settings.session.client("sts").get_caller_identity()["Account"]
-    if invalidate_image_from_ecr(service):
-        return
-    image_sha = None
-    image_tag = None
-    tag = ECR_URI_RE.match(service.image).group("tag")
-    if tag.startswith(r":"):
-        image_tag = tag.split(":")[-1]
-    elif tag.startswith(r"@"):
-        image_sha = tag.split("@")[-1]
-    repo_name = ECR_URI_RE.match(service.image).group("repo_name")
-    account_id = ECR_URI_RE.match(service.image).group("account_id")
-    region = ECR_URI_RE.match(service.image).group("region")
-    session = define_ecr_session(
-        account_id,
-        current_account_id,
-        repo_name,
-        region,
-        settings,
-        role_arn=service.ecr_config["RoleArn"]
-        if keyisset("RoleArn", service.ecr_config)
-        else None,
-    )
-    the_image = identify_service_image(repo_name, image_sha, image_tag, session)
-    return the_image
-
-
 def validate_the_image_input(the_image):
     """
     Function to validet the_image input
@@ -351,7 +228,6 @@ def scan_service_image(service, settings, the_image=None):
     :return:
     """
     region = None
-    current_account_id = settings.session.client("sts").get_caller_identity()["Account"]
     if validate_input(service):
         return
     vulnerability_config = service.ecr_config["VulnerabilitiesScan"]
@@ -362,12 +238,12 @@ def scan_service_image(service, settings, the_image=None):
         LOG.warn(f"No thresholds defined. Using defaults {DEFAULT_THRESHOLDS}")
         thresholds = DEFAULT_THRESHOLDS
     validate_the_image_input(the_image)
-    repo_name = ECR_URI_RE.match(service.image).group("repo_name")
-    account_id = ECR_URI_RE.match(service.image).group("account_id")
-    region = ECR_URI_RE.match(service.image).group("region")
+    parts = service.image.private_ecr
+    repo_name = parts.group("repo_name")
+    account_id = parts.group("account_id")
+    region = parts.group("region")
     session = define_ecr_session(
         account_id,
-        current_account_id,
         repo_name,
         region,
         settings,

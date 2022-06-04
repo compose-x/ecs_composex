@@ -8,8 +8,10 @@ from ecs_composex.common.ecs_composex import X_KEY
 
 RES_KEY = f"{X_KEY}{path.basename(path.dirname(path.abspath(__file__)))}"
 
+LABEL = "CloudWatch Alarms"
+
 ALARM_NAME_T = "AlarmName"
-ALARM_NAME = Parameter(ALARM_NAME_T, Type="String")
+ALARM_NAME = Parameter(ALARM_NAME_T, group_label=LABEL, Type="String")
 
 ALARM_ARN_T = "AlarmArn"
-ALARM_ARN = Parameter(ALARM_ARN_T, return_value="Arn", Type="String")
+ALARM_ARN = Parameter(ALARM_ARN_T, group_label=LABEL, return_value="Arn", Type="String")

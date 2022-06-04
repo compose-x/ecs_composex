@@ -3,14 +3,11 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
-from compose_x_common.compose_x_common import keyisset, set_else_none
-from troposphere import AWS_NO_VALUE, FindInMap, GetAtt, ImportValue, NoValue, Ref, Sub
+from compose_x_common.compose_x_common import keyisset
+from troposphere import FindInMap, GetAtt, ImportValue, NoValue, Ref, Sub
 from troposphere.ecs import ContainerDefinition, Environment
 
 from ecs_composex.common import LOG
-from ecs_composex.ecs.ecs_params import LOG_GROUP_RETENTION
 
 
 def import_secrets(template, service, container, settings):
@@ -233,10 +230,3 @@ def validate_healthcheck(healthcheck, valid_keys, required_keys):
         raise AttributeError(
             f"Expected at least {required_keys}. Got", healthcheck.keys()
         )
-
-
-def get_closest_valid_log_retention_period(set_expiry):
-    return min(
-        LOG_GROUP_RETENTION.AllowedValues,
-        key=lambda x: abs(x - max([set_expiry])),
-    )

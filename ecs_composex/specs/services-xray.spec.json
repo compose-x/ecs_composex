@@ -1,0 +1,89 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "id": "services.x-xray",
+  "$id": "services.x-xray.spec.json",
+  "type": "object",
+  "title": "services.x-xray specification",
+  "description": "The services.x-xray specification for ComposeX",
+  "oneOf": [
+    {
+      "type": "boolean",
+      "description": "Simply add xray-daemon with compose-x managed settings"
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "OverrideImage": {
+          "type": "string",
+          "description": "Overrides the image to use for the xray-daemon service"
+        }
+      }
+    }
+  ],
+  "definitions": {
+    "TargetScalingDef": {
+      "type": "object",
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "allOf": [
+            {
+              "not": {
+                "required": [
+                  "CpuTarget"
+                ]
+              }
+            },
+            {
+              "not": {
+                "required": [
+                  "MemoryTarget"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "required": [
+            "CpuTarget"
+          ]
+        },
+        {
+          "required": [
+            "MemoryTarget"
+          ]
+        }
+      ],
+      "properties": {
+        "CpuTarget": {
+          "type": "integer",
+          "maximum": 100.0,
+          "minimum": 0.1,
+          "description": "Percentage of CPU usage to track and scale services accordingly"
+        },
+        "MemoryTarget": {
+          "type": "integer",
+          "description": "Percentage of RAM usage to track and scale services accordingly",
+          "maximum": 100.0,
+          "minimum": 0.1
+        },
+        "ScaleInCooldown": {
+          "type": "integer",
+          "default": 300,
+          "description": "Lapse of time before xray in since last xray activity"
+        },
+        "ScaleOutCooldown": {
+          "type": "integer",
+          "default": 60,
+          "description": "Lapse of time before xray out since last xray activity."
+        },
+        "DisableScaleIn": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether the xray in should be disabled or not."
+        }
+      }
+    }
+  }
+}

@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
-    from ecs_composex.mods_manager import ModManager
 
 from botocore.exceptions import ClientError
 from compose_x_common.aws import get_assume_role_session
@@ -40,7 +39,7 @@ from troposphere.ecs import (
 from troposphere.logs import LogGroup
 
 from ecs_composex.common import LOG, add_update_mapping
-from ecs_composex.compose.compose_services.helpers import (
+from ecs_composex.compose.compose_services.service_logging.helpers import (
     get_closest_valid_log_retention_period,
 )
 from ecs_composex.ecs import metadata
@@ -355,7 +354,7 @@ class EcsCluster:
                             if keyisset("AllowKmsKeyReuse", self.parameters)
                             else Sub(
                                 f"arn:${{{AWS_PARTITION}}}:logs:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:"
-                                f"log-group:/ecs/execute-logs/${{CLUSTER_NAME}}*",
+                                "log-group:/ecs/execute-logs/${CLUSTER_NAME}*",
                                 CLUSTER_NAME=cluster_name,
                             )
                         }
@@ -397,7 +396,7 @@ class EcsCluster:
             },
             "Settings": {
                 "Alias": Sub(
-                    f"alias/ecs/execute-logs/${{CLUSTER_NAME}}",
+                    "alias/ecs/execute-logs/${CLUSTER_NAME}",
                     CLUSTER_NAME=cluster_name,
                 )
             },
@@ -414,7 +413,7 @@ class EcsCluster:
         self.log_group = LogGroup(
             "EcsExecLogGroup",
             LogGroupName=Sub(
-                f"/ecs/execute-logs/${{CLUSTER_NAME}}",
+                "/ecs/execute-logs/${CLUSTER_NAME}",
                 CLUSTER_NAME=cluster_name,
             ),
             RetentionInDays=120
@@ -487,7 +486,7 @@ class EcsCluster:
             settings.compose_content["x-s3"][MANAGED_S3_BUCKET_NAME] = bucket_config
         log_configuration["S3BucketName"] = f"x-s3::{MANAGED_S3_BUCKET_NAME}"
         log_configuration["S3KeyPrefix"] = Sub(
-            f"ecs/execute-logs/${{CLUSTER_NAME}}/", CLUSTER_NAME=cluster_name
+            "ecs/execute-logs/${CLUSTER_NAME}/", CLUSTER_NAME=cluster_name
         )
         log_configuration["S3EncryptionEnabled"] = True
 

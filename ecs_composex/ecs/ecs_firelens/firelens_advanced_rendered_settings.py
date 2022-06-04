@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
 
 from troposphere import Ref, Region
-from troposphere.ecs import Environment, LogConfiguration
+from troposphere.ecs import Environment
 
 from ecs_composex.compose.compose_services.helpers import extend_container_envvars
 from ecs_composex.compose.compose_volumes.ecs_family_helpers import set_volumes

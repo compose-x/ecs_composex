@@ -17,8 +17,6 @@ if TYPE_CHECKING:
     )
     from ecs_composex.cloudmap.cloudmap_stack import PrivateNamespace
 
-from typing import Union
-
 from compose_x_common.compose_x_common import keyisset
 from troposphere import NoValue, Ref
 from troposphere.servicediscovery import DnsConfig, DnsRecord, Instance, Service

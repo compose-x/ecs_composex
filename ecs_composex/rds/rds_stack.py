@@ -7,7 +7,6 @@ Module to handle AWS RDS CFN Templates creation
 
 from __future__ import annotations
 
-import json
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:

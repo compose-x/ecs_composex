@@ -12,8 +12,6 @@ if TYPE_CHECKING:
     from ecs_composex.common.stacks import ComposeXStack
     from troposphere.iam import Role
 
-from itertools import chain
-
 from troposphere import (
     AWS_ACCOUNT_ID,
     AWS_PARTITION,

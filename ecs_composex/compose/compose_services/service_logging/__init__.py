@@ -13,14 +13,13 @@ from compose_x_common.compose_x_common import keyisset, set_else_none
 from troposphere import NoValue
 from troposphere.ecs import LogConfiguration
 
-from ecs_composex.compose.compose_services.logging_definition_helpers import (
+from ecs_composex.compose.compose_services.service_logging.helpers import (
+    get_closest_valid_log_retention_period,
     handle_awslogs_options,
     handle_firelens_options,
     replace_awslogs_with_firelens_configuration,
 )
 from ecs_composex.ecs.ecs_params import LOG_GROUP_RETENTION
-
-from .helpers import get_closest_valid_log_retention_period
 
 
 class ServiceLogging:
@@ -101,8 +100,8 @@ class ServiceLogging:
 
     @property
     def family(self) -> Union[ComposeFamily, None]:
-        if self.service.my_family:
-            return self.service.my_family
+        if self.service.family:
+            return self.service.family
         return None
 
     @property
