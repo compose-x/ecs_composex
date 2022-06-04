@@ -2,6 +2,45 @@
 History
 =======
 
+0.21.0 (2022-06-04)
+===================
+
+In this realease, the important addition to the ECS Compose-X features is adding support for
+FireLens log driver.
+
+With FireLens, users will be able to leverage the power of fluentbit (fluentd to come) to manipulate
+and ship logs in various formats and to various destinations.
+
+Examples will be added to the `labs <https://labs.compose-x.io>`__ and `a new repository <https://github.com/compose-x/compose-x-firelens-examples>`__
+was created specifically to showcase different FireLens configurations and test cases.
+
+
+New features
+---------------
+
+* 7539a26 Implement FireLens logging options. (#617) (John Preston)
+
+
+Breaking changes
+---------------------
+
+* x-logging.CreateLogGroup deprecated.
+
+Improvements
+---------------
+
+* 06d295f Fix image property to use (John Preston)
+* 7367c25 Refactoring compose-service class and image settings (#621) (John Preston)
+
+
+Fixes
+--------
+
+* 7674090 Fixed service count from deploy.replicas (John Preston)
+* 23968ac Ensures the family does not add itself as dependency (John Preston)
+
+
+
 0.20.0 (2022-05-18)
 ============================
 
