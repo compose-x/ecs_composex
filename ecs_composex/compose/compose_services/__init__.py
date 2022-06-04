@@ -186,7 +186,7 @@ class ComposeService:
         if (
             family.stack
             and isinstance(self.image, ServiceImage)
-            and isinstance(self.image.image_uri, str)
+            and isinstance(self.image.image, str)
         ):
             family.stack.Parameters.update(
                 {self.image.image_param.title: self.image.image_uri}
