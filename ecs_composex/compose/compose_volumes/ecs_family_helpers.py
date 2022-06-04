@@ -9,6 +9,25 @@ from ecs_composex.common import NONALPHANUM
 from ecs_composex.ecs.ecs_conditions import USE_FARGATE_CON_T
 
 
+def existing_mount_points(mount_points: list[MountPoint]) -> list:
+    """
+    Function to list out all unique mount points defined.
+
+    :param list[MountPoint] mount_points: Existing mount points
+    :return: Unique list of mount points
+    :rtype: list
+    """
+    return [
+        dict(_tmp)
+        for _tmp in {
+            tuple(mount.items())
+            for mount in [
+                _mnt.to_dict() for _mnt in mount_points if isinstance(_mnt, MountPoint)
+            ]
+        }
+    ]
+
+
 def set_services_mount_points(family):
     """
     Method to set the mount points to the Container Definition of the defined service
@@ -22,6 +41,17 @@ def set_services_mount_points(family):
             setattr(service.container_definition, "MountPoints", mount_points)
         else:
             mount_points = getattr(service.container_definition, "MountPoints")
+        for mnt_point in mount_points:
+            if not isinstance(mnt_point, MountPoint):
+                raise TypeError(
+                    family.name,
+                    service.name,
+                    "mount point is not",
+                    MountPoint,
+                    "Got",
+                    mnt_point,
+                    type(mnt_point),
+                )
         for volume in service.volumes:
             if keyisset("volume", volume):
                 mnt_point = MountPoint(
@@ -39,7 +69,8 @@ def set_services_mount_points(family):
                         SourceVolume=NONALPHANUM.sub("", volume["target"]),
                     ),
                 )
-            mount_points.append(mnt_point)
+            if not mnt_point.to_dict() in existing_mount_points(mount_points):
+                mount_points.append(mnt_point)
 
 
 def define_shared_volumes(family):
