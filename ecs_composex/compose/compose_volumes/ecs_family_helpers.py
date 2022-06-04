@@ -55,8 +55,7 @@ def mount_point_exists(
                     existing_mnt.to_dict(),
                 )
             return True
-    else:
-        return False
+    return False
 
 
 def set_services_mount_points(family):
