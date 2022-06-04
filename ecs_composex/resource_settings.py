@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from ecs_composex.compose.compose_services import ComposeService
 
 from compose_x_common.compose_x_common import keyisset
-from troposphere import AWSHelperFn, FindInMap, GetAtt, NoValue, Ref, Sub
+from troposphere import AWSHelperFn, GetAtt, NoValue, Ref, Sub
 from troposphere.iam import Policy as IamPolicy
 from troposphere.iam import PolicyType
 

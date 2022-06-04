@@ -7,7 +7,7 @@ Docker compose integration related function, wrapping transformation to Containe
 
 import re
 
-from compose_x_common.compose_x_common import keyisset, set_else_none
+from compose_x_common.compose_x_common import keyisset
 from troposphere import NoValue
 
 from ecs_composex.common import LOG, clpow2, nxtpow2

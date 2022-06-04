@@ -7,7 +7,7 @@ Module of functions factorizing common patterns for TCP based access such as RDS
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ecs_composex.ecs.ecs_family import ComposeFamily

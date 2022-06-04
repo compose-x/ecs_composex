@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from ecs_composex.ecs.ecs_family import ComposeFamily
     from ecs_composex.common.cfn_params import Parameter
 
-from ecs_composex.common import LOG, add_parameters
+from ecs_composex.common import LOG
 from ecs_composex.compose.compose_services import ComposeService
 
 

@@ -14,7 +14,6 @@ from itertools import chain
 
 from compose_x_common.compose_x_common import keyisset
 from troposphere import Ref, Region, Sub
-from troposphere.ecs import LogConfiguration
 
 from ecs_composex.common import LOG
 from ecs_composex.common.cfn_conditions import define_stack_name

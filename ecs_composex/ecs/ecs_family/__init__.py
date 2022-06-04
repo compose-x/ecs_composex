@@ -21,7 +21,6 @@ from troposphere import Ref, Region, Tags
 from troposphere.ecs import EphemeralStorage, RuntimePlatform, TaskDefinition
 
 from ecs_composex.common import LOG, add_outputs, add_parameters
-from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.compose_services import ComposeService
 from ecs_composex.ecs import ecs_conditions, ecs_params

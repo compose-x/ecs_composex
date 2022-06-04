@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import logging
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -11,7 +10,7 @@ if TYPE_CHECKING:
     from .kinesis_firehose_stack import DeliveryStream
 
 from troposphere import NoValue, Sub
-from troposphere.firehose import DeliveryStream
+from troposphere.firehose import DeliveryStream as CfnDeliveryStream
 from troposphere.logs import LogGroup
 
 from ecs_composex.common import LOG, build_template
@@ -62,7 +61,7 @@ def values_validation(stream: DeliveryStream) -> None:
                     "must be",
                     expression,
                 )
-        else:
+        elif callable(expression):
             expression(stream, prop_attr)
 
 
@@ -74,11 +73,11 @@ def create_new_stream(stream: DeliveryStream) -> None:
     """
     props = import_record_properties(
         stream.properties,
-        DeliveryStream,
+        CfnDeliveryStream,
         ignore_missing_required=True,
         ignore_missing_sub_required=True,
     )
-    stream.cfn_resource = DeliveryStream(stream.logical_name, **props)
+    stream.cfn_resource = CfnDeliveryStream(stream.logical_name, **props)
     stream.log_group = LogGroup(
         f"{stream.logical_name}LogGroup",
         LogGroupName=Sub(

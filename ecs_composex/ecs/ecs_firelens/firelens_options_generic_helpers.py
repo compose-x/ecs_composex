@@ -9,7 +9,6 @@ if TYPE_CHECKING:
     from ecs_composex.ecs.ecs_family import ComposeFamily
     from ecs_composex.compose.compose_services import ComposeService
     from ecs_composex.common.settings import ComposeXSettings
-    from ecs_composex.compose.x_resources import XResource
 
 from compose_x_common.aws import validate_iam_role_arn
 from troposphere import Sub

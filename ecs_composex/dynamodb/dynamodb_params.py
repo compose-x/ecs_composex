@@ -3,8 +3,12 @@
 
 from ecs_composex.common.cfn_params import Parameter
 
+LABEL = "DynamoDB"
+
 TABLE_NAME_T = "TableName"
-TABLE_NAME = Parameter(TABLE_NAME_T, Type="String", AllowedPattern=r"[a-zA-Z0-9_.-]+")
+TABLE_NAME = Parameter(
+    TABLE_NAME_T, group_label=LABEL, Type="String", AllowedPattern=r"[a-zA-Z0-9_.-]+"
+)
 
 TABLE_ARN_T = "Arn"
-TABLE_ARN = Parameter(TABLE_ARN_T, return_value="Arn", Type="String")
+TABLE_ARN = Parameter(TABLE_ARN_T, group_label=LABEL, return_value="Arn", Type="String")

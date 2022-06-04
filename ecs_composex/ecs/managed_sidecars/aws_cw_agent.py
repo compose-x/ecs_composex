@@ -6,8 +6,7 @@ Simple class to manage AWS XRay sidecar
 """
 
 from ecs_composex.common.cfn_params import Parameter
-
-from . import ManagedSidecar
+from ecs_composex.ecs.managed_sidecars import ManagedSidecar
 
 CW_IMAGE_PARAMETER = Parameter(
     "CloudwatchAgentImage",

@@ -3,14 +3,11 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
-from compose_x_common.compose_x_common import keyisset, set_else_none
-from troposphere import AWS_NO_VALUE, FindInMap, GetAtt, ImportValue, NoValue, Ref, Sub
+from compose_x_common.compose_x_common import keyisset
+from troposphere import FindInMap, GetAtt, ImportValue, NoValue, Ref, Sub
 from troposphere.ecs import ContainerDefinition, Environment
 
 from ecs_composex.common import LOG
-from ecs_composex.ecs.ecs_params import LOG_GROUP_RETENTION
 
 
 def import_secrets(template, service, container, settings):

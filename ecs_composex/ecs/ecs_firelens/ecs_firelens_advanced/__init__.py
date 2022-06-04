@@ -17,7 +17,7 @@ from os import environ, path
 
 from compose_x_common.compose_x_common import keyisset, set_else_none
 from jinja2 import Environment, FileSystemLoader
-from troposphere import NoValue, Ref, Region, Sub
+from troposphere import Ref, Region
 
 from ecs_composex.common import LOG
 from ecs_composex.compose.compose_services.service_logging import ServiceLogging

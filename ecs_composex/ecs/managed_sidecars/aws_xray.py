@@ -16,8 +16,7 @@ from copy import deepcopy
 
 from ecs_composex.common import LOG
 from ecs_composex.ecs.ecs_params import XRAY_IMAGE
-
-from . import ManagedSidecar
+from ecs_composex.ecs.managed_sidecars import ManagedSidecar
 
 XRAY_NAME = "xray-daemon"
 XRAY_DEFINITION = {

@@ -12,6 +12,7 @@ from botocore.exceptions import ClientError
 
 if TYPE_CHECKING:
     from . import ComposeService
+    from ecs_composex.common.settings import ComposeXSettings
 
 import warnings
 
@@ -35,6 +36,8 @@ from troposphere import Ref
 from ecs_composex.common import LOG
 from ecs_composex.common.cfn_params import Parameter
 
+from .ecr_helpers import define_service_image, interpolate_ecr_uri_tag_with_digest
+
 
 def get_image_from_ssm_parameter(
     ssm_parameter: Parameter, session: Session = None
@@ -54,7 +57,7 @@ class ServiceImage:
     """
 
     :ivar _image:
-    :ivar str image_name:
+    :ivar str image_uri:
     """
 
     def __init__(self, service: ComposeService, image_param: Parameter = None):
@@ -63,7 +66,7 @@ class ServiceImage:
         self._service = service
         self._image = None
 
-        self.image_name = service.definition["image"]
+        self.image_uri = service.definition["image"]
         if not image_param:
             self._image_param = Parameter(
                 f"{self.service.logical_name}ImageUrl", Type="String"
@@ -106,43 +109,53 @@ class ServiceImage:
 
     @property
     def private_ecr(self) -> Union[re.Match, None]:
-        return PRIVATE_ECR_URI_RE.match(self.image_name)
+        return PRIVATE_ECR_URI_RE.match(self.image_uri)
 
     @property
     def public_ecr(self) -> Union[re.Match, None]:
-        return PUBLIC_ECR_URI_RE.match(self.image_name)
+        return PUBLIC_ECR_URI_RE.match(self.image_uri)
 
-    @property
-    def ecr_properties(self) -> dict:
-        ecr_private_parts = self.private_ecr
-        ecr_public_parts = self.public_ecr
-        if ecr_private_parts:
-            tag = ecr_private_parts.group("tag")
-            if tag.startswith(r"@sha"):
-                image_id = {"imageDigest": tag}
+    def image_digest(self):
+        if self.private_ecr and self.private_ecr.group("tag").startswith(r"@sha"):
+            return self.private_ecr.group("tag")
+        elif self.public_ecr and self.public_ecr.group("tag").startswith(r"@sha"):
+            return self.public_ecr.group("tag")
+
+    def private_ecr_digest(self, settings: ComposeXSettings):
+        if not self.service.x_ecr:
+            return
+        service_image = define_service_image(self.service, settings)
+        if not keyisset("imageDigest", service_image):
+            LOG.info(
+                f"{self.service.name} - Unable to find digest for {self.image_uri}"
+            )
+            return
+        if (
+            self.service.ecr_config
+            and keyisset("InterpolateWithDigest", self.service.x_ecr)
+            and keyisset("imageDigest", service_image)
+        ):
+            self.image_uri = interpolate_ecr_uri_tag_with_digest(
+                self.image_uri, service_image["imageDigest"]
+            )
+            LOG.info(f"Update service {self.service.name} image to {self.image_uri}")
+            if self.service.family:
+                self.service.family.stack.Parameters.update(
+                    {self.image_param.title: self.image_uri}
+                )
             else:
-                image_id = {"imageTag": tag}
-            config: dict = {
-                "RegistryId": ecr_private_parts.group("account_id"),
-                "RepositoryName": ecr_private_parts.group("repo_name"),
-                "Region": ecr_private_parts.group("region"),
-            }
-            config.update(image_id)
-            return config
-        elif ecr_public_parts:
-            tag = ecr_public_parts.group("tag")
-            if tag.startswith(r"@sha"):
-                image_id = {"imageDigest": tag}
-            else:
-                image_id = {"imageTag": tag}
-            config: dict = {
-                "RepositoryName": ecr_public_parts.group("repo_name"),
-                "Region": "us-east-1",
-            }
-            config.update(image_id)
-            return config
-        else:
-            return {}
+                self.service.definition["image"] = self.image_uri
+
+    def interpolate_image_digest(self, settings: ComposeXSettings):
+        """
+        if service x-ecr is set, and image URI indicates a resolvable image, sets image_digest
+        """
+        if (
+            self.service.x_ecr
+            and keyisset("InterpolateWithDigest", self.service.x_ecr)
+            and self.private_ecr
+        ):
+            self.private_ecr_digest(settings)
 
     def retrieve_image_digest(self):
         """

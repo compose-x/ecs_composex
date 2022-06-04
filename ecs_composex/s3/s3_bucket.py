@@ -16,6 +16,7 @@ from ecs_composex.kinesis_firehose.kinesis_firehose_stack import DeliveryStream
 from ecs_composex.mods_manager import ModManager, XResourceModule
 from ecs_composex.resource_settings import link_resource_to_services
 from ecs_composex.s3.s3_ecs_cluster import handle_ecs_cluster
+from ecs_composex.s3.s3_kinesis_firehose import s3_to_firehose
 from ecs_composex.s3.s3_params import (
     CONTROL_CLOUD_ATTR_MAPPING,
     S3_BUCKET_ARN,
@@ -25,8 +26,6 @@ from ecs_composex.s3.s3_params import (
     S3_BUCKET_NAME,
     S3_BUCKET_REGION_DOMAIN_NAME,
 )
-
-from .s3_kinesis_firehose import s3_to_firehose
 
 
 class Bucket(ApiXResource):

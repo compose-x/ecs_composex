@@ -15,7 +15,6 @@ from os import path
 from typing import TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
-    from .service_logging import ServiceLogging
     from ecs_composex.ecs.ecs_family import ComposeFamily
 
 from compose_x_common.compose_x_common import keyisset, keypresent, set_else_none
@@ -48,7 +47,6 @@ from ecs_composex.compose.compose_volumes.services_helpers import map_volumes
 from ecs_composex.ecs.ecs_conditions import (
     IPC_FROM_HOST_CON_T,
     USE_FARGATE_CON_T,
-    USE_LINUX_OS_T,
     USE_WINDOWS_OS_T,
 )
 
@@ -60,7 +58,7 @@ class ComposeService:
     Class to represent a docker-compose singleton service
 
     :ivar str container_name: name of the container to use in definitions
-    :ivar ServiceLogging logging::
+    :ivar ecs_composex.compose.compose_services.service_logging.ServiceLogging logging:
     :ivar ServiceImage image:
     """
 
@@ -107,6 +105,7 @@ class ComposeService:
         self.x_cloudmap = set_else_none("x-cloudmap", self.x_network, None, False)
         self.x_ecs = set_else_none("x-ecs", self.definition, {})
         self.ecr_config = set_else_none("x-ecr", self.definition, None)
+        self.x_ecr = set_else_none("x-ecr", self.definition, {})
         self.eip_auto_assign = set_else_none("AssignPublicIp", self.x_network, False)
         self.x_ray = set_else_none(
             "x-xray",
@@ -187,10 +186,10 @@ class ComposeService:
         if (
             family.stack
             and isinstance(self.image, ServiceImage)
-            and isinstance(self.image.image, str)
+            and isinstance(self.image.image_uri, str)
         ):
             family.stack.Parameters.update(
-                {self.image.image_param.title: self.image.image}
+                {self.image.image_param.title: self.image.image_uri}
             )
 
     @property
