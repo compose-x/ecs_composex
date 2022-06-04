@@ -61,7 +61,7 @@ behave = "^1.2.6"
 coverage = { extras = ["toml"], version = "^6.3.2" }
 flake8 = "^3.9.2"
 pytest = "^6.2.5"
-Sphinx = "^4.5.0"
+Sphinx = "^5.0"
 tox = "^3.24.5"
 tbump = "6.5.0"
 sphinx-jsonschema = "^1.17.2"
