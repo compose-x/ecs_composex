@@ -99,7 +99,7 @@ class ComposeFamily:
 
     @property
     def services(self):
-        return chain(self.managed_sidecars, self.ordered_services)
+        return list(chain(self.managed_sidecars, self.ordered_services))
 
     def init_family(self) -> None:
         """

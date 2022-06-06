@@ -123,7 +123,15 @@ class ServicesXResource(XResource):
         :param dict service: Service definition in compose file
         :param ecs_composex.common.settings.ComposeXSettings settings: Execution settings
         """
-        the_service = [s for s in settings.services if s.name == service_name][0]
+        for svc in settings.services:
+            if svc.name == service_name:
+                the_service = svc
+                break
+        else:
+            raise KeyError(
+                f"Service {service_name} not found in ",
+                [_svc.name for _svc in settings.services],
+            )
         for family_name in the_service.families:
             family_name = NONALPHANUM.sub("", family_name)
             if family_name not in [f[0].name for f in self.families_targets]:
