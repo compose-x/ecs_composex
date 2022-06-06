@@ -45,7 +45,7 @@ class FamilyLogging:
         self._family = family
         self.family_logging_prefix = f"svc/ecs/{family.logical_name}"
         self.logging_group_name = Sub(
-            f"${{STACK_NAME}}/{self.family_logging_prefix}/${{{CLUSTER_NAME_T}}}",
+            f"${{STACK_NAME}}/${{{CLUSTER_NAME_T}}}/{self.family_logging_prefix}",
             STACK_NAME=define_stack_name(family.template if family.template else None),
         )
         self._family_log_group: LogGroup = create_log_group(
