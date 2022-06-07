@@ -35,14 +35,6 @@ def render_config_sidecar_config(
             },
         },
         "labels": {"container_name": "log_router_configuration"},
-        "logging": {
-            "driver": "awslogs",
-            "options": {
-                "awslogs-group": Ref(family.logging.family_logging_prefix),
-                "awslogs-stream-prefix": "firelens_config",
-                "awslogs-create-group": True,
-            },
-        },
         "volumes": [f"{volume_name}:{mount_path}"],
     }
     if ssm_parameter:
