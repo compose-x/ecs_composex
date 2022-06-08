@@ -190,18 +190,41 @@ The port of the target to send the traffic to
 healthcheck
 ^^^^^^^^^^^^^^^^^^
 
-The healthcheck properties can be defined in the same fashion as defined in the `Target Group`_ definition.
-However, it is also possible to shorten the syntax into a simple string
+
+.. code-block:: yaml
+    :caption: shorthand regular expression
+
+    x-elbv2:
+      lb:
+        Services:
+          - healthcheck: (port:protocol)(:healthy_count:unhealthy_count:intervals:timeout)?(:path:http_codes)?
 
 
 .. code-block:: yaml
+    :caption: full definition with the properties
 
-    (port:protocol)(:healthy_count:unhealthy_count:intervals:timeout)?(:path:http_codes)?
+    x-elbv2:
+      Services:
+        - name: family:service
+          healthcheck:
+            HealthCheckEnabled:
+            HealthCheckIntervalSeconds:
+            HealthCheckPath:
+            HealthCheckPort:
+            HealthCheckProtocol:
+            HealthCheckTimeoutSeconds:
+            HealthyThresholdCount:
+            UnhealthyThresholdCount:
+            Matcher : <Matcher>
 
-.. note::
 
-    The last part, for path and HTTP codes, is only valid for ALB
+The healthcheck can be defined either as a string, will set the properties values accordingly,
+or as a mapping, using the same healthcheck as the ones defined in  `Target Group`_ definition.
 
+
+.. tip::
+
+    ECS Compose-X will log a warning when it detects an invalid value, and corrects it to the valid one.
 
 TargetGroupAttributes
 ======================

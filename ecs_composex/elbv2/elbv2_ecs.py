@@ -3,7 +3,7 @@
 
 import re
 
-from compose_x_common.compose_x_common import keyisset
+from compose_x_common.compose_x_common import keyisset, set_else_none
 from troposphere import AWS_NO_VALUE, GetAtt, Output, Ref, Sub
 from troposphere.ecs import LoadBalancer as EcsLb
 from troposphere.elasticloadbalancingv2 import (
@@ -146,7 +146,8 @@ def fix_nlb_settings(props):
             [10, 30], key=lambda x: abs(x - props["HealthCheckIntervalSeconds"])
         )
         LOG.warning(
-            f"The only intervals value valid for NLB are 10 and 30. Closes value is {right_value}"
+            f"Set to {props['HealthCheckIntervalSeconds']} - "
+            f"The only intervals value valid for NLB are 10 and 30. Closest value is {right_value}"
         )
         props["HealthCheckIntervalSeconds"] = right_value
     validate_tcp_health_counts(props)
@@ -231,11 +232,9 @@ def set_healthcheck_definition(props, target_definition):
         r"((?:[\d]{1}|10):(?:[\d]{1}|10):[\d]{1,3}:[\d]{1,3})?:"
         r"?((?:/[\S][^:]+.$)|(?:/[\S]+)(?::)(?:(?:[\d]{1,4},?){1,}.$)|(?:(?:[\d]{1,4},?){1,}.$))?"
     )
-    if keyisset("healthcheck", target_definition) and isinstance(
-        target_definition["healthcheck"], str
-    ):
-        healthcheck_raw = target_definition["healthcheck"]
-        groups = healthcheck_reg.search(healthcheck_raw).groups()
+    healthcheck_definition = set_else_none("healthcheck", target_definition)
+    if isinstance(healthcheck_definition, str):
+        groups = healthcheck_reg.search(healthcheck_definition).groups()
         if not groups[0]:
             raise ValueError(
                 "You need to define at least the Protocol and port for healthcheck"
@@ -250,28 +249,18 @@ def set_healthcheck_definition(props, target_definition):
             except ValueError:
                 LOG.error(target_definition["name"], target_definition["healthcheck"])
                 raise
-    props.update(healthcheck_props)
-
-
-def validate_attributes(target_definition):
-    """
-    Function to validate services attributes
-    :param dict target_definition:
-    :return:
-    """
-    required_props = [
-        ("port", int),
-        ("healthcheck", str),
-    ]
-    if not all(
-        prop in target_definition.keys() for prop in [key[0] for key in required_props]
-    ):
-        raise KeyError(
-            "services require at least",
-            [key[0] for key in required_props],
-            "got",
-            target_definition.keys(),
+    elif isinstance(healthcheck_definition, dict):
+        healthcheck_props.update(healthcheck_definition)
+        if keyisset("Matcher", healthcheck_definition):
+            healthcheck_props["Matcher"] = Matcher(**healthcheck_definition["Matcher"])
+    else:
+        raise TypeError(
+            healthcheck_definition,
+            type(healthcheck_definition),
+            "must be one of",
+            (str, dict),
         )
+    props.update(healthcheck_props)
 
 
 def validate_props_and_service_definition(props, service):
@@ -429,7 +418,6 @@ def define_service_target_group(
     :return: the target group
     :rtype: troposphere.elasticloadbalancingv2.TargetGroup
     """
-    validate_attributes(target_definition)
     props = {}
     set_healthcheck_definition(props, target_definition)
     props["Port"] = target_definition["port"]
@@ -438,6 +426,7 @@ def define_service_target_group(
         if not keyisset("protocol", target_definition)
         else target_definition["protocol"]
     )
+    fix_nlb_settings(props)
     props["TargetType"] = "ip"
     import_target_group_attributes(props, target_definition, resource, service)
     validate_props_and_service_definition(props, service)

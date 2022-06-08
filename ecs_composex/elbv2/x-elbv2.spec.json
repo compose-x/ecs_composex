@@ -90,7 +90,83 @@
           "$ref": "#/definitions/Port"
         },
         "healthcheck": {
-          "type": "string"
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "object",
+              "description": "Allows to define HealthCheck properties as in https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-elasticloadbalancingv2-targetgroup.html",
+              "additionalProperties": false,
+              "properties": {
+                "HealthCheckEnabled": {
+                  "type": [
+                    "string",
+                    "boolean"
+                  ]
+                },
+                "HealthCheckIntervalSeconds": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "HealthCheckPath": {
+                  "type": "string"
+                },
+                "HealthCheckPort": {
+                  "type": "number",
+                  "minimum": 1,
+                  "maximum": 65535
+                },
+                "HealthCheckProtocol": {
+                  "type": "string",
+                  "enum": [
+                    "HTTP",
+                    "HTTPS",
+                    "TCP",
+                    "UDP",
+                    "TLS",
+                    "TCP_UDP"
+                  ]
+                },
+                "HealthCheckTimeoutSeconds": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "HealthyThresholdCount": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "UnhealthyThresholdCount": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "Matcher": {
+                  "type": "object",
+                  "oneOf": [
+                    {
+                      "required": [
+                        "HttpCode"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "GrpcCode"
+                      ]
+                    }
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "GrpcCode": {
+                      "type": "string"
+                    },
+                    "HttpCode": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          ]
         },
         "TargetGroupAttributes": {
           "oneOf": [

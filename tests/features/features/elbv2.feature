@@ -22,12 +22,13 @@ Feature: ecs_composex.elbv2
 
 
         Examples:
-            | file_path                   | override_file                               |
-            | use-cases/blog.features.yml | use-cases/elbv2/create_only.yml             |
-            | use-cases/blog.features.yml | use-cases/elbv2/create_acm_parameters.yml   |
-            | use-cases/blog.features.yml | use-cases/elbv2/create_only_with_oidc.yml   |
-            | use-cases/blog.features.yml | use-cases/elbv2/create_only_with_record.yml |
-            | use-cases/blog.features.yml | use-cases/elbv2/create_only_with_alarms.yml |
+            | file_path                   | override_file                                         |
+            | use-cases/blog.features.yml | use-cases/elbv2/create_only.yml                       |
+            | use-cases/blog.features.yml | use-cases/elbv2/create_only_with_full_healthcheck.yml |
+            | use-cases/blog.features.yml | use-cases/elbv2/create_acm_parameters.yml             |
+            | use-cases/blog.features.yml | use-cases/elbv2/create_only_with_oidc.yml             |
+            | use-cases/blog.features.yml | use-cases/elbv2/create_only_with_record.yml           |
+            | use-cases/blog.features.yml | use-cases/elbv2/create_only_with_alarms.yml           |
 #
 #    @elbv2 @alarms
 #    Scenario Outline: ELBv2 with alarms mis-configured
