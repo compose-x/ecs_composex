@@ -104,14 +104,14 @@ uvloop = ["uvloop (>=0.15.2)"]
 
 [[package]]
 name = "boto3"
-version = "1.24.2"
+version = "1.24.4"
 description = "The AWS SDK for Python"
 category = "main"
 optional = false
 python-versions = ">= 3.7"
 
 [package.dependencies]
-botocore = ">=1.27.2,<1.28.0"
+botocore = ">=1.27.4,<1.28.0"
 jmespath = ">=0.7.1,<2.0.0"
 s3transfer = ">=0.6.0,<0.7.0"
 
@@ -120,8 +120,8 @@ crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
 
 [[package]]
 name = "boto3-stubs"
-version = "1.24.2"
-description = "Type annotations for boto3 1.24.2 generated with mypy-boto3-builder 7.6.1"
+version = "1.24.4"
+description = "Type annotations for boto3 1.24.4 generated with mypy-boto3-builder 7.6.1"
 category = "dev"
 optional = false
 python-versions = ">=3.6"
@@ -451,7 +451,7 @@ xray = ["mypy-boto3-xray (>=1.24.0,<1.25.0)"]
 
 [[package]]
 name = "botocore"
-version = "1.27.2"
+version = "1.27.4"
 description = "Low-level, data-driven core of boto 3."
 category = "main"
 optional = false
@@ -467,8 +467,8 @@ crt = ["awscrt (==0.13.8)"]
 
 [[package]]
 name = "botocore-stubs"
-version = "1.27.2"
-description = "Type annotations for botocore 1.27.2 generated with mypy-boto3-builder 7.6.1"
+version = "1.27.4"
+description = "Type annotations for botocore 1.27.4 generated with mypy-boto3-builder 7.6.1"
 category = "dev"
 optional = false
 python-versions = ">=3.6"
@@ -1173,7 +1173,7 @@ python-versions = "*"
 
 [[package]]
 name = "pyupgrade"
-version = "2.32.1"
+version = "2.34.0"
 description = "A tool to automatically upgrade syntax for newer versions."
 category = "dev"
 optional = false
@@ -1654,20 +1654,20 @@ black = [
     {file = "black-22.3.0.tar.gz", hash = "sha256:35020b8886c022ced9282b51b5a875b6d1ab0c387b31a065b84db7c33085ca79"},
 ]
 boto3 = [
-    {file = "boto3-1.24.2-py3-none-any.whl", hash = "sha256:e3c10adc7be890b147568a4162d9cafb876f11f87460c4a0dc90742d6d4ebe7c"},
-    {file = "boto3-1.24.2.tar.gz", hash = "sha256:927b5e8e2decad746e6c32bb81f15c2ea9ab4398286134d21f6742493eb893f6"},
+    {file = "boto3-1.24.4-py3-none-any.whl", hash = "sha256:79b7acf5cf83b34d23a975e400374caaf4711c52266c8717b293f40f3041e0aa"},
+    {file = "boto3-1.24.4.tar.gz", hash = "sha256:8bfb695cbe27d2ee9730ea4e1c894ef1fc255219d3fc7bc804171943ae8d7914"},
 ]
 boto3-stubs = [
-    {file = "boto3-stubs-1.24.2.tar.gz", hash = "sha256:c45fce34cf80106931d8dd5eb6ad556f0643fbe2742344cb8f57941a94ba07ed"},
-    {file = "boto3_stubs-1.24.2-py3-none-any.whl", hash = "sha256:17652cafca1334b9719c1c42a74c7056b7deb95f8289482cf20ef73b534673c7"},
+    {file = "boto3-stubs-1.24.4.tar.gz", hash = "sha256:51365626386ac9a30a4f683fbe85027b56e900ec44a460ee365f4176e2031ea4"},
+    {file = "boto3_stubs-1.24.4-py3-none-any.whl", hash = "sha256:60571885c9ad0b4c68b8f93391564caf5fa7f87f76f925ca1edb78ce7060add3"},
 ]
 botocore = [
-    {file = "botocore-1.27.2-py3-none-any.whl", hash = "sha256:131f71fe16ef84f9e0e72c54d2e230a6d8e79dd3947f507259a129649649a35d"},
-    {file = "botocore-1.27.2.tar.gz", hash = "sha256:b7cdd4f4a6395a084a381a7d2a25b177e6de5f8a4dfa3c645ec957ba3c83e200"},
+    {file = "botocore-1.27.4-py3-none-any.whl", hash = "sha256:54ef4b035c51fe8937a61d3017e30e0a47237916143889ecf4eace481220029a"},
+    {file = "botocore-1.27.4.tar.gz", hash = "sha256:866ac4ad7de326cfb6956462cc224eee1ef1c17987c2313c6fecdbe017e753fc"},
 ]
 botocore-stubs = [
-    {file = "botocore-stubs-1.27.2.tar.gz", hash = "sha256:fddc6077b36b4f279badc67a20e919720e5b816d3905ae896c523ca9926cd5bf"},
-    {file = "botocore_stubs-1.27.2-py3-none-any.whl", hash = "sha256:a04c3ba81253dca0b782b15ffa08e57532a4e7ac2ed404cd4912837e9c5c78b7"},
+    {file = "botocore-stubs-1.27.4.tar.gz", hash = "sha256:7d9159d08714bfd2d6b9d04ee6ca7a049af0dad55e5bc75068dcd34651a4bf31"},
+    {file = "botocore_stubs-1.27.4-py3-none-any.whl", hash = "sha256:6eb2689cb96feeb714092c26adbe1aa170c05957ea0c274cf03772ec2355df1d"},
 ]
 certifi = [
     {file = "certifi-2022.5.18.1-py3-none-any.whl", hash = "sha256:f1d53542ee8cbedbe2118b5686372fb33c297fcd6379b050cca0ef13a597382a"},
@@ -2080,8 +2080,8 @@ pytz = [
     {file = "pytz-2022.1.tar.gz", hash = "sha256:1e760e2fe6a8163bc0b3d9a19c4f84342afa0a2affebfaa84b01b978a02ecaa7"},
 ]
 pyupgrade = [
-    {file = "pyupgrade-2.32.1-py2.py3-none-any.whl", hash = "sha256:d874f34870abadd7536c89678f9811076d5df93c13620f90a125355a2d31fa91"},
-    {file = "pyupgrade-2.32.1.tar.gz", hash = "sha256:11e2c3e4e2e53a61b2d8852ed154ea5683887b6ac42561622ca8d89c94fd951a"},
+    {file = "pyupgrade-2.34.0-py2.py3-none-any.whl", hash = "sha256:16617805b8d1138f96a1ff9cdb4b302b39b51804b3fc5474dc36c0326387445a"},
+    {file = "pyupgrade-2.34.0.tar.gz", hash = "sha256:ed0d9f282fa6282d0ca3bc0596a022aeb95435edab9daf3fc04c2ba118687b68"},
 ]
 pyyaml = [
     {file = "PyYAML-6.0-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:d4db7c7aef085872ef65a8fd7d6d09a14ae91f691dec3e87ee5ee0539d516f53"},
