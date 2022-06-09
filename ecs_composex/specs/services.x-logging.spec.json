@@ -113,6 +113,15 @@
           "type": "string",
           "description": "Path to the source file that contains the configuration"
         },
+        "ParserFiles": {
+          "type": "array",
+          "minItems": 1,
+          "description": "List of files to use to add via the config sidecar",
+          "items": {
+            "type": "string",
+            "description": "Path to the files to add as ParserFiles"
+          }
+        },
         "EnableApiHeathCheck": {
           "type": "boolean",
           "default": true,

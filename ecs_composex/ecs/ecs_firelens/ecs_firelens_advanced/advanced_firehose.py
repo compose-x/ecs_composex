@@ -35,7 +35,7 @@ class FireLensFirehoseManagedDestination:
         "time_key",
         "log_key",
         "compression",
-        "endpiont",
+        "endpoint",
         "sts_endpoint",
         "auto_retry_requests",
     ]
