@@ -9,6 +9,12 @@
     HC_Retry_Failure_Count 5
     HC_Period 5
 {% endif %}
+{% if parser_files -%}
+[SERVICE]
+{%- for parser_file_path in parser_files %}
+    Parsers_File {{ parser_file_path }}
+{%- endfor %}
+{% endif %}
 
 {% if grace_period -%}
 [SERVICE]
@@ -18,9 +24,3 @@
 {%- for service_content in services_content -%}
 {{ service_content }}
 {% endfor %}
-{% if parser_files %}
-[SERVICE]
-{%- for parser_file_path in parser_files %}
-    Parsers_File {{ parser_file_path }}
-{%- endfor %}
-{% endif %}
