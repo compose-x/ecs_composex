@@ -6,6 +6,7 @@ Handles ``Rendered`` section of the FireLens configuration
 """
 from __future__ import annotations
 
+import json
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -29,7 +30,6 @@ from .firelens_config_sidecar import FluentBitConfig, render_config_sidecar_conf
 
 
 class FireLensFamilyManagedConfiguration:
-
     volume_mount = "/compose_x_rendered/"
     volume_name = "compose-x-firelens-rendering"
     config_file_name: str = "firelens.conf"
@@ -42,6 +42,7 @@ class FireLensFamilyManagedConfiguration:
             if _svc.logging and _svc.logging.firelens_advanced:
                 _services_with_advanced.append((_svc, _svc.logging.firelens_advanced))
         self._ssm_parameter = None
+        self._parser_files: dict = {}
         self.family.logging.firelens_config_service = FluentBitConfig(
             "log_router_preload",
             render_config_sidecar_config(
@@ -92,21 +93,49 @@ class FireLensFamilyManagedConfiguration:
         """
         Sets ssm parameter or updates content
         """
+        content: dict = {
+            "files": {
+                f"{self.volume_mount}{self.config_file_name}": {
+                    "content": self.rendered_content
+                }
+            }
+        }
+        content["files"].update(self.parser_files)
         if not self._ssm_parameter:
             self._ssm_parameter = add_managed_ssm_parameter(
-                self.family,
-                settings,
-                {
-                    "files": {
-                        f"{self.volume_mount}{self.config_file_name}": {
-                            "content": self.content
-                        }
-                    }
-                },
+                self.family, settings, content
             )
 
     @property
-    def content(self):
+    def parser_files(self) -> dict:
+        self._parser_files = {}
+        for _svc in self.services_configs.values():
+            for _parser_file, _parser_file_def in _svc.parser_files.items():
+                if not keyisset("content", _parser_file_def):
+                    continue
+                file_path = f"{self.volume_mount}{_parser_file}"
+                if file_path not in self._parser_files.keys():
+                    self._parser_files[
+                        f"{self.volume_mount}{_parser_file}"
+                    ] = _parser_file_def
+        return self._parser_files
+
+    @property
+    def parser_files_names(self) -> list:
+        files_names: list = []
+        for _svc in self.services_configs.values():
+            for _parser_file, _parser_file_def in _svc.parser_files.items():
+                if keyisset("content", _parser_file_def):
+                    file_path = f"{self.volume_mount}{_parser_file}"
+                    self._parser_files.update({file_path: _parser_file_def})
+                else:
+                    file_path = _parser_file
+                if file_path not in files_names:
+                    files_names.append(file_path)
+        return files_names
+
+    @property
+    def rendered_content(self):
         here = path.abspath(path.dirname(__file__))
         jinja_env = Environment(
             loader=FileSystemLoader(here),
@@ -122,6 +151,7 @@ class FireLensFamilyManagedConfiguration:
                 _svc.render_jinja_config_file()
                 for _svc in self.services_configs.values()
             ],
+            parser_files=self.parser_files_names,
         )
         return content
 
@@ -132,6 +162,7 @@ class FireLensServiceManagedConfiguration:
         self._definition = copy.deepcopy(definition)
         self.family = family
         self.source_file = set_else_none("SourceFile", self.definition)
+        self._parser_files = set_else_none("ParserFiles", self.definition, alt_value=[])
         self._env_vars = set_else_none("EnvironmentVariables", self.definition)
         self.managed_destinations = []
         self.extra_env_vars = set_else_none(
@@ -169,6 +200,23 @@ class FireLensServiceManagedConfiguration:
             if isinstance(_managed_dest, FireLensFirehoseManagedDestination):
                 managed_firehose.append(_managed_dest)
         return managed_firehose
+
+    @property
+    def parser_files(self) -> dict:
+        files: dict = {}
+        for _file in self._parser_files:
+            file_name = path.basename(_file)
+            try:
+                with open(_file) as file_fd:
+                    content = file_fd.read()
+                files[file_name]: dict = {"content": content}
+            except OSError:
+                LOG.warning(
+                    f"{self.family.name} - FireLens Advanced - {_file} not found."
+                    " Assuming it already is in the image"
+                )
+                files[_file]: dict = {}
+        return files
 
     @property
     def source_file_content(self) -> str:
