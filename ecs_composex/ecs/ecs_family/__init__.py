@@ -98,8 +98,12 @@ class ComposeFamily:
         self.service_compute = ServiceCompute(self)
 
     @property
-    def services(self):
+    def services(self) -> list:
         return list(chain(self.managed_sidecars, self.ordered_services))
+
+    @property
+    def want_xray(self) -> bool:
+        return any([service.x_ray for service in self.services])
 
     def init_family(self) -> None:
         """
@@ -180,7 +184,12 @@ class ComposeFamily:
             ExecutionRoleArn=self.iam_manager.exec_role.arn,
             ContainerDefinitions=[s.container_definition for s in self.services],
             RequiresCompatibilities=ecs_conditions.use_external_lt_con(
-                ["EXTERNAL"], ["EC2", "FARGATE"]
+                ["EXTERNAL"],
+                If(
+                    ecs_conditions.USE_FARGATE_CON_T,
+                    ["FARGATE"],
+                    If(ecs_conditions.USE_EC2_CON_T, ["EC2"], ["EC2", "FARGATE"]),
+                ),
             ),
             RuntimePlatform=If(
                 ecs_conditions.USE_FARGATE_CON_T,
@@ -375,7 +384,6 @@ class ComposeFamily:
         """
         from .family_helpers import set_service_dependency_on_all_iam_policies
 
-        # self.import_all_sidecars()
         self.add_containers_images_cfn_parameters()
         self.task_compute.set_task_compute_parameter()
         self.task_compute.unlock_compute_for_main_container()
@@ -401,7 +409,6 @@ class ComposeFamily:
         ):
             self.template.add_resource(self.service_scaling.scalable_target)
         self.generate_outputs()
-        # self.handle_logging(settings)
         service_configs = [
             [0, service]
             for service in chain(self.managed_sidecars, self.ordered_services)

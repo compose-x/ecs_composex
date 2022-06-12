@@ -24,11 +24,16 @@
           "items": {
             "type": "object",
             "required": [
-              "Name"
+              "Name",
+              "x-cloudmap"
             ],
             "properties": {
               "Name": {
                 "type": "string"
+              },
+              "x-cloudmap": {
+                "type": "string",
+                "description": "name of x-cloudmap to use"
               },
               "Node": {
                 "type": "string"

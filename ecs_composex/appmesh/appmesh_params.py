@@ -24,9 +24,20 @@ SERVICES_KEY = "Services"
 NODES_KEY = "Nodes"
 ROUTER_KEY = "Router"
 ROUTERS_KEY = "Routers"
+HTTP_METHODS = [
+    "CONNECT",
+    "DELETE",
+    "GET",
+    "HEAD",
+    "OPTIONS",
+    "PATCH",
+    "POST",
+    "PUT",
+    "TRACE",
+]
 
 MESH_NAME_T = "AppMeshName"
-MESH_NAME = Parameter(MESH_NAME_T, Type="String", Default="AutoCreate")
+MESH_NAME = Parameter(MESH_NAME_T, Type="String")
 
 MESH_OWNER_ID_T = "MeshOwnerId"
 MESH_OWNER_ID = Parameter(

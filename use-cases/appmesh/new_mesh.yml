@@ -1,6 +1,30 @@
 ---
 # Simple mesh definition for new mesh of Services
 
+x-cloudmap:
+  PrivateNamespace:
+    ZoneName: test.lan
+
+services:
+  app03:
+    x-network:
+      x-cloudmap: PrivateNamespace
+    x-ecs:
+      EnableExecuteCommand: true
+
+  app02:
+    x-network:
+      x-cloudmap: PrivateNamespace
+    x-ecs:
+      EnableExecuteCommand: true
+
+  app01:
+    x-network:
+      x-cloudmap: PrivateNamespace
+    x-ecs:
+      EnableExecuteCommand: true
+
+
 x-appmesh:
   Properties: {}
   Settings:
@@ -23,7 +47,7 @@ x-appmesh:
             - Match:
                 Prefix: /date
                 Method: GET
-                Scheme: Http
+                Scheme: http
               Nodes:
                 - Name: youtoo
                   Weight: 1
@@ -39,5 +63,7 @@ x-appmesh:
     Services:
       - Name: api
         Node: bignicefamily
+        x-cloudmap: PrivateNamespace
       - Name: dateteller
         Router: dateteller
+        x-cloudmap: PrivateNamespace

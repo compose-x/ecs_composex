@@ -1,5 +1,6 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  Copyright 2020-2022 John Mille <john@compose-x.io>
+import re
 
 from compose_x_common.compose_x_common import keyisset, keypresent
 from troposphere import If, NoValue, Ref, StackName, Tags
@@ -133,5 +134,9 @@ def set_service_default_tags_labels(family) -> Tags:
             continue
         if isinstance(svc.deploy_labels, list):
             continue
-        service_tags += Tags(**svc.deploy_labels)
+        for key, value in svc.deploy_labels.items():
+            if not isinstance(value, str) or (
+                isinstance(value, str) and re.match(r"^[a-zA-Z:=+_\-@ ]+$", value)
+            ):
+                service_tags += Tags(**{key: value})
     return service_tags

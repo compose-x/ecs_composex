@@ -292,16 +292,6 @@ def generate_full_template(settings: ComposeXSettings):
         vpc_stack.vpc_resource.cfn_resource or vpc_stack.vpc_resource.mappings
     ):
         settings.set_networks(vpc_stack)
-    # if settings.use_appmesh:
-    #     from ecs_composex.appmesh.appmesh_mesh import Mesh
-    #
-    #     mesh = Mesh(
-    #         settings.compose_content["x-appmesh"],
-    #         root_stack,
-    #         settings,
-    #     )
-    #     mesh.render_mesh_template(root_stack, settings)
-
     x_cloud_lookup_and_new_vpc(settings, vpc_stack)
 
     for family in settings.families.values():
@@ -323,6 +313,16 @@ def generate_full_template(settings: ComposeXSettings):
         family.handle_logging(settings)
     apply_x_configs_to_ecs(settings, settings.root_stack, modules=settings.mod_manager)
     apply_x_resource_to_x(settings, settings.root_stack, vpc_stack)
+
+    if settings.use_appmesh:
+        from ecs_composex.appmesh.appmesh_mesh import Mesh
+
+        mesh = Mesh(
+            settings.compose_content["x-appmesh"],
+            settings.root_stack,
+            settings,
+        )
+        mesh.render_mesh_template(mesh.stack, settings)
 
     for family in settings.families.values():
         family.finalize_family_settings()

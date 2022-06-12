@@ -10,6 +10,8 @@ if TYPE_CHECKING:
     from ecs_composex.ecs.ecs_family import ComposeFamily
     from ecs_composex.common.cfn_params import Parameter
 
+from troposphere import Ref, Region
+
 from ecs_composex.common import LOG
 from ecs_composex.compose.compose_services import ComposeService
 
@@ -38,6 +40,21 @@ class ManagedSidecar(ComposeService):
         self.family = family
         family.add_managed_sidecar(self)
         self.set_as_dependency_to_family_services(is_dependency)
+        if (
+            family.logging
+            and self not in family.logging.services_logging
+            and not self.logging
+        ):
+            family.logging.set_init_family_service_logging(
+                self,
+                {
+                    "awslogs-group": Ref(family.logging.family_log_group),
+                    "awslogs-region": Region,
+                    "awslogs-stream-prefix": self.name,
+                },
+            )
+        self.define_port_mappings()
+        self.family.service_networking.merge_services_ports()
 
     def set_as_dependency_to_family_services(self, is_dependency: bool = False) -> None:
         """
