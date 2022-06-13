@@ -13,7 +13,6 @@ Feature: ecs_composex.appmesh
     @appmesh @error
     Scenario Outline: Meshes are incorrect
         Given I use <file_path> as my docker-compose file
-        And I render the docker-compose to composex
         Then I render the docker-compose expecting an error
         Examples:
             | file_path                                                    |

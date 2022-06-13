@@ -31,10 +31,13 @@ x-appmesh:
     Nodes:
       - Name: app03
         Protocol: Tcp
+        Port: 5000
       - Name: youtoo
         Protocol: Http
+        Port: 5000
       - Name: bignicefamily
         Protocol: Http
+        Port: 80
         Backends:
           - dateteller # Points to the dateteller Service, not Router!
     Routers:
