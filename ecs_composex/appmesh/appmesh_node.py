@@ -70,37 +70,8 @@ class MeshNode:
         self.port_mappings = [
             appmesh.PortMapping(Port=self.port, Protocol=self.protocol)
         ]
-        # self.set_port_mappings()
-        # self.set_listeners_port_mappings()
         self.create_service_virtual_node(family, mesh, settings)
         self.add_envoy_container_definition(mesh, family)
-
-    # def set_port_mappings(self):
-    #     """
-    #     Method to set the port mappings based on the service config ports
-    #     """
-    #     target = "target"
-    #     published = "published"
-    #     for port in self.service_config.ports:
-    #         if published not in port:
-    #             continue
-    #         if port[target] not in self.mappings.keys():
-    #             self.mappings[port[target]] = {port[published]: port}
-    #         elif (
-    #             port[target] in self.mappings.keys()
-    #             and not port[published] in self.mappings[port[target]]
-    #         ):
-    #             self.mappings[port[target]][port[published]] = port
-    #
-    # def set_listeners_port_mappings(self):
-    #     """
-    #     Method to set the listeners port_mappings
-    #     """
-    #     for port in self.service_config.ports:
-    #         self.port_mappings.append(
-    #             appmesh.PortMapping(Port=self.port, Protocol=self.protocol)
-    #         )
-    #         break
 
     def create_service_virtual_node(
         self, family: ComposeFamily, mesh: Mesh, settings: ComposeXSettings

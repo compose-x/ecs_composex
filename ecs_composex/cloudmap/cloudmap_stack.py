@@ -210,6 +210,17 @@ class PrivateNamespace(AwsEnvironmentResource):
         ):
             root_stack.stack_template.add_resource(self.stack)
 
+    def add_initialized_stack_to_root(
+        self, stack_initialized: bool, root_stack: ComposeXStack
+    ) -> None:
+        if (
+            stack_initialized
+            and self.stack.stack_template
+            and self.stack.stack_template.resources
+            and self.stack.title not in root_stack.stack_template.resources
+        ):
+            root_stack.stack_template.add_resource(self.stack)
+
     def to_ecs(
         self,
         settings: ComposeXSettings,
@@ -235,13 +246,7 @@ class PrivateNamespace(AwsEnvironmentResource):
                     stack_initialized = False if self.stack.is_void else True
                     if not stack_initialized:
                         self.init_stack_for_resources(settings)
-                    if (
-                        stack_initialized
-                        and self.stack.stack_template
-                        and self.stack.stack_template.resources
-                        and self.stack.title not in root_stack.stack_template.resources
-                    ):
-                        root_stack.stack_template.add_resource(self.stack)
+                    self.add_initialized_stack_to_root(stack_initialized, root_stack)
                     create_registry(family, self, port_config, settings)
 
 
