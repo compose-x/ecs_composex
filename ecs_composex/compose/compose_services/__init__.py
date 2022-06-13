@@ -937,7 +937,7 @@ class ComposeService:
             self.group = self.user
         elif isinstance(user_value, str):
             valid_pattern = re.compile(
-                r"(^\d{1,5}$)|(?P<user>^\d{1,5}):(?P<group>\d{1,5})$"
+                r"(^\d{1,5}$|(?P<user>^\d{1,5}):(?P<group>\d{1,5})$)"
             )
             groups = valid_pattern.match(user_value)
             if not groups:
