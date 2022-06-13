@@ -17,7 +17,7 @@ NUMBERS_REG = r"[^0-9.]"
 MINIMUM_SUPPORTED = 4
 
 
-def import_time_values_to_seconds(time_string, as_tuple=False):
+def import_time_values_to_seconds(time_string, as_tuple=False, maximum: int = None):
     """
     Function to parse strings with h/m/s
 
@@ -47,6 +47,8 @@ def import_time_values_to_seconds(time_string, as_tuple=False):
     if as_tuple:
         return hours, minutes, seconds
     seconds += (60 * minutes) + (60 * 60 * hours)
+    if maximum and seconds > maximum:
+        return maximum
     return seconds
 
 

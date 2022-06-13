@@ -193,6 +193,13 @@ class ComposeService:
             )
 
     @property
+    def ecs_user(self) -> Union[str, AWSHelperFn]:
+        __user = set_else_none("user", self.definition, alt_value=None)
+        if not __user:
+            return NoValue
+        return str(__user)
+
+    @property
     def deploy_labels(self):
         return set_else_none("labels", self.deploy, alt_value={})
 
@@ -288,29 +295,29 @@ class ComposeService:
 
     @property
     def memory_limit(self):
-        if not self._mem_alloc or self.container_start_condition in [
+        if self.container_start_condition in [
             "SUCCESS",
             "COMPLETE",
         ]:
             return NoValue
         resource = "memory"
         str_value = set_else_none(
-            resource, set_else_none("limits", self.resources, alt_value={})
+            resource, set_else_none("limits", self.resources, alt_value=None)
         )
         if not str_value:
             return NoValue
         return set_memory_to_mb(str_value)
 
     @property
-    def memory_resevations(self):
-        if not self._mem_resa or self.container_start_condition in [
+    def memory_reservations(self):
+        if self.container_start_condition in [
             "SUCCESS",
             "COMPLETE",
         ]:
             return NoValue
         resource = "memory"
         str_value = set_else_none(
-            resource, set_else_none("reservations", self.resources, alt_value={})
+            resource, set_else_none("reservations", self.resources, alt_value=None)
         )
         if not str_value:
             return NoValue
@@ -833,11 +840,10 @@ class ComposeService:
         Define the list of port mappings to use for either AWS VPC deployments or else (bridge etc).
         Not in use atm as AWS VPC is made mandatory
         """
-        service_port_mappings = (
-            getattr(self.container_definition, "PortMappings")
-            if self.container_definition
-            else []
-        )
+        if self.container_definition:
+            service_port_mappings = getattr(self.container_definition, "PortMappings")
+        else:
+            return []
         for protocol, mappings in self.ingress_mappings.items():
             for target_port, published_ports in mappings.items():
                 if published_ports:
@@ -886,7 +892,7 @@ class ComposeService:
             Name=self.name,
             Cpu=self.cpu_amount,
             Memory=self.memory_limit,
-            MemoryReservation=self.memory_resevations,
+            MemoryReservation=self.memory_reservations,
             PortMappings=[],
             Environment=self.cfn_environment,
             LogConfiguration=NoValue,
@@ -916,32 +922,34 @@ class ComposeService:
                 USE_WINDOWS_OS_T, NoValue, keyisset("read_only", self.definition)
             ),
             SystemControls=self.sysctls,
-            User=If(USE_WINDOWS_OS_T, NoValue, self.user_group)
-            if self.user_group
-            else NoValue,
+            User=If(USE_WINDOWS_OS_T, NoValue, self.ecs_user)
+            if self.ecs_user != NoValue
+            else self.ecs_user,
         )
 
     def set_user_group(self):
         """
         Method to assign the user / group IDs for the container
         """
-        if not keyisset("user", self.definition):
-            return
-        user_value = self.definition["user"]
+        user_value = set_else_none("user", self.definition, alt_value=None)
         if isinstance(user_value, int):
             self.user = str(user_value)
+            self.group = self.user
         elif isinstance(user_value, str):
-            valid_pattern = re.compile(r"^\d{1,5}$|(^\d{1,5}):(\d{1,5})$")
-            if not valid_pattern.match(user_value):
-                raise ValueError(
-                    "user property must be of the format", valid_pattern.pattern
-                )
-            groups = valid_pattern.match(user_value).groups()
-            self.user = groups[0]
-            if len(groups) == 2:
-                self.group = groups[-1]
-        self.user_group = self.user
-        if self.group:
+            valid_pattern = re.compile(
+                r"(^\d{1,5}$|(?P<user>^\d{1,5}):(?P<group>\d{1,5})$)"
+            )
+            groups = valid_pattern.match(user_value)
+            if not groups:
+                raise ValueError("when using user:group, use the UID instead of name")
+            if groups.group("user") and groups.group("group"):
+                self.user = str(groups.group("user"))
+                self.group = str(groups.group("group"))
+            else:
+                self.user = groups.groups()[0]
+                self.group = self.user
+
+        if self.user and self.group:
             self.user_group = f"{self.user}:{self.group}"
 
     def set_x_credentials_secret(self, key):

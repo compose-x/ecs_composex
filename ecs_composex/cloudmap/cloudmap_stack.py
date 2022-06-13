@@ -25,7 +25,7 @@ from ecs_composex.cloudmap.cloudmap_helpers import (
     lookup_service_discovery_namespace,
     resolve_lookup,
 )
-from ecs_composex.common import LOG, add_update_mapping, build_template
+from ecs_composex.common import LOG, add_outputs, add_update_mapping, build_template
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources.environment_x_resources import (
     AwsEnvironmentResource,
@@ -38,7 +38,12 @@ from ecs_composex.compose.x_resources.helpers import (
 from ecs_composex.resources_import import import_record_properties
 from ecs_composex.vpc.vpc_params import VPC_ID
 
-from .cloudmap_params import MOD_KEY, PRIVATE_DNS_ZONE_NAME, PRIVATE_NAMESPACE_ID
+from .cloudmap_params import (
+    MOD_KEY,
+    PRIVATE_DNS_ZONE_ID,
+    PRIVATE_DNS_ZONE_NAME,
+    PRIVATE_NAMESPACE_ID,
+)
 from .cloudmap_x_resources import handle_resource_cloudmap_settings
 
 
@@ -58,6 +63,7 @@ class PrivateNamespace(AwsEnvironmentResource):
     ):
         self.zone_name = None
         self.records = []
+        self.family_sd_services: dict = {}
         super().__init__(name, definition, module, settings)
         self.zone_name = set_else_none(
             "Name", self.definition, set_else_none("ZoneName", self.definition, None)
@@ -74,18 +80,42 @@ class PrivateNamespace(AwsEnvironmentResource):
         """
         self.output_properties = {
             PRIVATE_NAMESPACE_ID: (
-                f"{self.logical_name}",
-                self.cfn_resource,
-                Ref,
-                None,
-            ),
-            PRIVATE_DNS_ZONE_NAME: (
-                f"{self.logical_name}{PRIVATE_DNS_ZONE_NAME.return_value}",
+                f"{self.logical_name}{PRIVATE_NAMESPACE_ID.return_value}",
                 self.cfn_resource,
                 GetAtt,
                 PRIVATE_NAMESPACE_ID.return_value,
             ),
+            PRIVATE_DNS_ZONE_ID: (
+                f"{self.logical_name}{PRIVATE_DNS_ZONE_ID.return_value}",
+                self.cfn_resource,
+                GetAtt,
+                PRIVATE_DNS_ZONE_ID.return_value,
+            ),
+            PRIVATE_DNS_ZONE_NAME: (
+                f"{self.logical_name}{PRIVATE_DNS_ZONE_NAME.return_value}",
+                self.cfn_resource,
+                self.zone_name,
+                False,
+            ),
         }
+
+    @property
+    def namespace_id(self):
+        if not self.attributes_outputs:
+            return None
+        return self.attributes_outputs[PRIVATE_NAMESPACE_ID]
+
+    @property
+    def hosted_zone_id(self):
+        if not self.attributes_outputs:
+            return None
+        return self.attributes_outputs[PRIVATE_DNS_ZONE_ID]
+
+    @property
+    def zone_dns_name(self):
+        if not self.attributes_outputs:
+            return None
+        return self.attributes_outputs[PRIVATE_DNS_ZONE_NAME]
 
     def lookup_resource(
         self,
@@ -130,9 +160,7 @@ class PrivateNamespace(AwsEnvironmentResource):
 
     def init_stack_for_resources(self, settings) -> None:
         """
-        When creating new Route53 records, if the x-route53 where looked up, we need to initialize the Route53 stack
-
-        :param ComposeXStack root_stack: The root stack
+        When creating new CloudMap records, if the x-cloudmap where looked up, we need to initialize the CloudMap stack
         """
         if self.stack.is_void:
             stack_template = build_template("Root stack for x-cloudmap resources")
@@ -182,6 +210,17 @@ class PrivateNamespace(AwsEnvironmentResource):
         ):
             root_stack.stack_template.add_resource(self.stack)
 
+    def add_initialized_stack_to_root(
+        self, stack_initialized: bool, root_stack: ComposeXStack
+    ) -> None:
+        if (
+            stack_initialized
+            and self.stack.stack_template
+            and self.stack.stack_template.resources
+            and self.stack.title not in root_stack.stack_template.resources
+        ):
+            root_stack.stack_template.add_resource(self.stack)
+
     def to_ecs(
         self,
         settings: ComposeXSettings,
@@ -204,6 +243,10 @@ class PrivateNamespace(AwsEnvironmentResource):
                 port_config,
             ) in family.service_networking.cloudmap_config.items():
                 if namespace == self.name:
+                    stack_initialized = False if self.stack.is_void else True
+                    if not stack_initialized:
+                        self.init_stack_for_resources(settings)
+                    self.add_initialized_stack_to_root(stack_initialized, root_stack)
                     create_registry(family, self, port_config, settings)
 
 
@@ -290,3 +333,4 @@ def define_new_namespace(new_namespaces, stack_template):
         stack_template.add_resource(namespace.cfn_resource)
         namespace.init_outputs()
         namespace.generate_outputs()
+        add_outputs(stack_template, namespace.outputs)

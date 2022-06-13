@@ -132,15 +132,18 @@ class FamilyLogging:
                 "awslogs-region": Region,
                 "awslogs-stream-prefix": service.name,
             }
-            service.logging = ServiceLogging(service, default_family_options)
-            service.logging.set_update_log_configuration()
-            setattr(
-                service.container_definition,
-                "LogConfiguration",
-                service.logging.log_configuration,
-            )
-            self.services_logging[service] = service.logging
+            self.set_init_family_service_logging(service, default_family_options)
         self.update_cw_log_retention()
+
+    def set_init_family_service_logging(self, service, awslogs_options):
+        service.logging = ServiceLogging(service, awslogs_options)
+        service.logging.set_update_log_configuration()
+        setattr(
+            service.container_definition,
+            "LogConfiguration",
+            service.logging.log_configuration,
+        )
+        self.services_logging[service] = service.logging
 
     def handle_firelens(self, settings):
         from ecs_composex.ecs.ecs_firelens.firelens_managed_sidecar_service import (

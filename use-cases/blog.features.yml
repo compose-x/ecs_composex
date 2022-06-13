@@ -97,7 +97,7 @@ services:
     healthcheck:
       interval: 1m30s
       timeout: 10s
-      start_period: 1h
+      start_period: 15s
       retries: 3
       test:
         - CMD

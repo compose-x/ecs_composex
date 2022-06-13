@@ -44,7 +44,6 @@ def set_xray(family: ComposeFamily) -> None:
     The XRAY service is marked as a dependency to family services as some services with XRAY
     collection will fail if for some reason the daemon is not started yet.
     """
-    want_xray = any([service.x_ray for service in family.services])
     have_xray_container = XRAY_NAME in [service.name for service in family.services]
     have_xray = any(
         [
@@ -53,10 +52,10 @@ def set_xray(family: ComposeFamily) -> None:
             if svc.name == XRAY_NAME
         ]
     )
-    if not have_xray and want_xray:
+    if not have_xray and family.want_xray:
         xray_service = deepcopy(XRAY_SERVICE)
         xray_service.add_to_family(family, is_dependency=True)
-    elif have_xray_container and want_xray:
+    elif have_xray_container and family.want_xray:
         LOG.warning(
             f"{family.name}"
             "You defined a container named xray-daemon on top of using x-xray in one of the services. "

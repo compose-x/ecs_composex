@@ -4,11 +4,22 @@
 """
 Module to manage Routers specifically.
 """
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .appmesh_mesh import Mesh
+    from .appmesh_node import MeshNode
+    from ecs_composex.common.settings import ComposeXSettings
+
 from compose_x_common.compose_x_common import keyisset
-from troposphere import AWS_NO_VALUE, GetAtt, Ref, Sub, appmesh
+from troposphere import AWS_NO_VALUE, GetAtt, NoValue, Ref, Sub, appmesh
 
 from ecs_composex.appmesh import appmesh_conditions
 from ecs_composex.appmesh.appmesh_params import (
+    HTTP_METHODS,
     LISTENER_KEY,
     MATCH_KEY,
     METHOD_KEY,
@@ -23,29 +34,40 @@ from ecs_composex.appmesh.appmesh_params import (
 from ecs_composex.common import LOG, NONALPHANUM
 
 
-def define_http_route(route_match, route_nodes):
+def define_http_route(route_match, route_nodes, http2: bool):
     route = appmesh.HttpRoute(
         Match=appmesh.HttpRouteMatch(
             Prefix=route_match[PREFIX_KEY]
             if keyisset(PREFIX_KEY, route_match)
             else Ref(AWS_NO_VALUE),
-            Scheme=route_match[SCHEME_KEY]
-            if keyisset(SCHEME_KEY, route_match)
+            Scheme=route_match[SCHEME_KEY].lower()
+            if keyisset(SCHEME_KEY, route_match) and http2
             else Ref(AWS_NO_VALUE),
-            Method=route_match[METHOD_KEY]
+            Method=route_match[METHOD_KEY].upper()
             if keyisset(METHOD_KEY, route_match)
             else Ref(AWS_NO_VALUE),
         ),
         Action=appmesh.HttpRouteAction(
             WeightedTargets=[
                 appmesh.WeightedTarget(
-                    VirtualNode=node.get_node_param,
+                    VirtualNode=GetAtt(node.node, "VirtualNodeName"),
                     Weight=node.weight,
                 )
                 for node in route_nodes
             ]
         ),
     )
+    if route.Match.Method != NoValue and route.Match.Method not in HTTP_METHODS:
+        raise ValueError(
+            "HttpMatch Scheme must be one of ", HTTP_METHODS, "Got", route.Match.Method
+        )
+    if route.Match.Scheme != NoValue and route.Match.Scheme not in ["http", "https"]:
+        raise ValueError(
+            "HttpMatch Scheme must be one of ",
+            ["http", "https"],
+            "Got",
+            route.Match.Scheme,
+        )
     return route
 
 
@@ -71,7 +93,7 @@ def define_route_name(route_match):
         "PUT",
         "TRACE",
     ]
-    allowed_schemes = ["Http", "Https"]
+    allowed_schemes = ["http", "https"]
 
     prefix_suffix = ""
     method_suffix = ""
@@ -101,13 +123,13 @@ class MeshRouter:
     tcp_routes_keys = [NODES_KEY]
     http_routes_keys = [MATCH_KEY, NODES_KEY]
 
-    def __init__(self, name, definition, mesh, nodes):
+    def __init__(self, name, definition, mesh: Mesh, nodes):
         """
-        Method to initialize the router
+        Scheme to initialize the router
 
         :param str name:
         :param dict definition:
-        :param troposphere.appmesh.Mesh mesh: The mesh to add the router to.
+        :param Mesh: The mesh to add the router to.
         :param dict nodes: list of nodes defined in the mesh.
         """
 
@@ -122,14 +144,14 @@ class MeshRouter:
         self.nodes = []
         self.router = appmesh.VirtualRouter(
             f"VirtualRouter{self.title}",
-            MeshName=appmesh_conditions.get_mesh_name(mesh),
+            MeshName=appmesh_conditions.get_mesh_name(mesh.appmesh),
             MeshOwner=appmesh_conditions.set_mesh_owner_id(),
             VirtualRouterName=Sub(f"{self.title}-vr-${{AWS::StackName}}"),
             Spec=appmesh.VirtualRouterSpec(
                 Listeners=[
                     appmesh.VirtualRouterListener(
                         PortMapping=appmesh.PortMapping(
-                            Port=self.port, Protocol=self.protocol
+                            Port=self.port, Protocol=self.protocol.lower()
                         )
                     )
                 ]
@@ -139,7 +161,7 @@ class MeshRouter:
 
     def validate_definition(self):
         """
-        Method to validate the router definition
+        Scheme to validate the router definition
         """
         if not keyisset(ROUTES_KEY, self.definition):
             raise KeyError(f"No routes defined for the router {self.title}")
@@ -178,7 +200,7 @@ class MeshRouter:
                         f"node {node[NAME_KEY]} is not defined as a virtual node."
                     )
             route_match = route[MATCH_KEY]
-            route = define_http_route(route_match, route_nodes)
+            route = define_http_route(route_match, route_nodes, http2)
             self.nodes += [node for node in route_nodes]
             route_name = define_route_name(route_match)
             protocol = "HttpRoute"
@@ -221,7 +243,7 @@ class MeshRouter:
                 Action=appmesh.TcpRouteAction(
                     WeightedTargets=[
                         appmesh.WeightedTarget(
-                            VirtualNode=node.get_node_param,
+                            VirtualNode=GetAtt(node.node, "VirtualNodeName"),
                             Weight=node.weight,
                         )
                         for node in route_nodes
@@ -242,7 +264,7 @@ class MeshRouter:
 
     def add_routes(self, nodes):
         """
-        Method to register routers
+        Scheme to register routers
         """
         for route_protocol in self.raw_routes.keys():
             if route_protocol != self.protocol:

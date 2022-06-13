@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ecs_composex.ecs.ecs_family import ComposeFamily
+    from ecs_composex.cloudmap.cloudmap_ecs import EcsDiscoveryService
 
 from itertools import chain
 
@@ -49,6 +50,7 @@ class ServiceNetworking:
         """
         self.family = family
         self._network_mode = "awsvpc"
+        self._sd_service = None
         if family.service_compute.launch_type == "EXTERNAL":
             LOG.warning(
                 f"{family.name} - External mode cannot use awsvpc mode. Falling back to bridge"
@@ -88,6 +90,24 @@ class ServiceNetworking:
                 )
             ),
         )
+
+    @property
+    def sd_service(self):
+        return self._sd_service
+
+    @sd_service.setter
+    def sd_service(self, sd_service: EcsDiscoveryService):
+        self._sd_service = sd_service
+        if self.family.ecs_service and not self.family.ecs_service.registries:
+            self.family.ecs_service.registries.append(
+                self._sd_service.ecs_service_registry
+            )
+        else:
+            setattr(
+                self.family.ecs_service,
+                "registries",
+                [self._sd_service.ecs_service_registry],
+            )
 
     @property
     def eip_assign(self):
