@@ -2,6 +2,39 @@
 History
 =======
 
+0.22.0 (2022-06-13)
+====================
+
+In this version, along with a few fixes, we see the return of x-appmesh, with the same feature set as in previous versions.
+Also by default, the mesh allows all traffic, to make it easier for early on-boarding.
+Users can later on update the properties to change that behaviour.
+
+In previous versions with appmesh, the virtual resources of the mesh were created in the root stack.
+They now are created in their own stack, as all resources can be created independently from the services.
+
+New features
+--------------
+
+* 1b8f75f Re-enable AppMesh and few fixes (#629) (John Preston)
+
+Breaking changes
+-----------------
+
+Not a breaking change per-say, but the CloudMap records for services no longer are created
+in the services stack, instead are created in the ``cloudmap`` stack.
+
+General improvements & Fixes
+----------------------------------
+
+* 71d6577 Updated dependencies (John Preston)
+* bbe44f1 FireLens ParserFiles to declare additional files with Parser (#627) (John Preston)
+* f4163dd Added healthcheck full suport using TargetGroup properties (#625) (John Preston)
+* 36e9faa Updated dependencies (John Preston)
+* c360600 Correct log group name to same format as < 0.20 (John Preston)
+* 94f0244 family.services returns list, not itertools.chain (John Preston)
+* 961c28b Remove useless else (John Preston)
+
+
 0.21.0 (2022-06-04)
 ===================
 
