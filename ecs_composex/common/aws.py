@@ -313,6 +313,7 @@ def deploy(settings, root_stack):
             Capabilities=["CAPABILITY_IAM", "CAPABILITY_AUTO_EXPAND"],
             Parameters=root_stack.render_parameters_list_cfn(),
             TemplateURL=root_stack.TemplateURL,
+            DisableRollback=settings.disable_rollback,
         )
         LOG.info(f"Stack {settings.name} successfully deployed.")
         LOG.info(res["StackId"])
@@ -324,6 +325,7 @@ def deploy(settings, root_stack):
             Capabilities=["CAPABILITY_IAM", "CAPABILITY_AUTO_EXPAND"],
             Parameters=root_stack.render_parameters_list_cfn(),
             TemplateURL=root_stack.TemplateURL,
+            DisableRollback=settings.disable_rollback,
         )
         LOG.info(f"Stack {settings.name} successfully updating.")
         LOG.info(res["StackId"])
@@ -406,7 +408,9 @@ def plan(settings, root_stack):
             apply_q = input("Want to apply? [yN]: ")
             if apply_q in ["y", "Y", "YES", "Yes", "yes"]:
                 client.execute_change_set(
-                    ChangeSetName=change_set_name, StackName=settings.name
+                    ChangeSetName=change_set_name,
+                    StackName=settings.name,
+                    DisableRollback=settings.disable_rollback,
                 )
             else:
                 delete_q = input("Cleanup ChangeSet ? [yN]: ")
