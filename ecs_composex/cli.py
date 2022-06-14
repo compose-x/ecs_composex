@@ -125,6 +125,13 @@ def main_parser():
         help="Allow you to run API calls using a specific IAM role, within same or for cross-account",
         required=False,
     )
+    base_command_parser.add_argument(
+        "--disable-rollback",
+        dest="DisableRollback",
+        help="On create/plan, disable stack automatic rollback.",
+        required=False,
+        action="store_true",
+    )
     extras_parser.add_argument(
         "--ignore-ecr-findings",
         dest=ComposeXSettings.ecr_arg,

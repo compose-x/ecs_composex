@@ -24,7 +24,7 @@ import yaml
 from botocore.exceptions import ClientError
 from cfn_flip.yaml_dumper import LongCleanDumper
 from compose_x_common.aws import get_account_id, validate_iam_role_arn
-from compose_x_common.compose_x_common import keyisset
+from compose_x_common.compose_x_common import keyisset, set_else_none
 from compose_x_render.compose_x_render import ComposeDefinition
 from importlib_resources import files as pkg_files
 from troposphere import AWSObject
@@ -134,6 +134,7 @@ class ComposeXSettings:
         """
         Class to init the configuration
         """
+        self.__args = deepcopy(kwargs)
         self.for_cfn_macro = for_macro
         self.session = boto3.session.Session()
         self.override_session(session, profile_name, kwargs)
@@ -181,6 +182,10 @@ class ComposeXSettings:
         self.x_resources_void = []
         self.mod_manager = None
         self.root_stack = None
+
+    @property
+    def disable_rollback(self) -> bool:
+        return bool(set_else_none("DisableRollback", self.__args, alt_value=False))
 
     def get_x_resources(self, include_new=True, include_mappings=True) -> list:
         """
