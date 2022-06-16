@@ -118,6 +118,7 @@ class XResource:
             if not keyisset("MacroParameters", self.definition)
             else self.definition["MacroParameters"]
         )
+        self.support_defaults: bool = False
         self.uses_default = not any(
             [self.lookup, self.parameters, self.use, self.properties]
         )

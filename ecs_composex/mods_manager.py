@@ -15,32 +15,171 @@ Priority order goes
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
-
+    from ecs_composex.common.settings import ComposeXSettings
+    from ecs_composex.compose.x_resources import XResource
+    from ecs_composex.compose.x_resources.services_resources import ServicesXResource
+    from ecs_composex.compose.x_resources.api_x_resources import ApiXResource
+    from ecs_composex.compose.x_resources.environment_x_resources import (
+        AwsEnvironmentResource,
+    )
+    from ecs_composex.compose.x_resources.network_x_resources import (
+        NetworkXResource,
+        DatabaseXResource,
+    )
 import re
+from collections import OrderedDict
+from copy import deepcopy
 from importlib import import_module
 from json import loads
 
-from importlib_resources import files as pkg_files
+from compose_x_common.compose_x_common import keyisset
 
 from ecs_composex.common import NONALPHANUM
 from ecs_composex.common.ecs_composex import X_KEY
 from ecs_composex.common.logging import LOG
+from ecs_composex.compose.x_resources.helpers import (
+    set_lookup_resources,
+    set_new_resources,
+)
 from ecs_composex.iam.import_sam_policies import import_and_cleanse_sam_policies
 
 
 class XResourceModule:
-    def __init__(self, res_key: str, x_class, posix_path):
+    def __init__(
+        self,
+        res_key: str,
+        x_class,
+        posix_path,
+        resource_class: Union[
+            XResource,
+            ServicesXResource,
+            ApiXResource,
+            AwsEnvironmentResource,
+            NetworkXResource,
+            DatabaseXResource,
+        ] = None,
+        definition: dict = None,
+    ):
         self._res_key = res_key
         self._xstack_class = x_class
+        self._resource_class = resource_class
+        self._stack = None
         self._path = posix_path
         self._mod_policies = {}
         self._json_schema = {}
         self.import_perms_definition()
         self.import_json_schema()
+        self._resources: dict = {}
+        self._original_definition = deepcopy(definition)
+        self._definition: dict = {}
+        self._mappings: dict = {}
+        if definition:
+            self.definition = definition
+
+    @property
+    def resource_class(
+        self,
+    ) -> Union[
+        XResource,
+        ServicesXResource,
+        ApiXResource,
+        AwsEnvironmentResource,
+        NetworkXResource,
+        DatabaseXResource,
+    ]:
+        return self._resource_class
+
+    @property
+    def mappings(self) -> dict:
+        _lookup_mappings: dict = {}
+        for resource in self.lookup_resources:
+            _lookup_mappings[resource.logical_name] = resource.mappings
+        return {self.mapping_key: _lookup_mappings}
+
+    @property
+    def new_resources(self) -> list:
+        """
+        Function to create a list of new resources. Check if empty resource is supported
+
+        :return: list of resources to create
+        :rtype: list[XResource] x_resources:
+        """
+        new_resources = []
+        for resource in self.resources_list:
+            if (
+                resource.properties or resource.parameters or resource.uses_default
+            ) and not (resource.lookup or resource.use):
+                if resource.uses_default and not resource.support_defaults:
+                    raise KeyError(
+                        f"{resource.module.res_key}.{resource.name} - "
+                        "Requires either or both Properties or MacroParameters. Got neither",
+                        resource.definition.keys(),
+                    )
+                new_resources.append(resource)
+        return new_resources
+
+    @property
+    def lookup_resources(self) -> list:
+        """
+        :return: list of resources to import from Lookup
+        :rtype: list[XResource] x_resources:
+        """
+        lookup_resources = []
+        for resource in self.resources_list:
+            if resource.lookup:
+                if resource.properties or resource.parameters or resource.use:
+                    LOG.warning(
+                        f"{resource.module.res_key}.{resource.name} is set for Lookup"
+                        " but has other properties set. Voiding them"
+                    )
+                    resource.properties = {}
+                    resource.parameters = {}
+                    resource.use = {}
+                lookup_resources.append(resource)
+        return lookup_resources
+
+    @property
+    def resources(
+        self,
+    ) -> dict[
+        str,
+        Union[
+            XResource,
+            ServicesXResource,
+            ApiXResource,
+            AwsEnvironmentResource,
+            NetworkXResource,
+            DatabaseXResource,
+        ],
+    ]:
+        return self._resources
+
+    @property
+    def resources_list(
+        self,
+    ) -> list[
+        Union[
+            XResource,
+            ServicesXResource,
+            ApiXResource,
+            AwsEnvironmentResource,
+            NetworkXResource,
+            DatabaseXResource,
+        ]
+    ]:
+        return list(self._resources.values())
+
+    @property
+    def definition(self) -> dict:
+        return self._definition
+
+    @definition.setter
+    def definition(self, definition: dict):
+        self._definition = definition
 
     @property
     def res_key(self):
@@ -93,6 +232,30 @@ class XResourceModule:
         except OSError:
             pass
 
+    def set_resources(self, settings: ComposeXSettings):
+        """
+        Method to define the ComposeXResource for each service.
+        First updates the resources dict
+
+        :param ecs_composex.common.settings.ComposeXSettings settings:
+        """
+        _resources = OrderedDict(
+            sorted(
+                settings.compose_content[self.res_key].items(),
+                key=lambda item: item[0],
+            )
+        )
+        for resource_name, resource_definition in _resources.items():
+            new_definition = self.resource_class(
+                name=resource_name,
+                definition=resource_definition,
+                module=self,
+                settings=settings,
+            )
+            LOG.debug(type(new_definition))
+            LOG.debug(new_definition.__dict__)
+            self.resources[resource_name] = new_definition
+
 
 class ModManager:
     """
@@ -105,7 +268,17 @@ class ModManager:
         for res_key, res_def in settings.compose_content.items():
             if not res_def:
                 continue
-            self.add_module(res_key)
+            self.load_module(res_key, res_def)
+
+    def init_mods_resources(self, settings: ComposeXSettings):
+        for module in self.modules.values():
+            if not module.resource_class:
+                continue
+            if module.definition:
+                module.set_resources(settings)
+            elif keyisset(module.res_key, settings.compose_content):
+                module.definition = settings.compose_content(module.res_key)
+                module.set_resources(settings)
 
     def modules_repr(self):
         for key, module in self.modules.items():
@@ -125,9 +298,8 @@ class ModManager:
             for module_name, module in self.modules.items():
                 if module_name == res_key:
                     return module
-            return
 
-    def add_module_from_module_def(self, res_key: str, module_name: str, mod_key: str):
+    def add_module_from_module_def(self, res_key: str, mod_key: str, module_name: str):
         module_path = f"{module_name}.{mod_key}_module"
         core_module = self.import_resource_modules(res_key, module_path)
         if core_module:
@@ -138,33 +310,23 @@ class ModManager:
         extension_module = self.import_resource_modules(
             res_key, extensions_modules_path
         )
-        if extension_module:
+        if not extension_module:
             return extension_module
 
-    def add_module(self, res_key):
+    def load_module(self, res_key: str, res_def: dict) -> Union[XResourceModule, None]:
         if not res_key.startswith(X_KEY):
             return
         mod_key = re.sub(X_KEY, "", res_key)
         module_name = f"ecs_composex.{mod_key}"
 
-        module = self.add_module_from_module_def(res_key, module_name, mod_key)
-        if module:
-            LOG.debug(f"{module.res_key} - Loaded from module definition")
-            return module
-
-        mod_x_stack_class = get_mod_class(f"{module_name}.{mod_key}_stack")
-        if not mod_x_stack_class:
-            module_name = f"ecs_composex_{mod_key}"
-            mod_x_stack_class = get_mod_class(f"{module_name}.{mod_key}_stack")
-
-        if mod_x_stack_class:
-            module = XResourceModule(
-                res_key,
-                mod_x_stack_class,
-                pkg_files(module_name),
-            )
-            self.modules[res_key] = module
-            return module
+        module = self.add_module_from_module_def(res_key, mod_key, module_name)
+        if not module:
+            LOG.error(f"{res_key} - Unable to load module definition")
+            return
+        if res_def:
+            module.definition = res_def
+        self.modules[res_key] = module
+        return module
 
 
 def get_mod_class(module_name):

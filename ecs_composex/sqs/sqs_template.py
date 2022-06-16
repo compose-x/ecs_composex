@@ -1,6 +1,13 @@
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2022 John Mille <john@compose-x.io>
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .sqs_stack import Queue as ComposeXQueue
+    from ecs_composex.common.settings import ComposeXSettings
 
 from __future__ import annotations
 
@@ -73,7 +80,6 @@ def define_queue_properties(queue):
     props = import_record_properties(queue.properties, CfnQueue)
     queue.cfn_resource = CfnQueue(queue.logical_name, **props)
     LOG.debug(queue.cfn_resource.title, queue.logical_name)
-    return queue
 
 
 def add_aws_services_queue_policy(queue: Queue):

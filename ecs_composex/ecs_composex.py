@@ -50,6 +50,7 @@ from ecs_composex.vpc.helpers import (
     define_vpc_settings,
     update_network_resources_vpc_config,
 )
+from ecs_composex.vpc.vpc_stack import Vpc
 from ecs_composex.vpc.vpc_stack import XStack as VpcStack
 
 RES_REGX = re.compile(r"(^([x-]+))")
@@ -280,12 +281,16 @@ def generate_full_template(settings: ComposeXSettings):
     add_ecs_cluster(settings)
     settings.mod_manager = ModManager(settings)
     settings.mod_manager.modules_repr()
+    settings.mod_manager.init_mods_resources(settings)
     iam_stack = add_resource(
         settings.root_stack.stack_template, IamStack("iam", settings)
     )
     add_x_resources(settings)
     add_compose_families(settings)
-    vpc_module = settings.mod_manager.add_module("x-vpc")
+    if "x-vpc" not in settings.mod_manager.modules:
+        vpc_module = settings.mod_manager.load_module("x-vpc", {})
+    else:
+        vpc_module = settings.mod_manager.modules["x-vpc"]
     vpc_stack = VpcStack("vpc", settings, vpc_module)
     define_vpc_settings(settings, vpc_module, vpc_stack)
     if vpc_stack.vpc_resource and (

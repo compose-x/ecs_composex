@@ -42,10 +42,11 @@ def add_managed_ssm_parameter(
     }
 
     if "x-ssm_parameter" not in settings.mod_manager.modules:
-        ssm_module = settings.mod_manager.add_module("x-ssm_parameter")
-        settings.compose_content[ssm_module.res_key]: dict = {
-            ssm_parameter_title: ssm_parameter_definition
-        }
+        x_ssm_content: dict = {ssm_parameter_title: ssm_parameter_definition}
+        ssm_module = settings.mod_manager.load_module(
+            "x-ssm_parameter", res_def=x_ssm_content
+        )
+        settings.compose_content[ssm_module.res_key] = ssm_module.definition
     else:
         ssm_module = settings.mod_manager.modules["x-ssm_parameter"]
         settings.compose_content[ssm_module.res_key].update(

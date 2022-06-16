@@ -250,26 +250,31 @@ class ComposeXSettings:
         Returns: the list of XResource in the execution.
 
         """
-        all_keys = self.compose_content.keys()
-        all_resources = []
-        for res_key in all_keys:
+        _resources = []
+        for module in self.mod_manager.modules.values():
+            _resources += module.resources_list
+        return _resources
 
-            if not isinstance(self.compose_content[res_key], dict):
-                continue
-            for resource in self.compose_content[res_key].values():
-                if not issubclass(
-                    type(resource),
-                    (
-                        XResource,
-                        ServicesXResource,
-                        NetworkXResource,
-                        ApiXResource,
-                        AwsEnvironmentResource,
-                    ),
-                ):
-                    continue
-                all_resources.append(resource)
-        return all_resources
+        # all_keys = self.compose_content.keys()
+        # all_resources = []
+        # for res_key in all_keys:
+        #
+        #     if not isinstance(self.compose_content[res_key], dict):
+        #         continue
+        #     for resource in self.compose_content[res_key].values():
+        #         if not issubclass(
+        #             type(resource),
+        #             (
+        #                 XResource,
+        #                 ServicesXResource,
+        #                 NetworkXResource,
+        #                 ApiXResource,
+        #                 AwsEnvironmentResource,
+        #             ),
+        #         ):
+        #             continue
+        #         all_resources.append(resource)
+        # return all_resources
 
     def evaluate_private_namespace(self):
         """

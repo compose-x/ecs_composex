@@ -6,15 +6,15 @@ from pathlib import Path
 
 from ecs_composex.mods_manager import XResourceModule
 
-from .opensearch_stack import OpenSearchDomain, XStack
+from .dashboards_stack import XStack
 
 COMPOSE_X_MODULES: dict = {
-    "x-opensearch'": {
+    "x-dashboards": {
         "Module": XResourceModule(
-            "x-opensearch",
+            "x-dashboards",
             XStack,
             Path(path.abspath(path.dirname(__file__))),
-            OpenSearchDomain,
+            resource_class=None,
         ),
     },
 }

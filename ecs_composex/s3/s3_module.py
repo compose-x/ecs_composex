@@ -6,12 +6,12 @@ from pathlib import Path
 
 from ecs_composex.mods_manager import XResourceModule
 
-from .s3_stack import XStack
+from .s3_stack import Bucket, XStack
 
 COMPOSE_X_MODULES: dict = {
     "x-s3": {
         "Module": XResourceModule(
-            "x-s3", XStack, Path(path.abspath(path.dirname(__file__)))
+            "x-s3", XStack, Path(path.abspath(path.dirname(__file__))), Bucket
         ),
     },
 }

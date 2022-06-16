@@ -6,12 +6,12 @@ from pathlib import Path
 
 from ecs_composex.mods_manager import XResourceModule
 
-from .sqs_stack import XStack
+from .sqs_stack import Queue, XStack
 
 COMPOSE_X_MODULES: dict = {
     "x-sqs": {
         "Module": XResourceModule(
-            "x-sqs", XStack, Path(path.abspath(path.dirname(__file__)))
+            "x-sqs", XStack, Path(path.abspath(path.dirname(__file__))), Queue
         ),
     },
 }

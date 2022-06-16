@@ -6,15 +6,15 @@ from pathlib import Path
 
 from ecs_composex.mods_manager import XResourceModule
 
-from .opensearch_stack import OpenSearchDomain, XStack
+from .neptune_stack import NeptuneDBCluster, XStack
 
 COMPOSE_X_MODULES: dict = {
-    "x-opensearch'": {
+    "x-neptune": {
         "Module": XResourceModule(
-            "x-opensearch",
+            "x-neptune",
             XStack,
             Path(path.abspath(path.dirname(__file__))),
-            OpenSearchDomain,
+            NeptuneDBCluster,
         ),
     },
 }

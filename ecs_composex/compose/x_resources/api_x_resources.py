@@ -41,7 +41,7 @@ class ApiXResource(ServicesXResource):
         """
         Maps API only based resource to ECS Services
         """
-        LOG.debug(f"{self.module.res_key}.{self.name} - Linking to services")
+        LOG.info(f"{self.module.res_key}.{self.name} - Linking to services")
         handle_resource_to_services(
             settings,
             self,
