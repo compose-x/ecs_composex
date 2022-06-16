@@ -7,7 +7,7 @@ Module of functions factorizing common patterns for TCP based access such as RDS
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
     from ecs_composex.ecs.ecs_family import ComposeFamily
@@ -22,15 +22,19 @@ if TYPE_CHECKING:
 from botocore.exceptions import ClientError
 from compose_x_common.aws import get_account_id
 from compose_x_common.aws.rds import RDS_DB_ID_CLUSTER_ARN_RE
-from compose_x_common.compose_x_common import keyisset, keypresent
+from compose_x_common.compose_x_common import keyisset, keypresent, set_else_none
 from troposphere import FindInMap, GetAtt, Ref, Sub
 from troposphere.ec2 import SecurityGroupIngress
+from troposphere.ecs import Environment
 from troposphere.ecs import Secret as EcsSecret
 from troposphere.iam import PolicyType
 
 from ecs_composex.common import LOG, add_parameters, add_resource, add_update_mapping
 from ecs_composex.common.aws import find_aws_resource_arn_from_tags_api
-from ecs_composex.compose.compose_services.helpers import extend_container_secrets
+from ecs_composex.compose.compose_services.helpers import (
+    extend_container_envvars,
+    extend_container_secrets,
+)
 from ecs_composex.ecs.ecs_params import SG_T
 from ecs_composex.rds.rds_params import DB_SECRET_POLICY_NAME
 from ecs_composex.resource_settings import get_parameter_settings
@@ -258,7 +262,7 @@ def generate_secrets_from_secrets_mappings(
         )
 
 
-def define_db_secrets(db, secret_import, target) -> list:
+def define_db_secrets(db: DatabaseXResource, secret_import, target: tuple) -> list:
     """
     Function to return the list of env vars set for the DB to use as env vars for the Secret.
 
@@ -266,6 +270,12 @@ def define_db_secrets(db, secret_import, target) -> list:
     :rtype: list
     """
     secrets = []
+    if keyisset("DoNotExposeMappings", target[-1]):
+        LOG.warning(
+            f"{db.module.res_key}.{db.name} - {target[0].name} - "
+            "DoNotExposeMappings set. Not creating secret mappings"
+        )
+        return secrets
     if keyisset("SecretsMappings", target[-1]):
         LOG.info(f"{target[0].name} expects specific name for {db.name}")
         generate_secrets_from_secrets_mappings(
@@ -325,7 +335,7 @@ def add_security_group_ingress(service_stack: ComposeXStack, db_name: str, sg_id
     )
 
 
-def generate_rds_secrets_permissions(resources: list, db_name: str) -> dict:
+def generate_rds_secrets_permissions(resources, db_name: str) -> dict:
     """
     Function to generate the IAM policy to use for the ECS Execution role to get access to the RDS secrets
     :return:
@@ -334,31 +344,32 @@ def generate_rds_secrets_permissions(resources: list, db_name: str) -> dict:
         "Sid": f"AccessTo{db_name}Secret",
         "Effect": "Allow",
         "Action": ["secretsmanager:GetSecretValue", "secretsmanager:GetSecret"],
-        "Resource": resources,
+        "Resource": resources if isinstance(resources, list) else [resources],
     }
 
 
 def add_secrets_access_policy(
-    service_family: ComposeFamily,
+    target: tuple,
     secret_import,
-    db_name: str,
-    use_task_role: bool = False,
+    db,
+    use_task_role: Union[bool, dict] = False,
 ):
     """
     Function to add or append policy to access DB Secret for the Execution Role
 
-    :param service_family:
+    :param tuple target:
     :param secret_import:
     :return:
     """
-    db_policy_statement = generate_rds_secrets_permissions(secret_import, db_name)
+    service_family = target[0]
+    db_policy_statement = generate_rds_secrets_permissions(
+        secret_import, db.logical_name
+    )
     task_role = service_family.iam_manager.task_role.name
     exec_role = service_family.iam_manager.exec_role.name
     if keyisset(DB_SECRET_POLICY_NAME, service_family.template.resources):
-        db_policy = service_family.template.resources[DB_SECRET_POLICY_NAME]
-        db_policy.PolicyDocument["Statement"].append(db_policy_statement)
-        if use_task_role:
-            db_policy.Roles.append(task_role)
+        policy = service_family.template.resources[DB_SECRET_POLICY_NAME]
+        policy.PolicyDocument["Statement"].append(db_policy_statement)
     else:
         policy = PolicyType(
             DB_SECRET_POLICY_NAME,
@@ -370,8 +381,61 @@ def add_secrets_access_policy(
                 "Statement": [db_policy_statement],
             },
         )
-        if use_task_role:
-            policy.Roles.append(task_role)
+    if use_task_role:
+        handle_task_role_access(
+            use_task_role, policy, secret_import, task_role, db, service_family
+        )
+
+
+def handle_task_role_access(
+    use_task_role: Union[dict, bool],
+    policy: PolicyType,
+    secret_import,
+    task_role,
+    db: DatabaseXResource,
+    family: ComposeFamily,
+) -> None:
+    if policy.Roles and task_role not in policy.Roles:
+        policy.Roles.append(task_role)
+    if isinstance(use_task_role, dict):
+        secret_env_key = use_task_role["SecretEnvName"]
+    elif isinstance(use_task_role, bool):
+        secret_env_key = f"{db.logical_name}_SECRET"
+    else:
+        raise TypeError(
+            "use_task_role must be one of",
+            (bool, dict),
+            "Got",
+            use_task_role,
+            type(use_task_role),
+        )
+    add_secret_arn_env_var(family, secret_env_key, secret_import)
+    LOG.info(
+        f"{db.module.res_key}.{db.name} - Added {secret_env_key} environment variable to the DB Secret."
+        "Granted access to the Task Role"
+    )
+
+
+def add_secret_arn_env_var(
+    family: ComposeFamily, secret_env_key: str, secret_definition
+):
+    """
+    Adds environment variable to service, using the Name/ARN of the service as value
+
+    :param family:
+    :param secret_env_key:
+    :param secret_definition:
+    :return:
+    """
+    if isinstance(secret_definition, list):
+        raise TypeError("secret_definition cannot be a list. Got", secret_definition)
+    for service in family.services:
+        if service.is_aws_sidecar:
+            continue
+        extend_container_envvars(
+            service.container_definition,
+            [Environment(Name=secret_env_key, Value=secret_definition)],
+        )
 
 
 def handle_db_secret_to_services(
@@ -388,7 +452,10 @@ def handle_db_secret_to_services(
         if service not in target[0].ordered_services or service.is_aws_sidecar:
             continue
         add_secret_to_container(db, secret_import, service, target)
-    add_secrets_access_policy(target[0], secret_import, db.logical_name)
+    grant_task_role_access = set_else_none(
+        "GrantTaskAccess", target[-1], alt_value=False
+    )
+    add_secrets_access_policy(target, secret_import, db, grant_task_role_access)
 
 
 def handle_import_dbs_to_services(
@@ -410,10 +477,14 @@ def handle_import_dbs_to_services(
                 service,
                 target,
             )
+        grant_task_role_access = set_else_none(
+            "GrantTaskAccess", target[-1], alt_value=False
+        )
         add_secrets_access_policy(
-            target[0],
+            target,
             db.attributes_outputs[db.db_secret_arn_parameter]["ImportValue"],
-            db.logical_name,
+            db,
+            use_task_role=grant_task_role_access,
         )
     add_security_group_ingress(
         target[0].stack,

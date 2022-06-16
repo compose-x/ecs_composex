@@ -37,9 +37,12 @@ x-rds:
           Value: "dummy-db"
 
     Services:
-      - name: app01
-        access: RW
-      - name: app03
-        access: RW
-      - name: youtoo
-        access: RW
+      app01:
+        Access: RW
+      app03:
+        Access: RW
+        GrantTaskAccess:
+          SecretEnvName: DB_B_SECRET
+      youtoo:
+        Access: RW
+        GrantTaskAccess: True
