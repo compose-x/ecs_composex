@@ -53,6 +53,29 @@
             "SecretsMappings": {
               "$ref": "#/definitions/SecretsMappingsDef"
             },
+            "GrantTaskAccess": {
+              "oneOf": [
+                {
+                  "type": "boolean",
+                  "description": "Turn on to enable access to the secret to the TaskRole"
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "description": "Enables access to secret to Task Role",
+                  "properties": {
+                    "SecretEnvName": {
+                      "type": "string",
+                      "description": "Sets an environment variable name pointing to the secret Name/ARN"
+                    }
+                  }
+                }
+              ]
+            },
+            "DoNotExposeMappings": {
+              "type": "boolean",
+              "description": "Disable exporting the secret to containers at all."
+            },
             "ReturnValues": {
               "type": "object",
               "description": "Set the CFN Return Value and the environment variable name you want to expose to the service",

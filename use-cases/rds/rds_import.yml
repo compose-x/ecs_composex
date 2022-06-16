@@ -5,8 +5,10 @@ version: '3.8'
 x-rds:
   dbA:
     Services:
-      - name: app03
-        access: RW
+      app03:
+        Access:
+          DBCluster: RO
+        DoNotExposeMappings: true
     Lookup:
       cluster:
         Name: database-1
@@ -24,10 +26,32 @@ x-rds:
             VarName: DB_HOST
   dbB:
     Services:
-      - name: app03
-        access: RW
+      app03:
+        Access:
+          DBCluster: RO
+        GrantTaskAccess: true
     Lookup:
       cluster:
         Name: database-1
         Tags:
           - serverless: "True"
+      secret:
+        Name: GHToken
+        Tags:
+          - useless: "yes"
+  dbC:
+    Services:
+      app03:
+        Access:
+          DBCluster: RO
+        GrantTaskAccess:
+          SecretEnvName: DB_C_SECRET
+    Lookup:
+      cluster:
+        Name: database-1
+        Tags:
+          - serverless: "True"
+      secret:
+        Name: GHToken
+        Tags:
+          - useless: "yes"
