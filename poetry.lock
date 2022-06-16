@@ -38,7 +38,7 @@ tests = ["coverage", "hypothesis", "pympler", "pytest (>=4.3.0)", "six", "zope.i
 
 [[package]]
 name = "babel"
-version = "2.10.1"
+version = "2.10.2"
 description = "Internationalization utilities"
 category = "dev"
 optional = false
@@ -104,14 +104,14 @@ uvloop = ["uvloop (>=0.15.2)"]
 
 [[package]]
 name = "boto3"
-version = "1.24.7"
+version = "1.24.9"
 description = "The AWS SDK for Python"
 category = "main"
 optional = false
 python-versions = ">= 3.7"
 
 [package.dependencies]
-botocore = ">=1.27.7,<1.28.0"
+botocore = ">=1.27.9,<1.28.0"
 jmespath = ">=0.7.1,<2.0.0"
 s3transfer = ">=0.6.0,<0.7.0"
 
@@ -120,8 +120,8 @@ crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
 
 [[package]]
 name = "boto3-stubs"
-version = "1.24.7"
-description = "Type annotations for boto3 1.24.7 generated with mypy-boto3-builder 7.6.1"
+version = "1.24.9"
+description = "Type annotations for boto3 1.24.9 generated with mypy-boto3-builder 7.6.1"
 category = "dev"
 optional = false
 python-versions = ">=3.6"
@@ -328,7 +328,6 @@ macie2 = ["mypy-boto3-macie2 (>=1.24.0,<1.25.0)"]
 managedblockchain = ["mypy-boto3-managedblockchain (>=1.24.0,<1.25.0)"]
 marketplace-catalog = ["mypy-boto3-marketplace-catalog (>=1.24.0,<1.25.0)"]
 marketplace-entitlement = ["mypy-boto3-marketplace-entitlement (>=1.24.0,<1.25.0)"]
-xray = ["mypy-boto3-xray (>=1.24.0,<1.25.0)"]
 marketplacecommerceanalytics = ["mypy-boto3-marketplacecommerceanalytics (>=1.24.0,<1.25.0)"]
 mediaconnect = ["mypy-boto3-mediaconnect (>=1.24.0,<1.25.0)"]
 mediaconvert = ["mypy-boto3-mediaconvert (>=1.24.0,<1.25.0)"]
@@ -449,10 +448,11 @@ workmail = ["mypy-boto3-workmail (>=1.24.0,<1.25.0)"]
 workmailmessageflow = ["mypy-boto3-workmailmessageflow (>=1.24.0,<1.25.0)"]
 workspaces = ["mypy-boto3-workspaces (>=1.24.0,<1.25.0)"]
 workspaces-web = ["mypy-boto3-workspaces-web (>=1.24.0,<1.25.0)"]
+xray = ["mypy-boto3-xray (>=1.24.0,<1.25.0)"]
 
 [[package]]
 name = "botocore"
-version = "1.27.7"
+version = "1.27.9"
 description = "Low-level, data-driven core of boto 3."
 category = "main"
 optional = false
@@ -468,8 +468,8 @@ crt = ["awscrt (==0.13.8)"]
 
 [[package]]
 name = "botocore-stubs"
-version = "1.27.7"
-description = "Type annotations for botocore 1.27.7 generated with mypy-boto3-builder 7.6.1"
+version = "1.27.9"
+description = "Type annotations for botocore 1.27.9 generated with mypy-boto3-builder 7.6.1"
 category = "dev"
 optional = false
 python-versions = ">=3.6"
@@ -552,7 +552,7 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 
 [[package]]
 name = "compose-x-common"
-version = "1.0.1"
+version = "1.0.2"
 description = "Common Library for Compose-X Projects"
 category = "main"
 optional = false
@@ -1618,8 +1618,8 @@ attrs = [
     {file = "attrs-19.3.0.tar.gz", hash = "sha256:f7b7ce16570fe9965acd6d30101a28f62fb4a7f9e926b3bbc9b61f8b04247e72"},
 ]
 babel = [
-    {file = "Babel-2.10.1-py3-none-any.whl", hash = "sha256:3f349e85ad3154559ac4930c3918247d319f21910d5ce4b25d439ed8693b98d2"},
-    {file = "Babel-2.10.1.tar.gz", hash = "sha256:98aeaca086133efb3e1e2aad0396987490c8425929ddbcfe0550184fdc54cd13"},
+    {file = "Babel-2.10.2-py3-none-any.whl", hash = "sha256:81a3beca4d0cd40a9cfb9e2adb2cf39261c2f959b92e7a74750befe5d79afd7b"},
+    {file = "Babel-2.10.2.tar.gz", hash = "sha256:7aed055f0c04c9e7f51a2f75261e41e1c804efa724cb65b60a970dd4448d469d"},
 ]
 beautifulsoup4 = [
     {file = "beautifulsoup4-4.11.1-py3-none-any.whl", hash = "sha256:58d5c3d29f5a36ffeb94f02f0d786cd53014cf9b3b3951d42e0080d8a9498d30"},
@@ -1655,20 +1655,20 @@ black = [
     {file = "black-22.3.0.tar.gz", hash = "sha256:35020b8886c022ced9282b51b5a875b6d1ab0c387b31a065b84db7c33085ca79"},
 ]
 boto3 = [
-    {file = "boto3-1.24.7-py3-none-any.whl", hash = "sha256:925a34a55257219f4601e803951fd4d61ed6eac2208dc834a04fe150b03f265e"},
-    {file = "boto3-1.24.7.tar.gz", hash = "sha256:6e243e28c804dccd2015935acfac0567e1861b20fdd96aa47f232b47aa214a69"},
+    {file = "boto3-1.24.9-py3-none-any.whl", hash = "sha256:87d34861727699c795bf8d65703f2435e75f12879bdd483e08b35b7c5510e8c8"},
+    {file = "boto3-1.24.9.tar.gz", hash = "sha256:0821212ff521cb934801b1f655cef3c0e976775324b1018f1751700d0f42dbb4"},
 ]
 boto3-stubs = [
-    {file = "boto3-stubs-1.24.7.tar.gz", hash = "sha256:0da1d485c954d3d48a8d91c6255354eafb8624ae5d07853324cd043bc0baa61d"},
-    {file = "boto3_stubs-1.24.7-py3-none-any.whl", hash = "sha256:b64bd104dfca69e57cc257d439c9d4c3bcba536949c45e1d7f29fe6dc2069f54"},
+    {file = "boto3-stubs-1.24.9.tar.gz", hash = "sha256:7d7740298e1db7a8105e61f6b9713bc10aecf6539b7122db5a5fd11723c0b31e"},
+    {file = "boto3_stubs-1.24.9-py3-none-any.whl", hash = "sha256:139861de497a888e637c211740d9d80a377e0459aaa9e09bf773008e16ab63ce"},
 ]
 botocore = [
-    {file = "botocore-1.27.7-py3-none-any.whl", hash = "sha256:3e0cbe26f08fe9a3f6df5de4dcc3bef686e01ba5f79ad03ffbe79d92f51ecea5"},
-    {file = "botocore-1.27.7.tar.gz", hash = "sha256:dc83ef991c730ab0f06b51fcefda74f493b990903b882452aff78c123e3040e2"},
+    {file = "botocore-1.27.9-py3-none-any.whl", hash = "sha256:5669b982b0583e73daef1fe0a4df311055e6287326f857dbb1dcc2de1d8412ad"},
+    {file = "botocore-1.27.9.tar.gz", hash = "sha256:7a7588b0170e571317496ac4104803329d5bc792bc008e8a757ffd440f1b6fa6"},
 ]
 botocore-stubs = [
-    {file = "botocore-stubs-1.27.7.tar.gz", hash = "sha256:02b69d3bc90c3fa012977bc4358990543d143d5871260fc58ccc70a877104ba1"},
-    {file = "botocore_stubs-1.27.7-py3-none-any.whl", hash = "sha256:8175bfb652b1e0a33d00fd93888be3dcc426902d03d880ff10a7488576655a3b"},
+    {file = "botocore-stubs-1.27.9.tar.gz", hash = "sha256:6a7f004b2fb539fd4062c874d817d41f49386cae6f082194a168ac479ba48be6"},
+    {file = "botocore_stubs-1.27.9-py3-none-any.whl", hash = "sha256:6992cfbda5b0f85de7372c860770f7dede4fa2084972459787e3d92228f17d2e"},
 ]
 certifi = [
     {file = "certifi-2022.5.18.1-py3-none-any.whl", hash = "sha256:f1d53542ee8cbedbe2118b5686372fb33c297fcd6379b050cca0ef13a597382a"},
@@ -1699,8 +1699,8 @@ colorama = [
     {file = "colorama-0.4.4.tar.gz", hash = "sha256:5941b2b48a20143d2267e95b1c2a7603ce057ee39fd88e7329b0c292aa16869b"},
 ]
 compose-x-common = [
-    {file = "compose_x_common-1.0.1-py3-none-any.whl", hash = "sha256:29e979a623ae6bcc53efca68fcaee36876d26dbe469b5ca9bce48873149650e5"},
-    {file = "compose_x_common-1.0.1.tar.gz", hash = "sha256:5b4b458c2aa0908a54b90e55e7780a283767b9dc3bce16584f84ef3a9a5477a4"},
+    {file = "compose_x_common-1.0.2-py3-none-any.whl", hash = "sha256:9f7723d86e5959ec5c4a2420bb1d1e135de37deed04a666b58c58838935f8422"},
+    {file = "compose_x_common-1.0.2.tar.gz", hash = "sha256:0de9105681cac80537671d8d24dbacb769fdad90abba043641f85369f7258c80"},
 ]
 compose-x-render = [
     {file = "compose_x_render-0.5.5-py3-none-any.whl", hash = "sha256:6e6857c026205ff7f277fbe621321e6774209763d51bea0645fc03ffdfa96acd"},

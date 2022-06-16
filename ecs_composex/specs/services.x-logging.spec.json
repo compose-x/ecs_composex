@@ -145,6 +145,9 @@
               },
               {
                 "$ref": "#/definitions/FireLensFirehoseManagedDestination"
+              },
+              {
+                "$ref": "#/definitions/FireLensKinesisManagedDestination"
               }
             ]
           }
@@ -164,7 +167,17 @@
       "properties": {
         "delivery_stream": {
           "type": "string",
-          "description": "Allows to define delivery_stream with simple name or a delivery stream defined in x-kinesis_firehose."
+          "description": "Define delivery_stream with simple name or a delivery stream defined in x-kinesis_firehose."
+        }
+      }
+    },
+    "FireLensKinesisManagedDestination": {
+      "type": "object",
+      "required": ["stream"],
+      "properties": {
+        "stream": {
+          "type": "string",
+          "description": "Define delivery_stream with simple name or a data stream defined in x-kinesis."
         }
       }
     },

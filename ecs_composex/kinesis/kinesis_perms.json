@@ -12,7 +12,11 @@
   "Producer": {
     "Effect": "Allow",
     "Action": [
-      "kinesis:PutRecord"
+      "kinesis:PutRecord",
+      "kinesis:PutRecords",
+      "kinesis:DescribeStream",
+      "kinesis:DescribeStreamSummary",
+      "kinesis:ListShards"
     ],
     "Resource": [
       "${ARN}"

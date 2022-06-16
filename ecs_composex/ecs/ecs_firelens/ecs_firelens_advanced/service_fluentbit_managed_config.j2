@@ -9,3 +9,12 @@
     {{ key| safe }} {{ value | safe }}
 {%- endfor -%}
 {% endfor %}
+
+{% for kinesis_stream_destination in firelens_data_streams_destinations %}
+[OUTPUT]
+    Name kinesis_streams
+    Match {{ service_match }}
+{%- for key, value in kinesis_stream_destination.output_definition.items() %}
+    {{ key| safe }} {{ value | safe }}
+{%- endfor -%}
+{% endfor %}
