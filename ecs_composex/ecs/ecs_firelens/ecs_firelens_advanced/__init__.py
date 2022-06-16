@@ -25,6 +25,7 @@ from ecs_composex.compose.compose_services.service_logging import ServiceLogging
 from ecs_composex.compose.compose_volumes import ComposeVolume
 
 from .advanced_firehose import FireLensFirehoseManagedDestination
+from .advanced_kinesis import FireLensKinesisManagedDestination
 from .config_parameter import add_managed_ssm_parameter
 from .firelens_config_sidecar import FluentBitConfig, render_config_sidecar_config
 
@@ -185,6 +186,13 @@ class FireLensServiceManagedConfiguration:
                             destination_definition, self, settings
                         )
                     )
+                elif keyisset("stream", destination_definition):
+                    print("Detected a kinesis stream destination")
+                    self.managed_destinations.append(
+                        FireLensKinesisManagedDestination(
+                            destination_definition, self, settings
+                        )
+                    )
                 else:
                     LOG.error("Invalid definition for ComposeXManagedAwsDestinations")
                     LOG.error(destination_definition)
@@ -200,6 +208,14 @@ class FireLensServiceManagedConfiguration:
             if isinstance(_managed_dest, FireLensFirehoseManagedDestination):
                 managed_firehose.append(_managed_dest)
         return managed_firehose
+
+    @property
+    def managed_data_streams_destinations(self):
+        managed_data_stream: list = []
+        for _managed_dest in self.managed_destinations:
+            if isinstance(_managed_dest, FireLensKinesisManagedDestination):
+                managed_data_stream.append(_managed_dest)
+        return managed_data_stream
 
     @property
     def parser_files(self) -> dict:
@@ -236,6 +252,7 @@ class FireLensServiceManagedConfiguration:
         content = template.render(
             env=environ,
             firelens_firehose_destinations=self.managed_firehose_destinations,
+            firelens_data_streams_destinations=self.managed_data_streams_destinations,
             source_file=self.source_file_content,
             service_match=f"{self.service.name}-firelens*",
         )

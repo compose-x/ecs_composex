@@ -17,7 +17,12 @@ from ecs_composex.common import LOG, add_resource
 from ecs_composex.ecs.ecs_params import LOG_GROUP_RETENTION, LOG_GROUP_T
 from ecs_composex.resource_settings import define_iam_permissions
 
-LOGGING_ACTIONS = ["logs:CreateLogStream", "logs:PutLogEvents", "logs:CreateLogGroup"]
+LOGGING_ACTIONS = [
+    "logs:CreateLogStream",
+    "logs:PutLogEvents",
+    "logs:CreateLogGroup",
+    "logs:Describe*",
+]
 LOGGING_IAM_PERMISSIONS_MODEL: dict = {"Effect": "Allow", "Action": LOGGING_ACTIONS}
 
 

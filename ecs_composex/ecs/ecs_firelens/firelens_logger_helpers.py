@@ -19,6 +19,7 @@ from ecs_composex.ecs.ecs_firelens.helpers.cloudwatch_helpers import (
 from ecs_composex.ecs.ecs_firelens.helpers.firehose_helpers import (
     handle_x_kinesis_firehose,
 )
+from ecs_composex.ecs.ecs_firelens.helpers.kinesis_helpers import handle_x_kinesis
 
 from .firelens_options_generic_helpers import handle_cross_account_permissions
 
@@ -38,6 +39,34 @@ def handle_firehose_config(
 
     param_to_handler = {
         "delivery_stream": handle_x_kinesis_firehose,
+        "role_arn": handle_cross_account_permissions,
+    }
+    for param_name, param_function in param_to_handler.items():
+        if param_name in service.logging.log_options.keys() and param_function:
+            service.logging.log_options[param_name] = param_function(
+                family,
+                service,
+                settings,
+                param_name,
+                service.logging.log_options[param_name],
+            )
+
+
+def handle_kinesis_config(
+    family: ComposeFamily,
+    service: ComposeService,
+    settings: ComposeXSettings,
+) -> None:
+    """
+    Function to handle kinesis datastream destination and detect settings to set accordingly, such as IAM Permissions
+
+    :param ComposeFamily family:
+    :param ComposeService service:
+    :param ComposeXSettings settings:
+    """
+
+    param_to_handler = {
+        "delivery_stream": handle_x_kinesis,
         "role_arn": handle_cross_account_permissions,
     }
     for param_name, param_function in param_to_handler.items():
@@ -120,3 +149,5 @@ def parse_set_update_firelens_configuration_options(
             handle_firehose_config(family, service, settings)
         elif name == "cloudwatch":
             handle_cloudwatch(family, service, settings)
+        elif name == "kinesis" or name == "kinesis_streams":
+            handle_kinesis_config(family, service, settings)
