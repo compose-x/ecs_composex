@@ -29,6 +29,7 @@ def update_network_resources_vpc_config(settings, vpc_stack):
     :type vpc_stack: ecs_composex.vpc.vpc_stack.VpcStack
     """
     for resource in settings.x_resources:
+        print(resource, resource.module.res_key)
         if resource.mappings:
             LOG.debug(
                 f"{resource.module.res_key}.{resource.name} - Lookup resource need no VPC Settings."

@@ -138,7 +138,7 @@ class Certificate(AwsEnvironmentResource):
                     update_settings[0](
                         self,
                         resource_stack,
-                        properties_to_update,
+                        properties_toupdate,
                         update_settings[3],
                         settings,
                     )
@@ -159,18 +159,14 @@ class XStack(ComposeXStack):
         :param ecs_composex.common.settings.ComposeXSettings settings:
         :param dict kwargs:
         """
-        set_resources(settings, Certificate, module)
-        x_resources = settings.compose_content[module.res_key].values()
-        lookup_resources = set_lookup_resources(x_resources)
-        new_resources = set_new_resources(x_resources, False)
-        if new_resources:
+        if module.new_resources:
             stack_template = build_template("ACM Certificates created from x-acm")
             super().__init__(name, stack_template, module=module, **kwargs)
-            define_acm_certs(new_resources, self)
+            define_acm_certs(module.new_resources, self)
         else:
             self.is_void = True
-        if lookup_resources:
-            resolve_lookup(lookup_resources, settings, module)
+        if module.lookup_resources:
+            resolve_lookup(module.lookup_resources, settings, module)
         self.module_name = module.mod_key
-        for resource in x_resources:
+        for resource in module.resources_list:
             resource.stack = self

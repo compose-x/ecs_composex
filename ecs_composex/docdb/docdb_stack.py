@@ -105,6 +105,7 @@ class DocDb(DatabaseXResource):
         self.db_sg = None
         self.db_subnets_group = None
         super().__init__(name, definition, module, settings)
+        self.support_defaults = True
         self.set_override_subnets()
         self.security_group_param = DB_SG
         self.db_secret_arn_parameter = DB_SECRET_ARN
@@ -225,19 +226,15 @@ class XStack(ComposeXStack):
     def __init__(
         self, title, settings: ComposeXSettings, module: XResourceModule, **kwargs
     ):
-        set_resources(settings, DocDb, module)
-        x_resources = settings.compose_content[module.res_key].values()
-        lookup_resources = set_lookup_resources(x_resources)
-        if lookup_resources:
-            resolve_lookup(lookup_resources, settings, module)
-        new_resources = set_new_resources(x_resources, True)
+        if module.lookup_resources:
+            resolve_lookup(module.lookup_resources, settings, module)
 
-        if new_resources:
+        if module.new_resources:
             stack_template = init_doc_db_template()
             super().__init__(title, stack_template, **kwargs)
-            create_docdb_template(stack_template, new_resources, settings, self)
+            create_docdb_template(stack_template, module.new_resources, settings, self)
         else:
             self.is_void = True
 
-        for resource in settings.compose_content[module.res_key].values():
+        for resource in module.resources_list:
             resource.stack = self

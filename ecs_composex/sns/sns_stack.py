@@ -39,6 +39,7 @@ class Topic(ApiXResource):
         super().__init__(name, definition, module, settings)
         self.arn_parameter = TOPIC_ARN
         self.ref_parameter = TOPIC_ARN
+        self.support_defaults = True
 
     def init_outputs(self):
         self.output_properties = {
@@ -60,20 +61,16 @@ class XStack(ComposeXStack):
     def __init__(
         self, title, settings: ComposeXSettings, module: XResourceModule, **kwargs
     ):
-        set_resources(settings, Topic, module)
-        x_resources = settings.compose_content[module.res_key].values()
-        lookup_resources = set_lookup_resources(x_resources)
-        if lookup_resources:
-            create_sns_mappings(lookup_resources, settings, module)
+        if module.lookup_resources:
+            create_sns_mappings(module.lookup_resources, settings, module)
 
-        new_resources = set_new_resources(x_resources, True)
-        if not new_resources:
+        if not module.new_resources:
             self.is_void = True
         else:
             template = build_template(
                 f"{module.res_key} - Compose-X Generated template"
             )
-            generate_sns_templates(settings, new_resources, self, template)
+            generate_sns_templates(settings, module.new_resources, self, template)
             super().__init__(module.mapping_key, stack_template=template, **kwargs)
-        for resource in x_resources:
+        for resource in module.resources_list:
             resource.stack = self

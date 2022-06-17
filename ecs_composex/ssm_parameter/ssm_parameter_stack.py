@@ -103,18 +103,15 @@ class XStack(ComposeXStack):
     def __init__(
         self, title, settings: ComposeXSettings, module: XResourceModule, **kwargs
     ):
-        set_resources(settings, SsmParameter, module)
-        x_resources = settings.compose_content[module.res_key].values()
-        lookup_resources = set_lookup_resources(x_resources)
-        if lookup_resources:
-            resolve_lookup(lookup_resources, settings, module)
-        new_resources = set_new_resources(x_resources, False)
 
-        if new_resources:
+        if module.lookup_resources:
+            resolve_lookup(module.lookup_resources, settings, module)
+
+        if module.new_resources:
             template = build_template("Parent template for SSM in ECS Compose-X")
             super().__init__(module.mapping_key, stack_template=template, **kwargs)
-            render_new_parameters(new_resources, self)
+            render_new_parameters(module.new_resources, self)
         else:
             self.is_void = True
-        for resource in settings.compose_content[module.res_key].values():
+        for resource in module.resources_list:
             resource.stack = self

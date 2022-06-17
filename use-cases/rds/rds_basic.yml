@@ -15,7 +15,6 @@ x-rds:
       - name: youtoo
         access: RW
 
-
   dbB:
     Properties:
       Engine: "aurora-postgresql"

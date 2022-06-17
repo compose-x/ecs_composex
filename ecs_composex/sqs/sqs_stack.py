@@ -38,11 +38,11 @@ class Queue(ApiXResource):
     ):
         self.redrive_queue = None
         super().__init__(name, definition, module, settings)
-        self.support_defaults = True
         self.kms_arn_attr = SQS_KMS_KEY
         self.arn_parameter = SQS_ARN
         self.ref_parameter = SQS_URL
         self.predefined_resource_service_scaling_function = handle_service_scaling
+        self.support_defaults = True
 
     def init_outputs(self):
         """

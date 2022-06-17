@@ -116,19 +116,15 @@ class XStack(ComposeXStack):
     def __init__(
         self, title: str, settings: ComposeXSettings, module: XResourceModule, **kwargs
     ):
-        set_resources(settings, Bucket, module)
-        x_resources = settings.compose_content[module.res_key].values()
-        lookup_resources = set_lookup_resources(x_resources)
-        if lookup_resources:
+        if module.lookup_resources:
             if not keyisset(module.mapping_key, settings.mappings):
                 settings.mappings[module.mapping_key] = {}
-            define_bucket_mappings(lookup_resources, settings, module)
-        new_resources = set_new_resources(x_resources, True)
-        if new_resources:
+            define_bucket_mappings(module.lookup_resources, settings, module)
+        if module.new_resources:
             stack_template = build_template(f"Root template for {settings.name}.s3")
             super().__init__(module.mapping_key, stack_template, **kwargs)
-            create_s3_template(new_resources, stack_template)
+            create_s3_template(module.new_resources, stack_template)
         else:
             self.is_void = True
-        for resource in settings.compose_content[module.res_key].values():
+        for resource in module.resources_list:
             resource.stack = self

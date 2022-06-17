@@ -199,12 +199,8 @@ def handle_compose_topics(alarm, alarms_stack, settings, topic_def, notify_on):
     :param str notify_on:
     :return:
     """
-    try:
-        topic = settings.compose_content[SNS_KEY][topic_def[SNS_KEY]]
-    except KeyError:
-        LOG.error(f"No topic {topic_def[SNS_KEY]} found in {SNS_KEY}.{Topic.keyword}")
-        raise
-    if not topic.attributes_outputs:
+    topic = settings.find_resource(f"x-sns::{topic_def['x-sns']}")
+    if topic and not topic.attributes_outputs:
         topic.init_outputs()
         topic.generate_outputs()
     topic_arn = topic.attributes_outputs[TOPIC_ARN]

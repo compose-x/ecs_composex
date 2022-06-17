@@ -130,19 +130,16 @@ class XStack(ComposeXStack):
         :param ecs_composex.common.settings.ComposeXSettings settings:
         :param kwargs:
         """
-        set_resources(settings, CodeProfiler, module)
-        x_resources = settings.compose_content[module.res_key].values()
-        lookup_resources = set_lookup_resources(x_resources)
-        if lookup_resources:
+
+        if module.lookup_resources:
             if not keyisset(module.mapping_key, settings.mappings):
                 settings.mappings[module.mapping_key] = {}
             define_lookup_profile_mappings(
-                settings.mappings[module.mapping_key], lookup_resources, settings
+                settings.mappings[module.mapping_key], module.lookup_resources, settings
             )
-        new_resources = set_new_resources(x_resources, False)
 
-        if new_resources:
-            stack_template = create_root_template(new_resources, module.res_key)
+        if module.new_resources:
+            stack_template = create_root_template(module.new_resources, module.res_key)
             super().__init__(title, stack_template, **kwargs)
         else:
             self.is_void = True

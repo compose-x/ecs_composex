@@ -71,6 +71,7 @@ class PrivateNamespace(AwsEnvironmentResource):
         self.records = []
         self.family_sd_services: dict = {}
         super().__init__(name, definition, module, settings)
+        self.support_defaults = True
         self.zone_name = set_else_none(
             "Name", self.definition, set_else_none("ZoneName", self.definition, None)
         )
@@ -273,21 +274,18 @@ class XStack(ComposeXStack):
         :param ecs_composex.common.settings.ComposeXSettings settings:
         :param dict kwargs:
         """
-        set_resources(settings, PrivateNamespace, module)
-        x_resources = settings.compose_content[module.res_key].values()
-        detect_duplicas(x_resources)
-        lookup_resources = set_lookup_resources(x_resources)
-        new_resources = set_new_resources(x_resources, supports_uses_default=True)
-        for resource in x_resources:
+
+        detect_duplicas(module.resources_list)
+        for resource in module.resources_list:
             resource.stack = self
-        if new_resources:
+        if module.new_resources:
             stack_template = build_template(self._title)
             super().__init__(module.mapping_key, stack_template, **kwargs)
-            define_new_namespace(new_resources, stack_template)
+            define_new_namespace(module.new_resources, stack_template)
         else:
             self.is_void = True
-        if lookup_resources:
-            resolve_lookup(lookup_resources, settings, module)
+        if module.lookup_resources:
+            resolve_lookup(module.lookup_resources, settings, module)
         self.module_name = module.mod_key
 
 

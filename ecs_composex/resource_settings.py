@@ -19,6 +19,7 @@ if TYPE_CHECKING:
 
 from compose_x_common.compose_x_common import keyisset
 from troposphere import AWSHelperFn, GetAtt, NoValue, Ref, Sub
+from troposphere.ecs import Environment
 from troposphere.iam import Policy as IamPolicy
 from troposphere.iam import PolicyType
 
@@ -322,7 +323,11 @@ def set_update_container_env_vars_from_resource_attribute(
         r"^(?P<res_key>x-[\S]+)::(?P<res_name>[\S]+)::(?P<return_value>[\S]+)$"
     )
     for defined_env_var in svc_container_environment:
-        value = defined_env_var.Value
+        value = (
+            defined_env_var.Value
+            if isinstance(defined_env_var, Environment)
+            else defined_env_var
+        )
         if not isinstance(value, str):
             continue
         parts = resource_attribute_match_re.match(value)

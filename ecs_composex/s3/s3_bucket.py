@@ -50,6 +50,7 @@ class Bucket(ApiXResource):
             }
         }
         self.cloudmap_dns_supported = False
+        self.support_defaults = True
 
     def init_outputs(self):
         self.output_properties = {

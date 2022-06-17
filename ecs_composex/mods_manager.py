@@ -98,7 +98,7 @@ class XResourceModule:
         _lookup_mappings: dict = {}
         for resource in self.lookup_resources:
             _lookup_mappings[resource.logical_name] = resource.mappings
-        return {self.mapping_key: _lookup_mappings}
+        return _lookup_mappings
 
     @property
     def new_resources(self) -> list:
@@ -110,15 +110,15 @@ class XResourceModule:
         """
         new_resources = []
         for resource in self.resources_list:
-            if (
-                resource.properties or resource.parameters or resource.uses_default
-            ) and not (resource.lookup or resource.use):
-                if resource.uses_default and not resource.support_defaults:
-                    raise KeyError(
-                        f"{resource.module.res_key}.{resource.name} - "
-                        "Requires either or both Properties or MacroParameters. Got neither",
-                        resource.definition.keys(),
-                    )
+            if resource.lookup:
+                continue
+            if resource.uses_default and not resource.support_defaults:
+                raise KeyError(
+                    f"{resource.module.res_key}.{resource.name} - "
+                    "Requires either or both Properties or MacroParameters. Got neither",
+                    resource.definition.keys(),
+                )
+            else:
                 new_resources.append(resource)
         return new_resources
 

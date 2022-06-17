@@ -5,9 +5,25 @@
 Module to apply SQS settings onto ECS Services
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .sqs_stack import Queue
+    from ecs_composex.common.settings import ComposeXSettings
+
 from troposphere import FindInMap, GetAtt, Ref
 from troposphere.cloudwatch import Alarm, MetricDimension
 
+
+from ecs_composex.common.logging import LOG
+from ecs_composex.common.troposphere_tools import (
+    add_outputs,
+    add_parameters,
+    add_resource,
+    add_update_mapping,
+)
 from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.common.logging import LOG
 from ecs_composex.common.troposphere_tools import add_parameters
@@ -18,7 +34,7 @@ from ecs_composex.ecs.service_scaling.helpers import (
 from ecs_composex.sqs.sqs_params import SQS_NAME
 
 
-def handle_service_scaling(resource, settings=None) -> None:
+def handle_service_scaling(resource: Queue, settings: ComposeXSettings = None) -> None:
     """
     Function to define and prepare settings for scaling rules based for SQS Queues discovered through lookup
 
@@ -27,14 +43,15 @@ def handle_service_scaling(resource, settings=None) -> None:
     :raises KeyError: if the service name is not a listed service in docker-compose.
     :return:
     """
-    resource_attribute = SQS_NAME.title
-    if not resource.lookup:
-        resource_value = GetAtt(
-            resource.stack.title,
-            f"Outputs.{resource.logical_name}{SQS_NAME.title}",
-        )
+    queue_id = resource.attributes_outputs[SQS_NAME]
+    if resource.cfn_resource:
+        queue_pointer = queue_id["ImportParameter"]
+    elif resource.mappings:
+        queue_pointer = queue_id["ImportValue"]
     else:
-        resource_value = FindInMap("sqs", resource.logical_name, resource_attribute)
+        raise AttributeError(
+            resource.module.res_key, resource.name, "no mapping nor new resource"
+        )
     for target in resource.families_scaling:
         if (
             not target[0].service_scaling.scalable_target
@@ -59,28 +76,30 @@ def handle_service_scaling(resource, settings=None) -> None:
             scaling_source=resource.logical_name,
         )
 
-        if not resource.lookup:
-            resource_parameter = Parameter(
-                f"{resource.logical_name}{resource_attribute}", Type="String"
-            )
-            add_parameters(target[0].template, [resource_parameter])
+        if isinstance(queue_pointer, Parameter):
+            add_parameters(target[0].template, [queue_pointer])
             target[0].stack.Parameters.update(
-                {resource_parameter.title: resource_value}
+                {queue_pointer.title: queue_id["ImportValue"]}
             )
             add_alarm_for_resource(
                 resource,
                 target,
                 scaling_out_policy,
                 scaling_in_policy,
-                Ref(resource_parameter),
+                Ref(queue_pointer),
             )
         else:
+            add_update_mapping(
+                target[0].template,
+                resource.module.mapping_key,
+                resource.module.mappings,
+            )
             add_alarm_for_resource(
                 resource,
                 target,
                 scaling_out_policy,
                 scaling_in_policy,
-                resource_value,
+                queue_pointer,
             )
 
 
@@ -97,9 +116,8 @@ def add_alarm_for_resource(
     :param resource_parameter:
     :return:
     """
-    Alarm(
+    alarm = Alarm(
         f"SqsScalingAlarm{resource.logical_name}To{target[0].logical_name}",
-        template=target[0].template,
         ActionsEnabled=True,
         AlarmActions=[Ref(scaling_out_policy)],
         AlarmDescription=f"MessagesProcessingWatchFor{resource.logical_name}To{target[0].logical_name}",
@@ -122,3 +140,4 @@ def add_alarm_for_resource(
             ].MetricIntervalLowerBound
         ),
     )
+    add_resource(target[0].template, alarm, True)

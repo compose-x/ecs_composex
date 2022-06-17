@@ -124,7 +124,7 @@ def invoke_x_to_ecs(
     if ecs_function:
         LOG.debug(ecs_function)
         ecs_function(
-            settings.compose_content[composex_key],
+            settings.mod_manager.modules[composex_key].resources,
             services_stack,
             resource,
             settings,

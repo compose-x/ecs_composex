@@ -86,6 +86,7 @@ class OpenSearchDomain(DatabaseXResource):
         self.db_cluster_arn_parameter = OS_DOMAIN_ARN
         self.arn_parameter = OS_DOMAIN_ARN
         self.ref_parameter = OS_DOMAIN_ID
+        self.support_defaults = True
 
     def init_outputs(self):
         """
@@ -167,21 +168,18 @@ class XStack(ComposeXStack):
     def __init__(
         self, title, settings: ComposeXSettings, module: XResourceModule, **kwargs
     ):
-        set_resources(settings, OpenSearchDomain, module)
-        x_resources = settings.compose_content[module.res_key].values()
-        lookup_resources = set_lookup_resources(x_resources)
-        new_resources = set_new_resources(x_resources, True)
-        if new_resources:
+        if module.lookup_resources:
+            if not keyisset(module.mapping_key, settings.mappings):
+                settings.mappings[module.mapping_key] = {}
+            create_opensearch_mappings(module.lookup_resources, settings)
+        if module.new_resources:
             stack_template = build_template(
                 "Root template for OpenSearch", [VPC_ID, STORAGE_SUBNETS]
             )
             super().__init__(title, stack_template, **kwargs)
-            create_new_domains(new_resources, self)
+            create_new_domains(module.new_resources, self)
         else:
             self.is_void = True
-        if lookup_resources:
-            if not keyisset(module.mapping_key, settings.mappings):
-                settings.mappings[module.mapping_key] = {}
-            create_opensearch_mappings(lookup_resources, settings)
-        for resource in settings.compose_content[module.res_key].values():
+
+        for resource in module.resources_list:
             resource.stack = self

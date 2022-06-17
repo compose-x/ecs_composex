@@ -13,6 +13,7 @@ from troposphere.applicationautoscaling import (
 )
 
 from ecs_composex.common.logging import LOG
+from ecs_composex.common.troposphere_tools import *
 from ecs_composex.ecs.ecs_params import SERVICE_SCALING_TARGET
 
 
@@ -133,7 +134,6 @@ def generate_alarm_scaling_out_policy(
     )
     policy = ScalingPolicy(
         f"ScalingOutPolicy{scaling_source}{service_name}",
-        template=service_template,
         PolicyName=f"ScalingOutPolicy{scaling_source}{service_name}",
         PolicyType="StepScaling",
         ScalingTargetId=Ref(SERVICE_SCALING_TARGET),
@@ -147,6 +147,7 @@ def generate_alarm_scaling_out_policy(
             else scaling_def["ScaleOutCooldown"],
         ),
     )
+    add_resource(service_template, policy, True)
     return policy
 
 
@@ -169,7 +170,6 @@ def reset_to_zero_policy(
         )
     policy = ScalingPolicy(
         f"ScalingInPolicy{scaling_source}{service_name}",
-        template=service_template,
         PolicyName=f"ScalingInPolicy{scaling_source}{service_name}",
         PolicyType="StepScaling",
         ScalingTargetId=Ref(SERVICE_SCALING_TARGET),
@@ -188,6 +188,7 @@ def reset_to_zero_policy(
             ],
         ),
     )
+    add_resource(service_template, policy, True)
     return policy
 
 

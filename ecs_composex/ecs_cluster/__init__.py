@@ -384,7 +384,7 @@ class EcsCluster:
             )
         key_config = {
             "Properties": {
-                "EnableKeyRotationg": True,
+                "EnableKeyRotation": True,
                 "Enabled": True,
                 "Description": Sub(
                     f"ECS Cluster {cluster_name} execute logging encryption key"

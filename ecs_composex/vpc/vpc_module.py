@@ -6,12 +6,12 @@ from pathlib import Path
 
 from ecs_composex.mods_manager import XResourceModule
 
-from .vpc_stack import Vpc, XStack
+from .vpc_stack import XStack
 
 COMPOSE_X_MODULES: dict = {
     "x-vpc": {
         "Module": XResourceModule(
-            "x-vpc", XStack, Path(path.abspath(path.dirname(__file__))), Vpc
+            "x-vpc", XStack, Path(path.abspath(path.dirname(__file__)))
         ),
     },
 }

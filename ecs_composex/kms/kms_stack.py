@@ -123,6 +123,7 @@ class KmsKey(AwsEnvironmentResource, ApiXResource):
         super().__init__(name, definition, module, settings)
         self.arn_parameter = KMS_KEY_ARN
         self.ref_parameter = KMS_KEY_ID
+        self.support_defaults = True
 
     @property
     def is_cmk(self):
@@ -234,25 +235,22 @@ class XStack(ComposeXStack):
     def __init__(
         self, title, settings: ComposeXSettings, module: XResourceModule, **kwargs
     ):
-        set_resources(settings, KmsKey, module)
-        x_resources = settings.compose_content[module.res_key].values()
-        lookup_resources = set_lookup_resources(x_resources)
-        new_resources = set_new_resources(x_resources, True)
-        if new_resources:
+
+        if module.new_resources:
             stack_template = build_template("Root template for KMS")
             super().__init__(title, stack_template, **kwargs)
-            create_kms_template(stack_template, new_resources, self)
+            create_kms_template(stack_template, module.new_resources, self)
         else:
             self.is_void = True
-        if lookup_resources:
+        if module.lookup_resources:
             if not keyisset(module.mapping_key, settings.mappings):
                 settings.mappings[module.mapping_key] = {}
-            for resource in lookup_resources:
+            for resource in module.lookup_resources:
                 resource.lookup_resource(
                     KMS_KEY_ARN_RE, get_key_config, Key.resource_type, "kms:key"
                 )
                 settings.mappings[module.mapping_key].update(
                     {resource.logical_name: resource.mappings}
                 )
-        for resource in settings.compose_content[module.res_key].values():
+        for resource in module.resources_list:
             resource.stack = self

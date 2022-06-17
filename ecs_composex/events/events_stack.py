@@ -164,21 +164,20 @@ class XStack(ComposeXStack):
         :param ecs_composex.common.settings.ComposeXSettings settings: Execution settings
         :param dict kwargs:
         """
-        set_resources(settings, Rule, module)
-        x_resources = settings.compose_content[module.res_key].values()
-        lookup_resources = set_lookup_resources(x_resources)
-        if lookup_resources:
+        if module.lookup_resources:
             warnings.warn(
                 f"{module.res_key} does not support Lookup/Use. You can only create new resources"
             )
 
-        new_resources = set_new_resources(x_resources, False)
-        if new_resources:
+        if module.new_resources:
             stack_template = build_template(
                 "Events rules for ComposeX",
                 [CLUSTER_NAME, FARGATE_VERSION],
             )
             super().__init__(title, stack_template, **kwargs)
-            create_events_template(self, settings, new_resources)
+            create_events_template(self, settings, module.new_resources)
         else:
             self.is_void = True
+
+        # for resource in module.resources_list:
+        #     resource.stack = self

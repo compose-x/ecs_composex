@@ -138,6 +138,7 @@ class Rds(DatabaseXResource):
         self.ref_parameter = DB_CLUSTER_NAME
         self.db_cluster_endpoint_param = DB_ENDPOINT_ADDRESS
         self.db_cluster_ro_endpoint_param = DB_RO_ENDPOINT_ADDRESS
+        self.support_defaults = True
 
     def init_outputs(self):
         """
@@ -237,24 +238,21 @@ class XStack(ComposeXStack):
     def __init__(
         self, title, settings: ComposeXSettings, module: XResourceModule, **kwargs
     ):
-        set_resources(settings, Rds, module)
-        x_resources = settings.compose_content[module.res_key].values()
-        new_resources = set_new_resources(x_resources, True)
-        lookup_resources = set_lookup_resources(x_resources)
-        if new_resources:
+
+        if module.new_resources:
             stack_template = build_template(
                 "Root stack for RDS DBs", [VPC_ID, STORAGE_SUBNETS]
             )
             super().__init__(title, stack_template, **kwargs)
-            generate_rds_templates(stack_template, new_resources, settings)
+            generate_rds_templates(stack_template, module.new_resources, settings)
             self.mark_nested_stacks()
         else:
             self.is_void = True
-        for resource in settings.compose_content[module.res_key].values():
+        for resource in module.resources_list:
             resource.stack = self
-        if lookup_resources and module.mapping_key not in settings.mappings:
+        if module.lookup_resources and module.mapping_key not in settings.mappings:
             settings.mappings[module.mapping_key] = {}
-        for resource in lookup_resources:
+        for resource in module.lookup_resources:
             if keyisset("cluster", resource.lookup):
                 resource.lookup_resource(
                     RDS_DB_CLUSTER_ARN_RE,

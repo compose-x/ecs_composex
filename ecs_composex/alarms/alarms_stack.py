@@ -121,20 +121,16 @@ class XStack(ComposeXStack):
     def __init__(
         self, name, settings: ComposeXSettings, module: XResourceModule, **kwargs
     ):
-        set_resources(settings, Alarm, module)
-        x_resources = settings.compose_content[module.res_key].values()
-        new_resources = set_new_resources(x_resources, False)
-        lookup_resources = set_lookup_resources(x_resources)
-        if new_resources:
+        if module.new_resources:
             template = build_template("Root stack for Alarms created via Compose-X")
             super().__init__(name, stack_template=template, **kwargs)
-            create_alarms(template, new_resources)
+            create_alarms(template, module.new_resources)
         else:
             self.is_void = True
-        if lookup_resources:
+        if module.lookup_resources:
             warnings.warn(
                 f"{module.res_key} - Lookup and Use are not supported. "
                 "You can only create new resources"
             )
-        for resource in x_resources:
+        for resource in module.resources_list:
             resource.stack = self
