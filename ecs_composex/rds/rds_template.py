@@ -30,13 +30,14 @@ class RdsDbStack(ComposeXStack):
     Class to represent a RDS Stack
     """
 
-    def __init__(self, name, stack_template, db, **kwargs):
+    def __init__(self, name, stack_template, db, rds_stack, **kwargs):
         self.db = db
-        self.parent_template = None
         super().__init__(name, stack_template, **kwargs)
+        self.parent_stack = rds_stack
+        db.stack = self
 
 
-def add_db_stack(root_template, db, settings):
+def add_db_stack(root_template, db, settings, rds_stack):
     """
     Function to add the DB stack to the root stack
 
@@ -94,6 +95,7 @@ def add_db_stack(root_template, db, settings):
         db=db,
         stack_template=db_template,
         stack_parameters=parameters,
+        rds_stack=rds_stack,
     )
     root_template.add_resource(db_stack)
     new_outputs = []
@@ -107,15 +109,14 @@ def add_db_stack(root_template, db, settings):
     root_template.add_output(new_outputs)
 
 
-def generate_rds_templates(root_tpl, new_dbs, settings):
+def generate_rds_templates(rds_stack, root_tpl, new_dbs, settings):
     """
     Function to generate the RDS root template for all the DBs defined in the x-rds section of the compose file
 
     :param troposphere.Template root_tpl:
     :param list new_dbs:
     :param ecs_composex.common.settings.ComposeXSettings settings:
-    :param ecs_composex.rds.rds_stack.XStack self_stack:
     """
     for db in new_dbs:
-        add_db_stack(root_tpl, db, settings)
+        add_db_stack(root_tpl, db, settings, rds_stack)
     return root_tpl

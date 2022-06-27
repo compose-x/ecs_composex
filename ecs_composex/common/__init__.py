@@ -5,6 +5,15 @@
 Most commonly used functions shared across all modules.
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .settings import ComposeXSettings
+    from .stacks import ComposeXStack
+
+import logging as logthings
 import re
 from datetime import datetime as dt
 from math import ceil, log

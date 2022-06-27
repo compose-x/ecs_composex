@@ -244,11 +244,12 @@ class XStack(ComposeXStack):
                 "Root stack for RDS DBs", [VPC_ID, STORAGE_SUBNETS]
             )
             super().__init__(title, stack_template, **kwargs)
-            generate_rds_templates(stack_template, module.new_resources, settings)
-            self.mark_nested_stacks()
+            generate_rds_templates(self, stack_template, module.new_resources, settings)
+            self.parent_stack = settings.root_stack
+            # self.mark_nested_stacks()
         else:
             self.is_void = True
-        for resource in module.resources_list:
+        for resource in module.lookup_resources:
             resource.stack = self
         if module.lookup_resources and module.mapping_key not in settings.mappings:
             settings.mappings[module.mapping_key] = {}

@@ -123,6 +123,7 @@ class OpenSearchDomain(DatabaseXResource):
                     self,
                     port_parameter=OS_DOMAIN_PORT,
                     sg_parameter=OS_DOMAIN_SG,
+                    settings=settings,
                 )
             link_resource_to_services(
                 settings,

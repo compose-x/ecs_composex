@@ -43,6 +43,10 @@ from ecs_composex.rds_resources_settings import (
 from ecs_composex.resource_settings import link_resource_to_services
 from ecs_composex.vpc.vpc_params import STORAGE_SUBNETS, VPC_ID
 
+from ecs_composex.common.logging import LOG
+from ecs_composex.compose.x_resources.network_x_resources import DatabaseXResource
+from .neptune_template import create_neptune_template
+
 
 def get_db_cluster_config(db, account_id, resource_id):
     client = db.lookup_session.client("neptune")
@@ -196,9 +200,7 @@ class NeptuneDBCluster(DatabaseXResource):
         LOG.info(f"{self.module.res_key}.{self.name} - Linking to services")
         if not self.mappings and self.cfn_resource:
             handle_new_tcp_resource(
-                self,
-                port_parameter=DB_PORT,
-                sg_parameter=DB_SG,
+                self, port_parameter=DB_PORT, sg_parameter=DB_SG, settings=settings
             )
             link_resource_to_services(
                 settings,

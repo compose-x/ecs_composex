@@ -282,5 +282,6 @@ def efs_to_ecs(resources, services_stack, res_root_stack, settings):
                 resource,
                 port_parameter=FS_PORT,
                 sg_parameter=FS_MNT_PT_SG_ID,
+                settings=settings,
             )
             expand_family_with_efs_volumes(res_root_stack.title, resource, settings)

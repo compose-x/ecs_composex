@@ -29,6 +29,13 @@ from troposphere.ecs import Environment
 from troposphere.ecs import Secret as EcsSecret
 from troposphere.iam import PolicyType
 
+from ecs_composex.common.logging import LOG
+from ecs_composex.common.troposphere_tools import (
+    add_parameter_recursively,
+    add_parameters,
+    add_resource,
+    add_update_mapping,
+)
 from ecs_composex.common.aws import find_aws_resource_arn_from_tags_api
 from ecs_composex.common.logging import LOG
 from ecs_composex.common.troposphere_tools import (
@@ -518,6 +525,7 @@ def handle_new_tcp_resource(
     resource: NetworkXResource | DatabaseXResource,
     port_parameter: Parameter,
     sg_parameter: Parameter,
+    settings: ComposeXSettings,
     secret_parameter=None,
 ):
     """
@@ -529,21 +537,18 @@ def handle_new_tcp_resource(
     :param secret_parameter:
     :return:
     """
-    if resource.logical_name not in resource.stack.stack_template.resources:
-        raise KeyError(
-            f"DB {resource.logical_name} not defined in {resource.stack.title} root template"
-        )
-
-    parameters_to_add = []
-    parameters_values = {}
-
-    port_settings = get_parameter_settings(resource, port_parameter)
-    parameters_to_add.append(port_settings[1])
-    parameters_values[port_settings[0]] = port_settings[2]
-
-    sg_settings = get_parameter_settings(resource, sg_parameter)
-    parameters_to_add.append(sg_settings[1])
-    parameters_values[sg_settings[0]] = sg_settings[2]
+    print(
+        resource.name,
+        resource.stack.title,
+        resource.stack.parent_stack.title
+        if resource.stack.parent_stack
+        else "NO PARENT",
+    )
+    # if resource.logical_name not in resource.stack.stack_template.resources:
+    #     raise KeyError(
+    #         f"DB {resource.logical_name} not defined in {resource.stack.title} root template",
+    #         list(resource.stack.stack_template.resources.keys()),
+    #     )
 
     for target in resource.families_targets:
         if target[0].service_compute.launch_type == "EXTERNAL":
@@ -553,22 +558,32 @@ def handle_new_tcp_resource(
             )
             continue
         LOG.info(f"{resource.stack.title} - Linking to {target[0].name}")
-        add_parameters(target[0].template, parameters_to_add)
-        target[0].stack.Parameters.update(parameters_values)
+        sg_id = resource.add_attribute_to_another_stack(
+            target[0].stack, sg_parameter, settings
+        )
+        port_id = resource.add_attribute_to_another_stack(
+            target[0].stack, port_parameter, settings
+        )
+
         add_security_group_ingress(
             target[0].stack,
             resource.logical_name,
-            sg_id=Ref(sg_settings[1]),
-            port=Ref(port_settings[1]),
+            sg_id=Ref(sg_id["ImportParameter"]),
+            port=Ref(port_id["ImportParameter"]),
         )
         if secret_parameter:
-            secret_settings = get_parameter_settings(resource, secret_parameter)
-            add_parameters(target[0].template, [secret_settings[1]])
-            target[0].stack.Parameters.update({secret_settings[0]: secret_settings[2]})
-            handle_db_secret_to_services(resource, Ref(secret_settings[1]), target)
+            secret_id = resource.add_attribute_to_another_stack(
+                target[0].stack, secret_parameter, settings
+            )
+            handle_db_secret_to_services(
+                resource, Ref(secret_id["ImportParameter"]), target
+            )
         else:
             LOG.debug(
                 f"No secret_parameter for {resource.module.res_key}.{resource.name}"
             )
-        if resource.stack.title not in target[0].stack.DependsOn:
+        if (
+            resource.stack.parent_stack == settings.root_stack
+            or not resource.stack.parent_stack
+        ) and resource.stack.title not in target[0].stack.DependsOn:
             target[0].stack.DependsOn.append(resource.stack.title)

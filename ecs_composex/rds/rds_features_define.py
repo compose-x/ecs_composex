@@ -5,11 +5,20 @@
 Module to define and match RDS Features to other AWS resources.
 """
 
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .rds_stack import Rds
+    from ecs_composex.common.settings import ComposeXSettings
+
 import re
 
-from compose_x_common.compose_x_common import keyisset
-from troposphere import AWS_NO_VALUE, AWS_PARTITION, GetAtt, Ref, Sub
+from troposphere import AWS_NO_VALUE, AWS_PARTITION, Ref, Sub
 from troposphere.iam import Policy as IamPolicy
+
 
 from ecs_composex.common.logging import LOG
 from ecs_composex.common.troposphere_tools import add_parameters, add_update_mapping
@@ -18,24 +27,7 @@ from ecs_composex.s3.s3_params import S3_BUCKET_ARN
 S3_KEY = "x-s3"
 
 
-def get_s3_bucket_arn_from_resource(db_stack, resource):
-    param = resource.attributes_outputs[S3_BUCKET_ARN]["ImportParameter"]
-    add_parameters(db_stack.stack_template, [param])
-    if db_stack.parent_stack:
-        add_parameters(db_stack.parent_stack.stack_template, [param])
-        db_stack.parent_stack.Parameters.update(
-            {
-                param.title: GetAtt(
-                    "s3",
-                    f"Outputs.{resource.logical_name}{S3_BUCKET_ARN.title}",
-                )
-            }
-        )
-    db_stack.Parameters.update({param.title: Ref(param.title)})
-    return Sub(f"${{{param.title}}}/*")
-
-
-def set_from_x_s3(settings, db, db_stack, bucket_name):
+def set_from_x_s3(settings: ComposeXSettings, db: Rds, db_stack, bucket_name: str):
     """
     Function to link the RDS DB to a Bucket defined in x-s3
 
@@ -44,29 +36,18 @@ def set_from_x_s3(settings, db, db_stack, bucket_name):
     :param str bucket_name:
     :return:
     """
-    resource = None
-    if not keyisset(S3_KEY, settings.compose_content):
-        raise KeyError(
-            f"No Buckets defined in the Compose file under {S3_KEY}.",
-            settings.compose_content.keys(),
+    bucket = settings.find_resource(bucket_name)
+    if not bucket:
+        raise LookupError(
+            f"Failed to find bucket {bucket_name} for DB {db.module.res_key}.{db.name}"
         )
-    bucket_name = bucket_name.strip("x-s3::")
-    buckets = settings.compose_content[S3_KEY]
-    if bucket_name not in [res.name for res in buckets.values()]:
-        LOG.error(
-            f"No bucket {bucket_name} in x-s3. Buckets defined: {[res.name for res in buckets.values()]}"
-        )
-        return
-    for resource in buckets.values():
-        if bucket_name == resource.name:
-            break
-    if not resource:
-        return
-    if resource.cfn_resource:
-        return get_s3_bucket_arn_from_resource(db_stack, resource)
-    elif resource.lookup and keyisset("s3", settings.mappings):
-        add_update_mapping(db_stack.stack_template, "s3", settings.mappings["s3"])
-        return resource.lookup_properties[S3_BUCKET_ARN]
+    bucket_arn_id = bucket.add_attribute_to_another_stack(
+        db_stack, S3_BUCKET_ARN, settings
+    )
+    if bucket.cfn_resource:
+        return Sub(f"${{{bucket_arn_id['ImportParameter'].title}}}/*")
+    elif bucket.lookup and bucket.module.mappings:
+        return bucket.lookup_properties[S3_BUCKET_ARN]
 
 
 def import_bucket_from_arn(bucket):

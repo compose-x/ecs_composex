@@ -30,6 +30,12 @@ from troposphere import AWSObject, Export, FindInMap, GetAtt, Join, Output, Ref,
 from troposphere.ecs import Environment
 
 from ecs_composex.common import NONALPHANUM
+from ecs_composex.common.logging import LOG
+from ecs_composex.common.troposphere_tools import (
+    add_parameter_recursively,
+    add_parameters,
+    add_update_mapping,
+)
 from ecs_composex.common.aws import (
     define_lookup_role_from_info,
     find_aws_resource_arn_from_tags_api,
@@ -671,3 +677,20 @@ class XResource:
             {param_id["ImportParameter"].title: param_id["ImportValue"]}
         )
         return param_id
+
+    def add_attribute_to_another_stack(
+        self, ext_stack, attribute: Parameter, settings: ComposeXSettings
+    ):
+
+        attr_id = self.attributes_outputs[attribute]
+        if self.mappings and self.lookup:
+            add_update_mapping(
+                ext_stack.stack_template, self.module.mapping_key, self.module.mappings
+            )
+        elif self.cfn_resource:
+            add_parameter_recursively(ext_stack, settings, attr_id)
+        else:
+            raise AttributeError(
+                self.module.res_key, self.name, "No lookup nor mappings ??"
+            )
+        return attr_id
