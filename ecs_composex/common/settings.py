@@ -413,8 +413,9 @@ class ComposeXSettings:
         self, family_name: str, service: ComposeService, assigned_services: list
     ) -> None:
         if service in assigned_services:
-            print(
-                f"Detected {service.name} is-reused in different family. Making a deepcopy"
+            LOG.info(
+                f"New family {family_name} - "
+                f"Detected {service.name} has multiple families defined. Making a duplicate"
             )
             the_service = deepcopy(service)
             family = ComposeFamily([the_service], family_name)
@@ -424,9 +425,9 @@ class ComposeXSettings:
         else:
             family = ComposeFamily([service], family_name)
             service.family = family
+            if service not in assigned_services:
+                assigned_services.append(service)
         self.families[family.logical_name] = family
-        if service not in assigned_services:
-            assigned_services.append(service)
 
     def add_service_to_family(
         self, family_name: str, service: ComposeService, assigned_services: list
@@ -434,32 +435,34 @@ class ComposeXSettings:
         the_family = self.families[family_name]
         if service in assigned_services:
             LOG.info(
-                f"Service {service.name} is-reused in different family. Making a deepcopy"
+                f"New family {family_name} - "
+                f"Detected {service.name} has multiple families defined. Making a duplicate"
             )
             the_service = deepcopy(service)
+            self.services.append(the_service)
         else:
             the_service = service
         LOG.debug(f"THE_SERVICE, {hex(id(the_service))}, SERVICE, {hex(id(service))}")
         the_family.add_service(the_service)
         the_service.family = the_family
-        self.services.append(the_service)
         if the_service not in assigned_services:
             assigned_services.append(the_service)
 
-    def set_families(self):
+    def set_families(self) -> None:
         """
-        Method to define the list of families
-        :return:
+        Method to define the list of families.
+        Creating services_to_assign which won't get duplicate services added, as they already are in other functions.
         """
         assigned_services = []
-        for service in self.services:
+        services_to_assign = [_service for _service in self.services]
+        for service in services_to_assign:
             for family_name in service.families:
                 formatted_name = sub(r"[^a-zA-Z0-9]+", "", family_name)
                 if NONALPHANUM.findall(formatted_name):
                     raise ValueError(
                         "Family names must be ^[a-zA-Z0-9]+$ | alphanumerical"
                     )
-                if formatted_name not in self.families.keys():
+                if formatted_name not in self.families:
                     self.add_new_family(family_name, service, assigned_services)
                 elif formatted_name in self.families.keys() and service.name not in [
                     _service.name
