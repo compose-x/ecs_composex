@@ -50,6 +50,7 @@ from ecs_composex.ecs.ecs_conditions import (
     USE_WINDOWS_OS_T,
 )
 
+from .helpers import extend_container_envvars
 from .service_image import ServiceImage
 
 
@@ -926,6 +927,9 @@ class ComposeService:
             if self.ecs_user != NoValue
             else self.ecs_user,
         )
+
+        _to_add = [secret.env_var for secret in self.secrets]
+        extend_container_envvars(self.container_definition, _to_add)
 
     def set_user_group(self):
         """

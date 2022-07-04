@@ -6,6 +6,7 @@ secrets:
   john:
     x-secrets:
       Name: /cicd/shared/github.com/token
+      VarName: SOMETHING_GITHUB
 
   zyx: {}
 services:

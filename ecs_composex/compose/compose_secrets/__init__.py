@@ -5,16 +5,18 @@
 Package to manage docker-compose secrets
 """
 
+import re
 from copy import deepcopy
 
 from compose_x_common.aws.kms import KMS_KEY_ARN_RE
 from compose_x_common.aws.secrets_manager import get_secret_name_from_arn
-from compose_x_common.compose_x_common import keyisset
+from compose_x_common.compose_x_common import keyisset, set_else_none
 from troposphere import AWS_ACCOUNT_ID, AWS_PARTITION, AWS_REGION, FindInMap, Sub
+from troposphere.ecs import Environment as EcsEnvVar
 from troposphere.ecs import Secret as EcsSecret
 
 from ecs_composex.common import LOG, NONALPHANUM
-from ecs_composex.ecs.ecs_params import EXEC_ROLE_T
+from ecs_composex.ecs.ecs_params import EXEC_ROLE_T, TASK_ROLE_T
 from ecs_composex.secrets.secrets_aws import lookup_secret_config
 from ecs_composex.secrets.secrets_params import RES_KEY, XRES_KEY
 
@@ -34,8 +36,6 @@ class ComposeSecret:
     json_keys_key = "JsonKeys"
     links_key = "LinksTo"
     map_name = RES_KEY
-    allowed_keys = ["Name", "Lookup"]
-    valid_keys = [json_keys_key, links_key] + allowed_keys
 
     def __init__(self, name, definition, settings):
         """
@@ -46,24 +46,10 @@ class ComposeSecret:
         :param ecs_composex.common.settings.ComposeXSettings settings:
         """
         self.services = []
-        if not any(key in definition[self.x_key].keys() for key in self.allowed_keys):
-            raise KeyError(
-                "You must define at least one of",
-                self.allowed_keys,
-                "Got",
-                definition.keys(),
-            )
-        elif not all(key in self.valid_keys for key in definition[self.x_key].keys()):
-            raise KeyError(
-                "Only valid keys are",
-                self.valid_keys,
-                "Got",
-                definition[self.x_key].keys(),
-            )
         self.name = name
         self.logical_name = NONALPHANUM.sub("", self.name)
         self.definition = deepcopy(definition)
-        self.links = [EXEC_ROLE_T]
+        self.links = [EXEC_ROLE_T, TASK_ROLE_T]
         self.arn = None
         self.iam_arn = None
         self.aws_name = None
@@ -80,6 +66,15 @@ class ComposeSecret:
         if self.mapping:
             settings.secrets_mappings.update({self.logical_name: self.mapping})
             self.add_json_keys()
+
+    @property
+    def env_var(self) -> EcsEnvVar:
+        env_var_name = set_else_none(
+            "VarName",
+            set_else_none("x-secrets", self.definition, alt_value={}),
+            alt_value=re.sub(r"\W+", "", self.name.replace("-", "_").upper()),
+        )
+        return EcsEnvVar(Name=env_var_name, Value=self.arn)
 
     def define_secret(self, secret_name, json_key) -> EcsSecret:
         if isinstance(self.arn, str):
