@@ -15,6 +15,7 @@ from compose_x_common.compose_x_common import keyisset, set_else_none
 from troposphere import Ref
 
 from ecs_composex.acm.acm_stack import Certificate
+
 from ecs_composex.common.logging import LOG
 from ecs_composex.common.troposphere_tools import add_update_mapping, build_template
 from ecs_composex.compose.x_resources.environment_x_resources import (
@@ -110,19 +111,14 @@ class HostedZone(AwsEnvironmentResource):
                 )
         self.generate_cfn_mappings_from_lookup_properties()
 
-    def init_stack_for_records(self, root_stack) -> None:
+    def init_stack_for_records(self, root_stack, settings: ComposeXSettings) -> None:
         """
         When creating new Route53 records, if the x-route53 where looked up, we need to initialize the Route53 stack
 
         :param ComposeXStack root_stack: The root stack
         """
-        if self.module.mapping_key not in root_stack.stack_template.resources:
-            from ecs_composex.route53.route53_stack import XStack
 
-            stack_template = build_template(self.stack.stack_title)
-            super(XStack, self.stack).__init__(self.module.mapping_key, stack_template)
-            self.stack.is_void = False
-            root_stack.stack_template.add_resource(self.stack)
+        pass
 
     def handle_x_dependencies(self, settings, root_stack) -> None:
         """

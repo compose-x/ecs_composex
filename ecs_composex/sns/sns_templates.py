@@ -8,7 +8,9 @@ Module to add topics and subscriptions to the SNS stack
 from compose_x_common.compose_x_common import keyisset
 from troposphere.sns import Topic
 
+
 from ecs_composex.common.logging import LOG
+from ecs_composex.common.troposphere_tools import add_outputs
 from ecs_composex.sns import metadata
 
 TOPICS_KEY = "Topics"
@@ -78,7 +80,7 @@ def add_topics_to_template(template, topics, content):
         topic.init_outputs()
         topic.generate_outputs()
         template.add_resource(topic.cfn_resource)
-        template.add_output(topic.outputs)
+        add_outputs(template, topic.outputs)
 
 
 def add_sns_topics(root_template, new_topics, content):

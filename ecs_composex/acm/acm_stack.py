@@ -34,11 +34,6 @@ from ecs_composex.common.troposphere_tools import build_template
 from ecs_composex.compose.x_resources.environment_x_resources import (
     AwsEnvironmentResource,
 )
-from ecs_composex.compose.x_resources.helpers import (
-    set_lookup_resources,
-    set_new_resources,
-    set_resources,
-)
 from ecs_composex.resources_import import (
     find_aws_properties_in_aws_resource,
     find_aws_resources_in_template_resources,
@@ -138,7 +133,7 @@ class Certificate(AwsEnvironmentResource):
                     update_settings[0](
                         self,
                         resource_stack,
-                        properties_toupdate,
+                        properties_to_update,
                         update_settings[3],
                         settings,
                     )

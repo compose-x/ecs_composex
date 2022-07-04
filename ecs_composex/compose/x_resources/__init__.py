@@ -92,42 +92,18 @@ class XResource:
         self.env_vars = []
         self.validators = []
         self.logical_name = NONALPHANUM.sub("", self.name)
-        self.settings = (
-            None
-            if not keyisset("Settings", self.definition)
-            else self.definition["Settings"]
-        )
-        self.use = (
-            None if not keyisset("Use", self.definition) else self.definition["Use"]
-        )
-        self.lookup = (
-            None
-            if not keyisset("Lookup", self.definition)
-            else self.definition["Lookup"]
-        )
+        self.settings = set_else_none("Settings", definition, alt_value={})
+        self.parameters = set_else_none("MacroParameters", definition, alt_value={})
+        self.lookup = set_else_none("Lookup", definition, alt_value={})
         if self.lookup:
             self.lookup_session = define_lookup_role_from_info(
                 self.lookup, settings.session
             )
-        else:
-            self.lookup_session = settings.session
-        if keyisset("Properties", self.definition) and not self.lookup:
-            self.properties = self.definition["Properties"]
-        elif not keyisset("Properties", self.definition) and keypresent(
-            "Properties", self.definition
-        ):
             self.properties = {}
         else:
-            self.properties = None
-        self.parameters = (
-            {}
-            if not keyisset("MacroParameters", self.definition)
-            else self.definition["MacroParameters"]
-        )
+            self.lookup_session = settings.session
+            self.properties = set_else_none("Properties", definition)
         self.support_defaults: bool = False
-        self.uses_default = not any(
-            [self.lookup, self.parameters, self.use, self.properties]
-        )
         self.scaling = set_else_none("Scaling", self.definition)
         self.scaling_target = None
         self.cfn_resource = None
@@ -153,6 +129,10 @@ class XResource:
 
     def __repr__(self):
         return self.logical_name
+
+    @property
+    def uses_default(self) -> bool:
+        return not any([self.lookup, self.parameters, self.properties])
 
     @property
     def env_var_prefix(self) -> str:

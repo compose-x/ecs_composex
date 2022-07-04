@@ -17,7 +17,9 @@ x-acm:
 
 x-elbv2:
   lbA:
-    Properties: {}
+    Properties:
+      Type: application
+      Scheme: internet-facing
     DnsAliases:
       - Route53Zone: x-route53::public-domain-01
         Names:

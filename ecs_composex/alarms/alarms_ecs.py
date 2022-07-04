@@ -249,11 +249,7 @@ def handle_alarm_topics(alarm, alarms_stack, settings):
 
 
 def alarms_to_ecs(resources, services_stack, res_root_stack, settings):
-    new_resources = [
-        resource
-        for resource in resources.values()
-        if not resource.lookup and not resource.use
-    ]
+    new_resources = [resource for resource in resources.values() if not resource.lookup]
     for alarm in new_resources:
         if alarm.in_composite:
             continue

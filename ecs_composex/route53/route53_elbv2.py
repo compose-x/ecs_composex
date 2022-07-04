@@ -122,7 +122,7 @@ def handle_elbv2_records(
         dns_zone_pointer = dns_zone.split(r"x-route53::")[-1]
         if dns_zone_pointer != x_hosted_zone.name:
             continue
-        x_hosted_zone.init_stack_for_records(root_stack)
+        x_hosted_zone.init_stack_for_records(root_stack, settings)
         add_dns_records_for_elbv2(
             x_hosted_zone,
             record,

@@ -83,14 +83,13 @@ def set_lookup_resources(
     lookup_resources = []
     for resource in x_resources:
         if resource.lookup:
-            if resource.properties or resource.parameters or resource.use:
+            if resource.properties or resource.parameters:
                 LOG.warning(
                     f"{resource.module.res_key}.{resource.name} is set for Lookup"
                     " but has other properties set. Voiding them"
                 )
                 resource.properties = {}
                 resource.parameters = {}
-                resource.use = {}
             lookup_resources.append(resource)
     return lookup_resources
 

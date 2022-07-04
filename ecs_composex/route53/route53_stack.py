@@ -30,8 +30,6 @@ class XStack(ComposeXStack):
     :param ecs_composex.common.settings.ComposeXSettings settings:
     """
 
-    stack_title = "Route53 zones and records created from x-route53"
-
     def __init__(
         self, name: str, settings: ComposeXSettings, module: XResourceModule, **kwargs
     ):
@@ -42,16 +40,13 @@ class XStack(ComposeXStack):
         """
         self.x_to_x_mappings = []
         self.x_resource_class = HostedZone
-        set_resources(settings, HostedZone, module)
-        x_resources = settings.compose_content[module.res_key].values()
-        lookup_resources = set_lookup_resources(x_resources)
-        if lookup_resources:
-            resolve_lookup(lookup_resources, settings, module)
-        new_resources = set_new_resources(x_resources, False)
-        if new_resources:
-            stack_template = build_template(self.stack_title)
-            super().__init__(module.mapping_key, stack_template, **kwargs)
+        if module.lookup_resources:
+            resolve_lookup(module.lookup_resources, settings, module)
+        if module.new_resources:
+            self.is_void = False
         else:
             self.is_void = True
-        for resource in x_resources:
+        stack_template = build_template(module.res_key)
+        super().__init__(module.mapping_key, stack_template, **kwargs)
+        for resource in module.resources_list:
             resource.stack = self
