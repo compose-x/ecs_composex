@@ -225,9 +225,7 @@ class Rds(DatabaseXResource):
         :return:
         """
         if self.parameters:
-            apply_extra_parameters(
-                settings, self, self.stack.stack_template.resources[self.name]
-            )
+            apply_extra_parameters(settings, self, self.stack)
 
 
 class XStack(ComposeXStack):

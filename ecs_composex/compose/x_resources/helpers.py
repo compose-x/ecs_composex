@@ -51,7 +51,7 @@ def set_new_resources(
     for resource in x_resources:
         if (
             resource.properties or resource.parameters or resource.uses_default
-        ) and not (resource.lookup or resource.use):
+        ) and not resource.lookup:
             if resource.uses_default and not supports_uses_default:
                 raise KeyError(
                     f"{resource.module.res_key}.{resource.name} - "
@@ -132,3 +132,11 @@ def get_setting_key(name: str, settings_dict: dict) -> str:
     if keyisset(name.title(), settings_dict):
         return name.title()
     return name
+
+
+def get_top_stack(curr_stack, settings: ComposeXSettings):
+    if (
+        curr_stack.parent_stack and curr_stack.parent_stack == settings.root_stack
+    ) or not curr_stack.parent_stack:
+        return curr_stack
+    return get_top_stack(curr_stack.parent_stack, settings)

@@ -631,19 +631,20 @@ def import_resource_into_service_stack(
         )
 
 
-def add_dependency(resource, family: ComposeFamily) -> None:
+def add_dependency(resource, family: ComposeFamily, settings: ComposeXSettings) -> None:
     """
     Add dependency across the resource stack and the ECS Service stack
 
     :param ecs_composex.common.compose_resources.ServicesXResource resource: The resource
     :param ecs_composex.ecs.ecs_family.ComposeFamily family:
+    :param settings:
     """
     if (
         resource.stack
         and not resource.stack.is_void
-        and resource.stack.title not in family.stack.DependsOn
+        and resource.stack.get_top_root_stack().title not in family.stack.DependsOn
     ):
-        family.stack.DependsOn.append(resource.stack.title)
+        family.stack.DependsOn.append(resource.stack.get_top_root_stack().title)
 
 
 def link_resource_kms_to_service(settings: ComposeXSettings, resource, target) -> None:
@@ -730,7 +731,7 @@ def link_resource_to_services(
         set_iam_link_resource_to_services(
             resource, target, arn_attr_value, access_subkeys
         )
-        add_dependency(resource, target[0])
+        add_dependency(resource, target[0], settings)
         link_resource_kms_to_service(settings, resource, target)
 
 

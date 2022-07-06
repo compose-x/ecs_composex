@@ -27,7 +27,9 @@ from troposphere.rds import (
     DBSubnetGroup,
 )
 
-import ecs_composex.common.troposphere_tools
+from ecs_composex.common.logging import LOG
+from ecs_composex.common.troposphere_tools import add_outputs, add_resource, build_template
+
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.logging import LOG
 from ecs_composex.common.troposphere_tools import (
@@ -130,29 +132,44 @@ def create_db_subnet_group(template: Template, db: Rds, subnets=None) -> DBSubne
         subnets = STORAGE_SUBNETS
     group = DBSubnetGroup(
         f"{db.logical_name}SubnetGroup",
-        template=template,
         DBSubnetGroupDescription=Sub(
             f"DB Subnet group for {db.logical_name} in ${{AWS::StackName}}"
         ),
         SubnetIds=Ref(subnets),
+        Tags=Tags(
+            **{
+                "compose-x::module": db.module.res_key,
+                "compose-x::rds::name": db.name,
+                "compose-x::rds::logical-name": db.logical_name,
+            }
+        ),
     )
+    add_resource(template, group)
     return group
 
 
-def add_db_sg(template, db_name):
+def add_db_sg(template, db):
     """
     Function to add a Security group for the database
 
-    :param str db_name: Name of the database as defined in compose file
+    :param db: Name of the database as defined in compose file
     :param troposphere.Template template: template to add the sg to
     """
-    return SecurityGroup(
-        f"{db_name}Sg",
-        template=template,
-        GroupName=Sub(f"${{{ROOT_STACK_NAME_T}}}-{db_name}"),
-        GroupDescription=Sub(f"${{{ROOT_STACK_NAME_T}}} ${db_name}"),
+    sg = SecurityGroup(
+        f"{db.logical_name}Sg",
+        GroupName=Sub(f"${{{ROOT_STACK_NAME_T}}}-{db.logical_name}"),
+        GroupDescription=Sub(f"${{{ROOT_STACK_NAME_T}}} ${db.logical_name}"),
         VpcId=Ref(VPC_ID),
+        Tags=Tags(
+            **{
+                "compose-x::module": db.module.res_key,
+                "compose-x::rds::name": db.name,
+                "compose-x::rds::logical-name": db.logical_name,
+            }
+        ),
     )
+    add_resource(template, sg)
+    return sg
 
 
 def add_default_instance_definition(db: Rds, for_cluster: bool = False):
@@ -355,6 +372,10 @@ def define_parameters_group_from_engine_and_version(
         f"{db.mod_res_key}.{db.name} - "
         "Defined Parameters groups from default for {engine_name}@{engine_version}"
     )
+    else:
+        raise TypeError("db is", type(db), "Expected one of", [DBInstance, DBCluster])
+    add_resource(template, params)
+
 
 
 def add_parameter_group(template: Template, db: Rds, session: Session = None) -> None:
@@ -537,7 +558,7 @@ def generate_database_template(db: Rds, settings: ComposeXSettings) -> Template:
     """
     db_template = init_database_template(db)
     db.db_secret = add_db_secret(db_template, db.logical_name)
-    db.db_sg = add_db_sg(db_template, db.logical_name)
+    db.db_sg = add_db_sg(db_template, db)
     db.db_subnet_group = create_db_subnet_group(db_template, db)
     if db.properties:
         create_from_properties(db_template, db)

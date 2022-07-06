@@ -45,7 +45,7 @@ def update_network_resources_vpc_config(settings, vpc_stack):
                 f"{resource.module.res_key}.{resource.name} - Not a NetworkXResource"
             )
         if (
-            hasattr(resource.stack, "stack_parent")
+            hasattr(resource.stack, "parent_stack")
             and resource.stack.parent_stack is None
         ) or resource.stack == resource.stack.get_top_root_stack():
             LOG.debug(f"{resource.stack.title} is not a nested stacks")

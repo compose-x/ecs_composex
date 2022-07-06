@@ -184,7 +184,7 @@ def evaluate_parameters(bucket, bucket_template):
     """
     Review bucket parameters to configure the bucket and extra properties.
     """
-    if bucket.mappings or bucket.use:
+    if bucket.mappings:
         return
     if not bucket.parameters:
         return

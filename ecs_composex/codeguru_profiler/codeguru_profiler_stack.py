@@ -144,5 +144,5 @@ class XStack(ComposeXStack):
         else:
             self.is_void = True
 
-        for resource in settings.compose_content[module.res_key].values():
+        for resource in module.resources_list:
             resource.stack = self

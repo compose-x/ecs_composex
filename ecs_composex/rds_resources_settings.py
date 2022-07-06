@@ -335,7 +335,6 @@ def add_security_group_ingress(service_stack: ComposeXStack, db_name: str, sg_id
         service_template,
         SecurityGroupIngress(
             f"AllowFrom{service_stack.title}to{db_name}",
-            template=service_template,
             GroupId=sg_id,
             FromPort=port,
             ToPort=port,

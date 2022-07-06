@@ -15,7 +15,7 @@ from compose_x_common.aws.ecs import (
     describe_all_ecs_clusters_from_ccapi,
     list_all_ecs_clusters,
 )
-from compose_x_common.compose_x_common import keyisset
+from compose_x_common.compose_x_common import keyisset, set_else_none
 from troposphere import (
     AWS_ACCOUNT_ID,
     AWS_NO_VALUE,
@@ -116,38 +116,18 @@ class EcsCluster:
             self.platform_override = None
         else:
             self.definition = definition
-            self.lookup = (
-                self.definition["Lookup"] if keyisset("Lookup", self.definition) else {}
-            )
-            self.use = (
-                self.definition["Use"]
-                if keyisset("Use", self.definition) and not self.lookup
-                else {}
-            )
-            self.properties = (
-                self.definition["Properties"]
-                if keyisset("Properties", self.definition) and not self.lookup
-                else {}
-            )
-            self.parameters = (
-                self.definition["MacroParameters"]
-                if keyisset("MacroParameters", self.definition) and not self.lookup
-                else {}
-            )
+            self.lookup = set_else_none("Lookup", definition, alt_value={})
+            if self.lookup:
+                self.properties = {}
+            else:
+                self.properties = set_else_none("Properties", definition, alt_value={})
+            self.parameters = set_else_none("MacroParameters", definition, alt_value={})
 
     def set_from_definition(self, root_stack, session, settings):
         if self.lookup:
             self.lookup_cluster(session)
             add_update_mapping(
                 root_stack.stack_template, self.mappings_key, self.mappings
-            )
-        elif self.definition and self.use:
-            self.mappings = {CLUSTER_NAME.title: {"Name": self.use}}
-            add_update_mapping(
-                root_stack.stack_template, self.mappings_key, self.mappings
-            )
-            self.cluster_identifier = FindInMap(
-                self.mappings_key, CLUSTER_NAME.title, "Name"
             )
         elif self.properties:
             self.define_cluster(root_stack, settings)
