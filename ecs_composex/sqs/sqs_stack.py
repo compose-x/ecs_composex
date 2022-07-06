@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 from troposphere import GetAtt, Ref
 
-from ecs_composex.common import add_update_mapping, build_template
+from ecs_composex.common import LOG, add_update_mapping, build_template
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources.api_x_resources import ApiXResource
 from ecs_composex.compose.x_resources.helpers import (
@@ -67,6 +67,32 @@ class Queue(ApiXResource):
                 "QueueName",
             ),
         }
+
+    def handle_x_dependencies(
+        self, settings: ComposeXSettings, root_stack: ComposeXStack
+    ) -> None:
+        from ecs_composex.s3.s3_bucket import Bucket
+
+        from .sqs_s3 import s3_to_sqs_notifications
+
+        for resource in settings.get_x_resources(include_mappings=False):
+            if not resource.cfn_resource:
+                continue
+            if not resource.stack:
+                LOG.debug(
+                    f"resource {resource.name} has no `stack` attribute defined. Skipping"
+                )
+                continue
+            mappings = [(Bucket, s3_to_sqs_notifications)]
+            for target in mappings:
+                if isinstance(resource, target[0]) or issubclass(
+                    type(resource), target[0]
+                ):
+                    target[1](
+                        self,
+                        resource,
+                        settings,
+                    )
 
 
 class XStack(ComposeXStack):
