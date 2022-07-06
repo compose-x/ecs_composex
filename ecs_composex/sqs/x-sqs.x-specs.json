@@ -28,8 +28,35 @@
           "$ref": "x-resources.common.spec.json#/definitions/Services"
         },
         "MacroParameters": {
-          "type": "object"
+          "type": "object",
+          "properties": {
+            "AwsPrincipalsAccess": {
+              "additionalItems": false,
+              "properties": {
+                "Consume": {
+                  "description": "List of AWS Services with Read/Get access to the queue",
+                  "$ref": "#/definitions/AwsAccessType"
+                },
+                "Publish": {
+                  "description": "List of AWS Services with Publish access to the queue",
+                  "$ref": "#/definitions/AwsAccessType"
+                },
+                "PublishConsume": {
+                  "description": "List of AWS Services with RW access to the queue",
+                  "$ref": "#/definitions/AwsAccessType"
+                }
+              }
+            }
+          }
         }
+      }
+    }
+  },
+  "definitions": {
+    "AwsAccessType": {
+      "type": "array",
+      "items": {
+        "type": "string"
       }
     }
   }

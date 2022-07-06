@@ -2,161 +2,209 @@
 # Copyright 2020-2022 John Mille <john@compose-x.io>
 
 
-from copy import deepcopy
+from __future__ import annotations
 
-from compose_x_common.compose_x_common import keyisset, keypresent
-from troposphere import GetAtt, Ref, Sub
-from troposphere.sqs import Queue, RedrivePolicy
+from typing import TYPE_CHECKING
 
-from ecs_composex.common import LOG, NONALPHANUM, build_template
-from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
+import boto3.session
+
+if TYPE_CHECKING:
+    from troposphere import Template
+    from ecs_composex.common.settings import ComposeXSettings
+    from ecs_composex.common.stacks import ComposeXStack
+    from .sqs_stack import Queue
+
+from itertools import chain
+
+from compose_x_common.compose_x_common import keyisset, set_else_none
+from troposphere import MAX_OUTPUTS, AccountId, GetAtt, Ref, Sub
+from troposphere.sqs import Queue as CfnQueue
+from troposphere.sqs import QueuePolicy
+
+from ecs_composex.common import LOG, add_outputs, add_resource, build_template
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.sqs import metadata
-from ecs_composex.sqs.sqs_params import DLQ_ARN, DLQ_ARN_T, SQS_ARN, SQS_ARN_T
-
-CFN_MAX_OUTPUTS = 190
+from ecs_composex.resources_import import import_record_properties
+from ecs_composex.sqs.sqs_params import SQS_ARN
 
 
-def define_redrive_policy(target_queue, retries=None, mono_template=True):
-    if target_queue.cfn_resource:
-        policy = {
-            "RedrivePolicy": RedrivePolicy(
-                deadLetterTargetArn=GetAtt(target_queue.cfn_resource, "Arn")
-                if mono_template
-                else Ref(DLQ_ARN),
-                maxReceiveCount=retries,
-            )
-        }
-    else:
-        policy = {
-            "RedrivePolicy": RedrivePolicy(
-                deadLetterTargetArn=target_queue.attributes_outputs[SQS_ARN][
-                    "ImportValue"
-                ],
-                maxReceiveCount=retries,
-            )
-        }
-    return policy
+def add_queue_default_policy(queue: Queue):
+    queue_policy_title = f"{queue.logical_name}Policy"
+    queue.resource_policy = QueuePolicy(
+        queue_policy_title,
+        PolicyDocument={
+            "Version": "2008-10-17",
+            "Id": "__default_policy",
+            "Statement": [
+                {
+                    "Sid": "__owner_statement",
+                    "Effect": "Allow",
+                    "Principal": {
+                        "AWS": Sub("arn:${AWS::Partition}:iam::${AWS::AccountId}:root")
+                    },
+                    "Action": "sqs:*",
+                    "Resource": GetAtt(queue.cfn_resource, SQS_ARN.return_value),
+                }
+            ],
+        },
+        Queues=[Ref(queue.cfn_resource)],
+    )
+    add_resource(queue.stack.stack_template, queue.resource_policy)
 
 
-def set_queue(queue, properties, redrive_policy=None):
-    """
-    Function to define and set the SQS Queue
-
-    :param queue: Queue object
-    :param dict properties: queue properties
-    :param dict redrive_policy: redrive policy in case it has been defined
-
-    :return: queue
-    :rtype: troposphere.sqs.Queue
-    """
-    name = None
-    if redrive_policy is not None:
-        properties.update(redrive_policy)
-    if keyisset("QueueName", properties):
-        name = properties["QueueName"]
-        properties.pop("QueueName")
-    if keyisset("FifoQueue", properties):
-        properties["QueueName"] = (
-            Sub(f"${{{ROOT_STACK_NAME_T}}}-{queue.name}.fifo")
-            if not name
-            else Sub(f"${{{ROOT_STACK_NAME_T}}}-{name}.fifo")
-        )
-    else:
-        properties["QueueName"] = (
-            Sub(f"${{{ROOT_STACK_NAME_T}}}-{queue.name}")
-            if not name
-            else Sub(f"${{{ROOT_STACK_NAME_T}}}-{name}")
-        )
-    queue = Queue(queue.logical_name, **properties)
-    return queue
-
-
-def define_queue(queue, queues, mono_template=True):
+def define_queue_properties(queue):
     """
     Function to parse the queue definition and generate the queue accordingly. Created the redrive policy if necessary
 
     :param ecs_composex.common.compose_resources.Queue queue: name of the queue
-    :param list[ecs_composex.sqs.sqs_stack.Queue] queues: the queues defined in x-sqs
-    :param bool mono_template: whether or not there are so many outputs we need to split.
 
     :return: queue
     :rtype: troposphere.sqs.Queue
     """
-    redrive_policy = None
-    if keypresent("Properties", queue.definition):
-        props = deepcopy(queue.definition)
-        properties = props["Properties"]
-        properties.update({"Metadata": metadata})
-    else:
-        properties = {"Metadata": metadata}
-    if keyisset("RedrivePolicy", properties) and keyisset(
-        "deadLetterTargetArn", properties["RedrivePolicy"]
-    ):
-        redrive_target = properties["RedrivePolicy"]["deadLetterTargetArn"]
-        for _queue in queues:
-            if redrive_target == _queue.name:
-                break
-        else:
-            raise KeyError(
-                f"Queue {redrive_target} defined as DLQ for {queue.name} but is not defined"
-            )
-        if keyisset("maxReceiveCount", properties["RedrivePolicy"]):
-            retries = int(properties["RedrivePolicy"]["maxReceiveCount"])
-        else:
-            retries = 5
-        redrive_policy = define_redrive_policy(_queue, retries, mono_template)
-    queue.cfn_resource = set_queue(queue, properties, redrive_policy)
 
+    name = set_else_none("QueueName", queue.properties)
+    if keyisset("FifoQueue", queue.properties) and name and not name.endswith(".fifo"):
+        queue.properties["QueueName"] = f"${name}.fifo"
+        LOG.warning(
+            f"QueueName was defined and FifoQueue set to true, but queue name was invalid. "
+            f"Corrected to {queue.properties['QueueName']}"
+        )
+    props = import_record_properties(queue.properties, CfnQueue)
+    queue.cfn_resource = CfnQueue(queue.logical_name, **props)
     LOG.debug(queue.cfn_resource.title, queue.logical_name)
     return queue
 
 
-def render_new_queues(settings, new_queues, queues, xstack, template):
-    """
-    Function to create the root DynamdoDB template.
+def add_aws_services_queue_policy(queue: Queue):
+    if not queue.resource_policy:
+        return
+    aws_services = set_else_none("AwsPrincipalsAccess", queue.parameters)
+    publish_consume = set_else_none("PublishConsume", aws_services, alt_value=[])
+    consume = [
+        _elem
+        for _elem in set_else_none("Consume", aws_services, alt_value=[])
+        if _elem not in publish_consume
+    ]
+    publish = [
+        _elem
+        for _elem in set_else_none("Publish", aws_services, alt_value=[])
+        if _elem not in publish_consume
+    ]
+    for service in chain(consume, publish, publish_consume):
+        if service not in boto3.session.Session().get_available_services():
+            raise ValueError(
+                queue.module.res_key,
+                queue.name,
+                f"Service {service} is not valid. Valid services",
+                boto3.session.Session().get_available_services(),
+            )
+    same_account_condition: dict = {"StringEquals": {"aws:SourceAccount": AccountId}}
+    if consume:
+        consume_statement = {
+            "Sid": "__aws_services_consume",
+            "Effect": "Allow",
+            "Principal": {
+                "Service": [
+                    Sub(f"{_aws_service}.${{AWS::URLSuffix}}")
+                    for _aws_service in consume
+                ]
+            },
+            "NotAction": [
+                "sqs:TagQueue",
+                "sqs:RemovePermission",
+                "sqs:AddPermission",
+                "sqs:UntagQueue",
+                "sqs:PurgeQueue",
+                "sqs:DeleteQueue",
+                "sqs:CreateQueue",
+                "sqs:SetQueueAttributes",
+                "sqs:SendMessage",
+            ],
+            "Resource": GetAtt(queue.cfn_resource, SQS_ARN.return_value),
+            "Condition": same_account_condition,
+        }
+        queue.resource_policy.PolicyDocument["Statement"].append(consume_statement)
+    if publish:
+        publish_statement = {
+            "Sid": "__aws_services_publish",
+            "Effect": "Allow",
+            "Principal": {
+                "Service": [
+                    Sub(f"{_aws_service}.${{AWS::URLSuffix}}")
+                    for _aws_service in publish
+                ]
+            },
+            "Action": ["sqs:SendMessage"],
+            "Resource": GetAtt(queue.cfn_resource, SQS_ARN.return_value),
+            "Condition": same_account_condition,
+        }
+        queue.resource_policy.PolicyDocument["Statement"].append(publish_statement)
 
-    :param ecs_composex.common.settings.ComposeXSettings settings: Execution settings.
+        if publish_consume:
+            publish_consume_statement = {
+                "Sid": "__aws_services_publish_consume",
+                "Effect": "Allow",
+                "Principal": {
+                    "Service": [
+                        Sub(f"{_aws_service}.${{AWS::URLSuffix}}")
+                        for _aws_service in publish_consume
+                    ]
+                },
+                "NotAction": [
+                    "sqs:TagQueue",
+                    "sqs:RemovePermission",
+                    "sqs:AddPermission",
+                    "sqs:UntagQueue",
+                    "sqs:PurgeQueue",
+                    "sqs:DeleteQueue",
+                    "sqs:CreateQueue",
+                    "sqs:SetQueueAttributes",
+                ],
+                "Resource": GetAtt(queue.cfn_resource, SQS_ARN.return_value),
+                "Condition": same_account_condition,
+            }
+            queue.resource_policy.PolicyDocument["Statement"].append(
+                publish_consume_statement
+            )
+
+
+def render_new_queues(
+    settings: ComposeXSettings,
+    new_queues: list[Queue],
+    xstack: ComposeXStack,
+    template: Template,
+):
+    """
+    Sets the new SQS Queue properties. In case there are so many queues that there would not be enough outputs,
+    split into 1 stack per queue
+
+    :param settings:
+    :param new_queues:
+    :param xstack:
+    :param template:
     """
     mono_template = False
     output_per_resource = 3
-    if (len(new_queues) * output_per_resource) <= CFN_MAX_OUTPUTS:
+    if (len(new_queues) * output_per_resource) <= MAX_OUTPUTS:
         mono_template = True
 
     for queue in new_queues:
         queue.stack = xstack
-        define_queue(queue, queues, mono_template)
-        if queue.cfn_resource:
-            queue.init_outputs()
-            queue.generate_outputs()
-            if mono_template:
-                template.add_resource(queue.cfn_resource)
-                template.add_output(queue.outputs)
-            elif not mono_template:
-                parameters = {}
-                if hasattr(queue, "RedrivePolicy"):
-                    parameters.update(
-                        {
-                            DLQ_ARN_T: GetAtt(
-                                NONALPHANUM.sub(
-                                    "",
-                                    queues[queue.name].definition["Properties"][
-                                        "RedrivePolicy"
-                                    ]["deadLetterTargetArn"],
-                                ),
-                                f"Outputs.{SQS_ARN_T}",
-                            )
-                        }
-                    )
-                queue_template = build_template(
-                    f"Template for SQS queue {queue.cfn_resource.title}",
-                    [DLQ_ARN],
-                )
-                queue_template.add_resource(queue.cfn_resource)
-                queue_template.add_output(queue.outputs)
-                queue_stack = ComposeXStack(
-                    queue.logical_name,
-                    stack_template=queue_template,
-                    stack_parameters=parameters,
-                )
-                template.add_resource(queue_stack)
+        define_queue_properties(queue)
+        if not queue.cfn_resource:
+            continue
+        queue.init_outputs()
+        queue.generate_outputs()
+        if mono_template:
+            the_template = template
+            queue.stack = xstack
+        else:
+            the_template = build_template(
+                f"Template for SQS queue {queue.cfn_resource.title}",
+            )
+            queue.stack = ComposeXStack(queue.logical_name, stack_template=the_template)
+            add_resource(template, queue.stack)
+        add_resource(the_template, queue.cfn_resource)
+        add_outputs(the_template, queue.outputs)
+        add_queue_default_policy(queue)
+        if queue.parameters and keyisset("AwsPrincipalsAccess", queue.parameters):
+            add_aws_services_queue_policy(queue)

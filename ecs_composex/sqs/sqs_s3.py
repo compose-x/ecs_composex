@@ -24,26 +24,7 @@ from ecs_composex.common import LOG, add_parameters, add_resource, build_templat
 from ecs_composex.sqs.sqs_params import SQS_ARN
 
 
-def map_queue_with_bucket_notification(
-    queue: Queue,
-    bucket: Bucket,
-    queue_notification: QueueConfigurations,
-    settings: ComposeXSettings,
-) -> None:
-    """
-    Maps the queue to the `Queue` queue_notification property
-
-    :param queue:
-    :param bucket:
-    :param queue_notification:
-    :param settings:
-    """
-    queue_id = queue.attributes_outputs[SQS_ARN]
-    add_parameters(bucket.stack.stack_template, [queue_id["ImportParameter"]])
-    bucket.stack.Parameters.update(
-        {queue_id["ImportParameter"].title: queue_id["ImportValue"]}
-    )
-    setattr(queue_notification, "Queue", Ref(queue_id["ImportParameter"]))
+def add_queue_policy(queue: Queue):
     s3_notifications_sid = "__s3_notifications"
     queue_policy_title = f"{queue.logical_name}Policy"
     if queue_policy_title in queue.stack.stack_template.resources:
@@ -88,25 +69,32 @@ def map_queue_with_bucket_notification(
         )
 
 
-def s3_to_sqs_notifications(
+def map_queue_with_bucket_notification(
     queue: Queue,
     bucket: Bucket,
+    queue_notification: QueueConfigurations,
     settings: ComposeXSettings,
 ) -> None:
     """
-    Updates the notification `Queue` property it is the x-sqs queue
+    Maps the queue to the `Queue` queue_notification property
 
     :param queue:
     :param bucket:
+    :param queue_notification:
     :param settings:
     """
-    if queue.cfn_resource and hasattr(queue.cfn_resource, "FifoQueue"):
-        if queue.cfn_resource.FifoQueue is True:
-            LOG.error(
-                f"{queue.module.res_key}.{queue.name} is a Fifo Queue. "
-                "These are not allowed for S3 notifications"
-            )
-            return
+    queue_id = queue.attributes_outputs[SQS_ARN]
+    add_parameters(bucket.stack.stack_template, [queue_id["ImportParameter"]])
+    bucket.stack.Parameters.update(
+        {queue_id["ImportParameter"].title: queue_id["ImportValue"]}
+    )
+    setattr(queue_notification, "Queue", Ref(queue_id["ImportParameter"]))
+    add_queue_policy(queue)
+
+
+def update_new_bucket_properties(
+    queue: Queue, bucket: Bucket, settings: ComposeXSettings
+) -> None:
     if not hasattr(bucket.cfn_resource, "NotificationConfiguration"):
         return
     if not hasattr(
@@ -136,3 +124,32 @@ def s3_to_sqs_notifications(
             map_queue_with_bucket_notification(
                 queue, bucket, queue_notification, settings
             )
+
+
+def s3_to_sqs_notifications(
+    queue: Queue,
+    bucket: Bucket,
+    settings: ComposeXSettings,
+) -> None:
+    """
+    Updates the notification `Queue` property it is the x-sqs queue
+
+    :param queue:
+    :param bucket:
+    :param settings:
+    """
+    if queue.cfn_resource and hasattr(queue.cfn_resource, "FifoQueue"):
+        if queue.cfn_resource.FifoQueue is True:
+            LOG.error(
+                f"{queue.module.res_key}.{queue.name} is a Fifo Queue. "
+                "These are not allowed for S3 notifications"
+            )
+            return
+    if bucket.cfn_resource:
+        update_new_bucket_properties(queue, bucket, settings)
+    else:
+        LOG.warning(
+            f"{bucket.module.res_key}.{bucket.name} is not a new bucket. "
+            f"Only granting S3 access in {queue.module.res_key}.{queue.name} policy"
+        )
+        add_queue_policy(queue)
