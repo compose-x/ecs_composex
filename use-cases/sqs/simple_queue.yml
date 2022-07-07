@@ -4,7 +4,7 @@ x-sqs:
   queueB:
     Properties:
       RedrivePolicy:
-        deadLetterTargetArn: queueA
+        deadLetterTargetArn: x-sqs::queueA
         maxReceiveCount: 10
     Services:
       bignicefamily:
@@ -41,3 +41,10 @@ x-sqs:
               UpperBound: 20
             - Count: 7
               LowerBound: 20
+    MacroParameters:
+      AwsPrincipalsAccess:
+        Publish:
+          - sns
+          - s3
+        Consume:
+          - lambda

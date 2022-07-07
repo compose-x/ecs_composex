@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 from troposphere import GetAtt, Ref
 
-from ecs_composex.common import add_update_mapping, build_template
+from ecs_composex.common import LOG, add_update_mapping, build_template
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources.api_x_resources import ApiXResource
 from ecs_composex.compose.x_resources.helpers import (
@@ -40,6 +40,7 @@ class Queue(ApiXResource):
         module: XResourceModule,
         settings: ComposeXSettings,
     ):
+        self.redrive_queue = None
         super().__init__(name, definition, module, settings)
         self.kms_arn_attr = SQS_KMS_KEY
         self.arn_parameter = SQS_ARN
@@ -68,6 +69,35 @@ class Queue(ApiXResource):
             ),
         }
 
+    def handle_x_dependencies(
+        self, settings: ComposeXSettings, root_stack: ComposeXStack
+    ) -> None:
+        from ecs_composex.s3.s3_bucket import Bucket
+
+        from .sqs_s3 import s3_to_sqs_notifications
+        from .sqs_sqs import sqs_to_sqs
+
+        for resource in settings.get_x_resources(include_mappings=True):
+            if resource == self:
+                continue
+            if not resource.cfn_resource:
+                continue
+            if not resource.stack:
+                LOG.debug(
+                    f"resource {resource.name} has no `stack` attribute defined. Skipping"
+                )
+                continue
+            mappings = [(Bucket, s3_to_sqs_notifications), (type(self), sqs_to_sqs)]
+            for target in mappings:
+                if isinstance(resource, target[0]) or issubclass(
+                    type(resource), target[0]
+                ):
+                    target[1](
+                        self,
+                        resource,
+                        settings,
+                    )
+
 
 class XStack(ComposeXStack):
     """
@@ -95,8 +125,8 @@ class XStack(ComposeXStack):
                     template, module.mapping_key, settings.mappings[module.mapping_key]
                 )
             super().__init__(title, stack_template=template, **kwargs)
-            render_new_queues(settings, new_resources, x_resources, self, template)
+            render_new_queues(settings, new_resources, self, template)
         else:
             self.is_void = True
-        for resource in settings.compose_content[module.res_key].values():
+        for resource in x_resources:
             resource.stack = self

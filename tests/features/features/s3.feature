@@ -30,6 +30,15 @@ Feature: ecs_composex.s3
             | use-cases/blog.features.yml | use-cases/s3/lookup_use_create_buckets.yml                             |
             | use-cases/blog.features.yml | use-cases/s3/lookup_use_create_buckets_services_mappings_cloudmap.yaml |
 
+    Scenario Outline: New bucket and new SQS Queue with S3 notifications
+        Given With <file_path>
+        And With <override_file>
+        And I use defined files as input to define execution settings
+        Then I render all files to verify execution
+
+        Examples:
+            | file_path                   | override_file                              |
+            | use-cases/blog.features.yml | use-cases/s3/bucket_with_notifications.yml |
 
     Scenario Outline: NLookup s3 buckets only
         Given I use <file_path> as my docker-compose file and <override_file> as override file

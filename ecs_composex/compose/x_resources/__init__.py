@@ -140,6 +140,7 @@ class XResource:
         self.default_cloudmap_settings = {}
         self.cloudmap_dns_supported = False
         self.policies_scaffolds = get_access_types(module.mod_key)
+        self.resource_policy = None
 
     def __repr__(self):
         return self.logical_name
