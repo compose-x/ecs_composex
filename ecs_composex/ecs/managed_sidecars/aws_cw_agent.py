@@ -21,7 +21,7 @@ CW_AGENT_DEFINITION = {
     "deploy": {
         "resources": {"limits": {"cpus": 0.1, "memory": "256M"}},
     },
-    "labels": {"container_name": "cw-agent"},
+    "labels": {"container_name": CW_AGENT_NAME},
 }
 
 CW_AGENT_SERVICE = ManagedSidecar(CW_AGENT_NAME, CW_AGENT_DEFINITION)

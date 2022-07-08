@@ -78,8 +78,8 @@ def set_ecs_cw_policy(
     :param troposphere.ssm.Parameter cw_config_parameter:
     """
     ecs_sd_policy = PolicyType(
-        "CWAgentAccessForPrometheusScraping",
-        PolicyName="CWAgentAccessForPrometheusScraping",
+        "CWAgentAccessForEcsScraping",
+        PolicyName="CWAgentAccessForEcsScraping",
         PolicyDocument={
             "Version": "2012-10-17",
             "Statement": [
@@ -132,24 +132,6 @@ def set_ecs_cw_policy(
                         }
                     },
                 },
-                {
-                    "Sid": "ExtractFromCloudWatchAgentServerPolicy",
-                    "Effect": "Allow",
-                    "Action": ["ssm:GetParameter*"],
-                    "Resource": [
-                        Sub(
-                            "arn:aws:ssm:*:${AWS::AccountId}:parameter/AmazonCloudWatch-*"
-                        ),
-                        Sub(
-                            f"arn:${{{AWS_PARTITION}}}:ssm:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}"
-                            f":parameter${{{prometheus_parameter.title}}}"
-                        ),
-                        Sub(
-                            f"arn:${{{AWS_PARTITION}}}:ssm:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}"
-                            f":parameter${{{cw_config_parameter.title}}}"
-                        ),
-                    ],
-                },
             ],
         },
         Roles=[
@@ -157,4 +139,23 @@ def set_ecs_cw_policy(
             family.iam_manager.task_role.name,
         ],
     )
+    if prometheus_parameter:
+        ecs_sd_policy.PolicyDocument["Statement"].append(
+            {
+                "Sid": "ExtractFromCloudWatchAgentServerPolicy",
+                "Effect": "Allow",
+                "Action": ["ssm:GetParameter*"],
+                "Resource": [
+                    Sub("arn:aws:ssm:*:${AWS::AccountId}:parameter/AmazonCloudWatch-*"),
+                    Sub(
+                        f"arn:${{{AWS_PARTITION}}}:ssm:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}"
+                        f":parameter${{{prometheus_parameter.title}}}"
+                    ),
+                    Sub(
+                        f"arn:${{{AWS_PARTITION}}}:ssm:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}"
+                        f":parameter${{{cw_config_parameter.title}}}"
+                    ),
+                ],
+            },
+        )
     add_resource(family.template, ecs_sd_policy)
