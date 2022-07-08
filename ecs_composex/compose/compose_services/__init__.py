@@ -160,6 +160,8 @@ class ComposeService:
         map_volumes(self, volumes)
         map_secrets(self, secrets)
         self.set_container_definition()
+        self.links = set_else_none("links", definition)
+        self.family_links: list = []
 
     def __repr__(self):
         return self.name

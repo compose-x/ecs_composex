@@ -37,13 +37,6 @@ def define_cloudwatch_agent(cw_prometheus_config, cw_agent_config) -> ManagedSid
     cw_service = deepcopy(CW_AGENT_SERVICE)
     secrets = [
         Secret(
-            Name="PROMETHEUS_CONFIG_CONTENT",
-            ValueFrom=Sub(
-                f"arn:${{{AWS_PARTITION}}}:ssm:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}"
-                f":parameter${{{cw_prometheus_config.title}}}"
-            ),
-        ),
-        Secret(
             Name="CW_CONFIG_CONTENT",
             ValueFrom=Sub(
                 f"arn:${{{AWS_PARTITION}}}:ssm:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}"
@@ -51,6 +44,16 @@ def define_cloudwatch_agent(cw_prometheus_config, cw_agent_config) -> ManagedSid
             ),
         ),
     ]
+    if cw_prometheus_config:
+        secrets.append(
+            Secret(
+                Name="PROMETHEUS_CONFIG_CONTENT",
+                ValueFrom=Sub(
+                    f"arn:${{{AWS_PARTITION}}}:ssm:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}"
+                    f":parameter${{{cw_prometheus_config.title}}}"
+                ),
+            ),
+        )
     if hasattr(cw_service.container_definition, "Secrets"):
         s_secrets = getattr(cw_service.container_definition, "Secrets")
         if isinstance(s_secrets, list):
@@ -81,7 +84,7 @@ def set_ecs_cw_policy(
             "Version": "2012-10-17",
             "Statement": [
                 {
-                    "Sid": "EnableCreationAndManagementOfPrometheusLogEvents",
+                    "Sid": "EnableCreationAndManagementOfContainerInsightsLogEvents",
                     "Effect": "Allow",
                     "Action": ["logs:GetLogEvents", "logs:PutLogEvents"],
                     "Resource": Sub(
@@ -90,7 +93,7 @@ def set_ecs_cw_policy(
                     ),
                 },
                 {
-                    "Sid": "EnableCreationAndManagementOfPrometheusCloudwatchLogGroupsAndStreams",
+                    "Sid": "EnableCreationAndManagementOfContainerInsightsCloudwatchLogGroupsAndStreams",
                     "Effect": "Allow",
                     "Action": [
                         "logs:CreateLogStream",

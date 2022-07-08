@@ -45,6 +45,7 @@ class ServiceLogging:
                 alt_value=LOG_GROUP_RETENTION.Default,
             )
         )
+        print("SERVICE LOGGING IS", self.def_x_logging, self.cw_retention_period)
 
     @property
     def uses_firelens(self) -> bool:

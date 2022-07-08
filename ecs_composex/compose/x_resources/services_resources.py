@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from ecs_composex.mods_manager import XResourceModule
 
 
-from compose_x_common.compose_x_common import keyisset
+from compose_x_common.compose_x_common import keyisset, set_else_none
 
 from ecs_composex.common import LOG, NONALPHANUM
 from ecs_composex.compose.x_resources import XResource
@@ -37,11 +37,7 @@ class ServicesXResource(XResource):
         self.families_scaling = []
         self.arn_parameter = None
         super().__init__(name, definition, module, settings)
-        self.services = (
-            []
-            if not keyisset("Services", self.definition)
-            else self.definition["Services"]
-        )
+        self.services = set_else_none("Services", definition, alt_value={})
         self.set_services_targets(settings)
         self.set_services_scaling(settings)
 

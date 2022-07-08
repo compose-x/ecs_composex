@@ -77,6 +77,8 @@ class ComposeFamily:
         self.umbrella_log_group = None
         self.firelens_service = None
         self.firelens_config_service = None
+        self.cwagent_service = None
+        self.xray_service = None
         self.task_definition = None
         self.service_definition = None
         self.service_tags = None
@@ -223,6 +225,38 @@ class ComposeFamily:
         """
         set_xray(self)
         set_prometheus(self)
+        self.set_services_family_links()
+
+    def set_services_family_links(self):
+        for service in self.ordered_services:
+            if service.links:
+                for link in service.links:
+                    for _svc in self.ordered_services:
+                        if _svc == service:
+                            continue
+                        if _svc.name in link:
+                            service.family_links.append(link)
+            if self.xray_service and self.xray_service.name not in service.family_links:
+                service.family_links.append(self.xray_service.name)
+            if (
+                self.cwagent_service
+                and self.cwagent_service.name not in service.family_links
+            ):
+                service.family_links.append(f"{self.cwagent_service.name}:cwagent")
+            if service.family_links:
+                setattr(
+                    service.container_definition,
+                    "Links",
+                    If(
+                        ecs_conditions.USE_WINDOWS_OS_T,
+                        NoValue,
+                        If(
+                            ecs_conditions.USE_BRIDGE_NETWORKING_MODE_CON_T,
+                            service.family_links,
+                            NoValue,
+                        ),
+                    ),
+                )
 
     def generate_outputs(self):
         """

@@ -96,6 +96,12 @@ DISABLE_CAPACITY_PROVIDERS_CON = Or(
     Condition(USE_LAUNCH_TYPE_CON_T), Condition(USE_CLUSTER_MODE_CON_T)
 )
 
+USE_BRIDGE_NETWORKING_MODE_CON_T = "UseBridgeNetworkingMode"
+USE_BRIDGE_NETWORKING_MODE_CON = Equals(Ref(ecs_params.NETWORK_MODE), "bridge")
+
+USE_AWSVPC_NETWORKING_MODE_CON_T = "UseAwsvpcNetworkingMode"
+USE_AWSVPC_NETWORKING_MODE_CON = Equals(Ref(ecs_params.NETWORK_MODE), "awsvpc")
+
 
 def use_external_lt_con(if_true, if_false) -> If:
     """
