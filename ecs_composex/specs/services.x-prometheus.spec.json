@@ -10,6 +10,10 @@
     "ContainersInsights": {
       "type": "object",
       "properties": {
+        "CollectEmf": {
+          "type": "boolean",
+          "description": "Enables the CW Agent EMF Logs collection"
+        },
         "EnableCWAgentDebug": {
           "type": "boolean",
           "description": "Whether or not enable debug mode for the CloudWatch agent",

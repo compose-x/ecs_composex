@@ -82,42 +82,44 @@ def set_cw_prometheus_config_parameter(
         return family.template.resources[parameter.title]
 
 
-def set_cw_config_parameter(family: ComposeFamily, **options) -> SSMParameter:
+def set_cw_config_parameter(
+    family: ComposeFamily, enable_emf: bool = False, **prometheus_options
+) -> SSMParameter:
     """
     Function to add the SSM Parameter representing the Prometheus scrapper config
-
-    :param ecs_composex.ecs.ecs_family.ComposeFamily family:
-    :return: parameter
-    :rtype: troposphere.ssm.Parameter
     """
 
+    prometheus_collection = {
+        "prometheus_config_path": "env:PROMETHEUS_CONFIG_CONTENT",
+        "emf_processor": {
+            "metric_declaration": [],
+        },
+    }
     value_py = {
         "logs": {
-            "metrics_collected": {
-                "prometheus": {
-                    "prometheus_config_path": "env:PROMETHEUS_CONFIG_CONTENT",
-                    "emf_processor": {
-                        "metric_declaration": [],
-                    },
-                }
-            },
-            "force_flush_interval": 5,
+            "metrics_collected": {},
+            "force_flush_interval": 15,
         }
     }
-    if keyisset("EnableCWAgentDebug", options):
+    if enable_emf:
+        value_py["logs"]["metrics_collected"]["emf"]: dict = {}
+    if keyisset("EnableCWAgentDebug", prometheus_options):
         value_py["agent"] = {"debug": True}
-    ecs_sd_config = {
-        "sd_frequency": "1m",
-        "sd_result_file": "/tmp/cwagent_ecs_auto_sd.yaml",
-        "docker_label": {},
-        "task_definition_list": [],
-        "service_name_list_for_tasks": [],
-    }
-    value_py["logs"]["metrics_collected"]["prometheus"][
-        "ecs_service_discovery"
-    ] = ecs_sd_config
-    if options.values():
-        emf_processors = generate_emf_processors(family, ecs_sd_config, **options)
+    if any(prometheus_options.values()) and prometheus_options.values():
+        value_py["logs"]["metrics_collected"]["prometheus"] = prometheus_collection
+        ecs_sd_config = {
+            "sd_frequency": "1m",
+            "sd_result_file": "/tmp/cwagent_ecs_auto_sd.yaml",
+            "docker_label": {},
+            "task_definition_list": [],
+            "service_name_list_for_tasks": [],
+        }
+        value_py["logs"]["metrics_collected"]["prometheus"][
+            "ecs_service_discovery"
+        ] = ecs_sd_config
+        emf_processors = generate_emf_processors(
+            family, ecs_sd_config, **prometheus_options
+        )
         value_py["logs"]["metrics_collected"]["prometheus"][
             "emf_processor"
         ] = emf_processors

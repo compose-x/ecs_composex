@@ -17,10 +17,11 @@ CW_IMAGE_PARAMETER = Parameter(
 CW_AGENT_NAME = "cloudwatch-agent"
 CW_AGENT_DEFINITION = {
     "image": CW_IMAGE_PARAMETER.Default,
+    "ports": [{"target": 25888, "protocol": "tcp"}],
     "deploy": {
         "resources": {"limits": {"cpus": 0.1, "memory": "256M"}},
     },
-    "labels": {"container_name": "cw-agent"},
+    "labels": {"container_name": CW_AGENT_NAME},
 }
 
 CW_AGENT_SERVICE = ManagedSidecar(CW_AGENT_NAME, CW_AGENT_DEFINITION)
