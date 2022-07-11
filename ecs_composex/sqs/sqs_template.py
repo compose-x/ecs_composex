@@ -6,16 +6,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .sqs_stack import Queue as ComposeXQueue
     from ecs_composex.common.settings import ComposeXSettings
-
-from __future__ import annotations
-
-from typing import TYPE_CHECKING
-
-import boto3.session
-
-if TYPE_CHECKING:
     from troposphere import Template
     from ecs_composex.common.settings import ComposeXSettings
     from ecs_composex.common.stacks import ComposeXStack
@@ -23,6 +14,7 @@ if TYPE_CHECKING:
 
 from itertools import chain
 
+import boto3.session
 from compose_x_common.compose_x_common import keyisset, set_else_none
 from troposphere import MAX_OUTPUTS, AccountId, GetAtt, Ref, Sub
 from troposphere.sqs import Queue as CfnQueue
