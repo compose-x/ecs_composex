@@ -61,7 +61,7 @@ class ComposeFamily:
     """
 
     def __init__(self, services, family_name):
-        self._services = services
+        self._compose_services = services
         self.ordered_services = services
         self.managed_sidecars = []
         self.name = family_name
@@ -302,7 +302,7 @@ class ComposeFamily:
         LOG.info(f"{self.name} - LaunchType set to {self.service_compute.launch_type}")
         LOG.info(
             f"{self.name} - TaskDefinition containers: "
-            f"{[svc.name for svc in chain(self.ordered_services, self.managed_sidecars)]}"
+            f"{[svc.name for svc in self.services]}"
         )
 
     def add_service(self, service: ComposeService):
@@ -314,7 +314,7 @@ class ComposeFamily:
 
         from .task_execute_command import set_enable_execute_command
 
-        self._services.append(service)
+        self._compose_services.append(service)
 
         self.set_update_containers_priority()
         self.iam_manager.init_update_policies()
@@ -537,7 +537,10 @@ class ComposeFamily:
         """
         Method to sort out the containers dependencies and create the containers definitions based on the configs.
         """
-        service_configs = [[0, service] for service in self.services]
+        service_configs = [
+            [0, service]
+            for service in list(chain(self._compose_services, self.managed_sidecars))
+        ]
         handle_same_task_services_dependencies(service_configs)
         ordered_containers_config = sorted(service_configs, key=lambda i: i[0])
         self.ordered_services = [s[1] for s in ordered_containers_config]

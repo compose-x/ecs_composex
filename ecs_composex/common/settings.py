@@ -464,13 +464,15 @@ class ComposeXSettings:
                     )
                 if formatted_name not in self.families:
                     self.add_new_family(family_name, service, assigned_services)
-                elif formatted_name in self.families.keys() and service.name not in [
-                    _service.name
-                    for _service in self.families[formatted_name].ordered_services
-                ]:
-                    self.add_service_to_family(
-                        formatted_name, service, assigned_services
-                    )
+                elif formatted_name in self.families.keys():
+                    family_services = [
+                        _service.name
+                        for _service in self.families[formatted_name].ordered_services
+                    ]
+                    if service.name not in family_services:
+                        self.add_service_to_family(
+                            formatted_name, service, assigned_services
+                        )
         LOG.debug([self.families[family] for family in self.families])
 
     def set_content(self, kwargs, content=None, fully_load=True):
