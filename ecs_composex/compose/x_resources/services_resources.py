@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
@@ -79,9 +79,6 @@ class ServicesXResource(XResource):
     def set_services_targets_from_list(self, settings):
         """
         Deals with services set as a list
-
-        :param settings:
-        :return:
         """
         for service in self.services:
             name_key = get_setting_key("name", service)
@@ -144,19 +141,21 @@ class ServicesXResource(XResource):
     def set_services_targets_from_dict(self, settings):
         """
         Deals with services set as a dict
-
-        :param settings:
-        :return:
         """
         for service_name, service_def in self.services.items():
-            if service_name in settings.families and service_name not in [
-                f[0].name for f in self.families_targets
-            ]:
+            if service_name in [
+                family.name for family in settings.families.values()
+            ] and service_name not in [tgt[0].name for tgt in self.families_targets]:
+                for family in settings.families.values():
+                    if family.name == service_name:
+                        break
+                else:
+                    raise ValueError("Failed to map service_name to families")
                 self.families_targets.append(
                     (
-                        settings.families[service_name],
+                        family,
                         True,
-                        settings.families[service_name].services,
+                        family.services,
                         service_def["Access"]
                         if keyisset("Access", service_def)
                         else {},

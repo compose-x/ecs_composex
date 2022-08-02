@@ -23,7 +23,7 @@ def render_config_sidecar_config(
     family: ComposeFamily, volume_name: str, mount_path: str, ssm_parameter: str = None
 ):
     config: dict = {
-        "image": "public.ecr.aws/compose-x/ecs-files-composer:d1a1abb",
+        "image": "public.ecr.aws/compose-x/ecs-files-composer:latest",
         "deploy": {
             "resources": {
                 "limits": {"cpus": 0.1, "memory": "64M"},
