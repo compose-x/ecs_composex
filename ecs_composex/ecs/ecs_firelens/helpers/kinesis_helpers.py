@@ -55,6 +55,8 @@ def add_data_stream_for_firelens(
     family: ComposeFamily,
     settings: ComposeXSettings,
 ):
+    if not isinstance(kinesis_stream, Stream):
+        raise TypeError("kinesis_stream must be", Stream, "Got", type(kinesis_stream))
     set_add_family_to_kinesis(kinesis_stream, family, settings)
     kinesis_stream.add_parameter_to_family_stack(family, settings, STREAM_ID)
     if kinesis_stream.cfn_resource:

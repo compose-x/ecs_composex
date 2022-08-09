@@ -58,6 +58,10 @@ def add_firehose_delivery_stream_for_firelens(
     family: ComposeFamily,
     settings: ComposeXSettings,
 ):
+    if not isinstance(firehose_stream, DeliveryStream):
+        raise TypeError(
+            "firehose_stream must be", DeliveryStream, "Got", type(firehose_stream)
+        )
     set_add_family_to_firehose(firehose_stream, family, settings)
     firehose_stream.add_parameter_to_family_stack(family, settings, FIREHOSE_ID)
     if firehose_stream.cfn_resource:

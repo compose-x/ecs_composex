@@ -47,19 +47,20 @@ class FireLensKinesisManagedDestination:
         settings: ComposeXSettings,
     ):
         self._definition = definition
-        self._managed_data_stream = None
         self.parent = advanced_config
         if self._definition["stream"].startswith("x-kinesis"):
             self._managed_data_stream = settings.find_resource(
                 self._definition["stream"]
             )
 
-        add_data_stream_for_firelens(
-            self._managed_data_stream,
-            self.parent.extra_env_vars,
-            self.parent.family,
-            settings,
-        )
+            add_data_stream_for_firelens(
+                self._managed_data_stream,
+                self.parent.extra_env_vars,
+                self.parent.family,
+                settings,
+            )
+        else:
+            self._managed_data_stream = None
         self.process_all_options(self.parent.family, self.parent.service, settings)
 
     def process_all_options(self, family, service, settings: ComposeXSettings):
