@@ -127,6 +127,8 @@ def handle_firelens_options(
     for key, value in config_name_map.items():
         if keyisset(key, options):
             options.update({"Name": value})
+            if not keyisset("region", options):
+                options.update({"region": Region})
             break
 
     return LogConfiguration(LogDriver="awsfirelens", Options=options)

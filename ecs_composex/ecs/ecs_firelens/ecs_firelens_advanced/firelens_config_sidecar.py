@@ -12,7 +12,6 @@ if TYPE_CHECKING:
     from ecs_composex.ecs.ecs_firelens.firelens_managed_sidecar_service import FluentBit
 
 from compose_x_common.compose_x_common import keyisset
-from troposphere import Ref
 
 from ecs_composex.compose.compose_volumes import ComposeVolume
 from ecs_composex.compose.compose_volumes.services_helpers import map_volumes
