@@ -117,6 +117,8 @@ def update_new_bucket_properties(
                 "expected",
                 QueueConfigurations,
             )
+        if not isinstance(queue_notification.Queue, str):
+            continue
         if not queue_notification.Queue.startswith(queue.module.res_key):
             continue
         x_sqs = queue_notification.Queue.split(f"{queue.module.res_key}::")[-1]
