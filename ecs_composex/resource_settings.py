@@ -22,9 +22,10 @@ from troposphere import AWSHelperFn, GetAtt, NoValue, Ref, Sub
 from troposphere.iam import Policy as IamPolicy
 from troposphere.iam import PolicyType
 
-from ecs_composex.common import LOG, add_parameters, add_update_mapping
 from ecs_composex.common.cfn_params import STACK_ID_SHORT, Parameter
+from ecs_composex.common.logging import LOG
 from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.common.troposphere_tools import add_parameters, add_update_mapping
 from ecs_composex.compose.compose_services.helpers import extend_container_envvars
 from ecs_composex.iam.import_sam_policies import get_access_types
 from ecs_composex.kms.kms_params import MAPPINGS_KEY as KMS_MAPPING_KEY

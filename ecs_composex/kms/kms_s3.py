@@ -7,13 +7,10 @@ Handle x-kms in S3 buckets
 
 from troposphere import Ref
 
-from ecs_composex.common import add_parameters, setup_logging
-
+from ..common.troposphere_tools import add_parameters
 from .kms_params import KMS_KEY_ID
 
 KEY = "KMSMasterKeyID"
-
-LOG = setup_logging()
 
 
 def assign_kms_key_to_bucket(kms_key, bucket_rule, bucket_stack):

@@ -26,8 +26,9 @@ from json import loads
 
 from importlib_resources import files as pkg_files
 
-from ecs_composex.common import LOG, NONALPHANUM
+from ecs_composex.common import NONALPHANUM
 from ecs_composex.common.ecs_composex import X_KEY
+from ecs_composex.common.logging import LOG
 from ecs_composex.iam.import_sam_policies import import_and_cleanse_sam_policies
 
 

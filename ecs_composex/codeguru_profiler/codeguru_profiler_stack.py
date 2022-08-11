@@ -22,9 +22,13 @@ from ecs_composex.codeguru_profiler.codeguru_profiler_params import (
     PROFILER_ARN,
     PROFILER_NAME,
 )
-from ecs_composex.common import add_outputs, build_template
 from ecs_composex.common.cfn_params import STACK_ID_SHORT
 from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.common.troposphere_tools import (
+    add_outputs,
+    add_resource,
+    build_template,
+)
 from ecs_composex.compose.x_resources.api_x_resources import ApiXResource
 from ecs_composex.compose.x_resources.helpers import (
     set_lookup_resources,
@@ -65,7 +69,7 @@ def create_root_template(new_resources: list, module_res_key: str) -> Template:
         res.init_outputs()
         res.generate_outputs()
         add_outputs(root_tpl, res.outputs)
-        root_tpl.add_resource(res.cfn_resource)
+        add_resource(root_tpl, res.cfn_resource)
     return root_tpl
 
 

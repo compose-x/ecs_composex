@@ -18,7 +18,7 @@ except ImportError:
 
 from compose_x_common.compose_x_common import keyisset
 
-from ecs_composex.common import LOG
+from ecs_composex.common.logging import LOG
 
 from .ecr_helpers import define_ecr_session
 

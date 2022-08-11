@@ -16,7 +16,7 @@ from troposphere import AWS_REGION, AWS_STACK_ID, Join, Ref, Select, Split, Sub
 from troposphere.cloudwatch import Alarm as CWAlarm
 from troposphere.cloudwatch import CompositeAlarm
 
-from ecs_composex.common import add_outputs, add_resource
+from ecs_composex.common.troposphere_tools import add_outputs, add_resource
 from ecs_composex.resources_import import import_record_properties
 
 

@@ -11,8 +11,13 @@ if TYPE_CHECKING:
 
 from troposphere import FindInMap, Ref
 
-from ecs_composex.common import LOG, add_parameters, add_update_mapping
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME, ROOT_STACK_NAME_T
+from ecs_composex.common.logging import LOG
+from ecs_composex.common.troposphere_tools import (
+    add_parameters,
+    add_resource,
+    add_update_mapping,
+)
 from ecs_composex.compose.compose_secrets.ecs_family_helpers import (
     set_repository_credentials,
 )
@@ -116,7 +121,7 @@ def add_compose_families(settings: ComposeXSettings) -> None:
             }
         )
         family.template.metadata.update(metadata)
-        settings.root_stack.stack_template.add_resource(family.stack)
+        add_resource(settings.root_stack.stack_template, family.stack)
         family.validate_compute_configuration_for_task(settings)
 
     families_stacks = [

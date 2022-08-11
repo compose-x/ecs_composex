@@ -28,9 +28,11 @@ from troposphere.ec2 import LaunchTemplate, TagSpecifications
 from troposphere.ssm import Parameter as SSMParameter
 
 from ecs_composex import __version__ as version
-from ecs_composex.common import LOG, NONALPHANUM, add_parameters
+from ecs_composex.common import NONALPHANUM
 from ecs_composex.common.cfn_params import Parameter
+from ecs_composex.common.logging import LOG
 from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.common.troposphere_tools import add_parameters
 
 
 def define_tag_parameter_title(tag_name):

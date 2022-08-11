@@ -25,6 +25,7 @@ from troposphere.elasticloadbalancingv2 import (
     TargetGroupTuple,
 )
 
+import ecs_composex.common.troposphere_tools
 from ecs_composex.acm.acm_params import RES_KEY as ACM_KEY
 from ecs_composex.cognito_userpool.cognito_params import MAPPINGS_KEY as COGNITO_MAP
 from ecs_composex.cognito_userpool.cognito_params import RES_KEY as COGNITO_KEY
@@ -33,9 +34,9 @@ from ecs_composex.cognito_userpool.cognito_params import (
     USERPOOL_DOMAIN,
     USERPOOL_ID,
 )
-from ecs_composex.common import (
-    LOG,
-    NONALPHANUM,
+from ecs_composex.common import NONALPHANUM
+from ecs_composex.common.logging import LOG
+from ecs_composex.common.troposphere_tools import (
     Parameter,
     add_parameters,
     add_update_mapping,

@@ -8,11 +8,11 @@ Module to find the Secrets from AWS Tags
 from botocore.exceptions import ClientError
 from compose_x_common.compose_x_common import keyisset
 
-from ecs_composex.common import LOG
 from ecs_composex.common.aws import (
     define_lookup_role_from_info,
     find_aws_resource_arn_from_tags_api,
 )
+from ecs_composex.common.logging import LOG
 
 
 def get_secret_config(logical_name, secret_arn, session):

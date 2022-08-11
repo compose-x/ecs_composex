@@ -5,8 +5,8 @@ from boto3.session import Session
 from compose_x_common.aws.arns import ARNS_PER_TAGGINGAPI_TYPE
 from compose_x_common.compose_x_common import keyisset
 
-from ecs_composex.common import LOG
 from ecs_composex.common.aws import find_aws_resource_arn_from_tags_api
+from ecs_composex.common.logging import LOG
 from ecs_composex.vpc.vpc_params import (
     APP_SUBNETS,
     PUBLIC_SUBNETS,

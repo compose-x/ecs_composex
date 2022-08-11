@@ -14,11 +14,12 @@ from compose_x_common.compose_x_common import keyisset, set_else_none
 from troposphere import AWS_ACCOUNT_ID, AWS_NO_VALUE, Ref, Sub
 from troposphere.ec2 import SecurityGroupIngress
 
-from ecs_composex.common import LOG, NONALPHANUM
+from ecs_composex.common import NONALPHANUM
 from ecs_composex.common.aws import (
     define_lookup_role_from_info,
     find_aws_resource_arn_from_tags_api,
 )
+from ecs_composex.common.logging import LOG
 
 
 def flatten_ip(ip_str):

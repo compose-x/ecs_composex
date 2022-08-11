@@ -20,8 +20,8 @@ from troposphere import AWS_ACCOUNT_ID, AWSHelperFn, GetAtt, NoValue, Ref, Sub
 from troposphere.ec2 import SecurityGroup, SecurityGroupIngress
 from troposphere.ecs import AwsvpcConfiguration, NetworkConfiguration
 
-from ecs_composex.common import LOG
 from ecs_composex.common.cfn_params import Parameter
+from ecs_composex.common.logging import LOG
 from ecs_composex.ecs.ecs_conditions import use_external_lt_con
 from ecs_composex.ecs.ecs_params import NETWORK_MODE, SERVICE_NAME_T
 from ecs_composex.ecs.service_networking.ingress_helpers import (

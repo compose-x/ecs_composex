@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 from troposphere import FindInMap, Select
 
-from ecs_composex.common import LOG
+from ecs_composex.common.logging import LOG
 from ecs_composex.elasticache.elasticache_aws import lookup_cluster_resource
 from ecs_composex.elasticache.elasticache_params import (
     CLUSTER_SG,

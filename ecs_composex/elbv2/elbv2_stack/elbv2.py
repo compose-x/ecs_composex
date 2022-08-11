@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import ecs_composex.common.troposphere_tools
+
 if TYPE_CHECKING:
     from ecs_composex.mods_manager import XResourceModule
     from ecs_composex.common.settings import ComposeXSettings
@@ -18,7 +20,9 @@ from troposphere.elasticloadbalancingv2 import (
     SubnetMapping,
 )
 
-from ecs_composex.common import LOG, NONALPHANUM, ROOT_STACK_NAME
+from ecs_composex.common import NONALPHANUM
+from ecs_composex.common.logging import LOG
+from ecs_composex.common.troposphere_tools import ROOT_STACK_NAME
 from ecs_composex.compose.x_resources.network_x_resources import NetworkXResource
 from ecs_composex.elbv2.elbv2_params import (
     LB_DNS_NAME,

@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import ecs_composex.common.troposphere_tools
+
 if TYPE_CHECKING:
     from ecs_composex.common.stacks import ComposeXStack
     from ecs_composex.ssm_parameter.ssm_parameter_stack import SsmParameter
@@ -18,7 +20,8 @@ from troposphere import Base64
 from troposphere.ssm import Parameter as CfnSsmParameter
 from yaml import Loader
 
-from ecs_composex.common import LOG, add_outputs
+from ecs_composex.common.logging import LOG
+from ecs_composex.common.troposphere_tools import add_outputs
 from ecs_composex.resources_import import import_record_properties
 from ecs_composex.ssm_parameter.ssm_parameter_params import (
     SSM_PARAM_ARN,

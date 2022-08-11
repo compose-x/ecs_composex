@@ -15,7 +15,9 @@ from troposphere.elasticache import (
     SubnetGroup,
 )
 
-from ecs_composex.common import LOG, build_template
+import ecs_composex.common.troposphere_tools
+from ecs_composex.common.logging import LOG
+from ecs_composex.common.troposphere_tools import build_template
 from ecs_composex.resources_import import import_record_properties
 from ecs_composex.vpc.vpc_params import STORAGE_SUBNETS, VPC_ID
 

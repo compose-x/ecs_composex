@@ -9,7 +9,9 @@ from troposphere import Ref
 from troposphere.cognito import UserPoolClient
 from troposphere.elasticloadbalancingv2 import Listener
 
-from ecs_composex.common import LOG, NONALPHANUM
+import ecs_composex.common.troposphere_tools
+from ecs_composex.common import NONALPHANUM
+from ecs_composex.common.logging import LOG
 from ecs_composex.elbv2.elbv2_stack.helpers import (
     add_acm_certs_arn,
     define_actions,

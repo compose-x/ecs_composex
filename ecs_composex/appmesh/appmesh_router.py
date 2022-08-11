@@ -31,7 +31,8 @@ from ecs_composex.appmesh.appmesh_params import (
     ROUTES_KEY,
     SCHEME_KEY,
 )
-from ecs_composex.common import LOG, NONALPHANUM
+from ecs_composex.common import NONALPHANUM
+from ecs_composex.common.logging import LOG
 
 
 def define_http_route(route_match, route_nodes, http2: bool):
@@ -171,7 +172,7 @@ class MeshRouter:
         listener = self.definition[LISTENER_KEY]
         if not keyisset(PORT_KEY, listener) or not keyisset(PROTOCOL_KEY, listener):
             raise KeyError("Listener for router requires Port and Protocol")
-        if not listener[PROTOCOL_KEY] in routes.keys():
+        if listener[PROTOCOL_KEY] not in routes.keys():
             raise ValueError(
                 f"The virtual router is configured for {listener[PROTOCOL_KEY]} but no such route configured"
             )

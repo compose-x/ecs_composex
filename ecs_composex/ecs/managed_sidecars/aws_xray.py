@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 from copy import deepcopy
 
-from ecs_composex.common import LOG
+from ecs_composex.common.logging import LOG
 from ecs_composex.ecs.ecs_params import XRAY_IMAGE
 from ecs_composex.ecs.managed_sidecars import ManagedSidecar
 

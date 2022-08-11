@@ -7,12 +7,13 @@ Module for DynamoDB to create the root template
 
 from troposphere import MAX_OUTPUTS, Ref, Tags, dynamodb
 
-from ecs_composex.common import add_outputs, add_resource, build_template
+import ecs_composex.common.troposphere_tools
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.dynamodb import metadata
 from ecs_composex.resources_import import import_record_properties
 
+from ..common.troposphere_tools import add_outputs, add_resource, build_template
 from .dynamodb_autoscaling import add_autoscaling
 
 CFN_MAX_OUTPUTS = MAX_OUTPUTS - 10

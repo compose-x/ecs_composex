@@ -7,12 +7,11 @@ from troposphere.ecs import AuthorizationConfig, EFSVolumeConfiguration, Volume
 from troposphere.efs import AccessPoint, CreationInfo, PosixUser, RootDirectory
 from troposphere.iam import PolicyType
 
-from ecs_composex.common import add_parameters, setup_logging
+from ecs_composex.common.logging import LOG
+from ecs_composex.common.troposphere_tools import add_parameters
 from ecs_composex.ecs.ecs_params import TASK_T
 from ecs_composex.efs.efs_params import FS_ARN, FS_ID, FS_MNT_PT_SG_ID, FS_PORT
 from ecs_composex.rds_resources_settings import handle_new_tcp_resource
-
-LOG = setup_logging()
 
 
 def get_volumes(task_definition):

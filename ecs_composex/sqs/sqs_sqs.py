@@ -16,8 +16,9 @@ if TYPE_CHECKING:
 
 from troposphere import GetAtt, Ref
 
-from ecs_composex.common import add_parameters, add_update_mapping
 from ecs_composex.sqs.sqs_params import SQS_ARN
+
+from ..common.troposphere_tools import add_parameters, add_update_mapping
 
 
 def update_target_queue_pointer(

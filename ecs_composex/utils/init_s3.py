@@ -4,7 +4,7 @@
 from boto3.session import Session
 from botocore.exceptions import ClientError
 
-from ecs_composex.common import LOG
+from ecs_composex.common.logging import LOG
 
 
 def create_bucket(bucket_name, session, no_location=False):

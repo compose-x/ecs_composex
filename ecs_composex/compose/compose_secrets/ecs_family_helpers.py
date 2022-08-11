@@ -4,6 +4,8 @@
 from troposphere.ecs import RepositoryCredentials
 from troposphere.iam import PolicyType
 
+import ecs_composex.common.troposphere_tools
+
 
 def identify_repo_credentials_secret(settings, task, secret_name):
     """

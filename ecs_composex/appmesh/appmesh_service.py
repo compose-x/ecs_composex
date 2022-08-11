@@ -28,8 +28,8 @@ from ecs_composex.cloudmap.cloudmap_params import (
     PRIVATE_DNS_ZONE_NAME,
     PRIVATE_NAMESPACE_ID,
 )
-from ecs_composex.common import (
-    NONALPHANUM,
+from ecs_composex.common import NONALPHANUM
+from ecs_composex.common.troposphere_tools import (
     add_parameters,
     add_resource,
     add_update_mapping,

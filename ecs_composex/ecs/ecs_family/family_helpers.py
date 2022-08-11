@@ -24,8 +24,9 @@ from troposphere import (
 )
 from troposphere.iam import Policy, PolicyType
 
-from ecs_composex.common import LOG, add_parameters
 from ecs_composex.common.cfn_params import Parameter
+from ecs_composex.common.logging import LOG
+from ecs_composex.common.troposphere_tools import add_parameters
 from ecs_composex.ecs.ecs_params import EXEC_ROLE_T, TASK_ROLE_T
 
 

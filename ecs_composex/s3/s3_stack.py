@@ -17,8 +17,9 @@ from compose_x_common.aws.s3 import S3_BUCKET_ARN_RE
 from compose_x_common.compose_x_common import attributes_to_mapping, keyisset
 from troposphere.s3 import Bucket as CfnBucket
 
-from ecs_composex.common import LOG, build_template
+from ecs_composex.common.logging import LOG
 from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.common.troposphere_tools import build_template
 from ecs_composex.compose.x_resources.helpers import (
     set_lookup_resources,
     set_new_resources,

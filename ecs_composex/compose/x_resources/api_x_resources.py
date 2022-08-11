@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from ecs_composex.common.stacks import ComposeXStack
 
 
-from ecs_composex.common import LOG
+from ecs_composex.common.logging import LOG
 from ecs_composex.compose.x_resources.services_resources import ServicesXResource
 from ecs_composex.resource_settings import handle_resource_to_services
 

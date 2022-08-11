@@ -30,8 +30,9 @@ from troposphere.ecs import (
     Ulimit,
 )
 
-from ecs_composex.common import LOG, NONALPHANUM, add_parameters
+from ecs_composex.common import NONALPHANUM
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME, Parameter
+from ecs_composex.common.logging import LOG
 from ecs_composex.compose.compose_secrets.services_helpers import map_secrets
 from ecs_composex.compose.compose_services.docker_tools import (
     import_time_values_to_seconds,
@@ -50,6 +51,7 @@ from ecs_composex.ecs.ecs_conditions import (
     USE_WINDOWS_OS_T,
 )
 
+from ...common.troposphere_tools import add_parameters
 from .helpers import extend_container_envvars
 from .service_image import ServiceImage
 

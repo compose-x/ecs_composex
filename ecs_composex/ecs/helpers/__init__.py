@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 from troposphere import GetAtt
 
-from ecs_composex.common import LOG
+from ecs_composex.common.logging import LOG
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.ecs.service_networking.helpers import add_security_group
 
@@ -23,7 +23,7 @@ def add_iam_dependency(iam_stack: ComposeXStack, family: ComposeFamily):
     :param ecs_composex.common.stacks.ComposeXStack iam_stack:
     :param ecs_composex.ecs.ecs_family.ComposeFamily family:
     """
-    if iam_stack.title not in family.stack.DependsOn:
+    if iam_stack and iam_stack.title not in family.stack.DependsOn:
         family.stack.DependsOn.append(iam_stack.title)
 
 

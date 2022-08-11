@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 from compose_x_common.compose_x_common import keyisset
 from troposphere.route53 import HostedZone as CfnHostedZone
 
-from ecs_composex.common import LOG
+from ecs_composex.common.logging import LOG
 from ecs_composex.route53.route53_params import (
     LAST_DOT_RE,
     PUBLIC_DNS_ZONE_ID,

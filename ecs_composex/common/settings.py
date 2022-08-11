@@ -7,11 +7,6 @@ Module for the ComposeXSettings class
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    pass
-
 from copy import deepcopy
 from datetime import datetime as dt
 from json import loads
@@ -30,8 +25,9 @@ from importlib_resources import files as pkg_files
 from troposphere import AWSObject
 
 from ecs_composex import __version__
-from ecs_composex.common import LOG, NONALPHANUM
+from ecs_composex.common import NONALPHANUM
 from ecs_composex.common.aws import get_cross_role_session
+from ecs_composex.common.logging import LOG
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.compose_networks import ComposeNetwork
 from ecs_composex.compose.compose_secrets import ComposeSecret

@@ -7,8 +7,8 @@ from boto3.session import Session
 from compose_x_common.aws.ecr.images import list_all_images
 from compose_x_common.compose_x_common import keyisset, set_else_none
 
-from ecs_composex.common import LOG
 from ecs_composex.common.aws import get_cross_role_session
+from ecs_composex.common.logging import LOG
 
 ECR_URI_RE = re.compile(
     r"(?P<account_id>\d{12}).dkr.ecr.(?P<region>[a-z0-9-]+).amazonaws.com/"

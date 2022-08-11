@@ -4,8 +4,9 @@
 
 from troposphere import MAX_OUTPUTS
 
-from ecs_composex.common import build_template
+import ecs_composex.common.troposphere_tools
 from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.common.troposphere_tools import build_template
 
 CFN_MAX_OUTPUTS = MAX_OUTPUTS - 10
 

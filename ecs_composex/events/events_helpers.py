@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import ecs_composex.common.troposphere_tools
+
 if TYPE_CHECKING:
     from ecs_composex.common.stacks import ComposeXStack
     from ecs_composex.common.settings import ComposeXSettings
@@ -14,7 +16,7 @@ from compose_x_common.compose_x_common import keyisset
 from troposphere import NoValue
 from troposphere.events import Rule as CfnRule
 
-from ecs_composex.common import LOG
+from ecs_composex.common.logging import LOG
 from ecs_composex.resources_import import import_record_properties
 
 

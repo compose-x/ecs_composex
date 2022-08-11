@@ -9,12 +9,11 @@ if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
     from ecs_composex.mods_manager import XResourceModule, ModManager
 
-
 from compose_x_common.compose_x_common import keyisset
 from troposphere import AWS_ACCOUNT_ID, AWS_PARTITION, GetAtt, Ref, Sub
 
-from ecs_composex.common import build_template
 from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.common.troposphere_tools import build_template
 from ecs_composex.compose.x_resources.helpers import (
     set_lookup_resources,
     set_new_resources,

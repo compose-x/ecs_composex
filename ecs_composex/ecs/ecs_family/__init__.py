@@ -20,7 +20,7 @@ from troposphere import Output as CfnOutput
 from troposphere import Ref, Region, Tags
 from troposphere.ecs import EphemeralStorage, RuntimePlatform, TaskDefinition
 
-from ecs_composex.common import LOG, add_outputs, add_parameters
+from ecs_composex.common.logging import LOG
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.compose_services import ComposeService
 from ecs_composex.ecs import ecs_conditions, ecs_params
@@ -38,6 +38,7 @@ from ecs_composex.ecs.service_scaling import ServiceScaling
 from ecs_composex.ecs.task_compute import TaskCompute
 from ecs_composex.ecs.task_iam import TaskIam
 
+from ...common.troposphere_tools import add_outputs, add_parameters
 from .family_helpers import assign_secrets_to_roles, ensure_essential_containers
 from .family_template import set_template
 from .task_runtime import define_family_runtime_parameters

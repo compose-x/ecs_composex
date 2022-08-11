@@ -4,8 +4,9 @@
 from troposphere import Ref, StackName, Sub, Tags
 from troposphere.ec2 import SecurityGroup
 
-from ecs_composex.common import LOG, add_resource
 from ecs_composex.common.cfn_conditions import define_stack_name
+from ecs_composex.common.logging import LOG
+from ecs_composex.common.troposphere_tools import add_resource
 from ecs_composex.ecs.ecs_params import SERVICE_NAME, SG_T
 from ecs_composex.vpc.vpc_params import VPC_ID
 

@@ -13,15 +13,14 @@ if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
     from ecs_composex.mods_manager import XResourceModule
 
-
 from compose_x_common.aws.rds import RDS_DB_CLUSTER_ARN_RE, RDS_DB_INSTANCE_ARN_RE
 from compose_x_common.compose_x_common import attributes_to_mapping, keyisset
 from troposphere import AWS_ACCOUNT_ID, AWS_PARTITION, AWS_REGION, GetAtt, Ref, Sub
 from troposphere.rds import DBCluster as CfnDBCluster
 from troposphere.rds import DBInstance as CfnDBInstance
 
-from ecs_composex.common import build_template, setup_logging
 from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.common.troposphere_tools import build_template
 from ecs_composex.compose.x_resources.helpers import (
     set_lookup_resources,
     set_new_resources,
@@ -42,8 +41,6 @@ from ecs_composex.rds.rds_params import (
 from ecs_composex.rds.rds_template import generate_rds_templates
 from ecs_composex.rds_resources_settings import lookup_rds_resource, lookup_rds_secret
 from ecs_composex.vpc.vpc_params import STORAGE_SUBNETS, VPC_ID
-
-LOG = setup_logging()
 
 
 def get_db_instance_config(db, account_id, resource_id):

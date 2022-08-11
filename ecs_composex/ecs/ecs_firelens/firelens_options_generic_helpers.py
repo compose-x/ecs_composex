@@ -14,8 +14,9 @@ from compose_x_common.aws import validate_iam_role_arn
 from troposphere import Sub
 from troposphere.iam import PolicyType
 
-from ecs_composex.common import LOG, add_resource
 from ecs_composex.common.cfn_params import STACK_ID_SHORT
+from ecs_composex.common.logging import LOG
+from ecs_composex.common.troposphere_tools import add_resource
 
 
 def handle_cross_account_permissions(

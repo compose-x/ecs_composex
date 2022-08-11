@@ -21,7 +21,12 @@ from compose_x_common.compose_x_common import keyisset
 from troposphere import NoValue, Ref
 from troposphere.servicediscovery import DnsConfig, DnsRecord, Instance, Service
 
-from ecs_composex.common import LOG, add_parameters, add_update_mapping
+from ecs_composex.common.logging import LOG
+from ecs_composex.common.troposphere_tools import (
+    add_parameters,
+    add_resource,
+    add_update_mapping,
+)
 
 from .cloudmap_params import PRIVATE_NAMESPACE_ID
 
@@ -218,5 +223,5 @@ def handle_resource_cloudmap_settings(
             f"{resource.module.res_key}.{resource.name}"
             " does not support DnsSettings for x-cloudmap."
         )
-    namespace.stack.stack_template.add_resource(resource_service)
-    namespace.stack.stack_template.add_resource(resource_instance)
+    add_resource(namespace.stack.stack_template, resource_service)
+    add_resource(namespace.stack.stack_template, resource_instance)

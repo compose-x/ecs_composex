@@ -15,7 +15,7 @@ from compose_x_common.aws.sqs import SQS_QUEUE_ARN_RE
 from compose_x_common.compose_x_common import keyisset
 from troposphere.sqs import Queue as CfnQueue
 
-from ecs_composex.common import LOG
+from ecs_composex.common.logging import LOG
 from ecs_composex.sqs.sqs_params import (
     SQS_ARN,
     SQS_KMS_KEY,

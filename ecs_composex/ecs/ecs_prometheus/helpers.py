@@ -18,7 +18,7 @@ from troposphere import AWS_ACCOUNT_ID, AWS_PARTITION, AWS_REGION, Sub
 from troposphere.ecs import Secret
 from troposphere.iam import PolicyType
 
-from ecs_composex.common import add_resource
+from ecs_composex.common.troposphere_tools import add_resource
 from ecs_composex.ecs import ecs_params
 
 

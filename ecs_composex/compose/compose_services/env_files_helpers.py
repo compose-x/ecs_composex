@@ -7,8 +7,10 @@ from troposphere import AWS_PARTITION, Sub
 from troposphere.ecs import EnvironmentFile
 from troposphere.iam import PolicyType
 
-from ecs_composex.common import FILE_PREFIX, LOG
+import ecs_composex.common.troposphere_tools
+from ecs_composex.common import FILE_PREFIX
 from ecs_composex.common.files import upload_file
+from ecs_composex.common.logging import LOG
 
 # TODO: refactor policy by having a x-s3 Bucket object deal with permissions
 

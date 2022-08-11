@@ -11,7 +11,7 @@ import warnings
 
 from compose_x_common.compose_x_common import keyisset
 
-from ecs_composex.common import LOG
+from ecs_composex.common.logging import LOG
 
 try:
     from ecs_composex.compose.compose_services.service_image.ecr_scans_eval import (

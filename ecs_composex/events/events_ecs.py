@@ -22,8 +22,9 @@ from troposphere.events import (
 )
 from troposphere.iam import Policy, PolicyType, Role
 
-from ecs_composex.common import add_parameters, setup_logging
 from ecs_composex.common.cfn_params import Parameter
+from ecs_composex.common.logging import LOG
+from ecs_composex.common.troposphere_tools import add_parameters
 from ecs_composex.ecs.ecs_params import (
     CLUSTER_NAME,
     FARGATE_VERSION,
@@ -33,8 +34,6 @@ from ecs_composex.ecs.ecs_params import (
     TASK_T,
 )
 from ecs_composex.vpc.vpc_params import APP_SUBNETS, SG_ID_TYPE, SUBNETS_TYPE
-
-LOG = setup_logging()
 
 
 def delete_service_from_template(service):

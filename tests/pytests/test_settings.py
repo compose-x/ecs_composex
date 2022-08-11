@@ -1,4 +1,3 @@
-#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille<john@compose-x.io>
 
@@ -6,15 +5,20 @@
 Module to test ecs_composex generic oneliner raise functions.
 """
 
-from copy import deepcopy
 from os import path
+
+import yaml
+
+try:
+    from yaml import CLoader as Loader
+except ImportError:
+    from yaml import Loader
 
 import boto3
 import placebo
 from botocore.exceptions import ClientError
 from pytest import fixture, raises
 
-from ecs_composex.common import load_composex_file
 from ecs_composex.common.settings import ComposeXSettings
 
 
@@ -25,14 +29,14 @@ def env_setup(monkeypatch):
 
 def get_basic_content():
     here = path.abspath(path.dirname(__file__))
-    content = load_composex_file(f"{here}/../../use-cases/blog.yml")
-    return deepcopy(content)
+    with open(f"{here}/../../use-cases/blog.yml") as composex_fd:
+        return yaml.load(composex_fd.read(), Loader=Loader)
 
 
 def get_secrets_content():
     here = path.abspath(path.dirname(__file__))
-    content = load_composex_file(f"{here}/../../use-cases/blog.features.yml")
-    return deepcopy(content)
+    with open(f"{here}/../../use-cases/blog.features.yml") as composex_fd:
+        return yaml.load(composex_fd.read(), Loader=Loader)
 
 
 def test_iam_role_arn():

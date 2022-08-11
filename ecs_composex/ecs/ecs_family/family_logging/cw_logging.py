@@ -13,7 +13,8 @@ from troposphere import GetAtt, Ref, Sub
 from troposphere.iam import Policy
 from troposphere.logs import LogGroup
 
-from ecs_composex.common import LOG, add_resource
+from ecs_composex.common.logging import LOG
+from ecs_composex.common.troposphere_tools import add_resource
 from ecs_composex.ecs.ecs_params import LOG_GROUP_RETENTION, LOG_GROUP_T
 from ecs_composex.resource_settings import define_iam_permissions
 

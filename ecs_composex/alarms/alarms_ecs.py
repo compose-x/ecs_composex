@@ -12,8 +12,13 @@ from troposphere.cloudwatch import CompositeAlarm, MetricDimension
 
 from ecs_composex.alarms.alarms_helpers import create_alarms
 from ecs_composex.alarms.alarms_stack import Alarm
-from ecs_composex.common import LOG, add_outputs, add_parameters, add_update_mapping
 from ecs_composex.common.cfn_params import Parameter
+from ecs_composex.common.logging import LOG
+from ecs_composex.common.troposphere_tools import (
+    add_outputs,
+    add_parameters,
+    add_update_mapping,
+)
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME, SERVICE_SCALING_TARGET
 from ecs_composex.ecs.service_scaling.helpers import (
     generate_alarm_scaling_out_policy,

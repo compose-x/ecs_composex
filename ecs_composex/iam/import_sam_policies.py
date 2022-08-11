@@ -9,10 +9,6 @@ import json
 
 from importlib_resources import files as pkg_files
 
-from ecs_composex.common import setup_logging
-
-LOG = setup_logging()
-
 
 def import_and_cleanse_sam_policies():
     """

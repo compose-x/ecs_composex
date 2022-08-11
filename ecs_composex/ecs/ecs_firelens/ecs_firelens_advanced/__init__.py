@@ -20,7 +20,7 @@ from compose_x_common.compose_x_common import keyisset, set_else_none
 from jinja2 import Environment, FileSystemLoader
 from troposphere import Ref, Region
 
-from ecs_composex.common import LOG
+from ecs_composex.common.logging import LOG
 from ecs_composex.compose.compose_services.service_logging import ServiceLogging
 from ecs_composex.compose.compose_volumes import ComposeVolume
 

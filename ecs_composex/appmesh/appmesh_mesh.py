@@ -10,8 +10,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import ecs_composex.common.troposphere_tools
+
 if TYPE_CHECKING:
-    from ecs_composex.ecs.ecs_family import ComposeFamily
     from ecs_composex.common.settings import ComposeXSettings
 
 from compose_x_common.compose_x_common import keyisset, set_else_none
@@ -24,16 +25,14 @@ from ecs_composex.appmesh.appmesh_node import MeshNode
 from ecs_composex.appmesh.appmesh_params import MESH_NAME, MESH_OWNER_ID
 from ecs_composex.appmesh.appmesh_router import MeshRouter
 from ecs_composex.appmesh.appmesh_service import MeshService
-from ecs_composex.common import (
-    LOG,
+from ecs_composex.common.cfn_params import ROOT_STACK_NAME
+from ecs_composex.common.logging import LOG
+from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.common.troposphere_tools import (
     add_outputs,
-    add_parameters,
     add_resource,
     build_template,
 )
-from ecs_composex.common.cfn_params import ROOT_STACK_NAME
-from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.ecs import ecs_params
 from ecs_composex.resources_import import import_record_properties
 
 

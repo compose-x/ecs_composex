@@ -10,7 +10,8 @@ import re
 from compose_x_common.compose_x_common import keyisset
 from troposphere import NoValue
 
-from ecs_composex.common import LOG, clpow2, nxtpow2
+from ecs_composex.common import clpow2, nxtpow2
+from ecs_composex.common.logging import LOG
 from ecs_composex.ecs.ecs_params import FARGATE_MODES
 
 NUMBERS_REG = r"[^0-9.]"

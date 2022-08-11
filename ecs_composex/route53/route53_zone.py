@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import ecs_composex.common.troposphere_tools
+
 if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
     from ecs_composex.mods_manager import XResourceModule
@@ -13,7 +15,8 @@ from compose_x_common.compose_x_common import keyisset, set_else_none
 from troposphere import Ref
 
 from ecs_composex.acm.acm_stack import Certificate
-from ecs_composex.common import LOG, add_update_mapping, build_template
+from ecs_composex.common.logging import LOG
+from ecs_composex.common.troposphere_tools import add_update_mapping, build_template
 from ecs_composex.compose.x_resources.environment_x_resources import (
     AwsEnvironmentResource,
 )

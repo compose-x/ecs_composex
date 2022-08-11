@@ -9,8 +9,8 @@ import argparse
 import sys
 import warnings
 
-from ecs_composex.common import LOG
 from ecs_composex.common.aws import deploy, plan
+from ecs_composex.common.logging import LOG
 from ecs_composex.common.settings import ComposeXSettings
 from ecs_composex.common.stacks import process_stacks
 from ecs_composex.compose.compose_services.service_image.docker_opts import (

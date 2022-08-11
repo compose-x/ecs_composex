@@ -4,7 +4,7 @@
 from compose_x_common.compose_x_common import keypresent, set_else_none
 from troposphere.ecs import CapacityProviderStrategyItem
 
-from ecs_composex.common import LOG
+from ecs_composex.common.logging import LOG
 
 
 def merge_capacity_providers(service_compute):

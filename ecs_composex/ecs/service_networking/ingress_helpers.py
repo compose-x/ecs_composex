@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import ecs_composex.common.troposphere_tools
+
 if TYPE_CHECKING:
     from ecs_composex.ecs.ecs_family import ComposeFamily
     from ecs_composex.common.settings import ComposeXSettings
@@ -17,8 +19,9 @@ from troposphere import AWS_ACCOUNT_ID, GetAtt, Ref, Sub
 from troposphere.ec2 import SecurityGroupIngress
 
 from ecs_composex.cloudmap.cloudmap_params import RES_KEY as CLOUDMAP_KEY
-from ecs_composex.common import LOG, add_parameters
 from ecs_composex.common.cfn_params import Parameter
+from ecs_composex.common.logging import LOG
+from ecs_composex.common.troposphere_tools import add_parameters
 from ecs_composex.ecs.ecs_params import SERVICE_NAME_T
 from ecs_composex.ingress_settings import Ingress
 from ecs_composex.vpc.vpc_params import SG_ID_TYPE

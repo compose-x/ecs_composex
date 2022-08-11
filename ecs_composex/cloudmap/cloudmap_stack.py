@@ -25,8 +25,14 @@ from ecs_composex.cloudmap.cloudmap_helpers import (
     lookup_service_discovery_namespace,
     resolve_lookup,
 )
-from ecs_composex.common import LOG, add_outputs, add_update_mapping, build_template
+from ecs_composex.common.logging import LOG
 from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.common.troposphere_tools import (
+    add_outputs,
+    add_resource,
+    add_update_mapping,
+    build_template,
+)
 from ecs_composex.compose.x_resources.environment_x_resources import (
     AwsEnvironmentResource,
 )
@@ -208,7 +214,7 @@ class PrivateNamespace(AwsEnvironmentResource):
             and self.stack.stack_template.resources
             and self.stack.title not in root_stack.stack_template.resources
         ):
-            root_stack.stack_template.add_resource(self.stack)
+            add_resource(settings.root_stack.stack_template, self.stack)
 
     def add_initialized_stack_to_root(
         self, stack_initialized: bool, root_stack: ComposeXStack
@@ -219,7 +225,7 @@ class PrivateNamespace(AwsEnvironmentResource):
             and self.stack.stack_template.resources
             and self.stack.title not in root_stack.stack_template.resources
         ):
-            root_stack.stack_template.add_resource(self.stack)
+            add_resource(root_stack.stack_template, self.stack)
 
     def to_ecs(
         self,
@@ -330,7 +336,7 @@ def define_new_namespace(new_namespaces, stack_template):
                 f"{namespace.module.res_key}.{namespace.name} - "
                 "Failed to create PrivateNamespace from Properties/MacroParameters"
             )
-        stack_template.add_resource(namespace.cfn_resource)
+        add_resource(stack_template, namespace.cfn_resource)
         namespace.init_outputs()
         namespace.generate_outputs()
         add_outputs(stack_template, namespace.outputs)

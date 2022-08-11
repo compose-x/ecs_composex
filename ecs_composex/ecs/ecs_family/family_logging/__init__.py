@@ -15,8 +15,8 @@ from itertools import chain
 from compose_x_common.compose_x_common import keyisset
 from troposphere import Ref, Region, Sub
 
-from ecs_composex.common import LOG
 from ecs_composex.common.cfn_conditions import define_stack_name
+from ecs_composex.common.logging import LOG
 from ecs_composex.compose.compose_services.service_logging import ServiceLogging
 from ecs_composex.ecs.ecs_firelens.firelens_advanced_rendered_settings import (
     handle_firelens_advanced_settings,

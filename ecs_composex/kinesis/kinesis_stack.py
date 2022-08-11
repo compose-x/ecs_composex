@@ -18,7 +18,6 @@ from compose_x_common.compose_x_common import attributes_to_mapping, keyisset
 from troposphere import GetAtt, Ref
 from troposphere.kinesis import Stream as CfnStream
 
-from ecs_composex.common import setup_logging
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources.api_x_resources import ApiXResource
 from ecs_composex.compose.x_resources.helpers import (
@@ -31,8 +30,6 @@ from ecs_composex.kinesis.kinesis_template import create_streams_template
 from ecs_composex.kinesis_firehose.kinesis_firehose_stack import DeliveryStream
 
 from .kinesis_kinesis_firehose import kinesis_to_firehose
-
-LOG = setup_logging()
 
 
 def get_stream_config(stream, account_id, resource_id):

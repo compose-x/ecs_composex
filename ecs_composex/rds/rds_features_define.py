@@ -11,7 +11,8 @@ from compose_x_common.compose_x_common import keyisset
 from troposphere import AWS_NO_VALUE, AWS_PARTITION, GetAtt, Ref, Sub
 from troposphere.iam import Policy as IamPolicy
 
-from ecs_composex.common import LOG, add_parameters, add_update_mapping
+from ecs_composex.common.logging import LOG
+from ecs_composex.common.troposphere_tools import add_parameters, add_update_mapping
 from ecs_composex.s3.s3_params import S3_BUCKET_ARN
 
 S3_KEY = "x-s3"

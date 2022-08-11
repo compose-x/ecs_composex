@@ -28,8 +28,9 @@ from troposphere.elasticloadbalancingv2 import Certificate as ElbCertificate
 from troposphere.elasticloadbalancingv2 import Listener, ListenerCertificate
 
 from ecs_composex.acm.acm_params import CERT_ARN
-from ecs_composex.common import LOG, build_template
+from ecs_composex.common.logging import LOG
 from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.common.troposphere_tools import build_template
 from ecs_composex.compose.x_resources.environment_x_resources import (
     AwsEnvironmentResource,
 )

@@ -15,7 +15,7 @@ from compose_x_common.aws.sns import SNS_TOPIC_ARN_RE
 from compose_x_common.compose_x_common import attributes_to_mapping, keyisset
 from troposphere.sns import Topic as CfnTopic
 
-from ecs_composex.common import LOG
+from ecs_composex.common.logging import LOG
 from ecs_composex.sns.sns_params import TOPIC_ARN, TOPIC_KMS_KEY, TOPIC_NAME
 
 

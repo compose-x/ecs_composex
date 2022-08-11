@@ -7,7 +7,7 @@ from compose_x_common.compose_x_common import keyisset
 from troposphere import FindInMap, GetAtt, ImportValue, NoValue, Ref, Sub
 from troposphere.ecs import ContainerDefinition, Environment
 
-from ecs_composex.common import LOG
+from ecs_composex.common.logging import LOG
 
 
 def import_secrets(template, service, container, settings):

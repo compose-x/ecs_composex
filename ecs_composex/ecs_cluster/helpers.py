@@ -5,7 +5,7 @@ import re
 
 from compose_x_common.compose_x_common import keyisset
 
-from ecs_composex.common import LOG
+from ecs_composex.common.logging import LOG
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME
 from ecs_composex.ecs_cluster.ecs_cluster_params import (

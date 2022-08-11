@@ -16,7 +16,7 @@ from troposphere.firehose import CloudWatchLoggingOptions
 from troposphere.iam import PolicyType
 from troposphere.logs import LogStream
 
-from ecs_composex.common import LOG
+from ecs_composex.common.logging import LOG
 
 
 def grant_log_group_access(stream: DeliveryStream) -> PolicyType:

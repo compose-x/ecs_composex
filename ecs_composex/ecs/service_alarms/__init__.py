@@ -6,7 +6,7 @@ from copy import deepcopy
 
 from compose_x_common.compose_x_common import keyisset
 
-from ecs_composex.common import LOG
+from ecs_composex.common.logging import LOG
 
 from .service_predefined_alarms import PREDEFINED_SERVICE_ALARMS_DEFINITION
 

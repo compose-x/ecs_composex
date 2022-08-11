@@ -12,7 +12,7 @@ from itertools import chain
 
 from troposphere import If, NoValue
 
-from ecs_composex.common import LOG
+from ecs_composex.common.logging import LOG
 from ecs_composex.compose.compose_services.docker_tools import (
     find_closest_fargate_configuration,
 )

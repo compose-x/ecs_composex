@@ -8,8 +8,9 @@ Module to apply SQS settings onto ECS Services
 from troposphere import FindInMap, GetAtt, Ref
 from troposphere.cloudwatch import Alarm, MetricDimension
 
-from ecs_composex.common import LOG, add_parameters
 from ecs_composex.common.cfn_params import Parameter
+from ecs_composex.common.logging import LOG
+from ecs_composex.common.troposphere_tools import add_parameters
 from ecs_composex.ecs.service_scaling.helpers import (
     generate_alarm_scaling_out_policy,
     reset_to_zero_policy,

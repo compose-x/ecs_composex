@@ -9,7 +9,7 @@ from copy import deepcopy
 
 from compose_x_common.compose_x_common import set_else_none
 
-from ecs_composex.common import LOG
+from ecs_composex.common.logging import LOG
 
 
 def match_networks_services_config(service, net_config, networks):

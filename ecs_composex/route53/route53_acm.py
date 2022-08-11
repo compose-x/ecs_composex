@@ -7,11 +7,8 @@ Manages x-route53 to x-acm
 
 from troposphere import Ref
 
-from ecs_composex.common import add_parameters, add_update_mapping, setup_logging
-
+from ..common.troposphere_tools import add_parameters, add_update_mapping
 from .route53_params import PUBLIC_DNS_ZONE_ID, validate_domain_name
-
-LOG = setup_logging()
 
 
 def new_dns_zone(route53_zone, acm_stack, validation_option):

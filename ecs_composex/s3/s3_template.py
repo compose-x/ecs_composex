@@ -22,8 +22,9 @@ from troposphere import (
     s3,
 )
 
-from ecs_composex.common import LOG, build_template
+from ecs_composex.common.logging import LOG
 from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.common.troposphere_tools import build_template
 from ecs_composex.resource_settings import generate_resource_permissions
 from ecs_composex.resources_import import import_record_properties
 

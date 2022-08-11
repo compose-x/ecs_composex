@@ -33,8 +33,8 @@ from compose_x_common.aws.ecr import PRIVATE_ECR_URI_RE, PUBLIC_ECR_URI_RE
 from compose_x_common.compose_x_common import keyisset
 from troposphere import Ref
 
-from ecs_composex.common import LOG
 from ecs_composex.common.cfn_params import Parameter
+from ecs_composex.common.logging import LOG
 
 from .ecr_helpers import define_service_image, interpolate_ecr_uri_tag_with_digest
 

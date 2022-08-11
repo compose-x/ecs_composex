@@ -12,8 +12,9 @@ from troposphere.elasticloadbalancingv2 import (
     TargetGroupAttribute,
 )
 
-from ecs_composex.common import LOG, add_outputs, add_parameters
 from ecs_composex.common.cfn_params import Parameter
+from ecs_composex.common.logging import LOG
+from ecs_composex.common.troposphere_tools import add_outputs, add_parameters
 from ecs_composex.ecs.ecs_params import ELB_GRACE_PERIOD
 from ecs_composex.elbv2.elbv2_params import (
     LB_SG_ID,

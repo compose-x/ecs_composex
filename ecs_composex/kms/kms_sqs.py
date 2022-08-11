@@ -7,13 +7,10 @@ Handle x-kms in x-sqs
 
 from troposphere import Ref
 
-from ecs_composex.common import add_parameters, add_update_mapping, setup_logging
-
+from ..common.troposphere_tools import add_parameters, add_update_mapping
 from .kms_params import KMS_KEY_ID
 
 KEY = "KmsMasterKeyId"
-
-LOG = setup_logging()
 
 
 def assign_kms_key_to_queue(kms_key, queue, queue_stack, settings):

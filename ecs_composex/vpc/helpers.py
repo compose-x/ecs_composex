@@ -11,7 +11,8 @@ if TYPE_CHECKING:
     from ecs_composex.mods_manager import XResourceModule
     from ecs_composex.common.stacks import ComposeXStack
 
-from ecs_composex.common import LOG, add_update_mapping
+from ecs_composex.common.logging import LOG
+from ecs_composex.common.troposphere_tools import add_resource, add_update_mapping
 from ecs_composex.compose.x_resources.network_x_resources import NetworkXResource
 
 
@@ -66,7 +67,7 @@ def define_vpc_settings(
             f"{settings.name} - Services or x-Resources need a VPC to function. Creating default one"
         )
         vpc_stack.create_new_default_vpc("vpc", vpc_module, settings)
-        settings.root_stack.stack_template.add_resource(vpc_stack)
+        add_resource(settings.root_stack.stack_template, vpc_stack)
         vpc_stack.vpc_resource.generate_outputs()
     elif (
         vpc_stack.is_void and vpc_stack.vpc_resource and vpc_stack.vpc_resource.mappings
@@ -82,6 +83,6 @@ def define_vpc_settings(
         and vpc_stack.vpc_resource.cfn_resource
         and vpc_stack.title not in settings.root_stack.stack_template.resources.keys()
     ):
-        settings.root_stack.stack_template.add_resource(vpc_stack)
+        add_resource(settings.root_stack.stack_template, vpc_stack)
         LOG.info(f"{settings.name}.x-vpc - VPC stack added. A new VPC will be created.")
         vpc_stack.vpc_resource.generate_outputs()

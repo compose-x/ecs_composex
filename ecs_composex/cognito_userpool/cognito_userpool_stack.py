@@ -25,8 +25,9 @@ from ecs_composex.cognito_userpool.cognito_params import (
     USERPOOL_ID,
     USERPOOL_NAME,
 )
-from ecs_composex.common import build_template, setup_logging
+from ecs_composex.common.logging import LOG
 from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.common.troposphere_tools import build_template
 from ecs_composex.compose.x_resources.api_x_resources import ApiXResource
 from ecs_composex.compose.x_resources.environment_x_resources import (
     AwsEnvironmentResource,
@@ -36,8 +37,6 @@ from ecs_composex.compose.x_resources.helpers import (
     set_new_resources,
     set_resources,
 )
-
-LOG = setup_logging()
 
 
 def get_userpool_config(userpool, account_id, resource_id):

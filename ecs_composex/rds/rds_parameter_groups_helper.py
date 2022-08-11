@@ -12,7 +12,7 @@ import boto3
 from botocore.exceptions import ClientError
 from compose_x_common.compose_x_common import keyisset
 
-from ecs_composex.common import LOG
+from ecs_composex.common.logging import LOG
 
 
 def get_db_cluster_engine_parameter_group_defaults(engine_family):

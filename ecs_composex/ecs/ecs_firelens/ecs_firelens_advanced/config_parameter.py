@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from ecs_composex.ecs.ecs_family import ComposeFamily
     from ecs_composex.common.settings import ComposeXSettings
 
-from ecs_composex.common import add_resource
+from ecs_composex.common.troposphere_tools import add_resource
 from ecs_composex.ssm_parameter.ssm_parameter_helpers import render_new_parameters
 from ecs_composex.ssm_parameter.ssm_parameter_stack import SsmParameter
 

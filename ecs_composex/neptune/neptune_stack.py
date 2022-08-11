@@ -12,14 +12,20 @@ if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
     from ecs_composex.mods_manager import XResourceModule, ModManager
 
-
 from compose_x_common.aws.neptune import NEPTUNE_DB_CLUSTER_ARN_RE
 from compose_x_common.compose_x_common import attributes_to_mapping, keyisset
 from troposphere import AWS_ACCOUNT_ID, AWS_PARTITION, AWS_REGION, GetAtt, Ref, Sub
 from troposphere.neptune import DBCluster as CfnDBCluster
 
-from ecs_composex.common import build_template, setup_logging
+from ecs_composex.common.logging import LOG
 from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.common.troposphere_tools import build_template
+from ecs_composex.compose.x_resources.helpers import (
+    set_lookup_resources,
+    set_new_resources,
+    set_resources,
+)
+from ecs_composex.compose.x_resources.network_x_resources import DatabaseXResource
 from ecs_composex.neptune.neptune_params import (
     DB_CLUSTER_RESOURCES_ARN,
     DB_ENDPOINT,
@@ -27,6 +33,7 @@ from ecs_composex.neptune.neptune_params import (
     DB_READ_ENDPOINT,
     DB_RESOURCE_ID,
 )
+from ecs_composex.neptune.neptune_template import create_neptune_template
 from ecs_composex.rds.rds_params import DB_CLUSTER_ARN, DB_CLUSTER_NAME, DB_SG
 from ecs_composex.rds_resources_settings import (
     handle_new_tcp_resource,
@@ -35,16 +42,6 @@ from ecs_composex.rds_resources_settings import (
 )
 from ecs_composex.resource_settings import link_resource_to_services
 from ecs_composex.vpc.vpc_params import STORAGE_SUBNETS, VPC_ID
-
-from ..compose.x_resources.helpers import (
-    set_lookup_resources,
-    set_new_resources,
-    set_resources,
-)
-from ..compose.x_resources.network_x_resources import DatabaseXResource
-from .neptune_template import create_neptune_template
-
-LOG = setup_logging()
 
 
 def get_db_cluster_config(db, account_id, resource_id):

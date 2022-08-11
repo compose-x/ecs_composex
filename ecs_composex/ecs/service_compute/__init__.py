@@ -12,7 +12,7 @@ Unrelated to the Task compute settings (RAM/CPU)
 """
 from troposphere import If, NoValue, Ref
 
-from ecs_composex.common import LOG
+from ecs_composex.common.logging import LOG
 from ecs_composex.ecs.ecs_conditions import (
     DISABLE_CAPACITY_PROVIDERS_CON_T,
     USE_LAUNCH_TYPE_CON_T,

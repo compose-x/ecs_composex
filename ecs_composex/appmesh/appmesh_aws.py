@@ -8,7 +8,7 @@ Module to interact with AWS AppMesh API
 from compose_x_common.compose_x_common import keyisset
 
 from ecs_composex.appmesh.appmesh_params import MESH_NAME, MESH_OWNER_ID
-from ecs_composex.common import LOG
+from ecs_composex.common.logging import LOG
 
 
 def find_mesh_in_list(mesh_name, client, next_token=None):

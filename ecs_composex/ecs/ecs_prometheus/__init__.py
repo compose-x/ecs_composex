@@ -12,7 +12,7 @@ from compose_x_common.compose_x_common import keyisset
 from troposphere import If
 from troposphere.ecs import Environment
 
-from ecs_composex.common import LOG
+from ecs_composex.common.logging import LOG
 from ecs_composex.compose.compose_services import ComposeService
 from ecs_composex.compose.compose_services.helpers import extend_container_envvars
 from ecs_composex.ecs.ecs_conditions import USE_BRIDGE_NETWORKING_MODE_CON_T

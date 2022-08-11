@@ -7,8 +7,8 @@ from compose_x_common.aws import get_account_id
 from compose_x_common.compose_x_common import attributes_to_mapping, keyisset
 from troposphere import GetAtt, Ref
 
-from ecs_composex.common import LOG
 from ecs_composex.common.aws import find_aws_resource_arn_from_tags_api
+from ecs_composex.common.logging import LOG
 from ecs_composex.common.settings import ComposeXSettings
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources.api_x_resources import ApiXResource

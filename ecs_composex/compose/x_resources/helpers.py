@@ -23,7 +23,7 @@ from collections import OrderedDict
 
 from compose_x_common.compose_x_common import keyisset
 
-from ecs_composex.common import LOG
+from ecs_composex.common.logging import LOG
 
 
 def set_new_resources(

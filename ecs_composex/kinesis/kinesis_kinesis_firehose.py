@@ -16,10 +16,12 @@ if TYPE_CHECKING:
 
 from troposphere import Ref
 
-from ecs_composex.common import LOG, add_parameters, add_update_mapping
+from ecs_composex.common.logging import LOG
 from ecs_composex.iam.import_sam_policies import get_access_types
 from ecs_composex.resource_settings import map_x_resource_perms_to_resource
 from ecs_composex.resources_import import get_dest_resource_nested_property, skip_if
+
+from ..common.troposphere_tools import add_parameters, add_update_mapping
 
 FIREHOSE_PROPERTIES = {"KinesisStreamSourceConfiguration::KinesisStreamARN": STREAM_ARN}
 

@@ -21,10 +21,12 @@ from troposphere import MAX_OUTPUTS, AccountId, GetAtt, Ref, Sub
 from troposphere.sqs import Queue as CfnQueue
 from troposphere.sqs import QueuePolicy
 
-from ecs_composex.common import LOG, add_outputs, add_resource, build_template
+from ecs_composex.common.logging import LOG
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.resources_import import import_record_properties
 from ecs_composex.sqs.sqs_params import SQS_ARN
+
+from ..common.troposphere_tools import add_outputs, add_resource, build_template
 
 
 def add_queue_default_policy(queue: Queue):

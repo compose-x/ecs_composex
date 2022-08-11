@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import ecs_composex.common.troposphere_tools
+
 if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
     from ecs_composex.mods_manager import XResourceModule
@@ -19,15 +21,15 @@ from compose_x_common.compose_x_common import keyisset
 from troposphere import GetAtt, Output, Parameter, Sub
 from troposphere.cloudwatch import Dashboard as CWDashboard
 
-from ecs_composex.common import (
-    LOG,
-    NONALPHANUM,
+from ecs_composex.common import NONALPHANUM
+from ecs_composex.common.cfn_conditions import define_stack_name
+from ecs_composex.common.logging import LOG
+from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.common.troposphere_tools import (
     add_outputs,
     add_parameters,
     build_template,
 )
-from ecs_composex.common.cfn_conditions import define_stack_name
-from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.dashboards.dashboards_services_metrics import ServiceEcsWidget
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME, SERVICE_T
 

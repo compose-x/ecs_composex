@@ -20,17 +20,17 @@ from importlib import import_module
 from troposphere import AWS_STACK_NAME, Ref
 
 from ecs_composex.cloudmap.cloudmap_helpers import x_cloud_lookup_and_new_vpc
-from ecs_composex.common import (
-    LOG,
-    NONALPHANUM,
+from ecs_composex.common import NONALPHANUM
+from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
+from ecs_composex.common.ecs_composex import X_KEY
+from ecs_composex.common.logging import LOG
+from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.common.tagging import add_all_tags
+from ecs_composex.common.troposphere_tools import (
     add_resource,
     add_update_mapping,
     init_template,
 )
-from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
-from ecs_composex.common.ecs_composex import X_KEY
-from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.common.tagging import add_all_tags
 from ecs_composex.compose.x_resources.environment_x_resources import (
     AwsEnvironmentResource,
 )
@@ -247,7 +247,7 @@ def set_all_mappings_to_root_stack(
     root_stack: ComposeXStack, settings: ComposeXSettings
 ):
     """
-    Adds all of the mappings to the root stack
+    Adds all the mappings to the root stack
 
     :param ComposeXStack root_stack:
     :param ecs_composex.common.settings.ComposeXSettings settings: The settings for the execution
@@ -280,8 +280,8 @@ def generate_full_template(settings: ComposeXSettings):
     add_ecs_cluster(settings)
     settings.mod_manager = ModManager(settings)
     settings.mod_manager.modules_repr()
-    iam_stack = settings.root_stack.stack_template.add_resource(
-        IamStack("iam", settings)
+    iam_stack = add_resource(
+        settings.root_stack.stack_template, IamStack("iam", settings)
     )
     add_x_resources(settings)
     add_compose_families(settings)

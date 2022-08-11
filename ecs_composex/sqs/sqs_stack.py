@@ -14,8 +14,9 @@ if TYPE_CHECKING:
 
 from troposphere import GetAtt, Ref
 
-from ecs_composex.common import LOG, add_update_mapping, build_template
+from ecs_composex.common.logging import LOG
 from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.common.troposphere_tools import add_update_mapping, build_template
 from ecs_composex.compose.x_resources.api_x_resources import ApiXResource
 from ecs_composex.compose.x_resources.helpers import (
     set_lookup_resources,

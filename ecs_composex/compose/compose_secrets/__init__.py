@@ -15,7 +15,8 @@ from troposphere import AWS_ACCOUNT_ID, AWS_PARTITION, AWS_REGION, FindInMap, Su
 from troposphere.ecs import Environment as EcsEnvVar
 from troposphere.ecs import Secret as EcsSecret
 
-from ecs_composex.common import LOG, NONALPHANUM
+from ecs_composex.common import NONALPHANUM
+from ecs_composex.common.logging import LOG
 from ecs_composex.ecs.ecs_params import EXEC_ROLE_T, TASK_ROLE_T
 from ecs_composex.secrets.secrets_aws import lookup_secret_config
 from ecs_composex.secrets.secrets_params import RES_KEY, XRES_KEY

@@ -16,7 +16,7 @@ from compose_x_common.aws.arns import ARNS_PER_TAGGINGAPI_TYPE
 from compose_x_common.compose_x_common import keyisset
 from tabulate import tabulate
 
-from ecs_composex.common import LOG
+from ecs_composex.common.logging import LOG
 from ecs_composex.iam import ROLE_ARN_ARG
 
 

@@ -25,8 +25,10 @@ from troposphere.ec2 import SecurityGroup
 from troposphere.iam import Role
 from troposphere.logs import LogGroup, ResourcePolicy
 
-from ecs_composex.common import NONALPHANUM, add_outputs, add_parameters, setup_logging
+from ecs_composex.common import NONALPHANUM
 from ecs_composex.common.cfn_conditions import define_stack_name
+from ecs_composex.common.logging import LOG
+from ecs_composex.common.troposphere_tools import add_outputs, add_parameters
 from ecs_composex.compose.compose_services.service_logging.helpers import (
     get_closest_valid_log_retention_period,
 )
@@ -35,8 +37,6 @@ from ecs_composex.opensearch.opensearch_params import OS_DOMAIN_PORT, OS_DOMAIN_
 from ecs_composex.resources_import import import_record_properties
 from ecs_composex.secrets import add_db_secret
 from ecs_composex.vpc.vpc_params import STORAGE_SUBNETS, VPC_ID
-
-LOG = setup_logging()
 
 
 def validate_security_groups(domain, groups):
@@ -401,7 +401,7 @@ def validate_version_support(domain, props, instance_type, config):
     if not keyisset(engine_name, engine_support):
         return
     supported_version = float(engine_support[engine_name])
-    if not version_number >= supported_version:
+    if version_number < supported_version:
         raise ValueError(
             f"{domain.name} - EngineVersion {engine_version} is not supported. "
             f"{instance_type} Requires >={engine_name}_{supported_version}"

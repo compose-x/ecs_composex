@@ -1,14 +1,10 @@
-#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille<john@compose-x.io>
 
-from behave import then
-from pytest import raises
 from troposphere import Template
 from troposphere.appmesh import Mesh
 
 from ecs_composex.appmesh.appmesh_mesh import Mesh as AppMesh
-from ecs_composex.common import LOG
 from ecs_composex.common.stacks import ComposeXStack
 from tests.features.steps.common import *
 
@@ -23,7 +19,7 @@ def step_impl(context):
     full_stack = generate_full_template(context.settings)
     assert isinstance(full_stack.stack_template, Template)
     mesh = full_stack.stack_template.resources[AppMesh.mesh_title]
-    LOG.info(type(mesh))
+    print(type(mesh))
     assert isinstance(mesh, Mesh)
 
 

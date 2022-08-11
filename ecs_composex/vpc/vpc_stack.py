@@ -12,7 +12,6 @@ if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
     from ecs_composex.mods_manager import XResourceModule
 
-
 import re
 
 import troposphere
@@ -22,8 +21,8 @@ from compose_x_common.compose_x_common import keyisset, set_else_none
 from troposphere import FindInMap, GetAtt, Join, Ref
 from troposphere.servicediscovery import PrivateDnsNamespace
 
-from ecs_composex.common import LOG, add_outputs, build_template
 from ecs_composex.common.cfn_params import Parameter
+from ecs_composex.common.logging import LOG
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.resources_import import (
     find_aws_properties_in_aws_resource,
@@ -53,6 +52,7 @@ from ecs_composex.vpc.vpc_subnets import (
 )
 from ecs_composex.vpc.vpc_template import add_vpc_core, add_vpc_flow
 
+from ..common.troposphere_tools import add_outputs, build_template
 from ..compose.x_resources.environment_x_resources import AwsEnvironmentResource
 from .vpc_cloudmap import x_vpc_to_x_cloudmap
 

@@ -12,7 +12,7 @@ from troposphere.applicationautoscaling import (
     StepScalingPolicyConfiguration,
 )
 
-from ecs_composex.common import LOG
+from ecs_composex.common.logging import LOG
 from ecs_composex.ecs.ecs_params import SERVICE_SCALING_TARGET
 
 

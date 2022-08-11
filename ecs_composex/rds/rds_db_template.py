@@ -16,8 +16,10 @@ from troposphere.rds import (
     DBSubnetGroup,
 )
 
-from ecs_composex.common import LOG, build_template
+import ecs_composex.common.troposphere_tools
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
+from ecs_composex.common.logging import LOG
+from ecs_composex.common.troposphere_tools import build_template
 from ecs_composex.rds import rds_conditions
 from ecs_composex.rds.rds_parameter_groups_helper import (
     get_family_from_engine_version,

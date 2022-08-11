@@ -16,7 +16,7 @@ from troposphere.secretsmanager import (
     SecretTargetAttachment,
 )
 
-from ecs_composex.common import add_parameters
+from ecs_composex.common.troposphere_tools import add_parameters
 
 
 def add_db_secret(template, resource_title):

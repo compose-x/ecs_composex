@@ -11,7 +11,8 @@ from troposphere import AWS_NO_VALUE, AWS_STACK_NAME, GetAtt, Ref, Sub
 from troposphere.iam import Role as IamRole
 from troposphere.rds import DBClusterRole
 
-from ecs_composex.common import LOG
+import ecs_composex.common.troposphere_tools
+from ecs_composex.common.logging import LOG
 from ecs_composex.iam import define_iam_policy, service_role_trust_policy
 from ecs_composex.rds.rds_features_define import (
     define_s3_export_feature_policy,

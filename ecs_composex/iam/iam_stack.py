@@ -23,9 +23,14 @@ from compose_x_common.compose_x_common import keyisset
 from troposphere import NoValue, Sub
 from troposphere.iam import Role as IamRole
 
-from ecs_composex.common import add_outputs, add_parameters, build_template
 from ecs_composex.common.cfn_conditions import define_stack_name
 from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.common.troposphere_tools import (
+    add_outputs,
+    add_parameters,
+    add_resource,
+    build_template,
+)
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME
 from ecs_composex.iam import define_iam_policy, service_role_trust_policy
 
@@ -79,7 +84,7 @@ class XStack(ComposeXStack):
         )
         new_roles = import_family_roles(settings, exec_role_managed_policy)
         for role in new_roles:
-            self.stack_template.add_resource(role.cfn_resource)
+            add_resource(stack_template, role.cfn_resource)
             role.stack = self
             if not role.attributes_outputs:
                 role.generate_outputs()

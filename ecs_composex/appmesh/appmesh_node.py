@@ -10,29 +10,24 @@ if TYPE_CHECKING:
     from ecs_composex.ecs.ecs_family import ComposeFamily
     from ecs_composex.common.settings import ComposeXSettings
 
-from troposphere import AWS_NO_VALUE, GetAtt, Output, Parameter, Ref, Sub, appmesh
+from troposphere import GetAtt, Output, Parameter, Ref, Sub, appmesh
 from troposphere.ec2 import SecurityGroupIngress
 from troposphere.ecs import Environment, ProxyConfiguration
 
 from ecs_composex.appmesh import appmesh_conditions, appmesh_params, metadata
 from ecs_composex.appmesh.appmesh_conditions import get_mesh_name, get_mesh_owner
-from ecs_composex.appmesh.appmesh_params import BACKENDS_KEY, NAME_KEY
-from ecs_composex.cloudmap.cloudmap_params import (
-    ECS_SERVICE_NAMESPACE_SERVICE_ARN,
-    ECS_SERVICE_NAMESPACE_SERVICE_ID,
-    ECS_SERVICE_NAMESPACE_SERVICE_NAME,
-)
-from ecs_composex.common import (
-    LOG,
+from ecs_composex.appmesh.appmesh_params import BACKENDS_KEY
+from ecs_composex.cloudmap.cloudmap_params import ECS_SERVICE_NAMESPACE_SERVICE_NAME
+from ecs_composex.common.cfn_conditions import define_stack_name
+from ecs_composex.common.cfn_params import Parameter
+from ecs_composex.common.logging import LOG
+from ecs_composex.common.troposphere_tools import (
     add_outputs,
     add_parameters,
     add_resource,
     add_update_mapping,
 )
-from ecs_composex.common.cfn_conditions import define_stack_name
-from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.compose.compose_services.helpers import extend_container_envvars
-from ecs_composex.ecs import ecs_params
 from ecs_composex.ecs.managed_sidecars import ManagedSidecar
 
 

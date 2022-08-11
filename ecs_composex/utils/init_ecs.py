@@ -5,7 +5,7 @@
 Module to initialize the AWS Account.
 """
 
-from ecs_composex.common import LOG
+from ecs_composex.common.logging import LOG
 
 
 def set_ecs_settings(session):

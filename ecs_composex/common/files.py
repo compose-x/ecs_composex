@@ -21,7 +21,8 @@ from os import mkdir
 from botocore.exceptions import ClientError
 from troposphere import Template
 
-from ecs_composex.common import FILE_PREFIX, LOG
+from ecs_composex.common import FILE_PREFIX
+from ecs_composex.common.logging import LOG
 
 JSON_MIME = "application/json"
 YAML_MIME = "application/x-yaml"

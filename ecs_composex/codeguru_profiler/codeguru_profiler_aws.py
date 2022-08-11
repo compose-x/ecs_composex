@@ -11,11 +11,11 @@ from ecs_composex.codeguru_profiler.codeguru_profiler_params import (
     PROFILER_ARN,
     PROFILER_NAME,
 )
-from ecs_composex.common import LOG
 from ecs_composex.common.aws import (
     define_lookup_role_from_info,
     find_aws_resource_arn_from_tags_api,
 )
+from ecs_composex.common.logging import LOG
 
 
 def get_profile_config(profile_arn, session):

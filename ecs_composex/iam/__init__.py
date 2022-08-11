@@ -7,7 +7,7 @@ import re
 from troposphere import Join, Ref, Sub
 from troposphere.iam import Role
 
-from ecs_composex.common import LOG
+from ecs_composex.common.logging import LOG
 
 ROLE_ARN_ARG = "RoleArn"
 

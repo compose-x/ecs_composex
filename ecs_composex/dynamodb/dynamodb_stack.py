@@ -18,8 +18,9 @@ from compose_x_common.compose_x_common import attributes_to_mapping, keyisset
 from troposphere import GetAtt, Ref
 from troposphere.dynamodb import Table as CfnTable
 
-from ecs_composex.common import build_template, setup_logging
+from ecs_composex.common.logging import LOG
 from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.common.troposphere_tools import build_template
 from ecs_composex.compose.x_resources.api_x_resources import ApiXResource
 from ecs_composex.compose.x_resources.helpers import (
     set_lookup_resources,
@@ -28,8 +29,6 @@ from ecs_composex.compose.x_resources.helpers import (
 )
 from ecs_composex.dynamodb.dynamodb_params import TABLE_ARN, TABLE_NAME
 from ecs_composex.dynamodb.dynamodb_template import create_dynamodb_template
-
-LOG = setup_logging()
 
 
 def get_dynamodb_table_config(table, account_id, resource_id):

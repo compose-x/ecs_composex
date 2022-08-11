@@ -11,10 +11,9 @@ import re
 
 from troposphere import Ref
 
-from ecs_composex.common import add_parameters, setup_logging
+from ecs_composex.common.logging import LOG
+from ecs_composex.common.troposphere_tools import add_parameters
 from ecs_composex.elbv2.elbv2_params import LB_FULL_NAME, TGT_FULL_NAME
-
-LOG = setup_logging()
 
 
 def handle_elbv2_dimension_mapping(alarms_stack, dimension, resource, settings):
@@ -27,16 +26,13 @@ def handle_elbv2_dimension_mapping(alarms_stack, dimension, resource, settings):
     :param ecs_composex.common.settings.ComposeXSettings settings:
     :return: The identified LB
     """
-    x_elbv2 = settings.compose_content["x-elbv2"]
     if not isinstance(dimension.Value, str):
-        LOG.warning(
-            f"{alarms_stack.title}{resource.name} - Dimension {dimension.Name} value is {type(dimension.Value)}"
-        )
+        LOG.debug(f"{dimension} - {type(dimension)}")
         return
-    lb_name = dimension.Value.split("x-elbv2::")[-1]
-    if lb_name not in x_elbv2.keys():
-        raise ValueError(f"x-elbv2.{lb_name} is not present in this execution")
-    lb = x_elbv2[lb_name]
+    if not dimension.value.startswith("x-elbv2"):
+        LOG.debug(f"Dimension.Value is not elbv2: {dimension.Value}")
+        return
+    lb = settings.find_resource(dimension.Value)
     add_parameters(
         alarms_stack.stack_template,
         [lb.attributes_outputs[LB_FULL_NAME]["ImportParameter"]],

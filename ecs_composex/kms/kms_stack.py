@@ -19,9 +19,10 @@ from compose_x_common.compose_x_common import attributes_to_mapping, keyisset
 from troposphere import AWS_ACCOUNT_ID, AWS_PARTITION, GetAtt, Ref, Sub
 from troposphere.kms import Alias, Key
 
-from ecs_composex.common import LOG, build_template
 from ecs_composex.common.cfn_conditions import define_stack_name
+from ecs_composex.common.logging import LOG
 from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.common.troposphere_tools import build_template
 from ecs_composex.compose.x_resources.api_x_resources import ApiXResource
 from ecs_composex.compose.x_resources.environment_x_resources import (
     AwsEnvironmentResource,

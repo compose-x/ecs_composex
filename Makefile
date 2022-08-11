@@ -1,4 +1,4 @@
-.PHONY: clean clean-test clean-pyc clean-build docs help lint conform release-test release codebuild coverage
+.PHONY: clean clean-test clean-pyc clean-build docs help conform release-test release codebuild coverage
 .DEFAULT_GOAL := help
 
 define BROWSER_PYSCRIPT
@@ -53,12 +53,6 @@ clean-test: ## remove test and coverage artifacts
 	rm -f .coverage
 	rm -fr htmlcov/
 	rm -fr .pytest_cache
-
-lint: ## check style with flake8
-	flake8 ecs_composex --exclude .git,_invoke*
-
-lint-tests:
-	flake8 tests --exclude .git,_invoke*
 
 test: ## run tests quickly with the default Python
 	behave tests/features

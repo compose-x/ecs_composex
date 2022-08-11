@@ -18,7 +18,7 @@ from compose_x_common.aws.kinesis import KINESIS_STREAM_ARN_RE
 from compose_x_common.compose_x_common import keyisset
 from troposphere import FindInMap, Ref, Region
 
-from ecs_composex.common import LOG
+from ecs_composex.common.logging import LOG
 from ecs_composex.kinesis.kinesis_params import STREAM_ARN, STREAM_ID
 from ecs_composex.kinesis.kinesis_stack import Stream
 

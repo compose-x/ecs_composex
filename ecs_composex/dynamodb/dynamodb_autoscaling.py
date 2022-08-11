@@ -18,7 +18,9 @@ from troposphere.applicationautoscaling import (
     TargetTrackingScalingPolicyConfiguration,
 )
 
-from ecs_composex.common import LOG, add_resource
+from ecs_composex.common.logging import LOG
+
+from ..common.troposphere_tools import add_resource
 
 
 def create_autoscaling_target_and_policy(

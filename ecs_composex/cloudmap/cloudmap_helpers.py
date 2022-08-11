@@ -23,7 +23,7 @@ from ecs_composex.cloudmap.cloudmap_params import (
     PRIVATE_NAMESPACE_ID,
     ZONES_PATTERN,
 )
-from ecs_composex.common import LOG
+from ecs_composex.common.logging import LOG
 from ecs_composex.exceptions import ComposeBaseException, IncompatibleOptions
 
 

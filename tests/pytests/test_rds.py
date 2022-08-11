@@ -1,13 +1,17 @@
-#  -*- coding: utf-8 -*-
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2021 John Mille<john@compose-x.io>
 
 from os import path
 
+import yaml
+
+try:
+    from yaml import CLoader as Loader
+except ImportError:
+    from yaml import Loader
 import pytest
 from troposphere.rds import DBCluster, DBInstance
 
-from ecs_composex.common import load_composex_file
 from ecs_composex.rds.rds_db_template import determine_resource_type
 
 
@@ -23,8 +27,10 @@ def test_rds_resource_type(here):
     cluster_file_path = f"{here}/../../use-cases/rds/resource_sorting/cluster.yml"
     instance_file_path = f"{here}/../../use-cases/rds/resource_sorting/instance.yml"
 
-    cluster_props = load_composex_file(cluster_file_path)["Properties"]
-    instance_props = load_composex_file(instance_file_path)["Properties"]
+    with open(cluster_file_path) as composex_fd:
+        cluster_props = yaml.load(composex_fd.read(), Loader=Loader)["Properties"]
+    with open(instance_file_path) as composex_fd:
+        instance_props = yaml.load(composex_fd.read(), Loader=Loader)["Properties"]
 
     c_type = determine_resource_type("dummy", cluster_props)
     i_type = determine_resource_type("dummy", instance_props)

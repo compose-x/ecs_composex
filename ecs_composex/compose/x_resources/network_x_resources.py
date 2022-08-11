@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 from compose_x_common.compose_x_common import keyisset
 
-from ecs_composex.common import LOG
+from ecs_composex.common.logging import LOG
 from ecs_composex.compose.x_resources.services_resources import ServicesXResource
 from ecs_composex.rds_resources_settings import handle_new_tcp_resource, import_dbs
 from ecs_composex.resource_settings import link_resource_to_services

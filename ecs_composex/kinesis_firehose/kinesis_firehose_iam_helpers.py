@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 from compose_x_common.compose_x_common import set_else_none
 from troposphere import GetAtt
 
-from ecs_composex.common import LOG
+from ecs_composex.common.logging import LOG
 
 
 def set_replace_s3_backup_config(resource: DeliveryStream, dest_config) -> None:

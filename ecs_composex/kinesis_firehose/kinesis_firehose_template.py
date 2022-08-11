@@ -13,13 +13,14 @@ from troposphere import NoValue, Sub
 from troposphere.firehose import DeliveryStream as CfnDeliveryStream
 from troposphere.logs import LogGroup
 
-from ecs_composex.common import LOG, build_template
 from ecs_composex.common.cfn_params import STACK_ID_SHORT
+from ecs_composex.common.logging import LOG
 from ecs_composex.resources_import import (
     get_dest_resource_nested_property,
     import_record_properties,
 )
 
+from ..common.troposphere_tools import build_template
 from .kinesis_firehose_iam_helpers import set_replace_iam_role
 from .kinesis_firehose_logging_helpers import (
     grant_log_group_access,

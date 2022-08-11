@@ -22,18 +22,14 @@ from ecs_composex.cloudmap.cloudmap_params import (
     ECS_SERVICE_NAMESPACE_SERVICE_NAME,
 )
 from ecs_composex.cloudmap.cloudmap_params import LABEL as CLOUDMAP_LABEL
-from ecs_composex.cloudmap.cloudmap_params import PRIVATE_NAMESPACE_ID
-from ecs_composex.common import (
+from ecs_composex.common.cfn_conditions import define_stack_name
+from ecs_composex.common.cfn_params import Parameter
+from ecs_composex.common.logging import LOG
+from ecs_composex.common.troposphere_tools import (
     add_outputs,
     add_parameters,
     add_resource,
-    add_update_mapping,
-    setup_logging,
 )
-from ecs_composex.common.cfn_conditions import define_stack_name
-from ecs_composex.common.cfn_params import Parameter
-
-LOG = setup_logging()
 
 
 def create_registry(family, namespace, port_config, settings):

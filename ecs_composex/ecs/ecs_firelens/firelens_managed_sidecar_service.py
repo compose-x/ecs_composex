@@ -15,8 +15,9 @@ from compose_x_common.compose_x_common import keyisset
 from troposphere import If, NoValue, Ref, Sub
 from troposphere.ecs import FirelensConfiguration
 
-from ecs_composex.common import LOG, add_parameters
 from ecs_composex.common.cfn_params import Parameter
+from ecs_composex.common.logging import LOG
+from ecs_composex.common.troposphere_tools import add_parameters
 from ecs_composex.ecs.ecs_conditions import USE_FARGATE_CON_T
 from ecs_composex.ecs.managed_sidecars import ManagedSidecar
 

@@ -20,8 +20,10 @@ from troposphere import AccountId, GetAtt, Ref, Sub
 from troposphere.s3 import QueueConfigurations
 from troposphere.sqs import QueuePolicy
 
-from ecs_composex.common import LOG, add_parameters, add_resource, build_template
+from ecs_composex.common.logging import LOG
 from ecs_composex.sqs.sqs_params import SQS_ARN
+
+from ..common.troposphere_tools import add_parameters, add_resource, build_template
 
 
 def add_queue_policy(queue: Queue):

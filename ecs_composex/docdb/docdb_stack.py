@@ -17,7 +17,6 @@ from compose_x_common.compose_x_common import attributes_to_mapping, keyisset
 from troposphere import AWS_ACCOUNT_ID, AWS_PARTITION, AWS_REGION, GetAtt, Ref, Sub
 from troposphere.docdb import DBCluster as CfnDBCluster
 
-from ecs_composex.common import setup_logging
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources.helpers import (
     set_lookup_resources,
@@ -39,8 +38,6 @@ from ecs_composex.docdb.docdb_template import (
 from ecs_composex.rds.rds_params import DB_CLUSTER_ARN, DB_SECRET_ARN, DB_SG
 from ecs_composex.rds_resources_settings import lookup_rds_resource, lookup_rds_secret
 from ecs_composex.vpc.vpc_params import STORAGE_SUBNETS
-
-LOG = setup_logging()
 
 
 def get_db_cluster_config(db, account_id, resource_id):

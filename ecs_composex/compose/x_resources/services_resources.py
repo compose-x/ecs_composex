@@ -9,10 +9,10 @@ if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
     from ecs_composex.mods_manager import XResourceModule
 
-
 from compose_x_common.compose_x_common import keyisset, set_else_none
 
-from ecs_composex.common import LOG, NONALPHANUM
+from ecs_composex.common import NONALPHANUM
+from ecs_composex.common.logging import LOG
 from ecs_composex.compose.x_resources import XResource
 from ecs_composex.compose.x_resources.helpers import get_setting_key
 

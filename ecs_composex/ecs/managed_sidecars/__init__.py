@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 from troposphere import Ref, Region
 
-from ecs_composex.common import LOG
+from ecs_composex.common.logging import LOG
 from ecs_composex.compose.compose_services import ComposeService
 
 

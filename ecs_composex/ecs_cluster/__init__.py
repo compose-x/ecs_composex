@@ -38,7 +38,8 @@ from troposphere.ecs import (
 )
 from troposphere.logs import LogGroup
 
-from ecs_composex.common import LOG, add_update_mapping
+from ecs_composex.common.logging import LOG
+from ecs_composex.common.troposphere_tools import add_resource, add_update_mapping
 from ecs_composex.compose.compose_services.service_logging.helpers import (
     get_closest_valid_log_retention_period,
 )
@@ -178,8 +179,8 @@ class EcsCluster:
             ),
             Metadata=metadata,
         )
-        root_stack.stack_template.add_resource(self.log_group)
-        root_stack.stack_template.add_resource(self.cfn_resource)
+        add_resource(root_stack.stack_template, self.log_group)
+        add_resource(root_stack.stack_template, self.cfn_resource)
         self.capacity_providers = FARGATE_PROVIDERS
         self.default_strategy_providers = [
             cap.CapacityProvider for cap in DEFAULT_STRATEGY

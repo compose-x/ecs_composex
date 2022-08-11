@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import ecs_composex.common.troposphere_tools
+
 if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
     from ecs_composex.mods_manager import XResourceModule
@@ -18,7 +20,12 @@ from troposphere import Ref
 from troposphere.certificatemanager import Certificate as CfnAcmCertificate
 
 from ecs_composex.acm.acm_params import CERT_ARN, RES_KEY
-from ecs_composex.common import LOG, add_parameters, add_update_mapping
+from ecs_composex.common.logging import LOG
+from ecs_composex.common.troposphere_tools import (
+    add_parameters,
+    add_resource,
+    add_update_mapping,
+)
 
 
 def define_acm_certs(new_resources: list[Certificate], acm_stack: ComposeXStack):
@@ -30,7 +37,7 @@ def define_acm_certs(new_resources: list[Certificate], acm_stack: ComposeXStack)
     """
     for resource in new_resources:
         resource.create_acm_cert()
-        acm_stack.stack_template.add_resource(resource.cfn_resource)
+        add_resource(acm_stack.stack_template, resource.cfn_resource)
         if not resource.outputs:
             resource.generate_outputs()
         if resource.outputs:
@@ -95,7 +102,7 @@ def update_property_stack_with_resource(
             continue
         if not property_value.startswith(RES_KEY):
             continue
-        if not property_value.find(RES_KEY) >= 0:
+        if property_value.find(RES_KEY) < 0:
             LOG.info(
                 f"{RES_KEY} - {property_value} is not a pointer to x-acm. {property_value}"
             )

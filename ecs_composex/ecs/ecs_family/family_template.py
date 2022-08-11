@@ -4,7 +4,7 @@
 
 from troposphere import Template
 
-from ecs_composex.common import build_template
+from ecs_composex.common.troposphere_tools import build_template
 from ecs_composex.ecs import ecs_conditions, ecs_params
 
 

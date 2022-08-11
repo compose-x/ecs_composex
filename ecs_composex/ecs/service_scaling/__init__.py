@@ -10,6 +10,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from ecs_composex.common.troposphere_tools import add_parameters, add_resource
+
 if TYPE_CHECKING:
     from ecs_composex.ecs.ecs_family import ComposeFamily
 
@@ -131,7 +133,7 @@ class ServiceScaling:
             self.scalable_target
             and self.scalable_target.title not in self.family.template.resources
         ):
-            self.family.template.add_resource(self.scalable_target)
+            add_resource(self.family.template, self.scalable_target)
 
     def add_target_scaling(self) -> None:
         """
@@ -166,4 +168,4 @@ class ServiceScaling:
                     self.family.template
                     and policy.title not in self.family.template.resources
                 ):
-                    self.family.template.add_resource(policy)
+                    add_resource(self.family.template, policy)
