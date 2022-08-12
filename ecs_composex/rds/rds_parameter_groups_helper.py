@@ -8,37 +8,53 @@ Strip rds internal params to try and fit within 20 param limit
 https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-rds-dbparametergroup.html#cfn-rds-dbparametergroup-parameters
 
 """
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Union
+
+if TYPE_CHECKING:
+    from boto3.session import Session
+
 import boto3
 from botocore.exceptions import ClientError
+from compose_x_common.aws import get_session
 from compose_x_common.compose_x_common import keyisset
 
 from ecs_composex.common.logging import LOG
 
 
-def get_db_cluster_engine_parameter_group_defaults(engine_family):
+def get_db_cluster_engine_parameter_group_defaults(
+    engine_family, for_aurora_cluster: bool = True, session: Session = None
+):
     """
     Returns a dict of all the parameter group parameters and default values
 
     :parm str engine_family: Engine family we are getting the cluster settings for, i.e. aurora-mysql5.7
     """
 
-    client = boto3.client("rds")
+    session = get_session(session)
+    client = session.client("rds")
     try:
-        req = client.describe_engine_default_cluster_parameters(
-            DBParameterGroupFamily=engine_family
-        )
+        if for_aurora_cluster:
+            req = client.describe_engine_default_cluster_parameters(
+                DBParameterGroupFamily=engine_family
+            )
+        else:
+            req = client.describe_engine_default_parameters(
+                DBParameterGroupFamily=engine_family
+            )
     except ClientError as error:
-        LOG.error(error)
+        LOG.exception(error)
         return None
     params_return = {}
     if "EngineDefaults" in req.keys():
         params = req["EngineDefaults"]["Parameters"]
         for param in params:
             if (
-                "ParameterValue" in param.keys()
-                and "{" not in param["ParameterValue"]
-                and "IsModifiable" in param.keys()
-                and param["IsModifiable"] is True
+                keyisset("ParameterValue", param)
+                and r"{" not in param["ParameterValue"]
+                and keyisset("IsModifiable", param)
                 and not param["ParameterName"].startswith("rds.")
             ):
                 params_return[param["ParameterName"]] = param["ParameterValue"]
@@ -48,31 +64,22 @@ def get_db_cluster_engine_parameter_group_defaults(engine_family):
 
 
 def get_family_from_engine_version(
-    engine_name, engine_version, session=None, client=None
-):
+    engine_name: str, engine_version: str, session: Session = None
+) -> Union[str, None]:
     """
-    Function to get the engine family from engine name and version
-    :param client: override client for boto3 call
-    :type client: boto3.client
-    :param session: override session for boto3 client
-    :type session: boto3.session.Session
-    :param engine_name: engine name, ie. aurora-mysql
-    :type engine_name: str
-    :param engine_version: engine version, ie. 5.7.12
-    :type engine_version: str
-    :return: engine_family
-    :rtype: str
+    Get the engine family from engine name and version
     """
-    if not client:
-        if not session:
-            session = boto3.session.Session()
-        client = session.client("rds")
+    session = get_session(session)
+    client = session.client("rds")
     try:
         req = client.describe_db_engine_versions(
             Engine=engine_name, EngineVersion=engine_version
         )
     except ClientError as error:
-        LOG.error(error)
+        LOG.error(
+            f"Failed to describe DB Engine Versions for {engine_name}@{engine_version}"
+        )
+        LOG.exception(error)
         return None
 
     if not keyisset("DBEngineVersions", req):
@@ -85,13 +92,11 @@ def get_family_from_engine_version(
     return db_family
 
 
-def get_family_settings(db_family):
+def get_family_settings(db_family: str, session: Session = None) -> dict:
     """
     Function to get the DB family settings
-    :param str db_family: The DB family
-    :return: db settings or None
-    :rtype: None or dict
     """
+    session = get_session(session)
     if (
         db_family is not None
         and isinstance(db_family, str)
@@ -99,6 +104,6 @@ def get_family_settings(db_family):
     ):
         LOG.debug("Aurora based instance")
         LOG.debug(f"Looking for parameters for {db_family}")
-        return get_db_cluster_engine_parameter_group_defaults(db_family)
+        return get_db_cluster_engine_parameter_group_defaults(db_family, True, session)
     else:
-        return None
+        return get_db_cluster_engine_parameter_group_defaults(db_family, False, session)

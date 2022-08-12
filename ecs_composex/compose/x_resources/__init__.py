@@ -167,6 +167,14 @@ class XResource:
                 mapping[parameter.title] = parameter
         return mapping
 
+    @property
+    def mod_res_key(self) -> str:
+        return self.module.res_key
+
+    @property
+    def mod_mapping_key(self) -> str:
+        return self.module.mapping_key
+
     def validate(self, settings, root_stack=None, *args, **kwargs) -> None:
         """
         Function to implement self-validation for the resource and the execution settings.

@@ -5,8 +5,19 @@
 RDS DB template generator
 """
 
-from compose_x_common.compose_x_common import keyisset
-from troposphere import AWS_NO_VALUE, GetAtt, If, NoValue, Ref, Sub, Tags
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Union
+
+if TYPE_CHECKING:
+    from .rds_stack import Rds
+    from ecs_composex.common.settings import ComposeXSettings
+    from troposphere import Template
+    from boto3.session import Session
+
+from compose_x_common.aws import get_session
+from compose_x_common.compose_x_common import keyisset, set_else_none
+from troposphere import AWS_NO_VALUE, AWSHelperFn, GetAtt, If, NoValue, Ref, Sub, Tags
 from troposphere.ec2 import SecurityGroup
 from troposphere.rds import (
     DBCluster,
@@ -19,7 +30,11 @@ from troposphere.rds import (
 import ecs_composex.common.troposphere_tools
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.logging import LOG
-from ecs_composex.common.troposphere_tools import build_template
+from ecs_composex.common.troposphere_tools import (
+    add_outputs,
+    add_resource,
+    build_template,
+)
 from ecs_composex.rds import rds_conditions
 from ecs_composex.rds.rds_parameter_groups_helper import (
     get_family_from_engine_version,
@@ -47,13 +62,9 @@ from ecs_composex.secrets import (
 from ecs_composex.vpc.vpc_params import STORAGE_SUBNETS, VPC_ID
 
 
-def init_database_template(db):
+def init_database_template(db: Rds) -> Template:
     """
-    Function to initialize the DB Template
-
-    :param db: The DB definition
-    :return: template
-    :rtype: troposphere.Template
+    Initialize default DB Template
     """
     template = build_template(
         f"Template for RDS DB {db.name}",
@@ -103,26 +114,17 @@ def init_database_template(db):
     return template
 
 
-def add_db_outputs(db_template, db):
+def add_db_outputs(db_template: Template, db: Rds) -> None:
     """
     Function to add outputs to the DB template
-
-    :param troposphere.Template db_template: DB Template
-    :param ecs_composex.rds.rds_stack.Rds db:
-    :param ecs_composex.rds.rds_stack.XStack parent_stack:
     """
     db.generate_outputs()
-    db_template.add_output(db.outputs)
+    add_outputs(db_template, db.outputs)
 
 
-def create_db_subnet_group(template, db, subnets=None):
+def create_db_subnet_group(template: Template, db: Rds, subnets=None) -> DBSubnetGroup:
     """
-    Function to create a subnet group
-
-    :param troposphere.Template template: the template to add the subnet group to.
-    :param subnets: The subnets to use.
-    :return: group, the DB Subnets Group
-    :rtype: troposphere.rds.DBSubnetGroup
+    Create the DB Subnet Group
     """
     if not subnets:
         subnets = STORAGE_SUBNETS
@@ -153,12 +155,9 @@ def add_db_sg(template, db_name):
     )
 
 
-def add_default_instance_definition(db, for_cluster=False):
+def add_default_instance_definition(db: Rds, for_cluster: bool = False):
     """
-    Function to add DB Instance(s)
-
-    :param ecs_composex.rds.rds_stack.Rds db:
-    :param bool for_cluster: Whether this instance is added with default values for a DB Cluster
+    Add DB Instances
     """
     props = {
         "Engine": Ref(DB_ENGINE_NAME),
@@ -219,13 +218,9 @@ def add_default_instance_definition(db, for_cluster=False):
     return instance
 
 
-def add_default_cluster_definition(db):
+def add_default_cluster_definition(db: Rds) -> DBCluster:
     """
-    Function to add the cluster to the template
-
-    :param ecs_composex.rds.rds_stack.Rds db: The Rds resource
-    :return: cluster
-    :rtype: troposphere.rds.DBCluster
+    Imports definition and creates DBCluster resource
     """
     props = {
         "Condition": rds_conditions.USE_CLUSTER_CON_T,
@@ -252,7 +247,6 @@ def add_default_cluster_definition(db):
         ),
         "Engine": Ref(DB_ENGINE_NAME),
         "EngineVersion": Ref(DB_ENGINE_VERSION),
-        "DBClusterParameterGroupName": Ref(CLUSTER_PARAMETER_GROUP_T),
         "VpcSecurityGroupIds": [Ref(db.db_sg)],
         "Tags": Tags(SecretName=Ref(db.db_secret), Name=db.logical_name),
         "StorageEncrypted": True,
@@ -261,109 +255,141 @@ def add_default_cluster_definition(db):
     return cluster
 
 
-def set_parameters_groups_from_macro_parameters(db, template):
+def set_parameters_groups_from_macro_parameters(db: Rds, template: Template) -> None:
     """
-    Function to set the DB parameters group if ParametersGroups is set on MacroParameters
+    Set the DB parameters group if ParametersGroups is set on MacroParameters
     """
     if isinstance(db.cfn_resource, DBCluster):
         props = import_record_properties(
             db.parameters["ParametersGroups"], DBClusterParameterGroup
         )
-        params = template.add_resource(
+        params = add_resource(
+            template,
             DBClusterParameterGroup(
                 CLUSTER_PARAMETER_GROUP_T,
                 **props,
-            )
+            ),
         )
         setattr(db.cfn_resource, "DBClusterParameterGroupName", Ref(params))
     elif isinstance(db.cfn_resource, DBInstance):
         props = import_record_properties(
             db.parameters["ParametersGroups"], DBParameterGroup
         )
-        params = template.add_resource(
+        params = add_resource(
+            template,
             DBParameterGroup(
                 CLUSTER_PARAMETER_GROUP_T,
                 **props,
-            )
+            ),
         )
         setattr(db.cfn_resource, "DBParameterGroupName", Ref(params))
 
 
-def add_parameter_group(template, db):
-    """
-    Function to create a parameter group which uses the same values as default which can later be altered
-
-    :param troposphere.Template template: the RDS template
-    :param db: the db object as imported from Docker composeX file
-    :type db: ecs_composex.common.compose_resources.Rds
-    """
-
-    parameters_properties = [
-        "DBClusterParameterGroupName",
-        "DBParameterGroupName",
-    ]
-    if db.properties and not any(
-        key in parameters_properties for key in db.properties.keys()
+def validate_group_is_set(db: Rds) -> bool:
+    if isinstance(db.cfn_resource, DBCluster) and hasattr(
+        db.cfn_resource, "DBClusterParameterGroupName"
     ):
-        LOG.info(f"Parameter group was already set for {db.name}")
-        return
-    elif (
-        not db.properties
-        and db.parameters
-        and keyisset("ParametersGroups", db.parameters)
-    ) or (
-        db.properties
-        and not any(key in parameters_properties for key in db.properties.keys())
-        and db.parameters
-        and keyisset("ParametersGroups", db.parameters)
-    ):
-        set_parameters_groups_from_macro_parameters(db, template)
-        return
+        _param = getattr(db.cfn_resource, "DBClusterParameterGroupName")
+        if isinstance(_param, str) or isinstance(_param, Ref) and _param != NoValue:
+            LOG.debug(
+                f"{db.mod_res_key}.{db.name} - DBClusterParameterGroupName already set: {_param}"
+            )
+            return True
 
-    if (
-        db.properties
-        and keyisset(DB_ENGINE_NAME.title, db.properties)
-        and keyisset(DB_ENGINE_VERSION.title, db.properties)
+    elif isinstance(db.cfn_resource, DBInstance) and hasattr(
+        db.cfn_resource, "DBParameterGroupName"
     ):
-        db_family = get_family_from_engine_version(
-            db.properties[DB_ENGINE_NAME.title],
-            db.properties[DB_ENGINE_VERSION.title],
+        _param = getattr(db.cfn_resource, "DBParameterGroupName")
+        if isinstance(_param, str) or isinstance(_param, Ref) and _param != NoValue:
+            LOG.debug(
+                f"{db.mod_res_key}.{db.name} - DBParameterGroupName already set: {_param}"
+            )
+            return True
+    return False
+
+
+def define_parameters_group_from_engine_and_version(
+    db: Rds,
+    template: Template,
+    engine_name: str,
+    engine_version: str,
+    session: Session = None,
+) -> None:
+    session = get_session(session)
+    LOG.debug(
+        f"{db.mod_res_key}.{db.name}"
+        f" - Defining ParameterGroups based on default settings for {engine_name}@{engine_version}"
+    )
+    if not engine_name or not engine_version:
+        raise KeyError(
+            "Engine and EngineVersion must be set in either Properties or MacroParameters"
         )
-
-    elif (
-        not db.properties
-        and db.parameters
-        and not keyisset("ParametersGroups", db.parameters)
-    ):
-        db_family = get_family_from_engine_version(
-            db.parameters[DB_ENGINE_NAME.title],
-            db.parameters[DB_ENGINE_VERSION.title],
+    db_family = get_family_from_engine_version(engine_name, engine_version)
+    if not db_family:
+        raise LookupError(
+            f"Failed to retrieve the DB Engine Family for {engine_name}@{engine_version}"
         )
-    else:
-        raise RuntimeError("Failed to determine the DB Parameters family.", db.name)
-    db_settings = get_family_settings(db_family)
+    db_settings = get_family_settings(db_family, session)
     if isinstance(db.cfn_resource, DBInstance):
-        params = DBParameterGroup(
-            PARAMETER_GROUP_T,
-            template=template,
-            Family=db_family,
-            Parameters=db_settings,
+        params = add_resource(
+            template,
+            DBParameterGroup(
+                PARAMETER_GROUP_T,
+                Family=db_family,
+                Parameters=db_settings,
+            ),
         )
         setattr(db.cfn_resource, "DBParameterGroupName", Ref(params))
     elif isinstance(db.cfn_resource, DBCluster):
-        params = DBClusterParameterGroup(
-            CLUSTER_PARAMETER_GROUP_T,
-            template=template,
-            Family=db_family,
-            Parameters=db_settings,
-            Description=Sub(f"RDS Settings copy for {db_family}"),
+        params = add_resource(
+            template,
+            DBClusterParameterGroup(
+                CLUSTER_PARAMETER_GROUP_T,
+                Family=db_family,
+                Parameters=db_settings,
+                Description=Sub(f"Compose-X RDS copy for {db_family}"),
+            ),
         )
         setattr(db.cfn_resource, "DBClusterParameterGroupName", Ref(params))
+    LOG.info(
+        f"{db.mod_res_key}.{db.name} - "
+        "Defined Parameters groups from default for {engine_name}@{engine_version}"
+    )
 
 
-def override_set_properties(props, db):
+def add_parameter_group(template: Template, db: Rds, session: Session = None) -> None:
     """
-    Function to override secrets parameters from the rds properties
+    Create a DB ParameterGroup which uses the same values as default which can later be altered
+    """
+    if validate_group_is_set(db):
+        LOG.debug(
+            f"{db.mod_res_key}.{db.name} - ParameterGroupName set from Properties or MacroParameters"
+        )
+    elif db.parameters and keyisset("ParametersGroups", db.parameters):
+        LOG.info(
+            f"{db.mod_res_key}.{db.name} - Defining ParameterGroup from MacroParameters"
+        )
+        set_parameters_groups_from_macro_parameters(db, template)
+    else:
+        engine_name = set_else_none(
+            DB_ENGINE_NAME.title,
+            db.properties,
+            alt_value=set_else_none(DB_ENGINE_NAME.title, db.parameters),
+        )
+        engine_version = set_else_none(
+            DB_ENGINE_VERSION.title,
+            db.properties,
+            alt_value=set_else_none(DB_ENGINE_VERSION.title, db.parameters),
+        )
+        session = get_session(session)
+        define_parameters_group_from_engine_and_version(
+            db, template, engine_name, engine_version, session
+        )
+
+
+def override_set_properties(props: dict, db: Rds) -> None:
+    """
+    Override secrets parameters from the rds properties
     """
     props.update(
         {
@@ -383,14 +409,10 @@ def override_set_properties(props, db):
     )
 
 
-def determine_resource_type(db_name, properties):
+def determine_resource_type(db_name: str, properties: dict) -> Union[type, None]:
     """
     Function to determine if the properties are the ones of a DB Cluster or DB Instance.
-    By default it will assume Cluster if cannot conclude that it is a DB Instance
-
-    :param str db_name:
-    :param dict properties:
-    :return:
+    Default assumes DBCluster if it can't make it out from properties.
     """
     if (
         keyisset(DB_ENGINE_NAME.title, properties)
@@ -414,13 +436,9 @@ def determine_resource_type(db_name, properties):
     return None
 
 
-def add_instances_from_parameters(db_template, db):
+def add_instances_from_parameters(db_template: Template, db: Rds) -> None:
     """
-    Function to go over each Instance defined in parameters
-
-    :param troposphere.Template db_template: The template to add the resources to.
-    :param ecs_composex.rds.rds_stack.Rds db: The Db object defined in compose.
-    :raises: TypeError
+    Adds DB Instances based on the DB definition.
     """
     aurora_compatible = [
         "Engine",
@@ -465,22 +483,18 @@ def add_instances_from_parameters(db_template, db):
         db_template.add_resource(db_instance)
 
 
-def create_from_properties(db_template, db):
+def create_from_properties(db_template: Template, db: Rds) -> None:
     """
     Function to create RDS resources based on the Properties defined in Compose files.
     It will try to identify what type of resource (Cluster or Instance) is defined based on the properties
     that were given. If not capable, falls back to using MacroParameters, and if not, raises exception
-
-    :param troposphere.Template db_template: The template to add the resources to.
-    :param ecs_composex.rds.rds_stack.Rds db: The Db object defined in compose.
-    :raises: RuntimeError
     """
     rds_class = determine_resource_type(db.name, db.properties)
     if rds_class:
         rds_props = import_record_properties(db.properties, rds_class)
         override_set_properties(rds_props, db)
         db.cfn_resource = rds_class(db.logical_name, **rds_props)
-        db_template.add_resource(db.cfn_resource)
+        add_resource(db_template, db.cfn_resource)
     elif db.parameters:
         create_from_parameters(db_template, db)
     else:
@@ -490,13 +504,9 @@ def create_from_properties(db_template, db):
         )
 
 
-def create_from_parameters(db_template, db):
+def create_from_parameters(db_template: Template, db: Rds) -> None:
     """
     Function to create the RDS resources from MacroParameters when Properties are not set.
-
-    :param troposphere.Template db_template:
-    :param ecs_composex.rds.rds_stack.Rds db:
-    :return:
     """
     if db.parameters[DB_ENGINE_NAME.title].startswith("aurora"):
         db.cfn_resource = add_default_cluster_definition(db)
@@ -505,7 +515,7 @@ def create_from_parameters(db_template, db):
     db_template.add_resource(db.cfn_resource)
 
 
-def add_db_instances_for_cluster(db_template, db):
+def add_db_instances_for_cluster(db_template: Template, db: Rds) -> None:
     """
     Function to add DB instances for a RDS Cluster
 
@@ -521,13 +531,9 @@ def add_db_instances_for_cluster(db_template, db):
         add_instances_from_parameters(db_template, db)
 
 
-def generate_database_template(db, settings):
+def generate_database_template(db: Rds, settings: ComposeXSettings) -> Template:
     """
-    Function to generate the database template
-    :param ecs_composex.rds.rds_stack.Rds db: The database object
-
-    :return: db_template
-    :rtype: troposphere.Template
+    Creates the database and its template. Will be used to create the stack for it.
     """
     db_template = init_database_template(db)
     db.db_secret = add_db_secret(db_template, db.logical_name)
@@ -539,7 +545,7 @@ def generate_database_template(db, settings):
         create_from_parameters(db_template, db)
     if isinstance(db.cfn_resource, DBCluster):
         add_db_instances_for_cluster(db_template, db)
-    add_parameter_group(db_template, db)
+    add_parameter_group(db_template, db, session=settings.session)
     add_db_dependency(db.cfn_resource, db.db_secret)
     attach_to_secret_to_resource(db_template, db.cfn_resource, db.db_secret)
     db.init_outputs()

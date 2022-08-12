@@ -19,6 +19,7 @@ from troposphere import AWS_ACCOUNT_ID, AWS_PARTITION, AWS_REGION, GetAtt, Ref, 
 from troposphere.rds import DBCluster as CfnDBCluster
 from troposphere.rds import DBInstance as CfnDBInstance
 
+from ecs_composex.common.logging import LOG
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common.troposphere_tools import build_template
 from ecs_composex.compose.x_resources.helpers import (
