@@ -19,7 +19,6 @@ import re
 from troposphere import AWS_NO_VALUE, AWS_PARTITION, Ref, Sub
 from troposphere.iam import Policy as IamPolicy
 
-
 from ecs_composex.common.logging import LOG
 from ecs_composex.common.troposphere_tools import add_parameters, add_update_mapping
 from ecs_composex.s3.s3_params import S3_BUCKET_ARN

@@ -15,7 +15,6 @@ from compose_x_common.compose_x_common import keyisset, set_else_none
 from troposphere import Ref
 
 from ecs_composex.acm.acm_stack import Certificate
-
 from ecs_composex.common.logging import LOG
 from ecs_composex.common.troposphere_tools import add_update_mapping, build_template
 from ecs_composex.compose.x_resources.environment_x_resources import (

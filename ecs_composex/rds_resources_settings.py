@@ -29,16 +29,10 @@ from troposphere.ecs import Environment
 from troposphere.ecs import Secret as EcsSecret
 from troposphere.iam import PolicyType
 
-from ecs_composex.common.logging import LOG
-from ecs_composex.common.troposphere_tools import (
-    add_parameter_recursively,
-    add_parameters,
-    add_resource,
-    add_update_mapping,
-)
 from ecs_composex.common.aws import find_aws_resource_arn_from_tags_api
 from ecs_composex.common.logging import LOG
 from ecs_composex.common.troposphere_tools import (
+    add_parameter_recursively,
     add_parameters,
     add_resource,
     add_update_mapping,

@@ -639,12 +639,13 @@ def add_dependency(resource, family: ComposeFamily, settings: ComposeXSettings) 
     :param ecs_composex.ecs.ecs_family.ComposeFamily family:
     :param settings:
     """
+    resource_top_stack = resource.stack.get_top_root_stack(settings.root_stack)
     if (
         resource.stack
         and not resource.stack.is_void
-        and resource.stack.get_top_root_stack().title not in family.stack.DependsOn
+        and resource_top_stack.title not in family.stack.DependsOn
     ):
-        family.stack.DependsOn.append(resource.stack.get_top_root_stack().title)
+        family.stack.DependsOn.append(resource_top_stack.title)
 
 
 def link_resource_kms_to_service(settings: ComposeXSettings, resource, target) -> None:

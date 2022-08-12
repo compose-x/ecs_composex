@@ -19,7 +19,6 @@ from troposphere.s3 import Bucket as CfnBucket
 
 from ecs_composex.common.logging import LOG
 from ecs_composex.common.stacks import ComposeXStack
-
 from ecs_composex.common.troposphere_tools import build_template
 from ecs_composex.compose.x_resources.helpers import (
     set_lookup_resources,

@@ -43,3 +43,39 @@ def nxtpow2(x):
     :returns: next power of two number
     """
     return int(pow(2, ceil(log(x, 2))))
+
+
+# def add_parameter_recursively(
+#     ext_stack: ComposeXStack,
+#     compose_settings: ComposeXSettings,
+#     attribute_settings: dict,
+# ):
+#     from .stacks import ComposeXStack
+#
+#     print(
+#         "EXT STACK",
+#         ext_stack,
+#         type(ext_stack),
+#         ext_stack.title
+#         if isinstance(ext_stack, ComposeXStack)
+#         else "NOT A COMPOSE STACK",
+#     )
+#     attribute_param = attribute_settings["ImportParameter"]
+#
+#     if (
+#         ext_stack.parent_stack
+#         and (ext_stack.parent_stack == compose_settings.root_stack)
+#         or not ext_stack.parent_stack
+#     ):
+#         print("EXT STACK", ext_stack.title, "NO PARENT SET. UPDATING STACK PARAMETERS")
+#         add_parameters(ext_stack.stack_template, [attribute_param])
+#         ext_stack.Parameters.update(
+#             {attribute_param.title: attribute_settings["ImportValue"]}
+#         )
+#     else:
+#         add_parameters(ext_stack.stack_template, [attribute_param])
+#         ext_stack.Parameters.update({attribute_param.title: Ref(attribute_param)})
+#         return add_parameter_recursively(
+#             ext_stack.parent_stack, compose_settings, attribute_settings
+#         )
+#     return Ref(attribute_param)

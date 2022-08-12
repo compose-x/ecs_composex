@@ -7,6 +7,8 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from troposphere import AWSObject
+    from .settings import ComposeXSettings
+    from .stacks import ComposeXStack
 
 from copy import deepcopy
 
@@ -189,9 +191,12 @@ def add_resource(template, resource, replace=False) -> AWSObject:
     :param troposphere.AWSObject resource:
     :param bool replace:
     """
-    if resource not in template.resources.values():
+    if (
+        resource not in template.resources.values()
+        and resource.title not in template.resources.keys()
+    ):
         return template.add_resource(resource)
-    elif resource in template.resources.values() and replace:
+    elif resource.title in template.resources and replace:
         template.resources[resource.title] = resource
         return resource
 
@@ -226,3 +231,39 @@ def build_template(description=None, *parameters):
         add_parameters(template, *parameters)
     add_defaults(template)
     return template
+
+
+def add_parameter_recursively(
+    ext_stack: ComposeXStack,
+    compose_settings: ComposeXSettings,
+    attribute_settings: dict,
+):
+    from .stacks import ComposeXStack
+
+    print(
+        "EXT STACK",
+        ext_stack,
+        type(ext_stack),
+        ext_stack.title
+        if isinstance(ext_stack, ComposeXStack)
+        else "NOT A COMPOSE STACK",
+    )
+    attribute_param = attribute_settings["ImportParameter"]
+
+    if (
+        ext_stack.parent_stack
+        and (ext_stack.parent_stack == compose_settings.root_stack)
+        or not ext_stack.parent_stack
+    ):
+        print("EXT STACK", ext_stack.title, "NO PARENT SET. UPDATING STACK PARAMETERS")
+        add_parameters(ext_stack.stack_template, [attribute_param])
+        ext_stack.Parameters.update(
+            {attribute_param.title: attribute_settings["ImportValue"]}
+        )
+    else:
+        add_parameters(ext_stack.stack_template, [attribute_param])
+        ext_stack.Parameters.update({attribute_param.title: Ref(attribute_param)})
+        return add_parameter_recursively(
+            ext_stack.parent_stack, compose_settings, attribute_settings
+        )
+    return Ref(attribute_param)

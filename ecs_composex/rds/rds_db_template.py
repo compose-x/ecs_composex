@@ -27,9 +27,6 @@ from troposphere.rds import (
     DBSubnetGroup,
 )
 
-from ecs_composex.common.logging import LOG
-from ecs_composex.common.troposphere_tools import add_outputs, add_resource, build_template
-
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.logging import LOG
 from ecs_composex.common.troposphere_tools import (

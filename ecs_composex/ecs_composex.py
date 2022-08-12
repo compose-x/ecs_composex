@@ -151,13 +151,13 @@ def apply_x_configs_to_ecs(
             or issubclass(type(resource), (ServicesXResource, AwsEnvironmentResource))
         ) and hasattr(resource, "to_ecs"):
             resource.to_ecs(settings, modules, root_stack)
-
     for resource_stack in root_stack.stack_template.resources.values():
         if (
             issubclass(type(resource_stack), ComposeXStack)
             and not resource_stack.is_void
         ):
             invoke_x_to_ecs(None, root_stack, resource_stack, settings)
+
     for resource_stack in settings.x_resources_void:
         res_type = list(resource_stack.keys())[-1]
         invoke_x_to_ecs(res_type, root_stack, resource_stack[res_type], settings)

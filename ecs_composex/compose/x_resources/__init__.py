@@ -30,12 +30,6 @@ from troposphere import AWSObject, Export, FindInMap, GetAtt, Join, Output, Ref,
 from troposphere.ecs import Environment
 
 from ecs_composex.common import NONALPHANUM
-from ecs_composex.common.logging import LOG
-from ecs_composex.common.troposphere_tools import (
-    add_parameter_recursively,
-    add_parameters,
-    add_update_mapping,
-)
 from ecs_composex.common.aws import (
     define_lookup_role_from_info,
     find_aws_resource_arn_from_tags_api,
@@ -44,7 +38,11 @@ from ecs_composex.common.cfn_conditions import define_stack_name
 from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.common.ecs_composex import CFN_EXPORT_DELIMITER as DELIM
 from ecs_composex.common.logging import LOG
-from ecs_composex.common.troposphere_tools import add_parameters, add_update_mapping
+from ecs_composex.common.troposphere_tools import (
+    add_parameter_recursively,
+    add_parameters,
+    add_update_mapping,
+)
 from ecs_composex.iam.import_sam_policies import get_access_types
 from ecs_composex.mods_manager import XResourceModule
 from ecs_composex.resource_settings import get_parameter_settings

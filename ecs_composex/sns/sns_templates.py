@@ -8,7 +8,6 @@ Module to add topics and subscriptions to the SNS stack
 from compose_x_common.compose_x_common import keyisset
 from troposphere.sns import Topic
 
-
 from ecs_composex.common.logging import LOG
 from ecs_composex.common.troposphere_tools import add_outputs
 from ecs_composex.sns import metadata

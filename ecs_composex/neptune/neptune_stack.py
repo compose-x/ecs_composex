@@ -43,8 +43,6 @@ from ecs_composex.rds_resources_settings import (
 from ecs_composex.resource_settings import link_resource_to_services
 from ecs_composex.vpc.vpc_params import STORAGE_SUBNETS, VPC_ID
 
-from ecs_composex.common.logging import LOG
-from ecs_composex.compose.x_resources.network_x_resources import DatabaseXResource
 from .neptune_template import create_neptune_template
 
 

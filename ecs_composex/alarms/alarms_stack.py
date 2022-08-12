@@ -28,7 +28,6 @@ from ecs_composex.alarms.alarms_elbv2 import (
 from ecs_composex.alarms.alarms_params import ALARM_ARN, ALARM_NAME
 from ecs_composex.common.logging import LOG
 from ecs_composex.common.stacks import ComposeXStack
-
 from ecs_composex.common.troposphere_tools import build_template
 from ecs_composex.compose.x_resources.helpers import (
     set_lookup_resources,
