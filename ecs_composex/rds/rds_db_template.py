@@ -58,7 +58,12 @@ from ecs_composex.secrets import (
     add_db_secret,
     attach_to_secret_to_resource,
 )
-from ecs_composex.vpc.vpc_params import STORAGE_SUBNETS, VPC_ID
+from ecs_composex.vpc.vpc_params import (
+    APP_SUBNETS,
+    PUBLIC_SUBNETS,
+    STORAGE_SUBNETS,
+    VPC_ID,
+)
 
 
 def init_database_template(db: Rds) -> Template:
@@ -369,10 +374,6 @@ def define_parameters_group_from_engine_and_version(
         f"{db.mod_res_key}.{db.name} - "
         "Defined Parameters groups from default for {engine_name}@{engine_version}"
     )
-    else:
-        raise TypeError("db is", type(db), "Expected one of", [DBInstance, DBCluster])
-    add_resource(template, params)
-
 
 
 def add_parameter_group(template: Template, db: Rds, session: Session = None) -> None:

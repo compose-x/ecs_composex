@@ -22,11 +22,6 @@ from troposphere.rds import DBInstance as CfnDBInstance
 from ecs_composex.common.logging import LOG
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common.troposphere_tools import build_template
-from ecs_composex.compose.x_resources.helpers import (
-    set_lookup_resources,
-    set_new_resources,
-    set_resources,
-)
 from ecs_composex.compose.x_resources.network_x_resources import DatabaseXResource
 from ecs_composex.rds.rds_features import apply_extra_parameters
 from ecs_composex.rds.rds_params import (
@@ -41,7 +36,12 @@ from ecs_composex.rds.rds_params import (
 )
 from ecs_composex.rds.rds_template import generate_rds_templates
 from ecs_composex.rds_resources_settings import lookup_rds_resource, lookup_rds_secret
-from ecs_composex.vpc.vpc_params import STORAGE_SUBNETS, VPC_ID
+from ecs_composex.vpc.vpc_params import (
+    APP_SUBNETS,
+    PUBLIC_SUBNETS,
+    STORAGE_SUBNETS,
+    VPC_ID,
+)
 
 
 def get_db_instance_config(db, account_id, resource_id):
@@ -239,7 +239,8 @@ class XStack(ComposeXStack):
 
         if module.new_resources:
             stack_template = build_template(
-                "Root stack for RDS DBs", [VPC_ID, STORAGE_SUBNETS]
+                "Root stack for RDS DBs",
+                [VPC_ID, STORAGE_SUBNETS, APP_SUBNETS, PUBLIC_SUBNETS],
             )
             super().__init__(title, stack_template, **kwargs)
             generate_rds_templates(self, stack_template, module.new_resources, settings)
