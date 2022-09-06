@@ -51,7 +51,7 @@ class ResourceIamManager:
             and keyisset("x-iam", resource.parameters)
             and keyisset("PermissionsBoundary", resource.parameters["x-iam"])
         ):
-            self.permissions_boundarypermissions_boundary = define_iam_policy(
+            self.permissions_boundary = define_iam_policy(
                 resource.parameters["x-iam"]["PermissionsBoundary"]
             )
         self.service_linked_role = IamRole(

@@ -157,10 +157,6 @@ def handle_user_defined_policies(
 def implement_bucket_policy(bucket: Bucket, param_key: str, bucket_template: Template):
     """
     Function to parse the input parameter for the Bucket Policy, and generate the policy accordingly
-
-    :param ecs_composex.s3.s3_bucket.Bucket bucket:
-    :param str param_key: The MacroParameters sub parameter to evaluate
-    :param troposphere.Template bucket_template:
     """
     statement = []
     managed_policies_key = "PredefinedBucketPolicies"
@@ -183,9 +179,7 @@ def implement_bucket_policy(bucket: Bucket, param_key: str, bucket_template: Tem
 
 def evaluate_parameters(bucket, bucket_template):
     """
-
-    :param ecs_composex.s3.s3_bucket.Bucket bucket:
-    :param troposphere.Template bucket_template:
+    Review bucket parameters to configure the bucket and extra properties.
     """
     if bucket.mappings or bucket.use:
         return
@@ -201,10 +195,6 @@ def evaluate_parameters(bucket, bucket_template):
 def create_s3_template(new_buckets: list[Bucket], template: Template) -> Template:
     """
     Function to create the root S3 template.
-
-    :param list new_buckets:
-    :param troposphere.Template template:
-    :return:
     """
     mono_template = False
     if len(list(new_buckets)) <= COMPOSEX_MAX_OUTPUTS:
