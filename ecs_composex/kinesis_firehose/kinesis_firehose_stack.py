@@ -91,12 +91,12 @@ class DeliveryStream(AwsEnvironmentResource, ApiXResource):
         self.iam_manager = ResourceIamManager(self, "firehose")
         self.arn_parameter = FIREHOSE_ARN
         self.ref_parameter = FIREHOSE_ID
-        # self.cloud_control_attributes_mapping = {
-        #     FIREHOSE_ARN: "Arn",
-        #     FIREHOSE_ID: "DeliveryStreamName",
-        #     FIREHOSE_KMS_KEY_ID: "DeliveryStreamEncryptionConfigurationInput::KeyARN",
-        #     FIREHOSE_CMK_MANAGER: "DeliveryStreamEncryptionConfigurationInput::KeyType",
-        # }
+        self.cloud_control_attributes_mapping = {
+            FIREHOSE_ARN: "Arn",
+            FIREHOSE_ID: "DeliveryStreamName",
+            FIREHOSE_KMS_KEY_ID: "DeliveryStreamEncryptionConfigurationInput::KeyARN",
+            FIREHOSE_CMK_MANAGER: "DeliveryStreamEncryptionConfigurationInput::KeyType",
+        }
 
     def init_outputs(self):
         self.output_properties = {

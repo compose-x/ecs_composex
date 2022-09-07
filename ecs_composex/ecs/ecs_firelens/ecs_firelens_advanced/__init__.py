@@ -255,7 +255,7 @@ class FireLensServiceManagedConfiguration:
             source_file=self.source_file_content,
             service_match=f"{self.service.name}-firelens*",
         )
-        print(content)
+        LOG.debug(content)
         return content
 
 

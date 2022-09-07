@@ -52,7 +52,7 @@ class FireLensFirehoseManagedDestination:
             self._managed_firehose = settings.find_resource(
                 self._definition["delivery_stream"]
             )
-            self.pointer = add_firehose_delivery_stream_for_firelens(
+            add_firehose_delivery_stream_for_firelens(
                 self._managed_firehose,
                 self.parent.extra_env_vars,
                 self.parent.family,
@@ -60,7 +60,9 @@ class FireLensFirehoseManagedDestination:
             )
         else:
             self._managed_firehose = None
-            self.pointer = self._definition["delivery_stream"]
+            self.parent.extra_env_vars.update(
+                {self.delivery_stream_fluent_name: self._definition["delivery_stream"]}
+            )
         self.process_all_options(self.parent.family, self.parent.service, settings)
 
     def process_all_options(self, family, service, settings: ComposeXSettings):
@@ -90,9 +92,6 @@ class FireLensFirehoseManagedDestination:
 
     @property
     def delivery_stream_fluent_name(self):
-        self.parent.extra_env_vars.update(
-            {self._managed_firehose.env_var_prefix: self.pointer}
-        )
         return rf"${{{self._managed_firehose.env_var_prefix}}}"
 
     @property
