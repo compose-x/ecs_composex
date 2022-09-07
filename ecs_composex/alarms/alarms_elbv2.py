@@ -29,7 +29,7 @@ def handle_elbv2_dimension_mapping(alarms_stack, dimension, resource, settings):
     if not isinstance(dimension.Value, str):
         LOG.debug(f"{dimension} - {type(dimension)}")
         return
-    if not dimension.value.startswith("x-elbv2"):
+    if not dimension.Value.startswith("x-elbv2"):
         LOG.debug(f"Dimension.Value is not elbv2: {dimension.Value}")
         return
     lb = settings.find_resource(dimension.Value)

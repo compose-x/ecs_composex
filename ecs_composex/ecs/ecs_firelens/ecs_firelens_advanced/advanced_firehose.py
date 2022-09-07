@@ -60,6 +60,9 @@ class FireLensFirehoseManagedDestination:
             )
         else:
             self._managed_firehose = None
+            self.parent.extra_env_vars.update(
+                {self.delivery_stream_fluent_name: self._definition["delivery_stream"]}
+            )
         self.process_all_options(self.parent.family, self.parent.service, settings)
 
     def process_all_options(self, family, service, settings: ComposeXSettings):

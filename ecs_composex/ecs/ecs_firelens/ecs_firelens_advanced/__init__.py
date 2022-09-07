@@ -31,8 +31,8 @@ from .firelens_config_sidecar import FluentBitConfig, render_config_sidecar_conf
 
 
 class FireLensFamilyManagedConfiguration:
-    volume_mount = "/compose_x_rendered/"
-    volume_name = "compose-x-firelens-rendering"
+    volume_mount: str = "/compose_x_rendered/"
+    volume_name: str = "compose-x-firelens-rendering"
     config_file_name: str = "firelens.conf"
 
     def __init__(self, family: ComposeFamily, settings: ComposeXSettings):
@@ -187,7 +187,6 @@ class FireLensServiceManagedConfiguration:
                         )
                     )
                 elif keyisset("stream", destination_definition):
-                    print("Detected a kinesis stream destination")
                     self.managed_destinations.append(
                         FireLensKinesisManagedDestination(
                             destination_definition, self, settings
@@ -256,6 +255,7 @@ class FireLensServiceManagedConfiguration:
             source_file=self.source_file_content,
             service_match=f"{self.service.name}-firelens*",
         )
+        LOG.debug(content)
         return content
 
 

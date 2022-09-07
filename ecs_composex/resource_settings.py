@@ -381,18 +381,15 @@ def map_resource_env_vars_to_family_services(
     return_values = (
         {} if not keyisset("ReturnValues", target[-1]) else target[-1]["ReturnValues"]
     )
+    if return_values:
+        env_vars = resource.generate_resource_service_env_vars(target, return_values)
+    else:
+        env_vars = resource.generate_ref_env_var(target)
     for svc in target[2]:
-        if svc in target[0].managed_sidecars:
-            continue
-        if return_values:
-            extend_container_envvars(
-                svc.container_definition,
-                resource.generate_resource_service_env_vars(target, return_values),
-            )
-        else:
-            extend_container_envvars(
-                svc.container_definition, resource.generate_ref_env_var(target)
-            )
+        extend_container_envvars(
+            svc.container_definition,
+            env_vars,
+        )
 
 
 def map_resource_return_value_to_services_command(

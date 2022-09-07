@@ -155,8 +155,8 @@ def set_volumes(family):
                     USE_FARGATE_CON_T,
                     NoValue,
                     DockerVolumeConfiguration(
-                        Scope="task" if not volume.is_shared else "shared",
-                        Autoprovision=NoValue if not volume.is_shared else True,
+                        Scope="task",  # if not volume.is_shared else "shared",
+                        Autoprovision=NoValue,  # if not volume.is_shared else True,
                     ),
                 ),
             )

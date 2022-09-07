@@ -17,8 +17,13 @@ import yaml
 from compose_x_common.compose_x_common import keyisset
 from troposphere import Sub
 from troposphere.ssm import Parameter as SSMParameter
-from yaml import CDumper as Dumper
-from yaml import CLoader as Loader
+
+try:
+    from yaml import CDumper as Dumper
+    from yaml import CLoader as Loader
+except ImportError:
+    from yaml import Dumper as Dumper
+    from yaml import Loader as Loader
 
 from ecs_composex.common.cfn_params import STACK_ID_SHORT
 from ecs_composex.ecs import ecs_params

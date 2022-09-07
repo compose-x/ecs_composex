@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from ecs_composex.ecs.ecs_family import ComposeFamily
     from ecs_composex.common.settings import ComposeXSettings
 
-from troposphere import Ref, Region
+from troposphere import AWSHelperFn, Ref, Region
 from troposphere.ecs import Environment
 
 from ecs_composex.compose.compose_services.helpers import extend_container_envvars
@@ -38,7 +38,7 @@ def handle_firelens_advanced_settings(
     env_vars += [
         Environment(Name=name, Value=value)
         for name, value in advanced_config.extra_env_vars.items()
-        if isinstance(value, Ref)
+        if isinstance(value, AWSHelperFn) or issubclass(type(value), AWSHelperFn)
     ]
     extend_container_envvars(
         family.logging.firelens_service.container_definition, env_vars
