@@ -5,12 +5,11 @@ from compose_x_common.compose_x_common import keyisset
 from troposphere import AWS_REGION, AWS_STACK_NAME, GetAtt, Ref
 from troposphere.route53 import AliasTarget, RecordSetType
 
-import ecs_composex.common.troposphere_tools
-from ecs_composex.common import NONALPHANUM, setup_logging
+from ecs_composex.common import NONALPHANUM
+from ecs_composex.common.logging import LOG
+from ecs_composex.common.troposphere_tools import add_outputs, add_parameters
 from ecs_composex.elbv2.elbv2_params import LB_DNS_NAME, LB_DNS_ZONE_ID
-
-from ..common.troposphere_tools import add_outputs, add_parameters
-from .route53_params import PUBLIC_DNS_ZONE_ID, validate_domain_name
+from ecs_composex.route53.route53_params import PUBLIC_DNS_ZONE_ID, validate_domain_name
 
 
 def create_record(name, route53_zone, route53_stack, target_elbv2, elbv2_stack) -> None:

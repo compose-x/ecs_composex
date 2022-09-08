@@ -7,8 +7,9 @@ Manages x-route53 to x-acm
 
 from troposphere import Ref
 
-from ..common.troposphere_tools import add_parameters, add_update_mapping
-from .route53_params import PUBLIC_DNS_ZONE_ID, validate_domain_name
+from ecs_composex.common.logging import LOG
+from ecs_composex.common.troposphere_tools import add_parameters, add_update_mapping
+from ecs_composex.route53.route53_params import PUBLIC_DNS_ZONE_ID, validate_domain_name
 
 
 def new_dns_zone(route53_zone, acm_stack, validation_option):
@@ -97,11 +98,13 @@ def handle_acm_records(
         for validation in target_cert.cfn_resource.DomainValidationOptions
         if hasattr(validation, "HostedZoneId")
         and isinstance(validation.HostedZoneId, str)
-        and validation.HostedZoneId.startswith("x-route53")
+        and validation.HostedZoneId.startswith(x_hosted_zone.module.res_key)
     ]
 
     for validation_opt in validation_options:
-        dns_zone_pointer = validation_opt.HostedZoneId.split(r"x-route53::")[-1]
+        dns_zone_pointer = validation_opt.HostedZoneId.split(
+            rf"{x_hosted_zone.module.res_key}::"
+        )[-1]
         if dns_zone_pointer != x_hosted_zone.name:
             continue
         x_hosted_zone.init_stack_for_records(root_stack)

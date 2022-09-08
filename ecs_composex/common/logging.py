@@ -30,12 +30,12 @@ def setup_logging():
     stdout_handler = logthings.StreamHandler(sys.stdout)
     stdout_handler.setFormatter(default_format)
     stdout_handler.setLevel(logthings.INFO)
-    app_logger.addHandler(stdout_handler)
 
     stderr_handler = logthings.StreamHandler(sys.stderr)
     stderr_handler.setFormatter(debug_format)
     stderr_handler.setLevel(logthings.ERROR)
 
+    app_logger.addHandler(stdout_handler)
     app_logger.addHandler(stderr_handler)
     app_logger.setLevel(logthings.INFO)
     return app_logger

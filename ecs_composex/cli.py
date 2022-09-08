@@ -6,6 +6,7 @@ Console script for ecs_composex.
 """
 
 import argparse
+import logging
 import sys
 import warnings
 
