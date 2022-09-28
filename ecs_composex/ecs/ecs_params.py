@@ -146,6 +146,8 @@ FARGATE_MODES = {
     1024: [(2**10) * i for i in range(2, 9)],
     2048: [(2**10) * i for i in range(4, 17)],
     4096: [(2**10) * i for i in range(8, 33)],
+    8192: [(2**10) * i for i in range(16, 61, 4)],
+    16384: [(2**10) * i for i in range(32, 121, 8)],
 }
 
 FARGATE_MODES_VALUES = []
