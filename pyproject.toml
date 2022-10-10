@@ -40,8 +40,8 @@ python = "^3.7"
 boto3 = ">=1.24"
 troposphere = "^4.1.0"
 ecr-scan-reporter = { version = "^0.4.7", optional = true }
-compose-x-render = "^0.5.5"
-compose-x-common = "^1.1"
+compose-x-render = "^0.6.0"
+compose-x-common = "^1.2"
 jsonschema = "^4.15"
 requests = "^2.28.1"
 tabulate = "^0.8.10"
@@ -55,10 +55,10 @@ Jinja2 = "^3.1.2"
 isort = "^5.10.1"
 placebo = "^0.10.0"
 pre-commit = "^2.20.0"
-black = "^22.8"
+black = "^22.10"
 sphinx-material = "^0.0.35"
 behave = "^1.2.6"
-coverage = { extras = ["toml"], version = "^6.4" }
+coverage = { extras = ["toml"], version = "^6.5" }
 pytest = "^7.1"
 Sphinx = "^5.1.1"
 tox = "^3.25.1"
@@ -67,7 +67,7 @@ sphinx-jsonschema = "^1.19.1"
 boto3-stubs = { extras = ["acm", "ecs", "cloudformation", "essential"], version = "^1.24" }
 pyclean = "^2.2.0"
 sphinx-autodoc-typehints = "^1.19.2"
-pyupgrade = "^2.37.3"
+pyupgrade = "^3.0"
 
 [tool.poetry.scripts]
 ecs-compose-x = "ecs_composex.cli:main"

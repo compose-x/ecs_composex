@@ -62,11 +62,11 @@ test-all: ## run tests on every Python version with tox
 	tox --skip-missing-interpreters
 
 coverage: ## check code coverage quickly with the default Python
-	coverage run --source ecs_composex -m behave tests/features --junit
-	coverage run --source ecs_composex -a -m pytest tests/pytests -vv -x
-	coverage report -m
-	coverage xml -o coverage/coverage.xml
-	coverage html
+	poetry run coverage run --source ecs_composex -m behave tests/features --junit
+	poetry run coverage run --source ecs_composex -a -m pytest tests/pytests -vv -x
+	poetry run coverage report -m
+	poetry run coverage xml -o coverage/coverage.xml
+	poetry run coverage html
 	$(BROWSER) htmlcov/index.html
 
 .ONESHELL:
