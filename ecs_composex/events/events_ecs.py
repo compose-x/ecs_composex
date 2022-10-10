@@ -33,6 +33,7 @@ from ecs_composex.ecs.ecs_params import (
     SERVICE_T,
     TASK_T,
 )
+from ecs_composex.iam import add_role_boundaries
 from ecs_composex.vpc.vpc_params import APP_SUBNETS, SG_ID_TYPE, SUBNETS_TYPE
 
 
@@ -157,7 +158,7 @@ def define_service_targets(stack, rule, cluster_arn):
                 )
             )
             if service[0].iam_manager.permissions_boundary:
-                role.PermissionsBoundary = service[0].iam_manager.permissions_boundary
+                add_role_boundaries(role, service[0].iam_manager.permissions_boundary)
         else:
             role = stack.stack_template.resources[role_name]
         add_parameters(
