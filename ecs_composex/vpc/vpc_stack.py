@@ -60,27 +60,6 @@ AZ_INDEX_PATTERN = r"(([a-z0-9-]+)([a-z]{1}$))"
 AZ_INDEX_RE = re.compile(AZ_INDEX_PATTERN)
 
 
-def set_subnets_from_use(subnets_list, vpc_settings, subnets_def):
-    """
-    Sets the subnets IDs from x-vpc.Use
-    """
-    for subnet_name in subnets_list:
-        if not isinstance(vpc_settings[subnet_name], (list, str)):
-            raise TypeError(
-                "The subnet_name must be of type",
-                str,
-                list,
-                "Got",
-                type(subnet_name),
-            )
-        subnets = (
-            vpc_settings[subnet_name].split(",")
-            if isinstance(vpc_settings[subnet_name], str)
-            else vpc_settings[subnet_name]
-        )
-        subnets_def[subnet_name] = subnets
-
-
 class Vpc(AwsEnvironmentResource):
     """
     Class to represent the VPC

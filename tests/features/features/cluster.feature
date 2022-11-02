@@ -3,8 +3,11 @@ Feature: ecs-cluster
 
     @cluster
     Scenario Outline: ECS Cluster override
-        Given I use <file_path> as my docker-compose file and <override_file> as override file
+        Given With <file_path>
+        And With <override_file>
+        And I use defined files as input to define execution settings
         Then I render the docker-compose to composex to validate
+        And I render all files to verify execution
         Examples:
             | file_path                   | override_file                                  |
             | use-cases/blog.features.yml | use-cases/ecs/cluster_create.yml               |
@@ -14,7 +17,9 @@ Feature: ecs-cluster
 
     @cluster
     Scenario Outline: ECS Capacity Providers adapt or auto-correct
-        Given I use <file_path> as my docker-compose file and <override_file> as override file
+        Given With <file_path>
+        And With <override_file>
+        And I use defined files as input to define execution settings
         Then I render the docker-compose to composex to validate
         And I render all files to verify execution
 

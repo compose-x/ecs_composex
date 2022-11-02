@@ -2,11 +2,6 @@
 # ELBv2 creation for services
 
 
-x-dns:
-  PublicZone:
-    Name: bdd-testing.compose-x.io
-    Use: ZABCDEFGHIS0123
-
 x-acm:
   public-acm-01:
     Properties:

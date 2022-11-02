@@ -69,7 +69,13 @@ def x_cloud_lookup_and_new_vpc(settings: ComposeXSettings, vpc_stack: VpcStack):
         for namespace in settings.x_resources
         if isinstance(namespace, PrivateNamespace) and namespace.lookup_properties
     ]
+    print(
+        "x_cloud_lookup_and_new_vpc - x resources?",
+        settings.x_resources,
+        settings.compose_content.keys(),
+    )
     if lookup_namespaces and not vpc_stack.is_void:
+        print(settings.compose_content["x-cloudmap"])
         raise IncompatibleOptions(
             "You cannot have Compose-X Create a new VPC and use x-cloudmap.Lookup."
             " Use x-vpc to re-use the VPC the PrivateNamespace is attached to",

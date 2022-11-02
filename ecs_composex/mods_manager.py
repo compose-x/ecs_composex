@@ -15,6 +15,8 @@ Priority order goes
 
 from __future__ import annotations
 
+import sys
+import warnings
 from typing import TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
@@ -41,10 +43,6 @@ from compose_x_common.compose_x_common import keyisset
 from ecs_composex.common import NONALPHANUM
 from ecs_composex.common.ecs_composex import X_KEY
 from ecs_composex.common.logging import LOG
-from ecs_composex.compose.x_resources.helpers import (
-    set_lookup_resources,
-    set_new_resources,
-)
 from ecs_composex.iam.import_sam_policies import import_and_cleanse_sam_policies
 
 
@@ -64,6 +62,8 @@ class XResourceModule:
         ] = None,
         definition: dict = None,
     ):
+        if definition and not isinstance(definition, dict):
+            raise TypeError("The module resources definition must be a dict/mapping")
         self._res_key = res_key
         self._xstack_class = x_class
         self._resource_class = resource_class
@@ -74,11 +74,16 @@ class XResourceModule:
         self.import_perms_definition()
         self.import_json_schema()
         self._resources: dict = {}
-        self._original_definition = deepcopy(definition)
         self._definition: dict = {}
+        self._original_definition: dict = {}
         self._mappings: dict = {}
         if definition:
             self.definition = definition
+            self._original_definition = deepcopy(definition)
+
+    def __del__(self):
+        if hasattr(self, "_resources") and self._resources:
+            self._resources.clear()
 
     @property
     def resource_class(
@@ -238,12 +243,17 @@ class XResourceModule:
 
         :param ecs_composex.common.settings.ComposeXSettings settings:
         """
+        if self._resources:
+            warnings.warn("BEFORE SETTINGS RESOURCES, SOME WERE ALREADY FOUND")
+            self._resources: dict = {}
         _resources = OrderedDict(
             sorted(
                 settings.compose_content[self.res_key].items(),
                 key=lambda item: item[0],
             )
         )
+        if not self._original_definition:
+            self._original_definition = {self.res_key: dict(_resources)}
         for resource_name, resource_definition in _resources.items():
             new_definition = self.resource_class(
                 name=resource_name,
@@ -263,11 +273,21 @@ class ModManager:
 
     def __init__(self, settings: ComposeXSettings):
         self.modules = {}
+        self.loaded_modules: list = []
 
         for res_key, res_def in settings.compose_content.items():
             if not res_def:
                 continue
             self.load_module(res_key, res_def)
+
+    def __del__(self):
+        for module in self.modules.values():
+            if module:
+                module.resources.clear()
+        for module in self.loaded_modules:
+            if module in sys.modules:
+                del sys.modules[module]
+            del module
 
     def init_mods_resources(self, settings: ComposeXSettings):
         for module in self.modules.values():
@@ -276,7 +296,7 @@ class ModManager:
             if module.definition:
                 module.set_resources(settings)
             elif keyisset(module.res_key, settings.compose_content):
-                module.definition = settings.compose_content(module.res_key)
+                module.definition = settings.compose_content[module.res_key]
                 module.set_resources(settings)
 
     def modules_repr(self):
@@ -290,12 +310,13 @@ class ModManager:
             )
 
     def import_resource_modules(self, res_key: str, module_path: str):
-        mod_x_stack_modules = get_module(module_path)
+        py_module, mod_x_stack_modules = get_module(module_path)
         if mod_x_stack_modules:
             for module_res_key, module_def in mod_x_stack_modules.items():
                 self.modules[module_res_key] = module_def["Module"]
             for module_name, module in self.modules.items():
                 if module_name == res_key:
+                    self.loaded_modules.append(py_module)
                     return module
 
     def add_module_from_module_def(self, res_key: str, mod_key: str, module_name: str):
@@ -317,7 +338,6 @@ class ModManager:
             return
         mod_key = re.sub(X_KEY, "", res_key)
         module_name = f"ecs_composex.{mod_key}"
-
         module = self.add_module_from_module_def(res_key, mod_key, module_name)
         if not module:
             LOG.error(f"{res_key} - Unable to load module definition")
@@ -328,45 +348,7 @@ class ModManager:
         return module
 
 
-def get_mod_class(module_name):
-    """
-    Function to get the XModule class for a specific ecs_composex module
-
-    :return: the_class, maps to the main class for the given x-module
-    """
-    try:
-        res_module = import_module(module_name)
-        try:
-            the_class = getattr(res_module, "XStack")
-            return the_class
-        except AttributeError as error:
-            LOG.debug(error)
-            return None
-    except ImportError as error:
-        LOG.debug(error)
-        return None
-
-
-def get_mod_entrypoints(module_name):
-    """
-    Function to get the XModule class for a specific ecs_composex module
-
-    :return: the_class, maps to the main class for the given x-module
-    """
-    try:
-        res_module = import_module(module_name)
-        try:
-            the_class = getattr(res_module, "XStack")
-            return the_class
-        except AttributeError as error:
-            LOG.debug(error)
-            return None
-    except ImportError as error:
-        LOG.debug(error)
-        return None
-
-
-def get_module(module_name):
+def get_module(module_name) -> tuple:
     """
     Function to get the XResourceModule if it has been defined.
 
@@ -376,12 +358,12 @@ def get_module(module_name):
         res_module = import_module(module_name)
         try:
             module = getattr(res_module, "COMPOSE_X_MODULES")
-            return module
+            return res_module, module
         except AttributeError:
             LOG.debug(f"No {module_name}.COMPOSE_X_MODULES found")
     except AttributeError as error:
         LOG.debug(error)
-        return None
+        return None, None
     except ImportError as error:
         LOG.debug(error)
-        return None
+        return None, None

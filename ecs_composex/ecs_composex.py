@@ -7,7 +7,10 @@ Main module to generate a full stack with VPC, Cluster, Compute, Services and al
 
 from __future__ import annotations
 
+import json
 from typing import TYPE_CHECKING
+
+import yaml
 
 if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
@@ -185,6 +188,7 @@ def apply_x_resource_to_x(
             or isinstance(resource, AwsEnvironmentResource)
         ):
             continue
+        print("X TO X RESOURCE", resource, resource.name)
         if hasattr(resource, "handle_x_dependencies"):
             resource.handle_x_dependencies(settings, root_stack)
     if vpc_stack and vpc_stack.vpc_resource:
@@ -336,4 +340,5 @@ def generate_full_template(settings: ComposeXSettings):
     set_ecs_cluster_identifier(settings.root_stack, settings)
     add_all_tags(settings.root_stack.stack_template, settings)
     set_all_mappings_to_root_stack(settings.root_stack, settings)
+    settings.mod_manager.modules.clear()
     return settings.root_stack

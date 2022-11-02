@@ -13,7 +13,9 @@ Feature: ecs_composex.sqs
             | use-cases/blog.features.yml | use-cases/sqs/create_and_lookup.yml | ecs-composex-373709687836-eu-west-1 |
 
     Scenario Outline: Create services with a queue
-        Given I use <file_path> as my docker-compose file and <override_file> as override file
+        Given With <file_path>
+        And With <override_file>
+        And I use defined files as input to define execution settings
         Then I render the docker-compose to composex to validate
         And I render all files to verify execution
 

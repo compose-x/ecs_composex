@@ -2,9 +2,11 @@ Feature: ecs_composex.firehose
 
     @firehose
     Scenario Outline: Create services with a queue
-        Given I use <file_path> as my docker-compose file and <override_file> as override file
-        Then I render the docker-compose to composex to validate
-        And I render all files to verify execution
+        Given With <file_path>
+        And With <override_file>
+        And I use defined files as input to define execution settings
+#        Then I render the docker-compose to composex to validate
+        Then I render all files to verify execution
 
 
         Examples:

@@ -52,17 +52,6 @@ services:
 # DNS and Ingress settings
 # Here we assume you already have a route53 domain, so *Lookup* will identify it.
 
-x-dns:
-  PrivateNamespace:
-    Name: privatedomain.lan
-  PublicZone:
-    Name: your.domain.net
-    Lookup: True
-  Records:
-    - Properties:
-        Name: wordpress.demos.bdd-testing.compose-x.io
-        Type: A
-      Target: x-elbv2::app-alb
 
 #Create an ACM Certificate for my domain
 

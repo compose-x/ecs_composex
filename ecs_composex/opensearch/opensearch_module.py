@@ -9,7 +9,7 @@ from ecs_composex.mods_manager import XResourceModule
 from .opensearch_stack import OpenSearchDomain, XStack
 
 COMPOSE_X_MODULES: dict = {
-    "x-opensearch'": {
+    "x-opensearch": {
         "Module": XResourceModule(
             "x-opensearch",
             XStack,

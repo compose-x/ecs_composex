@@ -3,7 +3,8 @@ Feature: ecs-firelens
 
     @firelens
     Scenario Outline: ECS FireLens with advanced FireHose
-        Given I use <file_path> as my docker-compose file
+        Given With <file_path>
+        And I use defined files as input to define execution settings
         Then I render the docker-compose to composex to validate
         And I render all files to verify execution
         Examples:

@@ -7,7 +7,11 @@ from troposphere.route53 import AliasTarget, RecordSetType
 
 from ecs_composex.common import NONALPHANUM
 from ecs_composex.common.logging import LOG
-from ecs_composex.common.troposphere_tools import add_outputs, add_parameters
+from ecs_composex.common.troposphere_tools import (
+    add_outputs,
+    add_parameters,
+    add_resource,
+)
 from ecs_composex.elbv2.elbv2_params import LB_DNS_NAME, LB_DNS_ZONE_ID
 from ecs_composex.route53.route53_params import PUBLIC_DNS_ZONE_ID, validate_domain_name
 
@@ -22,6 +26,7 @@ def create_record(name, route53_zone, route53_stack, target_elbv2, elbv2_stack) 
     :param ecs_composex.elbv2.elbv2_stack.Elbv2 target_elbv2:
     :param ComposeXStack elbv2_stack:
     """
+    print("ROUTE 3 STACK?", route53_stack, route53_stack.is_void)
     if not target_elbv2.attributes_outputs:
         target_elbv2.init_outputs()
         target_elbv2.generate_outputs()
@@ -65,7 +70,9 @@ def create_record(name, route53_zone, route53_stack, target_elbv2, elbv2_stack) 
         **record_props,
     )
     if cfn_resource.title not in route53_stack.stack_template.resources:
-        route53_stack.stack_template.add_resource(cfn_resource)
+        add_resource(route53_stack.stack_template, cfn_resource)
+        if route53_stack.is_void:
+            route53_stack.is_void = False
     if elbv2_stack.title not in route53_stack.DependsOn:
         route53_stack.DependsOn.append(elbv2_stack.title)
 

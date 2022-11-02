@@ -165,6 +165,7 @@ class ComposeXSettings:
         self.upload = False if self.no_upload else True
         self.parse_command(kwargs, content)
         self.compose_content = {}
+        self.original_content: dict = {}
         self.input_file = (
             kwargs[self.input_file_arg] if keyisset(self.input_file_arg, kwargs) else {}
         )
@@ -224,6 +225,7 @@ class ComposeXSettings:
             "Unable to find any resource matching",
             compose_resource_arn,
             self.x_resource_repr,
+            type(compose_resource_arn),
         )
 
     @property
@@ -489,8 +491,10 @@ class ComposeXSettings:
             if not keyisset(self.input_file_arg, kwargs)
             else kwargs[self.input_file_arg]
         )
+        LOG.debug(f"Input files: {files}")
         content_def = ComposeDefinition(files, content)
-        self.compose_content = content_def.definition
+        self.original_content = content_def.definition
+        self.compose_content = deepcopy(content_def.definition)
         source = pkg_files("ecs_composex").joinpath("specs/compose-spec.json")
         LOG.info(f"Validating against input schema {source}")
         resolver = jsonschema.RefResolver(

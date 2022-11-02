@@ -20,7 +20,7 @@ from ecs_composex.resources_import import (
     import_record_properties,
 )
 
-from ..common.troposphere_tools import build_template
+from ..common.troposphere_tools import add_outputs, add_resource, build_template
 from .kinesis_firehose_iam_helpers import set_replace_iam_role
 from .kinesis_firehose_logging_helpers import (
     grant_log_group_access,
@@ -110,11 +110,11 @@ def create_streams_template(new_resources: list[DeliveryStream]) -> Template:
     root_template = build_template("Root stack for ecs_composex.kinesis_firehose")
     for res in new_resources:
         create_new_stream(res)
-        root_template.add_resource(res.cfn_resource)
-        root_template.add_resource(res.iam_manager.service_linked_role)
-        root_template.add_resource(res.log_group)
-        root_template.add_resource(grant_log_group_access(res))
+        add_resource(root_template, res.cfn_resource)
+        add_resource(root_template, res.iam_manager.service_linked_role)
+        add_resource(root_template, res.log_group)
+        add_resource(root_template, grant_log_group_access(res))
         set_replace_cw_logging(res, root_template)
-        root_template.add_output(res.outputs)
+        add_outputs(root_template, res.outputs)
         res.ensure_iam_policies_dependencies()
     return root_template
