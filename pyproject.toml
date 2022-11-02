@@ -59,7 +59,7 @@ black = "^22.10"
 sphinx-material = "^0.0.35"
 behave = "^1.2.6"
 coverage = { extras = ["toml"], version = "^6.5" }
-pytest = "^7.1"
+pytest = "^7.2"
 Sphinx = "^5.1.1"
 tox = "^3.25.1"
 tbump = "6.9"
