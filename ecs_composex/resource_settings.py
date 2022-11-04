@@ -420,7 +420,6 @@ def map_resource_return_value_to_services_command(
             if not parts:
                 new_command.append(sh_part)
                 continue
-            print("PARTS", parts)
             resource = settings.find_resource(
                 f"{parts.group('res_key')}::{parts.group('res_name')}"
             )

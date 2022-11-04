@@ -26,7 +26,6 @@ def create_record(name, route53_zone, route53_stack, target_elbv2, elbv2_stack) 
     :param ecs_composex.elbv2.elbv2_stack.Elbv2 target_elbv2:
     :param ComposeXStack elbv2_stack:
     """
-    print("ROUTE 3 STACK?", route53_stack, route53_stack.is_void)
     if not target_elbv2.attributes_outputs:
         target_elbv2.init_outputs()
         target_elbv2.generate_outputs()

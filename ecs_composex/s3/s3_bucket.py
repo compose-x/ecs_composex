@@ -23,6 +23,7 @@ from ecs_composex.s3.s3_params import (
     S3_BUCKET_DOMAIN_NAME,
     S3_BUCKET_DUAL_STACK_NAME,
     S3_BUCKET_KMS_KEY,
+    S3_BUCKET_KMS_KEY_ARN,
     S3_BUCKET_NAME,
     S3_BUCKET_REGION_DOMAIN_NAME,
 )
@@ -38,7 +39,7 @@ class Bucket(ApiXResource):
     ):
         super().__init__(name, definition, module, settings)
         self.cloud_control_attributes_mapping = CONTROL_CLOUD_ATTR_MAPPING
-        self.kms_arn_attr = S3_BUCKET_KMS_KEY
+        self.kms_arn_attr = S3_BUCKET_KMS_KEY_ARN
         self.arn_parameter = S3_BUCKET_ARN
         self.ref_parameter = S3_BUCKET_NAME
 

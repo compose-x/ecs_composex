@@ -20,16 +20,12 @@ from troposphere.s3 import Bucket as CfnBucket
 from ecs_composex.common.logging import LOG
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common.troposphere_tools import build_template
-from ecs_composex.compose.x_resources.helpers import (
-    set_lookup_resources,
-    set_new_resources,
-    set_resources,
-)
 from ecs_composex.s3.s3_bucket import Bucket
 from ecs_composex.s3.s3_params import (
     CONTROL_CLOUD_ATTR_MAPPING,
     S3_BUCKET_ARN,
     S3_BUCKET_KMS_KEY,
+    S3_BUCKET_KMS_KEY_ARN,
     S3_BUCKET_NAME,
 )
 from ecs_composex.s3.s3_template import create_s3_template
@@ -95,6 +91,23 @@ def define_bucket_mappings(
                 f"{module.res_key}.{bucket.name} - "
                 f"CMK identified {bucket.lookup_properties[S3_BUCKET_KMS_KEY]}."
             )
+            key_arn_r = bucket.lookup_session.client("kms").describe_key(
+                KeyId=bucket.lookup_properties[S3_BUCKET_KMS_KEY]
+            )["KeyMetadata"]["Arn"]
+            bucket.lookup_properties.update({S3_BUCKET_KMS_KEY_ARN: key_arn_r})
+            LOG.info(
+                f"{module.res_key}.{bucket.name} - "
+                f"CMK ARN - {bucket.lookup_properties[S3_BUCKET_KMS_KEY_ARN]}"
+            )
+            bucket.add_new_output_attribute(
+                S3_BUCKET_KMS_KEY_ARN,
+                (
+                    f"{bucket.logical_name}{S3_BUCKET_KMS_KEY_ARN.return_value}",
+                    None,
+                    None,
+                    S3_BUCKET_KMS_KEY_ARN.return_value,
+                ),
+            )
             bucket.add_new_output_attribute(
                 S3_BUCKET_KMS_KEY,
                 (
@@ -104,6 +117,7 @@ def define_bucket_mappings(
                     S3_BUCKET_KMS_KEY.return_value,
                 ),
             )
+
         bucket.generate_cfn_mappings_from_lookup_properties()
         bucket.generate_outputs()
 

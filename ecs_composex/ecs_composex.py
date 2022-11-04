@@ -188,7 +188,6 @@ def apply_x_resource_to_x(
             or isinstance(resource, AwsEnvironmentResource)
         ):
             continue
-        print("X TO X RESOURCE", resource, resource.name)
         if hasattr(resource, "handle_x_dependencies"):
             resource.handle_x_dependencies(settings, root_stack)
     if vpc_stack and vpc_stack.vpc_resource:

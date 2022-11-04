@@ -238,16 +238,6 @@ def add_parameter_recursively(
     compose_settings: ComposeXSettings,
     attribute_settings: dict,
 ):
-    from .stacks import ComposeXStack
-
-    print(
-        "EXT STACK",
-        ext_stack,
-        type(ext_stack),
-        ext_stack.title
-        if isinstance(ext_stack, ComposeXStack)
-        else "NOT A COMPOSE STACK",
-    )
     attribute_param = attribute_settings["ImportParameter"]
 
     if (
@@ -255,7 +245,6 @@ def add_parameter_recursively(
         and (ext_stack.parent_stack == compose_settings.root_stack)
         or not ext_stack.parent_stack
     ):
-        print("EXT STACK", ext_stack.title, "NO PARENT SET. UPDATING STACK PARAMETERS")
         add_parameters(ext_stack.stack_template, [attribute_param])
         ext_stack.Parameters.update(
             {attribute_param.title: attribute_settings["ImportValue"]}

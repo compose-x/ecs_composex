@@ -291,7 +291,6 @@ def define_new_namespace(new_namespaces, stack_template):
     :param list[PrivateNamespace] new_namespaces: list of PrivateNamespace to process
     :param troposphere.Template stack_template: The template to add the new resources to
     """
-    print("NEW NAMESPACES", new_namespaces)
     for namespace in new_namespaces:
         if namespace.properties:
             if (
