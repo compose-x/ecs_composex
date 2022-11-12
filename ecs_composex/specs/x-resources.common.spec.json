@@ -93,7 +93,9 @@
     "CloudMapDef": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["Namespace"],
+      "required": [
+        "Namespace"
+      ],
       "properties": {
         "Namespace": {
           "type": "string",

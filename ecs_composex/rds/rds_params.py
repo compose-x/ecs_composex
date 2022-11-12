@@ -88,7 +88,12 @@ DB_ENDPOINT_PORT = Parameter(
 DB_SECRET_ARN = Parameter(DB_SECRET_T, Type="String")
 
 DB_CLUSTER_ARN_T = "DBClusterArn"
-DB_CLUSTER_ARN = Parameter(DB_CLUSTER_ARN_T, Type="String")
+DB_CLUSTER_ARN = Parameter(DB_CLUSTER_ARN_T, return_value="DBClusterArn", Type="String")
+
+DB_INSTANCE_ARN_T = "DBInstanceArn"
+DB_INSTANCE_ARN = Parameter(
+    DB_INSTANCE_ARN_T, return_value="DBInstanceArn", Type="String"
+)
 
 DB_CLUSTER_NAME_T = "DBCluster"
 DB_CLUSTER_NAME = Parameter(DB_CLUSTER_NAME_T, Type="String")

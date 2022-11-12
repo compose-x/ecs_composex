@@ -6,6 +6,14 @@ Module to handle Root stacks and substacks in ECS composeX. Allows to treat ever
 files into S3 and on disk.
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ecs_composex.common.settings import ComposeXSettings
+    from ecs_composex.vpc.vpc_stack import XStack as VpcStack
+
 from os import path
 
 from compose_x_common.compose_x_common import keyisset
@@ -25,7 +33,7 @@ from ecs_composex.common import NONALPHANUM, cfn_conditions
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.files import FileArtifact
 from ecs_composex.common.logging import LOG
-from ecs_composex.common.troposphere_tools import add_parameters
+from ecs_composex.common.troposphere_tools import add_parameters, add_update_mapping
 from ecs_composex.vpc.vpc_params import (
     APP_SUBNETS,
     APP_SUBNETS_T,
@@ -133,7 +141,7 @@ class ComposeXStack(Stack):
                 resource.parent_stack = self
                 resource.mark_nested_stacks()
 
-    def get_top_root_stack(self, stack_stop=None):
+    def get_top_root_stack(self, stack_stop: ComposeXStack = None):
         if self.is_void:
             return None
         if (stack_stop and self.parent_stack and self.parent_stack != stack_stop) or (
@@ -249,14 +257,12 @@ class ComposeXStack(Stack):
         template_file.validate(settings)
         self.write_config_file(settings)
 
-    def set_vpc_parameters_from_vpc_stack(self, vpc_stack, *parameters):
+    def set_vpc_parameters_from_vpc_stack(
+        self, vpc_stack: VpcStack, settings: ComposeXSettings, *parameters
+    ):
         """
         When a new VPC is created (vpc comes from nested stack), adds the subnets parameters
         and updates the stack parameters in the root stack.
-
-        :param vpc_stack:
-        :param list parameters:
-
         """
         if isinstance(vpc_stack, ComposeXStack) or issubclass(
             type(vpc_stack), ComposeXStack
@@ -277,45 +283,77 @@ class ComposeXStack(Stack):
             STORAGE_SUBNETS,
             APP_SUBNETS,
         ]
-        if not parameters:
-            add_parameters(self.stack_template, default_parameters)
-            self.Parameters.update(
-                {
-                    VPC_ID_T: GetAtt(vpc_stack, f"Outputs.{VPC_ID_T}"),
-                    PUBLIC_SUBNETS_T: GetAtt(vpc_stack, f"Outputs.{PUBLIC_SUBNETS_T}"),
-                    APP_SUBNETS_T: GetAtt(vpc_stack, f"Outputs.{APP_SUBNETS_T}"),
-                    STORAGE_SUBNETS_T: GetAtt(
-                        vpc_stack, f"Outputs.{STORAGE_SUBNETS_T}"
-                    ),
-                }
-            )
-        else:
+        add_parameters(self.stack_template, default_parameters)
+        if (
+            self.parent_stack
+            and self.parent_stack is not None
+            and self.parent_stack != settings.root_stack
+        ):
+            ref_params = {
+                VPC_ID_T: Ref(VPC_ID),
+                PUBLIC_SUBNETS_T: Join(",", Ref(PUBLIC_SUBNETS)),
+                APP_SUBNETS_T: Join(",", Ref(APP_SUBNETS)),
+                STORAGE_SUBNETS_T: Join(",", Ref(STORAGE_SUBNETS)),
+            }
             for parameter in parameters:
-                self.Parameters.update(
-                    {parameter: GetAtt(vpc_stack, f"Outputs.{parameter}")}
+                ref_params.update({parameter.title: Join(",", Ref(parameter))})
+            self.Parameters.update(ref_params)
+            self.parent_stack.set_vpc_parameters_from_vpc_stack(vpc_stack, settings)
+        else:
+            getatt_params = {
+                VPC_ID_T: GetAtt(vpc_stack, f"Outputs.{VPC_ID_T}"),
+                PUBLIC_SUBNETS_T: GetAtt(vpc_stack, f"Outputs.{PUBLIC_SUBNETS_T}"),
+                APP_SUBNETS_T: GetAtt(vpc_stack, f"Outputs.{APP_SUBNETS_T}"),
+                STORAGE_SUBNETS_T: GetAtt(vpc_stack, f"Outputs.{STORAGE_SUBNETS_T}"),
+            }
+            for parameter in parameters:
+                getatt_params.update(
+                    {parameter.title: GetAtt(vpc_stack, f"Outputs.{parameter.title}")}
                 )
-        if not hasattr(self, "DependsOn"):
-            self.DependsOn = [vpc]
-        elif hasattr(self, "DependsOn") and vpc not in getattr(self, "DependsOn"):
-            self.DependsOn.append(vpc)
+            self.Parameters.update(getatt_params)
+            if not hasattr(self, "DependsOn"):
+                self.DependsOn = [vpc]
+            elif hasattr(self, "DependsOn") and vpc not in getattr(self, "DependsOn"):
+                self.DependsOn.append(vpc)
 
-    def set_vpc_params_from_vpc_stack_import(self, vpc_stack):
+    def set_vpc_params_from_vpc_lookup(
+        self, vpc_stack: VpcStack, settings: ComposeXSettings
+    ) -> None:
         """
         Method to set the stack parameters when we are not creating a VPC.
         """
         add_parameters(self.stack_template, vpc_stack.vpc_resource.subnets_parameters)
         add_parameters(self.stack_template, [VPC_ID])
-        self.Parameters.update(
-            {VPC_ID.title: FindInMap("Network", VPC_ID.title, VPC_ID.title)}
-        )
-        for subnet_param in vpc_stack.vpc_resource.subnets_parameters:
-            self.Parameters.update(
-                {
-                    subnet_param.title: Join(
-                        ",", FindInMap("Network", subnet_param.title, "Ids")
-                    )
-                }
+        if (
+            self.parent_stack
+            and self.parent_stack is not None
+            and self.parent_stack != settings.root_stack
+        ):
+            ref_params = {
+                VPC_ID_T: Ref(VPC_ID),
+                PUBLIC_SUBNETS_T: Join(",", Ref(PUBLIC_SUBNETS)),
+                APP_SUBNETS_T: Join(",", Ref(APP_SUBNETS)),
+                STORAGE_SUBNETS_T: Join(",", Ref(STORAGE_SUBNETS)),
+            }
+            for subnet_param in vpc_stack.vpc_resource.subnets_parameters:
+                ref_params.update({subnet_param.title: Join(",", Ref(subnet_param))})
+            self.Parameters.update(ref_params)
+            self.parent_stack.set_vpc_params_from_vpc_lookup(vpc_stack, settings)
+        else:
+            add_update_mapping(
+                self.stack_template, "Network", vpc_stack.vpc_resource.mappings
             )
+            self.Parameters.update(
+                {VPC_ID.title: FindInMap("Network", VPC_ID.title, VPC_ID.title)}
+            )
+            for subnet_param in vpc_stack.vpc_resource.subnets_parameters:
+                self.Parameters.update(
+                    {
+                        subnet_param.title: Join(
+                            ",", FindInMap("Network", subnet_param.title, "Ids")
+                        )
+                    }
+                )
 
 
 def process_stacks(root_stack, settings, is_root=True):

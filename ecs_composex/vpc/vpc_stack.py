@@ -93,6 +93,16 @@ class Vpc(AwsEnvironmentResource):
         self.azs = {}
         super().__init__(name, definition, module, settings)
 
+    def storage_subnets_count(self) -> int:
+        if self.cfn_resource and self.storage_subnets:
+            return len(self.storage_subnets[-1])
+        elif self.mappings:
+            return len(self.mappings[STORAGE_SUBNETS.title]["Ids"])
+        else:
+            raise AttributeError(
+                f"VPC is not set. Cannot determine the count for {STORAGE_SUBNETS.title}"
+            )
+
     def create_vpc(self, template, settings):
         """
         Creates a new VPC from Properties (or from defaults)
@@ -310,7 +320,7 @@ class Vpc(AwsEnvironmentResource):
                 continue
             resource_stack = resource.stack
             if not resource_stack:
-                LOG.error(
+                LOG.debug(
                     f"resource {resource.name} has no `stack` attribute defined. Skipping"
                 )
                 continue
@@ -380,6 +390,7 @@ class XStack(ComposeXStack):
                 super().__init__(title, stack_template=template, **kwargs)
                 self.vpc_resource.generate_outputs()
                 add_outputs(template, self.vpc_resource.outputs)
+            self.vpc_resource.stack = self
 
     def create_new_default_vpc(self, title, vpc_module, settings):
         """
@@ -398,6 +409,7 @@ class XStack(ComposeXStack):
         super().__init__(title, stack_template=template)
         self.vpc_resource.generate_outputs()
         add_outputs(template, self.vpc_resource.outputs)
+        self.vpc_resource.stack = self
 
     @property
     def vpc_id(self):

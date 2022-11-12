@@ -228,6 +228,40 @@ class ComposeXSettings:
             type(compose_resource_arn),
         )
 
+    def get_resource_attribute(self, compose_resource_arn: str) -> tuple:
+        import re
+
+        resource_attribute_match_re = re.compile(
+            r"^(?P<res_key>x-[\S]+)::(?P<res_name>[\S]+)::(?P<return_value>[\S]+)$"
+        )
+        parts = resource_attribute_match_re.match(compose_resource_arn)
+        if not parts:
+            LOG.error(
+                f"{compose_resource_arn} if invalid. Must match, {resource_attribute_match_re.pattern}"
+            )
+            return None, None
+        try:
+            resource = self.find_resource(
+                f"{parts.group('res_key')}::{parts.group('res_name')}"
+            )
+            if (
+                parts.group("return_value")
+                not in resource.property_to_parameter_mapping
+            ):
+                raise KeyError(
+                    parts.group("return_value"),
+                    "not a valid return value for",
+                    resource.module.res_key,
+                    resource.name,
+                    resource.property_to_parameter_mapping.keys(),
+                )
+            parameter = resource.property_to_parameter_mapping[
+                parts.group("return_value")
+            ]
+            return resource, parameter
+        except LookupError:
+            return None, None
+
     @property
     def x_resource_repr(self):
         return [f"{_r.module.res_key}.{_r.name}" for _r in self.x_resources]
@@ -253,7 +287,7 @@ class ComposeXSettings:
 
         """
         _resources = []
-        for module in self.mod_manager.modules.values():
+        for name, module in self.mod_manager.modules.items():
             _resources += module.resources_list
         return _resources
 

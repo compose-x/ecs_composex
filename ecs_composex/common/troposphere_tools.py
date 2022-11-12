@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 from copy import deepcopy
 
 from compose_x_common.compose_x_common import keyisset, keypresent, set_else_none
-from troposphere import AWS_NO_VALUE, Output
+from troposphere import AWS_NO_VALUE, Join, Output
 from troposphere import Parameter as CfnParameter
 from troposphere import Ref, Template
 
@@ -233,26 +233,44 @@ def build_template(description=None, *parameters):
     return template
 
 
-def add_parameter_recursively(
+def add_update_parameter_recursively(
     ext_stack: ComposeXStack,
     compose_settings: ComposeXSettings,
     attribute_settings: dict,
 ):
-    attribute_param = attribute_settings["ImportParameter"]
+    """
+    Recursively adds parameters to an external stack and updates
+    the parameters as it goes.
 
+    if current external stack has no parent or the parent is the root stack,
+     use
+    `attribute_settings["ImportValue"]` is the `GetAtt stack.Outputs.<output_name>` for that value.
+
+    Otherwise, we consider that we have started from a lower node, we add the direct reference to the value,
+    and recursively go up the parent stacks until the first condition is met.
+    We set the value to `Ref` given the value is given via parameter coming from the parent stack.
+    If however the parameter is a List<> as defined in the AWS CFN Docs, we flatten the list with Join for nested
+    Stack parameters.
+    """
+    attribute_param = attribute_settings["ImportParameter"]
     if (
         ext_stack.parent_stack
         and (ext_stack.parent_stack == compose_settings.root_stack)
-        or not ext_stack.parent_stack
-    ):
+    ) or not ext_stack.parent_stack:
         add_parameters(ext_stack.stack_template, [attribute_param])
         ext_stack.Parameters.update(
             {attribute_param.title: attribute_settings["ImportValue"]}
         )
     else:
         add_parameters(ext_stack.stack_template, [attribute_param])
-        ext_stack.Parameters.update({attribute_param.title: Ref(attribute_param)})
-        return add_parameter_recursively(
+        if isinstance(attribute_param, Parameter) and attribute_param.Type.startswith(
+            r"List<"
+        ):
+            value = Join(",", Ref(attribute_param))
+        else:
+            value = Ref(attribute_param)
+        ext_stack.Parameters.update({attribute_param.title: value})
+        return add_update_parameter_recursively(
             ext_stack.parent_stack, compose_settings, attribute_settings
         )
     return Ref(attribute_param)

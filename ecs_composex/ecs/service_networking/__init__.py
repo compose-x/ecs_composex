@@ -22,6 +22,7 @@ from troposphere.ecs import AwsvpcConfiguration, NetworkConfiguration
 
 from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.common.logging import LOG
+from ecs_composex.common.troposphere_tools import add_parameters
 from ecs_composex.ecs.ecs_conditions import use_external_lt_con
 from ecs_composex.ecs.ecs_params import NETWORK_MODE, SERVICE_NAME_T
 from ecs_composex.ecs.service_networking.ingress_helpers import (
@@ -127,6 +128,9 @@ class ServiceNetworking:
                 isinstance(extra_group, SecurityGroup)
                 and extra_group.title in self.family.template.resources
             ):
+                groups.append(Ref(extra_group))
+            elif isinstance(extra_group, Parameter):
+                add_parameters(self.family.template, [extra_group])
                 groups.append(Ref(extra_group))
         return groups
 

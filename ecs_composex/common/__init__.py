@@ -13,7 +13,6 @@ if TYPE_CHECKING:
     from .settings import ComposeXSettings
     from .stacks import ComposeXStack
 
-import logging as logthings
 import re
 from datetime import datetime as dt
 from math import ceil, log
@@ -43,6 +42,25 @@ def nxtpow2(x):
     :returns: next power of two number
     """
     return int(pow(2, ceil(log(x, 2))))
+
+
+def get_nested_property(top_object, property_path: str, separator: str = None):
+    if separator is None:
+        separator = r"."
+    elif separator and not isinstance(separator, str):
+        raise TypeError("Separator must be a string")
+    top_property_split = property_path.split(separator, 1)
+    if len(top_property_split) == 1 and hasattr(top_object, top_property_split[0]):
+        return (
+            top_object,
+            top_property_split[0],
+            getattr(top_object, top_property_split[0]),
+        )
+    if len(top_property_split) > 1 and hasattr(top_object, top_property_split[0]):
+        return get_nested_property(
+            getattr(top_object, top_property_split[0]), top_property_split[-1]
+        )
+    return None, None, None
 
 
 # def add_parameter_recursively(

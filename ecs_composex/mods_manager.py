@@ -234,6 +234,9 @@ class XResourceModule:
             with open(json_schema_file_path, encoding="utf-8-sig") as json_schema_fd:
                 self._json_schema = loads(json_schema_fd.read())
         except OSError:
+            LOG.warning(
+                f"{self.res_key} - JSON Schema not found for validation. Render may contain errors."
+            )
             pass
 
     def set_resources(self, settings: ComposeXSettings):
@@ -291,7 +294,9 @@ class ModManager:
 
     def init_mods_resources(self, settings: ComposeXSettings):
         for module in self.modules.values():
-            if not module.resource_class:
+            if not module.resource_class or not isinstance(
+                settings.compose_content[module.res_key], dict
+            ):
                 continue
             if module.definition:
                 module.set_resources(settings)
@@ -330,10 +335,12 @@ class ModManager:
         extension_module = self.import_resource_modules(
             res_key, extensions_modules_path
         )
-        if not extension_module:
+        if extension_module:
             return extension_module
 
-    def load_module(self, res_key: str, res_def: dict) -> Union[XResourceModule, None]:
+    def load_module(
+        self, res_key: str, res_def: Union[dict, bool]
+    ) -> Union[XResourceModule, None]:
         if not res_key.startswith(X_KEY):
             return
         mod_key = re.sub(X_KEY, "", res_key)
@@ -342,7 +349,7 @@ class ModManager:
         if not module:
             LOG.error(f"{res_key} - Unable to load module definition")
             return
-        if res_def:
+        if res_def and isinstance(res_def, dict):
             module.definition = res_def
         self.modules[res_key] = module
         return module

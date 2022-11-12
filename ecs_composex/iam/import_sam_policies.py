@@ -31,18 +31,24 @@ def import_and_cleanse_sam_policies():
     return import_policies
 
 
-def get_access_types(module_name: str) -> dict:
+def get_access_types(module_name: str, perms_path: str = None) -> dict:
     """
     Retrieves the Permissions definitions for a given module
 
     :param str module_name:
+    :param str perms_path: Override path to the permissions, instead of relying on module name
     :return: the policies
     :rtype: dict
     """
     sam_policies = import_and_cleanse_sam_policies()
-    source = str(
-        pkg_files("ecs_composex").joinpath(f"{module_name}/{module_name}_perms.json")
-    )
+    if not perms_path:
+        source = str(
+            pkg_files("ecs_composex").joinpath(
+                f"{module_name}/{module_name}_perms.json"
+            )
+        )
+    else:
+        source = perms_path
     try:
         with open(
             source,

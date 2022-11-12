@@ -281,6 +281,8 @@ def generate_full_template(settings: ComposeXSettings):
         f"Service families to process {[family.name for family in settings.families.values()]}"
     )
     settings.root_stack = create_root_stack(settings)
+    for family in settings.families.values():
+        family.stack.parent_stack = settings.root_stack
     add_ecs_cluster(settings)
     settings.mod_manager = ModManager(settings)
     settings.mod_manager.modules_repr()
@@ -300,6 +302,7 @@ def generate_full_template(settings: ComposeXSettings):
         vpc_stack.vpc_resource.cfn_resource or vpc_stack.vpc_resource.mappings
     ):
         settings.set_networks(vpc_stack)
+    vpc_module.resources.update({"x-vpc": vpc_stack.vpc_resource})
     x_cloud_lookup_and_new_vpc(settings, vpc_stack)
 
     for family in settings.families.values():
@@ -319,6 +322,7 @@ def generate_full_template(settings: ComposeXSettings):
             family.apply_ecs_execute_command_permissions(settings)
         family.import_all_sidecars()
         family.handle_logging(settings)
+
     apply_x_configs_to_ecs(settings, settings.root_stack, modules=settings.mod_manager)
     apply_x_resource_to_x(settings, settings.root_stack, vpc_stack)
 
@@ -336,8 +340,14 @@ def generate_full_template(settings: ComposeXSettings):
         family.finalize_family_settings()
         map_resource_return_value_to_services_command(family, settings)
         family.state_facts()
+
     set_ecs_cluster_identifier(settings.root_stack, settings)
     add_all_tags(settings.root_stack.stack_template, settings)
     set_all_mappings_to_root_stack(settings.root_stack, settings)
+
+    for resource in settings.x_resources:
+        if hasattr(resource, "post_processing"):
+            resource.post_processing(settings)
+
     settings.mod_manager.modules.clear()
     return settings.root_stack

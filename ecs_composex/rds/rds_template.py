@@ -10,6 +10,7 @@ from troposphere import GetAtt, Join, Output, Ref
 
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME, ROOT_STACK_NAME_T
 from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.common.troposphere_tools import add_outputs
 from ecs_composex.rds.rds_db_template import generate_database_template
 from ecs_composex.rds.rds_params import (
     DB_ENGINE_NAME_T,
@@ -97,6 +98,8 @@ def add_db_stack(root_template, db, settings, rds_stack):
         stack_parameters=parameters,
         rds_stack=rds_stack,
     )
+    db.generate_outputs()
+    add_outputs(db_template, db.outputs)
     root_template.add_resource(db_stack)
     new_outputs = []
     for output_name in db_stack.stack_template.outputs:

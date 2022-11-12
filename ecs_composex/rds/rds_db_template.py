@@ -27,6 +27,7 @@ from troposphere.rds import (
     DBSubnetGroup,
 )
 
+from ecs_composex.common.cfn_conditions import define_stack_name
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
 from ecs_composex.common.logging import LOG
 from ecs_composex.common.troposphere_tools import (
@@ -84,6 +85,8 @@ def init_database_template(db: Rds) -> Template:
             DB_STORAGE_CAPACITY,
             DB_STORAGE_TYPE,
             STORAGE_SUBNETS,
+            APP_SUBNETS,
+            PUBLIC_SUBNETS,
         ],
     )
     template.add_condition(
@@ -116,14 +119,6 @@ def init_database_template(db: Rds) -> Template:
         rds_conditions.USE_CLUSTER_OR_SNAPSHOT_CON,
     )
     return template
-
-
-def add_db_outputs(db_template: Template, db: Rds) -> None:
-    """
-    Function to add outputs to the DB template
-    """
-    db.generate_outputs()
-    add_outputs(db_template, db.outputs)
 
 
 def create_db_subnet_group(template: Template, db: Rds, subnets=None) -> DBSubnetGroup:
@@ -159,8 +154,12 @@ def add_db_sg(template, db):
     """
     sg = SecurityGroup(
         f"{db.logical_name}Sg",
-        GroupName=Sub(f"${{{ROOT_STACK_NAME_T}}}-{db.logical_name}"),
-        GroupDescription=Sub(f"${{{ROOT_STACK_NAME_T}}} ${db.logical_name}"),
+        GroupName=Sub(
+            f"${{STACK_NAME}}-{db.logical_name}", STACK_NAME=define_stack_name()
+        ),
+        GroupDescription=Sub(
+            f"${{STACK_NAME}} {db.logical_name}", STACK_NAME=define_stack_name()
+        ),
         VpcId=Ref(VPC_ID),
         Tags=Tags(
             **{
@@ -179,6 +178,9 @@ def add_default_instance_definition(db: Rds, for_cluster: bool = False):
     Add DB Instances
     """
     props = {
+        "DBName": If(
+            rds_conditions.USE_CLUSTER_OR_SNAPSHOT_CON_T, NoValue, Ref(DB_NAME)
+        ),
         "Engine": Ref(DB_ENGINE_NAME),
         "EngineVersion": If(
             rds_conditions.USE_CLUSTER_CON_T,
@@ -208,11 +210,6 @@ def add_default_instance_definition(db: Rds, for_cluster: bool = False):
                 f"{{{{resolve:secretsmanager:${{{db.db_secret.title}}}:SecretString:username}}}}"
             ),
         ),
-        "DBClusterIdentifier": If(
-            rds_conditions.USE_CLUSTER_CON_T,
-            Ref(db.cfn_resource),
-            Ref(AWS_NO_VALUE),
-        ),
         "MasterUserPassword": If(
             rds_conditions.USE_CLUSTER_CON_T,
             Ref(AWS_NO_VALUE),
@@ -231,6 +228,15 @@ def add_default_instance_definition(db: Rds, for_cluster: bool = False):
     if db.parameters and keyisset("MultiAZ", db.parameters):
         props["MultiAZ"] = True
     if for_cluster and keyisset("StorageEncrypted", props):
+        props.update(
+            {
+                "DBClusterIdentifier": If(
+                    rds_conditions.USE_CLUSTER_CON_T,
+                    Ref(db.cfn_resource),
+                    Ref(AWS_NO_VALUE),
+                ),
+            }
+        )
         del props["StorageEncrypted"]
 
     instance = DBInstance(f"Instance{db.logical_name}", **props)
@@ -270,7 +276,7 @@ def add_default_cluster_definition(db: Rds) -> DBCluster:
         "Tags": Tags(SecretName=Ref(db.db_secret), Name=db.logical_name),
         "StorageEncrypted": True,
     }
-    cluster = DBCluster(f"Cluster{db.logical_name}", **props)
+    cluster = DBCluster(f"{db.logical_name}", **props)
     return cluster
 
 
@@ -356,6 +362,7 @@ def define_parameters_group_from_engine_and_version(
                 PARAMETER_GROUP_T,
                 Family=db_family,
                 Parameters=db_settings,
+                Description=f"copy from original for {db_family}",
             ),
         )
         setattr(db.cfn_resource, "DBParameterGroupName", Ref(params))
@@ -366,13 +373,13 @@ def define_parameters_group_from_engine_and_version(
                 CLUSTER_PARAMETER_GROUP_T,
                 Family=db_family,
                 Parameters=db_settings,
-                Description=Sub(f"Compose-X RDS copy for {db_family}"),
+                Description=f"copy from original for {db_family}",
             ),
         )
         setattr(db.cfn_resource, "DBClusterParameterGroupName", Ref(params))
     LOG.info(
         f"{db.mod_res_key}.{db.name} - "
-        "Defined Parameters groups from default for {engine_name}@{engine_version}"
+        f"Defined Parameters groups from default for {engine_name}@{engine_version}"
     )
 
 
@@ -531,7 +538,7 @@ def create_from_parameters(db_template: Template, db: Rds) -> None:
         db.cfn_resource = add_default_cluster_definition(db)
     else:
         db.cfn_resource = add_default_instance_definition(db)
-    db_template.add_resource(db.cfn_resource)
+    add_resource(db_template, db.cfn_resource)
 
 
 def add_db_instances_for_cluster(db_template: Template, db: Rds) -> None:
@@ -568,6 +575,4 @@ def generate_database_template(db: Rds, settings: ComposeXSettings) -> Template:
     add_db_dependency(db.cfn_resource, db.db_secret)
     attach_to_secret_to_resource(db_template, db.cfn_resource, db.db_secret)
     db.init_outputs()
-    add_db_outputs(db_template, db)
-    db.is_nested = True
     return db_template

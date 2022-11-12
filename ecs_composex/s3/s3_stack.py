@@ -138,6 +138,7 @@ class XStack(ComposeXStack):
             stack_template = build_template(f"Root template for {settings.name}.s3")
             super().__init__(module.mapping_key, stack_template, **kwargs)
             create_s3_template(module.new_resources, stack_template)
+            self.parent_stack = settings.root_stack
         else:
             self.is_void = True
         for resource in module.resources_list:

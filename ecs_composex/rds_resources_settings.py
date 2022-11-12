@@ -31,19 +31,13 @@ from troposphere.iam import PolicyType
 
 from ecs_composex.common.aws import find_aws_resource_arn_from_tags_api
 from ecs_composex.common.logging import LOG
-from ecs_composex.common.troposphere_tools import (
-    add_parameter_recursively,
-    add_parameters,
-    add_resource,
-    add_update_mapping,
-)
+from ecs_composex.common.troposphere_tools import add_resource, add_update_mapping
 from ecs_composex.compose.compose_services.helpers import (
     extend_container_envvars,
     extend_container_secrets,
 )
 from ecs_composex.ecs.ecs_params import SG_T
 from ecs_composex.rds.rds_params import DB_SECRET_POLICY_NAME
-from ecs_composex.resource_settings import get_parameter_settings
 
 
 def filter_out_tag_resources(lookup_attributes, rds_resource, tagging_api_id):
@@ -324,16 +318,17 @@ def add_security_group_ingress(service_stack: ComposeXStack, db_name: str, sg_id
     :param sg_id: The security group Id to use for ingress. DB Security group, not service's
     :param port: The port for Ingress to the DB.
     """
-    service_template = service_stack.stack_template
     add_resource(
-        service_template,
+        service_stack.stack_template,
         SecurityGroupIngress(
             f"AllowFrom{service_stack.title}to{db_name}",
             GroupId=sg_id,
             FromPort=port,
             ToPort=port,
             Description=Sub(f"Allow FROM {service_stack.title} TO {db_name}"),
-            SourceSecurityGroupId=GetAtt(service_template.resources[SG_T], "GroupId"),
+            SourceSecurityGroupId=GetAtt(
+                service_stack.stack_template.resources[SG_T], "GroupId"
+            ),
             SourceSecurityGroupOwnerId=Ref("AWS::AccountId"),
             IpProtocol="6",
         ),
@@ -551,6 +546,12 @@ def handle_new_tcp_resource(
             )
             continue
         LOG.info(f"{resource.stack.title} - Linking to {target[0].name}")
+        if not sg_parameter or not port_parameter:
+            LOG.warning(
+                f"{resource.module.res_key}.{resource.name}"
+                f"Security Group or Port parameter not set. Skipping."
+            )
+            continue
         sg_id = resource.add_attribute_to_another_stack(
             target[0].stack, sg_parameter, settings
         )
