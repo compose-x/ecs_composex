@@ -11,21 +11,11 @@ from boto3.session import Session
 from botocore.exceptions import ClientError
 
 if TYPE_CHECKING:
-    from . import ComposeService
     from ecs_composex.common.settings import ComposeXSettings
+    from . import ComposeService
 
-import warnings
 
-try:
-    import docker
-
-    USE_DOCKER = True
-except ImportError:
-    USE_DOCKER = False
-    warnings.warn(
-        "Due to security issues not addressed by docker python, this is temporarily disabled.",
-        DeprecationWarning,
-    )
+import docker
 import requests
 import urllib3
 from compose_x_common.aws import get_session
@@ -65,6 +55,7 @@ class ServiceImage:
             raise KeyError(service.name, "You must define ``image``")
         self._service = service
         self._image = None
+        self._image_digest = None
 
         self.image_uri = service.definition["image"]
         if not image_param:
@@ -115,12 +106,6 @@ class ServiceImage:
     def public_ecr(self) -> Union[re.Match, None]:
         return PUBLIC_ECR_URI_RE.match(self.image_uri)
 
-    def image_digest(self):
-        if self.private_ecr and self.private_ecr.group("tag").startswith(r"@sha"):
-            return self.private_ecr.group("tag")
-        elif self.public_ecr and self.public_ecr.group("tag").startswith(r"@sha"):
-            return self.public_ecr.group("tag")
-
     def private_ecr_digest(self, settings: ComposeXSettings):
         if not self.service.x_ecr:
             return
@@ -156,6 +141,13 @@ class ServiceImage:
             and self.private_ecr
         ):
             self.private_ecr_digest(settings)
+        else:
+            try:
+                import docker
+
+                self.retrieve_image_digest()
+            except ImportError:
+                print("Unable to use docker to resolve image")
 
     def retrieve_image_digest(self):
         """
@@ -169,8 +161,6 @@ class ServiceImage:
             "application/vnd.docker.distribution.manifest.v1+prettyjws",
             "application/vnd.docker.distribution.manifest.list.v2+json",
         ]
-        if not USE_DOCKER:
-            return
         try:
             dkr_client = docker.APIClient()
             image_details = dkr_client.inspect_distribution(self.image)
@@ -188,7 +178,17 @@ class ServiceImage:
                     valid_media_types,
                 )
             if keyisset("digest", details):
-                self.image_digest = details["digest"]
+                image_digest = details["digest"]
+                self.image_uri = re.sub(r"(:.*$|@.*$)", f"@{image_digest}", self.image)
+                LOG.info(
+                    f"Update service {self.service.name} image to {self.image_uri}"
+                )
+                if self.service.family:
+                    self.service.family.stack.Parameters.update(
+                        {self.image_param.title: self.image_uri}
+                    )
+                else:
+                    self.service.definition["image"] = self.image_uri
             else:
                 LOG.warning(
                     "No digest found. This might be due to Registry API prior to V2"

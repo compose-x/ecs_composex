@@ -4,7 +4,7 @@ services:
     x-docker_opts:
       InterpolateWithDigest: true
   serviceB:
-    image: public.ecr.aws/nginx/nginx-prometheus-exporter:0.10.0
+    image: public.ecr.aws/nginx/nginx-prometheus-exporter:latest
     x-docker_opts:
       InterpolateWithDigest: true
   serviceC:

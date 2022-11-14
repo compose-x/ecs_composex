@@ -1,35 +1,5 @@
 Feature: common
 
-    @common
-    Scenario Outline: Create services stack
-        Given I use <file_path> as my docker-compose file
-        And I want to upload files to S3 bucket <bucket_name>
-        Then I render all files to verify execution
-
-        Examples:
-            | file_path                      | bucket_name                         |
-            | use-cases/sqs/simple_queue.yml | ecs-composex-373709687836-eu-west-1 |
-
-    @common
-    Scenario Outline: Update services services stack
-        Given I use <file_path> as my docker-compose file
-        And I want to upload files to S3 bucket <bucket_name>
-        Then I render all files to verify execution
-
-        Examples:
-            | file_path                      | bucket_name                         |
-            | use-cases/sqs/simple_queue.yml | ecs-composex-373709687836-eu-west-1 |
-
-    @common
-    Scenario Outline: Update stack in a failed stack
-        Given I use <file_path> as my docker-compose file
-        And I want to upload files to S3 bucket <bucket_name>
-        Then I render all files to verify execution
-
-        Examples:
-            | file_path                      | bucket_name                         |
-            | use-cases/sqs/simple_queue.yml | ecs-composex-373709687836-eu-west-1 |
-
     @logging
     Scenario Outline: Logging override
         Given I use <file_path> as my docker-compose file and <override_file> as override file
