@@ -382,10 +382,6 @@ class ComposeFamily:
     ) -> None:
         """
         Once we have figured out the compute settings (EXTERNAL vs other)
-
-        :param settings:
-        :param vpc_stack:
-        :return:
         """
         from ecs_composex.ecs.service_networking.helpers import add_security_group
 
@@ -395,9 +391,9 @@ class ComposeFamily:
             LOG.debug(f"{self.name} Ingress cannot be set (EXTERNAL mode). Skipping")
         else:
             if vpc_stack.vpc_resource.mappings:
-                self.stack.set_vpc_params_from_vpc_stack_import(vpc_stack)
+                self.stack.set_vpc_params_from_vpc_lookup(vpc_stack, settings)
             else:
-                self.stack.set_vpc_parameters_from_vpc_stack(vpc_stack)
+                self.stack.set_vpc_parameters_from_vpc_stack(vpc_stack, settings)
             add_security_group(self)
             self.service_networking.ingress.set_aws_sources_ingress(
                 settings,

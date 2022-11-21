@@ -62,6 +62,14 @@ S3_BUCKET_KMS_KEY = Parameter(
     Type="String",
     Description="S3 Bucket KMS Key",
 )
+S3_BUCKET_KMS_KEY_ARN_T = "BucketKmsKeyArn"
+S3_BUCKET_KMS_KEY_ARN = Parameter(
+    S3_BUCKET_KMS_KEY_ARN_T,
+    group_label=GROUP_LABEL,
+    return_value="KMSMasterKeyArn",
+    Type="String",
+    Description="S3 Bucket KMS Key",
+)
 
 CONTROL_CLOUD_ATTR_MAPPING = {
     S3_BUCKET_NAME: "BucketName",

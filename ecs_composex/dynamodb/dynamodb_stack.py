@@ -123,18 +123,15 @@ class XStack(ComposeXStack):
     def __init__(
         self, title, settings: ComposeXSettings, module: XResourceModule, **kwargs
     ):
-        set_resources(settings, Table, module)
-        x_resources = settings.compose_content[module.res_key].values()
-        lookup_resources = set_lookup_resources(x_resources)
-        if lookup_resources:
-            resolve_lookup(lookup_resources, settings, module)
-        new_resources = set_new_resources(x_resources, False)
-        if new_resources:
+
+        if module.lookup_resources:
+            resolve_lookup(module.lookup_resources, settings, module)
+        if module.new_resources:
             stack_template = build_template("Root template for DynamoDB tables")
             super().__init__(title, stack_template, **kwargs)
-            create_dynamodb_template(new_resources, stack_template, self)
+            create_dynamodb_template(module.new_resources, stack_template, self)
         else:
             self.is_void = True
-        for resource in x_resources:
+        for resource in module.resources_list:
             if resource.lookup:
                 resource.stack = self

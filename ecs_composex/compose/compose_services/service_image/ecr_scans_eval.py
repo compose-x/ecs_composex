@@ -7,6 +7,7 @@ import re
 from time import sleep
 
 from boto3.session import Session
+from compose_x_common.compose_x_common import keyisset
 
 try:
     from ecr_scan_reporter.ecr_scan_reporter import DEFAULT_THRESHOLDS
@@ -15,9 +16,6 @@ except ImportError:
     raise ImportError(
         "You must install ecr-scan-reporter in order to use this functionality"
     )
-
-from compose_x_common.compose_x_common import keyisset
-
 from ecs_composex.common.logging import LOG
 
 from .ecr_helpers import define_ecr_session

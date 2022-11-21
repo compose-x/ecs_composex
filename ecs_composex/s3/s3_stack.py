@@ -20,16 +20,12 @@ from troposphere.s3 import Bucket as CfnBucket
 from ecs_composex.common.logging import LOG
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common.troposphere_tools import build_template
-from ecs_composex.compose.x_resources.helpers import (
-    set_lookup_resources,
-    set_new_resources,
-    set_resources,
-)
 from ecs_composex.s3.s3_bucket import Bucket
 from ecs_composex.s3.s3_params import (
     CONTROL_CLOUD_ATTR_MAPPING,
     S3_BUCKET_ARN,
     S3_BUCKET_KMS_KEY,
+    S3_BUCKET_KMS_KEY_ARN,
     S3_BUCKET_NAME,
 )
 from ecs_composex.s3.s3_template import create_s3_template
@@ -95,6 +91,23 @@ def define_bucket_mappings(
                 f"{module.res_key}.{bucket.name} - "
                 f"CMK identified {bucket.lookup_properties[S3_BUCKET_KMS_KEY]}."
             )
+            key_arn_r = bucket.lookup_session.client("kms").describe_key(
+                KeyId=bucket.lookup_properties[S3_BUCKET_KMS_KEY]
+            )["KeyMetadata"]["Arn"]
+            bucket.lookup_properties.update({S3_BUCKET_KMS_KEY_ARN: key_arn_r})
+            LOG.info(
+                f"{module.res_key}.{bucket.name} - "
+                f"CMK ARN - {bucket.lookup_properties[S3_BUCKET_KMS_KEY_ARN]}"
+            )
+            bucket.add_new_output_attribute(
+                S3_BUCKET_KMS_KEY_ARN,
+                (
+                    f"{bucket.logical_name}{S3_BUCKET_KMS_KEY_ARN.return_value}",
+                    None,
+                    None,
+                    S3_BUCKET_KMS_KEY_ARN.return_value,
+                ),
+            )
             bucket.add_new_output_attribute(
                 S3_BUCKET_KMS_KEY,
                 (
@@ -104,6 +117,7 @@ def define_bucket_mappings(
                     S3_BUCKET_KMS_KEY.return_value,
                 ),
             )
+
         bucket.generate_cfn_mappings_from_lookup_properties()
         bucket.generate_outputs()
 
@@ -116,19 +130,16 @@ class XStack(ComposeXStack):
     def __init__(
         self, title: str, settings: ComposeXSettings, module: XResourceModule, **kwargs
     ):
-        set_resources(settings, Bucket, module)
-        x_resources = settings.compose_content[module.res_key].values()
-        lookup_resources = set_lookup_resources(x_resources)
-        if lookup_resources:
+        if module.lookup_resources:
             if not keyisset(module.mapping_key, settings.mappings):
                 settings.mappings[module.mapping_key] = {}
-            define_bucket_mappings(lookup_resources, settings, module)
-        new_resources = set_new_resources(x_resources, True)
-        if new_resources:
+            define_bucket_mappings(module.lookup_resources, settings, module)
+        if module.new_resources:
             stack_template = build_template(f"Root template for {settings.name}.s3")
             super().__init__(module.mapping_key, stack_template, **kwargs)
-            create_s3_template(new_resources, stack_template)
+            create_s3_template(module.new_resources, stack_template)
+            self.parent_stack = settings.root_stack
         else:
             self.is_void = True
-        for resource in settings.compose_content[module.res_key].values():
+        for resource in module.resources_list:
             resource.stack = self

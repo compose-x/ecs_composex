@@ -43,6 +43,8 @@ from ecs_composex.rds_resources_settings import (
 from ecs_composex.resource_settings import link_resource_to_services
 from ecs_composex.vpc.vpc_params import STORAGE_SUBNETS, VPC_ID
 
+from .neptune_template import create_neptune_template
+
 
 def get_db_cluster_config(db, account_id, resource_id):
     client = db.lookup_session.client("neptune")
@@ -173,6 +175,7 @@ class NeptuneDBCluster(DatabaseXResource):
         cfn_resource_type,
         tagging_api_id,
         subattribute_key=None,
+        use_arn_for_id: bool = False,
     ):
         """
         Method to self-identify properties
@@ -196,9 +199,7 @@ class NeptuneDBCluster(DatabaseXResource):
         LOG.info(f"{self.module.res_key}.{self.name} - Linking to services")
         if not self.mappings and self.cfn_resource:
             handle_new_tcp_resource(
-                self,
-                port_parameter=DB_PORT,
-                sg_parameter=DB_SG,
+                self, port_parameter=DB_PORT, sg_parameter=DB_SG, settings=settings
             )
             link_resource_to_services(
                 settings,
@@ -236,22 +237,10 @@ class XStack(ComposeXStack):
     def __init__(
         self, title, settings: ComposeXSettings, module: XResourceModule, **kwargs
     ):
-        set_resources(settings, NeptuneDBCluster, module)
-        x_resources = settings.compose_content[module.res_key].values()
-        new_resources = set_new_resources(x_resources, True)
-        lookup_resources = set_lookup_resources(x_resources)
-        if new_resources:
-            stack_template = build_template(
-                "Root template for Neptune by ComposeX", [VPC_ID, STORAGE_SUBNETS]
-            )
-            super().__init__(title, stack_template, **kwargs)
-            create_neptune_template(stack_template, new_resources, settings, self)
-        else:
-            self.is_void = True
-        if lookup_resources:
+        if module.lookup_resources:
             if not keyisset(module.mapping_key, settings.mappings):
                 settings.mappings[module.mapping_key] = {}
-            for resource in lookup_resources:
+            for resource in module.lookup_resources:
                 resource.lookup_resource(
                     NEPTUNE_DB_CLUSTER_ARN_RE,
                     get_db_cluster_config,
@@ -263,5 +252,16 @@ class XStack(ComposeXStack):
                 settings.mappings[module.mapping_key].update(
                     {resource.logical_name: resource.mappings}
                 )
-        for resource in settings.compose_content[module.res_key].values():
+        if module.new_resources:
+            stack_template = build_template(
+                "Root template for Neptune by ComposeX", [VPC_ID, STORAGE_SUBNETS]
+            )
+            super().__init__(title, stack_template, **kwargs)
+            create_neptune_template(
+                stack_template, module.new_resources, settings, self
+            )
+        else:
+            self.is_void = True
+
+        for resource in module.resources_list:
             resource.stack = self

@@ -62,14 +62,12 @@ def get_target_lb(parts, dimension, resource, settings):
     :rtype: ecs_composex.elbv2.elbv2_stack.Elbv2
     :raises: ValueError if the name provided does not match to an x-elbv2 resource
     """
-    x_elbv2 = settings.compose_content["x-elbv2"]
-    if parts.group("lb") and not parts.group("lb") in x_elbv2.keys():
+    if not parts.group("lb"):
         raise ValueError(
-            f"{resource.name} - {dimension.Value} - LB {parts.group('lb')} does not exist in x-elbv2",
-            x_elbv2.keys(),
+            f"{resource.name} - {dimension.Value} - LB {parts.group('lb')} not defined in x-elbv2"
         )
-    else:
-        return x_elbv2[parts.group("lb")]
+    the_lb = settings.find_resource(f"x-elbv2::{parts.group('lb')}")
+    return the_lb
 
 
 def validate_tgt_input(dimension, settings):

@@ -60,27 +60,6 @@ AZ_INDEX_PATTERN = r"(([a-z0-9-]+)([a-z]{1}$))"
 AZ_INDEX_RE = re.compile(AZ_INDEX_PATTERN)
 
 
-def set_subnets_from_use(subnets_list, vpc_settings, subnets_def):
-    """
-    Sets the subnets IDs from x-vpc.Use
-    """
-    for subnet_name in subnets_list:
-        if not isinstance(vpc_settings[subnet_name], (list, str)):
-            raise TypeError(
-                "The subnet_name must be of type",
-                str,
-                list,
-                "Got",
-                type(subnet_name),
-            )
-        subnets = (
-            vpc_settings[subnet_name].split(",")
-            if isinstance(vpc_settings[subnet_name], str)
-            else vpc_settings[subnet_name]
-        )
-        subnets_def[subnet_name] = subnets
-
-
 class Vpc(AwsEnvironmentResource):
     """
     Class to represent the VPC
@@ -113,6 +92,16 @@ class Vpc(AwsEnvironmentResource):
         self.layers = None
         self.azs = {}
         super().__init__(name, definition, module, settings)
+
+    def storage_subnets_count(self) -> int:
+        if self.cfn_resource and self.storage_subnets:
+            return len(self.storage_subnets[-1])
+        elif self.mappings:
+            return len(self.mappings[STORAGE_SUBNETS.title]["Ids"])
+        else:
+            raise AttributeError(
+                f"VPC is not set. Cannot determine the count for {STORAGE_SUBNETS.title}"
+            )
 
     def create_vpc(self, template, settings):
         """
@@ -331,7 +320,7 @@ class Vpc(AwsEnvironmentResource):
                 continue
             resource_stack = resource.stack
             if not resource_stack:
-                LOG.error(
+                LOG.debug(
                     f"resource {resource.name} has no `stack` attribute defined. Skipping"
                 )
                 continue
@@ -401,6 +390,7 @@ class XStack(ComposeXStack):
                 super().__init__(title, stack_template=template, **kwargs)
                 self.vpc_resource.generate_outputs()
                 add_outputs(template, self.vpc_resource.outputs)
+            self.vpc_resource.stack = self
 
     def create_new_default_vpc(self, title, vpc_module, settings):
         """
@@ -419,6 +409,7 @@ class XStack(ComposeXStack):
         super().__init__(title, stack_template=template)
         self.vpc_resource.generate_outputs()
         add_outputs(template, self.vpc_resource.outputs)
+        self.vpc_resource.stack = self
 
     @property
     def vpc_id(self):

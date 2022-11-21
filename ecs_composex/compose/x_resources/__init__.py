@@ -29,7 +29,7 @@ from importlib_resources import files as pkg_files
 from troposphere import AWSObject, Export, FindInMap, GetAtt, Join, Output, Ref, Sub
 from troposphere.ecs import Environment
 
-from ecs_composex.common import NONALPHANUM
+from ecs_composex.common import NONALPHANUM, get_nested_property
 from ecs_composex.common.aws import (
     define_lookup_role_from_info,
     find_aws_resource_arn_from_tags_api,
@@ -37,9 +37,13 @@ from ecs_composex.common.aws import (
 from ecs_composex.common.cfn_conditions import define_stack_name
 from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.common.ecs_composex import CFN_EXPORT_DELIMITER as DELIM
+from ecs_composex.common.ecs_composex import TAGS_SEPARATOR, X_KEY
 from ecs_composex.common.logging import LOG
-from ecs_composex.common.troposphere_tools import add_parameters, add_update_mapping
-from ecs_composex.iam.import_sam_policies import get_access_types
+from ecs_composex.common.troposphere_tools import (
+    add_parameters,
+    add_update_mapping,
+    add_update_parameter_recursively,
+)
 from ecs_composex.mods_manager import XResourceModule
 from ecs_composex.resource_settings import get_parameter_settings
 
@@ -86,41 +90,18 @@ class XResource:
         self.env_vars = []
         self.validators = []
         self.logical_name = NONALPHANUM.sub("", self.name)
-        self.settings = (
-            None
-            if not keyisset("Settings", self.definition)
-            else self.definition["Settings"]
-        )
-        self.use = (
-            None if not keyisset("Use", self.definition) else self.definition["Use"]
-        )
-        self.lookup = (
-            None
-            if not keyisset("Lookup", self.definition)
-            else self.definition["Lookup"]
-        )
+        self.settings = set_else_none("Settings", definition, alt_value={})
+        self.parameters = set_else_none("MacroParameters", definition, alt_value={})
+        self.lookup = set_else_none("Lookup", definition, alt_value={})
         if self.lookup:
             self.lookup_session = define_lookup_role_from_info(
                 self.lookup, settings.session
             )
-        else:
-            self.lookup_session = settings.session
-        if keyisset("Properties", self.definition) and not self.lookup:
-            self.properties = self.definition["Properties"]
-        elif not keyisset("Properties", self.definition) and keypresent(
-            "Properties", self.definition
-        ):
             self.properties = {}
         else:
-            self.properties = None
-        self.parameters = (
-            {}
-            if not keyisset("MacroParameters", self.definition)
-            else self.definition["MacroParameters"]
-        )
-        self.uses_default = not any(
-            [self.lookup, self.parameters, self.use, self.properties]
-        )
+            self.lookup_session = settings.session
+            self.properties = set_else_none("Properties", definition)
+        self.support_defaults: bool = False
         self.scaling = set_else_none("Scaling", self.definition)
         self.scaling_target = None
         self.cfn_resource = None
@@ -134,18 +115,22 @@ class XResource:
         self.lookup_properties = {}
         self.mappings = {}
         self.default_tags = {
-            "compose-x::module": self.module.mod_key,
-            "compose-x::resource_name": self.name,
-            "compose-x::logical_name": self.logical_name,
+            f"compose-x{TAGS_SEPARATOR}module": self.module.mod_key,
+            f"compose-x{TAGS_SEPARATOR}resource_name": self.name,
+            f"compose-x{TAGS_SEPARATOR}logical_name": self.logical_name,
         }
         self.cloudmap_settings = set_else_none("x-cloudmap", self.settings, {})
         self.default_cloudmap_settings = {}
         self.cloudmap_dns_supported = False
-        self.policies_scaffolds = get_access_types(module.mod_key)
+        self.policies_scaffolds = module.iam_policies
         self.resource_policy = None
 
     def __repr__(self):
         return self.logical_name
+
+    @property
+    def uses_default(self) -> bool:
+        return not any([self.lookup, self.parameters, self.properties])
 
     @property
     def env_var_prefix(self) -> str:
@@ -199,7 +184,6 @@ class XResource:
             base_uri=f"file://{path.abspath(path.dirname(resolver_source))}/",
             referrer=self.module.json_schema,
         )
-
         try:
             jsonschema.validate(
                 definition,
@@ -253,6 +237,7 @@ class XResource:
         cfn_resource_type,
         tagging_api_id,
         subattribute_key=None,
+        use_arn_for_id: bool = False,
     ):
         """
         Method to self-identify properties. It will try to use AWS Cloud Control API if possible, otherwise fallback
@@ -299,11 +284,13 @@ class XResource:
         _account_id = get_account_id(self.lookup_session)
         if _account_id == account_id and self.cloud_control_attributes_mapping:
             props = self.cloud_control_attributes_mapping_lookup(
-                cfn_resource_type, resource_id
+                cfn_resource_type, self.arn if use_arn_for_id else resource_id
             )
         if not props:
             props = self.native_attributes_mapping_lookup(
-                account_id, resource_id, native_lookup_function
+                account_id,
+                self.arn if use_arn_for_id else resource_id,
+                native_lookup_function,
             )
         self.lookup_properties = props
         self.generate_cfn_mappings_from_lookup_properties()
@@ -314,6 +301,7 @@ class XResource:
         Sets the .mappings attribute based on the lookup_attributes for CFN purposes
         """
         for parameter, value in self.lookup_properties.items():
+            print("PARM?", parameter)
             if not isinstance(parameter, Parameter):
                 raise TypeError(
                     f"{self.module.res_key}.{self.name} - lookup attribute {parameter} is",
@@ -323,7 +311,12 @@ class XResource:
                     Parameter,
                 )
             if parameter.return_value:
-                self.mappings[NONALPHANUM.sub("", parameter.return_value)] = value
+                if parameter.return_value not in self.mappings:
+                    self.mappings[NONALPHANUM.sub("", parameter.return_value)] = value
+                else:
+                    self.mappings[
+                        parameter.title + NONALPHANUM.sub("", parameter.return_value)
+                    ] = value
             else:
                 self.mappings[parameter.title] = value
 
@@ -487,6 +480,14 @@ class XResource:
         :return: The FindInMap setting for mapped resource
         """
         if attribute_parameter.return_value:
+            long_name = attribute_parameter.title + NONALPHANUM.sub(
+                "", attribute_parameter.return_value
+            )
+        else:
+            long_name = attribute_parameter.title
+        if self.mappings and long_name in self.mappings:
+            return FindInMap(self.module.mapping_key, self.logical_name, long_name)
+        elif attribute_parameter.return_value:
             return FindInMap(
                 self.module.mapping_key,
                 self.logical_name,
@@ -577,10 +578,6 @@ class XResource:
         """
         Method to create the outputs for XResources
         """
-        if self.stack and not self.stack.is_void:
-            root_stack = self.stack.title
-        else:
-            root_stack = self.module.mapping_key
         if self.lookup_properties:
             for attribute_parameter, value in self.lookup_properties.items():
                 output_name = f"{self.logical_name}{attribute_parameter.title}"
@@ -621,7 +618,9 @@ class XResource:
                         Type=attribute_parameter.Type,
                     ),
                     "ImportValue": GetAtt(
-                        root_stack,
+                        self.stack.get_top_root_stack()
+                        if self.stack
+                        else self.module.mapping_key,
                         f"Outputs.{output_name}",
                     ),
                     "Original": attribute_parameter,
@@ -670,3 +669,61 @@ class XResource:
             {param_id["ImportParameter"].title: param_id["ImportValue"]}
         )
         return param_id
+
+    def add_attribute_to_another_stack(
+        self, ext_stack, attribute: Parameter, settings: ComposeXSettings
+    ):
+
+        attr_id = self.attributes_outputs[attribute]
+        if self.mappings and self.lookup:
+            add_update_mapping(
+                ext_stack.stack_template, self.module.mapping_key, self.module.mappings
+            )
+        elif self.cfn_resource:
+            add_update_parameter_recursively(ext_stack, settings, attr_id)
+        else:
+            raise AttributeError(
+                self.module.res_key, self.name, "No lookup nor mappings ??"
+            )
+        return attr_id
+
+    def post_processing(self, settings: ComposeXSettings):
+        if not self.cfn_resource or not hasattr(self, "post_processing_properties"):
+            LOG.debug("Not a new cluster or no post_processing_properties. Skipping")
+            return
+        LOG.info(f"Post processing {self.module.res_key}.{self.name}")
+        for _property in self.post_processing_properties:
+            cluster_property, property_name, value = get_nested_property(
+                self.cfn_resource, _property
+            )
+            if not value or not isinstance(value, (str, list)):
+                continue
+            if (
+                isinstance(value, list)
+                and value
+                and isinstance(value[0], str)
+                and value[0].startswith(X_KEY)
+            ):
+                value = value[0]
+            if not value.startswith(X_KEY):
+                continue
+            resource, parameter = settings.get_resource_attribute(value)
+            if not resource or not parameter:
+                LOG.error(
+                    f"Failed to find resource/attribute for {property_name} with value {value}"
+                )
+                continue
+            res_param_id = resource.add_attribute_to_another_stack(
+                self.stack, parameter, settings
+            )
+            if res_param_id is resource:
+                res_propery_value = Ref(resource.cfn_resource)
+            elif res_param_id is not resource and resource.cfn_resource:
+                res_propery_value = Ref(res_param_id["ImportParameter"])
+            else:
+                res_propery_value = res_param_id["ImportValue"]
+            setattr(cluster_property, property_name, res_propery_value)
+            LOG.info(
+                f"{self.module.res_key}.{self.name}"
+                f" - Successfully mapped {_property} to {resource.module.res_key}.{resource.name}",
+            )

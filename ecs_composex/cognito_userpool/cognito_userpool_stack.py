@@ -135,20 +135,16 @@ class XStack(ComposeXStack):
         :param ecs_composex.common.settings.ComposeXSettings settings:
         :param dict kwargs:
         """
-        set_resources(settings, UserPool, module)
-        x_resources = settings.compose_content[module.res_key].values()
 
-        lookup_resources = set_lookup_resources(x_resources)
-        if lookup_resources:
-            resolve_lookup(lookup_resources, settings, module)
+        if module.lookup_resources:
+            resolve_lookup(module.lookup_resources, settings, module)
 
-        new_resources = set_new_resources(x_resources, False)
-        if new_resources:
+        if module.new_resources:
             LOG.error(f"{module.res_key} does not support new resources creation yet.")
             stack_template = build_template(f"Root stack to manage {module.mod_key}")
             super().__init__(title, stack_template, **kwargs)
             self.is_void = True
         else:
             self.is_void = True
-        for resource in x_resources:
+        for resource in module.resources_list:
             resource.stack = self

@@ -165,6 +165,7 @@ class ComposeXSettings:
         self.upload = False if self.no_upload else True
         self.parse_command(kwargs, content)
         self.compose_content = {}
+        self.original_content: dict = {}
         self.input_file = (
             kwargs[self.input_file_arg] if keyisset(self.input_file_arg, kwargs) else {}
         )
@@ -224,7 +225,42 @@ class ComposeXSettings:
             "Unable to find any resource matching",
             compose_resource_arn,
             self.x_resource_repr,
+            type(compose_resource_arn),
         )
+
+    def get_resource_attribute(self, compose_resource_arn: str) -> tuple:
+        import re
+
+        resource_attribute_match_re = re.compile(
+            r"^(?P<res_key>x-[\S]+)::(?P<res_name>[\S]+)::(?P<return_value>[\S]+)$"
+        )
+        parts = resource_attribute_match_re.match(compose_resource_arn)
+        if not parts:
+            LOG.error(
+                f"{compose_resource_arn} if invalid. Must match, {resource_attribute_match_re.pattern}"
+            )
+            return None, None
+        try:
+            resource = self.find_resource(
+                f"{parts.group('res_key')}::{parts.group('res_name')}"
+            )
+            if (
+                parts.group("return_value")
+                not in resource.property_to_parameter_mapping
+            ):
+                raise KeyError(
+                    parts.group("return_value"),
+                    "not a valid return value for",
+                    resource.module.res_key,
+                    resource.name,
+                    resource.property_to_parameter_mapping.keys(),
+                )
+            parameter = resource.property_to_parameter_mapping[
+                parts.group("return_value")
+            ]
+            return resource, parameter
+        except LookupError:
+            return None, None
 
     @property
     def x_resource_repr(self):
@@ -250,26 +286,31 @@ class ComposeXSettings:
         Returns: the list of XResource in the execution.
 
         """
-        all_keys = self.compose_content.keys()
-        all_resources = []
-        for res_key in all_keys:
+        _resources = []
+        for name, module in self.mod_manager.modules.items():
+            _resources += module.resources_list
+        return _resources
 
-            if not isinstance(self.compose_content[res_key], dict):
-                continue
-            for resource in self.compose_content[res_key].values():
-                if not issubclass(
-                    type(resource),
-                    (
-                        XResource,
-                        ServicesXResource,
-                        NetworkXResource,
-                        ApiXResource,
-                        AwsEnvironmentResource,
-                    ),
-                ):
-                    continue
-                all_resources.append(resource)
-        return all_resources
+        # all_keys = self.compose_content.keys()
+        # all_resources = []
+        # for res_key in all_keys:
+        #
+        #     if not isinstance(self.compose_content[res_key], dict):
+        #         continue
+        #     for resource in self.compose_content[res_key].values():
+        #         if not issubclass(
+        #             type(resource),
+        #             (
+        #                 XResource,
+        #                 ServicesXResource,
+        #                 NetworkXResource,
+        #                 ApiXResource,
+        #                 AwsEnvironmentResource,
+        #             ),
+        #         ):
+        #             continue
+        #         all_resources.append(resource)
+        # return all_resources
 
     def evaluate_private_namespace(self):
         """
@@ -484,8 +525,10 @@ class ComposeXSettings:
             if not keyisset(self.input_file_arg, kwargs)
             else kwargs[self.input_file_arg]
         )
+        LOG.debug(f"Input files: {files}")
         content_def = ComposeDefinition(files, content)
-        self.compose_content = content_def.definition
+        self.original_content = content_def.definition
+        self.compose_content = deepcopy(content_def.definition)
         source = pkg_files("ecs_composex").joinpath("specs/compose-spec.json")
         LOG.info(f"Validating against input schema {source}")
         resolver = jsonschema.RefResolver(

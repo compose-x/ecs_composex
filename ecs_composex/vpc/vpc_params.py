@@ -67,7 +67,9 @@ PUBLIC_SUBNETS = Parameter(
 
 APP_SUBNETS_CIDR_T = "AppSubnetsCidr"
 APP_SUBNETS_CIDR = Parameter(
-    APP_SUBNETS_CIDR_T, group_label=VPC_SETTINGS, Type="CommaDelimitedList"
+    APP_SUBNETS_CIDR_T,
+    group_label=VPC_SETTINGS,
+    Type="CommaDelimitedList",
 )
 APP_SUBNETS_T = "AppSubnets"
 APP_SUBNETS = Parameter(APP_SUBNETS_T, group_label=VPC_SETTINGS, Type=SUBNETS_TYPE)

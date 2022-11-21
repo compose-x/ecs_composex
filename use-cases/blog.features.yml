@@ -218,10 +218,5 @@ volumes:
   some-volume: {}
   normal-vol: {}
 
-
-x-dns:
-  PrivateNamespace:
-    Name: lambda.internal
-
 x-tags:
   costcentre: lambda

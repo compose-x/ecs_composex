@@ -24,7 +24,7 @@ from troposphere import (
 
 from ecs_composex.common.logging import LOG
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.common.troposphere_tools import build_template
+from ecs_composex.common.troposphere_tools import add_outputs, build_template
 from ecs_composex.resource_settings import generate_resource_permissions
 from ecs_composex.resources_import import import_record_properties
 
@@ -181,7 +181,7 @@ def evaluate_parameters(bucket, bucket_template):
     """
     Review bucket parameters to configure the bucket and extra properties.
     """
-    if bucket.mappings or bucket.use:
+    if bucket.mappings:
         return
     if not bucket.parameters:
         return
@@ -208,13 +208,13 @@ def create_s3_template(new_buckets: list[Bucket], template: Template) -> Templat
             bucket_template = template
             if mono_template:
                 bucket_template.add_resource(bucket.cfn_resource)
-                bucket_template.add_output(bucket.outputs)
+                add_outputs(bucket_template, bucket.outputs)
             elif not mono_template:
                 bucket_template = build_template(
                     f"Template for S3 Bucket {bucket.name}"
                 )
                 bucket_template.add_resource(bucket.cfn_resource)
-                bucket_template.add_output(bucket.outputs)
+                add_outputs(bucket_template, bucket.outputs)
                 bucket_stack = ComposeXStack(
                     bucket.logical_name, stack_template=bucket_template
                 )

@@ -87,6 +87,7 @@ def elasticache_to_ecs(resources, services_stack, res_root_stack, settings):
                 resource,
                 port_parameter=resource.port_attr,
                 sg_parameter=CLUSTER_SG,
+                settings=settings,
             )
         elif resource.mappings and not resource.cfn_resource:
             link_cluster_to_service(

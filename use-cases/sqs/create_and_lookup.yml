@@ -58,11 +58,11 @@ x-sqs:
         - useless: "yes"
         - costcentre: lambda
     Services:
-      - name: bignicefamily
-        access: RWMessages
-      - name: app03
-        access: RWMessages
-        scaling:
+      bignicefamily:
+        Access: RWMessages
+      app03:
+        Access: RWMessages
+        Scaling:
           ScaleInCooldown: 120
           ScaleOutCooldown: 60
           Steps:

@@ -31,14 +31,6 @@ services:
     x-ecr:
       InterpolateWithDigest: true
 
-
-x-dns:
-  PublicZone:
-    Name: mydomain.net
-  PrivateNamespace:
-    Name: cluster.internal
-
-
 x-elbv2:
   public-alb:
     Properties:

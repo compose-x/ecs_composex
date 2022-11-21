@@ -76,6 +76,7 @@ class Efs(NetworkXResource):
         self.access_points = []
         self.volume = definition["Volume"]
         super().__init__(name, definition, module, settings)
+        self.support_defaults = True
         self.set_override_subnets()
         self.ref_parameter = FS_ID
         self.arn_parameter = FS_ARN
@@ -147,18 +148,14 @@ class XStack(ComposeXStack):
     def __init__(
         self, name, settings: ComposeXSettings, module: XResourceModule, **kwargs
     ):
-        set_resources(settings, Efs, module)
-        x_resources = settings.compose_content[module.res_key].values()
-        new_resources = set_new_resources(x_resources, False)
-        lookup_resources = set_lookup_resources(x_resources)
-        if new_resources:
-            stack_template = create_efs_stack(settings, new_resources)
+        if module.new_resources:
+            stack_template = create_efs_stack(settings, module.new_resources)
             super().__init__(name, stack_template, **kwargs)
         else:
             self.is_void = True
-        if lookup_resources:
+        if module.lookup_resources:
             warnings.warn(
                 f"{module.res_key} - Lookup not supported. You can only create new resources at the moment"
             )
-        for resource in settings.compose_content[module.res_key].values():
+        for resource in module.resources_list:
             resource.stack = self

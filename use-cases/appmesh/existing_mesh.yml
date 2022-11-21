@@ -115,12 +115,6 @@ x-appmesh:
       - name: dateteller
         router: dateteller
 
-x-dns:
-  PrivateNamespace:
-    Name: mycluster.lan
-  PublicNamespace:
-    Name: bdd-testing.compose-x.io
-
 x-vpc:
   Create:
     VpcCidr: 10.0.0.24

@@ -6,7 +6,11 @@ from troposphere import Tags
 from troposphere.kinesis import Stream, StreamEncryption
 
 from ecs_composex.common.logging import LOG
-from ecs_composex.common.troposphere_tools import build_template
+from ecs_composex.common.troposphere_tools import (
+    add_outputs,
+    add_resource,
+    build_template,
+)
 from ecs_composex.resources_import import import_record_properties
 
 
@@ -51,6 +55,6 @@ def create_streams_template(new_resources, settings):
     root_template = build_template("Root stack for ecs_composex.kinesis")
     for res in new_resources:
         create_new_stream(res)
-        root_template.add_resource(res.cfn_resource)
-        root_template.add_output(res.outputs)
+        add_resource(root_template, res.cfn_resource)
+        add_outputs(root_template, res.outputs)
     return root_template

@@ -2,9 +2,11 @@ Feature: ecs_composex.opensearch
 
     @opensearch @create
     Scenario Outline: Simple OS Domain with services
-        Given I use <file_path> as my docker-compose file and <override_file> as override file
-        And I render the docker-compose to composex
-        Then I render all files to verify execution
+        Given With <file_path>
+        And With <override_file>
+        And I use defined files as input to define execution settings
+        Then I render the docker-compose to composex to validate
+        And I render all files to verify execution
 
         Examples:
             | file_path                   | override_file                                |

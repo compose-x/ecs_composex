@@ -113,11 +113,11 @@ x-kms:
         - usage: unknown
         - ForLookup: "true"
 
-x-ssm_parameter:
-  testing:
-    Properties:
-      Type: String
-      Value: "a simple test"
-    Services:
-      web:
-        Access: RO
+#x-ssm_parameter:
+#  testing:
+#    Properties:
+#      Type: String
+#      Value: "a simple test"
+#    Services:
+#      web:
+#        Access: RO

@@ -19,6 +19,7 @@ if TYPE_CHECKING:
 
 from compose_x_common.compose_x_common import keyisset
 from troposphere import AWSHelperFn, GetAtt, NoValue, Ref, Sub
+from troposphere.ecs import Environment
 from troposphere.iam import Policy as IamPolicy
 from troposphere.iam import PolicyType
 
@@ -322,7 +323,11 @@ def set_update_container_env_vars_from_resource_attribute(
         r"^(?P<res_key>x-[\S]+)::(?P<res_name>[\S]+)::(?P<return_value>[\S]+)$"
     )
     for defined_env_var in svc_container_environment:
-        value = defined_env_var.Value
+        value = (
+            defined_env_var.Value
+            if isinstance(defined_env_var, Environment)
+            else defined_env_var
+        )
         if not isinstance(value, str):
             continue
         parts = resource_attribute_match_re.match(value)
@@ -626,19 +631,21 @@ def import_resource_into_service_stack(
         )
 
 
-def add_dependency(resource, family: ComposeFamily) -> None:
+def add_dependency(resource, family: ComposeFamily, settings: ComposeXSettings) -> None:
     """
     Add dependency across the resource stack and the ECS Service stack
 
     :param ecs_composex.common.compose_resources.ServicesXResource resource: The resource
     :param ecs_composex.ecs.ecs_family.ComposeFamily family:
+    :param settings:
     """
+    resource_top_stack = resource.stack.get_top_root_stack(settings.root_stack)
     if (
         resource.stack
         and not resource.stack.is_void
-        and resource.stack.title not in family.stack.DependsOn
+        and resource_top_stack.title not in family.stack.DependsOn
     ):
-        family.stack.DependsOn.append(resource.stack.title)
+        family.stack.DependsOn.append(resource_top_stack.title)
 
 
 def link_resource_kms_to_service(settings: ComposeXSettings, resource, target) -> None:
@@ -725,7 +732,8 @@ def link_resource_to_services(
         set_iam_link_resource_to_services(
             resource, target, arn_attr_value, access_subkeys
         )
-        add_dependency(resource, target[0])
+        if resource.cfn_resource:
+            add_dependency(resource, target[0], settings)
         link_resource_kms_to_service(settings, resource, target)
 
 

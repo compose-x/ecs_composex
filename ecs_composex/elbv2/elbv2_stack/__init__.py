@@ -45,15 +45,11 @@ class XStack(ComposeXStack):
     def __init__(
         self, title, settings: ComposeXSettings, module: XResourceModule, **kwargs
     ):
-        set_resources(settings, Elbv2, module)
-        x_resources = settings.compose_content[module.res_key].values()
-        lookup_resources = set_lookup_resources(x_resources)
-        new_resources = set_new_resources(x_resources, True)
-        if lookup_resources:
+        if module.lookup_resources:
             warnings.warn(
                 f"{module.res_key} - Lookup not supported. You can only create new resources."
             )
-        if not new_resources:
+        if not module.new_resources:
             self.is_void = True
             return
         stack_template = init_elbv2_template()
@@ -62,10 +58,10 @@ class XStack(ComposeXStack):
             APP_SUBNETS.title: Ref(APP_SUBNETS),
             PUBLIC_SUBNETS.title: Ref(PUBLIC_SUBNETS),
         }
-        for resource in new_resources:
+        for resource in module.new_resources:
             resource.set_lb_definition()
             resource.sort_alb_ingress(settings, stack_template)
 
         super().__init__(title, stack_template, stack_parameters=lb_input, **kwargs)
-        for resource in new_resources:
+        for resource in module.resources_list:
             resource.stack = self

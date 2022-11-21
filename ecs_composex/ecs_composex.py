@@ -7,7 +7,10 @@ Main module to generate a full stack with VPC, Cluster, Compute, Services and al
 
 from __future__ import annotations
 
+import json
 from typing import TYPE_CHECKING
+
+import yaml
 
 if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
@@ -50,6 +53,7 @@ from ecs_composex.vpc.helpers import (
     define_vpc_settings,
     update_network_resources_vpc_config,
 )
+from ecs_composex.vpc.vpc_stack import Vpc
 from ecs_composex.vpc.vpc_stack import XStack as VpcStack
 
 RES_REGX = re.compile(r"(^([x-]+))")
@@ -123,7 +127,7 @@ def invoke_x_to_ecs(
     if ecs_function:
         LOG.debug(ecs_function)
         ecs_function(
-            settings.compose_content[composex_key],
+            settings.mod_manager.modules[composex_key].resources,
             services_stack,
             resource,
             settings,
@@ -150,13 +154,13 @@ def apply_x_configs_to_ecs(
             or issubclass(type(resource), (ServicesXResource, AwsEnvironmentResource))
         ) and hasattr(resource, "to_ecs"):
             resource.to_ecs(settings, modules, root_stack)
-
     for resource_stack in root_stack.stack_template.resources.values():
         if (
             issubclass(type(resource_stack), ComposeXStack)
             and not resource_stack.is_void
         ):
             invoke_x_to_ecs(None, root_stack, resource_stack, settings)
+
     for resource_stack in settings.x_resources_void:
         res_type = list(resource_stack.keys())[-1]
         invoke_x_to_ecs(res_type, root_stack, resource_stack[res_type], settings)
@@ -277,21 +281,28 @@ def generate_full_template(settings: ComposeXSettings):
         f"Service families to process {[family.name for family in settings.families.values()]}"
     )
     settings.root_stack = create_root_stack(settings)
+    for family in settings.families.values():
+        family.stack.parent_stack = settings.root_stack
     add_ecs_cluster(settings)
     settings.mod_manager = ModManager(settings)
     settings.mod_manager.modules_repr()
+    settings.mod_manager.init_mods_resources(settings)
     iam_stack = add_resource(
         settings.root_stack.stack_template, IamStack("iam", settings)
     )
     add_x_resources(settings)
     add_compose_families(settings)
-    vpc_module = settings.mod_manager.add_module("x-vpc")
+    if "x-vpc" not in settings.mod_manager.modules:
+        vpc_module = settings.mod_manager.load_module("x-vpc", {})
+    else:
+        vpc_module = settings.mod_manager.modules["x-vpc"]
     vpc_stack = VpcStack("vpc", settings, vpc_module)
     define_vpc_settings(settings, vpc_module, vpc_stack)
     if vpc_stack.vpc_resource and (
         vpc_stack.vpc_resource.cfn_resource or vpc_stack.vpc_resource.mappings
     ):
         settings.set_networks(vpc_stack)
+    vpc_module.resources.update({"x-vpc": vpc_stack.vpc_resource})
     x_cloud_lookup_and_new_vpc(settings, vpc_stack)
 
     for family in settings.families.values():
@@ -311,6 +322,7 @@ def generate_full_template(settings: ComposeXSettings):
             family.apply_ecs_execute_command_permissions(settings)
         family.import_all_sidecars()
         family.handle_logging(settings)
+
     apply_x_configs_to_ecs(settings, settings.root_stack, modules=settings.mod_manager)
     apply_x_resource_to_x(settings, settings.root_stack, vpc_stack)
 
@@ -328,7 +340,14 @@ def generate_full_template(settings: ComposeXSettings):
         family.finalize_family_settings()
         map_resource_return_value_to_services_command(family, settings)
         family.state_facts()
+
     set_ecs_cluster_identifier(settings.root_stack, settings)
     add_all_tags(settings.root_stack.stack_template, settings)
     set_all_mappings_to_root_stack(settings.root_stack, settings)
+
+    for resource in settings.x_resources:
+        if hasattr(resource, "post_processing"):
+            resource.post_processing(settings)
+
+    settings.mod_manager.modules.clear()
     return settings.root_stack

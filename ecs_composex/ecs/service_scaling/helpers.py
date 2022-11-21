@@ -1,6 +1,15 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  Copyright 2020-2022 John Mille <john@compose-x.io>
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from troposphere import Template
+    from troposphere.applicationautoscaling import ScalableTarget
+    from ecs_composex.compose.compose_services import ComposeService
+
 import secrets
 import string
 
@@ -13,10 +22,11 @@ from troposphere.applicationautoscaling import (
 )
 
 from ecs_composex.common.logging import LOG
+from ecs_composex.common.troposphere_tools import add_resource
 from ecs_composex.ecs.ecs_params import SERVICE_SCALING_TARGET
 
 
-def validate_steps_definition(steps, unordered):
+def validate_steps_definition(steps: list[dict], unordered: list[dict]) -> None:
     """
     Validates that the steps definition is correct
 
@@ -43,11 +53,9 @@ def validate_steps_definition(steps, unordered):
         unordered.append(step_def)
 
 
-def rectify_scaling_steps(cfn_steps):
+def rectify_scaling_steps(cfn_steps: list[StepAdjustment]) -> None:
     """
-    Function to rectify settings to avoid errors
-
-    :param list cfn_steps:
+    Function to rectify settings to avoid errors with invalid step scaling configuration.
     """
     if hasattr(cfn_steps[-1], "MetricIntervalUpperBound") and not isinstance(
         getattr(cfn_steps[-1], "MetricIntervalUpperBound"), Ref
@@ -61,7 +69,10 @@ def rectify_scaling_steps(cfn_steps):
         setattr(cfn_steps[0], "MetricIntervalLowerBound", 1)
 
 
-def define_step_adjustment(pre_upper, ordered, cfn_steps):
+def define_step_adjustment(pre_upper: int, ordered: list, cfn_steps: list) -> None:
+    """
+    Creates the steps list for step scaling.
+    """
     for step_def in ordered:
         if pre_upper and not int(step_def["LowerBound"]) >= pre_upper:
             raise ValueError(
@@ -82,13 +93,11 @@ def define_step_adjustment(pre_upper, ordered, cfn_steps):
         )
 
 
-def generate_scaling_out_steps(steps, target):
+def generate_scaling_out_steps(
+    steps: list[dict], target: ScalableTarget
+) -> list[StepAdjustment]:
     """
-    Function to generate the scaling steps
-
-    :param list steps:
-    :param tropsphere.applicationautoscaling.ScalingTarget target: The defined max in the Scalable Target
-    :return:
+    Function to generate the scaling steps from the defined definition
     """
     unordered = []
     validate_steps_definition(steps, unordered)
@@ -107,17 +116,13 @@ def generate_scaling_out_steps(steps, target):
 
 
 def generate_alarm_scaling_out_policy(
-    service_name, service_template, scaling_def, scaling_source=None
-):
+    service_name: str,
+    service_template: Template,
+    scaling_def: dict,
+    scaling_source: str = None,
+) -> ScalingPolicy:
     """
     Function to create the scaling out policy based on steps
-
-    :param str service_name: The name of the service/family
-    :param troposphere.Template service_template:
-    :param dict scaling_def:
-    :param str scaling_source:
-    :return: The scaling out policy
-    :rtype: ScalingPolicy
     """
     if not keyisset("Steps", scaling_def):
         raise KeyError("No steps were defined in the scaling definition", scaling_def)
@@ -133,7 +138,6 @@ def generate_alarm_scaling_out_policy(
     )
     policy = ScalingPolicy(
         f"ScalingOutPolicy{scaling_source}{service_name}",
-        template=service_template,
         PolicyName=f"ScalingOutPolicy{scaling_source}{service_name}",
         PolicyType="StepScaling",
         ScalingTargetId=Ref(SERVICE_SCALING_TARGET),
@@ -147,20 +151,18 @@ def generate_alarm_scaling_out_policy(
             else scaling_def["ScaleOutCooldown"],
         ),
     )
+    add_resource(service_template, policy, True)
     return policy
 
 
 def reset_to_zero_policy(
-    service_name, service_template, scaling_def, scaling_source=None
-):
+    service_name: str,
+    service_template: Template,
+    scaling_def: dict,
+    scaling_source: str = None,
+) -> ScalingPolicy:
     """
     Defines a policy allowing to reset to 0 containers.
-
-    :param service_name:
-    :param service_template:
-    :param dict scaling_def:
-    :param scaling_source:
-    :return:
     """
     length = 6
     if not scaling_source:
@@ -169,7 +171,6 @@ def reset_to_zero_policy(
         )
     policy = ScalingPolicy(
         f"ScalingInPolicy{scaling_source}{service_name}",
-        template=service_template,
         PolicyName=f"ScalingInPolicy{scaling_source}{service_name}",
         PolicyType="StepScaling",
         ScalingTargetId=Ref(SERVICE_SCALING_TARGET),
@@ -188,10 +189,11 @@ def reset_to_zero_policy(
             ],
         ),
     )
+    add_resource(service_template, policy, True)
     return policy
 
 
-def handle_range(config, key, new_range):
+def handle_range(config: dict, key: str, new_range: str) -> None:
     """
     Function to handle Range.
     """
@@ -204,7 +206,9 @@ def handle_range(config, key, new_range):
         config[key]["max"] = max(config[key]["max"], new_max)
 
 
-def handle_defined_target_scaling_props(prop, config, key, new_config):
+def handle_defined_target_scaling_props(
+    prop: str, config: dict, key: str, new_config: dict
+) -> None:
     if prop[1] is int:
         config[key][prop[0]] = min(config[key][prop[0]], new_config[prop[0]])
     elif (
@@ -216,7 +220,7 @@ def handle_defined_target_scaling_props(prop, config, key, new_config):
         config[key][prop[0]] = True
 
 
-def define_new_config(config, key, new_config):
+def define_new_config(config: dict, key: str, new_config: dict) -> None:
     valid_keys = [
         "CpuTarget",
         "MemoryTarget",
@@ -232,7 +236,7 @@ def define_new_config(config, key, new_config):
             config[key][prop] = new_config[prop]
 
 
-def handle_target_scaling(config, key, new_config):
+def handle_target_scaling(config: dict, key: str, new_config: dict) -> None:
     """
     Function to handle merge of target tracking config
     """
@@ -243,13 +247,11 @@ def handle_target_scaling(config, key, new_config):
         define_new_config(config, key, new_config)
 
 
-def handle_defined_x_aws_autoscaling(configs, service):
+def handle_defined_x_aws_autoscaling(
+    configs: list[dict], service: ComposeService
+) -> None:
     """
     Function to sort out existing or not x-aws-autoscaling in the deploy section
-
-    :param list configs:
-    :param ecs_composex.common.compose_services.ComposeService service:
-    :return:
     """
     if keyisset("deploy", service.definition) and keyisset(
         "x-aws-autoscaling", service.definition["deploy"]
@@ -273,7 +275,7 @@ def handle_defined_x_aws_autoscaling(configs, service):
         configs.append(service.x_scaling)
 
 
-def merge_family_services_scaling(services):
+def merge_family_services_scaling(services: list[ComposeService]) -> dict:
     x_scaling = {
         "Range": None,
         "TargetScaling": {
@@ -300,13 +302,11 @@ def merge_family_services_scaling(services):
     return x_scaling
 
 
-def define_tracking_target_configuration(target_scaling_config, config_key):
+def define_tracking_target_configuration(
+    target_scaling_config: dict, config_key: str
+) -> applicationautoscaling.TargetTrackingScalingPolicyConfiguration:
     """
     Function to create the configuration for target tracking scaling
-
-    :param dict target_scaling_config:
-    :param str config_key:
-    :return:
     """
     settings = {
         "cpu": {

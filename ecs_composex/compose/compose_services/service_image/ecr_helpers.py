@@ -25,7 +25,7 @@ def invalidate_image_from_ecr(service, mute=False):
     :return: True when the image is not from ECR
     :rtype: bool
     """
-    if not ECR_URI_RE.match(service.image):
+    if not ECR_URI_RE.match(service.image.image_uri):
         if not mute:
             LOG.info(
                 f"{service.name} - image provided not valid ECR URI - "

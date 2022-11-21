@@ -107,7 +107,7 @@ def handle_acm_records(
         )[-1]
         if dns_zone_pointer != x_hosted_zone.name:
             continue
-        x_hosted_zone.init_stack_for_records(root_stack)
+        x_hosted_zone.init_stack_for_records(root_stack, settings)
         update_route53_pointer(
             x_hosted_zone,
             validation_opt,

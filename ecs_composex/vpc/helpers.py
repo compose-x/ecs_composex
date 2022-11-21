@@ -29,29 +29,23 @@ def update_network_resources_vpc_config(settings, vpc_stack):
     :type vpc_stack: ecs_composex.vpc.vpc_stack.VpcStack
     """
     for resource in settings.x_resources:
-        if resource.mappings:
+        if (
+            not resource.requires_vpc
+            or resource.mappings
+            or (hasattr(resource, "stack") and resource.stack == vpc_stack)
+        ):
             LOG.debug(
                 f"{resource.module.res_key}.{resource.name} - Lookup resource need no VPC Settings."
-            )
-            continue
-        if not resource.requires_vpc:
-            LOG.debug(
-                f"{resource.module.res_key}.{resource.name} - Resource is not bound to VPC."
             )
             continue
         if not issubclass(type(resource), NetworkXResource):
             LOG.debug(
                 f"{resource.module.res_key}.{resource.name} - Not a NetworkXResource"
             )
-        if (
-            hasattr(resource.stack, "stack_parent")
-            and resource.stack.parent_stack is None
-        ) or resource.stack == resource.stack.get_top_root_stack():
-            LOG.debug(f"{resource.stack.title} is not a nested stacks")
-            if vpc_stack.vpc_resource.mappings:
-                resource.stack.set_vpc_params_from_vpc_stack_import(vpc_stack)
-            else:
-                resource.stack.set_vpc_parameters_from_vpc_stack(vpc_stack)
+        if vpc_stack.vpc_resource.mappings:
+            resource.stack.set_vpc_params_from_vpc_lookup(vpc_stack, settings)
+        else:
+            resource.stack.set_vpc_parameters_from_vpc_stack(vpc_stack, settings)
         if resource.requires_vpc and hasattr(resource, "update_from_vpc"):
             resource.update_from_vpc(vpc_stack, settings)
 

@@ -15,7 +15,6 @@ from ecs_composex.common.logging import LOG
 from ecs_composex.common.settings import ComposeXSettings
 from ecs_composex.common.stacks import process_stacks
 from ecs_composex.compose.compose_services.service_image.docker_opts import (
-    evaluate_docker_configs,
     evaluate_ecr_configs,
 )
 from ecs_composex.ecs_composex import generate_full_template
@@ -57,6 +56,7 @@ def main_parser():
         action=ArgparseHelper,
         help="show this help message and exit",
     )
+
     cmd_parsers = parser.add_subparsers(
         dest=ComposeXSettings.command_arg, help="Command to execute."
     )
@@ -140,6 +140,9 @@ def main_parser():
         default=False,
         help="For services with x-ecr defined, ignores errors if any found",
     )
+    base_command_parser.add_argument(
+        "--loglevel", type=str, help="Log level. Defaults to INFO", required=False
+    )
     for command in ComposeXSettings.active_commands:
         cmd_parsers.add_parser(
             name=command["name"],
@@ -166,6 +169,24 @@ def main():
         parser.print_help()
         sys.exit()
     args = parser.parse_args()
+    if args.loglevel:
+        valid_levels = [
+            "FATAL",
+            "CRITICAL",
+            "ERROR",
+            "WARNING",
+            "WARN",
+            "INFO",
+            "DEBUG",
+            "INFO",
+        ]
+        if args.loglevel.upper() in valid_levels:
+            LOG.setLevel(logging.getLevelName(args.loglevel.upper()))
+            LOG.handlers[0].setLevel(logging.getLevelName(args.loglevel.upper()))
+        else:
+            print(
+                f"Log level value {args.loglevel} is invalid. Must me one of {valid_levels}"
+            )
     LOG.debug(args)
     settings = ComposeXSettings(**vars(args))
     settings.set_bucket_name_from_account_id()
@@ -176,7 +197,6 @@ def main():
             "You must update the templates in order to deploy. We won't be deploying."
         )
         settings.deploy = False
-    evaluate_docker_configs(settings)
     scan_results = evaluate_ecr_configs(settings)
     if scan_results and not settings.ignore_ecr_findings:
         warnings.warn("SCAN Images failed for instructed images. Failure")

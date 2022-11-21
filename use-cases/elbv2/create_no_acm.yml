@@ -3,7 +3,9 @@
 
 x-elbv2:
   lbA:
-    Properties: {}
+    Properties:
+      Type: application
+      Scheme: internet-facing
     Settings:
      S3Logs: bucket:/prefix
      timeout_seconds: 60

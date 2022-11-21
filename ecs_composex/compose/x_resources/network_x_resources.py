@@ -170,6 +170,7 @@ class DatabaseXResource(NetworkXResource):
                 port_parameter=self.port_param,
                 sg_parameter=self.security_group_param,
                 secret_parameter=self.db_secret_arn_parameter,
+                settings=settings,
             )
             if self.db_cluster_arn_parameter:
                 link_resource_to_services(

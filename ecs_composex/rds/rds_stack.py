@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
     from ecs_composex.mods_manager import XResourceModule
+    from ecs_composex.common.cfn_params import Parameter
 
 from compose_x_common.aws.rds import RDS_DB_CLUSTER_ARN_RE, RDS_DB_INSTANCE_ARN_RE
 from compose_x_common.compose_x_common import attributes_to_mapping, keyisset
@@ -22,11 +23,6 @@ from troposphere.rds import DBInstance as CfnDBInstance
 from ecs_composex.common.logging import LOG
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common.troposphere_tools import build_template
-from ecs_composex.compose.x_resources.helpers import (
-    set_lookup_resources,
-    set_new_resources,
-    set_resources,
-)
 from ecs_composex.compose.x_resources.network_x_resources import DatabaseXResource
 from ecs_composex.rds.rds_features import apply_extra_parameters
 from ecs_composex.rds.rds_params import (
@@ -34,6 +30,7 @@ from ecs_composex.rds.rds_params import (
     DB_CLUSTER_NAME,
     DB_ENDPOINT_ADDRESS,
     DB_ENDPOINT_PORT,
+    DB_INSTANCE_ARN,
     DB_NAME,
     DB_RO_ENDPOINT_ADDRESS,
     DB_SECRET_ARN,
@@ -41,7 +38,12 @@ from ecs_composex.rds.rds_params import (
 )
 from ecs_composex.rds.rds_template import generate_rds_templates
 from ecs_composex.rds_resources_settings import lookup_rds_resource, lookup_rds_secret
-from ecs_composex.vpc.vpc_params import STORAGE_SUBNETS, VPC_ID
+from ecs_composex.vpc.vpc_params import (
+    APP_SUBNETS,
+    PUBLIC_SUBNETS,
+    STORAGE_SUBNETS,
+    VPC_ID,
+)
 
 
 def get_db_instance_config(db, account_id, resource_id):
@@ -138,6 +140,21 @@ class Rds(DatabaseXResource):
         self.ref_parameter = DB_CLUSTER_NAME
         self.db_cluster_endpoint_param = DB_ENDPOINT_ADDRESS
         self.db_cluster_ro_endpoint_param = DB_RO_ENDPOINT_ADDRESS
+        self.support_defaults = True
+
+    @property
+    def arn_parameter(self) -> Parameter:
+        if isinstance(self.cfn_resource, CfnDBCluster):
+            self.db_cluster_arn_parameter = DB_CLUSTER_ARN
+        else:
+            self.db_cluster_arn_parameter = DB_INSTANCE_ARN
+        return self.db_cluster_arn_parameter
+
+    @arn_parameter.setter
+    def arn_parameter(self, value):
+        if value is None:
+            pass
+        self.db_cluster_arn_parameter = value
 
     def init_outputs(self):
         """
@@ -151,12 +168,11 @@ class Rds(DatabaseXResource):
                 None,
                 "DbName",
             ),
-            self.db_cluster_arn_parameter: (
-                f"{self.logical_name}{self.db_cluster_arn_parameter.title}",
+            self.arn_parameter: (
+                f"{self.logical_name}{self.arn_parameter.title}",
                 self.cfn_resource,
-                Sub,
-                f"arn:${{{AWS_PARTITION}}}:rds:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:"
-                f"${{{self.cfn_resource.title}}}",
+                GetAtt,
+                self.arn_parameter.return_value,
             ),
             self.port_param: (
                 f"{self.logical_name}{self.port_param.return_value}",
@@ -186,14 +202,19 @@ class Rds(DatabaseXResource):
                 self.db_cluster_endpoint_param.return_value,
                 self.db_cluster_endpoint_param.return_value.replace(".", ""),
             ),
-            self.db_cluster_ro_endpoint_param: (
-                f"{self.logical_name}{self.db_cluster_ro_endpoint_param.title}",
-                self.cfn_resource,
-                GetAtt,
-                self.db_cluster_ro_endpoint_param.return_value,
-                self.db_cluster_ro_endpoint_param.return_value.replace(".", ""),
-            ),
         }
+        if isinstance(self.cfn_resource, CfnDBCluster):
+            self.output_properties.update(
+                {
+                    self.db_cluster_ro_endpoint_param: (
+                        f"{self.logical_name}{self.db_cluster_ro_endpoint_param.title}",
+                        self.cfn_resource,
+                        GetAtt,
+                        self.db_cluster_ro_endpoint_param.return_value,
+                        self.db_cluster_ro_endpoint_param.return_value.replace(".", ""),
+                    )
+                }
+            )
 
     def lookup_resource(
         self,
@@ -202,6 +223,7 @@ class Rds(DatabaseXResource):
         cfn_resource_type,
         tagging_api_id,
         subattribute_key=None,
+        use_arn_for_id: bool = False,
     ):
         """
         Method to self-identify properties
@@ -224,9 +246,7 @@ class Rds(DatabaseXResource):
         :return:
         """
         if self.parameters:
-            apply_extra_parameters(
-                settings, self, self.stack.stack_template.resources[self.name]
-            )
+            apply_extra_parameters(settings, self, self.stack)
 
 
 class XStack(ComposeXStack):
@@ -237,24 +257,22 @@ class XStack(ComposeXStack):
     def __init__(
         self, title, settings: ComposeXSettings, module: XResourceModule, **kwargs
     ):
-        set_resources(settings, Rds, module)
-        x_resources = settings.compose_content[module.res_key].values()
-        new_resources = set_new_resources(x_resources, True)
-        lookup_resources = set_lookup_resources(x_resources)
-        if new_resources:
+
+        if module.new_resources:
             stack_template = build_template(
-                "Root stack for RDS DBs", [VPC_ID, STORAGE_SUBNETS]
+                "Root stack for RDS DBs",
+                [VPC_ID, STORAGE_SUBNETS, APP_SUBNETS, PUBLIC_SUBNETS],
             )
             super().__init__(title, stack_template, **kwargs)
-            generate_rds_templates(stack_template, new_resources, settings)
-            self.mark_nested_stacks()
+            generate_rds_templates(self, stack_template, module.new_resources, settings)
+            self.parent_stack = settings.root_stack
+            # self.mark_nested_stacks()
         else:
             self.is_void = True
-        for resource in settings.compose_content[module.res_key].values():
-            resource.stack = self
-        if lookup_resources and module.mapping_key not in settings.mappings:
+        if module.lookup_resources and module.mapping_key not in settings.mappings:
             settings.mappings[module.mapping_key] = {}
-        for resource in lookup_resources:
+        for resource in module.lookup_resources:
+            resource.stack = self
             if keyisset("cluster", resource.lookup):
                 resource.lookup_resource(
                     RDS_DB_CLUSTER_ARN_RE,

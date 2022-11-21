@@ -1,14 +1,12 @@
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2022 John Mille <john@compose-x.io>
 
-
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import boto3.session
-
 if TYPE_CHECKING:
+    from ecs_composex.common.settings import ComposeXSettings
     from troposphere import Template
     from ecs_composex.common.settings import ComposeXSettings
     from ecs_composex.common.stacks import ComposeXStack
@@ -16,6 +14,7 @@ if TYPE_CHECKING:
 
 from itertools import chain
 
+import boto3.session
 from compose_x_common.compose_x_common import keyisset, set_else_none
 from troposphere import MAX_OUTPUTS, AccountId, GetAtt, Ref, Sub
 from troposphere.sqs import Queue as CfnQueue
@@ -73,7 +72,6 @@ def define_queue_properties(queue):
     props = import_record_properties(queue.properties, CfnQueue)
     queue.cfn_resource = CfnQueue(queue.logical_name, **props)
     LOG.debug(queue.cfn_resource.title, queue.logical_name)
-    return queue
 
 
 def add_aws_services_queue_policy(queue: Queue):

@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
     from ecs_composex.mods_manager import XResourceModule
-    from ecs_composex.route53.route53_zone import HostedZone
+    from ecs_composex.route53.route53_stack import HostedZone
 
 from compose_x_common.compose_x_common import keyisset
 from troposphere.route53 import HostedZone as CfnHostedZone

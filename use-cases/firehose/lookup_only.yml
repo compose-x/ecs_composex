@@ -2,7 +2,7 @@
 # Use cases for kinesis
 
 x-kinesis_firehose:
-  stream-to-s3-direct-put:
+  lookup-stream-to-s3-direct-put:
     Lookup:
       Tags:
         - ForLookupTesting: "true"

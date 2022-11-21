@@ -32,7 +32,6 @@ def step_impl(context):
     cases_path = [
         path.abspath(f"{here()}/../../../{file_name}") for file_name in context.files
     ]
-    print(cases_path)
     context.settings = ComposeXSettings(
         profile_name=getattr(context, "profile_name")
         if hasattr(context, "profile_name")
@@ -45,6 +44,11 @@ def step_impl(context):
         },
     )
     context.settings.set_bucket_name_from_account_id()
+
+
+@then("I render the docker-compose to composex to validate")
+def step_impl(context):
+    context.root_stack = generate_full_template(context.settings)
 
 
 @then("I use defined files as input expecting an error")
@@ -127,6 +131,7 @@ def step_impl(context, file_path, override_file):
 def set_impl(context):
     if not hasattr(context, "root_stack"):
         context.root_stack = generate_full_template(context.settings)
+    print(context.settings.x_resources)
     process_stacks(context.root_stack, context.settings)
 
 
@@ -165,16 +170,6 @@ def step_impl(context):
     Function to check we got a stack ID
     """
     assert context.stack_id is None
-
-
-@given("I render the docker-compose to composex")
-def step_impl(context):
-    context.root_stack = generate_full_template(context.settings)
-
-
-@then("I render the docker-compose to composex to validate")
-def step_impl(context):
-    context.root_stack = generate_full_template(context.settings)
 
 
 @then("I render the docker-compose expecting an error")

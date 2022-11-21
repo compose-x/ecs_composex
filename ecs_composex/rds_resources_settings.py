@@ -31,18 +31,13 @@ from troposphere.iam import PolicyType
 
 from ecs_composex.common.aws import find_aws_resource_arn_from_tags_api
 from ecs_composex.common.logging import LOG
-from ecs_composex.common.troposphere_tools import (
-    add_parameters,
-    add_resource,
-    add_update_mapping,
-)
+from ecs_composex.common.troposphere_tools import add_resource, add_update_mapping
 from ecs_composex.compose.compose_services.helpers import (
     extend_container_envvars,
     extend_container_secrets,
 )
 from ecs_composex.ecs.ecs_params import SG_T
 from ecs_composex.rds.rds_params import DB_SECRET_POLICY_NAME
-from ecs_composex.resource_settings import get_parameter_settings
 
 
 def filter_out_tag_resources(lookup_attributes, rds_resource, tagging_api_id):
@@ -323,17 +318,17 @@ def add_security_group_ingress(service_stack: ComposeXStack, db_name: str, sg_id
     :param sg_id: The security group Id to use for ingress. DB Security group, not service's
     :param port: The port for Ingress to the DB.
     """
-    service_template = service_stack.stack_template
     add_resource(
-        service_template,
+        service_stack.stack_template,
         SecurityGroupIngress(
             f"AllowFrom{service_stack.title}to{db_name}",
-            template=service_template,
             GroupId=sg_id,
             FromPort=port,
             ToPort=port,
             Description=Sub(f"Allow FROM {service_stack.title} TO {db_name}"),
-            SourceSecurityGroupId=GetAtt(service_template.resources[SG_T], "GroupId"),
+            SourceSecurityGroupId=GetAtt(
+                service_stack.stack_template.resources[SG_T], "GroupId"
+            ),
             SourceSecurityGroupOwnerId=Ref("AWS::AccountId"),
             IpProtocol="6",
         ),
@@ -518,57 +513,55 @@ def handle_new_tcp_resource(
     resource: NetworkXResource | DatabaseXResource,
     port_parameter: Parameter,
     sg_parameter: Parameter,
+    settings: ComposeXSettings,
     secret_parameter=None,
 ):
     """
     Funnction to standardize TCP services access from services.
-
-    :param resource:
-    :param port_parameter:
-    :param sg_parameter:
-    :param secret_parameter:
-    :return:
     """
-    if resource.logical_name not in resource.stack.stack_template.resources:
-        raise KeyError(
-            f"DB {resource.logical_name} not defined in {resource.stack.title} root template"
-        )
-
-    parameters_to_add = []
-    parameters_values = {}
-
-    port_settings = get_parameter_settings(resource, port_parameter)
-    parameters_to_add.append(port_settings[1])
-    parameters_values[port_settings[0]] = port_settings[2]
-
-    sg_settings = get_parameter_settings(resource, sg_parameter)
-    parameters_to_add.append(sg_settings[1])
-    parameters_values[sg_settings[0]] = sg_settings[2]
-
     for target in resource.families_targets:
-        if target[0].service_compute.launch_type == "EXTERNAL":
+        if target[0].service_compute.launch_type != "EXTERNAL":
+            if not sg_parameter or not port_parameter:
+                LOG.warning(
+                    f"{resource.module.res_key}.{resource.name}"
+                    "Security Group or Port parameter not set. Skipping."
+                )
+                continue
+            LOG.info(
+                f"{resource.module.res_key}.{resource.name} - Linking to {target[0].name}"
+            )
+            sg_id = resource.add_attribute_to_another_stack(
+                target[0].stack, sg_parameter, settings
+            )
+            port_id = resource.add_attribute_to_another_stack(
+                target[0].stack, port_parameter, settings
+            )
+
+            add_security_group_ingress(
+                target[0].stack,
+                resource.logical_name,
+                sg_id=Ref(sg_id["ImportParameter"]),
+                port=Ref(port_id["ImportParameter"]),
+            )
+        else:
             LOG.warning(
-                f"{resource.stack.title} - {target[0].name} - "
+                f"{resource.module.res_key}.{resource.name} - "
                 "When using EXTERNAL Launch Type, networking settings cannot be set."
             )
-            continue
-        LOG.info(f"{resource.stack.title} - Linking to {target[0].name}")
-        add_parameters(target[0].template, parameters_to_add)
-        target[0].stack.Parameters.update(parameters_values)
-        add_security_group_ingress(
-            target[0].stack,
-            resource.logical_name,
-            sg_id=Ref(sg_settings[1]),
-            port=Ref(port_settings[1]),
-        )
         if secret_parameter:
-            secret_settings = get_parameter_settings(resource, secret_parameter)
-            add_parameters(target[0].template, [secret_settings[1]])
-            target[0].stack.Parameters.update({secret_settings[0]: secret_settings[2]})
-            handle_db_secret_to_services(resource, Ref(secret_settings[1]), target)
+            secret_id = resource.add_attribute_to_another_stack(
+                target[0].stack, secret_parameter, settings
+            )
+            handle_db_secret_to_services(
+                resource, Ref(secret_id["ImportParameter"]), target
+            )
         else:
             LOG.debug(
                 f"No secret_parameter for {resource.module.res_key}.{resource.name}"
             )
-        if resource.stack.title not in target[0].stack.DependsOn:
+        if (
+            resource.cfn_resource
+            and resource.stack.parent_stack == settings.root_stack
+            or not resource.stack.parent_stack
+        ) and resource.stack.title not in target[0].stack.DependsOn:
             target[0].stack.DependsOn.append(resource.stack.title)

@@ -43,9 +43,9 @@ def update_families_networking_settings(
             LOG.debug(f"{family.name} Ingress cannot be set (EXTERNAL mode). Skipping")
             continue
         if vpc_stack.vpc_resource.mappings:
-            family.stack.set_vpc_params_from_vpc_stack_import(vpc_stack)
+            family.stack.set_vpc_params_from_vpc_lookup(vpc_stack)
         else:
-            family.stack.set_vpc_parameters_from_vpc_stack(vpc_stack)
+            family.stack.set_vpc_parameters_from_vpc_stack(vpc_stack, settings)
         add_security_group(family)
 
 

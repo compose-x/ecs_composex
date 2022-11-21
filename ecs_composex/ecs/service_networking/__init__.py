@@ -16,12 +16,21 @@ if TYPE_CHECKING:
 from itertools import chain
 
 from compose_x_common.compose_x_common import keyisset, set_else_none
-from troposphere import AWS_ACCOUNT_ID, AWSHelperFn, GetAtt, NoValue, Ref, Sub
+from troposphere import (
+    AWS_ACCOUNT_ID,
+    AWSHelperFn,
+    FindInMap,
+    GetAtt,
+    NoValue,
+    Ref,
+    Sub,
+)
 from troposphere.ec2 import SecurityGroup, SecurityGroupIngress
 from troposphere.ecs import AwsvpcConfiguration, NetworkConfiguration
 
 from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.common.logging import LOG
+from ecs_composex.common.troposphere_tools import add_parameters
 from ecs_composex.ecs.ecs_conditions import use_external_lt_con
 from ecs_composex.ecs.ecs_params import NETWORK_MODE, SERVICE_NAME_T
 from ecs_composex.ecs.service_networking.ingress_helpers import (
@@ -128,6 +137,11 @@ class ServiceNetworking:
                 and extra_group.title in self.family.template.resources
             ):
                 groups.append(Ref(extra_group))
+            elif isinstance(extra_group, Parameter):
+                add_parameters(self.family.template, [extra_group])
+                groups.append(Ref(extra_group))
+            elif isinstance(extra_group, FindInMap):
+                groups.append(extra_group)
         return groups
 
     @property

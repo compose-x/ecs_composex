@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 from copy import deepcopy
 
 from compose_x_common.compose_x_common import keyisset, set_else_none
-from troposphere import GetAtt, Ref
+from troposphere import GetAtt
 
 from ecs_composex.cloudmap.cloudmap_helpers import (
     detect_duplicas,
@@ -35,11 +35,6 @@ from ecs_composex.common.troposphere_tools import (
 )
 from ecs_composex.compose.x_resources.environment_x_resources import (
     AwsEnvironmentResource,
-)
-from ecs_composex.compose.x_resources.helpers import (
-    set_lookup_resources,
-    set_new_resources,
-    set_resources,
 )
 from ecs_composex.resources_import import import_record_properties
 from ecs_composex.vpc.vpc_params import VPC_ID
@@ -71,6 +66,7 @@ class PrivateNamespace(AwsEnvironmentResource):
         self.records = []
         self.family_sd_services: dict = {}
         super().__init__(name, definition, module, settings)
+        self.support_defaults = True
         self.zone_name = set_else_none(
             "Name", self.definition, set_else_none("ZoneName", self.definition, None)
         )
@@ -130,6 +126,7 @@ class PrivateNamespace(AwsEnvironmentResource):
         cfn_resource_type,
         tagging_api_id,
         subattribute_key=None,
+        use_arn_for_id: bool = False,
     ):
         """
         Special lookup for Route53. Only needs
@@ -273,22 +270,19 @@ class XStack(ComposeXStack):
         :param ecs_composex.common.settings.ComposeXSettings settings:
         :param dict kwargs:
         """
-        set_resources(settings, PrivateNamespace, module)
-        x_resources = settings.compose_content[module.res_key].values()
-        detect_duplicas(x_resources)
-        lookup_resources = set_lookup_resources(x_resources)
-        new_resources = set_new_resources(x_resources, supports_uses_default=True)
-        for resource in x_resources:
-            resource.stack = self
-        if new_resources:
+
+        detect_duplicas(module.resources_list)
+        if module.new_resources:
             stack_template = build_template(self._title)
             super().__init__(module.mapping_key, stack_template, **kwargs)
-            define_new_namespace(new_resources, stack_template)
+            define_new_namespace(module.new_resources, stack_template)
         else:
             self.is_void = True
-        if lookup_resources:
-            resolve_lookup(lookup_resources, settings, module)
+        if module.lookup_resources:
+            resolve_lookup(module.lookup_resources, settings, module)
         self.module_name = module.mod_key
+        for resource in module.resources_list:
+            resource.stack = self
 
 
 def define_new_namespace(new_namespaces, stack_template):

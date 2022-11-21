@@ -169,22 +169,31 @@ def extend_container_envvars(
         setattr(container, "Environment", [])
     set_validate_environment(container)
     environment = getattr(container, "Environment")
-    existing = [
+    existing_names = [
         var.Name
         for var in environment
         if isinstance(var, Environment) and isinstance(var.Name, str)
     ]
     for var in env_vars:
-        if var.Name not in existing:
-            LOG.debug(f"Adding {var.Name} to {existing}")
+        if not isinstance(var, Environment):
+            if var not in environment:
+                LOG.debug(f"var already exists {var}")
+            else:
+                environment.append(var)
+            continue
+
+        if var.Name not in existing_names:
+            LOG.debug(f"Adding {var.Name} to {existing_names}")
             environment.append(var)
-        elif var.Name in existing and replace:
+        elif var.Name in existing_names and replace:
             for defined_env_var in environment:
                 if defined_env_var.Name == var.Name:
                     setattr(defined_env_var, "Value", var.Value)
                     break
 
-    LOG.debug(f"{container.Name}, {[env.Name for env in environment]}")
+    LOG.debug(
+        f"{container.Name}, {[env.Name for env in environment if isinstance(env, Environment)]}"
+    )
 
 
 def define_ingress_mappings(service_ports):

@@ -3,7 +3,9 @@ Feature: ecs_composex.elbv2
     @elbv2
 
     Scenario Outline: Create ELBv2 with multiple listeners and rules
-        Given I use <file_path> as my docker-compose file and <override_file> as override file
+        Given With <file_path>
+        And With <override_file>
+        And I use defined files as input to define execution settings
         Then I render the docker-compose to composex to validate
         And I render all files to verify execution
 
@@ -16,7 +18,9 @@ Feature: ecs_composex.elbv2
     @elbv2 @acm
 
     Scenario Outline: Create ELBv2 with ACM and DNS settings
-        Given I use <file_path> as my docker-compose file and <override_file> as override file
+        Given With <file_path>
+        And With <override_file>
+        And I use defined files as input to define execution settings
         Then I render the docker-compose to composex to validate
         And I render all files to verify execution
 

@@ -10,6 +10,25 @@
     "AssignPublicIp": {
       "type": "boolean"
     },
+    "AdditionalSecurityGroups": {
+      "description": "Define additional security groups to use.",
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^[a-zA-Z0-9._-]+$": {
+          "description": "The definition of the security group to use",
+          "oneOf": [
+            {
+              "type": "string",
+              "description": "The security group ID to use. It must belong to the same VPC you are deploying to"
+            },
+            {
+              "$ref": "x-resources.common.spec.json#/definitions/Lookup"
+            }
+          ]
+        }
+      }
+    },
     "x-cloudmap": {
       "oneOf": [
         {
