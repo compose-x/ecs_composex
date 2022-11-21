@@ -140,7 +140,7 @@ def main_parser():
         default=False,
         help="For services with x-ecr defined, ignores errors if any found",
     )
-    parser.add_argument(
+    base_command_parser.add_argument(
         "--loglevel", type=str, help="Log level. Defaults to INFO", required=False
     )
     for command in ComposeXSettings.active_commands:
@@ -182,6 +182,7 @@ def main():
         ]
         if args.loglevel.upper() in valid_levels:
             LOG.setLevel(logging.getLevelName(args.loglevel.upper()))
+            LOG.handlers[0].setLevel(logging.getLevelName(args.loglevel.upper()))
         else:
             print(
                 f"Log level value {args.loglevel} is invalid. Must me one of {valid_levels}"

@@ -14,7 +14,6 @@ if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
     from . import ComposeService
 
-
 import docker
 import requests
 import urllib3
@@ -142,12 +141,15 @@ class ServiceImage:
         ):
             self.private_ecr_digest(settings)
         else:
-            try:
-                import docker
+            if keyisset("x-docker_opts", self.service.definition) and keyisset(
+                "InterpolateWithDigest", self.service.definition["x-docker_opts"]
+            ):
+                try:
+                    import docker
 
-                self.retrieve_image_digest()
-            except ImportError:
-                print("Unable to use docker to resolve image")
+                    self.retrieve_image_digest()
+                except ImportError:
+                    print("Unable to use docker to resolve image")
 
     def retrieve_image_digest(self):
         """

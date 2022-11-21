@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 from compose_x_common.aws import get_session
 from compose_x_common.compose_x_common import keyisset, set_else_none
-from troposphere import AWS_NO_VALUE, AWSHelperFn, GetAtt, If, NoValue, Ref, Sub, Tags
+from troposphere import AWS_NO_VALUE, GetAtt, If, NoValue, Ref, Sub, Tags
 from troposphere.ec2 import SecurityGroup
 from troposphere.rds import (
     DBCluster,
@@ -28,13 +28,9 @@ from troposphere.rds import (
 )
 
 from ecs_composex.common.cfn_conditions import define_stack_name
-from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
+from ecs_composex.common.ecs_composex import TAGS_SEPARATOR
 from ecs_composex.common.logging import LOG
-from ecs_composex.common.troposphere_tools import (
-    add_outputs,
-    add_resource,
-    build_template,
-)
+from ecs_composex.common.troposphere_tools import add_resource, build_template
 from ecs_composex.rds import rds_conditions
 from ecs_composex.rds.rds_parameter_groups_helper import (
     get_family_from_engine_version,
@@ -135,9 +131,9 @@ def create_db_subnet_group(template: Template, db: Rds, subnets=None) -> DBSubne
         SubnetIds=Ref(subnets),
         Tags=Tags(
             **{
-                "compose-x::module": db.module.res_key,
-                "compose-x::rds::name": db.name,
-                "compose-x::rds::logical-name": db.logical_name,
+                f"compose-x{TAGS_SEPARATOR}module": db.module.res_key,
+                f"compose-x{TAGS_SEPARATOR}rds{TAGS_SEPARATOR}name": db.name,
+                f"compose-x{TAGS_SEPARATOR}rds{TAGS_SEPARATOR}logical-name": db.logical_name,
             }
         ),
     )
@@ -163,9 +159,9 @@ def add_db_sg(template, db):
         VpcId=Ref(VPC_ID),
         Tags=Tags(
             **{
-                "compose-x::module": db.module.res_key,
-                "compose-x::rds::name": db.name,
-                "compose-x::rds::logical-name": db.logical_name,
+                f"compose-x{TAGS_SEPARATOR}module": db.module.res_key,
+                f"compose-x{TAGS_SEPARATOR}rds{TAGS_SEPARATOR}name": db.name,
+                f"compose-x{TAGS_SEPARATOR}rds{TAGS_SEPARATOR}logical-name": db.logical_name,
             }
         ),
     )

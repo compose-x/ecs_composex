@@ -732,7 +732,8 @@ def link_resource_to_services(
         set_iam_link_resource_to_services(
             resource, target, arn_attr_value, access_subkeys
         )
-        add_dependency(resource, target[0], settings)
+        if resource.cfn_resource:
+            add_dependency(resource, target[0], settings)
         link_resource_kms_to_service(settings, resource, target)
 
 

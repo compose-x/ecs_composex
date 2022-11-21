@@ -172,7 +172,7 @@ def default_tags():
     :return: default compose-x tags
     :rtype: troposphere.Tags
     """
-    return Tags(CreatedByComposeX=True, **{"compose-x::version": version})
+    return Tags(CreatedByComposeX=True, **{"compose-x:version": version})
 
 
 def apply_tags_to_resources(settings, resource, params, xtags):

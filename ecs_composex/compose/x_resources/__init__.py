@@ -37,14 +37,13 @@ from ecs_composex.common.aws import (
 from ecs_composex.common.cfn_conditions import define_stack_name
 from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.common.ecs_composex import CFN_EXPORT_DELIMITER as DELIM
-from ecs_composex.common.ecs_composex import X_KEY
+from ecs_composex.common.ecs_composex import TAGS_SEPARATOR, X_KEY
 from ecs_composex.common.logging import LOG
 from ecs_composex.common.troposphere_tools import (
     add_parameters,
     add_update_mapping,
     add_update_parameter_recursively,
 )
-from ecs_composex.iam.import_sam_policies import get_access_types
 from ecs_composex.mods_manager import XResourceModule
 from ecs_composex.resource_settings import get_parameter_settings
 
@@ -116,9 +115,9 @@ class XResource:
         self.lookup_properties = {}
         self.mappings = {}
         self.default_tags = {
-            "compose-x::module": self.module.mod_key,
-            "compose-x::resource_name": self.name,
-            "compose-x::logical_name": self.logical_name,
+            f"compose-x{TAGS_SEPARATOR}module": self.module.mod_key,
+            f"compose-x{TAGS_SEPARATOR}resource_name": self.name,
+            f"compose-x{TAGS_SEPARATOR}logical_name": self.logical_name,
         }
         self.cloudmap_settings = set_else_none("x-cloudmap", self.settings, {})
         self.default_cloudmap_settings = {}
@@ -302,6 +301,7 @@ class XResource:
         Sets the .mappings attribute based on the lookup_attributes for CFN purposes
         """
         for parameter, value in self.lookup_properties.items():
+            print("PARM?", parameter)
             if not isinstance(parameter, Parameter):
                 raise TypeError(
                     f"{self.module.res_key}.{self.name} - lookup attribute {parameter} is",
@@ -311,7 +311,12 @@ class XResource:
                     Parameter,
                 )
             if parameter.return_value:
-                self.mappings[NONALPHANUM.sub("", parameter.return_value)] = value
+                if parameter.return_value not in self.mappings:
+                    self.mappings[NONALPHANUM.sub("", parameter.return_value)] = value
+                else:
+                    self.mappings[
+                        parameter.title + NONALPHANUM.sub("", parameter.return_value)
+                    ] = value
             else:
                 self.mappings[parameter.title] = value
 
@@ -475,6 +480,14 @@ class XResource:
         :return: The FindInMap setting for mapped resource
         """
         if attribute_parameter.return_value:
+            long_name = attribute_parameter.title + NONALPHANUM.sub(
+                "", attribute_parameter.return_value
+            )
+        else:
+            long_name = attribute_parameter.title
+        if self.mappings and long_name in self.mappings:
+            return FindInMap(self.module.mapping_key, self.logical_name, long_name)
+        elif attribute_parameter.return_value:
             return FindInMap(
                 self.module.mapping_key,
                 self.logical_name,
