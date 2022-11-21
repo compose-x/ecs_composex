@@ -174,6 +174,7 @@ class DocDb(DatabaseXResource):
         cfn_resource_type,
         tagging_api_id,
         subattribute_key=None,
+        use_arn_for_id: bool = False,
     ):
         """
         Method to self-identify properties

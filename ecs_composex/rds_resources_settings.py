@@ -518,53 +518,36 @@ def handle_new_tcp_resource(
 ):
     """
     Funnction to standardize TCP services access from services.
-
-    :param resource:
-    :param port_parameter:
-    :param sg_parameter:
-    :param secret_parameter:
-    :return:
     """
-    print(
-        resource.name,
-        resource.stack.title,
-        resource.stack.parent_stack.title
-        if resource.stack.parent_stack
-        else "NO PARENT",
-    )
-    # if resource.logical_name not in resource.stack.stack_template.resources:
-    #     raise KeyError(
-    #         f"DB {resource.logical_name} not defined in {resource.stack.title} root template",
-    #         list(resource.stack.stack_template.resources.keys()),
-    #     )
-
     for target in resource.families_targets:
-        if target[0].service_compute.launch_type == "EXTERNAL":
+        if target[0].service_compute.launch_type != "EXTERNAL":
+            if not sg_parameter or not port_parameter:
+                LOG.warning(
+                    f"{resource.module.res_key}.{resource.name}"
+                    "Security Group or Port parameter not set. Skipping."
+                )
+                continue
+            LOG.info(
+                f"{resource.module.res_key}.{resource.name} - Linking to {target[0].name}"
+            )
+            sg_id = resource.add_attribute_to_another_stack(
+                target[0].stack, sg_parameter, settings
+            )
+            port_id = resource.add_attribute_to_another_stack(
+                target[0].stack, port_parameter, settings
+            )
+
+            add_security_group_ingress(
+                target[0].stack,
+                resource.logical_name,
+                sg_id=Ref(sg_id["ImportParameter"]),
+                port=Ref(port_id["ImportParameter"]),
+            )
+        else:
             LOG.warning(
-                f"{resource.stack.title} - {target[0].name} - "
+                f"{resource.module.res_key}.{resource.name} - "
                 "When using EXTERNAL Launch Type, networking settings cannot be set."
             )
-            continue
-        LOG.info(f"{resource.stack.title} - Linking to {target[0].name}")
-        if not sg_parameter or not port_parameter:
-            LOG.warning(
-                f"{resource.module.res_key}.{resource.name}"
-                f"Security Group or Port parameter not set. Skipping."
-            )
-            continue
-        sg_id = resource.add_attribute_to_another_stack(
-            target[0].stack, sg_parameter, settings
-        )
-        port_id = resource.add_attribute_to_another_stack(
-            target[0].stack, port_parameter, settings
-        )
-
-        add_security_group_ingress(
-            target[0].stack,
-            resource.logical_name,
-            sg_id=Ref(sg_id["ImportParameter"]),
-            port=Ref(port_id["ImportParameter"]),
-        )
         if secret_parameter:
             secret_id = resource.add_attribute_to_another_stack(
                 target[0].stack, secret_parameter, settings
@@ -577,7 +560,8 @@ def handle_new_tcp_resource(
                 f"No secret_parameter for {resource.module.res_key}.{resource.name}"
             )
         if (
-            resource.stack.parent_stack == settings.root_stack
+            resource.cfn_resource
+            and resource.stack.parent_stack == settings.root_stack
             or not resource.stack.parent_stack
         ) and resource.stack.title not in target[0].stack.DependsOn:
             target[0].stack.DependsOn.append(resource.stack.title)

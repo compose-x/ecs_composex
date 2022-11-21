@@ -126,6 +126,7 @@ class PrivateNamespace(AwsEnvironmentResource):
         cfn_resource_type,
         tagging_api_id,
         subattribute_key=None,
+        use_arn_for_id: bool = False,
     ):
         """
         Special lookup for Route53. Only needs
