@@ -301,7 +301,6 @@ class XResource:
         Sets the .mappings attribute based on the lookup_attributes for CFN purposes
         """
         for parameter, value in self.lookup_properties.items():
-            print("PARM?", parameter)
             if not isinstance(parameter, Parameter):
                 raise TypeError(
                     f"{self.module.res_key}.{self.name} - lookup attribute {parameter} is",
