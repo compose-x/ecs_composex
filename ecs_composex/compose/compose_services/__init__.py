@@ -343,6 +343,22 @@ class ComposeService:
             setattr(self.container_definition, "Command", new_command)
 
     @property
+    def entrypoint(self):
+        _entrypoint = set_else_none("entrypoint", self.definition, alt_value=NoValue)
+        if isinstance(_entrypoint, str):
+            return shlex.split(_entrypoint)
+        else:
+            return _entrypoint
+
+    @entrypoint.setter
+    def entrypoint(self, new_entrypoint):
+        if isinstance(new_entrypoint, str):
+            new_entrypoint = shlex.split(new_entrypoint)
+        self.definition.update({"entrypoint": new_entrypoint})
+        if self.container_definition:
+            setattr(self.container_definition, "EntryPoint", new_entrypoint)
+
+    @property
     def runtime_architecture(self):
         return set_else_none("CpuArchitecture", self.x_ecs, None)
 
@@ -902,6 +918,7 @@ class ComposeService:
             Environment=self.cfn_environment,
             LogConfiguration=NoValue,
             Command=self.command,
+            EntryPoint=self.entrypoint,
             HealthCheck=self.ecs_healthcheck,
             DependsOn=NoValue,
             Essential=self.is_essential,
