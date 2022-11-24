@@ -3,12 +3,18 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, Union
+
+if TYPE_CHECKING:
+    from ecs_composex.ecs.ecs_family import ComposeFamily
+
 import re
 from copy import deepcopy
 
 from compose_x_common.compose_x_common import keyisset
 from troposphere import AWS_STACK_NAME
 
+from ecs_composex.ecs.ecs_params import SERVICE_NAME
 from ecs_composex.ecs.managed_sidecars.nginx_prometheus_exporter import (
     NGINX_EXPORTER_SERVICE,
 )
@@ -16,20 +22,17 @@ from ecs_composex.ecs.managed_sidecars.nginx_prometheus_exporter import (
 METRICS_DEFAULT_PATH = r"/metrics"
 
 
-def generate_ecs_sd_service_name_pattern(family_name):
+def generate_ecs_sd_service_name_pattern(family: ComposeFamily) -> Union[str]:
     """
-    Generate the ecs_service_discovery configuration for a given set of set of ECS Task Families
-
-    :param str family_name:
-    :return:
+    Generate the ecs_service_discovery configuration for a given set of ECS Task Families
     """
     task_def_re = re.compile(
         r"(.*:task-definition/)|(arn:aws(?:[\S]+)?:ecs:[\S]+:\d{12}:task-definition/)"
     )
-    if not task_def_re.match(family_name):
-        task_name = f".*:task-definition/.*{family_name}"
+    if not task_def_re.match(family.name):
+        task_name = f".*:task-definition/.*${{{SERVICE_NAME.title}}}"
     else:
-        task_name = family_name
+        task_name = family.name
     return task_name
 
 
@@ -66,7 +69,7 @@ def get_ngnix_processor(
             if not keyisset("ExporterPort", nginx_config)
             else str(nginx_config["ExporterPort"]),
             "sd_task_definition_arn_pattern": generate_ecs_sd_service_name_pattern(
-                family.name
+                family
             ),
         },
     )
@@ -134,7 +137,7 @@ def get_jmx_processor(family, ecs_sd_config, jmx_config) -> list:
             if not keyisset("ExporterPort", jmx_config)
             else str(jmx_config["ExporterPort"]),
             "sd_task_definition_arn_pattern": generate_ecs_sd_service_name_pattern(
-                family.name
+                family
             ),
         },
     )
@@ -171,7 +174,7 @@ def process_custom_rules(family, ecs_sd_config, options, emf_processors):
                 else rule["ExporterPath"],
                 "sd_metrics_ports": str(rule["ExporterPort"]),
                 "sd_task_definition_arn_pattern": generate_ecs_sd_service_name_pattern(
-                    family.name
+                    family
                 ),
             },
         )

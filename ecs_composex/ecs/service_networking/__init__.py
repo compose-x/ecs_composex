@@ -32,7 +32,7 @@ from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.common.logging import LOG
 from ecs_composex.common.troposphere_tools import add_parameters
 from ecs_composex.ecs.ecs_conditions import use_external_lt_con
-from ecs_composex.ecs.ecs_params import NETWORK_MODE, SERVICE_NAME_T
+from ecs_composex.ecs.ecs_params import NETWORK_MODE, SERVICE_NAME
 from ecs_composex.ecs.service_networking.ingress_helpers import (
     merge_cloudmap_settings,
     merge_family_services_networking,
@@ -295,7 +295,7 @@ class ServiceNetworking:
                 ),
                 "SourceSecurityGroupOwnerId": Ref(AWS_ACCOUNT_ID),
                 "Description": Sub(
-                    f"From ELB {lb_name} to ${{{SERVICE_NAME_T}}} on port {port['target']}"
+                    f"From ELB {lb_name} to ${{{SERVICE_NAME.title}}} on port {port['target']}"
                 ),
             }
             if title in self.family.template.resources:

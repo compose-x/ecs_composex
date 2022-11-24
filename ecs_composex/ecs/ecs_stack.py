@@ -54,7 +54,7 @@ def initialize_family_services(
     family.ecs_service = EcsService(family)
     family.stack.Parameters.update(
         {
-            ecs_params.SERVICE_NAME_T: family.logical_name,
+            ecs_params.SERVICE_NAME.title: family.name,
             CLUSTER_NAME_T: Ref(CLUSTER_NAME),
             ROOT_STACK_NAME_T: Ref(ROOT_STACK_NAME),
         }

@@ -66,7 +66,6 @@ class ComposeFamily:
         self.ordered_services = services
         self.managed_sidecars = []
         self.name = family_name
-        self.logical_name = re.sub(r"[^a-zA-Z0-9]+", "", family_name)
         self.family_hostname = self.name.replace("_", "-").lower()
         self.services_depends_on = []
         self.template = set_template(self)
@@ -99,6 +98,10 @@ class ComposeFamily:
         self.service_networking = None
         self.task_compute = None
         self.service_compute = ServiceCompute(self)
+
+    @property
+    def logical_name(self) -> str:
+        return re.sub(r"[^a-zA-Z0-9]+", "", self.name)
 
     @property
     def services(self) -> list:

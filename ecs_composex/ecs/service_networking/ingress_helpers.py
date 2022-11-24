@@ -22,7 +22,7 @@ from ecs_composex.cloudmap.cloudmap_params import RES_KEY as CLOUDMAP_KEY
 from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.common.logging import LOG
 from ecs_composex.common.troposphere_tools import add_parameters
-from ecs_composex.ecs.ecs_params import SERVICE_NAME_T
+from ecs_composex.ecs.ecs_params import SERVICE_NAME
 from ecs_composex.ingress_settings import Ingress
 from ecs_composex.vpc.vpc_params import SG_ID_TYPE
 
@@ -203,7 +203,7 @@ def add_dependant_ingress_rules(
             "IpProtocol": port["protocol"],
             "SourceSecurityGroupOwnerId": Ref(AWS_ACCOUNT_ID),
             "Description": Sub(
-                f"From ${{{SERVICE_NAME_T}}} to {dst_family.stack.title} on port {target_port}"
+                f"From ${{{SERVICE_NAME.title}}} to {dst_family.stack.title} on port {target_port}"
             ),
         }
         src_family.template.add_resource(

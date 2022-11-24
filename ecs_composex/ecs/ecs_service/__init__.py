@@ -49,7 +49,7 @@ class EcsService:
         self.ecs_service = None
         self.alarms = {}
         if family.stack:
-            family.stack.Parameters.update({ecs_params.SERVICE_NAME_T: family.name})
+            family.stack.Parameters.update({ecs_params.SERVICE_NAME.title: family.name})
 
         self.lbs = []
         self.registries = []

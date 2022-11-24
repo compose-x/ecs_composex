@@ -74,7 +74,7 @@ def set_cw_prometheus_config_parameter(
         Type="String",
         Name=Sub(
             f"/ecs/config/prometheus/${{{ecs_params.CLUSTER_NAME.title}}}/${{STACK_SHORT_ID}}"
-            f"/${{{ecs_params.SERVICE_NAME_T}}}",
+            f"/${{{ecs_params.SERVICE_NAME.title}}}",
             STACK_SHORT_ID=STACK_ID_SHORT,
         ),
         Description=Sub(
@@ -136,7 +136,7 @@ def set_cw_config_parameter(
         Type="String",
         Name=Sub(
             f"/ecs/config/cw_agent_config/${{{ecs_params.CLUSTER_NAME.title}}}/${{STACK_SHORT_ID}}"
-            f"/${{{ecs_params.SERVICE_NAME_T}}}",
+            f"/${{{ecs_params.SERVICE_NAME.title}}}",
             STACK_SHORT_ID=STACK_ID_SHORT,
         ),
         Description=Sub(
