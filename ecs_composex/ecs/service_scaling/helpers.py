@@ -62,11 +62,6 @@ def rectify_scaling_steps(cfn_steps: list[StepAdjustment]) -> None:
     ):
         LOG.warning("The last upper bound shall not be set. Deleting value to comply}")
         setattr(cfn_steps[-1], "MetricIntervalUpperBound", Ref(AWS_NO_VALUE))
-    if cfn_steps[0].MetricIntervalLowerBound == 0:
-        LOG.warning(
-            "You defined the lower bound to 0. To enable alarm threshold we are setting it to 1"
-        )
-        setattr(cfn_steps[0], "MetricIntervalLowerBound", 1)
 
 
 def define_step_adjustment(pre_upper: int, ordered: list, cfn_steps: list) -> None:
