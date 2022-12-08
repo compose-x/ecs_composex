@@ -70,7 +70,7 @@ def handle_cross_account_permissions(
                     }
                 ],
             },
-            Roles=family.iam_manager.task_role.name,
+            Roles=[family.iam_manager.task_role.name],
         )
         add_resource(family.template, policy)
     return config_value
