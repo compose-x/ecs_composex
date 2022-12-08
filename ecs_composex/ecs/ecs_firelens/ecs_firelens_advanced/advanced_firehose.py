@@ -60,9 +60,19 @@ class FireLensFirehoseManagedDestination:
             )
         else:
             self._managed_firehose = None
-            self.parent.extra_env_vars.update(
-                {self.delivery_stream_fluent_name: self._definition["delivery_stream"]}
-            )
+            parts = KINESIS_FIREHOSE_ARN_RE.match(self._definition["delivery_stream"])
+            if parts:
+                self.parent.extra_env_vars.update(
+                    {self.delivery_stream_fluent_name: parts.group("id")}
+                )
+            else:
+                self.parent.extra_env_vars.update(
+                    {
+                        self.delivery_stream_fluent_name: self._definition[
+                            "delivery_stream"
+                        ]
+                    }
+                )
         self.process_all_options(self.parent.family, self.parent.service, settings)
 
     def process_all_options(self, family, service, settings: ComposeXSettings):
@@ -87,12 +97,23 @@ class FireLensFirehoseManagedDestination:
     def delivery_stream(self) -> str:
         if isinstance(self._managed_firehose, DeliveryStream):
             return self._managed_firehose.name
+        parts = KINESIS_FIREHOSE_ARN_RE.match(self._definition["delivery_stream"])
+        if parts:
+            return parts.group("id")
         else:
-            return self._definition["delivery_stream"]
+            raise ValueError(
+                f"Delivery stream neither a",
+                DeliveryStream,
+                "nor valid ARN",
+                parts,
+                KINESIS_FIREHOSE_ARN_RE.pattern,
+            )
 
     @property
     def delivery_stream_fluent_name(self):
-        return rf"${{{self._managed_firehose.env_var_prefix}}}"
+        if self._managed_firehose:
+            return rf"${{{self._managed_firehose.env_var_prefix}}}"
+        return f"${self.delivery_stream.upper()}"
 
     @property
     def region(self) -> str:
@@ -106,6 +127,9 @@ class FireLensFirehoseManagedDestination:
                 return KINESIS_FIREHOSE_ARN_RE.match(arn_value).group("region")
         if keyisset("region", self._definition):
             return self._definition["region"]
+        parts = KINESIS_FIREHOSE_ARN_RE.match(self._definition["delivery_stream"])
+        if parts:
+            return parts.group("region")
         else:
             return r"${AWS_DEFAULT_REGION}"
 
