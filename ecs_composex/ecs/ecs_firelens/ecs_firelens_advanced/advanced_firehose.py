@@ -92,7 +92,8 @@ class FireLensFirehoseManagedDestination:
 
     @property
     def delivery_stream_fluent_name(self):
-        return rf"${{{self._managed_firehose.env_var_prefix}}}"
+        if self._managed_firehose:
+            return rf"${{{self._managed_firehose.env_var_prefix}}}"
 
     @property
     def region(self) -> str:

@@ -1,6 +1,14 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  Copyright 2020-2022 John Mille <john@compose-x.io>
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ecs_composex.common.settings import ComposeXSettings
+    from ecs_composex.cognito_userpool.cognito_userpool_stack import UserPool
+
 import re
 from copy import deepcopy
 from json import dumps
@@ -471,13 +479,11 @@ def import_new_acm_certs(listener, src_name, settings, listener_stack):
     upgrade_listener_to_use_tls(listener)
 
 
-def handle_import_cognito_pool(the_pool, listener_stack, settings):
+def handle_import_cognito_pool(
+    the_pool: UserPool, listener_stack, settings: ComposeXSettings
+) -> tuple:
     """
     Function to map AWS Cognito Pool to attributes
-    :param the_pool:
-    :param listener_stack:
-    :param settings:
-    :return:
     """
     if the_pool.cfn_resource and not the_pool.mappings:
         pool_id_param = Parameter(
@@ -507,23 +513,27 @@ def handle_import_cognito_pool(the_pool, listener_stack, settings):
         )
 
 
-def import_cognito_pool(src_name, settings, listener_stack):
+def import_cognito_pool(src_name, settings: ComposeXSettings, listener_stack):
     """
     Function to Import an Cognito Pool defined in x-cognito_pool
-
-    :param src_name:
-    :param ecs_composex.common.settings.ComposeXSettings settings:
-    :param listener_stack:
-    :return:
     """
     if not keyisset(COGNITO_KEY, settings.compose_content):
         raise LookupError(
             f"There is no {COGNITO_KEY} defined in your docker-compose files"
         )
-    pool_names = [pool.name for pool in settings.compose_content[COGNITO_KEY].values()]
-    if src_name not in pool_names:
-        raise KeyError(f"{COGNITO_KEY} - pool {src_name} not found", pool_names)
-    for pool in settings.compose_content[COGNITO_KEY].values():
+    print("Cognito SRC Name", src_name)
+    print(settings.x_resources)
+    pools = [
+        res
+        for res in settings.x_resources
+        if res.module.res_key == "x-cognito_userpool"
+    ]
+    if src_name not in [__pool.name for __pool in pools]:
+        raise KeyError(
+            f"{COGNITO_KEY} - pool {src_name} not found",
+            [__pool.name for __pool in pools],
+        )
+    for pool in pools:
         if src_name == pool.name:
             return handle_import_cognito_pool(pool, listener_stack, settings)
     raise LookupError("Failed to identify the cognito userpool to use", src_name)

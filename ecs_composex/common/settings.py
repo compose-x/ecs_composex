@@ -200,7 +200,7 @@ class ComposeXSettings:
                 and issubclass(type(resource.cfn_resource), AWSObject)
             ):
                 continue
-            if not include_mappings and resource.mappings:
+            if not include_mappings and (resource and resource.mappings):
                 continue
             x_resources.append(resource)
         return x_resources
@@ -290,27 +290,6 @@ class ComposeXSettings:
         for name, module in self.mod_manager.modules.items():
             _resources += module.resources_list
         return _resources
-
-        # all_keys = self.compose_content.keys()
-        # all_resources = []
-        # for res_key in all_keys:
-        #
-        #     if not isinstance(self.compose_content[res_key], dict):
-        #         continue
-        #     for resource in self.compose_content[res_key].values():
-        #         if not issubclass(
-        #             type(resource),
-        #             (
-        #                 XResource,
-        #                 ServicesXResource,
-        #                 NetworkXResource,
-        #                 ApiXResource,
-        #                 AwsEnvironmentResource,
-        #             ),
-        #         ):
-        #             continue
-        #         all_resources.append(resource)
-        # return all_resources
 
     def evaluate_private_namespace(self):
         """
