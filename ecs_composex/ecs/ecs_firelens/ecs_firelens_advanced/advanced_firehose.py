@@ -86,7 +86,7 @@ class FireLensFirehoseManagedDestination:
                 and param_function
                 and callable(param_function)
             ):
-                service.logging.log_options[param_name] = param_function(
+                param_function(
                     family,
                     service,
                     settings,
