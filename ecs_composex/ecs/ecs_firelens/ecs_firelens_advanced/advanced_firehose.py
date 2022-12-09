@@ -14,6 +14,7 @@ from compose_x_common.aws.arns import KINESIS_FIREHOSE_ARN_RE
 from compose_x_common.compose_x_common import keyisset
 from troposphere import Region
 
+from ecs_composex.compose.x_resources import ENV_VAR_NAME
 from ecs_composex.ecs.ecs_firelens.firelens_options_generic_helpers import (
     handle_cross_account_permissions,
 )
@@ -60,9 +61,19 @@ class FireLensFirehoseManagedDestination:
             )
         else:
             self._managed_firehose = None
-            self.parent.extra_env_vars.update(
-                {self.delivery_stream_fluent_name: self._definition["delivery_stream"]}
-            )
+            parts = KINESIS_FIREHOSE_ARN_RE.match(self._definition["delivery_stream"])
+            if parts:
+                self.parent.extra_env_vars.update(
+                    {self.delivery_stream_env_var_name: parts.group("id")}
+                )
+            else:
+                self.parent.extra_env_vars.update(
+                    {
+                        self.delivery_stream_env_var_name: self._definition[
+                            "delivery_stream"
+                        ]
+                    }
+                )
         self.process_all_options(self.parent.family, self.parent.service, settings)
 
     def process_all_options(self, family, service, settings: ComposeXSettings):
@@ -75,7 +86,7 @@ class FireLensFirehoseManagedDestination:
                 and param_function
                 and callable(param_function)
             ):
-                service.logging.log_options[param_name] = param_function(
+                param_function(
                     family,
                     service,
                     settings,
@@ -87,13 +98,31 @@ class FireLensFirehoseManagedDestination:
     def delivery_stream(self) -> str:
         if isinstance(self._managed_firehose, DeliveryStream):
             return self._managed_firehose.name
+        parts = KINESIS_FIREHOSE_ARN_RE.match(self._definition["delivery_stream"])
+        if parts:
+            return parts.group("id")
         else:
-            return self._definition["delivery_stream"]
+            raise ValueError(
+                f"Delivery stream neither a",
+                DeliveryStream,
+                "nor valid ARN",
+                parts,
+                KINESIS_FIREHOSE_ARN_RE.pattern,
+            )
 
     @property
-    def delivery_stream_fluent_name(self):
+    def delivery_stream_env_var_name(self):
+        if self._managed_firehose:
+            return self._managed_firehose.env_var_prefix
+        return ENV_VAR_NAME.sub(
+            "", self.delivery_stream.upper().replace("-", "_").replace(".", "_")
+        )
+
+    @property
+    def delivery_stream_fluent_env_var(self):
         if self._managed_firehose:
             return rf"${{{self._managed_firehose.env_var_prefix}}}"
+        return rf"${{{self.delivery_stream_env_var_name}}}"
 
     @property
     def region(self) -> str:
@@ -107,6 +136,9 @@ class FireLensFirehoseManagedDestination:
                 return KINESIS_FIREHOSE_ARN_RE.match(arn_value).group("region")
         if keyisset("region", self._definition):
             return self._definition["region"]
+        parts = KINESIS_FIREHOSE_ARN_RE.match(self._definition["delivery_stream"])
+        if parts:
+            return parts.group("region")
         else:
             return r"${AWS_DEFAULT_REGION}"
 
@@ -120,7 +152,7 @@ class FireLensFirehoseManagedDestination:
     def output_definition(self):
         config: dict = {
             "region": self.region,
-            "delivery_stream": self.delivery_stream_fluent_name,
+            "delivery_stream": self.delivery_stream_fluent_env_var,
         }
         for option_name in self.options:
             if keyisset(option_name, self._definition):
