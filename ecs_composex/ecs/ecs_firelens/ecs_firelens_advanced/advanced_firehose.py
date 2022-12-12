@@ -59,7 +59,7 @@ class FireLensFirehoseManagedDestination:
                 self.parent.family,
                 settings,
             )
-        else:
+        elif self._definition["delivery_stream"].startswith("arn:aws"):
             self._managed_firehose = None
             parts = KINESIS_FIREHOSE_ARN_RE.match(self._definition["delivery_stream"])
             if parts:
@@ -67,13 +67,16 @@ class FireLensFirehoseManagedDestination:
                     {self.delivery_stream_env_var_name: parts.group("id")}
                 )
             else:
-                self.parent.extra_env_vars.update(
-                    {
-                        self.delivery_stream_env_var_name: self._definition[
-                            "delivery_stream"
-                        ]
-                    }
+                raise ValueError(
+                    f"x-logging Kinesis Firehose destination is not a valid ARN",
+                    {self._definition["stream"]},
+                    "must match",
+                    KINESIS_FIREHOSE_ARN_RE.pattern,
                 )
+        else:
+            self.parent.extra_env_vars.update(
+                {self.delivery_stream_env_var_name: self._definition["delivery_stream"]}
+            )
         self.process_all_options(self.parent.family, self.parent.service, settings)
 
     def process_all_options(self, family, service, settings: ComposeXSettings):
