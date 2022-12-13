@@ -8,7 +8,7 @@ ECS ComposeX
 
 |PYPI_VERSION| |PYPI_LICENSE| |PY_DLS|
 
-|CODE_STYLE| |TDD| |BDD|
+|CODE_STYLE| |ISORT| |TDD| |BDD|
 
 |QUALITY|
 
@@ -158,3 +158,6 @@ Usage
 
 .. |PY_DLS| image:: https://img.shields.io/pypi/dm/ecs-composex
     :target: https://pypi.org/project/ecs-composex/
+
+.. |ISORT| image:: https://img.shields.io/badge/%20imports-isort-%231674b1?style=flat&labelColor=ef8336
+    :target: https://pycqa.github.io/isort/
