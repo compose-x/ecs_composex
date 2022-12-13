@@ -57,17 +57,12 @@ isort = "^5.10.1"
 placebo = "^0.10.0"
 pre-commit = "^2.20.0"
 black = "^22.10"
-sphinx-material = "^0.0.35"
 behave = "^1.2.6"
 coverage = { extras = ["toml"], version = "^6.5" }
 pytest = "^7.2"
-Sphinx = "^5.1.1"
-tox = "^3.25.1"
 tbump = "6.9"
-sphinx-jsonschema = "^1.19.1"
 boto3-stubs = { extras = ["acm", "ecs", "cloudformation", "essential"], version = "^1.24" }
 pyclean = "^2.2.0"
-sphinx-autodoc-typehints = "^1.19.2"
 pyupgrade = "^3.1"
 
 [tool.poetry.scripts]
@@ -77,6 +72,12 @@ compose-x = "ecs_composex.cli:main"
 
 [tool.poetry.extras]
 ecrscan = ["ecr-scan-reporter"]
+
+[tool.poetry.group.docs.dependencies]
+sphinx = "^5.3.0"
+sphinx-autodoc-typehints = "^1.19.2"
+sphinx-jsonschema = "^1.19.1"
+sphinx-material = "^0.0.35"
 
 [tool.tbump]
 github_url = "https://github.com/compose-x/ecs_composex"
