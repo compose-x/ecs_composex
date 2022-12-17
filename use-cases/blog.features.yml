@@ -54,7 +54,7 @@ services:
     secrets:
       - zyx
     x-logging:
-      RetentionInDays: 42
+      RetentionInDays: 1337
     x-network:
       Ingress:
         Myself: False
