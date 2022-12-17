@@ -7,9 +7,10 @@ Package to manage an ECS "Family" Task and Service definition
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
+    from troposphere.ecs import Service as CfnService
     from ecs_composex.common.settings import ComposeXSettings
 
 import re
@@ -22,13 +23,14 @@ from troposphere.ecs import EphemeralStorage, RuntimePlatform, TaskDefinition
 
 from ecs_composex.common.logging import LOG
 from ecs_composex.common.stacks import ComposeXStack
+from ecs_composex.common.troposphere_tools import Parameter
 from ecs_composex.compose.compose_services import ComposeService
 from ecs_composex.ecs import ecs_conditions, ecs_params
 from ecs_composex.ecs.ecs_family.family_helpers import (
     handle_same_task_services_dependencies,
 )
 from ecs_composex.ecs.ecs_family.family_logging import FamilyLogging
-from ecs_composex.ecs.ecs_params import TASK_T
+from ecs_composex.ecs.ecs_params import SERVICE_T, TASK_T
 from ecs_composex.ecs.ecs_prometheus import set_prometheus
 from ecs_composex.ecs.managed_sidecars.aws_xray import set_xray
 from ecs_composex.ecs.service_compute import ServiceCompute
@@ -80,7 +82,6 @@ class ComposeFamily:
         self.cwagent_service = None
         self.xray_service = None
         self.task_definition = None
-        self.service_definition = None
         self.service_tags = None
         self.task_ephemeral_storage = 0
         self.enable_execute_command = False
@@ -110,6 +111,18 @@ class ComposeFamily:
     @property
     def want_xray(self) -> bool:
         return any([service.x_ray for service in self.services])
+
+    @property
+    def service_definition(self) -> Union[None, CfnService]:
+        if self.ecs_service and self.ecs_service.ecs_service:
+            return self.ecs_service.ecs_service
+        return None
+
+    @property
+    def service_definition_param(self) -> Parameter:
+        return Parameter(
+            f"{self.logical_name}{SERVICE_T}", group_label="ECS Settings", Type="String"
+        )
 
     def init_family(self) -> None:
         """
@@ -283,6 +296,11 @@ class ComposeFamily:
         self.outputs.append(
             CfnOutput(self.task_definition.title, Value=Ref(self.task_definition))
         )
+        self.outputs.append(
+            CfnOutput(
+                self.service_definition_param.title, Value=Ref(self.service_definition)
+            )
+        )
         if (
             self.service_scaling
             and self.service_scaling.scalable_target
@@ -424,17 +442,17 @@ class ComposeFamily:
 
         set_service_dependency_on_all_iam_policies(self)
         if self.service_compute.launch_type == "EXTERNAL":
-            if hasattr(self.ecs_service.ecs_service, "LoadBalancers"):
-                setattr(self.ecs_service.ecs_service, "LoadBalancers", NoValue)
-            if hasattr(self.ecs_service.ecs_service, "ServiceRegistries"):
-                setattr(self.ecs_service.ecs_service, "ServiceRegistries", NoValue)
+            if hasattr(self.service_definition, "LoadBalancers"):
+                setattr(self.service_definition, "LoadBalancers", NoValue)
+            if hasattr(self.service_definition, "ServiceRegistries"):
+                setattr(self.service_definition, "ServiceRegistries", NoValue)
             for container in self.task_definition.ContainerDefinitions:
                 if hasattr(container, "LinuxParameters"):
                     parameters = getattr(container, "LinuxParameters")
                     setattr(parameters, "InitProcessEnabled", False)
         if (
-            self.ecs_service.ecs_service
-            and self.ecs_service.ecs_service.title in self.template.resources
+            self.service_definition
+            and self.service_definition.title in self.template.resources
         ) and (
             self.service_scaling
             and self.service_scaling.scalable_target

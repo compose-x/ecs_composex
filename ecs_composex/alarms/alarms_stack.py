@@ -29,11 +29,6 @@ from ecs_composex.alarms.alarms_params import ALARM_ARN, ALARM_NAME
 from ecs_composex.common.logging import LOG
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common.troposphere_tools import build_template
-from ecs_composex.compose.x_resources.helpers import (
-    set_lookup_resources,
-    set_new_resources,
-    set_resources,
-)
 from ecs_composex.compose.x_resources.services_resources import ServicesXResource
 
 
@@ -122,9 +117,11 @@ class XStack(ComposeXStack):
         self, name, settings: ComposeXSettings, module: XResourceModule, **kwargs
     ):
         if module.new_resources:
-            template = build_template("Root stack for Alarms created via Compose-X")
+            template = build_template(
+                f"Alarms created for {settings.name} by Compose-X"
+            )
             super().__init__(name, stack_template=template, **kwargs)
-            create_alarms(template, module.new_resources)
+            create_alarms(template, self, module.new_resources, settings)
         else:
             self.is_void = True
         if module.lookup_resources:
