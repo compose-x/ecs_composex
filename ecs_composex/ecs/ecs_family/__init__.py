@@ -296,11 +296,13 @@ class ComposeFamily:
         self.outputs.append(
             CfnOutput(self.task_definition.title, Value=Ref(self.task_definition))
         )
-        self.outputs.append(
-            CfnOutput(
-                self.service_definition_param.title, Value=Ref(self.service_definition)
+        if self.service_definition:
+            self.outputs.append(
+                CfnOutput(
+                    self.service_definition_param.title,
+                    Value=Ref(self.service_definition),
+                )
             )
-        )
         if (
             self.service_scaling
             and self.service_scaling.scalable_target

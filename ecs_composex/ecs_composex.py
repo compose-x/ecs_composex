@@ -7,24 +7,19 @@ Main module to generate a full stack with VPC, Cluster, Compute, Services and al
 
 from __future__ import annotations
 
-import json
 from typing import TYPE_CHECKING
-
-import yaml
 
 if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
     from ecs_composex.compose.x_resources import XResource
 
-import re
-import warnings
 from importlib import import_module
 
 from troposphere import AWS_STACK_NAME, Ref
 
 from ecs_composex.cloudmap.cloudmap_helpers import x_cloud_lookup_and_new_vpc
 from ecs_composex.common import NONALPHANUM
-from ecs_composex.common.cfn_params import ROOT_STACK_NAME_T
+from ecs_composex.common.cfn_params import ROOT_STACK_NAME
 from ecs_composex.common.ecs_composex import X_KEY
 from ecs_composex.common.logging import LOG
 from ecs_composex.common.stacks import ComposeXStack
@@ -53,25 +48,7 @@ from ecs_composex.vpc.helpers import (
     define_vpc_settings,
     update_network_resources_vpc_config,
 )
-from ecs_composex.vpc.vpc_stack import Vpc
 from ecs_composex.vpc.vpc_stack import XStack as VpcStack
-
-RES_REGX = re.compile(r"(^([x-]+))")
-COMPUTE_STACK_NAME = "Ec2Compute"
-VPC_STACK_NAME = "vpc"
-MESH_TITLE = "RootMesh"
-
-IGNORED_X_KEYS = [
-    f"{X_KEY}tags",
-    f"{X_KEY}appmesh",
-    f"{X_KEY}vpc",
-    f"{X_KEY}cluster",
-    f"{X_KEY}dashboards",
-]
-
-ENV_RESOURCE_MODULES = ["acm", "route53", "cloudmap"]
-ENV_RESOURCES = [f"{X_KEY}{mode}" for mode in ENV_RESOURCE_MODULES]
-DEPRECATED_RESOURCES = [(f"{X_KEY}dns", "0.17", ["x-route53", "x-cloudmap"])]
 
 
 def get_mod_function(module_name, function_name):
@@ -204,7 +181,7 @@ def add_x_resources(settings: ComposeXSettings) -> None:
             module.mapping_key,
             settings=settings,
             module=module,
-            Parameters={ROOT_STACK_NAME_T: Ref(AWS_STACK_NAME)},
+            Parameters={ROOT_STACK_NAME.title: Ref(AWS_STACK_NAME)},
         )
         if x_stack and x_stack.is_void:
             settings.x_resources_void.append({module.res_key: x_stack})
@@ -232,19 +209,6 @@ def create_root_stack(settings: ComposeXSettings) -> ComposeXStack:
         file_name=settings.name,
     )
     return root_stack
-
-
-def deprecation_warning(settings):
-    """
-    Simple function to warn about deprecation of compose-x modules / x-resources
-    :param ecs_composex.common.settings.ComposeXSettings settings: The settings for the execution
-    """
-    for mod in DEPRECATED_RESOURCES:
-        if mod[0] in settings.compose_content.keys():
-            warnings.warn(
-                f"{mod[0]} is deprecated since {mod[1]}. See {mod[2]} as alternatives",
-                DeprecationWarning,
-            )
 
 
 def set_all_mappings_to_root_stack(
@@ -276,7 +240,6 @@ def generate_full_template(settings: ComposeXSettings):
     :return root_template: Template, params
     :rtype: root_template, list
     """
-    deprecation_warning(settings)
     LOG.info(
         f"Service families to process {[family.name for family in settings.families.values()]}"
     )

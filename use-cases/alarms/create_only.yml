@@ -47,3 +47,9 @@ x-alarms:
       TreatMissingData: notBreaching
     MacroParameters:
       ServiceName: bignicefamily
+
+  composite-alarm:
+    MacroParameters:
+      CompositeExpression: ALARM(alarm-01) and (OK(service-alarm) or INSUFFICIENT_DATA(service-alarm))
+    Topics:
+      - TopicArn: arn:aws:sns:eu-west-1:012346578900:topic/sometopic
