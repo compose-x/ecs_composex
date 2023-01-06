@@ -119,9 +119,17 @@ class ComposeFamily:
         return None
 
     @property
-    def service_definition_param(self) -> Parameter:
+    def service_name_param(self) -> Parameter:
         return Parameter(
             f"{self.logical_name}{SERVICE_T}", group_label="ECS Settings", Type="String"
+        )
+
+    @property
+    def service_arn_param(self) -> Parameter:
+        return Parameter(
+            f"{self.logical_name}{SERVICE_T}Arn",
+            group_label="ECS Settings",
+            Type="String",
         )
 
     def init_family(self) -> None:
@@ -299,7 +307,13 @@ class ComposeFamily:
         if self.service_definition:
             self.outputs.append(
                 CfnOutput(
-                    self.service_definition_param.title,
+                    self.service_name_param.title,
+                    Value=GetAtt(self.service_definition, "Name"),
+                )
+            )
+            self.outputs.append(
+                CfnOutput(
+                    self.service_arn_param.title,
                     Value=Ref(self.service_definition),
                 )
             )

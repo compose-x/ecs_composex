@@ -164,7 +164,7 @@ def handle_service_alarm(
             [_family.name for _family in settings.families],
         )
     family = settings.families[family_name]
-    add_parameters(template, [CLUSTER_NAME, family.service_definition_param])
+    add_parameters(template, [CLUSTER_NAME, family.service_name_param])
     props = import_record_properties(alarm.properties, CWAlarm)
     props.update(
         {
@@ -173,7 +173,7 @@ def handle_service_alarm(
                 MetricDimension(
                     **{
                         "Name": "ServiceName",
-                        "Value": Ref(family.service_definition_param),
+                        "Value": Ref(family.service_name_param),
                     }
                 ),
             ],
@@ -195,8 +195,8 @@ def handle_service_alarm(
         )
     alarm.stack.Parameters.update(
         {
-            family.service_definition_param.title: GetAtt(
-                family.logical_name, f"Outputs.{family.service_definition_param.title}"
+            family.service_name_param.title: GetAtt(
+                family.logical_name, f"Outputs.{family.service_name_param.title}"
             )
         }
     )
