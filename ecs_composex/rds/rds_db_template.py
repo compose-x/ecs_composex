@@ -25,6 +25,7 @@ from troposphere.rds import (
     DBInstance,
     DBParameterGroup,
     DBSubnetGroup,
+    ServerlessV2ScalingConfiguration,
 )
 
 from ecs_composex.common.cfn_conditions import define_stack_name
@@ -553,6 +554,24 @@ def add_db_instances_for_cluster(db_template: Template, db: Rds) -> None:
         add_instances_from_parameters(db_template, db)
 
 
+def add_default_db_instance_for_cluster(db: Rds, db_template: Template) -> None:
+    if isinstance(db.cfn_resource, DBCluster) and not (
+        (
+            hasattr(db.cfn_resource, "ServerlessV2ScalingConfiguration")
+            and isinstance(
+                db.cfn_resource.ServerlessV2ScalingConfiguration,
+                ServerlessV2ScalingConfiguration,
+            )
+        )
+        or (
+            hasattr(db.cfn_resource, "EngineMode")
+            and isinstance(db.cfn_resource.EngineMode, str)
+            and db.cfn_resource.EngineMode == "serverless"
+        )
+    ):
+        add_db_instances_for_cluster(db_template, db)
+
+
 def generate_database_template(db: Rds, settings: ComposeXSettings) -> Template:
     """
     Creates the database and its template. Will be used to create the stack for it.
@@ -565,8 +584,7 @@ def generate_database_template(db: Rds, settings: ComposeXSettings) -> Template:
         create_from_properties(db_template, db)
     elif not db.properties and db.parameters:
         create_from_parameters(db_template, db)
-    if isinstance(db.cfn_resource, DBCluster):
-        add_db_instances_for_cluster(db_template, db)
+    add_default_db_instance_for_cluster(db, db_template)
     add_parameter_group(db_template, db, session=settings.session)
     add_db_dependency(db.cfn_resource, db.db_secret)
     attach_to_secret_to_resource(db_template, db.cfn_resource, db.db_secret)
