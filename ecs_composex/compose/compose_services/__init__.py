@@ -97,11 +97,8 @@ class ComposeService:
                     setting[1],
                 )
         self._definition = deepcopy(definition)
-        self.original_definition = definition
         self.name = name
         self.container_definition = None
-        self.container_name = name
-        self.service_name = Sub(f"${{{ROOT_STACK_NAME.title}}}-{self.name}")
 
         self.x_scaling = set_else_none("x-scaling", self.definition, None, False)
         self.x_network = set_else_none("x-network", self.definition, None, False)
@@ -171,6 +168,10 @@ class ComposeService:
     @property
     def definition(self):
         return self._definition
+
+    @property
+    def container_name(self) -> str:
+        return set_else_none("container_name", self._definition, self.name)
 
     @property
     def compose_x_arn(self) -> str:
@@ -805,17 +806,6 @@ class ComposeService:
                 raise FileNotFoundError("No file found at", path.abspath(file_path))
             env_files.append(path.abspath(file_path))
         return env_files
-
-    def set_service_labels(self, deployments):
-        labels = "labels"
-        if not keyisset(labels, deployments):
-            return
-        self.deploy_labels = deployments[labels]
-        custom_keys = re.compile(r"^ecs\.[\S]+$")
-        keys = [name for name in self.deploy_labels.keys()]
-        for key in keys:
-            if custom_keys.match(key):
-                del self.deploy_labels[key]
 
     def handle_expose_ports(self, aws_vpc_mappings):
         """

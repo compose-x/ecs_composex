@@ -24,24 +24,21 @@ See more details with the `AWS CFN Stack Anatomy`_
 Service Family
 ========================
 
-When defining a services in docker-compose, and you run **docker-compose up**, all the containers are running all at the
-same time on the machine running docker for you. When you deploy to AWS ECS via ECS Compose-X, each service is then
-its own `Task Definition`_ and `Service Definition`_ and are managed separately, across - potentially - multiple hosts etc.
+When defining a services in Docker Compose, running `docker-compose up` will start all containers at the same time on the machine running Docker.
+When deploying to Amazon Web Services (AWS) Elastic Container Service (ECS) using ECS Compose-X,
+each service is represented as its own `Task Definition`_ and Service Definition, and can be managed across multiple hosts.
 
-Sometimes one want to have more than one container running at the same time, although in your docker-compose file they
-are defined as individual services.
+Sometimes, it is desirable to have more than one container running at the same time, in which case a Family can be used
+to group multiple containers into the same Task Definition. To define multiple services from the Docker Compose file to
+be part of the same Family, set the `ecs.task.family` label in the deploy configuration.
 
-A **Family** is what allows you to group multiple containers into the same `Task Definition`_ and therefore.
+For example, within ECS Compose-X, setting **x-ray** to true in the service definition automatically adds a sidecar
+aws-xray-daemon container as an additional container, of the same Family.
 
-Typically, when you set **x-ray: true** in your service definition, ECS Compose-X automatically adds a sidecar, the
-aws-xray-daemon container, as an additional container, of the same "Family" definition.
-
-To define more than one service defined in docker-compose to be part of the same family, simply set the deploy label
-**ecs.task.family**.
 
 .. hint::
 
-    If not specified, the "family name" uses the service name.
+    If not specified via the deploy label ``ecs.task.family``, it uses the service name.
 
 For example, below, we indicate that nginx should be part of the "kafdrop" family. The ECS Task Definition will therefore
 have the settings for the nginx service and the kafdrop service, into one.
@@ -104,9 +101,8 @@ as well as IAM roles to use.
 Service Definition
 ====================
 
-The service definitions is what is used in the ECS Cluster to create the service, based on a task definition.
-This will set the network properties (VPC, Subnets etc), auto-scaling and otherwise represents the deployment as a service
-of the task definition.
+The ECS Cluster uses the service definition to create a service based on the task definition.
+This service has properties such as the VPC, Subnets, auto-scaling, and other settings that define the deployment.
 
 .. seealso::
 
@@ -117,13 +113,11 @@ of the task definition.
 services.x-feature
 =====================
 
-In ECS Compose-X, extension fields are used to define properties ignored by docker-compose when running commands, but that
-we can then use to extend the utility of the template with.
+Extension fields are used to extend the utility of the ECS Compose-X template,
+allowing you to customize the behavior of the services in the stack. They are not used by docker-compose, but can
+be used to add additional features to the template that docker-compose does not support.
 
-When in the documentation, is referred a feature as **service.x-**, this means that this is an extension field that is
-set inside the service definition.
-
-For example, here x-s3 is a top level feature of ECS Compose-X, whereas x-scaling only applies at the level of the service.
+For example, here x-s3 is a top level feature of ECS Compose-X, whereas x-scaling only applies at the `Service Family`_ level.
 
 .. code-block:: yaml
 
@@ -141,12 +135,9 @@ For example, here x-s3 is a top level feature of ECS Compose-X, whereas x-scalin
 JSON Schema
 =============
 
-Docker Compose uses the Compose-Spec JSON schema to ensure that the input of the syntax of the input to docker-compose file is correct.
-To keep with the same level of validation, ECS Compose-X also validates the input given to it to make sure that the input
-processed is correct. This removes a lot of conditional verification on the input itself and allows for a lighter code and
-much clearer syntax to use.
-
-The compose-spec original extension field is extended with the ECS Compose-X definitions for its features.
+ECS Compose-X validates the input given to it to maintain the same level of accuracy as Docker Compose,
+which utilizes the Compose-Spec JSON schema. This simplifies the code and results in a more straightforward syntax.
+The `compose-spec`_ is extended with the additional features in ECS Compose-X.
 
 .. seealso::
 
@@ -158,3 +149,4 @@ The compose-spec original extension field is extended with the ECS Compose-X def
 .. _AWS Task Definition CFN Syntax: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ecs-taskdefinition.html
 .. _AWS Service Definition CFN Syntax: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ecs-service.html
 .. _JSON Schema documentation: https://json-schema.org/
+.. _compose-spec: https://github.com/compose-spec/compose-spec

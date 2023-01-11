@@ -155,6 +155,16 @@ to define is the Alarm expression
     MacroParameters:
       CompositeExpression: <str>
 
+ServiceName
+--------------
+
+Allows to set the service name or family defined in the compose file, and automatically fills in the ``Cluster``
+and ``ServiceName`` Dimensions.
+
+.. note::
+
+    If you did set ``Dimensions`` in the Properties, these will be overriden.
+
 CompositeExpression
 --------------------
 

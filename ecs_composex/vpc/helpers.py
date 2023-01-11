@@ -29,9 +29,13 @@ def update_network_resources_vpc_config(settings, vpc_stack):
     :type vpc_stack: ecs_composex.vpc.vpc_stack.VpcStack
     """
     for resource in settings.x_resources:
+        if not resource:
+            print("NONED???", resource)
+            continue
         if (
-            not resource.requires_vpc
-            or resource.mappings
+            resource
+            and not resource.requires_vpc
+            or (resource and resource.mappings)
             or (hasattr(resource, "stack") and resource.stack == vpc_stack)
         ):
             LOG.debug(

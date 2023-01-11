@@ -5,6 +5,13 @@
 Module to define CloudWatch alarms in x-alarms and match these to services
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ecs_composex.common.settings import ComposeXSettings
+
 from compose_x_common.compose_x_common import keyisset
 from troposphere import GetAtt, Output, Ref
 from troposphere.cloudwatch import Alarm as CWAlarm
@@ -256,78 +263,3 @@ def alarms_to_ecs(resources, services_stack, res_root_stack, settings):
         handle_service_scaling(alarm, res_root_stack)
         if alarm.topics:
             handle_alarm_topics(alarm, res_root_stack, settings)
-
-
-def update_alarm_threshold(alarm_properties, settings):
-    """
-    Function to update the threshold based on the defined settings
-
-    :param alarm_properties:
-    :param settings:
-    :return:
-    """
-    if alarm_properties["MetricName"] in settings and keyisset(
-        alarm_properties["MetricName"], settings
-    ):
-        alarm_properties["Threshold"] = float(settings[alarm_properties["MetricName"]])
-
-
-def update_definition_from_settings(alarm_definition, settings):
-    """
-    Function to update the alarm definition with the global settings
-
-    :param dict alarm_definition:
-    :param dict settings:
-    :return:
-    """
-    alarm_definition["Properties"].update(
-        {
-            "DatapointsToAlarm": settings["DatapointsToAlarm"],
-            "EvaluationPeriods": settings["EvaluationPeriods"],
-            "Period": settings["Period"],
-        }
-    )
-
-
-def set_services_alarms(settings):
-    """
-    Function to create and assign alarms to services
-
-    :param ecs_composex.common.settings.ComposeXSettings settings:
-    """
-    for family in settings.families.values():
-        if not family.predefined_alarms:
-            continue
-        family_alarms = []
-        for name, definition in family.predefined_alarms.items():
-            primary_name = definition["Primary"]
-            primary = definition["Alarms"][primary_name]
-            update_definition_from_settings(primary, definition["Settings"])
-            for alarm_name, alarm_definition in definition["Alarms"].items():
-                if keyisset("Topics", definition):
-                    alarm_definition["Topics"] = definition["Topics"]
-                if keyisset("Properties", alarm_definition) and keyisset(
-                    "MetricName", alarm_definition["Properties"]
-                ):
-                    update_alarm_threshold(
-                        alarm_definition["Properties"], definition["Settings"]
-                    )
-                the_alarm = Alarm(
-                    alarm_name, alarm_definition, family.logical_name, settings
-                )
-                family_alarms.append(the_alarm)
-        create_alarms(family.template, family_alarms)
-        for alarm in family_alarms:
-            dimensions = [
-                MetricDimension(**{"Name": "ClusterName", "Value": Ref(CLUSTER_NAME)}),
-                MetricDimension(
-                    **{
-                        "Name": "ServiceName",
-                        "Value": GetAtt(family.ecs_service.ecs_service, "Name"),
-                    }
-                ),
-            ]
-            if isinstance(alarm.cfn_resource, CWAlarm):
-                setattr(alarm.cfn_resource, "Dimensions", dimensions)
-            if issubclass(type(alarm.cfn_resource), CompositeAlarm):
-                handle_alarm_topics(alarm, family.stack, settings)

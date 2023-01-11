@@ -7,6 +7,11 @@ Module for the ComposeXSettings class
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ecs_composex.ecs_cluster import EcsCluster
+
 from copy import deepcopy
 from datetime import datetime as dt
 from json import loads
@@ -174,7 +179,7 @@ class ComposeXSettings:
         self.use_appmesh = keyisset("x-appmesh", self.compose_content)
         self.evaluate_private_namespace()
         self.name = kwargs[self.name_arg]
-        self.ecs_cluster = None
+        self._ecs_cluster = None
         self.ignore_ecr_findings = keyisset(self.ecr_arg, kwargs)
         self.x_resources_void = []
         self.mod_manager = None
@@ -184,12 +189,20 @@ class ComposeXSettings:
     def disable_rollback(self) -> bool:
         return bool(set_else_none("DisableRollback", self.__args, alt_value=False))
 
+    @property
+    def ecs_cluster(self) -> EcsCluster:
+        return self._ecs_cluster
+
+    @ecs_cluster.setter
+    def ecs_cluster(self, value: EcsCluster) -> None:
+        self._ecs_cluster = value
+
     def get_x_resources(self, include_new=True, include_mappings=True) -> list:
         """
         Returns the x_resources with filters
 
-        :param include_new: Whether or not to add the new resources in the list
-        :param include_mappings: Whether or not to add the new resources in the listF
+        :param include_new: Whether to add the new resources in the list
+        :param include_mappings: Whether to add the new resources in the listF
         """
         if not include_new and not include_mappings:
             return self.x_resources
@@ -200,7 +213,7 @@ class ComposeXSettings:
                 and issubclass(type(resource.cfn_resource), AWSObject)
             ):
                 continue
-            if not include_mappings and resource.mappings:
+            if not include_mappings and (resource and resource.mappings):
                 continue
             x_resources.append(resource)
         return x_resources
@@ -290,27 +303,6 @@ class ComposeXSettings:
         for name, module in self.mod_manager.modules.items():
             _resources += module.resources_list
         return _resources
-
-        # all_keys = self.compose_content.keys()
-        # all_resources = []
-        # for res_key in all_keys:
-        #
-        #     if not isinstance(self.compose_content[res_key], dict):
-        #         continue
-        #     for resource in self.compose_content[res_key].values():
-        #         if not issubclass(
-        #             type(resource),
-        #             (
-        #                 XResource,
-        #                 ServicesXResource,
-        #                 NetworkXResource,
-        #                 ApiXResource,
-        #                 AwsEnvironmentResource,
-        #             ),
-        #         ):
-        #             continue
-        #         all_resources.append(resource)
-        # return all_resources
 
     def evaluate_private_namespace(self):
         """

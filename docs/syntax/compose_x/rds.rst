@@ -56,6 +56,27 @@ If you are creating a RDS DB Instance, see `AWS RDS DB Instance Return Values`_.
 
 The value ``DBCluster`` can be used to expose the value for **Ref**
 
+.. _rds_db_secret_access:
+
+GrantTaskAccess
+---------------
+
+Allow to grant secret access to the Task Role. Can be either a boolean or mapping to specify an environment variable name
+with the ARN of the secret
+
+.. code-block:: yaml
+
+    Services:
+      app01:
+        Access: RW
+      app03:
+        Access: RW
+        GrantTaskAccess:
+          SecretEnvName: DB_B_SECRET # Grants access to the secret, sets env var DB_B_SECRET to the ARN
+      youtoo:
+        Access: RW
+        GrantTaskAccess: True # Grants access to the secret, not setting an env var
+
 .. _rds_db_secrets_mappings:
 
 SecretsMapping

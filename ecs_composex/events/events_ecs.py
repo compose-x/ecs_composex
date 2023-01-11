@@ -52,6 +52,7 @@ def delete_service_from_template(service):
     for output_name in outputs:
         if output_name.find(SERVICE_SCALING_TARGET) > 0:
             del service[0].template.outputs[output_name]
+    service[0].ecs_service.ecs_service = None
 
 
 def define_service_targets(stack, rule, cluster_arn):

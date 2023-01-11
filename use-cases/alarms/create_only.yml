@@ -31,3 +31,25 @@ x-alarms:
             - Count: 3
               LowerBound: 1000
               UpperBound: 10000
+
+  service-alarm:
+    Properties:
+      ActionsEnabled: true
+      AlarmDescription: A simple CW alarm
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      DatapointsToAlarm: 1
+      EvaluationPeriods: 5
+      MetricName: TotalLagForTopicAndConsumerGroup
+      Namespace: lag-metrics-v4
+      Period: 60
+      Statistic: Sum
+      Threshold: 1.0
+      TreatMissingData: notBreaching
+    MacroParameters:
+      ServiceName: bignicefamily
+
+  composite-alarm:
+    MacroParameters:
+      CompositeExpression: ALARM(alarm-01) and (OK(service-alarm) or INSUFFICIENT_DATA(service-alarm))
+    Topics:
+      - TopicArn: arn:aws:sns:eu-west-1:012346578900:topic/sometopic

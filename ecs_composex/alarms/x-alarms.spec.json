@@ -19,6 +19,10 @@
       "properties": {
         "CompositeExpression": {
           "type": "string"
+        },
+        "ServiceName": {
+          "type": "string",
+          "description": "Name of the service/family the alarm is for. Automatically sets Dimensions."
         }
       }
     },

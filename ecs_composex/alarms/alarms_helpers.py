@@ -8,15 +8,31 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .alarms_stack import Alarm
     from troposphere import Template
+    from ecs_composex.common.settings import ComposeXSettings
 
 import re
 
 from compose_x_common.compose_x_common import keyisset
-from troposphere import AWS_REGION, AWS_STACK_ID, Join, Ref, Select, Split, Sub
+from troposphere import (
+    AWS_REGION,
+    AWS_STACK_ID,
+    FindInMap,
+    GetAtt,
+    Join,
+    Ref,
+    Select,
+    Split,
+    Sub,
+)
 from troposphere.cloudwatch import Alarm as CWAlarm
-from troposphere.cloudwatch import CompositeAlarm
+from troposphere.cloudwatch import CompositeAlarm, MetricDimension
 
-from ecs_composex.common.troposphere_tools import add_outputs, add_resource
+from ecs_composex.common.troposphere_tools import (
+    add_outputs,
+    add_parameters,
+    add_resource,
+)
+from ecs_composex.ecs.ecs_params import CLUSTER_NAME
 from ecs_composex.resources_import import import_record_properties
 
 
@@ -137,13 +153,74 @@ def add_composite_alarms(template: Template, new_alarms: list[Alarm]) -> None:
             add_outputs(template, alarm.outputs)
 
 
-def create_alarms(template: Template, new_alarms: list[Alarm]) -> None:
+def handle_service_alarm(
+    alarm: Alarm, settings: ComposeXSettings, template: Template, family_name: str
+) -> None:
+    if not family_name in settings.families:
+        raise ValueError(
+            f"{alarm.module.res_key}.{alarm.name} - MacroParameters.ServiceName",
+            family_name,
+            "Is not defined.",
+            [_family.name for _family in settings.families],
+        )
+    family = settings.families[family_name]
+    add_parameters(template, [CLUSTER_NAME, family.service_name_param])
+    props = import_record_properties(alarm.properties, CWAlarm)
+    props.update(
+        {
+            "Dimensions": [
+                MetricDimension(**{"Name": "ClusterName", "Value": Ref(CLUSTER_NAME)}),
+                MetricDimension(
+                    **{
+                        "Name": "ServiceName",
+                        "Value": Ref(family.service_name_param),
+                    }
+                ),
+            ],
+        }
+    )
+    if settings.ecs_cluster.cfn_resource:
+        alarm.stack.Parameters.update(
+            {CLUSTER_NAME.title: Ref(settings.ecs_cluster.cfn_resource)}
+        )
+    else:
+        alarm.stack.Parameters.update(
+            {
+                CLUSTER_NAME.title: FindInMap(
+                    settings.ecs_cluster.mappings,
+                    settings.ecs_cluster.mappings_key,
+                    "Name",
+                )
+            }
+        )
+    alarm.stack.Parameters.update(
+        {
+            family.service_name_param.title: GetAtt(
+                family.logical_name, f"Outputs.{family.service_name_param.title}"
+            )
+        }
+    )
+    alarm.cfn_resource = CWAlarm(alarm.logical_name, **props)
+    alarm.init_outputs()
+    alarm.generate_outputs()
+    add_resource(template, alarm.cfn_resource)
+    add_outputs(template, alarm.outputs)
+
+
+def create_alarms(
+    template: Template, stack, new_alarms: list[Alarm], settings: ComposeXSettings
+) -> None:
     """
     Main function to create new alarms
     Rules out CompositeAlarms first, creates "Simple" alarms, and then link these to ComopsiteAlarms if so declared.
     """
     for alarm in new_alarms:
-        if (
+        alarm.stack = stack
+        if alarm.parameters and keyisset("ServiceName", alarm.parameters):
+            handle_service_alarm(
+                alarm, settings, template, alarm.parameters["ServiceName"]
+            )
+        elif (
             alarm.properties
             and not alarm.parameters
             or (

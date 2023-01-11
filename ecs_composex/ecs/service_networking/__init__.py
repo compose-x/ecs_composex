@@ -70,12 +70,6 @@ class ServiceNetworking:
         self.merge_services_ports()
         self.merge_networks()
         self.definition = merge_family_services_networking(family)
-        self.ingress_from_self = False
-        if any([svc.expose_ports for svc in family.services]):
-            self.ingress_from_self = True
-            LOG.info(
-                f"{family.name} - services have export ports, allowing internal ingress"
-            )
         self._security_group = None
         self.extra_security_groups = []
         self._subnets = Ref(APP_SUBNETS)
@@ -83,7 +77,12 @@ class ServiceNetworking:
             merge_cloudmap_settings(family, self.ports) if self.ports else {}
         )
         self.ingress = Ingress(self.definition[Ingress.master_key], self.ports)
-        self.ingress_from_self = keyisset(self.self_key, self.definition)
+
+    @property
+    def ingress_from_self(self) -> bool:
+        if self.ingress:
+            return keyisset(self.self_key, self.ingress.definition)
+        return False
 
     @property
     def ecs_network_config(self):
@@ -240,6 +239,7 @@ class ServiceNetworking:
         """
         Method to allow communications internally to the group on set ports
         """
+        LOG.debug(f"SELF INGRESS? {self.family.name} {self.ingress_from_self}")
         if (
             not self.family.template
             or not self.family.ecs_service
@@ -269,7 +269,7 @@ class ServiceNetworking:
                     ),
                     SourceSecurityGroupOwnerId=Ref(AWS_ACCOUNT_ID),
                     Description=Sub(
-                        f"Allowing traffic internally on port {target_port}"
+                        f"Internal traffic on {target_port}/{port['protocol']}"
                     ),
                 )
             )

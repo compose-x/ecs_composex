@@ -175,7 +175,7 @@ class XResourceModule:
             DatabaseXResource,
         ]
     ]:
-        return list(self._resources.values())
+        return [_res for _res in self._resources.values() if _res is not None]
 
     @property
     def definition(self) -> dict:

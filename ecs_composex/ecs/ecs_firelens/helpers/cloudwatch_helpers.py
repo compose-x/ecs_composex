@@ -40,7 +40,7 @@ def set_default_cloudwatch_logging_options(
             "region": Region,
             "auto_create_group": True,
             "log_group_name": Ref(family.logging.family_log_group),
-            "log_stream_prefix": service.service_name,
+            "log_stream_prefix": service.container_name,
         }
     )
 

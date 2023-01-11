@@ -65,7 +65,9 @@ class FamilyLogging:
 
     @property
     def cw_log_retention(self) -> int:
-        return max(_svc.logging.cw_retention_period for _svc in self.family.services)
+        return max(
+            _svc.logging.cw_retention_period for _svc in self.family.ordered_services
+        )
 
     def update_cw_log_retention(self):
         if self.family.stack:

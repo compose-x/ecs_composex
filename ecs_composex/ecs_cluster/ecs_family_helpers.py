@@ -73,7 +73,7 @@ def validate_compute_configuration_for_task(family, settings):
             ", ignoring CapacityProviders"
             f"{[_cap.CapacityProvider for _cap in family.service_compute.ecs_capacity_providers]}"
         )
-        if family.ecs_service.ecs_service:
+        if family.service_definition:
             setattr(
                 family.service_definition,
                 "CapacityProviderStrategy",

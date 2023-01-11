@@ -21,29 +21,24 @@ The no-code CDK for docker-compose & AWS ECS
 
 * Step 1. Install ECS Compose-x
 * Step 2. Use your existing docker-compose files. Optionally, add Compose-X extensions.
-* Step 3. Deploy to AWS via CloudFormation.
-* Step 4 ? Repeat.
+* Step 3. Deploy to AWS with AWS CloudFormation
 
 
 What does it do?
 ========================
 
-* Simplify applications and resources deployment to AWS for developers/SRE/Cloud engineers
-    * Generates CloudFormation templates out of the Compose Files
-    * Links services and AWS Resources together via IAM / Networking / Configuration
-    * Detects mis-configurations and autocorrects wherever possible
-
-* Use/Re-use existing docker-compose files and compose specifications
-    * Supports docker-compose specification 3.7+
-    * Performs JSON validation of input to improve reliability
-    * Enable/disable features to run in AWS Fargate automatically
+* Automatically deploy applications to AWS using existing docker-compose files
+    * Deploys multiple applications to AWS in a single command
+    * Creates AWS resources such as EC2 Instances, ECS Clusters and Containers
+    * Automatically configures IAM roles and Networking for secure and reliable access
 
 * Expand the definitions with AWS CloudFormation resources
     * For supported resources, supports full CloudFormation properties
     * For existing resources, will detect them and allow to use the ``Return Values`` with other components
 
 * Allows to use existing resources in your AWS Account
-* Can be extended with custom modules/hooks
+* Can be extended with custom modules/hooks to customize the deployment process
+* Automatically rolls back the application in case of errors, to previous version or to a stable state
 
 
 Install

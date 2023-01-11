@@ -10,6 +10,7 @@ from troposphere.ecs import (
     PlacementStrategy,
 )
 
+from ecs_composex.common.ecs_composex import TAGS_SEPARATOR
 from ecs_composex.ecs.ecs_conditions import USE_EXTERNAL_LT_T, USE_FARGATE_CON_T
 from ecs_composex.ecs.ecs_params import SERVICE_NAME
 
@@ -73,14 +74,14 @@ def set_service_update_config(family) -> dict:
     family_min_percent = define_family_deploy_percents(min_percents, 100)
     family_max_percent = define_family_deploy_percents(max_percents, 200)
 
-    rollback = True
+    rollback = False
     actions = [
-        service.update_config["failure_action"] != "rollback"
+        service.update_config["failure_action"] == "rollback"
         for service in family.services
         if service.update_config and keyisset("failure_action", service.update_config)
     ]
     if any(actions):
-        rollback = False
+        rollback = True
     deployment_config.update(
         {
             "MinimumHealthyPercent": family_min_percent,
@@ -125,8 +126,8 @@ def set_service_default_tags_labels(family) -> Tags:
         {
             "Name": Ref(SERVICE_NAME),
             "StackName": StackName,
-            "compose-x::name": family.name,
-            "compose-x::logical_name": family.logical_name,
+            f"compose-x{TAGS_SEPARATOR}name": family.name,
+            f"compose-x{TAGS_SEPARATOR}logical_name": family.logical_name,
         }
     )
     for svc in family.services:

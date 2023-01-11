@@ -2,6 +2,45 @@
 History
 =======
 
+0.23.0 (2023-01-11)
+===================
+
+0.22 was one of the more stable releases which had numerous patch versions to improve features & stability.
+0.23.0 adds to it and has a deep refactor of the way resources & modules are working together, allowing
+for anyone to create their own x-resources extension packages, which plug & play to the core modules.
+
+We also had one new contribution, so thanks to samyuktha-edara for the fix (#647)!
+
+New features
+---------------
+
+* b944b4b Document GrantTaskAccess (John "Preston" Mille)
+* 6a2652d Allows to set name of a compose service or family in x-alarms for auto completion of Dimensions (John "Preston" Mille)
+* 901f1f8 New Fargate CPU RAM combinations (John Preston)
+* 12bac08 Enable EMF logging with CW Agent. (#641) (John Preston)
+* 5e71df8 x-s3.Bucket QueuesNotifications support x-sqs:: (#640) (John Preston)
+* 7d0eb5f Secrets access granted to both roles by default. (#637) (John Preston)
+* 085da03 Working FireLens to x-kinesis (#632) (John Preston)
+* 269155c Working disable rollback (#630) (John Preston)
+
+
+General improvements & Bug fixes
+----------------------------------
+
+* 6eea00d Fixing ECS Scaling Lowerbound (#647) (Samyuktha Edara)
+* 3b535bd Fix loop iteration over services to create families (#636) (John Preston)
+* b001fad Improve x-rds/x-docdb secrets management (#633) (John Preston)
+* 6138126 No default instance for serverless DB Cluster (John "Preston" Mille)
+* 56a069f Fix Ingress.Myself condition check (John "Preston" Mille)
+* 4516f33 Distinguish ServiceName & Service ARN (John "Preston" Mille)
+* 1ee7db1 Ignore sidecars when considering log retention set in compose file (John "Preston" Mille)
+* c088638 Fixing up deleting the service definition output on events delete service (John "Preston" Mille)
+* 3409cf1 Explicitely wrong value with closest value different than 30 (John "Preston" Mille)
+* 8823b50 Slight changes to documentation wording (John "Preston" Mille)
+* 385a91d Adding isort icon/link (John "Preston" Mille)
+* b78c8c5 Improving input validation for firelens destinations (John "Preston" Mille)
+* 150f858 Fixing up ELBv2 & Cognito (John "Preston" Mille)
+
 0.22.0 (2022-06-13)
 ====================
 

@@ -135,6 +135,7 @@ def add_alarm_for_resource(
             scaling_out_policy.StepScalingPolicyConfiguration.StepAdjustments[
                 0
             ].MetricIntervalLowerBound
-        ) + 1,
+        )
+        + 1,
     )
     add_resource(target[0].template, alarm, True)

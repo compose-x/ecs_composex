@@ -110,7 +110,7 @@ def handle_firelens_options(
         "region": Region,
         "auto_create_group": True,
         "log_group_name": service.logical_name,
-        "log_stream_prefix": service.service_name,
+        "log_stream_prefix": service.container_name,
     }
     if set_cw_default:
         options = set_else_none(
