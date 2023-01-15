@@ -95,7 +95,7 @@ def set_ecs_cw_policy(
                         ),
                         Sub(
                             f"arn:${{{AWS_PARTITION}}}:ssm:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}"
-                            f":parameter${{{cw_config_parameter.title}}}"
+                            f":parameter/${{{cw_config_parameter.title}}}"
                         ),
                     ],
                 },
@@ -164,7 +164,7 @@ def set_ecs_cw_policy(
                 "Resource": [
                     Sub(
                         f"arn:${{{AWS_PARTITION}}}:ssm:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}"
-                        f":parameter${{{prometheus_parameter.title}}}"
+                        f":parameter/${{{prometheus_parameter.title}}}"
                     ),
                 ],
             },
