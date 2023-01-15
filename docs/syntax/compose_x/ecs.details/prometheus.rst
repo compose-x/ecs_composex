@@ -32,11 +32,22 @@ ContainersInsights Syntax Reference
 .. code-block:: yaml
 
     EnableCWAgentDebug: bool
+    CollectEmf: bool
     CollectForAppMesh: bool
     CollectForJavaJmx: bool|ExporterConfig
     CollectForNginx: bool|ExporterConfig
     AutoAddNginxPrometheusExporter: bool
     CustomRules: [ExporterConfig]
+
+CollectEmf
+-------------
+
+This allows to turn on EMF Collection from the CW Agent container.
+
+.. hint::
+
+    Same as :ref:`monitoring_cw_agent_emf_collection`. See for more details.
+
 
 CollectForAppMesh
 -------------------

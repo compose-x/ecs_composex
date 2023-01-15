@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "id": "services.x-monitoring",
+  "$id": "services.x-monitoring.spec.json",
+  "type": "object",
+  "title": "services.x-monitoring specification",
+  "description": "The services.x-monitoring specification for ECS Compose-X",
+  "additionalProperties": false,
+  "properties": {
+    "CWAgentCollectEmf": {
+      "type": "boolean"
+    }
+  },
+  "definitions": {}
+}

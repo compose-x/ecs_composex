@@ -22,12 +22,14 @@ from ecs_composex.common.troposphere_tools import add_resource
 from ecs_composex.ecs import ecs_params
 
 
-def define_cloudwatch_agent(cw_prometheus_config, cw_agent_config) -> ManagedSidecar:
+def define_cloudwatch_agent(
+    cw_agent_config, cw_prometheus_config=None
+) -> ManagedSidecar:
     """
     Function to define the CW Agent image task definition
 
-    :param cw_prometheus_config:
     :param cw_agent_config:
+    :param cw_prometheus_config:
     :return:
     """
     from copy import deepcopy
@@ -40,7 +42,7 @@ def define_cloudwatch_agent(cw_prometheus_config, cw_agent_config) -> ManagedSid
             Name="CW_CONFIG_CONTENT",
             ValueFrom=Sub(
                 f"arn:${{{AWS_PARTITION}}}:ssm:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}"
-                f":parameter${{{cw_agent_config.title}}}"
+                f":parameter/${{{cw_agent_config.title}}}"
             ),
         ),
     ]
@@ -50,7 +52,7 @@ def define_cloudwatch_agent(cw_prometheus_config, cw_agent_config) -> ManagedSid
                 Name="PROMETHEUS_CONFIG_CONTENT",
                 ValueFrom=Sub(
                     f"arn:${{{AWS_PARTITION}}}:ssm:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}"
-                    f":parameter${{{cw_prometheus_config.title}}}"
+                    f":parameter/${{{cw_prometheus_config.title}}}"
                 ),
             ),
         )
@@ -67,8 +69,8 @@ def define_cloudwatch_agent(cw_prometheus_config, cw_agent_config) -> ManagedSid
 
 def set_ecs_cw_policy(
     family: ComposeFamily,
-    prometheus_parameter: Parameter,
     cw_config_parameter: Parameter,
+    prometheus_parameter: Parameter = None,
 ) -> None:
     """
     Renders the IAM policy to grant the TaskRole access to CW, ECS and SSM Parameters
@@ -83,6 +85,20 @@ def set_ecs_cw_policy(
         PolicyDocument={
             "Version": "2012-10-17",
             "Statement": [
+                {
+                    "Sid": "CWAgentConfigurationFromSSMParameter",
+                    "Effect": "Allow",
+                    "Action": ["ssm:GetParameter*"],
+                    "Resource": [
+                        Sub(
+                            "arn:aws:ssm:*:${AWS::AccountId}:parameter/AmazonCloudWatch-*"
+                        ),
+                        Sub(
+                            f"arn:${{{AWS_PARTITION}}}:ssm:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}"
+                            f":parameter/${{{cw_config_parameter.title}}}"
+                        ),
+                    ],
+                },
                 {
                     "Sid": "EnableCreationAndManagementOfContainerInsightsLogEvents",
                     "Effect": "Allow",
@@ -142,18 +158,13 @@ def set_ecs_cw_policy(
     if prometheus_parameter:
         ecs_sd_policy.PolicyDocument["Statement"].append(
             {
-                "Sid": "ExtractFromCloudWatchAgentServerPolicy",
+                "Sid": "CWAgentPrometheusScrapingConfigurationAccess",
                 "Effect": "Allow",
                 "Action": ["ssm:GetParameter*"],
                 "Resource": [
-                    Sub("arn:aws:ssm:*:${AWS::AccountId}:parameter/AmazonCloudWatch-*"),
                     Sub(
                         f"arn:${{{AWS_PARTITION}}}:ssm:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}"
-                        f":parameter${{{prometheus_parameter.title}}}"
-                    ),
-                    Sub(
-                        f"arn:${{{AWS_PARTITION}}}:ssm:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}"
-                        f":parameter${{{cw_config_parameter.title}}}"
+                        f":parameter/${{{prometheus_parameter.title}}}"
                     ),
                 ],
             },

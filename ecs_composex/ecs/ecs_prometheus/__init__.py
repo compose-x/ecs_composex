@@ -96,9 +96,9 @@ def add_cw_agent_to_family(
     else:
         prometheus_config = None
     cw_agent_config = set_cw_config_parameter(family, collect_emf, **prometheus_options)
-    cw_agent_service = define_cloudwatch_agent(prometheus_config, cw_agent_config)
+    cw_agent_service = define_cloudwatch_agent(cw_agent_config, prometheus_config)
     cw_agent_service.add_to_family(family, is_dependency=True)
-    set_ecs_cw_policy(family, prometheus_config, cw_agent_config)
+    set_ecs_cw_policy(family, cw_agent_config, prometheus_config)
     family.cwagent_service = cw_agent_service
     if collect_emf:
         env_var = Environment(
@@ -118,5 +118,5 @@ def add_cw_agent_to_family(
         )
         family.iam_manager.add_new_managed_policy(
             "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
-            role_name=family.iam_manager.task_role._role_type,
+            role_name=family.iam_manager.task_role.role_type,
         )

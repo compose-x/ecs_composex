@@ -26,6 +26,7 @@ except ImportError:
     from yaml import Loader as Loader
 
 from ecs_composex.common.cfn_params import STACK_ID_SHORT
+from ecs_composex.common.troposphere_tools import add_resource
 from ecs_composex.ecs import ecs_params
 from ecs_composex.ecs.ecs_prometheus.emf_processors import generate_emf_processors
 
@@ -69,24 +70,16 @@ def set_cw_prometheus_config_parameter(
         }
 
     parameter = SSMParameter(
-        f"{family.logical_name}SSMPrometheusConfig",
+        f"{family.logical_name}CWAgentPrometheusScrapingConfig",
         Tier="Standard",
         Type="String",
-        Name=Sub(
-            f"/ecs/config/prometheus/${{{ecs_params.CLUSTER_NAME.title}}}/${{STACK_SHORT_ID}}"
-            f"/${{{ecs_params.SERVICE_NAME.title}}}",
-            STACK_SHORT_ID=STACK_ID_SHORT,
-        ),
         Description=Sub(
-            f"Prometheus Scraping SSM Parameter for ECS Cluster: ${{{ecs_params.CLUSTER_NAME.title}}}"
+            "CW Agent Prometheus Scraping config for "
+            f"ecs/${{{ecs_params.CLUSTER_NAME.title}}}/${{{ecs_params.SERVICE_NAME.title}}}"
         ),
         Value=Sub(yaml.dump(value_py, Dumper=Dumper), STACK_SHORT_ID=STACK_ID_SHORT),
     )
-    if parameter.title not in family.template.resources:
-        family.template.add_resource(parameter)
-        return parameter
-    else:
-        return family.template.resources[parameter.title]
+    return add_resource(family.template, parameter)
 
 
 def set_cw_config_parameter(
@@ -131,24 +124,15 @@ def set_cw_config_parameter(
             "emf_processor"
         ] = emf_processors
     parameter = SSMParameter(
-        f"{family.logical_name}SSMCWAgentPrometheusConfig",
+        f"{family.logical_name}SsmCWAgentConfig",
         Tier="Intelligent-Tiering",
         Type="String",
-        Name=Sub(
-            f"/ecs/config/cw_agent_config/${{{ecs_params.CLUSTER_NAME.title}}}/${{STACK_SHORT_ID}}"
-            f"/${{{ecs_params.SERVICE_NAME.title}}}",
-            STACK_SHORT_ID=STACK_ID_SHORT,
-        ),
         Description=Sub(
-            f"Prometheus Scraping SSM Parameter for ECS Cluster: ${{{ecs_params.CLUSTER_NAME.title}}}"
+            f"CW Agent config for ecs/${{{ecs_params.CLUSTER_NAME.title}}}/${{{ecs_params.SERVICE_NAME.title}}}"
         ),
         Value=Sub(
-            json.dumps(value_py, ensure_ascii=True, sort_keys=True, indent=2),
+            json.dumps(value_py, ensure_ascii=True, sort_keys=True),
             STACK_SHORT_ID=STACK_ID_SHORT,
         ),
     )
-    if parameter.title not in family.template.resources:
-        family.template.add_resource(parameter)
-        return parameter
-    else:
-        return family.template.resources[parameter.title]
+    return add_resource(family.template, parameter)

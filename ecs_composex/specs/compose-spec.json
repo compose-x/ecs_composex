@@ -105,6 +105,9 @@
         "x-prometheus": {
           "$ref": "services.x-prometheus.spec.json"
         },
+        "x-monitoring": {
+          "$ref": "services.x-monitoring.spec.json"
+        },
         "x-ecs": {
           "$ref": "services.x-ecs.spec.json"
         },
