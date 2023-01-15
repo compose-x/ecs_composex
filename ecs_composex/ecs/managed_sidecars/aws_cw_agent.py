@@ -17,7 +17,10 @@ CW_IMAGE_PARAMETER = Parameter(
 CW_AGENT_NAME = "cloudwatch-agent"
 CW_AGENT_DEFINITION = {
     "image": CW_IMAGE_PARAMETER.Default,
-    "ports": [{"target": 25888, "protocol": "tcp"}],
+    "ports": [
+        {"target": 25888, "protocol": "tcp"},
+        {"target": 25888, "protocol": "udp"},
+    ],
     "deploy": {
         "resources": {"limits": {"cpus": 0.1, "memory": "256M"}},
     },

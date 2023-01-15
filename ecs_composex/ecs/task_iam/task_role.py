@@ -1,6 +1,12 @@
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2022 John Mille <john@compose-x.io>
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ecs_composex.ecs.ecs_family import ComposeFamily
 
 from compose_x_common.compose_x_common import keyisset
 from troposphere import GetAtt, Output, Ref, Sub
@@ -18,15 +24,12 @@ class EcsRole:
     Class to wrap around the AWS IAM Role
     """
 
-    def __init__(self, family, role_type):
+    def __init__(self, family: ComposeFamily, role_type: str):
         """
         :param family: The family the role will belong to
         """
-        if role_type not in [TASK_ROLE_T, EXEC_ROLE_T]:
-            raise ValueError(
-                "role_type is", role_type, "expected one of", [TASK_ROLE_T, EXEC_ROLE_T]
-            )
-        self._role_type = role_type
+        self._role_type = None
+        self.role_type = role_type
         self._name = None
         self._arn = None
         self.family = family
@@ -54,6 +57,18 @@ class EcsRole:
         self.attributes_outputs = {}
         self.outputs = []
         self.lookup = {}
+
+    @property
+    def role_type(self) -> str:
+        return self._role_type
+
+    @role_type.setter
+    def role_type(self, role_type: str) -> None:
+        if role_type not in [TASK_ROLE_T, EXEC_ROLE_T]:
+            raise ValueError(
+                "role_type is", role_type, "expected one of", [TASK_ROLE_T, EXEC_ROLE_T]
+            )
+        self._role_type = role_type
 
     @property
     def name_param(self):
