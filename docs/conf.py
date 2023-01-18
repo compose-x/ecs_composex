@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # ecs_composex documentation build configuration file, created by
 # sphinx-quickstart on Fri Jun  9 13:47:02 2017.
@@ -82,7 +81,7 @@ autoclass_content = "class"
 typehints_fully_qualified = True
 
 sitemap_locales = ["en"]
-html_baseurl = "https://docs.compose-x.io"
+html_baseurl = "https://docs.compose-x.io/"
 
 extensions.append("sphinx_material")
 html_theme_path = sphinx_material.html_theme_path()
@@ -99,7 +98,7 @@ html_theme_options = {
     # 'google_analytics_account': 'UA-XXXXX',
     # Specify a base_url used to generate sitemap.xml. If not
     # specified, then no sitemap will be built.
-    "base_url": "https://docs.compose-x.io",
+    "base_url": "https://docs.compose-x.io/",
     "html_minify": False,
     "html_prettify": True,
     "css_minify": True,
