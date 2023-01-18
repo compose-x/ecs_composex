@@ -6,7 +6,7 @@ Module to add topics and subscriptions to the SNS stack
 """
 
 from compose_x_common.compose_x_common import keyisset
-from troposphere.sns import Topic
+from troposphere.sns import Topic, Subscription
 
 from ecs_composex.common.logging import LOG
 from ecs_composex.common.troposphere_tools import add_outputs
@@ -43,7 +43,10 @@ def define_topic_subscriptions(subscriptions, content):
         ):
             pass
         else:
-            subscriptions_objs.append(sub)
+            subscription= Subscription()
+            setattr(subscription,PROTOCOL_KEY,sub[PROTOCOL_KEY] )
+            setattr(subscription,ENDPOINT_KEY,sub[ENDPOINT_KEY] )
+            subscriptions_objs.append(subscription)
     return subscriptions_objs
 
 
