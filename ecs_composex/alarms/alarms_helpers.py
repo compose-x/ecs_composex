@@ -156,14 +156,16 @@ def add_composite_alarms(template: Template, new_alarms: list[Alarm]) -> None:
 def handle_service_alarm(
     alarm: Alarm, settings: ComposeXSettings, template: Template, family_name: str
 ) -> None:
-    if not family_name in settings.families:
+    for family in settings.families.values():
+        if family.name == family_name:
+            break
+    else:
         raise ValueError(
             f"{alarm.module.res_key}.{alarm.name} - MacroParameters.ServiceName",
             family_name,
             "Is not defined.",
-            [_family.name for _family in settings.families],
+            [_family.name for _family in settings.families.values()],
         )
-    family = settings.families[family_name]
     add_parameters(template, [CLUSTER_NAME, family.service_name_param])
     props = import_record_properties(alarm.properties, CWAlarm)
     props.update(
