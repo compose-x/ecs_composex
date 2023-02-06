@@ -9,6 +9,7 @@ if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
     from ecs_composex.cognito_userpool.cognito_userpool_stack import UserPool
     from ecs_composex.elbv2.elbv2_ecs import ComposeTargetGroup
+    from ecs_composex.elbv2.elbv2_stack.elbv2_listener import ComposeListener
 
 import re
 from copy import deepcopy
@@ -185,7 +186,7 @@ def tea_pot(default_of_all=False) -> Action:
     )
 
 
-def handle_predefined_redirects(listener, action_name) -> None:
+def handle_predefined_redirects(listener: ComposeListener, action_name) -> None:
     """
     Function to handle predefined redirects
     """
@@ -203,7 +204,7 @@ def handle_predefined_redirects(listener, action_name) -> None:
             listener.DefaultActions.insert(0, action)
 
 
-def handle_default_actions(listener) -> None:
+def handle_default_actions(listener: ComposeListener) -> None:
     """
     Handles default actions set on the listener
     """
@@ -390,15 +391,12 @@ def define_listener_rules_actions(listener, left_services) -> list:
     return rules
 
 
-def handle_non_default_services(listener, services_def) -> list:
+def handle_non_default_services(listener: ComposeListener) -> list:
     """
     Function to handle define the listener rule and identify
-    :param listener:
-    :param services_def:
-    :return:
     """
-    left_services = deepcopy(services_def)
-    for count, service_def in enumerate(services_def):
+    left_services = deepcopy(listener.services)
+    for count, service_def in enumerate(listener.services):
         if isinstance(service_def["access"], str) and service_def["access"] == "/":
             left_services.pop(count)
             listener.DefaultActions += define_actions(listener, service_def)
@@ -597,22 +595,9 @@ def map_service_target(lb, listener_service_def: dict) -> None:
         raise ValueError()
     for target in lb.families_targets:
         family_target_groups: list[ComposeTargetGroup] = target[0].target_groups
-        if not family_target_groups:
-            continue
-        if len(family_target_groups) == 1:
-            mapped = match_target_group_to_listener_target(
-                family_target_groups[0], listener_service_def, target_parts
-            )
-            if mapped:
-                break
         for target_group in family_target_groups:
             mapped = match_target_group_to_listener_target(
                 target_group, listener_service_def, target_parts
             )
             if mapped:
                 break
-        break
-    else:
-        raise ValueError(
-            f"Unable to map Listener target {listener_service_def['name']} to any defined service"
-        )

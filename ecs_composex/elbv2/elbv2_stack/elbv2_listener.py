@@ -104,7 +104,7 @@ class ComposeListener(Listener):
                 "No default actions defined and more than one service defined. "
                 "If one of the access path is / it will be used as default"
             )
-            rules = handle_non_default_services(self, self.services)
+            rules = handle_non_default_services(self)
             for rule in rules:
                 template.add_resource(rule)
         else:
@@ -202,6 +202,11 @@ class ComposeListener(Listener):
         validate_duplicate_targets(lb, self)
         for l_service_def in self.services:
             map_service_target(lb, l_service_def)
+            if not keyisset("target_arn", l_service_def):
+                raise LookupError(
+                    f"{lb.module.res_key}.{lb.name} - Listener {self.name}",
+                    f"Failed to map {l_service_def['name']} to any family:service:port combination",
+                )
 
 
 def validate_duplicate_targets(lb: Elbv2, listener: ComposeListener) -> None:

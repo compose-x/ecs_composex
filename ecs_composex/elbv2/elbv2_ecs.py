@@ -534,11 +534,15 @@ def handle_services_association(
         )
         for service in load_balancer.services:
             target_name = f"{target[0].name}:{target[1].name}"
+            if target_name not in service["name"]:
+                continue
             if target_name == service["name"] and tgt_group.Port == int(
                 service["port"]
             ):
                 service["target_arn"] = Ref(tgt_group)
                 identified.append(True)
+                break
+
     if not identified:
         LOG.error(
             f"{load_balancer.module.res_key}.{load_balancer.name} - No services found as targets. Skipping association"
@@ -547,6 +551,7 @@ def handle_services_association(
 
     for listener in load_balancer.listeners:
         listener.map_lb_target_groups_service_to_listener_targets(load_balancer)
+
     for listener in load_balancer.listeners:
         listener.handle_certificates(settings, res_root_stack)
         listener.handle_cognito_pools(settings, res_root_stack)
