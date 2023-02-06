@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
     from ecs_composex.cognito_userpool.cognito_userpool_stack import UserPool
+    from ecs_composex.elbv2.elbv2_ecs import ComposeTargetGroup
 
 import re
 from copy import deepcopy
@@ -51,6 +52,10 @@ from ecs_composex.common.troposphere_tools import (
 )
 from ecs_composex.elbv2.elbv2_params import RES_KEY
 from ecs_composex.resources_import import import_record_properties
+
+LISTENER_TARGET_RE: re.Pattern = re.compile(
+    r"(?P<family>[\w\-]+):(?P<container>[\w\-]+)(?::(?P<port>\d+))?"
+)
 
 
 def handle_cross_zone(value: str) -> LoadBalancerAttributes:
@@ -566,22 +571,48 @@ def add_acm_certs_arn(listener, src_value, settings, listener_stack):
     upgrade_listener_to_use_tls(listener)
 
 
-def map_service_target(lb, name, l_service_def):
+def match_target_group_to_listener_target(
+    target_group: ComposeTargetGroup, listener_service_def: dict, target_parts: re.Match
+) -> bool:
+    if not (
+        target_parts.group("family") == target_group.family.name
+        and target_parts.group("container") == target_group.service.name
+    ):
+        return False
+    if (
+        target_parts.group("port")
+        and int(target_parts.group("port")) != target_group.port
+    ):
+        return False
+    listener_service_def["target_arn"] = Ref(target_group)
+    return True
+
+
+def map_service_target(lb, listener_service_def: dict) -> None:
     """
     Function to iterate over targets to map the service and its defined TargetGroup ARN
-
-    :param ecs_composex.elbv2.elbv2_stack.elbv2.Elbv2 lb:
-    :param str name:
-    :param dict l_service_def:
-    :return:
     """
+    target_parts = LISTENER_TARGET_RE.match(listener_service_def["name"])
+    if not target_parts:
+        raise ValueError()
     for target in lb.families_targets:
-        t_family = target[0].name
-        t_service = target[1].name
-        target_name = f"{t_family}:{t_service}"
-        if target_name == name:
-            for service in lb.services:
-                if service["name"] == target_name:
-                    l_service_def["target_arn"] = service["target_arn"]
-                    break
-            break
+        family_target_groups: list[ComposeTargetGroup] = target[0].target_groups
+        if not family_target_groups:
+            continue
+        if len(family_target_groups) == 1:
+            mapped = match_target_group_to_listener_target(
+                family_target_groups[0], listener_service_def, target_parts
+            )
+            if mapped:
+                break
+        for target_group in family_target_groups:
+            mapped = match_target_group_to_listener_target(
+                target_group, listener_service_def, target_parts
+            )
+            if mapped:
+                break
+        break
+    else:
+        raise ValueError(
+            f"Unable to map Listener target {listener_service_def['name']} to any defined service"
+        )

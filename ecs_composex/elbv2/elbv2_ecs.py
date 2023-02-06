@@ -1,6 +1,17 @@
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2022 John Mille <john@compose-x.io>
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ecs_composex.elbv2 import Elbv2
+    from ecs_composex.common.settings import ComposeXSettings
+    from ecs_composex.common.stacks import ComposeXStack
+    from ecs_composex.ecs.ecs_family import ComposeFamily
+    from ecs_composex.compose.compose_services import ComposeService
+
 import re
 
 from compose_x_common.compose_x_common import keyisset, set_else_none
@@ -30,11 +41,22 @@ class ComposeTargetGroup(TargetGroup):
     Class to manage Target Groups
     """
 
-    def __init__(self, title, elbv2, family, stack, **kwargs):
-        self.family = family
-        self.stack = stack
+    def __init__(
+        self,
+        title: str,
+        elbv2: Elbv2,
+        family: ComposeFamily,
+        service: ComposeService,
+        stack: ComposeXStack,
+        port: int,
+        **kwargs,
+    ):
+        self.family: ComposeFamily = family
+        self.service: ComposeService = service
+        self.stack: ComposeXStack = stack
+        self.port: int = port
         self.outputs = []
-        self.elbv2 = elbv2
+        self.elbv2: Elbv2 = elbv2
         self.output_properties = {}
         self.attributes_outputs = {}
         super().__init__(title, **kwargs)
@@ -403,21 +425,14 @@ def import_target_group_attributes(props, target_def, elbv2, service):
 
 
 def define_service_target_group(
-    resource,
-    family,
-    service,
-    resources_root_stack,
-    target_definition,
-):
+    resource: Elbv2,
+    family: ComposeFamily,
+    service: ComposeService,
+    resources_root_stack: ComposeXStack,
+    target_definition: dict,
+) -> ComposeTargetGroup:
     """
     Function to create the elbv2 target group
-    :param ecs_composex.elbv2.elbv2_stack.Elbv2 resource: the ELBv2 to attach to
-    :param ecs_composex.common.compose_services.ComposeService service: the service target
-    :param ecs_composex.ecs.ecs_family.ComposeFamily family: the family owning the service
-    :param ecs_composex.common.stacks.ComposeXStack resources_root_stack:
-    :param dict target_definition: the Service definition
-    :return: the target group
-    :rtype: troposphere.elasticloadbalancingv2.TargetGroup
     """
     props = {}
     set_healthcheck_definition(props, target_definition)
@@ -436,7 +451,9 @@ def define_service_target_group(
         target_group_name,
         elbv2=resource,
         family=family,
+        service=service,
         stack=resource.stack,
+        port=int(target_definition["port"]),
         VpcId=Ref(VPC_ID),
         **props,
     )
@@ -476,7 +493,7 @@ def define_service_target_group_definition(
     service,
     target_def,
     resources_root_stack,
-):
+) -> ComposeTargetGroup:
     """
     Function to create the new service TGT Group
 
@@ -493,53 +510,52 @@ def define_service_target_group_definition(
             f"{resource.module.res_key}.{resource.name} - Adding {family.logical_name} {service.name}"
         )
 
-    service_tgt_group = define_service_target_group(
+    return define_service_target_group(
         resource,
         family,
         service,
         resources_root_stack,
         target_def,
     )
-    return Ref(service_tgt_group)
+    # return Ref(service_tgt_group)
 
 
-def handle_services_association(resource, res_root_stack, settings):
+def handle_services_association(
+    load_balancer: Elbv2, res_root_stack: ComposeXStack, settings: ComposeXSettings
+) -> None:
     """
     Function to handle association of listeners and targets to the LB
-
-    :param ecs_composex.elbv2.elbv2_stack.Elbv2 resource:
-    :param ecs_composex.common.settings.ComposeXSettings settings:
-    :param ecs_composex.common.stacks.ComposeXStack res_root_stack:
-    :return:
     """
     template = res_root_stack.stack_template
-    resource.set_listeners(template)
-    resource.associate_to_template(template)
-    add_outputs(template, resource.outputs)
+    load_balancer.set_listeners(template)
+    load_balancer.associate_to_template(template)
+    add_outputs(template, load_balancer.outputs)
     identified = []
-    for target in resource.families_targets:
+    for target in load_balancer.families_targets:
         if target[1].launch_type == "EXTERNAL":
             LOG.error(
-                f"x-elbv2.{resource.name} - Target family {target[0].name} uses EXTERNAL launch type. Ignoring"
+                f"x-elbv2.{load_balancer.name} - Target family {target[0].name} uses EXTERNAL launch type. Ignoring"
             )
             continue
-        tgt_arn = define_service_target_group_definition(
-            resource, target[0], target[1], target[2], res_root_stack
+        tgt_group = define_service_target_group_definition(
+            load_balancer, target[0], target[1], target[2], res_root_stack
         )
-        for service in resource.services:
+        for service in load_balancer.services:
             target_name = f"{target[0].name}:{target[1].name}"
-            if target_name == service["name"]:
-                service["target_arn"] = tgt_arn
+            if target_name == service["name"] and tgt_group.Port == int(
+                service["port"]
+            ):
+                service["target_arn"] = Ref(tgt_group)
                 identified.append(True)
     if not identified:
         LOG.error(
-            f"{resource.module.res_key}.{resource.name} - No services found as targets. Skipping association"
+            f"{load_balancer.module.res_key}.{load_balancer.name} - No services found as targets. Skipping association"
         )
         return
 
-    for listener in resource.listeners:
-        listener.map_lb_services_to_listener_targets(resource)
-    for listener in resource.listeners:
+    for listener in load_balancer.listeners:
+        listener.map_lb_target_groups_service_to_listener_targets(load_balancer)
+    for listener in load_balancer.listeners:
         listener.handle_certificates(settings, res_root_stack)
         listener.handle_cognito_pools(settings, res_root_stack)
         listener.define_default_actions(template)
