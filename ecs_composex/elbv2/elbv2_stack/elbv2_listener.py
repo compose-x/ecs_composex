@@ -1,6 +1,13 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  Copyright 2020-2022 John Mille <john@compose-x.io>
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .elbv2 import Elbv2
+
 import warnings
 from copy import deepcopy
 
@@ -13,6 +20,7 @@ import ecs_composex.common.troposphere_tools
 from ecs_composex.common import NONALPHANUM
 from ecs_composex.common.logging import LOG
 from ecs_composex.elbv2.elbv2_stack.helpers import (
+    LISTENER_TARGET_RE,
     add_acm_certs_arn,
     define_actions,
     handle_default_actions,
@@ -68,6 +76,10 @@ class ComposeListener(Listener):
         super().__init__(self.name, **listener_kwargs)
         self.DefaultActions = []
 
+    @property
+    def port(self) -> int:
+        return int(self.definition["Port"])
+
     def define_default_actions(self, template):
         """
         If DefaultTarget is set it will set it if not a service, otherwise at the service level.
@@ -92,7 +104,7 @@ class ComposeListener(Listener):
                 "No default actions defined and more than one service defined. "
                 "If one of the access path is / it will be used as default"
             )
-            rules = handle_non_default_services(self, self.services)
+            rules = handle_non_default_services(self)
             for rule in rules:
                 template.add_resource(rule)
         else:
@@ -181,37 +193,39 @@ class ComposeListener(Listener):
                     ):
                         src_type[2](self, source_value, settings, listener_stack)
 
-    def validate_mapping(self, lb, t_targets, l_targets):
-        """
-        Method to validate the services mapping
-
-        :param ecs_composex.elbv2.elbv2_stack.elbv2.Elbv2 lb:
-        :param list t_targets:
-        :param list l_targets:
-        :return:
-        """
-        if not all(target in t_targets for target in l_targets):
-            raise KeyError(
-                "Missing one of ",
-                [
-                    i
-                    for i in l_targets + t_targets
-                    if i not in l_targets or i not in t_targets
-                ],
-                f" in {lb.logical_name} Services for listener {self.title}",
-            )
-
-    def map_lb_services_to_listener_targets(self, lb):
+    def map_lb_target_groups_service_to_listener_targets(self, lb: Elbv2) -> None:
         """
         Map Services defined in LB definition to Targets
-
-        :param ecs_composex.elbv2.elbv2_stack.elbv2.Elbv2 lb:
         """
         if not self.services:
             return
-        l_targets = [s["name"] for s in self.services]
-        t_targets = [s["name"] for s in lb.services]
-        self.validate_mapping(lb, t_targets, l_targets)
+        validate_duplicate_targets(lb, self)
         for l_service_def in self.services:
-            name = l_service_def["name"]
-            map_service_target(lb, name, l_service_def)
+            map_service_target(lb, l_service_def)
+            if not keyisset("target_arn", l_service_def):
+                raise LookupError(
+                    f"{lb.module.res_key}.{lb.name} - Listener {self.name}",
+                    f"Failed to map {l_service_def['name']} to any family:service:port combination",
+                )
+
+
+def validate_duplicate_targets(lb: Elbv2, listener: ComposeListener) -> None:
+    t_targets = [s["name"] for s in lb.services]
+    duplicate_services: bool = len(t_targets) != len(set(t_targets))
+    if duplicate_services:
+
+        for listener_target in listener.services:
+            parts = LISTENER_TARGET_RE.match(listener_target["name"])
+            if not parts:
+                raise ValueError(
+                    "{lb.module.res_key}.{lb.name} - Listener {listener.port}"
+                    " - Target name definition is invalid. Must comply to",
+                    LISTENER_TARGET_RE.pattern,
+                )
+            if listener_target["name"] and parts and not parts.group("port"):
+                raise ValueError(
+                    f"{lb.module.res_key}.{lb.name} - Listener {listener.port}"
+                    f" - Target service {listener_target['name']} is defined more than once in "
+                    "`Services`. You must specify the port with format",
+                    LISTENER_TARGET_RE.pattern,
+                )

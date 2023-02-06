@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from ecs_composex.mods_manager import XResourceModule
     from ecs_composex.common.settings import ComposeXSettings
 
-from compose_x_common.compose_x_common import keyisset, keypresent
+from compose_x_common.compose_x_common import keyisset, keypresent, set_else_none
 from troposphere import AWS_NO_VALUE, AWS_STACK_NAME, GetAtt, Ref, Select, Sub, Tags
 from troposphere.ec2 import EIP, SecurityGroup
 from troposphere.elasticloadbalancingv2 import (
@@ -34,6 +34,7 @@ from ecs_composex.elbv2.elbv2_params import (
 )
 from ecs_composex.elbv2.elbv2_stack.elbv2_listener import ComposeListener
 from ecs_composex.elbv2.elbv2_stack.helpers import (
+    LISTENER_TARGET_RE,
     handle_cross_zone,
     handle_desync_mitigation_mode,
     handle_drop_invalid_headers,
@@ -64,7 +65,7 @@ class Elbv2(NetworkXResource):
         self.lb_eips = []
         self.unique_service_lb = False
         self.lb = None
-        self.listeners = []
+        self.listeners: list[ComposeListener] = []
         super().__init__(name, definition, module, settings)
         self.validate_services()
         self.sort_props()
@@ -103,14 +104,26 @@ class Elbv2(NetworkXResource):
         Method to define the listeners
         :return:
         """
-        if not keyisset("Listeners", self.definition):
+        listeners: list[dict] = set_else_none("Listeners", self.definition, [])
+        if not listeners:
             raise KeyError(f"You must define at least one listener for LB {self.name}")
-        ports = [listener["Port"] for listener in self.definition["Listeners"]]
+        ports = [listener["Port"] for listener in listeners]
         validate_listeners_duplicates(self.name, ports)
-        for listener_def in self.definition["Listeners"]:
-            if keyisset("Targets", listener_def):
-                for target in listener_def["Targets"]:
-                    if target["name"] not in [svc["name"] for svc in self.services]:
+        for listener_def in listeners:
+            targets: list[dict] = set_else_none("Targets", listener_def, [])
+            if targets:
+                for target in targets:
+                    target_parts = LISTENER_TARGET_RE.match(target["name"])
+                    if not target_parts:
+                        raise ValueError(
+                            f"{self.module.res_key}.{self.name} - Listener {listener_def['Port']}"
+                            f" - Target {target['name']} is not a valid value. Must match",
+                            LISTENER_TARGET_RE.pattern,
+                        )
+                    if (
+                        f"{target_parts.group('family')}:{target_parts.group('container')}"
+                        not in [svc["name"] for svc in self.services]
+                    ):
                         listener_def["Targets"].remove(target)
             if keyisset("Targets", listener_def) or keyisset(
                 "DefaultActions", listener_def
