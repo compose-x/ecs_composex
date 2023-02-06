@@ -488,21 +488,14 @@ def define_service_target_group(
 
 
 def define_service_target_group_definition(
-    resource,
-    family,
-    service,
-    target_def,
-    resources_root_stack,
+    resource: Elbv2,
+    family: ComposeFamily,
+    service: ComposeService,
+    target_def: dict,
+    resources_root_stack: ComposeXStack,
 ) -> ComposeTargetGroup:
     """
-    Function to create the new service TGT Group
-
-    :param ecs_composex.elbv2.elbv2_stack.Elbv2 resource:
-    :param service:
-    :param ecs_composex.ecs.ecs_family.ComposeFamily family:
-    :param dict target_def:
-    :param ecs_composex.common.stacks.ComposeXStack resources_root_stack:
-    :return:
+    Function to create the new service TGT Group for a given combination of family, service and port.
     """
     if resource.logical_name not in family.stack.DependsOn:
         family.stack.DependsOn.append(resources_root_stack.title)
@@ -517,7 +510,6 @@ def define_service_target_group_definition(
         resources_root_stack,
         target_def,
     )
-    # return Ref(service_tgt_group)
 
 
 def handle_services_association(

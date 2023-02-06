@@ -193,36 +193,13 @@ class ComposeListener(Listener):
                     ):
                         src_type[2](self, source_value, settings, listener_stack)
 
-    def validate_mapping(self, lb: Elbv2, t_targets: list[str], l_targets: list[str]):
-        """
-        Method to validate the services mapping
-
-        :param ecs_composex.elbv2.elbv2_stack.elbv2.Elbv2 lb:
-        :param list t_targets:
-        :param list l_targets:
-        :return:
-        """
-        if not all(target in t_targets for target in l_targets):
-            raise KeyError(
-                "Missing one of ",
-                [
-                    i
-                    for i in l_targets + t_targets
-                    if i not in l_targets or i not in t_targets
-                ],
-                f" in {lb.logical_name} Services for listener {self.title}",
-            )
-
     def map_lb_target_groups_service_to_listener_targets(self, lb: Elbv2) -> None:
         """
         Map Services defined in LB definition to Targets
         """
         if not self.services:
             return
-        l_targets = [s["name"] for s in self.services]
-        t_targets = [s["name"] for s in lb.services]
         validate_duplicate_targets(lb, self)
-        # self.validate_mapping(lb, t_targets, l_targets)
         for l_service_def in self.services:
             map_service_target(lb, l_service_def)
 
