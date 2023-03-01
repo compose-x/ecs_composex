@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
     from ecs_composex.common.stacks import ComposeXStack
 
+from compose_x_common.compose_x_common import set_else_none
 from troposphere import AWS_NO_VALUE, GetAtt, Output, Ref, Sub
 from troposphere.ecs import ServiceRegistry
 from troposphere.servicediscovery import DnsConfig, DnsRecord, HealthCheckCustomConfig
@@ -32,14 +33,9 @@ from ecs_composex.common.troposphere_tools import (
 )
 
 
-def create_registry(family, namespace, port_config, settings):
+def create_registry(family, namespace, config: dict, settings):
     """
     Creates the settings for the ECS Service Registries and adds the resources to the appropriate template
-
-    :param ecs_composex.ecs.ecs_family.ComposeFamily family:
-    :param ecs_composex.cloudmap.cloudmap_stack.PrivateNamespace namespace:
-    :param dict port_config:
-    :param ecs_composex.common.settings.ComposeXSettings settings:
     """
     if family.ecs_service.registries:
         LOG.warn(
@@ -47,7 +43,7 @@ def create_registry(family, namespace, port_config, settings):
             f"Only one can be set. Ignoring mapping to {namespace.name}"
         )
         return
-    family_sd_service = EcsDiscoveryService(family, namespace, port_config, settings)
+    family_sd_service = EcsDiscoveryService(family, namespace, config, settings)
     add_resource(namespace.stack.stack_template, family_sd_service.sd_service)
     family.service_networking.sd_service = family_sd_service
 
@@ -61,12 +57,12 @@ class EcsDiscoveryService:
         self,
         family: ComposeFamily,
         namespace: PrivateNamespace,
-        port_config: dict,
+        config: dict,
         settings: ComposeXSettings,
     ):
         self.family = family
         self.namespace = namespace
-        self.port_config = port_config
+        self.config = config
 
         self._sd_service = SdService(
             f"{namespace.logical_name}EcsServiceDiscovery{family.logical_name}",
@@ -83,7 +79,7 @@ class EcsDiscoveryService:
                     DnsRecord(TTL="15", Type="SRV"),
                 ],
             ),
-            Name=family.family_hostname,
+            Name=set_else_none("Name", config, family.family_hostname),
         )
 
         self._sd_service_parameter = Parameter(
@@ -151,13 +147,13 @@ class EcsDiscoveryService:
             }
         )
         return ServiceRegistry(
-            f"ServiceRegistry{self.port_config['target']}",
+            f"ServiceRegistry{self.config['Port']['target']}",
             RegistryArn=Ref(
                 self.attributes_properties[ECS_SERVICE_NAMESPACE_SERVICE_ARN][
                     "ImportParameter"
                 ]
             ),
-            Port=int(self.port_config["target"]),
+            Port=int(self.config["Port"]["target"]),
         )
 
     @property

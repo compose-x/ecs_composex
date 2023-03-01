@@ -53,6 +53,10 @@
                   "type": "number",
                   "minimum": 0,
                   "maximum": 65535
+                },
+                "Name": {
+                  "type": "string",
+                  "description": "Name of the service. Do not include the cloudmap hostname. Overrides the ecs.task.family.hostname deploy label"
                 }
               }
             }

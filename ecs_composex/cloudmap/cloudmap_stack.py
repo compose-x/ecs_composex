@@ -231,11 +231,9 @@ class PrivateNamespace(AwsEnvironmentResource):
         root_stack: ComposeXStack = None,
     ) -> None:
         """
-        Checks whether the namespace should be mapped to a given ECS Service
-        :param ComposeXSettings settings: Execution settings
-        :param ModManager modules: Unused atm
-        :param ComposeXStack root_stack: Unused atm
+        Maps ECS Services to the CloudMap for ServiceDiscovery Service
         """
+
         from .cloudmap_ecs import create_registry
 
         for family in settings.families.values():
@@ -243,14 +241,14 @@ class PrivateNamespace(AwsEnvironmentResource):
                 continue
             for (
                 namespace,
-                port_config,
+                config,
             ) in family.service_networking.cloudmap_config.items():
                 if namespace == self.name:
                     stack_initialized = False if self.stack.is_void else True
                     if not stack_initialized:
                         self.init_stack_for_resources(settings)
                     self.add_initialized_stack_to_root(stack_initialized, root_stack)
-                    create_registry(family, self, port_config, settings)
+                    create_registry(family, self, config, settings)
 
 
 class XStack(ComposeXStack):

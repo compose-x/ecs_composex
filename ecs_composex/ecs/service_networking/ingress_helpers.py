@@ -270,7 +270,10 @@ def handle_str_cloudmap_config(
     :param list ports:
     """
     if cloudmap_config not in family_mappings.keys():
-        family_mappings[cloudmap_config] = ports[0]
+        family_mappings[cloudmap_config] = {
+            "Port": ports[0],
+            "Name": family.family_hostname,
+        }
     else:
         LOG.warning(
             f"{family.name}.x-network.x-cloudmap - {cloudmap_config} is set multiple times. "
@@ -299,10 +302,18 @@ def handle_dict_cloudmap_config(
             if keyisset("Port", config):
                 for port in ports:
                     if port["target"] == config["Port"]:
-                        family_mappings[map_name] = port
+                        family_mappings[map_name] = {
+                            "Port": port,
+                            "Name": set_else_none(
+                                "Name", config, family.family_hostname
+                            ),
+                        }
                         break
             else:
-                family_mappings[map_name] = ports[0]
+                family_mappings[map_name] = {
+                    "Port": ports[0],
+                    "Name": set_else_none("Name", config, family.family_hostname),
+                }
 
 
 def merge_cloudmap_settings(family: ComposeFamily, ports: list) -> dict:
