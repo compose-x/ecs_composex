@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     from ecs_composex.ecs.ecs_family import ComposeFamily
     from troposphere.ssm import Parameter
 
+from compose_x_common.compose_x_common import set_else_none
 from troposphere import AWS_ACCOUNT_ID, AWS_PARTITION, AWS_REGION, Sub
 from troposphere.ecs import Secret
 from troposphere.iam import PolicyType
@@ -23,20 +24,17 @@ from ecs_composex.ecs import ecs_params
 
 
 def define_cloudwatch_agent(
-    cw_agent_config, cw_prometheus_config=None
+    cw_agent_config, cw_prometheus_config=None, emf_config: dict = None
 ) -> ManagedSidecar:
-    """
-    Function to define the CW Agent image task definition
+    """Function to define the CW Agent image task definition"""
 
-    :param cw_agent_config:
-    :param cw_prometheus_config:
-    :return:
-    """
-    from copy import deepcopy
+    from ecs_composex.ecs.managed_sidecars.aws_cw_agent import (
+        get_cloudwatch_agent_sidecar,
+    )
 
-    from ecs_composex.ecs.managed_sidecars.aws_cw_agent import CW_AGENT_SERVICE
-
-    cw_service = deepcopy(CW_AGENT_SERVICE)
+    override_image = set_else_none("OverrideImage", emf_config, alt_value=None)
+    use_digest = set_else_none("InterpolateWithDigest", emf_config, alt_value=False)
+    cw_service = get_cloudwatch_agent_sidecar(override_image, use_digest)
     secrets = [
         Secret(
             Name="CW_CONFIG_CONTENT",

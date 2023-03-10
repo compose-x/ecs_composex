@@ -8,8 +8,64 @@
   "additionalProperties": false,
   "properties": {
     "CWAgentCollectEmf": {
-      "type": "boolean"
+      "oneOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "$ref": "#/definitions/EmfSidecarConfiguration"
+        }
+      ]
+    },
+    "CollectEmf": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "CloudwatchAgent": {
+          "description": "Uses AWS CloudWatch agent sidecar for EMF ingestion",
+          "$ref": "#/definitions/EmfSidecarConfiguration"
+        },
+        "FluentBit": {
+          "description": "Uses FluentBit EMF ingestion. Not yet implemented.",
+          "$ref": "#/definitions/EmfSidecarConfiguration"
+        },
+        "OTEL": {
+          "description": "Uses ADOT Collector for EMF ingestion. Not yet implemented",
+          "$ref": "#/definitions/EmfSidecarConfiguration"
+        }
+      }
     }
   },
-  "definitions": {}
+  "definitions": {
+    "EmfSidecarConfiguration": {
+      "type": "object",
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "required": [
+            "UseLatest"
+          ]
+        },
+        {
+          "required": [
+            "OverrideImage"
+          ]
+        }
+      ],
+      "properties": {
+        "UseLatest": {
+          "type": "boolean",
+          "description": "Use the latest image in the task definition"
+        },
+        "InterpolateWithDigest": {
+          "type": "boolean",
+          "description": "If true, will attempt to resolve the image Digest for the image and use in Task Definition"
+        },
+        "OverrideImage": {
+          "type": "string",
+          "description": "AT YOUR OWN RISKS - Allows to override the image to use."
+        }
+      }
+    }
+  }
 }
