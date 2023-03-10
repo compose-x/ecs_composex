@@ -33,6 +33,7 @@ CW_AGENT_DEFINITION = {
 def get_cloudwatch_agent_sidecar(
     image_override: str = None, use_digest: bool = False
 ) -> ManagedSidecar:
+    """Renders a new ManagedSidecar for the AWS CW Agent"""
     cw_agent_service_definition: dict = deepcopy(CW_AGENT_DEFINITION)
     if use_digest:
         cw_agent_service_definition.update(

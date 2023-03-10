@@ -21,17 +21,13 @@ from troposphere.iam import PolicyType
 
 from ecs_composex.common.troposphere_tools import add_resource
 from ecs_composex.ecs import ecs_params
+from ecs_composex.ecs.managed_sidecars.aws_cw_agent import get_cloudwatch_agent_sidecar
 
 
 def define_cloudwatch_agent(
     cw_agent_config, cw_prometheus_config=None, emf_config: dict = None
 ) -> ManagedSidecar:
     """Function to define the CW Agent image task definition"""
-
-    from ecs_composex.ecs.managed_sidecars.aws_cw_agent import (
-        get_cloudwatch_agent_sidecar,
-    )
-
     override_image = set_else_none("OverrideImage", emf_config, alt_value=None)
     use_digest = set_else_none("InterpolateWithDigest", emf_config, alt_value=False)
     cw_service = get_cloudwatch_agent_sidecar(override_image, use_digest)

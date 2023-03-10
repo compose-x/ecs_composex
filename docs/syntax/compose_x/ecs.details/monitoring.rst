@@ -80,6 +80,12 @@ the digest.
     This setting is recommended if you want to ensure that the image used is going to be consistently the same throughout
     the lifecycle of your Task Definition revision.
 
+.. code-block::
+
+    x-monitoring:
+      CWAgentCollectEmf:
+        InterpolateWithDigest: false
+        UseLatest: true
 
 .. _AWS CloudWatch agent & EMF Configuration for details: https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch_Embedded_Metric_Format_Generation_CloudWatch_Agent.html
 .. _latest CloudWatch agent image from AWS ECR Public: https://gallery.ecr.aws/cloudwatch-agent/cloudwatch-agent
