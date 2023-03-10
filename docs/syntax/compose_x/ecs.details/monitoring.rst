@@ -84,7 +84,7 @@ the digest.
 
     x-monitoring:
       CWAgentCollectEmf:
-        InterpolateWithDigest: false
+        InterpolateWithDigest: true
         UseLatest: true
 
 .. _AWS CloudWatch agent & EMF Configuration for details: https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch_Embedded_Metric_Format_Generation_CloudWatch_Agent.html
