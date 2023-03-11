@@ -44,20 +44,40 @@ def nxtpow2(x):
     return int(pow(2, ceil(log(x, 2))))
 
 
-def get_nested_property(top_object, property_path: str, separator: str = None):
+def get_nested_property(
+    top_object, property_path: str, separator: str = None, to_update: list = None
+):
     if separator is None:
         separator = r"."
     elif separator and not isinstance(separator, str):
         raise TypeError("Separator must be a string")
     top_property_split = property_path.split(separator, 1)
-    if len(top_property_split) == 1 and hasattr(top_object, top_property_split[0]):
-        return (
-            top_object,
-            top_property_split[0],
-            getattr(top_object, top_property_split[0]),
-        )
+    if to_update is None:
+        to_update: list = []
+    if (
+        len(top_property_split) == 1
+        and hasattr(top_object, top_property_split[0])
+        and not isinstance(top_object, list)
+    ):
+        return [
+            (
+                top_object,
+                top_property_split[0],
+                getattr(top_object, top_property_split[0]),
+            )
+        ]
+
+    if len(top_property_split) == 1 and isinstance(top_object, list):
+        for item in top_object:
+            get_nested_property(
+                item, top_property_split[0], separator=separator, to_update=to_update
+            )
+
     if len(top_property_split) > 1 and hasattr(top_object, top_property_split[0]):
         return get_nested_property(
-            getattr(top_object, top_property_split[0]), top_property_split[-1]
+            getattr(top_object, top_property_split[0]),
+            top_property_split[-1],
+            separator=separator,
+            to_update=to_update,
         )
-    return None, None, None
+    return to_update

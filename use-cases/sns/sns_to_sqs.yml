@@ -1,0 +1,30 @@
+x-sns:
+  abcd:
+    Properties: {}
+    Services:
+      app01:
+        Access: Publish
+      youtoo:
+        Access: Publish
+
+
+  someothertopic:
+    Properties:
+      Subscription:
+        - Endpoint: x-sqs::queueA::Arn
+          Protocol: "sqs"
+        - Endpoint: x-sqs::queueC::Arn
+          Protocol: "sqs"
+      TopicName: "SampleTopic"
+
+
+x-sqs:
+  queueA: {}
+  queueC:
+    Properties:
+      FifoQueue: true
+    Services:
+      rproxy:
+        Access: RWMessages
+      youtoo:
+        Access: RWMessages
