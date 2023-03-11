@@ -690,7 +690,7 @@ class XResource:
             LOG.debug("Not a new cluster or no post_processing_properties. Skipping")
             return
         LOG.info(f"Post processing {self.module.res_key}.{self.name}")
-        for _property in self.post_processing_properties:
+        for _property in getattr(self, "post_processing_properties", []):
             properties_to_update: list[tuple] = get_nested_property(
                 self.cfn_resource, _property
             )
@@ -702,7 +702,11 @@ class XResource:
                 resource, parameter = settings.get_resource_attribute(value)
                 if not resource or not parameter:
                     LOG.error(
-                        f"Failed to find resource/attribute for {property_name} with value {value}"
+                        "%s.%s - Failed to find resource/attribute for %s with value %s",
+                        self.module.res_key,
+                        self.name,
+                        resource,
+                        value,
                     )
                     continue
                 res_param_id = resource.add_attribute_to_another_stack(
@@ -716,8 +720,12 @@ class XResource:
                     res_propery_value = res_param_id["ImportValue"]
                 setattr(aws_property_object, property_name, res_propery_value)
                 LOG.info(
-                    f"{self.module.res_key}.{self.name}"
-                    f" - Successfully mapped {_property} to {resource.module.res_key}.{resource.name}",
+                    "%s.%s - Successfully mapped %s to %s.%s",
+                    self.module.res_key,
+                    self.name,
+                    _property,
+                    resource.module.res_key,
+                    resource.name,
                 )
 
 

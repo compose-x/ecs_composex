@@ -59,13 +59,13 @@ def get_nested_property(
         and hasattr(top_object, top_property_split[0])
         and not isinstance(top_object, list)
     ):
-        return [
+        to_update.append(
             (
                 top_object,
                 top_property_split[0],
                 getattr(top_object, top_property_split[0]),
             )
-        ]
+        )
 
     if len(top_property_split) == 1 and isinstance(top_object, list):
         for item in top_object:
