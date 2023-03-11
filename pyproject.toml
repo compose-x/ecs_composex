@@ -15,7 +15,6 @@ classifiers = [
   "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)",
   "Natural Language :: English",
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.7",
   "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
@@ -36,9 +35,9 @@ exclude = ["*.pyc", "*~", "*pycache*"]
 "Documentation" = "https://docs.compose-x.io/"
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = "^3.8"
 boto3 = ">=1.26"
-troposphere = "^4.2.0"
+troposphere = "^4.3.2"
 ecr-scan-reporter = { version = "^0.4.7", optional = true }
 compose-x-render = "^0.6.1"
 compose-x-common = "^1.2"
