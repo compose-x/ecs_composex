@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
     from ecs_composex.ecs.ecs_family import ComposeFamily
@@ -66,28 +66,30 @@ def set_prometheus(family):
                 family, service, prometheus_config, prometheus_options
             )
 
-    for service in family.services:
+    for service in family.ordered_services:
         if keyisset("x-monitoring", service.definition) and keyisset(
             "CWAgentCollectEmf", service.definition["x-monitoring"]
         ):
-            collect_emf = True
+            emf_collection_config = service.definition["x-monitoring"][
+                "CWAgentCollectEmf"
+            ]
             break
     else:
-        collect_emf = False
+        emf_collection_config = False
 
     if any(prometheus_options.values()):
-        add_cw_agent_to_family(family, collect_emf, **prometheus_options)
+        add_cw_agent_to_family(family, emf_collection_config, **prometheus_options)
     else:
-        add_cw_agent_to_family(family, collect_emf)
+        add_cw_agent_to_family(family, emf_collection_config)
 
 
 def add_cw_agent_to_family(
-    family: ComposeFamily, collect_emf: bool = False, **prometheus_options
+    family: ComposeFamily, emf_config: Union[bool, dict] = None, **prometheus_options
 ):
     """
     Function to add the CW Agent to the task family for additional monitoring
     """
-    if not collect_emf and not prometheus_options:
+    if not emf_config and not prometheus_options:
         return
     if prometheus_options:
         prometheus_config = set_cw_prometheus_config_parameter(
@@ -95,12 +97,14 @@ def add_cw_agent_to_family(
         )
     else:
         prometheus_config = None
-    cw_agent_config = set_cw_config_parameter(family, collect_emf, **prometheus_options)
-    cw_agent_service = define_cloudwatch_agent(cw_agent_config, prometheus_config)
+    cw_agent_config = set_cw_config_parameter(family, emf_config, **prometheus_options)
+    cw_agent_service = define_cloudwatch_agent(
+        cw_agent_config, prometheus_config, emf_config
+    )
     cw_agent_service.add_to_family(family, is_dependency=True)
     set_ecs_cw_policy(family, cw_agent_config, prometheus_config)
     family.cwagent_service = cw_agent_service
-    if collect_emf:
+    if emf_config:
         env_var = Environment(
             Name="AWS_EMF_AGENT_ENDPOINT",
             Value=If(

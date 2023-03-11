@@ -130,12 +130,13 @@ class ServiceImage:
             else:
                 self.service.definition["image"] = self.image_uri
 
-    def interpolate_image_digest(self, settings: ComposeXSettings):
+    def interpolate_image_digest(self, settings: ComposeXSettings = None):
         """
         if service x-ecr is set, and image URI indicates a resolvable image, sets image_digest
         """
         if (
-            self.service.x_ecr
+            settings
+            and self.service.x_ecr
             and keyisset("InterpolateWithDigest", self.service.x_ecr)
             and self.private_ecr
         ):

@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 import ecs_composex.common.troposphere_tools
 
@@ -83,7 +83,7 @@ def set_cw_prometheus_config_parameter(
 
 
 def set_cw_config_parameter(
-    family: ComposeFamily, enable_emf: bool = False, **prometheus_options
+    family: ComposeFamily, enable_emf: Union[dict, bool] = None, **prometheus_options
 ) -> SSMParameter:
     """
     Function to add the SSM Parameter representing the Prometheus scrapper config
