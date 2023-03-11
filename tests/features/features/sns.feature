@@ -10,6 +10,7 @@ Feature: ecs_composex.sns
 
 
         Examples:
-            | file_path                   | override_file                       |
-            | use-cases/blog.features.yml | use-cases/sns/simple_sns.yml        |
-            | use-cases/blog.features.yml | use-cases/sns/create_and_lookup.yml |
+            | file_path                   | override_file                                |
+            | use-cases/blog.features.yml | use-cases/sns/simple_sns.yml                 |
+            | use-cases/blog.features.yml | use-cases/sns/create_and_lookup.yml          |
+            | use-cases/blog.features.yml | use-cases/sns/sns_with_sqs_subscription.yaml |

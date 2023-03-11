@@ -672,7 +672,6 @@ class XResource:
     def add_attribute_to_another_stack(
         self, ext_stack, attribute: Parameter, settings: ComposeXSettings
     ):
-
         attr_id = self.attributes_outputs[attribute]
         if self.mappings and self.lookup:
             add_update_mapping(
@@ -691,38 +690,58 @@ class XResource:
             LOG.debug("Not a new cluster or no post_processing_properties. Skipping")
             return
         LOG.info(f"Post processing {self.module.res_key}.{self.name}")
-        for _property in self.post_processing_properties:
-            cluster_property, property_name, value = get_nested_property(
+        for _property in getattr(self, "post_processing_properties", []):
+            properties_to_update: list[tuple] = get_nested_property(
                 self.cfn_resource, _property
             )
-            if not value or not isinstance(value, (str, list)):
-                continue
-            if (
-                isinstance(value, list)
-                and value
-                and isinstance(value[0], str)
-                and value[0].startswith(X_KEY)
-            ):
-                value = value[0]
-            if not value.startswith(X_KEY):
-                continue
-            resource, parameter = settings.get_resource_attribute(value)
-            if not resource or not parameter:
-                LOG.error(
-                    f"Failed to find resource/attribute for {property_name} with value {value}"
+            for _prop_to_update in properties_to_update:
+                aws_property_object, property_name, value = _prop_to_update
+                value = validate_input_value(aws_property_object, property_name, value)
+                if not value:
+                    continue
+                resource, parameter = settings.get_resource_attribute(value)
+                if not resource or not parameter:
+                    LOG.error(
+                        "%s.%s - Failed to find resource/attribute for %s with value %s",
+                        self.module.res_key,
+                        self.name,
+                        resource,
+                        value,
+                    )
+                    continue
+                res_param_id = resource.add_attribute_to_another_stack(
+                    self.stack, parameter, settings
                 )
-                continue
-            res_param_id = resource.add_attribute_to_another_stack(
-                self.stack, parameter, settings
-            )
-            if res_param_id is resource:
-                res_propery_value = Ref(resource.cfn_resource)
-            elif res_param_id is not resource and resource.cfn_resource:
-                res_propery_value = Ref(res_param_id["ImportParameter"])
-            else:
-                res_propery_value = res_param_id["ImportValue"]
-            setattr(cluster_property, property_name, res_propery_value)
-            LOG.info(
-                f"{self.module.res_key}.{self.name}"
-                f" - Successfully mapped {_property} to {resource.module.res_key}.{resource.name}",
-            )
+                if res_param_id is resource:
+                    res_propery_value = Ref(resource.cfn_resource)
+                elif res_param_id is not resource and resource.cfn_resource:
+                    res_propery_value = Ref(res_param_id["ImportParameter"])
+                else:
+                    res_propery_value = res_param_id["ImportValue"]
+                setattr(aws_property_object, property_name, res_propery_value)
+                LOG.info(
+                    "%s.%s - Successfully mapped %s to %s.%s",
+                    self.module.res_key,
+                    self.name,
+                    _property,
+                    resource.module.res_key,
+                    resource.name,
+                )
+
+
+def validate_input_value(aws_property_object, property_name, value) -> Union[None, str]:
+    """Validation that input for resource property update if valid"""
+    if (
+        (aws_property_object is None or property_name is None or value is None)
+        or (not value or not isinstance(value, (str, list)))
+        or (isinstance(value, str) and not value.startswith(X_KEY))
+    ):
+        return None
+    if (
+        isinstance(value, list)
+        and value
+        and isinstance(value[0], str)
+        and value[0].startswith(X_KEY)
+    ):
+        value = value[0]
+    return value

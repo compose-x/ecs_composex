@@ -309,7 +309,9 @@ def generate_full_template(settings: ComposeXSettings):
     set_all_mappings_to_root_stack(settings.root_stack, settings)
 
     for resource in settings.x_resources:
-        if hasattr(resource, "post_processing"):
+        if hasattr(resource, "post_processing") and hasattr(
+            resource, "post_processing_properties"
+        ):
             resource.post_processing(settings)
 
     settings.mod_manager.modules.clear()

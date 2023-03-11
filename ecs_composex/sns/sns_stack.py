@@ -14,14 +14,9 @@ from troposphere import GetAtt, Ref
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common.troposphere_tools import build_template
 from ecs_composex.compose.x_resources.api_x_resources import ApiXResource
-from ecs_composex.compose.x_resources.helpers import (
-    set_lookup_resources,
-    set_new_resources,
-    set_resources,
-)
 from ecs_composex.sns.sns_helpers import create_sns_mappings
 from ecs_composex.sns.sns_params import TOPIC_ARN, TOPIC_NAME
-from ecs_composex.sns.sns_templates import generate_sns_templates
+from ecs_composex.sns.sns_templates import import_sns_topics_to_template
 
 
 class Topic(ApiXResource):
@@ -40,6 +35,7 @@ class Topic(ApiXResource):
         self.arn_parameter = TOPIC_ARN
         self.ref_parameter = TOPIC_ARN
         self.support_defaults = True
+        self.post_processing_properties = ["Subscription.Endpoint"]
 
     def init_outputs(self):
         self.output_properties = {
@@ -67,10 +63,8 @@ class XStack(ComposeXStack):
         if not module.new_resources:
             self.is_void = True
         else:
-            template = build_template(
-                f"{module.res_key} - Compose-X Generated template"
-            )
-            generate_sns_templates(settings, module.new_resources, self, template)
+            template = build_template(f"{module.res_key} - stack")
+            import_sns_topics_to_template(module.new_resources, template)
             super().__init__(module.mapping_key, stack_template=template, **kwargs)
         for resource in module.resources_list:
             resource.stack = self
