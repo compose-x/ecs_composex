@@ -143,6 +143,9 @@ def main_parser():
     base_command_parser.add_argument(
         "--loglevel", type=str, help="Log level. Defaults to INFO", required=False
     )
+    parser.add_argument(
+        "--loglevel", type=str, help="Log level. Defaults to INFO", required=False
+    )
     for command in ComposeXSettings.active_commands:
         cmd_parsers.add_parser(
             name=command["name"],
@@ -169,7 +172,7 @@ def main():
         parser.print_help()
         sys.exit()
     args = parser.parse_args()
-    if args.loglevel:
+    if hasattr(args, "loglevel") and args.loglevel:
         valid_levels = [
             "FATAL",
             "CRITICAL",
