@@ -54,8 +54,8 @@ docker = "^6.0.1"
 [tool.poetry.dev-dependencies]
 isort = "^5.10.1"
 placebo = "^0.10.0"
-pre-commit = "^2.20.0"
-black = "^22.10"
+pre-commit = "^3.2"
+black = "^23.1"
 behave = "^1.2.6"
 coverage = { extras = ["toml"], version = "^7" }
 pytest = "^7.2"
