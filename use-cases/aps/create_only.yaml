@@ -1,0 +1,57 @@
+---
+# x-aps create only tests
+
+x-aps:
+  SimpleWorkspaceFromCfnDocs:
+    Properties:
+      Alias: TestWorkspace
+      Tags:
+        - Key: Name
+          Value: FromDocsExample
+        - Key: Link
+          Value: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-aps-workspace.html#aws-resource-aps-workspace--examples
+    Services:
+      app03:
+        Access: Query
+
+  SimpleWorkspaceFromCfnDocsWithExistingLogging:
+    Properties:
+      Alias: TestWorkspaceWithLogging
+      LoggingConfiguration:
+        LogGroupArn: arn:aws:logs:eu-west-1:373709687836:log-group:test-dummy-aps:*
+      Tags:
+        - Key: Name
+          Value: FromDocsExample
+        - Key: Link
+          Value: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-aps-workspace.html#aws-resource-aps-workspace--examples
+
+  SimpleWorkspaceFromCfnDocsWithNewBoolLogging:
+    Properties:
+      Alias: TestWorkspaceWithNewBoolLogging
+      Tags:
+        - Key: Name
+          Value: FromDocsExample
+        - Key: Link
+          Value: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-aps-workspace.html#aws-resource-aps-workspace--examples
+    MacroParameters:
+      CreateNewLogGroup: true
+
+  SimpleWorkspaceFromCfnDocsWithNewDictLogging:
+    Properties:
+      Alias: TestWorkspaceWithNewDictLogging
+      Tags:
+        - Key: Name
+          Value: FromDocsExample
+        - Key: Link
+          Value: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-aps-workspace.html#aws-resource-aps-workspace--examples
+    MacroParameters:
+      CreateNewLogGroup:
+        LogGroupName: testing-new-aps-logging-group
+        RetentionInDays: 1
+    Services:
+      app03:
+        Access: RW
+        ReturnValues:
+          PrometheusEndpoint: REMOTE_ENDPOINT
+          RemoteWriteUrl: REMOTE_WRITE_URL
+          QueryUrl: QUERY_URL
