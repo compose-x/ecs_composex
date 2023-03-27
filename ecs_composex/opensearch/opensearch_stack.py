@@ -72,7 +72,6 @@ class OpenSearchDomain(DatabaseXResource):
     def __init__(
         self, name, definition, module: XResourceModule, settings: ComposeXSettings
     ):
-
         super().__init__(
             name,
             definition,

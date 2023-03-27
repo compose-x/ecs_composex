@@ -84,7 +84,6 @@ class ComposeService:
         secrets=None,
         image_param: Parameter = None,
     ):
-
         for setting in self.ecs_plugin_aws_keys:
             if keyisset(setting[0], definition) and not isinstance(
                 definition[setting[0]], setting[1]

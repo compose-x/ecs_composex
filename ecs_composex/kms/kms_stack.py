@@ -235,7 +235,6 @@ class XStack(ComposeXStack):
     def __init__(
         self, title, settings: ComposeXSettings, module: XResourceModule, **kwargs
     ):
-
         if module.new_resources:
             stack_template = build_template("Root template for KMS")
             super().__init__(title, stack_template, **kwargs)

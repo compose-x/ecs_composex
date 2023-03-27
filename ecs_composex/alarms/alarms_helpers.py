@@ -139,7 +139,6 @@ def create_composite_alarm(alarm: Alarm, alarms: list[Alarm]) -> None:
 
 
 def add_composite_alarms(template: Template, new_alarms: list[Alarm]) -> None:
-
     for alarm in new_alarms:
         if not alarm.cfn_resource and (
             (alarm.parameters and keyisset("CompositeExpression", alarm.parameters))

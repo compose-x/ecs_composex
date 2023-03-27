@@ -213,7 +213,6 @@ def validate_duplicate_targets(lb: Elbv2, listener: ComposeListener) -> None:
     t_targets = [s["name"] for s in lb.services]
     duplicate_services: bool = len(t_targets) != len(set(t_targets))
     if duplicate_services:
-
         for listener_target in listener.services:
             parts = LISTENER_TARGET_RE.match(listener_target["name"])
             if not parts:

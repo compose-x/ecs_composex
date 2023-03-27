@@ -28,7 +28,6 @@ def step_impl(context, file_path):
 
 @given("I use defined files as input to define execution settings")
 def step_impl(context):
-
     cases_path = [
         path.abspath(f"{here()}/../../../{file_name}") for file_name in context.files
     ]
@@ -53,7 +52,6 @@ def step_impl(context):
 
 @then("I use defined files as input expecting an error")
 def step_impl(context):
-
     cases_path = [
         path.abspath(f"{here()}/../../../{file_name}") for file_name in context.files
     ]

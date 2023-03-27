@@ -257,7 +257,6 @@ class XStack(ComposeXStack):
     def __init__(
         self, title, settings: ComposeXSettings, module: XResourceModule, **kwargs
     ):
-
         if module.new_resources:
             stack_template = build_template(
                 "Root stack for RDS DBs",

@@ -105,7 +105,6 @@ def get_resources_from_tags(session, aws_resource_search, search_tags):
     :return:
     """
     try:
-
         client = session.client("resourcegroupstaggingapi")
         resources_r = client.get_resources(
             ResourceTypeFilters=[aws_resource_search], TagFilters=search_tags

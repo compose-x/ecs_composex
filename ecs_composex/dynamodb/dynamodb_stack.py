@@ -123,7 +123,6 @@ class XStack(ComposeXStack):
     def __init__(
         self, title, settings: ComposeXSettings, module: XResourceModule, **kwargs
     ):
-
         if module.lookup_resources:
             resolve_lookup(module.lookup_resources, settings, module)
         if module.new_resources:

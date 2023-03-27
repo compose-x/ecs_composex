@@ -229,7 +229,6 @@ class Mesh:
         self.process_mesh_components(stack, settings)
 
     def process_mesh_components(self, services_stack, settings):
-
         for router_name in self.routers:
             router = self.routers[router_name]
             services_stack.stack_template.add_resource(router.router)

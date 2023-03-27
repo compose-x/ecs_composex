@@ -1,4 +1,3 @@
-#   -*- coding: utf-8 -*-
 #  SPDX-License-Identifier: MPL-2.0
 #  Copyright 2020-2021 John Mille <john@compose-x.io>
 
@@ -8,7 +7,6 @@ from ecs_composex.ingress_settings import set_port_from_str
 
 
 def test_valid_ports():
-
     ports_check = {
         "8080": {0: 8080, 1: 8080, 2: "tcp"},
         "8081:80": {0: 8081, 1: 80, 2: "tcp"},
@@ -22,7 +20,6 @@ def test_valid_ports():
 
 
 def test_invalid_ports():
-
     invalid_ports = ["8080/icmp", "abcd", "1234567/udp"]
     for port_str in invalid_ports:
         with raises(ValueError):
