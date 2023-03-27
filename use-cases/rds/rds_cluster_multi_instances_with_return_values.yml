@@ -6,7 +6,7 @@ x-rds:
   dbA:
     MacroParameters:
       Engine: "aurora-postgresql"
-      EngineVersion: "12.7"
+      EngineVersion: "14.6"
       Instances:
         - DBInstanceClass: db.m5a.large
           DBAllocatedStorage: 50
@@ -21,7 +21,7 @@ x-rds:
   dbC:
     MacroParameters:
       Engine: "aurora-postgresql"
-      EngineVersion: "12.7"
+      EngineVersion: "14.6"
       ParametersGroups:
         Description: CloudFormation Sample Aurora Parameter Group
         Family: aurora5.6
@@ -41,7 +41,7 @@ x-rds:
   dbB:
     Properties:
       Engine: "aurora-postgresql"
-      EngineVersion: "12.7"
+      EngineVersion: "14.6"
       BackupRetentionPeriod: 1
       DatabaseName: dbname
       DeletionProtection: False
