@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "id": "x-aps.spec.json",
+  "$id": "x-aps.spec.json",
+  "title": "x-aps",
+  "description": "x-aps specification",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "Lookup": {
+      "$ref": "x-resources.common.spec.json#/definitions/Lookup"
+    },
+    "Properties": {
+      "type": "object",
+      "description": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-aps-workspace.html"
+    },
+    "Settings": {
+      "$ref": "x-resources.common.spec.json#/definitions/Settings"
+    },
+    "Services": {
+      "$ref": "x-resources.common.spec.json#/definitions/Services"
+    },
+    "MacroParameters": {
+      "type": "object",
+      "properties": {
+        "CreateNewLogGroup": {
+          "oneOf": [
+            {
+              "type": "boolean",
+              "description": "Creates a new LogGroup to use for LoggingConfiguration."
+            },
+            {
+              "type": "object",
+              "description": "LogGroup properties as defined at https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-logs-loggroup.html"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

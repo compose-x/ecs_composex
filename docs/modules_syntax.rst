@@ -67,6 +67,7 @@
     syntax/compose_x/dashboards
     syntax/compose_x/alarms
     syntax/compose_x/codeguru_profiler
+    syntax/compose_x/aps
 
 .. toctree::
     :caption: Docker Compose syntax

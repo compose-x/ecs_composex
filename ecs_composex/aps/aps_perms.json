@@ -1,0 +1,33 @@
+{
+  "RW": {
+    "Action": [
+      "aps:DescribeWorkspace*",
+      "aps:RemoteWrite"
+    ],
+    "Effect": "Allow",
+    "Resource": [
+      "${ARN}"
+    ]
+  },
+  "Query": {
+    "Action": [
+      "aps:QueryMetrics",
+      "aps:DescribeWorkspace"
+    ],
+    "Effect": "Allow",
+    "Resource": [
+      "${ARN}"
+    ]
+  },
+  "ReadActions": {
+    "NotAction": [
+      "aps:QueryMetrics",
+      "aps:Describe*",
+      "aps:Get*",
+      "aps:List*"
+    ],
+    "Resource": [
+      "${ARN}"
+    ]
+  }
+}

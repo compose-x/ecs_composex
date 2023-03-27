@@ -1,0 +1,16 @@
+---
+# x-aps create only tests
+
+x-aps:
+  LookupOnly:
+    Lookup:
+      Tags:
+        - Name: ews-home
+
+    Services:
+      app03:
+        Access: RW
+        ReturnValues:
+          PrometheusEndpoint: REMOTE_ENDPOINT
+          RemoteWriteUrl: REMOTE_WRITE_URL
+          QueryUrl: QUERY_URL

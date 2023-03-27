@@ -282,6 +282,7 @@ class XResource:
             )
         props = {}
         _account_id = get_account_id(self.lookup_session)
+        LOG.debug("arn: %s - account_id: %s", self.arn, _account_id)
         if _account_id == account_id and self.cloud_control_attributes_mapping:
             props = self.cloud_control_attributes_mapping_lookup(
                 cfn_resource_type, self.arn if use_arn_for_id else resource_id
@@ -378,13 +379,16 @@ class XResource:
         parameter to the services stack appropriately.
         """
         res_return_names = {}
-        for prop_param in self.attributes_outputs.keys():
+        if hasattr(self, "add_extra_outputs"):
+            self.add_extra_outputs()
+        for prop_param in self.attributes_outputs:
             if prop_param.return_value:
                 res_return_names[prop_param.return_value] = prop_param
             else:
                 res_return_names[prop_param.title] = prop_param
         env_vars = []
         params_to_add = []
+
         if self.ref_parameter and self.ref_parameter.title in target_definition.keys():
             LOG.debug(
                 f"{self.module.res_key}.{self.module.res_key} - Ref parameter {self.ref_parameter.title} override."
@@ -529,8 +533,10 @@ class XResource:
             value = Ref(output_definition[1])
         elif output_definition[2] is GetAtt:
             value = GetAtt(output_definition[1], output_definition[3])
-        elif output_definition[2] is Sub:
+        elif output_definition[2] is Sub and len(output_definition) == 4:
             value = Sub(output_definition[3])
+        elif output_definition[2] is Sub and len(output_definition) == 5:
+            value = Sub(output_definition[3], output_definition[4])
         elif output_definition[2] is Join:
             if not isinstance(output_definition[3], list):
                 raise ValueError(
@@ -560,23 +566,27 @@ class XResource:
         export = self.define_export_name(output_definition, attribute_parameter)
         return value, export
 
-    def add_new_output_attribute(self, attribute_id, attribute_config):
+    def add_new_output_attribute(
+        self,
+        attribute_id: Parameter,
+        attribute_config: tuple,
+        generate_outputs: bool = True,
+    ):
         """
         Adds a new output to attributes and re-generates all outputs
-
-        :param attribute_id:
-        :param tuple attribute_config:
         """
         if not self.output_properties:
             self.output_properties = {attribute_id: attribute_config}
         else:
             self.output_properties.update({attribute_id: attribute_config})
-        self.generate_outputs()
+        if generate_outputs:
+            self.generate_outputs()
 
     def generate_outputs(self):
         """
         Method to create the outputs for XResources
         """
+        LOG.debug("%s.%s - Generating outputs", self.module.res_key, self.name)
         if self.lookup_properties:
             for attribute_parameter, value in self.lookup_properties.items():
                 output_name = f"{self.logical_name}{attribute_parameter.title}"
