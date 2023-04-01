@@ -30,18 +30,20 @@ def define_table(table, template):
     table_props.update(
         {
             "Metadata": metadata,
-            "Tags": Tags(
-                Name=table.name,
-                ResourceName=table.logical_name,
-                CreatedByComposex=True,
-                RootStackName=Ref(ROOT_STACK_NAME),
-            ),
         }
     )
     cfn_table = dynamodb.Table(table.logical_name, **table_props)
     table.cfn_resource = cfn_table
     if table.scaling:
         add_autoscaling(table, template)
+    if hasattr(cfn_table, "Tags"):
+        print("ORIGINAL TABLE TAGS FROM DEFINITION", cfn_table.Tags.to_dict())
+        cfn_table.Tags += Tags(
+            Name=table.name,
+            ResourceName=table.logical_name,
+            CreatedByComposex=True,
+            RootStackName=Ref(ROOT_STACK_NAME),
+        )
     table.init_outputs()
     table.generate_outputs()
     add_resource(template, table.cfn_resource)

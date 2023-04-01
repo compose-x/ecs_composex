@@ -10,7 +10,7 @@ from __future__ import annotations
 from inspect import isfunction
 
 from compose_x_common.compose_x_common import keyisset, keypresent
-from troposphere import AWSHelperFn, AWSObject, AWSProperty
+from troposphere import AWSHelperFn, AWSObject, AWSProperty, Tags
 
 
 def skip_if(resource, prop_attr) -> bool:
@@ -82,6 +82,15 @@ def import_non_functions(
     :param bool set_to_novalue:
     :param bool ignore_missing:
     """
+    if (
+        prop_name == "Tags"
+        and top_class.props[prop_name][0] == Tags
+        and isinstance(properties[prop_name], list)
+    ):
+        print(properties[prop_name])
+        props[prop_name] = Tags(
+            **dict({_tag.values() for _tag in properties[prop_name]})
+        )
     if isinstance(properties[prop_name], AWSHelperFn):
         props[prop_name] = properties[prop_name]
     elif isinstance(properties[prop_name], (str, int, float, tuple)) or top_class.props[

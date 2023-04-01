@@ -157,6 +157,8 @@ def add_object_tags(obj, tags):
         LOG.debug(f"Adding the new tags {clean_tags} to {obj}")
         existing_tags = getattr(obj, "Tags").to_dict()
         new_tags = clean_tags.to_dict()
+        print("EXISTING TAGS", existing_tags)
+        print("NEW TAGS", new_tags)
         result = merge_tags_lists(existing_tags, new_tags)
         result_tags = Tags(*result)
         LOG.debug(result_tags)
