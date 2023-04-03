@@ -87,7 +87,6 @@ def import_non_functions(
         and top_class.props[prop_name][0] == Tags
         and isinstance(properties[prop_name], list)
     ):
-        print(properties[prop_name])
         props[prop_name] = Tags(
             **dict({_tag.values() for _tag in properties[prop_name]})
         )

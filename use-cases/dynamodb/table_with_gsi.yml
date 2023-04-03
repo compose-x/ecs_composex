@@ -1,4 +1,6 @@
 version: '3.8'
+x-tags:
+  Environment: somenonprod
 x-dynamodb:
   tableA:
     Properties:
