@@ -1,7 +1,14 @@
 version: '3.8'
+x-tags:
+  Environment: somenonprod
 x-dynamodb:
   tableA:
     Properties:
+      Tags:
+        - Key: Name
+          Value: "tableA"
+        - Key: "Environment"
+          Value: nonprod
       AttributeDefinitions:
         - AttributeName: Album
           AttributeType: S

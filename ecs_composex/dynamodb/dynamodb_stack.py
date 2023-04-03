@@ -22,11 +22,6 @@ from ecs_composex.common.logging import LOG
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common.troposphere_tools import build_template
 from ecs_composex.compose.x_resources.api_x_resources import ApiXResource
-from ecs_composex.compose.x_resources.helpers import (
-    set_lookup_resources,
-    set_new_resources,
-    set_resources,
-)
 from ecs_composex.dynamodb.dynamodb_params import TABLE_ARN, TABLE_NAME
 from ecs_composex.dynamodb.dynamodb_template import create_dynamodb_template
 

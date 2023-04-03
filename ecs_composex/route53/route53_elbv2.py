@@ -62,10 +62,18 @@ def create_record(name, route53_zone, route53_stack, target_elbv2, elbv2_stack) 
     elif route53_zone.mappings:
         zone_id_attribute = route53_zone.attributes_outputs[PUBLIC_DNS_ZONE_ID]
         record_props["HostedZoneId"] = zone_id_attribute["ImportValue"]
-    cfn_resource = RecordSetType(
-        f"Route53{record_props['Type']}{NONALPHANUM.sub('', record_props['Name'])}"[
+    if name.startswith(r"*."):
+        cfn_resource_title: str = f"Route53{record_props['Type']}wildcard{NONALPHANUM.sub('', record_props['Name'])}"[
             :128
-        ],
+        ]
+    else:
+        cfn_resource_title: str = (
+            f"Route53{record_props['Type']}{NONALPHANUM.sub('', record_props['Name'])}"[
+                :128
+            ]
+        )
+    cfn_resource = RecordSetType(
+        cfn_resource_title,
         **record_props,
     )
     if cfn_resource.title not in route53_stack.stack_template.resources:
