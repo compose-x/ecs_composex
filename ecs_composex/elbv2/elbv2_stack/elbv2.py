@@ -316,29 +316,26 @@ class Elbv2(NetworkXResource):
         :param ecs_composex.vpc.vpc_stack.VpcStack vpc_stack:
         :return:
         """
-        if self.is_nlb():
+        if vpc_stack.vpc_resource.cfn_resource and self.subnets_override not in [
+            PUBLIC_SUBNETS.title,
+            APP_SUBNETS.title,
+        ]:
+            raise ValueError(
+                "When Compose-X creates the VPC, the only subnets you can define to use are",
+                [PUBLIC_SUBNETS.title, APP_SUBNETS.title],
+            )
+        if self.is_nlb() and self.lb_is_public:
             return Ref(AWS_NO_VALUE)
-        elif not self.lb_is_public and self.subnets_override:
-            if vpc_stack.vpc_resource.cfn_resource and self.subnets_override not in [
-                PUBLIC_SUBNETS.title,
-                APP_SUBNETS.title,
-            ]:
-                raise ValueError(
-                    "When Compose-X creates the VPC, the only subnets you can define to use are",
-                    [PUBLIC_SUBNETS.title, APP_SUBNETS.title],
-                )
-            elif (
-                not vpc_stack.vpc_resource.cfn_resource
-                and vpc_stack.vpc_resource.mappings
-                and self.subnets_override in vpc_stack.vpc_resource.mappings.keys()
-            ):
-                return Ref(self.subnets_override)
-        else:
-            if self.is_alb() and self.lb_is_public:
-                return Ref(PUBLIC_SUBNETS)
-            elif not self.lb_is_public:
-                return Ref(APP_SUBNETS)
-        return APP_SUBNETS.title
+        if (
+            self.subnets_override
+            and not vpc_stack.vpc_resource.cfn_resource
+            and vpc_stack.vpc_resource.mappings
+            and self.subnets_override in vpc_stack.vpc_resource.mappings.keys()
+        ):
+            return Ref(self.subnets_override)
+        elif self.lb_is_public:
+            return Ref(PUBLIC_SUBNETS)
+        return Ref(APP_SUBNETS)
 
     def set_subnet_mappings(self, vpc_stack):
         """
@@ -349,16 +346,19 @@ class Elbv2(NetworkXResource):
             return Ref(AWS_NO_VALUE)
         if not self.lb_eips and self.lb_is_public:
             self.set_eips(vpc_stack)
-        mappings = []
-        subnets = self.define_override_subnets(PUBLIC_SUBNETS.title, vpc_stack)
-        for count, eip in enumerate(self.lb_eips):
-            mappings.append(
-                SubnetMapping(
-                    AllocationId=GetAtt(eip, "AllocationId"),
-                    SubnetId=Select(count, Ref(subnets)),
+            mappings = []
+            subnets = self.define_override_subnets(PUBLIC_SUBNETS.title, vpc_stack)
+            for count, eip in enumerate(self.lb_eips):
+                mappings.append(
+                    SubnetMapping(
+                        AllocationId=GetAtt(eip, "AllocationId"),
+                        SubnetId=Select(count, Ref(subnets)),
+                    )
                 )
-            )
-        return mappings
+            return mappings
+        elif not self.lb_is_public:
+            self.cfn_resource.Subnets = self.set_subnets(vpc_stack)
+            return Ref(AWS_NO_VALUE)
 
     def parse_attributes_settings(self):
         """

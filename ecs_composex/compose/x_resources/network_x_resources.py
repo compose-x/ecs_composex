@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from ecs_composex.mods_manager import XResourceModule, ModManager
 
 
-from compose_x_common.compose_x_common import keyisset
+from compose_x_common.compose_x_common import keyisset, set_else_none
 
 from ecs_composex.common.logging import LOG
 from ecs_composex.compose.x_resources.services_resources import ServicesXResource
@@ -108,18 +108,11 @@ class NetworkXResource(ServicesXResource):
         """
         Updates the subnets to use from default for the given resource
         """
-        if (
-            self.settings
-            and keyisset("Subnets", self.settings)
-            and hasattr(self, "subnets_param")
-        ):
-            self.subnets_override = self.settings["Subnets"]
-        elif (
-            self.parameters
-            and keyisset("Subnets", self.parameters)
-            and hasattr(self, "subnets_param")
-        ):
-            self.subnets_override = self.parameters["Subnets"]
+        subnets_override = set_else_none(
+            "Subnets", self.settings, set_else_none("Subnets", self.parameters)
+        )
+        if subnets_override and hasattr(self, "subnets_param"):
+            self.subnets_override = subnets_override
 
     def update_from_vpc(self, vpc_stack, settings=None):
         """
