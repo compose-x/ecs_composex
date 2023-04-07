@@ -38,6 +38,11 @@
             "HostedZoneId": {
               "$ref": "#/definitions/HostedZoneId",
               "description": "If set, will retrieve the zone details from the Zone ID directly."
+            },
+            "IsPrivateZone": {
+              "type": "boolean",
+              "default": false,
+              "description": "Defines whether the zone is private"
             }
           }
         },

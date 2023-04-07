@@ -51,7 +51,9 @@ def lookup_hosted_zone(zone, session, private, zone_id=None) -> dict:
             zone_r = client.get_hosted_zone(Id=zones_r["Id"])["HostedZone"]
 
         if zone_r["Config"]["PrivateZone"] != private:
-            raise ValueError(f"The zone {zone.zone_name} is not a private zone.")
+            raise ValueError(
+                f"The zone {zone.zone_name} is not a private zone.", zone_r["Config"]
+            )
         return {
             PUBLIC_DNS_ZONE_ID: zone_r["Id"].split(r"/")[-1],
             PUBLIC_DNS_ZONE_NAME: LAST_DOT_RE.sub("", zone_r["Name"]),

@@ -113,15 +113,16 @@ class HostedZone(AwsEnvironmentResource):
                 self, self.lookup_session, False
             )
         elif isinstance(lookup_attributes, dict):
+            is_private = keyisset("IsPrivateZone", lookup_attributes)
             if not keyisset("HostedZoneId", lookup_attributes):
                 self.lookup_properties = lookup_hosted_zone(
-                    self, self.lookup_session, False
+                    self, self.lookup_session, private=is_private
                 )
             else:
                 self.lookup_properties = lookup_hosted_zone(
                     self,
                     self.lookup_session,
-                    False,
+                    private=is_private,
                     zone_id=lookup_attributes["HostedZoneId"],
                 )
         self.generate_cfn_mappings_from_lookup_properties()

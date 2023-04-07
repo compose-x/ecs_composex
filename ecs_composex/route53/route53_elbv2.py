@@ -63,15 +63,17 @@ def create_record(name, route53_zone, route53_stack, target_elbv2, elbv2_stack) 
         zone_id_attribute = route53_zone.attributes_outputs[PUBLIC_DNS_ZONE_ID]
         record_props["HostedZoneId"] = zone_id_attribute["ImportValue"]
     if name.startswith(r"*."):
-        cfn_resource_title: str = f"Route53{record_props['Type']}wildcard{NONALPHANUM.sub('', record_props['Name'])}"[
-            :128
-        ]
+        cfn_resource_title: str = (
+            f"Route53{record_props['Type']}{route53_zone.logical_name.lower()}"
+            f"wildcard{NONALPHANUM.sub('', record_props['Name'])}"[:128]
+        )
+
     else:
         cfn_resource_title: str = (
-            f"Route53{record_props['Type']}{NONALPHANUM.sub('', record_props['Name'])}"[
-                :128
-            ]
+            f"Route53{record_props['Type']}{route53_zone.logical_name.lower()}"
+            f"{NONALPHANUM.sub('', record_props['Name'])}"[:128]
         )
+
     cfn_resource = RecordSetType(
         cfn_resource_title,
         **record_props,
