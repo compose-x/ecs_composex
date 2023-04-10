@@ -201,9 +201,8 @@ def main():
         )
         settings.deploy = False
     scan_results = evaluate_ecr_configs(settings)
-    if scan_results and not settings.ignore_ecr_findings:
-        warnings.warn("SCAN Images failed for instructed images. Failure")
-        return 1
+    if scan_results:
+        return scan_results
     root_stack = generate_full_template(settings)
     process_stacks(root_stack, settings)
 

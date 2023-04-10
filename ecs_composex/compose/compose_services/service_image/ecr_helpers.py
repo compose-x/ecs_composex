@@ -16,44 +16,6 @@ ECR_URI_RE = re.compile(
 )
 
 
-def invalidate_image_from_ecr(service, mute=False):
-    """
-    Function to validate that the image URI is from valid and from private ECR
-
-    :param ecs_composex.common.compose_services.ComposeService service:
-    :param bool mute: Whether we display output
-    :return: True when the image is not from ECR
-    :rtype: bool
-    """
-    if not ECR_URI_RE.match(service.image.image_uri):
-        if not mute:
-            LOG.info(
-                f"{service.name} - image provided not valid ECR URI - "
-                f"{service.image} - "
-            )
-            LOG.info(f"Expected ECR Regexp {ECR_URI_RE.pattern}")
-        return True
-    return False
-
-
-def validate_input(service):
-    """
-    Validates that we have enough settings and the URL matches AWS ECR Private Repo
-
-    :param ecs_composex.common.compose_services.ComposeService service:
-    :return:
-    """
-    if not service.ecr_config:
-        LOG.debug(f"No configuration defined for x-ecr. Skipping for {service.name}")
-        return True
-    if not keyisset("VulnerabilitiesScan", service.ecr_config):
-        LOG.info(f"{service.name} - No scan to be evaluated.")
-        return True
-    if invalidate_image_from_ecr(service, True):
-        return True
-    return False
-
-
 def define_ecr_session(account_id, repo_name, region, settings, role_arn=None):
     """
     Function to determine the boto3 session to use for subsequent API calls to ECR

@@ -5,16 +5,18 @@ from __future__ import annotations
 
 import re
 from time import sleep
+from typing import Union
 
 from boto3.session import Session
-from compose_x_common.compose_x_common import keyisset
+from compose_x_common.compose_x_common import keyisset, set_else_none
 
 try:
     from ecr_scan_reporter.ecr_scan_reporter import DEFAULT_THRESHOLDS
     from ecr_scan_reporter.images_scanner import trigger_images_scan
 except ImportError:
+    DEFAULT_THRESHOLDS: dict = {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0}
     raise ImportError(
-        "You must install ecr-scan-reporter in order to use this functionality"
+        "Run pip install ecs-composex[ecrscan] to enable this functionality."
     )
 from ecs_composex.common.logging import LOG
 
@@ -103,7 +105,7 @@ def wait_for_scan_report(
     image_url,
     trigger_scan=False,
     ecr_session=None,
-):
+) -> dict[str, Union[dict, str]]:
     """
     Function to wait for the scan report to go from In Progress to else
 
@@ -132,13 +134,13 @@ def wait_for_scan_report(
     if image_scan_r is None:
         reason = "Failed to retrieve or poll scan report"
         LOG.error(reason)
-        return {"FAILED": True, "reason": reason}
-    if image_scan_r["imageScanStatus"]["status"] == "COMPLETE" and keyisset(
+        findings: dict = {"FAILED": True, "reason": reason}
+    elif image_scan_r["imageScanStatus"]["status"] != "FAILED" and keyisset(
         "findingSeverityCounts", image_scan_r["imageScanFindings"]
     ):
-        findings = image_scan_r["imageScanFindings"]["findingSeverityCounts"]
+        findings: dict = image_scan_r["imageScanFindings"]["findingSeverityCounts"]
     elif image_scan_r["imageScanStatus"]["status"] == "FAILED":
-        findings = {
+        findings: dict = {
             "FAILED": True,
             "reason": image_scan_r["imageScanStatus"]["description"],
         }
@@ -161,7 +163,12 @@ def validate_input(service):
     return False
 
 
-def define_result(image_url, security_findings, thresholds, vulnerability_config):
+def define_result(
+    image_url: str,
+    security_findings: dict,
+    thresholds: dict,
+    vulnerability_config: dict,
+) -> tuple[bool, list[str]]:
     """
     Function to define what to do with findings, if any.
     If VulnerabilitiesScan.Fail is False, then ignore the findings and display only
@@ -173,30 +180,30 @@ def define_result(image_url, security_findings, thresholds, vulnerability_config
     :return: Whether there is a breach of thresholds or not
     :rtype: bool
     """
-    result = False
+    results: list[str] = []
+    ignore: bool = False
     if not security_findings:
-        return result
+        return True, results
     elif keyisset("FAILED", security_findings):
         LOG.error(
             f"{image_url} - Scan of image failed. - {security_findings['reason']}"
         )
-        if keyisset("TreatFailedAs", vulnerability_config):
-            if vulnerability_config["TreatFailedAs"] == "Success":
-                LOG.info("TreatFailedAs set to Success - ignoring scan failure")
-                result = False
-            else:
-                result = True
+        treat_failed_as = set_else_none(
+            "TreatFailedAs", vulnerability_config, "Failure"
+        )
+        if treat_failed_as == "Success":
+            LOG.warning("TreatFailedAs set to Success - ignoring scan failure")
+            return True, results
+        else:
+            return False, results
     else:
+        ignore = keyisset("IgnoreFailure", vulnerability_config)
         for name, limit in thresholds.items():
             if keyisset(name, security_findings) and security_findings[name] >= limit:
-                LOG.error(
-                    f"Found {name} vulnerability: {security_findings[name]}/{limit}"
-                )
-                if not keyisset("IgnoreFailure", vulnerability_config):
-                    result = True
-    LOG.info("ECR Scan Thresholds")
-    LOG.info(",".join([f"{name}/{limit}" for name, limit in thresholds.items()]))
-    return result
+                results.append(f"{name}: {security_findings[name]}/{limit}")
+    if ignore and results:
+        return True, results
+    return False, results
 
 
 def validate_the_image_input(the_image):
@@ -256,6 +263,7 @@ def scan_service_image(service, settings, the_image=None):
         image_url=service.image,
         ecr_session=session,
     )
-    return define_result(
+    results = define_result(
         service.image, security_findings, thresholds, vulnerability_config
     )
+    return results

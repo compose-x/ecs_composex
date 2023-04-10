@@ -15,13 +15,11 @@ if TYPE_CHECKING:
 
 import warnings
 
-from compose_x_common.compose_x_common import keyisset
+from compose_x_common.compose_x_common import keyisset, set_else_none
 
 from ecs_composex.common.logging import LOG
 from ecs_composex.compose.compose_services.service_image.ecr_helpers import (
     define_service_image,
-    interpolate_ecr_uri_tag_with_digest,
-    invalidate_image_from_ecr,
 )
 
 try:
@@ -39,32 +37,28 @@ def evaluate_ecr_configs(settings: ComposeXSettings) -> int:
     """
     Function to go over each service of each family in its final state and evaluate the ECR Image validity.
     """
-    result = 0
     if not SCANS_POSSIBLE:
-        return result
+        return 0
     for family in settings.families.values():
         for service in family.services:
-            if not isinstance(service.image, str):
-                continue
-            if not keyisset("x-ecr", service.definition) or invalidate_image_from_ecr(
-                service, True
-            ):
+            x_ecr_config = set_else_none("x-ecr", service.definition)
+
+            if not x_ecr_config or not service.image.private_ecr:
+                LOG.debug(
+                    "{}.{} - Not private ECR nor valid".format(
+                        family.name, service.name
+                    )
+                )
                 continue
             service_image = define_service_image(service, settings)
-            if (
-                service.ecr_config
-                and keyisset("InterpolateWithDigest", service.ecr_config)
-                and keyisset("imageDigest", service_image)
-            ):
-                service.image = interpolate_ecr_uri_tag_with_digest(
-                    service.image, service_image["imageDigest"]
+            scan_results = scan_service_image(service, settings, service_image)
+            if scan_results[1]:
+                LOG.warn(
+                    "{}.{} - ECR Scan Findings(LEVEL:findings/threshold): {}".format(
+                        family.name, service.name, "|".join(scan_results[1])
+                    )
                 )
-                LOG.info(
-                    f"Update service {family.name}.{service.name} image to {service.image}"
-                )
-            if scan_service_image(service, settings, service_image):
-                LOG.warn(f"{family.name}.{service.name} - vulnerabilities found")
-                result = 1
-            else:
-                LOG.info(f"{family.name}.{service.name} - ECR Evaluation Passed.")
-    return result
+            if not scan_results[0] and not settings.ignore_ecr_findings:
+                LOG.error(f"{family.name}.{service.name} - vulnerabilities found")
+                return 1
+    return 0
