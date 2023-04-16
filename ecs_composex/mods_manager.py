@@ -347,7 +347,7 @@ class ModManager:
         module_name = f"ecs_composex.{mod_key}"
         module = self.add_module_from_module_def(res_key, mod_key, module_name)
         if not module:
-            LOG.error(f"{res_key} - Unable to load module definition")
+            LOG.debug(f"{res_key} - Unable to load module definition")
             return
         if res_def and isinstance(res_def, dict):
             module.definition = res_def

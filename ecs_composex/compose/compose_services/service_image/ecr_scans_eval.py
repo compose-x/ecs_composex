@@ -5,7 +5,10 @@ from __future__ import annotations
 
 import re
 from time import sleep
-from typing import Union
+from typing import TYPE_CHECKING, Union
+
+if TYPE_CHECKING:
+    from ecs_composex.compose.compose_services.service_image import ServiceImage
 
 from boto3.session import Session
 from compose_x_common.compose_x_common import keyisset, set_else_none
@@ -29,7 +32,7 @@ ECR_URI_RE = re.compile(
 
 
 def initial_scan_retrieval(
-    registry, repository_name, image, image_url, trigger_scan, ecr_session=None
+    registry, repository_name, image, service_image, trigger_scan, ecr_session=None
 ):
     """
     Function to retrieve the scan findings from ECR, and if none, can trigger scan
@@ -37,7 +40,7 @@ def initial_scan_retrieval(
     :param str registry:
     :param str repository_name:
     :param dict image:
-    :param str image_url:
+    :param ServiceImage service_image:
     :param bool trigger_scan:
     :param boto3.session.Session ecr_session:
     :return: The scan report
@@ -52,9 +55,11 @@ def initial_scan_retrieval(
         )
         return image_scan_r
     except client.exceptions.ScanNotFoundException:
-        LOG.error(f"No scan report found for {image_url}")
+        LOG.error(f"No scan report found for {service_image.image_uri}")
         if trigger_scan:
-            LOG.info(f"Triggering scan for {image_url}, trigger_scan={trigger_scan}")
+            LOG.info(
+                f"Triggering scan for {service_image.image_uri}, trigger_scan={trigger_scan}"
+            )
             trigger_images_scan(
                 repo_name=repository_name,
                 images_to_scan=[image],
@@ -62,7 +67,7 @@ def initial_scan_retrieval(
             )
         else:
             LOG.warn(
-                f"No scan was available and scanning not requested for {image_url}. Skipping"
+                f"No scan was available and scanning not requested for {service_image.image_uri}. Skipping"
             )
             return None
 
@@ -102,7 +107,7 @@ def wait_for_scan_report(
     registry,
     repository_name,
     image,
-    image_url,
+    image_url: ServiceImage,
     trigger_scan=False,
     ecr_session=None,
 ) -> dict[str, Union[dict, str]]:
@@ -111,7 +116,7 @@ def wait_for_scan_report(
 
     :param str registry:
     :param str repository_name:
-    :param dict image:
+    :param image:
     :param str image_url::
     :param bool trigger_scan:
     :param boto3.session.Session ecr_session:
@@ -223,14 +228,15 @@ def validate_the_image_input(the_image):
         raise KeyError("imageDigest must be set in the_image")
 
 
-def scan_service_image(service, settings, the_image=None):
+def scan_service_image(
+    service, settings, the_image: ServiceImage = None
+) -> tuple[bool, list[str]]:
     """
     Function to review the service definition and evaluate scan if properties defined
 
     :param ecs_composex.common.compose_services.ComposeService service:
     :param ecs_composex.common.settings.ComposeXSettings settings: The settings for the execution
     :param the_image: The image to use for scanning references.
-    :return:
     """
     region = None
     if validate_input(service):
