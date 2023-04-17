@@ -1,0 +1,116 @@
+
+version: "3.8"
+services:
+  dummy:
+    image: nginx
+
+
+x-wafv2_webacl:
+  New-WebAcl:
+    Properties:
+      Description: wafv2-webacl-dev
+      DefaultAction:
+        Allow: {}
+      Scope: REGIONAL
+      Rules:
+        - Priority: 0
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              RuleActionOverrides: []
+              ManagedRuleGroupConfigs: []
+              ExcludedRules: []
+              Name: AWSManagedRulesAmazonIpReputationList
+          OverrideAction:
+            None: {}
+          RuleLabels: []
+          VisibilityConfig:
+            MetricName: AWS-AWSManagedRulesAmazonIpReputationList
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+          Name: AWS-AWSManagedRulesAmazonIpReputationList
+        - Priority: 1
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              RuleActionOverrides: []
+              ManagedRuleGroupConfigs: []
+              ExcludedRules: []
+              Name: AWSManagedRulesAnonymousIpList
+          OverrideAction:
+            None: {}
+          RuleLabels: []
+          VisibilityConfig:
+            MetricName: AWS-AWSManagedRulesAnonymousIpList
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+          Name: AWS-AWSManagedRulesAnonymousIpList
+        - Priority: 2
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              RuleActionOverrides: []
+              ManagedRuleGroupConfigs: []
+              ExcludedRules: []
+              Name: AWSManagedRulesUnixRuleSet
+          OverrideAction:
+            None: {}
+          RuleLabels: []
+          VisibilityConfig:
+            MetricName: AWS-AWSManagedRulesUnixRuleSet
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+          Name: AWS-AWSManagedRulesUnixRuleSet
+        - Priority: 3
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              RuleActionOverrides: []
+              ManagedRuleGroupConfigs: []
+              ExcludedRules: []
+              Name: AWSManagedRulesAdminProtectionRuleSet
+          OverrideAction:
+            None: {}
+          RuleLabels: []
+          VisibilityConfig:
+            MetricName: AWS-AWSManagedRulesAdminProtectionRuleSet
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+          Name: AWS-AWSManagedRulesAdminProtectionRuleSet
+        - Priority: 4
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              RuleActionOverrides: []
+              ManagedRuleGroupConfigs: []
+              ExcludedRules: []
+              Name: AWSManagedRulesKnownBadInputsRuleSet
+          OverrideAction:
+            None: {}
+          RuleLabels: []
+          VisibilityConfig:
+            MetricName: AWS-AWSManagedRulesKnownBadInputsRuleSet
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+          Name: AWS-AWSManagedRulesKnownBadInputsRuleSet
+        - Priority: 5
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              RuleActionOverrides: []
+              ManagedRuleGroupConfigs: []
+              ExcludedRules: []
+              Name: AWSManagedRulesCommonRuleSet
+          OverrideAction:
+            None: {}
+          RuleLabels: []
+          VisibilityConfig:
+            MetricName: AWS-AWSManagedRulesCommonRuleSet
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+          Name: AWS-AWSManagedRulesCommonRuleSet
+      VisibilityConfig:
+        MetricName: wafv2-webacl-dev
+        SampledRequestsEnabled: true
+        CloudWatchMetricsEnabled: true
+      Name: wafv2-webacl-dev

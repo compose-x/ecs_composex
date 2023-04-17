@@ -1,0 +1,14 @@
+{
+  "RO": {
+    "Sid": "RW",
+    "Effect": "Allow",
+    "Action": [
+      "wafv2:Describe*",
+      "wafv2:List*",
+      "wafv2:Get*"
+    ],
+    "Resource": [
+      "${ARN}"
+    ]
+  }
+}

@@ -25,6 +25,7 @@ from ecs_composex.common.logging import LOG
 from ecs_composex.common.troposphere_tools import ROOT_STACK_NAME
 from ecs_composex.compose.x_resources.network_x_resources import NetworkXResource
 from ecs_composex.elbv2.elbv2_params import (
+    LB_ARN,
     LB_DNS_NAME,
     LB_DNS_ZONE_ID,
     LB_FULL_NAME,
@@ -70,9 +71,11 @@ class Elbv2(NetworkXResource):
         self.validate_services()
         self.sort_props()
         self.module_name = MOD_KEY
+        self.ref_parameter = LB_ARN
 
     def init_outputs(self):
         self.output_properties = {
+            LB_ARN: (self.logical_name, self.cfn_resource, Ref, None),
             LB_DNS_NAME: (
                 f"{self.logical_name}{LB_DNS_NAME.return_value}",
                 self.cfn_resource,
@@ -316,10 +319,15 @@ class Elbv2(NetworkXResource):
         :param ecs_composex.vpc.vpc_stack.VpcStack vpc_stack:
         :return:
         """
-        if vpc_stack.vpc_resource.cfn_resource and self.subnets_override not in [
-            PUBLIC_SUBNETS.title,
-            APP_SUBNETS.title,
-        ]:
+        if (
+            self.subnets_override
+            and vpc_stack.vpc_resource.cfn_resource
+            and self.subnets_override
+            not in [
+                PUBLIC_SUBNETS.title,
+                APP_SUBNETS.title,
+            ]
+        ):
             raise ValueError(
                 "When Compose-X creates the VPC, the only subnets you can define to use are",
                 [PUBLIC_SUBNETS.title, APP_SUBNETS.title],

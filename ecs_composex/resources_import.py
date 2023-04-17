@@ -63,7 +63,8 @@ def handle_list(properties, property_class):
     for property_definition in properties:
         if not isinstance(property_definition, (str, int, float, bool)):
             record = import_record_properties(property_definition, property_class)
-            rendered_properties.append(property_class(**record))
+            _property = property_class(**record)
+            rendered_properties.append(_property)
         else:
             rendered_properties.append(property_definition)
     return rendered_properties
@@ -160,7 +161,19 @@ def import_record_properties(
         elif keypresent(prop_name, properties) and isfunction(
             top_class.props[prop_name][0]
         ):
-            props[prop_name] = properties[prop_name]
+            try:
+                props[prop_name] = top_class.props[prop_name][0](properties[prop_name])
+            except Exception as error:
+                if isinstance(error.args[-1], type) and issubclass(
+                    error.args[-1], AWSProperty
+                ):
+                    props[prop_name] = error.args[-1](
+                        **import_record_properties(
+                            properties[prop_name], error.args[-1]
+                        )
+                    )
+                else:
+                    props[prop_name] = properties[prop_name]
         elif keypresent(prop_name, properties) and not isfunction(
             properties[prop_name]
         ):
