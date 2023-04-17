@@ -1,0 +1,67 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "id": "x-wafv2_webacl.spec.json",
+  "$id": "x-wafv2_webacl.spec.json",
+  "title": "x-wafv2_webacl",
+  "description": "x-wafv2_webacl specification",
+  "type": "object",
+  "oneOf": [
+    {
+      "required": [
+        "Properties"
+      ]
+    },
+    {
+      "required": [
+        "Lookup"
+      ]
+    }
+  ],
+  "properties": {
+    "Lookup": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "Arn": {
+          "type": "string",
+          "description": "The ARN identifier.",
+          "format": "^arn:(aws|aws-cn|aws-us-gov):([a-z0-9-]+):([a-z0-9-]+)?:(\\d{12})?:(.*$)"
+        },
+        "Identifier": {
+          "type": "string",
+          "description": "The ID of the WAF Rule",
+          "pattern": "^([\\w\\-_]+)\\|([\\w\\-]+)\\|(REGIONAL|GLOBAL)$"
+        },
+        "RoleArn": {
+          "type": "string",
+          "format": "^arn:(aws|aws-cn|aws-us-gov):iam::(\\d{12}):role/(.*$)"
+        },
+        "Region": {
+          "type": "string",
+          "format": "(af|ap|ca|eu|me|sa|us|cn|us)-[\\S]+-[\\d]$",
+          "description": "AWS Region to look for the resource into."
+        }
+      }
+    },
+    "Properties": {
+      "type": "object",
+      "description": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-wafv2-webacl.htm"
+    },
+    "MacroParameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+      }
+    },
+    "Services": {
+      "$ref": "x-resources.common.spec.json#/definitions/Services"
+    },
+    "LoadBalancers": {
+      "type": "array",
+      "description": "List of x-elbv2 to Associate the WebACL with",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

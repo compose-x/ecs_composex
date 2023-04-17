@@ -372,5 +372,6 @@ def get_module(module_name) -> tuple:
         LOG.debug(error)
         return None, None
     except ImportError as error:
+        LOG.debug(module_name)
         LOG.debug(error)
         return None, None

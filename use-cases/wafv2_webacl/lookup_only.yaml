@@ -1,0 +1,11 @@
+
+version: "3.8"
+services:
+  dummy:
+    image: nginx
+
+
+x-wafv2_webacl:
+  New-WebAcl:
+    Lookup:
+      Identifier: wafv2-webacl-dev|526c0a30-bdc9-4ccf-ad50-b734e3982fdb|REGIONAL
