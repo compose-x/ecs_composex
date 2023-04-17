@@ -18,13 +18,9 @@ from compose_x_common.compose_x_common import attributes_to_mapping, keyisset
 from troposphere import GetAtt, Ref
 from troposphere.kinesis import Stream as CfnStream
 
+from ecs_composex.common.logging import LOG
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.compose.x_resources.api_x_resources import ApiXResource
-from ecs_composex.compose.x_resources.helpers import (
-    set_lookup_resources,
-    set_new_resources,
-    set_resources,
-)
 from ecs_composex.kinesis.kinesis_params import STREAM_ARN, STREAM_ID, STREAM_KMS_KEY_ID
 from ecs_composex.kinesis.kinesis_template import create_streams_template
 from ecs_composex.kinesis_firehose.kinesis_firehose_stack import DeliveryStream
