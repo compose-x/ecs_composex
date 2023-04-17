@@ -32,6 +32,7 @@
     syntax/compose_x/cloudmap
     syntax/compose_x/elbv2
     syntax/compose_x/acm
+    syntax/compose_x/wafv2_webacl
 
 
 .. toctree::
