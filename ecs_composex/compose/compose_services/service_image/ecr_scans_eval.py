@@ -72,19 +72,16 @@ def initial_scan_retrieval(
             return None
 
 
-def scan_poll_and_wait(registry, repository_name, image, image_url, ecr_session=None):
-    """
-    Function to pull the scans results until no longer in progress
-
-    :param boto3.session.Session ecr_session:
-    :param registry:
-    :param repository_name:
-    :param image:
-    :param image_url:
-    :param ecr_session:
-    :return: The scan report
-    :rtype: dict
-    """
+def scan_poll_and_wait(
+    registry,
+    repository_name,
+    image,
+    image_url,
+    ecr_session=None,
+    scan_frequency: str = None,
+    scan_on_push: bool = False,
+):
+    """Function to pull the scans results until no longer in progress"""
     client = ecr_session.client("ecr")
     while True:
         try:
@@ -93,11 +90,17 @@ def scan_poll_and_wait(registry, repository_name, image, image_url, ecr_session=
                 repositoryName=repository_name,
                 imageId=image,
             )
-            if image_scan_r["imageScanStatus"]["status"] == "IN_PROGRESS":
-                LOG.info(f"{image_url} - Scan in progress - waiting 10 seconds")
+            if image_scan_r["imageScanStatus"]["status"] in ["IN_PROGRESS", "PENDING"]:
+                LOG.info(
+                    f"{image_url.image_uri} - Scan in progress - waiting 10 seconds"
+                )
                 sleep(10)
             else:
                 return image_scan_r
+        except client.exceptions.ScanNotFoundException:
+            if scan_frequency and scan_frequency == "CONTINUOUS_SCAN" and scan_on_push:
+                LOG.info(f"{image_url.image_uri} - Pending enhanced scan")
+                sleep(10)
         except client.exceptions.LimitExceededException:
             LOG.warn(f"{image_url} - Exceeding API Calls quota. Waiting 10 seconds")
             sleep(10)
@@ -125,17 +128,44 @@ def wait_for_scan_report(
     if not ecr_session:
         ecr_session = Session()
     findings = {}
+    scan_frequency = None
+    scan_on_push = False
+    try:
+        scanning_config = ecr_session.client(
+            "ecr"
+        ).client.batch_get_repository_scanning_configuration(
+            repositoryNames=[repository_name]
+        )
+        scan_frequency = scanning_config[0]["scanFrequency"]
+        scan_on_push = scanning_config[0]["scanOnPush"]
+    except Exception as error:
+        LOG.debug(error)
     image_scan_r = initial_scan_retrieval(
         registry, repository_name, image, image_url, trigger_scan, ecr_session
     )
     if (
+        image_scan_r is None
+        and not trigger_scan
+        and scan_frequency != "CONTINUOUS_SCAN"
+    ):
+        return findings
+    if (image_scan_r is None and scan_frequency == "CONTINUOUS_SCAN") or (
         image_scan_r
-        and keyisset("imageScanStatus", image_scan_r)
-        and image_scan_r["imageScanStatus"]["status"] == "IN_PROGRESS"
+        and (
+            keyisset("imageScanStatus", image_scan_r)
+            and image_scan_r["imageScanStatus"]["status"] in ["IN_PROGRESS", "PENDING"]
+        )
     ):
         image_scan_r = scan_poll_and_wait(
-            registry, repository_name, image, image_url, ecr_session
+            registry,
+            repository_name,
+            image,
+            image_url,
+            ecr_session,
+            scan_frequency,
+            scan_on_push,
         )
+
     if image_scan_r is None:
         reason = "Failed to retrieve or poll scan report"
         LOG.error(reason)
