@@ -133,7 +133,11 @@ def wait_for_scan_report(
     try:
         scanning_config = ecr_session.client(
             "ecr"
-        ).batch_get_repository_scanning_configuration(repositoryNames=[repository_name])
+        ).batch_get_repository_scanning_configuration(
+            repositoryNames=[repository_name]
+        )[
+            "scanningConfigurations"
+        ]
         scan_frequency = scanning_config[0]["scanFrequency"]
         scan_on_push = scanning_config[0]["scanOnPush"]
     except Exception as error:
@@ -144,7 +148,9 @@ def wait_for_scan_report(
         registry, repository_name, image, image_url, trigger_scan, ecr_session
     )
     LOG.info(
-        f"ECR Repository Scan configuration: {repository_name} - {scan_on_push}/{scan_frequency}"
+        "ECR Repository Scan configuration: {} - (ScanOnPush/scanFrequency): {}/{}".format(
+            repository_name, scan_on_push, scan_frequency
+        )
     )
     if (
         image_scan_r is None
@@ -206,7 +212,7 @@ def define_result(
     security_findings: dict,
     thresholds: dict,
     vulnerability_config: dict,
-) -> tuple[bool, list[str]]:
+) -> tuple[bool, list[str], list[str]]:
     """
     Function to define what to do with findings, if any.
     If VulnerabilitiesScan.Fail is False, then ignore the findings and display only
@@ -219,9 +225,10 @@ def define_result(
     :rtype: bool
     """
     results: list[str] = []
-    ignore: bool = False
+    over_the_limit_results: list[str] = []
+    ignore = keyisset("IgnoreFailure", vulnerability_config)
     if not security_findings:
-        return True, results
+        return True, results, over_the_limit_results
     elif keyisset("FAILED", security_findings):
         LOG.error(
             f"{image_url} - Scan of image failed. - {security_findings['reason']}"
@@ -231,17 +238,20 @@ def define_result(
         )
         if treat_failed_as == "Success":
             LOG.warning("TreatFailedAs set to Success - ignoring scan failure")
-            return True, results
+            return True, results, over_the_limit_results
         else:
-            return False, results
+            return False, results, over_the_limit_results
     else:
-        ignore = keyisset("IgnoreFailure", vulnerability_config)
         for name, limit in thresholds.items():
-            if keyisset(name, security_findings) and security_findings[name] >= limit:
-                results.append(f"{name}: {security_findings[name]}/{limit}")
-    if ignore and results:
-        return True, results
-    return False, results
+            level_limit = set_else_none(name, security_findings)
+            if not level_limit:
+                continue
+            if level_limit > limit:
+                over_the_limit_results.append(f"{name}: {level_limit}/{limit}")
+            results.append(f"{name}: {level_limit}/{limit}")
+    if not ignore and over_the_limit_results:
+        return False, results, over_the_limit_results
+    return True, results, over_the_limit_results
 
 
 def validate_the_image_input(the_image):
@@ -262,8 +272,8 @@ def validate_the_image_input(the_image):
 
 
 def scan_service_image(
-    service, settings, the_image: ServiceImage = None
-) -> tuple[bool, list[str]]:
+    service, settings, the_image: dict = None
+) -> tuple[bool, list[str], list[str]]:
     """
     Function to review the service definition and evaluate scan if properties defined
 
@@ -273,7 +283,7 @@ def scan_service_image(
     """
     region = None
     if validate_input(service):
-        return
+        return True, [], []
     vulnerability_config = service.ecr_config["VulnerabilitiesScan"]
     if keyisset("Thresholds", vulnerability_config):
         thresholds = dict(DEFAULT_THRESHOLDS)
@@ -302,7 +312,6 @@ def scan_service_image(
         image_url=service.image,
         ecr_session=session,
     )
-    results = define_result(
+    return define_result(
         service.image, security_findings, thresholds, vulnerability_config
     )
-    return results
