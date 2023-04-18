@@ -54,7 +54,7 @@ def evaluate_ecr_configs(settings: ComposeXSettings) -> int:
             scan_pass, findings, failed_findings = scan_service_image(
                 service, settings, service_image
             )
-            print(scan_pass, findings, failed_findings)
+            LOG.debug("%s %s %s", scan_pass, findings, failed_findings)
             if scan_pass and not findings:
                 LOG.info(f"{family.name}.{service.name} - ECR Scan Skipped")
                 return 0

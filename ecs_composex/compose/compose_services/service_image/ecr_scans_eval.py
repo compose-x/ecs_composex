@@ -133,7 +133,11 @@ def wait_for_scan_report(
     try:
         scanning_config = ecr_session.client(
             "ecr"
-        ).batch_get_repository_scanning_configuration(repositoryNames=[repository_name])
+        ).batch_get_repository_scanning_configuration(
+            repositoryNames=[repository_name]
+        )[
+            "scanningConfigurations"
+        ]
         scan_frequency = scanning_config[0]["scanFrequency"]
         scan_on_push = scanning_config[0]["scanOnPush"]
     except Exception as error:
@@ -144,7 +148,9 @@ def wait_for_scan_report(
         registry, repository_name, image, image_url, trigger_scan, ecr_session
     )
     LOG.info(
-        f"ECR Repository Scan configuration: {repository_name} - {scan_on_push}/{scan_frequency}"
+        "ECR Repository Scan configuration: {} - (ScanOnPush/scanFrequency): {}/{}".format(
+            repository_name, scan_on_push, scan_frequency
+        )
     )
     if (
         image_scan_r is None
