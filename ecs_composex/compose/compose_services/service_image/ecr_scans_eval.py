@@ -133,9 +133,7 @@ def wait_for_scan_report(
     try:
         scanning_config = ecr_session.client(
             "ecr"
-        ).client.batch_get_repository_scanning_configuration(
-            repositoryNames=[repository_name]
-        )
+        ).batch_get_repository_scanning_configuration(repositoryNames=[repository_name])
         scan_frequency = scanning_config[0]["scanFrequency"]
         scan_on_push = scanning_config[0]["scanOnPush"]
     except Exception as error:
