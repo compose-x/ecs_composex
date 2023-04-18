@@ -55,7 +55,7 @@ def initial_scan_retrieval(
         )
         return image_scan_r
     except client.exceptions.ScanNotFoundException:
-        LOG.error(f"No scan report found for {service_image.image_uri}")
+        LOG.warning(f"No scan report found for {service_image.image_uri}")
         if trigger_scan:
             LOG.info(
                 f"Triggering scan for {service_image.image_uri}, trigger_scan={trigger_scan}"
@@ -139,9 +139,14 @@ def wait_for_scan_report(
         scan_frequency = scanning_config[0]["scanFrequency"]
         scan_on_push = scanning_config[0]["scanOnPush"]
     except Exception as error:
-        LOG.debug(error)
+        LOG.warning(
+            f"{repository_name} - Could not determine scanning configuration - {error}"
+        )
     image_scan_r = initial_scan_retrieval(
         registry, repository_name, image, image_url, trigger_scan, ecr_session
+    )
+    LOG.info(
+        f"ECR Repository Scan configuration: {repository_name} - {scan_on_push}/{scan_frequency}"
     )
     if (
         image_scan_r is None
