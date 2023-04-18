@@ -51,17 +51,26 @@ def evaluate_ecr_configs(settings: ComposeXSettings) -> int:
                 )
                 continue
             service_image = define_service_image(service, settings)
-            scan_results = scan_service_image(service, settings, service_image)
-            if not scan_results:
+            scan_pass, findings, failed_findings = scan_service_image(
+                service, settings, service_image
+            )
+            print(scan_pass, findings, failed_findings)
+            if scan_pass and not findings:
                 LOG.info(f"{family.name}.{service.name} - ECR Scan Skipped")
                 return 0
-            if scan_results[1]:
+            if findings:
                 LOG.warn(
                     "{}.{} - ECR Scan Findings(LEVEL:findings/threshold): {}".format(
-                        family.name, service.name, "|".join(scan_results[1])
+                        family.name, service.name, "|".join(findings)
                     )
                 )
-            if not scan_results[0] and not settings.ignore_ecr_findings:
+                if failed_findings:
+                    LOG.error(
+                        "{}.{} - Findings above thresholds: {}".format(
+                            family.name, service.name, "|".join(failed_findings)
+                        )
+                    )
+            if not scan_pass and not settings.ignore_ecr_findings:
                 LOG.error(f"{family.name}.{service.name} - vulnerabilities found")
                 return 1
     return 0
