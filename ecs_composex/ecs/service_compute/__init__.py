@@ -63,15 +63,18 @@ class ServiceCompute:
             )
         self._ecs_capacity_providers = providers
         if self.family.ecs_service and self.family.ecs_service.ecs_service:
-            setattr(
-                self.family.ecs_service.ecs_service,
-                "CapacityProviderStrategy",
-                If(
-                    DISABLE_CAPACITY_PROVIDERS_CON_T,
-                    NoValue,
-                    providers,
-                ),
-            )
+            self.apply_capacity_providers_to_service(providers)
+
+    def apply_capacity_providers_to_service(self, providers: list):
+        setattr(
+            self.family.ecs_service.ecs_service,
+            "CapacityProviderStrategy",
+            If(
+                DISABLE_CAPACITY_PROVIDERS_CON_T,
+                NoValue,
+                providers,
+            ),
+        )
 
     def set_update_capacity_providers(self) -> None:
         """
@@ -91,6 +94,17 @@ class ServiceCompute:
             for _svc in self.family.ordered_services
             if _svc.launch_type
         ]
+        if not launch_modes:
+            LOG.info(
+                "services.{} - No Launch Type defined. Using default: {}".format(
+                    self.family.name, LAUNCH_TYPE.Default
+                )
+            )
+            LOG.debug(
+                f"{self.family.name} - Using default Launch Type - {LAUNCH_TYPE.Default}"
+            )
+            self.launch_type = LAUNCH_TYPE.Default
+            return
         modes_priority_ordered = ["EXTERNAL", "EC2", "FARGATE"]
         for mode in modes_priority_ordered:
             if mode in launch_modes and self.launch_type != mode:
@@ -101,5 +115,8 @@ class ServiceCompute:
                 break
         else:
             LOG.debug(
-                f"{self.family.name} - Using default Launch Type - {LAUNCH_TYPE.Default}"
+                "{} - Using default Launch Type - {}".format(
+                    self.family.name, LAUNCH_TYPE.Default
+                )
             )
+            self.launch_type = LAUNCH_TYPE.Default

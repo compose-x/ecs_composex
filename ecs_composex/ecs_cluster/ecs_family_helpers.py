@@ -48,7 +48,7 @@ def validate_capacity_providers(family, cluster):
         raise ValueError(
             "Providers",
             cap_names,
-            "not defined in ECS Cluster providers. Valid values are",
+            "not defined in ECS Cluster providers. Available providers are",
             cluster.capacity_providers,
         )
 
