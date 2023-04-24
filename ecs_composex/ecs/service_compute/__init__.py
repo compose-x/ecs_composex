@@ -63,15 +63,18 @@ class ServiceCompute:
             )
         self._ecs_capacity_providers = providers
         if self.family.ecs_service and self.family.ecs_service.ecs_service:
-            setattr(
-                self.family.ecs_service.ecs_service,
-                "CapacityProviderStrategy",
-                If(
-                    DISABLE_CAPACITY_PROVIDERS_CON_T,
-                    NoValue,
-                    providers,
-                ),
-            )
+            self.apply_capacity_providers_to_service(providers)
+
+    def apply_capacity_providers_to_service(self, providers: list):
+        setattr(
+            self.family.ecs_service.ecs_service,
+            "CapacityProviderStrategy",
+            If(
+                DISABLE_CAPACITY_PROVIDERS_CON_T,
+                NoValue,
+                providers,
+            ),
+        )
 
     def set_update_capacity_providers(self) -> None:
         """

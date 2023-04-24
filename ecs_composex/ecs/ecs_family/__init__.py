@@ -455,6 +455,10 @@ class ComposeFamily:
         self.add_containers_images_cfn_parameters()
         self.task_compute.set_task_compute_parameter()
         self.task_compute.unlock_compute_for_main_container()
+        if self.service_compute.ecs_capacity_providers:
+            self.service_compute.apply_capacity_providers_to_service(
+                self.service_compute.ecs_capacity_providers
+            )
 
         set_service_dependency_on_all_iam_policies(self)
         if self.service_compute.launch_type == "EXTERNAL":
