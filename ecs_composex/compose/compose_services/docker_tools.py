@@ -195,5 +195,5 @@ def set_compute_resources(service, deployment):
     service.cpu_amount = (
         max(cpu_resa, cpu_alloc) if (cpu_resa or cpu_alloc) else NoValue
     )
-    if isinstance(service.cpu_amount, int) and service.cpu_amount > 4096:
-        LOG.warning(f"{service.name} - Fargate does not support more than 4 vCPU.")
+    if isinstance(service.cpu_amount, int) and service.cpu_amount > 16384:
+        LOG.warning(f"{service.name} - Fargate does not support more than 16 vCPU.")
