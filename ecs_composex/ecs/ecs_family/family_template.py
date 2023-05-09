@@ -32,8 +32,6 @@ def set_template(family) -> Template:
         ],
     )
     conditions = {
-        ecs_conditions.SERVICE_COUNT_ZERO_CON_T: ecs_conditions.SERVICE_COUNT_ZERO_CON,
-        ecs_conditions.SERVICE_COUNT_ZERO_AND_FARGATE_CON_T: ecs_conditions.SERVICE_COUNT_ZERO_AND_FARGATE_CON,
         ecs_conditions.USE_HOSTNAME_CON_T: ecs_conditions.USE_HOSTNAME_CON,
         ecs_conditions.NOT_USE_HOSTNAME_CON_T: ecs_conditions.NOT_USE_HOSTNAME_CON,
         ecs_conditions.NOT_USE_CLUSTER_SG_CON_T: ecs_conditions.NOT_USE_CLUSTER_SG_CON,

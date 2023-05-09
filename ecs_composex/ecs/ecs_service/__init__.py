@@ -76,19 +76,7 @@ class EcsService:
             LaunchType=family.service_compute.cfn_launch_type,
             CapacityProviderStrategy=NoValue,
             EnableECSManagedTags=True,
-            DesiredCount=If(
-                ecs_conditions.SERVICE_COUNT_ZERO_AND_FARGATE_CON_T,
-                1,
-                If(
-                    ecs_conditions.USE_FARGATE_CON_T,
-                    Ref(ecs_params.SERVICE_COUNT),
-                    If(
-                        ecs_conditions.SERVICE_COUNT_ZERO_CON_T,
-                        NoValue,
-                        Ref(ecs_params.SERVICE_COUNT),
-                    ),
-                ),
-            ),
+            DesiredCount=Ref(ecs_params.SERVICE_COUNT),
             SchedulingStrategy=NoValue,
             PlacementStrategies=define_placement_strategies(),
             NetworkConfiguration=family.service_networking.ecs_network_config,
