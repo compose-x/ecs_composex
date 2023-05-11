@@ -56,7 +56,9 @@ def evaluate_ecr_configs(settings: ComposeXSettings) -> int:
             )
             LOG.debug("%s %s %s", scan_pass, findings, failed_findings)
             if scan_pass and not findings:
-                LOG.info(f"{family.name}.{service.name} - ECR Scan Skipped")
+                LOG.info(
+                    f"{family.name}.{service.name} - ECR Scan Pass (No vulnerabilities found)"
+                )
                 return 0
             if findings:
                 LOG.warn(
