@@ -88,7 +88,7 @@ class FamilyLogging:
         Returns the amount, in MB, of RAM to use for the log router (fluentbit) container
         """
         _mb = (2**10) ** 2
-        _max = 512 * _mb
+        _max = 512
         default = 64
         defined = [
             _config.firelens_advanced["LogDriverBufferLimit"]
@@ -97,14 +97,21 @@ class FamilyLogging:
         ]
         if not defined:
             return default
-        sum_defined = sum(defined)
-        max_defined = max(defined)
-        if max_defined < sum_defined < _max:
-            return sum_defined / _mb
-        elif sum_defined < max_defined < _max:
-            return max_defined / _mb
-        elif sum_defined > _max and max_defined > _max:
-            return _max / _mb
+        sum_defined = int(sum(defined) / _mb)
+        max_defined = int(max(defined) / _mb)
+        if sum_defined > _max:
+            sum_defined = _max
+        if max_defined > _max:
+            max_defined = _max
+        if sum_defined == max_defined and max_defined <= _max:
+            return sum_defined
+        elif sum_defined != max_defined:
+            if max_defined < sum_defined <= _max:
+                return sum_defined
+            elif sum_defined < max_defined <= _max:
+                return max_defined
+            elif sum_defined > _max and max_defined >= _max:
+                return _max
         return default
 
     @property
@@ -157,7 +164,9 @@ class FamilyLogging:
         self.firelens_service = FluentBit(
             FLUENT_BIT_AGENT_NAME,
             render_agent_config(
-                self.family, self.api_health_enabled, self.buffer_limit_mb
+                self.family,
+                self.api_health_enabled,
+                memory_limits=int(self.buffer_limit_mb),
             ),
         )
         self.firelens_service.logging = ServiceLogging(
