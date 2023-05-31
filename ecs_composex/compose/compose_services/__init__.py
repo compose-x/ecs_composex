@@ -372,7 +372,7 @@ class ComposeService:
 
     @property
     def replicas(self):
-        return int(set_else_none("replicas", self.deploy, alt_value=1))
+        return int(set_else_none("replicas", self.deploy, alt_value=1, eval_bool=True))
 
     @replicas.setter
     def replicas(self, value: int):

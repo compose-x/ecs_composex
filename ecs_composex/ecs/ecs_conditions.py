@@ -23,9 +23,6 @@ NOT_USE_CLUSTER_SG_CON = Equals(
 USE_CLUSTER_SG_CON_T = "UseClusterSecurityGroupCondition"
 USE_CLUSTER_SG_CON = Not(Condition(NOT_USE_CLUSTER_SG_CON_T))
 
-SERVICE_COUNT_ZERO_CON_T = "ServiceCountIsZeroCondition"
-SERVICE_COUNT_ZERO_CON = Equals(Ref(ecs_params.SERVICE_COUNT), "0")
-
 USE_EC2_CON_T = "UseEC2LaunchType"
 USE_EC2_CON = Equals(Ref(ecs_params.LAUNCH_TYPE), "EC2")
 
@@ -78,10 +75,6 @@ IPC_FROM_HOST_CON = Equals(Ref(ecs_params.IPC_MODE), "host")
 USE_EC2_OR_EXTERNAL_LT_CON_T = "UseEC2orExternal"
 USE_EC2_OR_EXTERNAL_LT_CON = Or(Condition(USE_EXTERNAL_LT_T), Condition(USE_EC2_CON_T))
 
-SERVICE_COUNT_ZERO_AND_FARGATE_CON_T = "ServiceCountZeroAndFargate"
-SERVICE_COUNT_ZERO_AND_FARGATE_CON = And(
-    Condition(USE_FARGATE_CON_T), Condition(SERVICE_COUNT_ZERO_CON_T)
-)
 
 NOT_USE_HOSTNAME_CON_T = "NotUseMicroserviceHostnameCondition"
 NOT_USE_HOSTNAME_CON = Equals(
