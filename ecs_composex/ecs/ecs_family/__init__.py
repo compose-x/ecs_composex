@@ -19,7 +19,13 @@ from itertools import chain
 from troposphere import AWS_STACK_NAME, GetAtt, If, Join, NoValue
 from troposphere import Output as CfnOutput
 from troposphere import Ref, Region, Tags
-from troposphere.ecs import EphemeralStorage, RuntimePlatform, TaskDefinition
+from troposphere.ecs import (
+    Environment,
+    EphemeralStorage,
+    RuntimePlatform,
+    Secret,
+    TaskDefinition,
+)
 
 from ecs_composex.common.logging import LOG
 from ecs_composex.common.stacks import ComposeXStack
@@ -487,6 +493,7 @@ class ComposeFamily:
         ]
         handle_same_task_services_dependencies(service_configs)
         self.set_add_region_when_external()
+        self.sort_env_vars_alphabetically()
 
     def set_add_region_when_external(self):
         from troposphere.ecs import Environment
@@ -508,6 +515,25 @@ class ComposeFamily:
                 _env.Name for _env in environment if isinstance(_env, Environment)
             ]:
                 environment.append(region_conditional)
+
+    def sort_env_vars_alphabetically(self):
+        for service in self.services:
+            environment = getattr(service.container_definition, "Environment")
+            if not environment:
+                pass
+            original = [_env for _env in environment if isinstance(_env, Environment)]
+            sorted_env = sorted(original, key=lambda x: x.Name)
+            for _env in environment:
+                if not isinstance(_env, Environment):
+                    sorted_env.append(_env)
+            setattr(service.container_definition, "Environment", sorted_env)
+            secrets = getattr(service.container_definition, "Secrets")
+            original_secrets = [_env for _env in secrets if isinstance(_env, Secret)]
+            sorted_secrets = sorted(original_secrets, key=lambda x: x.Name)
+            for _secret in secrets:
+                if not isinstance(_secret, Secret):
+                    sorted_secrets.append(_secret)
+            setattr(service.container_definition, "Secrets", sorted_secrets)
 
     def set_services_to_services_dependencies(self):
         """
