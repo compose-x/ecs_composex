@@ -50,7 +50,7 @@ def render_agent_config(
         "image": "public.ecr.aws/aws-observability/aws-for-firehose_destination.bit:latest",
         "deploy": {
             "resources": {
-                "limits": {"cpus": memory_limits, "memory": f"{memory_limits}M"},
+                "limits": {"cpus": cpu_limits, "memory": f"{memory_limits}M"},
                 "reservations": {"memory": "32M"},
             },
         },
