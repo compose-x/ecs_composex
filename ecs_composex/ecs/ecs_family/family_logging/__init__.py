@@ -115,6 +115,18 @@ class FamilyLogging:
         return default
 
     @property
+    def cpu_limits(self) -> float:
+        default = 0.1
+        defined = [
+            _config.firelens_advanced["SidecarCpuReservation"]
+            for _config in self.services_logging.values()
+            if keyisset("SidecarCpuReservation", _config.firelens_advanced)
+        ]
+        if not defined:
+            return default
+        return max(defined)
+
+    @property
     def grace_period(self):
         default = 30
         defined = [
@@ -167,6 +179,7 @@ class FamilyLogging:
                 self.family,
                 self.api_health_enabled,
                 memory_limits=int(self.buffer_limit_mb),
+                cpu_limits=float(self.cpu_limits),
             ),
         )
         self.firelens_service.logging = ServiceLogging(

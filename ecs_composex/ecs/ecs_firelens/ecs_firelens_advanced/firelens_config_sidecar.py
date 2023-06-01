@@ -35,6 +35,7 @@ def render_config_sidecar_config(
         },
         "labels": {"container_name": "log_router_configuration"},
         "volumes": [f"{volume_name}:{mount_path}"],
+        "x-docker_opts": {"InterpolateWithDigest": True},
     }
     if ssm_parameter:
         config["command"] = [

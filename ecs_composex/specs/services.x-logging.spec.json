@@ -106,6 +106,12 @@
           "default": 67108864,
           "description": "Amount in bytes, of RAM to assign to the FireLens container to cater for BufferLimit."
         },
+        "SidecarCpuReservation": {
+          "type": "number",
+          "minimum": 0.1,
+          "description": "Customizable CPU Limit for the sidecar container.",
+          "default": 0.1
+        },
         "FirelensConfiguration": {
           "$ref": "#/definitions/FirelensConfiguration"
         },

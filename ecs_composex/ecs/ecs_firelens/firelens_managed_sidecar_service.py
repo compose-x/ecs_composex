@@ -28,27 +28,29 @@ FLUENT_BIT_IMAGE_PARAMETER = Parameter(
 )
 
 FLUENT_BIT_AGENT_NAME = "log_router"
-DEFAULT_LIMIT = 64
+DEFAULT_MEMORY_LIMIT = 64
+DEFAULT_CPU_LIMIT = 0.1
 
 
 def render_agent_config(
     family: ComposeFamily,
     api_health_enabled: bool = False,
     enable_prometheus: bool = False,
-    memory_limits: int = DEFAULT_LIMIT,
+    memory_limits: int = DEFAULT_MEMORY_LIMIT,
+    cpu_limits: float = DEFAULT_CPU_LIMIT,
 ) -> dict:
     if memory_limits > 512:
         LOG.error(
             f"{family.name} - FireLens container memory exceeds 512MB. Setting to 512MB"
         )
         memory_limits = 512
-    elif memory_limits < DEFAULT_LIMIT:
-        memory_limits = DEFAULT_LIMIT
+    elif memory_limits < DEFAULT_MEMORY_LIMIT:
+        memory_limits = DEFAULT_MEMORY_LIMIT
     config: dict = {
         "image": "public.ecr.aws/aws-observability/aws-for-firehose_destination.bit:latest",
         "deploy": {
             "resources": {
-                "limits": {"cpus": 0.1, "memory": f"{memory_limits}M"},
+                "limits": {"cpus": cpu_limits, "memory": f"{memory_limits}M"},
                 "reservations": {"memory": "32M"},
             },
         },
