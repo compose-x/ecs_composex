@@ -76,6 +76,69 @@
           "description": "Whether the scaling in should be disabled or not."
         }
       }
+    },
+    "ScheduledActions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/ScheduledAction"
+      }
+    },
+    "ScheduledAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "EndTime": {
+          "type": "string"
+        },
+        "ScalableDimension": {
+          "type": "string"
+        },
+        "ScalableTargetAction": {
+          "type": "object",
+          "additionalProperties": false,
+          "anyOf": [
+            {
+              "required": [
+                "MaxCapacity"
+              ]
+            },
+            {
+              "required": [
+                "MinCapacity"
+              ]
+            }
+          ],
+          "properties": {
+            "MaxCapacity": {
+              "type": "number",
+              "minimum": 0
+            },
+            "MinCapacity": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        },
+        "Schedule": {
+          "type": "string",
+          "pattern": "[\\u0020-\\uD7FF\\uE000-\\uFFFD\\uD800\\uDC00-\\uDBFF\\uDFFF\\r\\n\\t]*"
+        },
+        "ScheduledActionName": {
+          "type": "string",
+          "pattern": "(?!((^[ ]+.*)|(.*([\\u0000-\\u001f]|[\\u007f-\\u009f]|[:/|])+.*)|(.*[ ]+$))).+"
+        },
+        "ServiceNamespace": {
+          "type": "string"
+        },
+        "StartTime": {
+          "type": "string"
+        },
+        "Timezone": {
+          "type": "string",
+          "default": "UTC",
+          "pattern": "[\\u0020-\\uD7FF\\uE000-\\uFFFD\\uD800\\uDC00-\\uDBFF\\uDFFF\\r\\n\\t]*"
+        }
+      }
     }
   }
 }
