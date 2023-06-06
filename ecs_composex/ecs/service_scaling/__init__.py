@@ -55,12 +55,12 @@ class ServiceScaling:
         self.target_scaling = None
         self.scalable_target = None
         self.scaling_policies = []
+        self.scheduled_actions: list = set_else_none("ScheduledActions", configuration)
         self.replicas = max(service.replicas for service in family.services)
         self.defined = False
         if not keyisset("Range", configuration):
             return
         self.defined = True
-        self.scheduled_actions: list = set_else_none("ScheduledActions", configuration)
         if self.replicas != ecs_params.SERVICE_COUNT.Default:
             self.family.stack.Parameters.update(
                 {ecs_params.SERVICE_COUNT.title: self.replicas}
