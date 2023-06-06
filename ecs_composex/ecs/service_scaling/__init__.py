@@ -10,14 +10,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ecs_composex.common.troposphere_tools import add_parameters, add_resource
-
 if TYPE_CHECKING:
     from ecs_composex.ecs.ecs_family import ComposeFamily
 
+from copy import deepcopy
 from json import dumps
 
-from compose_x_common.compose_x_common import keyisset
+from compose_x_common.compose_x_common import keyisset, set_else_none
 from troposphere import (
     AWS_ACCOUNT_ID,
     AWS_PARTITION,
@@ -26,7 +25,14 @@ from troposphere import (
     Sub,
     applicationautoscaling,
 )
+from troposphere_awscommunity_applicationautoscaling_scheduledaction import (
+    ScalableTargetAction,
+    ScheduledAction,
+)
 
+from ecs_composex.common import NONALPHANUM
+from ecs_composex.common.logging import LOG
+from ecs_composex.common.troposphere_tools import add_resource
 from ecs_composex.ecs import ecs_params
 
 from .helpers import define_tracking_target_configuration, merge_family_services_scaling
@@ -54,6 +60,7 @@ class ServiceScaling:
         if not keyisset("Range", configuration):
             return
         self.defined = True
+        self.scheduled_actions: list = set_else_none("ScheduledActions", configuration)
         if self.replicas != ecs_params.SERVICE_COUNT.Default:
             self.family.stack.Parameters.update(
                 {ecs_params.SERVICE_COUNT.title: self.replicas}
@@ -169,3 +176,34 @@ class ServiceScaling:
                     and policy.title not in self.family.template.resources
                 ):
                     add_resource(self.family.template, policy)
+
+    def add_scheduled_actions(self) -> None:
+        """Sets the scheduled actions"""
+        if not self.scalable_target or (
+            self.scalable_target and not self.scheduled_actions
+        ):
+            LOG.debug(f"services.{self.family.name}.x-scaling - No ScheduledActions")
+            return
+        for _count, _action in enumerate(self.scheduled_actions):
+            action = deepcopy(_action)
+            target_capacity = ScalableTargetAction(**action["ScalableTargetAction"])
+            del action["ScalableTargetAction"]
+            action.update(
+                {
+                    "ResourceId": Ref(self.scalable_target),
+                    "ScalableDimension": "ecs:DesiredCount",
+                    "ServiceNamespace": "ecs",
+                }
+            )
+            cfn_action_title = NONALPHANUM.sub("", action["ScheduledActionName"])
+            scheduled_action = add_resource(
+                self.family.template,
+                ScheduledAction(
+                    f"{self.family.logical_name}ScheduledAction{cfn_action_title}",
+                    ScalableTargetAction=target_capacity,
+                    **action,
+                ),
+            )
+            LOG.debug(
+                f"services.{self.family.name} - Added ScheduledAction {scheduled_action.title}"
+            )

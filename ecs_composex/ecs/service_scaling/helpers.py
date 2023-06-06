@@ -270,6 +270,11 @@ def handle_defined_x_aws_autoscaling(
         configs.append(service.x_scaling)
 
 
+def handle_scheduled_actions(config: dict, config_name: str, definition: list) -> None:
+    """Ensures all Scheduled actions defined across the services are unique"""
+    config[config_name] = definition
+
+
 def merge_family_services_scaling(services: list[ComposeService]) -> dict:
     x_scaling = {
         "Range": None,
@@ -285,6 +290,7 @@ def merge_family_services_scaling(services: list[ComposeService]) -> dict:
     valid_keys = [
         ("Range", str, handle_range),
         ("TargetScaling", dict, handle_target_scaling),
+        ("ScheduledActions", list, handle_scheduled_actions),
     ]
     for key in valid_keys:
         for config in x_scaling_configs:

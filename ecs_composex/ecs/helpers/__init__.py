@@ -105,3 +105,4 @@ def set_families_ecs_service(settings: ComposeXSettings):
         family.ecs_service.generate_service_definition(family)
         family.service_scaling.create_scalable_target()
         family.service_scaling.add_target_scaling()
+        family.service_scaling.add_scheduled_actions()

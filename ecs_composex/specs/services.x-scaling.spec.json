@@ -11,6 +11,9 @@
     },
     "TargetScaling": {
       "$ref": "#/definitions/TargetScalingDef"
+    },
+    "ScheduledActions": {
+      "$ref": "#/definitions/ScheduledActions"
     }
   },
   "definitions": {
@@ -90,9 +93,6 @@
         "EndTime": {
           "type": "string"
         },
-        "ScalableDimension": {
-          "type": "string"
-        },
         "ScalableTargetAction": {
           "type": "object",
           "additionalProperties": false,
@@ -120,14 +120,9 @@
           }
         },
         "Schedule": {
-          "type": "string",
-          "pattern": "[\\u0020-\\uD7FF\\uE000-\\uFFFD\\uD800\\uDC00-\\uDBFF\\uDFFF\\r\\n\\t]*"
+          "type": "string"
         },
         "ScheduledActionName": {
-          "type": "string",
-          "pattern": "(?!((^[ ]+.*)|(.*([\\u0000-\\u001f]|[\\u007f-\\u009f]|[:/|])+.*)|(.*[ ]+$))).+"
-        },
-        "ServiceNamespace": {
           "type": "string"
         },
         "StartTime": {
@@ -135,8 +130,7 @@
         },
         "Timezone": {
           "type": "string",
-          "default": "UTC",
-          "pattern": "[\\u0020-\\uD7FF\\uE000-\\uFFFD\\uD800\\uDC00-\\uDBFF\\uDFFF\\r\\n\\t]*"
+          "default": "UTC"
         }
       }
     }
