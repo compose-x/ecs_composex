@@ -179,9 +179,7 @@ class ServiceScaling:
 
     def add_scheduled_actions(self) -> None:
         """Sets the scheduled actions"""
-        if not self.scalable_target or (
-            self.scalable_target and not self.scheduled_actions
-        ):
+        if not self.scalable_target or not self.scheduled_actions:
             LOG.debug(f"services.{self.family.name}.x-scaling - No ScheduledActions")
             return
         for _count, _action in enumerate(self.scheduled_actions):
