@@ -60,7 +60,9 @@ class ServiceScaling:
         if not keyisset("Range", configuration):
             return
         self.defined = True
-        self.scheduled_actions: list = set_else_none("ScheduledActions", configuration)
+        self.scheduled_actions: list = set_else_none(
+            "ScheduledActions", configuration, []
+        )
         if self.replicas != ecs_params.SERVICE_COUNT.Default:
             self.family.stack.Parameters.update(
                 {ecs_params.SERVICE_COUNT.title: self.replicas}
@@ -180,7 +182,7 @@ class ServiceScaling:
     def add_scheduled_actions(self) -> None:
         """Sets the scheduled actions"""
         if not self.scalable_target or (
-            self.scalable_target and not self.scheduled_actions
+            self.scalable_target and not self.scalable_target.scheduled_actions
         ):
             LOG.debug(f"services.{self.family.name}.x-scaling - No ScheduledActions")
             return
