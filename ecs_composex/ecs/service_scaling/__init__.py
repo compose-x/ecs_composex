@@ -189,7 +189,7 @@ class ServiceScaling:
             action.update(
                 {
                     "ResourceId": Ref(self.scalable_target),
-                    "ScalableDimension": "ecs:DesiredCount",
+                    "ScalableDimension": "ecs:service:DesiredCount",
                     "ServiceNamespace": "ecs",
                 }
             )
