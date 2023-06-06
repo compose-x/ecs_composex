@@ -76,6 +76,25 @@ services:
     x-xray: false
     x-scaling:
       Range: "1-4"
+      ScheduledActions:
+        - Timezone: Europe/London
+          Schedule: rate(1h)
+          ScheduledActionName: Scale.Up_EveryHour
+          ScalableTargetAction:
+            MinCapacity: 1
+            MaxCapacity: 2
+        - Timezone: Europe/London
+          Schedule: rate(1h)
+          ScheduledActionName: ScaleDown
+          ScalableTargetAction:
+            MaxCapacity: 2
+            MinCapacity: 2
+
+        - Timezone: Europe/London
+          Schedule: rate(1h)
+          ScheduledActionName: Bump The Max
+          ScalableTargetAction:
+            MaxCapacity: 4
   app02:
     depends_on:
       - app01

@@ -11,6 +11,9 @@
     },
     "TargetScaling": {
       "$ref": "#/definitions/TargetScalingDef"
+    },
+    "ScheduledActions": {
+      "$ref": "#/definitions/ScheduledActions"
     }
   },
   "definitions": {
@@ -74,6 +77,61 @@
           "type": "boolean",
           "default": false,
           "description": "Whether the scaling in should be disabled or not."
+        }
+      }
+    },
+    "ScheduledActions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/ScheduledAction"
+      }
+    },
+    "ScheduledAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "EndTime": {
+          "type": "string"
+        },
+        "ScalableTargetAction": {
+          "type": "object",
+          "additionalProperties": false,
+          "anyOf": [
+            {
+              "required": [
+                "MaxCapacity"
+              ]
+            },
+            {
+              "required": [
+                "MinCapacity"
+              ]
+            }
+          ],
+          "properties": {
+            "MaxCapacity": {
+              "type": "number",
+              "minimum": 0
+            },
+            "MinCapacity": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        },
+        "Schedule": {
+          "type": "string"
+        },
+        "ScheduledActionName": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9-_\\.]+"
+        },
+        "StartTime": {
+          "type": "string"
+        },
+        "Timezone": {
+          "type": "string",
+          "default": "UTC"
         }
       }
     }
