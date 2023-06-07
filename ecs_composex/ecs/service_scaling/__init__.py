@@ -22,6 +22,8 @@ from troposphere import (
     AWS_PARTITION,
     AWS_URL_SUFFIX,
     Ref,
+    Select,
+    Split,
     Sub,
     applicationautoscaling,
 )
@@ -31,6 +33,7 @@ from troposphere_awscommunity_applicationautoscaling_scheduledaction import (
 )
 
 from ecs_composex.common import NONALPHANUM
+from ecs_composex.common.cfn_params import STACK_ID_SHORT
 from ecs_composex.common.logging import LOG
 from ecs_composex.common.troposphere_tools import add_resource
 from ecs_composex.ecs import ecs_params
@@ -186,14 +189,31 @@ class ServiceScaling:
             action = deepcopy(_action)
             target_capacity = ScalableTargetAction(**action["ScalableTargetAction"])
             del action["ScalableTargetAction"]
+            cfn_action_title = NONALPHANUM.sub("", action["ScheduledActionName"])
+            macro_parameters = set_else_none("MacroParameters", action)
+            if macro_parameters:
+                del action["MacroParameters"]
+                if keyisset("AddServiceName", macro_parameters):
+                    action["ScheduledActionName"] = Sub(
+                        f"${{{self.family.ecs_service.ecs_service.title}.Name}}."
+                        + action["ScheduledActionName"]
+                    )
+                elif keyisset("AddRandomId", macro_parameters):
+                    action["ScheduledActionName"] = Sub(
+                        "${STACK_ID_SHORT}" + action["ScheduledActionName"],
+                        STACK_ID_SHORT,
+                    )
             action.update(
                 {
-                    "ResourceId": Ref(self.scalable_target),
-                    "ScalableDimension": "ecs:service:DesiredCount",
-                    "ServiceNamespace": "ecs",
+                    "ResourceId": Select(0, Split("|", Ref(self.scalable_target))),
+                    "ScalableDimension": Select(
+                        1, Split("|", Ref(self.scalable_target))
+                    ),
+                    "ServiceNamespace": Select(
+                        2, Split("|", Ref(self.scalable_target))
+                    ),
                 }
             )
-            cfn_action_title = NONALPHANUM.sub("", action["ScheduledActionName"])
             scheduled_action = add_resource(
                 self.family.template,
                 ScheduledAction(

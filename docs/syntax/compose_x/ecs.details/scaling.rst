@@ -14,10 +14,11 @@ services.x-scaling
     services:
       serviceA:
         x-scaling:
-          Range: "<>"
+          Range: str
+          ScheduledActions: []
           TargetScaling:
-            CpuTarget: <>
-            RamTarget: <>
+            CpuTarget: float
+            RamTarget: float
 
 Range
 =====
@@ -32,6 +33,44 @@ Range, defines the minimum and maximum number of containers you will have runnin
     Range: "1-21"
 
 .. _xscaling_target_scaling_syntax_refernece:
+
+
+ScheduledActions
+==================
+
+The ScheduledActions is a list of ScheduledActions as created and defined by `AwsCommunity::ApplicationAutoscaling::ScheduledAction`_
+allowing to create scheduled autoscaling activities to change the MinCapacity and MaxCapacity of your ECS Service.
+
+This allows for great flexibility and costs savings to ensure you always get all the capacity you need when you need it,
+and rely at the same time on otherwise defined scaling policies.
+
+Example
+--------
+
+In the following example, Monday to Friday, for 1h, we change the scaling max & min.
+
+.. code-block:: yaml
+
+    services:
+      my-service:
+        x-scaling:
+          Range: 1-10
+          ScheduledActions:
+            - Timezone: Europe/London
+              Schedule: cron(45 2 ? * MON-FRIN)
+              ScheduledActionName: Scale.Up
+              ScalableTargetAction:
+                MinCapacity: 2
+                MaxCapacity: 4
+              MacroParameters:
+                AddServiceName: true
+            - Timezone: Europe/London
+              Schedule: cron(45 3 ? * MON-FRIN)
+              ScheduledActionName: Scale.Down
+              ScalableTargetAction:
+                MinCapacity: 1
+                MaxCapacity: 2
+
 
 TargetScaling
 ==============
@@ -103,3 +142,5 @@ Definition
 
 .. literalinclude:: ../../../../ecs_composex/specs/services.x-scaling.spec.json
     :language: json
+
+.. _AwsCommunity::ApplicationAutoscaling::ScheduledAction: https://github.com/aws-cloudformation/community-registry-extensions/tree/main/resources/ApplicationAutoscaling_ScheduledAction

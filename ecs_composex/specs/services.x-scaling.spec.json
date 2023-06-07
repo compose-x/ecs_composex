@@ -90,6 +90,32 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
+        "MacroParameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "oneOf": [
+            {
+              "required": [
+                "AddServiceName"
+              ]
+            },
+            {
+              "required": [
+                "AddRandomId"
+              ]
+            }
+          ],
+          "properties": {
+            "AddServiceName": {
+              "type": "boolean",
+              "description": "Automatically adds the ScheduledActionName to make it unique"
+            },
+            "AddRandomId": {
+              "type": "boolean",
+              "description": "Automatically adds a short ID to the ScheduledActionName to make it unique"
+            }
+          }
+        },
         "EndTime": {
           "type": "string"
         },
