@@ -89,14 +89,8 @@ def validate_tgt_input(dimension, settings):
             f"The Target Group value {dimension.Value} is not set for interpolation. Skipping"
         )
         return
-    elif not (
-        parts
-        or (
-            parts
-            and not parts.group("lb")
-            or not parts.group("svc")
-            or not parts.group("port")
-        )
+    elif parts and (
+        not parts.group("lb") or not parts.group("svc") or not parts.group("port")
     ):
         raise ValueError(
             "The mappings to the Target group is incorrect. Must match pattern",

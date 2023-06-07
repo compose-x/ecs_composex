@@ -32,8 +32,7 @@ Range, defines the minimum and maximum number of containers you will have runnin
     # Example
     Range: "1-21"
 
-.. _xscaling_target_scaling_syntax_refernece:
-
+.. _xscaling_scheduledactions:
 
 ScheduledActions
 ==================
@@ -71,6 +70,7 @@ In the following example, Monday to Friday, for 1h, we change the scaling max & 
                 MinCapacity: 1
                 MaxCapacity: 2
 
+.. _xscaling_target_scaling_syntax_refernece:
 
 TargetScaling
 ==============
