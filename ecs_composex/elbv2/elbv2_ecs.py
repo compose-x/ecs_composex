@@ -555,7 +555,7 @@ def handle_services_association(
     for listener in load_balancer.listeners:
         listener.handle_certificates(settings, res_root_stack)
         listener.handle_cognito_pools(settings, res_root_stack)
-        listener.define_default_actions(template)
+        listener.define_default_actions(load_balancer, template)
 
 
 def elbv2_to_ecs(resources, services_stack, res_root_stack, settings):

@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from ecs_composex.cognito_userpool.cognito_userpool_stack import UserPool
     from ecs_composex.elbv2.elbv2_ecs import ComposeTargetGroup
     from ecs_composex.elbv2.elbv2_stack.elbv2_listener import ComposeListener
+    from ecs_composex.elbv2.elbv2_stack import Elbv2
 
 import re
 from copy import deepcopy

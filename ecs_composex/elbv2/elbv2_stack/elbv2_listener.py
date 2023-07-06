@@ -52,6 +52,7 @@ class ComposeListener(Listener):
         :param ecs_composex.elbv2.elbv2_stack.elbv2.Elbv2 lb:
         :param dict definition:
         """
+        self._lb = lb
         self.definition = deepcopy(definition)
         straight_import_keys = ["Port", "Protocol", "SslPolicy", "AlpnPolicy"]
         listener_kwargs = {
@@ -80,7 +81,11 @@ class ComposeListener(Listener):
     def port(self) -> int:
         return int(self.definition["Port"])
 
-    def define_default_actions(self, template):
+    @property
+    def lb(self) -> Elbv2:
+        return self._lb
+
+    def define_default_actions(self, lb: Elbv2, template):
         """
         If DefaultTarget is set it will set it if not a service, otherwise at the service level.
         If not defined, and there is more than one service, it will fail.
@@ -105,8 +110,13 @@ class ComposeListener(Listener):
                 "If one of the access path is / it will be used as default"
             )
             rules = handle_non_default_services(self)
-            for rule in rules:
-                template.add_resource(rule)
+            if rules and lb.is_alb():
+                for rule in rules:
+                    template.add_resource(rule)
+            else:
+                LOG.warning(
+                    f"{lb.module.res_key}.{lb.name} - LB is NLB. Can't assign Listener Rules."
+                )
         else:
             raise ValueError(f"Failed to determine any default action for {self.title}")
 
