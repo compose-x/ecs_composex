@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .elbv2 import Elbv2
+    from ..elbv2_ecs import MergedTargetGroup
 
 import warnings
 from copy import deepcopy
@@ -103,6 +104,11 @@ class ComposeListener(Listener):
                 f"{self.title} has no defined DefaultActions and only 1 service. Default all to service."
             )
             self.DefaultActions = define_actions(self, self.services[0])
+        elif lb.is_nlb() and self.services and len(self.services) > 1:
+            raise ValueError(
+                f"{lb.module.res_key}.{lb.name} - Listener {self.port}"
+                " - NLB cannot have more than one target per listener."
+            )
         elif not self.default_actions and self.services and len(self.services) > 1:
             LOG.warning(
                 f"{self.title} - "
@@ -217,6 +223,22 @@ class ComposeListener(Listener):
                     f"{lb.module.res_key}.{lb.name} - Listener {self.name}",
                     f"Failed to map {l_service_def['name']} to any family:service:port combination",
                 )
+
+    def map_target_group_to_listener(self, target_group: MergedTargetGroup) -> None:
+        if not self.services:
+            LOG.warning(
+                f"{self.lb.module.res_key}.{self.lb.name} - Listener {self.Port} - No Targets defined."
+            )
+            return
+        for _tgt_group in self.services:
+            _tgt_name = _tgt_group["name"]
+            if _tgt_name == target_group.name:
+                _tgt_group["target_arn"] = Ref(target_group)
+                break
+        else:
+            LOG.debug(
+                f"{self.lb.module.res_key}.{self.lb.name} - Listener {self.Port} - No target group matched."
+            )
 
 
 def validate_duplicate_targets(lb: Elbv2, listener: ComposeListener) -> None:

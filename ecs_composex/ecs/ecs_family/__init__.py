@@ -69,7 +69,7 @@ class ComposeFamily:
     :ivar TaskCompute task_compute: Task Compute manager
     """
 
-    def __init__(self, services, family_name):
+    def __init__(self, services: list[ComposeService], family_name):
         self._compose_services = services
         self.ordered_services = services
         self.managed_sidecars = []
@@ -113,6 +113,10 @@ class ComposeFamily:
     @property
     def services(self) -> list:
         return list(chain(self.managed_sidecars, self.ordered_services))
+
+    @property
+    def services_names(self) -> list[str]:
+        return [_svc.name for _svc in self.ordered_services]
 
     @property
     def want_xray(self) -> bool:

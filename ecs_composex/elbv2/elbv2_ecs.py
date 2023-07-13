@@ -23,9 +23,14 @@ from troposphere.elasticloadbalancingv2 import (
     TargetGroupAttribute,
 )
 
+from ecs_composex.common import NONALPHANUM
 from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.common.logging import LOG
-from ecs_composex.common.troposphere_tools import add_outputs, add_parameters
+from ecs_composex.common.troposphere_tools import (
+    add_outputs,
+    add_parameters,
+    add_resource,
+)
 from ecs_composex.ecs.ecs_params import ELB_GRACE_PERIOD
 from ecs_composex.elbv2.elbv2_params import (
     LB_SG_ID,
@@ -34,6 +39,138 @@ from ecs_composex.elbv2.elbv2_params import (
     TGT_GROUP_NAME,
 )
 from ecs_composex.vpc.vpc_params import VPC_ID
+
+
+class MergedTargetGroup(TargetGroup):
+    """Class for TargetGroup merged among more than one service"""
+
+    def __init__(
+        self,
+        name: str,
+        definition: dict,
+        elbv2: Elbv2,
+        stack: ComposeXStack,
+        port: int,
+        **kwargs,
+    ):
+        self.name = name
+        self._definition = definition
+        self.families: list[ComposeFamily] = []
+        self.stack: ComposeXStack = stack
+        self.port: int = port
+        self.outputs = []
+        self.elbv2: Elbv2 = elbv2
+        self.output_properties = {}
+        self.attributes_outputs = {}
+        super().__init__(NONALPHANUM.sub("", name), **kwargs)
+
+    @property
+    def definition(self) -> dict:
+        return self._definition
+
+    def init_outputs(self):
+        self.output_properties = {
+            TGT_GROUP_ARN: (self.title, self, Ref, None),
+            TGT_GROUP_NAME: (
+                f"{self.title}{TGT_GROUP_NAME.return_value}",
+                self,
+                GetAtt,
+                TGT_GROUP_NAME.return_value,
+                None,
+            ),
+            TGT_FULL_NAME: (
+                f"{self.title}{TGT_FULL_NAME.return_value}",
+                self,
+                GetAtt,
+                TGT_FULL_NAME.return_value,
+                None,
+            ),
+        }
+
+    def generate_outputs(self):
+        for (
+            attribute_parameter,
+            output_definition,
+        ) in self.output_properties.items():
+            output_name = f"{self.title}{attribute_parameter.title}"
+            value = self.set_new_resource_outputs(output_definition)
+            self.attributes_outputs[attribute_parameter] = {
+                "Name": output_name,
+                "Output": Output(output_name, Value=value),
+                "ImportParameter": Parameter(
+                    output_name,
+                    return_value=attribute_parameter.return_value,
+                    Type=attribute_parameter.Type,
+                ),
+                "ImportValue": GetAtt(
+                    self.stack,
+                    f"Outputs.{output_name}",
+                ),
+                "Original": attribute_parameter,
+            }
+        for attr in self.attributes_outputs.values():
+            if keyisset("Output", attr):
+                self.outputs.append(attr["Output"])
+
+    def set_new_resource_outputs(self, output_definition):
+        """
+        Method to define the outputs for the resource when new
+        """
+        if output_definition[2] is Ref:
+            value = Ref(output_definition[1])
+        elif output_definition[2] is GetAtt:
+            value = GetAtt(output_definition[1], output_definition[3])
+        elif output_definition[2] is Sub:
+            value = Sub(output_definition[3])
+        else:
+            raise TypeError(
+                f"3rd argument for {output_definition[0]} must be one of",
+                (Ref, GetAtt, Sub),
+                "Got",
+                output_definition[2],
+            )
+        return value
+
+    def associate_families(self, settings: ComposeXSettings):
+        for _family in self.definition["Services"]:
+            _family_name, _service_name = _family["Name"].split(r":")
+            for family in settings.families.values():
+                if family.name == _family_name:
+                    break
+            else:
+                raise KeyError(
+                    f"{self.elbv2.module.res_key}.{self.elbv2.name} - TargetGroup {self.name} - Service Family {_family_name} is not set in services"
+                )
+            for _f_service in family.services:
+                if _f_service.name == _service_name:
+                    break
+            else:
+                raise KeyError(
+                    f"{self.elbv2.module.res_key}.{self.elbv2.name} - TargetGroup {self.name} - Family {_family_name} does not have a container named {_service_name}"
+                )
+
+            if self not in family.target_groups:
+                family.target_groups.append(self)
+            tgt_parameter = self.attributes_outputs[TGT_GROUP_ARN]["ImportParameter"]
+            add_parameters(family.template, [tgt_parameter])
+            family.stack.Parameters.update(
+                {
+                    tgt_parameter.title: self.attributes_outputs[TGT_GROUP_ARN][
+                        "ImportValue"
+                    ],
+                }
+            )
+            service_lb = EcsLb(
+                ContainerPort=self.Port,
+                ContainerName=_f_service.name,
+                TargetGroupArn=Ref(tgt_parameter),
+            )
+            family.ecs_service.lbs.append(service_lb)
+            add_parameters(family.template, [ELB_GRACE_PERIOD])
+            family.ecs_service.ecs_service.HealthCheckGracePeriodSeconds = Ref(
+                ELB_GRACE_PERIOD
+            )
+            handle_sg_lb_ingress_to_service(self.elbv2, family, self.elbv2.stack)
 
 
 class ComposeTargetGroup(TargetGroup):
@@ -229,7 +366,9 @@ def handle_path_settings(props, path_raw):
         )
 
 
-def set_healthcheck_definition(props, target_definition):
+def set_healthcheck_definition(
+    props, target_definition, healtheck_keyword: str = "healthcheck"
+):
     """
 
     :param dict props:
@@ -255,12 +394,12 @@ def set_healthcheck_definition(props, target_definition):
         r"((?:[\d]{1}|10):(?:[\d]{1}|10):[\d]{1,3}:[\d]{1,3})?:"
         r"?((?:/[\S][^:]+.$)|(?:/[\S]+)(?::)(?:(?:[\d]{1,4},?){1,}.$)|(?:(?:[\d]{1,4},?){1,}.$))?"
     )
-    healthcheck_definition = set_else_none("healthcheck", target_definition)
+    healthcheck_definition = set_else_none(healtheck_keyword, target_definition)
     if isinstance(healthcheck_definition, str):
         groups = healthcheck_reg.search(healthcheck_definition).groups()
         if not groups[0]:
             raise ValueError(
-                "You need to define at least the Protocol and port for healthcheck"
+                f"You need to define at least the Protocol and port for {healtheck_keyword}"
             )
         for count, value in enumerate(required_rex.match(groups[0]).groups()):
             healthcheck_props[required_mapping[count]] = value
@@ -356,15 +495,7 @@ def validate_target_group_attributes(target_attributes, validation, lb_type):
             raise ValueError(f"{attr.Key} value {attr.Value} is not valid.")
 
 
-def import_target_group_attributes(props, target_def, elbv2, service):
-    """
-
-    :param dict props:
-    :param dict target_def:
-    :param ecs_composex.elbv2.elbv2_stack.Elbv2 elbv2:
-    :param ecs_composex.common.compose_services.ComposeService service:
-    :return:
-    """
+def import_target_group_attributes(props, target_def, elbv2):
     attributes_key = "TargetGroupAttributes"
     if not keyisset(attributes_key, target_def):
         props[attributes_key] = [
@@ -444,7 +575,7 @@ def define_service_target_group(
     )
     fix_nlb_settings(props)
     props["TargetType"] = "ip"
-    import_target_group_attributes(props, target_definition, resource, service)
+    import_target_group_attributes(props, target_definition, resource)
     validate_props_and_service_definition(props, service)
     target_group_name = f"Tgt{resource.logical_name}{family.logical_name}{service.logical_name}{props['Port']}"
     target_group = ComposeTargetGroup(
@@ -558,6 +689,53 @@ def handle_services_association(
         listener.define_default_actions(load_balancer, template)
 
 
+def handle_target_groups_association(
+    load_balancer: Elbv2, res_root_stack: ComposeXStack, settings: ComposeXSettings
+) -> None:
+    """
+    Function to create TargetGroups based on the `TargetGroups` defined on the ELB rather than the services.
+    This allows to associate more than one ECS service to a single TargetGroup.
+    """
+    template = res_root_stack.stack_template
+    load_balancer.set_listeners(template)
+    load_balancer.associate_to_template(template)
+    add_outputs(template, load_balancer.outputs)
+    _targets = set_else_none("TargetGroups", load_balancer.definition, {})
+    if not _targets:
+        return
+    for _target_name, _target_def in _targets.items():
+        props = {}
+        set_healthcheck_definition(props, _target_def, "HealthCheck")
+        props["Port"] = _target_def["Port"]
+        props["Protocol"] = _target_def["Protocol"]
+        fix_nlb_settings(props)
+        props["TargetType"] = "ip"
+        import_target_group_attributes(props, _target_def, load_balancer)
+        _tgt_group = MergedTargetGroup(
+            _target_name,
+            _target_def,
+            load_balancer,
+            load_balancer.stack,
+            int(_target_def["Port"]),
+            VpcId=Ref(VPC_ID),
+            **props,
+        )
+        _tgt_group.init_outputs()
+        _tgt_group.generate_outputs()
+        add_resource(template, _tgt_group)
+        add_outputs(template, _tgt_group.outputs)
+        load_balancer.target_groups.append(_tgt_group)
+        _tgt_group.associate_families(settings)
+
+        for listener in load_balancer.listeners:
+            listener.map_target_group_to_listener(_tgt_group)
+
+    for listener in load_balancer.listeners:
+        listener.handle_certificates(settings, res_root_stack)
+        listener.handle_cognito_pools(settings, res_root_stack)
+        listener.define_default_actions(load_balancer, template)
+
+
 def elbv2_to_ecs(resources, services_stack, res_root_stack, settings):
     """
     Entrypoint function to map services, targets, listeners and ACM together
@@ -569,6 +747,14 @@ def elbv2_to_ecs(resources, services_stack, res_root_stack, settings):
     :return:
     """
     for resource_name, resource in resources.items():
-        LOG.info(f"{resource.module.res_key}.{resource_name} - Linking to services")
         if resource.cfn_resource and not resource.mappings:
-            handle_services_association(resource, res_root_stack, settings)
+            if keyisset("TargetGroups", resource.definition):
+                LOG.info(
+                    f"{resource.module.res_key}.{resource_name} - Linking to TargetGroups"
+                )
+                handle_target_groups_association(resource, res_root_stack, settings)
+            else:
+                LOG.info(
+                    f"{resource.module.res_key}.{resource_name} - Linking to Services"
+                )
+                handle_services_association(resource, res_root_stack, settings)

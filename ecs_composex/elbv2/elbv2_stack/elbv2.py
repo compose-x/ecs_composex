@@ -24,6 +24,7 @@ from ecs_composex.common import NONALPHANUM
 from ecs_composex.common.logging import LOG
 from ecs_composex.common.troposphere_tools import ROOT_STACK_NAME
 from ecs_composex.compose.x_resources.network_x_resources import NetworkXResource
+from ecs_composex.elbv2.elbv2_ecs import MergedTargetGroup
 from ecs_composex.elbv2.elbv2_params import (
     LB_ARN,
     LB_DNS_NAME,
@@ -67,6 +68,7 @@ class Elbv2(NetworkXResource):
         self.unique_service_lb = False
         self.lb = None
         self.listeners: list[ComposeListener] = []
+        self.target_groups: list[MergedTargetGroup] = []
         super().__init__(name, definition, module, settings)
         self.validate_services()
         self.sort_props()
@@ -114,7 +116,7 @@ class Elbv2(NetworkXResource):
         validate_listeners_duplicates(self.name, ports)
         for listener_def in listeners:
             targets: list[dict] = set_else_none("Targets", listener_def, [])
-            if targets:
+            if targets and self.services:
                 for target in targets:
                     target_parts = LISTENER_TARGET_RE.match(target["name"])
                     if not target_parts:
