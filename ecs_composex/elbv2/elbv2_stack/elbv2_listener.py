@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .elbv2 import Elbv2
+    from ..elbv2_ecs import MergedTargetGroup
 
 import warnings
 from copy import deepcopy
@@ -52,6 +53,7 @@ class ComposeListener(Listener):
         :param ecs_composex.elbv2.elbv2_stack.elbv2.Elbv2 lb:
         :param dict definition:
         """
+        self._lb = lb
         self.definition = deepcopy(definition)
         straight_import_keys = ["Port", "Protocol", "SslPolicy", "AlpnPolicy"]
         listener_kwargs = {
@@ -77,10 +79,14 @@ class ComposeListener(Listener):
         self.DefaultActions = []
 
     @property
-    def port(self) -> int:
+    def def_port(self) -> int:
         return int(self.definition["Port"])
 
-    def define_default_actions(self, template):
+    @property
+    def lb(self) -> Elbv2:
+        return self._lb
+
+    def define_default_actions(self, lb: Elbv2, template):
         """
         If DefaultTarget is set it will set it if not a service, otherwise at the service level.
         If not defined, and there is more than one service, it will fail.
@@ -98,6 +104,11 @@ class ComposeListener(Listener):
                 f"{self.title} has no defined DefaultActions and only 1 service. Default all to service."
             )
             self.DefaultActions = define_actions(self, self.services[0])
+        elif lb.is_nlb() and self.services and len(self.services) > 1:
+            raise ValueError(
+                f"{lb.module.res_key}.{lb.name} - Listener {self.def_port}"
+                " - NLB cannot have more than one target per listener."
+            )
         elif not self.default_actions and self.services and len(self.services) > 1:
             LOG.warning(
                 f"{self.title} - "
@@ -105,8 +116,13 @@ class ComposeListener(Listener):
                 "If one of the access path is / it will be used as default"
             )
             rules = handle_non_default_services(self)
-            for rule in rules:
-                template.add_resource(rule)
+            if rules and lb.is_alb():
+                for rule in rules:
+                    template.add_resource(rule)
+            else:
+                LOG.warning(
+                    f"{lb.module.res_key}.{lb.name} - LB is NLB. Can't assign Listener Rules."
+                )
         else:
             raise ValueError(f"Failed to determine any default action for {self.title}")
 
@@ -208,6 +224,22 @@ class ComposeListener(Listener):
                     f"Failed to map {l_service_def['name']} to any family:service:port combination",
                 )
 
+    def map_target_group_to_listener(self, target_group: MergedTargetGroup) -> None:
+        if not self.services:
+            LOG.warning(
+                f"{self.lb.module.res_key}.{self.lb.name} - Listener {self.Port} - No Targets defined."
+            )
+            return
+        for _tgt_group in self.services:
+            _tgt_name = _tgt_group["name"]
+            if _tgt_name == target_group.name:
+                _tgt_group["target_arn"] = Ref(target_group)
+                break
+        else:
+            LOG.debug(
+                f"{self.lb.module.res_key}.{self.lb.name} - Listener {self.Port} - No target group matched."
+            )
+
 
 def validate_duplicate_targets(lb: Elbv2, listener: ComposeListener) -> None:
     t_targets = [s["name"] for s in lb.services]
@@ -223,7 +255,7 @@ def validate_duplicate_targets(lb: Elbv2, listener: ComposeListener) -> None:
                 )
             if listener_target["name"] and parts and not parts.group("port"):
                 raise ValueError(
-                    f"{lb.module.res_key}.{lb.name} - Listener {listener.port}"
+                    f"{lb.module.res_key}.{lb.name} - Listener {listener.def_port}"
                     f" - Target service {listener_target['name']} is defined more than once in "
                     "`Services`. You must specify the port with format",
                     LISTENER_TARGET_RE.pattern,

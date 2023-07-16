@@ -21,6 +21,13 @@ from re import compile, sub
 import boto3
 import jsonschema
 import yaml
+
+try:
+    from yaml import Dumper as Dumper
+    from yaml import Loader as Loader
+except ImportError:
+    from yaml import CDumper as Dumper, CLoader as Loader
+
 from botocore.exceptions import ClientError
 from cfn_flip.yaml_dumper import LongCleanDumper
 from compose_x_common.aws import get_account_id, validate_iam_role_arn
@@ -149,7 +156,7 @@ class ComposeXSettings:
         self.networks = []
         self.secrets_mappings = {}
         self.mappings = {}
-        self.families = {}
+        self.families: dict[str, ComposeFamily] = {}
         self.account_id = None
         self.output_dir = self.default_output_dir
         self.format = self.default_format

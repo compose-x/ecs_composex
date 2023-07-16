@@ -40,11 +40,12 @@ def render_agent_config(
     cpu_limits: float = DEFAULT_CPU_LIMIT,
 ) -> dict:
     if memory_limits > 512:
-        LOG.error(
-            f"{family.name} - FireLens container memory exceeds 512MB. Setting to 512MB"
-        )
-        memory_limits = 512
+        LOG.warning(f"{family.name} - FireLens container memory defined exceeds 512MB")
     elif memory_limits < DEFAULT_MEMORY_LIMIT:
+        LOG.warning(
+            "{} - FireLens container memory defined is below the minimum requirement. "
+            "Setting to {}MB".format(family.name, DEFAULT_MEMORY_LIMIT)
+        )
         memory_limits = DEFAULT_MEMORY_LIMIT
     config: dict = {
         "image": "public.ecr.aws/aws-observability/aws-for-firehose_destination.bit:latest",
@@ -70,8 +71,8 @@ def render_agent_config(
             ],
             "interval": "10s",
             "retries": 3,
-            "start_period": "5s",
-            "timeout": "2s",
+            "start_period": "15s",
+            "timeout": "5s",
         },
     }
     if api_health_enabled:
@@ -82,10 +83,10 @@ def render_agent_config(
                         "CMD-SHELL",
                         "curl -sq http://127.0.0.1:2020/api/v1/health  || exit 1",
                     ],
-                    "interval": "10s",
+                    "interval": "15s",
                     "retries": 3,
-                    "start_period": "5s",
-                    "timeout": "2s",
+                    "start_period": "30s",
+                    "timeout": "10s",
                 }
             }
         )

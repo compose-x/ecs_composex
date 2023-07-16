@@ -16,6 +16,7 @@ x-elbv2
         Properties: {}
         MacroParameters: {}
         Listeners: []
+        TargetGroups: {}
         Services: []
         DnsAliases: []
         Settings: {}
@@ -131,6 +132,142 @@ Similar syntax as for ECS Services Ingress, allow you to define Ingress. See the
     Check out the :ref:`lookup_syntax_reference` syntax reference
 
 
+Listeners
+=========
+
+You can define in a very simple way your `Listener definition`_ and cross-reference other resources, here, the services
+and ACM certificates you might be creating.
+
+It has its own set of properties, custom to ECS ComposeX.
+
+The following properties are identical to the original CFN definition.
+
+* `Port <https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-elasticloadbalancingv2-listener.html#cfn-elasticloadbalancingv2-listener-port>`_
+* `Protocol <https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-elasticloadbalancingv2-listener.html#cfn-elasticloadbalancingv2-listener-protocol>`_
+* `SslPolicy <https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-elasticloadbalancingv2-listener.html#cfn-elasticloadbalancingv2-listener-sslpolicy>`_
+* `Certificates <https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-elasticloadbalancingv2-listener.html#cfn-elasticloadbalancingv2-listener-certificates>`_
+
+`JSON Schema definition <https://github.com/compose-x/ecs_composex_specs/blob/main/ecs_composex_specs/x-elbv2.spec.json#L82>`__
+
+.. hint::
+
+    For certificates, you can also use **x-acm** to refer to an ACM certificate you are creating with this stack.
+    It will automatically import the Certificate ARN and map it once created.
+
+.. hint::
+
+    You can re-use the same ACM certificate defined in x-acm for multiple listeners. Make sure to have all the Alt. Subjects you need!
+
+.. warning::
+
+    The certificate ARN must be valid when set, however, we are not checking that it actually exists.(yet)
+
+
+Listener Targets
+------------------
+
+List of targets to send the requests to. These are equivalent to ELBv2::TargetGroup
+
+.. code-block:: yaml
+
+    name: <service_name> ie. app03:app03
+    access: <domain name and or path> ie. domain.net/path
+    cognito_auth: AuthenticateCognitoConfig
+
+
+This represents the targets and simultaneously the Listener Rules to apply so that you can point to multiple services
+at once and implement these rules.
+
+name
+^^^^^^^
+
+The name of the family and service in that family to send the requests to.
+
+
+access
+^^^^^^^^^
+
+Allows you to define the conditions based on the path or domain name (or combination of both) that should be in place
+to forward requests.
+
+If you only define the domain name, any path in that domain will be what's matched.
+
+AuthenticateCognitoConfig
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Defines the `AuthenticateCognitoConfig`_ requirement condition / action.
+
+
+AuthenticateOidcConfig
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Similar to `AuthenticateCognitoConfig`_ but for OIDC providers. This allows to respect all the `AuthenticateOidcConfig`_
+Properties as per CFN definition.
+
+.. tip::
+
+    We highly recommend that you store the OIDC details into a secret in secrets manager!
+
+.. hint::
+
+    For both AuthenticateCognitoConfig and AuthenticateOidcConfig, the rules defined in `access` will be set to come **after**
+    the authenticate action.
+
+TargetGroups
+================
+
+Added in 0.23.16+
+
+This allows you to create singular Target Groups, in the similar way to `Services`_. The differences are, with `Services_`:
+
+* you are creating 1 Target Group per family:container:port combination
+* you cannot have more than one service in ECS registering to that Target Group.
+
+We've tried to make the syntax friendlier than with `Services`_
+Let's take the below example, where we have 3 services, placed logically in different zones. We still want these
+services to have the same NLB route the traffic to each of them. For that, we define a target group, for example, `all-gateways`.
+The name is totally arbitrary, but must be unique.
+
+We then simply list the services that we want to attach/assign to that target group. We give the family:container combination,
+and then which port from that combination should be used to send traffic to.
+
+Apart from that, the attributes set within a target group are the same as the CFN `Target Group Attributes`_
+
+.. code-block:: yaml
+
+    x-elbv2:
+      internal-ingress:
+        TargetGroups:
+          all-gateways:
+            Port: 6969
+            Protocol: TCP
+            HealthCheck:
+              HealthCheckIntervalSeconds: 17
+              HealthCheckProtocol: TCP
+              HealthCheckTimeoutSeconds: 10
+              HealthyThresholdCount: 2
+              UnhealthyThresholdCount: 2
+            TargetGroupAttributes:
+              deregistration_delay.timeout_seconds: "30"
+              proxy_protocol_v2.enabled: "false"
+              preserve_client_ip.enabled: "false"
+            Services:
+              - Name: proxy-internal-az3:conduktor-proxy-internal-az3
+                Port: 6969
+              - Name: proxy-internal-az2:conduktor-proxy-internal-az2
+                Port: 6969
+              - Name: proxy-internal-az1:conduktor-proxy-internal-az1
+                Port: 6969
+
+.. tip::
+
+    Because of of the HealthCheck port, we recommend to use the same port on each container.
+
+.. hint::
+
+    ECS Compose-X will still try to automatically fix the properties of your target group just as it did before.
+
+
 Services
 ========
 
@@ -227,7 +364,7 @@ or as a mapping, using the same healthcheck as the ones defined in  `Target Grou
     ECS Compose-X will log a warning when it detects an invalid value, and corrects it to the valid one.
 
 TargetGroupAttributes
-======================
+----------------------
 
 In order to set Target Group specific settings, you can use `CFN TargetGroupAttributes`_ properties.
 
@@ -318,88 +455,6 @@ into a map/dict structure and compose-x will automatically convert it to the CFN
     .. seealso::
 
         `Target Group Attributes`_
-
-
-Listeners
-=========
-
-You can define in a very simple way your `Listener definition`_ and cross-reference other resources, here, the services
-and ACM certificates you might be creating.
-
-It has its own set of properties, custom to ECS ComposeX.
-
-The following properties are identical to the original CFN definition.
-
-* `Port <https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-elasticloadbalancingv2-listener.html#cfn-elasticloadbalancingv2-listener-port>`_
-* `Protocol <https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-elasticloadbalancingv2-listener.html#cfn-elasticloadbalancingv2-listener-protocol>`_
-* `SslPolicy <https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-elasticloadbalancingv2-listener.html#cfn-elasticloadbalancingv2-listener-sslpolicy>`_
-* `Certificates <https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-elasticloadbalancingv2-listener.html#cfn-elasticloadbalancingv2-listener-certificates>`_
-
-`JSON Schema definition <https://github.com/compose-x/ecs_composex_specs/blob/main/ecs_composex_specs/x-elbv2.spec.json#L82>`__
-
-.. hint::
-
-    For certificates, you can also use **x-acm** to refer to an ACM certificate you are creating with this stack.
-    It will automatically import the Certificate ARN and map it once created.
-
-.. hint::
-
-    You can re-use the same ACM certificate defined in x-acm for multiple listeners. Make sure to have all the Alt. Subjects you need!
-
-.. warning::
-
-    The certificate ARN must be valid when set, however, we are not checking that it actually exists.(yet)
-
-
-Listener Targets
-=================
-
-List of targets to send the requests to. These are equivalent to ELBv2::TargetGroup
-
-.. code-block:: yaml
-
-    name: <service_name> ie. app03:app03
-    access: <domain name and or path> ie. domain.net/path
-    cognito_auth: AuthenticateCognitoConfig
-
-
-This represents the targets and simultaneously the Listener Rules to apply so that you can point to multiple services
-at once and implement these rules.
-
-name
------
-
-The name of the family and service in that family to send the requests to.
-
-
-access
-------
-
-Allows you to define the conditions based on the path or domain name (or combination of both) that should be in place
-to forward requests.
-
-If you only define the domain name, any path in that domain will be what's matched.
-
-AuthenticateCognitoConfig
----------------------------
-
-Defines the `AuthenticateCognitoConfig`_ requirement condition / action.
-
-
-AuthenticateOidcConfig
------------------------
-
-Similar to `AuthenticateCognitoConfig`_ but for OIDC providers. This allows to respect all the `AuthenticateOidcConfig`_
-Properties as per CFN definition.
-
-.. tip::
-
-    We highly recommend that you store the OIDC details into a secret in secrets manager!
-
-.. hint::
-
-    For both AuthenticateCognitoConfig and AuthenticateOidcConfig, the rules defined in `access` will be set to come **after**
-    the authenticate action.
 
 
 Examples

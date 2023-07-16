@@ -33,6 +33,7 @@ Feature: ecs_composex.elbv2
             | use-cases/blog.features.yml | use-cases/elbv2/create_only_with_oidc.yml             |
             | use-cases/blog.features.yml | use-cases/elbv2/create_only_with_record.yml           |
             | use-cases/blog.features.yml | use-cases/elbv2/create_only_with_alarms.yml           |
+            | use-cases/blog.features.yml | use-cases/elbv2/create_only_target_groups.yml         |
 #
 #    @elbv2 @alarms
 #    Scenario Outline: ELBv2 with alarms mis-configured

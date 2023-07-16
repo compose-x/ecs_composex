@@ -4,6 +4,18 @@
   "type": "object",
   "title": "x-elbv2",
   "description": "The specifications of x-elbv2 in ComposeX",
+  "oneOf": [
+    {
+      "required": [
+        "Services"
+      ]
+    },
+    {
+      "required": [
+        "TargetGroups"
+      ]
+    }
+  ],
   "properties": {
     "Properties": {
       "type": "object"
@@ -27,6 +39,87 @@
       "type": "array",
       "items": {
         "$ref": "#/definitions/TargetDef"
+      }
+    },
+    "TargetGroups": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Target groups, uniquely identified",
+      "patternProperties": {
+        "^[a-zA-Z0-9\\-._]+$": {
+          "type": "object",
+          "required": [
+            "Port",
+            "Protocol",
+            "Services",
+            "HealthCheck"
+          ],
+          "description": "Defines a target group that encompasses one or several services.",
+          "properties": {
+            "Protocol": {
+              "type": "string"
+            },
+            "Port": {
+              "type": "number",
+              "minimum": 1,
+              "maximum": 65535
+            },
+            "Services": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "properties": {
+                  "Name": {
+                    "type": "string",
+                    "description": "Family:Container definition"
+                  },
+                  "Port": {
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 65535
+                  }
+                }
+              }
+            },
+            "HealthCheck": {
+              "$ref": "#/definitions/TargetGroupHealthCheckDef"
+            },
+            "TargetGroupAttributes": {
+              "$ref": "#/definitions/TargetGroupAttributeDef"
+            },
+            "Tags": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "description": "Shortcut definition of key/value tags",
+                  "patternProperties": {
+                    "^[a-zA-Z0-9._]+$": {
+                      "type": "string"
+                    }
+                  }
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "description": "Classic CFN Key/Value object for a Tag",
+                    "additionalProperties": false,
+                    "properties": {
+                      "Key": {
+                        "type": "string"
+                      },
+                      "Value": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
       }
     },
     "Settings": {
@@ -90,105 +183,111 @@
           "$ref": "#/definitions/Port"
         },
         "healthcheck": {
-          "oneOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "object",
-              "description": "Allows to define HealthCheck properties as in https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-elasticloadbalancingv2-targetgroup.html",
-              "additionalProperties": false,
-              "properties": {
-                "HealthCheckEnabled": {
-                  "type": [
-                    "string",
-                    "boolean"
-                  ]
-                },
-                "HealthCheckIntervalSeconds": {
-                  "type": "integer",
-                  "minimum": 1
-                },
-                "HealthCheckPath": {
-                  "type": "string"
-                },
-                "HealthCheckPort": {
-                  "type": "number",
-                  "minimum": 1,
-                  "maximum": 65535
-                },
-                "HealthCheckProtocol": {
-                  "type": "string",
-                  "enum": [
-                    "HTTP",
-                    "HTTPS",
-                    "TCP",
-                    "UDP",
-                    "TLS",
-                    "TCP_UDP"
-                  ]
-                },
-                "HealthCheckTimeoutSeconds": {
-                  "type": "integer",
-                  "minimum": 1
-                },
-                "HealthyThresholdCount": {
-                  "type": "integer",
-                  "minimum": 1
-                },
-                "UnhealthyThresholdCount": {
-                  "type": "integer",
-                  "minimum": 1
-                },
-                "Matcher": {
-                  "type": "object",
-                  "oneOf": [
-                    {
-                      "required": [
-                        "HttpCode"
-                      ]
-                    },
-                    {
-                      "required": [
-                        "GrpcCode"
-                      ]
-                    }
-                  ],
-                  "additionalProperties": false,
-                  "properties": {
-                    "GrpcCode": {
-                      "type": "string"
-                    },
-                    "HttpCode": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          ]
+          "$ref": "#/definitions/TargetGroupHealthCheckDef"
         },
         "TargetGroupAttributes": {
-          "oneOf": [
-            {
-              "type": "array",
-              "description": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-elasticloadbalancingv2-targetgroup.html",
-              "items": {
-                "$ref": "#/definitions/TargetGroupAttribute"
-              }
+          "$ref": "#/definitions/TargetGroupAttributeDef"
+        }
+      }
+    },
+    "TargetGroupHealthCheckDef": {
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "description": "Allows to define HealthCheck properties as in https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-elasticloadbalancingv2-targetgroup.html",
+          "additionalProperties": false,
+          "properties": {
+            "HealthCheckEnabled": {
+              "type": [
+                "string",
+                "boolean"
+              ]
             },
-            {
+            "HealthCheckIntervalSeconds": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "HealthCheckPath": {
+              "type": "string"
+            },
+            "HealthCheckPort": {
+              "type": "number",
+              "minimum": 1,
+              "maximum": 65535
+            },
+            "HealthCheckProtocol": {
+              "type": "string",
+              "enum": [
+                "HTTP",
+                "HTTPS",
+                "TCP",
+                "UDP",
+                "TLS",
+                "TCP_UDP"
+              ]
+            },
+            "HealthCheckTimeoutSeconds": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "HealthyThresholdCount": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "UnhealthyThresholdCount": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "Matcher": {
               "type": "object",
+              "oneOf": [
+                {
+                  "required": [
+                    "HttpCode"
+                  ]
+                },
+                {
+                  "required": [
+                    "GrpcCode"
+                  ]
+                }
+              ],
               "additionalProperties": false,
-              "patternProperties": {
-                "^[a-zA-Z0-9._]+$": {
+              "properties": {
+                "GrpcCode": {
+                  "type": "string"
+                },
+                "HttpCode": {
                   "type": "string"
                 }
               }
             }
-          ]
+          }
         }
-      }
+      ]
+    },
+    "TargetGroupAttributeDef": {
+      "oneOf": [
+        {
+          "type": "array",
+          "description": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-elasticloadbalancingv2-targetgroup.html",
+          "items": {
+            "$ref": "#/definitions/TargetGroupAttribute"
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "patternProperties": {
+            "^[a-zA-Z0-9._]+$": {
+              "type": "string"
+            }
+          }
+        }
+      ]
     },
     "TargetGroupAttribute": {
       "type": "object",
