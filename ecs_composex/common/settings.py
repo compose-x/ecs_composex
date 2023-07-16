@@ -39,12 +39,6 @@ from ecs_composex.compose.compose_secrets import ComposeSecret
 from ecs_composex.compose.compose_services import ComposeService
 from ecs_composex.compose.compose_volumes import ComposeVolume
 from ecs_composex.compose.x_resources import XResource
-from ecs_composex.compose.x_resources.api_x_resources import ApiXResource
-from ecs_composex.compose.x_resources.environment_x_resources import (
-    AwsEnvironmentResource,
-)
-from ecs_composex.compose.x_resources.network_x_resources import NetworkXResource
-from ecs_composex.compose.x_resources.services_resources import ServicesXResource
 from ecs_composex.ecs.ecs_family import ComposeFamily
 from ecs_composex.iam import ROLE_ARN_ARG
 from ecs_composex.utils.init_ecs import set_ecs_settings

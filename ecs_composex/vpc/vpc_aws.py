@@ -38,7 +38,7 @@ def delete_subnet_from_settings(subnets, subnet_key, vpc_settings):
 
 
 def validate_subnets_belong_with_vpc(
-    vpc_settings: dict, subnet_keys: list[str], session: Session = None
+    vpc_settings: dict, subnet_keys: list, session: Session = None
 ) -> None:
     """
     Function to ensure all subnets belong to the identified VPC
