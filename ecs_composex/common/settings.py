@@ -39,12 +39,6 @@ from ecs_composex.compose.compose_secrets import ComposeSecret
 from ecs_composex.compose.compose_services import ComposeService
 from ecs_composex.compose.compose_volumes import ComposeVolume
 from ecs_composex.compose.x_resources import XResource
-from ecs_composex.compose.x_resources.api_x_resources import ApiXResource
-from ecs_composex.compose.x_resources.environment_x_resources import (
-    AwsEnvironmentResource,
-)
-from ecs_composex.compose.x_resources.network_x_resources import NetworkXResource
-from ecs_composex.compose.x_resources.services_resources import ServicesXResource
 from ecs_composex.ecs.ecs_family import ComposeFamily
 from ecs_composex.iam import ROLE_ARN_ARG
 from ecs_composex.utils.init_ecs import set_ecs_settings
@@ -144,6 +138,7 @@ class ComposeXSettings:
             if keyisset(self.region_arg, kwargs)
             else self.session.region_name
         )
+        self.region_mappings = self.import_regional_mapping()
 
         self.bucket_name = (
             None if not keyisset(self.bucket_arg, kwargs) else kwargs[self.bucket_arg]
@@ -600,6 +595,11 @@ class ComposeXSettings:
                     kwargs[ROLE_ARN_ARG],
                     session_name=f"ComposeXSettings@{kwargs[self.command_arg]}",
                 )
+
+    def import_regional_mapping(self) -> list[dict]:
+        return self.session.client("ec2").describe_availability_zones()[
+            "AvailabilityZones"
+        ]
 
     def set_output_settings(self, kwargs):
         """
