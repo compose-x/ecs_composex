@@ -79,7 +79,7 @@ class ComposeListener(Listener):
         self.DefaultActions = []
 
     @property
-    def port(self) -> int:
+    def def_port(self) -> int:
         return int(self.definition["Port"])
 
     @property
@@ -106,7 +106,7 @@ class ComposeListener(Listener):
             self.DefaultActions = define_actions(self, self.services[0])
         elif lb.is_nlb() and self.services and len(self.services) > 1:
             raise ValueError(
-                f"{lb.module.res_key}.{lb.name} - Listener {self.port}"
+                f"{lb.module.res_key}.{lb.name} - Listener {self.def_port}"
                 " - NLB cannot have more than one target per listener."
             )
         elif not self.default_actions and self.services and len(self.services) > 1:
@@ -255,7 +255,7 @@ def validate_duplicate_targets(lb: Elbv2, listener: ComposeListener) -> None:
                 )
             if listener_target["name"] and parts and not parts.group("port"):
                 raise ValueError(
-                    f"{lb.module.res_key}.{lb.name} - Listener {listener.port}"
+                    f"{lb.module.res_key}.{lb.name} - Listener {listener.def_port}"
                     f" - Target service {listener_target['name']} is defined more than once in "
                     "`Services`. You must specify the port with format",
                     LISTENER_TARGET_RE.pattern,

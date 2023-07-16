@@ -57,7 +57,6 @@ class MergedTargetGroup(TargetGroup):
         self._definition = definition
         self.families: list[ComposeFamily] = []
         self.stack: ComposeXStack = stack
-        self.port: int = port
         self.outputs = []
         self.elbv2: Elbv2 = elbv2
         self.output_properties = {}
