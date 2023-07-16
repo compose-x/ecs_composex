@@ -144,6 +144,7 @@ class ComposeXSettings:
             if keyisset(self.region_arg, kwargs)
             else self.session.region_name
         )
+        self.region_mappings = self.import_regional_mapping()
 
         self.bucket_name = (
             None if not keyisset(self.bucket_arg, kwargs) else kwargs[self.bucket_arg]
@@ -600,6 +601,11 @@ class ComposeXSettings:
                     kwargs[ROLE_ARN_ARG],
                     session_name=f"ComposeXSettings@{kwargs[self.command_arg]}",
                 )
+
+    def import_regional_mapping(self) -> list[dict]:
+        return self.session.client("ec2").describe_availability_zones()[
+            "AvailabilityZones"
+        ]
 
     def set_output_settings(self, kwargs):
         """

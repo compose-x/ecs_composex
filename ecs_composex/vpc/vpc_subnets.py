@@ -76,6 +76,7 @@ def add_storage_subnets(template, vpc, az_index, layers):
                     f"${{STACK_NAME}}-Storage-{index}",
                     STACK_NAME=define_stack_name(template),
                 ),
+                AvailabilityZone=Sub(f"{{AWS::Region}}{index}"),
             )
             + Tags({f"vpc{DELIM}usage": "storage", f"vpc{DELIM}vpc-id": Ref(vpc)}),
             Metadata=metadata,
@@ -148,6 +149,7 @@ def add_public_subnets(
                     f"${{STACK_NAME}}-Public-{index}",
                     STACK_NAME=define_stack_name(template),
                 ),
+                AvailabilityZone=Sub(f"{{AWS::Region}}{index}"),
             )
             + Tags({f"vpc{DELIM}usage": "public", f"vpc{DELIM}vpc-id": Ref(vpc)}),
             Metadata=metadata,
@@ -160,6 +162,7 @@ def add_public_subnets(
                 AllocationId=GetAtt(eip, "AllocationId"),
                 SubnetId=Ref(subnet),
                 Metadata=metadata,
+                Tags=Tags(AvailabilityZone=Sub(f"{{AWS::Region}}{index}")),
             )
             nats.append(nat)
         SubnetRouteTableAssociation(
@@ -261,6 +264,7 @@ def add_apps_subnets(template, vpc, az_index, layers, nats, endpoints=None):
                     f"${{STACK_NAME}}-App-{index}",
                     STACK_NAME=define_stack_name(template),
                 ),
+                AvailabilityZone=Sub(f"{{AWS::Region}}{index}"),
             )
             + Tags(
                 {
@@ -318,7 +322,7 @@ def add_apps_subnets(template, vpc, az_index, layers, nats, endpoints=None):
             ],
         )
         for service in endpoints["AwsServices"]:
-            if service["service"] == "s3":
+            if service["service"] in ["s3", "dynamodb"]:
                 add_gateway_endpoint(service, rtbs, template)
             else:
                 add_interface_endpoint(sg_endpoints, service, subnets, template)

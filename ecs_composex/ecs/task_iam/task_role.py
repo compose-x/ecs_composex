@@ -9,7 +9,8 @@ if TYPE_CHECKING:
     from ecs_composex.ecs.ecs_family import ComposeFamily
 
 from compose_x_common.compose_x_common import keyisset
-from troposphere import GetAtt, Output, Ref, Sub
+from troposphere import GetAtt, Output, Ref, Region, Sub
+from troposphere.iam import Policy as InlinePolicy
 from troposphere.iam import Role as IamRole
 
 from ecs_composex.common.cfn_params import Parameter
@@ -153,7 +154,28 @@ class EcsRole:
                     f"TaskRole - {self.family.logical_name} in ${{{CLUSTER_NAME.title}}}"
                 ),
                 ManagedPolicyArns=[],
-                Policies=[],
+                Policies=[
+                    InlinePolicy(
+                        PolicyName="EC2BasicDescribe",
+                        PolicyDocument={
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Sid": "GrantVpcSubnetsDescribeAccess",
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "ec2:DescribeVpcs",
+                                        "ec2:DescribeSubnets",
+                                    ],
+                                    "Resource": ["*"],
+                                    "Condition": {
+                                        "StringEquals": {"ec2:Region": Region}
+                                    },
+                                }
+                            ],
+                        },
+                    )
+                ],
             )
 
     def set_new_resource_outputs(self, output_definition):

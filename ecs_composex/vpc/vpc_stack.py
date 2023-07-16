@@ -9,6 +9,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from troposphere import Template
+    from boto3.session import Session
     from ecs_composex.common.settings import ComposeXSettings
     from ecs_composex.mods_manager import XResourceModule
 
@@ -91,6 +93,7 @@ class Vpc(AwsEnvironmentResource):
         self.logging = None
         self.layers = None
         self.azs = {}
+        self.zone_ids: dict = {}
         super().__init__(name, definition, module, settings)
 
     def storage_subnets_count(self) -> int:
@@ -103,23 +106,18 @@ class Vpc(AwsEnvironmentResource):
                 f"VPC is not set. Cannot determine the count for {STORAGE_SUBNETS.title}"
             )
 
-    def create_vpc(self, template, settings):
-        """
-        Creates a new VPC from Properties (or from defaults)
-
-        :param troposhere.Template template:
-        :param ecs_composex.common.settings.ComposeXSettings settings:
-        """
+    def create_vpc(self, template: Template, settings: ComposeXSettings) -> None:
+        """Creates a new VPC from Properties (or from defaults)"""
         self.endpoints = set_else_none("Endpoints", self.properties, [])
         self.vpc_cidr = set_else_none(
             VPC_CIDR.title, self.properties, self.default_ipv4_cidr
         )
+        region_account_zones = settings.session.client(
+            "ec2"
+        ).describe_availability_zones()
         curated_azs = []
         current_region_azs = [
-            zone["ZoneName"]
-            for zone in settings.session.client("ec2").describe_availability_zones()[
-                "AvailabilityZones"
-            ][:2]
+            zone["ZoneName"] for zone in region_account_zones["AvailabilityZones"][:2]
         ]
         for az in current_region_azs:
             if isinstance(az, dict):
@@ -169,13 +167,8 @@ class Vpc(AwsEnvironmentResource):
         self.subnets_parameters.append(PUBLIC_SUBNETS)
         self.subnets_parameters.append(STORAGE_SUBNETS)
 
-    def lookup_vpc(self, settings):
-        """
-        Method to set VPC settings from x-vpc
-
-        :return: vpc_settings
-        :rtype: dict
-        """
+    def lookup_vpc(self) -> None:
+        """Method to set VPC settings from x-vpc"""
         vpc_settings = lookup_x_vpc_settings(self)
         self.create_vpc_mappings(vpc_settings)
         LOG.info(f"{RES_KEY} - Found VPC - {self.mappings[VPC_ID.title][VPC_ID.title]}")
@@ -214,11 +207,8 @@ class Vpc(AwsEnvironmentResource):
             else None,
         )
 
-    def set_azs_from_api(self):
-        """
-        Method to set the AWS Azs based on DescribeAvailabilityZones
-        :return:
-        """
+    def set_azs_from_api(self) -> None:
+        """Method to set the AWS Azs based on DescribeAvailabilityZones"""
         try:
             self.aws_azs = get_region_azs(self.lookup_session)
         except ClientError as error:
@@ -231,14 +221,8 @@ class Vpc(AwsEnvironmentResource):
             else:
                 LOG.error(error)
 
-    def set_azs_from_vpc_import(self, subnets, session=None):
-        """
-        Function to get the list of AZs for a given set of subnets
-
-        :param dict subnets:
-        :param session: The Session used to find the EC2 subnets (useful for lookup).
-        :return:
-        """
+    def set_azs_from_vpc_import(self, subnets: dict, session: Session = None) -> None:
+        """Function to get the list of AZs for a given set of subnets"""
         if session is None:
             client = self.lookup_session.client("ec2")
         else:
@@ -259,12 +243,15 @@ class Vpc(AwsEnvironmentResource):
                     "Subnets"
                 ]
                 azs = [subnet["AvailabilityZone"] for subnet in subnets_r]
+                zone_ids = [subnet["AvailabilityZoneId"] for subnet in subnets_r]
                 self.mappings[subnet_name]["Azs"] = azs
+                self.mappings[subnet_name]["ZoneIds"] = zone_ids
                 self.azs[subnets_param] = azs
+                self.zone_ids[subnets_param] = zone_ids
             except ClientError:
                 LOG.warning("Could not define the AZs based on the imported subnets")
 
-    def init_outputs(self):
+    def init_outputs(self) -> None:
         """
         Initialize output properties to pass on to the other stacks that need these values
         """
@@ -308,12 +295,11 @@ class Vpc(AwsEnvironmentResource):
             ),
         }
 
-    def handle_x_dependencies(self, settings, root_stack):
+    def handle_x_dependencies(
+        self, settings: ComposeXSettings, root_stack: ComposeXStack
+    ) -> None:
         """
         Function to have x-vpc update resources that have the x-vpc value where VpcID should be.
-
-        :param ecs_composex.common.settings.ComposeXSettings settings: the execution settings
-        :param ecs_composex.common.stacks.ComposeXStack root_stack: unused today
         """
         for resource in settings.get_x_resources(include_mappings=False):
             if not resource.cfn_resource:
@@ -381,7 +367,7 @@ class XStack(ComposeXStack):
                 "vpc", settings.compose_content[module.res_key], module, settings
             )
             if self.vpc_resource.lookup:
-                self.vpc_resource.lookup_vpc(settings)
+                self.vpc_resource.lookup_vpc()
             elif self.vpc_resource.properties:
                 template = init_vpc_template()
                 self.vpc_resource.create_vpc(template, settings)
@@ -392,7 +378,9 @@ class XStack(ComposeXStack):
                 add_outputs(template, self.vpc_resource.outputs)
             self.vpc_resource.stack = self
 
-    def create_new_default_vpc(self, title, vpc_module, settings):
+    def create_new_default_vpc(
+        self, title: str, vpc_module, settings: ComposeXSettings
+    ):
         """
         In case no x-vpc was specified but the deployment settings require a new VPC, allows for an easy way to set one.
         """
