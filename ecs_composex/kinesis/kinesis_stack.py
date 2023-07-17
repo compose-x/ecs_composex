@@ -137,7 +137,7 @@ def resolve_lookup(
             "kinesis:stream",
         )
         LOG.info(f"{module.res_key}.{resource.name} - Matched to {resource.arn}")
-        settings.mappings[module.res_key].update(
+        settings.mappings[module.mapping_key].update(
             {resource.logical_name: resource.mappings}
         )
 

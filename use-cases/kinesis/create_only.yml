@@ -10,6 +10,8 @@ x-kinesis:
   stream-02:
     Properties:
       Name: stream-02
+      StreamModeDetails:
+        StreamMode: PROVISIONED
     Services:
       app03:
         Access: Producer
@@ -18,6 +20,41 @@ x-kinesis:
     Properties:
       RetentionPeriodHours: 72
       ShardCount: 4
+      StreamEncryption:
+        EncryptionType: KMS
+        KeyId: alias/aws/kinesis
+    Services:
+      app03:
+        Access: Producer
+
+  stream-04:
+    Properties:
+      RetentionPeriodHours: 72
+      StreamEncryption:
+        EncryptionType: KMS
+        KeyId: alias/aws/kinesis
+    Services:
+      app03:
+        Access: Producer
+
+  stream-on-demand:
+    Properties:
+      RetentionPeriodHours: 72
+      StreamEncryption:
+        EncryptionType: KMS
+        KeyId: alias/aws/kinesis
+      StreamModeDetails:
+        StreamMode: ON_DEMAND
+    Services:
+      app03:
+        Access: Producer
+
+  stream-with-shards-and-mode:
+    Properties:
+      ShardCount: 2
+      StreamModeDetails:
+        StreamMode: PROVISIONED
+      RetentionPeriodHours: 72
       StreamEncryption:
         EncryptionType: KMS
         KeyId: alias/aws/kinesis
