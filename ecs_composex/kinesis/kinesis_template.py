@@ -36,20 +36,7 @@ def create_new_stream(stream):
     """
     props = import_record_properties(stream.properties, Stream)
     stream_mode = set_else_none("StreamModeDetails", props)
-    if not keyisset("ShardCount", stream.properties):
-        if not stream_mode:
-            LOG.warning(
-                "{}.{} - ShardCount must be set if StreamModeDetails isn't set. Defaulting to 1".format(
-                    stream.module.res_key, stream.name
-                )
-            )
-        if stream_mode and stream_mode.StreamMode == "PROVISIONED":
-            LOG.warning(
-                "{}.{} - ShardCount must be set if StreamModeDetails is PROVISIONED."
-                "Defaulting to 1".format(stream.module.res_key, stream.name)
-            )
-        props["ShardCount"] = 1
-    elif (
+    if (
         keyisset("ShardCount", props)
         and stream_mode
         and stream_mode.StreamMode == "ON_DEMAND"
@@ -59,6 +46,15 @@ def create_new_stream(stream):
             " Setting to AWS::NoValue".format(stream.module.res_key, stream.name)
         )
         props["ShardCount"] = NoValue
+    else:
+        if not keyisset("ShardCount", stream.properties) and (
+            not stream_mode or (stream_mode and stream_mode.StreamMode == "PROVISIONED")
+        ):
+            LOG.warning(
+                "{}.{} - ShardCount must be set if StreamModeDetails isn't set or is set to PROVISIONED."
+                " Defaulting to 1".format(stream.module.res_key, stream.name)
+            )
+            props["ShardCount"] = 1
 
     props["Tags"] = Tags(Name=stream.logical_name, ComposeName=stream.name)
     stream.cfn_resource = Stream(stream.logical_name, **props)
