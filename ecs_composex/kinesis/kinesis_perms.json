@@ -2,8 +2,9 @@
   "Consumer": {
     "Effect": "Allow",
     "Action": [
-      "kinesis:Get*",
-      "kinesis:DescribeStreamSummary"
+      "kinesis:DescribeStream",
+      "kinesis:GetRecords",
+      "kinesis:ListShards"
     ],
     "Resource": [
       "${ARN}"
@@ -12,10 +13,13 @@
   "Producer": {
     "Effect": "Allow",
     "Action": [
-      "kinesis:PutRecord",
-      "kinesis:PutRecords",
       "kinesis:DescribeStream",
       "kinesis:DescribeStreamSummary",
+      "kinesis:DescribeStreamConsumer",
+      "kinesis:SubscribeToShard",
+      "kinesis:RegisterStreamConsumer",
+      "kinesis:PutRecord",
+      "kinesis:PutRecords",
       "kinesis:ListShards"
     ],
     "Resource": [

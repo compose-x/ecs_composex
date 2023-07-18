@@ -41,5 +41,19 @@
       "${ARN}",
       "${ARN}/index/*"
     ]
+  },
+  "KinesisKCL": {
+    "Effect": "Allow",
+    "Action": [
+      "dynamodb:GetItem",
+      "dynamodb:PutItem",
+      "dynamodb:Scan",
+      "dynamodb:UpdateItem",
+      "dynamodb:DeleteItem"
+    ],
+    "Resource": [
+      "${ARN}",
+      "${ARN}/index/*"
+    ]
   }
 }
