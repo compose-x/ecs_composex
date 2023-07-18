@@ -1,4 +1,3 @@
-#   -*- coding: utf-8 -*-
 #  SPDX-License-Identifier: MPL-2.0
 #  Copyright 2020-2021 John Mille <john@compose-x.io>
 
@@ -62,7 +61,7 @@ if __name__ == "__main__":
     TEMPLATE_FILE = find_files("policy_templates.json", ZIP_DIR.name)[0]
     DEST_FILE_PATH = path.abspath("ecs_composex/iam/sam_policies.json")
     print("Found source", TEMPLATE_FILE)
-    with open(TEMPLATE_FILE, "r") as file_fd:
+    with open(TEMPLATE_FILE) as file_fd:
         original_content = json.loads(file_fd.read())
     print("Outputting to", DEST_FILE_PATH)
     with open(DEST_FILE_PATH, "w") as file_fd:

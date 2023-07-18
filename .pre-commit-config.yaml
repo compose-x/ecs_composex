@@ -7,6 +7,7 @@ repos:
       - id: check-case-conflict
       - id: check-json
       - id: check-yaml
+        exclude: ^.cicd/
       - id: check-toml
       - id: end-of-file-fixer
       - id: trailing-whitespace
@@ -19,6 +20,7 @@ repos:
     rev: v3.9.0
     hooks:
       - id: pyupgrade
+        exclude: ^tests/
         args: [ "--py38-plus", "--keep-runtime-typing" ]
 
   - repo: https://github.com/psf/black
@@ -50,3 +52,20 @@ repos:
         entry: .scripts/cleanup_placebo.sh
         require_serial: true
         files: "tests/*.json$"
+
+#  - repo: https://github.com/aws-cloudformation/cfn-lint
+#    rev: v0.78.1
+#    hooks:
+#      - id: cfn-lint
+#        files: .cicd/.*\.(json|yml|yaml)$
+
+  - repo: https://github.com/hadolint/hadolint
+    rev: v2.12.0
+    hooks:
+      - id: hadolint-docker
+        args: [ "-t", "error" ]
+
+  - repo: https://github.com/iamthefij/docker-pre-commit
+    rev: master
+    hooks:
+      - id: docker-compose-check

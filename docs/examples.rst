@@ -14,4 +14,3 @@ Examples and walk-through
 
     examples/lab
     examples/nginx_simple
-
