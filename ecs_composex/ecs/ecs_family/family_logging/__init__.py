@@ -98,21 +98,7 @@ class FamilyLogging:
         if not defined:
             return default
         sum_defined = int(sum(defined) / _mb)
-        max_defined = int(max(defined) / _mb)
-        if sum_defined > _max:
-            sum_defined = _max
-        if max_defined > _max:
-            max_defined = _max
-        if sum_defined == max_defined and max_defined <= _max:
-            return sum_defined
-        elif sum_defined != max_defined:
-            if max_defined < sum_defined <= _max:
-                return sum_defined
-            elif sum_defined < max_defined <= _max:
-                return max_defined
-            elif sum_defined > _max and max_defined >= _max:
-                return _max
-        return default
+        return sum_defined
 
     @property
     def cpu_limits(self) -> float:

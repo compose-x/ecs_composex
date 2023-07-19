@@ -102,7 +102,6 @@
         "LogDriverBufferLimit": {
           "type": "number",
           "minimum": 33554432,
-          "maximum": 536870912,
           "default": 67108864,
           "description": "Amount in bytes, of RAM to assign to the FireLens container to cater for BufferLimit."
         },
