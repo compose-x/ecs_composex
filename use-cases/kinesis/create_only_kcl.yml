@@ -1,0 +1,88 @@
+---
+# Use cases for kinesis
+
+x-kinesis:
+  stream-01:
+    Properties: {}
+    Services:
+      app03:
+        Access: Consumer
+    MacroParameters:
+      SetupIAMForKCL:
+        app03: true
+  stream-02:
+    Properties:
+      Name: stream-02
+      StreamModeDetails:
+        StreamMode: PROVISIONED
+    MacroParameters:
+      SetupIAMForKCL:
+        app03:
+          CloudWatchPutMetricData: true
+          DynamoDB:
+            EnableCreateDeleteTables: true
+            TableNames:
+              - kcltable1
+    Services:
+      app03:
+        Access: Producer
+
+  stream-03:
+    Properties:
+      RetentionPeriodHours: 72
+      ShardCount: 4
+      StreamEncryption:
+        EncryptionType: KMS
+        KeyId: alias/aws/kinesis
+    MacroParameters:
+      SetupIAMForKCL:
+        app03:
+          CloudWatchPutMetricData: true
+          DynamoDB:
+            EnableCreateDeleteTables: false
+            TableNames:
+              - kcltable1
+    Services:
+      app03:
+        Access: Producer
+
+  stream-04:
+    Properties:
+      RetentionPeriodHours: 72
+      StreamEncryption:
+        EncryptionType: KMS
+        KeyId: alias/aws/kinesis
+    MacroParameters:
+      SetupIAMForKCL:
+        app03:
+          CloudWatchPutMetricData: false
+          DynamoDB:
+            EnableCreateDeleteTables: false
+    Services:
+      app03:
+        Access: Producer
+
+  stream-on-demand:
+    Properties:
+      RetentionPeriodHours: 72
+      StreamEncryption:
+        EncryptionType: KMS
+        KeyId: alias/aws/kinesis
+      StreamModeDetails:
+        StreamMode: ON_DEMAND
+    Services:
+      app03:
+        Access: Producer
+
+  stream-with-shards-and-mode:
+    Properties:
+      ShardCount: 2
+      StreamModeDetails:
+        StreamMode: PROVISIONED
+      RetentionPeriodHours: 72
+      StreamEncryption:
+        EncryptionType: KMS
+        KeyId: alias/aws/kinesis
+    Services:
+      app03:
+        Access: Producer

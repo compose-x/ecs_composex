@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
-    from ecs_composex.mods_manager import XResourceModule
+    from ecs_composex.mods_manager import XResourceModule, ModManager
 
 from botocore.exceptions import ClientError
 from compose_x_common.aws.kinesis import KINESIS_STREAM_ARN_RE
@@ -24,7 +24,9 @@ from ecs_composex.compose.x_resources.api_x_resources import ApiXResource
 from ecs_composex.kinesis.kinesis_params import STREAM_ARN, STREAM_ID, STREAM_KMS_KEY_ID
 from ecs_composex.kinesis.kinesis_template import create_streams_template
 from ecs_composex.kinesis_firehose.kinesis_firehose_stack import DeliveryStream
+from ecs_composex.resource_settings import handle_resource_to_services
 
+from .kcl_helpers import add_cloudwatch_metric_data_permission, add_dynamodb_permissions
 from .kinesis_kinesis_firehose import kinesis_to_firehose
 
 
@@ -86,6 +88,53 @@ class Stream(ApiXResource):
                 STREAM_ARN.return_value,
             ),
         }
+
+    def to_ecs(
+        self,
+        settings: ComposeXSettings,
+        modules: ModManager,
+        root_stack: ComposeXStack = None,
+        targets_overrides: list = None,
+    ) -> None:
+        """
+        Maps API only based resource to ECS Services
+        """
+        LOG.info(f"{self.module.res_key}.{self.name} - Linking to services")
+        handle_resource_to_services(
+            settings,
+            self,
+            arn_parameter=self.arn_parameter,
+            nested=False,
+            targets_overrides=targets_overrides,
+        )
+        if self.parameters and keyisset("SetupIAMForKCL", self.parameters):
+            self.setup_iam_for_kcl(settings)
+        if self.predefined_resource_service_scaling_function:
+            self.predefined_resource_service_scaling_function(self, settings)
+
+    def setup_iam_for_kcl(self, settings: ComposeXSettings) -> None:
+        """When SetupIAMForKCL is set in MacroParameters, grant IAM permissions access to other resources"""
+        macro_param = self.parameters["SetupIAMForKCL"]
+        for family_name, kcl_def in macro_param.items():
+            print(f"Granting IAM Permissions for {family_name}")
+            if family_name not in self.services:
+                print(
+                    f"Family {family_name} wasn't set as a consumer/producer to this table"
+                )
+                continue
+            _family = settings.families[family_name]
+            if isinstance(kcl_def, bool):
+                add_cloudwatch_metric_data_permission(_family)
+                add_dynamodb_permissions(_family, True)
+            elif isinstance(kcl_def, dict):
+                if keyisset("CloudWatchPutMetricData", kcl_def):
+                    add_cloudwatch_metric_data_permission(_family)
+                if keyisset("DynamoDB", kcl_def):
+                    add_dynamodb_permissions(_family, kcl_def["DynamoDB"])
+            else:
+                raise TypeError(
+                    f"kcl_def is {type(kcl_def)}. Expected one of", [bool, dict]
+                )
 
     def handle_x_dependencies(
         self, settings: ComposeXSettings, root_stack: ComposeXStack

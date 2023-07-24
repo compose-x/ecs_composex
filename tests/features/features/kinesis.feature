@@ -10,7 +10,8 @@ Feature: ecs_composex.kinesis
 
 
         Examples:
-            | file_path                   | override_file                     |
-            | use-cases/blog.features.yml | use-cases/kinesis/create_only.yml |
+            | file_path                   | override_file                            |
+            | use-cases/blog.features.yml | use-cases/kinesis/create_only.yml        |
+            | use-cases/blog.features.yml | use-cases/kinesis/create_only_kcl.yml    |
             | use-cases/blog.features.yml | use-cases/kinesis/create_only_legacy.yml |
 #      | use-cases/blog.features.yml | use-cases/kinesis/create_lookup.yml |
