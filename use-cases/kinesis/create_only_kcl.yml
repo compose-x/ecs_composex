@@ -7,11 +7,22 @@ x-kinesis:
     Services:
       app03:
         Access: Consumer
+    MacroParameters:
+      SetupIAMForKCL:
+        app03: true
   stream-02:
     Properties:
       Name: stream-02
       StreamModeDetails:
         StreamMode: PROVISIONED
+    MacroParameters:
+      SetupIAMForKCL:
+        app03:
+          CloudWatchPutMetricData: true
+          DynamoDB:
+            EnableCreateDeleteTables: true
+            TableNames:
+              - kcltable1
     Services:
       app03:
         Access: Producer
@@ -23,6 +34,14 @@ x-kinesis:
       StreamEncryption:
         EncryptionType: KMS
         KeyId: alias/aws/kinesis
+    MacroParameters:
+      SetupIAMForKCL:
+        app03:
+          CloudWatchPutMetricData: true
+          DynamoDB:
+            EnableCreateDeleteTables: false
+            TableNames:
+              - kcltable1
     Services:
       app03:
         Access: Producer
@@ -33,6 +52,12 @@ x-kinesis:
       StreamEncryption:
         EncryptionType: KMS
         KeyId: alias/aws/kinesis
+    MacroParameters:
+      SetupIAMForKCL:
+        app03:
+          CloudWatchPutMetricData: false
+          DynamoDB:
+            EnableCreateDeleteTables: false
     Services:
       app03:
         Access: Producer

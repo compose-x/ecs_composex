@@ -21,7 +21,17 @@
       "$ref": "x-resources.common.spec.json#/definitions/Services"
     },
     "MacroParameters": {
-      "type": "object"
+      "type": "object",
+      "properties": {
+        "SetupIAMForKCL": {
+          "type": "object",
+          "patternProperties": {
+            "^[a-zA-Z0-9-_\\.]+$": {
+              "$ref": "#/definitions/SetupIAMForKCLDef"
+            }
+          }
+        }
+      }
     }
   },
   "oneOf": [
@@ -35,5 +45,50 @@
         "Properties"
       ]
     }
-  ]
+  ],
+  "definitions": {
+    "SetupIAMForKCLDef": {
+      "oneOf": [
+        {
+          "type": "boolean",
+          "description": "Enables IAM permissions as described https://docs.aws.amazon.com/streams/latest/dev/tutorial-stock-data-kplkcl-iam.html"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "CloudWatchPutMetricData": {
+              "type": "boolean",
+              "description": "If true, allows PutMetricData to Cloudwatch Metrics"
+            },
+            "DynamoDB": {
+              "oneOf": [
+                {
+                  "type": "boolean",
+                  "description": "Grant all recommend IAM permissions for DynamoDB. Very permissive, use at own risks"
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "EnableCreateDeleteTables": {
+                      "type": "boolean",
+                      "description": "If true, adds IAM permissions to create/delete any tables."
+                    },
+                    "TableNames": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "List of DynamoDB tables to restrict the create/delete to instead of *"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  }
 }

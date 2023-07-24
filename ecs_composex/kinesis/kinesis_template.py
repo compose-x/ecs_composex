@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2022 John Mille <john@compose-x.io>
 
-from compose_x_common.compose_x_common import keyisset
-from troposphere import Tags
+from compose_x_common.compose_x_common import keyisset, set_else_none
+from troposphere import NoValue, Tags
 from troposphere.kinesis import Stream, StreamEncryption
 
 from ecs_composex.common.logging import LOG
@@ -35,9 +35,27 @@ def create_new_stream(stream):
     :return:
     """
     props = import_record_properties(stream.properties, Stream)
-    if not keyisset("ShardCount", stream.properties):
-        LOG.warning("ShardCount must be set. Defaulting to 1")
-        props["ShardCount"] = 1
+    stream_mode = set_else_none("StreamModeDetails", props)
+    if (
+        keyisset("ShardCount", props)
+        and stream_mode
+        and stream_mode.StreamMode == "ON_DEMAND"
+    ):
+        LOG.warning(
+            "{}.{} - ShardCount can't be set with StreamModeDetails.StreamMode ON_DEMAND."
+            " Setting to AWS::NoValue".format(stream.module.res_key, stream.name)
+        )
+        props["ShardCount"] = NoValue
+    else:
+        if not keyisset("ShardCount", stream.properties) and (
+            not stream_mode or (stream_mode and stream_mode.StreamMode == "PROVISIONED")
+        ):
+            LOG.warning(
+                "{}.{} - ShardCount must be set if StreamModeDetails isn't set or is set to PROVISIONED."
+                " Defaulting to 1".format(stream.module.res_key, stream.name)
+            )
+            props["ShardCount"] = 1
+
     props["Tags"] = Tags(Name=stream.logical_name, ComposeName=stream.name)
     stream.cfn_resource = Stream(stream.logical_name, **props)
     stream.init_outputs()
