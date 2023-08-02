@@ -131,6 +131,7 @@ def render_new_parameters(
             raise ValueError(f"{new_res.name} AWS CFN does not support SecureString.")
         if new_res.parameters and keyisset("FromFile", new_res.parameters):
             value = import_value_from_file(new_res)
+            print("VALUE?", value)
         if keyisset("Value", new_res.properties):
             if value:
                 LOG.warn(

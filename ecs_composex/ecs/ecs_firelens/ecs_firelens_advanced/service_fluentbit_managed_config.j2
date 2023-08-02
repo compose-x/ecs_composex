@@ -1,5 +1,5 @@
 {%- if source_file %}
-{{ source_file }}
+{{ source_file | safe }}
 {% endif %}
 {% for firehose_destination in firelens_firehose_destinations %}
 [OUTPUT]

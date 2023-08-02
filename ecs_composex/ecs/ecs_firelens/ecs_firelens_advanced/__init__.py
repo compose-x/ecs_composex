@@ -237,14 +237,18 @@ class FireLensServiceManagedConfiguration:
     def source_file_content(self) -> str:
         if not self.source_file:
             return ""
+        # from markupsafe import Markup
         with open(path.abspath(self.source_file)) as config_fd:
-            return config_fd.read()
+            content = config_fd.read()
+            return content
+        # value = Markup(content).unescape().strip()
+        # return value
 
     def render_jinja_config_file(self):
         here = path.abspath(path.dirname(__file__))
         jinja_env = Environment(
             loader=FileSystemLoader(here),
-            autoescape=True,
+            autoescape=False,
             auto_reload=False,
         )
         template = jinja_env.get_template("service_fluentbit_managed_config.j2")
