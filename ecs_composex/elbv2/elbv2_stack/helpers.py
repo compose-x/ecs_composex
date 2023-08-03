@@ -383,7 +383,7 @@ def define_listener_rules_actions(listener, left_services) -> list:
     for count, service_def in enumerate(left_services):
         priority = count + 1
         rule = ListenerRule(
-            f"{listener.title}{NONALPHANUM.sub('', service_def['name'])}Rule{priority}",
+            f"{listener.title}{NONALPHANUM.sub('', service_def['name'])}Rule{count}",
             ListenerArn=Ref(listener),
             Actions=define_actions(listener, service_def, True),
             Priority=priority,
