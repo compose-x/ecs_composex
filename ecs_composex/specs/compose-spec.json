@@ -102,6 +102,9 @@
         "x-docker_opts": {
           "$ref": "services.x-docker_opts.spec.json"
         },
+        "x-environment": {
+          "$ref": "services.x-environment.spec.json"
+        },
         "x-prometheus": {
           "$ref": "services.x-prometheus.spec.json"
         },

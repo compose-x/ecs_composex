@@ -656,6 +656,17 @@ class ComposeFamily:
 
         validate_compute_configuration_for_task(self, settings)
 
+    def x_environment_processing(self):
+        """
+        Checks for each service if `x-environment` was set
+        """
+        from .family_helpers import swap_environment_value_with_parameter
+
+        for service in self.ordered_services:
+            if not service.x_environment:
+                continue
+            swap_environment_value_with_parameter(self, service)
+
 
 class ServiceStack(ComposeXStack):
     """

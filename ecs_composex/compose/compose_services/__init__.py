@@ -160,6 +160,7 @@ class ComposeService:
         self.set_container_definition()
         self.links = set_else_none("links", definition)
         self.family_links: list = []
+        self.x_environment: dict = set_else_none("x-environment", definition, {})
 
     def __repr__(self):
         return self.name

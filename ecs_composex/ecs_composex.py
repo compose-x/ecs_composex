@@ -303,6 +303,7 @@ def generate_full_template(settings: ComposeXSettings):
         family.finalize_family_settings()
         map_resource_return_value_to_services_command(family, settings)
         family.state_facts()
+        family.x_environment_processing()
 
     set_ecs_cluster_identifier(settings.root_stack, settings)
     add_all_tags(settings.root_stack.stack_template, settings)

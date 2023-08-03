@@ -4,26 +4,30 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
     from ecs_composex.ecs.ecs_family import ComposeFamily
     from ecs_composex.common.stacks import ComposeXStack
+    from ecs_composex.compose.compose_services import ComposeService
     from troposphere.iam import Role
 
 from troposphere import (
     AWS_ACCOUNT_ID,
     AWS_PARTITION,
     AWS_REGION,
+    MAX_PARAMETERS,
     FindInMap,
     GetAtt,
     NoValue,
     Ref,
     Sub,
 )
+from troposphere.ecs import Environment
 from troposphere.iam import Policy, PolicyType
 
+from ecs_composex.common import NONALPHANUM
 from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.common.logging import LOG
 from ecs_composex.common.troposphere_tools import add_parameters
@@ -312,3 +316,64 @@ def set_service_dependency_on_all_iam_policies(family: ComposeFamily) -> None:
     else:
         setattr(family.ecs_service.ecs_service, "DependsOn", policies)
     LOG.debug(family.ecs_service.ecs_service.DependsOn)
+
+
+def update_env_var_to_parameter(
+    family: ComposeFamily,
+    service: ComposeService,
+    env_var: Environment,
+    set_as_params: Union[list, dict],
+) -> None:
+    """
+    Function that will replace a user-defined environment variable with a Template Parameter
+    If the SetAsParameter is a list, goes through them and generates the CFN Parameter properties
+    If SetAsParameter is a dict, it will import the user-defined Parameter settings.
+    """
+    type_to_param_type: dict = {str: "String", int: "Number", float: "Number"}
+    for var_name in set_as_params:
+        if env_var.Name != var_name:
+            continue
+        if env_var.Name not in service.environment:
+            continue
+        parameter_title: str = NONALPHANUM.sub("", var_name)
+        if isinstance(set_as_params, list):
+            env_var_param = Parameter(
+                parameter_title,
+                group_label="User Defined Service Variable",
+                Type=type_to_param_type[type(service.environment[var_name])],
+            )
+        elif isinstance(set_as_params, dict):
+            env_var_param = Parameter(
+                parameter_title,
+                group_label="User Defined Service Variable",
+                **set_as_params[var_name],
+            )
+        else:
+            raise TypeError(
+                "services.{} - Value for x-environment.SetAsParameter must be either a list or mapping/dict. Got",
+                type(set_as_params),
+            )
+        add_parameters(family.template, [env_var_param])
+        family.stack.Parameters.update(
+            {env_var_param.title: service.environment[var_name]}
+        )
+        setattr(env_var, "Value", Ref(env_var_param))
+
+
+def swap_environment_value_with_parameter(
+    family: ComposeFamily, service: ComposeService
+) -> None:
+    set_as_params = service.x_environment["SetAsParameter"]
+    for env_var in service.cfn_environment:
+        if len(family.stack.Parameters) > MAX_PARAMETERS:
+            print("Too many parameters already set")
+            break
+        if not isinstance(env_var, Environment):
+            continue
+        if not isinstance(env_var.Value, (str, int, float)):
+            print(
+                f"Env var {env_var.Name} is not str or int. Cannot convert",
+                type(env_var.Value),
+            )
+            continue
+        update_env_var_to_parameter(family, service, env_var, set_as_params)
