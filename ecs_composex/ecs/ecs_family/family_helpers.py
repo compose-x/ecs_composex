@@ -336,6 +336,12 @@ def update_env_var_to_parameter(
         if env_var.Name not in service.environment:
             continue
         parameter_title: str = NONALPHANUM.sub("", var_name)
+        if type(service.environment[var_name]):
+            LOG.warning(
+                "{}.{} - Env var values have to be string. Value will be cast with Sub".format(
+                    family.name, service.name
+                )
+            )
         if isinstance(set_as_params, list):
             env_var_param = Parameter(
                 parameter_title,
@@ -343,6 +349,15 @@ def update_env_var_to_parameter(
                 Type=type_to_param_type[type(service.environment[var_name])],
             )
         elif isinstance(set_as_params, dict):
+            if (
+                "Type" in set_as_params[var_name]
+                and set_as_params[var_name]["Type"].find("List") >= 0
+            ):
+                raise ValueError(
+                    "{}.{} - For environment variables, Parameter property Type cannot be a List. Got {}".format(
+                        family.name, service.name, set_as_params[var_name]["Type"]
+                    )
+                )
             env_var_param = Parameter(
                 parameter_title,
                 group_label="User Defined Service Variable",
@@ -357,7 +372,7 @@ def update_env_var_to_parameter(
         family.stack.Parameters.update(
             {env_var_param.title: service.environment[var_name]}
         )
-        setattr(env_var, "Value", Ref(env_var_param))
+        setattr(env_var, "Value", Sub(env_var_param.title))
 
 
 def swap_environment_value_with_parameter(
@@ -366,14 +381,19 @@ def swap_environment_value_with_parameter(
     set_as_params = service.x_environment["SetAsParameter"]
     for env_var in service.cfn_environment:
         if len(family.stack.Parameters) > MAX_PARAMETERS:
-            print("Too many parameters already set")
+            LOG.warning(
+                "{}.{} - Too many parameters already set for this stack".format(
+                    family.name, service.name
+                )
+            )
             break
         if not isinstance(env_var, Environment):
             continue
         if not isinstance(env_var.Value, (str, int, float)):
-            print(
-                f"Env var {env_var.Name} is not str or int. Cannot convert",
-                type(env_var.Value),
+            LOG.debug(
+                "Env var {} is not str or int. Cannot convert. Got {}".format(
+                    env_var.Name, type(env_var.Value)
+                ),
             )
             continue
         update_env_var_to_parameter(family, service, env_var, set_as_params)
