@@ -140,8 +140,6 @@ class FireLensFamilyManagedConfiguration:
         here = path.abspath(path.dirname(__file__))
         jinja_env = Environment(
             loader=FileSystemLoader(here),
-            autoescape=True,
-            auto_reload=False,
         )
         template = jinja_env.get_template("family_fluentbit_managed_config.j2")
         content = template.render(
@@ -238,14 +236,13 @@ class FireLensServiceManagedConfiguration:
         if not self.source_file:
             return ""
         with open(path.abspath(self.source_file)) as config_fd:
-            return config_fd.read()
+            content = config_fd.read()
+            return content
 
     def render_jinja_config_file(self):
         here = path.abspath(path.dirname(__file__))
         jinja_env = Environment(
             loader=FileSystemLoader(here),
-            autoescape=True,
-            auto_reload=False,
         )
         template = jinja_env.get_template("service_fluentbit_managed_config.j2")
         content = template.render(

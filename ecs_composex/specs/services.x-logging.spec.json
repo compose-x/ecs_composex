@@ -99,6 +99,10 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
+        "DockerImageOverride": {
+          "type": "string",
+          "description": "Docker image to use instead of the AWS-fluentbit image"
+        },
         "LogDriverBufferLimit": {
           "type": "number",
           "minimum": 33554432,

@@ -22,5 +22,5 @@
     Grace {{ grace_period | int }}
 {% endif %}
 {%- for service_content in services_content -%}
-{{ service_content }}
+{{ service_content | safe }}
 {% endfor %}

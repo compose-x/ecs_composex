@@ -25,4 +25,3 @@ License files can be found here
 .. _Apache 2.0 License: https://www.apache.org/licenses/LICENSE-2.0.txt
 .. _BSD-2 Clause License: https://opensource.org/licenses/BSD-2-Clause
 .. _MIT license: https://opensource.org/licenses/MIT
-

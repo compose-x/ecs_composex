@@ -30,7 +30,7 @@ services:
         ecs.task.family: bignicefamily
       resources:
         reservations:
-          cpus: '0.25'
+          cpus: "0.25"
           memory: 1GB
     environment:
       LOGLEVEL: DEBUG
