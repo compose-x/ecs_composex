@@ -248,8 +248,6 @@ class FireLensServiceManagedConfiguration:
         here = path.abspath(path.dirname(__file__))
         jinja_env = Environment(
             loader=FileSystemLoader(here),
-            autoescape=False,
-            auto_reload=False,
         )
         template = jinja_env.get_template("service_fluentbit_managed_config.j2")
         content = template.render(
