@@ -140,8 +140,6 @@ class FireLensFamilyManagedConfiguration:
         here = path.abspath(path.dirname(__file__))
         jinja_env = Environment(
             loader=FileSystemLoader(here),
-            autoescape=True,
-            auto_reload=False,
         )
         template = jinja_env.get_template("family_fluentbit_managed_config.j2")
         content = template.render(
