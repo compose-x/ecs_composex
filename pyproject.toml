@@ -37,7 +37,7 @@ exclude = ["*.pyc", "*~", "*pycache*"]
 [tool.poetry.dependencies]
 python = "^3.8"
 boto3 = ">=1.26"
-troposphere = "^4.3.2"
+troposphere = ">=4.3.2,<4.4"
 ecr-scan-reporter = { version = "^0.4.8", optional = true }
 compose-x-render = "^0.6.1"
 compose-x-common = "^1.2"
