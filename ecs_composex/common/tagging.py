@@ -25,6 +25,7 @@ import copy
 from compose_x_common.compose_x_common import keyisset
 from troposphere import Ref, Tags
 from troposphere.ec2 import LaunchTemplate, TagSpecifications
+from troposphere.events import Rule
 from troposphere.msk import Cluster, Configuration
 from troposphere.ssm import Parameter as SSMParameter
 
@@ -141,7 +142,7 @@ def add_object_tags(obj, tags):
     :param obj: Troposphere object to add the tags to
     :param troposphere.Tags tags: list of tags as defined in Docker composeX file
     """
-    excluded_types = (SSMParameter, Cluster, Configuration)
+    excluded_types = (SSMParameter, Cluster, Configuration, Rule)
     if tags is None:
         return
     clean_tags = copy.deepcopy(tags)
