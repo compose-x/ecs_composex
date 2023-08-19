@@ -154,40 +154,7 @@ class EcsRole:
                     f"TaskRole - {self.family.logical_name} in ${{{CLUSTER_NAME.title}}}"
                 ),
                 ManagedPolicyArns=[],
-                Policies=[
-                    InlinePolicy(
-                        PolicyName="EC2BasicDescribe",
-                        PolicyDocument={
-                            "Version": "2012-10-17",
-                            "Statement": [
-                                {
-                                    "Sid": "GrantVpcSubnetsDescribeAccess",
-                                    "Effect": "Allow",
-                                    "Action": [
-                                        "ec2:DescribeVpcs",
-                                        "ec2:DescribeSubnets",
-                                    ],
-                                    "Resource": ["*"],
-                                    "Condition": {
-                                        "StringEquals": {"ec2:Region": Region}
-                                    },
-                                },
-                                {
-                                    "Sid": "GrantRegionDescribe",
-                                    "Effect": "Allow",
-                                    "Action": [
-                                        "ec2:DescribeRegions",
-                                        "ec2:DescribeAvailabilityZones",
-                                    ],
-                                    "Resource": ["*"],
-                                    "Condition": {
-                                        "StringEquals": {"ec2:Region": Region}
-                                    },
-                                },
-                            ],
-                        },
-                    )
-                ],
+                Policies=[],
             )
 
     def set_new_resource_outputs(self, output_definition):

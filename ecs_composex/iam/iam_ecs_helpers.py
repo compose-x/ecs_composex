@@ -9,10 +9,50 @@ if TYPE_CHECKING:
     from troposphere import Template, AWSObject
     from ecs_composex.common.settings import ComposeXSettings
 
-from troposphere import Ref, Sub
+from troposphere import Ref, Region, Sub
 from troposphere.iam import ManagedPolicy
 
 from ecs_composex.common.cfn_conditions import define_stack_name
+from ecs_composex.common.troposphere_tools import add_resource
+
+
+def add_ec2_managed_policy(template: Template) -> None:
+    policy_id = "EC2BasicDescribe"
+    if policy_id not in template.resources:
+        return add_resource(
+            template,
+            ManagedPolicy(
+                policy_id,
+                Description="EC2 Default access",
+                PolicyDocument={
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Sid": "GrantVpcSubnetsDescribeAccess",
+                            "Effect": "Allow",
+                            "Action": [
+                                "ec2:DescribeVpcs",
+                                "ec2:DescribeSubnets",
+                            ],
+                            "Resource": ["*"],
+                            "Condition": {"StringEquals": {"ec2:Region": Region}},
+                        },
+                        {
+                            "Sid": "GrantRegionDescribe",
+                            "Effect": "Allow",
+                            "Action": [
+                                "ec2:DescribeRegions",
+                                "ec2:DescribeAvailabilityZones",
+                            ],
+                            "Resource": ["*"],
+                            "Condition": {"StringEquals": {"ec2:Region": Region}},
+                        },
+                    ],
+                },
+            ),
+        )
+    else:
+        return template.resources[policy_id]
 
 
 def add_ecs_execution_role_managed_policy(
@@ -99,7 +139,9 @@ def add_ecs_execution_role_managed_policy(
 
 
 def import_family_roles(
-    settings: ComposeXSettings, exec_role_managed_policy: ManagedPolicy
+    settings: ComposeXSettings,
+    exec_role_managed_policy: ManagedPolicy,
+    ec2_policy: ManagedPolicy,
 ) -> list:
     """
 
@@ -114,4 +156,6 @@ def import_family_roles(
             Ref(exec_role_managed_policy),
             role_name=family.iam_manager.exec_role._role_type,
         )
+        family.iam_manager.add_new_managed_policy(Ref(ec2_policy))
+
     return roles

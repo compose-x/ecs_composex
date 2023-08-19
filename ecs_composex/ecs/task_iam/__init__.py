@@ -5,10 +5,17 @@
 Package managing the IAM resources (roles, policies etc.) for a given ComposeFamily
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ecs_composex.ecs.ecs_family import ComposeFamily
+
 from collections import OrderedDict
 
 from compose_x_common.compose_x_common import set_else_none
-from troposphere import Ref
+from troposphere import Ref, Region
 from troposphere.iam import Policy
 
 from ecs_composex.ecs.ecs_params import EXEC_ROLE_T, TASK_ROLE_T
@@ -27,7 +34,7 @@ class TaskIam:
     Class to manage the compose family IAM roles, permissions and other settings
     """
 
-    def __init__(self, family):
+    def __init__(self, family: ComposeFamily):
         self.family = family
 
         self.exec_role = EcsRole(self.family, EXEC_ROLE_T)
@@ -140,7 +147,7 @@ class TaskIam:
                 role_depends_on = getattr(role, "DependsOn")
             role_depends_on.append(policy.data["Ref"])
 
-    def add_new_policy(self, policy, role_name=None) -> None:
+    def add_new_policy(self, policy: Policy, role_name: str = None) -> None:
         """
         Adds new inline policy to the role
 

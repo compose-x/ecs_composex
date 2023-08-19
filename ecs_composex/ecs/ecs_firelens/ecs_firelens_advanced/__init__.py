@@ -54,6 +54,9 @@ class FireLensFamilyManagedConfiguration:
             shared_volume=self.config_volume,
             mount_path=self.volume_mount,
         )
+        self.family.logging.firelens_config_service.image.interpolate_image_digest(
+            settings
+        )
         self.family.logging.firelens_config_service.logging = ServiceLogging(
             self.family.logging.firelens_config_service,
             {

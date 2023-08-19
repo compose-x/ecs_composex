@@ -34,7 +34,11 @@ from ecs_composex.common.troposphere_tools import (
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME
 from ecs_composex.iam import define_iam_policy, service_role_trust_policy
 
-from .iam_ecs_helpers import add_ecs_execution_role_managed_policy, import_family_roles
+from .iam_ecs_helpers import (
+    add_ec2_managed_policy,
+    add_ecs_execution_role_managed_policy,
+    import_family_roles,
+)
 
 
 class ResourceIamManager:
@@ -79,10 +83,13 @@ class XStack(ComposeXStack):
         add_parameters(stack_template, [CLUSTER_NAME])
         super().__init__(name, stack_template, **kwargs)
         exec_role_managed_policy = add_ecs_execution_role_managed_policy(stack_template)
+        ec2_managed_policy = add_ec2_managed_policy(stack_template)
         self.Parameters.update(
             {CLUSTER_NAME.title: settings.ecs_cluster.cluster_identifier}
         )
-        new_roles = import_family_roles(settings, exec_role_managed_policy)
+        new_roles = import_family_roles(
+            settings, exec_role_managed_policy, ec2_managed_policy
+        )
         for role in new_roles:
             add_resource(stack_template, role.cfn_resource)
             role.stack = self
