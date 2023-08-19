@@ -171,7 +171,19 @@ class EcsRole:
                                     "Condition": {
                                         "StringEquals": {"ec2:Region": Region}
                                     },
-                                }
+                                },
+                                {
+                                    "Sid": "GrantRegionDescribe",
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "ec2:DescribeRegions",
+                                        "ec2:DescribeAvailabilityZones",
+                                    ],
+                                    "Resource": ["*"],
+                                    "Condition": {
+                                        "StringEquals": {"ec2:Region": Region}
+                                    },
+                                },
                             ],
                         },
                     )
