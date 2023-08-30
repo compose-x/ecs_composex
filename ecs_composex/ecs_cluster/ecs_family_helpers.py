@@ -1,6 +1,15 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  Copyright 2020-2022 John Mille <john@compose-x.io>
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Union
+
+if TYPE_CHECKING:
+    from ecs_composex.common.settings import ComposeXSettings
+    from ecs_composex.ecs.ecs_family import ComposeFamily
+    from ecs_composex.ecs_cluster import EcsCluster
+
 from troposphere import NoValue
 
 from ecs_composex.ecs.ecs_params import LAUNCH_TYPE
@@ -13,12 +22,10 @@ and x-ecs settings
 """
 
 
-def validate_capacity_providers(family, cluster):
+def validate_capacity_providers(family: ComposeFamily, cluster: EcsCluster) -> bool:
     """
     Validates that the defined ecs_capacity_providers are all available in the ECS Cluster Providers
 
-    :param family:
-    :param cluster: The cluster object
     :raises: ValueError if not all task family providers in the cluster providers
     :raises: TypeError if cluster_providers not a list
     """
@@ -53,13 +60,10 @@ def validate_capacity_providers(family, cluster):
         )
 
 
-def validate_compute_configuration_for_task(family, settings):
-    """
-    Function to perform a final validation of compute before rendering.
-
-    :param family:
-    :param ecs_composex.common.settings.ComposeXSettings settings:
-    """
+def validate_compute_configuration_for_task(
+    family: ComposeFamily, settings: ComposeXSettings
+) -> None:
+    """Function to perform a final validation of compute before rendering."""
     if (
         family.service_compute.launch_type
         and family.service_compute.launch_type == "EXTERNAL"
@@ -83,7 +87,10 @@ def validate_compute_configuration_for_task(family, settings):
         family.service_compute.set_update_launch_type()
         family.service_compute.set_update_capacity_providers()
         validate_capacity_providers(family, settings.ecs_cluster)
-        if family.service_compute.launch_type in ["EC2", "EXTERNAL", "FARGATE"]:
+        if (
+            not family.service_compute.ecs_capacity_providers
+            and family.service_compute.launch_type in ["EC2", "EXTERNAL"]
+        ):
             return
         set_service_launch_type(family, settings.ecs_cluster)
         LOG.debug(
@@ -92,7 +99,7 @@ def validate_compute_configuration_for_task(family, settings):
         )
 
 
-def set_launch_type_from_cluster_and_service(family):
+def set_launch_type_from_cluster_and_service(family: ComposeFamily) -> None:
     if all(
         provider.CapacityProvider in ["FARGATE", "FARGATE_SPOT"]
         for provider in family.service_compute.ecs_capacity_providers
@@ -112,7 +119,9 @@ def set_launch_type_from_cluster_and_service(family):
         )
 
 
-def set_launch_type_from_cluster_only(family, cluster):
+def set_launch_type_from_cluster_only(
+    family: ComposeFamily, cluster: EcsCluster
+) -> None:
     if any(
         provider in ["FARGATE", "FARGATE_SPOT"]
         for provider in cluster.default_strategy_providers
@@ -133,7 +142,7 @@ def set_launch_type_from_cluster_only(family, cluster):
         family.service_compute.launch_type = "CLUSTER_MODE"
 
 
-def set_service_launch_type(family, cluster):
+def set_service_launch_type(family, cluster) -> None:
     """
     Sets the LaunchType value for the ECS Service
     """

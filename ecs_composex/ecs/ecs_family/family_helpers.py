@@ -372,7 +372,7 @@ def update_env_var_to_parameter(
         family.stack.Parameters.update(
             {env_var_param.title: service.environment[var_name]}
         )
-        setattr(env_var, "Value", Sub(env_var_param.title))
+        setattr(env_var, "Value", Sub(f"${{{env_var_param.title}}}"))
 
 
 def swap_environment_value_with_parameter(

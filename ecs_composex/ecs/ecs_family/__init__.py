@@ -152,9 +152,6 @@ class ComposeFamily:
         self.set_services_to_services_dependencies()
         self.set_update_containers_priority()
 
-        self.service_compute.set_update_launch_type()
-        self.service_compute.set_update_capacity_providers()
-
         define_family_runtime_parameters(self)
 
         self.task_compute = TaskCompute(self)
@@ -368,9 +365,6 @@ class ComposeFamily:
         self.iam_manager.init_update_policies()
         # self.handle_logging()
 
-        self.service_compute.set_update_launch_type()
-        self.service_compute.set_update_capacity_providers()
-
         if self.task_definition and service.container_definition:
             self.task_definition.ContainerDefinitions.append(
                 service.container_definition
@@ -405,9 +399,6 @@ class ComposeFamily:
             self.set_secrets_access()
         self.iam_manager.init_update_policies()
         # self.handle_logging()
-
-        self.service_compute.set_update_launch_type()
-        self.service_compute.set_update_capacity_providers()
         self.task_compute.set_task_compute_parameter()
 
     def finalize_services_networking_settings(self, settings: ComposeXSettings) -> None:
