@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import copy
 import re
 from typing import TYPE_CHECKING, Union
 
@@ -129,6 +130,10 @@ class ServiceImage:
                 )
             else:
                 self.service.definition["image"] = self.image_uri
+            LOG.debug("ECR - ADDING IMAGE TAG TO LABELS")
+            self.service.docker_labels.update(
+                {"com.docker.image_tag": service_image["imageTag"]}
+            )
 
     def interpolate_image_digest(self, settings: ComposeXSettings = None):
         """
@@ -165,6 +170,7 @@ class ServiceImage:
             "application/vnd.docker.distribution.manifest.list.v2+json",
         ]
         try:
+            original_image = self.image
             dkr_client = docker.APIClient()
             image_details = dkr_client.inspect_distribution(self.image)
             if not keyisset("Descriptor", image_details):
@@ -192,6 +198,17 @@ class ServiceImage:
                     )
                 else:
                     self.service.definition["image"] = self.image_uri
+                try:
+                    image_tag_re = re.compile(r"(?<=[:@])(?P<tag_digest>[\w.\-_]+$)")
+                    original_tag_digest = image_tag_re.search(original_image).group(
+                        "tag_digest"
+                    )
+                    self.service.docker_labels.update(
+                        {"com.compose.image_tag": original_tag_digest}
+                    )
+                except AttributeError:
+                    pass
+
             else:
                 LOG.warning(
                     "No digest found. This might be due to Registry API prior to V2"

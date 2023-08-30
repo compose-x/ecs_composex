@@ -130,6 +130,8 @@ class ComposeService:
             import_env_variables(self.environment) if self.environment else NoValue
         )
         self.depends_on = set_else_none("depends_on", self.definition, [], False)
+        self.docker_labels: dict = {}
+        self.import_docker_labels(self._definition)
 
         if not keyisset("image", self.definition):
             raise KeyError("You must specify the image to use for", self.name)
@@ -877,21 +879,22 @@ class ComposeService:
             self.handle_expose_ports(service_port_mappings)
         return service_port_mappings
 
-    def import_docker_labels(self):
+    def import_docker_labels(self, definition: dict):
         """
         Import the Docker labels if defined
         """
         labels = {}
-        if not keyisset("labels", self.definition):
+        if not keyisset("labels", definition):
             return labels
         else:
-            if isinstance(self.definition["labels"], dict):
-                return self.definition["labels"]
-            elif isinstance(self.definition["labels"], list):
-                for label in self.definition["labels"]:
+            if isinstance(definition["labels"], dict):
+                self.docker_labels.update(definition["labels"])
+            elif isinstance(definition["labels"], list):
+                for label in definition["labels"]:
                     splits = label.split("=")
-                    labels.update({splits[0]: splits[1] if len(splits) == 2 else ""})
-        return labels
+                    self.docker_labels.update(
+                        {splits[0]: splits[1] if len(splits) == 2 else ""}
+                    )
 
     def set_container_definition(self):
         """
@@ -929,7 +932,7 @@ class ComposeService:
                 If(USE_WINDOWS_OS_T, NoValue, keyisset("Privileged", self.definition)),
             ),
             WorkingDirectory=self.working_dir,
-            DockerLabels=self.import_docker_labels(),
+            DockerLabels=self.docker_labels,
             ReadonlyRootFilesystem=If(
                 USE_WINDOWS_OS_T, NoValue, keyisset("read_only", self.definition)
             ),
