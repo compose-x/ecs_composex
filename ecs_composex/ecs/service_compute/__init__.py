@@ -10,6 +10,13 @@ Module to manage the ``compute`` settings of the ECS Service
 Unrelated to the Task compute settings (RAM/CPU)
 
 """
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ecs_composex.ecs.ecs_family import ComposeFamily
+
 from troposphere import If, NoValue, Ref
 
 from ecs_composex.common.logging import LOG
@@ -28,7 +35,7 @@ class ServiceCompute:
     """
 
     def __init__(self, family):
-        self.family = family
+        self.family: ComposeFamily = family
         self._launch_type = None
         self._ecs_capacity_providers = []
 
@@ -94,7 +101,7 @@ class ServiceCompute:
             for _svc in self.family.ordered_services
             if _svc.launch_type
         ]
-        if not launch_modes:
+        if not self.launch_type and not launch_modes:
             LOG.info(
                 "services.{} - No Launch Type defined. Using default: {}".format(
                     self.family.name, LAUNCH_TYPE.Default
@@ -109,7 +116,7 @@ class ServiceCompute:
         for mode in modes_priority_ordered:
             if mode in launch_modes and self.launch_type != mode:
                 LOG.info(
-                    f"{self.family.name} - At least one service defined for EXTERNAL. Overriding for all"
+                    f"{self.family.name} - At least one service defined for {mode}. Overriding for all"
                 )
                 self.launch_type = mode
                 break
