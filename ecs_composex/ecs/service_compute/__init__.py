@@ -55,7 +55,6 @@ class ServiceCompute:
     @launch_type.setter
     def launch_type(self, launch_type):
         self._launch_type = launch_type
-        print("FAMILY STACK?", self.family.stack)
         if self.family.stack:
             self.family.stack.Parameters.update({LAUNCH_TYPE.title: self._launch_type})
 
