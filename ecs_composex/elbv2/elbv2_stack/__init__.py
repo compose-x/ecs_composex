@@ -63,5 +63,7 @@ class XStack(ComposeXStack):
             resource.sort_alb_ingress(settings, stack_template)
 
         super().__init__(title, stack_template, stack_parameters=lb_input, **kwargs)
+        if not hasattr(self, "DeletionPolicy"):
+            setattr(self, "DeletionPolicy", module.module_deletion_policy)
         for resource in module.resources_list:
             resource.stack = self

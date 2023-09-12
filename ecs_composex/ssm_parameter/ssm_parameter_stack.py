@@ -110,6 +110,8 @@ class XStack(ComposeXStack):
             template = build_template("Parent template for SSM in ECS Compose-X")
             super().__init__(module.mapping_key, stack_template=template, **kwargs)
             render_new_parameters(module.new_resources, self)
+            if not hasattr(self, "DeletionPolicy"):
+                setattr(self, "DeletionPolicy", module.module_deletion_policy)
         else:
             self.is_void = True
         for resource in module.resources_list:

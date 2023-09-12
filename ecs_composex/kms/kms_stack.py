@@ -27,11 +27,6 @@ from ecs_composex.compose.x_resources.api_x_resources import ApiXResource
 from ecs_composex.compose.x_resources.environment_x_resources import (
     AwsEnvironmentResource,
 )
-from ecs_composex.compose.x_resources.helpers import (
-    set_lookup_resources,
-    set_new_resources,
-    set_resources,
-)
 from ecs_composex.kinesis_firehose.kinesis_firehose_stack import DeliveryStream
 from ecs_composex.kms import metadata
 from ecs_composex.kms.kms_ecs_cluster import handle_ecs_cluster
@@ -239,6 +234,8 @@ class XStack(ComposeXStack):
             stack_template = build_template("Root template for KMS")
             super().__init__(title, stack_template, **kwargs)
             create_kms_template(stack_template, module.new_resources, self)
+            if not hasattr(self, "DeletionPolicy"):
+                setattr(self, "DeletionPolicy", module.module_deletion_policy)
         else:
             self.is_void = True
         if module.lookup_resources:

@@ -158,6 +158,8 @@ class XStack(ComposeXStack):
             stack_template = build_template("ACM Certificates created from x-acm")
             super().__init__(name, stack_template, module=module, **kwargs)
             define_acm_certs(module.new_resources, self)
+            if not hasattr(self, "DeletionPolicy"):
+                setattr(self, "DeletionPolicy", module.module_deletion_policy)
         else:
             self.is_void = True
         if module.lookup_resources:

@@ -25,11 +25,6 @@ from ecs_composex.compose.x_resources.api_x_resources import ApiXResource
 from ecs_composex.compose.x_resources.environment_x_resources import (
     AwsEnvironmentResource,
 )
-from ecs_composex.compose.x_resources.helpers import (
-    set_lookup_resources,
-    set_new_resources,
-    set_resources,
-)
 from ecs_composex.iam.iam_stack import ResourceIamManager
 from ecs_composex.kinesis_firehose.kinesis_firehose_params import (
     FIREHOSE_ARN,
@@ -187,6 +182,8 @@ class XStack(ComposeXStack):
         if module.new_resources:
             stack_template = create_streams_template(module.new_resources)
             super().__init__(title, stack_template, **kwargs)
+            if not hasattr(self, "DeletionPolicy"):
+                setattr(self, "DeletionPolicy", module.module_deletion_policy)
         else:
             self.is_void = True
         for resource in module.resources_list:

@@ -14,11 +14,6 @@ from troposphere import AWS_ACCOUNT_ID, AWS_PARTITION, GetAtt, Ref, Sub
 
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common.troposphere_tools import build_template
-from ecs_composex.compose.x_resources.helpers import (
-    set_lookup_resources,
-    set_new_resources,
-    set_resources,
-)
 from ecs_composex.compose.x_resources.network_x_resources import DatabaseXResource
 from ecs_composex.opensearch.opensearch_aws import create_opensearch_mappings
 from ecs_composex.opensearch.opensearch_params import (
@@ -178,6 +173,8 @@ class XStack(ComposeXStack):
             )
             super().__init__(title, stack_template, **kwargs)
             create_new_domains(module.new_resources, self)
+            if not hasattr(self, "DeletionPolicy"):
+                setattr(self, "DeletionPolicy", module.module_deletion_policy)
         else:
             self.is_void = True
 

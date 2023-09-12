@@ -122,6 +122,8 @@ class XStack(ComposeXStack):
             )
             super().__init__(name, stack_template=template, **kwargs)
             create_alarms(template, self, module.new_resources, settings)
+            if not hasattr(self, "DeletionPolicy"):
+                setattr(self, "DeletionPolicy", module.module_deletion_policy)
         else:
             self.is_void = True
         if module.lookup_resources:

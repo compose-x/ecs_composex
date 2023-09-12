@@ -151,6 +151,8 @@ class XStack(ComposeXStack):
         if module.new_resources:
             stack_template = create_efs_stack(settings, module.new_resources)
             super().__init__(name, stack_template, **kwargs)
+            if not hasattr(self, "DeletionPolicy"):
+                setattr(self, "DeletionPolicy", module.module_deletion_policy)
         else:
             self.is_void = True
         if module.lookup_resources:
