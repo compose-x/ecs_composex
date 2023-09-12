@@ -132,7 +132,7 @@ class ServiceImage:
                 self.service.definition["image"] = self.image_uri
             LOG.debug("ECR - ADDING IMAGE TAG TO LABELS")
             self.service.docker_labels.update(
-                {"com.docker.image_tag": service_image["imageTag"]}
+                {"docker_image_tag": service_image["imageTag"]}
             )
 
     def interpolate_image_digest(self, settings: ComposeXSettings = None):
@@ -204,7 +204,7 @@ class ServiceImage:
                         "tag_digest"
                     )
                     self.service.docker_labels.update(
-                        {"com.compose.image_tag": original_tag_digest}
+                        {"__meta_image_tag": original_tag_digest}
                     )
                 except AttributeError:
                     pass
