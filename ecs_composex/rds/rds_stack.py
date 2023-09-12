@@ -265,7 +265,8 @@ class XStack(ComposeXStack):
             super().__init__(title, stack_template, **kwargs)
             generate_rds_templates(self, stack_template, module.new_resources, settings)
             self.parent_stack = settings.root_stack
-            # self.mark_nested_stacks()
+            if not hasattr(self, "DeletionPolicy"):
+                setattr(self, "DeletionPolicy", module.module_deletion_policy)
         else:
             self.is_void = True
         if module.lookup_resources and module.mapping_key not in settings.mappings:

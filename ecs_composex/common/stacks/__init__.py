@@ -99,6 +99,7 @@ class ComposeXStack(Stack):
         :param kwargs: kwargs from composex along with the kwargs for the stack
         """
         self.name = name
+        self._deletion_policy: str = "Delete"
         self.parent_stack = None
         if module_name is None:
             self.module_name = path.basename(path.dirname(path.abspath(__file__)))

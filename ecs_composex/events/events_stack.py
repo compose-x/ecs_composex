@@ -176,6 +176,9 @@ class XStack(ComposeXStack):
             )
             super().__init__(title, stack_template, **kwargs)
             create_events_template(self, settings, module.new_resources)
+            if not hasattr(self, "DeletionPolicy"):
+                setattr(self, "DeletionPolicy", module.module_deletion_policy)
+
         else:
             self.is_void = True
 

@@ -36,6 +36,8 @@ class RdsDbStack(ComposeXStack):
         super().__init__(name, stack_template, **kwargs)
         self.parent_stack = rds_stack
         db.stack = self
+        if not hasattr(self, "DeletionPolicy"):
+            setattr(self, "DeletionPolicy", db.module.module_deletion_policy)
 
 
 def add_db_stack(root_template, db, settings, rds_stack):

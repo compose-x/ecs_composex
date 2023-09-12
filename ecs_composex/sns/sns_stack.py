@@ -66,5 +66,7 @@ class XStack(ComposeXStack):
             template = build_template(f"{module.res_key} - stack")
             import_sns_topics_to_template(module.new_resources, template)
             super().__init__(module.mapping_key, stack_template=template, **kwargs)
+            if not hasattr(self, "DeletionPolicy"):
+                setattr(self, "DeletionPolicy", module.module_deletion_policy)
         for resource in module.resources_list:
             resource.stack = self

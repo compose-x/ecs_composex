@@ -1,6 +1,7 @@
 version: "3.8"
 
 x-s3:
+  DeletionPolicy: Retain
   bucket-01:
     Properties:
       BucketName: bucket-01

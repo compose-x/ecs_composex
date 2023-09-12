@@ -211,5 +211,7 @@ class XStack(ComposeXStack):
             self.is_void = True
         stack_template = build_template(module.res_key)
         super().__init__(module.mapping_key, stack_template, **kwargs)
+        if not hasattr(self, "DeletionPolicy"):
+            setattr(self, "DeletionPolicy", module.module_deletion_policy)
         for resource in module.resources_list:
             resource.stack = self

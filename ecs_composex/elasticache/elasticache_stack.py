@@ -20,11 +20,6 @@ from troposphere import GetAtt, Ref, Sub
 from troposphere.ssm import Parameter as SSMParameter
 
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.compose.x_resources.helpers import (
-    set_lookup_resources,
-    set_new_resources,
-    set_resources,
-)
 from ecs_composex.compose.x_resources.network_x_resources import NetworkXResource
 from ecs_composex.elasticache.elasticache_ecs import create_lookup_mappings
 from ecs_composex.elasticache.elasticache_params import (
@@ -242,6 +237,8 @@ class XStack(ComposeXStack):
         if module.new_resources:
             stack_template = create_root_template(module.new_resources)
             super().__init__(title, stack_template, **kwargs)
+            if not hasattr(self, "DeletionPolicy"):
+                setattr(self, "DeletionPolicy", module.module_deletion_policy)
         else:
             self.is_void = True
 

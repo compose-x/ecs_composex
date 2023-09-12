@@ -141,6 +141,8 @@ class XStack(ComposeXStack):
         if module.new_resources:
             stack_template = create_root_template(module.new_resources, module.res_key)
             super().__init__(title, stack_template, **kwargs)
+            if not hasattr(self, "DeletionPolicy"):
+                setattr(self, "DeletionPolicy", module.module_deletion_policy)
         else:
             self.is_void = True
 

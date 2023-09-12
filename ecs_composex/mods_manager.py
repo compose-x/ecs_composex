@@ -32,13 +32,14 @@ if TYPE_CHECKING:
         NetworkXResource,
         DatabaseXResource,
     )
+
 import re
 from collections import OrderedDict
 from copy import deepcopy
 from importlib import import_module
 from json import loads
 
-from compose_x_common.compose_x_common import keyisset
+from compose_x_common.compose_x_common import keyisset, set_else_none
 
 from ecs_composex.common import NONALPHANUM
 from ecs_composex.common.ecs_composex import X_KEY
@@ -80,6 +81,7 @@ class XResourceModule:
         if definition:
             self.definition = definition
             self._original_definition = deepcopy(definition)
+        self.module_deletion_policy: str = "Delete"
 
     def __del__(self):
         if hasattr(self, "_resources") and self._resources:
@@ -255,6 +257,9 @@ class XResourceModule:
                 key=lambda item: item[0],
             )
         )
+        if keyisset("DeletionPolicy", _resources):
+            self.module_deletion_policy = _resources["DeletionPolicy"]
+            del _resources["DeletionPolicy"]
         if not self._original_definition:
             self._original_definition = {self.res_key: dict(_resources)}
         for resource_name, resource_definition in _resources.items():

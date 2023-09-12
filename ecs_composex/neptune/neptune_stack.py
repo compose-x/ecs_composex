@@ -20,11 +20,6 @@ from troposphere.neptune import DBCluster as CfnDBCluster
 from ecs_composex.common.logging import LOG
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common.troposphere_tools import build_template
-from ecs_composex.compose.x_resources.helpers import (
-    set_lookup_resources,
-    set_new_resources,
-    set_resources,
-)
 from ecs_composex.compose.x_resources.network_x_resources import DatabaseXResource
 from ecs_composex.neptune.neptune_params import (
     DB_CLUSTER_RESOURCES_ARN,
@@ -33,7 +28,6 @@ from ecs_composex.neptune.neptune_params import (
     DB_READ_ENDPOINT,
     DB_RESOURCE_ID,
 )
-from ecs_composex.neptune.neptune_template import create_neptune_template
 from ecs_composex.rds.rds_params import DB_CLUSTER_ARN, DB_CLUSTER_NAME, DB_SG
 from ecs_composex.rds_resources_settings import (
     handle_new_tcp_resource,
@@ -260,6 +254,8 @@ class XStack(ComposeXStack):
             create_neptune_template(
                 stack_template, module.new_resources, settings, self
             )
+            if not hasattr(self, "DeletionPolicy"):
+                setattr(self, "DeletionPolicy", module.module_deletion_policy)
         else:
             self.is_void = True
 

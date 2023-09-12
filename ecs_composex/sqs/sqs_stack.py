@@ -119,6 +119,8 @@ class XStack(ComposeXStack):
                 )
             super().__init__(title, stack_template=template, **kwargs)
             render_new_queues(settings, module.new_resources, self, template)
+            if not hasattr(self, "DeletionPolicy"):
+                setattr(self, "DeletionPolicy", module.module_deletion_policy)
         else:
             self.is_void = True
         for resource in module.resources_list:
