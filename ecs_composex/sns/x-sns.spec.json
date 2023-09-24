@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "id": "x-sns.spec.json",
+  "$id": "x-sns.spec.json",
+  "title": "x-sns",
+  "description": "x-sns specification",
+  "type": "object",
+  "properties": {
+    "Lookup": {
+      "$ref": "x-resources.common.spec.json#/definitions/Lookup"
+    },
+    "Properties": {
+      "type": "object",
+      "description": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-sns-topic.html"
+    },
+    "Settings": {
+      "$ref": "x-resources.common.spec.json#/definitions/Settings"
+    },
+    "Services": {
+      "$ref": "x-resources.common.spec.json#/definitions/Services"
+    }
+  },
+  "patternProperties": {
+    "x-": {}
+  }
+}
