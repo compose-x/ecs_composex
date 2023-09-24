@@ -224,7 +224,7 @@ class FileArtifact:
         if isinstance(self.template, Template):
             try:
                 if self.mime == YAML_MIME:
-                    self.body = self.template.to_yaml()
+                    self.body = self.template.to_yaml(clean_up=True, long_form=True)
                 else:
                     self.body = self.template.to_json()
             except Exception as error:
