@@ -140,32 +140,32 @@ uvloop = ["uvloop (>=0.15.2)"]
 
 [[package]]
 name = "boto3"
-version = "1.28.46"
+version = "1.28.55"
 description = "The AWS SDK for Python"
 optional = false
 python-versions = ">= 3.7"
 files = [
-    {file = "boto3-1.28.46-py3-none-any.whl", hash = "sha256:04445d70127c25fad69e2cab7e3f5cb219c8d6e60463af3657f20e29ac517957"},
-    {file = "boto3-1.28.46.tar.gz", hash = "sha256:2ca2852f7b7c1bc2e56f10f968d4c8483c8228b935ecd89a444ae8292ad0dc24"},
+    {file = "boto3-1.28.55-py3-none-any.whl", hash = "sha256:2680c0e36167e672777110ccef5303d59fa4a6a4f10086f9c14158c5cb008d5c"},
+    {file = "boto3-1.28.55.tar.gz", hash = "sha256:2ceb644b1df7c3c8907913ab367a9900af79e271b4cfca37b542ec1fa142faf8"},
 ]
 
 [package.dependencies]
-botocore = ">=1.31.46,<1.32.0"
+botocore = ">=1.31.55,<1.32.0"
 jmespath = ">=0.7.1,<2.0.0"
-s3transfer = ">=0.6.0,<0.7.0"
+s3transfer = ">=0.7.0,<0.8.0"
 
 [package.extras]
 crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
 
 [[package]]
 name = "boto3-stubs"
-version = "1.28.46"
-description = "Type annotations for boto3 1.28.46 generated with mypy-boto3-builder 7.19.0"
+version = "1.28.55"
+description = "Type annotations for boto3 1.28.55 generated with mypy-boto3-builder 7.19.0"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "boto3-stubs-1.28.46.tar.gz", hash = "sha256:a448163c1ef6e3fb383b0a2b25dcadb2cf8b0571ff4a39db9cf6b83760bad7f0"},
-    {file = "boto3_stubs-1.28.46-py3-none-any.whl", hash = "sha256:489a027b5298e840f889cb3213ecfe44fbbdc16156a648fcd2bf0824156dfe2b"},
+    {file = "boto3-stubs-1.28.55.tar.gz", hash = "sha256:5121b26e4c4bb8adc7ac1a19dd27d3bfe236b18bec2ace5f987b9df6e2511cd3"},
+    {file = "boto3_stubs-1.28.55-py3-none-any.whl", hash = "sha256:530437c949b35e70613667d50c04ff3a41512ad03c3295851cc2c58a7309928d"},
 ]
 
 [package.dependencies]
@@ -218,7 +218,7 @@ backup-gateway = ["mypy-boto3-backup-gateway (>=1.28.0,<1.29.0)"]
 backupstorage = ["mypy-boto3-backupstorage (>=1.28.0,<1.29.0)"]
 batch = ["mypy-boto3-batch (>=1.28.0,<1.29.0)"]
 billingconductor = ["mypy-boto3-billingconductor (>=1.28.0,<1.29.0)"]
-boto3 = ["boto3 (==1.28.46)", "botocore (==1.31.46)"]
+boto3 = ["boto3 (==1.28.55)", "botocore (==1.31.55)"]
 braket = ["mypy-boto3-braket (>=1.28.0,<1.29.0)"]
 budgets = ["mypy-boto3-budgets (>=1.28.0,<1.29.0)"]
 ce = ["mypy-boto3-ce (>=1.28.0,<1.29.0)"]
@@ -544,13 +544,13 @@ xray = ["mypy-boto3-xray (>=1.28.0,<1.29.0)"]
 
 [[package]]
 name = "botocore"
-version = "1.31.46"
+version = "1.31.55"
 description = "Low-level, data-driven core of boto 3."
 optional = false
 python-versions = ">= 3.7"
 files = [
-    {file = "botocore-1.31.46-py3-none-any.whl", hash = "sha256:ac0c1258b1782cde42950bd00138fdce6bd7d04855296af8c326d5844a426473"},
-    {file = "botocore-1.31.46.tar.gz", hash = "sha256:6c30be3371624a80d6a881d9c7771a80e0eb82697ee374aaf522cd59b76e14dd"},
+    {file = "botocore-1.31.55-py3-none-any.whl", hash = "sha256:5ec27caa440257619712af0a71524cc2e56110fc502853c3e4046f87b65e42e9"},
+    {file = "botocore-1.31.55.tar.gz", hash = "sha256:21ba89c4df083338ec463d9c2a8cffca42a99f9ad5f24bcac1870393b216c5a7"},
 ]
 
 [package.dependencies]
@@ -563,13 +563,13 @@ crt = ["awscrt (==0.16.26)"]
 
 [[package]]
 name = "botocore-stubs"
-version = "1.31.46"
+version = "1.31.55"
 description = "Type annotations and code completion for botocore"
 optional = false
 python-versions = ">=3.7,<4.0"
 files = [
-    {file = "botocore_stubs-1.31.46-py3-none-any.whl", hash = "sha256:5d19d73de8aabef48ea7d9fe6ffab83bb46d066080d5aed82403fc3478f6b5b9"},
-    {file = "botocore_stubs-1.31.46.tar.gz", hash = "sha256:120334397569ec75f17dc0503d438b5d7791c82ea375bfac98d41a4fad0e1fe9"},
+    {file = "botocore_stubs-1.31.55-py3-none-any.whl", hash = "sha256:ada1712ca340f29530c33837db552a9fa087f1c2224c410e6b20c4edbf7d9d6b"},
+    {file = "botocore_stubs-1.31.55.tar.gz", hash = "sha256:e75c725841a6fdaffe2b39ebf892828ce690132ebeab5be30a7568641e7eae10"},
 ]
 
 [package.dependencies]
@@ -958,21 +958,19 @@ test = ["pytest (>=6)"]
 
 [[package]]
 name = "filelock"
-version = "3.12.3"
+version = "3.12.4"
 description = "A platform independent file lock."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "filelock-3.12.3-py3-none-any.whl", hash = "sha256:f067e40ccc40f2b48395a80fcbd4728262fab54e232e090a4063ab804179efeb"},
-    {file = "filelock-3.12.3.tar.gz", hash = "sha256:0ecc1dd2ec4672a10c8550a8182f1bd0c0a5088470ecd5a125e45f49472fac3d"},
+    {file = "filelock-3.12.4-py3-none-any.whl", hash = "sha256:08c21d87ded6e2b9da6728c3dff51baf1dcecf973b768ef35bcbc3447edb9ad4"},
+    {file = "filelock-3.12.4.tar.gz", hash = "sha256:2e6f249f1f3654291606e046b09f1fd5eac39b360664c27f5aad072012f8bcbd"},
 ]
-
-[package.dependencies]
-typing-extensions = {version = ">=4.7.1", markers = "python_version < \"3.11\""}
 
 [package.extras]
 docs = ["furo (>=2023.7.26)", "sphinx (>=7.1.2)", "sphinx-autodoc-typehints (>=1.24)"]
 testing = ["covdefaults (>=2.3)", "coverage (>=7.3)", "diff-cover (>=7.7)", "pytest (>=7.4)", "pytest-cov (>=4.1)", "pytest-mock (>=3.11.1)", "pytest-timeout (>=2.1)"]
+typing = ["typing-extensions (>=4.7.1)"]
 
 [[package]]
 name = "flatdict"
@@ -986,13 +984,13 @@ files = [
 
 [[package]]
 name = "identify"
-version = "2.5.28"
+version = "2.5.29"
 description = "File identification library for Python"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "identify-2.5.28-py2.py3-none-any.whl", hash = "sha256:87816de144bf46d161bd5b3e8f5596b16cade3b80be537087334b26bc5c177f3"},
-    {file = "identify-2.5.28.tar.gz", hash = "sha256:94bb59643083ebd60dc996d043497479ee554381fbc5307763915cda49b0e78f"},
+    {file = "identify-2.5.29-py2.py3-none-any.whl", hash = "sha256:24437fbf6f4d3fe6efd0eb9d67e24dd9106db99af5ceb27996a5f7895f24bf1b"},
+    {file = "identify-2.5.29.tar.gz", hash = "sha256:d43d52b86b15918c137e3a74fff5224f60385cd0e9c38e99d07c257f02f151a5"},
 ]
 
 [package.extras]
@@ -1327,13 +1325,13 @@ typing-extensions = {version = ">=4.1.0", markers = "python_version < \"3.12\""}
 
 [[package]]
 name = "mypy-boto3-cloudformation"
-version = "1.28.36"
-description = "Type annotations for boto3.CloudFormation 1.28.36 service generated with mypy-boto3-builder 7.18.0"
+version = "1.28.48"
+description = "Type annotations for boto3.CloudFormation 1.28.48 service generated with mypy-boto3-builder 7.19.0"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "mypy-boto3-cloudformation-1.28.36.tar.gz", hash = "sha256:0e1eeca0f44b8907ba9acd2547f5f68fe4ac6c3b226432561d189cca94544686"},
-    {file = "mypy_boto3_cloudformation-1.28.36-py3-none-any.whl", hash = "sha256:0b0bfabd65aaeb38a6206ee592b7cdd0b0baafdf07f9f77afc089868817edd6f"},
+    {file = "mypy-boto3-cloudformation-1.28.48.tar.gz", hash = "sha256:efbe4073397800824287c8d52a65383112862f903b16fd587b5113449652371b"},
+    {file = "mypy_boto3_cloudformation-1.28.48-py3-none-any.whl", hash = "sha256:653e14414abc9fab8d29d693f138639a1325322fb6ba1b06ca90a6ccb11dfd94"},
 ]
 
 [package.dependencies]
@@ -1341,13 +1339,13 @@ typing-extensions = {version = ">=4.1.0", markers = "python_version < \"3.12\""}
 
 [[package]]
 name = "mypy-boto3-dynamodb"
-version = "1.28.36"
-description = "Type annotations for boto3.DynamoDB 1.28.36 service generated with mypy-boto3-builder 7.18.0"
+version = "1.28.55"
+description = "Type annotations for boto3.DynamoDB 1.28.55 service generated with mypy-boto3-builder 7.19.0"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "mypy-boto3-dynamodb-1.28.36.tar.gz", hash = "sha256:5fe1d336fdc8c58f345c9c1b4e4c1a2d164660531cf3a074d4598975fb2687de"},
-    {file = "mypy_boto3_dynamodb-1.28.36-py3-none-any.whl", hash = "sha256:9a3b49385d17e421661ab8639fc09cc64a706198be20287f82d83511289294a3"},
+    {file = "mypy-boto3-dynamodb-1.28.55.tar.gz", hash = "sha256:a3039f8ada07a218f97f0c70a82ed9cf461a0cb5133194fcf1e0e87b15c899a5"},
+    {file = "mypy_boto3_dynamodb-1.28.55-py3-none-any.whl", hash = "sha256:c4c16a00e90db5857cbeee207f6dec954ca142bd52e2de0f3d52be6d50d83d16"},
 ]
 
 [package.dependencies]
@@ -1355,13 +1353,13 @@ typing-extensions = {version = ">=4.1.0", markers = "python_version < \"3.12\""}
 
 [[package]]
 name = "mypy-boto3-ec2"
-version = "1.28.46"
-description = "Type annotations for boto3.EC2 1.28.46 service generated with mypy-boto3-builder 7.19.0"
+version = "1.28.55"
+description = "Type annotations for boto3.EC2 1.28.55 service generated with mypy-boto3-builder 7.19.0"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "mypy-boto3-ec2-1.28.46.tar.gz", hash = "sha256:c00e655fa032c58daaa00f18fe71a0b5d0f6b499ba8e32314cd083cf59018da5"},
-    {file = "mypy_boto3_ec2-1.28.46-py3-none-any.whl", hash = "sha256:d15cd2a6b9cf97fa7d2d1bf71cef5d6afd917f83815d02429bd5744e21cc6ac0"},
+    {file = "mypy-boto3-ec2-1.28.55.tar.gz", hash = "sha256:df063942ed527c430adac00b7d9aa1e1c3b0cd2ed844c07c87fc158f099e3377"},
+    {file = "mypy_boto3_ec2-1.28.55-py3-none-any.whl", hash = "sha256:cce60593c42339e169f6805e0d2156b324b1fe138e791c1d575be66feb71c59d"},
 ]
 
 [package.dependencies]
@@ -1411,13 +1409,13 @@ typing-extensions = {version = ">=4.1.0", markers = "python_version < \"3.12\""}
 
 [[package]]
 name = "mypy-boto3-s3"
-version = "1.28.36"
-description = "Type annotations for boto3.S3 1.28.36 service generated with mypy-boto3-builder 7.18.0"
+version = "1.28.55"
+description = "Type annotations for boto3.S3 1.28.55 service generated with mypy-boto3-builder 7.19.0"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "mypy-boto3-s3-1.28.36.tar.gz", hash = "sha256:44da375fd4d75b1c5ccc26dcd3be48294c7061445efd6d90ebfca43ffebbb3e4"},
-    {file = "mypy_boto3_s3-1.28.36-py3-none-any.whl", hash = "sha256:d0e90074e4043edf420292397012e37309ff204442a0874d8c969f56546be665"},
+    {file = "mypy-boto3-s3-1.28.55.tar.gz", hash = "sha256:b008809f448e74075012d4fc54b0176de0b4f49bc38e39de30ca0e764eb75056"},
+    {file = "mypy_boto3_s3-1.28.55-py3-none-any.whl", hash = "sha256:11a3db97398973d4ae28489b94c010778a0a5c65f99e00268456c3fea67eca79"},
 ]
 
 [package.dependencies]
@@ -1586,13 +1584,13 @@ virtualenv = ">=20.10.0"
 
 [[package]]
 name = "pyclean"
-version = "2.7.4"
+version = "2.7.5"
 description = "Pure Python cross-platform pyclean. Clean up your Python bytecode."
 optional = false
 python-versions = "*"
 files = [
-    {file = "pyclean-2.7.4-py3-none-any.whl", hash = "sha256:e4e64d85fab8073aacc76c7b9ab49e9e3adfa2057e73e6c634ec0a680620d6bc"},
-    {file = "pyclean-2.7.4.tar.gz", hash = "sha256:3baab554c4cc4a865175bf0ed8f6a4d5f9783db79d32efa025d5ff081dc81933"},
+    {file = "pyclean-2.7.5-py3-none-any.whl", hash = "sha256:d0162d2515ee7eef8903cfac3e7c84e114b7423ebd098d1f56c93ee2dc01d214"},
+    {file = "pyclean-2.7.5.tar.gz", hash = "sha256:5c5eb5771f46d2becd6ac085b0ff6ad17be315af4a01f9dd5e05b0582bb3d441"},
 ]
 
 [[package]]
@@ -1832,13 +1830,13 @@ decorator = ">=3.4.2"
 
 [[package]]
 name = "s3transfer"
-version = "0.6.2"
+version = "0.7.0"
 description = "An Amazon S3 Transfer Manager"
 optional = false
 python-versions = ">= 3.7"
 files = [
-    {file = "s3transfer-0.6.2-py3-none-any.whl", hash = "sha256:b014be3a8a2aab98cfe1abc7229cc5a9a0cf05eb9c1f2b86b230fd8df3f78084"},
-    {file = "s3transfer-0.6.2.tar.gz", hash = "sha256:cab66d3380cca3e70939ef2255d01cd8aece6a4907a9528740f668c4b0611861"},
+    {file = "s3transfer-0.7.0-py3-none-any.whl", hash = "sha256:10d6923c6359175f264811ef4bf6161a3156ce8e350e705396a7557d6293c33a"},
+    {file = "s3transfer-0.7.0.tar.gz", hash = "sha256:fd3889a66f5fe17299fe75b82eae6cf722554edca744ca5d5fe308b104883d2e"},
 ]
 
 [package.dependencies]
@@ -2209,35 +2207,35 @@ files = [
 
 [[package]]
 name = "types-s3transfer"
-version = "0.6.2"
+version = "0.7.0"
 description = "Type annotations and code completion for s3transfer"
 optional = false
 python-versions = ">=3.7,<4.0"
 files = [
-    {file = "types_s3transfer-0.6.2-py3-none-any.whl", hash = "sha256:1068877b6e59be5226fa3006ae64371ac9d5bc590dfdbd9c66fd0a075d3254ac"},
-    {file = "types_s3transfer-0.6.2.tar.gz", hash = "sha256:4ba9b483796fdcd026aa162ee03bdcedd2bf7d08e9387c820dcdd158b0102057"},
+    {file = "types_s3transfer-0.7.0-py3-none-any.whl", hash = "sha256:ae9ed9273465d9f43da8b96307383da410c6b59c3b2464c88d20b578768e97c6"},
+    {file = "types_s3transfer-0.7.0.tar.gz", hash = "sha256:aca0f2486d0a3a5037cd5b8f3e20a4522a29579a8dd183281ff0aa1c4e2c8aa7"},
 ]
 
 [[package]]
 name = "typing-extensions"
-version = "4.7.1"
-description = "Backported and Experimental Type Hints for Python 3.7+"
+version = "4.8.0"
+description = "Backported and Experimental Type Hints for Python 3.8+"
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.8"
 files = [
-    {file = "typing_extensions-4.7.1-py3-none-any.whl", hash = "sha256:440d5dd3af93b060174bf433bccd69b0babc3b15b1a8dca43789fd7f61514b36"},
-    {file = "typing_extensions-4.7.1.tar.gz", hash = "sha256:b75ddc264f0ba5615db7ba217daeb99701ad295353c45f9e95963337ceeeffb2"},
+    {file = "typing_extensions-4.8.0-py3-none-any.whl", hash = "sha256:8f92fc8806f9a6b641eaa5318da32b44d401efaac0f6678c9bc448ba3605faa0"},
+    {file = "typing_extensions-4.8.0.tar.gz", hash = "sha256:df8e4339e9cb77357558cbdbceca33c303714cf861d1eef15e1070055ae8b7ef"},
 ]
 
 [[package]]
 name = "unidecode"
-version = "1.3.6"
+version = "1.3.7"
 description = "ASCII transliterations of Unicode text"
 optional = false
 python-versions = ">=3.5"
 files = [
-    {file = "Unidecode-1.3.6-py3-none-any.whl", hash = "sha256:547d7c479e4f377b430dd91ac1275d593308dce0fc464fb2ab7d41f82ec653be"},
-    {file = "Unidecode-1.3.6.tar.gz", hash = "sha256:fed09cf0be8cf415b391642c2a5addfc72194407caee4f98719e40ec2a72b830"},
+    {file = "Unidecode-1.3.7-py3-none-any.whl", hash = "sha256:663a537f506834ed836af26a81b210d90cbde044c47bfbdc0fbbc9f94c86a6e4"},
+    {file = "Unidecode-1.3.7.tar.gz", hash = "sha256:3c90b4662aa0de0cb591884b934ead8d2225f1800d8da675a7750cbc3bd94610"},
 ]
 
 [[package]]
@@ -2294,17 +2292,17 @@ test = ["websockets"]
 
 [[package]]
 name = "zipp"
-version = "3.16.2"
+version = "3.17.0"
 description = "Backport of pathlib-compatible object wrapper for zip files"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "zipp-3.16.2-py3-none-any.whl", hash = "sha256:679e51dd4403591b2d6838a48de3d283f3d188412a9782faadf845f298736ba0"},
-    {file = "zipp-3.16.2.tar.gz", hash = "sha256:ebc15946aa78bd63458992fc81ec3b6f7b1e92d51c35e6de1c3804e73b799147"},
+    {file = "zipp-3.17.0-py3-none-any.whl", hash = "sha256:0e923e726174922dce09c53c59ad483ff7bbb8e572e00c7f7c46b88556409f31"},
+    {file = "zipp-3.17.0.tar.gz", hash = "sha256:84e64a1c28cf7e91ed2078bb8cc8c259cb19b76942096c8d7b84947690cabaf0"},
 ]
 
 [package.extras]
-docs = ["furo", "jaraco.packaging (>=9.3)", "jaraco.tidelift (>=1.4)", "rst.linker (>=1.9)", "sphinx (>=3.5)", "sphinx-lint"]
+docs = ["furo", "jaraco.packaging (>=9.3)", "jaraco.tidelift (>=1.4)", "rst.linker (>=1.9)", "sphinx (<7.2.5)", "sphinx (>=3.5)", "sphinx-lint"]
 testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "pytest (>=6)", "pytest-black (>=0.3.7)", "pytest-checkdocs (>=2.4)", "pytest-cov", "pytest-enabler (>=2.2)", "pytest-ignore-flaky", "pytest-mypy (>=0.9.1)", "pytest-ruff"]
 
 [extras]
