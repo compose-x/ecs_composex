@@ -1,6 +1,15 @@
 # SPDX-License-Identifier: MPL-2.0
 # Copyright 2020-2022 John Mille <john@compose-x.io>
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Union
+
+if TYPE_CHECKING:
+    from ecs_composex.common.settings import ComposeXSettings
+    from ecs_composex.ecs.ecs_family import ComposeFamily
+    from ecs_composex.efs.efs_stack import Efs
+
 from compose_x_common.compose_x_common import keyisset
 from troposphere import GetAtt, Ref
 from troposphere.ecs import AuthorizationConfig, EFSVolumeConfiguration, Volume
@@ -8,7 +17,7 @@ from troposphere.efs import AccessPoint, CreationInfo, PosixUser, RootDirectory
 from troposphere.iam import PolicyType
 
 from ecs_composex.common.logging import LOG
-from ecs_composex.common.troposphere_tools import add_parameters
+from ecs_composex.common.troposphere_tools import add_parameters, add_resource
 from ecs_composex.ecs.ecs_params import TASK_T
 from ecs_composex.efs.efs_params import FS_ARN, FS_ID, FS_MNT_PT_SG_ID, FS_PORT
 from ecs_composex.rds_resources_settings import handle_new_tcp_resource
@@ -86,7 +95,7 @@ def add_task_iam_access_to_access_point(family, access_points, efs):
         },
         Roles=[family.iam_manager.task_role.name],
     )
-    family.template.add_resource(policy)
+    add_resource(family.template, policy)
 
 
 def add_efs_definition_to_target_family(new_efs, target):
@@ -137,7 +146,7 @@ def override_service_volume(new_efs, fs_id, target, access_points, volumes):
                         Path=mount_pt.ContainerPath,
                     ),
                 )
-                target[0].template.add_resource(sub_service_specific_access_point)
+                add_resource(target[0].template, sub_service_specific_access_point)
                 access_points.append(sub_service_specific_access_point)
                 volumes.append(
                     Volume(
@@ -212,7 +221,9 @@ def override_efs_settings(new_efs, target, fs_id_parameter, access_points, volum
                 )
 
 
-def expand_family_with_efs_volumes(efs_root_stack_title, new_efs, settings):
+def expand_family_with_efs_volumes(
+    efs_root_stack_title: str, new_efs: Efs, settings: ComposeXSettings
+):
     """
     Function to add the EFS Volume definition to the task definition for the service to use.
 
@@ -224,15 +235,16 @@ def expand_family_with_efs_volumes(efs_root_stack_title, new_efs, settings):
     fs_id_parameter = new_efs.attributes_outputs[FS_ID]["ImportParameter"]
     fs_id_getatt = new_efs.attributes_outputs[FS_ID]["ImportValue"]
     for target in new_efs.families_targets:
-        if target[0].service_compute.launch_type == "EXTERNAL":
+        family: ComposeFamily = target[0]
+        if family.service_compute.launch_type == "EXTERNAL":
             LOG.warning(
-                f"x-efs - {target[0].name} - When using EXTERNAL Launch Type, networking settings cannot be set."
+                f"x-efs - {family.name} - When using EXTERNAL Launch Type, networking settings cannot be set."
             )
             return
         access_points = []
-        target[0].stack.Parameters.update({fs_id_parameter.title: fs_id_getatt})
-        add_parameters(target[0].template, [fs_id_parameter])
-        task_definition = target[0].template.resources[TASK_T]
+        family.stack.Parameters.update({fs_id_parameter.title: fs_id_getatt})
+        add_parameters(family.template, [fs_id_parameter])
+        task_definition = family.template.resources[TASK_T]
         efs_config_kwargs = {"FilesystemId": Ref(fs_id_parameter)}
         if (
             new_efs.parameters
@@ -240,12 +252,15 @@ def expand_family_with_efs_volumes(efs_root_stack_title, new_efs, settings):
             or [service.user for service in target[2]]
         ):
             add_efs_definition_to_target_family(new_efs, target)
-            efs_access_point = target[0].template.add_resource(
+            efs_access_point = add_resource(
+                family.template,
                 AccessPoint(
-                    f"{new_efs.logical_name}{target[0].logical_name}EfsAccessPoint",
+                    f"{new_efs.logical_name}{family.logical_name}EfsAccessPoint",
                     FileSystemId=Ref(fs_id_parameter),
-                )
+                ),
             )
+            if not efs_access_point:
+                continue
             access_points.append(efs_access_point)
             efs_config_kwargs.update(
                 {
@@ -262,7 +277,7 @@ def expand_family_with_efs_volumes(efs_root_stack_title, new_efs, settings):
         volumes = get_volumes(task_definition)
         volumes.append(efs_volume_definition)
         override_efs_settings(new_efs, target, fs_id_parameter, access_points, volumes)
-        add_task_iam_access_to_access_point(target[0], access_points, new_efs)
+        add_task_iam_access_to_access_point(family, access_points, new_efs)
 
 
 def efs_to_ecs(resources, services_stack, res_root_stack, settings):

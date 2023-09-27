@@ -202,7 +202,7 @@ def add_resource(template, resource, replace=False) -> AWSObject:
 
 
 def add_defaults(template):
-    """Function to CFN parameters and conditions to the template whhich are used
+    """Function to CFN parameters and conditions to the template which are used
     across ECS ComposeX
 
     :param template: source template to add the params and conditions to
