@@ -365,8 +365,6 @@ class ComposeXSettings:
         else:
             efs = self.compose_content["x-efs"]
         for volume in self.compose_content[ComposeVolume.main_key].values():
-            if volume.lookup or volume.use:
-                continue
             if (
                 volume.efs_definition
                 or volume.driver == "nfs"

@@ -16,19 +16,22 @@ if TYPE_CHECKING:
 
 import warnings
 
+from compose_x_common.aws.efs import EFS_ARN_RE, list_efs_mount_targets
 from troposphere import GetAtt, Ref, Select, Sub
 from troposphere.ec2 import SecurityGroup
 from troposphere.efs import FileSystem, MountTarget
 
+from ecs_composex.common.cfn_params import STACK_ID_SHORT
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common.troposphere_tools import build_template
-from ecs_composex.compose.x_resources.helpers import (
-    set_lookup_resources,
-    set_new_resources,
-    set_resources,
-)
 from ecs_composex.compose.x_resources.network_x_resources import NetworkXResource
-from ecs_composex.efs.efs_params import FS_ARN, FS_ID, FS_MNT_PT_SG_ID, FS_PORT
+from ecs_composex.efs.efs_params import (
+    CONTROL_CLOUD_ATTR_MAPPING,
+    FS_ARN,
+    FS_ID,
+    FS_MNT_PT_SG_ID,
+    FS_PORT,
+)
 from ecs_composex.resources_import import import_record_properties
 from ecs_composex.vpc.vpc_params import STORAGE_SUBNETS, VPC_ID
 
@@ -48,7 +51,7 @@ def create_efs_stack(settings, new_resources):
         res.cfn_resource = FileSystem(res.logical_name, **res_cfn_props)
         res.db_sg = SecurityGroup(
             f"{res.logical_name}SecurityGroup",
-            GroupName=Sub(f"{res.logical_name}EfsSg"),
+            GroupName=Sub(f"{res.logical_name}-${{STACK_ID}}", STACK_ID=STACK_ID_SHORT),
             GroupDescription=Sub(f"SG for EFS {res.cfn_resource.title}"),
             VpcId=Ref(VPC_ID),
         )
@@ -82,6 +85,7 @@ class Efs(NetworkXResource):
         self.arn_parameter = FS_ARN
         self.security_group_param = FS_MNT_PT_SG_ID
         self.port_param = FS_PORT
+        # self.cloud_control_attributes_mapping = CONTROL_CLOUD_ATTR_MAPPING
 
     def init_outputs(self):
         """
@@ -140,6 +144,49 @@ class Efs(NetworkXResource):
             )
 
 
+def get_efs_details(efs: Efs, account_id, resource_id: str) -> dict:
+    client = efs.lookup_session.client("efs")
+    props: dict = {}
+    efs_r = client.describe_file_systems(FileSystemId=efs.arn)["FileSystems"][0]
+    props[FS_ARN] = efs_r["FileSystemArn"]
+    props[FS_ID] = efs_r["FileSystemId"]
+    mount_points: list = list_efs_mount_targets(
+        session=efs.lookup_session, client=client, FileSystemId=efs.arn
+    )
+    if not mount_points:
+        raise LookupError(
+            "{}.{} - No EFS MountTargets for {}".format(
+                efs.module.res_key, efs.name, efs.arn
+            )
+        )
+    groups: list = []
+    for _mnt in mount_points:
+        groups_r = client.describe_mount_target_security_groups(
+            MountTargetId=_mnt["MountTargetId"]
+        )
+        for s_group in groups_r["SecurityGroups"]:
+            if s_group not in groups:
+                groups.append(s_group)
+    if not groups:
+        raise LookupError(f"Unable to find groups for MountTargets of {efs.arn}")
+    props[FS_MNT_PT_SG_ID] = groups[0]
+    return props
+
+
+def lookup_resource(module, resource: Efs, settings: ComposeXSettings):
+    resource.lookup_resource(
+        EFS_ARN_RE,
+        get_efs_details,
+        FileSystem.resource_type,
+        "elasticfilesystem",
+    )
+    resource.generate_cfn_mappings_from_lookup_properties()
+    resource.generate_outputs()
+    settings.mappings[module.mapping_key].update(
+        {resource.logical_name: resource.mappings}
+    )
+
+
 class XStack(ComposeXStack):
     """
     Class to represent the root for EFS
@@ -155,9 +202,9 @@ class XStack(ComposeXStack):
                 setattr(self, "DeletionPolicy", module.module_deletion_policy)
         else:
             self.is_void = True
-        if module.lookup_resources:
-            warnings.warn(
-                f"{module.res_key} - Lookup not supported. You can only create new resources at the moment"
-            )
+        if module.lookup_resources and module.mapping_key not in settings.mappings:
+            settings.mappings[module.mapping_key] = {}
+        for resource in module.lookup_resources:
+            lookup_resource(module, resource, settings)
         for resource in module.resources_list:
             resource.stack = self

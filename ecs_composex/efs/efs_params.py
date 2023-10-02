@@ -37,3 +37,8 @@ FS_AS_ID = Parameter(FS_AS_ID_T, Type="String")
 
 FS_MNT_PT_SG_ID_T = "FilesystemMountPointSgId"
 FS_MNT_PT_SG_ID = Parameter(FS_MNT_PT_SG_ID_T, return_value="GroupId", Type=SG_ID_TYPE)
+
+CONTROL_CLOUD_ATTR_MAPPING = {
+    FS_ID: "FileSystemId",
+    FS_ARN: "Arn",
+}

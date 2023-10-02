@@ -13,7 +13,6 @@ from copy import deepcopy
 from compose_x_common.compose_x_common import keyisset
 
 from ecs_composex.common.logging import LOG
-from ecs_composex.efs.efs_params import FS_REGEXP
 from ecs_composex.efs.efs_params import RES_KEY as EFS_KEY
 
 from .helpers import evaluate_plugin_efs_properties
@@ -65,19 +64,12 @@ class ComposeVolume:
             )
             self.type = "bind"
             self.driver = "nfs"
-        elif (
-            keyisset("external", self.definition)
-            and keyisset("name", self.definition)
-            and FS_REGEXP.match(self.definition["name"])
-        ):
-            LOG.warning(f"volumes.{self.name} - Identified a EFS to use")
-            self.efs_definition = {"Use": self.definition["name"]}
-            self.use = self.definition["name"]
         else:
             self.import_volume_from_definition()
 
     def import_volume_from_definition(self):
         if keyisset(EFS_KEY, self.definition):
+            self.efs_definition = self.definition[EFS_KEY]
             self.import_from_x_efs_settings()
         elif (
             not keyisset(EFS_KEY, self.definition)
@@ -96,9 +88,7 @@ class ComposeVolume:
         self.is_shared = True
         if keyisset("Lookup", self.efs_definition):
             self.lookup = self.efs_definition["Lookup"]
-        elif keyisset("Use", self.efs_definition):
-            self.use = self.efs_definition["Use"]
-        if not self.use and not self.lookup:
+        else:
             self.efs_definition = (
                 self.definition[EFS_KEY]["Properties"]
                 if keyisset("Properties", self.efs_definition)

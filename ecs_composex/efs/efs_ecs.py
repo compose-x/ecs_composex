@@ -20,7 +20,10 @@ from ecs_composex.common.logging import LOG
 from ecs_composex.common.troposphere_tools import add_parameters, add_resource
 from ecs_composex.ecs.ecs_params import TASK_T
 from ecs_composex.efs.efs_params import FS_ARN, FS_ID, FS_MNT_PT_SG_ID, FS_PORT
-from ecs_composex.rds_resources_settings import handle_new_tcp_resource
+from ecs_composex.rds_resources_settings import (
+    add_security_group_ingress,
+    handle_new_tcp_resource,
+)
 
 
 def get_volumes(task_definition):
@@ -221,41 +224,51 @@ def override_efs_settings(new_efs, target, fs_id_parameter, access_points, volum
                 )
 
 
+def looked_up_efs_family_hook(
+    efs: Efs, family: ComposeFamily, settings: ComposeXSettings
+) -> None:
+    sg_id = efs.add_attribute_to_another_stack(family.stack, FS_MNT_PT_SG_ID, settings)
+    add_parameters(family.template, [sg_id["ImportParameter"]])
+    add_security_group_ingress(
+        family.stack, efs.logical_name, Ref(sg_id["ImportParameter"]), 2049
+    )
+    family.stack.Parameters.update(
+        {sg_id["ImportParameter"].title: sg_id["ImportValue"]}
+    )
+
+
 def expand_family_with_efs_volumes(
-    efs_root_stack_title: str, new_efs: Efs, settings: ComposeXSettings
+    efs_root_stack_title: str, efs: Efs, settings: ComposeXSettings
 ):
     """
     Function to add the EFS Volume definition to the task definition for the service to use.
-
-    :param efs_root_stack_title: Root stack title for EFS
-    :param new_efs:
-    :param ecs_composex.common.settings.ComposeXSettings settings:
-    :return:
     """
-    fs_id_parameter = new_efs.attributes_outputs[FS_ID]["ImportParameter"]
-    fs_id_getatt = new_efs.attributes_outputs[FS_ID]["ImportValue"]
-    for target in new_efs.families_targets:
+    fs_id_parameter = efs.attributes_outputs[FS_ID]["ImportParameter"]
+    fs_id_getatt = efs.attributes_outputs[FS_ID]["ImportValue"]
+    for target in efs.families_targets:
         family: ComposeFamily = target[0]
         if family.service_compute.launch_type == "EXTERNAL":
             LOG.warning(
                 f"x-efs - {family.name} - When using EXTERNAL Launch Type, networking settings cannot be set."
             )
             return
+        if efs.lookup:
+            looked_up_efs_family_hook(efs, target[0], settings)
         access_points = []
         family.stack.Parameters.update({fs_id_parameter.title: fs_id_getatt})
         add_parameters(family.template, [fs_id_parameter])
         task_definition = family.template.resources[TASK_T]
         efs_config_kwargs = {"FilesystemId": Ref(fs_id_parameter)}
         if (
-            new_efs.parameters
-            and keyisset("EnforceIamAuth", new_efs.parameters)
+            efs.parameters
+            and keyisset("EnforceIamAuth", efs.parameters)
             or [service.user for service in target[2]]
         ):
-            add_efs_definition_to_target_family(new_efs, target)
+            add_efs_definition_to_target_family(efs, target)
             efs_access_point = add_resource(
                 family.template,
                 AccessPoint(
-                    f"{new_efs.logical_name}{family.logical_name}EfsAccessPoint",
+                    f"{efs.logical_name}{family.logical_name}EfsAccessPoint",
                     FileSystemId=Ref(fs_id_parameter),
                 ),
             )
@@ -272,24 +285,16 @@ def expand_family_with_efs_volumes(
             )
         efs_volume_definition = Volume(
             EFSVolumeConfiguration=EFSVolumeConfiguration(**efs_config_kwargs),
-            Name=new_efs.volume.volume_name,
+            Name=efs.volume.volume_name,
         )
         volumes = get_volumes(task_definition)
         volumes.append(efs_volume_definition)
-        override_efs_settings(new_efs, target, fs_id_parameter, access_points, volumes)
-        add_task_iam_access_to_access_point(family, access_points, new_efs)
+        override_efs_settings(efs, target, fs_id_parameter, access_points, volumes)
+        add_task_iam_access_to_access_point(family, access_points, efs)
 
 
 def efs_to_ecs(resources, services_stack, res_root_stack, settings):
-    """
-    Function to associate back the EFS FS to services.
-
-    :param resources:
-    :param services_stack:
-    :param res_root_stack:
-    :param ecs_composex.common.settings.ComposeXSettings settings:
-    :return:
-    """
+    """Function to associate back the EFS FS to services."""
     for resource_name, resource in resources.items():
         LOG.info(f"{resource.module.res_key}.{resource_name} - Linking to services")
         if not resource.mappings and resource.cfn_resource:
@@ -300,3 +305,5 @@ def efs_to_ecs(resources, services_stack, res_root_stack, settings):
                 settings=settings,
             )
             expand_family_with_efs_volumes(res_root_stack.title, resource, settings)
+        else:
+            expand_family_with_efs_volumes(None, resource, settings)
