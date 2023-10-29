@@ -7,7 +7,8 @@ Module to manage the AppMesh Virtual service
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Mapping
+from collections.abc import Mapping
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .appmesh_mesh import Mesh
