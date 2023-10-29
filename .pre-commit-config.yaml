@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
+    rev: v4.5.0
     hooks:
       - id: end-of-file-fixer
       - id: trailing-whitespace
@@ -19,14 +19,14 @@ repos:
       - id: fix-byte-order-marker
 
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.13.0
+    rev: v3.15.0
     hooks:
       - id: pyupgrade
         exclude: ^tests/
         args: [ "--py38-plus", "--keep-runtime-typing" ]
 
   - repo: https://github.com/psf/black
-    rev: 23.9.1
+    rev: 23.10.1
     hooks:
       - id: black
 
