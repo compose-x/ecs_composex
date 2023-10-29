@@ -125,7 +125,6 @@ def validate_listeners_duplicates(name, ports) -> None:
     :return:
     """
     if len(ports) != len(set(ports)):
-        s = set()
         raise ValueError(
             f"{name} - More than one listener with port {{x for x in ports if x in s or s.add(x)}}"
         )
