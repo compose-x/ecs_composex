@@ -90,7 +90,7 @@ class ComposeXSettings:
     single_nat_arg = "SingleNat"
 
     default_vpc_cidr = "100.127.254.0/24"
-    default_output_dir = f"/tmp/{dt.utcnow().strftime('%s')}"
+    default_output_dir = f"/tmp/{int(dt.utcnow().timestamp())}"
 
     active_commands = [
         {
