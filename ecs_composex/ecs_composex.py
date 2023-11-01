@@ -184,7 +184,7 @@ def add_x_resources(settings: ComposeXSettings) -> None:
             Parameters={ROOT_STACK_NAME.title: Ref(AWS_STACK_NAME)},
         )
         if x_stack and x_stack.is_void:
-            settings.x_resources_void.append({module.res_key: x_stack})
+            settings.x_resources_void.append({module.mod_key: x_stack})
         elif (
             x_stack
             and hasattr(x_stack, "title")
