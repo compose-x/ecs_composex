@@ -288,7 +288,7 @@ class ComposeXStack(Stack):
         if (
             self.parent_stack
             and self.parent_stack is not None
-            and self.parent_stack != settings.root_stack
+            and id(self.parent_stack) != id(settings.root_stack)
         ):
             ref_params = {
                 VPC_ID_T: Ref(VPC_ID),
