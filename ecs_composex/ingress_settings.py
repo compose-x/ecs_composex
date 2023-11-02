@@ -251,6 +251,7 @@ class Ingress:
             for port in self.ports:
                 if (
                     keyisset("Ports", source)
+                    and keyisset("published", port)
                     and port["published"] not in source["Ports"]
                 ):
                     continue
