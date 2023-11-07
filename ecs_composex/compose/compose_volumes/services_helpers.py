@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 import re
 from uuid import uuid4
 
-from compose_x_common.compose_x_common import keyisset
+from compose_x_common.compose_x_common import keyisset, set_else_none
 
 from ecs_composex.common.logging import LOG
 
@@ -36,10 +36,12 @@ def match_volumes_services_config(
         return
     else:
         for volume in volumes:
-            if not keyisset("source", vol_config) and not keyisset("volume", volume):
+            v_volume = set_else_none("volume", volume)
+            v_source = set_else_none("source", vol_config)
+            if not v_source and not v_volume:
                 LOG.error(f"volumes - Failure to process {volume}")
                 continue
-            if volume.name == vol_config["source"]:
+            if volume.name == v_source:
                 volume.services.append(service)
                 vol_config["volume"] = volume
                 service.volumes.append(vol_config)
@@ -59,7 +61,7 @@ def handle_volume_str_config(service: ComposeService, config: str, volumes: list
     """
     volume_config = {"read_only": False}
     path_finder = re.compile(
-        r"(?:(?P<source>[\S][^:]+):)?(?P<target>/[^:\n]+)(?::(?P<mode>ro|rw))?"
+        r"(?:(?P<source>[\S][^:]+):)?(?P<target>/[^:\n]+)(?::(?P<mode>ro|rw|z))?"
     )
     path_match = path_finder.match(config)
     if not path_match or (path_match and not path_match.group("target")):
@@ -147,18 +149,19 @@ def map_volumes(service: ComposeService, volumes: list = None) -> None:
     :param service: The Service to map the volumes to.
     :param list volumes:
     """
-    if keyisset(ComposeVolume.main_key, service.definition):
-        for s_volume in service.definition[ComposeVolume.main_key]:
-            if (
-                isinstance(s_volume, dict)
-                and (keyisset("type", s_volume) and s_volume["type"] == "tmpfs")
-                or keyisset("tmpfs", s_volume)
-            ):
-                handle_tmpfs(service, s_volume)
-            else:
-                if not volumes:
-                    continue
-                if isinstance(s_volume, str):
-                    handle_volume_str_config(service, s_volume, volumes)
-                elif isinstance(s_volume, dict):
-                    handle_volume_dict_config(service, s_volume, volumes)
+    if not keyisset(ComposeVolume.main_key, service.definition):
+        return
+    for s_volume in service.definition[ComposeVolume.main_key]:
+        if (
+            isinstance(s_volume, dict)
+            and (keyisset("type", s_volume) and s_volume["type"] == "tmpfs")
+            or keyisset("tmpfs", s_volume)
+        ):
+            handle_tmpfs(service, s_volume)
+        else:
+            if not volumes:
+                continue
+            if isinstance(s_volume, str):
+                handle_volume_str_config(service, s_volume, volumes)
+            elif isinstance(s_volume, dict):
+                handle_volume_dict_config(service, s_volume, volumes)

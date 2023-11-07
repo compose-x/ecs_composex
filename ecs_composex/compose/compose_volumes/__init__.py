@@ -10,7 +10,7 @@ Class and functions to interact with the volumes: defined in compose files.
 
 from copy import deepcopy
 
-from compose_x_common.compose_x_common import keyisset
+from compose_x_common.compose_x_common import keyisset, set_else_none
 
 from ecs_composex.common.logging import LOG
 from ecs_composex.efs.efs_params import RES_KEY as EFS_KEY
@@ -53,10 +53,13 @@ class ComposeVolume:
         self.use = {}
         self.lookup = {}
         self.type = "volume"
-        self.driver = "local"
+        self.driver = set_else_none("driver", definition, "local")
+        self.driver_opts = set_else_none(self.driver_opts_key, definition, {})
         self.external = False
-        self.efs_definition = evaluate_plugin_efs_properties(
-            self.definition, self.driver_opts_key
+        self.efs_definition = (
+            evaluate_plugin_efs_properties(self.definition, self.driver_opts_key)
+            if self.driver == "efs"
+            else {}
         )
         if self.efs_definition:
             LOG.info(
@@ -68,17 +71,19 @@ class ComposeVolume:
             self.import_volume_from_definition()
 
     def import_volume_from_definition(self):
-        if keyisset(EFS_KEY, self.definition):
+        efs_set = set_else_none(EFS_KEY, self.definition)
+        driver = set_else_none(self.driver_key, self.definition)
+        driver_opts = set_else_none(self.driver_opts_key, self.definition)
+        if efs_set:
             self.efs_definition = self.definition[EFS_KEY]
             self.import_from_x_efs_settings()
-        elif (
-            not keyisset(EFS_KEY, self.definition)
-            and keyisset(self.driver_key, self.definition)
-            and not keyisset(self.driver_opts_key, self.definition)
-        ):
+        elif not efs_set and driver and not driver_opts:
             self.import_local_volume()
         else:
-            self.type = "volume"
+            if driver == "local":
+                self.type = set_else_none("o", driver_opts, "volume")
+            else:
+                self.type = "volume"
             self.driver = "local"
             self.is_shared = False
 
@@ -105,10 +110,7 @@ class ComposeVolume:
             self.type = "volume"
             self.driver = "local"
             self.efs_definition = None
-        elif (
-            self.definition[self.driver_key] == "nfs"
-            or self.definition[self.driver_key] == "efs"
-        ):
+        elif self.definition[self.driver_key] in ["nfs", "efs"]:
             self.type = "bind"
             self.is_shared = True
             self.driver = "nfs"
