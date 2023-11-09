@@ -309,7 +309,8 @@
             "lambda.multi_value_headers.enabled",
             "deregistration_delay.connection_termination.enabled",
             "preserve_client_ip.enabled",
-            "proxy_protocol_v2.enabled"
+            "proxy_protocol_v2.enabled",
+            "target_health_state.unhealthy.connection_termination.enabled"
           ]
         },
         "Value": {
