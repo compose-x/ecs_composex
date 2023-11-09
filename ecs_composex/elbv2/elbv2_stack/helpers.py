@@ -398,7 +398,7 @@ def handle_non_default_services(listener: ComposeListener) -> list:
     """
     left_services = deepcopy(listener.services)
     for count, service_def in enumerate(listener.services):
-        if isinstance(service_def["access"], str) and service_def["access"] == "/":
+        if isinstance(service_def.get("access", None), str) and service_def["access"] == "/":
             left_services.pop(count)
             listener.DefaultActions += define_actions(listener, service_def)
             break
