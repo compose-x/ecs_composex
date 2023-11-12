@@ -24,11 +24,13 @@ from ecs_composex.elbv2.elbv2_stack.helpers import (
     LISTENER_TARGET_RE,
     add_acm_certs_arn,
     define_actions,
+    define_listener_rules_actions,
     handle_default_actions,
     handle_non_default_services,
     import_cognito_pool,
     import_new_acm_certs,
     map_service_target,
+    tea_pot,
 )
 from ecs_composex.resources_import import import_record_properties
 
@@ -92,6 +94,7 @@ class ComposeListener(Listener):
         If not defined, and there is more than one service, it will fail.
         If not defined and there is only one service defined, it will skip
         """
+        rules: list = []
         if not self.default_actions and not self.services:
             warnings.warn(
                 f"{self.name} - There are no actions defined or services for listener {self.title}. Skipping"
@@ -100,10 +103,15 @@ class ComposeListener(Listener):
         if self.default_actions:
             handle_default_actions(self)
         elif not self.default_actions and self.services and len(self.services) == 1:
-            LOG.info(
-                f"{self.title} has no defined DefaultActions and only 1 service. Default all to service."
-            )
-            self.DefaultActions = define_actions(self, self.services[0])
+            if not keyisset("Conditions", self.services[0]):
+                LOG.info(
+                    f"{self.title} has no defined DefaultActions and only 1 service "
+                    "without Conditions. Setting Listener DefaultActions to service."
+                )
+                self.DefaultActions = define_actions(self, self.services[0])
+            else:
+                self.DefaultActions = [tea_pot(True)]
+                rules = define_listener_rules_actions(self, self.services)
         elif lb.is_nlb() and self.services and len(self.services) > 1:
             raise ValueError(
                 f"{lb.module.res_key}.{lb.name} - Listener {self.def_port}"
@@ -116,15 +124,15 @@ class ComposeListener(Listener):
                 "If one of the access path is / it will be used as default"
             )
             rules = handle_non_default_services(self)
-            if rules and lb.is_alb():
-                for rule in rules:
-                    template.add_resource(rule)
-            else:
-                LOG.warning(
-                    f"{lb.module.res_key}.{lb.name} - LB is NLB. Can't assign Listener Rules."
-                )
         else:
             raise ValueError(f"Failed to determine any default action for {self.title}")
+        if rules and lb.is_alb():
+            for rule in rules:
+                template.add_resource(rule)
+        else:
+            LOG.warning(
+                f"{lb.module.res_key}.{lb.name} - LB is NLB. Can't assign Listener Rules."
+            )
 
     def handle_cognito_pools(self, settings, listener_stack):
         """
