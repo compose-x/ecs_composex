@@ -34,7 +34,7 @@ class Rule(ServicesXResource):
     Class to define an Event Rule
     """
 
-    def handle_families_targets_expansion(self, service, settings):
+    def handle_families_targets_expansion_list(self, service, settings):
         """
         Method to list all families and services that are targets of the resource.
         Allows to implement family and service level association to resource
@@ -90,7 +90,7 @@ class Rule(ServicesXResource):
                     f"The family {service_name} has already been added. Skipping"
                 )
             elif service_name in [s.name for s in settings.services]:
-                self.handle_families_targets_expansion(service, settings)
+                self.handle_families_targets_expansion_list(service, settings)
 
     def handle_families_targets_expansion_dict(
         self, service_name, service, settings
