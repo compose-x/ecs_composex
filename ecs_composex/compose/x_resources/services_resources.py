@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Union
 if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
     from ecs_composex.mods_manager import XResourceModule
+    from ecs_composex.compose.compose_services import ComposeService
 
 from compose_x_common.compose_x_common import keyisset, set_else_none
 
@@ -33,7 +34,7 @@ class ServicesXResource(XResource):
         settings: ComposeXSettings,
     ):
         self.services = []
-        self.families_targets = []
+        self.families_targets: list = []
         self.families_scaling = []
         self.arn_parameter = None
         super().__init__(name, definition, module, settings)
@@ -52,17 +53,36 @@ class ServicesXResource(XResource):
             else:
                 LOG.debug(f"Applies to all services of {family[0].name}")
 
-    def handle_families_targets_expansion(self, service, settings):
+    @staticmethod
+    def define_service_to_associate(
+        service_name: str, family_name: str, settings: ComposeXSettings
+    ) -> ComposeService:
+        for _f_service in settings.families[family_name].services:
+            if _f_service.name == service_name:
+                _associated_service = _f_service
+                break
+        else:
+            raise AttributeError(
+                "Family {} does not have a service named {}: {}".format(
+                    family_name,
+                    service_name,
+                    [svc.name for svc in settings.families[family_name].services],
+                )
+            )
+        return _associated_service
+
+    def handle_families_targets_expansion_list(
+        self, service_name: str, service_def, settings: ComposeXSettings
+    ):
         """
         Method to list all families and services that are targets of the resource.
         Allows to implement family and service level association to resource
-
-        :param dict service: Service definition in compose file
-        :param ecs_composex.common.settings.ComposeXSettings settings: Execution settings
         """
-        name_key = get_setting_key("name", service)
-        access_key = get_setting_key("access", service)
-        the_service = [s for s in settings.services if s.name == service[name_key]][0]
+        name_key = get_setting_key("name", service_def)
+        access_key = get_setting_key("access", service_def)
+        the_service = [s for s in settings.services if s.name == service_def[name_key]][
+            0
+        ]
         for family_name in the_service.families:
             family_name = NONALPHANUM.sub("", family_name)
             if family_name not in [f[0].name for f in self.families_targets]:
@@ -70,9 +90,13 @@ class ServicesXResource(XResource):
                     (
                         settings.families[family_name],
                         False,
-                        [the_service],
-                        service[access_key],
-                        service,
+                        [
+                            self.define_service_to_associate(
+                                service_name, family_name, settings
+                            )
+                        ],
+                        set_else_none(service_def[access_key], service_def, {}),
+                        service_def,
                     )
                 )
 
@@ -103,18 +127,16 @@ class ServicesXResource(XResource):
                     f"{self.module.res_key}.{self.name} - Family {service_name} has already been added. Skipping"
                 )
             elif service_name in [s.name for s in settings.services]:
-                self.handle_families_targets_expansion(service, settings)
+                self.handle_families_targets_expansion_list(
+                    service_name, service, settings
+                )
 
     def handle_families_targets_expansion_dict(
-        self, service_name, service, settings
+        self, service_name: str, service_def: dict, settings: ComposeXSettings
     ) -> None:
         """
         Method to list all families and services that are targets of the resource.
         Allows to implement family and service level association to resource
-
-        :param str service_name:
-        :param dict service: Service definition in compose file
-        :param ecs_composex.common.settings.ComposeXSettings settings: Execution settings
         """
         for svc in settings.services:
             if svc.name == service_name:
@@ -132,20 +154,24 @@ class ServicesXResource(XResource):
                     (
                         settings.families[family_name],
                         False,
-                        [the_service],
-                        service["Access"] if keyisset("Access", service) else {},
-                        service,
+                        [
+                            self.define_service_to_associate(
+                                service_name, family_name, settings
+                            )
+                        ],
+                        set_else_none("Access", service_def, {}),
+                        service_def,
                     )
                 )
 
-    def set_services_targets_from_dict(self, settings):
+    def set_services_targets_from_dict(self, settings: ComposeXSettings):
         """
         Deals with services set as a dict
         """
         for service_name, service_def in self.services.items():
-            if service_name in [
-                family.name for family in settings.families.values()
-            ] and service_name not in [tgt[0].name for tgt in self.families_targets]:
+            if service_name in settings.family_names and service_name not in [
+                tgt[0].name for tgt in self.families_targets
+            ]:
                 for family in settings.families.values():
                     if family.name == service_name:
                         break
@@ -156,9 +182,7 @@ class ServicesXResource(XResource):
                         family,
                         True,
                         family.services,
-                        service_def["Access"]
-                        if keyisset("Access", service_def)
-                        else {},
+                        set_else_none("Access", service_def, {}),
                         service_def,
                     )
                 )
@@ -168,7 +192,7 @@ class ServicesXResource(XResource):
                 LOG.debug(
                     f"{self.module.res_key}.{self.name} - Family {service_name} has already been added. Skipping"
                 )
-            elif service_name in [s.name for s in settings.services]:
+            elif service_name in settings.service_names:
                 self.handle_families_targets_expansion_dict(
                     service_name, service_def, settings
                 )
@@ -186,6 +210,12 @@ class ServicesXResource(XResource):
             LOG.debug(f"{self.module.res_key}.{self.name} No Services defined.")
             return
         if isinstance(self.services, list):
+            from warnings import warn
+
+            warn(
+                "Services list will be deprecated in future versions. Use Services objects instead.",
+                DeprecationWarning,
+            )
             self.set_services_targets_from_list(settings)
         elif isinstance(self.services, dict):
             self.set_services_targets_from_dict(settings)
