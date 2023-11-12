@@ -357,7 +357,6 @@ def map_resource_env_vars_to_family_service_environment(
     :param tuple target:
     :param XResource resource:
     """
-
     for svc in target[2]:
         if svc in target[0].managed_sidecars:
             continue
