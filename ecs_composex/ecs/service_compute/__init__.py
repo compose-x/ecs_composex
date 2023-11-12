@@ -93,32 +93,58 @@ class ServiceCompute:
 
     def set_update_launch_type(self) -> None:
         """
-        Goes over all the services and verifies if one of them is set to use EXTERNAL mode.
-        If so, overrides for all
+        Defines all the possible launch types defined on the services of the task into `launch_types`
+        If this is the first time we run the function, and we don't have either self.launch_type nor `launch_types`
+        we default to Fargate
+        Considering that `EXTERNAL` > `EC2` > `FARGATE` in priority, we stop at that launch_type as soon as any service
+        has it set in its properties.
+        If launch_type wasn't set, we stop at the highest priority type
+        If launch_type was already set, we evaluate it a new service might have a different launch_type, higher priority
+        If we are already all set, debug log it.
+        Otherwise, if somehow we didn't get into any of these conditions, pick default => Fargate
         """
-        launch_modes = [
+        launch_types = [
             _svc.launch_type
             for _svc in self.family.ordered_services
             if _svc.launch_type
         ]
-        if not self.launch_type and not launch_modes:
+        if not self.launch_type and not launch_types:
             LOG.info(
                 "services.{} - No Launch Type defined. Using default: {}".format(
                     self.family.name, LAUNCH_TYPE.Default
                 )
             )
-            LOG.debug(
-                f"{self.family.name} - Using default Launch Type - {LAUNCH_TYPE.Default}"
-            )
             self.launch_type = LAUNCH_TYPE.Default
             return
-        modes_priority_ordered = ["EXTERNAL", "EC2", "FARGATE"]
-        for mode in modes_priority_ordered:
-            if mode in launch_modes and self.launch_type != mode:
+
+        launch_types_priority_ordered = ["EXTERNAL", "EC2", "FARGATE"]
+        for _launch_type in launch_types_priority_ordered:
+            type_in_family_launch_types: bool = _launch_type in launch_types
+            type_is_defined_launch_type: bool = self.launch_type == _launch_type
+
+            if not self.launch_type and type_in_family_launch_types:
                 LOG.info(
-                    f"{self.family.name} - At least one service defined for {mode}. Overriding for all"
+                    f"{self.family.name} - Init LaunchType {_launch_type}, requested by at least one service."
                 )
-                self.launch_type = mode
+                self.launch_type = _launch_type
+                break
+            elif (
+                self.launch_type
+                and type_in_family_launch_types
+                and not type_is_defined_launch_type
+            ):
+                LOG.info(
+                    f"{self.family.name} - A service in family requires {_launch_type} instead of {self.launch_type}."
+                    " Overriding."
+                )
+                self.launch_type = _launch_type
+                break
+            elif (
+                self.launch_type
+                and type_in_family_launch_types
+                and type_is_defined_launch_type
+            ):
+                LOG.debug(f"{self.family.name} is already set to {_launch_type}")
                 break
         else:
             LOG.debug(
