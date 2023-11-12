@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 from copy import deepcopy
 
 from compose_x_common.compose_x_common import keyisset, set_else_none
-from troposphere import GetAtt
+from troposphere import GetAtt, Ref
 
 from ecs_composex.cloudmap.cloudmap_helpers import (
     detect_duplicas,
@@ -311,13 +311,13 @@ def define_new_namespace(new_namespaces, stack_template):
                     f"{namespace.module.res_key}.{namespace.name} - "
                     "Vpc property was set. Overriding to compose-x x-vpc defined for execution."
                 )
-            namespace_props["Vpc"] = f"x-vpc::{VPC_ID.title}"
+            namespace_props["Vpc"] = Ref(VPC_ID)
             namespace.cfn_resource = PrivateNamespace(
                 namespace.logical_name, **namespace_props
             )
         elif namespace.uses_default:
             namespace_props = import_record_properties(
-                {"Name": namespace.zone_name, "Vpc": f"x-vpc::{VPC_ID.title}"},
+                {"Name": namespace.zone_name, "Vpc": Ref(VPC_ID)},
                 PrivateDnsNamespace,
             )
             namespace.cfn_resource = PrivateDnsNamespace(
