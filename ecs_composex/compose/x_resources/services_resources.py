@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Union
 if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
     from ecs_composex.mods_manager import XResourceModule
+    from ecs_composex.compose.compose_services import ComposeService
 
 from compose_x_common.compose_x_common import keyisset, set_else_none
 
@@ -55,7 +56,7 @@ class ServicesXResource(XResource):
     @staticmethod
     def define_service_to_associate(
         service_name: str, family_name: str, settings: ComposeXSettings
-    ):
+    ) -> ComposeService:
         for _f_service in settings.families[family_name].services:
             if _f_service.name == service_name:
                 _associated_service = _f_service
@@ -68,6 +69,7 @@ class ServicesXResource(XResource):
                     [svc.name for svc in settings.families[family_name].services],
                 )
             )
+        return _associated_service
 
     def handle_families_targets_expansion_list(
         self, service_name: str, service_def, settings: ComposeXSettings
