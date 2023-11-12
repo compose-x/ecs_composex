@@ -77,10 +77,17 @@ Ingress Syntax reference
                 Id: pl-abcd
             Myself: True/False
 
-.. note::
+.. tip::
 
-    Future feature is to allow to input a security group ID and the remote account ID to allow ingress traffic from
-    a security group owned by another of your account (or 3rd party).
+    You can define the SG from another AWS account by setting ``AccountOwner`` in the Security group definition.
+
+.. tip::
+
+    You can define which ports to open per source using the ``Ports`` list.
+
+    .. hint::
+
+        If you enter a port number that is not in the ``Ports`` list, it will be ignored.
 
 .. hint::
 
