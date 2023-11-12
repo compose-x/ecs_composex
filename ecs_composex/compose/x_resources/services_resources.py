@@ -52,6 +52,23 @@ class ServicesXResource(XResource):
             else:
                 LOG.debug(f"Applies to all services of {family[0].name}")
 
+    @staticmethod
+    def define_service_to_associate(
+        service_name: str, family_name: str, settings: ComposeXSettings
+    ):
+        for _f_service in settings.families[family_name].services:
+            if _f_service.name == service_name:
+                _associated_service = _f_service
+                break
+        else:
+            raise AttributeError(
+                "Family {} does not have a service named {}: {}".format(
+                    family_name,
+                    service_name,
+                    [svc.name for svc in settings.families[family_name].services],
+                )
+            )
+
     def handle_families_targets_expansion_list(
         self, service_name: str, service_def, settings: ComposeXSettings
     ):
@@ -67,26 +84,15 @@ class ServicesXResource(XResource):
         for family_name in the_service.families:
             family_name = NONALPHANUM.sub("", family_name)
             if family_name not in [f[0].name for f in self.families_targets]:
-                for _f_service in settings.families[family_name].services:
-                    if _f_service.name == service_name:
-                        _associated_service = _f_service
-                        break
-                else:
-                    raise AttributeError(
-                        "Family {} does not have a service named {}: {}".format(
-                            family_name,
-                            service_name,
-                            [
-                                svc.name
-                                for svc in settings.families[family_name].services
-                            ],
-                        )
-                    )
                 self.families_targets.append(
                     (
                         settings.families[family_name],
                         False,
-                        [_associated_service],
+                        [
+                            self.define_service_to_associate(
+                                service_name, family_name, settings
+                            )
+                        ],
                         set_else_none(service_def[access_key], service_def, {}),
                         service_def,
                     )
@@ -142,26 +148,15 @@ class ServicesXResource(XResource):
         for family_name in the_service.families:
             family_name = NONALPHANUM.sub("", family_name)
             if family_name not in [f[0].name for f in self.families_targets]:
-                for _f_service in settings.families[family_name].services:
-                    if _f_service.name == service_name:
-                        _associated_service = _f_service
-                        break
-                else:
-                    raise AttributeError(
-                        "Family {} does not have a service named {}: {}".format(
-                            family_name,
-                            service_name,
-                            [
-                                svc.name
-                                for svc in settings.families[family_name].services
-                            ],
-                        )
-                    )
                 self.families_targets.append(
                     (
                         settings.families[family_name],
                         False,
-                        [_associated_service],
+                        [
+                            self.define_service_to_associate(
+                                service_name, family_name, settings
+                            )
+                        ],
                         set_else_none("Access", service_def, {}),
                         service_def,
                     )
