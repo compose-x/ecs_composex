@@ -210,8 +210,11 @@ class ServicesXResource(XResource):
             LOG.debug(f"{self.module.res_key}.{self.name} No Services defined.")
             return
         if isinstance(self.services, list):
-            DeprecationWarning(
-                "Services list will be deprecated in future versions. Use Services objects instead."
+            from warnings import warn
+
+            warn(
+                "Services list will be deprecated in future versions. Use Services objects instead.",
+                DeprecationWarning,
             )
             self.set_services_targets_from_list(settings)
         elif isinstance(self.services, dict):
