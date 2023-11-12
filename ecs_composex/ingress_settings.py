@@ -288,7 +288,9 @@ class Ingress:
                         SecurityGroupIngress(
                             f"From{NONALPHANUM.sub('', sg_id)}ToServiceOn{target_port}",
                             SourceSecurityGroupId=sg_id,
-                            SourceSecurityGroupOwnerId=Ref(AWS_ACCOUNT_ID),
+                            SourceSecurityGroupOwnerId=set_else_none(
+                                "AccountOwner", source, Ref(AWS_ACCOUNT_ID)
+                            ),
                             **common_args,
                         )
                     )
