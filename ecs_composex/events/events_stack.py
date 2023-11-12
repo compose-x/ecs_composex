@@ -54,14 +54,12 @@ class Rule(ServicesXResource):
                     )
                 )
 
-    def set_services_targets_from_list(self, settings):
+    def set_services_targets_from_list(self, settings: ComposeXSettings):
         """
         Override method to map services and families targets of the services defined specifically for
         events
         TargetStructure:
         (family, family_wide, services[], access)
-
-        :param ecs_composex.common.settings.ComposeXSettings settings:
         :return:
         """
         if not self.services:
@@ -88,18 +86,16 @@ class Rule(ServicesXResource):
                     f"The family {service_name} has already been added. Skipping"
                 )
             elif service_name in [s.name for s in settings.services]:
-                self.handle_families_targets_expansion_list(service, settings)
+                self.handle_families_targets_expansion_list(
+                    service_name, service, settings
+                )
 
     def handle_families_targets_expansion_dict(
-        self, service_name, service, settings
+        self, service_name: str, service_def: dict, settings: ComposeXSettings
     ) -> None:
         """
         Method to list all families and services that are targets of the resource.
         Allows to implement family and service level association to resource
-
-        :param str service_name:
-        :param dict service: Service definition in compose file
-        :param ecs_composex.common.settings.ComposeXSettings settings: Execution settings
         """
         the_service = [s for s in settings.services if s.name == service_name][0]
         for family_name in the_service.families:
@@ -114,18 +110,13 @@ class Rule(ServicesXResource):
                                 service_name, family_name, settings
                             )
                         ],
-                        service["TaskCount"],
-                        service,
+                        service_def["TaskCount"],
+                        service_def,
                     )
                 )
 
-    def set_services_targets_from_dict(self, settings):
-        """
-        Deals with services set as a dict
-
-        :param settings:
-        :return:
-        """
+    def set_services_targets_from_dict(self, settings: ComposeXSettings) -> None:
+        """Deals with services set as a dict"""
         for service_name, service_def in self.services.items():
             if service_name in settings.families and service_name not in [
                 f[0].name for f in self.families_targets
@@ -157,15 +148,9 @@ class XStack(ComposeXStack):
     """
 
     def __init__(
-        self, title, settings: ComposeXSettings, module: XResourceModule, **kwargs
+        self, title: str, settings: ComposeXSettings, module: XResourceModule, **kwargs
     ):
-        """
-        Method to initialize the XStack for Events
-
-        :param str title: title for the stack
-        :param ecs_composex.common.settings.ComposeXSettings settings: Execution settings
-        :param dict kwargs:
-        """
+        """Initialize the XStack for Events"""
         if module.lookup_resources:
             warnings.warn(
                 f"{module.res_key} does not support Lookup/Use. You can only create new resources"
@@ -173,7 +158,7 @@ class XStack(ComposeXStack):
 
         if module.new_resources:
             stack_template = build_template(
-                "Events rules for ComposeX",
+                "Events rules for Compose-X",
                 [CLUSTER_NAME, FARGATE_VERSION],
             )
             super().__init__(title, stack_template, **kwargs)
@@ -183,6 +168,3 @@ class XStack(ComposeXStack):
 
         else:
             self.is_void = True
-
-        # for resource in module.resources_list:
-        #     resource.stack = self
