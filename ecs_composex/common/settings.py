@@ -195,6 +195,14 @@ class ComposeXSettings:
     def ecs_cluster(self) -> EcsCluster:
         return self._ecs_cluster
 
+    @property
+    def family_names(self) -> list[str]:
+        return [_family.name for _family in self.families.values()]
+
+    @property
+    def service_names(self) -> list[str]:
+        return [_service.name for _service in self.services]
+
     @ecs_cluster.setter
     def ecs_cluster(self, value: EcsCluster) -> None:
         self._ecs_cluster = value

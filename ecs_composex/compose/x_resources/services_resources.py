@@ -33,7 +33,7 @@ class ServicesXResource(XResource):
         settings: ComposeXSettings,
     ):
         self.services = []
-        self.families_targets = []
+        self.families_targets: list = []
         self.families_scaling = []
         self.arn_parameter = None
         super().__init__(name, definition, module, settings)
@@ -106,7 +106,7 @@ class ServicesXResource(XResource):
                 self.handle_families_targets_expansion(service, settings)
 
     def handle_families_targets_expansion_dict(
-        self, service_name, service, settings
+        self, service_name: str, service: dict, settings: ComposeXSettings
     ) -> None:
         """
         Method to list all families and services that are targets of the resource.
@@ -128,24 +128,39 @@ class ServicesXResource(XResource):
         for family_name in the_service.families:
             family_name = NONALPHANUM.sub("", family_name)
             if family_name not in [f[0].name for f in self.families_targets]:
+                for _f_service in settings.families[family_name].services:
+                    if _f_service.name == service_name:
+                        _associated_service = _f_service
+                        break
+                else:
+                    raise AttributeError(
+                        "Family {} does not have a service named {}: {}".format(
+                            family_name,
+                            service_name,
+                            [
+                                svc.name
+                                for svc in settings.families[family_name].services
+                            ],
+                        )
+                    )
                 self.families_targets.append(
                     (
                         settings.families[family_name],
                         False,
-                        [the_service],
+                        [_associated_service],
                         service["Access"] if keyisset("Access", service) else {},
                         service,
                     )
                 )
 
-    def set_services_targets_from_dict(self, settings):
+    def set_services_targets_from_dict(self, settings: ComposeXSettings):
         """
         Deals with services set as a dict
         """
         for service_name, service_def in self.services.items():
-            if service_name in [
-                family.name for family in settings.families.values()
-            ] and service_name not in [tgt[0].name for tgt in self.families_targets]:
+            if service_name in settings.family_names and service_name not in [
+                tgt[0].name for tgt in self.families_targets
+            ]:
                 for family in settings.families.values():
                     if family.name == service_name:
                         break
@@ -168,7 +183,7 @@ class ServicesXResource(XResource):
                 LOG.debug(
                     f"{self.module.res_key}.{self.name} - Family {service_name} has already been added. Skipping"
                 )
-            elif service_name in [s.name for s in settings.services]:
+            elif service_name in settings.service_names:
                 self.handle_families_targets_expansion_dict(
                     service_name, service_def, settings
                 )
