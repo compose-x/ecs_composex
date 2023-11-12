@@ -20,11 +20,6 @@ from ecs_composex.common import NONALPHANUM
 from ecs_composex.common.logging import LOG
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common.troposphere_tools import build_template
-from ecs_composex.compose.x_resources.helpers import (
-    set_lookup_resources,
-    set_new_resources,
-    set_resources,
-)
 from ecs_composex.compose.x_resources.services_resources import ServicesXResource
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME, FARGATE_VERSION
 
@@ -34,15 +29,14 @@ class Rule(ServicesXResource):
     Class to define an Event Rule
     """
 
-    def handle_families_targets_expansion_list(self, service, settings):
+    def handle_families_targets_expansion_list(
+        self, service_name: str, service_def: dict, settings: ComposeXSettings
+    ):
         """
         Method to list all families and services that are targets of the resource.
         Allows to implement family and service level association to resource
-
-        :param dict service: Service definition in compose file
-        :param ecs_composex.common.settings.ComposeXSettings settings: Execution settings
         """
-        the_service = [s for s in settings.services if s.name == service["name"]][0]
+        the_service = [s for s in settings.services if s.name == service_def["name"]][0]
         for family_name in the_service.families:
             family_name = NONALPHANUM.sub("", family_name)
             if family_name not in [f[0].name for f in self.families_targets]:
@@ -50,9 +44,13 @@ class Rule(ServicesXResource):
                     (
                         settings.families[family_name],
                         False,
-                        [the_service],
-                        service["TaskCount"],
-                        service,
+                        [
+                            self.define_service_to_associate(
+                                service_name, family_name, settings
+                            )
+                        ],
+                        service_def["TaskCount"],
+                        service_def,
                     )
                 )
 
@@ -111,7 +109,11 @@ class Rule(ServicesXResource):
                     (
                         settings.families[family_name],
                         False,
-                        [the_service],
+                        [
+                            self.define_service_to_associate(
+                                service_name, family_name, settings
+                            )
+                        ],
                         service["TaskCount"],
                         service,
                     )
