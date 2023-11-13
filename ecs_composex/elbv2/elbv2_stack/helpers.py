@@ -16,7 +16,7 @@ import re
 from copy import deepcopy
 from json import dumps
 
-from compose_x_common.compose_x_common import keyisset
+from compose_x_common.compose_x_common import keyisset, set_else_none
 from troposphere import AWS_NO_VALUE, FindInMap, Ref
 from troposphere.elasticloadbalancingv2 import (
     Action,
@@ -198,9 +198,9 @@ def handle_predefined_redirects(listener: ComposeListener, action_name) -> None:
             f"Redirect {action_name} is not a valid pre-defined setting. Valid values",
             [r[0] for r in predefined_redirects],
         )
-    for redirect in predefined_redirects:
-        if action_name == redirect[0]:
-            action = redirect[1]()
+    for redirect_key, redirect_function in predefined_redirects:
+        if action_name == redirect_key:
+            action = redirect_function()
             listener.DefaultActions.insert(0, action)
 
 
@@ -276,7 +276,7 @@ def handle_string_condition_format(access_string) -> list:
         raise ValueError(f"Could not understand what the access is for {access_string}")
 
 
-def define_target_conditions(definition) -> list:
+def define_target_conditions(definition: dict) -> list:
     """
     Function to create the conditions for forward to target
 
@@ -285,11 +285,16 @@ def define_target_conditions(definition) -> list:
     :rtype: list
     """
     conditions = []
-    if keyisset("Conditions", definition) and isinstance(
-        definition["Conditions"], list
-    ):
+    user_defined_conditions = set_else_none("Conditions", definition, [])
+    if user_defined_conditions:
+        if not isinstance(user_defined_conditions, list):
+            raise TypeError(
+                "Conditions must be a list. Got {}".format(
+                    type(user_defined_conditions)
+                )
+            )
         conditions = import_record_properties(
-            {"Conditions": definition["Conditions"]},
+            {"Conditions": user_defined_conditions},
             ListenerRule,
             set_to_novalue=False,
             ignore_missing_required=True,
@@ -370,13 +375,11 @@ def define_actions(listener, target_def, rule_actions: bool = False) -> list:
     return actions
 
 
-def define_listener_rules_actions(listener, left_services) -> list:
+def define_listener_rules_actions(
+    listener: ComposeListener, left_services: list
+) -> list[ListenerRule]:
     """
     Function to identify the Target definition and create the resulting rule appropriately.
-
-    :param listener:
-    :param list left_services:
-    :return: The action to add or action list for default target
     """
     rules = []
     for count, service_def in enumerate(left_services):
@@ -528,8 +531,6 @@ def import_cognito_pool(src_name, settings: ComposeXSettings, listener_stack):
         raise LookupError(
             f"There is no {COGNITO_KEY} defined in your docker-compose files"
         )
-    print("Cognito SRC Name", src_name)
-    print(settings.x_resources)
     pools = [
         res
         for res in settings.x_resources
