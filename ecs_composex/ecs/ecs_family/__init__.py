@@ -526,9 +526,9 @@ class ComposeFamily:
                 secret_names = frozenset()
             environment = getattr(service.container_definition, "Environment")
             if environment:
-                remove_secrets = [_env for _env in environment if _env.Name not in secret_names]
-                original = [_env for _env in remove_secrets if isinstance(_env, Environment)]
-                sorted_env = sorted(original, key=lambda x: x.Name)
+                original = [_env for _env in environment if isinstance(_env, Environment)]
+                remove_secrets = [_env for _env in original if _env.Name not in secret_names]
+                sorted_env = sorted(remove_secrets, key=lambda x: x.Name)
                 for _env in environment:
                     if not isinstance(_env, Environment):
                         sorted_env.append(_env)
