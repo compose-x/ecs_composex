@@ -515,7 +515,9 @@ class ComposeFamily:
         for service in self.services:
             secrets = getattr(service.container_definition, "Secrets")
             if secrets:
-                original_secrets = [_env for _env in secrets if isinstance(_env, Secret)]
+                original_secrets = [
+                    _env for _env in secrets if isinstance(_env, Secret)
+                ]
                 sorted_secrets = sorted(original_secrets, key=lambda x: x.Name)
                 for _secret in secrets:
                     if not isinstance(_secret, Secret):
@@ -526,8 +528,12 @@ class ComposeFamily:
                 secret_names = frozenset()
             environment = getattr(service.container_definition, "Environment")
             if environment:
-                original = [_env for _env in environment if isinstance(_env, Environment)]
-                remove_secrets = [_env for _env in original if _env.Name not in secret_names]
+                original = [
+                    _env for _env in environment if isinstance(_env, Environment)
+                ]
+                remove_secrets = [
+                    _env for _env in original if _env.Name not in secret_names
+                ]
                 sorted_env = sorted(remove_secrets, key=lambda x: x.Name)
                 for _env in environment:
                     if not isinstance(_env, Environment):
