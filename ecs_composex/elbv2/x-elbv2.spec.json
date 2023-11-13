@@ -361,6 +361,18 @@
     },
     "Listener": {
       "type": "object",
+      "oneOf": [
+        {
+          "required": [
+            "DefaultActions"
+          ]
+        },
+        {
+          "required": [
+            "Targets"
+          ]
+        }
+      ],
       "properties": {
         "Port": {
           "$ref": "#/definitions/Port"
