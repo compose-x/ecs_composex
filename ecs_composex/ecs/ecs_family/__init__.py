@@ -513,22 +513,44 @@ class ComposeFamily:
 
     def sort_env_vars_alphabetically(self):
         for service in self.services:
-            environment = getattr(service.container_definition, "Environment")
-            if not environment:
-                pass
-            original = [_env for _env in environment if isinstance(_env, Environment)]
-            sorted_env = sorted(original, key=lambda x: x.Name)
-            for _env in environment:
-                if not isinstance(_env, Environment):
-                    sorted_env.append(_env)
-            setattr(service.container_definition, "Environment", sorted_env)
             secrets = getattr(service.container_definition, "Secrets")
-            original_secrets = [_env for _env in secrets if isinstance(_env, Secret)]
-            sorted_secrets = sorted(original_secrets, key=lambda x: x.Name)
-            for _secret in secrets:
-                if not isinstance(_secret, Secret):
-                    sorted_secrets.append(_secret)
-            setattr(service.container_definition, "Secrets", sorted_secrets)
+            environment = getattr(service.container_definition, "Environment")
+            if secrets:
+                original_secrets = [
+                    _secret for _secret in secrets if isinstance(_secret, Secret)
+                ]
+                sorted_secrets = sorted(
+                    original_secrets, key=lambda _secret: _secret.Name
+                )
+                # Below imports secrets back which were inside a Fn::If or other Intrinsic functions
+                for _secret in secrets:
+                    if not isinstance(_secret, Secret):
+                        sorted_secrets.append(_secret)
+                setattr(service.container_definition, "Secrets", sorted_secrets)
+
+            if environment:
+                secrets_names: list[str] = [
+                    _secret.Name
+                    for _secret in getattr(service.container_definition, "Secrets")
+                ]
+                original = [
+                    _env for _env in environment if isinstance(_env, Environment)
+                ]
+                sorted_env = sorted(original, key=lambda _env_var: _env_var.Name)
+                for _index, _env in enumerate(sorted_env):
+                    if _env.Name in secrets_names:
+                        LOG.warning(
+                            "services.{}: Environment variable {} overlaps with Secret. Removing.".format(
+                                self.name, _env.Name
+                            )
+                        )
+                        sorted_env.pop(_index)
+                # Below imports env vars back which were inside a Fn::If or other Intrinsic functions
+                for _env in environment:
+                    if not isinstance(_env, Environment):
+                        sorted_env.append(_env)
+
+                setattr(service.container_definition, "Environment", sorted_env)
 
     def set_services_to_services_dependencies(self):
         """
