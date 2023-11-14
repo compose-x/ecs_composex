@@ -201,6 +201,19 @@ def add_resource(template, resource, replace=False) -> AWSObject:
         return resource
 
 
+def set_get_resource(template, resource) -> (AWSObject, bool):
+    """
+    Function to add resource to template if the resource does not already exist
+    Returns the resource if it already does.
+    """
+    if (
+        resource not in template.resources.values()
+        and resource.title not in template.resources.keys()
+    ):
+        return template.add_resource(resource), False
+    return template.resources[resource.title], True
+
+
 def add_defaults(template):
     """Function to CFN parameters and conditions to the template which are used
     across ECS ComposeX
