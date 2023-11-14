@@ -532,8 +532,11 @@ class ComposeFamily:
                 extras = []
                 for _env in environment:
                     if isinstance(_env, Environment):
+                        orig_env_name = _env.Name
                         while _env.Name in secret_names:
                             _env.Name += "_IN_SECRETS"
+                        if orig_env_name != _env.Name:
+                            LOG.warning(f"Renamed environment {orig_env_name} to {_env.Name}")
                         original.append(_env)
                     else:
                         extras.append(_env)
