@@ -241,42 +241,36 @@ def generate_secret_string(
             f"{db.logical_name}ConnectionStringSecret",
             Description=Sub(f"Connection string secret for {db.logical_name}"),
             SecretString=Sub(
-                "${ENGINE}://${USERNAME}:${PASSWORD}@{HOST}:${PORT}/${DBNAME}",
+                "${ENGINE}://${USERNAME}:${PASSWORD}@${HOST}:${PORT}/${DBNAME}",
                 ENGINE=Sub(
                     "{{resolve:secretsmanager:"
-                    + "${SECRET_SOURCE}"
-                    + ":SecretString:engine",
-                    SECRET_SOURCE=secret_import,
+                    + f"${{{secret_import.title}}}"
+                    + ":SecretString:engine}}",
                 ),
                 USERNAME=Sub(
                     "{{resolve:secretsmanager:"
-                    + "${SECRET_SOURCE}"
-                    + ":SecretString:username",
-                    SECRET_SOURCE=secret_import,
+                    + f"${{{secret_import.title}}}"
+                    + ":SecretString:username}}",
                 ),
                 PASSWORD=Sub(
                     "{{resolve:secretsmanager:"
-                    + "${SECRET_SOURCE}"
-                    + ":SecretString:password",
-                    SECRET_SOURCE=secret_import,
+                    + f"${{{secret_import.title}}}"
+                    + ":SecretString:password}}",
                 ),
                 HOST=Sub(
                     "{{resolve:secretsmanager:"
-                    + "${SECRET_SOURCE}"
-                    + ":SecretString:host",
-                    SECRET_SOURCE=secret_import,
+                    + f"${{{secret_import.title}}}"
+                    + ":SecretString:host}}",
                 ),
                 PORT=Sub(
                     "{{resolve:secretsmanager:"
-                    + "${SECRET_SOURCE}"
-                    + ":SecretString:port",
-                    SECRET_SOURCE=secret_import,
+                    + f"${{{secret_import.title}}}"
+                    + ":SecretString:port}}",
                 ),
                 DBNAME=Sub(
                     "{{resolve:secretsmanager:"
-                    + "${SECRET_SOURCE}"
-                    + ":SecretString:dbname",
-                    SECRET_SOURCE=secret_import,
+                    + f"${{{secret_import.title}}}"
+                    + ":SecretString:dbname}}",
                 ),
             ),
         ),
