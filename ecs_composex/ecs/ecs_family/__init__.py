@@ -528,16 +528,17 @@ class ComposeFamily:
                 secret_names = frozenset()
             environment = getattr(service.container_definition, "Environment")
             if environment:
-                original = [
-                    _env for _env in environment if isinstance(_env, Environment)
-                ]
-                remove_secrets = [
-                    _env for _env in original if _env.Name not in secret_names
-                ]
-                sorted_env = sorted(remove_secrets, key=lambda x: x.Name)
+                original = []
+                extras = []
                 for _env in environment:
-                    if not isinstance(_env, Environment):
-                        sorted_env.append(_env)
+                    if isinstance(_env, Environment):
+                        while _env.Name in secret_names:
+                            _env.Name += "_IN_SECRETS"
+                        original.append(_env)
+                    else:
+                        extras.append(_env)
+                sorted_env = sorted(original, key=lambda x: x.Name)
+                sorted_env.extend(extras)
                 setattr(service.container_definition, "Environment", sorted_env)
 
     def set_services_to_services_dependencies(self):
