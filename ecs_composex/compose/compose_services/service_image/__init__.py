@@ -164,6 +164,7 @@ class ServiceImage:
         if isinstance(self.image, Ref):
             return
         valid_media_types = [
+            "application/vnd.oci.image.index.v1+json",
             "application/vnd.docker.distribution.manifest.v1+json",
             "application/vnd.docker.distribution.manifest.v2+json",
             "application/vnd.docker.distribution.manifest.v1+prettyjws",
@@ -175,47 +176,50 @@ class ServiceImage:
             image_details = dkr_client.inspect_distribution(self.image)
             if not keyisset("Descriptor", image_details):
                 raise KeyError(f"No information retrieved for {self.image}")
-            details = image_details["Descriptor"]
-            if (
-                keyisset("mediaType", details)
-                and details["mediaType"] not in valid_media_types
-            ):
-                raise ValueError(
-                    "The mediaType is not valid. Got",
-                    details["mediaType"],
-                    "Expected one of",
-                    valid_media_types,
-                )
-            if keyisset("digest", details):
-                image_digest = details["digest"]
-                self.image_uri = re.sub(r"(:.*$|@.*$)", f"@{image_digest}", self.image)
-                LOG.info(
-                    f"Update service {self.service.name} image to {self.image_uri}"
-                )
-                if self.service.family:
-                    self.service.family.stack.Parameters.update(
-                        {self.image_param.title: self.image_uri}
-                    )
-                else:
-                    self.service.definition["image"] = self.image_uri
-                try:
-                    image_tag_re = re.compile(r"(?<=[:@])(?P<tag_digest>[\w.\-_]+$)")
-                    original_tag_digest = image_tag_re.search(original_image).group(
-                        "tag_digest"
-                    )
-                    self.service.docker_labels.update(
-                        {"__meta_image_tag": original_tag_digest}
-                    )
-                except AttributeError:
-                    pass
-
-            else:
-                LOG.warning(
-                    "No digest found. This might be due to Registry API prior to V2"
-                )
-
         except (docker.errors.APIError, docker.errors.DockerException) as error:
-            LOG.error(f"Failed to retrieve the image digest for {self.image}")
-            print(error)
-        except (FileNotFoundError, urllib3.exceptions, requests.exceptions):
-            LOG.error("Failed to connect to any docker engine.")
+            LOG.error(f"Failed to retrieve the image digest for {self.image}: {error}")
+            image_details = {}
+        except (FileNotFoundError, urllib3.exceptions, requests.exceptions) as error:
+            LOG.error("Failed to connect to any docker engine: {error}")
+            image_details = {}
+        if not image_details:
+            LOG.warn(
+                f"services.{self.service.name}: Failed to interpolate Docker image tag with digest"
+            )
+            return
+        details = image_details["Descriptor"]
+        if (
+            keyisset("mediaType", details)
+            and details["mediaType"] not in valid_media_types
+        ):
+            raise ValueError(
+                "The mediaType is not valid. Got",
+                details["mediaType"],
+                "Expected one of",
+                valid_media_types,
+            )
+        if keyisset("digest", details):
+            image_digest = details["digest"]
+            self.image_uri = re.sub(r"(:.*$|@.*$)", f"@{image_digest}", self.image)
+            LOG.info(f"Update service {self.service.name} image to {self.image_uri}")
+            if self.service.family:
+                self.service.family.stack.Parameters.update(
+                    {self.image_param.title: self.image_uri}
+                )
+            else:
+                self.service.definition["image"] = self.image_uri
+            try:
+                image_tag_re = re.compile(r"(?<=[:@])(?P<tag_digest>[\w.\-_]+$)")
+                original_tag_digest = image_tag_re.search(original_image).group(
+                    "tag_digest"
+                )
+                self.service.docker_labels.update(
+                    {"__meta_image_tag": original_tag_digest}
+                )
+            except AttributeError:
+                pass
+
+        else:
+            LOG.warning(
+                "No digest found. This might be due to Registry API prior to V2"
+            )
