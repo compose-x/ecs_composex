@@ -166,6 +166,9 @@ class FireLensServiceManagedConfiguration:
         self.source_file = set_else_none("SourceFile", self.definition)
         self._parser_files = set_else_none("ParserFiles", self.definition, alt_value=[])
         self._env_vars = set_else_none("EnvironmentVariables", self.definition)
+        self.firelens_config: dict = set_else_none(
+            "FirelensConfiguration", self.definition, alt_value={}
+        )
         self.managed_destinations = []
         self.extra_env_vars = set_else_none(
             "EnvironmentVariables", self.definition, alt_value={}
