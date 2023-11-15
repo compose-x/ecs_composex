@@ -404,7 +404,6 @@ def generate_rds_secrets_permissions(resources, db_name: str) -> dict:
     :return:
     """
     return {
-        "Sid": f"AccessTo{db_name}Secret",
         "Effect": "Allow",
         "Action": ["secretsmanager:GetSecretValue", "secretsmanager:GetSecret"],
         "Resource": resources if isinstance(resources, list) else [resources],
