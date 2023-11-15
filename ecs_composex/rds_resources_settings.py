@@ -235,6 +235,7 @@ def generate_secret_string(
     """
     from troposphere.secretsmanager import Secret
 
+    param_name = secret_import.data["Ref"]
     secret, already_set = set_get_resource(
         family.template,
         Secret(
@@ -244,32 +245,32 @@ def generate_secret_string(
                 "${ENGINE}://${USERNAME}:${PASSWORD}@${HOST}:${PORT}/${DBNAME}",
                 ENGINE=Sub(
                     "{{resolve:secretsmanager:"
-                    + f"${{{secret_import.title}}}"
+                    + f"${{{param_name}}}"
                     + ":SecretString:engine}}",
                 ),
                 USERNAME=Sub(
                     "{{resolve:secretsmanager:"
-                    + f"${{{secret_import.title}}}"
+                    + f"${{{param_name}}}"
                     + ":SecretString:username}}",
                 ),
                 PASSWORD=Sub(
                     "{{resolve:secretsmanager:"
-                    + f"${{{secret_import.title}}}"
+                    + f"${{{param_name}}}"
                     + ":SecretString:password}}",
                 ),
                 HOST=Sub(
                     "{{resolve:secretsmanager:"
-                    + f"${{{secret_import.title}}}"
+                    + f"${{{param_name}}}"
                     + ":SecretString:host}}",
                 ),
                 PORT=Sub(
                     "{{resolve:secretsmanager:"
-                    + f"${{{secret_import.title}}}"
+                    + f"${{{param_name}}}"
                     + ":SecretString:port}}",
                 ),
                 DBNAME=Sub(
                     "{{resolve:secretsmanager:"
-                    + f"${{{secret_import.title}}}"
+                    + f"${{{param_name}}}"
                     + ":SecretString:dbname}}",
                 ),
             ),
