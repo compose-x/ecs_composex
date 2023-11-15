@@ -17,7 +17,7 @@ batch:
         compute-type: BUILD_GENERAL1_SMALL
         privileged-mode: true
         variables:
-          VERSION: 3.7
+          VERSION: 3.10
           ARCH: amd64
       buildspec: .cicd/buildspec_image.yml
 
@@ -29,7 +29,7 @@ batch:
         privileged-mode: true
         variables:
           ARCH: arm64v8
-          VERSION: 3.7
+          VERSION: 3.10
       buildspec: .cicd/buildspec_image.yml
 
     - identifier: manifest
@@ -63,7 +63,7 @@ phases:
   build:
     commands:
       - |
-          for VERSION in py37 py38 py39 py310; do
+          for VERSION in py310; do
             for ARCH in "amd64" "arm64v8"; do
               TAG=${SUFFIX}-${VERSION}-${ARCH}
               echo TAG is $TAG
@@ -76,12 +76,6 @@ phases:
           done
 
       - docker manifest create ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}
-          --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py37-amd64
-          --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py37-arm64v8
-          --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py38-amd64
-          --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py38-arm64v8
-          --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py39-amd64
-          --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py39-arm64v8
           --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py310-amd64
           --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py310-arm64v8
       - docker manifest push ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}
@@ -89,24 +83,12 @@ phases:
       - |
           if ! [ $TAG_RELEASE -eq 1 ]; then
             docker manifest create ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:nightly        \
-                  --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py37-amd64    \
-                  --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py37-arm64v8  \
-                  --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py38-amd64    \
-                  --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py38-arm64v8  \
-                  --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py39-amd64    \
-                  --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py39-arm64v8  \
                   --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py310-amd64   \
                   --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py310-arm64v8 ;
 
             docker manifest push ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:nightly
           else
             docker manifest create ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:latest         \
-                  --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py37-amd64    \
-                  --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py37-arm64v8  \
-                  --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py38-amd64    \
-                  --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py38-arm64v8  \
-                  --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py39-amd64    \
-                  --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py39-arm64v8  \
                   --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py310-amd64   \
                   --amend ${PUBLIC_REGISTRY}/${REPOSITORY_NAME}:${SUFFIX}-py310-arm64v8 ;
 
