@@ -118,6 +118,16 @@
           "description": "If true, won't create any NAT. Mutually exclusive with SingleNat",
           "default": false
         },
+        "DHCPOptions": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "DomainName": {
+              "type": "string",
+              "description": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-dhcpoptions.html#cfn-ec2-dhcpoptions-domainname"
+            }
+          }
+        },
         "Endpoints": {
           "type": "object",
           "properties": {

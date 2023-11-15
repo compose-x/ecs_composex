@@ -14,6 +14,7 @@ from troposphere import (
     AWS_REGION,
     GetAtt,
     If,
+    NoValue,
     Ref,
     Sub,
     Tags,
@@ -39,7 +40,7 @@ AZ_INDEX_PATTERN = r"(([a-z0-9-]+)([a-z]{1}$))"
 AZ_INDEX_RE = re.compile(AZ_INDEX_PATTERN)
 
 
-def add_vpc_core(template, vpc_cidr):
+def add_vpc_core(template, vpc_cidr, dhcp_options: dict):
     """
     Function to create the core resources of the VPC
     and add them to the core VPC template
@@ -80,6 +81,9 @@ def add_vpc_core(template, vpc_cidr):
     dhcp_opts = DHCPOptions(
         "VpcDhcpOptions",
         template=template,
+        DomainName=dhcp_options["DomainName"]
+        if (dhcp_options and "DomainName" in dhcp_options)
+        else NoValue,
         DomainNameServers=["AmazonProvidedDNS"],
         Tags=Tags(Name=Sub(f"dhcp-${{{vpc.title}}}")),
         Metadata=metadata,
