@@ -5,6 +5,13 @@
 Package to handle recurring Secrets tasks
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from troposphere import Template
+
 from troposphere import Parameter, Ref, Sub
 from troposphere.docdb import DBCluster as DocdbCluster
 from troposphere.docdb import DBInstance as DocdbInstance
@@ -19,13 +26,8 @@ from troposphere.secretsmanager import (
 from ecs_composex.common.troposphere_tools import add_parameters
 
 
-def add_db_secret(template, resource_title):
-    """
-    Function to add a Secrets Manager secret that will be associated with the DB
-
-    :param template.Template template: The template to add the secret to.
-    :param str resource_title: The Logical name of the resource associated to that secret
-    """
+def add_db_secret(template: Template, resource_title: str) -> Secret:
+    """Function to add a Secrets Manager secret that will be associated with the DB"""
     username = Parameter(
         f"{resource_title}Username",
         Type="String",

@@ -31,7 +31,11 @@ from troposphere.iam import PolicyType
 
 from ecs_composex.common.aws import find_aws_resource_arn_from_tags_api
 from ecs_composex.common.logging import LOG
-from ecs_composex.common.troposphere_tools import add_resource, add_update_mapping
+from ecs_composex.common.troposphere_tools import (
+    add_resource,
+    add_update_mapping,
+    set_get_resource,
+)
 from ecs_composex.compose.compose_services.helpers import (
     extend_container_envvars,
     extend_container_secrets,
@@ -222,6 +226,61 @@ def define_secrets_keys_mappings(mappings_definition):
     return rendered_mappings
 
 
+def generate_secret_string(
+    secret_var_name: str, secret_import, db: DatabaseXResource, family: ComposeFamily
+) -> list:
+    """
+    Generates an additional secret that will put together the connection string that some services require in order
+    to connect to the DB. Generally, not recommended.
+    """
+    from troposphere.secretsmanager import Secret
+
+    param_name = secret_import.data["Ref"]
+    secret, already_set = set_get_resource(
+        family.template,
+        Secret(
+            f"{db.logical_name}ConnectionStringSecret",
+            Description=Sub(f"Connection string secret for {db.logical_name}"),
+            SecretString=Sub(
+                "${ENGINE}://${USERNAME}:${PASSWORD}@${HOST}:${PORT}/${DBNAME}",
+                ENGINE=Sub(
+                    "{{resolve:secretsmanager:"
+                    + f"${{{param_name}}}"
+                    + ":SecretString:engine}}",
+                ),
+                USERNAME=Sub(
+                    "{{resolve:secretsmanager:"
+                    + f"${{{param_name}}}"
+                    + ":SecretString:username}}",
+                ),
+                PASSWORD=Sub(
+                    "{{resolve:secretsmanager:"
+                    + f"${{{param_name}}}"
+                    + ":SecretString:password}}",
+                ),
+                HOST=Sub(
+                    "{{resolve:secretsmanager:"
+                    + f"${{{param_name}}}"
+                    + ":SecretString:host}}",
+                ),
+                PORT=Sub(
+                    "{{resolve:secretsmanager:"
+                    + f"${{{param_name}}}"
+                    + ":SecretString:port}}",
+                ),
+                DBNAME=Sub(
+                    "{{resolve:secretsmanager:"
+                    + f"${{{param_name}}}"
+                    + ":SecretString:dbname}}",
+                ),
+            ),
+        ),
+    )
+    if not already_set:
+        add_secrets_access_policy(family, Ref(secret), db, False)
+    return [EcsSecret(Name=secret_var_name, ValueFrom=Ref(secret))]
+
+
 def generate_secrets_from_secrets_mappings(
     db, secrets_list, secret_definition, mappings_definition
 ):
@@ -292,6 +351,10 @@ def define_db_secrets(db: DatabaseXResource, secret_import, target: tuple) -> li
             " - No SecretsMappings set. Exposing the secrets content as-is."
         )
         secrets.append(EcsSecret(Name=db.name, ValueFrom=secret_import))
+    if keyisset("GenerateConnectionStringSecret", target[-1]):
+        secrets += generate_secret_string(
+            target[-1]["GenerateConnectionStringSecret"], secret_import, db, target[0]
+        )
     return secrets
 
 
@@ -341,7 +404,6 @@ def generate_rds_secrets_permissions(resources, db_name: str) -> dict:
     :return:
     """
     return {
-        "Sid": f"AccessTo{db_name}Secret",
         "Effect": "Allow",
         "Action": ["secretsmanager:GetSecretValue", "secretsmanager:GetSecret"],
         "Resource": resources if isinstance(resources, list) else [resources],
@@ -349,19 +411,15 @@ def generate_rds_secrets_permissions(resources, db_name: str) -> dict:
 
 
 def add_secrets_access_policy(
-    target: tuple,
+    service_family: ComposeFamily,
     secret_import,
-    db,
+    db: DatabaseXResource,
     use_task_role: Union[bool, dict] = False,
-):
+) -> None:
     """
     Function to add or append policy to access DB Secret for the Execution Role
-
-    :param tuple target:
-    :param secret_import:
-    :return:
+    If the use_task_role true, also allows the task role access to the secret.
     """
-    service_family = target[0]
     db_policy_statement = generate_rds_secrets_permissions(
         secret_import, db.logical_name
     )
@@ -455,7 +513,7 @@ def handle_db_secret_to_services(
     grant_task_role_access = set_else_none(
         "GrantTaskAccess", target[-1], alt_value=False
     )
-    add_secrets_access_policy(target, secret_import, db, grant_task_role_access)
+    add_secrets_access_policy(target[0], secret_import, db, grant_task_role_access)
 
 
 def handle_import_dbs_to_services(
@@ -481,7 +539,7 @@ def handle_import_dbs_to_services(
             "GrantTaskAccess", target[-1], alt_value=False
         )
         add_secrets_access_policy(
-            target,
+            target[0],
             db.attributes_outputs[db.db_secret_arn_parameter]["ImportValue"],
             db,
             use_task_role=grant_task_role_access,

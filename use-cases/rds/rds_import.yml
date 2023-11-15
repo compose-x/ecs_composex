@@ -30,6 +30,7 @@ x-rds:
         Access:
           DBCluster: RO
         GrantTaskAccess: true
+        GenerateConnectionStringSecret: DB_CONN_STRING
     Lookup:
       cluster:
         Name: database-1
@@ -46,6 +47,7 @@ x-rds:
           DBCluster: RO
         GrantTaskAccess:
           SecretEnvName: DB_C_SECRET
+        GenerateConnectionStringSecret: DB_CONN_STRING
     Lookup:
       cluster:
         Name: database-1
