@@ -11,7 +11,6 @@ from typing import TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
     from ecs_composex.ecs.ecs_family import ComposeFamily
-    from ecs_composex.common.cfn_params import Parameter
     from ecs_composex.common.settings import ComposeXSettings
     from ecs_composex.compose.x_resources.network_x_resources import (
         NetworkXResource,
@@ -30,6 +29,7 @@ from troposphere.ecs import Secret as EcsSecret
 from troposphere.iam import PolicyType
 
 from ecs_composex.common.aws import find_aws_resource_arn_from_tags_api
+from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.common.logging import LOG
 from ecs_composex.common.troposphere_tools import (
     add_resource,
@@ -235,7 +235,6 @@ def generate_secret_string(
     """
     from troposphere.secretsmanager import Secret
 
-    param_name = secret_import.data["Ref"]
     secret, already_set = set_get_resource(
         family.template,
         Secret(
@@ -245,33 +244,39 @@ def generate_secret_string(
                 "${ENGINE}://${USERNAME}:${PASSWORD}@${HOST}:${PORT}/${DBNAME}",
                 ENGINE=Sub(
                     "{{resolve:secretsmanager:"
-                    + f"${{{param_name}}}"
+                    + "${SECRET_ID}"
                     + ":SecretString:engine}}",
+                    SECRET_ID=secret_import,
                 ),
                 USERNAME=Sub(
                     "{{resolve:secretsmanager:"
-                    + f"${{{param_name}}}"
+                    + "${SECRET_ID}"
                     + ":SecretString:username}}",
+                    SECRET_ID=secret_import,
                 ),
                 PASSWORD=Sub(
                     "{{resolve:secretsmanager:"
-                    + f"${{{param_name}}}"
+                    + "${SECRET_ID}"
                     + ":SecretString:password}}",
+                    SECRET_ID=secret_import,
                 ),
                 HOST=Sub(
                     "{{resolve:secretsmanager:"
-                    + f"${{{param_name}}}"
+                    + "${SECRET_ID}"
                     + ":SecretString:host}}",
+                    SECRET_ID=secret_import,
                 ),
                 PORT=Sub(
                     "{{resolve:secretsmanager:"
-                    + f"${{{param_name}}}"
+                    + "${SECRET_ID}"
                     + ":SecretString:port}}",
+                    SECRET_ID=secret_import,
                 ),
                 DBNAME=Sub(
                     "{{resolve:secretsmanager:"
-                    + f"${{{param_name}}}"
+                    + "${SECRET_ID}"
                     + ":SecretString:dbname}}",
+                    SECRET_ID=secret_import,
                 ),
             ),
         ),
