@@ -112,6 +112,7 @@ class Vpc(AwsEnvironmentResource):
         self.vpc_cidr = set_else_none(
             VPC_CIDR.title, self.properties, self.default_ipv4_cidr
         )
+        self.dhcp_options = set_else_none("DHCPOptions", self.properties, {})
         region_account_zones = settings.session.client(
             "ec2"
         ).describe_availability_zones()
@@ -130,7 +131,7 @@ class Vpc(AwsEnvironmentResource):
         self.azs[APP_SUBNETS] = current_region_azs
 
         self.layers = get_subnet_layers(self.vpc_cidr, len(curated_azs))
-        vpc_core = add_vpc_core(template, self.vpc_cidr)
+        vpc_core = add_vpc_core(template, self.vpc_cidr, self.dhcp_options)
         self.vpc = vpc_core[0]
         self.storage_subnets = add_storage_subnets(
             template, self.vpc, azs_index, self.layers

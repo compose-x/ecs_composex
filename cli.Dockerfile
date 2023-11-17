@@ -15,7 +15,9 @@ RUN poetry build
 FROM $BASE_IMAGE
 COPY --from=builder /opt/dist/ecs_composex-*.whl /opt/
 WORKDIR /opt
-RUN pip install pip -U --no-cache-dir && pip install wheel --no-cache-dir && pip install *.whl --no-cache-dir;\
+RUN pip install pip -U --no-cache-dir && \
+    pip install wheel --no-cache-dir && \
+    pip install *.whl --no-cache-dir;\
     pip --no-cache-dir install ecs-composex[ecrscan]
 WORKDIR /tmp
 ENTRYPOINT ["ecs-compose-x"]

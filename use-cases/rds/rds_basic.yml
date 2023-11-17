@@ -38,10 +38,12 @@ x-rds:
     Services:
       app01:
         Access: RW
+        GenerateConnectionStringSecret: APPO1_DB_B_CONNECTION_STRING
       app03:
         Access: RW
         GrantTaskAccess:
           SecretEnvName: DB_B_SECRET
+        GenerateConnectionStringSecret: APP03_DB_B_CONN
       youtoo:
         Access: RW
         GrantTaskAccess: True

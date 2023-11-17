@@ -515,6 +515,8 @@ def create_from_properties(db_template: Template, db: Rds) -> None:
     rds_class = determine_resource_type(db.name, db.properties)
     if rds_class:
         rds_props = import_record_properties(db.properties, rds_class)
+        if not keyisset("DatabaseName", rds_props):
+            rds_props["DatabaseName"] = Ref(DB_NAME)
         override_set_properties(rds_props, db)
         db.cfn_resource = rds_class(db.logical_name, **rds_props)
         add_resource(db_template, db.cfn_resource)

@@ -488,7 +488,7 @@ class ComposeFamily:
         ]
         handle_same_task_services_dependencies(service_configs)
         self.set_add_region_when_external()
-        self.sort_env_vars_alphabetically()
+        self.sort_secrets_env_vars()
 
     def set_add_region_when_external(self):
         from troposphere.ecs import Environment
@@ -511,38 +511,77 @@ class ComposeFamily:
             ]:
                 environment.append(region_conditional)
 
-    def sort_env_vars_alphabetically(self):
-        for service in self.services:
-            secrets = getattr(service.container_definition, "Secrets")
-            if secrets:
-                original_secrets = [
-                    _env for _env in secrets if isinstance(_env, Secret)
-                ]
-                sorted_secrets = sorted(original_secrets, key=lambda x: x.Name)
-                for _secret in secrets:
-                    if not isinstance(_secret, Secret):
-                        sorted_secrets.append(_secret)
-                setattr(service.container_definition, "Secrets", sorted_secrets)
-                secret_names = frozenset(x.Name for x in sorted_secrets)
+    @staticmethod
+    def sort_secrets(service: ComposeService, secrets: list) -> None:
+        """Sorts secrets by Name"""
+        if not secrets:
+            return
+        strictly_secrets: list = []
+        non_secret_type: list = []
+        for _secret in secrets:
+            if isinstance(_secret, Secret):
+                strictly_secrets.append(_secret)
             else:
-                secret_names = frozenset()
-            environment = getattr(service.container_definition, "Environment")
+                non_secret_type.append(_secret)
+        sorted_secrets = sorted(strictly_secrets, key=lambda _secret: _secret.Name)
+        sorted_secrets += non_secret_type
+        if sorted_secrets:
+            setattr(service.container_definition, "Secrets", sorted_secrets)
+        else:
+            setattr(service.container_definition, "Secrets", NoValue)
+
+    @staticmethod
+    def sort_env_vars(
+        service: ComposeService, environment: list, secrets: list = None
+    ) -> None:
+        """
+        Sorts env vars. If there are secrets in the list,
+        checks to remove env vars with Name that'd overlap with an existing secret.
+        Favoring secret over environment variable for security, as it's likely more sensitive.
+        """
+        strictly_env_vars: list = []
+        non_env_vars: list = []
+        for _env in environment:
+            if isinstance(_env, Environment):
+                strictly_env_vars.append(_env)
+            else:
+                non_env_vars.append(_env)
+        sorted_env = sorted(strictly_env_vars, key=lambda _env_var: _env_var.Name)
+        if sorted_env and (secrets and isinstance(secrets, list)):
+            secrets_names: list[str] = [
+                _secret.Name
+                for _secret in getattr(service.container_definition, "Secrets", [])
+            ]
+            for _index, _env in enumerate(sorted_env):
+                if _env.Name in secrets_names:
+                    LOG.warning(
+                        "services.{}: Environment variable {} overlaps with Secret. Removing.".format(
+                            service.family.name, _env.Name
+                        )
+                    )
+                    sorted_env.pop(_index)
+        sorted_env += non_env_vars
+        if sorted_env:
+            setattr(service.container_definition, "Environment", sorted_env)
+        else:
+            setattr(service.container_definition, "Environment", NoValue)
+
+    def sort_secrets_env_vars(self):
+        """
+        Sorts secrets and env vars alphabetically.
+        Removes env vars which would have a Key common to secrets
+        """
+        for service in self.services:
+            secrets: list = getattr(service.container_definition, "Secrets", [])
+            if secrets:
+                self.sort_secrets(service, secrets)
+            environment: list = getattr(service.container_definition, "Environment", [])
             if environment:
-                original = []
-                extras = []
-                for _env in environment:
-                    if isinstance(_env, Environment):
-                        orig_env_name = _env.Name
-                        while _env.Name in secret_names:
-                            _env.Name += "_IN_SECRETS"
-                        if orig_env_name != _env.Name:
-                            LOG.warning(f"Renamed environment {orig_env_name} to {_env.Name}")
-                        original.append(_env)
-                    else:
-                        extras.append(_env)
-                sorted_env = sorted(original, key=lambda x: x.Name)
-                sorted_env.extend(extras)
-                setattr(service.container_definition, "Environment", sorted_env)
+                self.sort_env_vars(
+                    service,
+                    environment,
+                    getattr(service.container_definition, "Secrets", []),
+                )
 
     def set_services_to_services_dependencies(self):
         """

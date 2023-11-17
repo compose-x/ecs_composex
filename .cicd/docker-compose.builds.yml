@@ -2,38 +2,10 @@
 # Docker compose file for the purpose of building images
 version: "3.8"
 services:
-  py37:
-    build:
-      dockerfile: cli.Dockerfile
-      context: ../
-      args:
-        SRC_TAG: "3.7.20220212"
-        ARCH: "-${ARCH}"
-    image: ${REGISTRY_URI}compose-x:${SUFFIX:-main}-py37-${ARCH}
-
-  py38:
-    build:
-      dockerfile: cli.Dockerfile
-      context: ../
-      args:
-        SRC_TAG: "3.8.20220212"
-        ARCH: "-${ARCH}"
-    image: ${REGISTRY_URI}compose-x:${SUFFIX:-main}-py38-${ARCH}
-
-  py39:
-    build:
-      dockerfile: cli.Dockerfile
-      context: ../
-      args:
-        SRC_TAG: "3.9.20220212"
-        ARCH: "-${ARCH}"
-    image: ${REGISTRY_URI}compose-x:${SUFFIX:-main}-py39-${ARCH}
-
   py310:
     build:
       dockerfile: cli.Dockerfile
       context: ../
       args:
-        SRC_TAG: "3.10.20220212"
         ARCH: "-${ARCH}"
     image: ${REGISTRY_URI}compose-x:${SUFFIX:-main}-py310-${ARCH}

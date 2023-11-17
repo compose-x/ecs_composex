@@ -53,6 +53,10 @@
             "SecretsMappings": {
               "$ref": "#/definitions/SecretsMappingsDef"
             },
+            "GenerateConnectionStringSecret": {
+              "type": "string",
+              "description": "If set, creates an additional secret that will represent the connection string to the DB, and sets the environment variable"
+            },
             "ReturnValues": {
               "type": "object",
               "description": "Set the CFN Return Value and the environment variable name you want to expose to the service",

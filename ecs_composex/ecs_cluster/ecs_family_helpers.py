@@ -99,14 +99,33 @@ def validate_compute_configuration_for_task(
         )
 
 
-def set_launch_type_from_cluster_and_service(family: ComposeFamily) -> None:
-    if all(
-        provider.CapacityProvider in ["FARGATE", "FARGATE_SPOT"]
-        for provider in family.service_compute.ecs_capacity_providers
-    ):
-        LOG.debug(
-            f"{family.name} - Cluster and Service use Fargate only. Setting to FARGATE_PROVIDERS"
+def set_launch_type_from_cluster_and_service(
+    family: ComposeFamily, cluster: EcsCluster
+) -> None:
+    """
+    Sets the launch type based on the service and capacity providers
+
+    If all the capacity providers of the service are FARGATE, we use `FARGATE_PROVIDERS` which removes `LaunchType` from
+    ECS Service definition
+    Otherwise, we use the capacity providers set which use AutoScaling.
+    """
+    family_providers: list = [
+        cap.CapacityProvider for cap in family.service_compute.ecs_capacity_providers
+    ]
+    family_uses_fargate_only = all(
+        provider in FARGATE_PROVIDERS for provider in family_providers
+    )
+    cluster_uses_fargate_only = all(
+        provider in FARGATE_PROVIDERS for provider in cluster.capacity_providers
+    )
+    if not all(provider in cluster.capacity_providers for provider in family_providers):
+        raise AttributeError(
+            "Family {} tries to use providers not available in the cluster. "
+            "Wants: {}. Available: {}".format(
+                family.name, family_providers, cluster.capacity_providers
+            )
         )
+    if family_uses_fargate_only and cluster_uses_fargate_only:
         family.service_compute.launch_type = "FARGATE_PROVIDERS"
     else:
         family.service_compute.launch_type = "SERVICE_MODE"
@@ -122,6 +141,11 @@ def set_launch_type_from_cluster_and_service(family: ComposeFamily) -> None:
 def set_launch_type_from_cluster_only(
     family: ComposeFamily, cluster: EcsCluster
 ) -> None:
+    """
+    When the family x-ecs has not set CapacityProviders, we rely on the ECS Cluster definition.
+    If all the capacity providers defined on the Cluster are FARGATE related, use `FARGATE_PROVIDERS`
+    Otherwise, use the ECS Cluster defined capacity providers based on the Cluster strategy.
+    """
     if any(
         provider in ["FARGATE", "FARGATE_SPOT"]
         for provider in cluster.default_strategy_providers
@@ -142,17 +166,20 @@ def set_launch_type_from_cluster_only(
         family.service_compute.launch_type = "CLUSTER_MODE"
 
 
-def set_service_launch_type(family, cluster) -> None:
+def set_service_launch_type(family: ComposeFamily, cluster) -> None:
     """
     Sets the LaunchType value for the ECS Service
+    If the LaunchType is EXTERNAL or EC2, we ignore Capacity Providers altogether.
     """
-    if (
-        family.service_compute.launch_type == "EXTERNAL"
-        or family.service_compute.launch_type == "EC2"
-    ):
+    if family.service_compute.launch_type in ["EXTERNAL", "EC2"]:
+        LOG.debug(
+            "services.{} uses {}. Skipping".format(
+                family.name, family.service_compute.launch_type
+            )
+        )
         return
     if family.service_compute.ecs_capacity_providers and cluster.capacity_providers:
-        set_launch_type_from_cluster_and_service(family)
+        set_launch_type_from_cluster_and_service(family, cluster)
     elif (
         not family.service_compute.ecs_capacity_providers and cluster.capacity_providers
     ):

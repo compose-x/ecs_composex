@@ -9,13 +9,52 @@ if TYPE_CHECKING:
     from ecs_composex.ecs.ecs_family import ComposeFamily
     from ecs_composex.common.settings import ComposeXSettings
 
+from compose_x_common.compose_x_common import set_else_none
 from troposphere import AWSHelperFn, Ref, Region
 from troposphere.ecs import Environment
 
+from ecs_composex.common.logging import LOG
 from ecs_composex.compose.compose_services.helpers import extend_container_envvars
 from ecs_composex.compose.compose_volumes.ecs_family_helpers import set_volumes
 
 from .ecs_firelens_advanced import FireLensFamilyManagedConfiguration
+
+
+def finalize_firelens_container_shorthands(
+    family: ComposeFamily, advanced_config: FireLensFamilyManagedConfiguration
+) -> None:
+    """
+    Checks the FirelensConfiguration.Options settings set on each services of the task family.
+    If it finds settings, updates the default settings with the new value.
+    First service in the family to have the settings win. There should be only one service with the x-logging.Firelens
+    config set not to overlap.
+    """
+    service_defined_firelens_options: dict = {}
+    for _service, _svc_config in advanced_config.services_configs.items():
+        if _service not in family.ordered_services:
+            continue
+        if not service_defined_firelens_options:
+            service_defined_firelens_options: dict = set_else_none(
+                "Options", _svc_config.firelens_config
+            )
+        else:
+            LOG.warning(
+                "{}.logging: FirelensConfiguration."
+                "Options already imported. Ignoring settings from {}".format(
+                    family.name, _service.name
+                )
+            )
+
+    firelens_options: dict = {
+        "config-file-value": f"{advanced_config.volume_mount}{advanced_config.config_file_name}",
+        "config-file-type": "file",
+        "enable-ecs-log-metadata": True,
+    }
+    firelens_options.update(service_defined_firelens_options)
+    family.logging.firelens_service.firelens_config = {
+        "Type": "fluentbit",
+        "Options": firelens_options,
+    }
 
 
 def handle_firelens_advanced_settings(
@@ -56,12 +95,5 @@ def handle_firelens_advanced_settings(
         },
     )
     set_volumes(family)
-    family.logging.firelens_service.firelens_config = {
-        "Type": "fluentbit",
-        "Options": {
-            "config-file-value": f"{advanced_config.volume_mount}{advanced_config.config_file_name}",
-            "config-file-type": "file",
-            "enable-ecs-log-metadata": True,
-        },
-    }
+    finalize_firelens_container_shorthands(family, advanced_config)
     return advanced_config

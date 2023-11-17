@@ -44,6 +44,7 @@ Access
 
     Access:
       DBCluster: RO
+    GenerateConnectionStringSecret: <string>
 
 The only valid key for Access is DBCluster. The only valid value is ``RO`` for read-only, which allows IAM calls to RDS
 to describe the cluster.
@@ -76,6 +77,27 @@ with the ARN of the secret
       youtoo:
         Access: RW
         GrantTaskAccess: True # Grants access to the secret, not setting an env var
+
+.. _rds_generate_connection_string:
+
+GenerateConnectionStringSecret
+---------------------------------
+
+This option enables to create a new secret that will be generated from the RDS Secret.
+The feature works for both newly created DBs and existing DBs (using Lookup).
+
+.. warning::
+
+    Once the secret has been created, if the root secret of the DB has changed, the value in the generated secret will
+    not be updated! Use at your own risks
+
+        .. hint::
+
+            Avoid to require the DB Connection string and have a separate environment variable for each part of the
+            connection.
+
+Example: ``postgres://username:password@cluster-hostname:port/dbname``
+
 
 .. _rds_db_secrets_mappings:
 
