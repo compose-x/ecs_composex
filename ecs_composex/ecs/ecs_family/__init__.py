@@ -553,7 +553,7 @@ class ComposeFamily:
                 for _secret in getattr(service.container_definition, "Secrets", [])
             ]
             # Iterate in reverse for popping so we don't mess up indexes
-            for _index, _env in reversed(enumerate(sorted_env)):
+            for _index, _env in reversed(tuple(enumerate(sorted_env))):
                 if _env.Name in secrets_names:
                     LOG.warning(
                         "services.{}: Environment variable {} overlaps with Secret. Removing.".format(
