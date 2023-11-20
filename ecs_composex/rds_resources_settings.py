@@ -419,7 +419,7 @@ def add_secrets_access_policy(
     service_family: ComposeFamily,
     secret_import,
     db: DatabaseXResource,
-    use_task_role: Union[bool, dict] = False,
+    use_task_role: bool | dict = False,
 ) -> None:
     """
     Function to add or append policy to access DB Secret for the Execution Role
@@ -451,7 +451,7 @@ def add_secrets_access_policy(
 
 
 def handle_task_role_access(
-    use_task_role: Union[dict, bool],
+    use_task_role: dict | bool,
     policy: PolicyType,
     secret_import,
     task_role,

@@ -134,7 +134,7 @@ class ManagedPrometheus(ApiXResource):
 def create_aps_log_group(
     new_aps: ManagedPrometheus,
     props: dict,
-    macro_value: Union[bool, dict],
+    macro_value: bool | dict,
     template: Template,
 ) -> None:
     """Handles the CreateNewLogGroup macro parameter"""

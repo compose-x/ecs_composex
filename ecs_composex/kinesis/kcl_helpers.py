@@ -60,7 +60,7 @@ def add_cloudwatch_metric_data_permission(family: ComposeFamily) -> None:
             )
 
 
-def define_dynamodb_statement(dynamodb_definition: Union[bool, dict]) -> list:
+def define_dynamodb_statement(dynamodb_definition: bool | dict) -> list:
     sid = "DynamodbKCL"
     if isinstance(dynamodb_definition, bool):
         statement = [
@@ -108,7 +108,7 @@ def define_dynamodb_statement(dynamodb_definition: Union[bool, dict]) -> list:
 
 
 def add_dynamodb_permissions(
-    family: ComposeFamily, dynamodb_definition: Union[bool, dict]
+    family: ComposeFamily, dynamodb_definition: bool | dict
 ) -> None:
     """
     Adds permissions to access DynamoDB
