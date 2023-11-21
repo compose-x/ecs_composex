@@ -2,6 +2,90 @@
 History
 =======
 
+0.24.0 (2023-11-21)
+===================
+
+0.23 has had a number of fixes, and small improvements but no significant new feature.
+On the other hand, it has had new contributors and bug reports, so I'd like to thank you all for the interest and
+time given to the project.
+
+New features
+-----------------
+
+* 71fbeb0 Allows to set DomainName in DHCP Options (#713) (John Preston)
+* 37d5bac Enable to set DeletionPolicy at the module level, applying to the module stack (#688) (John Preston)
+* 53895e0 Docker image as meta docker label (John "Preston" Mille)
+* 7f288f4 Expose env vars as parameters to the stack (#682) (John Preston)
+* b4e8e6b Basic working x-aps (John "Preston" Mille)
+
+General improvements & Bug fixes
+----------------------------------
+
+* 1d1cc0c Fixes non working FirelensConfiguration.Options in x-logging.Firelens.Advanced (#711) (John Preston)
+* b242d7e Working eval for compute platform (#706) (John Preston)
+* 2c91974 Build docker image only for py3.10 (John "Preston" Mille)
+* 6b23aae Fixing x-rds connection string build to something simpler (John "Preston" Mille)
+* fa98419 Removes env var if var.Name is already set in secrets (#710) (John Preston)
+* df66b95 Generate a connection string from existing RDS Secret (#712) (John Preston)
+* 0d91541 Added new oci type and better handling of the docker interpolate errors (John "Preston" Mille)
+* 2d04b3b Fix elbv2 conditions without setting access (#702) (John Preston)
+* 51bae41 [FIX] x-cloudmap VpcId use Ref on Parameter  (#705) (@thorfi)
+* cb2c62e Fix/service multi families assignment (#701) (John Preston)
+* b3b95a8 Fix missing ingress.SG AccountOwner parameter (#703) (John Preston)
+* 3eafa5e [FIX] elbv2 with empty DefaultActions crashes on target with Conditions (#697) (@thorfi)
+* b0d7bc1 Removing enum for Target attributes to enable users to add any new ones (John "Preston" Mille)
+* a8a0190 Add new TGT Group attribute (John "Preston" Mille)
+* 2d2ffee Fix condition test for AWS Source ingress (John "Preston" Mille)
+* 975f1f0 Using troposphere 4.5.1 (#691) (John Preston)
+* 84e4ce1 Fix/duplicate efs entries (#694) (John Preston)
+* 4b882c7 Bump to 0.23.27-rc0 (John "Preston" Mille)
+* 2182121 Change the way epoch timestamp is generated (#693) (Sam D)
+* 7cd3b19 Fix x-sns validation (#690) (John Preston)
+* 7a7c3ef Using long format of YAML Functions to be compat with all YAML loaders (John "Preston" Mille)
+* 7b47965 Bump to 0.23.24 (John "Preston" Mille)
+* 987fb3a Add docker label with original docker image tag if interpolated (John "Preston" Mille)
+* 2b3a154 Fixing up launch type (#686) (John Preston)
+* bedd9f5 Better EC2 default policy. Log Router preload use digest (John "Preston" Mille)
+* e41243e Granting Regional describe access (John "Preston" Mille)
+* ecdef96 Ensuring that we don't tag Event:Rule (#685) (John Preston)
+* 8e19e0d Updated deps (John "Preston" Mille)
+* 6e22aea Fix firelens config files import (#683) (John Preston)
+* d288d52 Uniqfy rules with the priority count (#681) (John Preston)
+* a10bd10 x-kinesis - Fixing up conditions for new stream. Fix Lookup. (#678) (John Preston)
+* 1c9f234 Removing arbitrary max for fluent-bit sidecar memory (John "Preston" Mille)
+* 394be4c x-elbv2.TargetGroups (#674) (John Preston)
+* 7473448 VPC Subnets discovery/settings improvements (#675) (John Preston)
+* 92a5016 Fix/elbv2 alarms bug (#672) (John Preston)
+* 9c3fbb1 Improve scheduled action and docs (#671) (John Preston)
+* f0f09b5 Support for Scheduled Actions (#670) (John Preston)
+* 0c80e8a Allow to update CPU Limit on FluentBit sidecar (#669) (John Preston)
+* ddb613e Sort env vars and secrets by Name to provide consistency across Task Definitions (#668) (John Preston)
+* 98a2bc9 Fixed memory assignment for fluent-bit sidecar (#667) (John Preston)
+* c3b921d Updated deps (John "Preston" Mille)
+* cb47e0c Changing confusing ECR Scan outcome (John "Preston" Mille)
+* b8b6c6b Correct warning on max CPU Count for fargate (John "Preston" Mille)
+* 5b96f57 x-ecs capacity providers when empty lauch type (#664) (John Preston)
+* 691e2bd Fixed validation condition logic (#663) (John Preston)
+* 4d58860 Fix ECR scans conditions (#662) (John Preston)
+* ac142b2 x-wafv2_webacl (#661) (John Preston)
+* 7f159c4 Fix logging for service image. (John "Preston" Mille)
+* a58e731 Improved logging (John "Preston" Mille)
+* 53774e1 Fix x-ecr security findings error (John "Preston" Mille)
+* 06b1fe4 Allow to specify Lookup of private zones. Adds logical name of DNS record to differentiate overlapping zones in the same x-route53 (John "Preston" Mille)
+* b52dfe3 Fixing up elbv2 subnets assignments (John "Preston" Mille)
+* a1805dc Fix resource.Tags import (#659) (John Preston)
+* c302b1a Fixing RDS tests (John "Preston" Mille)
+* a359787 Fixing loglevel error in CLI (John "Preston" Mille)
+* 63b2f8b Updated dockerfile using main upstream python (John "Preston" Mille)
+* 95ae027 Updated SNS topics imports. Updated post_processing to manage list (#656) (John Preston)
+* 5994b6d Enabling CW Agent image override/digest when enabling EMF (#655) (John Preston)
+* e0ff828 Resource Logical ID should not change based on the resource as to force replacement on update (John "Preston" Mille)
+* 68b40a2 Fix for alarms families iteration (John "Preston" Mille)
+* 68bbce4 Fixed using the same container as target more than once (#653) (John Preston)
+
+* 3c7a262 CW Agent configuration & EMF improvement (#651) (John Preston)
+
+
 0.23.0 (2023-01-11)
 ===================
 

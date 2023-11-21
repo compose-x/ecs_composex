@@ -432,7 +432,7 @@ def override_set_properties(props: dict, db: Rds) -> None:
     )
 
 
-def determine_resource_type(db_name: str, properties: dict) -> Union[type, None]:
+def determine_resource_type(db_name: str, properties: dict) -> type | None:
     """
     Function to determine if the properties are the ones of a DB Cluster or DB Instance.
     Default assumes DBCluster if it can't make it out from properties.

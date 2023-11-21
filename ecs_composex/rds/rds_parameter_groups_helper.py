@@ -65,7 +65,7 @@ def get_db_cluster_engine_parameter_group_defaults(
 
 def get_family_from_engine_version(
     engine_name: str, engine_version: str, session: Session = None
-) -> Union[str, None]:
+) -> str | None:
     """
     Get the engine family from engine name and version
     """

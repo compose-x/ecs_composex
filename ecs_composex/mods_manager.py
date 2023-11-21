@@ -53,14 +53,14 @@ class XResourceModule:
         res_key: str,
         x_class,
         posix_path,
-        resource_class: Union[
-            XResource,
-            ServicesXResource,
-            ApiXResource,
-            AwsEnvironmentResource,
-            NetworkXResource,
-            DatabaseXResource,
-        ] = None,
+        resource_class: (
+            XResource
+            | ServicesXResource
+            | ApiXResource
+            | AwsEnvironmentResource
+            | NetworkXResource
+            | DatabaseXResource
+        ) = None,
         definition: dict = None,
     ):
         if definition and not isinstance(definition, dict):
@@ -90,14 +90,14 @@ class XResourceModule:
     @property
     def resource_class(
         self,
-    ) -> Union[
-        XResource,
-        ServicesXResource,
-        ApiXResource,
-        AwsEnvironmentResource,
-        NetworkXResource,
-        DatabaseXResource,
-    ]:
+    ) -> (
+        XResource
+        | ServicesXResource
+        | ApiXResource
+        | AwsEnvironmentResource
+        | NetworkXResource
+        | DatabaseXResource
+    ):
         return self._resource_class
 
     @property
@@ -153,14 +153,14 @@ class XResourceModule:
         self,
     ) -> dict[
         str,
-        Union[
-            XResource,
-            ServicesXResource,
-            ApiXResource,
-            AwsEnvironmentResource,
-            NetworkXResource,
-            DatabaseXResource,
-        ],
+        (
+            XResource
+            | ServicesXResource
+            | ApiXResource
+            | AwsEnvironmentResource
+            | NetworkXResource
+            | DatabaseXResource
+        ),
     ]:
         return self._resources
 
@@ -168,14 +168,14 @@ class XResourceModule:
     def resources_list(
         self,
     ) -> list[
-        Union[
-            XResource,
-            ServicesXResource,
-            ApiXResource,
-            AwsEnvironmentResource,
-            NetworkXResource,
-            DatabaseXResource,
-        ]
+        (
+            XResource
+            | ServicesXResource
+            | ApiXResource
+            | AwsEnvironmentResource
+            | NetworkXResource
+            | DatabaseXResource
+        )
     ]:
         return [_res for _res in self._resources.values() if _res is not None]
 
@@ -343,9 +343,7 @@ class ModManager:
         if extension_module:
             return extension_module
 
-    def load_module(
-        self, res_key: str, res_def: Union[dict, bool]
-    ) -> Union[XResourceModule, None]:
+    def load_module(self, res_key: str, res_def: dict | bool) -> XResourceModule | None:
         if not res_key.startswith(X_KEY):
             return
         mod_key = re.sub(X_KEY, "", res_key)

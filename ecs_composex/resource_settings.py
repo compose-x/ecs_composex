@@ -240,7 +240,7 @@ def define_iam_permissions(
     dest_resource_template,
     policy_title,
     access_type_policy_model,
-    access_definition: Union[str, dict],
+    access_definition: str | dict,
     resource_arns,
     access_subkey: str = None,
     roles=None,
