@@ -35,7 +35,7 @@ def finalize_firelens_container_shorthands(
             continue
         if not service_defined_firelens_options:
             service_defined_firelens_options: dict = set_else_none(
-                "Options", _svc_config.firelens_config
+                "Options", _svc_config.firelens_config, {}
             )
         else:
             LOG.warning(
