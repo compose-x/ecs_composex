@@ -72,7 +72,7 @@ class ServicesXResource(XResource):
         return _associated_service
 
     def handle_families_targets_expansion_list(
-        self, service_name: str, service_def, settings: ComposeXSettings
+        self, service_name: str, service_def: dict, settings: ComposeXSettings
     ):
         """
         Method to list all families and services that are targets of the resource.
@@ -95,7 +95,7 @@ class ServicesXResource(XResource):
                                 service_name, family_name, settings
                             )
                         ],
-                        set_else_none(service_def[access_key], service_def, {}),
+                        set_else_none(access_key, service_def, {}),
                         service_def,
                     )
                 )
@@ -210,10 +210,11 @@ class ServicesXResource(XResource):
             LOG.debug(f"{self.module.res_key}.{self.name} No Services defined.")
             return
         if isinstance(self.services, list):
-            from warnings import warn
+            from warnings import simplefilter, warn
 
+            simplefilter("always", DeprecationWarning)
             warn(
-                "Services list will be deprecated in future versions. Use Services objects instead.",
+                "Services list will be deprecated in the next version. Use Services objects instead.",
                 DeprecationWarning,
             )
             self.set_services_targets_from_list(settings)
