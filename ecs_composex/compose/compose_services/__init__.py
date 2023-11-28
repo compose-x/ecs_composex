@@ -762,7 +762,7 @@ class ComposeService:
         __stop_grace_period = set_else_none("stop_grace_period", self.definition)
         if not __stop_grace_period:
             return NoValue
-        if not isinstance(__stop_grace_period, (int, str, float)):
+        if not isinstance(__stop_grace_period, (str)):
             raise TypeError(self.name)
         stop_timeout = import_time_values_to_seconds(__stop_grace_period)
         if stop_timeout < 2:
