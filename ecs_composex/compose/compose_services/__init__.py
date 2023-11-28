@@ -765,7 +765,13 @@ class ComposeService:
         if not isinstance(__stop_grace_period, (int, str, float)):
             raise TypeError(self.name)
         stop_timeout = import_time_values_to_seconds(__stop_grace_period)
-        return If(USE_FARGATE_CON_T, NoValue, stop_timeout)
+        if stop_timeout < 2:
+            LOG.warning(f"{self.name} - StopTimeout {stop_timeout} < 2 - setting to 2")
+            stop_timeout = 2
+        elif stop_timeout > 120:
+            LOG.warning(f"{self.name} - StopTimeout {stop_timeout} > 120 - setting to 120")
+            stop_timeout = 120
+        return stop_timeout
 
     @property
     def x_iam(self) -> dict:
