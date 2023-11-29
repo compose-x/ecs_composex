@@ -502,9 +502,11 @@ class ComposeService:
             self.deploy: dict = {"labels": {depends_key: value}}
 
     @property
-    def ephemeral_storage(self):
+    def ephemeral_storage(self) -> int:
         storage_key = "ecs.ephemeral.storage"
         storage_value = set_else_none(storage_key, self.deploy_labels, 0)
+        if not storage_value:
+            return 0
         if isinstance(storage_value, (int, float)):
             ephemeral_storage = int(storage_value)
         elif isinstance(storage_value, str):
@@ -517,6 +519,9 @@ class ComposeService:
                 [int, float, str],
             )
         if ephemeral_storage <= 21:
+            LOG.debug(
+                f"{self.name} - {storage_key} - defined value is <= 21. Leaving to default"
+            )
             return 0
         elif ephemeral_storage > 200:
             LOG.warning(
