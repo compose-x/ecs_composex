@@ -771,10 +771,14 @@ class ComposeService:
             raise TypeError(self.name)
         stop_timeout = import_time_values_to_seconds(__stop_grace_period)
         if stop_timeout < 2:
-            LOG.warning(f"services.{self.name} - stop_grace_period/StopTimeout {stop_timeout} < 2 - setting to 2")
+            LOG.warning(
+                f"services.{self.name} - stop_grace_period/StopTimeout {stop_timeout} < 2 - setting to 2"
+            )
             stop_timeout = 2
         elif stop_timeout > 120:
-            LOG.warning(f"services.{self.name} - stop_grace_period/StopTimeout {stop_timeout} > 120 - setting to 120")
+            LOG.warning(
+                f"services.{self.name} - stop_grace_period/StopTimeout {stop_timeout} > 120 - setting to 120"
+            )
             stop_timeout = 120
         return stop_timeout
 
