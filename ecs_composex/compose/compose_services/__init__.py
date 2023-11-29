@@ -524,7 +524,7 @@ class ComposeService:
             )
             return 200
         else:
-            LOG.info(f"{self.name} - {storage_key} set to {ephemeral_storage}")
+            LOG.debug(f"{self.name} - {storage_key} set to {ephemeral_storage}")
             return int(ephemeral_storage)
 
     @property
