@@ -504,10 +504,10 @@ class ComposeService:
     @property
     def ephemeral_storage(self):
         storage_key = "ecs.ephemeral.storage"
-        storage_value = set_else_none(
-            storage_key, set_else_none("labels", self.deploy, alt_value={}), alt_value=0
-        )
-        if isinstance(storage_value, (int, float)):
+        storage_value = set_else_none(storage_key, self.deploy_labels)
+        if storage_value is None:
+            return 0
+        elif isinstance(storage_value, (int, float)):
             ephemeral_storage = int(storage_value)
         elif isinstance(storage_value, str):
             ephemeral_storage = int(set_memory_to_mb(storage_value) / 1024)
@@ -518,13 +518,12 @@ class ComposeService:
                 "Expected one of",
                 [int, float, str],
             )
+        LOG.info(f"{self.name} - {storage_key} set to {ephemeral_storage}")
         if ephemeral_storage <= 21:
             return 0
-
         elif ephemeral_storage > 200:
             return 200
         else:
-            LOG.info(f"{self.name} - {storage_key} set to {ephemeral_storage}")
             return int(ephemeral_storage)
 
     @property
