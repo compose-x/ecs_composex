@@ -504,9 +504,7 @@ class ComposeService:
     @property
     def ephemeral_storage(self):
         storage_key = "ecs.ephemeral.storage"
-        storage_value = set_else_none(
-            storage_key, set_else_none("labels", self.deploy, alt_value={}), alt_value=0
-        )
+        storage_value = set_else_none(storage_key, self.deploy_labels, 0)
         if isinstance(storage_value, (int, float)):
             ephemeral_storage = int(storage_value)
         elif isinstance(storage_value, str):
@@ -520,8 +518,8 @@ class ComposeService:
             )
         if ephemeral_storage <= 21:
             return 0
-
         elif ephemeral_storage > 200:
+            LOG.warning(f"{self.name} - {storage_key} set to maximum 200 ({ephemeral_storage} > 200)")
             return 200
         else:
             LOG.info(f"{self.name} - {storage_key} set to {ephemeral_storage}")

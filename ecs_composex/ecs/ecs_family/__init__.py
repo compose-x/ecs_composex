@@ -89,7 +89,7 @@ class ComposeFamily:
         self.xray_service = None
         self.task_definition = None
         self.service_tags = None
-        self.task_ephemeral_storage = 0
+        # self.task_ephemeral_storage = 0
         self.enable_execute_command = False
         self.ecs_service = None
         self.runtime_cpu_arch = None
@@ -201,7 +201,7 @@ class ComposeFamily:
                 EphemeralStorage(SizeInGiB=self.task_ephemeral_storage),
                 NoValue,
             )
-            if 0 < self.task_ephemeral_storage >= 21
+            if self.task_ephemeral_storage >= 21
             else NoValue,
             InferenceAccelerators=NoValue,
             IpcMode=If(
@@ -370,7 +370,6 @@ class ComposeFamily:
                 service.container_definition
             )
             self.set_secrets_access()
-        self.set_task_ephemeral_storage()
         set_enable_execute_command(self)
         set_family_hostname(self)
 
@@ -596,13 +595,13 @@ class ComposeFamily:
                     if service_depends_on not in self.services_depends_on:
                         self.services_depends_on.append(service_depends_on)
 
-    def set_task_ephemeral_storage(self):
+    @property
+    def task_ephemeral_storage(self):
         """
         If any service ephemeral storage is defined above, sets the ephemeral storage to the maximum of them.
         """
         max_storage = max(service.ephemeral_storage for service in self.services)
-        if max_storage >= 21:
-            self.task_ephemeral_storage = max_storage
+        return max_storage if max_storage >= 21 else 0
 
     def set_enable_execute_command(self) -> None:
         """
