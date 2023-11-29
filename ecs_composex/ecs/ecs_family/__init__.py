@@ -29,7 +29,7 @@ from troposphere.ecs import (
 
 from ecs_composex.common.logging import LOG
 from ecs_composex.common.stacks import ComposeXStack
-from ecs_composex.common.troposphere_tools import Parameter
+from ecs_composex.common.troposphere_tools import Parameter, add_outputs, add_parameters
 from ecs_composex.compose.compose_services import ComposeService
 from ecs_composex.ecs import ecs_conditions, ecs_params
 from ecs_composex.ecs.ecs_family.family_helpers import (
@@ -41,12 +41,14 @@ from ecs_composex.ecs.ecs_prometheus import set_prometheus
 from ecs_composex.ecs.managed_sidecars.aws_xray import set_xray
 from ecs_composex.ecs.service_compute import ServiceCompute
 from ecs_composex.ecs.service_networking import ServiceNetworking
-from ecs_composex.ecs.service_networking.helpers import update_family_subnets
+from ecs_composex.ecs.service_networking.helpers import (
+    set_family_hostname,
+    update_family_subnets,
+)
 from ecs_composex.ecs.service_scaling import ServiceScaling
 from ecs_composex.ecs.task_compute import TaskCompute
 from ecs_composex.ecs.task_iam import TaskIam
 
-from ...common.troposphere_tools import add_outputs, add_parameters
 from .family_helpers import assign_secrets_to_roles, ensure_essential_containers
 from .family_template import set_template
 from .task_runtime import define_family_runtime_parameters
@@ -89,7 +91,6 @@ class ComposeFamily:
         self.xray_service = None
         self.task_definition = None
         self.service_tags = None
-        # self.task_ephemeral_storage = 0
         self.enable_execute_command = False
         self.ecs_service = None
         self.runtime_cpu_arch = None
@@ -105,6 +106,8 @@ class ComposeFamily:
         self.service_networking = None
         self.task_compute = None
         self.service_compute = ServiceCompute(self)
+        self.set_enable_execute_command()
+        set_family_hostname(self)
 
     @property
     def logical_name(self) -> str:
@@ -355,9 +358,6 @@ class ComposeFamily:
         Function to add new services (defined in the compose files). Not to use for managed sidecars
         :param ComposeService service:
         """
-        from ecs_composex.ecs.service_networking.helpers import set_family_hostname
-
-        from .task_execute_command import set_enable_execute_command
 
         self._compose_services.append(service)
 
@@ -370,7 +370,7 @@ class ComposeFamily:
                 service.container_definition
             )
             self.set_secrets_access()
-        set_enable_execute_command(self)
+        self.set_enable_execute_command()
         set_family_hostname(self)
 
     def add_managed_sidecar(self, service: ComposeService):
@@ -596,9 +596,10 @@ class ComposeFamily:
                         self.services_depends_on.append(service_depends_on)
 
     @property
-    def task_ephemeral_storage(self):
+    def task_ephemeral_storage(self) -> int:
         """
         If any service ephemeral storage is defined above, sets the ephemeral storage to the maximum of them.
+        Return 0 if below 21 which is the default "free" Fargate storage space.
         """
         max_storage = max(service.ephemeral_storage for service in self.services)
         return max_storage if max_storage >= 21 else 0
