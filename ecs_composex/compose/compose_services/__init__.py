@@ -760,6 +760,25 @@ class ComposeService:
         return rendered_limits if rendered_limits else NoValue
 
     @property
+    def stop_grace_period(self):
+        """
+        Method to import and determine StopTimeout
+        """
+        __stop_grace_period = set_else_none("stop_grace_period", self.definition)
+        if not __stop_grace_period:
+            return NoValue
+        if not isinstance(__stop_grace_period, (str)):
+            raise TypeError(self.name)
+        stop_timeout = import_time_values_to_seconds(__stop_grace_period)
+        if stop_timeout < 2:
+            LOG.warning(f"services.{self.name} - stop_grace_period/StopTimeout {stop_timeout} < 2 - setting to 2")
+            stop_timeout = 2
+        elif stop_timeout > 120:
+            LOG.warning(f"services.{self.name} - stop_grace_period/StopTimeout {stop_timeout} > 120 - setting to 120")
+            stop_timeout = 120
+        return stop_timeout
+
+    @property
     def x_iam(self) -> dict:
         __iam = set_else_none(
             "x-iam",
@@ -941,6 +960,7 @@ class ComposeService:
             ReadonlyRootFilesystem=If(
                 USE_WINDOWS_OS_T, NoValue, keyisset("read_only", self.definition)
             ),
+            StopTimeout=self.stop_grace_period,
             SystemControls=self.sysctls,
             User=If(USE_WINDOWS_OS_T, NoValue, self.ecs_user)
             if self.ecs_user != NoValue
