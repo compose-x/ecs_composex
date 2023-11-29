@@ -519,7 +519,9 @@ class ComposeService:
         if ephemeral_storage <= 21:
             return 0
         elif ephemeral_storage > 200:
-            LOG.warning(f"{self.name} - {storage_key} set to maximum 200 ({ephemeral_storage} > 200)")
+            LOG.warning(
+                f"{self.name} - {storage_key} set to maximum 200 ({ephemeral_storage} > 200)"
+            )
             return 200
         else:
             LOG.info(f"{self.name} - {storage_key} set to {ephemeral_storage}")
