@@ -16,7 +16,7 @@ except ImportError:
     from yaml import Dumper
 
 import json
-from os import mkdir
+from os import makedirs
 
 from botocore.exceptions import ClientError
 from troposphere import Template
@@ -178,7 +178,7 @@ class FileArtifact:
         Method to write the files to local filesystem based on parameters (directory name etc.)
         """
         try:
-            mkdir(settings.output_dir)
+            makedirs(settings.output_dir, exist_ok=True)
             LOG.debug(f"Created directory {settings.output_dir} to store files")
         except FileExistsError:
             LOG.debug(f"Output directory {settings.output_dir} already exists")
