@@ -70,6 +70,8 @@ class Elbv2(NetworkXResource):
         self.listeners: list[ComposeListener] = []
         self.target_groups: list[MergedTargetGroup] = []
         super().__init__(name, definition, module, settings)
+        self.no_allocate_eips: bool = keyisset("NoAllocateEips", self.settings)
+        self.retain_eips: bool = keyisset("RetainEips", self.settings)
         self.validate_services()
         self.sort_props()
         self.module_name = MOD_KEY
@@ -302,6 +304,7 @@ class Elbv2(NetworkXResource):
                         EIP(
                             f"{self.logical_name}Eip{public_subnet.title}",
                             Domain="vpc",
+                            DeletionPolicy="Retain" if self.retain_eips else "Delete",
                         )
                     )
             elif vpc_stack.vpc_resource.mappings:
@@ -311,6 +314,7 @@ class Elbv2(NetworkXResource):
                         EIP(
                             f"{self.logical_name}Eip{public_az.title().split('-')[-1]}",
                             Domain="vpc",
+                            DeletionPolicy="Retain" if self.retain_eips else "Delete",
                         )
                     )
 
@@ -334,7 +338,7 @@ class Elbv2(NetworkXResource):
                 "When Compose-X creates the VPC, the only subnets you can define to use are",
                 [PUBLIC_SUBNETS.title, APP_SUBNETS.title],
             )
-        if self.is_nlb() and self.lb_is_public:
+        if self.is_nlb() and self.lb_is_public and not self.no_allocate_eips:
             return Ref(AWS_NO_VALUE)
         if (
             self.subnets_override
@@ -354,7 +358,7 @@ class Elbv2(NetworkXResource):
         """
         if self.is_alb():
             return Ref(AWS_NO_VALUE)
-        if not self.lb_eips and self.lb_is_public:
+        if not self.lb_eips and self.lb_is_public and not self.no_allocate_eips:
             self.set_eips(vpc_stack)
             mappings = []
             subnets = self.define_override_subnets(PUBLIC_SUBNETS.title, vpc_stack)
@@ -366,7 +370,7 @@ class Elbv2(NetworkXResource):
                     )
                 )
             return mappings
-        elif not self.lb_is_public:
+        elif not self.lb_is_public or (self.lb_is_public and self.no_allocate_eips):
             self.cfn_resource.Subnets = self.set_subnets(vpc_stack)
             return Ref(AWS_NO_VALUE)
 
@@ -503,4 +507,9 @@ class Elbv2(NetworkXResource):
             if self.is_alb():
                 self.cfn_resource.Subnets = self.set_subnets(vpc_stack)
             elif self.is_nlb():
-                self.cfn_resource.SubnetMappings = self.set_subnet_mappings(vpc_stack)
+                if self.no_allocate_eips:
+                    self.cfn_resource.Subnets = self.set_subnets(vpc_stack)
+                else:
+                    self.cfn_resource.SubnetMappings = self.set_subnet_mappings(
+                        vpc_stack
+                    )
