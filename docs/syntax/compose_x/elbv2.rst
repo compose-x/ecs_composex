@@ -457,6 +457,22 @@ into a map/dict structure and compose-x will automatically convert it to the CFN
         `Target Group Attributes`_
 
 
+Settings
+============
+
+NoAllocateEips
+----------------
+
+By default, when using a public NLB, ECS Compose-X will create Elastic IP (EIPs) allocations.
+Given this is no longer a requirement on NLBs, this boolean allows to disable this behaviour and let AWS assign
+IP addresses to your NLB.
+
+RetainEips
+------------
+
+If set to true, when provisioning the EIPs, the DeletionPolicy will be set to ``Retain`` allowing you to preserve these
+IP addresses should you want to re-use them later.
+
 Examples
 ========
 

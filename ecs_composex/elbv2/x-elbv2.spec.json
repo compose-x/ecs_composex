@@ -126,7 +126,16 @@
       "type": "object",
       "properties": {
         "Subnets": {
-          "type": "string"
+          "type": "string",
+          "description": "Name of the Subnets as defined in x-vpc to use"
+        },
+        "NoAllocateEips": {
+          "type": "boolean",
+          "description": "Disables creating new EIPs for Network Load Balancers (NLB)"
+        },
+        "RetainEips": {
+          "type": "boolean",
+          "description": "Retains provisioned EIPs"
         }
       }
     },
