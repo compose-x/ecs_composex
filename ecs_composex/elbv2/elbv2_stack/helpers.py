@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import random
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -382,8 +383,9 @@ def define_listener_rules_actions(
     Function to identify the Target definition and create the resulting rule appropriately.
     """
     rules = []
+    offset = random.randint(1, 100)
     for count, service_def in enumerate(left_services):
-        priority = count + 1
+        priority = count + 1 + offset
         rule = ListenerRule(
             f"{listener.title}{NONALPHANUM.sub('', service_def['name'])}Rule{count}",
             ListenerArn=Ref(listener),
