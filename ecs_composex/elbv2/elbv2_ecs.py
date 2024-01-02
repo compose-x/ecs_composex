@@ -261,57 +261,6 @@ class ComposeTargetGroup(TargetGroup):
         return value
 
 
-def validate_tcp_health_counts(props):
-    healthy_prop = "HealthyThresholdCount"
-    unhealthy_prop = "UnhealthyThresholdCount"
-    if (
-        keyisset(healthy_prop, props)
-        and keyisset(unhealthy_prop, props)
-        and not props[unhealthy_prop] == props[healthy_prop]
-    ):
-        valid_value = max(props[unhealthy_prop], props[healthy_prop])
-        LOG.warning(
-            "With NLB your healthy and unhealthy count must be the same. Using the max of the two for cautious: "
-            f"{valid_value}"
-        )
-        props[healthy_prop] = valid_value
-        props[unhealthy_prop] = valid_value
-
-
-def fix_nlb_settings(props):
-    """
-    Function to automatically adjust/correct settings for NLB to avoid users cringe on fails
-
-    :param dict props:
-    """
-    network_modes = ["TCP", "UDP", "TCP_UDP"]
-    if (
-        keyisset("HealthCheckProtocol", props)
-        and not props["HealthCheckProtocol"] in network_modes
-    ):
-        return
-    if keyisset("HealthCheckTimeoutSeconds", props):
-        LOG.warning("With NLB you cannot set intervals. Resetting")
-        props["HealthCheckTimeoutSeconds"] = Ref(AWS_NO_VALUE)
-    if (
-        keyisset("HealthCheckIntervalSeconds", props)
-        and not (
-            props["HealthCheckIntervalSeconds"] == 10
-            or props["HealthCheckIntervalSeconds"] == 30
-        )
-        and not isinstance(props["HealthCheckIntervalSeconds"], Ref)
-    ):
-        right_value = min(
-            [10, 30], key=lambda x: abs(x - props["HealthCheckIntervalSeconds"])
-        )
-        LOG.warning(
-            f"Set to {props['HealthCheckIntervalSeconds']} - "
-            f"The only intervals value valid for NLB are 10 and 30. Closest value is {right_value}"
-        )
-        props["HealthCheckIntervalSeconds"] = right_value
-    validate_tcp_health_counts(props)
-
-
 def handle_ping_settings(props, ping_raw):
     """
     Function to setup the "ping" settings
@@ -325,8 +274,8 @@ def handle_ping_settings(props, ping_raw):
     ping_mapping = (
         ("HealthyThresholdCount", (2, 10)),
         ("UnhealthyThresholdCount", (2, 10)),
-        ("HealthCheckIntervalSeconds", (2, 120)),
-        ("HealthCheckTimeoutSeconds", (2, 10)),
+        ("HealthCheckIntervalSeconds", (5, 300)),
+        ("HealthCheckTimeoutSeconds", (2, 120)),
     )
     for count, value in enumerate(groups):
         if not min(ping_mapping[count][1]) <= int(value) <= max(ping_mapping[count][1]):
@@ -334,7 +283,6 @@ def handle_ping_settings(props, ping_raw):
                 f"Value for {ping_mapping[count][0]} is not valid. Must be in range of {ping_mapping[count][1]}"
             )
         props[ping_mapping[count][0]] = int(value)
-    fix_nlb_settings(props)
 
 
 def handle_path_settings(props, path_raw):
@@ -572,7 +520,6 @@ def define_service_target_group(
         if not keyisset("protocol", target_definition)
         else target_definition["protocol"]
     )
-    fix_nlb_settings(props)
     props["TargetType"] = "ip"
     import_target_group_attributes(props, target_definition, resource)
     validate_props_and_service_definition(props, service)
@@ -707,7 +654,6 @@ def handle_target_groups_association(
         set_healthcheck_definition(props, _target_def, "HealthCheck")
         props["Port"] = _target_def["Port"]
         props["Protocol"] = _target_def["Protocol"]
-        fix_nlb_settings(props)
         props["TargetType"] = "ip"
         import_target_group_attributes(props, _target_def, load_balancer)
         _tgt_group = MergedTargetGroup(
