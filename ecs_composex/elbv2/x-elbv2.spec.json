@@ -20,6 +20,44 @@
     "Properties": {
       "type": "object"
     },
+    "Lookup": {
+      "type": "object",
+      "description": "Lookup existing LoadBalancer",
+      "required": [
+        "loadbalancer"
+      ],
+      "properties": {
+        "loadbalancer": {
+          "type": "object",
+          "description": "",
+          "properties": {
+            "Tags": {
+              "$ref": "#/definitions/LookupTags",
+              "description": "Tags lookup to find the elasticloadbalancing:loadbalancer"
+            }
+          }
+        },
+        "Listeners": {
+          "type": "object",
+          "additionalProperties": false,
+          "patternProperties": {
+            "^[0-9]+": {
+              "type": "object",
+              "properties": {
+                "Tags": {
+                  "$ref": "#/definitions/LookupTags",
+                  "description": "Tags to lookup elasticloadbalancing:listener"
+                }
+              }
+            }
+          }
+        },
+        "RoleArn": {
+          "type": "string",
+          "description": "RoleARN to use in AssumeRole to find the Load Balancer"
+        }
+      }
+    },
     "MacroParameters": {
       "type": "object",
       "additionalProperties": true,
@@ -148,6 +186,38 @@
     }
   },
   "definitions": {
+    "LookupTags": {
+      "oneOf": [
+        {
+          "type": "array",
+          "description": "Tags list[Key: Value]",
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "Key": {
+                "type": "string"
+              },
+              "Value": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "description": "Key: Value tags",
+          "additionalProperties": false,
+          "patternProperties": {
+            "^[a-zA-Z0-9_:\\-\\.]+": {
+              "type": "string",
+              "description": "Tag value"
+            }
+          }
+        }
+      ]
+    },
     "DnsAlias": {
       "type": "object",
       "additionalProperties": false,

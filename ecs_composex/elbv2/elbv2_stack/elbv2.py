@@ -27,6 +27,7 @@ from ecs_composex.compose.x_resources.network_x_resources import NetworkXResourc
 from ecs_composex.elbv2.elbv2_ecs import MergedTargetGroup
 from ecs_composex.elbv2.elbv2_params import (
     LB_ARN,
+    LB_CLOUD_CONTROL_ATTRIBUTES,
     LB_DNS_NAME,
     LB_DNS_ZONE_ID,
     LB_FULL_NAME,
@@ -70,6 +71,7 @@ class Elbv2(NetworkXResource):
         self.listeners: list[ComposeListener] = []
         self.target_groups: list[MergedTargetGroup] = []
         super().__init__(name, definition, module, settings)
+        self.cloud_control_attributes_mapping = LB_CLOUD_CONTROL_ATTRIBUTES
         self.no_allocate_eips: bool = keyisset("NoAllocateEips", self.settings)
         self.retain_eips: bool = keyisset("RetainEips", self.settings)
         self.validate_services()

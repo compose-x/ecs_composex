@@ -787,13 +787,13 @@ files = [
 
 [[package]]
 name = "compose-x-common"
-version = "1.4.4"
+version = "1.4.5"
 description = "Common Library for Compose-X Projects"
 optional = false
 python-versions = ">=3.8,<4.0"
 files = [
-    {file = "compose_x_common-1.4.4-py3-none-any.whl", hash = "sha256:20a7cb187af95cd56fc39721f496cd5318bf3faf491ebc9b669811dd41c488dc"},
-    {file = "compose_x_common-1.4.4.tar.gz", hash = "sha256:5c6691ac5d568bb37bf564ae584f99d6799b4899a903fb554b9673079420c966"},
+    {file = "compose_x_common-1.4.5-py3-none-any.whl", hash = "sha256:5505db8eff61689bb5fa8cb940738603d012f8e7aedc6f13b61a97b600381b5c"},
+    {file = "compose_x_common-1.4.5.tar.gz", hash = "sha256:ed9c02c2f651e9caf04c2655db18bf297c20adc37a10a2b6a3950b9ef4908a51"},
 ]
 
 [package.dependencies]
@@ -2393,4 +2393,4 @@ ecrscan = ["ecr-scan-reporter"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "7a5a85df3c77d125297daabf4e5bc873102148bcddbac7ea1612d7bf04612415"
+content-hash = "3e75768e72e58f1d953bbb8ae9a5922b1e0b630890421820598623eea9c994f7"

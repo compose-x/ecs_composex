@@ -14,7 +14,9 @@ if TYPE_CHECKING:
 
 import warnings
 
+from compose_x_common.aws.elasticloadbalancing import LB_V2_LB_ARN_RE
 from troposphere import Ref
+from troposphere.elasticloadbalancingv2 import LoadBalancer as CfnLoadBalancer
 
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common.troposphere_tools import build_template
@@ -45,10 +47,6 @@ class XStack(ComposeXStack):
     def __init__(
         self, title, settings: ComposeXSettings, module: XResourceModule, **kwargs
     ):
-        if module.lookup_resources:
-            warnings.warn(
-                f"{module.res_key} - Lookup not supported. You can only create new resources."
-            )
         if not module.new_resources:
             self.is_void = True
             return
@@ -67,3 +65,17 @@ class XStack(ComposeXStack):
             setattr(self, "DeletionPolicy", module.module_deletion_policy)
         for resource in module.resources_list:
             resource.stack = self
+
+        for resource in module.lookup_resources:
+            resource.lookup_resource(
+                LB_V2_LB_ARN_RE,
+                None,
+                CfnLoadBalancer.resource_type,
+                "elasticloadbalancing:loadbalancer",
+                "loadbalancer",
+            )
+            resource.generate_cfn_mappings_from_lookup_properties()
+            resource.generate_outputs()
+            settings.mappings[module.mapping_key].update(
+                {resource.logical_name: resource.mappings}
+            )
