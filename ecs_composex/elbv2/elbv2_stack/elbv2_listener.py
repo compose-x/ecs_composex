@@ -13,13 +13,14 @@ import warnings
 from copy import deepcopy
 
 from compose_x_common.compose_x_common import keyisset
-from troposphere import Ref
+from troposphere import FindInMap, Ref
 from troposphere.cognito import UserPoolClient
 from troposphere.elasticloadbalancingv2 import Listener
 
-import ecs_composex.common.troposphere_tools
 from ecs_composex.common import NONALPHANUM
 from ecs_composex.common.logging import LOG
+from ecs_composex.common.troposphere_tools import add_parameters
+from ecs_composex.elbv2.elbv2_params import LB_ARN
 from ecs_composex.elbv2.elbv2_stack.helpers import (
     LISTENER_TARGET_RE,
     add_acm_certs_arn,
@@ -48,7 +49,7 @@ class ComposeListener(Listener):
 
     targets_keys = "Targets"
 
-    def __init__(self, lb, definition):
+    def __init__(self, lb: Elbv2, definition):
         """
         Method to init listener.
 
@@ -75,7 +76,27 @@ class ComposeListener(Listener):
             if keyisset("DefaultActions", self.definition)
             else []
         )
-        listener_kwargs.update({"LoadBalancerArn": Ref(lb.lb)})
+        if lb.cfn_resource:
+            listener_kwargs.update({"LoadBalancerArn": Ref(lb.lb)})
+        else:
+            add_parameters(
+                lb.stack.stack_template,
+                [lb.attributes_outputs[LB_ARN]["ImportParameter"]],
+            )
+            listener_kwargs.update(
+                {
+                    "LoadBalancerArn": Ref(
+                        lb.attributes_outputs[LB_ARN]["ImportParameter"]
+                    )
+                }
+            )
+            lb.stack.Parameters.update(
+                {
+                    lb.attributes_outputs[LB_ARN][
+                        "ImportParameter"
+                    ].title: lb.attributes_outputs[LB_ARN]["ImportValue"]
+                }
+            )
         self.name = f"{lb.logical_name}{listener_kwargs['Port']}"
         super().__init__(self.name, **listener_kwargs)
         self.DefaultActions = []

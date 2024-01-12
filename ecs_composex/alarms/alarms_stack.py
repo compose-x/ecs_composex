@@ -64,11 +64,7 @@ class Alarm(ServicesXResource):
         }
 
     def handle_dimensions(self, settings: ComposeXSettings) -> None:
-        """
-        Handles the dimensions settings and tries to resolve
-
-        :param ecs_composex.common.settings.ComposeXSettings settings:
-        """
+        """Handles the dimensions settings and tries to resolve"""
         if not hasattr(self.cfn_resource, "Dimensions"):
             LOG.debug(f"{self.module.res_key}.{self.name} - No Dimensions defined")
             return

@@ -153,9 +153,7 @@ class HostedZone(AwsEnvironmentResource):
         :param ecs_composex.common.settings.ComposeXSettings settings:
         :param ComposeXStack root_stack: The root stack
         """
-        for resource in settings.get_x_resources(include_mappings=False):
-            if not resource.cfn_resource:
-                continue
+        for resource in settings.get_x_resources(include_mappings=True):
             resource_stack = resource.stack
             if not resource_stack:
                 LOG.error(
@@ -163,12 +161,14 @@ class HostedZone(AwsEnvironmentResource):
                 )
                 continue
             mappings = [
-                (Elbv2, handle_elbv2_records),
-                (Certificate, handle_acm_records),
+                (Elbv2, handle_elbv2_records, True),
+                (Certificate, handle_acm_records, False),
             ]
             for target in mappings:
-                if isinstance(resource, target[0]) or issubclass(
-                    type(resource), target[0]
+                if (
+                    isinstance(resource, target[0])
+                    or issubclass(type(resource), target[0])
+                    and target[-1]
                 ):
                     if (
                         self.mappings

@@ -5,6 +5,7 @@ import re
 
 from compose_x_common.compose_x_common import keyisset
 
+from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.common.logging import LOG
 from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.ecs.ecs_params import CLUSTER_NAME
@@ -78,7 +79,9 @@ def set_ecs_cluster_identifier(root_stack, settings) -> None:
     """
     for name, resource in root_stack.stack_template.resources.items():
         if issubclass(type(resource), ComposeXStack) and CLUSTER_NAME.title in [
-            param.title for param in resource.stack_template.parameters.values()
+            param.title
+            for param in resource.stack_template.parameters.values()
+            if isinstance(param, Parameter)
         ]:
             resource.Parameters.update(
                 {CLUSTER_NAME.title: settings.ecs_cluster.cluster_identifier}

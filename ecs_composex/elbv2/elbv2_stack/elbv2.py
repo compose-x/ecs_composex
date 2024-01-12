@@ -62,7 +62,7 @@ class Elbv2(NetworkXResource):
         if not keyisset("Listeners", definition):
             raise KeyError("You must specify at least one Listener for a LB.", name)
         self.lb_is_public = False
-        self.lb_type = "application"
+        self._lb_type = "application"
         self.ingress = None
         self.lb_sg = None
         self.lb_eips = []
@@ -78,6 +78,14 @@ class Elbv2(NetworkXResource):
         self.sort_props()
         self.module_name = MOD_KEY
         self.ref_parameter = LB_ARN
+
+    @property
+    def lb_type(self) -> str:
+        if self.cloud_control_properties and keyisset(
+            "Type", self.cloud_control_properties
+        ):
+            return self.cloud_control_properties["Type"]
+        return self._lb_type
 
     def init_outputs(self):
         self.output_properties = {
@@ -219,7 +227,7 @@ class Elbv2(NetworkXResource):
             )
             else False
         )
-        self.lb_type = (
+        self._lb_type = (
             "application"
             if not keyisset("Type", self.properties)
             else self.properties["Type"]
@@ -479,7 +487,8 @@ class Elbv2(NetworkXResource):
         :param troposphere.Template template:
         :return:
         """
-        template.add_resource(self.lb)
+        if self.cfn_resource:
+            template.add_resource(self.lb)
         self.init_outputs()
         if self.lb_sg and isinstance(self.lb_sg, SecurityGroup):
             self.output_properties.update(

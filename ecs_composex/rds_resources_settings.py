@@ -166,7 +166,10 @@ def lookup_rds_resource(
     props = {}
     _account_id = get_account_id(rds_resource.lookup_session)
     if _account_id == account_id and rds_resource.cloud_control_attributes_mapping:
-        props = rds_resource.cloud_control_attributes_mapping_lookup(
+        (
+            props,
+            rds_resource.cloud_control_properties,
+        ) = rds_resource.cloud_control_attributes_mapping_lookup(
             cfn_resource_type, resource_id
         )
     if not props:

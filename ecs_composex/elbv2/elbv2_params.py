@@ -58,10 +58,11 @@ TGT_LB_ARNS = Parameter(
     "LoadBalancerArns", return_value="LoadBalancerArns", Type="CommaDelimitedList"
 )
 
-LB_CLOUD_CONTROL_ATTRIBUTES: dict[str, Parameter] = {
-    "CanonicalHostedZoneID": LB_DNS_ZONE_ID,
-    "LoadBalancerName": LB_NAME,
-    "LoadBalancerArn": LB_ARN,
-    "LoadBalancerFullName": LB_FULL_NAME,
-    "SecurityGroups::0": LB_SG_ID,
+LB_CLOUD_CONTROL_ATTRIBUTES: dict[Parameter, str] = {
+    LB_DNS_ZONE_ID: "CanonicalHostedZoneID",
+    LB_NAME: "LoadBalancerName",
+    LB_ARN: "LoadBalancerArn",
+    LB_FULL_NAME: "LoadBalancerFullName",
+    LB_SG_ID: "SecurityGroups::0",
+    LB_DNS_NAME: "DNSName",
 }

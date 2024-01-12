@@ -492,13 +492,13 @@ def import_target_group_attributes(props, target_def, elbv2):
         "slow_start.duration_seconds": lambda x: 30 <= int(x) <= 900,
     }
     # pragma: ignore use-case for now "lambda.multi_value_headers.enabled": lambda x: x in ("true", "false"),
-    if elbv2.cfn_resource.Type == "application":
+    if elbv2.lb_type == "application":
         validate_target_group_attributes(
-            props[attributes_key], alb_valid, elbv2.cfn_resource.Type
+            props[attributes_key], alb_valid, elbv2.lb_type
         )
-    if elbv2.cfn_resource.Type == "network":
+    if elbv2.lb_type == "network":
         validate_target_group_attributes(
-            props[attributes_key], nlb_valid, elbv2.cfn_resource.Type
+            props[attributes_key], nlb_valid, elbv2.lb_type
         )
 
 
@@ -692,7 +692,7 @@ def elbv2_to_ecs(resources, services_stack, res_root_stack, settings):
     :return:
     """
     for resource_name, resource in resources.items():
-        if resource.cfn_resource and not resource.mappings:
+        if resource.cfn_resource:
             if keyisset("TargetGroups", resource.definition):
                 LOG.info(
                     f"{resource.module.res_key}.{resource_name} - Linking to TargetGroups"
@@ -701,5 +701,16 @@ def elbv2_to_ecs(resources, services_stack, res_root_stack, settings):
             else:
                 LOG.info(
                     f"{resource.module.res_key}.{resource_name} - Linking to Services"
+                )
+                handle_services_association(resource, res_root_stack, settings)
+        elif resource.mappings:
+            if keyisset("TargetGroups", resource.definition):
+                LOG.info(
+                    f"{resource.module.res_key}.{resource_name} (Lookup) - Linking to TargetGroups"
+                )
+                handle_target_groups_association(resource, res_root_stack, settings)
+            else:
+                LOG.info(
+                    f"{resource.module.res_key}.{resource_name} (Lookup) - Linking to Services"
                 )
                 handle_services_association(resource, res_root_stack, settings)

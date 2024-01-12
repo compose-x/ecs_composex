@@ -145,7 +145,10 @@ class WebACL(AwsEnvironmentResource):
             self.arn,
             wafv2_webacl_id,
         )
-        props = self.cloud_control_attributes_mapping_lookup(
+        (
+            props,
+            self.cloud_control_properties,
+        ) = self.cloud_control_attributes_mapping_lookup(
             cfn_resource_type, wafv2_webacl_id
         )
         self.lookup_properties = props
