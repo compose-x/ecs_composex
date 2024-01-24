@@ -238,23 +238,27 @@ class Elbv2(NetworkXResource):
         if self.is_nlb():
             self.lb_sg = Ref(AWS_NO_VALUE)
         elif self.is_alb():
-            self.lb_sg = SecurityGroup(
-                f"{self.logical_name}SecurityGroup",
-                GroupDescription=Sub(
-                    f"SG for LB {self.logical_name} in ${{{AWS_STACK_NAME}}}"
-                ),
-                GroupName=Sub(
-                    f"{self.logical_name}-{self.lb_type}-sg-${{{AWS_STACK_NAME}}}"
-                ),
-                VpcId=Ref(VPC_ID),
-                Tags=Tags(Name=Sub(f"elbv2-{self.logical_name}-${{{AWS_STACK_NAME}}}")),
-            )
+            if not self.lookup:
+                self.lb_sg = SecurityGroup(
+                    f"{self.logical_name}SecurityGroup",
+                    GroupDescription=Sub(
+                        f"SG for LB {self.logical_name} in ${{{AWS_STACK_NAME}}}"
+                    ),
+                    GroupName=Sub(
+                        f"{self.logical_name}-{self.lb_type}-sg-${{{AWS_STACK_NAME}}}"
+                    ),
+                    VpcId=Ref(VPC_ID),
+                    Tags=Tags(
+                        Name=Sub(f"elbv2-{self.logical_name}-${{{AWS_STACK_NAME}}}")
+                    ),
+                )
+            else:
+                self.lb_sg = Ref(AWS_NO_VALUE)
 
     def sort_alb_ingress(self, settings, stack_template):
         """
         Method to handle Ingress to ALB
         """
-        print(self, self.is_alb(), self.attributes_outputs, self.parameters)
         if self.is_nlb():
             LOG.warning(
                 "You defined ingress rules for a NLB. This is invalid. Define ingress rules at the service level."
@@ -279,7 +283,6 @@ class Elbv2(NetworkXResource):
             else:
                 from ecs_composex.elbv2.elbv2_params import LB_SG_ID
 
-                print("LOOKUP ELBV2")
                 add_parameters(
                     stack_template,
                     [self.attributes_outputs[LB_SG_ID]["ImportParameter"]],
