@@ -22,7 +22,7 @@ from troposphere.elasticloadbalancingv2 import (
 
 from ecs_composex.common import NONALPHANUM
 from ecs_composex.common.logging import LOG
-from ecs_composex.common.troposphere_tools import ROOT_STACK_NAME
+from ecs_composex.common.troposphere_tools import ROOT_STACK_NAME, add_parameters
 from ecs_composex.compose.x_resources.network_x_resources import NetworkXResource
 from ecs_composex.elbv2.elbv2_ecs import MergedTargetGroup
 from ecs_composex.elbv2.elbv2_params import (
@@ -254,11 +254,8 @@ class Elbv2(NetworkXResource):
         """
         Method to handle Ingress to ALB
         """
-        if (
-            not self.parameters
-            or (self.parameters and not keyisset("Ingress", self.parameters))
-            or self.is_nlb()
-        ):
+        print(self, self.is_alb(), self.attributes_outputs, self.parameters)
+        if self.is_nlb():
             LOG.warning(
                 "You defined ingress rules for a NLB. This is invalid. Define ingress rules at the service level."
             )
@@ -272,12 +269,37 @@ class Elbv2(NetworkXResource):
         ports = set_service_ports(ports)
         self.ingress = Ingress(self.parameters["Ingress"], ports)
         if self.ingress and self.is_alb():
-            self.ingress.set_aws_sources_ingress(
-                settings, self.logical_name, GetAtt(self.lb_sg, "GroupId")
-            )
-            self.ingress.set_ext_sources_ingress(
-                self.logical_name, GetAtt(self.lb_sg, "GroupId")
-            )
+            if self.cfn_resource:
+                self.ingress.set_aws_sources_ingress(
+                    settings, self.logical_name, GetAtt(self.lb_sg, "GroupId")
+                )
+                self.ingress.set_ext_sources_ingress(
+                    self.logical_name, GetAtt(self.lb_sg, "GroupId")
+                )
+            else:
+                from ecs_composex.elbv2.elbv2_params import LB_SG_ID
+
+                print("LOOKUP ELBV2")
+                add_parameters(
+                    stack_template,
+                    [self.attributes_outputs[LB_SG_ID]["ImportParameter"]],
+                )
+                self.stack.Parameters.update(
+                    {
+                        self.attributes_outputs[LB_SG_ID][
+                            "ImportParameter"
+                        ].title: self.attributes_outputs[LB_SG_ID]["ImportValue"]
+                    }
+                )
+                self.ingress.set_aws_sources_ingress(
+                    settings,
+                    self.logical_name,
+                    Ref(self.attributes_outputs[LB_SG_ID]["ImportParameter"]),
+                )
+                self.ingress.set_ext_sources_ingress(
+                    self.logical_name,
+                    Ref(self.attributes_outputs[LB_SG_ID]["ImportParameter"]),
+                )
             self.ingress.associate_aws_ingress_rules(stack_template)
             self.ingress.associate_ext_ingress_rules(stack_template)
 

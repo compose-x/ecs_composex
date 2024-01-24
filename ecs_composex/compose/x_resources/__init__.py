@@ -91,7 +91,7 @@ class XResource:
         self.validators = []
         self.logical_name = NONALPHANUM.sub("", self.name)
         self.settings = set_else_none("Settings", definition, alt_value={})
-        self.parameters = set_else_none("MacroParameters", definition, alt_value={})
+        self._parameters = {}
         self.lookup = set_else_none("Lookup", definition, alt_value={})
         if self.lookup:
             self.lookup_session = define_lookup_role_from_info(
@@ -128,6 +128,10 @@ class XResource:
 
     def __repr__(self):
         return self.logical_name
+
+    @property
+    def parameters(self) -> dict:
+        return set_else_none("MacroParameters", self.definition, alt_value={})
 
     @property
     def uses_default(self) -> bool:

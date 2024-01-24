@@ -55,6 +55,8 @@ class XStack(ComposeXStack):
 
         self.is_void = False
         super().__init__(title, stack_template, stack_parameters=lb_input, **kwargs)
+        for resource in module.resources_list:
+            resource.stack = self
 
         if not hasattr(self, "DeletionPolicy"):
             setattr(self, "DeletionPolicy", module.module_deletion_policy)
@@ -76,5 +78,4 @@ class XStack(ComposeXStack):
             settings.mappings[module.mapping_key].update(
                 {resource.logical_name: resource.mappings}
             )
-        for resource in module.resources_list:
-            resource.stack = self
+            resource.sort_alb_ingress(settings, stack_template)
