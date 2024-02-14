@@ -657,7 +657,6 @@ def handle_target_groups_association(
     add_outputs(template, load_balancer.outputs)
     _targets = set_else_none("TargetGroups", load_balancer.definition, {})
     if not _targets:
-        print("NO TARGET GROUPS")
         return
     for _target_name, _target_def in _targets.items():
         props = {}
@@ -686,7 +685,6 @@ def handle_target_groups_association(
             listener.map_target_group_to_listener(_tgt_group)
 
         for listener in load_balancer.lookup_listeners.values():
-            print("MAPPING TARGET TO LISTENER", _tgt_group, listener)
             listener.map_target_group_to_listener(_tgt_group)
 
     for listener_port, listener_def in load_balancer.lookup_listeners.items():

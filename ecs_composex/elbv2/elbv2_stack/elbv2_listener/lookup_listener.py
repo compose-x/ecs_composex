@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from troposphere import Template
 
 from compose_x_common.aws.elasticloadbalancing import LB_V2_LISTENER_ARN_RE
-from compose_x_common.compose_x_common import keyisset, keypresent, set_else_none
+from compose_x_common.compose_x_common import keyisset, set_else_none
 from troposphere import Ref
 from troposphere.cognito import UserPoolClient
 from troposphere.elasticloadbalancingv2 import ListenerRule
@@ -21,16 +21,10 @@ from ecs_composex.common.aws import find_aws_resource_arn_from_tags_api
 from ecs_composex.common.logging import LOG
 from ecs_composex.elbv2.elbv2_stack.helpers import (
     LISTENER_TARGET_RE,
-    add_acm_certs_arn,
     define_actions,
-    define_listener_rules_actions,
     define_target_conditions,
-    handle_default_actions,
-    handle_non_default_services,
     import_cognito_pool,
-    import_new_acm_certs,
     map_service_target,
-    tea_pot,
     validate_duplicate_targets,
 )
 from ecs_composex.resources_import import import_record_properties
@@ -86,7 +80,6 @@ class LookupListener:
             and isinstance(self.definition[self.targets_keys], list)
             else []
         )
-        print("PROPS?", self.properties)
 
     def __repr__(self):
         return self.arn
@@ -216,13 +209,11 @@ class LookupListener:
                 )
 
     def map_target_group_to_listener(self, target_group: MergedTargetGroup) -> None:
-        print("MAPPING TARGET TO LOOKUP LISTENER")
         if not self.services:
             LOG.warning(
                 f"{self.lb.module.res_key}.{self.lb.name} - Listener {self.Port} - No Targets defined."
             )
             return
-        print("TARGET GROUP??", target_group)
         for _tgt_group in self.services:
             _tgt_name = _tgt_group["name"]
             if _tgt_name == target_group.name:
