@@ -244,7 +244,9 @@ class LookupListener:
         import random
 
         listener_id = LB_V2_LISTENER_ARN_RE.match(self.arn).group("id")
-        offset = 50000 - random.randint(1, 1000)
+        last_rule_offset = int(self.rules[-1]["Priority"]) if self.rules else 49999
+        starting_offset = last_rule_offset + random.randint(1, 1000)
+        offset = starting_offset + random.randint(1, 100)
         rules = []
         for count, service_def in enumerate(self.services):
             priority = offset - count - 1
