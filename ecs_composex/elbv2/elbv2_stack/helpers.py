@@ -608,3 +608,24 @@ def map_service_target(lb, listener_service_def: dict) -> None:
             )
             if mapped:
                 break
+
+
+def validate_duplicate_targets(lb: Elbv2, listener: ComposeListener) -> None:
+    t_targets = [s["name"] for s in lb.services]
+    duplicate_services: bool = len(t_targets) != len(set(t_targets))
+    if duplicate_services:
+        for listener_target in listener.services:
+            parts = LISTENER_TARGET_RE.match(listener_target["name"])
+            if not parts:
+                raise ValueError(
+                    "{lb.module.res_key}.{lb.name} - Listener {listener.port}"
+                    " - Target name definition is invalid. Must comply to",
+                    LISTENER_TARGET_RE.pattern,
+                )
+            if listener_target["name"] and parts and not parts.group("port"):
+                raise ValueError(
+                    f"{lb.module.res_key}.{lb.name} - Listener {listener.def_port}"
+                    f" - Target service {listener_target['name']} is defined more than once in "
+                    "`Services`. You must specify the port with format",
+                    LISTENER_TARGET_RE.pattern,
+                )

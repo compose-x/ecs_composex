@@ -630,10 +630,15 @@ def handle_services_association(
         )
         return
 
-    for listener in load_balancer.listeners:
+    for listener in load_balancer.new_listeners:
         listener.map_lb_target_groups_service_to_listener_targets(load_balancer)
 
-    for listener in load_balancer.listeners:
+    for listener_port, listener in load_balancer.lookup_listeners.items():
+        listener.map_lb_target_groups_service_to_listener_targets(load_balancer)
+        listener.handle_cognito_pools(settings, res_root_stack)
+        listener.define_new_rules(load_balancer, template)
+
+    for listener in load_balancer.new_listeners:
         listener.handle_certificates(settings, res_root_stack)
         listener.handle_cognito_pools(settings, res_root_stack)
         listener.define_default_actions(load_balancer, template)
@@ -652,6 +657,7 @@ def handle_target_groups_association(
     add_outputs(template, load_balancer.outputs)
     _targets = set_else_none("TargetGroups", load_balancer.definition, {})
     if not _targets:
+        print("NO TARGET GROUPS")
         return
     for _target_name, _target_def in _targets.items():
         props = {}
@@ -676,10 +682,17 @@ def handle_target_groups_association(
         load_balancer.target_groups.append(_tgt_group)
         _tgt_group.associate_families(settings)
 
-        for listener in load_balancer.listeners:
+        for listener in load_balancer.new_listeners:
             listener.map_target_group_to_listener(_tgt_group)
 
-    for listener in load_balancer.listeners:
+        for listener in load_balancer.lookup_listeners.values():
+            print("MAPPING TARGET TO LISTENER", _tgt_group, listener)
+            listener.map_target_group_to_listener(_tgt_group)
+
+    for listener_port, listener_def in load_balancer.lookup_listeners.items():
+        print(listener_port, listener_def)
+
+    for listener in load_balancer.new_listeners:
         listener.handle_certificates(settings, res_root_stack)
         listener.handle_cognito_pools(settings, res_root_stack)
         listener.define_default_actions(load_balancer, template)

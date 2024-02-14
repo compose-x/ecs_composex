@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 import warnings
 
 from compose_x_common.aws.elasticloadbalancing import LB_V2_LB_ARN_RE
+from compose_x_common.compose_x_common import keyisset
 from troposphere import Ref
 from troposphere.elasticloadbalancingv2 import LoadBalancer as CfnLoadBalancer
 
@@ -68,11 +69,14 @@ class XStack(ComposeXStack):
             resource.lookup_resource(
                 LB_V2_LB_ARN_RE,
                 None,
-                CfnLoadBalancer.resource_type,
-                "elasticloadbalancing:loadbalancer",
-                "loadbalancer",
+                cfn_resource_type=CfnLoadBalancer.resource_type,
+                tagging_api_id="elasticloadbalancing:loadbalancer",
+                subattribute_key="loadbalancer",
                 use_arn_for_id=True,
             )
+            if keyisset("Listeners", resource.lookup):
+                resource.find_lookup_listeners()
+
             resource.generate_cfn_mappings_from_lookup_properties()
             resource.generate_outputs()
             settings.mappings[module.mapping_key].update(

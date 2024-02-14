@@ -89,7 +89,10 @@ def define_tagsgroups_filter_tags(tags) -> list:
         return set_filters_from_tags_list(tags)
     elif isinstance(tags, dict):
         _tags = [
-            {"Key": key, "Values": (values,)}
+            {
+                "Key": key,
+                "Values": (str(values) if isinstance(values, int) else values,),
+            }
             for key, values in tags.items()
             if isinstance(values, (list, str, int)) and isinstance(key, str)
         ]

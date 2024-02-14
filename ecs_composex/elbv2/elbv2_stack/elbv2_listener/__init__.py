@@ -6,14 +6,14 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .elbv2 import Elbv2
-    from ..elbv2_ecs import MergedTargetGroup
+    from ecs_composex.elbv2 import Elbv2
+    from ecs_composex.elbv2.elbv2_ecs import MergedTargetGroup
 
 import warnings
 from copy import deepcopy
 
 from compose_x_common.compose_x_common import keyisset
-from troposphere import FindInMap, Ref
+from troposphere import Ref
 from troposphere.cognito import UserPoolClient
 from troposphere.elasticloadbalancingv2 import Listener
 
@@ -22,7 +22,6 @@ from ecs_composex.common.logging import LOG
 from ecs_composex.common.troposphere_tools import add_parameters
 from ecs_composex.elbv2.elbv2_params import LB_ARN
 from ecs_composex.elbv2.elbv2_stack.helpers import (
-    LISTENER_TARGET_RE,
     add_acm_certs_arn,
     define_actions,
     define_listener_rules_actions,
@@ -32,6 +31,7 @@ from ecs_composex.elbv2.elbv2_stack.helpers import (
     import_new_acm_certs,
     map_service_target,
     tea_pot,
+    validate_duplicate_targets,
 )
 from ecs_composex.resources_import import import_record_properties
 
@@ -268,24 +268,3 @@ class ComposeListener(Listener):
             LOG.debug(
                 f"{self.lb.module.res_key}.{self.lb.name} - Listener {self.Port} - No target group matched."
             )
-
-
-def validate_duplicate_targets(lb: Elbv2, listener: ComposeListener) -> None:
-    t_targets = [s["name"] for s in lb.services]
-    duplicate_services: bool = len(t_targets) != len(set(t_targets))
-    if duplicate_services:
-        for listener_target in listener.services:
-            parts = LISTENER_TARGET_RE.match(listener_target["name"])
-            if not parts:
-                raise ValueError(
-                    "{lb.module.res_key}.{lb.name} - Listener {listener.port}"
-                    " - Target name definition is invalid. Must comply to",
-                    LISTENER_TARGET_RE.pattern,
-                )
-            if listener_target["name"] and parts and not parts.group("port"):
-                raise ValueError(
-                    f"{lb.module.res_key}.{lb.name} - Listener {listener.def_port}"
-                    f" - Target service {listener_target['name']} is defined more than once in "
-                    "`Services`. You must specify the port with format",
-                    LISTENER_TARGET_RE.pattern,
-                )
