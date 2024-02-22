@@ -88,11 +88,15 @@ def define_tagsgroups_filter_tags(tags) -> list:
     if isinstance(tags, list):
         return set_filters_from_tags_list(tags)
     elif isinstance(tags, dict):
-        return [
-            {"Key": key, "Values": tuple(values)}
+        _tags = [
+            {
+                "Key": key,
+                "Values": (str(values) if isinstance(values, int) else values,),
+            }
             for key, values in tags.items()
             if isinstance(values, (list, str, int)) and isinstance(key, str)
         ]
+        return _tags
     raise TypeError("Tags must be one of", [list, dict], "Got", type(tags))
 
 

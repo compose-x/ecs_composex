@@ -143,8 +143,8 @@ class XResourceModule:
                         f"{resource.module.res_key}.{resource.name} is set for Lookup"
                         " but has other properties set. Voiding them"
                     )
-                    resource.properties = {}
-                    resource.parameters = {}
+                    if resource.properties:
+                        resource.properties = {}
                 lookup_resources.append(resource)
         return lookup_resources
 

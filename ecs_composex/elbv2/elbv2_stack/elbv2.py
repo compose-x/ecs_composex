@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from ecs_composex.mods_manager import XResourceModule
     from ecs_composex.common.settings import ComposeXSettings
 
+from compose_x_common.aws.elasticloadbalancing import LB_V2_LISTENER_ARN_RE
 from compose_x_common.compose_x_common import keyisset, keypresent, set_else_none
 from troposphere import AWS_NO_VALUE, AWS_STACK_NAME, GetAtt, Ref, Select, Sub, Tags
 from troposphere.ec2 import EIP, SecurityGroup
@@ -21,12 +22,14 @@ from troposphere.elasticloadbalancingv2 import (
 )
 
 from ecs_composex.common import NONALPHANUM
+from ecs_composex.common.aws import find_aws_resource_arn_from_tags_api
 from ecs_composex.common.logging import LOG
-from ecs_composex.common.troposphere_tools import ROOT_STACK_NAME
+from ecs_composex.common.troposphere_tools import ROOT_STACK_NAME, add_parameters
 from ecs_composex.compose.x_resources.network_x_resources import NetworkXResource
 from ecs_composex.elbv2.elbv2_ecs import MergedTargetGroup
 from ecs_composex.elbv2.elbv2_params import (
     LB_ARN,
+    LB_CLOUD_CONTROL_ATTRIBUTES,
     LB_DNS_NAME,
     LB_DNS_ZONE_ID,
     LB_FULL_NAME,
@@ -35,6 +38,7 @@ from ecs_composex.elbv2.elbv2_params import (
     MOD_KEY,
 )
 from ecs_composex.elbv2.elbv2_stack.elbv2_listener import ComposeListener
+from ecs_composex.elbv2.elbv2_stack.elbv2_listener.lookup_listener import LookupListener
 from ecs_composex.elbv2.elbv2_stack.helpers import (
     LISTENER_TARGET_RE,
     handle_cross_zone,
@@ -58,24 +62,39 @@ class Elbv2(NetworkXResource):
     def __init__(
         self, name, definition, module: XResourceModule, settings: ComposeXSettings
     ):
-        if not keyisset("Listeners", definition):
-            raise KeyError("You must specify at least one Listener for a LB.", name)
         self.lb_is_public = False
-        self.lb_type = "application"
+        self._lb_type = "application"
         self.ingress = None
         self.lb_sg = None
         self.lb_eips = []
         self.unique_service_lb = False
         self.lb = None
-        self.listeners: list[ComposeListener] = []
+        self.new_listeners: list[ComposeListener] = []
+        self.lookup_listeners: dict[int, LookupListener] = {}
         self.target_groups: list[MergedTargetGroup] = []
         super().__init__(name, definition, module, settings)
+        if (
+            not keyisset("Listeners", definition)
+            and not self.lookup
+            or (self.lookup and not keyisset("Listeners", self.lookup))
+        ):
+            raise KeyError("You must specify at least one Listener for a LB.", name)
+
+        self.cloud_control_attributes_mapping = LB_CLOUD_CONTROL_ATTRIBUTES
         self.no_allocate_eips: bool = keyisset("NoAllocateEips", self.settings)
         self.retain_eips: bool = keyisset("RetainEips", self.settings)
         self.validate_services()
         self.sort_props()
         self.module_name = MOD_KEY
         self.ref_parameter = LB_ARN
+
+    @property
+    def lb_type(self) -> str:
+        if self.cloud_control_properties and keyisset(
+            "Type", self.cloud_control_properties
+        ):
+            return self.cloud_control_properties["Type"]
+        return self._lb_type
 
     def init_outputs(self):
         self.output_properties = {
@@ -112,8 +131,11 @@ class Elbv2(NetworkXResource):
         :return:
         """
         listeners: list[dict] = set_else_none("Listeners", self.definition, [])
-        if not listeners:
-            raise KeyError(f"You must define at least one listener for LB {self.name}")
+        if not listeners and not self.lookup_listeners:
+            raise KeyError(
+                f"You must define at least one listener for LB {self.name}"
+                " when not looking up existing ones."
+            )
         ports = [listener["Port"] for listener in listeners]
         validate_listeners_duplicates(self.name, ports)
         for listener_def in listeners:
@@ -138,12 +160,24 @@ class Elbv2(NetworkXResource):
                 new_listener = template.add_resource(
                     ComposeListener(self, listener_def)
                 )
-                self.listeners.append(new_listener)
+                self.new_listeners.append(new_listener)
             else:
                 LOG.warning(
                     f"{self.module.res_key}.{self.name} - "
                     f"Listener {listener_def['Port']} has no action or service. Not used."
                 )
+
+    def find_lookup_listeners(self):
+        """
+        Method to lookup the listeners defined in the definition and sets them up.
+        Will use them to add to the LB mappings
+        """
+        listeners: dict = set_else_none("Listeners", self.lookup, {})
+        if not listeners:
+            LOG.debug("No Listener to lookup.")
+        for listener_port, listener_def in listeners.items():
+            listener: LookupListener = LookupListener(self, listener_port, listener_def)
+            self.lookup_listeners[listener_port] = listener
 
     def set_services_targets(self, settings):
         """
@@ -217,7 +251,7 @@ class Elbv2(NetworkXResource):
             )
             else False
         )
-        self.lb_type = (
+        self._lb_type = (
             "application"
             if not keyisset("Type", self.properties)
             else self.properties["Type"]
@@ -228,27 +262,28 @@ class Elbv2(NetworkXResource):
         if self.is_nlb():
             self.lb_sg = Ref(AWS_NO_VALUE)
         elif self.is_alb():
-            self.lb_sg = SecurityGroup(
-                f"{self.logical_name}SecurityGroup",
-                GroupDescription=Sub(
-                    f"SG for LB {self.logical_name} in ${{{AWS_STACK_NAME}}}"
-                ),
-                GroupName=Sub(
-                    f"{self.logical_name}-{self.lb_type}-sg-${{{AWS_STACK_NAME}}}"
-                ),
-                VpcId=Ref(VPC_ID),
-                Tags=Tags(Name=Sub(f"elbv2-{self.logical_name}-${{{AWS_STACK_NAME}}}")),
-            )
+            if not self.lookup:
+                self.lb_sg = SecurityGroup(
+                    f"{self.logical_name}SecurityGroup",
+                    GroupDescription=Sub(
+                        f"SG for LB {self.logical_name} in ${{{AWS_STACK_NAME}}}"
+                    ),
+                    GroupName=Sub(
+                        f"{self.logical_name}-{self.lb_type}-sg-${{{AWS_STACK_NAME}}}"
+                    ),
+                    VpcId=Ref(VPC_ID),
+                    Tags=Tags(
+                        Name=Sub(f"elbv2-{self.logical_name}-${{{AWS_STACK_NAME}}}")
+                    ),
+                )
+            else:
+                self.lb_sg = Ref(AWS_NO_VALUE)
 
     def sort_alb_ingress(self, settings, stack_template):
         """
         Method to handle Ingress to ALB
         """
-        if (
-            not self.parameters
-            or (self.parameters and not keyisset("Ingress", self.parameters))
-            or self.is_nlb()
-        ):
+        if self.is_nlb():
             LOG.warning(
                 "You defined ingress rules for a NLB. This is invalid. Define ingress rules at the service level."
             )
@@ -262,12 +297,36 @@ class Elbv2(NetworkXResource):
         ports = set_service_ports(ports)
         self.ingress = Ingress(self.parameters["Ingress"], ports)
         if self.ingress and self.is_alb():
-            self.ingress.set_aws_sources_ingress(
-                settings, self.logical_name, GetAtt(self.lb_sg, "GroupId")
-            )
-            self.ingress.set_ext_sources_ingress(
-                self.logical_name, GetAtt(self.lb_sg, "GroupId")
-            )
+            if self.cfn_resource:
+                self.ingress.set_aws_sources_ingress(
+                    settings, self.logical_name, GetAtt(self.lb_sg, "GroupId")
+                )
+                self.ingress.set_ext_sources_ingress(
+                    self.logical_name, GetAtt(self.lb_sg, "GroupId")
+                )
+            else:
+                from ecs_composex.elbv2.elbv2_params import LB_SG_ID
+
+                add_parameters(
+                    stack_template,
+                    [self.attributes_outputs[LB_SG_ID]["ImportParameter"]],
+                )
+                self.stack.Parameters.update(
+                    {
+                        self.attributes_outputs[LB_SG_ID][
+                            "ImportParameter"
+                        ].title: self.attributes_outputs[LB_SG_ID]["ImportValue"]
+                    }
+                )
+                self.ingress.set_aws_sources_ingress(
+                    settings,
+                    self.logical_name,
+                    Ref(self.attributes_outputs[LB_SG_ID]["ImportParameter"]),
+                )
+                self.ingress.set_ext_sources_ingress(
+                    self.logical_name,
+                    Ref(self.attributes_outputs[LB_SG_ID]["ImportParameter"]),
+                )
             self.ingress.associate_aws_ingress_rules(stack_template)
             self.ingress.associate_ext_ingress_rules(stack_template)
 
@@ -477,7 +536,8 @@ class Elbv2(NetworkXResource):
         :param troposphere.Template template:
         :return:
         """
-        template.add_resource(self.lb)
+        if self.cfn_resource:
+            template.add_resource(self.lb)
         self.init_outputs()
         if self.lb_sg and isinstance(self.lb_sg, SecurityGroup):
             self.output_properties.update(

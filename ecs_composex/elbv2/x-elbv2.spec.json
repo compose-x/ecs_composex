@@ -20,6 +20,58 @@
     "Properties": {
       "type": "object"
     },
+    "Lookup": {
+      "type": "object",
+      "description": "Lookup existing LoadBalancer",
+      "required": [
+        "loadbalancer"
+      ],
+      "properties": {
+        "loadbalancer": {
+          "type": "object",
+          "description": "",
+          "properties": {
+            "Tags": {
+              "$ref": "#/definitions/LookupTags",
+              "description": "Tags lookup to find the elasticloadbalancing:loadbalancer"
+            }
+          }
+        },
+        "Listeners": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Find existing Listener. When ALB, adds new TGT and rules. Cannot be default rule. When NLB, this simply adds new Target Groups.",
+          "patternProperties": {
+            "^[0-9]+": {
+              "type": "object",
+              "required": [
+                "Tags",
+                "Targets"
+              ],
+              "properties": {
+                "Tags": {
+                  "$ref": "#/definitions/LookupTags",
+                  "description": "Tags to lookup elasticloadbalancing:listener"
+                },
+                "Targets": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/TargetRule"
+                  }
+                },
+                "Certificates": {
+                  "$ref": "#/definitions/ListenerCertificates"
+                }
+              }
+            }
+          }
+        },
+        "RoleArn": {
+          "type": "string",
+          "description": "RoleARN to use in AssumeRole to find the Load Balancer"
+        }
+      }
+    },
     "MacroParameters": {
       "type": "object",
       "additionalProperties": true,
@@ -148,6 +200,41 @@
     }
   },
   "definitions": {
+    "LookupTags": {
+      "oneOf": [
+        {
+          "type": "array",
+          "description": "Tags list[Key: Value]",
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "Key": {
+                "type": "string"
+              },
+              "Value": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "description": "Key: Value tags",
+          "additionalProperties": false,
+          "patternProperties": {
+            "^[a-zA-Z0-9_:\\-\\.]+": {
+              "type": [
+                "string",
+                "number"
+              ],
+              "description": "Tag value"
+            }
+          }
+        }
+      ]
+    },
     "DnsAlias": {
       "type": "object",
       "additionalProperties": false,
@@ -393,42 +480,7 @@
           "type": "string"
         },
         "Certificates": {
-          "type": "array",
-          "uniqueItems": true,
-          "description": "List of pointers to an ACM Certificate.",
-          "items": {
-            "type": "object",
-            "description": "The Certificate pointer. Can use (only one) either x-acm, Arn or CertificateArn",
-            "additionalProperties": false,
-            "oneOf": [
-              {
-                "required": [
-                  "x-acm"
-                ]
-              },
-              {
-                "required": [
-                  "Arn"
-                ]
-              },
-              {
-                "required": [
-                  "CertificateArn"
-                ]
-              }
-            ],
-            "properties": {
-              "x-acm": {
-                "type": "string"
-              },
-              "Arn": {
-                "type": "string"
-              },
-              "CertificateArn": {
-                "type": "string"
-              }
-            }
-          }
+          "$ref": "#/definitions/ListenerCertificates"
         },
         "DefaultActions": {
           "type": "array"
@@ -456,6 +508,44 @@
         "TCP_UDP",
         "TLS"
       ]
+    },
+    "ListenerCertificates": {
+      "type": "array",
+      "uniqueItems": true,
+      "description": "List of pointers to an ACM Certificate.",
+      "items": {
+        "type": "object",
+        "description": "The Certificate pointer. Can use (only one) either x-acm, Arn or CertificateArn",
+        "additionalProperties": false,
+        "oneOf": [
+          {
+            "required": [
+              "x-acm"
+            ]
+          },
+          {
+            "required": [
+              "Arn"
+            ]
+          },
+          {
+            "required": [
+              "CertificateArn"
+            ]
+          }
+        ],
+        "properties": {
+          "x-acm": {
+            "type": "string"
+          },
+          "Arn": {
+            "type": "string"
+          },
+          "CertificateArn": {
+            "type": "string"
+          }
+        }
+      }
     }
   }
 }

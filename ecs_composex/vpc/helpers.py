@@ -9,25 +9,41 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
     from ecs_composex.mods_manager import XResourceModule
-    from ecs_composex.common.stacks import ComposeXStack
+    from ecs_composex.vpc.vpc_stack import XStack as VpcStack
 
 from ecs_composex.common.logging import LOG
+from ecs_composex.common.stacks import ComposeXStack
 from ecs_composex.common.troposphere_tools import add_resource, add_update_mapping
 from ecs_composex.compose.x_resources.network_x_resources import NetworkXResource
 
 
-def update_network_resources_vpc_config(settings, vpc_stack):
+def update_network_resources_vpc_config(
+    settings: ComposeXSettings, vpc_stack: VpcStack
+):
     """
     Iterate over the settings.x_resources, over the root stack nested stacks.
     If the nested stack has x_resources that depend on VPC, update the stack parameters with the vpc stack settings
 
     Although the first if should never be true, setting condition in case for safety.
-
-    :param settings: Runtime Execution setting
-    :type settings: ecs_composex.common.settings.ComposeXSettingsngs
-    :param vpc_stack: The VPC stack and details
-    :type vpc_stack: ecs_composex.vpc.vpc_stack.VpcStack
     """
+
+    from ecs_composex.vpc.vpc_params import VPC_ID_T
+
+    nested_stacks: dict[str, ComposeXStack] = {
+        resource: resource_def
+        for resource, resource_def in settings.root_stack.stack_template.resources.items()
+        if (
+            isinstance(resource_def, ComposeXStack)
+            or issubclass(type(resource_def), ComposeXStack)
+        )
+    }
+    for stack_def in nested_stacks.values():
+        if VPC_ID_T in stack_def.Parameters:
+            if vpc_stack.vpc_resource.mappings:
+                stack_def.set_vpc_params_from_vpc_lookup(vpc_stack, settings)
+            else:
+                stack_def.set_vpc_parameters_from_vpc_stack(vpc_stack, settings)
+
     for resource in settings.x_resources:
         if not resource:
             print("NONED???", resource)

@@ -385,7 +385,11 @@ def validate_props_and_service_definition(props, service):
         raise ValueError(
             f"Defined TargetGroup port {props['Port']} is not defined for {service.name}."
             " Valid ports are",
-            [p["published"] for p in service.ports],
+            [
+                _port["published"]
+                for _port in service.ports
+                if keyisset("published", _port)
+            ],
         )
     chosen_port = [p for p in service.ports if p["target"] == props["Port"]]
     if (chosen_port[0]["protocol"] == "tcp" and props["Protocol"] not in valid_tcp) or (
@@ -492,13 +496,13 @@ def import_target_group_attributes(props, target_def, elbv2):
         "slow_start.duration_seconds": lambda x: 30 <= int(x) <= 900,
     }
     # pragma: ignore use-case for now "lambda.multi_value_headers.enabled": lambda x: x in ("true", "false"),
-    if elbv2.cfn_resource.Type == "application":
+    if elbv2.lb_type == "application":
         validate_target_group_attributes(
-            props[attributes_key], alb_valid, elbv2.cfn_resource.Type
+            props[attributes_key], alb_valid, elbv2.lb_type
         )
-    if elbv2.cfn_resource.Type == "network":
+    if elbv2.lb_type == "network":
         validate_target_group_attributes(
-            props[attributes_key], nlb_valid, elbv2.cfn_resource.Type
+            props[attributes_key], nlb_valid, elbv2.lb_type
         )
 
 
@@ -626,10 +630,15 @@ def handle_services_association(
         )
         return
 
-    for listener in load_balancer.listeners:
+    for listener in load_balancer.new_listeners:
         listener.map_lb_target_groups_service_to_listener_targets(load_balancer)
 
-    for listener in load_balancer.listeners:
+    for listener_port, listener in load_balancer.lookup_listeners.items():
+        listener.map_lb_target_groups_service_to_listener_targets(load_balancer)
+        listener.handle_cognito_pools(settings, res_root_stack)
+        listener.define_new_rules(load_balancer, template)
+
+    for listener in load_balancer.new_listeners:
         listener.handle_certificates(settings, res_root_stack)
         listener.handle_cognito_pools(settings, res_root_stack)
         listener.define_default_actions(load_balancer, template)
@@ -648,6 +657,7 @@ def handle_target_groups_association(
     add_outputs(template, load_balancer.outputs)
     _targets = set_else_none("TargetGroups", load_balancer.definition, {})
     if not _targets:
+        print("NO TARGET GROUPS")
         return
     for _target_name, _target_def in _targets.items():
         props = {}
@@ -672,10 +682,17 @@ def handle_target_groups_association(
         load_balancer.target_groups.append(_tgt_group)
         _tgt_group.associate_families(settings)
 
-        for listener in load_balancer.listeners:
+        for listener in load_balancer.new_listeners:
             listener.map_target_group_to_listener(_tgt_group)
 
-    for listener in load_balancer.listeners:
+        for listener in load_balancer.lookup_listeners.values():
+            print("MAPPING TARGET TO LISTENER", _tgt_group, listener)
+            listener.map_target_group_to_listener(_tgt_group)
+
+    for listener_port, listener_def in load_balancer.lookup_listeners.items():
+        print(listener_port, listener_def)
+
+    for listener in load_balancer.new_listeners:
         listener.handle_certificates(settings, res_root_stack)
         listener.handle_cognito_pools(settings, res_root_stack)
         listener.define_default_actions(load_balancer, template)
@@ -692,7 +709,7 @@ def elbv2_to_ecs(resources, services_stack, res_root_stack, settings):
     :return:
     """
     for resource_name, resource in resources.items():
-        if resource.cfn_resource and not resource.mappings:
+        if resource.cfn_resource:
             if keyisset("TargetGroups", resource.definition):
                 LOG.info(
                     f"{resource.module.res_key}.{resource_name} - Linking to TargetGroups"
@@ -701,5 +718,16 @@ def elbv2_to_ecs(resources, services_stack, res_root_stack, settings):
             else:
                 LOG.info(
                     f"{resource.module.res_key}.{resource_name} - Linking to Services"
+                )
+                handle_services_association(resource, res_root_stack, settings)
+        elif resource.mappings:
+            if keyisset("TargetGroups", resource.definition):
+                LOG.info(
+                    f"{resource.module.res_key}.{resource_name} (Lookup) - Linking to TargetGroups"
+                )
+                handle_target_groups_association(resource, res_root_stack, settings)
+            else:
+                LOG.info(
+                    f"{resource.module.res_key}.{resource_name} (Lookup) - Linking to Services"
                 )
                 handle_services_association(resource, res_root_stack, settings)

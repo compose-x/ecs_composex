@@ -135,7 +135,10 @@ class Bucket(ApiXResource):
             _s3 = self.lookup_session.resource("s3")
             try:
                 if _s3.Bucket(resource_id) in _s3.buckets.all():
-                    props = self.cloud_control_attributes_mapping_lookup(
+                    (
+                        props,
+                        self.cloud_control_properties,
+                    ) = self.cloud_control_attributes_mapping_lookup(
                         cfn_resource_type, resource_id
                     )
             except _s3.meta.client.exceptions:

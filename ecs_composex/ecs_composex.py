@@ -211,17 +211,12 @@ def create_root_stack(settings: ComposeXSettings) -> ComposeXStack:
     return root_stack
 
 
-def set_all_mappings_to_root_stack(
-    root_stack: ComposeXStack, settings: ComposeXSettings
-):
+def set_all_mappings_to_root_stack(settings: ComposeXSettings):
     """
-    Adds all the mappings to the root stack
-
-    :param ComposeXStack root_stack:
-    :param ecs_composex.common.settings.ComposeXSettings settings: The settings for the execution
+    Adds all the mappings to the root stack1
     """
     for mapping_key, mapping in settings.mappings.items():
-        add_update_mapping(root_stack.stack_template, mapping_key, mapping)
+        add_update_mapping(settings.root_stack.stack_template, mapping_key, mapping)
 
 
 def generate_full_template(settings: ComposeXSettings):
@@ -307,7 +302,7 @@ def generate_full_template(settings: ComposeXSettings):
 
     set_ecs_cluster_identifier(settings.root_stack, settings)
     add_all_tags(settings.root_stack.stack_template, settings)
-    set_all_mappings_to_root_stack(settings.root_stack, settings)
+    set_all_mappings_to_root_stack(settings)
 
     for resource in settings.x_resources:
         if hasattr(resource, "post_processing") and hasattr(
