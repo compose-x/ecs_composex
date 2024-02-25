@@ -272,13 +272,13 @@ def define_iam_permissions(
         resource_mapping_key
         not in dest_resource.iam_manager.iam_modules_policies.keys()
     ):
-        dest_resource.iam_manager.iam_modules_policies[
-            resource_mapping_key
-        ] = PolicyType(
-            policy_title,
-            PolicyName=policy_title,
-            PolicyDocument={"Version": "2012-10-17", "Statement": []},
-            Roles=roles,
+        dest_resource.iam_manager.iam_modules_policies[resource_mapping_key] = (
+            PolicyType(
+                policy_title,
+                PolicyName=policy_title,
+                PolicyDocument={"Version": "2012-10-17", "Statement": []},
+                Roles=roles,
+            )
         )
         res_policy = dest_resource_template.add_resource(
             dest_resource.iam_manager.iam_modules_policies[resource_mapping_key]

@@ -173,9 +173,11 @@ class Mesh:
                 node["Port"],
                 self,
                 settings,
-                node[appmesh_params.BACKENDS_KEY]
-                if keyisset(appmesh_params.BACKENDS_KEY, node)
-                else None,
+                (
+                    node[appmesh_params.BACKENDS_KEY]
+                    if keyisset(appmesh_params.BACKENDS_KEY, node)
+                    else None
+                ),
             )
             self.nodes[family.logical_name] = mesh_node
             self.nodes[family.logical_name].get_node_param = GetAtt(

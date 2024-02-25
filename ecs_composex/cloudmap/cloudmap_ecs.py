@@ -67,9 +67,11 @@ class EcsDiscoveryService:
         self._sd_service = SdService(
             f"{namespace.logical_name}EcsServiceDiscovery{family.logical_name}",
             Description=Sub(f"{self.family.name} service"),
-            NamespaceId=Ref(self.namespace.cfn_resource)
-            if self.namespace.cfn_resource
-            else self.namespace.namespace_id["ImportValue"],
+            NamespaceId=(
+                Ref(self.namespace.cfn_resource)
+                if self.namespace.cfn_resource
+                else self.namespace.namespace_id["ImportValue"]
+            ),
             HealthCheckCustomConfig=HealthCheckCustomConfig(FailureThreshold=1.0),
             DnsConfig=DnsConfig(
                 RoutingPolicy="MULTIVALUE",

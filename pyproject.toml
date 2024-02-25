@@ -35,32 +35,32 @@ exclude = ["*.pyc", "*~", "*pycache*"]
 "Documentation" = "https://docs.compose-x.io/"
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = ">=3.9,<4.0"
 boto3 = ">=1.26,<2.0"
-troposphere = "4.5.3"
+troposphere = ">=4.5.3,<5.0"
 ecr-scan-reporter = { version = "^0.4.8", optional = true }
-compose-x-render = "^0.8"
+compose-x-render = "^1.0"
 compose-x-common = "^1.4"
-jsonschema = ">=4.15,<4.18"
+jsonschema = ">=4.21"
 requests = "^2.28"
 tabulate = "^0.8"
 importlib-resources = "^6.1"
 PyYAML = "^6.0"
 retry2 = "^0.9"
 Jinja2 = "^3.1.2"
-docker = "^6.0.1"
+docker = ">=6.0.1,<8.0"
 troposphere-awscommunity-applicationautoscaling-scheduledaction = "^0.1.1"
 
 [tool.poetry.dev-dependencies]
 isort = "^5.13"
 placebo = "^0.10.0"
-pre-commit = "^3.2"
-black = "^23.12"
+pre-commit = "^3.6"
+black = ">=23.12"
 behave = "^1.2.6"
 coverage = { extras = ["toml"], version = ">=7.0,<8" }
-pytest = "^7.4"
+pytest = ">=7.4"
 tbump = "^6.9"
-boto3-stubs = { extras = ["acm", "ecs", "cloudformation", "essential"], version = "^1.26" }
+boto3-stubs = { extras = ["acm", "ecs", "cloudformation", "essential"], version = ">=1.26,<2.0" }
 pyclean = "^2.7"
 pyupgrade = "^3.8"
 

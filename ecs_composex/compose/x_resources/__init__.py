@@ -181,20 +181,16 @@ class XResource:
         """
         JSON Validation of the resources module validation
         """
+        from jsonschema import Draft7Validator
+
+        from ecs_composex.specs import REGISTRY as COMPOSE_REGISTRY
+
         if not self.module.json_schema and not module_schema:
             return
-        resolver_source = pkg_files("ecs_composex").joinpath("specs/compose-spec.json")
-        LOG.debug(f"Validating against input schema {resolver_source}")
-        resolver = jsonschema.RefResolver(
-            base_uri=f"file://{path.abspath(path.dirname(resolver_source))}/",
-            referrer=self.module.json_schema,
-        )
+
+        _eval = Draft7Validator(self.module.json_schema, registry=COMPOSE_REGISTRY)
         try:
-            jsonschema.validate(
-                definition,
-                module_schema if module_schema else self.module.json_schema,
-                resolver=resolver,
-            )
+            _eval.validate(definition)
         except jsonschema.exceptions.ValidationError:
             LOG.error(f"{module_name}.{name} - Definition is not conform to schema.")
             raise
@@ -605,9 +601,11 @@ class XResource:
                     ),
                     "ImportParameter": Parameter(
                         output_name,
-                        group_label=attribute_parameter.group_label
-                        if attribute_parameter.group_label
-                        else self.module.mod_key,
+                        group_label=(
+                            attribute_parameter.group_label
+                            if attribute_parameter.group_label
+                            else self.module.mod_key
+                        ),
                         return_value=attribute_parameter.return_value,
                         Type=attribute_parameter.Type,
                     ),
@@ -628,16 +626,20 @@ class XResource:
                     "Output": Output(output_name, Value=value, Export=export),
                     "ImportParameter": Parameter(
                         output_name,
-                        group_label=attribute_parameter.group_label
-                        if attribute_parameter.group_label
-                        else self.module.mod_key,
+                        group_label=(
+                            attribute_parameter.group_label
+                            if attribute_parameter.group_label
+                            else self.module.mod_key
+                        ),
                         return_value=attribute_parameter.return_value,
                         Type=attribute_parameter.Type,
                     ),
                     "ImportValue": GetAtt(
-                        self.stack.get_top_root_stack()
-                        if self.stack
-                        else self.module.mapping_key,
+                        (
+                            self.stack.get_top_root_stack()
+                            if self.stack
+                            else self.module.mapping_key
+                        ),
                         f"Outputs.{output_name}",
                     ),
                     "Original": attribute_parameter,

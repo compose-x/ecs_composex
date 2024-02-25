@@ -966,9 +966,11 @@ class ComposeService:
             ),
             StopTimeout=self.stop_grace_period,
             SystemControls=self.sysctls,
-            User=If(USE_WINDOWS_OS_T, NoValue, self.ecs_user)
-            if self.ecs_user != NoValue
-            else self.ecs_user,
+            User=(
+                If(USE_WINDOWS_OS_T, NoValue, self.ecs_user)
+                if self.ecs_user != NoValue
+                else self.ecs_user
+            ),
         )
 
         _to_add = [secret.env_var for secret in self.secrets]

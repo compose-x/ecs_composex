@@ -199,13 +199,15 @@ class ComposeFamily:
                     Ref(ecs_params.NETWORK_MODE),
                 ),
             ),
-            EphemeralStorage=If(
-                ecs_conditions.USE_FARGATE_CON_T,
-                EphemeralStorage(SizeInGiB=self.task_ephemeral_storage),
-                NoValue,
-            )
-            if self.task_ephemeral_storage >= 21
-            else NoValue,
+            EphemeralStorage=(
+                If(
+                    ecs_conditions.USE_FARGATE_CON_T,
+                    EphemeralStorage(SizeInGiB=self.task_ephemeral_storage),
+                    NoValue,
+                )
+                if self.task_ephemeral_storage >= 21
+                else NoValue
+            ),
             InferenceAccelerators=NoValue,
             IpcMode=If(
                 ecs_conditions.USE_WINDOWS_OS_T,
