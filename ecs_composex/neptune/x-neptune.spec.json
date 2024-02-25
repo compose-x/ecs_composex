@@ -54,62 +54,52 @@
       }
     },
     "ServicesDef": {
-      "oneOf": [
-        {
-          "type": "array",
-          "items": {
-            "$ref": "x-resources.common.spec.json#/definitions/legacyServiceDef"
-          }
-        },
-        {
-          "type": "object",
-          "patternProperties": {
-            "[\\x20-\\x7E]+$": {
-              "description": "Object representation of the service to use.",
+      "type": "object",
+      "patternProperties": {
+        "[\\x20-\\x7E]+$": {
+          "description": "Object representation of the service to use.",
+          "properties": {
+            "Access": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "NeptuneDB"
+              ],
               "properties": {
-                "Access": {
-                  "type": "object",
-                  "additionalProperties": false,
-                  "required": [
-                    "NeptuneDB"
-                  ],
-                  "properties": {
-                    "NeptuneDB": {
-                      "type": "string"
-                    },
-                    "DBCluster": {
-                      "type": "string"
-                    }
-                  }
+                "NeptuneDB": {
+                  "type": "string"
                 },
-                "ReturnValues": {
-                  "type": "object",
-                  "description": "Set the CFN Return Value and the environment variable name you want to expose to the service",
-                  "additionalProperties": false,
-                  "patternProperties": {
-                    "[\\x20-\\x7E]+$": {
-                      "oneOf": [
-                        {
+                "DBCluster": {
+                  "type": "string"
+                }
+              }
+            },
+            "ReturnValues": {
+              "type": "object",
+              "description": "Set the CFN Return Value and the environment variable name you want to expose to the service",
+              "additionalProperties": false,
+              "patternProperties": {
+                "[\\x20-\\x7E]+$": {
+                  "oneOf": [
+                    {
+                      "$ref": "x-resources.common.spec.json#/definitions/varNameDef"
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "EnvVarName": {
                           "$ref": "x-resources.common.spec.json#/definitions/varNameDef"
-                        },
-                        {
-                          "type": "object",
-                          "additionalProperties": false,
-                          "properties": {
-                            "EnvVarName": {
-                              "$ref": "x-resources.common.spec.json#/definitions/varNameDef"
-                            }
-                          }
                         }
-                      ]
+                      }
                     }
-                  }
+                  ]
                 }
               }
             }
           }
         }
-      ]
+      }
     }
   }
 }

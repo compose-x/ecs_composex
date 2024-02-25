@@ -1,41 +1,20 @@
----
-# RDS Use-case.
-
 version: '3.8'
 x-rds:
   dbA:
     MacroParameters:
-      Engine: "aurora-postgresql"
-      EngineVersion: "14.6"
+      Engine: aurora-postgresql
+      EngineVersion: '14.6'
     Services:
-      - name: app01
-        access: RW
-      - name: app03
-        access: RW
-      - name: youtoo
-        access: RW
-
-
+      app01:
+        Access:
+          DBCluster: RO
+      app03:
+        Access:
+          DBCluster: RO
+      youtoo:
+        Access:
+          DBCluster: RO
   dbB:
-    Properties:
-      Engine: "aurora-postgresql"
-      EngineVersion: "14.6"
-      BackupRetentionPeriod: 1
-      DatabaseName: dbname
-      DeletionProtection: False
-      EnableCloudwatchLogsExports:
-        - audit
-        - general
-      EnableHttpEndpoint: True
-      EnableIAMDatabaseAuthentication: True
-      MasterUsername: dummy
-      MasterUserPassword: dummy
-      Port: 5432
-      StorageEncrypted: True
-      Tags:
-        - Key: Name
-          Value: "dummy-db"
-
     MacroParameters:
       RdsFeatures:
         - Name: s3Import
@@ -48,14 +27,34 @@ x-rds:
             - x-s3::bucket-01
             - arn:aws:s3:::sacrificial-lamb/folder/*
             - bucket-name
+    Properties:
+      BackupRetentionPeriod: 1
+      DatabaseName: dbname
+      DeletionProtection: false
+      EnableCloudwatchLogsExports:
+        - audit
+        - general
+      EnableHttpEndpoint: true
+      EnableIAMDatabaseAuthentication: true
+      Engine: aurora-postgresql
+      EngineVersion: '14.6'
+      MasterUserPassword: dummy
+      MasterUsername: dummy
+      Port: 5432
+      StorageEncrypted: true
+      Tags:
+        - Key: Name
+          Value: dummy-db
     Services:
-      - name: app01
-        access: RW
-      - name: app03
-        access: RW
-      - name: youtoo
-        access: RW
-
+      app01:
+        Access:
+          DBCluster: RO
+      app03:
+        Access:
+          DBCluster: RO
+      youtoo:
+        Access:
+          DBCluster: RO
 x-s3:
   bucket-01:
     Lookup:
@@ -63,5 +62,5 @@ x-s3:
         - Name: lambda-dev-eu-west-1
         - costcentre: lambda
     Services:
-      - name: app03
-        access: RWObjects
+      app03:
+        Access: RWObjects

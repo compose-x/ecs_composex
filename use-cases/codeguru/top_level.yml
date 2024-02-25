@@ -9,5 +9,5 @@ x-codeguru_profiler:
         - channelUri: SOME_SNS_TOPIC_ARN
           channelId: aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee
     Services:
-      - name: app03
-        access: RW
+      app03:
+        Access: RW

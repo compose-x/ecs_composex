@@ -1,123 +1,117 @@
-version: "3.8"
-
+version: '3.8'
 x-kms:
+  keyC:
+    Lookup:
+      Tags:
+        ForLookup: "true"
+        usage: unknown
+    Services:
+      app03:
+        Access: EncryptDecrypt
+      bignicefamily:
+        Access: DecryptOnly
   s3-encryption-key:
     Properties: {}
     Settings:
       Alias: alias/s3-encryption-key
-
-  keyC:
-    Lookup:
-      Tags:
-        - name: cicd
-        - costcentre: lambda
-    Services:
-      - name: app03
-        access: EncryptDecrypt
-      - name: bignicefamily
-        access: DecryptOnly
-
-
 x-s3:
   bucket-01:
-    Properties:
-      BucketName: bucket-01
-      AccessControl: BucketOwnerFullControl
-      ObjectLockEnabled: True
-      PublicAccessBlockConfiguration:
-          BlockPublicAcls: True
-          BlockPublicPolicy: True
-          IgnorePublicAcls: True
-          RestrictPublicBuckets: False
-      AccelerateConfiguration:
-        AccelerationStatus: Suspended
-      BucketEncryption:
-        ServerSideEncryptionConfiguration:
-          - ServerSideEncryptionByDefault:
-              SSEAlgorithm: "aws:kms"
-              KMSMasterKeyID: x-kms::keyC
-      VersioningConfiguration:
-        Status: "Enabled"
     MacroParameters:
-      ExpandRegionToBucket: True
-      ExpandAccountIdToBucket: True
-    Services:
-      - name: app03
-        access:
-          bucket: ListOnly
-          objects: CRUD
-  bucket-03:
+      ExpandAccountIdToBucket: true
+      ExpandRegionToBucket: true
     Properties:
-      BucketName: bucket-03
-      AccessControl: BucketOwnerFullControl
-      ObjectLockEnabled: True
-      PublicAccessBlockConfiguration:
-          BlockPublicAcls: True
-          BlockPublicPolicy: True
-          IgnorePublicAcls: True
-          RestrictPublicBuckets: False
       AccelerateConfiguration:
         AccelerationStatus: Suspended
+      AccessControl: BucketOwnerFullControl
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
+              KMSMasterKeyID: x-kms::keyC
               SSEAlgorithm: aws:kms
-              KMSMasterKeyID: x-kms::s3-encryption-key
+      BucketName: bucket-01
+      ObjectLockEnabled: true
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: false
       VersioningConfiguration:
-        Status: "Enabled"
-
-    Settings:
-      ExpandRegionToBucket: True
-      ExpandAccountIdToBucket: False
+        Status: Enabled
     Services:
-      - name: app03
-        access:
+      app03:
+        Access:
           bucket: ListOnly
           objects: CRUD
   bucket-02:
     Properties: {}
-    Settings:
-      ExpandRegionToBucket: False
-      ExpandAccountIdToBucket: False
-      EnableEncryption: AES256
-      EnableAcceleration: True
     Services:
-      - name: app03
-        access:
+      app03:
+        Access:
           bucket: ListOnly
           objects: RW
-
-  bucket-04:
+    Settings:
+      EnableAcceleration: true
+      EnableEncryption: AES256
+      ExpandAccountIdToBucket: false
+      ExpandRegionToBucket: false
+  bucket-03:
     Properties:
-      BucketName: bucket-04
-    Settings:
-      NameSeparator: "."
-      ExpandRegionToBucket: False
-      ExpandAccountIdToBucket: False
-      EnableEncryption: AES256
-      EnableAcceleration: True
+      AccelerateConfiguration:
+        AccelerationStatus: Suspended
+      AccessControl: BucketOwnerFullControl
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              KMSMasterKeyID: x-kms::s3-encryption-key
+              SSEAlgorithm: aws:kms
+      BucketName: bucket-03
+      ObjectLockEnabled: true
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: false
+      VersioningConfiguration:
+        Status: Enabled
     Services:
-      - name: app03
-        access:
+      app03:
+        Access:
           bucket: ListOnly
-          objects: RW
+          objects: CRUD
+    Settings:
+      ExpandAccountIdToBucket: false
+      ExpandRegionToBucket: true
+  bucket-04:
     MacroParameters:
       BucketPolicy:
-        PredefinedBucketPolicies:
-          - enforceSecureConnection
         Policies:
-          - Effect: Allow
-            Action:
+          - Action:
               - s3:Get*
+            Effect: Allow
             Resource:
-              - "${!ARN}/*"
-          - Effect: Allow
-            Action:
+              - ${!ARN}/*
+          - Action:
               - s3:Get*
               - s3:List*
-            Resource:
-              - "${!ARN}/*"
-              - "${!ARN}"
             Condition:
               bool:
                 aws:sourceIp: abcd
+            Effect: Allow
+            Resource:
+              - ${!ARN}/*
+              - ${!ARN}
+        PredefinedBucketPolicies:
+          - enforceSecureConnection
+    Properties:
+      BucketName: bucket-04
+    Services:
+      app03:
+        Access:
+          bucket: ListOnly
+          objects: RW
+    Settings:
+      EnableAcceleration: true
+      EnableEncryption: AES256
+      ExpandAccountIdToBucket: false
+      ExpandRegionToBucket: false
+      NameSeparator: .
