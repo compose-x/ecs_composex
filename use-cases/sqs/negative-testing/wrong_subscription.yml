@@ -1,53 +1,22 @@
----
-# Blog applications
-
-version: '3.8'
-
-x-configs:
-  app:
-    network:
-      use_cloudmap: True
-
 services:
-  rproxy:
-    image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-01-rproxy:latest
-    ports:
-      - 80:80
-    deploy:
-      replicas: 2
-      resources:
-        reservations:
-          cpus: "0.1"
-          memory: "32M"
-        limits:
-          cpus: "0.25"
-          memory: "64M"
-      labels:
-        - "ecs.task.family=app01"
-    x-configs:
-      network:
-        lb_type: application
-    depends_on:
-      - app
   app:
+    deploy:
+      labels:
+        ecs.task.family: app01
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 128M
+        reservations:
+          cpus: '0.25'
+          memory: 64M
+    environment:
+      LOGLEVEL: DEBUG
     image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-01:xray
     ports:
       - 5000
-    deploy:
-      resources:
-        reservations:
-          cpus: "0.25"
-          memory: "64M"
-        limits:
-          cpus: "0.5"
-          memory: "128M"
-      labels:
-        ecs.task.family: app01
-    environment:
-      LOGLEVEL: DEBUG
     x-configs:
-      use_xray: True
-
+      use_xray: true
   backend:
     image: nginx
     ports:
@@ -55,50 +24,69 @@ services:
     x-configs:
       iam:
         PermissionsBoundary: arn:aws:iam::aws:policy/PowerUserAccess
-
+  rproxy:
+    depends_on:
+      - app
+    deploy:
+      labels:
+        - ecs.task.family=app01
+      replicas: 2
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 64M
+        reservations:
+          cpus: '0.1'
+          memory: 32M
+    image: 373709687836.dkr.ecr.eu-west-1.amazonaws.com/blog-app-01-rproxy:latest
+    ports:
+      - 80:80
+    x-configs:
+      network:
+        lb_type: application
+version: '3.8'
+x-configs:
+  app:
+    network:
+      use_cloudmap: true
+x-rds:
+  dbA:
+    Properties:
+      Engine: aurora-mysql
+      EngineVersion: 5.7.12
+    Services:
+      app:
+        Access:
+          DBCluster: RO
+      backend:
+        Access:
+          DBCluster: RO
+x-sns:
+  topicA:
+    Properties: {}
+    Services:
+      app:
+        Access: Publish
+      backend:
+        Access: Publish
+  topicB:
+    Properties:
+      Subscription:
+        - Endpoint: unknown
+          Protocol: sqs
 x-sqs:
   queueA:
     Properties:
       QueueName: abcd
     Services:
-      - name: app
-        access: RWMessages
-
+      app:
+        Access: RWMessages
   queueB:
     Properties:
       QueueName: xyz
     Services:
-      - name: rproxy
-        access: RWMessages
-
-
-
-x-sns:
-  Topics:
-    topicA:
-      Properties: {}
-      Services:
-        - name: backend
-          access: Publish
-        - name: app
-          access: Publish
-    topicB:
-      Properties:
-        Subscription:
-          - Endpoint: unknown
-            Protocol: sqs
-
-x-rds:
-  dbA:
-    Properties:
-      Engine: "aurora-mysql"
-      EngineVersion: "5.7.12"
-    Services:
-      - name: backend
-        access: RW
-      - name: app
-        access: RW
-
+      rproxy:
+        Access: RWMessages
 x-tags:
-  costcentre: abcd
   contact: you@me.com
+  costcentre: abcd

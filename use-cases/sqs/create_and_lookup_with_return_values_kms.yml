@@ -1,8 +1,4 @@
----
-# Blog applications
-
 version: '3.8'
-
 x-kms:
   keyA:
     Properties: {}
@@ -21,9 +17,33 @@ x-kms:
         Access: EncryptDecrypt
       bignicefamily:
         Access: DecryptOnly
-
-
 x-sqs:
+  queueA: {}
+  queueB:
+    Properties:
+      KmsMasterKeyId: x-kms::keyC
+      RedrivePolicy:
+        deadLetterTargetArn: queueA
+        maxReceiveCount: 10
+    Services:
+      bignicefamily:
+        Access: RWMessages
+  queueC:
+    Properties:
+      FifoQueue: true
+    Services:
+      rproxy:
+        Access: RWMessages
+      youtoo:
+        Access: RWMessages
+  queueD:
+    Properties:
+      KmsMasterKeyId: x-kms::keyA
+    Services:
+      app01:
+        Access: RWMessages
+      app03:
+        Access: RWMessages
   queueE:
     Properties: {}
     Services:
@@ -33,26 +53,21 @@ x-sqs:
           ScaleInCooldown: 120
           ScaleOutCooldown: 60
           Steps:
-            - LowerBound: 0
+            - Count: 1
+              LowerBound: 0
               UpperBound: 10
-              Count: 1
-            - LowerBound: 10
+            - Count: 2
+              LowerBound: 10
               UpperBound: 20
-              Count: 2
-            - LowerBound: 20
-              Count: 5
-
+            - Count: 5
+              LowerBound: 20
   queueF:
-    Properties: {}
     Lookup:
       Tags:
-        - useless: "yes"
+        - useless: 'yes'
         - costcentre: lambda
+    Properties: {}
     Services:
-      bignicefamily:
-        Access: RWMessages
-        ReturnValues:
-          QueueName: QUEUE_F_NAME
       app03:
         Access: RWMessages
         ReturnValues:
@@ -61,39 +76,15 @@ x-sqs:
           ScaleInCooldown: 120
           ScaleOutCooldown: 60
           Steps:
-            - LowerBound: 0
+            - Count: 1
+              LowerBound: 0
               UpperBound: 10
-              Count: 1
-            - LowerBound: 10
+            - Count: 2
+              LowerBound: 10
               UpperBound: 20
-              Count: 2
-            - LowerBound: 20
-              Count: 5
-  queueA: {}
-  queueB:
-    Properties:
-      KmsMasterKeyId: x-kms::keyC
-      RedrivePolicy:
-        deadLetterTargetArn: queueA
-        maxReceiveCount: 10
-    Services:
-      - name: bignicefamily
-        access: RWMessages
-
-  queueC:
-    Properties:
-      FifoQueue: True
-    Services:
-      - name: rproxy
-        access: RWMessages
-      - name: youtoo
-        access: RWMessages
-
-  queueD:
-    Properties:
-      KmsMasterKeyId: x-kms::keyA
-    Services:
-      - name: app01
-        access: RWMessages
-      - name: app03
-        access: RWMessages
+            - Count: 5
+              LowerBound: 20
+      bignicefamily:
+        Access: RWMessages
+        ReturnValues:
+          QueueName: QUEUE_F_NAME

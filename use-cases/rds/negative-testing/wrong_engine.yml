@@ -53,7 +53,7 @@ x-rds:
       Engine: "aurora-mysql"
       EngineVersion: "5.7.100"
     Services:
-      - name: backend
-        access: RW
-      - name: app
-        access: RW
+      backend:
+        Access: RW
+      app:
+        Access: RW

@@ -51,61 +51,40 @@
   },
   "definitions": {
     "ServicesDef": {
-      "oneOf": [
-        {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "name": {
-                "type": "string"
-              },
-              "access": {
-                "$ref": "#/definitions/ServicesAccess"
-              }
+      "type": "object",
+      "patternProperties": {
+        "[\\x20-\\x7E]+$": {
+          "description": "Object representation of the service to use.",
+          "properties": {
+            "Access": {
+              "$ref": "#/definitions/ServicesAccess"
             },
-            "required": [
-              "name"
-            ]
-          }
-        },
-        {
-          "type": "object",
-          "patternProperties": {
-            "[\\x20-\\x7E]+$": {
-              "description": "Object representation of the service to use.",
-              "properties": {
-                "Access": {
-                  "$ref": "#/definitions/ServicesAccess"
-                },
-                "ReturnValues": {
-                  "type": "object",
-                  "description": "Set the CFN Return Value and the environment variable name you want to expose to the service",
-                  "additionalProperties": false,
-                  "patternProperties": {
-                    "[\\x20-\\x7E]+$": {
-                      "oneOf": [
-                        {
+            "ReturnValues": {
+              "type": "object",
+              "description": "Set the CFN Return Value and the environment variable name you want to expose to the service",
+              "additionalProperties": false,
+              "patternProperties": {
+                "[\\x20-\\x7E]+$": {
+                  "oneOf": [
+                    {
+                      "$ref": "x-resources.common.spec.json#/definitions/varNameDef"
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "EnvVarName": {
                           "$ref": "x-resources.common.spec.json#/definitions/varNameDef"
-                        },
-                        {
-                          "type": "object",
-                          "additionalProperties": false,
-                          "properties": {
-                            "EnvVarName": {
-                              "$ref": "x-resources.common.spec.json#/definitions/varNameDef"
-                            }
-                          }
                         }
-                      ]
+                      }
                     }
-                  }
+                  ]
                 }
               }
             }
           }
         }
-      ]
+      }
     },
     "ServicesAccess": {
       "type": "object",

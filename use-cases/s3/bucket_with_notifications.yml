@@ -1,36 +1,19 @@
-version: "3.8"
-
+version: '3.8'
 x-s3:
   bucket-01:
+    MacroParameters:
+      ExpandAccountIdToBucket: true
+      ExpandRegionToBucket: true
     Properties:
-      BucketName: bucket-01
-      AccessControl: BucketOwnerFullControl
       AccelerateConfiguration:
         AccelerationStatus: Suspended
-      ObjectLockEnabled: True
-      PublicAccessBlockConfiguration:
-        BlockPublicAcls: True
-        BlockPublicPolicy: True
-        IgnorePublicAcls: True
-        RestrictPublicBuckets: False
+      AccessControl: BucketOwnerFullControl
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
-              SSEAlgorithm: "aws:kms"
-              KMSMasterKeyID: "aws/s3"
-      VersioningConfiguration:
-        Status: "Enabled"
-      MetricsConfigurations:
-        - Id: EntireBucket
-      LifecycleConfiguration:
-        Rules:
-          - Id: GlacierRule
-            Prefix: glacier
-            Status: Enabled
-            ExpirationInDays: '365'
-            Transitions:
-              - TransitionInDays: '1'
-                StorageClass: GLACIER
+              KMSMasterKeyID: aws/s3
+              SSEAlgorithm: aws:kms
+      BucketName: bucket-01
       CorsConfiguration:
         CorsRules:
           - AllowedHeaders:
@@ -48,44 +31,57 @@ x-s3:
             AllowedMethods:
               - DELETE
             AllowedOrigins:
-              - 'http://www.example.com'
-              - 'http://www.example.net'
+              - http://www.example.com
+              - http://www.example.net
             ExposedHeaders:
               - Connection
               - Server
               - Date
             Id: myCORSRuleId2
             MaxAge: '1800'
-      WebsiteConfiguration:
-        IndexDocument: index.html
-        ErrorDocument: error.html
-        RoutingRules:
-          - RoutingRuleCondition:
-              HttpErrorCodeReturnedEquals: '404'
-              KeyPrefixEquals: out1/
-            RedirectRule:
-              HostName: ec2-11-22-333-44.compute-1.amazonaws.com
-              ReplaceKeyPrefixWith: report-404/
+      LifecycleConfiguration:
+        Rules:
+          - ExpirationInDays: '365'
+            Id: GlacierRule
+            Prefix: glacier
+            Status: Enabled
+            Transitions:
+              - StorageClass: GLACIER
+                TransitionInDays: '1'
+      MetricsConfigurations:
+        - Id: EntireBucket
       NotificationConfiguration:
         QueueConfigurations:
-          - Queue: x-sqs::s3-notifications
-            Event: s3:ObjectCreated:*
-
-    MacroParameters:
-      ExpandRegionToBucket: True
-      ExpandAccountIdToBucket: True
+          - Event: s3:ObjectCreated:*
+            Queue: x-sqs::s3-notifications
+      ObjectLockEnabled: true
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: false
+      VersioningConfiguration:
+        Status: Enabled
+      WebsiteConfiguration:
+        ErrorDocument: error.html
+        IndexDocument: index.html
+        RoutingRules:
+          - RedirectRule:
+              HostName: ec2-11-22-333-44.compute-1.amazonaws.com
+              ReplaceKeyPrefixWith: report-404/
+            RoutingRuleCondition:
+              HttpErrorCodeReturnedEquals: '404'
+              KeyPrefixEquals: out1/
     Services:
-      app03:
-        Access:
-          objects: CRUD
-          bucket: ListOnly
-          s3-bucket-ssl-requests-only: true
-
       app02:
         Access:
-          objects: CRUD
           bucket: ListOnly
-
+          objects: CRUD
+      app03:
+        Access:
+          bucket: ListOnly
+          objects: CRUD
+          s3-bucket-ssl-requests-only: true
 x-sqs:
   s3-notifications:
     Properties: {}

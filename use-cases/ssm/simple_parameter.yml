@@ -1,8 +1,4 @@
----
-# Blog applications
-
 version: '3.8'
-
 x-ssm_parameter:
   parameterA:
     Properties:
@@ -11,7 +7,6 @@ x-ssm_parameter:
       Name: /some/parameter
       Type: String
       Value: ABCD
-
   parameterB:
     Properties:
       DataType: text
@@ -19,61 +14,56 @@ x-ssm_parameter:
       Name: /some/other-parameter
       Type: String
       Value: ABCD
-
     Services:
-      - name: bignicefamily
-        access: RW
-
+      bignicefamily:
+        Access: RW
   parameterC:
-    Properties:
-      Name: /some/yet-other-parameter
-      Type: String
     MacroParameters:
       FromFile: ./use-cases/ssm/test_json.json
-      ValidateJson: true
       MinimizeJson: true
+      ValidateJson: true
+    Properties:
+      Name: /some/yet-other-parameter
+      Type: String
     Services:
-      - name: rproxy
-        access: RO
-      - name: youtoo
-        access: SSMParameterReadPolicy
-
+      rproxy:
+        Access: RO
+      youtoo:
+        Access: SSMParameterReadPolicy
   parameterD:
-    Properties:
-      Name: /some/yet-other-parameter
-      Type: String
     MacroParameters:
       FromFile: ./use-cases/ssm/test_yaml.yaml
       ValidateYaml: true
-    Services:
-      - name: rproxy
-        access: RO
-      - name: youtoo
-        access: SSMParameterReadPolicy
-
-  parameterS:
     Properties:
       Name: /some/yet-other-parameter
       Type: String
-    MacroParameters:
-      FromFile: ./use-cases/ssm/test_yaml.yaml
-      ValidateYaml: true
-      RenderToJson: true
     Services:
-      - name: rproxy
-        access: RO
-      - name: youtoo
-        access: SSMParameterReadPolicy
-
+      rproxy:
+        Access: RO
+      youtoo:
+        Access: SSMParameterReadPolicy
   parameterENCODED:
+    MacroParameters:
+      EncodeToBase64: true
+      FromFile: ./use-cases/ssm/test_yaml_jinja2.yaml
     Properties:
       Name: /some/yet-other-parameter
       Type: String
-    MacroParameters:
-      FromFile: ./use-cases/ssm/test_yaml_jinja2.yaml
-      EncodeToBase64: true
     Services:
-      - name: rproxy
-        access: RO
-      - name: youtoo
-        access: SSMParameterReadPolicy
+      rproxy:
+        Access: RO
+      youtoo:
+        Access: SSMParameterReadPolicy
+  parameterS:
+    MacroParameters:
+      FromFile: ./use-cases/ssm/test_yaml.yaml
+      RenderToJson: true
+      ValidateYaml: true
+    Properties:
+      Name: /some/yet-other-parameter
+      Type: String
+    Services:
+      rproxy:
+        Access: RO
+      youtoo:
+        Access: SSMParameterReadPolicy
