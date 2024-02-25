@@ -108,9 +108,9 @@ def lookup_rds_secret(rds_resource, secret_lookup):
             " - Failed to find the DB Secret"
         )
     if secret_arn:
-        rds_resource.lookup_properties[
-            rds_resource.db_secret_arn_parameter
-        ] = secret_arn
+        rds_resource.lookup_properties[rds_resource.db_secret_arn_parameter] = (
+            secret_arn
+        )
 
 
 def lookup_rds_resource(

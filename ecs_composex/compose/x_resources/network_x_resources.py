@@ -19,7 +19,6 @@ from ecs_composex.resource_settings import link_resource_to_services
 
 
 class NetworkXResource(ServicesXResource):
-
     """
     Class for resources that need VPC and SecurityGroups to be managed for Ingress
     """

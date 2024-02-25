@@ -32,9 +32,11 @@ def step_impl(context):
         path.abspath(f"{here()}/../../../{file_name}") for file_name in context.files
     ]
     context.settings = ComposeXSettings(
-        profile_name=getattr(context, "profile_name")
-        if hasattr(context, "profile_name")
-        else None,
+        profile_name=(
+            getattr(context, "profile_name")
+            if hasattr(context, "profile_name")
+            else None
+        ),
         **{
             ComposeXSettings.name_arg: "test",
             ComposeXSettings.command_arg: ComposeXSettings.render_arg,
@@ -58,9 +60,11 @@ def step_impl(context):
     print(cases_path)
     with raises(Exception):
         context.settings = ComposeXSettings(
-            profile_name=getattr(context, "profile_name")
-            if hasattr(context, "profile_name")
-            else None,
+            profile_name=(
+                getattr(context, "profile_name")
+                if hasattr(context, "profile_name")
+                else None
+            ),
             **{
                 ComposeXSettings.name_arg: "test",
                 ComposeXSettings.command_arg: ComposeXSettings.render_arg,
@@ -84,9 +88,11 @@ def step_impl(context, file_path):
     cases_path = path.abspath(f"{here()}/../../../{file_path}")
 
     context.settings = ComposeXSettings(
-        profile_name=getattr(context, "profile_name")
-        if hasattr(context, "profile_name")
-        else None,
+        profile_name=(
+            getattr(context, "profile_name")
+            if hasattr(context, "profile_name")
+            else None
+        ),
         **{
             ComposeXSettings.name_arg: "test",
             ComposeXSettings.command_arg: ComposeXSettings.render_arg,
@@ -112,9 +118,11 @@ def step_impl(context, file_path, override_file):
     cases_path = path.abspath(f"{here()}/../../../{file_path}")
     override_path = path.abspath(f"{here()}/../../../{override_file}")
     context.settings = ComposeXSettings(
-        profile_name=getattr(context, "profile_name")
-        if hasattr(context, "profile_name")
-        else None,
+        profile_name=(
+            getattr(context, "profile_name")
+            if hasattr(context, "profile_name")
+            else None
+        ),
         **{
             ComposeXSettings.name_arg: "test",
             ComposeXSettings.command_arg: ComposeXSettings.render_arg,

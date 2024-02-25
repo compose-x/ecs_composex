@@ -177,9 +177,9 @@ class EcsCluster:
         if keyisset("LogConfiguration", exec_config):
             log_config = exec_config["LogConfiguration"]
             if keyisset("CloudWatchLogGroupName", log_config):
-                self.mappings[CLUSTER_NAME.title][
-                    "CloudWatchLogGroupName"
-                ] = log_config["CloudWatchLogGroupName"]
+                self.mappings[CLUSTER_NAME.title]["CloudWatchLogGroupName"] = (
+                    log_config["CloudWatchLogGroupName"]
+                )
                 self.log_group = FindInMap(
                     self.mappings_key,
                     CLUSTER_NAME.title,
@@ -328,15 +328,17 @@ class EcsCluster:
                     "Resource": "*",
                     "Condition": {
                         "ArnLike": {
-                            "kms:EncryptionContext:aws:logs:arn": Sub(
-                                f"arn:${{{AWS_PARTITION}}}:logs:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:"
-                                "log-group:*"
-                            )
-                            if keyisset("AllowKmsKeyReuse", self.parameters)
-                            else Sub(
-                                f"arn:${{{AWS_PARTITION}}}:logs:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:"
-                                "log-group:/ecs/execute-logs/${CLUSTER_NAME}*",
-                                CLUSTER_NAME=cluster_name,
+                            "kms:EncryptionContext:aws:logs:arn": (
+                                Sub(
+                                    f"arn:${{{AWS_PARTITION}}}:logs:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:"
+                                    "log-group:*"
+                                )
+                                if keyisset("AllowKmsKeyReuse", self.parameters)
+                                else Sub(
+                                    f"arn:${{{AWS_PARTITION}}}:logs:${{{AWS_REGION}}}:${{{AWS_ACCOUNT_ID}}}:"
+                                    "log-group:/ecs/execute-logs/${CLUSTER_NAME}*",
+                                    CLUSTER_NAME=cluster_name,
+                                )
                             )
                         }
                     },
@@ -397,17 +399,23 @@ class EcsCluster:
                 "/ecs/execute-logs/${CLUSTER_NAME}",
                 CLUSTER_NAME=cluster_name,
             ),
-            RetentionInDays=120
-            if not keyisset("LogGroupRetentionInDays", self.parameters)
-            else get_closest_valid_log_retention_period(
-                self.parameters["LogGroupRetentionInDays"]
+            RetentionInDays=(
+                120
+                if not keyisset("LogGroupRetentionInDays", self.parameters)
+                else get_closest_valid_log_retention_period(
+                    self.parameters["LogGroupRetentionInDays"]
+                )
             ),
-            KmsKeyId=GetAtt(self.log_key.cfn_resource, "Arn")
-            if isinstance(self.log_key, KmsKey)
-            else Ref(AWS_NO_VALUE),
-            DependsOn=[self.log_key.cfn_resource.title]
-            if isinstance(self.log_key, KmsKey)
-            else [],
+            KmsKeyId=(
+                GetAtt(self.log_key.cfn_resource, "Arn")
+                if isinstance(self.log_key, KmsKey)
+                else Ref(AWS_NO_VALUE)
+            ),
+            DependsOn=(
+                [self.log_key.cfn_resource.title]
+                if isinstance(self.log_key, KmsKey)
+                else []
+            ),
         )
         root_stack.stack_template.add_resource(self.log_group)
         log_configuration["CloudWatchLogGroupName"] = Ref(self.log_group)

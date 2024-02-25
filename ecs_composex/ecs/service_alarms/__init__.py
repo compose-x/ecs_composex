@@ -29,9 +29,9 @@ def define_predefined_alarm_settings(family, new_settings):
             range_key = "max"
             if keyisset("range_key", new_settings):
                 range_key = new_settings["range_key"]
-            new_settings["Settings"][
-                metric_name
-            ] = family.service_scaling.scaling_range[range_key]
+            new_settings["Settings"][metric_name] = (
+                family.service_scaling.scaling_range[range_key]
+            )
 
 
 def define_predefined_alarms(family):

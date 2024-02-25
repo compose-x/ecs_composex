@@ -77,9 +77,11 @@ def define_step_adjustment(pre_upper: int, ordered: list, cfn_steps: list) -> No
         cfn_steps.append(
             StepAdjustment(
                 MetricIntervalLowerBound=int(step_def["LowerBound"]),
-                MetricIntervalUpperBound=int(step_def["UpperBound"])
-                if keyisset("UpperBound", step_def)
-                else Ref(AWS_NO_VALUE),
+                MetricIntervalUpperBound=(
+                    int(step_def["UpperBound"])
+                    if keyisset("UpperBound", step_def)
+                    else Ref(AWS_NO_VALUE)
+                ),
                 ScalingAdjustment=int(step_def["Count"]),
             )
         )
@@ -140,10 +142,12 @@ def generate_alarm_scaling_out_policy(
         StepScalingPolicyConfiguration=StepScalingPolicyConfiguration(
             AdjustmentType="ExactCapacity",
             StepAdjustments=step_adjustments,
-            Cooldown=60
-            if not keyisset("ScaleOutCooldown", scaling_def)
-            or not (isinstance(scaling_def["ScaleOutCooldown"], int))
-            else scaling_def["ScaleOutCooldown"],
+            Cooldown=(
+                60
+                if not keyisset("ScaleOutCooldown", scaling_def)
+                or not (isinstance(scaling_def["ScaleOutCooldown"], int))
+                else scaling_def["ScaleOutCooldown"]
+            ),
         ),
     )
     add_resource(service_template, policy, True)
@@ -172,10 +176,12 @@ def reset_to_zero_policy(
         ServiceNamespace="ecs",
         StepScalingPolicyConfiguration=StepScalingPolicyConfiguration(
             AdjustmentType="ExactCapacity",
-            Cooldown=60
-            if not keyisset("ScaleInCooldown", scaling_def)
-            or not (isinstance(scaling_def["ScaleInCooldown"], int))
-            else scaling_def["ScaleInCooldown"],
+            Cooldown=(
+                60
+                if not keyisset("ScaleInCooldown", scaling_def)
+                or not (isinstance(scaling_def["ScaleInCooldown"], int))
+                else scaling_def["ScaleInCooldown"]
+            ),
             StepAdjustments=[
                 StepAdjustment(
                     MetricIntervalUpperBound=0,

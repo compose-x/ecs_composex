@@ -53,12 +53,16 @@ def set_cw_prometheus_config_parameter(
     else:
         value_py = {
             "global": {
-                "scrape_interval": "1m"
-                if not keyisset("Interval", scrape_config)
-                else scrape_config["Interval"],
-                "scrape_timeout": "10s"
-                if not keyisset("Timeout", scrape_config)
-                else scrape_config["Timeout"],
+                "scrape_interval": (
+                    "1m"
+                    if not keyisset("Interval", scrape_config)
+                    else scrape_config["Interval"]
+                ),
+                "scrape_timeout": (
+                    "10s"
+                    if not keyisset("Timeout", scrape_config)
+                    else scrape_config["Timeout"]
+                ),
             },
             "scrape_configs": [
                 {

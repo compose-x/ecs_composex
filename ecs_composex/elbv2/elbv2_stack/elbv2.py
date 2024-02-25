@@ -506,14 +506,18 @@ class Elbv2(NetworkXResource):
         :param ecs_composex.common.settings.ComposeXSettings settings:
         """
         attrs = {
-            "IpAddressType": "ipv4"
-            if not keyisset("IpAddressType", self.properties)
-            else self.properties["IpAddressType"],
+            "IpAddressType": (
+                "ipv4"
+                if not keyisset("IpAddressType", self.properties)
+                else self.properties["IpAddressType"]
+            ),
             "Type": self.lb_type,
             "Scheme": "internet-facing" if self.lb_is_public else "internal",
-            "SecurityGroups": [Ref(self.lb_sg)]
-            if isinstance(self.lb_sg, SecurityGroup)
-            else self.lb_sg,
+            "SecurityGroups": (
+                [Ref(self.lb_sg)]
+                if isinstance(self.lb_sg, SecurityGroup)
+                else self.lb_sg
+            ),
             "Subnets": Ref(AWS_NO_VALUE),
             "SubnetMappings": Ref(AWS_NO_VALUE),
             "LoadBalancerAttributes": self.set_lb_attributes(),

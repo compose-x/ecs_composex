@@ -75,9 +75,9 @@ def get_db_cluster_config(db, account_id, resource_id):
         db.ref_parameter: "DBClusterIdentifier",
     }
     config = attributes_to_mapping(db_cluster, attributes_mappings)
-    config[
-        DB_CLUSTER_RESOURCES_ARN
-    ] = f"{config[DB_CLUSTER_ARN].replace('rds', 'neptune-db', 1)}/*"
+    config[DB_CLUSTER_RESOURCES_ARN] = (
+        f"{config[DB_CLUSTER_ARN].replace('rds', 'neptune-db', 1)}/*"
+    )
     return config
 
 

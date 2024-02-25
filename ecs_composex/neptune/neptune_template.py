@@ -111,9 +111,11 @@ def create_neptune_template(root_template, new_resources, settings, self_stack):
             DBSubnetGroupDescription=Sub(
                 f"docdb-{resource.logical_name}-subnets-${{{AWS_STACK_NAME}}}"
             ),
-            SubnetIds=Ref(STORAGE_SUBNETS)
-            if not resource.subnets_override
-            else Ref(resource.subnets_override),
+            SubnetIds=(
+                Ref(STORAGE_SUBNETS)
+                if not resource.subnets_override
+                else Ref(resource.subnets_override)
+            ),
             Tags=Tags(Name=Sub(f"docdb-subnets-${{{AWS_STACK_NAME}}}")),
         )
         resource.db_sg = SecurityGroup(

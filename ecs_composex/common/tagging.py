@@ -83,9 +83,11 @@ def generate_tags_parameters(tags):
     for tag in tags:
         parameters.append(
             Parameter(
-                define_tag_parameter_title(tag["Key"])
-                if isinstance(tags, list)
-                else define_tag_parameter_title(tag),
+                (
+                    define_tag_parameter_title(tag["Key"])
+                    if isinstance(tags, list)
+                    else define_tag_parameter_title(tag)
+                ),
                 group_label="Tagging",
                 Type="String",
                 MinLength=2,

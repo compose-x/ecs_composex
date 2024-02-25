@@ -81,9 +81,11 @@ def add_vpc_core(template, vpc_cidr, dhcp_options: dict):
     dhcp_opts = DHCPOptions(
         "VpcDhcpOptions",
         template=template,
-        DomainName=dhcp_options["DomainName"]
-        if (dhcp_options and "DomainName" in dhcp_options)
-        else NoValue,
+        DomainName=(
+            dhcp_options["DomainName"]
+            if (dhcp_options and "DomainName" in dhcp_options)
+            else NoValue
+        ),
         DomainNameServers=["AmazonProvidedDNS"],
         Tags=Tags(Name=Sub(f"dhcp-${{{vpc.title}}}")),
         Metadata=metadata,
