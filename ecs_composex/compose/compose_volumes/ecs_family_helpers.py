@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from ecs_composex.ecs.ecs_family import ComposeFamily
     from ecs_composex.compose.compose_services import ComposeService
 
-from compose_x_common.compose_x_common import keyisset, keypresent
+from compose_x_common.compose_x_common import keyisset, keypresent, set_else_none
 from troposphere import If, NoValue
 from troposphere.ecs import DockerVolumeConfiguration, Host, MountPoint, Volume
 
@@ -121,13 +121,13 @@ def define_host_volumes(family):
     host_volumes = []
     for service in family.services:
         for volume in service.volumes:
+            v_volume = set_else_none("volume", volume)
+            v_source = set_else_none("source", volume)
             if (
-                (
-                    (keypresent("volume", volume) and volume["volume"] is None)
-                    or not keyisset("volume", volume)
-                )
-                and keyisset("source", volume)
-                and volume["source"].startswith(r"/")
+                not v_volume
+                and v_source
+                and v_source.startswith(r"/")
+                or v_volume.type == "bind"
             ):
                 host_volumes.append(volume)
     return host_volumes
@@ -163,14 +163,27 @@ def set_volumes(family):
         if volume.cfn_volume:
             family_definition_volumes.append(volume.cfn_volume)
     for volume_config in host_volumes:
-        cfn_volume = If(
-            USE_FARGATE_CON_T,
-            NoValue,
-            Volume(
-                Host=Host(SourcePath=volume_config["source"]),
-                DockerVolumeConfiguration=NoValue,
-                Name=NONALPHANUM.sub("", volume_config["target"]),
-            ),
-        )
-        family_definition_volumes.append(cfn_volume)
+        v_volume = set_else_none("volume", volume_config)
+        if v_volume and v_volume.driver == "local" and v_volume.type == "bind":
+            cfn_volume = If(
+                USE_FARGATE_CON_T,
+                NoValue,
+                Volume(
+                    Host=Host(SourcePath=v_volume.driver_opts["device"]),
+                    DockerVolumeConfiguration=NoValue,
+                    Name=v_volume.name,
+                ),
+            )
+        else:
+            cfn_volume = If(
+                USE_FARGATE_CON_T,
+                NoValue,
+                Volume(
+                    Host=Host(SourcePath=volume_config["source"]),
+                    DockerVolumeConfiguration=NoValue,
+                    Name=NONALPHANUM.sub("", volume_config["target"]),
+                ),
+            )
+        if cfn_volume not in family_definition_volumes:
+            family_definition_volumes.append(cfn_volume)
     set_services_mount_points(family)
