@@ -33,7 +33,7 @@ class ServicesXResource(XResource):
         settings: ComposeXSettings,
     ):
         self.services = []
-        self.families_targets: list = []
+        self.families_targets: list[tuple] = []
         self.families_scaling = []
         self.arn_parameter = None
         super().__init__(name, definition, module, settings)
@@ -148,7 +148,7 @@ class ServicesXResource(XResource):
         if not isinstance(self.services, dict):
             raise TypeError(
                 "Services as list have been deprecated since version 1.0"
-                "You can use the upgrade_scripts to patch your existing compose files.e"
+                "You can use the upgrade_scripts to patch your existing compose files."
             )
         self.set_services_targets_from_dict(settings)
         self.debug_families_targets()
@@ -211,9 +211,8 @@ class ServicesXResource(XResource):
             LOG.debug(f"{self.module.res_key}.{self.name} No Services defined.")
             return
         if not isinstance(self.services, dict):
-            TypeError(
+            raise TypeError(
                 "Services scaling must be in a mapping/dict format."
                 "List format has been deprecated since 1.0"
             )
-            return
         self.set_services_targets_scaling_from_dict(settings)

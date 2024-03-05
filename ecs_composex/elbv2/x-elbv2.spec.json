@@ -88,9 +88,13 @@
       }
     },
     "Services": {
-      "type": "array",
-      "items": {
-        "$ref": "#/definitions/TargetDef"
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "x-": {},
+        "^[a-zA-Z0-9\\:_\\-]+$": {
+          "$ref": "#/definitions/TargetDef"
+        }
       }
     },
     "TargetGroups": {
@@ -263,15 +267,11 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "name",
         "protocol",
         "port",
         "healthcheck"
       ],
       "properties": {
-        "name": {
-          "type": "string"
-        },
         "protocol": {
           "$ref": "#/definitions/Protocol"
         },
