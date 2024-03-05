@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from ecs_composex.ecs.ecs_family import ComposeFamily
     from ecs_composex.efs.efs_stack import Efs
 
-from compose_x_common.compose_x_common import keyisset
+from compose_x_common.compose_x_common import keyisset, set_else_none
 from troposphere import GetAtt, Ref
 from troposphere.ecs import AuthorizationConfig, EFSVolumeConfiguration, Volume
 from troposphere.efs import AccessPoint, CreationInfo, PosixUser, RootDirectory
@@ -144,7 +144,9 @@ def override_service_volume(new_efs, fs_id, target, access_points, volumes):
                         CreationInfo=CreationInfo(
                             OwnerUid=service.user,
                             OwnerGid=service.group if service.group else service.user,
-                            Permissions="0755",
+                            Permissions=set_else_none(
+                                "RootDirectoryCreateMode", new_efs.parameters, "0775"
+                            ),
                         ),
                         Path=mount_pt.ContainerPath,
                     ),
@@ -186,7 +188,9 @@ def set_user_to_access_points(efs, fs_id, access_points, service):
                         CreationInfo=CreationInfo(
                             OwnerUid=service.user,
                             OwnerGid=group_id,
-                            Permissions="0755",
+                            Permissions=set_else_none(
+                                "RootDirectoryCreateMode", efs.parameters, "0775"
+                            ),
                         ),
                         Path=mount_pt.ContainerPath,
                     ),
@@ -251,14 +255,18 @@ def expand_family_with_efs_volumes(
             LOG.warning(
                 f"x-efs - {family.name} - When using EXTERNAL Launch Type, networking settings cannot be set."
             )
-            return
+            continue
         if efs.lookup:
-            looked_up_efs_family_hook(efs, target[0], settings)
+            looked_up_efs_family_hook(efs, family, settings)
         access_points = []
         family.stack.Parameters.update({fs_id_parameter.title: fs_id_getatt})
         add_parameters(family.template, [fs_id_parameter])
         task_definition = family.template.resources[TASK_T]
         efs_config_kwargs = {"FilesystemId": Ref(fs_id_parameter)}
+        access_point_title: str = (
+            f"{efs.logical_name}{family.logical_name}EfsAccessPoint"
+        )
+        efs_access_point = None
         if (
             efs.parameters
             and keyisset("EnforceIamAuth", efs.parameters)
@@ -268,13 +276,15 @@ def expand_family_with_efs_volumes(
             efs_access_point = add_resource(
                 family.template,
                 AccessPoint(
-                    f"{efs.logical_name}{family.logical_name}EfsAccessPoint",
+                    access_point_title,
                     FileSystemId=Ref(fs_id_parameter),
                 ),
             )
-            if not efs_access_point:
-                continue
-            access_points.append(efs_access_point)
+        if not efs_access_point and access_point_title in family.template.resources:
+            efs_access_point = family.template.resources[access_point_title]
+            if efs_access_point not in access_points:
+                access_points.append(efs_access_point)
+        if efs_access_point:
             efs_config_kwargs.update(
                 {
                     "AuthorizationConfig": AuthorizationConfig(

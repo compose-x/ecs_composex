@@ -18,6 +18,13 @@
       "properties": {
         "EnforceIamAuth": {
           "type": "boolean"
+        },
+        "RootDirectoryCreateMode": {
+          "type": "string",
+          "minLength": 4,
+          "pattern": "[01234567]{4}",
+          "description": "POSIX root folder creation. Default granting user and group full access.",
+          "default": "0775"
         }
       }
     },
