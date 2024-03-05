@@ -384,10 +384,10 @@ class ComposeXSettings:
                         "Properties": volume.efs_definition,
                         "MacroParameters": volume.parameters,
                         "Lookup": volume.lookup,
-                        "Services": [
-                            {"name": service.name, "access": "RW"}
+                        "Services": {
+                            service.name: {"Access": "RW"}
                             for service in volume.services
-                        ],
+                        },
                         "Settings": {"Subnets": "StorageSubnets"},
                         "Volume": volume,
                     }
