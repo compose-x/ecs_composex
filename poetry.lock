@@ -805,18 +805,18 @@ python-dateutil = ">=2.8.2,<3.0.0"
 
 [[package]]
 name = "compose-x-render"
-version = "1.0.0"
+version = "1.1.0"
 description = "Library & Tool to compile/merge compose files with top level extension fields"
 optional = false
 python-versions = ">=3.9,<4.0"
 files = [
-    {file = "compose_x_render-1.0.0-py3-none-any.whl", hash = "sha256:deb6aef1535a87cc85cc185185ce3996a85a9002e0e157c9416dab4138bf489d"},
-    {file = "compose_x_render-1.0.0.tar.gz", hash = "sha256:de93bec0a07122f67fe40676d8d31152a2ba27ff5d5bae15aca450d569938dc9"},
+    {file = "compose_x_render-1.1.0-py3-none-any.whl", hash = "sha256:87344c00d983761a929710db3e35696717a32dcb9813cbd99d6946a74a456e5b"},
+    {file = "compose_x_render-1.1.0.tar.gz", hash = "sha256:569c41b488bb9b98bbea798f37ec230c7ca077cf8c741dbfdf463d3fa68bd54c"},
 ]
 
 [package.dependencies]
 argparse = ">=1.4.0,<2.0.0"
-compose-x-common = ">=1.2,<2.0"
+compose-x-common = ">=1.4,<2.0"
 importlib-resources = ">=6.1,<7.0"
 jsonschema = ">=4.15,<5.0"
 PyYAML = ">=5,<7.0"

@@ -3,22 +3,28 @@
 
 from __future__ import annotations
 
-from compose_x_common.compose_x_common import keyisset
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from troposphere import Template
+    from troposphere.ecs import ContainerDefinition, Secret
+    from ecs_composex.common.settings import ComposeXSettings
+    from ecs_composex.compose.compose_services import ComposeService
+
+from compose_x_common.compose_x_common import keyisset, set_else_none
 from troposphere import FindInMap, GetAtt, ImportValue, NoValue, Ref, Sub
 from troposphere.ecs import ContainerDefinition, Environment
 
 from ecs_composex.common.logging import LOG
 
 
-def import_secrets(template, service, container, settings):
-    """
-    Function to import secrets from compose-x mapping to AWS Secrets in Secrets Manager
-
-    :param troposphere.Template template:
-    :param troposhere.ecs.ContainerDefinition container:
-    :param ecs_composex.common.settings.ComposeXSettings settings:
-    :return:
-    """
+def import_secrets(
+    template: Template,
+    service: ComposeService,
+    container: ContainerDefinition,
+    settings: ComposeXSettings,
+):
+    """Function to import secrets from compose-x and map those to AWS Secrets in Secrets Manager"""
     if not service.secrets:
         return
     if not keyisset("secrets", settings.compose_content):
@@ -42,7 +48,7 @@ def import_secrets(template, service, container, settings):
                 ].assign_to_task_definition(template, container)
 
 
-def define_string_interpolation(var_value):
+def define_string_interpolation(var_value: str) -> str:
     """
     Function to determine whether an env variable string should use Sub.
 
@@ -56,14 +62,8 @@ def define_string_interpolation(var_value):
     return var_value
 
 
-def set_environment_dict_from_list(environment: list) -> dict:
-    """
-    Transforms a list of string with a ``key=value`` into a dict of key/value
-
-    :param list environment:
-    :rtype: dict
-    :return: dict of key/value
-    """
+def set_environment_dict_from_list(environment: list) -> dict[str, str]:
+    """Transforms a list of string with a ``key=value`` into a dict of key/value"""
     env_vars_to_map = {}
     for key in environment:
         if not isinstance(key, str) or key.find(r"=") < 0:
@@ -111,15 +111,8 @@ def import_env_variables(environment) -> list:
     return env_vars
 
 
-def extend_container_secrets(container, secret):
-    """
-    Function to add secrets to a Container definition
-
-    :param container: container definition
-    :type container: troposphere.ecs.ContainerDefinition
-    :param secret: secret to add
-    :type secret: troposphere.ecs.Secret
-    """
+def extend_container_secrets(container: ContainerDefinition, secret: Secret):
+    """Add secrets to a Container definition"""
     if hasattr(container, "Secrets"):
         secrets = getattr(container, "Secrets")
         if secrets:
@@ -150,13 +143,7 @@ def set_validate_environment(container: ContainerDefinition) -> None:
 def extend_container_envvars(
     container: ContainerDefinition, env_vars: list, replace: bool = False
 ) -> None:
-    """
-    Extends the container environment variables with new ones to add. If not already set, defines.
-
-    :param troposphere.ecs.ContainerDefinition container:
-    :param list[troposphere.ecs.Environment] env_vars:
-    :return:
-    """
+    """Extends the container environment variables with new ones to add. If not already set, defines."""
     ignored_containers = ["xray-daemon", "envoy", "cw_agent"]
     if (
         isinstance(container, ContainerDefinition)
@@ -196,7 +183,7 @@ def extend_container_envvars(
     )
 
 
-def define_ingress_mappings(service_ports):
+def define_ingress_mappings(service_ports: list) -> dict:
     """
     Function to create a mapping of sources for a common target
     """
@@ -206,21 +193,22 @@ def define_ingress_mappings(service_ports):
     for port in service_ports:
         if not keyisset("target", port):
             raise KeyError("The ports must always at least define the target.")
-        if keyisset("protocol", port) and port["protocol"] == "udp":
+        _port_protocol = set_else_none("protocol", port, "tcp")
+        _port_target = port["target"]
+        _port_published = set_else_none("published", port, None)
+
+        if _port_protocol == "udp":
             mappings = udp_mappings
         else:
             mappings = tcp_mappings
 
-        if not port["target"] in mappings.keys() and keyisset("published", port):
-            mappings[port["target"]] = [port["published"]]
-
-        elif not port["target"] in mappings.keys() and not keyisset("published", port):
-            mappings[port["target"]] = []
-        elif (
-            port["target"] in mappings.keys()
-            and not port["published"] in mappings[port["target"]]
-        ):
-            mappings[port["target"]].append(port["published"])
+        if _port_target not in mappings:
+            if _port_published:
+                mappings[_port_target] = [(_port_published, service_ports)]
+            else:
+                mappings[_port_target] = []
+        elif _port_target in mappings and _port_published not in mappings[_port_target]:
+            mappings[_port_target].append((_port_published, service_ports))
     return ports_mappings
 
 

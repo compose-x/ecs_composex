@@ -39,7 +39,7 @@ python = ">=3.9,<4.0"
 boto3 = ">=1.26,<2.0"
 troposphere = ">=4.5.3,<5.0"
 ecr-scan-reporter = { version = "^0.4.8", optional = true }
-compose-x-render = "^1.0"
+compose-x-render = "^1.1"
 compose-x-common = "^1.4"
 jsonschema = ">=4.21"
 requests = "^2.28"

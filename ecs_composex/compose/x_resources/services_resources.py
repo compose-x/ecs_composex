@@ -211,8 +211,9 @@ class ServicesXResource(XResource):
             LOG.debug(f"{self.module.res_key}.{self.name} No Services defined.")
             return
         if not isinstance(self.services, dict):
-            raise TypeError(
+            TypeError(
                 "Services scaling must be in a mapping/dict format."
                 "List format has been deprecated since 1.0"
             )
+            return
         self.set_services_targets_scaling_from_dict(settings)
