@@ -135,9 +135,6 @@ Resources:
           Ref: CodeBuildImage
         Type: LINUX_CONTAINER
         EnvironmentVariables:
-          - Name: PY_VERSION
-            Type: PLAINTEXT
-            Value: 3.10
           - Name: KNOWN_BUCKET
             Type: PLAINTEXT
             Value: !Ref TemplatesBucket
