@@ -8,7 +8,7 @@ x-events:
       ScheduleExpression: "cron(0 8 * * ? *)"
       State: "ENABLED"
     Services:
-      - name: app03
+      app03:
         TaskCount: 2
         DeleteDefaultService: True
 

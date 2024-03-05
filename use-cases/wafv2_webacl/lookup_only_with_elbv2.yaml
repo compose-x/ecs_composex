@@ -37,11 +37,11 @@ x-elbv2:
             access: /somewhere
 
     Services:
-      - name: bignicefamily:rproxy
+      bignicefamily:rproxy:
         port: 80
         protocol: HTTP
         healthcheck: 5000:HTTP:/healthcheck:200,201
-      - name: bignicefamily:app01
+      bignicefamily:app01:
         port: 5000
         healthcheck: 5000:HTTP:/path/to/healthcheck:200,201
         protocol: HTTP
@@ -50,7 +50,7 @@ x-elbv2:
             Value: "false"
           - Key: load_balancing.algorithm.type
             Value: least_outstanding_requests
-      - name: youtoo:rproxy
+      youtoo:rproxy:
         port: 80
         healthcheck: 5000:HTTP:5:2:15:3:/ping.This.Method:200,201
         protocol: HTTP
@@ -77,7 +77,7 @@ x-elbv2:
           - name: app03:app03
             access: /
     Services:
-      - name: app03:app03
+      app03:app03:
         port: 5000
         healthcheck: 5000:TCP:7:2:15:5
         protocol: TCP

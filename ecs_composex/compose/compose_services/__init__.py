@@ -889,11 +889,17 @@ class ComposeService:
             for target_port, published_ports in mappings.items():
                 if published_ports:
                     for port in published_ports:
+                        published_port, service_port = port
                         service_port_mappings.append(
                             PortMapping(
                                 ContainerPort=target_port,
-                                HostPort=If(USE_FARGATE_CON_T, NoValue, port),
+                                HostPort=If(USE_FARGATE_CON_T, NoValue, published_port),
                                 Protocol=protocol.lower(),
+                                Name=set_else_none(
+                                    "name",
+                                    service_port,
+                                    f"{protocol.lower()}_{target_port}",
+                                ),
                             )
                         )
                 else:
@@ -902,6 +908,7 @@ class ComposeService:
                             ContainerPort=target_port,
                             HostPort=NoValue,
                             Protocol=protocol.lower(),
+                            Name=f"{protocol.lower()}_{target_port}",
                         )
                     )
             self.handle_expose_ports(service_port_mappings)
