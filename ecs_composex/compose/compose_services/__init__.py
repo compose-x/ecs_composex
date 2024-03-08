@@ -889,11 +889,17 @@ class ComposeService:
             for target_port, published_ports in mappings.items():
                 if published_ports:
                     for port in published_ports:
+                        published_port, service_port = port
                         service_port_mappings.append(
                             PortMapping(
                                 ContainerPort=target_port,
-                                HostPort=If(USE_FARGATE_CON_T, NoValue, port),
+                                HostPort=If(USE_FARGATE_CON_T, NoValue, published_port),
                                 Protocol=protocol.lower(),
+                                Name=set_else_none(
+                                    "name",
+                                    service_port,
+                                    f"{protocol.lower()}_{target_port}",
+                                ),
                             )
                         )
                 else:
@@ -902,6 +908,7 @@ class ComposeService:
                             ContainerPort=target_port,
                             HostPort=NoValue,
                             Protocol=protocol.lower(),
+                            Name=f"{protocol.lower()}_{target_port}",
                         )
                     )
             self.handle_expose_ports(service_port_mappings)
@@ -966,9 +973,11 @@ class ComposeService:
             ),
             StopTimeout=self.stop_grace_period,
             SystemControls=self.sysctls,
-            User=If(USE_WINDOWS_OS_T, NoValue, self.ecs_user)
-            if self.ecs_user != NoValue
-            else self.ecs_user,
+            User=(
+                If(USE_WINDOWS_OS_T, NoValue, self.ecs_user)
+                if self.ecs_user != NoValue
+                else self.ecs_user
+            ),
         )
 
         _to_add = [secret.env_var for secret in self.secrets]

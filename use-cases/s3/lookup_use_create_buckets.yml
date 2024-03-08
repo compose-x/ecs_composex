@@ -1,32 +1,28 @@
-version: "3.8"
-
+version: '3.8'
 x-s3:
   bucket-01:
     Properties: {}
     Services:
-      - name: app03
-        access:
+      app03:
+        Access:
           bucket: ListOnly
           objects: RW
-
   bucket-02:
     Lookup:
       Tags:
-        - aws:cloudformation:logical-id: ArtifactsBucket
-        - aws:cloudformation:stack-name: pipeline-shared-buckets
+        Name: ArtifactsBucket
     Services:
-      - name: app03
-        access:
+      app03:
+        Access:
           bucket: PowerUser
           objects: RW
-
   bucket-03:
     Lookup:
       Identifier: sacrificial-lamb
       Tags:
-        - composex: "True"
+        - composex: 'True'
     Services:
-      - name: app03
-        access:
+      app03:
+        Access:
           bucket: PowerUser
           objects: RW

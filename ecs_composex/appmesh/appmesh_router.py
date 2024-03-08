@@ -38,15 +38,21 @@ from ecs_composex.common.logging import LOG
 def define_http_route(route_match, route_nodes, http2: bool):
     route = appmesh.HttpRoute(
         Match=appmesh.HttpRouteMatch(
-            Prefix=route_match[PREFIX_KEY]
-            if keyisset(PREFIX_KEY, route_match)
-            else Ref(AWS_NO_VALUE),
-            Scheme=route_match[SCHEME_KEY].lower()
-            if keyisset(SCHEME_KEY, route_match) and http2
-            else Ref(AWS_NO_VALUE),
-            Method=route_match[METHOD_KEY].upper()
-            if keyisset(METHOD_KEY, route_match)
-            else Ref(AWS_NO_VALUE),
+            Prefix=(
+                route_match[PREFIX_KEY]
+                if keyisset(PREFIX_KEY, route_match)
+                else Ref(AWS_NO_VALUE)
+            ),
+            Scheme=(
+                route_match[SCHEME_KEY].lower()
+                if keyisset(SCHEME_KEY, route_match) and http2
+                else Ref(AWS_NO_VALUE)
+            ),
+            Method=(
+                route_match[METHOD_KEY].upper()
+                if keyisset(METHOD_KEY, route_match)
+                else Ref(AWS_NO_VALUE)
+            ),
         ),
         Action=appmesh.HttpRouteAction(
             WeightedTargets=[
@@ -238,9 +244,11 @@ class MeshRouter:
                         f"node {node[NAME_KEY]} is not defined as a virtual node."
                     )
             route = appmesh.TcpRoute(
-                Timeout=appmesh.TcpTimeout(Idle=appmesh.Duration(Unit="ms", Value=1))
-                if keyisset("Timeout", route)
-                else Ref(AWS_NO_VALUE),
+                Timeout=(
+                    appmesh.TcpTimeout(Idle=appmesh.Duration(Unit="ms", Value=1))
+                    if keyisset("Timeout", route)
+                    else Ref(AWS_NO_VALUE)
+                ),
                 Action=appmesh.TcpRouteAction(
                     WeightedTargets=[
                         appmesh.WeightedTarget(

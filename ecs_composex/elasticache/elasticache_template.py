@@ -174,9 +174,11 @@ def create_cluster_from_parameters(cluster, template):
             required_keys,
         )
     props = {
-        "CacheNodeType": "cache.t3.small"
-        if not keyisset("CacheNodeType", cluster.parameters)
-        else cluster.parameters["CacheNodeType"],
+        "CacheNodeType": (
+            "cache.t3.small"
+            if not keyisset("CacheNodeType", cluster.parameters)
+            else cluster.parameters["CacheNodeType"]
+        ),
         "Engine": cluster.parameters["Engine"],
         "EngineVersion": cluster.parameters["EngineVersion"],
         "NumCacheNodes": 1,
@@ -205,9 +207,11 @@ def create_root_template(new_resources):
         resource.db_subnet_group = SubnetGroup(
             f"{resource.logical_name}SubnetGroup",
             Description="ElasticCacheSubnetGroup",
-            SubnetIds=Ref(STORAGE_SUBNETS)
-            if not resource.subnets_override
-            else Ref(resource.subnets_override),
+            SubnetIds=(
+                Ref(STORAGE_SUBNETS)
+                if not resource.subnets_override
+                else Ref(resource.subnets_override)
+            ),
         )
 
         resource.db_sg = SecurityGroup(

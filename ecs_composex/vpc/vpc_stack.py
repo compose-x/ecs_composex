@@ -203,9 +203,9 @@ class Vpc(AwsEnvironmentResource):
 
         self.set_azs_from_vpc_import(
             vpc_settings,
-            session=vpc_settings["session"]
-            if keyisset("session", vpc_settings)
-            else None,
+            session=(
+                vpc_settings["session"] if keyisset("session", vpc_settings) else None
+            ),
         )
 
     def set_azs_from_api(self) -> None:

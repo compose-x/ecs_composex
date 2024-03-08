@@ -60,9 +60,11 @@ def handle_elbv2(
         WebACLAssociation(
             f"{target_elbv2.logical_name}{webacl.logical_name}Association",
             ResourceArn=Ref(lb_id["ImportParameter"]),
-            WebACLArn=GetAtt(webacl.cfn_resource, WEB_ACL_ARN.return_value)
-            if webacl.cfn_resource
-            else webacl_arn_id["ImportValue"],
+            WebACLArn=(
+                GetAtt(webacl.cfn_resource, WEB_ACL_ARN.return_value)
+                if webacl.cfn_resource
+                else webacl_arn_id["ImportValue"]
+            ),
         ),
     )
     print(association)

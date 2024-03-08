@@ -605,21 +605,21 @@ def handle_services_association(
     add_outputs(template, load_balancer.outputs)
     identified = []
     for target in load_balancer.families_targets:
+        family: ComposeFamily = target[0]
+        print("TARGET?", target)
         if target[1].launch_type == "EXTERNAL":
             LOG.error(
-                f"x-elbv2.{load_balancer.name} - Target family {target[0].name} uses EXTERNAL launch type. Ignoring"
+                f"x-elbv2.{load_balancer.name} - Target family {family.name} uses EXTERNAL launch type. Ignoring"
             )
             continue
         tgt_group = define_service_target_group_definition(
-            load_balancer, target[0], target[1], target[2], res_root_stack
+            load_balancer, family, target[1], target[2], res_root_stack
         )
-        for service in load_balancer.services:
-            target_name = f"{target[0].name}:{target[1].name}"
-            if target_name not in service["name"]:
+        for service_name, service in load_balancer.services.items():
+            target_name = f"{family.name}:{target[1].name}"
+            if target_name not in service_name:
                 continue
-            if target_name == service["name"] and tgt_group.Port == int(
-                service["port"]
-            ):
+            if target_name == service_name and tgt_group.Port == int(service["port"]):
                 service["target_arn"] = Ref(tgt_group)
                 identified.append(True)
                 break

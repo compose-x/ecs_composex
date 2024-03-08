@@ -1,15 +1,10 @@
----
-# DOCDB Simple use-case. Creating new DBs
-
-
 x-neptune:
   cluster-A:
-    Services:
-      - name: app03
-        access:
-          NeptuneDB: connect
-          DBCluster: RO
     Lookup:
       Tags:
-        - project: "testing-graphql"
+        - project: testing-graphql
         - costcentre: lambda
+    Services:
+      app03:
+        Access:
+          DBCluster: RO

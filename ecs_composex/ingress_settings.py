@@ -346,9 +346,11 @@ class Ingress:
             self.ext_ingress_rules.append(
                 SecurityGroupIngress(
                     title,
-                    Description=description
-                    if not keyisset("Description", allowed_source)
-                    else allowed_source["Description"],
+                    Description=(
+                        description
+                        if not keyisset("Description", allowed_source)
+                        else allowed_source["Description"]
+                    ),
                     GroupId=security_group,
                     IpProtocol=port["protocol"],
                     FromPort=target_port,

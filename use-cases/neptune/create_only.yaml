@@ -1,17 +1,13 @@
----
-# DOCDB Simple use-case. Creating new DBs
-
-
 x-neptune:
   cluster-A:
-    Services:
-      - name: app03
-        access:
-          NeptuneDB: connect
-          DBCluster: RO
     Properties:
       BackupRetentionPeriod: 7
       DeletionProtection: false
       EngineVersion: 1.1.0.0
       IamAuthEnabled: false
       StorageEncrypted: true
+    Services:
+      app03:
+        Access:
+          DBCluster: RO
+          NeptuneDB: connect

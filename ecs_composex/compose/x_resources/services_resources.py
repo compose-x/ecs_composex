@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
@@ -15,7 +15,6 @@ from compose_x_common.compose_x_common import keyisset, set_else_none
 from ecs_composex.common import NONALPHANUM
 from ecs_composex.common.logging import LOG
 from ecs_composex.compose.x_resources import XResource
-from ecs_composex.compose.x_resources.helpers import get_setting_key
 
 
 class ServicesXResource(XResource):
@@ -34,7 +33,7 @@ class ServicesXResource(XResource):
         settings: ComposeXSettings,
     ):
         self.services = []
-        self.families_targets: list = []
+        self.families_targets: list[tuple] = []
         self.families_scaling = []
         self.arn_parameter = None
         super().__init__(name, definition, module, settings)
@@ -71,66 +70,6 @@ class ServicesXResource(XResource):
             )
         return _associated_service
 
-    def handle_families_targets_expansion_list(
-        self, service_name: str, service_def: dict, settings: ComposeXSettings
-    ):
-        """
-        Method to list all families and services that are targets of the resource.
-        Allows to implement family and service level association to resource
-        """
-        name_key = get_setting_key("name", service_def)
-        access_key = get_setting_key("access", service_def)
-        the_service = [s for s in settings.services if s.name == service_def[name_key]][
-            0
-        ]
-        for family_name in the_service.families:
-            family_name = NONALPHANUM.sub("", family_name)
-            if family_name not in [f[0].name for f in self.families_targets]:
-                self.families_targets.append(
-                    (
-                        settings.families[family_name],
-                        False,
-                        [
-                            self.define_service_to_associate(
-                                service_name, family_name, settings
-                            )
-                        ],
-                        set_else_none(access_key, service_def, {}),
-                        service_def,
-                    )
-                )
-
-    def set_services_targets_from_list(self, settings):
-        """
-        Deals with services set as a list
-        """
-        for service in self.services:
-            name_key = get_setting_key("name", service)
-            access_key = get_setting_key("access", service)
-            service_name = service[name_key]
-            if service_name in settings.families and service_name not in [
-                f[0].name for f in self.families_targets
-            ]:
-                self.families_targets.append(
-                    (
-                        settings.families[service_name],
-                        True,
-                        settings.families[service_name].services,
-                        service[access_key],
-                        service,
-                    )
-                )
-            elif service_name in settings.families and service_name in [
-                f[0].name for f in self.families_targets
-            ]:
-                LOG.debug(
-                    f"{self.module.res_key}.{self.name} - Family {service_name} has already been added. Skipping"
-                )
-            elif service_name in [s.name for s in settings.services]:
-                self.handle_families_targets_expansion_list(
-                    service_name, service, settings
-                )
-
     def handle_families_targets_expansion_dict(
         self, service_name: str, service_def: dict, settings: ComposeXSettings
     ) -> None:
@@ -164,7 +103,7 @@ class ServicesXResource(XResource):
                     )
                 )
 
-    def set_services_targets_from_dict(self, settings: ComposeXSettings):
+    def set_services_targets_from_dict(self, settings: ComposeXSettings) -> None:
         """
         Deals with services set as a dict
         """
@@ -197,90 +136,29 @@ class ServicesXResource(XResource):
                     service_name, service_def, settings
                 )
 
-    def set_services_targets(self, settings):
+    def set_services_targets(self, settings: ComposeXSettings) -> None:
         """
         Method to map services and families targets of the services defined.
         TargetStructure:
         (family, family_wide, services[], access)
-
-        :param ecs_composex.common.settings.ComposeXSettings settings:
-        :return:
         """
         if not self.services:
             LOG.debug(f"{self.module.res_key}.{self.name} No Services defined.")
             return
-        if isinstance(self.services, list):
-            from warnings import simplefilter, warn
-
-            simplefilter("always", DeprecationWarning)
-            warn(
-                "Services list will be deprecated in the next version. Use Services objects instead.",
-                DeprecationWarning,
+        if not isinstance(self.services, dict):
+            raise TypeError(
+                "Services as list have been deprecated since version 1.0"
+                "You can use the upgrade_scripts to patch your existing compose files."
             )
-            self.set_services_targets_from_list(settings)
-        elif isinstance(self.services, dict):
-            self.set_services_targets_from_dict(settings)
+        self.set_services_targets_from_dict(settings)
         self.debug_families_targets()
 
-    def handle_family_scaling_expansion(self, service, settings):
-        """
-        Method to search for the families of given service and add it if not already present
-
-        :param dict service:
-        :param ecs_composex.common.settings.ComposeXSettings settings:
-        :return:
-        """
-        name_key = get_setting_key("name", service)
-        scaling_key = get_setting_key("scaling", service)
-        the_service = [s for s in settings.services if s.name == service[name_key]][0]
-        for family_name in the_service.families:
-            family_name = NONALPHANUM.sub("", family_name)
-            if family_name not in [f[0].name for f in self.families_scaling]:
-                self.families_scaling.append(
-                    (settings.families[family_name], service[scaling_key])
-                )
-
-    def set_services_scaling_list(self, settings):
-        """
-        Method to map services and families targets of the services defined.
-
-        :param ecs_composex.common.settings.ComposeXSettings settings:
-        :return:
-        """
-        if not self.services or isinstance(self.services, dict):
-            return
-        for service in self.services:
-            name_key = get_setting_key("name", service)
-            scaling_key = get_setting_key("scaling", service)
-            if not keyisset(scaling_key, service):
-                LOG.debug(
-                    f"{self.module.res_key}.{self.name} - No Scaling set for {service[name_key]}"
-                )
-                continue
-            service_name = service[name_key]
-            if service_name in settings.families and service_name not in [
-                f[0].name for f in self.families_scaling
-            ]:
-                self.families_scaling.append(
-                    (settings.families[service_name], service[scaling_key])
-                )
-            elif service_name in settings.families and service_name in [
-                f[0].name for f in self.families_scaling
-            ]:
-                LOG.debug(
-                    f"{self.module.res_key}.{self.name} - Family {service_name} has already been added. Skipping"
-                )
-            elif service_name in [s.name for s in settings.services]:
-                self.handle_family_scaling_expansion(service, settings)
-
-    def handle_families_scaling_expansion_dict(self, service_name, service, settings):
+    def handle_families_scaling_expansion_dict(
+        self, service_name: str, service: dict, settings: ComposeXSettings
+    ) -> None:
         """
         Method to list all families and services that are targets of the resource.
         Allows to implement family and service level association to resource
-
-        :param str service_name:
-        :param dict service: Service definition in compose file
-        :param ecs_composex.common.settings.ComposeXSettings settings: Execution settings
         """
         the_service = [s for s in settings.services if s.name == service_name][0]
         for family_name in the_service.families:
@@ -293,12 +171,10 @@ class ServicesXResource(XResource):
                     )
                 )
 
-    def set_services_targets_scaling_from_dict(self, settings) -> None:
-        """
-        Deals with services set as a dict
-
-        :param settings:
-        """
+    def set_services_targets_scaling_from_dict(
+        self, settings: ComposeXSettings
+    ) -> None:
+        """Sets scaling targets to the resource for the defined services in the compose file."""
         for service_name, service_def in self.services.items():
             if not keyisset("Scaling", service_def):
                 LOG.debug(
@@ -325,19 +201,18 @@ class ServicesXResource(XResource):
                     service_name, service_def, settings
                 )
 
-    def set_services_scaling(self, settings):
+    def set_services_scaling(self, settings: ComposeXSettings):
         """
         Method to map services and families targets of the services defined.
         TargetStructure:
         (family, family_wide, services[], access)
-
-        :param ecs_composex.common.settings.ComposeXSettings settings:
-        :return:
         """
         if not self.services:
             LOG.debug(f"{self.module.res_key}.{self.name} No Services defined.")
             return
-        if isinstance(self.services, list):
-            self.set_services_scaling_list(settings)
-        elif isinstance(self.services, dict):
-            self.set_services_targets_scaling_from_dict(settings)
+        if not isinstance(self.services, dict):
+            raise TypeError(
+                "Services scaling must be in a mapping/dict format."
+                "List format has been deprecated since 1.0"
+            )
+        self.set_services_targets_scaling_from_dict(settings)

@@ -44,6 +44,8 @@ services:
           size: 1024
       - normal-vol:/var/tmp/shared
       - some-volume:/var/anotherpath:ro
+      - shared-images:/app/images
+
     links:
       - app03:dateteller
     ports:

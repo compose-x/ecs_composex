@@ -119,9 +119,9 @@ class FireLensFamilyManagedConfiguration:
                     continue
                 file_path = f"{self.volume_mount}{_parser_file}"
                 if file_path not in self._parser_files.keys():
-                    self._parser_files[
-                        f"{self.volume_mount}{_parser_file}"
-                    ] = _parser_file_def
+                    self._parser_files[f"{self.volume_mount}{_parser_file}"] = (
+                        _parser_file_def
+                    )
         return self._parser_files
 
     @property

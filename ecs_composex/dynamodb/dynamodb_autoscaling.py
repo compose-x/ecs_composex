@@ -63,9 +63,11 @@ def create_autoscaling_target_and_policy(
         MinCapacity=scale_definition["MinCapacity"],
         MaxCapacity=scale_definition["MaxCapacity"],
         ServiceNamespace="dynamodb",
-        ScalableDimension=f"dynamodb:table:{scalable_property}"
-        if not index
-        else f"dynamodb:index:{scalable_property}",
+        ScalableDimension=(
+            f"dynamodb:table:{scalable_property}"
+            if not index
+            else f"dynamodb:index:{scalable_property}"
+        ),
         RoleARN=Sub(
             "arn:aws:iam::${AWS::AccountId}:role/aws-service-role/"
             "dynamodb.application-autoscaling.${AWS::URLSuffix}/"

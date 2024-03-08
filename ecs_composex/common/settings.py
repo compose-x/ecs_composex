@@ -7,6 +7,7 @@ Module for the ComposeXSettings class
 
 from __future__ import annotations
 
+import json
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -383,10 +384,10 @@ class ComposeXSettings:
                         "Properties": volume.efs_definition,
                         "MacroParameters": volume.parameters,
                         "Lookup": volume.lookup,
-                        "Services": [
-                            {"name": service.name, "access": "RW"}
+                        "Services": {
+                            service.name: {"Access": "RW"}
                             for service in volume.services
-                        ],
+                        },
                         "Settings": {"Subnets": "StorageSubnets"},
                         "Volume": volume,
                     }
@@ -513,13 +514,11 @@ class ComposeXSettings:
         LOG.debug([self.families[family] for family in self.families])
 
     def set_content(self, kwargs, content=None, fully_load=True):
-        """
-        Method to initialize the compose content
+        """Method to initialize the compose content and validate as per the compose-x specs schemas."""
+        from jsonschema import Draft7Validator
 
-        :param dict kwargs:
-        :param dict content:
-        :param bool fully_load:
-        """
+        from ecs_composex.specs import REGISTRY
+
         files = (
             []
             if not keyisset(self.input_file_arg, kwargs)
@@ -529,16 +528,15 @@ class ComposeXSettings:
         content_def = ComposeDefinition(files, content)
         self.original_content = content_def.definition
         self.compose_content = deepcopy(content_def.definition)
-        source = pkg_files("ecs_composex").joinpath("specs/compose-spec.json")
-        LOG.info(f"Validating against input schema {source}")
-        resolver = jsonschema.RefResolver(
-            f"file://{path.abspath(path.dirname(source))}/", None
-        )
-        jsonschema.validate(
-            content_def.definition,
-            loads(source.read_text()),
-            resolver=resolver,
-        )
+        source = str(pkg_files("ecs_composex").joinpath("specs/compose-spec.json"))
+        LOG.debug(f"Validating against input schema {source}")
+
+        with open(source) as compose_fd:
+            content = compose_fd.read()
+            schema = json.loads(content)
+
+        _eval = Draft7Validator(schema, registry=REGISTRY)
+        _eval.validate(content_def.definition)
         if fully_load:
             self.set_secrets()
             self.set_volumes()

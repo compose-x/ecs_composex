@@ -151,7 +151,7 @@ class Elbv2(NetworkXResource):
                         )
                     if (
                         f"{target_parts.group('family')}:{target_parts.group('container')}"
-                        not in [svc["name"] for svc in self.services]
+                        not in self.services
                     ):
                         listener_def["Targets"].remove(target)
             if keyisset("Targets", listener_def) or keyisset(
@@ -191,8 +191,7 @@ class Elbv2(NetworkXResource):
         if not self.services:
             LOG.debug(f"{self.module.res_key}.{self.name} No Services defined.")
             return
-        for service_def in self.services:
-            family_combo_name = service_def["name"]
+        for family_combo_name, service_def in self.services.items():
             service_name = family_combo_name.split(":")[-1]
             family_name = NONALPHANUM.sub("", family_combo_name.split(":")[0])
             LOG.info(
@@ -223,7 +222,7 @@ class Elbv2(NetworkXResource):
                                 f_service.family,
                                 f_service,
                                 service_def,
-                                f"{service_def['name']}{service_def['port']}",
+                                f"{family_combo_name}{service_def['port']}",
                             )
                         )
                         break
@@ -235,7 +234,7 @@ class Elbv2(NetworkXResource):
         self.debug_families_targets()
 
     def validate_services(self):
-        services_names = list({service["name"] for service in self.services})
+        services_names = list(self.services.keys())
         if len(services_names) == 1:
             LOG.info(
                 f"LB {self.name} only has a unique service. LB will be deployed with the service stack."
@@ -506,14 +505,18 @@ class Elbv2(NetworkXResource):
         :param ecs_composex.common.settings.ComposeXSettings settings:
         """
         attrs = {
-            "IpAddressType": "ipv4"
-            if not keyisset("IpAddressType", self.properties)
-            else self.properties["IpAddressType"],
+            "IpAddressType": (
+                "ipv4"
+                if not keyisset("IpAddressType", self.properties)
+                else self.properties["IpAddressType"]
+            ),
             "Type": self.lb_type,
             "Scheme": "internet-facing" if self.lb_is_public else "internal",
-            "SecurityGroups": [Ref(self.lb_sg)]
-            if isinstance(self.lb_sg, SecurityGroup)
-            else self.lb_sg,
+            "SecurityGroups": (
+                [Ref(self.lb_sg)]
+                if isinstance(self.lb_sg, SecurityGroup)
+                else self.lb_sg
+            ),
             "Subnets": Ref(AWS_NO_VALUE),
             "SubnetMappings": Ref(AWS_NO_VALUE),
             "LoadBalancerAttributes": self.set_lb_attributes(),

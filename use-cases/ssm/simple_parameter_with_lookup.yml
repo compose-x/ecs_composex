@@ -1,8 +1,4 @@
----
-# Blog applications
-
 version: '3.8'
-
 x-ssm_parameter:
   parameterA:
     Properties:
@@ -11,7 +7,6 @@ x-ssm_parameter:
       Name: /some/parameter
       Type: String
       Value: ABCD
-
   parameterB:
     Properties:
       DataType: text
@@ -20,27 +15,25 @@ x-ssm_parameter:
       Type: String
       Value: ABCD
     Services:
-      - name: bignicefamily
-        access: RO
-
+      bignicefamily:
+        Access: RO
   parameterC:
+    MacroParameters:
+      FromFile: ./use-cases/ssm/test_json.json
     Properties:
       Name: /some/yet-other-parameter
       Type: String
-    MacroParameters:
-      FromFile: ./use-cases/ssm/test_json.json
     Services:
-      - name: rproxy
-        access: ROStrict
-      - name: youtoo
-        access: RW
-
+      rproxy:
+        Access: ROStrict
+      youtoo:
+        Access: RW
   parameterD:
     Lookup:
       Tags:
         - aws:cloudformation:logical-id: SsmLambdaArnPointer
     Services:
-      - name: rproxy
-        access: SSMParameterReadPolicy
-      - name: youtoo
-        access: SSMParameterReadPolicy
+      rproxy:
+        Access: SSMParameterReadPolicy
+      youtoo:
+        Access: SSMParameterReadPolicy

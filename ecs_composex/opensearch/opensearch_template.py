@@ -108,9 +108,11 @@ def add_new_security_group(domain, properties, stack):
         domain.security_group = define_domain_security_group(domain, stack)
         vpc_options = {
             "SecurityGroupIds": [Ref(domain.security_group)],
-            "SubnetIds": Ref(domain.subnets_override)
-            if domain.subnets_override
-            else Ref(STORAGE_SUBNETS),
+            "SubnetIds": (
+                Ref(domain.subnets_override)
+                if domain.subnets_override
+                else Ref(STORAGE_SUBNETS)
+            ),
         }
         properties["VPCOptions"] = opensearchservice.VPCOptions(**vpc_options)
 
@@ -144,10 +146,12 @@ def create_log_groups(domain, stack, props):
         log_group = LogGroup(
             f"{domain.logical_name}{NONALPHANUM.sub('', option)}LogGroup",
             LogGroupName=group_name,
-            RetentionInDays=30
-            if not keyisset("RetentionInDays", domain.parameters)
-            else get_closest_valid_log_retention_period(
-                domain.parameters["RetentionInDays"]
+            RetentionInDays=(
+                30
+                if not keyisset("RetentionInDays", domain.parameters)
+                else get_closest_valid_log_retention_period(
+                    domain.parameters["RetentionInDays"]
+                )
             ),
         )
         stack.stack_template.add_resource(log_group)
@@ -195,9 +199,9 @@ def correcting_required_settings(domain, props):
     :return:
     """
     if not keyisset("NodeToNodeEncryptionOptions", props):
-        props[
-            "NodeToNodeEncryptionOptions"
-        ] = opensearchservice.NodeToNodeEncryptionOptions(Enabled=True)
+        props["NodeToNodeEncryptionOptions"] = (
+            opensearchservice.NodeToNodeEncryptionOptions(Enabled=True)
+        )
     elif (
         keypresent("NodeToNodeEncryptionOptions", domain.parameters)
         and not domain.parameters["NodeToNodeEncryptionOptions"]
@@ -205,9 +209,9 @@ def correcting_required_settings(domain, props):
         LOG.warn(
             "You have Advanced Security options enabled but NodeToNodeEncryptionOptions is disabled. Enabling"
         )
-        props[
-            "NodeToNodeEncryptionOptions"
-        ] = opensearchservice.NodeToNodeEncryptionOptions(Enabled=True)
+        props["NodeToNodeEncryptionOptions"] = (
+            opensearchservice.NodeToNodeEncryptionOptions(Enabled=True)
+        )
 
     if keyisset("EncryptionAtRestOptions", props):
         crypt_options = props["EncryptionAtRestOptions"]
@@ -264,11 +268,13 @@ def generate_master_user(domain, stack, props):
         policy_doc = {"Version": "2012-10-17", "Statement": [statement]}
         iam_role = Role(
             f"{domain.logical_name}MasterUserRole",
-            PermissionsBoundary=define_iam_policy(
-                domain.parameters["MasterUserRolePermissionsBoundary"]
-            )
-            if keyisset("MasterUserRolePermissionsBoundary", domain.parameters)
-            else Ref(AWS_NO_VALUE),
+            PermissionsBoundary=(
+                define_iam_policy(
+                    domain.parameters["MasterUserRolePermissionsBoundary"]
+                )
+                if keyisset("MasterUserRolePermissionsBoundary", domain.parameters)
+                else Ref(AWS_NO_VALUE)
+            ),
             AssumeRolePolicyDocument=policy_doc,
         )
         stack.stack_template.add_resource(iam_role)

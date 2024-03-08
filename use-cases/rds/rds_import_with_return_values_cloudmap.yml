@@ -1,60 +1,53 @@
----
-# RDS Use-case.
-
 version: '3.8'
+x-cloudmap:
+  private:
+    Name: testing.cluster
 x-rds:
   dbA:
+    Lookup:
+      cluster:
+        Name: database-1
+        Tags:
+          - serverless: 'True'
+      secret:
+        Name: GHToken
+        Tags:
+          - useless: 'yes'
     Services:
       app03:
         ReturnValues:
           Endpoint.Address: DBA_HOSTNAME
+    Settings:
+      SecretsMappings:
+        Mappings:
+          - SecretKey: host
+            VarName: DB_HOST
+        PrefixWithDbName: DBA
+      x-cloudmap: private
+  dbB:
     Lookup:
       cluster:
         Name: database-1
         Tags:
-          - serverless: "True"
+          - serverless: 'True'
       secret:
         Name: GHToken
         Tags:
-          - useless: "yes"
-    Settings:
-      SecretsMappings:
-        PrefixWithDbName: DBA
-        Mappings:
-          - SecretKey: host
-            VarName: DB_HOST
-
-      x-cloudmap: private
-
-  dbB:
+          - useless: 'yes'
     Services:
       app03:
         ReturnValues:
           Endpoint.Address: DBB_HOSTNAME
-    Lookup:
-      cluster:
-        Name: database-1
-        Tags:
-          - serverless: "True"
-      secret:
-        Name: GHToken
-        Tags:
-          - useless: "yes"
     Settings:
       SecretsMappings:
-        PrefixWithDbName: DBA
         Mappings:
           - SecretKey: host
             VarName: DB_HOST
-
+        PrefixWithDbName: DBA
       x-cloudmap:
-        Namespace: private
-        ForceRegister: true
         DnsSettings:
           Hostname: db
+        ForceRegister: true
+        Namespace: private
         ReturnValues:
           DBClusterArn: ClusterArn
-
-x-cloudmap:
-  private:
-    Name: testing.cluster

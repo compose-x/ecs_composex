@@ -1,14 +1,12 @@
 version: 0.2
 
 env:
-  variables:
-    PY_VERSION: 3.8
   git-credential-helper: yes
 
 phases:
   install:
     runtime-versions:
-      python: "$(echo $PY_VERSION)"
+      python: 3.10
     commands:
       - (pip --version && pip install pip -U)|| curl -s https://bootstrap.pypa.io/get-pip.py | python
       - python -m pip install poetry

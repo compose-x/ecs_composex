@@ -120,18 +120,22 @@ class MeshService:
             ),
             Spec=appmesh.VirtualServiceSpec(
                 Provider=appmesh.VirtualServiceProvider(
-                    VirtualNode=appmesh.VirtualNodeServiceProvider(
-                        VirtualNodeName=GetAtt(service_node.node, "VirtualNodeName")
-                    )
-                    if service_node
-                    else Ref(AWS_NO_VALUE),
-                    VirtualRouter=appmesh.VirtualRouterServiceProvider(
-                        VirtualRouterName=GetAtt(
-                            service_router.router, "VirtualRouterName"
+                    VirtualNode=(
+                        appmesh.VirtualNodeServiceProvider(
+                            VirtualNodeName=GetAtt(service_node.node, "VirtualNodeName")
                         )
-                    )
-                    if service_router
-                    else Ref(AWS_NO_VALUE),
+                        if service_node
+                        else Ref(AWS_NO_VALUE)
+                    ),
+                    VirtualRouter=(
+                        appmesh.VirtualRouterServiceProvider(
+                            VirtualRouterName=GetAtt(
+                                service_router.router, "VirtualRouterName"
+                            )
+                        )
+                        if service_router
+                        else Ref(AWS_NO_VALUE)
+                    ),
                 )
             ),
         )

@@ -21,8 +21,8 @@ x-kms:
   keyC:
     Lookup:
       Tags:
-        - name: cicd
-        - costcentre: lambda
+        ForLookup: "true"
+        usage: unknown
     Services:
       app03:
         Access: EncryptDecrypt

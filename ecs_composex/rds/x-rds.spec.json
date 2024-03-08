@@ -25,14 +25,7 @@
   },
   "definitions": {
     "ServicesDef": {
-      "oneOf": [
-        {
-          "$ref": "x-rds-common.spec.json#/definitions/ServicesListDef"
-        },
-        {
-          "$ref": "x-rds-common.spec.json#/definitions/ServicesObjectDef"
-        }
-      ]
+      "$ref": "x-rds-common.spec.json#/definitions/ServicesObjectDef"
     },
     "ServicesObjectDef": {
       "type": "object",

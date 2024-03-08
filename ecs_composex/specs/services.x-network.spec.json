@@ -8,7 +8,8 @@
   "additionalProperties": false,
   "properties": {
     "AssignPublicIp": {
-      "type": "boolean"
+      "type": "boolean",
+      "description": "Enables assigning a public IP address to the service tasks."
     },
     "AdditionalSecurityGroups": {
       "description": "Define additional security groups to use.",
@@ -20,12 +21,62 @@
           "oneOf": [
             {
               "type": "string",
-              "description": "The security group ID to use. It must belong to the same VPC you are deploying to"
+              "description": "The security group ID to use. It must belong to the same VPC you are deploying to",
+              "pattern": "^sg-[a-z0-9]+$"
             },
             {
               "$ref": "x-resources.common.spec.json#/definitions/Lookup"
             }
           ]
+        }
+      }
+    },
+    "x-ecs_connect": {
+      "type": "object",
+      "oneOf": [
+        {
+          "required": [
+            "Properties"
+          ]
+        },
+        {
+          "required": [
+            "MacroParameters"
+          ]
+        }
+      ],
+      "properties": {
+        "Properties": {
+          "type": "object",
+          "description": "Literal properties to set as in https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ecs-service-serviceconnectconfiguration.html"
+        },
+        "MacroParameters": {
+          "type": "object",
+          "description": "ECS Compose-X Shorthand syntax to configure ECS Connect.",
+          "additionalProperties": false,
+          "properties": {
+            "ServiceAlias": {
+              "type": "string",
+              "description": "DNS Alias to use for this service with ECS Connect"
+            },
+            "ServicePort": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 65535,
+              "description": "The port to use for registration. If not set, uses the first port in the ports list"
+            },
+            "ServicePortName": {
+              "type": "string",
+              "description": "Name of the port. Must be the same as ports[].name. If not specified, uses generated port name of the first port."
+            },
+            "x-cloudmap": {
+              "type": "string",
+              "description": "Name of the namespace defined in the x-cloudmap root level to use."
+            }
+          },
+          "patternProperties": {
+            "x-*": {}
+          }
         }
       }
     },

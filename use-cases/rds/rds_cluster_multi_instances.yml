@@ -1,67 +1,69 @@
----
-# RDS Use-case.
-
 version: '3.8'
 x-rds:
   dbA:
     MacroParameters:
-      Engine: "aurora-postgresql"
-      EngineVersion: "14.6"
+      Engine: aurora-postgresql
+      EngineVersion: '14.6'
       Instances:
-        - DBInstanceClass: db.m5a.large
-          DBAllocatedStorage: 50
+        - DBAllocatedStorage: 50
+          DBInstanceClass: db.m5a.large
     Services:
-      - name: app01
-        access: RW
-      - name: app03
-        access: RW
-      - name: youtoo
-        access: RW
-
+      app01:
+        Access:
+          DBCluster: RO
+      app03:
+        Access:
+          DBCluster: RO
+      youtoo:
+        Access:
+          DBCluster: RO
+  dbB:
+    Properties:
+      BackupRetentionPeriod: 1
+      DatabaseName: dbname
+      DeletionProtection: false
+      EnableCloudwatchLogsExports:
+        - audit
+        - general
+      EnableHttpEndpoint: true
+      EnableIAMDatabaseAuthentication: true
+      Engine: aurora-postgresql
+      EngineVersion: '14.6'
+      MasterUserPassword: dummy
+      MasterUsername: dummy
+      Port: 5432
+      StorageEncrypted: true
+      Tags:
+        - Key: Name
+          Value: dummy-db
+    Services:
+      app01:
+        Access:
+          DBCluster: RO
+      app03:
+        Access:
+          DBCluster: RO
+      youtoo:
+        Access:
+          DBCluster: RO
   dbC:
     MacroParameters:
-      Engine: "aurora-postgresql"
-      EngineVersion: "14.6"
+      Engine: aurora-postgresql
+      EngineVersion: '14.6'
       ParametersGroups:
         Description: CloudFormation Sample Aurora Parameter Group
         Family: aurora5.6
         Parameters:
-          sql_mode: IGNORE_SPACE
-          max_allowed_packet: 1024
           innodb_buffer_pool_size: '{DBInstanceClassMemory*3/4}'
-
+          max_allowed_packet: 1024
+          sql_mode: IGNORE_SPACE
     Services:
-      - name: app01
-        access: RW
-      - name: app03
-        access: RW
-      - name: youtoo
-        access: RW
-
-  dbB:
-    Properties:
-      Engine: "aurora-postgresql"
-      EngineVersion: "14.6"
-      BackupRetentionPeriod: 1
-      DatabaseName: dbname
-      DeletionProtection: False
-      EnableCloudwatchLogsExports:
-        - audit
-        - general
-      EnableHttpEndpoint: True
-      EnableIAMDatabaseAuthentication: True
-      MasterUsername: dummy
-      MasterUserPassword: dummy
-      Port: 5432
-      StorageEncrypted: True
-      Tags:
-        - Key: Name
-          Value: "dummy-db"
-
-    Services:
-      - name: app01
-        access: RW
-      - name: app03
-        access: RW
-      - name: youtoo
-        access: RW
+      app01:
+        Access:
+          DBCluster: RO
+      app03:
+        Access:
+          DBCluster: RO
+      youtoo:
+        Access:
+          DBCluster: RO

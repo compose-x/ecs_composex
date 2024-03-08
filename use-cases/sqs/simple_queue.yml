@@ -25,6 +25,13 @@ x-sqs:
       app03:
         Access: RWMessages
   queueE:
+    MacroParameters:
+      AwsPrincipalsAccess:
+        Consume:
+          - lambda
+        Publish:
+          - sns
+          - s3
     Properties: {}
     Services:
       app03:
@@ -41,10 +48,3 @@ x-sqs:
               UpperBound: 20
             - Count: 7
               LowerBound: 20
-    MacroParameters:
-      AwsPrincipalsAccess:
-        Publish:
-          - sns
-          - s3
-        Consume:
-          - lambda

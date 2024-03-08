@@ -301,9 +301,11 @@ def scan_service_image(
         repo_name,
         region,
         settings,
-        role_arn=service.ecr_config["RoleArn"]
-        if keyisset("RoleArn", vulnerability_config)
-        else None,
+        role_arn=(
+            service.ecr_config["RoleArn"]
+            if keyisset("RoleArn", vulnerability_config)
+            else None
+        ),
     )
     security_findings = wait_for_scan_report(
         registry=account_id,
