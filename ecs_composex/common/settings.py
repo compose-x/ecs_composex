@@ -15,12 +15,9 @@ if TYPE_CHECKING:
 
 from copy import deepcopy
 from datetime import datetime as dt
-from json import loads
-from os import path
 from re import compile, sub
 
 import boto3
-import jsonschema
 import yaml
 
 try:

@@ -5,6 +5,8 @@
 Module to do a better env variables handling.
 """
 
+from __future__ import annotations
+
 import os
 import re
 

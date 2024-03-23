@@ -114,7 +114,7 @@ class ComposeFamily:
         return re.sub(r"[^a-zA-Z0-9]+", "", self.name)
 
     @property
-    def services(self) -> list:
+    def services(self) -> list[ComposeService]:
         return list(chain(self.managed_sidecars, self.ordered_services))
 
     @property
@@ -490,6 +490,10 @@ class ComposeFamily:
         handle_same_task_services_dependencies(service_configs)
         self.set_add_region_when_external()
         self.sort_secrets_env_vars()
+
+    def composed_env_processing(self, settings: ComposeXSettings) -> None:
+        for service in self.services:
+            service.composed_env_processing(settings)
 
     def set_add_region_when_external(self):
         from troposphere.ecs import Environment

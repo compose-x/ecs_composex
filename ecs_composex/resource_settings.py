@@ -336,11 +336,12 @@ def set_update_container_env_vars_from_resource_attribute(
             and parts.group("res_key") == resource.module.res_key
         ):
             continue
+        env_vars: list[Environment] = resource.set_update_container_env_var(
+            target[0], parts.group("return_value"), defined_env_var.Name
+        )
         extend_container_envvars(
             svc.container_definition,
-            resource.set_update_container_env_var(
-                target, parts.group("return_value"), defined_env_var.Name
-            ),
+            env_vars,
             replace=True,
         )
 
