@@ -16,11 +16,13 @@ from typing import TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
     from ecs_composex.ecs.ecs_family import ComposeFamily
+    from ecs_composex.common.settings import ComposeXSettings
 
 from compose_x_common.compose_x_common import keyisset, keypresent, set_else_none
 from troposphere import AWSHelperFn, If, NoValue, Ref, Sub
 from troposphere.ecs import (
     ContainerDefinition,
+    Environment,
     HealthCheck,
     KernelCapabilities,
     LinuxParameters,
@@ -42,6 +44,7 @@ from ecs_composex.compose.compose_services.docker_tools import (
 from ecs_composex.compose.compose_services.helpers import (
     define_ingress_mappings,
     import_env_variables,
+    sub_generate,
     validate_healthcheck,
 )
 from ecs_composex.compose.compose_volumes.services_helpers import map_volumes
@@ -1034,3 +1037,18 @@ class ComposeService:
                 )
             elif keyisset(setting[0], self.definition) and callable(setting[2]):
                 setting[2](setting[0])
+
+    def composed_env_processing(self, settings: ComposeXSettings):
+
+        env_vars: list[Environment] = getattr(
+            self.container_definition, "Environment", []
+        )
+        for env_var in env_vars:
+            if not isinstance(env_var, Environment) or not isinstance(
+                env_var.Value, str
+            ):
+                continue
+            sub_name, sub_params = sub_generate(
+                env_var.Value, {}, settings, self.family
+            )
+            env_var.Value = Sub(sub_name, **sub_params)

@@ -1,0 +1,138 @@
+secrets:
+  CLUSTER_SECRETS:
+    external: true
+    x-secrets:
+      Name: /kafka/warpstream/${CLUSTER_NAME}
+      JsonKeys:
+        - SecretKey: cluster_id
+          VarName: WARPSTREAM_DEFAULT_VIRTUAL_CLUSTER_ID
+        - SecretKey: api_key
+          VarName: WARPSTREAM_API_KEY
+        - SecretKey: agent_pool_name
+          VarName: WARPSTREAM_AGENT_POOL_NAME
+
+services:
+  warp:
+    secrets:
+      - CLUSTER_SECRETS
+    ports:
+      - 9092/tcp
+      - 9999/tcp
+      - 8080/tcp
+    x-network:
+      Ingress:
+        Myself: true
+        ExtSources:
+          - IPv4: 0.0.0.0/0
+            Name: ANY
+            Ports:
+              - 9092
+
+    expose:
+      - 8080/tcp
+    image: public.ecr.aws/warpstream-labs/warpstream_agent:latest
+    x-docker_opts:
+      InterpolateWithDigest: true
+    environment:
+      WARPSTREAM_DISCOVERY_KAFKA_HOSTNAME_OVERRIDE: "warp.bdd-testing.compose-x.io"
+      WARPSTREAM_BUCKET_URL: s3://x-s3::warp-cluster-storage::BucketName?region=x-aws::AWS::Region&prefix=cluster-01/
+      WARPSTREAM_REQUIRE_AUTHENTICATION: true
+    command:
+      - agent
+      - -requireAuthentication
+
+x-tags:
+  project: warpstream
+
+x-route53:
+  PublicZone:
+    ZoneName: bdd-testing.compose-x.io
+    Lookup: true
+
+x-acm:
+  warp-cert:
+    MacroParameters:
+      DomainNames:
+        - "warp.bdd-testing.compose-x.io"
+        - "*.warp.bdd-testing.compose-x.io"
+      HostedZoneId: x-route53::PublicZone
+
+x-elbv2:
+  public-ingress:
+    DnsAliases:
+      - Route53Zone: x-route53::PublicZone
+        Names:
+          - "warp.bdd-testing.compose-x.io"
+          - "*.warp.bdd-testing.compose-x.io"
+
+    Properties:
+      Scheme: internet-facing
+      Type: network
+      LoadBalancerAttributes:
+        dns_record.client_routing_policy: partial_availability_zone_affinity
+    MacroParameters:
+      cross_zone: false
+    Settings:
+      NoAllocateEips: true
+    Listeners:
+      - Port: 9092
+        Protocol: TLS
+        Certificates:
+          - x-acm: warp-cert
+        Targets:
+          - name: warp:warp:9092
+            access: /
+    Services:
+      warp:warp:
+        port: 9092
+        protocol: TCP
+        healthcheck: 9092:TCP:2:2:15:5
+        TargetGroupAttributes:
+          - Key: deregistration_delay.timeout_seconds
+            Value: "15"
+          - Key: deregistration_delay.connection_termination.enabled
+            Value: "false"
+          - Key: preserve_client_ip.enabled
+            Value: "true"
+
+x-s3:
+  warp-cluster-storage:
+    Services:
+      warp:
+        Access:
+          bucket: ListOnly
+          objects: CRUD
+          s3-bucket-ssl-requests-only: true
+    MacroParameters:
+      ExpandAccountIdToBucket: true
+      ExpandRegionToBucket: true
+    Properties:
+      AccelerateConfiguration:
+        AccelerationStatus: Suspended
+      AccessControl: BucketOwnerFullControl
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - BucketKeyEnabled: true
+            ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      LifecycleConfiguration:
+        AbortIncompleteMultipartUpload:
+          DaysAfterInitiation: 1
+        Rules:
+          - Id: InfrequentAccess
+            Prefix: cluster-01/
+            Status: Enabled
+            Transitions:
+              - StorageClass: STANDARD_IA
+                TransitionInDays: '31'
+              - StorageClass: INTELLIGENT_TIERING
+                TransitionInDays: '90'
+
+      MetricsConfigurations:
+        - Id: EntireBucket
+      ObjectLockEnabled: true
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true

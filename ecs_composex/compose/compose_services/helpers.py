@@ -3,7 +3,11 @@
 
 from __future__ import annotations
 
+import re
 from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ecs_composex.common import ComposeXSettings
 
 if TYPE_CHECKING:
     from troposphere import Template
@@ -15,6 +19,7 @@ from compose_x_common.compose_x_common import keyisset, set_else_none
 from troposphere import FindInMap, GetAtt, ImportValue, NoValue, Ref, Sub
 from troposphere.ecs import ContainerDefinition, Environment
 
+from ecs_composex.common import NONALPHANUM
 from ecs_composex.common.logging import LOG
 
 
@@ -227,3 +232,39 @@ def validate_healthcheck(healthcheck, valid_keys, required_keys):
         raise AttributeError(
             f"Expected at least {required_keys}. Got", healthcheck.keys()
         )
+
+
+def sub_generate(
+    input_s: str, sub_args: dict, settings: ComposeXSettings, service_family
+) -> tuple:
+    eval_r = re.compile(
+        r"(?P<intrinsic>x-aws::(?P<pseudo>AWS::[a-zA-Z0-9]+))|"
+        r"(?P<res_key>x-[a-zA-Z0-9-_]+)::(?P<res_name>[a-zA-Z0-9-_]+)::(?P<return_value>[a-zA-Z0-9-_]+)"
+    )
+    for _inter in eval_r.findall(input_s):
+        first_match = eval_r.search(input_s)
+        if not first_match:
+            break
+        aws, resource = first_match.group("pseudo"), first_match.group("res_key")
+
+        if resource:
+            res_key: str = first_match.group("res_key")
+            res_name: str = first_match.group("res_name")
+            return_value: str = first_match.group("return_value")
+            resource, parameter = settings.get_resource_attribute(
+                f"{res_key}::{res_name}::{return_value}"
+            )
+            value, params_to_add = resource.get_resource_attribute_value(
+                parameter, service_family
+            )
+            sub_arg_name_r: str = (
+                NONALPHANUM.sub("", res_key)
+                + NONALPHANUM.sub("", res_name)
+                + NONALPHANUM.sub("", return_value)
+            )
+            sub_arg_name: str = f"${{{sub_arg_name_r}}}"
+            sub_args[sub_arg_name_r] = value
+        else:
+            sub_arg_name: str = f"${{{first_match.group('pseudo')}}}"
+        input_s = eval_r.sub(sub_arg_name, input_s, count=1)
+    return input_s, sub_args

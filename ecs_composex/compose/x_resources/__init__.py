@@ -11,21 +11,19 @@ from typing import TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
+    from ecs_composex.ecs.ecs_family import ComposeFamily
 
 import json
 import re
 from copy import deepcopy
-from os import path
 
 import jsonschema
 from compose_x_common.aws import get_account_id
 from compose_x_common.compose_x_common import (
     attributes_to_mapping,
     keyisset,
-    keypresent,
     set_else_none,
 )
-from importlib_resources import files as pkg_files
 from troposphere import AWSObject, Export, FindInMap, GetAtt, Join, Output, Ref, Sub
 from troposphere.ecs import Environment
 
@@ -324,14 +322,10 @@ class XResource:
             else:
                 self.mappings[parameter.title] = value
 
-    def set_update_container_env_var(
-        self, target: tuple, parameter, env_var_name: str
-    ) -> list:
-        """
-        Function that will set or update the value of a given env var from Return value of a resource.
-        :param tuple target:
-        :param parameter:
-        """
+    def get_resource_attribute_value(
+        self, parameter, family: ComposeFamily
+    ) -> tuple | None:
+        """Finds the value"""
         if isinstance(parameter, str):
             try:
                 attr_parameter = self.property_to_parameter_mapping[parameter]
@@ -339,31 +333,22 @@ class XResource:
                 LOG.error(
                     f"{self.module.res_key}.{self.name} - No return value {parameter} available."
                 )
-                return []
+                return
         elif isinstance(parameter, Parameter):
             attr_parameter = parameter
         else:
             raise TypeError(
                 "parameter is", type(parameter), "must be one of", [str, Parameter]
             )
-        env_vars = []
         params_to_add = []
         attr_id = self.attributes_outputs[attr_parameter]
         if self.cfn_resource:
-            env_vars.append(
-                Environment(
-                    Name=env_var_name,
-                    Value=Ref(attr_id["ImportParameter"]),
-                )
-            )
+            value = Ref(attr_id["ImportParameter"])
             params_to_add.append(attr_parameter)
         elif self.lookup_properties:
-            env_vars.append(
-                Environment(
-                    Name=env_var_name,
-                    Value=attr_id["ImportValue"],
-                )
-            )
+            value = attr_id["ImportValue"]
+        else:
+            raise LookupError("Unable to find attribute of resource")
         if params_to_add:
             params_values = {}
             settings = [get_parameter_settings(self, param) for param in params_to_add]
@@ -371,9 +356,27 @@ class XResource:
             for setting in settings:
                 resource_params_to_add.append(setting[1])
                 params_values[setting[0]] = setting[2]
-            add_parameters(target[0].template, resource_params_to_add)
-            target[0].stack.Parameters.update(params_values)
-        return env_vars
+            add_parameters(family.template, resource_params_to_add)
+            family.stack.Parameters.update(params_values)
+        return value, params_to_add
+
+    def set_update_container_env_var(
+        self, family: ComposeFamily, parameter: str | Parameter, env_var_name: str
+    ) -> list:
+        """
+        Function that will set or update the value of a given env var from Return value of a resource.
+        If the resource is new, adding the parameter to the top stack
+        If the resource is lookup, point to the mapping.
+        """
+        env_vars: list[Environment] = []
+        try:
+            value, params_to_add = self.get_resource_attribute_value(parameter, family)
+            env_vars.append(Environment(Name=env_var_name, Value=value))
+            return env_vars
+        except Exception as error:
+            print(error)
+            print("Failed to define env vars")
+            return []
 
     def generate_resource_service_env_vars(
         self, target: tuple, target_definition: dict
