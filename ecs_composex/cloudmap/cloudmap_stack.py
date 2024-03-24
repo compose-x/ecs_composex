@@ -43,6 +43,7 @@ from .cloudmap_params import (
     MOD_KEY,
     PRIVATE_DNS_ZONE_ID,
     PRIVATE_DNS_ZONE_NAME,
+    PRIVATE_NAMESPACE_ARN,
     PRIVATE_NAMESPACE_ID,
 )
 from .cloudmap_x_resources import handle_resource_cloudmap_settings
@@ -98,6 +99,12 @@ class PrivateNamespace(AwsEnvironmentResource):
                 self.cfn_resource,
                 self.zone_name,
                 False,
+            ),
+            PRIVATE_NAMESPACE_ARN: (
+                f"{self.logical_name}{PRIVATE_NAMESPACE_ARN.return_value}",
+                self.cfn_resource,
+                GetAtt,
+                PRIVATE_NAMESPACE_ARN.return_value,
             ),
         }
 

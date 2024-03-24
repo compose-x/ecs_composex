@@ -301,7 +301,7 @@ def generate_full_template(settings: ComposeXSettings):
         mesh.render_mesh_template(mesh.stack, settings)
 
     for family in settings.families.values():
-        family.finalize_family_settings()
+        family.finalize_family_settings(settings)
         map_resource_return_value_to_services_command(family, settings)
         family.state_facts()
         family.x_environment_processing()

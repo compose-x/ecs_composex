@@ -105,6 +105,7 @@ class ComposeService:
         self.x_scaling = set_else_none("x-scaling", self.definition, None, False)
         self.x_network = set_else_none("x-network", self.definition, None, False)
         self.x_cloudmap = set_else_none("x-cloudmap", self.x_network, None, False)
+        self.x_ecs_connect = set_else_none("x-ecs_connect", self.x_network, None)
         self.x_ecs = set_else_none("x-ecs", self.definition, {})
         self.ecr_config = set_else_none("x-ecr", self.definition, None)
         self.x_ecr = set_else_none("x-ecr", self.definition, {})

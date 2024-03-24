@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Union
 if TYPE_CHECKING:
     from troposphere.ecs import Service as CfnService
     from ecs_composex.common.settings import ComposeXSettings
+    from ecs_composex.ecs.ecs_service import EcsService
 
 import re
 from itertools import chain
@@ -72,8 +73,8 @@ class ComposeFamily:
     """
 
     def __init__(self, services: list[ComposeService], family_name):
-        self._compose_services = services
-        self.ordered_services = services
+        self._compose_services: list[ComposeService] = services
+        self.ordered_services: list[ComposeService] = services
         self.managed_sidecars = []
         self.name = family_name
         self.family_hostname = self.name.replace("_", "-").lower()
@@ -92,7 +93,7 @@ class ComposeFamily:
         self.task_definition = None
         self.service_tags = None
         self.enable_execute_command = False
-        self.ecs_service = None
+        self.ecs_service: EcsService = None
         self.runtime_cpu_arch = None
         self.runtime_os_family = None
         self.outputs = []
@@ -103,7 +104,7 @@ class ComposeFamily:
         self.iam_manager = TaskIam(self)
         self.iam_manager.init_update_policies()
         self.service_scaling = None
-        self.service_networking = None
+        self.service_networking: ServiceNetworking | None = None
         self.task_compute = None
         self.service_compute = ServiceCompute(self)
         self.set_enable_execute_command()
@@ -447,12 +448,21 @@ class ComposeFamily:
             self.service_networking.ingress.associate_ext_ingress_rules(self.template)
             self.service_networking.add_self_ingress()
 
-    def finalize_family_settings(self):
+    def finalize_family_settings(self, settings: ComposeXSettings):
         """
         Once all services have been added, we add the sidecars and deal with appropriate permissions and settings
         Will add xray / prometheus sidecars
         """
         from .family_helpers import set_service_dependency_on_all_iam_policies
+
+        self.service_networking.set_ecs_connect(settings)
+        if self.service_networking.ecs_connect_config and self.ecs_service:
+            print("ASSIGNING SERVICE CONNECT")
+            setattr(
+                self.ecs_service.ecs_service,
+                "ServiceConnectConfiguration",
+                self.service_networking.ecs_connect_config,
+            )
 
         self.add_containers_images_cfn_parameters()
         self.task_compute.set_task_compute_parameter()
