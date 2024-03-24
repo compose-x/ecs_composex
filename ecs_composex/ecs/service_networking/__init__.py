@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ecs_composex.ecs.ecs_family import ComposeFamily
     from ecs_composex.cloudmap.cloudmap_ecs import EcsDiscoveryService
+    from ecs_composex.common.settings import ComposeXSettings
 
 from itertools import chain
 
@@ -34,6 +35,7 @@ from ecs_composex.common.troposphere_tools import add_parameters
 from ecs_composex.ecs.ecs_conditions import use_external_lt_con
 from ecs_composex.ecs.ecs_params import NETWORK_MODE, SERVICE_NAME
 from ecs_composex.ecs.service_networking.ingress_helpers import (
+    import_set_ecs_connect_settings,
     merge_cloudmap_settings,
     merge_family_services_networking,
 )
@@ -76,6 +78,7 @@ class ServiceNetworking:
         self.cloudmap_config = (
             merge_cloudmap_settings(family, self.ports) if self.ports else {}
         )
+        self.ecs_connect_config: ServiceConnectConfiguration | None = None
         self.ingress = Ingress(self.definition[Ingress.master_key], self.ports)
 
     @property
@@ -212,11 +215,7 @@ class ServiceNetworking:
                 self.networks.update(svc.networks)
 
     def merge_services_ports(self):
-        """
-        Function to merge two sections of ports
-
-        :return:
-        """
+        """Function to merge two sections of ports"""
         source_ports = [
             service.ports
             for service in chain(
@@ -234,6 +233,9 @@ class ServiceNetworking:
                 for s_port in f_source_ports:
                     if s_port["target"] not in f_overide_ports_targets:
                         self.ports.append(s_port)
+
+    def set_ecs_connect(self, settings: ComposeXSettings):
+        self.ecs_connect_config = import_set_ecs_connect_settings(self.family, settings)
 
     def add_self_ingress(self) -> None:
         """

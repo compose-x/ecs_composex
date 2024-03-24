@@ -48,6 +48,15 @@ PRIVATE_NAMESPACE_ID = Parameter(
     AllowedPattern=ZONES_PATTERN.pattern,
 )
 
+PRIVATE_NAMESPACE_ARN_T: str = "PrivateNamespaceArn"
+PRIVATE_NAMESPACE_ARN: Parameter = Parameter(
+    PRIVATE_NAMESPACE_ARN_T,
+    group_label=LABEL,
+    return_value="Arn",
+    Type="String",
+)
+
+
 ECS_SERVICE_NAMESPACE_SERVICE_ID_T = "EcsCloudMapServiceName"
 ECS_SERVICE_NAMESPACE_SERVICE_ID = Parameter(
     ECS_SERVICE_NAMESPACE_SERVICE_ID_T,
