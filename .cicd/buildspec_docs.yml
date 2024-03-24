@@ -2,7 +2,7 @@ version: 0.2
 
 env:
   variables:
-    PY_VERSION: 3.8
+    PY_VERSION: 3.10
   git-credential-helper: yes
 
 phases:
