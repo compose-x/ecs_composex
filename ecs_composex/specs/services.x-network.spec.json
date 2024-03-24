@@ -53,21 +53,24 @@
         "MacroParameters": {
           "type": "object",
           "description": "ECS Compose-X Shorthand syntax to configure ECS Connect.",
-          "additionalProperties": false,
+          "additionalProperties": true,
+          "required": [
+            "PortName",
+            "x-cloudmap"
+          ],
           "properties": {
-            "ServiceAlias": {
+            "DnsName": {
               "type": "string",
-              "description": "DNS Alias to use for this service with ECS Connect"
+              "description": "DNS name for the clients to find this service"
             },
-            "ServicePort": {
-              "type": "number",
-              "minimum": 0,
-              "maximum": 65535,
-              "description": "The port to use for registration. If not set, uses the first port in the ports list"
-            },
-            "ServicePortName": {
+            "CloudMapServiceName": {
               "type": "string",
-              "description": "Name of the port. Must be the same as ports[].name. If not specified, uses generated port name of the first port."
+              "maxLength": 64,
+              "description": "Optional - Set the name of the service as it appears in the CloudMap namespace"
+            },
+            "PortName": {
+              "type": "string",
+              "description": "Name of the port. Must be the same as ports[].name. If not specified, uses generated port name of the first port in the service."
             },
             "x-cloudmap": {
               "type": "string",
