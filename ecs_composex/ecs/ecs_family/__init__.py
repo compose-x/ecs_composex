@@ -93,7 +93,7 @@ class ComposeFamily:
         self.task_definition = None
         self.service_tags = None
         self.enable_execute_command = False
-        self.ecs_service: EcsService = None
+        self.ecs_service: EcsService | None = None
         self.runtime_cpu_arch = None
         self.runtime_os_family = None
         self.outputs = []
@@ -106,7 +106,7 @@ class ComposeFamily:
         self.service_scaling = None
         self.service_networking: ServiceNetworking | None = None
         self.task_compute = None
-        self.service_compute = ServiceCompute(self)
+        self.service_compute: ServiceCompute = ServiceCompute(self)
         self.set_enable_execute_command()
         set_family_hostname(self)
 

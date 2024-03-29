@@ -280,7 +280,7 @@ class ComposeXSettings:
                 parts.group("return_value")
             ]
             return resource, parameter
-        except LookupError as error:
+        except LookupError:
             print(f"Not found {compose_resource_arn}")
             return None, None
 

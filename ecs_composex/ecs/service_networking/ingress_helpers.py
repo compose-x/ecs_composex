@@ -315,8 +315,7 @@ def find_namespace(
     """Finds the x-cloudmap: namespace and returns the identifier to use for it"""
     x_resource_attribute: str = f"x-cloudmap::{namespace_id}::Arn"
     namespace, parameter = settings.get_resource_attribute(x_resource_attribute)
-    value, params_to_add = namespace.get_resource_attribute_value(parameter, family)
-    return value
+    return namespace.get_resource_attribute_value(parameter, family)[0]
 
 
 def set_ecs_connect_from_macro(
@@ -376,7 +375,6 @@ def process_ecs_connect_settings(
     family: ComposeFamily, service: ComposeService, settings: ComposeXSettings
 ) -> ServiceConnectConfiguration | Ref:
     """Determines whether to create the ECS Service connect from the Properties or MacroParameters"""
-    connect_props = NoValue
     if keyisset("Properties", service.x_ecs_connect):
         props = import_record_properties(
             service.x_ecs_connect["Properties"], ServiceConnectConfiguration
