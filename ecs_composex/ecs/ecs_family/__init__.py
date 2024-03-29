@@ -457,7 +457,6 @@ class ComposeFamily:
 
         self.service_networking.set_ecs_connect(settings)
         if self.service_networking.ecs_connect_config and self.ecs_service:
-            print("ASSIGNING SERVICE CONNECT")
             setattr(
                 self.ecs_service.ecs_service,
                 "ServiceConnectConfiguration",

@@ -32,6 +32,25 @@
       }
     },
     "x-ecs_connect": {
+      "$ref": "#/definitions/ecsConnect"
+    },
+    "x-cloudmap": {
+      "oneOf": [
+        {
+          "type": "string",
+          "description": "When you want to register the service into CloudMap. First port listed in ports[] used."
+        },
+        {
+          "$ref": "#/definitions/cloudMapMappingDefinition"
+        }
+      ]
+    },
+    "Ingress": {
+      "$ref": "ingress.spec.json"
+    }
+  },
+  "definitions": {
+    "ecsConnect": {
       "type": "object",
       "oneOf": [
         {
@@ -51,77 +70,79 @@
           "description": "Literal properties to set as in https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ecs-service-serviceconnectconfiguration.html"
         },
         "MacroParameters": {
-          "type": "object",
-          "description": "ECS Compose-X Shorthand syntax to configure ECS Connect.",
-          "additionalProperties": true,
-          "required": [
-            "PortName",
-            "x-cloudmap"
-          ],
-          "properties": {
-            "DnsName": {
-              "type": "string",
-              "description": "DNS name for the clients to find this service"
-            },
-            "CloudMapServiceName": {
-              "type": "string",
-              "maxLength": 64,
-              "description": "Optional - Set the name of the service as it appears in the CloudMap namespace"
-            },
-            "PortName": {
-              "type": "string",
-              "description": "Name of the port. Must be the same as ports[].name. If not specified, uses generated port name of the first port in the service."
-            },
-            "x-cloudmap": {
-              "type": "string",
-              "description": "Name of the namespace defined in the x-cloudmap root level to use."
-            }
-          },
-          "patternProperties": {
-            "x-*": {}
-          }
+          "$ref": "#/definitions/ecsConnectMacroParameters"
         }
       }
     },
-    "x-cloudmap": {
-      "oneOf": [
-        {
+    "ecsConnectMacroParameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Mapping for connect ports, allowing to create 1 service connect server alias per port",
+      "properties": {
+        "x-cloudmap": {
           "type": "string",
-          "description": "When you want to register the service into CloudMap. First port listed in ports[] used."
+          "description": "Name of the namespace defined in the x-cloudmap root level to use."
         },
-        {
+        "service_ports": {
           "type": "object",
-          "description": "Allows you to register the service to multiple registries, and/or use a specific port.",
           "additionalProperties": false,
           "patternProperties": {
-            "[a-zA-Z0-9-_.]+$": {
-              "type": "object",
-              "description": "The name of the object is the name of the x-cloudmap::<map>.",
-              "additionalProperties": false,
-              "required": [
-                "Port"
-              ],
-              "properties": {
-                "Port": {
-                  "description": "The port to register in SRV record",
-                  "type": "number",
-                  "minimum": 0,
-                  "maximum": 65535
-                },
-                "Name": {
-                  "type": "string",
-                  "description": "Name of the service. Do not include the cloudmap hostname. Overrides the ecs.task.family.hostname deploy label"
-                }
-              }
+            "^x-": {},
+            "^[a-zA-Z0-9-_]+$": {
+              "$ref": "#/definitions/ecsConnectMacroPorts"
             }
           }
         }
+      },
+      "required": [
+        "x-cloudmap"
       ]
     },
-    "Ingress": {
-      "$ref": "ingress.spec.json"
+    "ecsConnectMacroPorts": {
+      "type": "object",
+      "description": "ECS Compose-X Shorthand syntax to configure ECS Connect.",
+      "additionalProperties": true,
+      "properties": {
+        "DnsName": {
+          "type": "string",
+          "description": "DNS name for the clients to find this service"
+        },
+        "CloudMapServiceName": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Optional - Set the name of the service as it appears in the CloudMap namespace"
+        }
+      },
+      "patternProperties": {
+        "x-*": {}
+      }
+    },
+    "cloudMapMappingDefinition": {
+      "type": "object",
+      "description": "Allows you to register the service to multiple registries, and/or use a specific port.",
+      "additionalProperties": false,
+      "patternProperties": {
+        "[a-zA-Z0-9-_.]+$": {
+          "type": "object",
+          "description": "The name of the object is the name of the x-cloudmap::<map>.",
+          "additionalProperties": false,
+          "required": [
+            "Port"
+          ],
+          "properties": {
+            "Port": {
+              "description": "The port to register in SRV record",
+              "type": "number",
+              "minimum": 0,
+              "maximum": 65535
+            },
+            "Name": {
+              "type": "string",
+              "description": "Name of the service. Do not include the cloudmap hostname. Overrides the ecs.task.family.hostname deploy label"
+            }
+          }
+        }
+      }
     }
-  },
-  "definitions": {
   }
 }

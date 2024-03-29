@@ -314,7 +314,6 @@ def find_namespace(
 ):
     """Finds the x-cloudmap: namespace and returns the identifier to use for it"""
     x_resource_attribute: str = f"x-cloudmap::{namespace_id}::Arn"
-    print("RESOURCES?", settings.x_resources, namespace_id, x_resource_attribute)
     namespace, parameter = settings.get_resource_attribute(x_resource_attribute)
     value, params_to_add = namespace.get_resource_attribute_value(parameter, family)
     return value
@@ -330,48 +329,61 @@ def set_ecs_connect_from_macro(
     Based on the MacroParameters, creates the ServiceConnectConfiguration object.
     Configuration is in the `macro` parameter
     """
-    port_name = macro["PortName"]
-    for the_port in family.service_networking.ports:
-        if the_port["name"] == port_name:
-            break
-    else:
-        raise AttributeError(
-            f"No port called {port_name} in family {family.name}",
-            [_port["name"] for _port in family.service_networking.ports],
-        )
-
-    dns_name = set_else_none("DnsName", macro, None)
-    client_aliases = NoValue
-    if dns_name:
-        client_aliases = [
-            ServiceConnectClientAlias(DnsName=dns_name, Port=the_port["target"])
-        ]
-    services_props: dict = {
-        "DiscoveryName": set_else_none("CloudMapServiceName", macro, family.name),
-        "PortName": port_name,
-        "Timeout": set_else_none("Timeout", macro, NoValue),
-        "IngressPortOverride": set_else_none("IngressPortOverride", macro, NoValue),
-        "ClientAliases": client_aliases,
-    }
+    LOG.info(f"{family.name}.{service.name} - Setting up ecs-connect settings")
+    service_aliases: list[ServiceConnectService] = []
     props: dict = {
         "Enabled": True,
         "Namespace": find_namespace(family, macro["x-cloudmap"], settings),
-        "Services": [ServiceConnectService(**services_props)],
+        "Services": service_aliases,
     }
+    if not keyisset("service_ports", macro):
+        return ServiceConnectConfiguration(**props)
+
+    for port_name, connect_config in macro["service_ports"].items():
+        for the_port in family.service_networking.ports:
+            if keyisset("name", the_port) and the_port["name"] == port_name:
+                break
+        else:
+            raise AttributeError(
+                f"No port called {port_name} in family {family.name}",
+                [_port["name"] for _port in family.service_networking.ports],
+            )
+
+        dns_name = set_else_none("DnsName", connect_config, None)
+        client_aliases = NoValue
+        if dns_name:
+            client_aliases = [
+                ServiceConnectClientAlias(DnsName=dns_name, Port=the_port["target"])
+            ]
+        services_props: dict = {
+            "DiscoveryName": set_else_none(
+                "CloudMapServiceName", connect_config, family.name
+            ),
+            "PortName": port_name,
+            "Timeout": set_else_none("Timeout", connect_config, NoValue),
+            "IngressPortOverride": set_else_none(
+                "IngressPortOverride", connect_config, NoValue
+            ),
+            "ClientAliases": client_aliases,
+        }
+        config: ServiceConnectService = ServiceConnectService(**services_props)
+        service_aliases.append(config)
+
     return ServiceConnectConfiguration(**props)
 
 
 def process_ecs_connect_settings(
     family: ComposeFamily, service: ComposeService, settings: ComposeXSettings
-) -> ServiceConnectConfiguration:
+) -> ServiceConnectConfiguration | Ref:
     """Determines whether to create the ECS Service connect from the Properties or MacroParameters"""
+    connect_props = NoValue
     if keyisset("Properties", service.x_ecs_connect):
         props = import_record_properties(
             service.x_ecs_connect["Properties"], ServiceConnectConfiguration
         )
-        return ServiceConnectConfiguration(**props)
+        connect_props = ServiceConnectConfiguration(**props)
     elif keyisset("MacroParameters", service.x_ecs_connect):
-        return set_ecs_connect_from_macro(
+        connect_props = set_ecs_connect_from_macro(
             family, service, service.x_ecs_connect["MacroParameters"], settings
         )
     else:
@@ -379,6 +391,7 @@ def process_ecs_connect_settings(
             f"{family.name} - x-network.x-ecs_connect is not set correctly. "
             "One of Properties or MacroParameters is required"
         )
+    return connect_props
 
 
 def import_set_ecs_connect_settings(
@@ -387,7 +400,7 @@ def import_set_ecs_connect_settings(
     if not family.service_networking.ports:
         LOG.warning(f"services.{family.name} - No ports defined: ignoring ECS Connect.")
         return
-    x_ecs_configs: list[Service] = [
+    x_ecs_configs: list[ComposeService] = [
         service for service in family.ordered_services if service.x_ecs_connect
     ]
     if not x_ecs_configs:

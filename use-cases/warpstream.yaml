@@ -1,3 +1,4 @@
+version: "3.8"
 secrets:
   CLUSTER_SECRETS:
     external: true
@@ -22,9 +23,10 @@ services:
     x-network:
       x-ecs_connect:
         MacroParameters:
-          DnsName: wapstream.testing.internal
-          CloudMapServiceName: warpstream-dev
-          PortName: tcp_9092
+          services_ports:
+            tcp_9092:
+              DnsName: wapstream.testing.internal
+              CloudMapServiceName: warpstream-dev
           x-cloudmap: InternalZone
       Ingress:
         Myself: true
