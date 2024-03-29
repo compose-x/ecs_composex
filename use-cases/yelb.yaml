@@ -1,0 +1,82 @@
+x-cloudmap:
+  PrivateNamespace:
+    Name: compose-x.internal
+
+networks:
+  public:
+    x-vpc: PublicSubnets
+services:
+  yelb-ui:
+    image: mreferre/yelb-ui:0.10
+    depends_on:
+      - yelb-appserver
+    ports:
+      - 80
+    environment:
+      - UI_ENV=prod
+    networks:
+      - public
+    x-network:
+      AssignPublicIp: true
+      x-ecs_connect:
+        MacroParameters:
+          x-cloudmap: PrivateNamespace
+      Ingress:
+        ExtSources:
+          - IPv4: 86.132.105.135/32
+            Name: Home
+
+  yelb-appserver:
+    image: mreferre/yelb-appserver:0.7
+    depends_on:
+      - redis-server
+      - yelb-db
+    ports:
+      - 4567:4567
+    environment:
+      redishost: redis-server
+      yelbdbhost: yelb-db
+    x-network:
+      Ingress:
+        Services:
+          - Name: yelbui
+      x-ecs_connect:
+        MacroParameters:
+          service_ports:
+            tcp_4567:
+              DnsName: yelb-appserver
+              CloudMapServiceName: yelb-appserver
+          x-cloudmap: PrivateNamespace
+
+
+  redis-server:
+    image: redis:4.0.2
+    ports:
+      - 6379:6379
+    x-network:
+      x-ecs_connect:
+        MacroParameters:
+          service_ports:
+            tcp_6379:
+              DnsName: redis-server
+              CloudMapServiceName: redis-server
+          x-cloudmap: PrivateNamespace
+      Ingress:
+        Services:
+          - Name: yelbappserver
+
+  yelb-db:
+    image: mreferre/yelb-db:0.6
+    ports:
+      - 5432:5432
+    x-network:
+      x-ecs_connect:
+        MacroParameters:
+          service_ports:
+            tcp_5432:
+              DnsName: yelb-db
+              CloudMapServiceName: yelb-db
+          x-cloudmap: PrivateNamespace
+      Ingress:
+        Services:
+          - Name: yelbappserver
