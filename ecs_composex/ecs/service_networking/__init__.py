@@ -12,6 +12,10 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ecs_composex.ecs.ecs_family import ComposeFamily
     from ecs_composex.cloudmap.cloudmap_ecs import EcsDiscoveryService
+    from ecs_composex.ecs_ingress.ecs_ingress_stack import (
+        XStack as EcsIngressStack,
+        ServiceSecurityGroup,
+    )
 
 from itertools import chain
 
@@ -51,7 +55,7 @@ class ServiceNetworking:
 
     self_key = "Myself"
 
-    def __init__(self, family: ComposeFamily):
+    def __init__(self, family: ComposeFamily, families_sg_stack: EcsIngressStack):
         """
         Initialize network settings for the family ServiceConfig
 
@@ -71,7 +75,10 @@ class ServiceNetworking:
         self.merge_networks()
         self.definition = merge_family_services_networking(family)
         self._security_group = None
-        self.extra_security_groups = []
+        self.inter_services_sg: ServiceSecurityGroup = (
+            families_sg_stack.services_mappings[family.name]
+        )
+        self.extra_security_groups = [self.inter_services_sg.parameter]
         self._subnets = Ref(APP_SUBNETS)
         self.cloudmap_config = (
             merge_cloudmap_settings(family, self.ports) if self.ports else {}
