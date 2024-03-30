@@ -9,8 +9,10 @@ import ecs_composex.common.troposphere_tools
 
 if TYPE_CHECKING:
     from ecs_composex.ecs.ecs_family import ComposeFamily
+    from ecs_composex.compose.compose_services import ComposeService
     from ecs_composex.common.settings import ComposeXSettings
     from ecs_composex.common.stacks import ComposeXStack
+    from ecs_composex.ecs_ingress.ecs_ingress_stack import XStack as EcsIngressStack
 
 from json import dumps
 
@@ -21,7 +23,7 @@ from troposphere.ec2 import SecurityGroupIngress
 from ecs_composex.cloudmap.cloudmap_params import RES_KEY as CLOUDMAP_KEY
 from ecs_composex.common.cfn_params import Parameter
 from ecs_composex.common.logging import LOG
-from ecs_composex.common.troposphere_tools import add_parameters
+from ecs_composex.common.troposphere_tools import add_parameters, add_resource
 from ecs_composex.ecs.ecs_params import SERVICE_NAME
 from ecs_composex.ingress_settings import Ingress
 from ecs_composex.vpc.vpc_params import SG_ID_TYPE
@@ -142,120 +144,82 @@ def merge_family_services_networking(family: ComposeFamily) -> dict:
     return network_config
 
 
-def add_independent_rules(
-    dst_family: ComposeFamily, service_name: str, root_stack: ComposeXStack
-) -> None:
-    """
-    Adds security groups rules in the root stack as both services need to be created (with their SG)
-    before the ingress rule can be defined.
-
-    :param dst_family:
-    :param service_name:
-    :param root_stack:
-    :return:
-    """
-    src_service_stack = root_stack.stack_template.resources[service_name]
-    for port in dst_family.service_networking.ports:
-        target_port = set_else_none(
-            "published", port, alt_value=set_else_none("target", port, None)
-        )
-        if target_port is None:
-            raise ValueError(
-                "Wrong port definition value for security group ingress", port
-            )
-        ingress_rule = SecurityGroupIngress(
-            f"From{src_service_stack.title}To{dst_family.logical_name}On{target_port}",
-            FromPort=target_port,
-            ToPort=target_port,
-            IpProtocol=port["protocol"],
-            Description=Sub(
-                f"From {src_service_stack.title} to {dst_family.logical_name}"
-                f" on port {target_port}/{port['protocol']}"
-            ),
-            GroupId=GetAtt(
-                dst_family.stack.title,
-                f"Outputs.{dst_family.logical_name}GroupId",
-            ),
-            SourceSecurityGroupId=GetAtt(
-                src_service_stack.title,
-                f"Outputs.{src_service_stack.title}GroupId",
-            ),
-            SourceSecurityGroupOwnerId=Ref(AWS_ACCOUNT_ID),
-        )
-        if ingress_rule.title not in root_stack.stack_template.resources:
-            root_stack.stack_template.add_resource(ingress_rule)
-
-
-def add_dependant_ingress_rules(
-    dst_family: ComposeFamily, dst_family_sg_param: Parameter, src_family: ComposeFamily
-) -> None:
-    for port in dst_family.service_networking.ports:
-        target_port = set_else_none(
-            "published", port, alt_value=set_else_none("target", port, None)
-        )
-        if target_port is None:
-            raise ValueError(
-                "Wrong port definition value for security group ingress", port
-            )
-        common_args = {
-            "FromPort": target_port,
-            "ToPort": target_port,
-            "IpProtocol": port["protocol"],
-            "SourceSecurityGroupOwnerId": Ref(AWS_ACCOUNT_ID),
-            "Description": Sub(
-                f"From ${{{SERVICE_NAME.title}}} to {dst_family.stack.title} on port {target_port}"
-            ),
-        }
-        src_family.template.add_resource(
-            SecurityGroupIngress(
-                f"From{src_family.logical_name}To{dst_family.stack.title}On{target_port}",
-                SourceSecurityGroupId=GetAtt(
-                    src_family.service_networking.security_group, "GroupId"
-                ),
-                GroupId=Ref(dst_family_sg_param),
-                **common_args,
-            )
-        )
-
-
 def set_compose_services_ingress(
-    root_stack, dst_family: ComposeFamily, families: list, settings: ComposeXSettings
+    dst_family: ComposeFamily,
+    families_sg_stack: EcsIngressStack,
+    settings: ComposeXSettings,
 ) -> None:
     """
     Function to crate SG Ingress between two families / services.
     Presently, the ingress rules are set after all services have been created
-
-    :param ecs_composex.common.stacks.ComposeXStack root_stack:
-    :param ecs_composex.ecs.ecs_family.ComposeFamily dst_family:
-    :param list families: The list of family names.
-    :param ecs_composex.common.settings.ComposeXSettings settings:
     """
-    for service in dst_family.service_networking.ingress.services:
-        service_name = service["Name"]
-        if service_name not in families:
-            raise KeyError(
-                f"The service {service_name} is not among the services created together. Valid services are",
-                families,
+    target_family_services: list[ComposeService] = []
+    for _target_service_def in dst_family.service_networking.ingress.services:
+        service_name = _target_service_def["Name"]
+        for _service in settings.services:
+            if service_name != _service.name:
+                continue
+            if _service.family == dst_family:
+                continue
+            target_family_services.append(_service)
+    add_service_to_service_ingress_rules(
+        dst_family, target_family_services, families_sg_stack
+    )
+
+
+def add_service_to_service_ingress_rules(
+    dst_family: ComposeFamily,
+    target_family_services: list[ComposeService],
+    families_sg_stack: EcsIngressStack,
+):
+    """
+    For each identified service that wants to access the `dst_family` services
+    For each port of the `dst_family`
+    Create an SG Ingress rule that allows service-to-service communication
+    """
+    for _service in target_family_services:
+        if families_sg_stack.title not in _service.family.stack.DependsOn:
+            _service.family.stack.DependsOn.append(families_sg_stack.title)
+        for _service_port_def in dst_family.service_networking.ports:
+            target_port = set_else_none(
+                "target",
+                _service_port_def,
+                set_else_none("published", _service_port_def, None),
             )
-        if not keypresent("DependsOn", service):
-            add_independent_rules(dst_family, service_name, root_stack)
-        else:
-            src_family = settings.families[service_name]
-            if dst_family.stack.title not in src_family.stack.DependsOn:
-                src_family.stack.DependsOn.append(dst_family.stack.title)
-            dst_family_sg_param = Parameter(
-                f"{dst_family.stack.title}GroupId", Type=SG_ID_TYPE
+            if target_port is None:
+                raise ValueError(
+                    "Wrong port definition value for security group ingress",
+                    _service_port_def,
+                )
+            common_args = {
+                "FromPort": target_port,
+                "ToPort": target_port,
+                "IpProtocol": _service_port_def["protocol"],
+                "SourceSecurityGroupOwnerId": Ref(AWS_ACCOUNT_ID),
+                "Description": Sub(
+                    f"From ${_service.family.name} to {dst_family.name} "
+                    f"on port {target_port}/{_service_port_def['protocol']}"
+                ),
+            }
+            ingress_title: str = (
+                f"From{_service.family.logical_name}To{dst_family.logical_name}"
+                f"On{target_port}{_service_port_def['protocol'].title()}"
             )
-            add_parameters(src_family.template, [dst_family_sg_param])
-            src_family.stack.Parameters.update(
-                {
-                    dst_family_sg_param.title: GetAtt(
-                        dst_family.stack.title,
-                        f"Outputs.{dst_family.logical_name}GroupId",
+            add_resource(
+                families_sg_stack.stack_template,
+                SecurityGroupIngress(
+                    ingress_title,
+                    SourceSecurityGroupId=GetAtt(
+                        _service.family.service_networking.inter_services_sg.cfn_resource,
+                        "GroupId",
                     ),
-                }
+                    GroupId=GetAtt(
+                        dst_family.service_networking.inter_services_sg.cfn_resource,
+                        "GroupId",
+                    ),
+                    **common_args,
+                ),
             )
-            add_dependant_ingress_rules(dst_family, dst_family_sg_param, src_family)
 
 
 def handle_str_cloudmap_config(

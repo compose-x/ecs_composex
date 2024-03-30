@@ -41,6 +41,7 @@ from ecs_composex.ecs.helpers import (
 )
 from ecs_composex.ecs_cluster import add_ecs_cluster
 from ecs_composex.ecs_cluster.helpers import set_ecs_cluster_identifier
+from ecs_composex.ecs_ingress.ecs_ingress_stack import XStack as ServicesIngressStack
 from ecs_composex.iam.iam_stack import XStack as IamStack
 from ecs_composex.mods_manager import ModManager
 from ecs_composex.resource_settings import map_resource_return_value_to_services_command
@@ -248,8 +249,13 @@ def generate_full_template(settings: ComposeXSettings):
     iam_stack = add_resource(
         settings.root_stack.stack_template, IamStack("iam", settings)
     )
+    families_sg_stack = add_resource(
+        settings.root_stack.stack_template,
+        ServicesIngressStack("ServicesNetworking", settings),
+    )
+
     add_x_resources(settings)
-    add_compose_families(settings)
+    add_compose_families(settings, families_sg_stack)
     if "x-vpc" not in settings.mod_manager.modules:
         vpc_module = settings.mod_manager.load_module("x-vpc", {})
     else:
@@ -264,9 +270,9 @@ def generate_full_template(settings: ComposeXSettings):
     x_cloud_lookup_and_new_vpc(settings, vpc_stack)
 
     for family in settings.families.values():
-        family.init_network_settings(settings, vpc_stack)
+        family.init_network_settings(settings, vpc_stack, families_sg_stack)
 
-    handle_families_cross_dependencies(settings, settings.root_stack)
+    handle_families_cross_dependencies(settings, families_sg_stack)
     update_network_resources_vpc_config(settings, vpc_stack)
     set_families_ecs_service(settings)
 
@@ -304,6 +310,7 @@ def generate_full_template(settings: ComposeXSettings):
     set_ecs_cluster_identifier(settings.root_stack, settings)
     add_all_tags(settings.root_stack.stack_template, settings)
     set_all_mappings_to_root_stack(settings)
+    families_sg_stack.update_vpc_settings(vpc_stack)
 
     for resource in settings.x_resources:
         if hasattr(resource, "post_processing") and hasattr(

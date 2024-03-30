@@ -417,14 +417,14 @@ class ComposeFamily:
                 )
 
     def init_network_settings(
-        self, settings: ComposeXSettings, vpc_stack: ComposeXStack
+        self, settings: ComposeXSettings, vpc_stack: ComposeXStack, families_sg_stack
     ) -> None:
         """
         Once we have figured out the compute settings (EXTERNAL vs other)
         """
         from ecs_composex.ecs.service_networking.helpers import add_security_group
 
-        self.service_networking = ServiceNetworking(self)
+        self.service_networking = ServiceNetworking(self, families_sg_stack)
         self.finalize_services_networking_settings(settings)
         if self.service_compute.launch_type == "EXTERNAL":
             LOG.debug(f"{self.name} Ingress cannot be set (EXTERNAL mode). Skipping")

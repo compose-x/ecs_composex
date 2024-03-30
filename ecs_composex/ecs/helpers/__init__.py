@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ecs_composex.common.settings import ComposeXSettings
     from ecs_composex.ecs.ecs_family import ComposeFamily
+    from ecs_composex.ecs_ingress.ecs_ingress_stack import XStack as EcsIngressStack
 
 from ecs_composex.common.stacks import ComposeXStack
 
@@ -24,24 +25,23 @@ def add_iam_dependency(iam_stack: ComposeXStack, family: ComposeFamily):
 
 
 def handle_families_cross_dependencies(
-    settings: ComposeXSettings, root_stack: ComposeXStack
+    settings: ComposeXSettings,
+    families_sg_stack: EcsIngressStack,
 ):
     from ecs_composex.ecs.ecs_family import ServiceStack
     from ecs_composex.ecs.service_networking.ingress_helpers import (
         set_compose_services_ingress,
     )
 
-    families_stacks = [
-        family
-        for family in root_stack.stack_template.resources
-        if (
-            family in settings.families
-            and isinstance(settings.families[family].stack, ServiceStack)
-        )
-    ]
-    for family in families_stacks:
+    eval_families: list[ComposeFamily] = []
+    for _family in settings.families.values():
+        if isinstance(_family.stack, ServiceStack):
+            eval_families.append(_family)
+    for _dst_family in eval_families:
         set_compose_services_ingress(
-            root_stack, settings.families[family], families_stacks, settings
+            _dst_family,
+            families_sg_stack,
+            settings,
         )
 
 

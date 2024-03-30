@@ -8,8 +8,9 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ecs_composex.ecs.ecs_family import ComposeFamily
     from ecs_composex.common.settings import ComposeXSettings
+    from ecs_composex.ecs_ingress.ecs_ingress_stack import XStack as EcsIngressStack
 
-from troposphere import FindInMap, Ref
+from troposphere import FindInMap, GetAtt, Ref
 
 from ecs_composex.common.cfn_params import ROOT_STACK_NAME, ROOT_STACK_NAME_T
 from ecs_composex.common.logging import LOG
@@ -88,12 +89,12 @@ def handle_families_dependencies(
                 )
 
 
-def add_compose_families(settings: ComposeXSettings) -> None:
+def add_compose_families(
+    settings: ComposeXSettings, families_sg_stack: EcsIngressStack
+) -> None:
     """
     Using existing ComposeFamily in settings, creates the ServiceStack
     and template
-
-    :param ecs_composex.common.settings.ComposeXSettings settings:
     """
     for family_name, family in settings.families.items():
         family.init_family()
@@ -105,6 +106,7 @@ def add_compose_families(settings: ComposeXSettings) -> None:
                 family.iam_manager.task_role.name_param,
                 family.iam_manager.exec_role.arn_param,
                 family.iam_manager.exec_role.name_param,
+                families_sg_stack.services_mappings[family.name].parameter,
             ],
         )
         family.stack.Parameters.update(
@@ -118,6 +120,12 @@ def add_compose_families(settings: ComposeXSettings) -> None:
                 family.iam_manager.exec_role.arn_param.title: family.iam_manager.exec_role.output_arn,
                 family.iam_manager.exec_role.name_param.title: family.iam_manager.exec_role.output_name,
                 ecs_params.SERVICE_HOSTNAME.title: family.family_hostname,
+                families_sg_stack.services_mappings[
+                    family.name
+                ].parameter.title: GetAtt(
+                    families_sg_stack.services_mappings[family.name].stack.title,
+                    f"Outputs.{families_sg_stack.services_mappings[family.name].parameter.title}",
+                ),
             }
         )
         family.template.metadata.update(metadata)
