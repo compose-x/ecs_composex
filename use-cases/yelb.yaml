@@ -39,7 +39,7 @@ services:
     x-network:
       Ingress:
         Services:
-          - Name: yelbui
+          - Name: yelb-ui
       x-ecs_connect:
         MacroParameters:
           service_ports:
@@ -63,7 +63,7 @@ services:
           x-cloudmap: PrivateNamespace
       Ingress:
         Services:
-          - Name: yelbappserver
+          - Name: yelb-appserver
 
   yelb-db:
     image: mreferre/yelb-db:0.6
@@ -79,4 +79,4 @@ services:
           x-cloudmap: PrivateNamespace
       Ingress:
         Services:
-          - Name: yelbappserver
+          - Name: yelb-appserver
