@@ -1,3 +1,6 @@
+---
+# Docker compose file of the yelb application adapted for deployment via ECS Compose-X
+version: "3.8"
 x-cloudmap:
   PrivateNamespace:
     Name: compose-x.internal
@@ -23,8 +26,8 @@ services:
           x-cloudmap: PrivateNamespace
       Ingress:
         ExtSources:
-          - IPv4: 86.132.105.135/32
-            Name: Home
+          - IPv4: 0.0.0.0/0
+            Name: ANY
 
   yelb-appserver:
     image: mreferre/yelb-appserver:0.7
