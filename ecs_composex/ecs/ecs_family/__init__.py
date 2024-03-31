@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Union
 if TYPE_CHECKING:
     from troposphere.ecs import Service as CfnService
     from ecs_composex.common.settings import ComposeXSettings
+    from ecs_composex.ecs.ecs_service import EcsService
 
 import re
 from itertools import chain
@@ -72,8 +73,8 @@ class ComposeFamily:
     """
 
     def __init__(self, services: list[ComposeService], family_name):
-        self._compose_services = services
-        self.ordered_services = services
+        self._compose_services: list[ComposeService] = services
+        self.ordered_services: list[ComposeService] = services
         self.managed_sidecars = []
         self.name = family_name
         self.family_hostname = self.name.replace("_", "-").lower()
@@ -92,7 +93,7 @@ class ComposeFamily:
         self.task_definition = None
         self.service_tags = None
         self.enable_execute_command = False
-        self.ecs_service = None
+        self.ecs_service: EcsService | None = None
         self.runtime_cpu_arch = None
         self.runtime_os_family = None
         self.outputs = []
@@ -103,9 +104,9 @@ class ComposeFamily:
         self.iam_manager = TaskIam(self)
         self.iam_manager.init_update_policies()
         self.service_scaling = None
-        self.service_networking = None
+        self.service_networking: ServiceNetworking | None = None
         self.task_compute = None
-        self.service_compute = ServiceCompute(self)
+        self.service_compute: ServiceCompute = ServiceCompute(self)
         self.set_enable_execute_command()
         set_family_hostname(self)
 
@@ -447,41 +448,29 @@ class ComposeFamily:
             self.service_networking.ingress.associate_ext_ingress_rules(self.template)
             self.service_networking.add_self_ingress()
 
-    def finalize_family_settings(self):
+    def finalize_family_settings(self, settings: ComposeXSettings):
         """
         Once all services have been added, we add the sidecars and deal with appropriate permissions and settings
         Will add xray / prometheus sidecars
         """
-        from .family_helpers import set_service_dependency_on_all_iam_policies
+        from ecs_composex.ecs.ecs_family.family_helpers import (
+            set_service_dependency_on_all_iam_policies,
+        )
+        from ecs_composex.ecs.ecs_family.family_helpers.compute_finalizers import (
+            finalize_family_compute,
+            finalize_scaling_settings,
+        )
+        from ecs_composex.ecs.ecs_family.family_helpers.network_finalizers import (
+            finalize_lb_settings,
+            finalize_network_settings,
+        )
 
-        self.add_containers_images_cfn_parameters()
-        self.task_compute.set_task_compute_parameter()
-        self.task_compute.unlock_compute_for_main_container()
-        if self.service_compute.ecs_capacity_providers:
-            self.service_compute.apply_capacity_providers_to_service(
-                self.service_compute.ecs_capacity_providers
-            )
+        finalize_network_settings(self, settings)
+        finalize_family_compute(self)
 
         set_service_dependency_on_all_iam_policies(self)
-        if self.service_compute.launch_type == "EXTERNAL":
-            if hasattr(self.service_definition, "LoadBalancers"):
-                setattr(self.service_definition, "LoadBalancers", NoValue)
-            if hasattr(self.service_definition, "ServiceRegistries"):
-                setattr(self.service_definition, "ServiceRegistries", NoValue)
-            for container in self.task_definition.ContainerDefinitions:
-                if hasattr(container, "LinuxParameters"):
-                    parameters = getattr(container, "LinuxParameters")
-                    setattr(parameters, "InitProcessEnabled", False)
-        if (
-            self.service_definition
-            and self.service_definition.title in self.template.resources
-        ) and (
-            self.service_scaling
-            and self.service_scaling.scalable_target
-            and self.service_scaling.scalable_target.title
-            not in self.template.resources
-        ):
-            self.template.add_resource(self.service_scaling.scalable_target)
+        finalize_lb_settings(self)
+        finalize_scaling_settings(self)
         self.generate_outputs()
         service_configs = [
             [0, service]

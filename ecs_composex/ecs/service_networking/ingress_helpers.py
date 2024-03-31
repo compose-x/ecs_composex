@@ -17,8 +17,13 @@ if TYPE_CHECKING:
 from json import dumps
 
 from compose_x_common.compose_x_common import keyisset, keypresent, set_else_none
-from troposphere import AWS_ACCOUNT_ID, GetAtt, Ref, Sub
+from troposphere import AWS_ACCOUNT_ID, GetAtt, NoValue, Ref, Sub
 from troposphere.ec2 import SecurityGroupIngress
+from troposphere.ecs import (
+    ServiceConnectClientAlias,
+    ServiceConnectConfiguration,
+    ServiceConnectService,
+)
 
 from ecs_composex.cloudmap.cloudmap_params import RES_KEY as CLOUDMAP_KEY
 from ecs_composex.common.cfn_params import Parameter
@@ -26,6 +31,7 @@ from ecs_composex.common.logging import LOG
 from ecs_composex.common.troposphere_tools import add_parameters, add_resource
 from ecs_composex.ecs.ecs_params import SERVICE_NAME
 from ecs_composex.ingress_settings import Ingress
+from ecs_composex.resources_import import import_record_properties
 from ecs_composex.vpc.vpc_params import SG_ID_TYPE
 
 
@@ -301,3 +307,104 @@ def merge_cloudmap_settings(family: ComposeFamily, ports: list) -> dict:
         elif isinstance(cloudmap_config, dict):
             handle_dict_cloudmap_config(family, family_mappings, cloudmap_config, ports)
     return family_mappings
+
+
+def find_namespace(
+    family: ComposeFamily, namespace_id: str, settings: ComposeXSettings
+):
+    """Finds the x-cloudmap: namespace and returns the identifier to use for it"""
+    x_resource_attribute: str = f"x-cloudmap::{namespace_id}::Arn"
+    namespace, parameter = settings.get_resource_attribute(x_resource_attribute)
+    return namespace.get_resource_attribute_value(parameter, family)[0]
+
+
+def set_ecs_connect_from_macro(
+    family: ComposeFamily,
+    service: ComposeService,
+    macro: dict,
+    settings: ComposeXSettings,
+) -> ServiceConnectConfiguration:
+    """
+    Based on the MacroParameters, creates the ServiceConnectConfiguration object.
+    Configuration is in the `macro` parameter
+    """
+    LOG.info(f"{family.name}.{service.name} - Setting up ecs-connect settings")
+    service_aliases: list[ServiceConnectService] = []
+    props: dict = {
+        "Enabled": True,
+        "Namespace": find_namespace(family, macro["x-cloudmap"], settings),
+        "Services": service_aliases,
+    }
+    if not keyisset("service_ports", macro):
+        return ServiceConnectConfiguration(**props)
+
+    for port_name, connect_config in macro["service_ports"].items():
+        for the_port in family.service_networking.ports:
+            if keyisset("name", the_port) and the_port["name"] == port_name:
+                break
+        else:
+            raise AttributeError(
+                f"No port called {port_name} in family {family.name}",
+                [_port["name"] for _port in family.service_networking.ports],
+            )
+
+        dns_name = set_else_none("DnsName", connect_config, None)
+        client_aliases = NoValue
+        if dns_name:
+            client_aliases = [
+                ServiceConnectClientAlias(DnsName=dns_name, Port=the_port["target"])
+            ]
+        services_props: dict = {
+            "DiscoveryName": set_else_none(
+                "CloudMapServiceName", connect_config, family.name
+            ),
+            "PortName": port_name,
+            "Timeout": set_else_none("Timeout", connect_config, NoValue),
+            "IngressPortOverride": set_else_none(
+                "IngressPortOverride", connect_config, NoValue
+            ),
+            "ClientAliases": client_aliases,
+        }
+        config: ServiceConnectService = ServiceConnectService(**services_props)
+        service_aliases.append(config)
+
+    return ServiceConnectConfiguration(**props)
+
+
+def process_ecs_connect_settings(
+    family: ComposeFamily, service: ComposeService, settings: ComposeXSettings
+) -> ServiceConnectConfiguration | Ref:
+    """Determines whether to create the ECS Service connect from the Properties or MacroParameters"""
+    if keyisset("Properties", service.x_ecs_connect):
+        props = import_record_properties(
+            service.x_ecs_connect["Properties"], ServiceConnectConfiguration
+        )
+        connect_props = ServiceConnectConfiguration(**props)
+    elif keyisset("MacroParameters", service.x_ecs_connect):
+        connect_props = set_ecs_connect_from_macro(
+            family, service, service.x_ecs_connect["MacroParameters"], settings
+        )
+    else:
+        raise KeyError(
+            f"{family.name} - x-network.x-ecs_connect is not set correctly. "
+            "One of Properties or MacroParameters is required"
+        )
+    return connect_props
+
+
+def import_set_ecs_connect_settings(
+    family: ComposeFamily, settings: ComposeXSettings
+) -> ServiceConnectConfiguration | None:
+    if not family.service_networking.ports:
+        LOG.warning(f"services.{family.name} - No ports defined: ignoring ECS Connect.")
+        return
+    x_ecs_configs: list[ComposeService] = [
+        service for service in family.ordered_services if service.x_ecs_connect
+    ]
+    if not x_ecs_configs:
+        return None
+    if len(x_ecs_configs) > 1:
+        raise ValueError(
+            f"{family.name} - x-network.x-ecs_connect can only be set once for all the services of the family."
+        )
+    return process_ecs_connect_settings(family, x_ecs_configs[0], settings)

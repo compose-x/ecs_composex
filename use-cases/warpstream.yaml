@@ -1,3 +1,4 @@
+version: "3.8"
 secrets:
   CLUSTER_SECRETS:
     external: true
@@ -20,6 +21,13 @@ services:
       - 9999/tcp
       - 8080/tcp
     x-network:
+      x-ecs_connect:
+        MacroParameters:
+          services_ports:
+            tcp_9092:
+              DnsName: wapstream.testing.internal
+              CloudMapServiceName: warpstream-dev
+          x-cloudmap: InternalZone
       Ingress:
         Myself: true
         ExtSources:
@@ -48,6 +56,11 @@ x-route53:
   PublicZone:
     ZoneName: bdd-testing.compose-x.io
     Lookup: true
+
+x-cloudmap:
+  InternalZone:
+    ZoneName: testing.internal
+
 
 x-acm:
   warp-cert:

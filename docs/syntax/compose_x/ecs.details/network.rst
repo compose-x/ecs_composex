@@ -14,6 +14,7 @@ services.x-network
     services:
       serviceA:
         x-network:
+          x-ecs_connect: {}
           AssignPublicIp: bool
           Ingress: {}
           x-cloudmap: {}
@@ -40,6 +41,103 @@ This flag allows to assign an Elastic IP to the container when using ``awsvpc`` 
 
     To select which subnets to place the services, see :ref:`compose_networks_syntax_reference`
 
+
+x-ecs_connect (1.1.0)
+======================
+
+This configuration section allows you to define ECS Service Connect configuration.
+It's made up of two options, `Properties` and `MacroParameters`
+
+`Properties` must match exactly the `ECS Service Connect properties`_ and must be all valid to work.
+
+.. attention::
+
+    No changes to input or validation will be made when set. Be sure to have everything valid.
+
+`MacroParameters` however, is an attempt at creating a shorthand syntax to this.
+
+service connect - client only
+------------------------------
+
+You might have applications that you want to act only as clients to other services. This will only tell ECS to make sure
+to provision the Service Connect sidecar which will be there to handle the proxy-ing to server services.
+
+To enable the client config, you simply need to enable the feature as show below
+
+.. code-block::
+
+    x-cloudmap:
+      PrivateNamespace:
+        Name: compose-x.internal
+
+    services:
+      yelb-ui:
+        x-network:
+          AssignPublicIp: true
+          x-ecs_connect:
+            MacroParameters:
+              x-cloudmap: PrivateNamespace
+          Ingress:
+            ExtSources:
+              - IPv4: 0.0.0.0/0
+                Name: ANY
+
+service connect - server
+----------------------------
+
+For services that you want to act as client & server, you need to declare which ports you want to declare to Service Connect.
+That's mandatory.
+
+For example, we have the following two services: appserver will act as both a client and a server. It will serve requests
+for our yelb-ui service (the client above), and a client to the redis-server
+
+.. code-block::
+
+    x-cloudmap:
+      PrivateNamespace:
+        Name: compose-x.internal
+
+    services:
+      yelb-appserver:
+        image: mreferre/yelb-appserver:0.7
+        depends_on:
+          - redis-server
+        ports:
+          - 4567:4567
+        environment:
+          redishost: redis-server
+        x-network:
+          Ingress:
+            Services:
+              - Name: yelb-ui
+          x-ecs_connect:
+            MacroParameters:
+              service_ports:
+                tcp_4567:
+                  DnsName: yelb-appserver
+                  CloudMapServiceName: yelb-appserver
+              x-cloudmap: PrivateNamespace
+
+
+      redis-server:
+        image: redis:4.0.2
+        ports:
+          - 6379:6379
+        x-network:
+          x-ecs_connect:
+            MacroParameters:
+              service_ports:
+                tcp_6379:
+                  DnsName: redis-server
+                  CloudMapServiceName: redis-server
+              x-cloudmap: PrivateNamespace
+          Ingress:
+            Services:
+              - Name: yelb-appserver
+
+.. hint::
+
+    See `the full connect example`_ uses to perform functional testing of the feature.
 
 Ingress
 ======================
@@ -148,3 +246,6 @@ Definition
 -----------
 
 .. literalinclude:: ../../../../ecs_composex/specs/services.x-network.spec.json
+
+.. _ECS Service Connect properties: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ecs-service-serviceconnectconfiguration.html
+.. _the full connect example: https://github.com/compose-x/ecs_composex/tree/main/use-cases/yelb.yaml
