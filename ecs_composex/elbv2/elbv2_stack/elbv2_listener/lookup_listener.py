@@ -140,7 +140,7 @@ class LookupListener:
                     )
                 if (
                     f"{target_parts.group('family')}:{target_parts.group('container')}"
-                    not in [svc["name"] for svc in self.lb.services]
+                    not in [_family_service for _family_service in self.lb.services]
                 ):
                     self.definition["Targets"].remove(target)
         if not self.definition["Targets"]:
