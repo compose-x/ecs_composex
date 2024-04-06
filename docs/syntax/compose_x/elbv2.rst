@@ -282,26 +282,34 @@ Syntax
 
 .. code-block:: yaml
 
-    name: <family name:container name>
-    protocol: <str>
-    port : <int>
-    healthcheck: <str>
-    TargetGroupAttributes: list|map
+    <family_name:container_name:port>:
+        protocol: <str>
+        port : <int>
+        healthcheck: <str>
+        TargetGroupAttributes: list|map
 
 `JSON Schema definition <https://github.com/compose-x/ecs_composex_specs/blob/main/ecs_composex_specs/x-elbv2.spec.json#L38>`__
 
-name
-^^^^^^^^^^^^^^^^^^
+family_name:container_name:port
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+At minima, you must set ``family_name:container_name`` to indicate with container within the family is going to be used
+as the Target of the TargetGroup. Even if you only have 1 container in the family, must you set the container by name
+explicitly.
 
 Given that you can now re-use one of the service in the docker-compose file multiple times for multiple ECS Services
 in multiple Task definitions, and ECS to ELBv2 supports to route traffic to a specific container in the task definition,
 you have to indicate the service name in the following format
 
-.. code-block::
+If it so happens that you want to create multiple TargetGroups to the same container because it exposes different services
+on different ports, use the ``:port`` section to distinguish ports for the target group.
 
-    # name: <family_name>:<service_name>
-    name: youtoo:app01
-    name: app03:app03
+.. hint::
+
+    This value must match the value of `port`_. The `port`_ attribute will remain in future versions for compatibility, but
+    might be moved to using ``:port`` instead.
+
+
 
 .. hint::
 
@@ -336,6 +344,10 @@ healthcheck
         Services:
           - healthcheck: (port:protocol)(:healthy_count:unhealthy_count:intervals:timeout)?(:path:http_codes)?
 
+
+.. warning::
+
+    The string format is at risk to get deprecated in favor of the much simpler, more explicit properties mapping definition.
 
 .. code-block:: yaml
     :caption: full definition with the properties
@@ -373,7 +385,7 @@ In AWS CFN, it is a list of Key/Value objects, so compose-x supports it that way
 .. code-block:: yaml
 
     Services:
-      - name: app03:app03
+      app03:app03:
         port: 5000
         healthcheck: 5000:TCP:7:2:15:5
         protocol: TCP
@@ -391,7 +403,7 @@ into a map/dict structure and compose-x will automatically convert it to the CFN
 .. code-block:: yaml
 
     Services:
-      - name: app03:app03
+      name: app03:app03:
         port: 5000
         healthcheck: 5000:TCP:7:2:15:5
         protocol: TCP
@@ -457,6 +469,59 @@ into a map/dict structure and compose-x will automatically convert it to the CFN
         `Target Group Attributes`_
 
 
+Lookup
+=======
+
+.. note::
+
+    Available since 1.0+
+
+This allows to lookup existing LoadBalancers and either
+
+* Create a new listener, and set services to use for it. Will fail if listener port is already in use on the LB.
+* Lookup LB + Listeners, to create a/multiple new listener rule(s) to an existing Listener (available only for ALB).
+
+When using the ALB & Adding new rules to the existing Listener, you **MUST** define `Conditions` in the target list.
+This will allow the rules to be evaluated correctly.
+
+.. hint::
+
+    It is recommended to always at least use the hostname condition.
+
+Example
+---------
+
+.. code-block:: yaml
+    :caption: Lookup ALB and add rule to existing HTTPs listener.
+
+    x-elbv2:
+      uploadstatusALB:
+        DnsAliases:
+          - Names:
+              - my-target.hostname.tld
+            Route53Zone: x-route53::PublicZone
+        Lookup:
+          Listeners:
+            443:
+              Tags:
+                Name: my-https-listener
+              Targets:
+                - Conditions:
+                    - Field: host-header
+                      HostHeaderConfig:
+                        Values:
+                          - my-target.hostname.tld
+                  name: family:container:8080
+          RoleArn: ${NONPROD_RO_ROLE_ARN}
+          loadbalancer:
+            Tags:
+              Name: my-existing-lb
+        Services:
+          family:container:
+            healthcheck: 8080:HTTP:7:2:15:5:/swagger-ui.html:401
+            port: 8080
+            protocol: HTTP
+
 Settings
 ============
 
@@ -481,7 +546,7 @@ Examples
 
 
 .. code-block:: yaml
-    :caption: ELBv2 with
+    :caption: ELBv2 with Cognito OIDC
 
     x-elbv2:
       authLb:
@@ -515,7 +580,7 @@ Examples
                     prompt": "login"
                   OnUnauthenticatedRequest: "deny"
         Services:
-          - name: app03:app03
+          name: app03:app03:
             port: 5000
             healthcheck: 5000:HTTP:7:2:15:5
             protocol: HTTP
