@@ -6,19 +6,18 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    pass
+    from ecs_composex.ecs.ecs_family import ComposeFamily
+    from ecs_composex.common.settings import ComposeXSettings
 
 from troposphere import Ref
 
 from ecs_composex.common.logging import LOG
 
 
-def update_family_subnets(family, settings) -> None:
+def update_family_subnets(family: ComposeFamily, settings: ComposeXSettings) -> None:
     """
-    Method to update the stack parameters
-
-    :param ecs_composex.ecs.ecs_family.ComposeFamily family:
-    :param ecs_composex.common.settings.ComposeXSettings settings:
+    Update the stack parameters of the family stack AppSubnets Parameter value to the one matching with
+    networks.x-vpc and networks.[]
     """
     network_names = list(family.service_networking.networks.keys())
     for network in settings.networks:
@@ -37,7 +36,11 @@ def update_family_subnets(family, settings) -> None:
         )
 
 
-def set_family_hostname(family):
+def set_family_hostname(family: ComposeFamily):
+    """
+    Sets the hostname to use for the Family in Cloudmap.
+    If it has been set on more than one service container, it uses the first one.
+    """
     svcs_hostnames = any(svc.family_hostname for svc in family.services)
     if not svcs_hostnames or not family.family_hostname:
         LOG.debug(

@@ -241,6 +241,44 @@ class Ingress:
     def __repr__(self):
         return dumps(self.definition, indent=2)
 
+    def handle_security_group_source(
+        self,
+        source,
+        common_args: dict,
+        destination_title: str,
+        target_port: int,
+        settings,
+    ) -> None:
+        """
+        Method to handle SecurityGroup sources
+        It updates the list of AWS sources ingress rules that will later be added to the stack template of the family
+        """
+        if keyisset("Id", source):
+            sg_id = source["Id"]
+        elif keyisset("Lookup", source):
+            sg_id = lookup_security_group(settings, source["Lookup"])
+        else:
+            raise KeyError(
+                "Information missing to identify the SecurityGroup. Requires either Id or Lookup"
+            )
+        common_args.update(
+            {
+                "Description": Sub(
+                    f"From {sg_id} to {destination_title} on port {target_port}"
+                )
+            }
+        )
+        self.aws_ingress_rules.append(
+            SecurityGroupIngress(
+                f"From{NONALPHANUM.sub('', sg_id)}ToServiceOn{target_port}",
+                SourceSecurityGroupId=sg_id,
+                SourceSecurityGroupOwnerId=set_else_none(
+                    "AccountOwner", source, Ref(AWS_ACCOUNT_ID)
+                ),
+                **common_args,
+            )
+        )
+
     def set_aws_sources_ingress(
         self, settings: ComposeXSettings, destination_title: str, sg_ref: AWSHelperFn
     ) -> None:
@@ -267,30 +305,8 @@ class Ingress:
                     "GroupId": sg_ref,
                 }
                 if source["Type"] == "SecurityGroup":
-                    if keyisset("Id", source):
-                        sg_id = source["Id"]
-                    elif keyisset("Lookup", source):
-                        sg_id = lookup_security_group(settings, source["Lookup"])
-                    else:
-                        raise KeyError(
-                            "Information missing to identify the SecurityGroup. Requires either Id or Lookup"
-                        )
-                    common_args.update(
-                        {
-                            "Description": Sub(
-                                f"From {sg_id} to {destination_title} on port {target_port}"
-                            )
-                        }
-                    )
-                    self.aws_ingress_rules.append(
-                        SecurityGroupIngress(
-                            f"From{NONALPHANUM.sub('', sg_id)}ToServiceOn{target_port}",
-                            SourceSecurityGroupId=sg_id,
-                            SourceSecurityGroupOwnerId=set_else_none(
-                                "AccountOwner", source, Ref(AWS_ACCOUNT_ID)
-                            ),
-                            **common_args,
-                        )
+                    self.handle_security_group_source(
+                        source, common_args, destination_title, target_port, settings
                     )
                 elif source["Type"] == "PrefixList":
                     self.aws_ingress_rules.append(
