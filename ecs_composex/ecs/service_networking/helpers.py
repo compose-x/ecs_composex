@@ -1,50 +1,23 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  Copyright 2020-2022 John Mille <john@compose-x.io>
 
-from troposphere import Ref, StackName, Sub, Tags
-from troposphere.ec2 import SecurityGroup
+from __future__ import annotations
 
-from ecs_composex.common.cfn_conditions import define_stack_name
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ecs_composex.ecs.ecs_family import ComposeFamily
+    from ecs_composex.common.settings import ComposeXSettings
+
+from troposphere import Ref
+
 from ecs_composex.common.logging import LOG
-from ecs_composex.common.troposphere_tools import add_resource
-from ecs_composex.ecs.ecs_params import SERVICE_NAME, SG_T
-from ecs_composex.vpc.vpc_params import VPC_ID
 
 
-def add_security_group(family) -> None:
+def update_family_subnets(family: ComposeFamily, settings: ComposeXSettings) -> None:
     """
-    Creates a new EC2 SecurityGroup and assigns to ecs_service.network_settings
-    Adds the security group to the family template resources.
-
-    :param ecs_composex.ecs.ecs_family.ComposeFamily family:
-    """
-    family.service_networking.security_group = SecurityGroup(
-        SG_T,
-        GroupDescription=Sub(
-            f"SG for ${{{SERVICE_NAME.title}}} - ${{STACK_NAME}}",
-            STACK_NAME=define_stack_name(),
-        ),
-        Tags=Tags(
-            {
-                "Name": Sub(
-                    f"${{{SERVICE_NAME.title}}}-${{STACK_NAME}}",
-                    STACK_NAME=define_stack_name(),
-                ),
-                "StackName": StackName,
-                "MicroserviceName": Ref(SERVICE_NAME),
-            }
-        ),
-        VpcId=Ref(VPC_ID),
-    )
-    add_resource(family.template, family.service_networking.security_group)
-
-
-def update_family_subnets(family, settings) -> None:
-    """
-    Method to update the stack parameters
-
-    :param ecs_composex.ecs.ecs_family.ComposeFamily family:
-    :param ecs_composex.common.settings.ComposeXSettings settings:
+    Update the stack parameters of the family stack AppSubnets Parameter value to the one matching with
+    networks.x-vpc and networks.[]
     """
     network_names = list(family.service_networking.networks.keys())
     for network in settings.networks:
@@ -63,7 +36,11 @@ def update_family_subnets(family, settings) -> None:
         )
 
 
-def set_family_hostname(family):
+def set_family_hostname(family: ComposeFamily):
+    """
+    Sets the hostname to use for the Family in Cloudmap.
+    If it has been set on more than one service container, it uses the first one.
+    """
     svcs_hostnames = any(svc.family_hostname for svc in family.services)
     if not svcs_hostnames or not family.family_hostname:
         LOG.debug(

@@ -17,6 +17,7 @@ if TYPE_CHECKING:
         ServiceSecurityGroup,
     )
     from ecs_composex.common.settings import ComposeXSettings
+    from troposphere.ecs import ServiceConnectConfiguration
 
 from itertools import chain
 
@@ -76,11 +77,10 @@ class ServiceNetworking:
         self.merge_services_ports()
         self.merge_networks()
         self.definition = merge_family_services_networking(family)
-        self._security_group = None
-        self.inter_services_sg: ServiceSecurityGroup = (
-            families_sg_stack.services_mappings[family.name]
-        )
-        self.extra_security_groups = [self.inter_services_sg.parameter]
+        self.security_group: ServiceSecurityGroup = families_sg_stack.services_mappings[
+            family.name
+        ]
+        self.extra_security_groups = [self.security_group.parameter]
         self._subnets = Ref(APP_SUBNETS)
         self.cloudmap_config = (
             merge_cloudmap_settings(family, self.ports) if self.ports else {}
@@ -139,7 +139,7 @@ class ServiceNetworking:
 
     @property
     def security_groups(self) -> list:
-        groups = [Ref(self.security_group)]
+        groups = [Ref(self.security_group.parameter.title)]
         for extra_group in self.extra_security_groups:
             if (
                 isinstance(extra_group, SecurityGroup)
@@ -152,23 +152,6 @@ class ServiceNetworking:
             elif isinstance(extra_group, FindInMap):
                 groups.append(extra_group)
         return groups
-
-    @property
-    def security_group(self):
-        return self._security_group
-
-    @security_group.setter
-    def security_group(self, value):
-        if isinstance(value, SecurityGroup):
-            self._security_group = value
-        else:
-            raise TypeError(
-                "Service security group must be",
-                SecurityGroup,
-                "Got",
-                value,
-                type(value),
-            )
 
     @property
     def network_mode(self):
@@ -270,11 +253,11 @@ class ServiceNetworking:
                     FromPort=target_port,
                     ToPort=target_port,
                     IpProtocol=port["protocol"],
-                    GroupId=GetAtt(
-                        self.family.service_networking.security_group, "GroupId"
+                    GroupId=Ref(
+                        self.family.service_networking.security_group.parameter
                     ),
-                    SourceSecurityGroupId=GetAtt(
-                        self.family.service_networking.security_group, "GroupId"
+                    SourceSecurityGroupId=Ref(
+                        self.family.service_networking.security_group.parameter
                     ),
                     SourceSecurityGroupOwnerId=Ref(AWS_ACCOUNT_ID),
                     Description=Sub(
@@ -299,9 +282,7 @@ class ServiceNetworking:
                 "FromPort": port["target"],
                 "ToPort": port["target"],
                 "IpProtocol": port["protocol"],
-                "GroupId": GetAtt(
-                    self.family.service_networking.security_group, "GroupId"
-                ),
+                "GroupId": Ref(self.security_group.parameter.title),
                 "SourceSecurityGroupOwnerId": Ref(AWS_ACCOUNT_ID),
                 "Description": Sub(
                     f"From ELB {lb_name} to ${{{SERVICE_NAME.title}}} on port {port['target']}"

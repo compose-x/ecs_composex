@@ -17,6 +17,7 @@ if TYPE_CHECKING:
         DatabaseXResource,
     )
     from ecs_composex.common.stacks import ComposeXStack
+    from ecs_composex.ecs.ecs_stack import ServiceStack
 
 from botocore.exceptions import ClientError
 from compose_x_common.aws import get_account_id
@@ -380,25 +381,20 @@ def add_secret_to_container(db, secret_import, service, target):
         extend_container_secrets(service.container_definition, db_secret)
 
 
-def add_security_group_ingress(service_stack: ComposeXStack, db_name: str, sg_id, port):
+def add_security_group_ingress(family: ComposeFamily, db_name: str, sg_id, port):
     """
-    Function to add a SecurityGroupIngress rule into the ECS Service template
-
-    :param ecs_composex.ecs.ServicesStack service_stack: The root stack for the services
-    :param str db_name: the name of the database to use for imports
-    :param sg_id: The security group Id to use for ingress. DB Security group, not service's
-    :param port: The port for Ingress to the DB.
+    Add a SecurityGroupIngress rule into the ECS Service template, allowing the Service access to the DB.
     """
     add_resource(
-        service_stack.stack_template,
+        family.stack.stack_template,
         SecurityGroupIngress(
-            f"AllowFrom{service_stack.title}to{db_name}",
+            f"AllowFrom{family.stack.title}to{db_name}",
             GroupId=sg_id,
             FromPort=port,
             ToPort=port,
-            Description=Sub(f"Allow FROM {service_stack.title} TO {db_name}"),
-            SourceSecurityGroupId=GetAtt(
-                service_stack.stack_template.resources[SG_T], "GroupId"
+            Description=Sub(f"Allow FROM {family.stack.title} TO {db_name}"),
+            SourceSecurityGroupId=Ref(
+                family.service_networking.security_group.parameter.title
             ),
             SourceSecurityGroupOwnerId=Ref("AWS::AccountId"),
             IpProtocol="6",
@@ -553,7 +549,7 @@ def handle_import_dbs_to_services(
             use_task_role=grant_task_role_access,
         )
     add_security_group_ingress(
-        target[0].stack,
+        target[0],
         db.logical_name,
         sg_id=db.attributes_outputs[db.security_group_param]["ImportValue"],
         port=db.attributes_outputs[db.port_param]["ImportValue"],
@@ -604,7 +600,7 @@ def handle_new_tcp_resource(
             )
 
             add_security_group_ingress(
-                target[0].stack,
+                target[0],
                 resource.logical_name,
                 sg_id=Ref(sg_id["ImportParameter"]),
                 port=Ref(port_id["ImportParameter"]),

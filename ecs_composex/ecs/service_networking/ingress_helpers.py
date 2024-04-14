@@ -216,11 +216,11 @@ def add_service_to_service_ingress_rules(
                 SecurityGroupIngress(
                     ingress_title,
                     SourceSecurityGroupId=GetAtt(
-                        _service.family.service_networking.inter_services_sg.cfn_resource,
+                        _service.family.service_networking.security_group.cfn_resource,
                         "GroupId",
                     ),
                     GroupId=GetAtt(
-                        dst_family.service_networking.inter_services_sg.cfn_resource,
+                        dst_family.service_networking.security_group.cfn_resource,
                         "GroupId",
                     ),
                     **common_args,

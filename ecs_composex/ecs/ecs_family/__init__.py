@@ -304,9 +304,10 @@ class ComposeFamily:
             self.outputs.append(
                 CfnOutput(
                     f"{self.logical_name}GroupId",
-                    Value=GetAtt(self.service_networking.security_group, "GroupId"),
+                    Value=Ref(self.service_networking.security_group.parameter.title),
                 )
             )
+        if ecs_params.SERVICE_SUBNETS.title in self.stack.stack_template.parameters:
             self.outputs.append(
                 CfnOutput(
                     ecs_params.SERVICE_SUBNETS.title,
@@ -423,7 +424,6 @@ class ComposeFamily:
         """
         Once we have figured out the compute settings (EXTERNAL vs other)
         """
-        from ecs_composex.ecs.service_networking.helpers import add_security_group
 
         self.service_networking = ServiceNetworking(self, families_sg_stack)
         self.finalize_services_networking_settings(settings)
@@ -434,15 +434,14 @@ class ComposeFamily:
                 self.stack.set_vpc_params_from_vpc_lookup(vpc_stack, settings)
             else:
                 self.stack.set_vpc_parameters_from_vpc_stack(vpc_stack, settings)
-            add_security_group(self)
             self.service_networking.ingress.set_aws_sources_ingress(
                 settings,
                 self.logical_name,
-                GetAtt(self.service_networking.security_group, "GroupId"),
+                Ref(self.service_networking.security_group.parameter.title),
             )
             self.service_networking.ingress.set_ext_sources_ingress(
                 self.logical_name,
-                GetAtt(self.service_networking.security_group, "GroupId"),
+                Ref(self.service_networking.security_group.parameter.title),
             )
             self.service_networking.ingress.associate_aws_ingress_rules(self.template)
             self.service_networking.ingress.associate_ext_ingress_rules(self.template)

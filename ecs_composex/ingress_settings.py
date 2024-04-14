@@ -5,6 +5,14 @@
 Module to help with defining the network settings for the ECS Service based on the family services definitions.
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from troposphere import AWSHelperFn
+    from ecs_composex.common.settings import ComposeXSettings
+
 import re
 from copy import deepcopy
 from ipaddress import IPv4Interface
@@ -153,14 +161,8 @@ def set_service_ports(ports):
     return service_ports
 
 
-def lookup_security_group(settings, lookup):
-    """
-    Function to fetch the security group ID based on lookup details
-
-    :param ecs_composex.common.settings.ComposeXSettings settings:
-    :param lookup:
-    :return:
-    """
+def lookup_security_group(settings: ComposeXSettings, lookup: dict | list) -> str:
+    """Function to fetch the security group ID based on lookup details"""
     sg_re = re.compile(
         r"^arn:aws(?:-[a-z]+)?:ec2:[a-z0-9-]+:\d{12}:security-group/([\S]+)$"
     )
@@ -239,14 +241,48 @@ class Ingress:
     def __repr__(self):
         return dumps(self.definition, indent=2)
 
-    def set_aws_sources_ingress(self, settings, destination_title, sg_ref) -> None:
+    def handle_security_group_source(
+        self,
+        source,
+        common_args: dict,
+        destination_title: str,
+        target_port: int,
+        settings,
+    ) -> None:
         """
-        Method to define AWS Sources ingresses
+        Method to handle SecurityGroup sources
+        It updates the list of AWS sources ingress rules that will later be added to the stack template of the family
+        """
+        if keyisset("Id", source):
+            sg_id = source["Id"]
+        elif keyisset("Lookup", source):
+            sg_id = lookup_security_group(settings, source["Lookup"])
+        else:
+            raise KeyError(
+                "Information missing to identify the SecurityGroup. Requires either Id or Lookup"
+            )
+        common_args.update(
+            {
+                "Description": Sub(
+                    f"From {sg_id} to {destination_title} on port {target_port}"
+                )
+            }
+        )
+        self.aws_ingress_rules.append(
+            SecurityGroupIngress(
+                f"From{NONALPHANUM.sub('', sg_id)}ToServiceOn{target_port}",
+                SourceSecurityGroupId=sg_id,
+                SourceSecurityGroupOwnerId=set_else_none(
+                    "AccountOwner", source, Ref(AWS_ACCOUNT_ID)
+                ),
+                **common_args,
+            )
+        )
 
-        :param settings:
-        :param destination_title:
-        :param sg_ref:
-        """
+    def set_aws_sources_ingress(
+        self, settings: ComposeXSettings, destination_title: str, sg_ref: AWSHelperFn
+    ) -> None:
+        """Method to define AWS Sources ingresses"""
         for source in self.aws_sources:
             for port in self.ports:
                 if (
@@ -269,30 +305,8 @@ class Ingress:
                     "GroupId": sg_ref,
                 }
                 if source["Type"] == "SecurityGroup":
-                    if keyisset("Id", source):
-                        sg_id = source["Id"]
-                    elif keyisset("Lookup", source):
-                        sg_id = lookup_security_group(settings, source["Lookup"])
-                    else:
-                        raise KeyError(
-                            "Information missing to identify the SecurityGroup. Requires either Id or Lookup"
-                        )
-                    common_args.update(
-                        {
-                            "Description": Sub(
-                                f"From {sg_id} to {destination_title} on port {target_port}"
-                            )
-                        }
-                    )
-                    self.aws_ingress_rules.append(
-                        SecurityGroupIngress(
-                            f"From{NONALPHANUM.sub('', sg_id)}ToServiceOn{target_port}",
-                            SourceSecurityGroupId=sg_id,
-                            SourceSecurityGroupOwnerId=set_else_none(
-                                "AccountOwner", source, Ref(AWS_ACCOUNT_ID)
-                            ),
-                            **common_args,
-                        )
+                    self.handle_security_group_source(
+                        source, common_args, destination_title, target_port, settings
                     )
                 elif source["Type"] == "PrefixList":
                     self.aws_ingress_rules.append(
@@ -304,7 +318,7 @@ class Ingress:
                     )
 
     def create_ext_sources_ingress_rule(
-        self, destination_title, allowed_source, security_group, **props
+        self, destination_title, allowed_source, security_group: AWSHelperFn, **props
     ) -> None:
         """
         Creates the Security Ingress rule for a CIDR based rule
